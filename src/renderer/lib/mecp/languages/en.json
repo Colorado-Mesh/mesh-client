@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Medical",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Terrain / Infrastructure",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Weather / Environment",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Supplies",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Position / Movement",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Coordination",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Response",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Drill / Test",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Life / Leisure",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Threat / Security",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Have / Offer Resources",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "Beacon",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Injury",
+    "M02": "Unconscious person",
+    "M03": "Breathing difficulty",
+    "M04": "Cardiac event",
+    "M05": "Hypothermia",
+    "M06": "Severe bleeding",
+    "M07": "Fracture / immobile",
+    "M08": "Burns",
+    "M09": "Multiple casualties",
+    "M10": "Deceased",
+    "M11": "Animal bite / sting",
+    "M12": "Allergic reaction / anaphylaxis",
+    "M13": "Poisoning / toxic exposure",
+    "M14": "Persons located alive",
+    "M15": "Area searched, no victims found",
+    "T01": "Road blocked",
+    "T02": "Bridge out",
+    "T03": "Building collapsed",
+    "T04": "Flooding",
+    "T05": "Landslide",
+    "T06": "Power out",
+    "T07": "Fire",
+    "T08": "Avalanche",
+    "T09": "Path impassable",
+    "T10": "Shelter available",
+    "T11": "Drowning / water rescue needed",
+    "T12": "Water contamination",
+    "T13": "Earthquake",
+    "T14": "Gas leak",
+    "T15": "Chemical spill / HAZMAT",
+    "T16": "Vehicle accident",
+    "T17": "Vehicle fire",
+    "W01": "Storm approaching",
+    "W02": "Visibility zero",
+    "W03": "Extreme cold",
+    "W04": "Extreme heat",
+    "W05": "Air quality danger",
+    "W06": "Tsunami / tidal surge warning",
+    "S01": "Need water",
+    "S02": "Need food",
+    "S03": "Need medication",
+    "S04": "Need battery / power",
+    "S05": "Need fuel",
+    "S06": "Need tools / equipment",
+    "P01": "Stranded / stuck",
+    "P02": "Evacuating toward",
+    "P03": "Sheltering in place",
+    "P04": "En route to",
+    "P05": "At GPS coordinates",
+    "P06": "Lost",
+    "P07": "Group separated",
+    "C01": "Send rescue",
+    "C02": "Need transport",
+    "C03": "Relay this message",
+    "C04": "Confirm received",
+    "C05": "How many people",
+    "C06": "What is status",
+    "C07": "Can you reach",
+    "C08": "Rendezvous at",
+    "R01": "Acknowledged",
+    "R02": "Help coming",
+    "R03": "ETA [minutes]",
+    "R04": "Cannot assist",
+    "R05": "Redirecting to",
+    "R06": "Stand by",
+    "R07": "Situation resolved / all clear",
+    "D01": "This is a drill",
+    "D02": "This is a test",
+    "D03": "End of drill",
+    "D04": "Ignore previous — sent in error",
+    "L01": "Beer / drinks",
+    "L02": "Coffee",
+    "L03": "Food ready",
+    "L04": "Summit reached",
+    "L05": "At camp",
+    "L06": "Running late",
+    "L07": "Good signal here",
+    "L08": "Photo opportunity",
+    "L09": "Wildlife spotted",
+    "L10": "Beautiful view",
+    "L11": "Trail conditions good",
+    "L12": "Trail conditions bad",
+    "L13": "Need a break",
+    "L14": "Heading home",
+    "L15": "Good morning / check-in",
+    "L16": "Good night",
+    "L17": "Thank you",
+    "L18": "Having fun",
+    "L19": "Festival / event here",
+    "L20": "Node test / ping",
+    "X01": "Dangerous person / threat nearby",
+    "X02": "Area unsafe — avoid",
+    "X03": "Gunfire / explosions heard",
+    "X04": "Civil unrest / crowd danger",
+    "X05": "Theft / looting reported",
+    "X06": "Authorities / emergency services present",
+    "X07": "Checkpoint / road closure (authority)",
+    "H01": "Have water available",
+    "H02": "Have food available",
+    "H03": "Have medical supplies",
+    "H04": "Have power / charging",
+    "H05": "Have fuel",
+    "H06": "Have tools / equipment",
+    "H07": "Have shelter / space for [N]pax",
+    "H08": "Have transport / vehicle",
+    "B01": "Automated distress beacon active — sender may be unresponsive",
+    "B02": "Beacon acknowledged — reduce transmission rate",
+    "B03": "Cancel beacon — I am OK"
+  }
+}

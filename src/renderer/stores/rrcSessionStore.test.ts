@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   migrateLegacyWhispersForHub,
@@ -9,6 +9,10 @@ import { clearRrcOpenDms, loadRrcOpenDms, saveRrcOpenDms } from '@/renderer/lib/
 import { selectRrcActiveRoomMessages, useRrcSessionStore } from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+  });
   beforeEach(() => {
     useRrcSessionStore.setState({ unreadByHub: new Map(), unreadByRoom: new Map() });
     useRrcSessionStore.getState().clearSession();
@@ -182,6 +186,40 @@ describe('rrcSessionStore', () => {
     );
     expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBeUndefined();
     expect(useRrcSessionStore.getState().totalUnread()).toBe(0);
+  });
+
+  describe.each(['linux', 'darwin', 'win32'] as const)('background unread on %s', (platform) => {
+    it.each([
+      { hidden: false, focused: false },
+      { hidden: true, focused: true },
+    ])(
+      'counts selected-room traffic when $hidden hidden / $focused focused',
+      ({ hidden, focused }) => {
+        vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+        vi.spyOn(document, 'hasFocus').mockReturnValue(focused);
+        vi.spyOn(document, 'hidden', 'get').mockReturnValue(hidden);
+        const store = useRrcSessionStore.getState();
+        const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+        store.applyStatus('active', hub, 'Community');
+        store.roomJoined('#lobby');
+        store.setActiveRoom('#lobby');
+        store.setRrcPanelFocused(true);
+        store.addMessage(
+          {
+            id: 'background-room-message',
+            room: '#lobby',
+            kind: 'msg',
+            body: 'Unread while the app is in the background',
+            sender_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+            timestamp: 1,
+          },
+          { bumpUnread: true },
+        );
+        expect(useRrcSessionStore.getState().unreadByRoom.get('lobby')).toBe(1);
+        expect(useRrcSessionStore.getState().unreadForHub(hub)).toBe(1);
+        expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+      },
+    );
   });
 
   it('stashes hub unread across disconnect wipe', () => {
@@ -414,6 +452,23 @@ describe('rrcSessionStore', () => {
     store.roomJoined('#lobby');
     store.setRoomTopic('#lobby', 'updated');
     expect(useRrcSessionStore.getState().rooms.get('#lobby')?.topic).toBe('updated');
+  });
+
+  it('accumulates chunked /list header then room-row notices', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.beginListedRoomsDirectory(hub);
+    expect(store.isListedRoomsDirectoryOpen(hub)).toBe(true);
+    expect(useRrcSessionStore.getState().listedRooms).toEqual([]);
+    store.appendListedRooms([{ name: 'catfacts', topic: 'Cat Facts!' }], hub);
+    store.appendListedRooms([{ name: 'general' }], hub);
+    expect(useRrcSessionStore.getState().listedRooms).toEqual([
+      { name: 'catfacts', topic: 'Cat Facts!' },
+      { name: 'general' },
+    ]);
+    store.endListedRoomsDirectory(hub);
+    expect(useRrcSessionStore.getState().isListedRoomsDirectoryOpen(hub)).toBe(false);
   });
 
   it('distinguishes forced part from voluntary part intent', () => {
@@ -809,5 +864,44 @@ describe('rrcSessionStore', () => {
     store.reserveWhoTranscriptForce('general');
     store.releaseWhoTranscriptForce('general');
     expect(useRrcSessionStore.getState().consumeWhoTranscriptSlot('general')).toBe(false);
+  });
+
+  it('tracks whoReplyPending mark/clear/has with room-key tolerance', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    expect(store.hasWhoReplyPending('general')).toBe(false);
+    store.markWhoReplyPending('general');
+    expect(store.hasWhoReplyPending('general')).toBe(true);
+    expect(store.hasWhoReplyPending('#general')).toBe(true);
+    store.markWhoReplyPending('general'); // idempotent
+    store.clearWhoReplyPending('#general');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
+  });
+
+  it('clears whoReplyPending on part', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    store.markWhoReplyPending('general');
+    store.roomParted('general');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
+  });
+
+  it('resets whoReplyPending on re-handshake so a re-armed auto /who can mark again', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Community');
+    store.roomJoined('general');
+    store.markWhoReplyPending('general');
+    expect(store.hasWhoReplyPending('general')).toBe(true);
+    store.applyStatus('reconnecting', hub);
+    store.applyStatus('awaiting_welcome', hub);
+    store.applyStatus('active', hub, 'Community');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
+    useRrcSessionStore.getState().markWhoReplyPending('general');
+    expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(true);
   });
 });

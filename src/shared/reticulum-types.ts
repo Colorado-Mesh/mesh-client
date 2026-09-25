@@ -6,7 +6,10 @@ import { MS_PER_SECOND } from './timeConstants';
 export const RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS = 5 * 60 * MS_PER_SECOND;
 
 export interface ReticulumSidecarStatus {
+  /** Reticulum has been started; a BLE-only sidecar still reports false. */
   running: boolean;
+  /** Shared process liveness when it is running only for LoRa BLE. */
+  processRunning?: boolean;
   port: number;
   pid: number | null;
   lastError?: string;
@@ -57,7 +60,8 @@ export interface ReticulumInterfaceIssueAlert {
   linkDeliveryTimeouts: ReticulumLinkDeliveryTimeout[];
   /**
    * BLE RNode interface names where CoreBluetooth reported
-   * "Peer removed pairing information" (OS still shows Paired; bond keys are stale).
+   * "Peer removed pairing information" (OS may still show Paired). Sidecar keeps
+   * retrying with the existing OS bond; banner clears after the stale window or recovery.
    */
   bleBondRemoved: string[];
   /**
@@ -205,6 +209,8 @@ export interface ReticulumContactWireRow {
 export interface ReticulumRmapDiscoveredWireRow {
   discovery_hash: string;
   transport_id: string;
+  /** Announcing network / transport identity (32-hex). */
+  network_id?: string;
   discovery_name: string;
   interface_type: string;
   latitude: number;
@@ -213,6 +219,10 @@ export interface ReticulumRmapDiscoveredWireRow {
   transport_enabled: boolean;
   reachable_on?: string | null;
   port?: number | null;
+  /** IFAC virtual-network name when the announce published credentials. */
+  ifac_netname?: string | null;
+  /** IFAC passphrase when the announce published credentials. */
+  ifac_netkey?: string | null;
   frequency?: number | null;
   bandwidth?: number | null;
   spreading_factor?: number | null;

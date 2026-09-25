@@ -58,11 +58,21 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     expect(SOURCE).not.toMatch(/const wasActive = stateRef\.current\.status !== 'disconnected'/);
   });
 
-  it('holds Noble BLE yield while sidecar status is connecting', () => {
-    expect(SOURCE).toMatch(
-      /const sidecarActiveForBleYield =[\s\S]*?state\.status === 'connecting'[\s\S]*?state\.status === 'configured'[\s\S]*?state\.status === 'connected'[\s\S]*?state\.status === 'stale'/,
+  it('is concurrent-safe: stack connecting does not disconnect LoRa GATT sessions', () => {
+    // Reticulum stack start/connect must not tear down Meshtastic/MeshCore GATT.
+    // releaseGattBleCentral is reserved for bleBondRemoved recovery (dual-central pause).
+    expect(SOURCE).not.toContain('useReticulumNobleBleYieldWatcher');
+    expect(SOURCE).not.toMatch(/disconnectAll\s*\(/);
+    const connectBody = extractUseCallbackBody(SOURCE, 'connect');
+    expect(connectBody).not.toMatch(
+      /gattSidecarProxy|disconnectAll|disconnectGatt|releaseGattBleCentral/,
     );
-    expect(SOURCE).toMatch(/useReticulumNobleBleYieldWatcher\(sidecarActiveForBleYield\)/);
+    // Bond-recovery path may pause LoRa GATT; keep it out of connect().
+    expect(SOURCE).toMatch(/bleBondRemoved[\s\S]*?releaseGattBleCentral\(\)/);
+    // Healthy online BLE RNode must not permanently exclusive-hold LoRa GATT
+    // (that blocked MeshCore BLE coexistence after #1034).
+    expect(SOURCE).not.toContain('rnodeBleOnlineLoRaHoldRef');
+    expect(SOURCE).not.toMatch(/isReticulumBleRnodeOnline[\s\S]*?releaseGattBleCentral/);
   });
 });
 
@@ -185,10 +195,16 @@ describe('useReticulumRuntime resume-generation cancel (H7)', () => {
     expect(resumeBody).toContain('powerSuspendHadBleRnodeRef.current');
   });
 
-  it('latches bleBondRemoved to release Noble and set bond-desync sticky flag', () => {
+  it('latches bleBondRemoved to pause LoRa GATT and set bond-desync sticky flag', () => {
     expect(SOURCE).toMatch(/setReticulumBleBondDesyncActive\(true\)/);
-    expect(SOURCE).toMatch(/releaseReticulumBleRnodeConnect\(\)/);
+    expect(SOURCE).toMatch(/releaseGattBleCentral\(\)/);
+    expect(SOURCE).toMatch(/prepareReticulumBleRnodeConnect\(\)/);
     expect(SOURCE).toMatch(/status\.interfaceIssueAlert\?\.bleBondRemoved/);
+    // Hold application is tracked separately so BleLtkDesync WS cannot skip the lease.
+    expect(SOURCE).toContain('bondRecoveryHoldAppliedRef');
+    expect(SOURCE).toContain('bondRecoveryGenerationRef');
+    expect(SOURCE).toMatch(/const firstLatch = !bondRecoveryHoldAppliedRef\.current/);
+    expect(SOURCE).toMatch(/releaseReticulumBleRnodeConnect\(\{\s*notify:\s*false\s*\}\)/);
   });
 
   it('wires LXMF send rekey with replacesMessageHash for pending orphan cleanup', () => {

@@ -28,12 +28,7 @@ import {
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
-  fetchRecentInboundLxmf: vi.fn(),
   fetchRecentInboundLxmfDetailed: vi.fn(),
-}));
-
-vi.mock('@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher', () => ({
-  useReticulumNobleBleYieldWatcher: () => {},
 }));
 
 vi.mock('@/renderer/lib/reticulum/useReticulumPropagationAutoSync', () => ({
@@ -79,6 +74,7 @@ describe('useReticulumRuntime inbound LXMF catch-up', () => {
       pid: 1,
     });
     vi.mocked(window.electronAPI.reticulum.stop).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.reticulum.proxyPost).mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
       running: true,
       port: 19437,

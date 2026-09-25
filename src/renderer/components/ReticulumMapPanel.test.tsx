@@ -12,6 +12,8 @@ vi.mock('react-i18next', () => ({
 
 import ReticulumMapPanel from '@/renderer/components/ReticulumMapPanel';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { useIncidentStore } from '@/renderer/stores/incidentStore';
+import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
 
 const flyToMock = vi.fn();
@@ -66,6 +68,21 @@ vi.mock('@/renderer/components/map/leafletMapControls', () => ({
   flyMapToBounds: vi.fn(),
 }));
 
+vi.mock('@/renderer/components/map/emcommMapLayers', () => ({
+  IncidentMarkersLayer: () => <div data-testid="incident-markers-layer" />,
+  incidentMarkersFrom: (
+    incidents: Record<string, { status: string; lat?: number; lon?: number }>,
+  ) =>
+    Object.values(incidents).filter(
+      (inc) =>
+        inc.status !== 'resolved' &&
+        typeof inc.lat === 'number' &&
+        typeof inc.lon === 'number' &&
+        Number.isFinite(inc.lat) &&
+        Number.isFinite(inc.lon),
+    ),
+}));
+
 vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
   useReticulumPeerStore: (selector: (s: { peers: Map<string, unknown> }) => unknown) =>
     selector(peerStoreState),
@@ -74,6 +91,8 @@ vi.mock('@/renderer/stores/reticulumPeerStore', () => ({
 describe('ReticulumMapPanel', () => {
   beforeEach(() => {
     useReticulumDiscoveryMapStore.getState().clear();
+    useIncidentStore.getState().clearAll();
+    useMapLayerStore.setState({ showIncidents: true });
     peerStoreState.peers = new Map();
     flyToMock.mockClear();
     markerMock.mockClear();
@@ -86,6 +105,39 @@ describe('ReticulumMapPanel', () => {
     render(<ReticulumMapPanel stackConfigured={false} />);
     expect(screen.getByText('reticulumMap.empty.stackOff')).toBeInTheDocument();
     expect(screen.getByTestId('map-container')).toBeInTheDocument();
+  });
+
+  it('renders MECP incident markers even when RMAP discovery is empty', () => {
+    useIncidentStore.setState({
+      incidents: {
+        'inc-1': {
+          id: 'inc-1',
+          protocol: 'reticulum',
+          protocolsSeen: ['reticulum'],
+          severity: 0,
+          codes: ['M01'],
+          freetext: '40.0,-105.0 help',
+          senderId: 'peer-a',
+          senderName: 'Alice',
+          channel: null,
+          receivedAt: 1,
+          lastSeenAt: 1,
+          lat: 40,
+          lon: -105,
+          coordsSource: 'message',
+          messageIds: [],
+          ackCount: 0,
+          ackPeerIds: [],
+          beaconActive: false,
+          beaconAcked: false,
+          isDrill: false,
+          status: 'open',
+        },
+      },
+    });
+    render(<ReticulumMapPanel stackConfigured={true} />);
+    expect(screen.getByTestId('incident-markers-layer')).toBeInTheDocument();
+    expect(screen.queryByText('reticulumMap.empty.noDiscoveries')).not.toBeInTheDocument();
   });
 
   it('renders global map link', () => {
@@ -175,7 +227,12 @@ describe('ReticulumMapPanel', () => {
     );
     render(<ReticulumMapPanel stackConfigured={true} />);
     const list = screen.getByRole('list');
-    Object.defineProperty(list, 'scrollTop', { value: 400, configurable: true });
+    for (const scrollTop of [3, 200]) {
+      Object.defineProperty(list, 'scrollTop', { value: scrollTop, configurable: true });
+      fireEvent.scroll(list);
+      expect(screen.queryByRole('button', { name: 'aria.backToTop' })).not.toBeInTheDocument();
+    }
+    Object.defineProperty(list, 'scrollTop', { value: 201, configurable: true });
     fireEvent.scroll(list);
     expect(screen.getByRole('button', { name: 'aria.backToTop' })).toBeInTheDocument();
   });

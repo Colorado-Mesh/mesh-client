@@ -18,8 +18,15 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import type { ChatOutboxSendFn } from '@/renderer/hooks/useChatOutbox';
+import {
+  isChatOutboxSendAvailable,
+  useEmergencyOutboxDrain,
+} from '@/renderer/hooks/useEmergencyOutboxDrain';
+import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
@@ -46,6 +53,7 @@ import {
   setDebugSnapshotMeshtasticContext,
 } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
+import { sendTextWithOutboxFallback } from '@/renderer/lib/emergencySend';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -54,15 +62,19 @@ import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
+import { ownSenderIdSet, resolveIncidentWithBeaconCancel } from '@/renderer/lib/mecp/beaconCancel';
+import {
+  composeIncidentAck,
+  incidentAckViewKey,
+  incidentNeedsBeaconAck,
+  resolveIncidentAckRoute,
+} from '@/renderer/lib/mecp/incidentAck';
 import {
   readMeshcoreAutoOffloadWhenFull,
   writeMeshcoreAutoOffloadWhenFull,
 } from '@/renderer/lib/meshcore/meshcoreContactCapacityPush';
 import { isMeshcoreTcpOpenHopDeadAccepted } from '@/renderer/lib/meshcore/meshcoreTcpInitBurst';
-import {
-  meshcoreConfiguredChannelIndexSet,
-  meshcoreConfiguredChatChannels,
-} from '@/renderer/lib/meshcoreConfiguredChatChannels';
+import { meshcoreConfiguredChannelIndexSet } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { persistMeshcoreSelfNodeId } from '@/renderer/lib/meshcoreLastSelfNodeId';
 import { resolveMeshcoreOwnNodeIdSet } from '@/renderer/lib/meshcoreOwnNodeIds';
 import { getMeshcoreCompanionRepeaterRfBusySnapshot } from '@/renderer/lib/meshcoreRepeaterRpcInFlight';
@@ -72,6 +84,23 @@ import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshco
 import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
+import { createOnlineRecoveryScheduler } from '@/renderer/lib/onlineRecoveryDebounce';
+import {
+  asChannelIndexPills,
+  asEnvironmentTelemetryPoints,
+  asGpsIntervalChange,
+  asMqttConnectionLoss,
+  asNeighborInfoMap,
+  asNumericNodeId,
+  asOurPosition,
+  asRadioDeviceOwner,
+  asTelemetryPoints,
+  asTraceRouteResultsMap,
+  asWaypointMap,
+  chatChannelsFromRuntimeChannels,
+  traceRouteHopLabels,
+} from '@/renderer/lib/protocolRuntimeAdapters';
+import { requestReticulumAdminBluetoothFocus } from '@/renderer/lib/reticulum/reticulumAdminBluetoothFocus';
 import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
@@ -80,6 +109,11 @@ import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
+import {
+  type EmergencyIncident,
+  openMaydayUrgentCount,
+  useIncidentStore,
+} from '@/renderer/stores/incidentStore';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 import {
   meshtasticDeviceRoleFromConfigSlice,
@@ -96,7 +130,6 @@ import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
 import LanguageSelector from './components/LanguageSelector';
-import { LongSessionRestartBanner } from './components/LongSessionRestartBanner';
 import { MeshcoreFloodAdvertHeaderButton } from './components/MeshcoreFloodAdvertHeaderButton';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
 import { ProtocolAutoConnectCoordinator } from './components/ProtocolAutoConnectCoordinator';
@@ -111,14 +144,13 @@ import Sidebar from './components/Sidebar';
 import { LinkIcon } from './components/SignalBars';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
-import { useActiveMeshIdentity } from './hooks/useActiveMeshIdentity';
+import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectionActions';
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
 import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
 import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
-import { useLongSessionMaintenance } from './hooks/useLongSessionMaintenance';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
@@ -126,12 +158,9 @@ import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelAction
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
+import { useOperationalAlerts, useOperationalAlertSettings } from './hooks/useOperationalAlerts';
 import { usePowerRecovery } from './hooks/usePowerRecovery';
-import {
-  useProtocolConnect,
-  useProtocolConnectionActions,
-  useProtocolDisconnect,
-} from './hooks/useProtocolConnection';
+import { useProtocolConnect, useProtocolDisconnect } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
 import { useRendererHeartbeat } from './hooks/useRendererHeartbeat';
 import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
@@ -148,6 +177,7 @@ import {
   ChannelUtilizationChart,
   DiagnosticsPanel,
   GamesPanel,
+  IncidentPanel,
   MapPanel,
   ModulePanel,
   NomadNetworkPanel,
@@ -184,6 +214,7 @@ import {
   findFilteredTabIndexForPanel,
   GAMES_PANEL_INDEX,
   GRAPH_PANEL_INDEX,
+  INCIDENT_PANEL_INDEX,
   MAP_TAB_PANEL_INDEX,
   MODULES_PANEL_INDEX,
   NODES_PANEL_INDEX,
@@ -201,7 +232,6 @@ import {
   TELEMETRY_PANEL_INDEX,
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
-import { dedupeChannelPillsByIndex } from './lib/channelListDedupe';
 import { playMessageNotification } from './lib/chatNotifications';
 import {
   deviceHeaderVariant,
@@ -243,6 +273,7 @@ import {
 import { shouldAutoLaunchMeshcoreMqttAtStartup, tryAutoLaunchMqtt } from './lib/mqttAutoLaunch';
 import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { OPEN_NOMAD_PAGE_EVENT, type OpenNomadPageDetail } from './lib/nomad/openNomadPageFromLink';
+import { loadNotificationSoundSettings } from './lib/notificationSoundSettings';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { OPEN_RRC_HUB_EVENT } from './lib/openRrcHubFromLink';
 import { parseStoredJson } from './lib/parseStoredJson';
@@ -290,7 +321,6 @@ import {
   useAllRuntimes,
   useRuntime,
 } from './runtime/ProtocolRuntimeContext';
-import type { MeshcoreRuntime, MeshtasticRuntime } from './runtime/runtimeTypes';
 import { useMeshcoreRuntime } from './runtime/useMeshcoreRuntime';
 import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
@@ -345,7 +375,7 @@ export interface LocationFilter {
 }
 
 export interface UpdateState {
-  phase: 'idle' | 'available' | 'downloading' | 'ready' | 'error' | 'up-to-date';
+  phase: 'idle' | 'available' | 'downloading' | 'ready' | 'error' | 'up-to-date' | 'offline';
   version?: string;
   releaseUrl?: string;
   isPackaged?: boolean;
@@ -513,12 +543,11 @@ export default function App() {
   const meshcoreRuntime = useMeshcoreRuntime();
   const reticulumRuntime = useReticulumRuntime();
   const runtimeMap = useMemo<RuntimeMap>(
-    () =>
-      ({
-        meshtastic: meshtasticRuntime,
-        meshcore: meshcoreRuntime,
-        reticulum: reticulumRuntime,
-      }) as unknown as RuntimeMap,
+    () => ({
+      meshtastic: meshtasticRuntime,
+      meshcore: meshcoreRuntime,
+      reticulum: reticulumRuntime,
+    }),
     [meshtasticRuntime, meshcoreRuntime, reticulumRuntime],
   );
   return (
@@ -548,6 +577,12 @@ function AppContent() {
     };
   }, [addToast, t]);
 
+  useEffect(() => {
+    void loadNotificationSoundSettings().catch((error: unknown) => {
+      console.warn('[App] notification sounds hydrate failed ' + errLikeToLogString(error));
+    });
+  }, []);
+
   // Reconcile 24h clock from SQLite early — AppPanel is lazy and Chat reads the store first.
   useEffect(() => {
     let cancelled = false;
@@ -569,8 +604,8 @@ function AppContent() {
   }, []);
 
   const runtimes = useAllRuntimes();
-  const meshtasticRuntime = runtimes.meshtastic as unknown as MeshtasticRuntime;
-  const meshcoreRuntime = runtimes.meshcore as unknown as MeshcoreRuntime;
+  const meshtasticRuntime = runtimes.meshtastic;
+  const meshcoreRuntime = runtimes.meshcore;
   const reticulumRuntime = runtimes.reticulum;
   const [activeTab, setActiveTab] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
@@ -698,7 +733,9 @@ function AppContent() {
   const scrollToTopChatRef = useRef<(() => void) | null>(null);
   const scrollToTopRoomsRef = useRef<(() => void) | null>(null);
   const [showMainScrollTop, setShowMainScrollTop] = useState(false);
-  const [updateState, setUpdateState] = useState<UpdateState>({ phase: 'idle' });
+  const [updateState, setUpdateState] = useState<UpdateState>(() => ({
+    phase: typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'idle',
+  }));
   const menuUpdateNotifyCtrl = useMemo(
     () =>
       createUpdateMenuNotifyController(t, (title, body) =>
@@ -844,9 +881,10 @@ function AppContent() {
 
   const protocolConnect = useProtocolConnect();
   const protocolDisconnect = useProtocolDisconnect();
-  const meshtasticConnection = useProtocolConnectionActions('meshtastic');
-  const meshcoreConnection = useProtocolConnectionActions('meshcore');
-  const reticulumConnection = useProtocolConnectionActions('reticulum');
+  const allConnectionActions = useAllProtocolConnectionActions();
+  const meshtasticConnection = allConnectionActions.meshtastic;
+  const meshcoreConnection = allConnectionActions.meshcore;
+  const reticulumConnection = allConnectionActions.reticulum;
   const startReticulumStack = useCallback(
     () => reticulumConnection.connectAutomatic('http'),
     [reticulumConnection],
@@ -873,7 +911,6 @@ function AppContent() {
       },
     },
   });
-  const longSessionMaintenance = useLongSessionMaintenance();
   useRendererHeartbeat();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
@@ -892,16 +929,17 @@ function AppContent() {
   const reticulumPanelActions = allPanelActions.reticulum as ReturnType<
     typeof useReticulumPanelActions
   >;
-  const activeFacade = useProtocolFacade(protocol, allPanelActions);
-  const panelActions = allPanelActions[protocol];
+  const activeFacade = useProtocolFacade(protocol, allPanelActions, allConnectionActions);
+  const panelActions = activeFacade.panel.actions;
   const {
     identityIdByProtocol,
     focusedIdentityId,
+    reticulumIdentityId,
     capabilities: activeProtocolCapabilities,
-  } = useActiveMeshIdentity(protocol);
+    connection: activeConnection,
+  } = activeFacade;
   const meshtasticIdentityId = identityIdByProtocol.meshtastic;
   const meshcoreIdentityId = identityIdByProtocol.meshcore;
-  const reticulumIdentityId = identityIdByProtocol.reticulum;
   const meshtasticNodesById = useNodeStore((s) =>
     meshtasticIdentityId ? s.nodes[meshtasticIdentityId] : undefined,
   );
@@ -1067,10 +1105,6 @@ function AppContent() {
     () => protocolRecord(meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView),
     [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
   );
-  const connectionActionsByProtocol = useMemo(
-    () => protocolRecord(meshtasticConnection, meshcoreConnection, reticulumConnection),
-    [meshtasticConnection, meshcoreConnection, reticulumConnection],
-  );
   const panelActionsByProtocol = useMemo(
     () => protocolRecord(meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions),
     [meshtasticPanelActions, meshcorePanelActions, reticulumPanelActions],
@@ -1171,7 +1205,24 @@ function AppContent() {
     [sendMessage],
   );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
-  const activeRuntime = useRuntime(protocol) as unknown as MeshtasticRuntime;
+  const activeRuntime = useRuntime(protocol);
+  const activeSelfNodeNum = asNumericNodeId(
+    activeRuntime.selfNodeId,
+    activeRuntime.state.myNodeNum,
+  );
+  const activeOurPosition = asOurPosition(activeRuntime.ourPosition);
+  const activeWaypoints = asWaypointMap(activeRuntime.waypoints);
+  const activeTelemetry = asTelemetryPoints(activeRuntime.telemetry);
+  const activeSignalTelemetry = asTelemetryPoints(activeRuntime.signalTelemetry);
+  const activeEnvironmentTelemetry = asEnvironmentTelemetryPoints(
+    activeRuntime.environmentTelemetry,
+  );
+  const activeTraceRouteResults = useMemo(
+    () => asTraceRouteResultsMap(activeRuntime.traceRouteResults),
+    [activeRuntime.traceRouteResults],
+  );
+  const activeNeighborInfo = asNeighborInfoMap(activeRuntime.neighborInfo);
+  const activeChannelPills = asChannelIndexPills(activeRuntime.channels);
   const contactGroupsSelfId =
     typeof activeRuntime.selfNodeId === 'number' ? activeRuntime.selfNodeId : null;
   const contactGroups = useContactGroups(contactGroupsSelfId);
@@ -1274,6 +1325,66 @@ function AppContent() {
       }),
     [reticulumIdentity, reticulumRuntime.selfNodeId, reticulumRuntime.state.myNodeNum],
   );
+
+  const mecpMeshtasticSlice = useMemo(
+    () => ({
+      protocol: 'meshtastic' as const,
+      messages: meshtasticStoreMessages,
+      ownNodeIds: meshtasticOwnNodeIdSet,
+      ownSenderId: meshtasticRuntime.state.myNodeNum,
+      resolveLastKnown: (senderId: string) => {
+        const hex = senderId.startsWith('!') ? senderId.slice(1) : senderId;
+        const asNum = senderId.startsWith('!')
+          ? Number.parseInt(hex, 16)
+          : Number.parseInt(senderId, 10);
+        const node = Number.isFinite(asNum) ? meshtasticUiNodes.get(asNum) : undefined;
+        if (node?.latitude == null || node.longitude == null) return null;
+        if (!Number.isFinite(node.latitude) || !Number.isFinite(node.longitude)) return null;
+        return { lat: node.latitude, lon: node.longitude };
+      },
+    }),
+    [
+      meshtasticStoreMessages,
+      meshtasticOwnNodeIdSet,
+      meshtasticRuntime.state.myNodeNum,
+      meshtasticUiNodes,
+    ],
+  );
+  const mecpMeshcoreSlice = useMemo(
+    () => ({
+      protocol: 'meshcore' as const,
+      messages: meshcoreStoreMessages,
+      ownNodeIds: meshcoreOwnNodeIdSet,
+      ownSenderId: meshcoreRuntime.selfNodeId,
+      resolveLastKnown: (senderId: string) => {
+        const asNum = Number.parseInt(senderId, 10);
+        const byId = Number.isFinite(asNum) ? meshcoreUiNodes.get(asNum) : undefined;
+        const node =
+          byId ??
+          [...meshcoreUiNodes.values()].find(
+            (n) =>
+              String(n.node_id) === senderId ||
+              (typeof n.public_key_hex === 'string' &&
+                n.public_key_hex.toLowerCase() === senderId.toLowerCase()),
+          );
+        if (node?.latitude == null || node.longitude == null) return null;
+        if (!Number.isFinite(node.latitude) || !Number.isFinite(node.longitude)) return null;
+        return { lat: node.latitude, lon: node.longitude };
+      },
+    }),
+    [meshcoreStoreMessages, meshcoreOwnNodeIdSet, meshcoreRuntime.selfNodeId, meshcoreUiNodes],
+  );
+  const mecpReticulumSlice = useMemo(
+    () => ({
+      protocol: 'reticulum' as const,
+      messages: reticulumStoreMessages,
+      ownNodeIds: reticulumOwnNodeIdSet,
+      ownSenderId: reticulumRuntime.state.myNodeNum,
+      resolveLastKnown: () => null,
+    }),
+    [reticulumStoreMessages, reticulumOwnNodeIdSet, reticulumRuntime.state.myNodeNum],
+  );
+  useMecpAlertWatcher(mecpMeshtasticSlice, mecpMeshcoreSlice, mecpReticulumSlice);
 
   useEffect(() => {
     if (!reticulumIdentityId || reticulumLastReadSanitizedRef.current) return;
@@ -1466,6 +1577,19 @@ function AppContent() {
   }, [meshcoreCapabilities.hasContactImportExport, meshcoreRuntime.meshcorePubKeyHexByNodeId]);
 
   const capabilities = activeProtocolCapabilities;
+  const showConnectionPanel =
+    capabilities.hasChannelConfig ||
+    capabilities.prefersDeviceOwnerLongNameInHeader ||
+    capabilities.hasReticulumInterfaceConfig;
+  const showConnectionFirmwareCheck = capabilities.hasFirmwareUpdateCheck;
+  const openFirmwareReleases = useCallback(() => {
+    void window.electronAPI.update.openReleases(
+      firmwareCheckState.releaseUrl ??
+        (capabilities.prefersDeviceOwnerLongNameInHeader
+          ? MESHCORE_FIRMWARE_RELEASES_URL
+          : MESHTASTIC_FIRMWARE_RELEASES_URL),
+    );
+  }, [capabilities.prefersDeviceOwnerLongNameInHeader, firmwareCheckState.releaseUrl]);
   const nodeCountLabel = capabilities.nodeListTabUsesContactsLabel
     ? t('common.contacts')
     : capabilities.nodeListTabUsesPeersLabel
@@ -1476,7 +1600,193 @@ function AppContent() {
       ? reticulumPathPeerCount
       : nodesForUi.size;
 
-  useNodeStatusNotifier(nodesForUi, capabilities);
+  const operationalAlertSettings = useOperationalAlertSettings();
+  useNodeStatusNotifier(nodesForUi, capabilities, {
+    silenceThresholdMinutes: operationalAlertSettings.nodeSilenceAlertMinutes,
+  });
+  const meshtasticLinkStatus = meshtasticConnectionView.state.status;
+  const meshtasticLinkLoss = meshtasticConnectionView.state.connectionLoss;
+  const meshcoreLinkStatus = meshcoreConnectionView.state.status;
+  const meshcoreLinkLoss = meshcoreConnectionView.state.connectionLoss;
+  const operationalLinks = useMemo(
+    () => [
+      {
+        key: 'meshtastic',
+        label: 'Meshtastic',
+        status: meshtasticLinkStatus,
+        connectionLoss: meshtasticLinkLoss,
+      },
+      {
+        key: 'meshcore',
+        label: 'MeshCore',
+        status: meshcoreLinkStatus,
+        connectionLoss: meshcoreLinkLoss,
+      },
+    ],
+    [meshtasticLinkStatus, meshtasticLinkLoss, meshcoreLinkStatus, meshcoreLinkLoss],
+  );
+  useOperationalAlerts({
+    nodes: nodesForUi,
+    capabilities,
+    links: operationalLinks,
+    settings: operationalAlertSettings,
+  });
+
+  const incidentBadgeCount = useIncidentStore(openMaydayUrgentCount);
+
+  const chatSendAvailableByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        isChatOutboxSendAvailable('meshtastic', meshtasticConnectionView),
+        isChatOutboxSendAvailable('meshcore', meshcoreConnectionView),
+        isChatOutboxSendAvailable('reticulum', reticulumConnectionView),
+      ),
+    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
+  );
+  const meshtasticSendMessage = useSendMessage(meshtasticIdentityId);
+  const meshcoreSendMessage = useSendMessage(meshcoreIdentityId);
+  const reticulumSendMessage = useSendMessage(reticulumIdentityId);
+  const outboxSendFnByProtocol = useMemo(() => {
+    const wrap =
+      (send: typeof meshtasticSendMessage): ChatOutboxSendFn =>
+      (text, channel, destination, replyId) =>
+        send(text, channel, destination, replyId == null ? undefined : String(replyId));
+    return protocolRecord(
+      wrap(meshtasticSendMessage),
+      wrap(meshcoreSendMessage),
+      wrap(reticulumSendMessage),
+    );
+  }, [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage]);
+  const emergencyOutboxDrains = useMemo(
+    () =>
+      REGISTERED_MESH_PROTOCOLS.map((p) => ({
+        protocol: p,
+        isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, p),
+        sendFn: selectByProtocol(outboxSendFnByProtocol, p),
+      })),
+    [chatSendAvailableByProtocol, outboxSendFnByProtocol],
+  );
+  useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
+
+  const incidentOwnSenderIds = useMemo(
+    () =>
+      ownSenderIdSet([
+        ...meshtasticOwnNodeIdSet,
+        ...meshcoreOwnNodeIdSet,
+        ...reticulumOwnNodeIdSet,
+        meshtasticRuntime.state.myNodeNum,
+        meshcoreRuntime.selfNodeId,
+        reticulumRuntime.state.myNodeNum,
+      ]),
+    [
+      meshtasticOwnNodeIdSet,
+      meshcoreOwnNodeIdSet,
+      reticulumOwnNodeIdSet,
+      meshtasticRuntime.state.myNodeNum,
+      meshcoreRuntime.selfNodeId,
+      reticulumRuntime.state.myNodeNum,
+    ],
+  );
+
+  const handleIncidentAck = useCallback(
+    (incident: EmergencyIncident) => {
+      const route = resolveIncidentAckRoute(
+        incident,
+        protocol,
+        (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
+      );
+      const text = composeIncidentAck(incident);
+      const beaconAck = incidentNeedsBeaconAck(incident);
+      // ACKs are routine traffic: queue as normal priority so they never compete with reports.
+      // Tag viewKey so the App-level drain can send them without Chat open and recordAck on TX.
+      void sendTextWithOutboxFallback(
+        text,
+        {
+          isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, route.protocol),
+          sendFn: selectByProtocol(outboxSendFnByProtocol, route.protocol),
+          queueOutbox: async (entry) => {
+            const row = await window.electronAPI.chat.outbox.add(entry);
+            requestChatOutboxDrain(route.protocol);
+            return row;
+          },
+          protocol: route.protocol,
+          viewKey: incidentAckViewKey(incident.id, route),
+          channel: route.channel,
+          toNode: route.toNode,
+        },
+        'normal',
+      )
+        .then((outcome) => {
+          // Only mark acknowledged once the ACK actually left; a queued ACK may never send.
+          if (outcome === 'sent') {
+            if (beaconAck) {
+              useIncidentStore.getState().confirmBeacon(incident.id);
+            } else {
+              useIncidentStore.getState().recordAck(incident.id, 'local');
+            }
+          }
+          addToast(
+            t(outcome === 'sent' ? 'incidentPanel.ackSent' : 'incidentPanel.ackQueued', {
+              sender: incident.senderName,
+            }),
+            outcome === 'sent' ? 'success' : 'info',
+          );
+        })
+        .catch((e: unknown) => {
+          console.warn('[App] incident ACK send failed: ' + errLikeToLogString(e));
+          addToast(t('incidentPanel.ackFailed'), 'error');
+        });
+    },
+    [
+      protocol,
+      capabilitiesByProtocol,
+      chatSendAvailableByProtocol,
+      outboxSendFnByProtocol,
+      addToast,
+      t,
+    ],
+  );
+
+  const handleIncidentResolve = useCallback(
+    (incident: EmergencyIncident) => {
+      void resolveIncidentWithBeaconCancel(
+        incident,
+        incidentOwnSenderIds,
+        {
+          isSendAvailable: (p) => selectByProtocol(chatSendAvailableByProtocol, p),
+          sendFn: (p) => selectByProtocol(outboxSendFnByProtocol, p),
+          queueOutbox: (entry) => window.electronAPI.chat.outbox.add(entry),
+        },
+        (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
+      )
+        .then((result) => {
+          if (result === 'cancel-sent' || result === 'cancel-queued') {
+            addToast(
+              t(
+                result === 'cancel-sent'
+                  ? 'incidentPanel.beaconCancelSent'
+                  : 'incidentPanel.beaconCancelQueued',
+              ),
+              result === 'cancel-sent' ? 'success' : 'info',
+            );
+          } else if (result === 'cancel-failed') {
+            addToast(t('incidentPanel.beaconCancelFailed'), 'error');
+          }
+        })
+        .catch((e: unknown) => {
+          console.warn('[App] beacon cancel failed: ' + errLikeToLogString(e));
+          addToast(t('incidentPanel.beaconCancelFailed'), 'error');
+        });
+    },
+    [
+      incidentOwnSenderIds,
+      chatSendAvailableByProtocol,
+      outboxSendFnByProtocol,
+      capabilitiesByProtocol,
+      addToast,
+      t,
+    ],
+  );
 
   const chatUnreadByProtocol = useMemo(
     () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
@@ -1511,11 +1821,15 @@ function AppContent() {
   const meshtasticOwnNodeIdsForChat = useMemo(
     () =>
       meshtasticMqttOwnNodeIds(
-        activeRuntime.selfNodeId,
+        asNumericNodeId(meshtasticRuntime.selfNodeId),
         meshtasticRuntime.virtualNodeId,
         meshtasticRuntime.lastRfSelfNodeId,
       ),
-    [activeRuntime.selfNodeId, meshtasticRuntime.virtualNodeId, meshtasticRuntime.lastRfSelfNodeId],
+    [
+      meshtasticRuntime.selfNodeId,
+      meshtasticRuntime.virtualNodeId,
+      meshtasticRuntime.lastRfSelfNodeId,
+    ],
   );
   const reticulumOwnNodeIdsForChat = useMemo(
     () => Array.from(reticulumOwnNodeIdSet),
@@ -1859,9 +2173,11 @@ function AppContent() {
   const effectiveSecurityConfig = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.securityConfig ?? null)
     : meshtasticRuntime.securityConfig;
-  const effectiveDeviceOwner = isRemoteConfigureTarget
-    ? (meshtasticRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
-    : activeRuntime.deviceOwner;
+  const effectiveDeviceOwner = asRadioDeviceOwner(
+    isRemoteConfigureTarget
+      ? (meshtasticRuntime.remoteConfigSnapshot?.deviceOwner ?? null)
+      : activeRuntime.deviceOwner,
+  );
   const effectiveDeviceFixedPosition = isRemoteConfigureTarget
     ? (meshtasticRuntime.remoteConfigSnapshot?.deviceFixedPosition ?? null)
     : meshtasticRuntime.deviceFixedPosition;
@@ -2005,13 +2321,11 @@ function AppContent() {
   const traceRouteHops = useMemo(() => {
     if (!selectedNode) return undefined;
     if (!capabilities.hasNeighborInfo) return undefined;
-    const result = activeRuntime.traceRouteResults.get(selectedNode.node_id);
-    if (!result) return undefined;
-    return [
-      panelActions.getFullNodeLabel(activeConnectionView.state.myNodeNum) || 'Me',
-      ...result.route.map((id) => panelActions.getFullNodeLabel(id)),
-      panelActions.getFullNodeLabel(result.from),
-    ];
+    return traceRouteHopLabels(
+      activeRuntime.traceRouteResults.get(selectedNode.node_id),
+      activeConnectionView.state.myNodeNum,
+      panelActions.getFullNodeLabel,
+    );
   }, [
     selectedNode,
     panelActions,
@@ -2021,17 +2335,18 @@ function AppContent() {
   ]);
 
   /** MeshCore chat: only show configured channels (key !== all zeros). */
-  const chatChannels = useMemo(() => {
-    if (capabilities.hasReticulumInterfaceConfig) return [];
-    if (capabilities.hasCompanionContactManagementConfig) {
-      return meshcoreConfiguredChatChannels(activeRuntime.channels);
-    }
-    return dedupeChannelPillsByIndex(activeRuntime.channels);
-  }, [
-    capabilities.hasReticulumInterfaceConfig,
-    capabilities.hasCompanionContactManagementConfig,
-    activeRuntime.channels,
-  ]);
+  const chatChannels = useMemo(
+    () =>
+      chatChannelsFromRuntimeChannels(activeRuntime.channels, {
+        hasReticulumInterfaceConfig: capabilities.hasReticulumInterfaceConfig,
+        hasCompanionContactManagementConfig: capabilities.hasCompanionContactManagementConfig,
+      }),
+    [
+      capabilities.hasReticulumInterfaceConfig,
+      capabilities.hasCompanionContactManagementConfig,
+      activeRuntime.channels,
+    ],
+  );
 
   const [chatTabVisited, setChatTabVisited] = useState(false);
   const [roomsTabVisited, setRoomsTabVisited] = useState(false);
@@ -2324,15 +2639,14 @@ function AppContent() {
   } = meshcoreDbRefresh;
 
   const refreshNodesFromDb = useCallback(() => {
-    const actions = selectByProtocol(panelActionsByProtocol, protocol);
     if (capabilities.hasRemoteAdmin) {
       // Meshtastic runtime refresh already replace-syncs the identity node store.
-      void actions.refreshNodesFromDb();
+      void panelActions.refreshNodesFromDb();
     } else {
-      void actions.refreshNodesFromDb();
+      void panelActions.refreshNodesFromDb();
       void refreshMeshcoreNodesInStore({ nodesMode: 'replace' });
     }
-  }, [protocol, capabilities.hasRemoteAdmin, panelActionsByProtocol, refreshMeshcoreNodesInStore]);
+  }, [capabilities.hasRemoteAdmin, panelActions, refreshMeshcoreNodesInStore]);
 
   const refreshMessagesFromDb = useCallback(
     (opts?: MessageClearRefreshOptions) => {
@@ -2343,26 +2657,24 @@ function AppContent() {
         opts?.clearedChannel != null;
       const messagesMode = replace ? 'replace' : 'upsert';
       const replaceFromDb = replace;
-      const actions = selectByProtocol(panelActionsByProtocol, protocol);
-      const activeCaps = selectByProtocol(capabilitiesByProtocol, protocol);
 
-      if (activeCaps.hasRemoteAdmin) {
-        void actions.refreshMessagesFromDb({ replaceFromDb });
+      if (capabilities.hasRemoteAdmin) {
+        void panelActions.refreshMessagesFromDb({ replaceFromDb });
         void refreshMeshtasticMessagesInStore({ messagesMode });
       } else {
-        void actions.refreshMessagesFromDb({ replaceFromDb });
+        void panelActions.refreshMessagesFromDb({ replaceFromDb });
         void refreshMeshcoreMessagesInStore({ messagesMode });
       }
 
       if (opts?.clearedAll) {
         clearPersistedLastReadForProtocol(protocol);
-        if (activeCaps.hasRoomServersPanel) {
+        if (capabilities.hasRoomServersPanel) {
           clearPersistedRoomsLastRead();
         }
       } else if (opts?.clearedChannel != null) {
         removePersistedLastReadForChannel(protocol, opts.clearedChannel);
         if (
-          activeCaps.hasRoomServersPanel &&
+          capabilities.hasRoomServersPanel &&
           opts.clearedChannel === MESHCORE_ROOM_MESSAGE_CHANNEL
         ) {
           clearPersistedRoomsLastRead();
@@ -2371,8 +2683,9 @@ function AppContent() {
     },
     [
       protocol,
-      panelActionsByProtocol,
-      capabilitiesByProtocol,
+      panelActions,
+      capabilities.hasRemoteAdmin,
+      capabilities.hasRoomServersPanel,
       refreshMeshtasticMessagesInStore,
       refreshMeshcoreMessagesInStore,
     ],
@@ -2399,14 +2712,18 @@ function AppContent() {
   useEffect(() => {
     const prev = prevProtocolForMqttAutostartRef.current;
     prevProtocolForMqttAutostartRef.current = protocol;
-    const activeCaps = selectByProtocol(capabilitiesByProtocol, protocol);
-    if (!activeCaps.hasMqttHybrid) return;
+    if (!capabilities.hasMqttHybrid) return;
     if (selectByProtocol(capabilitiesByProtocol, prev).hasMqttHybrid) return;
     if (meshtasticConnectionView.mqttStatus !== 'disconnected') return;
     void tryAutoLaunchMqtt('meshtastic').catch((e: unknown) => {
       console.warn('[App] MQTT auto-launch on tab switch failed ' + errLikeToLogString(e));
     });
-  }, [protocol, meshtasticConnectionView.mqttStatus, capabilitiesByProtocol]);
+  }, [
+    protocol,
+    meshtasticConnectionView.mqttStatus,
+    capabilities.hasMqttHybrid,
+    capabilitiesByProtocol,
+  ]);
 
   // ─── MQTT auto-launch on startup ─────────────────────────────────
   // Launch MQTT for each protocol when autoLaunch is enabled. Meshtastic MQTT skips
@@ -2482,6 +2799,13 @@ function AppContent() {
       setUpdateState((s) => ({ ...s, phase: 'error', errorMessage: info.message }));
       menuUpdateNotifyCtrl.flushSettled('error', { message: info.message });
     });
+    const offOffline = window.electronAPI.update.onOffline(() => {
+      setUpdateState((s) =>
+        s.phase === 'ready'
+          ? { ...s, errorMessage: undefined }
+          : { ...s, phase: 'offline', errorMessage: undefined },
+      );
+    });
     return () => {
       offChecking();
       offAvailable();
@@ -2489,6 +2813,7 @@ function AppContent() {
       offProgress();
       offDownloaded();
       offError();
+      offOffline();
     };
   }, [menuUpdateNotifyCtrl]);
 
@@ -2501,16 +2826,72 @@ function AppContent() {
     }
   }, []);
 
-  // ─── Auto-check for updates on startup ────
+  // ─── Auto-check for updates on startup (+ debounced recovery when WAN returns) ────
   useEffect(() => {
-    const t = setTimeout(() => {
-      void window.electronAPI.update.check().catch((e: unknown) => {
-        console.warn('[App] update check failed ' + errLikeToLogString(e));
-        setUpdateState((s) => ({ ...s, phase: 'error' }));
-      });
-    }, 5000);
+    let checkInFlight = false;
+    let pendingRecovery = false;
+    const schedulerBox: {
+      current: ReturnType<typeof createOnlineRecoveryScheduler> | null;
+    } = { current: null };
+
+    const runCheck = () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      if (checkInFlight) {
+        pendingRecovery = true;
+        return;
+      }
+      checkInFlight = true;
+      void window.electronAPI.update
+        .check()
+        .catch((e: unknown) => {
+          console.warn('[App] update check failed ' + errLikeToLogString(e));
+          setUpdateState((s) => ({ ...s, phase: 'error' }));
+        })
+        .finally(() => {
+          checkInFlight = false;
+          if (!pendingRecovery) return;
+          pendingRecovery = false;
+          if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+          schedulerBox.current?.onOnline();
+        });
+    };
+
+    let startupTimer: ReturnType<typeof setTimeout> | null = null;
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      startupTimer = setTimeout(runCheck, 5000);
+    }
+
+    const scheduler = createOnlineRecoveryScheduler(runCheck);
+    schedulerBox.current = scheduler;
+    const onOnline = () => {
+      scheduler.onOnline();
+    };
+    const onOffline = () => {
+      scheduler.onOffline();
+      setUpdateState((s) =>
+        s.phase === 'ready'
+          ? { ...s, errorMessage: undefined }
+          : { ...s, phase: 'offline', errorMessage: undefined },
+      );
+    };
+    // Main may emit update:offline while navigator.onLine is still true (DNS/flaky WAN).
+    const offUpdateOffline = window.electronAPI.update.onOffline(() => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      if (checkInFlight) {
+        pendingRecovery = true;
+        return;
+      }
+      scheduler.onOnline();
+    });
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
     return () => {
-      clearTimeout(t);
+      if (startupTimer != null) clearTimeout(startupTimer);
+      scheduler.dispose();
+      offUpdateOffline();
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
     };
   }, []);
 
@@ -2738,20 +3119,11 @@ function AppContent() {
 
           void reconnectRfFromLastConnection(protocol, lastType, {
             connectBleAutomatic: (bleDeviceId) =>
-              selectByProtocol(connectionActionsByProtocol, protocol).connectAutomatic(
-                'ble',
-                undefined,
-                undefined,
-                bleDeviceId,
-              ),
+              activeConnection.connectAutomatic('ble', undefined, undefined, bleDeviceId),
             connectBleDirect: (bleDeviceId) =>
               protocolConnect(protocol, 'ble', undefined, bleDeviceId),
             connectSerialAutomatic: (serialPortId) =>
-              selectByProtocol(connectionActionsByProtocol, protocol).connectAutomatic(
-                'serial',
-                undefined,
-                serialPortId,
-              ),
+              activeConnection.connectAutomatic('serial', undefined, serialPortId),
             connectHttp: (httpAddress) => protocolConnect(protocol, 'http', httpAddress),
             connectTcp: (httpAddress) => protocolConnect(protocol, 'tcp', httpAddress),
           })
@@ -2768,7 +3140,7 @@ function AppContent() {
   }, [
     activeConnectionView.state.connectionType,
     activeConnectionView.state.serialNeedsReselect,
-    connectionActionsByProtocol,
+    activeConnection,
     protocol,
     protocolConnect,
     protocolDisconnect,
@@ -2857,7 +3229,7 @@ function AppContent() {
     setAlwaysShowMessageActions(alwaysShow);
   }, []);
 
-  const mqttLoss = activeRuntime.mqttConnectionLoss ?? false;
+  const mqttLoss = asMqttConnectionLoss(activeRuntime.mqttConnectionLoss);
   const mqttVariant = mqttHeaderVariant(
     activeConnectionView.mqttStatus ?? 'disconnected',
     mqttLoss,
@@ -3154,14 +3526,6 @@ function AppContent() {
           reconnectAttempt={activeConnectionView.state.reconnectAttempt}
           onReconnect={handleReconnect}
         />
-
-        {longSessionMaintenance.visible ? (
-          <LongSessionRestartBanner
-            onRestart={longSessionMaintenance.onRestart}
-            onDismiss={longSessionMaintenance.onDismiss}
-          />
-        ) : null}
-
         {/* Telemetry disabled notice */}
         {isOperational && activeRuntime.telemetryEnabled === false && !telemetryNoticeDismissed && (
           <div
@@ -3205,6 +3569,7 @@ function AppContent() {
                   : 0
               }
               gamesUnread={protocol === 'reticulum' && capabilities.hasLrgpGames ? gamesUnread : 0}
+              incidentBadgeCount={incidentBadgeCount}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />
@@ -3243,116 +3608,82 @@ function AppContent() {
                       className="w-full min-w-0"
                     >
                       <Suspense fallback={<PanelSkeleton />}>
-                        {protocol === 'meshtastic' && capabilities.hasChannelConfig && (
+                        {showConnectionPanel && (
                           <ConnectionPanel
-                            state={meshtasticConnection.state}
-                            onConnect={meshtasticConnection.connect}
-                            onAutoConnect={meshtasticConnection.connectAutomatic}
-                            onDisconnect={meshtasticConnection.disconnect}
-                            mqttStatus={meshtasticConnection.mqttStatus}
+                            state={activeConnection.state}
+                            onConnect={activeConnection.connect}
+                            onAutoConnect={activeConnection.connectAutomatic}
+                            onDisconnect={activeConnection.disconnect}
+                            mqttStatus={activeConnection.mqttStatus}
                             myNodeLabel={
-                              meshtasticRuntime.state.myNodeNum > 0
-                                ? meshtasticRuntime.getPickerStyleNodeLabel(
-                                    meshtasticRuntime.state.myNodeNum,
+                              activeRuntime.state.myNodeNum > 0
+                                ? activeRuntime.getPickerStyleNodeLabel(
+                                    activeRuntime.state.myNodeNum,
                                   )
                                 : undefined
                             }
-                            protocol="meshtastic"
+                            protocol={protocol}
                             firmwareCheckState={
-                              meshtasticCapabilities.hasFirmwareUpdateCheck &&
-                              !capabilities.prefersDeviceOwnerLongNameInHeader
-                                ? firmwareCheckState
-                                : undefined
+                              showConnectionFirmwareCheck ? firmwareCheckState : undefined
                             }
                             onOpenFirmwareReleases={
-                              meshtasticCapabilities.hasFirmwareUpdateCheck &&
-                              !capabilities.prefersDeviceOwnerLongNameInHeader
+                              showConnectionFirmwareCheck ? openFirmwareReleases : undefined
+                            }
+                            ensureMeshcoreMqttIdentity={
+                              capabilities.hasMqttConnectionPanel &&
+                              capabilities.prefersDeviceOwnerLongNameInHeader
+                                ? meshcoreRuntime.ensureMeshcoreMqttIdentity
+                                : undefined
+                            }
+                            onStartReticulumStack={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? startReticulumStack
+                                : undefined
+                            }
+                            onOpenReticulumRmapSettings={
+                              capabilities.hasReticulumInterfaceConfig
                                 ? () => {
-                                    void window.electronAPI.update.openReleases(
-                                      firmwareCheckState.releaseUrl ??
-                                        MESHTASTIC_FIRMWARE_RELEASES_URL,
-                                    );
+                                    const networkTabIdx = tabSlotIds.indexOf('Radio');
+                                    if (networkTabIdx >= 0) {
+                                      setActiveTab(networkTabIdx);
+                                    }
                                   }
                                 : undefined
                             }
-                          />
-                        )}
-                        {protocol === 'meshcore' &&
-                          capabilities.prefersDeviceOwnerLongNameInHeader && (
-                            <ConnectionPanel
-                              state={meshcoreConnection.state}
-                              onConnect={meshcoreConnection.connect}
-                              onAutoConnect={meshcoreConnection.connectAutomatic}
-                              onDisconnect={meshcoreConnection.disconnect}
-                              mqttStatus={meshcoreConnection.mqttStatus}
-                              myNodeLabel={
-                                meshcoreRuntime.state.myNodeNum > 0
-                                  ? meshcoreRuntime.getPickerStyleNodeLabel(
-                                      meshcoreRuntime.state.myNodeNum,
-                                    )
-                                  : undefined
-                              }
-                              protocol="meshcore"
-                              ensureMeshcoreMqttIdentity={
-                                meshcoreRuntime.ensureMeshcoreMqttIdentity
-                              }
-                              firmwareCheckState={
-                                meshcoreCapabilities.hasFirmwareUpdateCheck &&
-                                capabilities.prefersDeviceOwnerLongNameInHeader
-                                  ? firmwareCheckState
-                                  : undefined
-                              }
-                              onOpenFirmwareReleases={
-                                meshcoreCapabilities.hasFirmwareUpdateCheck &&
-                                capabilities.prefersDeviceOwnerLongNameInHeader
-                                  ? () => {
-                                      void window.electronAPI.update.openReleases(
-                                        firmwareCheckState.releaseUrl ??
-                                          MESHCORE_FIRMWARE_RELEASES_URL,
-                                      );
-                                    }
-                                  : undefined
-                              }
-                            />
-                          )}
-                        {protocol === 'reticulum' && capabilities.hasReticulumInterfaceConfig && (
-                          <ConnectionPanel
-                            state={reticulumConnection.state}
-                            onConnect={reticulumConnection.connect}
-                            onAutoConnect={reticulumConnection.connectAutomatic}
-                            onDisconnect={reticulumConnection.disconnect}
-                            mqttStatus={reticulumConnection.mqttStatus}
-                            protocol="reticulum"
-                            onStartReticulumStack={() =>
-                              reticulumConnection.connectAutomatic('http')
+                            onOpenReticulumSetupDestination={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? (destination) => {
+                                    const target = tabSlotIds.indexOf(destination);
+                                    if (target >= 0) setActiveTab(target);
+                                    return target >= 0;
+                                  }
+                                : undefined
                             }
-                            onOpenReticulumRmapSettings={() => {
-                              const networkTabIdx = tabSlotIds.indexOf('Radio');
-                              if (networkTabIdx >= 0) {
-                                setActiveTab(networkTabIdx);
-                              }
-                            }}
-                            onOpenReticulumSetupDestination={(destination) => {
-                              const target = tabSlotIds.indexOf(destination);
-                              if (target >= 0) setActiveTab(target);
-                              return target >= 0;
-                            }}
-                            onOpenAppGpsSettings={() => {
-                              const appTabIdx = tabSlotIds.indexOf('App');
-                              if (appTabIdx >= 0) {
-                                setAppTabVisited(true);
-                                setActiveTab(appTabIdx);
-                              }
-                            }}
-                            onOpenAdminBluetooth={() => {
-                              const adminTabIdx = findFilteredTabIndexForPanel(
-                                selectByProtocol(tabsByProtocol, protocol),
-                                ADMIN_PANEL_INDEX,
-                              );
-                              if (adminTabIdx >= 0) {
-                                setActiveTab(adminTabIdx);
-                              }
-                            }}
+                            onOpenAppGpsSettings={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? () => {
+                                    const appTabIdx = tabSlotIds.indexOf('App');
+                                    if (appTabIdx >= 0) {
+                                      setAppTabVisited(true);
+                                      setActiveTab(appTabIdx);
+                                    }
+                                  }
+                                : undefined
+                            }
+                            onOpenAdminBluetooth={
+                              capabilities.hasReticulumInterfaceConfig
+                                ? () => {
+                                    const adminTabIdx = findFilteredTabIndexForPanel(
+                                      selectByProtocol(tabsByProtocol, protocol),
+                                      ADMIN_PANEL_INDEX,
+                                    );
+                                    if (adminTabIdx >= 0) {
+                                      setActiveTab(adminTabIdx);
+                                      requestReticulumAdminBluetoothFocus();
+                                    }
+                                  }
+                                : undefined
+                            }
                           />
                         )}
                       </Suspense>
@@ -3382,11 +3713,7 @@ function AppContent() {
                                 : undefined
                             }
                             meshcoreChannelManagementDisabled={!isOperational}
-                            myNodeNum={
-                              typeof activeRuntime.selfNodeId === 'number'
-                                ? activeRuntime.selfNodeId
-                                : activeRuntime.state.myNodeNum
-                            }
+                            myNodeNum={activeSelfNodeNum}
                             ownNodeIds={
                               protocol === 'reticulum'
                                 ? reticulumOwnNodeIdsForChat
@@ -3719,7 +4046,7 @@ function AppContent() {
                             ) : (
                               <NodeListPanel
                                 nodes={nodesForUi}
-                                myNodeNum={activeRuntime.selfNodeId}
+                                myNodeNum={activeSelfNodeNum}
                                 onNodeClick={(node) => {
                                   setSelectedNodeId(node.node_id);
                                 }}
@@ -3815,9 +4142,9 @@ function AppContent() {
                               capabilities.nodeListTabUsesContactsLabel ? (
                               <MapPanel
                                 nodes={nodesForUi}
-                                myNodeNum={activeRuntime.selfNodeId}
+                                myNodeNum={activeSelfNodeNum}
                                 locationFilter={locationFilter}
-                                ourPosition={activeRuntime.ourPosition}
+                                ourPosition={activeOurPosition}
                                 onLocateMe={
                                   capabilities.hasFullPositionConfig
                                     ? () =>
@@ -3826,7 +4153,7 @@ function AppContent() {
                                           .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
                                     : undefined
                                 }
-                                waypoints={activeRuntime.waypoints}
+                                waypoints={activeWaypoints}
                                 onSendWaypoint={
                                   capabilities.hasFullPositionConfig
                                     ? meshtasticPanelActions.sendWaypoint
@@ -3925,7 +4252,7 @@ function AppContent() {
                                   }
                                   isConnected={isOperational}
                                   deviceFixedPosition={effectiveDeviceFixedPosition}
-                                  ourPosition={activeRuntime.ourPosition}
+                                  ourPosition={activeOurPosition}
                                   onSendPositionToDevice={resolvePanelPositionSendHandler(
                                     capabilities,
                                     meshtasticPanelActions.sendPositionToDevice,
@@ -4324,9 +4651,9 @@ function AppContent() {
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
                             <TelemetryPanel
-                              telemetry={activeRuntime.telemetry}
-                              signalTelemetry={activeRuntime.signalTelemetry}
-                              environmentTelemetry={activeRuntime.environmentTelemetry}
+                              telemetry={activeTelemetry}
+                              signalTelemetry={activeSignalTelemetry}
+                              environmentTelemetry={activeEnvironmentTelemetry}
                               useFahrenheit={useFahrenheit}
                               onToggleFahrenheit={toggleFahrenheit}
                               onRefresh={panelActions.requestRefresh}
@@ -4420,6 +4747,25 @@ function AppContent() {
                       ) : null}
                     </div>
                     <div
+                      id={`panel-${INCIDENT_PANEL_INDEX}`}
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), INCIDENT_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== INCIDENT_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                    >
+                      {activePanelIndex === INCIDENT_PANEL_INDEX ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <IncidentPanel
+                              onAck={handleIncidentAck}
+                              onResolve={handleIncidentResolve}
+                              ownSenderIds={incidentOwnSenderIds}
+                            />
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
                       id={`panel-${APP_PANEL_INDEX}`}
                       role="tabpanel"
                       aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), APP_PANEL_INDEX))}`}
@@ -4452,16 +4798,18 @@ function AppContent() {
                                 nodeCount={nodesForUi.size}
                                 myNodeNum={activeRuntime.state.myNodeNum}
                                 messageCount={activeUiMessages.length}
-                                channels={activeRuntime.channels}
+                                channels={activeChannelPills}
                                 onLocationFilterChange={handleLocationFilterChange}
-                                ourPosition={activeRuntime.ourPosition}
+                                ourPosition={activeOurPosition}
                                 onRefreshGps={
                                   capabilities.hasFullPositionConfig
                                     ? meshtasticPanelActions.refreshOurPosition
                                     : undefined
                                 }
                                 gpsLoading={activeRuntime.gpsLoading}
-                                onGpsIntervalChange={activeRuntime.updateGpsInterval}
+                                onGpsIntervalChange={asGpsIntervalChange(
+                                  activeRuntime.updateGpsInterval,
+                                )}
                                 onNodesPruned={refreshNodesFromDb}
                                 onMessagesPruned={refreshMessagesFromDb}
                                 onClearMeshcoreRepeaters={
@@ -4498,11 +4846,7 @@ function AppContent() {
                             <DiagnosticsPanel
                               nodes={nodesForDiagnostics}
                               meshcoreNodes={meshcoreUiNodes}
-                              myNodeNum={
-                                typeof activeRuntime.selfNodeId === 'number'
-                                  ? activeRuntime.selfNodeId
-                                  : 0
-                              }
+                              myNodeNum={asNumericNodeId(activeRuntime.selfNodeId)}
                               meshtasticListenerNodeId={
                                 meshtasticRuntime.state.myNodeNum > 0
                                   ? meshtasticRuntime.state.myNodeNum
@@ -4519,9 +4863,9 @@ function AppContent() {
                                     : () => Promise.resolve(undefined)
                               }
                               isConnected={isOperational}
-                              traceRouteResults={activeRuntime.traceRouteResults}
+                              traceRouteResults={activeTraceRouteResults}
                               getFullNodeLabel={panelActions.getFullNodeLabel}
-                              ourPosition={activeRuntime.ourPosition}
+                              ourPosition={activeOurPosition}
                               onNodeClick={(node) => {
                                 setSelectedNodeId(node.node_id);
                               }}
@@ -4659,7 +5003,7 @@ function AppContent() {
                           <Suspense fallback={<PanelSkeleton />}>
                             <PeerGraphPanel
                               nodes={nodesForUi}
-                              myNodeId={activeRuntime.selfNodeId}
+                              myNodeId={activeSelfNodeNum}
                               onNodeClick={setSelectedNodeId}
                             />
                           </Suspense>
@@ -4911,7 +5255,7 @@ function AppContent() {
             mqttConnected={detailConnectionView.mqttStatus === 'connected'}
             radioConnected={detailIsConnectedOrOperational}
             homeNode={detailHomeNode}
-            neighborInfo={activeRuntime.neighborInfo}
+            neighborInfo={activeNeighborInfo}
             useFahrenheit={useFahrenheit}
             protocol={detailModalProtocol}
             meshcoreTraceResult={

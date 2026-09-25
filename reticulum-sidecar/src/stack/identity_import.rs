@@ -111,8 +111,8 @@ pub fn decode_private_key_input(input: &str) -> Result<[u8; RNS_PRIVATE_KEY_LEN]
     ))
 }
 
-/// Decode exactly 64 raw bytes (e.g. from Electron file picker).
-#[allow(dead_code)] // binary import API used by identity_import_private_bytes
+/// Decode exactly 64 raw bytes (Ratspeak `.rsi` vault key + unit tests).
+#[cfg(any(test, feature = "rns-stack"))]
 pub fn decode_private_key_bytes(data: &[u8]) -> Result<[u8; RNS_PRIVATE_KEY_LEN], String> {
     bytes_to_key(data)
 }

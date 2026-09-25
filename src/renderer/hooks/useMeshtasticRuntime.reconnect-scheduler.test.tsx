@@ -58,7 +58,7 @@ describe('useMeshtasticRuntime reconnect scheduler (hook-level)', () => {
     disconnectSpy = vi.spyOn(connectionDriver, 'disconnect').mockResolvedValue(undefined);
 
     nobleDisconnectedHandlers = [];
-    vi.mocked(window.electronAPI.onNobleBleDisconnected).mockImplementation((cb) => {
+    vi.mocked(window.electronAPI.onGattDisconnected).mockImplementation((cb) => {
       nobleDisconnectedHandlers.push(cb as (sessionId: string) => void);
       return () => {};
     });
@@ -81,7 +81,7 @@ describe('useMeshtasticRuntime reconnect scheduler (hook-level)', () => {
     disconnectSpy.mockRestore();
     delaySpy.mockRestore();
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    vi.mocked(window.electronAPI.onNobleBleDisconnected).mockReturnValue(() => {});
+    vi.mocked(window.electronAPI.onGattDisconnected).mockReturnValue(() => {});
   });
 
   async function settleDelay(result: 'done' | 'aborted' | 'suspended' = 'done') {

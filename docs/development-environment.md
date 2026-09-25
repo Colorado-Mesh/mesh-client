@@ -505,7 +505,6 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 | `reticulum:sidecar:fmt`         | `cargo fmt` in `reticulum-sidecar/`                                                                                             |
 | `reticulum:sidecar:fmt:check`   | `cargo fmt --check`                                                                                                             |
 | `reticulum:sidecar:test`        | Full-feature `cargo test` (clones the `.rsstack/` workspace if needed)                                                          |
-| `reticulum:sidecar:test:full`   | Alias for `reticulum:sidecar:test`                                                                                              |
 | `setup:actionlint`              | Install actionlint for GitHub workflow linting                                                                                  |
 | `setup:build-deps`              | Install native build dependencies                                                                                               |
 | `setup:dialout`                 | Add user to dialout group for serial port access (Linux)                                                                        |
@@ -931,15 +930,11 @@ Log out/in after changing groups.
 
 ### Linux Bluetooth (BLE)
 
-Linux uses Web Bluetooth (Chromium's built-in BLE API) instead of `@stoprocent/noble`. This approach:
+LoRa BLE uses the reticulum-sidecar **btleplug** GATT stack on Linux (same as macOS/Windows) — not Web Bluetooth / Noble.
 
-- Requires no setcap/setuid workaround scripts
-- Requires the user to select a device from the in-app Bluetooth picker (backed by Chromium's chooser event)
-- Requires a user gesture (button click) to trigger device selection
-
-The app automatically enables `--enable-experimental-web-platform-features` on Linux at startup.
-
-There is **no portable Web Bluetooth API** for the negotiated ATT MTU ([WebBluetoothCG#383](https://github.com/WebBluetoothCG/web-bluetooth/issues/383)). When Chromium exposes `maximumWriteValueLength` on the TX characteristic, the client chunks `writeValue` accordingly; otherwise it sends each payload in one call.
+- Requires a working BlueZ stack (`systemctl status bluetooth`, `rfkill list`)
+- Flatpak builds need Bluetooth allowed (`--allow=bluetooth` + BlueZ talk-name)
+- ATT MTU / write sizing follows sidecar negotiation via `bleAttWriteLimit.ts` (spec min 23)
 
 Pairing failures and BlueZ steps: [BLE known issues](troubleshooting.md#ble-known-issues).
 

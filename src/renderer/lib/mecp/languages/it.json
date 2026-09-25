@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Medico",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Terreno / Infrastruttura",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Meteo / Ambiente",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Forniture",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Posizione / Movimento",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Coordinamento",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Risposta",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Esercitazione / Test",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Vita / Svago",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Minaccia / Sicurezza",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Disponibile / Offerta risorse",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "Faro",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Ferita",
+    "M02": "Persona priva di sensi",
+    "M03": "Difficoltà respiratoria",
+    "M04": "Evento cardiaco",
+    "M05": "Ipotermia",
+    "M06": "Emorragia grave",
+    "M07": "Frattura / immobilizzato",
+    "M08": "Ustioni",
+    "M09": "Vittime multiple",
+    "M10": "Deceduto",
+    "M11": "Morso / puntura di animale",
+    "M12": "Reazione allergica / anafilassi",
+    "M13": "Avvelenamento / esposizione tossica",
+    "M14": "Persone trovate in vita",
+    "M15": "Area perlustrata, nessuna vittima",
+    "T01": "Strada bloccata",
+    "T02": "Ponte crollato",
+    "T03": "Edificio crollato",
+    "T04": "Alluvione",
+    "T05": "Frana",
+    "T06": "Mancanza di corrente",
+    "T07": "Incendio",
+    "T08": "Valanga",
+    "T09": "Sentiero impraticabile",
+    "T10": "Rifugio disponibile",
+    "T11": "Annegamento / soccorso acquatico necessario",
+    "T12": "Acqua contaminata",
+    "T13": "Terremoto",
+    "T14": "Fuga di gas",
+    "T15": "Sversamento chimico / HAZMAT",
+    "T16": "Incidente stradale",
+    "T17": "Veicolo in fiamme",
+    "W01": "Tempesta in avvicinamento",
+    "W02": "Visibilità nulla",
+    "W03": "Freddo estremo",
+    "W04": "Caldo estremo",
+    "W05": "Qualità dell'aria pericolosa",
+    "W06": "Allerta tsunami / mareggiata",
+    "S01": "Serve acqua",
+    "S02": "Serve cibo",
+    "S03": "Servono medicinali",
+    "S04": "Serve batteria / energia",
+    "S05": "Serve carburante",
+    "S06": "Servono attrezzi / attrezzatura",
+    "P01": "Bloccati / intrappolati",
+    "P02": "In evacuazione verso",
+    "P03": "Rifugiati sul posto",
+    "P04": "In viaggio verso",
+    "P05": "Alle coordinate GPS",
+    "P06": "Persi",
+    "P07": "Gruppo separato",
+    "C01": "Inviate soccorso",
+    "C02": "Serve trasporto",
+    "C03": "Inoltrare questo messaggio",
+    "C04": "Confermare ricezione",
+    "C05": "Quante persone?",
+    "C06": "Qual è lo stato?",
+    "C07": "Potete raggiungere?",
+    "C08": "Punto d'incontro a",
+    "R01": "Ricevuto",
+    "R02": "Aiuto in arrivo",
+    "R03": "Arrivo stimato [minuti]",
+    "R04": "Impossibile assistere",
+    "R05": "Reindirizzamento a",
+    "R06": "Attendere",
+    "R07": "Situazione risolta / tutto libero",
+    "D01": "Questa è un'esercitazione",
+    "D02": "Questo è un test",
+    "D03": "Fine dell'esercitazione",
+    "D04": "Ignorare il precedente — inviato per errore",
+    "L01": "Birra / bevande",
+    "L02": "Caffè",
+    "L03": "Cibo pronto",
+    "L04": "Vetta raggiunta",
+    "L05": "Al campo",
+    "L06": "In ritardo",
+    "L07": "Buon segnale qui",
+    "L08": "Occasione fotografica",
+    "L09": "Fauna avvistata",
+    "L10": "Bella vista",
+    "L11": "Sentiero in buone condizioni",
+    "L12": "Sentiero in cattive condizioni",
+    "L13": "Serve una pausa",
+    "L14": "In rientro",
+    "L15": "Buongiorno / check-in",
+    "L16": "Buonanotte",
+    "L17": "Grazie",
+    "L18": "Ci stiamo divertendo",
+    "L19": "Festival / evento qui",
+    "L20": "Test nodo / ping",
+    "X01": "Persona pericolosa / minaccia vicina",
+    "X02": "Zona non sicura — evitare",
+    "X03": "Spari / esplosioni uditi",
+    "X04": "Disordini civili / pericolo folla",
+    "X05": "Furto / saccheggio segnalato",
+    "X06": "Autorità / servizi di emergenza presenti",
+    "X07": "Posto di blocco / chiusura stradale (autorità)",
+    "H01": "Acqua disponibile",
+    "H02": "Cibo disponibile",
+    "H03": "Forniture mediche disponibili",
+    "H04": "Energia / ricarica disponibile",
+    "H05": "Carburante disponibile",
+    "H06": "Attrezzi / attrezzatura disponibile",
+    "H07": "Rifugio / spazio per [N]pax",
+    "H08": "Trasporto / veicolo disponibile",
+    "B01": "Faro di soccorso automatico attivo — il mittente potrebbe non rispondere",
+    "B02": "Faro confermato — ridurre la frequenza di trasmissione",
+    "B03": "Annulla faro — sto bene"
+  }
+}

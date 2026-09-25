@@ -1,23 +1,81 @@
 /**
  * MeshCore hop-ACK (event 130) resolution shared by the runtime side-effect listener.
  *
- * Failure point: SQLite status write — logged by the caller; Zustand + in-memory chat rows
- * stay authoritative for UI.
+ * Failure point: SQLite status write on timeout — logged here; Zustand chat rows stay
+ * authoritative for the UI. Event 130 status writes are logged by the side-effect listener.
  */
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 import {
   meshcoreDeviceAckLookupKeys,
   meshcoreDmAckKeyU32,
+  meshcorePendingDmAckMapKeys,
   type PendingDmAckEntry,
 } from '../../hooks/meshcore/meshcoreHookPreamble';
 import { updateMessageStatus, useMessageStore } from '../../stores/messageStore';
+import { computePathHash, usePathHistoryStore } from '../../stores/pathHistoryStore';
+import { errLikeToLogString } from '../errLikeToLogString';
+import type { MeshcoreDmAckPendingParams } from '../meshcoreDmAckDelivery';
 import type { IdentityId } from '../types';
 
 /** MeshCore firmware RESP codes: 0x80 = ACK, 0x81 = NACK (may arrive signed). */
 const MESHCORE_RESP_CODE_NACK = 0x81;
 
 export type MeshcoreDmAckStatus = 'acked' | 'failed';
+
+export interface ArmMeshcoreDmAckPendingDeps {
+  pendingAcks: Map<number, PendingDmAckEntry>;
+  /** Read when the timer fires so a self-id learned after send still matches the row. */
+  getSelfNodeId: () => number;
+  outPath?: Uint8Array | null;
+  hopsAway?: number;
+}
+
+/**
+ * Track a companion-accepted DM until event 130 or `estTimeoutMs`.
+ * The runtime owns `pendingAcks`; chat send registers through this helper.
+ */
+export function armMeshcoreDmAckPending(
+  params: MeshcoreDmAckPendingParams,
+  deps: ArmMeshcoreDmAckPendingDeps,
+): void {
+  const { identityId, ackKeyU32, estTimeoutMs, destNodeId } = params;
+  const pendingMapKeys = meshcorePendingDmAckMapKeys(ackKeyU32);
+  const outPathRaw = deps.outPath;
+  const sendPathBytes = outPathRaw != null && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
+  const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
+  const hopsAway = deps.hopsAway ?? 0;
+  if (sendPathBytes.length > 0 && destNodeId != null) {
+    usePathHistoryStore.getState().recordPathUpdated(destNodeId, sendPathBytes, hopsAway, false);
+  }
+  const timeoutId = setTimeout(() => {
+    for (const k of pendingMapKeys) {
+      deps.pendingAcks.delete(k);
+    }
+    if (destNodeId != null && sendPathHash.length > 0) {
+      usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
+    }
+    syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, deps.getSelfNodeId(), 'failed');
+    void window.electronAPI.db
+      .updateMeshcoreMessageStatus(ackKeyU32, 'failed')
+      .catch((e: unknown) => {
+        console.warn(
+          '[meshcoreDmAckRuntime] updateMeshcoreMessageStatus (DM ack timeout) error ' +
+            errLikeToLogString(e),
+        );
+      });
+  }, estTimeoutMs);
+  const pendingEntry: PendingDmAckEntry = {
+    timeoutId,
+    mapKeys: pendingMapKeys,
+    canonicalPacketIdU32: ackKeyU32,
+    destNodeId,
+    pathHash: sendPathHash,
+  };
+  for (const k of pendingMapKeys) {
+    deps.pendingAcks.set(k, pendingEntry);
+  }
+}
 
 export interface MeshcoreDmAckResolution {
   isNack: boolean;

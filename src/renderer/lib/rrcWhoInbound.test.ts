@@ -5,7 +5,7 @@ import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 
 const hub = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
-function applyWho(body: string) {
+function applyWho(body: string, clearWhoReplyPending?: (room: string, hubHash?: string) => void) {
   const session = useRrcSessionStore.getState();
   const hubSession = session.sessionsByHub.get(hub);
   return applyRrcWhoInboundNotice(body, hubSession?.rooms.keys() ?? [], {
@@ -15,6 +15,7 @@ function applyWho(body: string) {
     },
     consumeWhoTranscriptSlot: (room, hubHash) =>
       useRrcSessionStore.getState().consumeWhoTranscriptSlot(room, hubHash),
+    clearWhoReplyPending,
   });
 }
 
@@ -88,5 +89,42 @@ describe('applyRrcWhoInboundNotice', () => {
     expect(useRrcSessionStore.getState().rooms.get('general')?.members).toEqual([
       { identity_hash: 'cccccccccccc', nickname: 'Carol' },
     ]);
+  });
+
+  it('clears whoReplyPending on a parsed /who including empty roster', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Hub A');
+    store.roomJoined('general');
+    store.markWhoReplyPending('general', hub);
+    const cleared: string[] = [];
+    expect(applyWho('members in general: (none)', (room) => cleared.push(room))).toEqual({
+      action: 'transcript',
+      room: 'general',
+    });
+    expect(cleared).toEqual(['general']);
+  });
+
+  it('clears whoReplyPending on parsed /who even when the room is unjoined', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Hub A');
+    store.roomJoined('general');
+    const cleared: string[] = [];
+    expect(applyWho('members in evil: Eve (eeeeeeeeeeee)', (room) => cleared.push(room))).toEqual({
+      action: 'unjoined',
+    });
+    expect(cleared).toEqual(['evil']);
+  });
+
+  it('does not clear whoReplyPending for non-/who notices', () => {
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hub, 'Hub A');
+    store.roomJoined('general');
+    const cleared: string[] = [];
+    expect(
+      applyWho('room general: registered; mode=+r; topic=General chat', (room) =>
+        cleared.push(room),
+      ),
+    ).toEqual({ action: 'skip' });
+    expect(cleared).toEqual([]);
   });
 });

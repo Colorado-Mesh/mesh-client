@@ -304,6 +304,58 @@ describe('Sidebar', () => {
     expect(await axe(badge)).toHaveNoViolations();
   });
 
+  it('shows Incident badge when incidentBadgeCount > 0', () => {
+    render(
+      <Sidebar
+        tabs={['Incident']}
+        tabSlotIds={['Incident']}
+        active={0}
+        onChange={vi.fn()}
+        incidentBadgeCount={2}
+        chatUnread={9}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(
+      screen.getByRole('tab', { name: 'Incident, 2 open MAYDAY or URGENT incidents' }),
+    ).toBeInTheDocument();
+  });
+
+  it('hides Incident badge when incidentBadgeCount is 0', () => {
+    render(
+      <Sidebar
+        tabs={['Incident']}
+        tabSlotIds={['Incident']}
+        active={0}
+        onChange={vi.fn()}
+        incidentBadgeCount={0}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'Incident' })).toBeInTheDocument();
+    expect(screen.queryByText('0')).not.toBeInTheDocument();
+  });
+
+  it('has no axe violations when Incident badge shows', async () => {
+    render(
+      <Sidebar
+        tabs={['Incident']}
+        tabSlotIds={['Incident']}
+        active={0}
+        onChange={vi.fn()}
+        incidentBadgeCount={1}
+        collapsed={false}
+        onToggle={vi.fn()}
+      />,
+    );
+    const badge = screen.getByText('1');
+    hydrateAxeThemeColors(badge);
+    expect(await axe(badge)).toHaveNoViolations();
+  });
+
   it('hides Remote badge when remotePendingOffers is 0', () => {
     render(
       <Sidebar

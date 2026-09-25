@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
@@ -56,9 +56,17 @@ import { WifiConfig } from './WifiConfig';
 
 export interface RNodeFlasherSectionProps {
   portBlocked: boolean;
+  /** Bumped when Admin Bluetooth focus is requested — scroll Bluetooth into view. */
+  focusBluetoothNonce?: number;
+  /** Optional host ref for the Bluetooth section (Admin scroll target). */
+  bluetoothSectionRef?: RefObject<HTMLDivElement | null>;
 }
 
-export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
+export function RNodeFlasherSection({
+  portBlocked,
+  focusBluetoothNonce = 0,
+  bluetoothSectionRef,
+}: RNodeFlasherSectionProps) {
   const { t } = useTranslation();
   const { serialPorts, showSerialPicker, requestSerialPort, selectSerialPort, cancelSerialPicker } =
     useElectronSerialPortPicker();
@@ -525,53 +533,59 @@ export function RNodeFlasherSection({ portBlocked }: RNodeFlasherSectionProps) {
           }}
         />
 
-        <BluetoothConfig
-          disabled={actionsDisabled}
-          pairingPin={pairingPin}
-          pairingPending={pairingPending}
-          onEnable={() => {
-            void runWithRNode(async (rnode) => {
-              await rnode.enableBluetooth();
-            });
-          }}
-          onDisable={() => {
-            void runWithRNode(async (rnode) => {
-              await rnode.disableBluetooth();
-              pairingSessionRef.current.invalidate();
-              setPairingPin(null);
-              setPairingPending(false);
-            });
-          }}
-          onStartPairing={() => {
-            void runWithRNode(async (rnode) => {
-              setPairingPin(null);
-              setPairingPending(true);
-              // Keeps the USB session open until CMD_BT_PIN or pairing timeout.
-              const attempt = pairingSessionRef.current.begin(() => {
+        <div
+          ref={bluetoothSectionRef}
+          id="reticulum-admin-bluetooth"
+          data-focus-bluetooth-nonce={focusBluetoothNonce || undefined}
+        >
+          <BluetoothConfig
+            disabled={actionsDisabled}
+            pairingPin={pairingPin}
+            pairingPending={pairingPending}
+            onEnable={() => {
+              void runWithRNode(async (rnode) => {
+                await rnode.enableBluetooth();
+              });
+            }}
+            onDisable={() => {
+              void runWithRNode(async (rnode) => {
+                await rnode.disableBluetooth();
+                pairingSessionRef.current.invalidate();
+                setPairingPin(null);
                 setPairingPending(false);
               });
-              try {
-                await rnode.startBluetoothPairing((pin) => {
-                  if (!attempt.isCurrent()) return;
-                  attempt.clearTimer();
-                  const pinLabel = String(pin).padStart(6, '0');
-                  setPairingPin(pin);
+            }}
+            onStartPairing={() => {
+              void runWithRNode(async (rnode) => {
+                setPairingPin(null);
+                setPairingPending(true);
+                // Keeps the USB session open until CMD_BT_PIN or pairing timeout.
+                const attempt = pairingSessionRef.current.begin(() => {
                   setPairingPending(false);
-                  showStatus(t('flasher.pairingPin', { pin: pinLabel }));
                 });
-              } catch (err) {
-                if (attempt.isCurrent()) {
-                  attempt.clearTimer();
-                  setPairingPending(false);
+                try {
+                  await rnode.startBluetoothPairing((pin) => {
+                    if (!attempt.isCurrent()) return;
+                    attempt.clearTimer();
+                    const pinLabel = String(pin).padStart(6, '0');
+                    setPairingPin(pin);
+                    setPairingPending(false);
+                    showStatus(t('flasher.pairingPin', { pin: pinLabel }));
+                  });
+                } catch (err) {
+                  if (attempt.isCurrent()) {
+                    attempt.clearTimer();
+                    setPairingPending(false);
+                  }
+                  throw err;
                 }
-                throw err;
-              }
-            });
-          }}
-          onClearPairedDevices={() => {
-            setShowClearBondsConfirm(true);
-          }}
-        />
+              });
+            }}
+            onClearPairedDevices={() => {
+              setShowClearBondsConfirm(true);
+            }}
+          />
+        </div>
 
         <WifiConfig
           disabled={actionsDisabled}

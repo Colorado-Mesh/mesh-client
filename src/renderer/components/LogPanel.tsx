@@ -77,6 +77,11 @@ function levelVisible(level: string, f: LevelFilters): boolean {
   return true;
 }
 
+/** Historical Noble BLE tags that are not MeshCore-scoped. */
+function isMeshtasticLegacyBleTag(message: string): boolean {
+  return message.includes('[BLE:') && !message.includes('[BLE:meshcore]');
+}
+
 /** Returns true for log entries that originated from the given protocol's device library or hook. */
 export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean {
   if (protocol === 'meshtastic') {
@@ -85,11 +90,12 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.source.includes('meshtastic') ||
       entry.message.includes('[useMeshtasticRuntime]') ||
       entry.message.includes('[iMeshDevice]') ||
-      entry.message.includes('[TransportNobleIpc]') ||
-      entry.message.includes('[NobleBleManager]') ||
-      entry.message.includes('[BLE:') ||
-      entry.message.includes('[BLE:meshcore]') ||
-      entry.message.includes('[IpcNobleConnection:meshtastic]') ||
+      entry.message.includes('[TransportSidecarGatt]') ||
+      entry.message.includes('[GATT]') ||
+      entry.message.includes('[GATT:meshtastic]') ||
+      entry.message.includes('[GATT:all]') ||
+      entry.message.includes('[IpcSidecarGattConnection:meshtastic]') ||
+      isMeshtasticLegacyBleTag(entry.message) ||
       entry.message.includes('[meshtasticSdkRoutingErrorLog]')
     );
   }
@@ -100,7 +106,8 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
       entry.message.includes('[meshcoreConnSideEffects]') ||
       entry.message.includes('[MeshCore MQTT]') ||
       entry.message.includes('[BLE:meshcore]') ||
-      entry.message.includes('[IpcNobleConnection:meshcore]')
+      entry.message.includes('[GATT:meshcore]') ||
+      entry.message.includes('[IpcSidecarGattConnection:meshcore]')
     );
   }
   if (protocol === 'reticulum') {
@@ -128,7 +135,9 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[useMeshcoreRuntime]') ||
     entry.message.includes('[meshcoreConnSideEffects]') ||
     entry.message.includes('[useReticulumRuntime]') ||
-    entry.message.includes('[TransportNobleIpc]') ||
+    entry.message.includes('[TransportSidecarGatt]') ||
+    entry.message.includes('[GATT]') ||
+    entry.message.includes('[GATT:') ||
     entry.message.includes('[MeshCore MQTT]') ||
     entry.message.includes('[ReticulumSidecar]') ||
     entry.message.includes('[ReticulumNetworkPanel]') ||
@@ -138,16 +147,33 @@ export function isDeviceEntry(entry: LogEntry, protocol?: MeshProtocol): boolean
     entry.message.includes('[reticulumSidecarReads]') ||
     entry.message.includes('[useReticulumSidecarApi]') ||
     entry.message.includes('[IPC] reticulum') ||
-    entry.message.includes('[NobleBleManager]') ||
     entry.message.includes('[BLE:') ||
     entry.message.includes('[BLE:meshcore]') ||
-    entry.message.includes('[IpcNobleConnection:')
+    entry.message.includes('[IpcSidecarGattConnection:')
   );
 }
 
-/** App-panel MQTT/infrastructure tags scoped to one protocol tab (not device/SDK traffic). */
+/** App-panel tags scoped to one protocol tab (not device/SDK traffic). */
 export function isProtocolExclusiveAppEntry(entry: LogEntry, protocol: MeshProtocol): boolean {
-  return protocol === 'meshtastic' && entry.message.includes('[Meshtastic MQTT]');
+  const { message } = entry;
+  if (protocol === 'meshtastic') {
+    return (
+      message.includes('[Meshtastic MQTT]') ||
+      message.includes('[MeshtasticRemoteAdmin]') ||
+      message.includes('[Meshtastic]') ||
+      (message.includes('[main] gatt:') && message.includes('session=meshtastic'))
+    );
+  }
+  if (protocol === 'meshcore') {
+    return (
+      message.includes('[MeshCoreTransport]') ||
+      message.includes('[MeshCoreProtocol]') ||
+      message.includes('[meshcoreRoom') ||
+      message.includes('[meshcoreRepeater') ||
+      (message.includes('[main] gatt:') && message.includes('session=meshcore'))
+    );
+  }
+  return false;
 }
 
 /** True when the line belongs to a protocol other than the active tab. */

@@ -37,7 +37,13 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  isMecpComposeEnabled,
+  isMecpMaydayButtonEnabled,
+  isQuickStatusBarEnabled,
+} from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
@@ -53,6 +59,7 @@ import {
   formatReticulumViaBadgeLabel,
   parseReticulumViaAtoms,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { collectReticulumChatOutboundDestStats } from '@/renderer/lib/reticulum/collectReticulumChatOutboundDestStats';
 import { normalizeReticulumNodeId } from '@/renderer/lib/reticulum/destHash';
 import { parseReticulumAttachmentPayload } from '@/renderer/lib/reticulum/parseReticulumAttachmentPayload';
 import {
@@ -65,6 +72,7 @@ import {
   isReticulumTelephonyOnlyDestination,
   resolveReticulumChatLxmfDestination,
 } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
+import { resolveReticulumStaleChatDest } from '@/renderer/lib/reticulum/resolveReticulumStaleChatDest';
 import { reticulumMessageMatchesDmPeer } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import {
   resolveReticulumDmBoundDestinationHash,
@@ -93,7 +101,7 @@ import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
-import { useChatOutbox } from '../hooks/useChatOutbox';
+import { isEmergencyOutboxPriority, useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
 import { chatDmPeerMessageCounts } from '../lib/chatDmPeerIndex';
@@ -130,7 +138,6 @@ import {
   getChatMessageVirtualizerKey,
   getDistFromChatBottom,
   scheduleVirtualRowRemeasure,
-  VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '../lib/chatScrollUtils';
 import {
   type ChatUnreadDmOptions,
@@ -140,6 +147,15 @@ import {
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
+import { sendEmergencyText, sendTextWithOutboxFallback } from '../lib/emergencySend';
+import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
+import {
+  getCachedMecpLanguage,
+  loadMecpLanguage,
+  localizeMecpCodes,
+  mecpLanguageForAppLocale,
+  tryParseMecp,
+} from '../lib/mecp/mecpMessages';
 import {
   findMeshcoreParentMessageForReply,
   meshcoreChatMessagesForDisplay,
@@ -150,6 +166,7 @@ import {
   meshcoreConfiguredChannelIndexSet,
 } from '../lib/meshcoreConfiguredChatChannels';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
+import { getNodeStatus } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import {
@@ -164,6 +181,13 @@ import {
   truncateReplyPreviewText,
 } from '../lib/replyPreview';
 import {
+  createRollCall,
+  isRollCallExpired,
+  ROLL_CALL_COMMAND_TEXT,
+  type RollCallState,
+  tallyRollCallReplies,
+} from '../lib/rollCall';
+import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
@@ -172,16 +196,21 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { useWatchedNodesStore } from '../stores/watchedNodesStore';
+import { QuickStatusBar } from './chat/QuickStatusBar';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
 import { HelpTooltip } from './HelpTooltip';
+import { MecpComposeModal } from './mecp/MecpComposeModal';
+import { mecpChatBubbleToneClasses, MecpSeverityBadge } from './mecp/MecpSeverityBadge';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
 import { ChatDmRncpControl } from './remote/ChatDmRncpControl';
 import { ChatDmRncpOfferBanner } from './remote/ChatDmRncpOfferBanner';
+import { ReticulumDmDestIdentityBar } from './reticulum/ReticulumDmDestIdentityBar';
 import { ReticulumGameChallengeButton } from './reticulum/ReticulumGameChallengeButton';
 import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumAttachmentLine } from './ReticulumAttachmentLine';
@@ -302,15 +331,36 @@ function OutboxBubble({
         : row.status === 'blocked'
           ? 'text-amber-400'
           : 'text-red-400';
+  const displayError = row.error ? translateChatSendError(t, row.error) : null;
+  const isEmergency = isEmergencyOutboxPriority(row);
   return (
     <div className="mb-1 flex justify-end px-4">
-      <div className="max-w-[75%] rounded-xl bg-slate-700 px-3 py-2 opacity-80">
+      <div
+        className={`max-w-[75%] rounded-xl bg-slate-700 px-3 py-2 ${
+          isEmergency ? 'border border-red-500' : 'opacity-80'
+        }`}
+      >
+        {isEmergency && (
+          <div className="mb-1 flex items-center gap-2 text-[11px]">
+            <span className="rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">
+              {t('chatPanel.outboxEmergencyBadge')}
+            </span>
+            {row.status !== 'blocked' && (
+              <span className="text-gray-300">{t('chatPanel.outboxEmergencyWillSend')}</span>
+            )}
+          </div>
+        )}
         <div className="text-sm text-white">{row.payload}</div>
         <div className={`mt-1 flex items-center gap-2 text-[11px] ${statusColor}`}>
           <span>{statusLabel}</span>
-          {row.error && (
-            <span className="text-muted max-w-[140px] truncate" title={row.error}>
-              — {row.error}
+          {isEmergency && row.attemptCount > 0 && (
+            <span className="text-gray-300">
+              {t('chatPanel.retryOutboxEmergencyAttempt', { count: row.attemptCount })}
+            </span>
+          )}
+          {displayError && (
+            <span className="text-muted max-w-[140px] truncate" title={displayError}>
+              — {displayError}
             </span>
           )}
           {(row.status === 'failed' || row.status === 'blocked') && (
@@ -329,6 +379,9 @@ function OutboxBubble({
             type="button"
             aria-label={t('chatPanel.cancelOutboxMessage')}
             onClick={() => {
+              if (isEmergency && !window.confirm(t('chatPanel.outboxEmergencyCancelConfirm'))) {
+                return;
+              }
               onCancel(row.id);
             }}
             className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
@@ -635,7 +688,7 @@ function ChatPanel({
   resolveShareLocation,
   onSendLocationWaypoint,
 }: ChatPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const capabilities = useRadioProvider(protocol);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const parentIconTrigger = useParentIconTrigger();
@@ -901,6 +954,49 @@ function ChatPanel({
     viewKey: string;
   } | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
+  const [mecpComposeSession, setMecpComposeSession] = useState(0);
+  const [mecpComposeEnabled, setMecpComposeEnabled] = useState(() => isMecpComposeEnabled());
+  const [mecpMaydayButtonEnabled, setMecpMaydayButtonEnabled] = useState(() =>
+    isMecpMaydayButtonEnabled(),
+  );
+  const [quickStatusBarEnabled, setQuickStatusBarEnabled] = useState(() =>
+    isQuickStatusBarEnabled(),
+  );
+  const [mecpMaydayMode, setMecpMaydayMode] = useState(false);
+  const [mecpLang, setMecpLang] = useState(() =>
+    getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
+  );
+  const mecpControlsEnabled = mecpComposeEnabled || mecpMaydayButtonEnabled;
+
+  useEffect(() => {
+    const sync = () => {
+      setMecpComposeEnabled(isMecpComposeEnabled());
+      setMecpMaydayButtonEnabled(isMecpMaydayButtonEnabled());
+      setQuickStatusBarEnabled(isQuickStatusBarEnabled());
+    };
+    window.addEventListener('mesh-client:appSettings', sync);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mecpControlsEnabled) {
+      setMecpComposeOpen(false);
+      setMecpMaydayMode(false);
+    }
+  }, [mecpControlsEnabled]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')).then((lang) => {
+      if (!cancelled) setMecpLang(lang);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [i18n.language]);
   const [pickerOpenFor, setPickerOpenFor] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -1384,7 +1480,7 @@ function ChatPanel({
     getItemKey: (index) => getChatMessageVirtualizerKey(filteredMessages[index], index),
     anchorTo: 'end',
     followOnAppend: true,
-    scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
+    scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
   });
 
   messageVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = createChatScrollAdjustPredicate({
@@ -1405,19 +1501,6 @@ function ChatPanel({
     );
   }, []);
 
-  const computeIsAtChatEnd = useCallback(() => {
-    const inner = scrollContainerRef.current;
-    if (!inner) return false;
-    const virtualAtEnd = messageVirtualizerRef.current.isAtEnd(CHAT_SCROLL_END_THRESHOLD);
-    const outerDist = getDistFromChatBottom(
-      inner,
-      messagesEndRef.current,
-      outerScrollMetricsRootRef?.current ?? null,
-    );
-    if (outerDist != null && outerDist > CHAT_SCROLL_END_THRESHOLD) return false;
-    return virtualAtEnd;
-  }, [outerScrollMetricsRootRef]);
-
   const viewKey = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) return `dm:${activeDmNode}`;
     return `ch:${channel}`;
@@ -1429,6 +1512,7 @@ function ChatPanel({
     [onSend],
   );
 
+  const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
   const {
     rows: outboxRows,
     queue: queueOutbox,
@@ -1436,7 +1520,7 @@ function ChatPanel({
     cancel: cancelOutbox,
   } = useChatOutbox({
     protocol,
-    isSendAvailable: isConnected && !(isMqttOnly && protocol === 'meshcore'),
+    isSendAvailable: outboxSendAvailable,
     sendFn: outboxSendFn,
   });
 
@@ -1488,13 +1572,38 @@ function ChatPanel({
     saveStarred(protocol, starred);
   }, [protocol, starred]);
 
-  // Sound notification: plays when a new message arrives on a view the user is not reading.
+  // Sound notification: regular channel/DM tones for other views; MECP always (incl. open view).
   useEffect(() => {
     const prevLen = prevMessagesLengthRef.current;
     prevMessagesLengthRef.current = messages.length;
-    if (localStorage.getItem('mesh-client:notifMuted') === '1' || messages.length <= prevLen)
-      return;
+    if (messages.length <= prevLen) return;
     const newMsgs = messages.slice(prevLen);
+
+    // MECP: audible even when focused on the receiving conversation (0–1 mute-bypass inside).
+    if (isActive && !isAppWindowInactive()) {
+      for (const msg of newMsgs) {
+        if (isOwnNode(msg.sender_id) || msg.isHistory) continue;
+        const mecp = tryParseMecp(msg.payload);
+        if (mecp?.severity == null) continue;
+        const peer = resolveDmPeer(msg);
+        const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
+        const dedupeId =
+          msg.storeId ??
+          (msg.packetId != null ? String(msg.packetId) : undefined) ??
+          (msg.id != null ? String(msg.id) : undefined) ??
+          `${msg.timestamp}:${msg.payload}`;
+        triggerMecpAlert({
+          severity: mecp.severity,
+          isDrill: mecp.isDrill,
+          senderLabel: msg.sender_name || String(msg.sender_id),
+          viewKey: msgViewKey,
+          mutedViews,
+          dedupeKey: `${protocol}:${dedupeId}`,
+        });
+      }
+    }
+
+    if (localStorage.getItem('mesh-client:notifMuted') === '1') return;
     const gated = newMsgs.filter((msg) => {
       if (isOwnNode(msg.sender_id) || msg.isHistory) return false;
       const peer = resolveDmPeer(msg);
@@ -1524,17 +1633,18 @@ function ChatPanel({
   ]);
 
   const updateScrollButtonVisibility = useCallback(() => {
-    const atEnd = computeIsAtChatEnd();
-    isPinnedToBottomRef.current = atEnd;
-    setShowScrollButton(!atEnd);
     const distFromBottom = getDistFromChatBottom(
       scrollContainerRef.current,
       messagesEndRef.current,
       outerScrollMetricsRootRef?.current ?? null,
     );
     if (distFromBottom == null) return undefined;
+    // React's scroll handler can run before the virtualizer updates its cached offset.
+    const atEnd = distFromBottom <= CHAT_SCROLL_END_THRESHOLD;
+    isPinnedToBottomRef.current = atEnd;
+    setShowScrollButton(!atEnd);
     return distFromBottom;
-  }, [computeIsAtChatEnd, outerScrollMetricsRootRef]);
+  }, [outerScrollMetricsRootRef]);
 
   const applyNearBottomReadState = useCallback(
     (distFromBottom: number) => {
@@ -1625,8 +1735,7 @@ function ChatPanel({
     };
   }, [applyNearBottomReadState, isActive, updateScrollButtonVisibility]);
 
-  // Refresh scroll button + mark-read when message list changes; scrollToEnd when app-pinned
-  // (followOnAppend uses the tighter VIRTUALIZER_SCROLL_END_THRESHOLD).
+  // Follow only while pinned; the virtualizer uses the same bottom tolerance.
   useEffect(() => {
     if (!isActive || isAppWindowInactive()) return;
     if (isPinnedToBottomRef.current) {
@@ -1750,8 +1859,16 @@ function ChatPanel({
     } else {
       messageVirtualizerRef.current.scrollToEnd({ behavior: 'smooth' });
       isPinnedToBottomRef.current = true;
+      // Already at the bottom: a no-op scroll will not emit an event to clear the button.
+      const dist = updateScrollButtonVisibility();
+      if (dist !== undefined) applyNearBottomReadState(dist);
     }
-  }, [applyNearBottomReadState, outerScrollMetricsRootRef, unreadStartIndex]);
+  }, [
+    applyNearBottomReadState,
+    outerScrollMetricsRootRef,
+    unreadStartIndex,
+    updateScrollButtonVisibility,
+  ]);
 
   const scrollToQuotedParent = useCallback(
     (replyKey: number) => {
@@ -1816,13 +1933,15 @@ function ChatPanel({
     }
   }, [showSearch]);
 
-  const handleSendChunk = useCallback(
-    async (text: string, opts?: ChatComposerSendOpts) => {
+  /** Live send for one chunk; resolves to the send id (Reticulum pending store id) when any. */
+  const sendChunkForResult = useCallback(
+    async (text: string, opts?: ChatComposerSendOpts): Promise<string | undefined> => {
       const sendChannel = channel;
       const destination = viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined;
       if (dmOnlyChat && destination == null) {
-        setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
-        return;
+        const message = t('chatPanel.selectDmFirst');
+        setChatActionError({ message, viewKey });
+        throw new Error(message);
       }
       if (
         protocol === 'meshcore' &&
@@ -1830,16 +1949,13 @@ function ChatPanel({
         meshcorePayloadIsTapbackEmojiOnly(text)
       ) {
         await onReact(text, opts.replyId, sendChannel);
-        return;
+        return undefined;
       }
+      let sendResult: string | undefined;
       const doSend = async () => {
-        const sendOutcome = onSend(
-          text,
-          sendChannel,
-          destination,
-          opts?.replyHash ?? opts?.replyId ?? undefined,
+        sendResult = await Promise.resolve(
+          onSend(text, sendChannel, destination, opts?.replyHash ?? opts?.replyId ?? undefined),
         );
-        await Promise.resolve(sendOutcome);
       };
       if (
         protocol === 'meshcore' &&
@@ -1857,13 +1973,14 @@ function ChatPanel({
           const msg = err instanceof Error ? err.message : '';
           if (msg === 'meshcore.errors.floodScopeBusy') {
             setChatActionError({ message: t('meshcore.errors.floodScopeBusy'), viewKey });
-            return;
+            return undefined;
           }
           throw err;
         }
-        return;
+        return sendResult;
       }
       await doSend();
+      return sendResult;
     },
     [
       activeDmNode,
@@ -1880,6 +1997,87 @@ function ChatPanel({
     ],
   );
 
+  const handleSendChunk = useCallback(
+    async (text: string, opts?: ChatComposerSendOpts): Promise<void> => {
+      await sendChunkForResult(text, opts);
+    },
+    [sendChunkForResult],
+  );
+
+  const sendQuickStatusText = useCallback(
+    async (text: string) => {
+      if ((viewMode === 'dm' || dmOnlyChat) && activeDmNode == null) {
+        setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
+        return;
+      }
+      try {
+        await sendTextWithOutboxFallback(
+          text,
+          {
+            isSendAvailable: outboxSendAvailable,
+            sendFn: (payload) => sendChunkForResult(payload),
+            queueOutbox,
+            protocol,
+            viewKey,
+            channel,
+            toNode: viewMode === 'dm' && activeDmNode != null ? activeDmNode : null,
+          },
+          'normal',
+        );
+        setUnreadDividerTimestamp(0);
+      } catch (err) {
+        console.warn('[ChatPanel] quick status send failed ' + errLikeToLogString(err));
+        setChatActionError({ message: t('chatPanel.sendFailed'), viewKey });
+      }
+    },
+    [
+      activeDmNode,
+      channel,
+      dmOnlyChat,
+      outboxSendAvailable,
+      protocol,
+      queueOutbox,
+      sendChunkForResult,
+      t,
+      viewKey,
+      viewMode,
+    ],
+  );
+
+  const [rollCall, setRollCall] = useState<RollCallState | null>(null);
+  const rollCallNowMs = useNowMs(rollCall != null, 30_000);
+  const rollCallTally = useMemo(
+    () => (rollCall ? tallyRollCallReplies(rollCall, viewMessages, isOwnNode) : null),
+    [rollCall, viewMessages, isOwnNode],
+  );
+  const rollCallSummary =
+    rollCallTally && rollCallNowMs > 0 && !isRollCallExpired(rollCallTally, rollCallNowMs)
+      ? {
+          responded: rollCallTally.respondedPeerIds.length,
+          expected: rollCallTally.expectedPeerIds.length,
+        }
+      : null;
+
+  const handleRollCall = useCallback(async () => {
+    const watched = useWatchedNodesStore.getState().watchedNodeIds;
+    const candidates = [...nodes.values()].filter((n) => !isOwnNode(n.node_id));
+    const watchedPeers = candidates.filter((n) => watched.has(n.node_id));
+    const expected = (
+      watchedPeers.length > 0
+        ? watchedPeers
+        : candidates.filter(
+            (n) =>
+              getNodeStatus(
+                n.last_heard,
+                capabilities.nodeStaleThresholdMs,
+                capabilities.nodeOfflineThresholdMs,
+              ) === 'online',
+          )
+    ).map((n) => String(n.node_id));
+    setRollCall(createRollCall(expected));
+    await sendQuickStatusText(ROLL_CALL_COMMAND_TEXT);
+  }, [capabilities, isOwnNode, nodes, sendQuickStatusText]);
+
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
     const sendChannel = msgChannel === -1 ? 0 : msgChannel;
@@ -1891,9 +2089,8 @@ function ChatPanel({
       await onReact(glyph, packetId, sendChannel);
     } catch (err) {
       console.error('[ChatPanel] React failed: ' + errLikeToLogString(err));
-      const message = err instanceof Error ? err.message : t('chatPanel.reactionFailed');
       setChatActionError({
-        message,
+        message: translateChatSendError(t, err, { fallbackKey: 'chatPanel.reactionFailed' }),
         viewKey,
       });
     }
@@ -2185,6 +2382,65 @@ function ChatPanel({
     if (!keyHash) return null;
     return s.getPeer(keyHash)?.identity_hash ?? null;
   });
+
+  const reticulumDmResolvedIdentityHash = useMemo(() => {
+    if (protocol !== 'reticulum') return null;
+    if (reticulumDmIdentityHash) return reticulumDmIdentityHash;
+    const keyHash = reticulumDmDestinationHash ?? reticulumDmBoundHash;
+    if (!keyHash) return null;
+    const rows = reticulumIdentityActivityByDestination.get(
+      keyHash.replace(/[^0-9a-f]/gi, '').toLowerCase(),
+    );
+    for (const row of rows ?? []) {
+      const id = row.identity_hash?.replace(/[^0-9a-f]/gi, '').toLowerCase();
+      if (id?.length === 32) return id;
+    }
+    return null;
+  }, [
+    protocol,
+    reticulumDmBoundHash,
+    reticulumDmDestinationHash,
+    reticulumDmIdentityHash,
+    reticulumIdentityActivityByDestination,
+  ]);
+
+  const reticulumOutboundDestStats = useMemo(() => {
+    if (protocol !== 'reticulum') {
+      return {
+        failedOutboundHashes: new Set<string>(),
+        deliveredOutboundHashes: new Set<string>(),
+      };
+    }
+    return collectReticulumChatOutboundDestStats(messages, ownNodeIdSet);
+  }, [messages, ownNodeIdSet, protocol]);
+
+  const reticulumDmStaleHint = useMemo(() => {
+    if (protocol !== 'reticulum' || !reticulumDmDestinationHash) {
+      return { status: 'ok' as const };
+    }
+    const peerStore = useReticulumPeerStore.getState();
+    const peers = [
+      ...peerStore.peers.values(),
+      ...peerStore.contacts.values(),
+      ...peerStore.history.values(),
+    ];
+    const openNorm = reticulumDmDestinationHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+    return resolveReticulumStaleChatDest({
+      openHash: reticulumDmDestinationHash,
+      activityByDestination: reticulumIdentityActivityByDestination,
+      peers,
+      failedOutboundHashes: reticulumOutboundDestStats.failedOutboundHashes,
+      openHasDelivered: reticulumOutboundDestStats.deliveredOutboundHashes.has(openNorm),
+    });
+    // reticulumPeersRevision: recompute when peer/contact display names update
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- peersRevision intentionally gates getState() reads
+  }, [
+    protocol,
+    reticulumDmDestinationHash,
+    reticulumIdentityActivityByDestination,
+    reticulumOutboundDestStats,
+    reticulumPeersRevision,
+  ]);
 
   const reticulumDmPassiveHops = useMemo(() => {
     if (reticulumDmPeerHops != null) return reticulumDmPeerHops;
@@ -2735,7 +2991,7 @@ function ChatPanel({
               <ReticulumVoiceCallButton
                 key={`dm-voice-${reticulumDmVoiceDialHash}`}
                 lxmfPeerHash={reticulumDmVoiceDialHash}
-                identityHash={reticulumDmIdentityHash}
+                identityHash={reticulumDmResolvedIdentityHash}
                 disabled={!reticulumStackLive}
                 className={RETICULUM_DM_HEADER_ACTION_CLASS}
               />
@@ -2788,21 +3044,34 @@ function ChatPanel({
             !voiceCallControl &&
             !gamesChallengeControl &&
             !paperShareControl &&
-            !peerDetailsControl
+            !peerDetailsControl &&
+            !reticulumDmDestinationHash
           ) {
             return null;
           }
-          // Order: path status → last heard → peer details → Probe/Path → Call → Challenge → Paper → Send file.
+          const destIdentityBar =
+            protocol === 'reticulum' && reticulumDmDestinationHash != null ? (
+              <ReticulumDmDestIdentityBar
+                key={`dm-dest-${reticulumDmDestinationHash}`}
+                lxmfHash={reticulumDmDestinationHash}
+                identityHash={reticulumDmResolvedIdentityHash}
+                staleHint={reticulumDmStaleHint}
+              />
+            ) : null;
+          // Order: path status → dest hashes → last heard → peer details → Probe/Path → Call → Challenge → Paper → Send file.
           return (
-            <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
-              {pathBadge}
-              {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
-              {peerDetailsControl}
-              {pathActions}
-              {voiceCallControl}
-              {gamesChallengeControl}
-              {paperShareControl}
-              {rncpControl}
+            <div className="mb-2 flex min-w-0 flex-col gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {pathBadge}
+                {dmNode ? <DmPeerInfoBar dmNode={dmNode} nowMs={nowMs} t={t} /> : null}
+                {peerDetailsControl}
+                {pathActions}
+                {voiceCallControl}
+                {gamesChallengeControl}
+                {paperShareControl}
+                {rncpControl}
+              </div>
+              {destIdentityBar}
             </div>
           );
         })()}
@@ -3005,8 +3274,12 @@ function ChatPanel({
                         >
                           {/* Message bubble */}
                           <div
-                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${
-                              compactMerged
+                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
+                              const mecp = tryParseMecp(msg.payload);
+                              if (mecp?.severity != null) {
+                                return mecpChatBubbleToneClasses(mecp.severity, isOwn);
+                              }
+                              return compactMerged
                                 ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
                                     isDm
                                       ? isOwn
@@ -3022,8 +3295,8 @@ function ChatPanel({
                                     : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
                                   : isOwn
                                     ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`
-                            }`}
+                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`;
+                            })()}`}
                           >
                             {/* Header: sender name (clickable) + DM indicator + time */}
                             {!isContinuation &&
@@ -3271,6 +3544,21 @@ function ChatPanel({
                                   }}
                                 />
                               )}
+                              {(() => {
+                                const mecp = tryParseMecp(msg.payload);
+                                if (mecp?.severity == null) return null;
+                                return (
+                                  <div className="mt-1 flex flex-col gap-0.5">
+                                    <MecpSeverityBadge
+                                      severity={mecp.severity}
+                                      pulse={!isOwn && mecp.severity <= 1 && !mecp.isDrill}
+                                    />
+                                    <p className="text-[10px] font-normal text-red-200/90">
+                                      {localizeMecpCodes(mecp, mecpLang)}
+                                    </p>
+                                  </div>
+                                );
+                              })()}
                             </div>
 
                             {/* Transport + RF hop count (incoming) */}
@@ -3647,6 +3935,75 @@ function ChatPanel({
       ) : null}
       {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
+      ) : null}
+      {mecpControlsEnabled ? (
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          {mecpComposeEnabled ? (
+            <button
+              type="button"
+              className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
+              aria-label={t('mecp.compose.open')}
+              onClick={() => {
+                setMecpMaydayMode(false);
+                setMecpComposeSession((n) => n + 1);
+                setMecpComposeOpen(true);
+              }}
+            >
+              {t('mecp.compose.button')}
+            </button>
+          ) : null}
+          {mecpMaydayButtonEnabled ? (
+            <button
+              type="button"
+              className="rounded border border-red-500 bg-red-700 px-2 py-1 text-xs font-bold text-white hover:bg-red-600"
+              aria-label={t('mecp.compose.maydayAria')}
+              onClick={() => {
+                setMecpMaydayMode(true);
+                setMecpComposeSession((n) => n + 1);
+                setMecpComposeOpen(true);
+              }}
+            >
+              {t('mecp.compose.maydayButton')}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      {mecpControlsEnabled ? (
+        <MecpComposeModal
+          key={mecpComposeSession}
+          open={mecpComposeOpen}
+          onClose={() => {
+            setMecpComposeOpen(false);
+            setMecpMaydayMode(false);
+          }}
+          resolveGps={resolveShareLocation}
+          initialSeverity={mecpMaydayMode ? 0 : undefined}
+          autoAttachGps={mecpMaydayMode}
+          onSend={async (text) => {
+            if ((viewMode === 'dm' || dmOnlyChat) && activeDmNode == null) {
+              const message = t('chatPanel.selectDmFirst');
+              setChatActionError({ message, viewKey });
+              throw new Error(message);
+            }
+            await sendEmergencyText(text, {
+              isSendAvailable: outboxSendAvailable,
+              sendFn: (payload) => sendChunkForResult(payload),
+              queueOutbox,
+              protocol,
+              viewKey,
+              channel,
+              toNode: viewMode === 'dm' && activeDmNode != null ? activeDmNode : null,
+            });
+          }}
+        />
+      ) : null}
+      {quickStatusBarEnabled ? (
+        <QuickStatusBar
+          disabled={(dmOnlyChat && activeDmNode == null) || reticulumDmMissingLxmf}
+          onSend={sendQuickStatusText}
+          onRollCall={handleRollCall}
+          rollCallSummary={rollCallSummary}
+        />
       ) : null}
       <ChatComposer
         className="mt-1"

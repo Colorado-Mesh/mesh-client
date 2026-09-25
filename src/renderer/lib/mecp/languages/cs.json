@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Zdravotní",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Terén / Infrastruktura",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Počasí / Prostředí",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Zásoby",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Poloha / Pohyb",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Koordinace",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Odezva",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Cvičení / Test",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Život / Volný čas",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Hrozba / Bezpečnost",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Nabídka zdrojů",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "Maják",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Zranění",
+    "M02": "Osoba v bezvědomí",
+    "M03": "Potíže s dýcháním",
+    "M04": "Srdeční příhoda",
+    "M05": "Podchlazení",
+    "M06": "Silné krvácení",
+    "M07": "Zlomenina / imobilní",
+    "M08": "Popáleniny",
+    "M09": "Více zraněných",
+    "M10": "Úmrtí",
+    "M11": "Kousnutí / bodnutí zvířetem",
+    "M12": "Alergická reakce / anafylaxe",
+    "M13": "Otrava / toxická expozice",
+    "M14": "Osoby nalezeny naživu",
+    "M15": "Oblast prohledána, bez obětí",
+    "T01": "Silnice zablokována",
+    "T02": "Most zničen",
+    "T03": "Budova zřícena",
+    "T04": "Záplavy",
+    "T05": "Sesuv půdy",
+    "T06": "Výpadek proudu",
+    "T07": "Požár",
+    "T08": "Lavina",
+    "T09": "Cesta neprůchodná",
+    "T10": "Úkryt k dispozici",
+    "T11": "Topení / potřeba vodní záchrany",
+    "T12": "Kontaminace vody",
+    "T13": "Zemětřesení",
+    "T14": "Únik plynu",
+    "T15": "Chemický únik / HAZMAT",
+    "T16": "Dopravní nehoda",
+    "T17": "Požár vozidla",
+    "W01": "Blíží se bouře",
+    "W02": "Nulová viditelnost",
+    "W03": "Extrémní mráz",
+    "W04": "Extrémní horko",
+    "W05": "Nebezpečná kvalita vzduchu",
+    "W06": "Varování před tsunami / přílivovou vlnou",
+    "S01": "Potřeba vody",
+    "S02": "Potřeba jídla",
+    "S03": "Potřeba léků",
+    "S04": "Potřeba baterie / energie",
+    "S05": "Potřeba paliva",
+    "S06": "Potřeba nástrojů / vybavení",
+    "P01": "Uvízlý / zaseknutý",
+    "P02": "Evakuace směrem k",
+    "P03": "Ukrytí na místě",
+    "P04": "Na cestě do",
+    "P05": "Na GPS souřadnicích",
+    "P06": "Ztracen",
+    "P07": "Skupina rozdělena",
+    "C01": "Vyslat záchranáře",
+    "C02": "Potřeba přepravy",
+    "C03": "Přeposlat tuto zprávu",
+    "C04": "Potvrďte příjem",
+    "C05": "Kolik osob",
+    "C06": "Jaký je stav",
+    "C07": "Můžete se spojit s",
+    "C08": "Sraz v",
+    "R01": "Potvrzeno",
+    "R02": "Pomoc je na cestě",
+    "R03": "Příjezd za [minut]",
+    "R04": "Nelze pomoci",
+    "R05": "Přesměrování na",
+    "R06": "Čekejte",
+    "R07": "Situace vyřešena / vše v pořádku",
+    "D01": "Toto je cvičení",
+    "D02": "Toto je test",
+    "D03": "Konec cvičení",
+    "D04": "Ignorujte předchozí — odesláno omylem",
+    "L01": "Pivo / nápoje",
+    "L02": "Káva",
+    "L03": "Jídlo hotovo",
+    "L04": "Vrchol dosažen",
+    "L05": "V táboře",
+    "L06": "Mám zpoždění",
+    "L07": "Dobrý signál zde",
+    "L08": "Příležitost k fotografii",
+    "L09": "Spatřena zvěř",
+    "L10": "Krásný výhled",
+    "L11": "Stav stezky dobrý",
+    "L12": "Stav stezky špatný",
+    "L13": "Potřebuji pauzu",
+    "L14": "Směřuji domů",
+    "L15": "Dobré ráno / hlášení",
+    "L16": "Dobrou noc",
+    "L17": "Děkuji",
+    "L18": "Užívám si to",
+    "L19": "Festival / akce zde",
+    "L20": "Test uzlu / ping",
+    "X01": "Nebezpečná osoba / hrozba poblíž",
+    "X02": "Nebezpečná oblast — vyhnout se",
+    "X03": "Střelba / výbuchy slyšeny",
+    "X04": "Občanské nepokoje / nebezpečí davu",
+    "X05": "Hlášena krádež / rabování",
+    "X06": "Úřady / záchranné složky na místě",
+    "X07": "Kontrolní stanoviště / uzavírka (úřady)",
+    "H01": "Voda k dispozici",
+    "H02": "Jídlo k dispozici",
+    "H03": "Zdravotnický materiál k dispozici",
+    "H04": "Energie / nabíjení k dispozici",
+    "H05": "Palivo k dispozici",
+    "H06": "Nástroje / vybavení k dispozici",
+    "H07": "Úkryt / místo pro [N]os.",
+    "H08": "Přeprava / vozidlo k dispozici",
+    "B01": "Automatický nouzový maják aktivní — odesílatel nemusí reagovat",
+    "B02": "Maják potvrzen — snížit frekvenci vysílání",
+    "B03": "Zrušit maják — jsem v pořádku"
+  }
+}

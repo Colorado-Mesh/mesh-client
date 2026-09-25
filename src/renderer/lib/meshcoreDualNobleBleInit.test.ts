@@ -15,17 +15,16 @@ import {
   getNobleBleConnectMutexSnapshot,
   getNobleBleDualRadioPrimaryProtocol,
   initNobleBleDualRadioStartup,
-  isRendererNobleBlePlatform,
+  isRendererGattBlePlatform,
   meshcoreNobleBleConfigureBusy,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
   meshtasticNobleBleConfigureBusy,
   needsSequentialMeshcoreRadioInit,
   nobleBleConfigureBusyForProtocol,
+  notifyBlePrimaryRfLinkReady,
   notifyNobleBlePrimaryAutoConnectSettled,
-  notifyNobleBlePrimaryRfLinkReady,
   resetNobleBleConnectMutexForTests,
   resolveNobleBleDualRadioPrimaryProtocol,
-  withNobleBleConnectMutex,
 } from './meshcoreDualNobleBleInit';
 
 const meshtasticProtocol = { type: 'meshtastic' } as const;
@@ -206,26 +205,18 @@ describe('meshcoreDualNobleBleInit', () => {
     expect(Date.now() - start).toBeLessThan(100);
   });
 
-  it.each(['darwin', 'win32'] as const)(
-    'isRendererNobleBlePlatform is true on %s (Noble BLE)',
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'isRendererGattBlePlatform is true on %s (sidecar GATT)',
     (platform) => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-      expect(isRendererNobleBlePlatform()).toBe(true);
+      expect(isRendererGattBlePlatform()).toBe(true);
     },
   );
 
-  it('isRendererNobleBlePlatform is false on linux (Web Bluetooth)', () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    expect(isRendererNobleBlePlatform()).toBe(false);
-  });
-
-  it('needsSequentialMeshcoreRadioInit is true for serial, TCP, and Linux Web Bluetooth', () => {
+  it('needsSequentialMeshcoreRadioInit is true for serial/TCP only (BLE stays parallel)', () => {
     expect(needsSequentialMeshcoreRadioInit('serial')).toBe(true);
     expect(needsSequentialMeshcoreRadioInit('tcp')).toBe(true);
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     expect(needsSequentialMeshcoreRadioInit('ble')).toBe(false);
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    expect(needsSequentialMeshcoreRadioInit('ble')).toBe(true);
   });
 
   it('meshcoreTargetsSharedMeshtasticBlePeripheral when both remember the same BLE id', () => {
@@ -237,90 +228,21 @@ describe('meshcoreDualNobleBleInit', () => {
     localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
   });
 
-  it.each(['darwin', 'win32'] as const)(
-    'withNobleBleConnectMutex serializes concurrent Noble BLE connect work on %s',
-    async (platform) => {
-      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-      const order: string[] = [];
-      let releaseFirst!: () => void;
-      const firstBlocked = new Promise<void>((resolve) => {
-        releaseFirst = resolve;
-      });
-      const first = withNobleBleConnectMutex('meshtastic', async () => {
-        order.push('first-start');
-        await firstBlocked;
-        order.push('first-end');
-      });
-      await Promise.resolve();
-      const second = withNobleBleConnectMutex('meshcore', () => {
-        order.push('second');
-        return Promise.resolve();
-      });
-      expect(getNobleBleConnectMutexSnapshot().queued).toBe('meshcore');
-      releaseFirst();
-      await Promise.all([first, second]);
-      expect(order).toEqual(['first-start', 'first-end', 'second']);
-    },
-  );
+  it('dual-radio primary settle still unblocks secondary without connect mutex', async () => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
+    localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
+    localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
+    localStorage.setItem('mesh-client:protocol', 'meshcore');
+    initNobleBleDualRadioStartup();
+    expect(getNobleBleDualRadioPrimaryProtocol()).toBe('meshcore');
 
-  it.each(['darwin', 'win32'] as const)(
-    'withNobleBleConnectMutex does not deadlock when secondary queues before primary settles on %s',
-    async (platform) => {
-      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-      localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
-      localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
-      localStorage.setItem('mesh-client:protocol', 'meshcore');
-      initNobleBleDualRadioStartup();
-      expect(getNobleBleDualRadioPrimaryProtocol()).toBe('meshcore');
+    const secondaryWait = awaitNobleBlePrimaryAutoConnectSettled(5_000);
+    notifyNobleBlePrimaryAutoConnectSettled();
+    await expect(secondaryWait).resolves.toBeUndefined();
 
-      const order: string[] = [];
-      // Secondary (meshtastic) enqueues first and must not hold the connect chain
-      // hostage while it awaits the primary's settle signal — otherwise the
-      // primary below can never reach its own work() to emit that signal.
-      const secondary = withNobleBleConnectMutex('meshtastic', async () => {
-        order.push('secondary');
-        return Promise.resolve();
-      });
-      await Promise.resolve();
-      await Promise.resolve();
-
-      const primary = withNobleBleConnectMutex('meshcore', async () => {
-        order.push('primary-start');
-        notifyNobleBlePrimaryAutoConnectSettled();
-        order.push('primary-end');
-        return Promise.resolve();
-      });
-
-      const deadlockGuard = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('withNobleBleConnectMutex deadlocked'));
-        }, 2000);
-      });
-      await Promise.race([Promise.all([primary, secondary]), deadlockGuard]);
-
-      expect(order).toEqual(['primary-start', 'primary-end', 'secondary']);
-
-      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-      localStorage.removeItem('mesh-client:protocol');
-    },
-  );
-
-  it('withNobleBleConnectMutex is a no-op on Linux Web Bluetooth', async () => {
-    vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
-    let release!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      release = resolve;
-    });
-    const first = withNobleBleConnectMutex('meshtastic', async () => {
-      await gate;
-      return 1;
-    });
-    const second = withNobleBleConnectMutex('meshcore', () => Promise.resolve(2));
-    release();
-    await expect(Promise.all([first, second])).resolves.toEqual([1, 2]);
+    localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
+    localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
+    localStorage.removeItem('mesh-client:protocol');
   });
 
   it('dualNobleBleBothRadiosConfigured when both stacks remember different BLE peripherals', () => {
@@ -362,7 +284,7 @@ describe('meshcoreDualNobleBleInit', () => {
     localStorage.removeItem('mesh-client:protocol');
   });
 
-  it('notifyNobleBlePrimaryRfLinkReady unblocks secondary without waiting for configure', async () => {
+  it('notifyBlePrimaryRfLinkReady unblocks secondary without waiting for configure', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
     localStorage.setItem('mesh-client:lastBleDevice:meshtastic', 'mt-peripheral');
     localStorage.setItem('mesh-client:lastBleDevice:meshcore', 'mc-peripheral');
@@ -374,7 +296,7 @@ describe('meshcoreDualNobleBleInit', () => {
     });
     await Promise.resolve();
     expect(secondaryUnblocked).toBe(false);
-    notifyNobleBlePrimaryRfLinkReady('meshcore');
+    notifyBlePrimaryRfLinkReady('meshcore');
     await secondaryWait;
     expect(secondaryUnblocked).toBe(true);
     localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');

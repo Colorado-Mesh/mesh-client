@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MecpRebroadcastSettings } from '@/renderer/components/mecp/MecpRebroadcastSettings';
 import { copyDebugSnapshotToClipboard } from '@/renderer/lib/debugSnapshot';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
@@ -69,6 +70,7 @@ import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
+import NotificationSoundSettings from './NotificationSoundSettings';
 import { useToast } from './Toast';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
@@ -169,6 +171,13 @@ interface AppSettings {
   meshcoreOpenWireCompatEnabled: boolean;
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
+  mecpComposeEnabled: boolean;
+  mecpMaydayButtonEnabled: boolean;
+  quickStatusBarEnabled: boolean;
+  nodeSilenceAlertMinutes: number | null;
+  nodeBatteryLowThreshold: number;
+  notifyOnLinkDown: boolean;
+  rollCallWindowMinutes: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -258,6 +267,7 @@ export default function AppPanel({
   const [supportBundleExporting, setSupportBundleExporting] = useState<SupportBundleMode | null>(
     null,
   );
+  const [mecpExportBusy, setMecpExportBusy] = useState(false);
   const { addToast } = useToast();
   const { t } = useTranslation();
   const resolveNodes = useCallback(
@@ -2115,6 +2125,70 @@ export default function AppPanel({
             {t('appPanel.soundNotifications')}
           </label>
         </div>
+        <NotificationSoundSettings />
+        <div className="space-y-2 border-t border-slate-700/60 pt-2">
+          <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+            {t('appPanel.opsAlertsHeading')}
+          </h4>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="nodeSilenceAlertMinutes" className="text-sm text-gray-300">
+              {t('appPanel.nodeSilenceAlertMinutes')}
+            </label>
+            <input
+              id="nodeSilenceAlertMinutes"
+              type="number"
+              min={1}
+              max={10080}
+              placeholder={t('appPanel.nodeSilenceAlertMinutesPlaceholder')}
+              aria-label={t('appPanel.nodeSilenceAlertMinutes')}
+              value={settings.nodeSilenceAlertMinutes ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                updateSetting(
+                  'nodeSilenceAlertMinutes',
+                  raw === '' ? null : Math.max(1, parseInt(raw, 10) || 1),
+                );
+              }}
+              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+            />
+            <p className="text-muted text-xs">{t('appPanel.nodeSilenceAlertMinutesHint')}</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="nodeBatteryLowThreshold" className="text-sm text-gray-300">
+              {t('appPanel.nodeBatteryLowThreshold')}
+            </label>
+            <input
+              id="nodeBatteryLowThreshold"
+              type="number"
+              min={1}
+              max={100}
+              aria-label={t('appPanel.nodeBatteryLowThreshold')}
+              value={settings.nodeBatteryLowThreshold}
+              onChange={(e) => {
+                updateSetting(
+                  'nodeBatteryLowThreshold',
+                  Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 10)),
+                );
+              }}
+              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="notifyOnLinkDown"
+              checked={settings.notifyOnLinkDown}
+              onChange={(e) => {
+                updateSetting('notifyOnLinkDown', e.target.checked);
+              }}
+              aria-label={t('appPanel.notifyOnLinkDown')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label htmlFor="notifyOnLinkDown" className="cursor-pointer text-sm text-gray-300">
+              {t('appPanel.notifyOnLinkDown')}
+            </label>
+          </div>
+        </div>
         {hasRrcPanel && (
           <div className="space-y-1">
             <div className="flex items-center gap-3">
@@ -2141,6 +2215,141 @@ export default function AppPanel({
           </div>
         )}
       </div>
+
+      <section
+        className="space-y-3 rounded-lg border border-red-900/40 bg-red-950/10 p-4"
+        aria-label={t('mecp.section.title')}
+      >
+        <div className="space-y-1">
+          <h3 className="text-sm font-semibold text-red-200">{t('mecp.section.title')}</h3>
+          <p className="text-muted text-xs leading-relaxed">{t('mecp.section.hint')}</p>
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            <a
+              href="https://mecp.radio/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-brand-green text-xs underline-offset-2 hover:underline"
+              aria-label={t('mecp.section.learnMore')}
+            >
+              {t('mecp.section.learnMore')}
+            </a>
+            <a
+              href="https://github.com/xiang-dev-1/MECP"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted text-xs underline-offset-2 hover:underline"
+              aria-label={t('mecp.section.protocolSource')}
+            >
+              {t('mecp.section.protocolSource')}
+            </a>
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="mecpComposeEnabled"
+              checked={settings.mecpComposeEnabled}
+              onChange={(e) => {
+                updateSetting('mecpComposeEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.showComposeButton')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label htmlFor="mecpComposeEnabled" className="cursor-pointer text-sm text-gray-300">
+              {t('mecp.section.showComposeButton')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.showComposeButtonHint')}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="mecpMaydayButtonEnabled"
+              checked={settings.mecpMaydayButtonEnabled}
+              onChange={(e) => {
+                updateSetting('mecpMaydayButtonEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.showMaydayButton')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label
+              htmlFor="mecpMaydayButtonEnabled"
+              className="cursor-pointer text-sm text-gray-300"
+            >
+              {t('mecp.section.showMaydayButton')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.showMaydayButtonHint')}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="quickStatusBarEnabled"
+              checked={settings.quickStatusBarEnabled}
+              onChange={(e) => {
+                updateSetting('quickStatusBarEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.showQuickStatusBar')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label htmlFor="quickStatusBarEnabled" className="cursor-pointer text-sm text-gray-300">
+              {t('mecp.section.showQuickStatusBar')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.showQuickStatusBarHint')}
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={mecpExportBusy}
+          className="rounded-lg border border-gray-600 bg-slate-900/60 px-3 py-2 text-sm text-gray-200 hover:bg-slate-800 disabled:opacity-50"
+          aria-label={t('mecp.exportLog')}
+          onClick={() => {
+            if (mecpExportBusy) return;
+            setMecpExportBusy(true);
+            void window.electronAPI.mecp
+              .exportReceivedLog()
+              .then((res) => {
+                if (res.success) {
+                  addToast(
+                    res.path
+                      ? t('mecp.exportLogSuccessPath', { path: res.path })
+                      : t('mecp.exportLogSuccess'),
+                    'success',
+                  );
+                  return;
+                }
+                if (res.reason === 'empty') {
+                  addToast(t('mecp.exportLogEmpty'), 'info');
+                  return;
+                }
+                if (res.reason === 'cancelled') return;
+                addToast(t('mecp.exportLogFailed'), 'error');
+              })
+              .catch((err: unknown) => {
+                console.warn(
+                  '[AppPanel] MECP export failed',
+                  err instanceof Error ? err.message : err,
+                );
+                addToast(t('mecp.exportLogFailed'), 'error');
+              })
+              .finally(() => {
+                setMecpExportBusy(false);
+              });
+          }}
+        >
+          {t('mecp.exportLog')}
+        </button>
+        <MecpRebroadcastSettings />
+      </section>
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
       <div className="space-y-2">

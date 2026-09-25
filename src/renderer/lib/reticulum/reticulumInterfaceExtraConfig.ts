@@ -33,10 +33,17 @@ export const KNOWN_IFACE_UI_KEYS: ReadonlySet<string> = new Set([
   'announce_interval',
   'connectable',
   'reachable_on',
+  'discovery_lxmf_address',
+  'discovery_stamp_value',
+  'discovery_encrypt',
+  'publish_ifac',
+  'discovery_publish_ifac',
+  'stamp_value',
   'network_name',
   'passphrase',
   'flow_control',
   'ignore_config_warnings',
+  'bootstrap_only',
 ]);
 
 export function isKnownIfaceUiKey(key: string): boolean {

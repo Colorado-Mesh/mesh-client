@@ -2,10 +2,6 @@
 let systemSuspended = false;
 const resumeWaiters = new Set<() => void>();
 
-export function getSystemSuspended(): boolean {
-  return systemSuspended;
-}
-
 export function setSystemSuspended(suspended: boolean): void {
   if (systemSuspended === suspended) return;
   systemSuspended = suspended;

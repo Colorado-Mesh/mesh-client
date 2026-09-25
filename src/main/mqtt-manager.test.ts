@@ -1534,6 +1534,237 @@ describe('updateChannelKeys', () => {
     debugSpy.mockRestore();
   });
 
+  it('streaming RF channel sync: OnTrail-only partial push keeps LongFast@1 for topic ingest', () => {
+    // Bundle repro: channelNameToIndex updated (1): OnTrail=0 wiped LongFast before @1 arrived.
+    const manager = new MQTTManager();
+    const access = mqttChannelTestAccess(manager);
+    stubMqttConnect(manager);
+    const onTrailPsk = Buffer.alloc(16, 0x11);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/CO/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: onTrailPsk.toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+      { name: 'cm-west-slp', pskBase64: Buffer.alloc(16, 0x22).toString('base64'), index: 2 },
+    ]);
+    expect(manager.getChannelNameToIndex()).toEqual({
+      OnTrail: 0,
+      LongFast: 1,
+      'cm-west-slp': 2,
+    });
+
+    // Mid-stream re-push with only primary (as configs arrive one-by-one).
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: onTrailPsk.toString('base64'), index: 0 },
+    ]);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(1);
+    expect(manager.getChannelNameToIndex().OnTrail).toBe(0);
+    expect(manager.getChannelNameToIndex()['cm-west-slp']).toBe(2);
+
+    const nodeId = 0xa6d7c69b;
+    const packetId = 0x4b2a1c01;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('within long fast'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: DEFAULT_PSK,
+      channelName: 'LongFast',
+      channel: 0,
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    access.onMessage('msh/US/CO/2/e/LongFast/!a6d7c69b', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { channel: number }).channel).toBe(1);
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: onTrailPsk.toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+      { name: 'cm-west-slp', pskBase64: Buffer.alloc(16, 0x22).toString('base64'), index: 2 },
+    ]);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(1);
+  });
+
+  it('layout change: LongFast@1 then LongFast@0 updates topic map to slot 0', () => {
+    const manager = new MQTTManager();
+    stubMqttConnect(manager);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: Buffer.alloc(16, 1).toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+    ]);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(1);
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 0 }]);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(0);
+    // Slot takeover: OnTrail must not keep slot 0 once LongFast claims it.
+    expect(manager.getChannelNameToIndex().OnTrail).toBeUndefined();
+  });
+
+  it('slot takeover: OnTrail@0 evicts prior radio LongFast@0 from topic map', () => {
+    const manager = new MQTTManager();
+    stubMqttConnect(manager);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 0 }]);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(0);
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: Buffer.alloc(16, 3).toString('base64'), index: 0 },
+    ]);
+    expect(manager.getChannelNameToIndex().OnTrail).toBe(0);
+    expect(manager.getChannelNameToIndex().LongFast).toBeUndefined();
+  });
+
+  it('complete-cover push drops radio names no longer present', () => {
+    const manager = new MQTTManager();
+    stubMqttConnect(manager);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: Buffer.alloc(16, 1).toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+      { name: 'OldChan', pskBase64: Buffer.alloc(16, 4).toString('base64'), index: 2 },
+    ]);
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: Buffer.alloc(16, 1).toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+      { name: 'cm-west-slp', pskBase64: Buffer.alloc(16, 5).toString('base64'), index: 2 },
+    ]);
+
+    expect(manager.getChannelNameToIndex().OldChan).toBeUndefined();
+    expect(manager.getChannelNameToIndex()['cm-west-slp']).toBe(2);
+    expect(manager.getChannelNameToIndex().LongFast).toBe(1);
+  });
+
+  it('radioSessionId change clears prior radio topic names before merge', () => {
+    const manager = new MQTTManager();
+    stubMqttConnect(manager);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys(
+      [
+        { name: 'OnTrail', pskBase64: Buffer.alloc(16, 1).toString('base64'), index: 0 },
+        { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+        { name: 'cm-west-slp', pskBase64: Buffer.alloc(16, 2).toString('base64'), index: 2 },
+      ],
+      { radioSessionId: 'rf:111' },
+    );
+    expect(manager.getChannelNameToIndex()['cm-west-slp']).toBe(2);
+
+    // Replacement radio: only primary so far — must not keep prior radio's cm-west-slp.
+    manager.updateChannelKeys(
+      [{ name: 'Primary', pskBase64: Buffer.alloc(16, 9).toString('base64'), index: 0 }],
+      { radioSessionId: 'rf:222' },
+    );
+    expect(manager.getChannelNameToIndex()).toEqual({ Primary: 0 });
+    expect(manager.getChannelNameToIndex().LongFast).toBeUndefined();
+    expect(manager.getChannelNameToIndex()['cm-west-slp']).toBeUndefined();
+  });
+
+  it('partial push keeps private-channel PSK so inbound decrypt still works', () => {
+    const manager = new MQTTManager();
+    const access = mqttChannelTestAccess(manager);
+    stubMqttConnect(manager);
+    const privatePsk = Buffer.alloc(16, 0xab);
+    manager.connect({
+      server: 'localhost',
+      port: 1883,
+      username: '',
+      password: '',
+      topicPrefix: 'msh/US/CO/',
+      autoLaunch: false,
+    });
+
+    manager.updateChannelKeys([
+      { name: 'OnTrail', pskBase64: privatePsk.toString('base64'), index: 0 },
+      { name: 'LongFast', pskBase64: 'AQ==', index: 1 },
+    ]);
+
+    // Mid-stream: only LongFast arrives again — OnTrail PSK must remain decryptable.
+    manager.updateChannelKeys([{ name: 'LongFast', pskBase64: 'AQ==', index: 1 }]);
+    expect(access.channelKeysByName.get('OnTrail')?.equals(privatePsk)).toBe(true);
+    expect(
+      (manager as unknown as { allDecryptKeys: Buffer[] }).allDecryptKeys.some((k) =>
+        k.equals(privatePsk),
+      ),
+    ).toBe(true);
+
+    const nodeId = 0x11223344;
+    const packetId = 0x00000077;
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TEXT_MESSAGE_APP,
+        payload: new TextEncoder().encode('private after partial'),
+      }),
+    );
+    const payload = buildEnvelope({
+      nodeId,
+      packetId,
+      dataBytes,
+      psk: privatePsk,
+      channelName: 'OnTrail',
+      channel: 0,
+    });
+
+    const messages: unknown[] = [];
+    manager.on('message', (m) => messages.push(m));
+    access.onMessage('msh/US/CO/2/e/OnTrail/!11223344', payload);
+
+    expect(messages).toHaveLength(1);
+    expect((messages[0] as { payload: string; channel: number }).payload).toBe(
+      'private after partial',
+    );
+    expect((messages[0] as { channel: number }).channel).toBe(0);
+  });
+
   it('Nathan/Colorado: radio LongFast@1 overrides manual LongFast@0 for topic attribution', () => {
     const manager = new MQTTManager();
     const access = mqttChannelTestAccess(manager);

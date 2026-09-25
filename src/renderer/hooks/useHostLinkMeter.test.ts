@@ -1,14 +1,14 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { NobleBleLinkRssiPayload } from '@/shared/electron-api.types';
+import type { GattBleLinkRssiPayload } from '@/shared/electron-api.types';
 
 import { useHostLinkMeter } from './useHostLinkMeter';
 
 describe('useHostLinkMeter', () => {
   beforeEach(() => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');
-    vi.mocked(window.electronAPI.onNobleBleLinkRssi).mockReturnValue(() => {});
+    vi.mocked(window.electronAPI.onGattLinkRssi).mockReturnValue(() => {});
     vi.mocked(window.electronAPI.hostLink.probeHttpRtt).mockResolvedValue(40);
     vi.mocked(window.electronAPI.hostLink.probeTcpRtt).mockResolvedValue(80);
     vi.mocked(window.electronAPI.hostLink.getSessionMeter).mockResolvedValue({ rttMs: 80 });
@@ -19,7 +19,7 @@ describe('useHostLinkMeter', () => {
     vi.clearAllMocks();
   });
 
-  it('returns unavailable for Linux BLE', () => {
+  it('returns ble-rssi for Linux BLE (sidecar GATT)', () => {
     const { result } = renderHook(() =>
       useHostLinkMeter({
         protocol: 'meshtastic',
@@ -29,12 +29,25 @@ describe('useHostLinkMeter', () => {
         platform: 'linux',
       }),
     );
-    expect(result.current.kind).toBe('unavailable');
+    expect(result.current.kind).toBe('ble-rssi');
   });
 
-  it('returns ble-rssi on darwin and applies Noble IPC updates', async () => {
-    let rssiCb: ((p: NobleBleLinkRssiPayload) => void) | null = null;
-    vi.mocked(window.electronAPI.onNobleBleLinkRssi).mockImplementation((cb) => {
+  it('returns ble-rssi while status is connecting (Meshtastic DeviceConfiguring)', () => {
+    const { result } = renderHook(() =>
+      useHostLinkMeter({
+        protocol: 'meshcore',
+        connectionType: 'ble',
+        status: 'connecting',
+        hostAddress: null,
+        platform: 'darwin',
+      }),
+    );
+    expect(result.current.kind).toBe('ble-rssi');
+  });
+
+  it('returns ble-rssi on darwin and applies GATT RSSI updates', async () => {
+    let rssiCb: ((p: GattBleLinkRssiPayload) => void) | null = null;
+    vi.mocked(window.electronAPI.onGattLinkRssi).mockImplementation((cb) => {
       rssiCb = cb;
       return () => {};
     });
@@ -183,9 +196,9 @@ describe('useHostLinkMeter', () => {
     expect(result.current.kind).toBe('ble-rssi');
   });
 
-  it('ignores Noble RSSI events for a different session', () => {
-    let rssiCb: ((p: NobleBleLinkRssiPayload) => void) | null = null;
-    vi.mocked(window.electronAPI.onNobleBleLinkRssi).mockImplementation((cb) => {
+  it('ignores GATT RSSI events for a different session', () => {
+    let rssiCb: ((p: GattBleLinkRssiPayload) => void) | null = null;
+    vi.mocked(window.electronAPI.onGattLinkRssi).mockImplementation((cb) => {
       rssiCb = cb;
       return () => {};
     });

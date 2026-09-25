@@ -1,0 +1,27 @@
+name: Download packaging sidecars
+description: Restore this run's staged sidecars and verify both architectures before packaging
+inputs:
+  platform:
+    description: Electron platform (win32, linux, darwin)
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/download-artifact@v7
+      with:
+        pattern: ci-reticulum-staged-${{ inputs.platform }}-*
+        path: .sidecar-artifacts
+        merge-multiple: true
+    # tar preserves Unix execute permissions that artifact uploads otherwise discard.
+    - name: Restore staged sidecars
+      shell: bash
+      run: |
+        mkdir -p resources/reticulum-sidecar/staged
+        for archive in .sidecar-artifacts/*.tar; do
+          tar -xf "$archive" -C resources/reticulum-sidecar/staged
+        done
+    - name: Verify staged Reticulum sidecars
+      shell: bash
+      env:
+        SIDECAR_PLATFORM: ${{ inputs.platform }}
+      run: node scripts/verify-reticulum-sidecar-staged.mjs --platform "$SIDECAR_PLATFORM"

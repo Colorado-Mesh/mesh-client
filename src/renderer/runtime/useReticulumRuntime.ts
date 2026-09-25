@@ -29,6 +29,7 @@ import {
   MAX_RAW_PACKET_LOG_ENTRIES,
   type ReticulumRawPacketEntry,
 } from '@/renderer/lib/rawPacketLogConstants';
+import { scheduleRrcSessionStatusReconcile } from '@/renderer/lib/reconcileRrcSessionsFromSnapshot';
 import { announceDestinationHashes } from '@/renderer/lib/reticulum/announceDestinationHashes';
 import {
   applyReticulumOutboundDeliveryStatus,
@@ -39,6 +40,7 @@ import {
   resolveReticulumOutboundViaFromPath,
   reticulumViaToMessageTransport,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { clearReticulumBleBondIssuesForOnlineInterfaces } from '@/renderer/lib/reticulum/clearReticulumBleBondIssuesForOnlineInterfaces';
 import { clearReticulumSessionStores } from '@/renderer/lib/reticulum/clearReticulumSessionStores';
 import {
   resolveReticulumDestinationHash,
@@ -58,8 +60,14 @@ import {
 import { cacheReticulumInboundAttachment } from '@/renderer/lib/reticulum/reticulumAttachmentCache';
 import { cacheReticulumInboundAudio } from '@/renderer/lib/reticulum/reticulumAudioAttachmentCache';
 import { isReticulumBleRnodeInterfaceRow } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
-import { releaseReticulumBleRnodeConnect } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
-import { setReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
+import {
+  prepareReticulumBleRnodeConnect,
+  releaseReticulumBleRnodeConnect,
+} from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import {
+  getReticulumBleBondDesyncActive,
+  setReticulumBleBondDesyncActive,
+} from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import { fetchReticulumConfigAudit } from '@/renderer/lib/reticulum/reticulumConfigAudit';
 import { RETICULUM_CONFIGURED_EVENT } from '@/renderer/lib/reticulum/reticulumConfiguredEvent';
 import { maybeNotifyInboundGamesChallenge } from '@/renderer/lib/reticulum/reticulumGamesNotifications';
@@ -127,7 +135,6 @@ import {
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { parseReticulumStackSettingsPayload } from '@/renderer/lib/reticulum/reticulumStackSettings';
 import { aggregateReticulumLocalRfTxQueue } from '@/renderer/lib/reticulum/reticulumTxQueueAggregate';
-import { useReticulumNobleBleYieldWatcher } from '@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher';
 import { useReticulumPropagationAutoSync } from '@/renderer/lib/reticulum/useReticulumPropagationAutoSync';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { reconcileRncpListenerFromSidecar } from '@/renderer/lib/rncpListenerApply';
@@ -314,6 +321,19 @@ export function useReticulumRuntime(): ProtocolRuntime {
   /** Set on power-suspend when an enabled BLE RNode was configured — wake must not reuseIfRunning. */
   const powerSuspendHadBleRnodeRef = useRef(false);
   /**
+   * True once this recovery episode has run releaseGattBleCentral + scan-lease hold.
+   * Distinct from {@link getReticulumBleBondDesyncActive}: `BleLtkDesync` can set the
+   * shared flag before `onStatus` arrives, which must not skip the hold setup.
+   * Exclusive LoRa GATT dispose is only for bleBondRemoved / LTK desync recovery — not
+   * while a healthy BLE RNode is online (that blocked MeshCore/Meshtastic BLE coexistence).
+   */
+  const bondRecoveryHoldAppliedRef = useRef(false);
+  /**
+   * Bumped when bond recovery clears / disconnect / teardown so a stale recovery IIFE
+   * cannot reacquire the Reticulum scan lease after release.
+   */
+  const bondRecoveryGenerationRef = useRef(0);
+  /**
    * Bumped on every power-suspend so a `connect()` flight started before an earlier suspend
    * (and still in flight when a *later* suspend/resume pair fires) can detect it has been
    * superseded and skip finalizing a stale "configured" state. Independent of `suppressReconnectRef`
@@ -336,16 +356,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
   const linkTimeoutBridgeGenerationRef = useRef(0);
   const identityIdRef = useRef(identityId);
   const nodeStoreSlice = useNodeStore((s) => (identityId ? s.nodes[identityId] : undefined));
-
-  // Include `connecting`: main suspends Noble at sidecar start before status reaches
-  // configured. Treating only configured/connected/stale as active let the watcher
-  // (and interface snapshot) release the start yield mid-BLE-RNode pair → Event receiver died.
-  const sidecarActiveForBleYield =
-    state.status === 'connecting' ||
-    state.status === 'configured' ||
-    state.status === 'connected' ||
-    state.status === 'stale';
-  useReticulumNobleBleYieldWatcher(sidecarActiveForBleYield);
 
   useEffect(() => {
     stateRef.current = state;
@@ -513,7 +523,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
       return { interfaces, osSerialPorts };
     }
     localInterfacesRef.current = interfaces;
-    logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+    const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+    if (newlyOnlineBle.length > 0) {
+      void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
+    }
     setQueueStatus(aggregateReticulumLocalRfTxQueue(interfaces));
     return { interfaces, osSerialPorts };
   }, []);
@@ -902,6 +915,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
             '[useReticulumRuntime] catch-up after events_lagged failed ' + errLikeToLogString(e),
           );
         });
+        void scheduleRrcSessionStatusReconcile('events_lagged');
       }
       if (evt.type === 'ws_connected' && evt.payload && typeof evt.payload === 'object') {
         const reconnect = (evt.payload as { reconnect?: boolean }).reconnect === true;
@@ -912,6 +926,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
               '[useReticulumRuntime] catch-up after ws_reconnect failed ' + errLikeToLogString(e),
             );
           });
+          void scheduleRrcSessionStatusReconcile('ws_reconnect');
         }
       }
       if (evt.type === 'lxmf_outbound_status' && evt.payload && typeof evt.payload === 'object') {
@@ -1267,7 +1282,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
 
           if (kind === 'notice') {
             const listed = parseRrcListNotice(p.body);
-            if (listed) session.setListedRooms(listed, hubDestHash);
+            if (listed?.action === 'begin') {
+              session.beginListedRoomsDirectory(hubDestHash);
+            } else if (listed?.action === 'replace') {
+              session.setListedRooms(listed.rooms, hubDestHash);
+            } else if (listed?.action === 'append') {
+              if (session.isListedRoomsDirectoryOpen(hubDestHash)) {
+                session.appendListedRooms(listed.rooms, hubDestHash);
+              }
+            } else if (listed?.action === 'end') {
+              session.endListedRoomsDirectory(hubDestHash);
+            } else if (session.isListedRoomsDirectoryOpen(hubDestHash) && !/^[ \t]/.test(p.body)) {
+              // Non-directory notice (join-info, /who, greeting) closes chunked /list.
+              session.endListedRoomsDirectory(hubDestHash);
+            }
             const hubKey = hubDestHash?.toLowerCase();
             const hubSession = hubKey ? session.sessionsByHub.get(hubKey) : undefined;
             // Materialize Map.keys() — one-shot iterators must not be re-walked.
@@ -1281,6 +1309,9 @@ export function useReticulumRuntime(): ProtocolRuntime {
               },
               consumeWhoTranscriptSlot: (whoRoom, hub) =>
                 session.consumeWhoTranscriptSlot(whoRoom, hub),
+              clearWhoReplyPending: (whoRoom, hub) => {
+                session.clearWhoReplyPending(whoRoom, hub);
+              },
             });
             const topic = parseRrcTopicNotice(p.body);
             if (topic) session.setRoomTopic(topic.room, topic.topic || null, hubDestHash);
@@ -1489,6 +1520,21 @@ export function useReticulumRuntime(): ProtocolRuntime {
           void refreshGamesSessions();
         }
       }
+      if (evt.type === 'BleLtkDesync' && evt.payload && typeof evt.payload === 'object') {
+        const p = evt.payload as {
+          device_address?: string;
+          bond_purged?: boolean;
+          message?: string;
+        };
+        setReticulumBleBondDesyncActive(true);
+        pushAppToast(
+          p.bond_purged === true
+            ? i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncPurged')
+            : i18n.t('connectionPanel.reticulumSidecarIssues.bleLtkDesyncManualForget'),
+          'error',
+          12_000,
+        );
+      }
       if (evt.type === 'rncp.progress' && evt.payload && typeof evt.payload === 'object') {
         const p = evt.payload as { transfer_id?: string; progress?: number };
         if (p.transfer_id && typeof p.progress === 'number') {
@@ -1679,6 +1725,8 @@ export function useReticulumRuntime(): ProtocolRuntime {
     propagationHydratedForBridgeRef.current = false;
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
+    bondRecoveryHoldAppliedRef.current = false;
+    bondRecoveryGenerationRef.current += 1;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
@@ -1687,12 +1735,60 @@ export function useReticulumRuntime(): ProtocolRuntime {
   useEffect(() => {
     const unsubStatus = window.electronAPI.reticulum.onStatus((status) => {
       const bondRemoved = status.interfaceIssueAlert?.bleBondRemoved ?? [];
-      // Sticky: set true when latched; clear only on sidecar stop / tearDown (not empty alert).
+      // Peer-removed recovery needs exclusive adapter time on macOS. Dual LoRa GATT
+      // centrals in the same sidecar precipitate repeated CBError 14 — pause LoRa BLE
+      // instead of releasing the lease (which nudges MeshCore/Meshtastic to reconnect).
       if (bondRemoved.length > 0) {
+        const firstLatch = !bondRecoveryHoldAppliedRef.current;
         setReticulumBleBondDesyncActive(true);
+        // Only dispose once per episode — re-entrant status updates were recreating
+        // the LoRa CBCentralManager between RNode retries (had_backend:true again).
+        if (firstLatch) {
+          bondRecoveryHoldAppliedRef.current = true;
+          const recoveryGeneration = bondRecoveryGenerationRef.current;
+          void (async () => {
+            try {
+              await window.electronAPI.releaseGattBleCentral();
+            } catch (e: unknown) {
+              console.debug(
+                '[useReticulumRuntime] releaseGattBleCentral during bond recovery ' +
+                  errLikeToLogString(e),
+              );
+            }
+            if (bondRecoveryGenerationRef.current !== recoveryGeneration) {
+              return;
+            }
+            try {
+              await prepareReticulumBleRnodeConnect();
+            } catch (e: unknown) {
+              console.debug(
+                '[useReticulumRuntime] hold scan lease during bond recovery ' +
+                  errLikeToLogString(e),
+              );
+              return;
+            }
+            if (bondRecoveryGenerationRef.current !== recoveryGeneration) {
+              void releaseReticulumBleRnodeConnect({ notify: false }).catch((e: unknown) => {
+                console.debug(
+                  '[useReticulumRuntime] release stale bond-recovery lease ' +
+                    errLikeToLogString(e),
+                );
+              });
+            }
+          })();
+        }
+      } else if (getReticulumBleBondDesyncActive()) {
+        setReticulumBleBondDesyncActive(false);
+        bondRecoveryHoldAppliedRef.current = false;
+        bondRecoveryGenerationRef.current += 1;
+        void window.electronAPI.clearGattBondRecoveryExclusive().catch((e: unknown) => {
+          console.debug(
+            '[useReticulumRuntime] clearGattBondRecoveryExclusive ' + errLikeToLogString(e),
+          );
+        });
         void releaseReticulumBleRnodeConnect().catch((e: unknown) => {
           console.debug(
-            '[useReticulumRuntime] release Noble after bleBondRemoved ' + errLikeToLogString(e),
+            '[useReticulumRuntime] release lease after bond recovery ' + errLikeToLogString(e),
           );
         });
       }
@@ -1989,12 +2085,15 @@ export function useReticulumRuntime(): ProtocolRuntime {
     propagationHydratedForBridgeRef.current = false;
     linkTimeoutBridgeGenerationRef.current += 1;
     setReticulumBleBondDesyncActive(false);
+    bondRecoveryHoldAppliedRef.current = false;
+    bondRecoveryGenerationRef.current += 1;
     setReticulumAnnounceBusPressureActive(false);
     setState(INITIAL_STATE);
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
 
   const restartStack = useCallback(async () => {
+    const generation = resumeGenerationRef.current;
     if (connectInFlightRef.current) {
       const pending = connectInFlightDoneRef.current;
       if (pending) {
@@ -2009,32 +2108,44 @@ export function useReticulumRuntime(): ProtocolRuntime {
         throw new Error('Reticulum stack operation already in progress');
       }
     }
+    if (resumeGenerationRef.current !== generation) return;
     connectInFlightRef.current = true;
-    console.warn('[useReticulumRuntime] restarting stack to reload interface config');
+    console.warn('[useReticulumRuntime] soft-restarting live RNS (HTTP + LoRa GATT preserved)');
     const priorSuppress = suppressReconnectRef.current;
     suppressReconnectRef.current = true;
     const flight = (async () => {
       setState((s) => ({ ...s, status: 'connecting', connectionType: null }));
       syncConnectionStore({ status: 'connecting', connectionType: null });
-      unsubEventRef.current?.();
-      unsubEventRef.current = null;
-      unsubVoiceAudioRef.current?.();
-      unsubVoiceAudioRef.current = null;
-      await window.electronAPI.reticulum.stop();
-      await window.electronAPI.reticulum.start({ reuseIfRunning: false });
-      subscribeSidecarEventBridges();
+      // Soft restart keeps the sidecar process (and LoRa GATT sessions) alive —
+      // do not stop()/start() which SIGTERM the binary.
+      const soft = (await window.electronAPI.reticulum.proxyPost('/api/v1/stack/restart', {})) as {
+        ok?: boolean;
+        error?: string;
+      };
+      if (resumeGenerationRef.current !== generation) return;
+      if (soft?.ok === false) {
+        throw new Error(typeof soft.error === 'string' ? soft.error : 'stack soft restart failed');
+      }
       const lxmfHash = await refreshIdentityFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       const connectedNodeId = lxmfHash ? reticulumHashToNodeId(lxmfHash) : 0;
       await refreshContactsFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await refreshLocalInterfacesFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await syncDiagnosticsFromSidecar();
+      if (resumeGenerationRef.current !== generation) return;
       await hydrateRawPackets();
+      if (resumeGenerationRef.current !== generation) return;
       if (identityId) {
         await markStaleReticulumOutboundMessages(identityId, RETICULUM_STALE_OUTBOUND_MS);
+        if (resumeGenerationRef.current !== generation) return;
         markStaleReticulumOutboundInStore(identityId, RETICULUM_STALE_OUTBOUND_MS);
         await loadMessagesFromDb('merge');
+        if (resumeGenerationRef.current !== generation) return;
       }
       await catchUpRecentInboundLxmf({ reason: 'restartStack' });
+      if (resumeGenerationRef.current !== generation) return;
       setState({ status: 'configured', myNodeNum: connectedNodeId, connectionType: null });
       syncConnectionStore({
         status: 'configured',
@@ -2050,16 +2161,20 @@ export function useReticulumRuntime(): ProtocolRuntime {
     try {
       await flight;
     } catch (e) {
+      if (resumeGenerationRef.current !== generation) return;
       console.error('[useReticulumRuntime] stack restart failed ' + errLikeToLogString(e));
-      tearDownFromSidecarStop();
+      // Soft restart failed with process still up — do not tearDownFromSidecarStop
+      // (that assumes a hard stop). Leave disconnected for a manual Start.
+      setState((s) => ({ ...s, status: 'disconnected', connectionType: null }));
+      syncConnectionStore({ status: 'disconnected', connectionType: null });
       throw e instanceof Error ? e : new Error(String(e));
     } finally {
-      suppressReconnectRef.current = priorSuppress;
+      // Stop owns the sticky suppress flag; a sleep-only cancellation still permits wake recovery.
+      if (!isReticulumManualStackStopSuppress()) suppressReconnectRef.current = priorSuppress;
       connectInFlightRef.current = false;
       connectInFlightDoneRef.current = null;
     }
   }, [
-    subscribeSidecarEventBridges,
     refreshContactsFromSidecar,
     refreshIdentityFromSidecar,
     refreshLocalInterfacesFromSidecar,
@@ -2069,7 +2184,6 @@ export function useReticulumRuntime(): ProtocolRuntime {
     hydrateRawPackets,
     catchUpRecentInboundLxmf,
     identityId,
-    tearDownFromSidecarStop,
     scheduleLocalInterfaceStatusBurst,
   ]);
 
@@ -2208,7 +2322,10 @@ export function useReticulumRuntime(): ProtocolRuntime {
           return;
         }
         localInterfacesRef.current = interfaces;
-        logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+        const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(interfaces, osSerialPorts);
+        if (newlyOnlineBle.length > 0) {
+          void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
+        }
         const queueAgg = aggregateReticulumLocalRfTxQueue(interfaces);
         setQueueStatus(queueAgg);
         const health = { interfaces, osSerialPorts };

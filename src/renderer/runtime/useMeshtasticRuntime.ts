@@ -57,7 +57,8 @@ import {
   type ResolveMeshtasticMqttPublishOptions,
 } from '@/renderer/lib/meshtasticMqttPublish';
 import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtasticMqttSettingsStorage';
-import { NOBLE_BLE_YIELD_RELEASED_EVENT } from '@/renderer/lib/nobleBleYieldReleased';
+import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import {
   meshtasticDeviceRoleFromConfigSlice,
   resolveAppliedMeshtasticDeviceRole,
@@ -97,7 +98,7 @@ import {
   prepareNobleYieldReleasedReconnectNudge,
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
-import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
+import { verifyGattRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
   getBlePeripheralIdFromMeshTransport,
@@ -132,10 +133,6 @@ import {
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { rehydrateMeshtasticConnectionParamsFromStorage } from '../lib/lastConnectionStorage';
 import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
-import {
-  isRendererNobleBlePlatform,
-  withNobleBleConnectMutex,
-} from '../lib/meshcoreDualNobleBleInit';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
 import { setMeshtasticConfigurePhase } from '../lib/meshtastic/meshtasticConfigurePhase';
@@ -146,6 +143,7 @@ import {
   markMeshtasticBroadcastPending,
 } from '../lib/meshtastic/meshtasticHeardRepeat';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
+import { createDebouncedMqttChannelKeysPush } from '../lib/meshtastic/meshtasticMqttChannelKeysDebounce';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
 import { MeshtasticMqttClientProxyBridge } from '../lib/meshtastic/meshtasticMqttClientProxy';
 import {
@@ -251,6 +249,7 @@ import {
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
 import {
+  MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS,
   MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
   MESHTASTIC_PACKET_DEDUP_TTL_MS,
   MESHTASTIC_POST_REBOOT_RECONNECT_DELAY_MS,
@@ -726,13 +725,21 @@ export function useMeshtasticRuntime() {
 
   const pushMqttChannelKeys = useCallback(() => {
     if (mqttStatusRef.current !== 'connected') return;
-    let entries = meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
-    if (entries.length === 0) {
+    const radioSessionId =
+      myNodeNumRef.current > 0 && deviceRef.current != null
+        ? `rf:${myNodeNumRef.current >>> 0}`
+        : 'rf:none';
+    let entries =
+      radioSessionId === 'rf:none'
+        ? meshtasticMqttChannelKeyEntriesFromManual()
+        : meshtasticMqttChannelKeyEntries(channelConfigsRef.current);
+    if (radioSessionId !== 'rf:none' && entries.length === 0) {
       entries = meshtasticMqttChannelKeyEntriesFromManual();
     }
-    if (entries.length === 0) return;
+    // Allow empty entries with rf:none so RF disconnect clears prior radio maps while MQTT stays up.
+    if (entries.length === 0 && radioSessionId !== 'rf:none') return;
     void window.electronAPI.mqtt
-      .updateChannelKeys({ entries })
+      .updateChannelKeys({ entries, radioSessionId })
       .then(() => window.electronAPI.mqtt.getChannelNameToIndex())
       .then((map) => {
         setDebugSnapshotMeshtasticContext({ mqttChannelNameToIndex: map });
@@ -742,6 +749,26 @@ export function useMeshtasticRuntime() {
           '[useMeshtasticRuntime] mqtt.updateChannelKeys failed ' + errLikeToLogString(e),
         );
       });
+  }, []);
+
+  const mqttChannelKeysPushLatestRef = useRef(pushMqttChannelKeys);
+  mqttChannelKeysPushLatestRef.current = pushMqttChannelKeys;
+
+  const mqttChannelKeysDebouncerRef = useRef(
+    createDebouncedMqttChannelKeysPush(() => {
+      mqttChannelKeysPushLatestRef.current();
+    }, MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS),
+  );
+
+  const schedulePushMqttChannelKeys = useCallback(() => {
+    mqttChannelKeysDebouncerRef.current.schedule();
+  }, []);
+
+  useEffect(() => {
+    const debouncer = mqttChannelKeysDebouncerRef.current;
+    return () => {
+      debouncer.cancel();
+    };
   }, []);
 
   useEffect(() => {
@@ -2061,6 +2088,12 @@ export function useMeshtasticRuntime() {
       console.debug('[useMeshtasticRuntime] skip reconnect (user disconnect)');
       return;
     }
+    if (connectionParamsRef.current?.type === 'ble' && getReticulumBleBondDesyncActive()) {
+      console.debug(
+        '[useMeshtasticRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
+      );
+      return;
+    }
     if (
       connectionParamsRef.current?.type === 'ble' &&
       shouldSkipBleReconnectAfterExhaustion({
@@ -2114,6 +2147,9 @@ export function useMeshtasticRuntime() {
       stopWatchdog();
       stopGpsInterval();
       deviceRef.current = null;
+      myNodeNumRef.current = 0;
+      // MQTT may stay up across RF link-loss; drop prior radio topic→index / PSKs (rf:none).
+      pushMqttChannelKeys();
       meshtasticDriverConnectedRef.current = false;
       meshtasticPendingDriverIdentityRef.current = null;
       if (staleDevice) {
@@ -2155,6 +2191,7 @@ export function useMeshtasticRuntime() {
     stopWatchdog,
     stopGpsInterval,
     clearPostCommitRebootRecovery,
+    pushMqttChannelKeys,
   ]);
 
   // Keep the ref in sync
@@ -2299,26 +2336,23 @@ export function useMeshtasticRuntime() {
         }));
       },
       runOpenAndAttach: async (ctx, params) => {
-        const { generation, isBle: isBleReconnect, attemptActive, lateTransport } = ctx;
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        const { generation, attemptActive, lateTransport } = ctx;
+        const bleBondRecoveryBlocks = () =>
+          params.type === 'ble' && getReticulumBleBondDesyncActive();
+        const isSuperseded = () =>
+          reconnectGenerationRef.current !== generation ||
+          !attemptActive() ||
+          bleBondRecoveryBlocks();
+        if (isSuperseded()) {
           throw new Error('Reconnect superseded before open');
         }
-        const opened =
-          isBleReconnect && isRendererNobleBlePlatform()
-            ? await withNobleBleConnectMutex('meshtastic', () =>
-                openMeshtasticTransport(params.type, {
-                  httpAddress: params.httpAddress,
-                  blePeripheralId: params.blePeripheralId,
-                  lastSerialPortId: params.lastSerialPortId,
-                }),
-              )
-            : await openMeshtasticTransport(params.type, {
-                httpAddress: params.httpAddress,
-                blePeripheralId: params.blePeripheralId,
-                lastSerialPortId: params.lastSerialPortId,
-              });
+        const opened = await openMeshtasticTransport(params.type, {
+          httpAddress: params.httpAddress,
+          blePeripheralId: params.blePeripheralId,
+          lastSerialPortId: params.lastSerialPortId,
+        });
         openedDriverIdentityId = opened.driverIdentityId;
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded after open');
         }
@@ -2326,7 +2360,7 @@ export function useMeshtasticRuntime() {
         wireSubscriptions(opened.device, params.type, {
           driverIdentityId: opened.driverIdentityId,
         });
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded before configure');
         }
@@ -2337,20 +2371,21 @@ export function useMeshtasticRuntime() {
           logTag: 'useMeshtasticRuntime reconnect',
         });
 
-        if (reconnectGenerationRef.current !== generation || !attemptActive()) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded during configure');
         }
-        if (!(await verifyNobleBleRfLink(params.type, 'meshtastic'))) {
+        if (!(await verifyGattRfLink(params.type, 'meshtastic'))) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('RF link lost after reconnect configure');
         }
-        if (!attemptActive() || reconnectGenerationRef.current !== generation) {
+        if (isSuperseded()) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('Reconnect superseded after configure');
         }
 
-        // Success
+        // Success — configure() completed; force UI out of Connecting even if DeviceConfigured
+        // status events were missed under dual-radio BLE load.
         console.debug(
           `[useMeshtasticRuntime] Reconnect succeeded on attempt ${reconnectAttemptRef.current}`,
         );
@@ -2364,8 +2399,12 @@ export function useMeshtasticRuntime() {
         meshtasticDeferredReconnectRef.current = false;
         meshtasticRfReconnectRef.current.markSuccess();
         meshtasticBleReconnectExhaustedRef.current.clear();
+        deviceConfiguredRef.current = true;
+        isConfiguringRef.current = false;
+        setMeshtasticConfigurePhase(false);
         setState((s) => ({
           ...s,
+          status: 'configured',
           serialNeedsReselect: false,
           connectionLoss: false,
         }));
@@ -2434,7 +2473,7 @@ export function useMeshtasticRuntime() {
   }, []);
 
   useEffect(() => {
-    return window.electronAPI.onNobleBleDisconnected((sessionId) => {
+    return window.electronAPI.onGattDisconnected((sessionId) => {
       if (sessionId !== 'meshtastic') return;
       if (
         bleConnectInProgressRef.current ||
@@ -2484,9 +2523,15 @@ export function useMeshtasticRuntime() {
   }, []);
 
   useEffect(() => {
-    const onNobleYieldReleased = () => {
+    const onBleLeaseReleased = () => {
       if (connectionParamsRef.current?.type !== 'ble') return;
       if (meshtasticExplicitDisconnectRef.current) return;
+      if (getReticulumBleBondDesyncActive()) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE yield released — skip nudge (RNode bond recovery)',
+        );
+        return;
+      }
       if (meshtasticDriverConnectedRef.current && deviceConfiguredRef.current) {
         return;
       }
@@ -2509,9 +2554,9 @@ export function useMeshtasticRuntime() {
       nobleYieldReconnectNudgeRef.current = true;
       handleConnectionLostRef.current();
     };
-    window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    window.addEventListener(BLE_ADAPTER_LEASE_RELEASED_EVENT, onBleLeaseReleased);
     return () => {
-      window.removeEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+      window.removeEventListener(BLE_ADAPTER_LEASE_RELEASED_EVENT, onBleLeaseReleased);
     };
   }, []);
 
@@ -2520,6 +2565,18 @@ export function useMeshtasticRuntime() {
 
   const scheduleMeshtasticReconnectAttempt = useCallback(() => {
     meshtasticRfReconnectRef.current.scheduleOwner(() => {
+      if (connectionParamsRef.current?.type === 'ble' && getReticulumBleBondDesyncActive()) {
+        console.debug(
+          '[useMeshtasticRuntime] abort reconnect schedule — RNode bond recovery holds the adapter',
+        );
+        // cancel() bumps controller generation; sync reconnectGenerationRef so an in-flight
+        // runOpenAndAttach sees supersession (endAttempt alone leaves generation unchanged).
+        meshtasticRfReconnectRef.current.cancel();
+        reconnectGenerationRef.current = meshtasticRfReconnectRef.current.generation;
+        isReconnectingRef.current = false;
+        meshtasticDeferredReconnectRef.current = false;
+        return;
+      }
       if (!isReconnectingRef.current || meshtasticExplicitDisconnectRef.current) {
         return;
       }
@@ -2742,8 +2799,10 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       });
+      myNodeNumRef.current = 0;
+      pushMqttChannelKeys();
     },
-    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog],
+    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, pushMqttChannelKeys],
   );
 
   const finalizeDriverDisconnect = useCallback(
@@ -2792,6 +2851,9 @@ export function useMeshtasticRuntime() {
         batteryPercent: undefined,
         batteryCharging: undefined,
       });
+      myNodeNumRef.current = 0;
+      // Drop prior radio topic→index / PSKs while MQTT may stay connected across RF swaps.
+      pushMqttChannelKeys();
       setConfigureTargetNodeNumState(null);
       configureTargetNodeNumRef.current = null;
       configureTargetPersistRestoredRef.current = false;
@@ -2807,6 +2869,7 @@ export function useMeshtasticRuntime() {
       stopGpsInterval,
       clearConfigureTimeout,
       clearPostCommitRebootRecovery,
+      pushMqttChannelKeys,
     ],
   );
   const connect = useCallback(
@@ -2817,20 +2880,11 @@ export function useMeshtasticRuntime() {
       let connectSucceeded = false;
       try {
         console.debug('[useMeshtasticRuntime] connect', type, httpAddress ?? blePeripheralId);
-        opened =
-          type === 'ble' && isRendererNobleBlePlatform()
-            ? await withNobleBleConnectMutex('meshtastic', () =>
-                openMeshtasticTransport(type, {
-                  httpAddress,
-                  blePeripheralId,
-                  lastSerialPortId: serialPortId,
-                }),
-              )
-            : await openMeshtasticTransport(type, {
-                httpAddress,
-                blePeripheralId,
-                lastSerialPortId: serialPortId,
-              });
+        opened = await openMeshtasticTransport(type, {
+          httpAddress,
+          blePeripheralId,
+          lastSerialPortId: serialPortId,
+        });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
         connectSucceeded = true;
       } catch (err) {
@@ -2870,20 +2924,11 @@ export function useMeshtasticRuntime() {
       let opened: Awaited<ReturnType<typeof openMeshtasticTransport>> | undefined;
       let connectSucceeded = false;
       const openAndAttach = async () => {
-        opened =
-          type === 'ble' && isRendererNobleBlePlatform()
-            ? await withNobleBleConnectMutex('meshtastic', () =>
-                openMeshtasticTransport(type, {
-                  httpAddress,
-                  blePeripheralId,
-                  lastSerialPortId,
-                }),
-              )
-            : await openMeshtasticTransport(type, {
-                httpAddress,
-                blePeripheralId,
-                lastSerialPortId,
-              });
+        opened = await openMeshtasticTransport(type, {
+          httpAddress,
+          blePeripheralId,
+          lastSerialPortId,
+        });
         await attachRfSession(opened.driverIdentityId, type, opened.device);
       };
       try {
@@ -4538,10 +4583,12 @@ export function useMeshtasticRuntime() {
   // ref MQTT uplink reads must follow the resolved list (store first, hook state
   // for MQTT-only presets) rather than the hook state alone. Re-push topic→index
   // when RF channels land after a cold-start MQTT connect (LongFast may be non-0).
+  // Debounce while channels stream one-by-one; main-process updateChannelKeys is
+  // also merge-safe so a partial OnTrail-only push cannot wipe LongFast@1.
   useEffect(() => {
     channelConfigsRef.current = resolvedChannelConfigs;
-    pushMqttChannelKeys();
-  }, [resolvedChannelConfigs, pushMqttChannelKeys]);
+    schedulePushMqttChannelKeys();
+  }, [resolvedChannelConfigs, schedulePushMqttChannelKeys]);
 
   const resolvedModuleConfigs = useMemo(() => {
     if (!meshtasticIdentityId) return moduleConfigs;

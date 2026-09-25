@@ -49,14 +49,14 @@ describe('nomadPageCache', () => {
   });
 
   it('evicts oldest entries when over capacity', () => {
-    for (let i = 0; i < 33; i++) {
+    for (let i = 0; i < 129; i++) {
       const hash = `${i}`.padStart(32, 'a');
       setNomadPageCache({ hash, path: `/page/${i}.mu` }, { content: `page-${i}` });
     }
-    expect(nomadPageCacheSizeForTests()).toBe(32);
+    expect(nomadPageCacheSizeForTests()).toBe(128);
     expect(getNomadPageCache({ hash: `0`.padStart(32, 'a'), path: '/page/0.mu' })).toBeUndefined();
-    expect(getNomadPageCache({ hash: `32`.padStart(32, 'a'), path: '/page/32.mu' })?.content).toBe(
-      'page-32',
-    );
+    expect(
+      getNomadPageCache({ hash: `128`.padStart(32, 'a'), path: '/page/128.mu' })?.content,
+    ).toBe('page-128');
   });
 });

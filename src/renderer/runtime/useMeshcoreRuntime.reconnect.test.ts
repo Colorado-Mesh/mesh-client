@@ -49,7 +49,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreConnectionParamsRef');
     expect(RUNTIME_SOURCE).toMatch(/rfType: 'serial'/);
     expect(RUNTIME_SOURCE).toMatch(/rfType === 'tcp'/);
-    expect(RUNTIME_SOURCE).toContain('verifyNobleBleRfLink');
+    expect(RUNTIME_SOURCE).toContain('verifyGattRfLink');
     expect(RUNTIME_SOURCE).toContain('RF link lost after MeshCore reconnect attach');
     expect(RUNTIME_SOURCE).not.toContain('RF link not ready before MeshCore reconnect open');
   });
@@ -76,18 +76,18 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(reconnectBody).toContain('preserveReconnectState: true');
   });
 
-  it('listens for Noble BLE adapter poweredOn to restart reconnect', () => {
-    expect(RUNTIME_SOURCE).toContain('onNobleBleAdapterState');
+  it('listens for GATT adapter poweredOn to restart reconnect', () => {
+    expect(RUNTIME_SOURCE).toContain('onGattAdapterState');
     expect(RUNTIME_SOURCE).toContain('BLE adapter poweredOn');
   });
 
-  it('skips Noble yield nudge when MeshCore is already connected', () => {
+  it('skips lease-release nudge when MeshCore is already connected', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /onNobleYieldReleased[\s\S]*?meshcoreDriverConnectedRef\.current \|\| connRef\.current[\s\S]*?return;/,
+      /onBleLeaseReleased[\s\S]*?meshcoreDriverConnectedRef\.current \|\| connRef\.current[\s\S]*?return;/,
     );
   });
 
-  it('skips Noble yield nudge when reconnect is already in progress', () => {
+  it('skips lease-release nudge when reconnect is already in progress', () => {
     expect(RUNTIME_SOURCE).toMatch(
       /prepareNobleYieldReleasedReconnectNudge\(\{[\s\S]*?isReconnecting: meshcoreIsReconnectingRef\.current[\s\S]*?bleConnectInProgress: bleConnectInProgressRef\.current/,
     );
@@ -109,15 +109,15 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     expect(RUNTIME_SOURCE).toContain('POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS');
   });
 
-  it('defers Noble disconnect while connect or reconnect open is in flight before configure', () => {
+  it('defers GATT disconnect while connect or reconnect open is in flight before configure', () => {
     expect(RUNTIME_SOURCE).toContain('meshcoreReconnectConnectInFlightRef');
     expect(RUNTIME_SOURCE).toContain('meshcoreDeviceConfiguredRef');
     expect(RUNTIME_SOURCE).toMatch(
-      /onNobleBleDisconnected[\s\S]*?bleConnectInProgressRef\.current \|\|[\s\S]*?meshcoreReconnectConnectInFlightRef\.current[\s\S]*?!meshcoreDeviceConfiguredRef\.current[\s\S]*?defer reconnect until connect settles/,
+      /onGattDisconnected[\s\S]*?bleConnectInProgressRef\.current \|\|[\s\S]*?meshcoreReconnectConnectInFlightRef\.current[\s\S]*?!meshcoreDeviceConfiguredRef\.current[\s\S]*?defer reconnect until connect settles/,
     );
   });
 
-  it('does not defer Noble disconnect after active configure during remaining initConn', () => {
+  it('does not defer GATT disconnect after active configure during remaining initConn', () => {
     expect(RUNTIME_SOURCE).toMatch(/meshcoreDeviceConfiguredRef\.current = true/);
     // Guard must use active configured ref, not everConfigured (stays true across sessions).
     expect(RUNTIME_SOURCE).toMatch(
@@ -128,9 +128,8 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
-  it('bounds every reconnect open+attach with NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
-    // Shared runner applies the budget to every transport (constant name is historical).
-    expect(ATTEMPT_RUNNER).toContain('NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS');
+  it('bounds every reconnect open+attach with BLE_RECONNECT_ATTEMPT_BUDGET_MS', () => {
+    expect(ATTEMPT_RUNNER).toContain('BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(ATTEMPT_RUNNER).toContain('raceWithDeadline');
     expect(ATTEMPT_RUNNER).toContain('Reconnect attempt timed out after');
     expect(ATTEMPT_RUNNER).toContain('attemptActive');
@@ -266,8 +265,8 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
     );
   });
 
-  it('latches BLE reconnect exhausted; late lost skips; yield release clears for one nudge', () => {
-    // Behavioral lifecycle (same policy as onNobleYieldReleased / connection-lost guards).
+  it('latches BLE reconnect exhausted; late lost skips; lease release clears for one nudge', () => {
+    // Behavioral lifecycle (same policy as onBleLeaseReleased / connection-lost guards).
     const latch = createBleReconnectExhaustLatch();
     latch.markExhausted();
     expect(
@@ -310,7 +309,7 @@ describe('useMeshcoreRuntime auto-reconnect (regression)', () => {
 
   it('skips Noble BLE disconnect reconnect when connectType is not ble (TCP/serial switch)', () => {
     expect(RUNTIME_SOURCE).toMatch(
-      /onNobleBleDisconnected[\s\S]*?meshcoreConnectTypeRef\.current !== 'ble'[\s\S]*?skip \(connectType=/,
+      /onGattDisconnected[\s\S]*?meshcoreConnectTypeRef\.current !== 'ble'[\s\S]*?skip \(connectType=/,
     );
   });
 

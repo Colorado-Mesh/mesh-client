@@ -71,22 +71,6 @@ function passivePathSnapshot(hub: string): { hops: number | null; iface: string 
   };
 }
 
-/** Pure helper — path-table hops alone do not prove live reachability for RRC. */
-export function evaluateReticulumRrcPathReady(
-  hops: number | null | undefined,
-  iface?: string | null,
-): ReticulumRrcPathProbe {
-  if (hops != null && hops >= 0) {
-    return {
-      ready: false,
-      reason: 'no_path',
-      passiveHops: hops,
-      passiveIface: iface ?? null,
-    };
-  }
-  return { ready: false, reason: 'no_path', hops: null, passiveHops: null };
-}
-
 async function recoverStaleRrcHubPath(hub: string): Promise<boolean> {
   const last = stalePathRecoveryAtByHub.get(hub) ?? 0;
   const now = Date.now();

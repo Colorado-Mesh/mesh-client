@@ -4,12 +4,12 @@ import { vi } from 'vitest';
 export function resetMeshcoreRuntimeElectronMocks(): void {
   vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockClear();
   vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockClear();
-  vi.mocked(window.electronAPI.connectNobleBle).mockClear();
-  vi.mocked(window.electronAPI.disconnectNobleBle).mockClear();
+  vi.mocked(window.electronAPI.connectGatt).mockClear();
+  vi.mocked(window.electronAPI.disconnectGatt).mockClear();
   vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
   vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
-  vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
-  vi.mocked(window.electronAPI.disconnectNobleBle).mockResolvedValue(undefined);
+  vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({ ok: true });
+  vi.mocked(window.electronAPI.disconnectGatt).mockResolvedValue(undefined);
 }
 
 /** Reset electronAPI MQTT listener mocks used by Meshtastic runtime hook tests. */

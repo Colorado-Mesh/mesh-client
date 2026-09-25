@@ -6,7 +6,7 @@
  * and that the expected payload shapes are consumed without errors.
  *
  * AI regression patterns caught here:
- * - Forgetting to register the event listener (onNobleBleDeviceDiscovered not called)
+ * - Forgetting to register the event listener (onGattDeviceDiscovered not called)
  * - Changing payload property names (deviceId → device_id, portId → port_id, etc.)
  * - Forgetting to return / call the cleanup unsubscribe function on unmount
  * - Disconnecting the serial port listener from state update
@@ -17,7 +17,7 @@ import userEvent from '@testing-library/user-event';
 import { flushSync } from 'react-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { NobleBleDevice, SerialPort } from '@/shared/electron-api.types';
+import type { GattBleDevice, SerialPort } from '@/shared/electron-api.types';
 
 import type { DeviceState } from '../lib/types';
 import ConnectionPanel from './ConnectionPanel';
@@ -41,7 +41,7 @@ const DEFAULT_PROPS = {
 describe('ConnectionPanel hardware event wiring', () => {
   beforeEach(() => {
     // Reset call history on all relevant mocks before each test
-    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockClear();
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockClear();
     vi.mocked(window.electronAPI.onSerialPortsDiscovered).mockClear();
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
   });
@@ -54,20 +54,19 @@ describe('ConnectionPanel hardware event wiring', () => {
 
   // ─── BLE device discovery ──────────────────────────────────────────────────
 
-  it('registers onNobleBleDeviceDiscovered listener on mount', () => {
+  it('registers onGattDeviceDiscovered listener on mount', () => {
     render(<ConnectionPanel {...DEFAULT_PROPS} />);
-    expect(window.electronAPI.onNobleBleDeviceDiscovered).toHaveBeenCalledOnce();
+    expect(window.electronAPI.onGattDeviceDiscovered).toHaveBeenCalledOnce();
   });
 
-  it('onNobleBleDeviceDiscovered callback accepts NobleBleDevice payload shape', () => {
+  it('onGattDeviceDiscovered callback accepts GattBleDevice payload shape', () => {
     render(<ConnectionPanel {...DEFAULT_PROPS} />);
 
-    const registeredCb = vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mock
-      .calls[0]?.[0];
+    const registeredCb = vi.mocked(window.electronAPI.onGattDeviceDiscovered).mock.calls[0]?.[0];
     expect(registeredCb).toBeDefined();
     if (registeredCb === undefined) throw new Error('callback must be registered');
 
-    const device: NobleBleDevice = { deviceId: 'ble-001', deviceName: 'Test Radio' };
+    const device: GattBleDevice = { deviceId: 'ble-001', deviceName: 'Test Radio' };
     // Must not throw — validates payload shape is consumed correctly
     act(() => {
       flushSync(() => {
@@ -77,8 +76,8 @@ describe('ConnectionPanel hardware event wiring', () => {
   });
 
   it('deduplicates BLE devices by deviceId on repeated discovery', () => {
-    let capturedCb: ((device: NobleBleDevice) => void) | undefined;
-    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+    let capturedCb: ((device: GattBleDevice) => void) | undefined;
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
       capturedCb = cb;
       return () => {};
     });
@@ -86,7 +85,7 @@ describe('ConnectionPanel hardware event wiring', () => {
     render(<ConnectionPanel {...DEFAULT_PROPS} />);
     expect(capturedCb).toBeDefined();
 
-    const device: NobleBleDevice = { deviceId: 'ble-001', deviceName: 'Duplicate Radio' };
+    const device: GattBleDevice = { deviceId: 'ble-001', deviceName: 'Duplicate Radio' };
     act(() => {
       capturedCb!(device);
     });
@@ -102,8 +101,8 @@ describe('ConnectionPanel hardware event wiring', () => {
   it('updates BLE RSSI on rediscovery and shows weak-signal banner', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
-    let capturedCb: ((device: NobleBleDevice) => void) | undefined;
-    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+    let capturedCb: ((device: GattBleDevice) => void) | undefined;
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
       capturedCb = cb;
       return () => {};
     });
@@ -130,9 +129,9 @@ describe('ConnectionPanel hardware event wiring', () => {
     expect(screen.getByText(/Bluetooth signal is weak \(-92 dBm\)/i)).toBeInTheDocument();
   });
 
-  it('unsubscribes onNobleBleDeviceDiscovered listener on unmount', () => {
+  it('unsubscribes onGattDeviceDiscovered listener on unmount', () => {
     const unsub = vi.fn();
-    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockReturnValueOnce(unsub);
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockReturnValueOnce(unsub);
 
     const { unmount } = render(<ConnectionPanel {...DEFAULT_PROPS} />);
     unmount();
@@ -142,8 +141,8 @@ describe('ConnectionPanel hardware event wiring', () => {
 
   it('does not open BLE picker when a device is discovered during USB Serial connect (cross-panel scan)', async () => {
     const user = userEvent.setup();
-    let capturedCb: ((device: NobleBleDevice) => void) | undefined;
-    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+    let capturedCb: ((device: GattBleDevice) => void) | undefined;
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
       capturedCb = cb;
       return () => {};
     });
@@ -172,8 +171,8 @@ describe('ConnectionPanel hardware event wiring', () => {
   it('opens BLE picker when a device is discovered during manual Bluetooth scan', async () => {
     const user = userEvent.setup();
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('win32');
-    let capturedCb: ((device: NobleBleDevice) => void) | undefined;
-    vi.mocked(window.electronAPI.onNobleBleDeviceDiscovered).mockImplementation((cb) => {
+    let capturedCb: ((device: GattBleDevice) => void) | undefined;
+    vi.mocked(window.electronAPI.onGattDeviceDiscovered).mockImplementation((cb) => {
       capturedCb = cb;
       return () => {};
     });
@@ -187,7 +186,7 @@ describe('ConnectionPanel hardware event wiring', () => {
     await user.click(within(connectionField!).getByRole('radio', { name: /Bluetooth/i }));
     await user.click(within(connectionField!).getByRole('button', { name: /^Connect$/i }));
 
-    expect(window.electronAPI.startNobleBleScanning).toHaveBeenCalled();
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalled();
     expect(capturedCb).toBeDefined();
 
     act(() => {

@@ -56,6 +56,18 @@ pub struct InterfaceRow {
     pub connectable: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reachable_on: Option<String>,
+    /// Operator LXMF address for discovered-interface contact (Python RNS / manual).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_lxmf_address: Option<String>,
+    /// Proof-of-work stamp difficulty for discovery announces (`discovery_stamp_value`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_stamp_value: Option<u8>,
+    /// Encrypt discovery announce payload (`discovery_encrypt`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discovery_encrypt: Option<bool>,
+    /// Include IFAC credentials in the discovery announce (`publish_ifac`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub publish_ifac: Option<bool>,
     /// IFAC virtual network name (common interface option).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub network_name: Option<String>,
@@ -71,12 +83,19 @@ pub struct InterfaceRow {
     /// when publish is on and mode is not AP/Gateway.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ignore_config_warnings: Option<bool>,
+    /// Tear down this interface once autoconnect_discovered_interfaces quota is met.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bootstrap_only: Option<bool>,
     /// Host outbound TX mpsc fill from live `GetInterfaceStats` (None when offline / unknown).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tx_queue_used: Option<u64>,
     /// Host outbound TX mpsc capacity from live stats.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tx_queue_max: Option<u64>,
+    /// Host↔BLE RNode link RSSI (dBm) from advertisement / resolve cache.
+    /// Only set for online `ble://` RNode rows; not LoRa air SNR/RSSI.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host_rssi: Option<i16>,
     /// Unknown INI keys preserved across CRUD so typed writes do not drop them.
     #[serde(default)]
     pub extra_config: HashMap<String, String>,
@@ -93,8 +112,14 @@ pub fn interface_discovery_defaults() -> (
     Option<u32>,
     Option<bool>,
     Option<String>,
+    Option<String>,
+    Option<u8>,
+    Option<bool>,
+    Option<bool>,
 ) {
-    (None, None, None, None, None, None, None, None)
+    (
+        None, None, None, None, None, None, None, None, None, None, None, None,
+    )
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -280,6 +305,14 @@ pub struct AddInterfaceRequest {
     #[serde(default)]
     pub reachable_on: Option<String>,
     #[serde(default)]
+    pub discovery_lxmf_address: Option<String>,
+    #[serde(default)]
+    pub discovery_stamp_value: Option<u8>,
+    #[serde(default)]
+    pub discovery_encrypt: Option<bool>,
+    #[serde(default)]
+    pub publish_ifac: Option<bool>,
+    #[serde(default)]
     pub network_name: Option<String>,
     #[serde(default)]
     pub passphrase: Option<String>,
@@ -288,6 +321,9 @@ pub struct AddInterfaceRequest {
     pub flow_control: Option<bool>,
     #[serde(default)]
     pub ignore_config_warnings: Option<bool>,
+    /// Tear down once discovered-interface autoconnect quota is filled.
+    #[serde(default)]
+    pub bootstrap_only: Option<bool>,
     #[serde(default)]
     pub extra_config: HashMap<String, String>,
 }
@@ -366,12 +402,18 @@ mod tx_queue_serde_tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: HashMap::default(),
         }
     }
@@ -383,6 +425,7 @@ mod tx_queue_serde_tests {
         let obj = value.as_object().expect("object");
         assert!(!obj.contains_key("tx_queue_used"));
         assert!(!obj.contains_key("tx_queue_max"));
+        assert!(!obj.contains_key("host_rssi"));
         assert!(!obj.contains_key("runtime_mode"));
         assert!(!obj.contains_key("ignore_config_warnings"));
     }
@@ -406,12 +449,15 @@ mod tx_queue_serde_tests {
         let mut row = minimal_row();
         row.tx_queue_used = Some(64);
         row.tx_queue_max = Some(256);
+        row.host_rssi = Some(-72);
         let value = serde_json::to_value(&row).expect("serialize");
         assert_eq!(value.get("tx_queue_used"), Some(&Value::from(64)));
         assert_eq!(value.get("tx_queue_max"), Some(&Value::from(256)));
+        assert_eq!(value.get("host_rssi"), Some(&Value::from(-72)));
         let roundtrip: InterfaceRow = serde_json::from_value(value).expect("deserialize");
         assert_eq!(roundtrip.tx_queue_used, Some(64));
         assert_eq!(roundtrip.tx_queue_max, Some(256));
+        assert_eq!(roundtrip.host_rssi, Some(-72));
     }
 
     #[test]

@@ -36,7 +36,7 @@ const harness = vi.hoisted(() => {
       on(event: string, cb: Listener): void {
         listeners.set(event, [...(listeners.get(event) ?? []), cb]);
       },
-      checkForUpdates: vi.fn((): Promise<void> => Promise.resolve()),
+      checkForUpdates: vi.fn((): Promise<unknown> => Promise.resolve()),
       downloadUpdate: vi.fn((): Promise<void> => Promise.resolve()),
       quitAndInstall: vi.fn(),
     },
@@ -45,6 +45,7 @@ const harness = vi.hoisted(() => {
     openExternal: vi.fn<(url: string) => Promise<void>>(),
     fetchAllGithubReleases: vi.fn<(...args: unknown[]) => Promise<unknown[]>>(),
     isPackaged: true,
+    isOnline: true,
     electronUpdaterMissing: false,
   };
 });
@@ -63,6 +64,9 @@ vi.mock('electron', () => ({
   },
   shell: {
     openExternal: (url: string) => harness.openExternal(url),
+  },
+  net: {
+    isOnline: () => harness.isOnline,
   },
 }));
 
@@ -161,6 +165,7 @@ beforeEach(() => {
   harness.autoUpdater.autoDownload = undefined;
   harness.autoUpdater.autoInstallOnAppQuit = undefined;
   harness.isPackaged = true;
+  harness.isOnline = true;
   harness.electronUpdaterMissing = false;
   vi.spyOn(console, 'warn').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -242,12 +247,73 @@ describe('updater behavior (electron-updater path)', () => {
     expect(console.error).toHaveBeenCalled();
   });
 
-  it('surfaces a sanitized update:error when the update check fails', async () => {
+  it('surfaces a sanitized update:offline when the update check fails with a network error', async () => {
     setup('darwin');
     harness.autoUpdater.checkForUpdates.mockRejectedValueOnce(new Error('offline\nnow'));
     await handler('update:check')(trustedEvent);
-    expect(harness.send).toHaveBeenCalledWith('update:error', { message: 'offline now' });
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.send).not.toHaveBeenCalledWith('update:error', expect.anything());
   });
+
+  it('surfaces update:offline and skips checkForUpdates when net.isOnline is false', async () => {
+    harness.isOnline = false;
+    setup('darwin');
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.autoUpdater.checkForUpdates).not.toHaveBeenCalled();
+    expect(harness.send).not.toHaveBeenCalledWith('update:checking', expect.anything());
+  });
+
+  it('surfaces a sanitized update:error when the update check fails with a non-network error', async () => {
+    setup('darwin');
+    harness.autoUpdater.checkForUpdates.mockRejectedValueOnce(new Error('signature bad\ninjected'));
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:error', {
+      message: 'signature bad injected',
+    });
+  });
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'surfaces a sanitized update:error when auto-download 404s on %s without an unhandled rejection',
+    async (platform) => {
+      setup(platform);
+      const unhandled: unknown[] = [];
+      const onUnhandled = (reason: unknown) => {
+        unhandled.push(reason);
+      };
+      process.on('unhandledRejection', onUnhandled);
+      try {
+        harness.autoUpdater.checkForUpdates.mockResolvedValueOnce({
+          // Reject after a tick so doCheck() can attach its catch first.
+          downloadPromise: Promise.resolve().then(() => {
+            throw new Error('Cannot download Mesh-client-Setup-5.36.0.exe status:404\ninjected');
+          }),
+        });
+        await handler('update:check')(trustedEvent);
+        await flushMicrotasks();
+        expect(harness.send).toHaveBeenCalledWith('update:error', {
+          message: 'Cannot download Mesh-client-Setup-5.36.0.exe status:404 injected',
+        });
+        expect(unhandled).toEqual([]);
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
+    },
+  );
+
+  it.each(['darwin', 'win32', 'linux'] as const)(
+    'does not emit update:error when auto-download succeeds on %s',
+    async (platform) => {
+      setup(platform);
+      harness.autoUpdater.checkForUpdates.mockResolvedValueOnce({
+        downloadPromise: Promise.resolve(['Mesh-client-Setup-9.9.9.exe']),
+      });
+      await handler('update:check')(trustedEvent);
+      emitUpdaterEvent('update-downloaded');
+      expect(harness.send).toHaveBeenCalledWith('update:downloaded');
+      expect(harness.send).not.toHaveBeenCalledWith('update:error', expect.anything());
+    },
+  );
 
   it('emits update:checking for IPC checks and exposes a notifying menu check', async () => {
     setup('darwin');
@@ -325,13 +391,29 @@ describe('updater behavior (GitHub Releases API fallback)', () => {
     expect(harness.send).toHaveBeenCalledWith('update:not-available');
   });
 
-  it('emits update:error when the GitHub API fetch fails', async () => {
+  it('emits update:offline when the GitHub API fetch fails with a network error', async () => {
+    harness.fetchAllGithubReleases.mockRejectedValueOnce(new Error('getaddrinfo ENOTFOUND'));
+    setup('darwin');
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.send).not.toHaveBeenCalledWith('update:error', expect.anything());
+  });
+
+  it('emits update:error when the GitHub API fetch fails with a non-network error', async () => {
     harness.fetchAllGithubReleases.mockRejectedValueOnce(new Error('HTTP 503'));
     setup('darwin');
     await handler('update:check')(trustedEvent);
     expect(harness.send).toHaveBeenCalledWith('update:error', {
       message: 'Update check failed — check network connection',
     });
+  });
+
+  it('emits update:offline and skips GitHub fetch when net.isOnline is false', async () => {
+    harness.isOnline = false;
+    setup('linux');
+    await handler('update:check')(trustedEvent);
+    expect(harness.send).toHaveBeenCalledWith('update:offline');
+    expect(harness.fetchAllGithubReleases).not.toHaveBeenCalled();
   });
 
   it('keeps update:download and update:install inert in dev (not packaged)', async () => {

@@ -512,24 +512,11 @@ export interface DeviceState {
   batteryCharging?: boolean;
 }
 
-export interface NobleBleDevice {
-  deviceId: string;
-  deviceName: string;
-  /** Advertised / last-seen BLE RSSI in dBm; null/undefined when unknown. */
-  rssi?: number | null;
-  /**
-   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`).
-   * On macOS this is typically empty until after a prior GATT connect (CoreBluetoothCache).
-   */
-  address?: string | null;
-}
-export type NobleBleSessionId = MeshProtocol;
-export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
-
-export interface WebBluetoothDevice {
-  deviceId: string;
-  deviceName: string;
-}
+export type {
+  GattBleConnectResult,
+  GattBleDevice,
+  GattBleSessionId,
+} from '@/shared/electron-api.types';
 
 export interface SerialPortInfo {
   portId: string;

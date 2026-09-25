@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Medisch",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Terrein / Infrastructuur",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Weer / Milieu",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Benodigdheden",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Positie / Verplaatsing",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Coördinatie",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Reactie",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Oefening / Test",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Dagelijks / Vrije tijd",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Dreiging / Veiligheid",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Beschikbaar / Middelen aanbieden",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "Noodbaken",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Verwonding",
+    "M02": "Bewusteloos persoon",
+    "M03": "Ademhalingsproblemen",
+    "M04": "Hartincident",
+    "M05": "Onderkoeling",
+    "M06": "Ernstige bloeding",
+    "M07": "Breuk / niet mobiel",
+    "M08": "Brandwonden",
+    "M09": "Meerdere slachtoffers",
+    "M10": "Overleden",
+    "M11": "Dierenbeet / -steek",
+    "M12": "Allergische reactie / anafylaxie",
+    "M13": "Vergiftiging / giftige blootstelling",
+    "M14": "Personen levend gevonden",
+    "M15": "Gebied doorzocht, geen slachtoffers",
+    "T01": "Weg geblokkeerd",
+    "T02": "Brug vernield",
+    "T03": "Gebouw ingestort",
+    "T04": "Overstroming",
+    "T05": "Aardverschuiving",
+    "T06": "Stroomuitval",
+    "T07": "Brand",
+    "T08": "Lawine",
+    "T09": "Pad onbegaanbaar",
+    "T10": "Schuilplaats beschikbaar",
+    "T11": "Verdrinking / waterredding nodig",
+    "T12": "Watervervuiling",
+    "T13": "Aardbeving",
+    "T14": "Gaslek",
+    "T15": "Chemisch incident / gevaarlijke stoffen",
+    "T16": "Verkeersongeval",
+    "T17": "Voertuigbrand",
+    "W01": "Storm nadert",
+    "W02": "Zicht nul",
+    "W03": "Extreme koude",
+    "W04": "Extreme hitte",
+    "W05": "Luchtkwaliteit gevaarlijk",
+    "W06": "Tsunami- / stormvloedwaarschuwing",
+    "S01": "Water nodig",
+    "S02": "Voedsel nodig",
+    "S03": "Medicijnen nodig",
+    "S04": "Batterij / stroom nodig",
+    "S05": "Brandstof nodig",
+    "S06": "Gereedschap / uitrusting nodig",
+    "P01": "Gestrand / vastzittend",
+    "P02": "Evacuatie richting",
+    "P03": "Schuilen ter plaatse",
+    "P04": "Onderweg naar",
+    "P05": "Op GPS-coördinaten",
+    "P06": "Verdwaald",
+    "P07": "Groep gescheiden",
+    "C01": "Stuur redding",
+    "C02": "Transport nodig",
+    "C03": "Bericht doorsturen",
+    "C04": "Ontvangst bevestigen",
+    "C05": "Hoeveel personen",
+    "C06": "Wat is de status",
+    "C07": "Kun je bereiken",
+    "C08": "Verzamelpunt bij",
+    "R01": "Bevestigd",
+    "R02": "Hulp onderweg",
+    "R03": "Aankomst over [minuten]",
+    "R04": "Kan niet helpen",
+    "R05": "Doorverwijzing naar",
+    "R06": "Even wachten",
+    "R07": "Situatie opgelost / veilig",
+    "D01": "Dit is een oefening",
+    "D02": "Dit is een test",
+    "D03": "Einde oefening",
+    "D04": "Vorige negeren — per ongeluk verzonden",
+    "L01": "Bier / drankjes",
+    "L02": "Koffie",
+    "L03": "Eten klaar",
+    "L04": "Top bereikt",
+    "L05": "Op de camping",
+    "L06": "Ben te laat",
+    "L07": "Goed signaal hier",
+    "L08": "Fotomoment",
+    "L09": "Wild dier gespot",
+    "L10": "Prachtig uitzicht",
+    "L11": "Padcondities goed",
+    "L12": "Padcondities slecht",
+    "L13": "Pauze nodig",
+    "L14": "Op weg naar huis",
+    "L15": "Goedemorgen / check-in",
+    "L16": "Goedenacht",
+    "L17": "Bedankt",
+    "L18": "Veel plezier",
+    "L19": "Festival / evenement hier",
+    "L20": "Knooppunttest / ping",
+    "X01": "Gevaarlijk persoon / dreiging nabij",
+    "X02": "Gebied onveilig — vermijden",
+    "X03": "Schoten / explosies gehoord",
+    "X04": "Onrust / menigte gevaarlijk",
+    "X05": "Diefstal / plundering gemeld",
+    "X06": "Autoriteiten / hulpdiensten aanwezig",
+    "X07": "Controlepost / wegafsluiting (overheid)",
+    "H01": "Water beschikbaar",
+    "H02": "Voedsel beschikbaar",
+    "H03": "Medische voorraad beschikbaar",
+    "H04": "Stroom / oplaadpunt beschikbaar",
+    "H05": "Brandstof beschikbaar",
+    "H06": "Gereedschap / uitrusting beschikbaar",
+    "H07": "Schuilplaats / ruimte voor [N] pers.",
+    "H08": "Transport / voertuig beschikbaar",
+    "B01": "Automatisch noodbaken actief — afzender reageert mogelijk niet",
+    "B02": "Baken bevestigd — zendfrequentie verlagen",
+    "B03": "Baken annuleren — het gaat goed met mij"
+  }
+}

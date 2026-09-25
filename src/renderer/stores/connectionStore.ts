@@ -101,22 +101,6 @@ export function getConnection(id: IdentityId): ConnectionRecord | undefined {
   return useConnectionStore.getState().connections[id];
 }
 
-/**
- * Bridges main-process `mqtt.onStatus` IPC into `connectionStore.mqttStatus` for one identity.
- *
- * Called from legacy runtime handlers (`useMeshtasticRuntime`, `useMeshcoreRuntime`) until
- * MQTT lifecycle moves fully into ConnectionDriver. No-op when `identityId` is null (MQTT can
- * arrive before the active identity is bound). See ConnectionDriver class doc and AGENTS.md.
- */
-export function mirrorMqttStatusToConnection(
-  identityId: IdentityId | null,
-  status: MQTTStatus,
-): void {
-  if (identityId) {
-    setConnection(identityId, { mqttStatus: status });
-  }
-}
-
 /** Mirror MQTT IPC status onto every identity bucket the UI may read for a protocol tab. */
 export function mirrorMqttStatusForProtocol(protocol: MeshProtocol, status: MQTTStatus): void {
   const { identities, activeIdentityId } = useIdentityStore.getState();

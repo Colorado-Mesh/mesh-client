@@ -21,11 +21,15 @@ export const OFFLINE_IDENTITY_BY_PROTOCOL: Record<MeshProtocol, IdentityId> = {
   reticulum: OFFLINE_RETICULUM_IDENTITY_ID,
 };
 
-const OFFLINE_PROTOCOL_ADAPTERS: Record<MeshProtocol, Protocol> = {
-  meshtastic: meshtasticProtocol,
-  meshcore: meshcoreProtocol,
-  reticulum: reticulumProtocol,
-};
+/** Resolved at call time: protocol modules import this file transitively (circular import). */
+function offlineProtocolAdapter(protocol: MeshProtocol): Protocol {
+  const adapters: Record<MeshProtocol, Protocol> = {
+    meshtastic: meshtasticProtocol,
+    meshcore: meshcoreProtocol,
+    reticulum: reticulumProtocol,
+  };
+  return adapters[protocol];
+}
 
 const OFFLINE_CREATED_AT = 0;
 
@@ -50,7 +54,7 @@ export function ensureOfflineProtocolIdentities(): void {
     if (identities[id]) continue;
     addIdentity({
       id,
-      protocol: OFFLINE_PROTOCOL_ADAPTERS[protocol],
+      protocol: offlineProtocolAdapter(protocol),
       signature: '',
       transports: [],
       createdAt: OFFLINE_CREATED_AT,

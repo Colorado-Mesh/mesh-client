@@ -7,6 +7,7 @@ import {
   normalizeNomadPagePath,
   normalizeNomadPageRequestData,
 } from '@/renderer/lib/nomad/micronParser';
+import { clearNomadImageCache } from '@/renderer/lib/nomad/nomadImageCache';
 import {
   clearNomadPageCache,
   getNomadPageCache,
@@ -343,6 +344,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
       panelActive: get().panelActive,
     });
     clearNomadPageCache();
+    clearNomadImageCache();
   },
 
   loadPage: async (hash, path, options = {}) => {

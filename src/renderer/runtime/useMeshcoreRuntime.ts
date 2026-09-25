@@ -20,7 +20,8 @@ import {
   type MeshcoreOffloadFromRadioOptions,
   throwIfMeshcoreOffloadAborted,
 } from '@/renderer/lib/meshcoreOffload';
-import { NOBLE_BLE_YIELD_RELEASED_EVENT } from '@/renderer/lib/nobleBleYieldReleased';
+import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
+import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import { touch } from '@/shared/touch';
 
 import { bytesToHex } from '../../shared/hexBytes';
@@ -99,7 +100,7 @@ import {
   prepareNobleYieldReleasedReconnectNudge,
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
-import { verifyNobleBleRfLink } from '../lib/bleReconnectHelper';
+import { verifyGattRfLink } from '../lib/bleReconnectHelper';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import { setMeshcoreDiagnosticsNodes } from '../lib/diagnosticsNodesRef';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
@@ -150,7 +151,7 @@ import {
   registerMeshcoreContactsFullOffloadRunner,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
-import { syncMeshcoreDmAckToMessageStore } from '../lib/meshcore/meshcoreDmAckRuntime';
+import { armMeshcoreDmAckPending } from '../lib/meshcore/meshcoreDmAckRuntime';
 import type {
   CayenneLppEntry,
   DeviceLogEntry,
@@ -243,9 +244,8 @@ import {
 import { setMeshcoreDmAckPendingImpl } from '../lib/meshcoreDmAckDelivery';
 import {
   awaitDualNobleBleMeshtasticSettle,
-  isRendererNobleBlePlatform,
+  isRendererGattBlePlatform,
   needsSequentialMeshcoreRadioInit,
-  withNobleBleConnectMutex,
 } from '../lib/meshcoreDualNobleBleInit';
 import { applyMeshcoreFloodScope } from '../lib/meshcoreFloodScope';
 import {
@@ -2100,7 +2100,7 @@ export function useMeshcoreRuntime() {
   );
 
   useEffect(() => {
-    return window.electronAPI.onNobleBleAdapterState((state) => {
+    return window.electronAPI.onGattAdapterState((state) => {
       if (state !== 'poweredOn') return;
       if (meshcoreConnectionParamsRef.current?.rfType !== 'ble') {
         const rehydrated = rehydrateMeshcoreConnectionParamsFromStorage();
@@ -2120,7 +2120,7 @@ export function useMeshcoreRuntime() {
       bleConnectInProgressRef.current = false;
       meshcoreBleReconnectExhaustedRef.current.clear();
       void (async () => {
-        if (isRendererNobleBlePlatform()) {
+        if (isRendererGattBlePlatform()) {
           await awaitDualNobleBleMeshtasticSettle(POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS);
         }
         if (meshcoreExplicitDisconnectRef.current) return;
@@ -2134,7 +2134,7 @@ export function useMeshcoreRuntime() {
   }, []);
 
   useEffect(() => {
-    return window.electronAPI.onNobleBleDisconnected((sessionId) => {
+    return window.electronAPI.onGattDisconnected((sessionId) => {
       if (sessionId !== 'meshcore') return;
       // prepareRfConnect(tcp|serial) disconnects Noble as intentional teardown. That async
       // disconnect must not call handleMeshcoreConnectionLost — it bumps setupGeneration and
@@ -2195,9 +2195,15 @@ export function useMeshcoreRuntime() {
   }, []);
 
   useEffect(() => {
-    const onNobleYieldReleased = () => {
+    const onBleLeaseReleased = () => {
       if (meshcoreConnectionParamsRef.current?.rfType !== 'ble') return;
       if (meshcoreExplicitDisconnectRef.current) return;
+      if (getReticulumBleBondDesyncActive()) {
+        console.debug(
+          '[useMeshcoreRuntime] Noble BLE yield released — skip nudge (RNode bond recovery)',
+        );
+        return;
+      }
       if (meshcoreDriverConnectedRef.current || connRef.current) {
         return;
       }
@@ -2217,9 +2223,9 @@ export function useMeshcoreRuntime() {
       meshcoreIsReconnectingRef.current = false;
       handleMeshcoreConnectionLostRef.current();
     };
-    window.addEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+    window.addEventListener(BLE_ADAPTER_LEASE_RELEASED_EVENT, onBleLeaseReleased);
     return () => {
-      window.removeEventListener(NOBLE_BLE_YIELD_RELEASED_EVENT, onNobleYieldReleased);
+      window.removeEventListener(BLE_ADAPTER_LEASE_RELEASED_EVENT, onBleLeaseReleased);
     };
   }, []);
 
@@ -3609,27 +3615,17 @@ export function useMeshcoreRuntime() {
         }));
       },
       runOpenAndAttach: async (ctx, params) => {
-        const { generation, isBle: isBleReconnect, attemptActive, lateTransport } = ctx;
+        const { generation, attemptActive, lateTransport } = ctx;
         await prepareRfConnect(params.rfType, { preserveReconnectState: true });
         if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive()) {
           throw new Error('MeshCore reconnect superseded before open');
         }
-        const opened =
-          isBleReconnect && isRendererNobleBlePlatform()
-            ? await withNobleBleConnectMutex('meshcore', () =>
-                openMeshCoreTransport(params.rfType, {
-                  blePeripheralId: params.blePeripheralId,
-                  host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
-                  portSignature:
-                    params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
-                }),
-              )
-            : await openMeshCoreTransport(params.rfType, {
-                blePeripheralId: params.blePeripheralId,
-                host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
-                portSignature:
-                  params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
-              });
+        const opened = await openMeshCoreTransport(params.rfType, {
+          blePeripheralId: params.blePeripheralId,
+          host: params.rfType === 'tcp' ? (params.httpAddress ?? 'localhost') : undefined,
+          portSignature:
+            params.rfType === 'serial' ? (params.serialPortId ?? undefined) : undefined,
+        });
         openedDriverIdentityId = opened.driverIdentityId;
         if (meshcoreReconnectGenerationRef.current !== generation || !attemptActive()) {
           await lateTransport.cleanup(opened.driverIdentityId);
@@ -3641,7 +3637,7 @@ export function useMeshcoreRuntime() {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('MeshCore reconnect superseded during attach');
         }
-        if (!(await verifyNobleBleRfLink(params.rfType, 'meshcore'))) {
+        if (!(await verifyGattRfLink(params.rfType, 'meshcore'))) {
           await lateTransport.cleanup(opened.driverIdentityId);
           throw new Error('RF link lost after MeshCore reconnect attach');
         }
@@ -3730,6 +3726,18 @@ export function useMeshcoreRuntime() {
 
   const scheduleMeshcoreReconnectAttempt = useCallback(() => {
     meshcoreRfReconnectRef.current.scheduleOwner(() => {
+      if (
+        meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
+        getReticulumBleBondDesyncActive()
+      ) {
+        console.debug(
+          '[useMeshcoreRuntime] abort reconnect schedule — RNode bond recovery holds the adapter',
+        );
+        meshcoreIsReconnectingRef.current = false;
+        meshcoreDeferredReconnectRef.current = false;
+        meshcoreRfReconnectRef.current.endAttempt();
+        return;
+      }
       if (!meshcoreIsReconnectingRef.current || meshcoreExplicitDisconnectRef.current) {
         return;
       }
@@ -3748,6 +3756,15 @@ export function useMeshcoreRuntime() {
   const handleMeshcoreConnectionLost = useCallback(() => {
     if (meshcoreExplicitDisconnectRef.current) {
       console.debug('[useMeshcoreRuntime] skip reconnect (user disconnect)');
+      return;
+    }
+    if (
+      meshcoreConnectionParamsRef.current?.rfType === 'ble' &&
+      getReticulumBleBondDesyncActive()
+    ) {
+      console.debug(
+        '[useMeshcoreRuntime] skip BLE reconnect — RNode bond recovery holds the adapter',
+      );
       return;
     }
     if (
@@ -4001,7 +4018,7 @@ export function useMeshcoreRuntime() {
     bleConnectInProgressRef.current = false;
     meshcoreBleReconnectExhaustedRef.current.clear();
     void (async () => {
-      if (isRendererNobleBlePlatform() && meshcoreConnectionParamsRef.current?.rfType === 'ble') {
+      if (isRendererGattBlePlatform() && meshcoreConnectionParamsRef.current?.rfType === 'ble') {
         console.debug(
           '[useMeshcoreRuntime] power resume — waiting for Meshtastic Noble BLE to settle',
         );
@@ -4022,10 +4039,6 @@ export function useMeshcoreRuntime() {
 
   const connect = useCallback(
     async (type: 'ble' | 'serial' | 'tcp', tcpHost?: string, blePeripheralId?: string) => {
-      /** Linux MeshCore uses renderer Web Bluetooth (not Noble IPC) — timeout copy must match. */
-      const meshcoreBleLinuxWebBluetooth =
-        type === 'ble' && navigator.userAgent.toLowerCase().includes('linux');
-
       await prepareRfConnect(type);
       const connectSetupGen = meshcoreSetupGenerationRef.current;
       // Provisional reconnect target for the intended transport before open/attach completes.
@@ -4041,7 +4054,7 @@ export function useMeshcoreRuntime() {
       let opened: Awaited<ReturnType<typeof openMeshCoreTransport>> | undefined;
       let connectSucceeded = false;
       try {
-        if (type === 'ble' && !meshcoreBleLinuxWebBluetooth && !blePeripheralId) {
+        if (type === 'ble' && !blePeripheralId) {
           throw new Error('BLE peripheral ID required');
         }
         const openTransport = () =>
@@ -4050,10 +4063,7 @@ export function useMeshcoreRuntime() {
             host: type === 'tcp' ? (tcpHost ?? 'localhost') : undefined,
             skipDiscoverSelf: meshcoreOpenHopUserTxReopenInFlightRef.current,
           });
-        opened =
-          type === 'ble' && isRendererNobleBlePlatform()
-            ? await withNobleBleConnectMutex('meshcore', openTransport)
-            : await openTransport();
+        opened = await openTransport();
         // Latch pending before attach so a racing prepareRfConnect can driver-disconnect
         // this open (attachRfSession previously left a gap where TCP stayed orphaned).
         meshcorePendingDriverIdentityRef.current = opened.driverIdentityId;
@@ -4136,13 +4146,10 @@ export function useMeshcoreRuntime() {
           safeMessage !== 'meshcore.errors.connectionFailed' && safeMessage !== 'Connection failed'
             ? safeMessage
             : fallbackMessage;
-        const timeoutMessage = meshcoreBleLinuxWebBluetooth
-          ? bleTimeoutStage === 'protocol-handshake'
-            ? 'meshcore.errors.bleTimeoutWebBtHandshake'
-            : 'meshcore.errors.bleTimeoutWebBt'
-          : bleTimeoutStage === 'protocol-handshake'
+        const timeoutMessage =
+          bleTimeoutStage === 'protocol-handshake'
             ? 'meshcore.errors.bleTimeoutHandshake'
-            : 'meshcore.errors.bleTimeoutNoble';
+            : 'meshcore.errors.bleTimeoutGatt';
         const normalizedErr = new Error(
           isAlreadyInProgress
             ? 'meshcore.errors.bleAlreadyInProgress'
@@ -4156,15 +4163,9 @@ export function useMeshcoreRuntime() {
         );
         if (isBleConnectTimeout) {
           console.warn(
-            meshcoreBleLinuxWebBluetooth
-              ? `[useMeshcoreRuntime] connect: BLE Web Bluetooth timed out ${formatStructuredLogDetail(
-                  {
-                    stage: bleTimeoutStage,
-                  },
-                )}`
-              : `[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
-                  { stage: bleTimeoutStage },
-                )}`,
+            `[useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback ${formatStructuredLogDetail(
+              { stage: bleTimeoutStage },
+            )}`,
           );
         }
         const errForLog = serializeErrorLike(err) || '(no error object)';
@@ -8075,57 +8076,24 @@ export function useMeshcoreRuntime() {
   }, [meshcoreIdentityId, state, mqttStatus]);
 
   const scheduleMeshcoreDmAckPendingImpl = useCallback(
-    ({
-      identityId,
-      ackKeyU32,
-      estTimeoutMs,
-      destNodeId,
-    }: {
+    (params: {
       identityId: IdentityId;
       ackKeyU32: number;
       estTimeoutMs: number;
       destNodeId?: number;
     }) => {
-      const pendingMapKeys = meshcorePendingDmAckMapKeys(ackKeyU32);
+      const destNodeId = params.destNodeId;
       const outPathRaw = destNodeId != null ? outPathMapRef.current.get(destNodeId) : undefined;
-      const sendPathBytes = outPathRaw && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
-      const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
       const hopsAway =
         destNodeId != null
           ? (getIdentityNode(meshcoreIdentityIdRef.current, destNodeId)?.hops_away ?? 0)
           : 0;
-      if (sendPathBytes.length > 0 && destNodeId != null) {
-        usePathHistoryStore
-          .getState()
-          .recordPathUpdated(destNodeId, sendPathBytes, hopsAway, false);
-      }
-      const timeoutId = setTimeout(() => {
-        for (const k of pendingMapKeys) {
-          pendingAcksRef.current.delete(k);
-        }
-        if (destNodeId != null && sendPathHash) {
-          usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
-        }
-        syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, myNodeNumRef.current, 'failed');
-        void window.electronAPI.db
-          .updateMeshcoreMessageStatus(ackKeyU32, 'failed')
-          .catch((e: unknown) => {
-            console.warn(
-              '[useMeshcoreRuntime] updateMeshcoreMessageStatus (DM ack timeout) error ' +
-                errLikeToLogString(e),
-            );
-          });
-      }, estTimeoutMs);
-      const pendingEntry: PendingDmAckEntry = {
-        timeoutId,
-        mapKeys: pendingMapKeys,
-        canonicalPacketIdU32: ackKeyU32,
-        destNodeId,
-        pathHash: sendPathHash,
-      };
-      for (const k of pendingMapKeys) {
-        pendingAcksRef.current.set(k, pendingEntry);
-      }
+      armMeshcoreDmAckPending(params, {
+        pendingAcks: pendingAcksRef.current,
+        getSelfNodeId: () => myNodeNumRef.current,
+        outPath: outPathRaw,
+        hopsAway,
+      });
     },
     [],
   );
@@ -8244,6 +8212,12 @@ export function useMeshcoreRuntime() {
       finalizeDriverDisconnect,
       connectAutomatic,
       getDestinationPubKey: (nodeId) => pubKeyMapRef.current.get(nodeId),
+      getSelfName: (nodeId) => {
+        const self = selfInfoRef.current;
+        return self && nodeId > 0 && pubkeyToNodeId(self.publicKey) === nodeId
+          ? self.name
+          : undefined;
+      },
       ensureTcpLiveForUserTx,
       runMeshcoreUserTxWithLiveTcp,
     });

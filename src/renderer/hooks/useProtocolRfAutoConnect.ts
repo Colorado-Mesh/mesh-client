@@ -16,7 +16,7 @@ import {
   dualNobleBleBothRadiosConfigured,
   getNobleBleDualRadioPrimaryProtocol,
   isNobleBleDualRadioSecondary,
-  isRendererNobleBlePlatform,
+  isRendererGattBlePlatform,
   meshcoreTargetsSharedMeshtasticBlePeripheral,
   notifyNobleBlePrimaryAutoConnectSettled,
 } from '@/renderer/lib/meshcoreDualNobleBleInit';
@@ -173,7 +173,7 @@ export function useProtocolRfAutoConnect({
         return;
       }
 
-      if (isRendererNobleBlePlatform()) {
+      if (isRendererGattBlePlatform()) {
         await awaitReticulumBleCoexistenceClear();
       }
       if (isCancelled()) {
@@ -215,19 +215,32 @@ export function useProtocolRfAutoConnect({
         return;
       }
 
-      await reconnectBleWithScan(protocol, bleId, () => {
-        if (isCancelled()) {
-          return Promise.reject(new DOMException('RF auto-connect cancelled', 'AbortError'));
-        }
-        const attempt = connectAutomaticRef.current('ble', undefined, undefined, bleId);
-        if (
-          dualNobleBleBothRadiosConfigured() &&
-          getNobleBleDualRadioPrimaryProtocol() === protocol
-        ) {
-          watchPrimaryAutoConnectAttempt(protocol, attempt);
-        }
-        return attempt;
-      });
+      const matchIds = [bleId, lastConnection.bleMac].filter(
+        (id): id is string => typeof id === 'string' && id.trim().length > 0,
+      );
+      await reconnectBleWithScan(
+        protocol,
+        bleId,
+        (resolvedId) => {
+          if (isCancelled()) {
+            return Promise.reject(new DOMException('RF auto-connect cancelled', 'AbortError'));
+          }
+          const attempt = connectAutomaticRef.current(
+            'ble',
+            undefined,
+            undefined,
+            resolvedId ?? bleId,
+          );
+          if (
+            dualNobleBleBothRadiosConfigured() &&
+            getNobleBleDualRadioPrimaryProtocol() === protocol
+          ) {
+            watchPrimaryAutoConnectAttempt(protocol, attempt);
+          }
+          return attempt;
+        },
+        { matchIds },
+      );
       clearAutoConnectTimeout();
     };
 

@@ -15,12 +15,25 @@ function channelSecretHex(secret: Uint8Array): string {
     .join('');
 }
 
+function asMeshcoreChatChannelSources(channels: readonly unknown[]): MeshcoreChatChannelSource[] {
+  const out: MeshcoreChatChannelSource[] = [];
+  for (const ch of channels) {
+    if (typeof ch !== 'object' || ch === null) continue;
+    const rec = ch as Record<string, unknown>;
+    if (typeof rec.index !== 'number' || typeof rec.name !== 'string') continue;
+    const source: MeshcoreChatChannelSource = { index: rec.index, name: rec.name };
+    if (rec.secret instanceof Uint8Array) source.secret = rec.secret;
+    out.push(source);
+  }
+  return out;
+}
+
 /** Channel slots with a non-zero PSK — matches Chat channel pills (see App `chatChannels`). */
 export function meshcoreConfiguredChatChannels(
-  channels: readonly MeshcoreChatChannelSource[],
+  channels: readonly unknown[],
 ): { index: number; name: string }[] {
   return dedupeChannelPillsByIndex(
-    channels
+    asMeshcoreChatChannelSources(channels)
       .filter((ch) => {
         const secret = ch.secret;
         return (
@@ -34,7 +47,7 @@ export function meshcoreConfiguredChatChannels(
 }
 
 export function meshcoreConfiguredChannelIndexSet(
-  channels: readonly MeshcoreChatChannelSource[],
+  channels: readonly unknown[],
 ): ReadonlySet<number> {
   return new Set(meshcoreConfiguredChatChannels(channels).map((c) => c.index));
 }

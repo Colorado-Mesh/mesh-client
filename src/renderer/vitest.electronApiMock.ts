@@ -19,6 +19,7 @@ function makeOutboxMockRow(entry: OutboxEntryInput): OutboxEntry {
     createdAt: now,
     updatedAt: now,
     ...entry,
+    priority: entry.priority === 'emergency' ? 'emergency' : 'normal',
   };
 }
 
@@ -182,25 +183,25 @@ export function createElectronAPIMock(): ElectronAPI {
       updateMeshcoreToken: vi.fn().mockResolvedValue(undefined),
       onRequestTokenRefresh: vi.fn().mockReturnValue(() => {}),
     },
-    onNobleBleAdapterState: vi.fn().mockReturnValue(() => {}),
-    onNobleBleDeviceDiscovered: vi.fn().mockReturnValue(() => {}),
-    onNobleBleLinkRssi: vi.fn().mockReturnValue(() => {}),
-    onNobleBleConnected: vi.fn().mockReturnValue(() => {}),
-    onNobleBleDisconnected: vi.fn().mockReturnValue(() => {}),
-    onNobleBleConnectAborted: vi.fn().mockReturnValue(() => {}),
-    onNobleBleFromRadio: vi.fn().mockReturnValue(() => {}),
-    startNobleBleScanning: vi.fn().mockResolvedValue({ ok: true }),
-    stopNobleBleScanning: vi.fn().mockResolvedValue(undefined),
-    connectNobleBle: vi.fn().mockResolvedValue({ ok: true }),
-    disconnectNobleBle: vi.fn().mockResolvedValue(undefined),
-    isNobleBleConnected: vi.fn().mockResolvedValue(true),
-    nobleBleToRadio: vi.fn().mockResolvedValue(undefined),
+    onGattAdapterState: vi.fn().mockReturnValue(() => {}),
+    onGattDeviceDiscovered: vi.fn().mockReturnValue(() => {}),
+    onGattLinkRssi: vi.fn().mockReturnValue(() => {}),
+    onGattConnected: vi.fn().mockReturnValue(() => {}),
+    onGattDisconnected: vi.fn().mockReturnValue(() => {}),
+    onGattConnectAborted: vi.fn().mockReturnValue(() => {}),
+    onGattIssue: vi.fn().mockReturnValue(() => {}),
+    onGattFromRadio: vi.fn().mockReturnValue(() => {}),
+    startGattScanning: vi.fn().mockResolvedValue({ ok: true }),
+    stopGattScanning: vi.fn().mockResolvedValue(undefined),
+    connectGatt: vi.fn().mockResolvedValue({ ok: true }),
+    disconnectGatt: vi.fn().mockResolvedValue(undefined),
+    releaseGattBleCentral: vi.fn().mockResolvedValue(undefined),
+    clearGattBondRecoveryExclusive: vi.fn().mockResolvedValue(undefined),
+    isGattConnected: vi.fn().mockResolvedValue(true),
+    gattToRadio: vi.fn().mockResolvedValue(undefined),
     onSerialPortsDiscovered: vi.fn().mockReturnValue(() => {}),
     selectSerialPort: vi.fn(),
     cancelSerialSelection: vi.fn(),
-    onBluetoothDevicesDiscovered: vi.fn().mockReturnValue(() => {}),
-    selectBluetoothDevice: vi.fn(),
-    cancelBluetoothSelection: vi.fn().mockResolvedValue({ cancelled: false }),
     bluetoothUnpair: vi.fn().mockResolvedValue(undefined),
     bluetoothStartScan: vi.fn().mockResolvedValue(undefined),
     bluetoothStopScan: vi.fn().mockResolvedValue(undefined),
@@ -225,6 +226,22 @@ export function createElectronAPIMock(): ElectronAPI {
       onProgress: vi.fn().mockReturnValue(() => {}),
       onDownloaded: vi.fn().mockReturnValue(() => {}),
       onError: vi.fn().mockReturnValue(() => {}),
+      onOffline: vi.fn().mockReturnValue(() => {}),
+    },
+    offlineMaps: {
+      estimate: vi.fn().mockResolvedValue({ tileCount: 0, sizeEstimateBytes: 0, withinCaps: true }),
+      download: vi.fn().mockResolvedValue({ jobId: 'test-job' }),
+      cancel: vi.fn().mockResolvedValue({ cancelled: true }),
+      status: vi.fn().mockResolvedValue({
+        activeJobs: [],
+        stats: { tileCount: 0, diskBytes: 0 },
+        regions: [],
+        sources: {},
+      }),
+      clear: vi.fn().mockResolvedValue({ ok: true }),
+      onProgress: vi.fn().mockReturnValue(() => {}),
+      onDone: vi.fn().mockReturnValue(() => {}),
+      onError: vi.fn().mockReturnValue(() => {}),
     },
     notifyDeviceConnected: vi.fn(),
     notifyDeviceDisconnected: vi.fn(),
@@ -233,8 +250,6 @@ export function createElectronAPIMock(): ElectronAPI {
     restartApp: vi.fn().mockResolvedValue(undefined),
     notify: {
       show: vi.fn().mockResolvedValue(undefined),
-      longSessionRestart: vi.fn().mockResolvedValue(undefined),
-      clearLongSessionNudge: vi.fn().mockResolvedValue(undefined),
     },
     getPlatform: vi.fn().mockReturnValue('linux'),
     showEmojiPanel: vi.fn().mockResolvedValue(undefined),
@@ -249,6 +264,11 @@ export function createElectronAPIMock(): ElectronAPI {
       encrypt: vi.fn().mockResolvedValue(null),
       decrypt: vi.fn().mockResolvedValue(null),
       isAvailable: vi.fn().mockResolvedValue(false),
+    },
+    notificationSounds: {
+      choose: vi.fn().mockResolvedValue(null),
+      save: vi.fn().mockResolvedValue({ id: 'a'.repeat(64), name: 'tone.wav' }),
+      read: vi.fn().mockResolvedValue(null),
     },
     appSettings: {
       getLoginItem: vi.fn().mockResolvedValue({ openAtLogin: false }),
@@ -398,6 +418,7 @@ export function createElectronAPIMock(): ElectronAPI {
         nobleYieldDecisionPending: false,
       }),
       acquireScan: vi.fn().mockResolvedValue({
+        ok: true,
         connections: [],
         scanOwner: 'reticulum',
         nobleYieldDecisionPending: false,
@@ -407,12 +428,7 @@ export function createElectronAPIMock(): ElectronAPI {
         scanOwner: null,
         nobleYieldDecisionPending: false,
       }),
-      pauseNobleScan: vi.fn().mockResolvedValue({
-        connections: [],
-        scanOwner: null,
-        nobleYieldDecisionPending: false,
-      }),
-      suspendNobleForReticulumBleConnect: vi.fn().mockResolvedValue({
+      suspendForReticulumBleConnect: vi.fn().mockResolvedValue({
         connections: [],
         scanOwner: null,
         nobleYieldDecisionPending: false,
@@ -423,6 +439,9 @@ export function createElectronAPIMock(): ElectronAPI {
       stop: vi.fn().mockResolvedValue(undefined),
       getStatus: vi.fn().mockResolvedValue({ running: false, port: 0, pid: null }),
       syncInterfaceIssueScope: vi.fn().mockResolvedValue({ running: false, port: 0, pid: null }),
+      clearBleBondIssuesForOnlineInterfaces: vi
+        .fn()
+        .mockResolvedValue({ running: false, port: 0, pid: null }),
       proxyGet: vi.fn().mockResolvedValue({ status: 'ok' }),
       proxyPost: vi.fn().mockResolvedValue({ ok: true }),
       proxyPut: vi.fn().mockResolvedValue({ ok: true }),
@@ -544,6 +563,10 @@ export function createElectronAPIMock(): ElectronAPI {
     },
     gps: {
       exportGpx: vi.fn().mockResolvedValue({ success: false, reason: 'cancelled' }),
+    },
+    mecp: {
+      appendReceived: vi.fn().mockResolvedValue({ ok: true }),
+      exportReceivedLog: vi.fn().mockResolvedValue({ success: false }),
     },
   } satisfies ElectronAPI;
 }

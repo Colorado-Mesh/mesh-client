@@ -11,6 +11,7 @@ import {
   pickProjects,
   planPrecommitTests,
   runPrecommitTests,
+  runVitestArgv,
   shouldForceFullSuite,
 } from './precommit-tests.mjs';
 
@@ -128,6 +129,65 @@ describe('precommit-tests related planning', () => {
 });
 
 describe('precommit-tests runPrecommitTests', () => {
+  it.each(['linux', 'darwin', 'win32'])('filters Git environment names on %s', (platform) => {
+    const spawnSyncFn = vi.fn(() => ({ status: 0 }));
+    const env = {
+      GIT_DIR: 'caller.git',
+      git_dir: 'mixed-case.git',
+      Git_Work_Tree: 'caller-worktree',
+      GIT_INDEX_FILE: 'caller-index',
+      APP_SETTING: 'preserved',
+    };
+    expect(runVitestArgv(['run'], { platform, env, spawnSyncFn })).toBe(0);
+    expect(spawnSyncFn.mock.calls[0][2].env).toEqual(
+      platform === 'win32'
+        ? { APP_SETTING: 'preserved' }
+        : { git_dir: 'mixed-case.git', Git_Work_Tree: 'caller-worktree', APP_SETTING: 'preserved' },
+    );
+  });
+
+  it.each([false, true])(
+    'keeps Git fixtures out of the committing repository (mixed case: %s)',
+    (mixedCase) => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), 'precommit-git-env-'));
+      try {
+        const fixture = path.join(root, 'fixture');
+        fs.mkdirSync(fixture);
+        const callerGitDir = path.join(root, 'committing.git');
+        const callerIndex = path.join(root, 'index');
+        fs.writeFileSync(callerIndex, 'preserve the caller index');
+        const child = path.join(root, 'fixture.cjs');
+        fs.writeFileSync(
+          child,
+          `const { spawnSync } = require('node:child_process');
+const gitKeys = new Set(['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE']);
+if (Object.keys(process.env).some((key) => gitKeys.has(key.toUpperCase()))) {
+  process.exit(2);
+}
+const result = spawnSync('git', ['init'], { cwd: process.argv[2], encoding: 'utf8' });
+process.exit(result.status ?? 1);
+`,
+        );
+        const status = runVitestArgv([fixture], {
+          vitestCli: child,
+          ...(mixedCase ? { platform: 'win32' } : {}),
+          env: {
+            ...process.env,
+            ...(mixedCase
+              ? { git_dir: callerGitDir, Git_Work_Tree: root, gIt_InDeX_fIlE: callerIndex }
+              : { GIT_DIR: callerGitDir, GIT_WORK_TREE: root, GIT_INDEX_FILE: callerIndex }),
+          },
+        });
+        expect(status).toBe(0);
+        expect(fs.existsSync(path.join(fixture, '.git', 'HEAD'))).toBe(true);
+        expect(fs.existsSync(callerGitDir)).toBe(false);
+        expect(fs.readFileSync(callerIndex, 'utf8')).toBe('preserve the caller index');
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+
   it('skips spawn when docs-only', () => {
     const spawnSyncFn = vi.fn();
     const logs = [];

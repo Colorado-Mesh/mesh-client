@@ -33,11 +33,14 @@ const SAMPLE_MANIFEST = `      - type: archive
         url: https://github.com/electron/electron/releases/download/v41.10.0/electron-v41.10.0-linux-x64.zip
         sha256: b5dac00ef6b5ee4e9882cf1424fd8dce7319fb09806757399fdf3b3da06efcd2
         dest: electron-prebuilt
+        # Electron zip has root-level \`electron\` + \`locales/\` + \`resources/\`; default strip-components:1 flattens them.
+        strip-components: 0
         only-arches: [x86_64]
       - type: archive
         url: https://github.com/electron/electron/releases/download/v41.10.0/electron-v41.10.0-linux-arm64.zip
         sha256: 2c063804e14c325cd34de1ff7528f6066d544d49a9d55c9c2937e20dd1e717e3
         dest: electron-prebuilt
+        strip-components: 0
         only-arches: [aarch64]`;
 
 const PNPM_X64_SHA = 'a'.repeat(64);
@@ -119,6 +122,7 @@ describe('sync-flatpak-electron.mjs', () => {
     expect(yaml).toContain('electron-v41.10.1-linux-arm64.zip');
     expect(yaml).toContain('only-arches: [x86_64]');
     expect(yaml).toContain('only-arches: [aarch64]');
+    expect(yaml.match(/strip-components: 0/g)).toHaveLength(2);
   });
 
   it('replaces stale Electron archive URLs and checksums in the manifest', () => {
@@ -129,6 +133,22 @@ describe('sync-flatpak-electron.mjs', () => {
     expect(next).toContain('electron-v41.10.1-linux-arm64.zip');
     expect(next).toContain(sha256ByZipArch.x64);
     expect(next).toContain(sha256ByZipArch.arm64);
+    expect(next.match(/strip-components: 0/g)).toHaveLength(3);
+  });
+
+  it('still matches the real manifest after an Electron bump', () => {
+    const manifestPath = path.join(import.meta.dirname, '..', 'org.coloradomesh.MeshClient.yml');
+    const manifest = fs.readFileSync(manifestPath, 'utf8');
+    const sha256ByZipArch = parseElectronSha256s(FIXTURE_SHASUMS, '41.10.1');
+
+    // Throws when the manifest blocks drift from ELECTRON_ARCHIVE_SOURCES_RE.
+    const next = syncFlatpakElectronManifest(manifest, '41.10.1', sha256ByZipArch);
+    const blocks = next
+      .split(/^\s*- type: archive\s*$/m)
+      .filter((block) => /electron-v[\d.]+-linux-(?:x64|arm64)\.zip/.test(block));
+
+    expect(blocks).toHaveLength(2);
+    for (const block of blocks) expect(block).toMatch(/strip-components:\s*0\b/);
   });
 });
 

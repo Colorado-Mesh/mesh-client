@@ -102,7 +102,7 @@
     "title": "App-Einstellungen",
     "logPanelSection": "Log-Panel",
     "floodAdvertSection": "Flood Advert",
-    "floodAdvertScheduleLabel": "Senden Sie automatisch eine Hochwasseranzeige nach einem Zeitplan:",
+    "floodAdvertScheduleLabel": "Senden Sie automatisch ein Flood-Advert nach einem Zeitplan:",
     "floodAdvertEvery12h": "Alle 12 Stunden",
     "floodAdvertEvery24h": "Alle 24 Stunden",
     "gpsSection": "GPS / Standort",
@@ -196,7 +196,7 @@
     "roomMessages": "Raumnachrichten",
     "importSchemaTooNew": "Diese Datenbankdatei erfordert einen neueren Mesh-Client (Schema {{dbVersion}}). Dieser Build unterstützt Schema {{appVersion}} oder älter. Installieren Sie die neueste Version und versuchen Sie es erneut.",
     "floodAdvertTypeLabel": "Advert-Typ",
-    "floodAdvertTypeFlood": "Hochwasser (Multi-Hop)",
+    "floodAdvertTypeFlood": "Flood (Multi-Hop)",
     "floodAdvertTypeZeroHop": "Zero-Hop (nur direkte Nachbarn)",
     "copyDebugSnapshot": "Debug-Snapshot kopieren",
     "copyDebugSnapshotButton": "Debug-Snapshot kopieren",
@@ -415,7 +415,13 @@
     "decreaseFontSize": "Schrift verkleinern",
     "increaseFontSize": "Schrift vergrössern",
     "resetFontSize": "Zurücksetzen",
-    "resetFontSizeAria": "Schriftgröße wiederherstellen"
+    "resetFontSizeAria": "Schriftgröße wiederherstellen",
+    "opsAlertsHeading": "Betriebswarnungen",
+    "nodeSilenceAlertMinutes": "Schweigewarnung für beobachtete Knoten (Minuten)",
+    "nodeSilenceAlertMinutesPlaceholder": "Protokollstandard",
+    "nodeSilenceAlertMinutesHint": "Leer lassen, um den veralteten Schwellenwert jedes Protokolls zu verwenden. Eskalationsfeuer bei 2x diesem Wert.",
+    "nodeBatteryLowThreshold": "Batterieleistungsschwelle (%)",
+    "notifyOnLinkDown": "Benachrichtigung bei unerwarteter Funkverbindung"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Wechseln Sie zu Meshtastic, {{count}} ungelesen",
     "switchToMeshCoreWithUnread": "Wechseln Sie zu MeshCore, {{count}} ungelesen",
     "switchToReticulumWithUnread": "Zu Reticulum wechseln, {{count}} ungelesen",
-    "tabWithUnread": "{{label}}, {{count}} ungelesen"
+    "tabWithUnread": "{{label}}, {{count}} ungelesen",
+    "tabWithOpenIncidents": "{{label}}, {{count}} offener MAITAG oder DRINGENDE VORFÄLLE"
   },
   "battery": {
     "percentCharging": "Akku {{percent}} Prozent, Laden",
@@ -752,7 +759,34 @@
     "reticulumSendAwaitingPeerReceipt": "Gesendet (wartet auf Peer-Eingang)",
     "reticulumChatNeedsLxmfDelivery": "Dieser Peer hat noch keine LXMF-Lieferadresse (Chat kann kein Voice-only-Ziel verwenden). Warten Sie auf eine LXMF-Ankündigung oder fügen Sie ihren 32-stelligen LXMF-Hash ein.",
     "saveAttachment": "Speichern…",
-    "revealAttachment": "In Ordner"
+    "revealAttachment": "In Ordner",
+    "outboxRemoveFailed": "Nachricht wurde gesendet, aber das Entfernen aus dem Postausgang ist fehlgeschlagen. Die in der Warteschlange stehende Kopie abbrechen.",
+    "sendErrors": {
+      "notConnected": "Nicht verbunden — schließen Sie das Radio an und versuchen Sie es erneut.",
+      "emptyPayload": "Nachrichtentext ist erforderlich",
+      "missingDestinationKey": "Diese Direktnachricht kann nicht gesendet werden — der Verschlüsselungsschlüssel des Empfängers fehlt. Warten Sie, bis der Kontakt synchronisiert oder erneut verbunden ist.",
+      "encryptionBlocked": "Kann nicht gesendet werden — Verschlüsselungsschlüssel fehlt.",
+      "timeout": "Sendezeit abgelaufen. Versuchen Sie es erneut.",
+      "invalidReaction": "Diese Reaktion ist nicht gültig.",
+      "reactionTargetMissing": "Die Nachricht, auf die reagiert werden soll, wurde nicht gefunden.",
+      "bleUnavailable": "Bluetooth ist nicht bereit. Verbinden Sie sich erneut und versuchen Sie es erneut.",
+      "roomSessionExpired": "Die Raumsitzung ist abgelaufen - melden Sie sich erneut an, um zu posten.",
+      "noSavedRoomCredential": "Kein gespeichertes Raumpasswort. Logge dich zuerst in den Raum ein."
+    },
+    "reticulumDmDestHashesAria": "Ziel-LXMF und Identitäts-Hashes",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "LXMF-Hash beginnend mit {{prefix}} kopieren",
+    "reticulumDmCopyIdentityAria": "Identitäts-Hash beginnend mit {{prefix}} kopieren",
+    "reticulumDmStaleAlternateAria": "Möglicherweise unterschiedliches LXMF-Ziel für diesen Peer",
+    "reticulumDmStaleAlternate": "Dieser Chat ist LXMF {{openPrefix}}…. Du hast auch einen anderen LXMF {{alternatePrefix}}…, bei dem es sich möglicherweise um dieselbe Person in einer anderen App handelt. Bestätigen Sie die Netzwerk-LXMF / Peers-Nachricht → oder kündigen Sie sie jetzt auf beiden Seiten an.",
+    "reticulumDmStaleAlternateNamed": "Dieser Chat ist LXMF {{openPrefix}}…. Ein anderer LXMF {{alternatePrefix}}… ({{name}}) kann dieselbe Person in einer anderen App sein. Öffnen Sie die → Peers-Nachricht auf diesem Hash oder kündigen Sie sie jetzt auf beiden Seiten an.",
+    "reticulumDmStaleAlternateDismissAria": "Zielwarnung ausblenden",
+    "outboxEmergencyBadge": "Notfall",
+    "outboxEmergencyWillSend": "Wird wiederholt, bis es gesendet wird",
+    "outboxEmergencyCapBlocked": "Pausiert: zu viele Notfallmeldungen in der Warteschlange. Versuchen Sie es erneut oder brechen Sie diese ab.",
+    "outboxEmergencyCancelConfirm": "Diese Notfallnachricht abbrechen? Es wird nicht gesendet.",
+    "retryOutboxEmergencyAttempt": "Versuch {{count}}"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -851,7 +885,6 @@
     "selectSerialPort": "Wählen Sie Serieller Port",
     "noSerialPorts": "Keine seriellen Ports gefunden. Stellen Sie sicher, dass Ihr Gerät angeschlossen ist.",
     "enterPin": "Geben Sie die auf Ihrem Gerät angezeigte PIN ein:",
-    "pinExpiring": "{{count}}s – PIN schnell eingeben, BlueZ-Pairing-Fenster wird geschlossen",
     "submit": "Einreichen",
     "rePairDevice": "Gerät entfernen und erneut koppeln",
     "mqttConnection": "MQTT-Verbindung",
@@ -920,19 +953,14 @@
     "stageConfiguring": "Gerät wird konfiguriert…",
     "stageConnecting": "Verbindung zum Gerät wird hergestellt…",
     "stageScanning": "Scannen – Wählen Sie Ihr Gerät aus, wenn es unten angezeigt wird",
-    "stageConnectingSaved": "Verbindung mit gespeichertem Bluetooth-Gerät wird hergestellt…",
-    "stageSelectBluetooth": "Wählen Sie unten Ihr Bluetooth-Gerät aus",
     "stageEnterPin": "Geben Sie die auf Ihrem Gerät angezeigte PIN ein",
     "stageEnterPinPair": "Geben Sie die PIN ein, um das Gerät zu koppeln",
     "stagePairingBluetooth": "Kopplung mit PIN (bluetoothctl)…",
     "stageRemoving": "Gerät wird entfernt…",
     "stagePairingPin": "Mit PIN koppeln…",
-    "stagePairing": "Paarung…",
-    "stageSelectBluetoothDots": "Wählen Sie Ihr Bluetooth-Gerät aus…",
     "stagePairingFailed": "Die Kopplung ist fehlgeschlagen. Bitte koppeln Sie Ihr Gerät erneut.",
     "stageCheckingPairing": "Bluetooth-Kopplung wird überprüft…",
     "stageEnterPinLinux": "Geben Sie die auf Ihrem Gerät angezeigte PIN ein (zuerst mit Linux koppeln).",
-    "stageReconnecting": "Verbindung zum letzten Bluetooth-Gerät wird wiederhergestellt…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
@@ -954,7 +982,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Überprüfen Sie Einstellungen > Bluetooth und Geräte. Wenn Bluetooth aktiviert, aber nicht verfügbar ist, aktualisieren Sie Ihren Bluetooth-Treiber im Geräte-Manager.",
-        "adapterLinuxHint": "Stellen Sie sicher, dass Bluetooth aktiviert und das experimentelle Web-Bluetooth-Flag gesetzt ist. Versuchen Sie: systemctl status bluetooth",
         "adapterGenericHint": "Stellen Sie sicher, dass Bluetooth aktiviert ist. Führen Sie unter Linux Folgendes aus: systemctl status bluetooth",
         "securityPermissionHint": "Bluetooth-Berechtigung verweigert. Stellen Sie sicher, dass die App Zugriff auf das Bluetooth-Gerät hat.",
         "gattDisconnectedHint": "GATT-Verbindung unterbrochen. Gehen Sie näher an das Gerät heran und stellen Sie die Verbindung wieder her.",
@@ -1161,7 +1188,8 @@
         "i2p": "I2P-Backbone über einen Router auf dieser Maschine. Aktivieren SIE die SAM-Anwendungsbrücke (127.0.0.1:7656) — nicht HTTP/HTTPS-I2PTunnel-Proxys (4444/4445). Starten Sie I2P neu, nachdem Sie SAM aktiviert haben, damit die Brücke zuhört, und starten Sie dann den Reticulum-Stack neu, wenn diese Schnittstelle ausgeschaltet bleibt.",
         "serial": "Generische serielle Verbindung zu einem TNC, Modem oder einem anderen Host über eine Leitung. Stellen Sie die Linienparameter so ein, dass sie mit dem fernen Ende übereinstimmen.",
         "ax25kiss": "AX.25 Paketradio durch einen KISS TNC. Erfordert Ihr Rufzeichen und eine SSID (0-15), die diese Station identifiziert.",
-        "local": "Shared-Instance-Buchse auf dieser Maschine. Andere lokale Tools (rnsd, Nomad Network, rnsh) können über diesen Stack angeschlossen werden. Der Socket-Pfad leitet sich vom Namen dieser Schnittstelle ab, sodass die Umbenennung die Adresse ändert, die andere Tools verwenden müssen."
+        "local": "Shared-Instance-Buchse auf dieser Maschine. Andere lokale Tools (rnsd, Nomad Network, rnsh) können über diesen Stack angeschlossen werden. Der Socket-Pfad leitet sich vom Namen dieser Schnittstelle ab, sodass die Umbenennung die Adresse ändert, die andere Tools verwenden müssen.",
+        "backbone": "Öffentlicher TCP-Backbone-Listener (Szenario A). Veröffentlicht ein Gateway, mit dem sich Peers automatisch verbinden können, wenn RMAP Discoverable eingeschaltet ist — setze reachable_on auf deinen öffentlichen Hostnamen oder deine öffentliche IP-Adresse."
       },
       "rfProfile": {
         "coordinated": "Regional koordiniert",
@@ -1299,7 +1327,9 @@
         "preamble": "Präambel (ms)",
         "txtail": "TX Tail (ms)",
         "persistence": "Beharrlichkeit sagt",
-        "slottime": "Zeit (ms):"
+        "slottime": "Zeit (ms):",
+        "listen_on": "Adresse zuhören",
+        "target_host": "Remote-Host (Client-Modus)"
       },
       "fieldOption": {
         "parity": {
@@ -1324,7 +1354,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Nur Bootstrap",
+      "bootstrapOnlyHint": "Trennen Sie diese Schnittstelle, sobald genügend erkannte Backbone-/TCP-Server automatisch verbunden sind (→Netzwerkautoverbindungslimit > 0 erforderlich)."
     },
     "reticulumPeers": {
       "hops": "Hops",
@@ -1354,15 +1386,13 @@
       "tcpUnreachableHint": "Die Remote-Reticulum-Instanz kann offline sein oder Verbindungen blockieren. Deaktivieren Sie diese Schnittstelle oder überprüfen Sie den Host und den Port. Häufige Neustarts von mesh-client oder des Stacks können dazu führen, dass Reticulum-1.4.0+-Hubs Ihre IP 12 Stunden lang blockieren — lieber warten statt erneut neu starten.",
       "connectingHintBle": "BLE RNode-Links können bis zu 60 Sekunden nach dem Start des Stacks dauern (OS-Passkey-Fenster). Geben Sie bei Aufforderung die aktuelle RNode-PIN ein — niemals 123456. Das ist normal, kein Fehler. Das Gerät wird möglicherweise erst nach einer erfolgreichen Verbindung in den Systemeinstellungen angezeigt.",
       "offlineHintBle": "Um diesen Fehler zu beheben, müssen Sie möglicherweise diese Schnittstelle entfernen und wieder hinzufügen (Gerät auswählen), damit die gespeicherte Bluetooth-ID aktualisiert wird, und dann den Stack neu starten. Ihr Betriebssystem fordert möglicherweise eine 6-stellige Bluetooth-PIN an (macOS, Windows oder Linux). RNode generiert bei jeder Kopplung einen neuen Code — verwenden Sie niemals 123456 (das ist die Standardeinstellung von Meshtastic, nicht RNode). Der RNode muss nicht in den Systemeinstellungen → Bluetooth angezeigt werden, bevor diese App eine Verbindung herstellt; der OS-Dialog erscheint, wenn der Stack koppelt. Headless-Radios: USB verbinden → Reticulum Admin → Bluetooth → Kopplung starten → geben Sie die im Admin-Panel angezeigte PIN (nicht auf dem Radiodisplay) in den OS-Dialog ein. Radios mit Display: Taste ~7 s auf Heltec-Geräten gedrückt halten (Timing variiert; ~10 s auf vielen Boards aktiviert stattdessen Wi‑Fi-AP), PIN vom Bildschirm ablesen und im OS-Dialog eingeben. Löschen Sie fehlgeschlagene Bindungen in den Bluetooth-Einstellungen Ihres Betriebssystems, bevor Sie es erneut versuchen.",
-      "offlineHintBleBondStale": "macOS zeigt diesen RNode immer noch als gekoppelt an, aber die Bluetooth-Schlüssel stimmen nicht mehr überein (Peer entfernte die Kopplungsinformationen). Vergessen Sie das Gerät in den Systemeinstellungen → Bluetooth, schalten Sie den RNode in den Kopplungsmodus (Admin → Bluetooth → Start Pairing oder halten Sie die Taste ~7 s gedrückt), entfernen Sie dann diese Schnittstelle und fügen Sie sie erneut hinzu (Gerät auswählen), starten Sie den Stack neu und geben Sie die neue 6-stellige PIN ein, wenn Sie dazu aufgefordert werden.",
+      "offlineHintBleBondStale": "macOS zeigt weiterhin Paired, aber Bluetooth hat die Bindung abgelehnt (Peer removed pairing information). Vergessen Sie diesen RNode in Systemeinstellungen → Bluetooth, dann neu koppeln: USB → Reticulum Admin → Bluetooth → Clear paired / Start pairing und neue PIN eingeben. Bevorzugen Sie USB-Serial oder Wi-Fi (tcp://), wenn das Funkgerät sofort online sein muss.",
       "tcpFastFlap": "{{name}}: Hub hat deine IP wahrscheinlich nach häufigen Stack-Neustarts blockiert ({{host}}:{{port}})",
       "tcpFastFlapHint": "Reticulum 1.4.0+ öffentliche Hubs blockieren eine IP nach fünf kurzen TCP-Sitzungen innerhalb von 12 Stunden. Schnelle Neustarts von mesh-client oder des Stacks zählen. Deaktivieren Sie diesen Hub und warten Sie bis zu 12 Stunden — ein erneuter Neustart verlängert die Sperre."
     },
     "autoConnectingTo": "Automatische Verbindung mit {{deviceName}}…",
     "autoReconnectInProgress": "Automatische Wiederverbindung läuft…",
     "stageAutoConnectingBle": "Verbindung zu {{deviceName}} wird hergestellt…",
-    "stageWaitingNobleBleMeshtastic": "Warten auf die Fertigstellung von Meshtastic Bluetooth — MeshCore verbindet sich automatisch mit {{deviceName}}, wenn es fertig ist…",
-    "stageWaitingNobleBleMeshcore": "Warten auf die Fertigstellung von MeshCore Bluetooth — Meshtastic verbindet sich automatisch mit {{deviceName}}, wenn es fertig ist…",
     "reticulumStats": {
       "interfaces": "{{count}} Schnittstellen",
       "peers": "{{count}} Peers"
@@ -1435,7 +1465,7 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Share-Instanz ist aktiviert — beenden Sie vollständig andere Reticulum-Apps (MeshChatX, Ratspeak, Standalone-RNSD) und starten Sie diesen Stack neu, bevor Sie DMs erneut versuchen.",
       "bleBondRemoved": "{{name}}: Bluetooth-Verbindung ist veraltet (das Betriebssystem zeigt immer noch „Paired“ an)",
-      "bleBondRemovedHint": "Vergessen Sie diesen RNode zuerst in Systemeinstellungen → Bluetooth (macOS entfernt Paired nicht automatisch). Bevorzugen Sie wenn möglich USB-Serial oder Wi‑Fi (tcp://), um BLE-Bindungen zu vermeiden. Dann: Admin → Bluetooth → Gekoppelte Geräte löschen (USB, ESP32) falls verfügbar, Kopplung starten, diese BLE-Schnittstelle entfernen und neu hinzufügen (Gerät wählen), Stack neu starten und die neue 6-stellige PIN eingeben.",
+      "bleBondRemovedHint": "Automatisches exclusive reconnect konnte diese Bindung nicht heilen. Vergessen Sie den RNode in Systemeinstellungen → Bluetooth, dann Admin → Clear paired / Start pairing und neue PIN eingeben. Bis zur Neu-Kopplung USB-Serial oder Wi-Fi (tcp://) bevorzugen. LoRa BLE (MeshCore/Meshtastic) bleibt pausiert, solange dieser RNode Bluetooth nutzt.",
       "blePairingTimedOut": "{{name}}: Zeitüberschreitung beim Austausch des Bluetooth-Passschlüssels",
       "blePairingTimedOutHint": "Stoppen Sie den Stack, starten Sie die Kopplung erneut (Admin → Bluetooth zeigt die PIN im Bedienfeld an — das Radio-Display bleibt möglicherweise leer — oder halten Sie die ~7 s-Taste für eine PIN auf dem Bildschirm gedrückt), starten Sie den Stack einmal neu und geben Sie diese PIN innerhalb von ~60 Sekunden in das OS-Dialogfeld ein. Verwenden Sie niemals 123456 (Meshtastic-Standard).",
       "bleBondRemovedStopStack": "Stapel stoppen",
@@ -1445,7 +1475,9 @@
       "txQueueDropsHintNeutral": "Dieser Schnittstellen-TX-Kanal ist voll. Überprüfen Sie die Verknüpfungsgesundheit der Schnittstelle (oder deaktivieren Sie sie), um das Herunterfallen zu stoppen.",
       "txQueueDropsHintBleFlowControl": "Host-TX-Warteschlangengegendruck, während das Funkgerät besetzt ist (Flusssteuerung eingeschaltet). Wird unter HF-Stau erwartet — keine steckengebliebene Verbindung. Reduzieren Sie die ausgehende Last oder warten Sie auf Sendezeit.",
       "tcpResetByPeer": "{{name}}: Hub setzt die TCP-Sitzung zurück (Verbindung von Peer zurückgesetzt)",
-      "tcpReadEof": "{{name}}: Hub hat TCP sauber geschlossen (INFO: TCP gelesen: EOF)"
+      "tcpReadEof": "{{name}}: Hub hat TCP sauber geschlossen (INFO: TCP gelesen: EOF)",
+      "bleLtkDesyncPurged": "Nichtübereinstimmung des Verschlüsselungsschlüssels (LTK-Desync) — veraltete OS-Bindung entfernt. Erneut koppeln: Admin → Bluetooth → Starten Sie die Kopplung und geben Sie dann die neue PIN ein.",
+      "bleLtkDesyncManualForget": "Nichtübereinstimmung des Verschlüsselungsschlüssels (LTK-Desync). Vergessen Sie diesen RNode in den Systemeinstellungen → Bluetooth und dann Admin → Start Pairing. Installieren Sie blueutil (brew install blueutil), um eine automatische Entkopplung unter macOS zu ermöglichen."
     },
     "reticulumSidecarBundledMissing": "Bei dieser Installation fehlt der mitgelieferte Reticulum-Sidecar. Führen Sie ein Upgrade auf eine neuere Version durch oder melden Sie das Problem – das Erstellen aus dem Quellcode ist bei Paketinstallationen nicht verfügbar.",
     "radioMqttRootDivergesWarning": "Das Hauptthema von Radio MQTT ist {{radioRoot}}, aber dieses Panel abonniert {{appPrefix}}. Passen Sie das Funkgerät an, um den landesweiten Knotenverkehr zu begrenzen — aktualisieren Sie das Themenpräfix und verbinden Sie MQTT erneut.",
@@ -1497,7 +1529,6 @@
     "linkQuality": "Verbindungsqualität",
     "linkQualityMs": "{{ms}} ms",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Nicht verfügbar (Web-Bluetooth)",
     "meshcoreCaBroker": "MeshCore.CA Broker",
     "meshcoreCaPrimary": "Hauptversicherter",
     "meshcoreCaBackup": "Backup",
@@ -1520,7 +1551,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} dBm",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Bluetooth-ID",
-    "reticulumAutoResendOnAnnounce": "Wiederholen Sie fehlgeschlagene Nachrichten, wenn ein Peer dies ankündigt"
+    "reticulumAutoResendOnAnnounce": "Wiederholen Sie fehlgeschlagene Nachrichten, wenn ein Peer dies ankündigt",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",
@@ -1756,11 +1804,11 @@
       },
       "excessiveFlooding": {
         "title": "Ermöglichen Sie die Einrichtung direkter Routen",
-        "description": "Das Überschwemmungsverhältnis ist sehr hoch — warten Sie, bis der Knoten Direktpfadkontakte akkumuliert hat, oder überprüfen Sie die Nähe des Repeaters."
+        "description": "Das Flood-Verhältnis ist sehr hoch — warten Sie, bis der Knoten Direktpfadkontakte akkumuliert hat, oder überprüfen Sie die Nähe des Repeaters."
       },
       "highCompanionTxQueue": {
         "title": "Reduzieren Sie den ausgehenden Datenverkehr oder überprüfen Sie die HF-Verbindung",
-        "description": "Die Companion TX-Warteschlange ist fast voll — pausieren Sie das Senden, reduzieren Sie Überschwemmungen oder prüfen Sie auf Störungen und schwache Links."
+        "description": "Die Companion TX-Warteschlange ist fast voll — pausieren Sie das Senden, reduzieren Sie Flooden oder prüfen Sie auf Störungen und schwache Links."
       }
     },
     "cuHistoryHeading": "Kanalauslastung (letzte 24h)",
@@ -1822,7 +1870,8 @@
         "rmap_transport_disabled": "Erkennbare Schnittstellen sind konfiguriert, aber der Transportmodus ist ausgeschaltet.",
         "rmap_i2p_not_connectable": "Die I2P-Schnittstelle \"{{name}}\" ist auffindbar, aber anschließbar ist nicht ja.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "Die Schnittstelle „{{name}}“ ist mit einem Nicht-AP-/Gateway-Modus auffindbar — Reticulum führt sie als Access Point aus, es sei denn, ignore_config_warnings ist festgelegt. Bearbeiten Sie die Schnittstelle oder starten Sie den Stack neu, damit der mesh-client das Opt-Out stempeln kann."
+        "rmap_mode_autocorrect": "Die Schnittstelle „{{name}}“ ist mit einem Nicht-AP-/Gateway-Modus auffindbar — Reticulum führt sie als Access Point aus, es sei denn, ignore_config_warnings ist festgelegt. Bearbeiten Sie die Schnittstelle oder starten Sie den Stack neu, damit der mesh-client das Opt-Out stempeln kann.",
+        "rmap_missing_reachable_on": "Die Backbone-Schnittstelle \"{{name}}\" ist auffindbar, aber reachable_on fehlt."
       },
       "runtime": {
         "rnsNotReady": "Der RNS-Stack ist nicht bereit",
@@ -1848,7 +1897,7 @@
         "announceBusPressure": "Hohe Ansage-/Pfad-Antwort-Rate kann eingehende LXMF-Chat-Zustellung verzögern — Aufholjagd ist aktiv; große Pfad-Tabellen werden erwartet",
         "announceBusPressureTipDisableHubs": "Deaktivieren Sie unbenutzte TCP-Hubs (→Verbindungsschnittstellen) — der größte Hebel für Pfad-Tabellen-Abwanderung.",
         "announceBusPressureTipShareInstance": "Deaktivieren Sie die Share-Instanz, wenn andere lokale Reticulum-Apps mit diesem Stack konkurrieren.",
-        "announceBusPressureTipAnnounceInterval": "Das Netzwerk-Ankündigungsintervall steuert nur die ausgehenden Ansagen dieses Knotens — es stoppt keine eingehenden Pfad-Antwort-Überschwemmungen.",
+        "announceBusPressureTipAnnounceInterval": "Das Netzwerk-Ankündigungsintervall steuert nur die ausgehenden Ansagen dieses Knotens — es stoppt keine eingehenden Pfad-Antwort-Flooden.",
         "announceBusPressureTipWait": "Catch-up ist bereits aktiv; diese Warnung löscht sich nach ca. 5 Minuten ohne Verzögerung, Sturm oder Überlauf.",
         "announceBusPressureHot": "Eine hohe Ankündigungs-/Pfadantwortrate kann die eingehende LXMF-Chat-Zustellung verzögern — die neuesten Pfadaktualisierungen erfolgen über „{{hotInterface}}“",
         "announceBusPressureTipHotInterface": "Die Streckentabellenabwanderung konzentriert sich auf die Schnittstelle „{{name}}“.",
@@ -1865,14 +1914,14 @@
     },
     "routingPort": {
       "nodeInfo": "NodeInfo",
-      "telemetry": "Telemetrie",
+      "telemetry": "Telemetry",
       "neighborInfo": "NeighborInfo",
       "traceroute": "Traceroute",
       "position": "Position",
       "remoteHardware": "RemoteHardware",
       "admin": "Admin",
       "discoveryFlood": "DiscoveryFlood",
-      "roomAdvert": "Raumanzeige",
+      "roomAdvert": "RoomAdvert",
       "generic": "Port{{port}}"
     },
     "signalColumn": "Signal",
@@ -1884,7 +1933,9 @@
     "km": "km",
     "distanceOffsetHelp": "Fügt den Schwellenwerten für die Hop-Goblin- und Bad-Route-Entfernung (0–50) eine flache km-Untergrenze hinzu.",
     "ignoreMqttToggle": "MQTT ignorieren",
-    "ignoreMqttHelp": "Nur MQTT-Knoten ausgrauen und von der Diagnose ausschließen"
+    "ignoreMqttHelp": "Nur MQTT-Knoten ausgrauen und von der Diagnose ausschließen",
+    "exportJson": "Exportieren JSON",
+    "exportJsonAria": "Sichtbare Diagnosezeilen als json exportieren"
   },
   "diagnosticsPing": {
     "title": "Kontinuierlicher Ping",
@@ -2253,7 +2304,42 @@
     "layerCongestionHalos": "Stauhalos",
     "waypointDefaultName": "Wegpunkt",
     "waypointDelete": "Wegpunkt löschen",
-    "noGpsNodes": "Noch keine Knoten mit GPS-Positionen"
+    "noGpsNodes": "Noch keine Knoten mit GPS-Positionen",
+    "offlineMaps": {
+      "heading": "Offline-Karten",
+      "autoCache": "Auto-Cache im Leerlauf",
+      "autoCacheAria": "Laden Sie die aktuelle Kartenansicht automatisch herunter, während Sie online sind",
+      "downloadView": "Aktuelle Ansicht herunterladen (.xls)",
+      "downloadAria": "Schätzen Sie die aktuelle Kartenansicht für die Offline-Nutzung und laden Sie sie herunter",
+      "estimating": "geschätzt …",
+      "confirm": "{{count}} Kacheln (~{{size}}), Zoom {{minZoom}}–{{maxZoom}}. Jetzt herunterladen?",
+      "confirmYes": "Herunterladen",
+      "confirmDownloadAria": "Offline-Karten-Download bestätigen",
+      "cancelConfirm": "Nicht jetzt",
+      "cancelConfirmAria": "Offline-Karten-Download-Bestätigung ab",
+      "progress": "{{completed}} / {{total}} Kacheln ({{failed}} fehlgeschlagen)",
+      "paused": "Pausiert — wartet auf Netzwerk...",
+      "cancel": "Download abbrechen",
+      "cancelAria": "Offline-Karten-Download abbrechen",
+      "cancelled": "Download abgebrochen!",
+      "done": "{{completed}} Kacheln heruntergeladen ({{failed}} fehlgeschlagen).",
+      "tooLarge": "Diese Fläche ist zu groß. Vergrößern oder verkleinern Sie den Zoombereich.",
+      "noViewport": "Schwenken Sie zuerst die Karte, damit ein Ansichtsfenster gespeichert wird.",
+      "cacheStats": "Cache: {{count}} Kacheln ({{size}})",
+      "clear": "Kachel-Cache leeren",
+      "clearAria": "Offline-Kartenkachel-Cache leeren",
+      "cleared": "Cache geleert."
+    },
+    "basemapUsgsTopo": "USGS Topo (nur USA)",
+    "layerIncidents": "NOT-HALT Vorkommnisse",
+    "layerMgrsGrid": "MGRS GRID",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "BOHRER {{sender}}: {{codes}}",
+    "measure": "Massnahme",
+    "measureStartAria": "Start Messstrecke",
+    "measureStopAria": "Messen beenden und löschen",
+    "measureHint": "Klicken Sie auf die Karte, um Punkte hinzuzufügen",
+    "measureTotal": "{{km}} km / {{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -2284,10 +2370,7 @@
       "bleAlreadyInProgress": "Bluetooth-Verbindung bereits im Gange. Warten Sie, bis der Vorgang abgeschlossen ist, oder versuchen Sie es stattdessen mit Seriell/USB.",
       "bleMissingServices": "Das Gerät unterstützt das MeshCore BLE-Protokoll nicht. Stellen Sie sicher, dass auf dem Gerät die MeshCore-Firmware ausgeführt wird.",
       "blePeripheralInUse": "Dieses Gerät ist bereits über Meshtastic BLE verbunden. Trennen Sie es zuerst, bevor Sie es als MeshCore verbinden.",
-      "bleTimeoutWebBtHandshake": "Zeitüberschreitung beim MeshCore-Handshake (Web-Bluetooth). Das Radio benötigt möglicherweise zuerst eine mit Linux gekoppelte PIN: Verwenden Sie „Gerät entfernen und erneut koppeln“ und geben Sie die auf dem Gerät angezeigte PIN ein, oder koppeln Sie es mit „bluetoothctl“ und tippen Sie dann erneut auf „Verbinden“.",
-      "bleTimeoutWebBt": "Beim Öffnen von MeshCore über Web-Bluetooth ist eine Zeitüberschreitung der Bluetooth-Verbindung aufgetreten. Versuchen Sie es erneut, lassen Sie das Gerät aktiv, schalten Sie BLE am Funkgerät aus und wieder ein oder verwenden Sie Seriell/TCP.",
       "bleTimeoutHandshake": "Bluetooth-Verbindung hergestellt, aber der MeshCore-Protokoll-Handshake wurde vor der Trennung/Zeitüberschreitung nicht abgeschlossen. Versuchen Sie es noch einmal, lassen Sie das Gerät aktiv und in der Nähe, schalten Sie BLE aus und wieder ein oder verwenden Sie Seriell/TCP.",
-      "bleTimeoutNoble": "Beim Öffnen von MeshCore über Noble IPC kam es zu einer Zeitüberschreitung der Bluetooth-Verbindung. Versuchen Sie es erneut, schalten Sie BLE auf dem Gerät aus und wieder ein oder verwenden Sie Seriell/TCP.",
       "roomPost": {
         "badState": "Raumbeitrag abgelehnt (nicht am Radio eingeloggt). Melden Sie sich ab, melden Sie sich erneut an und versuchen Sie es erneut.",
         "illegalArg": "Raumbeitrag abgelehnt (ungültiges Nachrichtenformat).",
@@ -2313,11 +2396,11 @@
         "rejected": "Raumabmeldung per Funk abgelehnt.",
         "failed": "Konnte den Raum nicht verlassen"
       },
-      "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
       "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
       "pingFailed": "Ping fehlgeschlagen",
       "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut.",
-      "removeContactFailed": "Lokal entfernt, aber das Radio hat removeContact abgelehnt. Der Kontakt kann nach einer Aktualisierung wieder angezeigt werden."
+      "removeContactFailed": "Lokal entfernt, aber das Radio hat removeContact abgelehnt. Der Kontakt kann nach einer Aktualisierung wieder angezeigt werden.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Überprüfen Sie v1_-Benutzernamen, Token-Signatur und JWT-Zielgruppe im Vergleich zum Broker. siehe docs/letsmesh-mqtt-auth.md. Verwenden Sie „Benutzerdefiniert“, um bei Bedarf ein vom Bediener ausgestelltes Token einzufügen.",
@@ -2822,7 +2905,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Global bevorzugtes Pfadmedium",
       "pathMediumPreferenceSaved": "Pfad Medium Präferenz gespeichert.",
-      "pathMediumPreferenceSaveFailed": "Pfad-Medium-Präferenz konnte nicht gespeichert werden."
+      "pathMediumPreferenceSaveFailed": "Pfad-Medium-Präferenz konnte nicht gespeichert werden.",
+      "discoveryConsumeTitle": "Schnittstellen entdeckt (konsumieren)",
+      "discoveryConsumeHint": "Zuhören ist immer möglich. Die automatische Verbindung bleibt deaktiviert (0), es sei denn, Sie entscheiden sich dafür — entdeckte Backbone-/TCP-Server werden von rsReticulum und nicht vom Mesh-Client gewählt.",
+      "autoconnectDiscovered": "Autoconnect-Limit",
+      "autoconnectDiscoveredAria": "Maximal entdeckte Schnittstellen für die automatische Verbindung",
+      "autoconnectDiscoveredHint": "0 = Niemals automatisch wählen. Werte über 0 lassen Reticulum kurzlebige Backbone-Clients von Discovery Announces aufrufen.",
+      "requiredDiscoveryValue": "Minimaler Entdeckungsstempel",
+      "requiredDiscoveryValueAria": "Minimaler kryptografischer Stempelwert für akzeptierte Entdeckungsansagen",
+      "discoverySources": "Vertrauenswürdige Entdeckungsquellen",
+      "discoverySourcesAria": "Kommagetrennte Netzwerk- oder Transportidentitäts-Hashes",
+      "discoverySourcesPlaceholder": "32-Hex-Hashes, durch Kommas getrennt (leer = beliebige akzeptieren)",
+      "discoverySourcesHint": "Wenn gesetzt, werden nur Ansagen von diesen Identitäten akzeptiert (immer noch abhängig vom Stempelwert).",
+      "discoverySourcesInvalid": "Jede Discovery-Quelle muss ein 32-stelliger Hex-Identitäts-Hash sein.",
+      "networkIdentity": "Netzwerkidentitätspfad",
+      "networkIdentityAria": "Pfad zur Netzwerkidentitätsdatei zur Erkennung, Verschlüsselung und Entschlüsselung",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "Optional. Erforderlich, um verschlüsselte Discovery-Ankündigungen zu entschlüsseln (und beim Veröffentlichen mit discovery_encrypt zu verschlüsseln)."
     },
     "reticulumConfigImport": {
       "title": "Reticulum-Konfiguration importieren",
@@ -2959,7 +3058,7 @@
     "voltageLabel": "Netzspannung",
     "gpsLabel": "GPS",
     "noLppSensorData": "Keine LPP-Sensordaten",
-    "mapPositionFromAdvertNotRequest": "Die Kartenposition stammt aus Anzeigen-/Kontaktdaten, nicht aus dieser Anfrage.",
+    "mapPositionFromAdvertNotRequest": "Die Kartenposition stammt aus Advert-/Kontaktdaten, nicht aus dieser Anfrage.",
     "neighborsHeading": "Nachbarn ({{count}})",
     "noNeighborsReported": "Keine Nachbarn gemeldet",
     "signalLabel": "Signal",
@@ -2973,10 +3072,10 @@
     "airTimeLabel": "Sendezeit",
     "uptimeLabel": "Verfügbarkeit",
     "txQueueLabel": "TX-Warteschlange",
-    "floodDirectSentLabel": "Hochwasser / Direkt verschickt",
-    "floodDirectRecvLabel": "Hochwasser /Direktrückgewinnung",
+    "floodDirectSentLabel": "Flood / Direkt verschickt",
+    "floodDirectRecvLabel": "Flood /Direktrückgewinnung",
     "errorsLabel": "Fehler",
-    "dupsDirectFloodLabel": "Dups (direkt / Hochwasser)",
+    "dupsDirectFloodLabel": "Dups (direkt / Flood)",
     "radioStatsLocalHeading": "Radiostatistiken (lokal)",
     "txAirTimeLabel": "TX Sendezeit",
     "rxAirTimeLabel": "RX Sendezeit",
@@ -3022,8 +3121,8 @@
     "confirmDelete": "Löschen bestätigen",
     "deleteFailedMqtt": "Löschen fehlgeschlagen. Trennen Sie die Verbindung zu MQTT und versuchen Sie es erneut.",
     "packetsLocalHeading": "Pakete (lokal)",
-    "sentFloodDirectLabel": "Gesendet (Hochwasser / Direkt)",
-    "recvFloodDirectLabel": "Recv (Hochwasser / Direkt)",
+    "sentFloodDirectLabel": "Gesendet (Flood / Direkt)",
+    "recvFloodDirectLabel": "Recv (Flood / Direkt)",
     "totalSentLabel": "Insgesamt gesendet",
     "totalRecvLabel": "Total Recv",
     "rxErrorsLabel": "RX-Fehler",
@@ -3178,7 +3277,7 @@
   "nodeListPanel": {
     "contactsRefreshed": "Kontakte aktualisiert.",
     "refreshFailed": "Aktualisierung fehlgeschlagen: {{message}}",
-    "floodAdvertSent": "Überschwemmungsanzeige gesendet",
+    "floodAdvertSent": "Flood-Advert gesendet",
     "advertFailed": "Anzeige fehlgeschlagen: {{message}}",
     "importFailed": "Import fehlgeschlagen: {{message}}",
     "importResultSuccess_one": "{{count}} Kontakt importiert.",
@@ -3205,7 +3304,7 @@
     "searchContactsPlaceholder": "Kontakte suchen",
     "searchNodesAria": "Knotensuche",
     "searchContactsAria": "Kontakte suchen",
-    "meshcoreImportedHint": "Importierte Kontakte verwenden die Importzeit als Zuletzt gehört, bis eine RF-Werbung oder ein Ping / Status sie aktualisiert.",
+    "meshcoreImportedHint": "Importierte Kontakte verwenden die Importzeit als Zuletzt gehört, bis eine RF-Advert oder ein Ping / Status sie aktualisiert.",
     "filterOptionAllNodes": "Alle Knoten",
     "filterOptionAllContacts": "Alle Kontakte",
     "filterTypePrefix": "Typ: {{label}}",
@@ -3269,7 +3368,8 @@
     "meshcoreTypeNone": "None",
     "meshcoreTypeUnknown": "Unbekannt",
     "columnHealth": "Knotengesundheit",
-    "hasPublicKeyTitle": "Öffentlicher Schlüssel:"
+    "hasPublicKeyTitle": "Öffentlicher Schlüssel:",
+    "buttonExportCsv": "CSV exportieren"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3432,7 +3532,10 @@
     "pageProgressFailoverGeneric": "Eine andere Route wird versucht...",
     "pageProgressNoAlternate": "Keine anderen Routen verfügbar — Beenden dieses Versuchs...",
     "downloadFile": "Herunterladen",
-    "dismissPreview": "Ablehnen"
+    "dismissPreview": "Ablehnen",
+    "clearBrowserCaches": "Seiten- und Bildcaches löschen",
+    "clearedBrowserCaches": "Nomad Seiten- und Bildcaches geleert",
+    "clearBrowserCachesHint": "In-Memory-Nomad-Seite und Bild-Caches löschen. Caches werden nicht auf der Festplatte gespeichert. Bilder, die größer als 2 MiB (base64) sind, werden niemals zwischengespeichert."
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",
@@ -3574,12 +3677,16 @@
     "pathMediumTitle": "Aktives Pfadmedium: {{medium}}",
     "chatNeedsLxmfDelivery": "Noch keine LXMF-Lieferadresse für diesen Peer. Warten Sie auf eine LXMF-Ankündigung oder öffnen Sie den Chat mit ihren 32-stelligen LXMF-Hash — Voice (lxst.telephony) -Zielen kann den Chat nicht empfangen.",
     "voiceAspectBadge": "Stimme",
-    "voiceAspectTitle": "Diese Pfad-Tabellenzeile ist ein LXST-Telefonieziel. Chat-Remaps zum LXMF-Delivery-Hash des Peers, wenn bekannt."
+    "voiceAspectTitle": "Diese Pfad-Tabellenzeile ist ein LXST-Telefonieziel. Chat-Remaps zum LXMF-Delivery-Hash des Peers, wenn bekannt.",
+    "heardViaTcpHub": "TCP-Hub",
+    "heardViaTcpHubTitle": "Aktiver Pfad ist über einen TCP/Transport Hub ({{interface}}). Bevorzugen Sie RF oder deaktivieren Sie Hubs, wenn Sie nur RF-Chat testen.",
+    "staleAlternateToast": "Chat geöffnet auf LXMF {{openPrefix}}…. Ein anderer LXMF {{alternatePrefix}}… kann dieselbe Person in einer anderen App sein — bestätige Network LXMF, bevor du dich auf „Geliefert“ verlässt.",
+    "staleAlternateToastNamed": "Chat geöffnet auf LXMF {{openPrefix}}…. Ein anderer LXMF {{alternatePrefix}}… ({{name}}) kann dieselbe Person in einer anderen App sein — bestätige Network LXMF, bevor du dich auf „Geliefert“ verlässt."
   },
   "radioPanel": {
     "offloadedContacts": "Entladen von {{count}} Kontakten in die Datenbank.",
     "failedOffloadContacts": "Kontakte konnten nicht entladen werden.",
-    "floodAdvertSent": "Überschwemmungsanzeige gesendet",
+    "floodAdvertSent": "Flood-Advert gesendet",
     "advertFailed": "Anzeige fehlgeschlagen: {{message}}",
     "clockSynced": "Uhr synchronisiert",
     "syncFailed": "Synchronisierung fehlgeschlagen: {{message}}",
@@ -4293,7 +4400,7 @@
     "emptyWaiting": "Es wurden noch keine neuen Mesh-Pakete empfangen. Bitte warten...",
     "noPacketsMatchFilter": "Keine Pakete entsprechen dem aktuellen Filter.",
     "rawHexLabel": "Rohes Hex ({{bytes}} Bytes):",
-    "transportScopeTooltip": "Transportumfangscode — regionaler Hochwasserfilter auf Hinweg",
+    "transportScopeTooltip": "Transportumfangscode — regionaler Flood-Filter auf Hinweg",
     "transportReturnTooltip": "Transportrückgabecode — Regionalfilter auf Rückweg",
     "transportRegionMatch": "Entspricht dem konfigurierten Überschwemmungsbereich",
     "transportRegionMismatch": "Entspricht nicht dem konfigurierten Überschwemmungsbereich",
@@ -4397,7 +4504,7 @@
     "ciphertextBytes": "Chiffriertextbytes:",
     "senderKeyPrefix": "Absenderschlüssel (Präfix):",
     "control": "Bedienung:",
-    "advertTs": "WERBUNG ts:",
+    "advertTs": "ADVERT ts:",
     "advertLatLon": "ANZEIGE lat/lon:"
   },
   "remoteAdmin": {
@@ -4765,14 +4872,25 @@
     "reachableOnError": {
       "invalid": "Ungültiger erreichbarer Wert.",
       "invalidHost": "Ungültiger Hostname für erreichbar am.",
-      "tooLong": "Der erreichbare Wert ist zu lang."
+      "tooLong": "Der erreichbare Wert ist zu lang.",
+      "required": "Backbone Publish erfordert ein erreichbares Skript für Hostname, IP oder Auflösung."
     },
     "openGlobalMap": "Globale Karte öffnen",
     "openGlobalMapAria": "RMAP v4 Global Map auf rmap.world öffnen",
     "applyPartialSuccess": "RMAP-Einstellungen wurden auf {{applied}} von {{total}} Schnittstellen angewendet.",
     "disablePartialSuccess": "Die RMAP-Veröffentlichung ist auf {{applied}} von {{total}} Schnittstellen deaktiviert.",
     "hint": "Ermöglicht RMAP-Veröffentlichung und App-GPS-Koordinaten auf allen aktivierten RMAP-fähigen Schnittstellen (RNode/Multi, KISS, BLE-Peer, I2P, UDP, Pipe). Das Kontrollkästchen ist nur aktiviert, wenn jede geeignete Schnittstelle veröffentlicht. Ein Teilzustand ist unbestimmt – überprüfen Sie ihn erneut, um den Rest zu synchronisieren. Verwenden Sie zur Feinsteuerung die RMAP-Umschaltung pro Schnittstelle für die Verbindung. LoRa-Pfade ermöglichen auch den Transport und den rmap.world-Hub.",
-    "disabledShareOff": "Aktivieren Sie Meinen Standort in der App → GPS / Standort freigeben, um ihn auf RMAP zu veröffentlichen."
+    "disabledShareOff": "Aktivieren Sie Meinen Standort in der App → GPS / Standort freigeben, um ihn auf RMAP zu veröffentlichen.",
+    "reachableOnRequired": "Erreichbar am (erforderlich für Backbone)",
+    "discoveryLxmfAddress": "Operator LXMF-Adresse (optional Hex)",
+    "discoveryStampValue": "Erkennungsstempelwert",
+    "discoveryEncrypt": "Encrypt Discovery kündigt an",
+    "publishIfac": "IFAC-Anmeldeinformationen veröffentlichen",
+    "advancedHint": "Verschlüsselungs- und IFAC-Optionen gelten für private Netzwerke, die eine gemeinsame Netzwerkidentität haben. Lassen Sie sie für die öffentliche RMAP-Veröffentlichung aus.",
+    "lxmfAddressError": {
+      "invalid": "Die LXMF-Adresse des Betreibers muss eine Hexadezimaladresse gerader Länge sein.",
+      "tooLong": "Operator-LXMF-Adresse ist zu lang."
+    }
   },
   "reticulumTopology": {
     "title": "Netzwerk-Topologie",
@@ -4844,17 +4962,12 @@
     "postCount": "{{count}} Posts",
     "lastPost": "Letzter Beitrag",
     "loginTitle": "Melden Sie sich beim Server an",
-    "adminLoginTitle": "Admin-Anmeldung",
     "loginHelp": "Geben Sie das Gastpasswort ein, um beizutreten und zu posten. Standard ist oft „hello“. Für Server ohne Gastpasswort „Schreibgeschützt fortfahren“ verwenden (Login sendet „hello“, wenn das Feld leer ist).",
-    "adminLoginHelp": "Geben Sie das Raumadministrator-Passwort ein, um Einstellungen und ACLs zu verwalten. Standard ist oft „hello“.",
     "guestPasswordLabel": "Gastpasswort",
     "guestPasswordPlaceholder": "hello",
-    "adminPasswordLabel": "Admin-Kennwort",
-    "adminPasswordPlaceholder": "Passwort",
     "loginButton": "Login",
     "loggingIn": "Anmelden …",
     "loginFailed": "Login fehlgeschlagen",
-    "cancelLoginDialog": "Raum-Anmeldedialog abbrechen",
     "continueReadOnly": "Schreibgeschützt fortfahren",
     "readOnlyBadge": "Schreibgeschützt",
     "readOnlyHint": "Sie haben schreibgeschützten Zugriff. Melden Sie sich mit einem Gast- oder Admin-Passwort an, um zu posten.",
@@ -5086,7 +5199,8 @@
     "network": "Netzwerk",
     "rrc": "RRC",
     "remote": "Remote",
-    "games": "Spiele"
+    "games": "Spiele",
+    "incident": "Vorfall"
   },
   "takServerPanel": {
     "title": "TAK-Server",
@@ -5148,7 +5262,7 @@
     "seriesIaq": "IAQ (0–500)",
     "statSent": "Gesendet",
     "statReceived": "Erhalten",
-    "statFlood": "Überschwemmung",
+    "statFlood": "Flood",
     "statDirect": "direkt",
     "footerBattery": "Akku: {{count}} PTS",
     "footerSignal": "Signal: {{count}} Pts",
@@ -5199,7 +5313,8 @@
     "menuToastUpToDateBody": "Sie haben die neueste Version.",
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
-    "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen"
+    "menuToastErrorTitle": "Update-Prüfung fehlgeschlagen",
+    "pausedOffline": "Updates pausiert (offline)"
   },
   "reticulumMap": {
     "title": "Entdeckungskarte",
@@ -5232,13 +5347,23 @@
       "noDiscoveries": "Noch keine RMAP-Erkennungsschnittstellen zu hören.",
       "filterEmpty": "Keine Schnittstellen entsprechen diesem Filter.",
       "hint": "Knoten werden nur angezeigt, wenn die Bediener die Option \"auffindbar\" = \"ja\" aktivieren. LoRa-Pfade benötigen einen TCP-Hub (zum Beispiel rmap.world:4242), um Ansagen weiterzuleiten. Für eine weltweite Abdeckung verwenden Sie den globalen Kartenlink."
-    }
+    },
+    "stampStatus": "Stempel {{stamp}} · {{status}} · {{hops}} Hops",
+    "addAsInterface": "AS-Interface",
+    "addAsInterfaceBusy": "Hinzufügen…",
+    "addAsInterfaceAria": "{{name}} als persistente Backbone-Schnittstelle hinzufügen",
+    "addAsInterfaceSuccess": "{{name}} zu Verbindungsschnittstellen hinzugefügt→. Starten Sie den Stapel neu, wenn er nicht auftaucht.",
+    "addAsInterfaceFailed": "Schnittstelle konnte nicht hinzugefügt werden: {{error}}",
+    "addAsInterfaceNotAddable": "Diese Erkennungszeile kann nicht hinzugefügt werden (erfordert eine Backbone- oder TCP-Serveradresse).",
+    "addAsInterfaceAdded": "Hinzugefügt",
+    "addAsInterfaceAddedAria": "{{name}} bereits als Verbindungsschnittstelle hinzugefügt"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
       "favourites": "Favourites",
-      "discovered": "Discovered"
+      "discovered": "Discovered",
+      "connected": "Verbunden"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -5247,23 +5372,23 @@
     "expandSidebar": "Expand hub list",
     "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
-    "connectManual": "Connect to hash",
+    "connectManual": "Mit Hash verbinden",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
-    "connectFailed": "Could not connect to RRC hub.",
-    "joinFailed": "Could not join room.",
-    "sendFailed": "Could not send message.",
+    "connectFailed": "Verbindung zum RRC-Hub fehlgeschlagen.",
+    "joinFailed": "Beitritt zum Raum fehlgeschlagen.",
+    "sendFailed": "Nachricht konnte nicht gesendet werden.",
     "selectHub": "Select hub {{name}}",
-    "selectHubPrompt": "Select an RRC hub to connect.",
+    "selectHubPrompt": "Wählen Sie einen RRC-Hub zum Verbinden.",
     "favoriteHub": "Favourite hub",
     "unfavoriteHub": "Remove hub favourite",
     "hopsAway_one": "{{count}} Hop entfernt",
     "hopsAway_other": "{{count}} Hops entfernt",
-    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "noDiscoveredHubs": "Noch keine aktiven RRC-Hubs entdeckt. Lassen Sie den Stack laufen, um Announces zu empfangen.",
     "rooms": "Rooms",
     "joinRoom": "Room name",
     "join": "Raum beitreten",
-    "joinRoomPrompt": "Tritt einem Raum bei, um zu chatten.",
-    "noRoomsJoined": "No rooms joined yet.",
+    "joinRoomPrompt": "Treten Sie einem Raum bei, um zu chatten.",
+    "noRoomsJoined": "Noch keinen Raum beigetreten.",
     "selectRoom": "Open room {{name}}",
     "leaveRoom": "Leave room",
     "disconnect": "Disconnect",
@@ -5358,8 +5483,8 @@
     "roomAutoJoinOnHint": "Automatisch beitreten — zum Ausschalten klicken",
     "roomAutoJoinOffHint": "Automatisch beitreten — Klicken Sie hier, um diesem Raum beizutreten, wenn der Hub eine Verbindung herstellt",
     "roomLegend": "★ favorit · A wechselt die automatische Verbindung",
-    "disconnectFailed": "Could not disconnect from RRC hub.",
-    "partFailed": "Could not leave room.",
+    "disconnectFailed": "Trennen vom RRC-Hub fehlgeschlagen.",
+    "partFailed": "Verlassen des Raums fehlgeschlagen.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
     "clearHistory": "Verlauf löschen",
     "clearHistoryTitle": "Raumverlauf löschen",
@@ -5386,7 +5511,8 @@
     },
     "roomNameLimit": {
       "overMax": "Raumname zu lang — Hub-Limit ist {{limit}} Bytes"
-    }
+    },
+    "noConnectedHubs": "Keine RRC-Hubs angeschlossen. Verbinde dich über Favoriten, Entdeckte oder per Hash."
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -5749,46 +5875,46 @@
     "sendChallengeAria": "Herausforderung senden",
     "sendChallenge": "Herausforderung senden",
     "selectSessionPrompt": "Wählen Sie eine Spielsitzung zum Spielen aus.",
-    "opponentLabel": "Einsprechender: {{peer}}",
+    "opponentLabel": "Gegner: {{peer}}",
     "acceptAria": "Herausforderung annehmen",
     "accept": "Zustimmen",
     "declineAria": "Herausforderung ablehnen",
     "decline": "Ablehnen",
-    "resignAria": "Kündigung",
-    "resign": "Kündigung",
-    "acceptDrawAria": "Ziehungsangebot annehmen",
-    "acceptDraw": "Ziehung annehmen",
-    "declineDrawAria": "Ziehungsangebot ablehnen",
-    "declineDraw": "Ziehung ablehnen",
-    "offerDrawAria": "Angebotsauslosung",
-    "offerDraw": "Angebotsauslosung",
+    "resignAria": "Aufgeben",
+    "resign": "Aufgeben",
+    "acceptDrawAria": "Remis annehmen",
+    "acceptDraw": "Remis annehmen",
+    "declineDrawAria": "Remis ablehnen",
+    "declineDraw": "Remis ablehnen",
+    "offerDrawAria": "Remis anbieten",
+    "offerDraw": "Remis anbieten",
     "resendAria": "Letzte Aktion erneut senden",
     "resend": "Erneut senden",
     "deleteSessionAria": "Sitzung löschen",
     "deleteSession": "Sitzung löschen",
-    "resignConfirmTitle": "Partie aufgeben",
-    "resignConfirmMessage": "Bist du sicher, dass du dieses Spiel kündigen möchtest? Dies kann nicht rückgängig gemacht werden.",
-    "drawOfferedBanner": "Dein Gegner hat ein Unentschieden angeboten.",
-    "challenge": "Schwierigkeiten",
-    "challengeAria": "Herausforderung zu einem Spiel",
+    "resignConfirmTitle": "Aufgeben?",
+    "resignConfirmMessage": "Möchten Sie diese Partie wirklich aufgeben? Dies kann nicht rückgängig gemacht werden.",
+    "drawOfferedBanner": "Ihr Gegner hat Remis angeboten.",
+    "challenge": "Herausforderung",
+    "challengeAria": "Herausforderung",
     "challengeAppAria": "Herausforderung an {{app}}",
     "challengeSent": "{{app}} Herausforderung gesendet",
     "ttt": {
       "youWon": "Sie haben gewonnen!",
       "opponentWon": "Gegner hat gewonnen.",
-      "draw": "Einzeichnen",
+      "draw": "Remis.",
       "yourTurn": "Du bist dran",
       "opponentTurn": "GEGNERISCHER ZUG",
       "yourMarker": "Du bist {{marker}}",
       "moveCount": "{{count}} Züge",
       "boardAria": "Tic-Tac-Toe-Brett",
-      "cellEmptyAria": "Cell {{index}}, empty",
-      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+      "cellEmptyAria": "Feld {{index}}, leer",
+      "cellOccupiedAria": "Feld {{index}}, {{marker}}"
     },
     "fourInARow": {
       "youWon": "Sie haben gewonnen!",
       "opponentWon": "Gegner hat gewonnen.",
-      "draw": "Einzeichnen",
+      "draw": "Remis.",
       "yourTurn": "Du bist dran",
       "opponentTurn": "GEGNERISCHER ZUG",
       "yourMarker": "Du bist {{marker}}",
@@ -5801,7 +5927,7 @@
     "chess": {
       "youWon": "Sie haben gewonnen!",
       "opponentWon": "Gegner hat gewonnen.",
-      "draw": "Einzeichnen",
+      "draw": "Remis.",
       "yourTurn": "Du bist dran",
       "yourTurnInCheck": "Sie sind an der Reihe — Sie sind in Schach",
       "opponentTurn": "GEGNERISCHER ZUG",
@@ -5841,24 +5967,18 @@
     },
     "deleteConfirmTitle": "Löschen sitzung?",
     "deleteConfirmMessage": "Diese Spielsitzung von Ihrer Liste entfernen? Dies kann nicht rückgängig gemacht werden.",
-    "claimThreefold": "Dreifach einfordern",
-    "claimThreefoldAria": "Dreifache Wiederholungsziehung beanspruchen",
-    "claimFiftyMove": "50-Bewegungen einfordern",
-    "claimFiftyMoveAria": "Auslosung der Fünfzig-Züge-Regel beanspruchen",
+    "claimThreefold": "Dreifache Wiederholung",
+    "claimThreefoldAria": "Dreifache Wiederholung",
+    "claimFiftyMove": "50-Züge-Regel beanspruchen",
+    "claimFiftyMoveAria": "50-Züge-Regel beanspruchen",
     "delivery": {
       "sending": "Senden…",
       "propagating": "Offline-Posteingang...",
       "propagated": "Gespeichert",
       "failed": "Erneuter Versuch erforderlich"
     },
-    "drawOfferWaitingBanner": "Angebot ziehen gesendet. Warten auf Gegner...",
-    "idleExpiryNotice": "Spiele laufen nach Inaktivität ab und können dann nur noch gelöscht werden. Unbeantwortete Herausforderungen: 24 Stunden (alle Spiele). Aktive Partien: Tic-Tac-Toe nach 24 Stunden, Schach und Four-in-a-row nach 7 Tagen."
-  },
-  "longSession": {
-    "title": "Neustart empfohlen",
-    "body": "mesh-client läuft seit vier Tagen mit Bluetooth-Funkverbindung. Starte die App neu, um das Risiko von Abstürzen bei langen Noble BLE-Sitzungen zu reduzieren.",
-    "restart": "Neustart",
-    "dismiss": "Ablehnen"
+    "drawOfferWaitingBanner": "Remis-Angebot gesendet. Warten auf den Gegner…",
+    "idleExpiryNotice": "Spiele laufen bei Inaktivität ab und können danach nur noch gelöscht werden. Unbeantwortete Herausforderungen: 24 Stunden (alle Spiele). Aktive Spiele: Tic-Tac-Toe nach 24 Stunden, Schach und Vier gewinnt nach 7 Tagen."
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · EINSTIEG",
@@ -5950,5 +6070,145 @@
     "interfacesUnavailable": "Ihre Verbindungen konnten nicht gelesen werden. Überprüfen Sie, ob Reticulum ausgeführt wird, und versuchen Sie es dann erneut.",
     "interfaceSaveFailed": "Diese Verbindung konnte nicht gespeichert werden. Überprüfen Sie Ihre Verbindungseinstellungen und versuchen Sie es erneut.",
     "identityUnavailable": "Ihre Identität konnte nicht gelesen werden. Überprüfen Sie, ob Reticulum ausgeführt wird, und versuchen Sie es dann erneut."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "Mayday",
+      "urgent": "DRINGEND",
+      "safety": "SICHERHEIT",
+      "routine": "ROUTINE"
+    },
+    "incomingToast": "{{severity}} MECP von {{sender}}",
+    "notificationTitle": "MECP-Alarm",
+    "exportLog": "MECP-Protokoll exportieren",
+    "compose": {
+      "title": "MECP-Bericht erstellen",
+      "button": "MECP",
+      "open": "Öffnen Sie MECP Compose",
+      "severity": "Schweregrad",
+      "category": "Kategorie",
+      "codes": "Code",
+      "removeCode": "Code {{code}} entfernen",
+      "freetext": "Freitext (Pax, GPS, Notizen)",
+      "addPax": "1 Person hinzufügen",
+      "attachGps": "GPS anhängen",
+      "byteBudget": "{{used}} / {{max}} Bytes",
+      "send": "MECP senden",
+      "gpsFailed": "Konnte keine GPS-Fixierung erhalten",
+      "sendFailed": "Senden des Berichts fehlgeschlagen",
+      "maydayButton": "Mayday",
+      "maydayAria": "Komponieren Sie MAYDAY mit einem Fingertipp mit GPS"
+    },
+    "rebroadcast": {
+      "title": "MECP RF Rebroadcast",
+      "hint": "Optional kann MECP, das auf einem Protokollkanal gehört wird, zu einem anderen überbrückt werden. Standardmäßig aus. Aktivieren Sie Bidirektional, um den Pfad auch umzukehren.",
+      "add": "Brückenregel hinzufügen",
+      "remove": "Brückenregel entfernen",
+      "enableRule": "Aktiviert",
+      "bidirectional": "Bidirektional",
+      "endpointA": "Hören / Quelle (A)",
+      "endpointB": "Weiterleitung / Ziel (B)",
+      "protocol": "Protokoll",
+      "channelIndex": "Kanalindex"
+    },
+    "exportLogSuccess": "MECP-Protokoll exportiert",
+    "exportLogSuccessPath": "MECP-Protokoll exportiert nach {{path}}",
+    "exportLogFailed": "Fehler beim Exportieren des MECP-Protokolls",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Emergency Communication Protocol — Erstellen Sie Berichte aus dem Chat, überbrücken Sie RF zwischen Meshtastic und MeshCore hier und exportieren Sie das dauerhaft empfangene Auditprotokoll.",
+      "learnMore": "So funktioniert MECP",
+      "protocolSource": "Protokollquelle auf GitHub",
+      "showComposeButton": "MECP-Schaltfläche im Chat anzeigen",
+      "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an.",
+      "showMaydayButton": "Mayday-Schaltfläche im Chat anzeigen",
+      "showMaydayButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt der Chat eine Mayday-Schaltfläche mit einem Fingertipp an, die das Verfassen mit Schweregrad 0 mit angeschlossenem GPS öffnet. Unabhängig von der MECP-Kompositionstaste.",
+      "showQuickStatusBar": "Schnellstatusleiste im Chat anzeigen",
+      "showQuickStatusBarHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat OK /Hilfe benötigen/ In Position / Verlorene Kommunikation / Wiederkehrender / Roll-Aufruf über dem Komponisten an."
+    },
+    "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll"
+  },
+  "notificationSounds": {
+    "title": "Benachrichtigungstöne",
+    "hint": "Wählen Sie einen Ton für jedes Ereignis oder importieren Sie eine Audiodatei bis zu 10 Sekunden und 2 MiB. Die Dateiauswahl startet im System-Sound-Ordner, wenn verfügbar. Importierte Sounds werden in Ihr Profil kopiert; Systemeinstellungen bleiben unverändert.",
+    "emergencyHint": "MAYDAY und URGENT ertönen auch bei stummgeschalteten Benachrichtigungen mit mindestens 10 % Lautstärke. SAFETY und ROUTINE beachten die üblichen Stummschaltungen. Die Hörprobe wird auch bei stummgeschalteten Benachrichtigungen abgespielt.",
+    "channel": "Kanalnachrichten",
+    "dm": "Direktnachrichten",
+    "reply": "Antworten und Erwähnungen",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Originalton",
+    "chime": "Signalton",
+    "bell": "Klingel",
+    "ping": "Doppelter Ping",
+    "alert": "Steigende Warnung",
+    "toneFor": "Ton für {{event}}",
+    "preview": "Vorschau",
+    "stop": "Stopp",
+    "choose": "Datei auswählen ...",
+    "reset": "Zurücksetzen",
+    "volume": "Volumen",
+    "volumeFor": "Volumen für {{event}}",
+    "previewFor": "Vorschau {{event}}",
+    "stopFor": "Vorschau für {{event}} beenden",
+    "chooseFor": "Audiodatei für {{event}} auswählen",
+    "resetFor": "{{event}} zurücksetzen",
+    "saving": "Soundeinstellungen werden gespeichert...",
+    "importFailed": "Dieser Ton konnte nicht importiert werden. Wählen Sie eine unterstützte Audiodatei, die nicht länger als 10 Sekunden und nicht größer als 2 MiB ist.",
+    "saveFailed": "Soundeinstellungen konnten nicht gespeichert werden. Ihre vorherige Auswahl ist unverändert.",
+    "previewFailed": "Dieser Sound konnte nicht abgespielt werden. Versuchen Sie es mit einer anderen Datei oder setzen Sie sie auf den ursprünglichen Ton zurück.",
+    "connectionLost": "Richtfunkverbindung",
+    "batteryLow": "Niedriger Akkustand"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} Akku schwach",
+    "batteryLowBody": "Batterie bei {{percent}}%",
+    "silenceEscalationTitle": "{{name}} noch stumm",
+    "silenceEscalationBody": "{{minutes}} Minuten lang nicht gehört",
+    "linkDownTitle": "{{protocol}} Link nach unten",
+    "linkDownBody": "Funkverbindung abgebrochen und erneute Verbindung fehlgeschlagen"
+  },
+  "incidentPanel": {
+    "title": "NOT-HALT Vorkommnisse",
+    "empty": "Keine offenen Notfallvorfälle.",
+    "listAria": "Offene Notfallvorfälle",
+    "resolve": "Finden",
+    "resolveAria": "Vorfall von {{sender}} lösen",
+    "ack": "Quittieren",
+    "ackAria": "Vorfall von {{sender}} bestätigen",
+    "ackBeacon": "Bake quittieren",
+    "ackBeaconAria": "Notsignal von {{sender}} quittieren",
+    "ackCount_one": "{{count}} Bestätigung",
+    "ackCount_other": "{{count}} Bestätigungen",
+    "protocolsSeen": "Gehört am: {{protocols}}",
+    "beaconActive": "Bake aktiv",
+    "drill": "Bohrer",
+    "ackSent": "Bestätigung gesendet an {{sender}}",
+    "ackQueued": "Bestätigung an {{sender}} in der Warteschlange; es wird gesendet, wenn das Radio verfügbar ist",
+    "ackFailed": "Bestätigung konnte nicht gesendet oder in die Warteschlange gestellt werden",
+    "intro": "Gemeinsames Betriebsbild für MECP-Notfälle, die auf jedem Protokoll zu hören sind. Offene MAYDAY- und DRINGENDE Zeilen kennzeichnen diese Registerkarte; Bohrer werden aufgelistet, aber nie gezählt. Verwenden Sie Acknowledge (oder Confirm for an active beacon), um auf dem Netz zu antworten, und dann Resolve, wenn der Vorfall lokal geschlossen wird.",
+    "emptyHint": "Eingehende MECP-Berichte werden hier automatisch angezeigt. Um eine zu senden, aktivieren Sie die Schaltfläche App → MECP MECP → anzeigen im Chat und verwenden Sie dann MECP oder MAYDAY im Chat. → Kartenebenen können offene Vorfälle mit Koordinaten anzeigen.",
+    "ackQueuedBadge": "ACK in Warteschlange gestellt",
+    "pendingAckListAria": "Bestätigungen für diesen Vorfall in der Warteschlange",
+    "cancelPendingAck": "Abbrechen",
+    "cancelPendingAckAria": "In der Warteschlange stehende Bestätigung für {{sender}} abbrechen",
+    "resolveBeacon": "Bake abbrechen",
+    "resolveBeaconAria": "Lösche dein Notsignal und teile dem Netz mit, dass du in Ordnung bist ({{sender}})",
+    "beaconCancelSent": "Signalabbruch gesendet. Andere Sender löschen dein Notsignal, wenn sie es hören.",
+    "beaconCancelQueued": "Beacon-Abbruch in der Warteschlange. Wird gesendet, wenn das Radio verfügbar ist.",
+    "beaconCancelFailed": "Das Beacon konnte nicht gesendet oder in die Warteschlange gestellt werden. Der Vorfall ist noch offen."
+  },
+  "quickStatus": {
+    "ok": "i.O.",
+    "needHelp": "Hilfe benötigt",
+    "inPosition": "In Position",
+    "lostComms": "Verlorene Kommunikationen",
+    "returning": "Wird zurückgegeben",
+    "barAria": "Schnelle Statusvoreinstellungen",
+    "rollCall": "Funktionsanruf",
+    "rollCallAria": "Broadcast-Notruf und Zählung OK-Antworten",
+    "rollCallTally": "{{responded}}/{{expected}} hat geantwortet"
   }
 }

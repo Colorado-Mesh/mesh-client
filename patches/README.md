@@ -10,7 +10,7 @@ Local overlays applied via `pnpm-workspace.yaml` → `patchedDependencies`. When
 | `app-builder-lib@26.15.3.patch` | [electron-userland/electron-builder](https://github.com/electron-userland/electron-builder) (`packages/app-builder-lib`) | Merged on master: [#10101](https://github.com/electron-userland/electron-builder/pull/10101) / [#10066](https://github.com/electron-userland/electron-builder/issues/10066); not yet in published `26.x` (only `27.0.0-alpha`) |
 | `usb@2.18.0.patch` | [node-usb/node-usb](https://github.com/node-usb/node-usb) | [#964](https://github.com/node-usb/node-usb/pull/964) |
 | `readable-stream@4.7.0.patch` | [nodejs/readable-stream](https://github.com/nodejs/readable-stream) | **Intentionally local** — upstream uses `require('process/')` for browser bundlers; Electron/Node needs bare `process` |
-| `debug@4.4.3.patch` | [debug-js/debug](https://github.com/debug-js/debug) | **Intentionally local** — inlines `ms`/`humanize` so electron-vite does not fail resolving the `ms` dependency |
+| `debug@4.4.3.patch` | [debug-js/debug](https://github.com/debug-js/debug) | **Intentionally local** — inlines `ms`/`humanize` so the esbuild main-process bundle does not fail resolving the `ms` dependency |
 
 ## @liamcottle/meshcore.js@1.15.0
 
@@ -92,7 +92,7 @@ Only if packaging/bundling no longer requires the bare `process` require, or ups
 
 Inline a minimal `ms`/`humanize` implementation instead of `require('ms')`.
 
-**Intentionally local.** electron-vite / the main-process bundle path can fail to resolve the transitive `ms` package; inlining avoids that without changing upstream’s dependency graph for all consumers.
+**Intentionally local.** The esbuild main-process bundle (`scripts/esbuild-main-build.mjs`) can fail to resolve the transitive `ms` package; inlining avoids that without changing upstream’s dependency graph for all consumers.
 
 ### Sunset
 

@@ -282,13 +282,12 @@ describe('localeStringQualityIssues', () => {
     expectIssue(issues, 'use Unicode ellipsis (…) instead of ASCII dots');
   });
 
-  it('flags double Unicode ellipsis on Noble BLE wait stage copy', () => {
+  it('flags double Unicode ellipsis on stageAutoConnectingBle copy', () => {
     const issues = localeStringQualityIssues({
       locale: 'zh',
-      flatKey: 'connectionPanel.stageWaitingNobleBleMeshtastic',
-      val: '正在等待 Meshtastic Bluetooth 完成 — 完成后 MeshCore 将自动连接到 {{deviceName}}……',
-      enVal:
-        'Waiting for Meshtastic Bluetooth to finish — MeshCore will connect to {{deviceName}} automatically when it is done…',
+      flatKey: 'connectionPanel.stageAutoConnectingBle',
+      val: '正在自动连接到 {{deviceName}}……',
+      enVal: 'Auto-connecting to {{deviceName}}…',
     });
     expectIssue(issues, 'use a single Unicode ellipsis (…), not repeated');
   });
@@ -1679,64 +1678,6 @@ describe('roomsPanel saved passwords per-key quality', () => {
     expectIssue(issues, 'close other apps using the serial port');
   });
 
-  const enLongSessionRestartNudge =
-    'Mesh-client has been running for four days. Restart the app to reduce the risk of crashes on long MeshCore BLE sessions.';
-
-  it('flags lowercase ble in longSessionRestartNudge', () => {
-    const issues = localeStringQualityIssues({
-      locale: 'fr',
-      flatKey: 'toasts.longSessionRestartNudge',
-      val: '... longues sessions ble MeshCore.',
-      enVal: enLongSessionRestartNudge,
-    });
-    expectIssue(issues, 'protocol token "BLE"');
-  });
-
-  it('accepts Mesh-Client casing for mesh-client brand in longSessionRestartNudge', () => {
-    expect(
-      localeStringQualityIssues({
-        locale: 'de',
-        flatKey: 'toasts.longSessionRestartNudge',
-        val: 'Mesh-Client läuft seit vier Tagen. MeshCore BLE-Sitzungen.',
-        enVal: enLongSessionRestartNudge,
-      }),
-    ).toEqual([]);
-  });
-
-  const enLongSessionBody =
-    'mesh-client has been running for four days with Bluetooth radio connected. Restart the app to reduce the risk of crashes on long Noble BLE sessions.';
-
-  it('flags missing BLE in longSession.body', () => {
-    const issues = localeStringQualityIssues({
-      locale: 'de',
-      flatKey: 'longSession.body',
-      val: 'mesh-client läuft seit vier Tagen. Noble Sitzungen.',
-      enVal: enLongSessionBody,
-    });
-    expectIssue(issues, 'protocol token "BLE"');
-  });
-
-  it('flags missing Noble in longSession.body', () => {
-    const issues = localeStringQualityIssues({
-      locale: 'ja',
-      flatKey: 'longSession.body',
-      val: 'mesh-clientは4日間稼働。BLEセッション。',
-      enVal: enLongSessionBody,
-    });
-    expectIssue(issues, 'protocol token "Noble"');
-  });
-
-  it('accepts mesh-client and Noble BLE in longSession.body', () => {
-    expect(
-      localeStringQualityIssues({
-        locale: 'zh',
-        flatKey: 'longSession.body',
-        val: 'mesh-client 已经运行了四天。降低长时间 Noble BLE 会话中崩溃的风险。',
-        enVal: enLongSessionBody,
-      }),
-    ).toEqual([]);
-  });
-
   const enMeshcoreOpenWireCompatHint =
     'When enabled, mesh-client sends keyed text replies (@[Name#key]), compact r: reactions, and g: Giphy GIFs. This may not match the official companion wire format; receivers need MeshCore Open-aware clients.';
 
@@ -2266,5 +2207,252 @@ describe('sniffer tab and MQTT channel PSK i18n quality', () => {
       val: 'Medio Path preferido',
     });
     expectIssue(issues, 'English "Path"');
+  });
+});
+
+describe('i18n accuracy sweep (meaning-gated rules)', () => {
+  it('flags TX→Texas on any key whose English has TX', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'tr',
+      flatKey: 'radioPanel.txPowerLabel',
+      enVal: 'TX Power',
+      val: 'Teksas Gücü',
+    });
+    expectIssue(issues, 'TX/RX Texas');
+  });
+
+  it('passes TX power when the radio abbreviation is kept', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'tr',
+        flatKey: 'radioPanel.txPowerLabel',
+        enVal: 'TX Power',
+        val: 'TX gücü',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags spaced Wi-Fi even when English uses WiFi', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'connectionPanel.wifiTcp',
+      enVal: 'WiFi/TCP (fast)',
+      val: 'Wi - Fi/TCP（高速）',
+    });
+    expectIssue(issues, 'Wi-Fi');
+  });
+
+  it('flags spaced I2P on any key when English has I2P', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'reticulumMap.filter.i2p',
+      enVal: 'I2P',
+      val: 'I 2 P',
+    });
+    expectIssue(issues, 'I2P');
+  });
+
+  it('flags spaced tcp:// scheme', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'id',
+      flatKey: 'flasher.wifiHint',
+      enVal: 'Use tcp://host (port 7633).',
+      val: 'Gunakan tcp :// host (port 7633).',
+    });
+    expectIssue(issues, 'tcp://');
+  });
+
+  it('flags hotel-room wording outside roomsPanel when English says room', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'chatPanel.sendErrors.noSavedRoomCredential',
+      enVal: 'No saved room password. Log in to the room first.',
+      val: 'No se ha guardado la contraseña de la habitación.',
+    });
+    expectIssue(issues, 'habitación');
+  });
+
+  it('flags water-flood wording on floodAdvertScheduleLabel', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'appPanel.floodAdvertScheduleLabel',
+      enVal: 'Automatically send a flood advert on a schedule:',
+      val: 'Senden Sie automatisch eine Hochwasseranzeige nach einem Zeitplan:',
+    });
+    expectIssue(issues, 'flood-routing');
+  });
+
+  it('does not treat overflowing logs as flood-routing', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'es',
+        flatKey: 'diagnosticsPanel.reticulum.runtime.autoBeaconTunnelOnly',
+        enVal: 'AutoInterface beacon TX is failing. Disable AutoInterface if the logs are flooded.',
+        val: 'El TX está fallando. Desactive AutoInterface si los registros están inundados.',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags commercial advert wording on sendFloodAdvert', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ko',
+      flatKey: 'nodeListPanel.sendFloodAdvert',
+      enVal: 'Send flood advert',
+      val: '홍수 광고 보내기',
+    });
+    expectIssue(issues, 'mesh-advert');
+  });
+
+  it('flags backbone anatomy on sibling hub keys', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'pl',
+      flatKey: 'connectionPanel.reticulumInterfaces.defaultHubsLabel',
+      enVal: 'Default backbones',
+      val: 'Domyślne kręgosłupy',
+    });
+    expectIssue(issues, 'kręgosłup');
+  });
+
+  it('flags translated RoomAdvert via English value, not camelCase leaf', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'cs',
+      flatKey: 'diagnosticsPanel.routingPort.roomAdvert',
+      enVal: 'RoomAdvert',
+      val: 'Reklama na pokoj',
+    });
+    expectIssue(issues, 'verbatim');
+  });
+
+  it('passes routingPort when the protocol identifier is kept', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'cs',
+        flatKey: 'diagnosticsPanel.routingPort.roomAdvert',
+        enVal: 'RoomAdvert',
+        val: 'RoomAdvert',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags gamesPanel resign employment false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'gamesPanel.resign',
+      enVal: 'Resign',
+      val: 'Kündigung',
+    });
+    expectIssue(issues, 'Aufgeben');
+  });
+
+  it('flags gamesPanel draw sketch false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'fr',
+      flatKey: 'gamesPanel.ttt.draw',
+      enVal: 'Draw.',
+      val: 'Dessin.',
+    });
+    expectIssue(issues, 'Nulle');
+  });
+
+  it('flags gamesPanel leftover English cell aria', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'gamesPanel.ttt.cellEmptyAria',
+      enVal: 'Cell {{index}}, empty',
+      val: 'Cell {{index}}, empty',
+    });
+    expectIssue(issues, 'identical to English');
+  });
+
+  it('flags leftover English rrc.connectFailed', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'es',
+      flatKey: 'rrc.connectFailed',
+      enVal: 'Could not connect to RRC hub.',
+      val: 'Could not connect to RRC hub.',
+    });
+    expectIssue(issues, 'connectFailed');
+  });
+
+  it('passes fixed gamesPanel resign in German', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'gamesPanel.resign',
+        enVal: 'Resign',
+        val: 'Aufgeben',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags gamesPanel challenge difficulty false friend', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'de',
+      flatKey: 'gamesPanel.challenge',
+      enVal: 'Challenge',
+      val: 'Schwierigkeiten',
+    });
+    expectIssue(issues, 'Herausforderung');
+  });
+
+  it('ignores German Schwierigkeiten on unrelated gamesPanel text', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'gamesPanel.idleExpiryNotice',
+        enVal:
+          'Games expire after inactivity and can then only be deleted. Unanswered challenges: 24 hours (all games).',
+        val: 'Bei Schwierigkeiten laufen Spiele bei Inaktivität ab und können danach nur noch gelöscht werden.',
+      }),
+    ).toEqual([]);
+  });
+
+  it('flags caret residue on common.emDash', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'common.emDash',
+      enVal: '—',
+      val: '—^',
+    });
+    expectIssue(issues, 'common.emDash dash placeholder must equal English "—"');
+  });
+
+  it('flags hyphen substitution on signalMeter.noData', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'signalMeter.noData',
+      enVal: '—',
+      val: '-',
+    });
+    expectIssue(issues, 'signalMeter.noData dash placeholder must equal English "—"');
+  });
+
+  it('passes dash placeholders that match English', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'uk',
+        flatKey: 'common.emDash',
+        enVal: '—',
+        val: '—',
+      }),
+    ).toEqual([]);
+    expect(
+      localeStringQualityIssues({
+        locale: 'it',
+        flatKey: 'roleInfo.placeholderDash',
+        enVal: '-',
+        val: '-',
+      }),
+    ).toEqual([]);
+  });
+
+  it('does not force translated noData sentences to be a dash', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'channelUtilization.noData',
+      enVal: 'No channel utilization data available yet',
+      val: 'Non sono ancora disponibili dati sull’utilizzo del canale',
+    });
+    expect(issues.some((msg) => msg.includes('dash placeholder'))).toBe(false);
   });
 });

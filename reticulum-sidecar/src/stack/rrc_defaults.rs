@@ -3,13 +3,5 @@
 
 pub const RRC_HUB_ASPECT: &str = "rrc.hub";
 
-#[derive(Debug, Clone, Copy)]
-#[allow(dead_code)] // catalog fields kept for TS parity when hubs are added
-pub struct RrcDefaultHub {
-    pub id: &'static str,
-    pub label: &'static str,
-    pub destination_hash: &'static str,
-}
-
-/// No predefined hubs — users favourite from discovery or manual connect.
-pub const RRC_DEFAULT_HUBS: &[RrcDefaultHub] = &[];
+/// Destination hashes of curated hubs (empty until hubs are added).
+pub const RRC_DEFAULT_HUBS: &[&str] = &[];

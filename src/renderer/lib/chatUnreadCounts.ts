@@ -1,5 +1,6 @@
 import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
+import { isMecpMessage } from '@/renderer/lib/mecp/mecpMessages';
 import {
   clampReadWatermarkMs,
   effectiveMessageTimestampMs,
@@ -284,6 +285,14 @@ const NOTIFICATION_TYPE_PRIORITY: Record<ChatNotificationType, number> = {
   channel: 0,
   dm: 1,
   reply: 2,
+  // MECP tones are owned by useMecpAlertWatcher — not selected here
+  mecp: -1,
+  mecpSafety: -1,
+  mecpSiren: -1,
+  mecpEas: -1,
+  // Operational alerts are not message-driven
+  connectionLost: -1,
+  batteryLow: -1,
 };
 
 export function resolveChatNotificationType(
@@ -296,6 +305,8 @@ export function resolveChatNotificationType(
   if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return null;
   if (msg.emoji && msg.replyId) return null;
   if (ownNodeIds.has(msg.sender_id)) return null;
+  // MECP siren/tone owned by triggerMecpAlert (watcher + focused ChatPanel) — never channel/dm beep
+  if (isMecpMessage(msg.payload)) return null;
 
   if (msg.replyId != null) {
     const parent =

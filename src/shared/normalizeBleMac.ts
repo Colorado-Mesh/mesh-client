@@ -30,6 +30,9 @@ function isStrictBleMacShape(id: string): boolean {
 export function normalizeBleMac(mac: string): string {
   const trimmed = mac.trim();
   if (!trimmed) return trimmed;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) {
+    return trimmed.replace(/-/g, '').toLowerCase();
+  }
   if (!isStrictBleMacShape(trimmed)) {
     return trimmed.toLowerCase();
   }
@@ -38,11 +41,23 @@ export function normalizeBleMac(mac: string): string {
 }
 
 /** Stripped lowercase hex digits from a MAC, UUID, or other BLE identifier. */
-function bleIdHexDigits(id: string): string {
+export function bleIdMatchKey(id: string): string {
   return id
     .trim()
     .replace(/[^0-9a-fA-F]/g, '')
     .toLowerCase();
+}
+
+/** True when two BLE identifiers refer to the same peripheral (MAC or UUID, any punctuation). */
+export function bleIdsMatch(a: string, b: string): boolean {
+  const ka = bleIdMatchKey(a);
+  const kb = bleIdMatchKey(b);
+  return ka.length > 0 && ka === kb;
+}
+
+/** Stripped lowercase hex digits from a MAC, UUID, or other BLE identifier. */
+function bleIdHexDigits(id: string): string {
+  return bleIdMatchKey(id);
 }
 
 /** True when `id` is a 48-bit BLE MAC (colon, hyphen, or compact 12-hex). */

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   getConnection,
-  mirrorMqttStatusToConnection,
   removeConnection,
   setConnection,
   useConnectionStore,
@@ -52,19 +51,5 @@ describe('connectionStore', () => {
 
   it('getConnection returns undefined for a missing identity', () => {
     expect(getConnection('missing')).toBeUndefined();
-  });
-
-  it('mirrorMqttStatusToConnection updates mqttStatus when identityId is set', () => {
-    setConnection(ID_A, { status: 'connected' });
-
-    mirrorMqttStatusToConnection(ID_A, 'connected');
-
-    expect(getConnection(ID_A)?.mqttStatus).toBe('connected');
-  });
-
-  it('mirrorMqttStatusToConnection is a no-op when identityId is null', () => {
-    mirrorMqttStatusToConnection(null, 'connected');
-
-    expect(useConnectionStore.getState().connections).toEqual({});
   });
 });

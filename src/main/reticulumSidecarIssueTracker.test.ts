@@ -32,7 +32,7 @@ const BLE_BOND_REMOVED_LINE =
   'BLE RNode connect failed name = RNode 41F4 error = send failed: BLE connect failed after 3 attempts: Runtime Error: Peer removed pairing information';
 
 const BLE_BOND_REMOVED_STOP_LINE =
-  'BLE RNode bond removed — stopping reconnect until stack restart (Forget OS bond + re-pair) name = RNode 41F4 error = send failed: BLE connect failed after 3 attempts: Runtime Error: Peer removed pairing information';
+  'BLE RNode bond removed — retrying with existing OS bond (Forget only if retries keep failing) name = RNode 41F4 error = send failed: BLE connect failed after 3 attempts: Runtime Error: Peer removed pairing information';
 
 const BLE_BOND_ATTEMPT_LINE =
   'BLE RNode connect attempt failed attempt = 1 error = Runtime Error: Peer removed pairing information';
@@ -96,16 +96,29 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     expect(alert?.lastAtMs).toBe(1_000);
   });
 
-  it('builds alert from bond-removed halt-loop log without connect-failed prefix', () => {
+  it('builds alert from bond-removed retry log without connect-failed prefix', () => {
     tracker.recordLine(BLE_BOND_REMOVED_STOP_LINE, 1_000);
     const alert = tracker.getAlert(1_500);
     expect(alert?.bleBondRemoved).toEqual(['RNode 41F4']);
   });
 
-  it('keeps bleBondRemoved sticky past the generic alert stale window', () => {
+  it('prunes bleBondRemoved after the generic alert stale window', () => {
     tracker.recordLine(BLE_BOND_REMOVED_STOP_LINE, 0);
     const alert = tracker.getAlert(RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS + 60_000);
-    expect(alert?.bleBondRemoved).toEqual(['RNode 41F4']);
+    expect(alert).toBeNull();
+  });
+
+  it('clears bleBondRemoved when the named interface comes online', () => {
+    tracker.recordLine(BLE_BOND_REMOVED_STOP_LINE, 1_000);
+    expect(tracker.getAlert(1_500)?.bleBondRemoved).toEqual(['RNode 41F4']);
+    tracker.clearBleBondIssuesForOnlineInterfaces(new Set(['RNode 41F4']));
+    expect(tracker.getAlert(1_600)).toBeNull();
+  });
+
+  it('clearBleBondIssuesForOnlineInterfaces leaves other names latched', () => {
+    tracker.recordLine(BLE_BOND_REMOVED_STOP_LINE, 1_000);
+    tracker.clearBleBondIssuesForOnlineInterfaces(new Set(['Other RNode']));
+    expect(tracker.getAlert(1_500)?.bleBondRemoved).toEqual(['RNode 41F4']);
   });
 
   it('builds alert with BLE pairing-timed-out issues', () => {

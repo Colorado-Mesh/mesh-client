@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { clearReticulumBleBondIssuesForOnlineInterfaces } from '@/renderer/lib/reticulum/clearReticulumBleBondIssuesForOnlineInterfaces';
 import { syncReticulumBleRegistry } from '@/renderer/lib/reticulum/reticulumBleAdapterConflict';
 import {
   beginReticulumBleConnectGrace,
@@ -62,6 +63,10 @@ export interface ReticulumInterfaceRow {
   announce_interval_min?: number | null;
   connectable?: boolean | null;
   reachable_on?: string | null;
+  discovery_lxmf_address?: string | null;
+  discovery_stamp_value?: number | null;
+  discovery_encrypt?: boolean | null;
+  publish_ifac?: boolean | null;
   /** IFAC virtual network name. */
   network_name?: string | null;
   /** IFAC authentication passphrase. */
@@ -73,10 +78,17 @@ export interface ReticulumInterfaceRow {
    * configured mode. Sidecar-derived; not edited in the UI form.
    */
   ignore_config_warnings?: boolean | null;
+  /** Tear down once discovered-interface autoconnect quota is filled. */
+  bootstrap_only?: boolean | null;
   /** Host outbound TX mpsc fill from live sidecar stats. */
   tx_queue_used?: number | null;
   /** Host outbound TX mpsc capacity from live sidecar stats. */
   tx_queue_max?: number | null;
+  /**
+   * Host↔BLE RNode link RSSI (dBm) from sidecar connect/scan cache.
+   * Prefer this over live advertisement scans once the interface is up.
+   */
+  host_rssi?: number | null;
   /** Unknown INI keys preserved by the sidecar across CRUD. */
   extra_config?: Record<string, string> | null;
 }
@@ -152,7 +164,10 @@ export function useReticulumInterfaceSnapshot({
       setEffectivePrimaryLocalSerialInterfaceId(
         getCachedReticulumEffectivePrimaryLocalSerialInterfaceId(),
       );
-      logReticulumLocalInterfaceHealthChanges(rows, paths);
+      const newlyOnlineBle = logReticulumLocalInterfaceHealthChanges(rows, paths);
+      if (newlyOnlineBle.length > 0) {
+        void clearReticulumBleBondIssuesForOnlineInterfaces(newlyOnlineBle);
+      }
       await syncReticulumBleRegistry(rows);
       return { interfaces: rows, paths };
     } catch (e) {
@@ -200,10 +215,9 @@ export function useReticulumInterfaceSnapshot({
       setInterfacesHydrated(false);
       burstCancelRef.current?.();
       burstCancelRef.current = null;
-      // Noble BLE yield + shared grace clock are owned by useReticulumNobleBleYieldWatcher.
-      // Do not clear grace or release yield here while the sidecar is still up during
-      // connecting — a mid-pair clear leaves release/renew stuck (CoreBluetooth Event
-      // receiver died).
+      // Shared BLE connect grace clock is module-owned (reticulumBleConnectGrace).
+      // Do not clear grace here while the sidecar is still up during connecting —
+      // a mid-pair clear leaves release/renew stuck (CoreBluetooth Event receiver died).
       return;
     }
     beginBleConnectGrace();

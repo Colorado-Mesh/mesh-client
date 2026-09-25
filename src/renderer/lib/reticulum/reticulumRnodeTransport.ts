@@ -7,9 +7,6 @@ import {
 /** Default TCP port for RNode-over-IP (matches rsReticulum `rns-interface`). */
 export const RNODE_DEFAULT_TCP_PORT = 7633;
 
-/** RNode WiFi AP mode default gateway (upstream firmware). */
-export const RNODE_AP_DEFAULT_HOST = '10.0.0.1';
-
 const TCP_SCHEME = 'tcp://';
 
 export type ReticulumRnodeTransportKind = 'serial' | 'ble' | 'wifi';

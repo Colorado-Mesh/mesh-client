@@ -144,6 +144,8 @@ Contents:
   debug-snapshot.json  — UI/session state for triage (Meshtastic, MeshCore, Reticulum sidecar)
   mesh-client.log      — Application log (current session)
   mesh-client.log.1    — Prior session log (preserved on restart) or size-rotated backup
+  mecp-received.log    — Durable MECP (emergency) received audit log
+  mecp-received.log.1  — Size-rotated MECP audit backup (if present)
   manifest.json        — App version, buildChannel, and platform metadata
   README.txt           — This file
 
@@ -173,6 +175,8 @@ Contents:
   reticulum/lxmf-outbound.log   — Filtered LXMF outbound / PN cascade lines from app logs
   mesh-client.log               — Application log (current session)
   mesh-client.log.1             — Prior session log (preserved on restart) or size-rotated backup
+  mecp-received.log             — Durable MECP (emergency) received audit log
+  mecp-received.log.1           — Size-rotated MECP audit backup (if present)
   manifest.json                 — App version, buildChannel, and platform metadata
   README.txt                    — This file
 `;
@@ -304,6 +308,19 @@ export async function buildSupportBundleZip(
   if (fs.existsSync(backupPath)) {
     backupLog = await readFileTailOrEmpty(backupPath, MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES);
     zip.file(LOG_BACKUP_FILENAME, backupLog);
+  }
+
+  const mecpLogPath = path.join(logDir, 'mecp-received.log');
+  const mecpLog = await readFileOrEmpty(mecpLogPath);
+  if (mecpLog.length > 0) {
+    zip.file('mecp-received.log', mecpLog);
+  }
+  const mecpBackupPath = path.join(logDir, 'mecp-received.log.1');
+  if (fs.existsSync(mecpBackupPath)) {
+    zip.file(
+      'mecp-received.log.1',
+      await readFileTailOrEmpty(mecpBackupPath, MAX_SUPPORT_BUNDLE_LOG_BACKUP_BYTES),
+    );
   }
 
   zip.file('manifest.json', JSON.stringify(buildManifest(mode), null, 2));

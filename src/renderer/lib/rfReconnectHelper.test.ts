@@ -18,9 +18,9 @@ describe('reconnectRfFromLastConnection', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    window.electronAPI.startNobleBleScanning = vi.fn().mockResolvedValue({ ok: true });
-    window.electronAPI.stopNobleBleScanning = vi.fn().mockResolvedValue(undefined);
-    window.electronAPI.onNobleBleDeviceDiscovered = vi.fn(() => () => {});
+    window.electronAPI.startGattScanning = vi.fn().mockResolvedValue({ ok: true });
+    window.electronAPI.stopGattScanning = vi.fn().mockResolvedValue(undefined);
+    window.electronAPI.onGattDeviceDiscovered = vi.fn(() => () => {});
   });
 
   it('reconnects serial using stored port id', async () => {

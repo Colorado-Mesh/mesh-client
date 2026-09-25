@@ -22,7 +22,6 @@ import {
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   getDistFromChatBottom,
-  VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '@/renderer/lib/chatScrollUtils';
 import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
@@ -384,7 +383,7 @@ export function RrcChatView({
     getItemKey: (index) => rrcMessageVirtualizerKey(visibleMessages[index], index),
     anchorTo: 'end',
     followOnAppend: true,
-    scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
+    scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
   });
 
   messageVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = createChatScrollAdjustPredicate({

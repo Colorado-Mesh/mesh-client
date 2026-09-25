@@ -10,6 +10,8 @@ import type {
   GamesStatusResponse,
 } from './games-types';
 import type { MeshProtocol } from './meshProtocol';
+import type { NotificationSoundsApi } from './notificationSounds';
+import type { OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
 import type {
   PathCapability,
   RemoteAddressBookRow,
@@ -101,7 +103,10 @@ export interface ReticulumIdentityExportSaveResult {
 }
 //
 // Rules for maintaining this file:
-// - Every method here must have a matching ipcMain.handle/on in src/main/index.ts
+// - Every method here must have a matching ipcMain.handle/on in src/main/**
+//   (index.ts plus namespaced modules under src/main/ipc/, and a few sibling files).
+//   `pnpm run check:ipc-contract` (scripts/check-ipc-contract.mjs) enforces preload↔main
+//   channel alignment.
 // - Every method here must be present in the mock in src/renderer/vitest.setup.ts
 // - The preload (src/preload/index.ts) annotates its exposeInMainWorld call with `satisfies ElectronAPI`
 //
@@ -174,34 +179,32 @@ export interface UpdateCheckingPayload {
   notifyOnSettled?: boolean;
 }
 
-/** Renderer → main long-session restart OS notification (Noble BLE day-4 nudge). */
-export interface LongSessionRestartPayload {
-  title: string;
-  body: string;
-  restartLabel: string;
-  laterLabel: string;
-}
-
-export interface NobleBleDevice {
+export interface GattBleDevice {
   deviceId: string;
   deviceName: string;
   /** Advertised / last-seen BLE RSSI in dBm; null when unknown (e.g. Linux Web Bluetooth). */
   rssi?: number | null;
   /**
-   * Hardware BLE MAC when the OS exposes one (Noble `peripheral.address`).
+   * Hardware BLE MAC when the OS exposes one.
    * On macOS this is typically empty until after a prior GATT connect (CoreBluetoothCache).
    */
   address?: string | null;
 }
 
-export type NobleBleSessionId = MeshProtocol;
-export type NobleBleConnectResult = { ok: true } | { ok: false; error: string };
+export type GattBleSessionId = MeshProtocol;
+export type GattBleConnectResult = { ok: true } | { ok: false; error: string; code?: string };
 
-/** Host↔radio BLE RSSI while GATT is connected (Noble updateRssiAsync). */
-export interface NobleBleLinkRssiPayload {
-  sessionId: NobleBleSessionId;
+/** Host↔radio BLE RSSI while GATT is connected. */
+export interface GattBleLinkRssiPayload {
+  sessionId: GattBleSessionId;
   /** RSSI in dBm; null when the last poll failed or returned non-finite. */
   rssi: number | null;
+}
+
+export interface GattBleIssuePayload {
+  sessionId?: GattBleSessionId;
+  code: string;
+  message: string;
 }
 
 export interface SerialPort {
@@ -272,9 +275,17 @@ export interface OutboxEntry {
   groupId: string | null;
   groupIndex: number | null;
   groupTotal: number | null;
+  /** `'emergency'` rows skip the 24h drain age cap and retry indefinitely (EMCOMM WS2). */
+  priority: OutboxPriority;
 }
 
-export type OutboxEntryInput = Omit<OutboxEntry, 'id' | 'attemptCount' | 'updatedAt' | 'createdAt'>;
+export type OutboxPriority = 'normal' | 'emergency';
+
+/** `priority` defaults to `'normal'` when omitted. */
+export type OutboxEntryInput = Omit<
+  OutboxEntry,
+  'id' | 'attemptCount' | 'updatedAt' | 'createdAt' | 'priority'
+> & { priority?: OutboxPriority };
 
 export interface SpellcheckReplacePayload {
   suggestion: string;
@@ -293,13 +304,14 @@ export interface RendererLivenessSnapshot {
 
 // ─── ElectronAPI interface ────────────────────────────────────────────────────
 
-export type BlePeripheralOwner =
-  'noble:meshtastic' | 'noble:meshcore' | 'webbt:meshtastic' | 'webbt:meshcore' | 'reticulum';
+export type BlePeripheralOwner = 'gatt:meshtastic' | 'gatt:meshcore' | 'reticulum';
 
-export type BleScanOwner = 'noble' | 'reticulum' | 'webbt';
+export type BleScanOwner = 'gatt' | 'reticulum';
 
-export type NobleBleStartScanResult =
-  { ok: true } | { ok: false; code: 'scan_busy'; owner: BleScanOwner };
+export type GattBleStartScanResult =
+  | { ok: true }
+  | { ok: false; code: 'scan_busy'; owner: string }
+  | { ok: false; code: string; error: string };
 
 export interface BleRegisteredConnection {
   mac: string;
@@ -316,6 +328,11 @@ export interface BleCoexistenceState {
    */
   nobleYieldDecisionPending?: boolean;
 }
+
+/** Result of bleCoexistence:acquireScan — busy is a normal Result, not an IPC throw. */
+export type BleCoexistenceAcquireScanResult =
+  | ({ ok: true } & BleCoexistenceState)
+  | ({ ok: false; code: 'scan_busy'; owner: BleScanOwner } & BleCoexistenceState);
 
 export interface ElectronAPI {
   // ─── Database operations ────────────────────────────────────────────────────
@@ -425,8 +442,9 @@ export interface ElectronAPI {
     deleteNodesBySource: (source: string) => Promise<number>;
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;
-    prunePositionHistory: (days: number) => Promise<number>;
-    prunePositionHistoryPerNode: (maxPerNode: number) => Promise<number>;
+    /** `exemptNodeIds`: node ids (`!hex`, `0x` hex, or decimal) whose rows are never pruned. */
+    prunePositionHistory: (days: number, exemptNodeIds?: string[]) => Promise<number>;
+    prunePositionHistoryPerNode: (maxPerNode: number, exemptNodeIds?: string[]) => Promise<number>;
     clearNodePositions: () => Promise<void>;
     updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<void>;
     /** Meshtastic: replace optimistic temp `packet_id` with RF `sendText()` id for `reply_id` / tapback matching. */
@@ -823,6 +841,7 @@ export interface ElectronAPI {
     getChannelNameToIndex: () => Promise<Record<string, number>>;
     updateChannelKeys: (args: {
       entries: { name: string; pskBase64: string; index?: number }[];
+      radioSessionId?: string;
     }) => Promise<void>;
     updateTopicPrefix: (args: { topicPrefix: string }) => Promise<void>;
     publish: (args: {
@@ -912,50 +931,40 @@ export interface ElectronAPI {
     unregister: (mac: string, owner: BlePeripheralOwner) => Promise<BleCoexistenceState>;
     assertCanConnect: (owner: BlePeripheralOwner, mac: string) => Promise<BleCoexistenceState>;
     getState: () => Promise<BleCoexistenceState>;
-    acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
+    acquireScan: (owner: BleScanOwner) => Promise<BleCoexistenceAcquireScanResult>;
     releaseScan: (owner: BleScanOwner) => Promise<BleCoexistenceState>;
-    pauseNobleScan: () => Promise<BleCoexistenceState>;
-    suspendNobleForReticulumBleConnect: () => Promise<BleCoexistenceState>;
+    /** Disconnect LoRa GATT sessions and hold scan mutex for Reticulum BLE RNode connect. */
+    suspendForReticulumBleConnect: () => Promise<BleCoexistenceState>;
   };
 
-  // ─── Noble BLE ───────────────────────────────────────────────────────────────
-  onNobleBleAdapterState: (cb: (state: string) => void) => () => void;
-  onNobleBleDeviceDiscovered: (cb: (device: NobleBleDevice) => void) => () => void;
-  onNobleBleLinkRssi: (cb: (payload: NobleBleLinkRssiPayload) => void) => () => void;
-  onNobleBleConnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
-  onNobleBleDisconnected: (cb: (sessionId: NobleBleSessionId) => void) => () => void;
-  onNobleBleConnectAborted: (
-    cb: (payload: { sessionId: NobleBleSessionId; message: string }) => void,
+  // ─── GATT BLE (sidecar proxy) ────────────────────────────────────────────────
+  onGattAdapterState: (cb: (state: string) => void) => () => void;
+  onGattDeviceDiscovered: (cb: (device: GattBleDevice) => void) => () => void;
+  onGattLinkRssi: (cb: (payload: GattBleLinkRssiPayload) => void) => () => void;
+  onGattConnected: (cb: (sessionId: GattBleSessionId) => void) => () => void;
+  onGattDisconnected: (cb: (sessionId: GattBleSessionId) => void) => () => void;
+  onGattConnectAborted: (
+    cb: (payload: { sessionId: GattBleSessionId; message: string }) => void,
   ) => () => void;
-  onNobleBleFromRadio: (
-    cb: (payload: { sessionId: NobleBleSessionId; bytes: Uint8Array }) => void,
+  onGattFromRadio: (
+    cb: (payload: { sessionId: GattBleSessionId; bytes: Uint8Array }) => void,
   ) => () => void;
-  startNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<NobleBleStartScanResult>;
-  stopNobleBleScanning: (sessionId: NobleBleSessionId) => Promise<void>;
-  connectNobleBle: (
-    sessionId: NobleBleSessionId,
-    peripheralId: string,
-  ) => Promise<NobleBleConnectResult>;
-  disconnectNobleBle: (sessionId: NobleBleSessionId) => Promise<void>;
-  isNobleBleConnected: (sessionId: NobleBleSessionId) => Promise<boolean>;
-  nobleBleToRadio: (sessionId: NobleBleSessionId, bytes: Uint8Array) => Promise<void>;
+  onGattIssue: (cb: (payload: GattBleIssuePayload) => void) => () => void;
+  startGattScanning: (sessionId: GattBleSessionId) => Promise<GattBleStartScanResult>;
+  stopGattScanning: (sessionId: GattBleSessionId) => Promise<void>;
+  connectGatt: (sessionId: GattBleSessionId, peripheralId: string) => Promise<GattBleConnectResult>;
+  disconnectGatt: (sessionId: GattBleSessionId) => Promise<void>;
+  /** Drop LoRa GATT sessions + sidecar CBCentralManager for RNode bond recovery. */
+  releaseGattBleCentral: () => Promise<void>;
+  /** End exclusive RNode bond-recovery hold so LoRa GATT may scan/connect again. */
+  clearGattBondRecoveryExclusive: () => Promise<void>;
+  isGattConnected: (sessionId: GattBleSessionId) => Promise<boolean>;
+  gattToRadio: (sessionId: GattBleSessionId, bytes: Uint8Array) => Promise<void>;
 
   // ─── Serial port selection ───────────────────────────────────────────────────
   onSerialPortsDiscovered: (callback: (ports: SerialPort[]) => void) => () => void;
   selectSerialPort: (portId: string) => void;
   cancelSerialSelection: () => void;
-
-  // ─── Bluetooth device selection (Linux Web Bluetooth) ────────────────────────
-  onBluetoothDevicesDiscovered: (
-    callback: (devices: NobleBleDevice[], generation?: number) => void,
-  ) => () => void;
-  selectBluetoothDevice: (deviceId: string) => void;
-  /**
-   * Cancel the Linux Web Bluetooth chooser.
-   * Pass the generation from onBluetoothDevicesDiscovered to ignore stale cancels.
-   * Await before starting a new requestDevice() so force-clear cannot race the new session.
-   */
-  cancelBluetoothSelection: (generation?: number | null) => Promise<{ cancelled: boolean }>;
 
   // ─── Bluetooth pairing (Linux) ──────────────────────────────────────────────
   bluetoothUnpair: (macAddress: string) => Promise<void>;
@@ -998,6 +1007,72 @@ export interface ElectronAPI {
     onProgress: (cb: (info: { percent: number }) => void) => () => void;
     onDownloaded: (cb: () => void) => () => void;
     onError: (cb: (info: { message: string }) => void) => () => void;
+    onOffline: (cb: () => void) => () => void;
+  };
+
+  // ─── Offline map tile cache ──────────────────────────────────────────────────
+  offlineMaps: {
+    estimate: (req: {
+      bounds: { north: number; south: number; east: number; west: number };
+      minZoom: number;
+      maxZoom: number;
+      basemapId: OfflineMapBasemapId;
+      /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
+      retina?: boolean;
+    }) => Promise<{ tileCount: number; sizeEstimateBytes: number; withinCaps: boolean }>;
+    download: (req: {
+      bounds: { north: number; south: number; east: number; west: number };
+      minZoom: number;
+      maxZoom: number;
+      basemapId: OfflineMapBasemapId;
+      /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
+      retina?: boolean;
+    }) => Promise<{ jobId: string }>;
+    cancel: (jobId: string) => Promise<{ cancelled: boolean }>;
+    status: () => Promise<{
+      activeJobs: {
+        jobId: string;
+        source: OfflineMapBasemapId;
+        completed: number;
+        total: number;
+        failed: number;
+        bytes: number;
+        paused: boolean;
+      }[];
+      stats: { tileCount: number; diskBytes: number };
+      regions: {
+        id: string;
+        basemapId: OfflineMapBasemapId;
+        bounds: { north: number; south: number; east: number; west: number };
+        minZoom: number;
+        maxZoom: number;
+        completedAt: number;
+        tileCount: number;
+      }[];
+      sources: Record<string, { tileCount: number; diskBytes: number }>;
+    }>;
+    clear: (source?: OfflineMapBasemapId | 'all') => Promise<{ ok: boolean }>;
+    onProgress: (
+      cb: (info: {
+        jobId: string;
+        source: OfflineMapBasemapId;
+        completed: number;
+        total: number;
+        failed: number;
+        bytes: number;
+        paused: boolean;
+      }) => void,
+    ) => () => void;
+    onDone: (
+      cb: (info: {
+        jobId: string;
+        completed: number;
+        failed: number;
+        bytes: number;
+        cancelled: boolean;
+      }) => void,
+    ) => () => void;
+    onError: (cb: (info: { jobId: string; message: string }) => void) => () => void;
   };
 
   // ─── Meshtastic XMODEM (local radio file transfer) ───────────────────────────
@@ -1014,15 +1089,15 @@ export interface ElectronAPI {
   notifyDeviceDisconnected: () => void;
   setTrayUnread: (count: number) => void;
   quitApp: () => Promise<void>;
-  /** Full process relaunch (Noble BLE long-session restart). */
+  /** Full process relaunch. */
   restartApp: () => Promise<void>;
 
   // ─── Native OS notifications ─────────────────────────────────────────────────
   notify: {
     show: (title: string, body: string) => Promise<void>;
-    longSessionRestart: (opts: LongSessionRestartPayload) => Promise<void>;
-    clearLongSessionNudge: () => Promise<void>;
   };
+
+  notificationSounds: NotificationSoundsApi;
 
   // ─── Safe storage ────────────────────────────────────────────────────────────
   safeStorage: {
@@ -1064,7 +1139,7 @@ export interface ElectronAPI {
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => () => void;
 
   /** Renderer liveness ping for hang detection (resume + visible-window stall). */
-  sendRendererHeartbeat: (payload?: { ts: number }) => Promise<void>;
+  sendRendererHeartbeat: (payload?: { ts: number; hidden?: boolean }) => Promise<void>;
   /** Main-process uptime in seconds (for long-session restart nudge). */
   getProcessUptimeSec: () => Promise<number>;
   /**
@@ -1136,6 +1211,29 @@ export interface ElectronAPI {
     }>;
   };
 
+  // ─── MECP received audit log ─────────────────────────────────────────────────
+  mecp: {
+    appendReceived: (entry: {
+      protocol: string;
+      severity: number | null;
+      drill: boolean;
+      from?: string;
+      channel?: number | string;
+      payload: string;
+      decoded?: string;
+      direction?: 'received' | 'rebroadcast';
+      toProtocol?: string;
+      toChannel?: number | string;
+      bidirectional?: boolean;
+      messageId?: string;
+    }) => Promise<{ ok: true }>;
+    exportReceivedLog: () => Promise<{
+      success: boolean;
+      path?: string;
+      reason?: 'empty' | 'cancelled' | 'error';
+    }>;
+  };
+
   // ─── Chat export ─────────────────────────────────────────────────────────────
   chat: {
     export: (messages: ChatExportMessage[]) => Promise<{ success: boolean; path?: string }>;
@@ -1195,6 +1293,13 @@ export interface ElectronAPI {
     getStatus: () => Promise<ReticulumSidecarStatus>;
     /** Drop latched TCP/TX issues for interfaces not in the enabled set; returns updated status. */
     syncInterfaceIssueScope: (enabledInterfaceNames: string[]) => Promise<ReticulumSidecarStatus>;
+    /**
+     * Clear BLE bond-removed / pairing-timeout latches after named interfaces report online.
+     * Returns updated sidecar status (emits onStatus when the alert changes).
+     */
+    clearBleBondIssuesForOnlineInterfaces: (
+      onlineInterfaceNames: string[],
+    ) => Promise<ReticulumSidecarStatus>;
     proxyGet: (apiPath: string) => Promise<unknown>;
     proxyPost: (apiPath: string, body: unknown) => Promise<unknown>;
     proxyPut: (apiPath: string, body: unknown) => Promise<unknown>;

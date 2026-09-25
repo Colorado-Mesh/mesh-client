@@ -390,7 +390,7 @@
     "themeResetFailed": "Не вдалося скинути кольори.",
     "messageActionsBarBgVisible": "Показувати тло",
     "rrcUnreadAllRoomMessages": "Непрочитані RRC для всіх повідомлень кімнати",
-    "rrcUnreadAllRoomMessagesHint": "Коли ввімкнено, будь-яке нове повідомлення про приміщення RRC позначається як непрочитане і може відтворювати звук каналу. Вимкніть для сповіщень у стилі IRC: лише прямі повідомлення та @згадки.",
+    "rrcUnreadAllRoomMessagesHint": "Коли ввімкнено, будь-яке нове повідомлення кімнати RRC позначається як непрочитане і може відтворювати звук каналу. Вимкніть для сповіщень у стилі IRC: лише прямі повідомлення та @згадки.",
     "shareMyLocation": "Оприлюднити адресу",
     "shareMyLocationHint": "Якщо ввімкнено, ця програма може шукати ваше місцезнаходження на цьому комп'ютері та надсилати його за допомогою Meshtastic, MeshCore або Reticulum (спільний чат, радіо push, RMAP). Якщо вимкнено, функції GPS-пошуку для господарів і надсилання додатків вимкнені; статичні координати все ще працюють лише для вашої місцевої карти. Радіоприймач із власним GPS все ще може показувати ваше місцезнаходження. Вбудоване програмне забезпечення пристрою може транслюватися до тих пір, поки ви не налаштуєте радіо або модулі.",
     "shareMyLocationOffInfo": "Надсилання даних про місцезнаходження вимкнено — оновлення GPS хоста та надсилання даних мережею вимкнено. Увімкніть \"Поділитися своїм місцезнаходженням\" вище, щоб скористатися автоматичним оновленням або надіслати свою позицію.",
@@ -431,7 +431,13 @@
     "decreaseFontSize": "Зменшити розмір шрифту",
     "increaseFontSize": "Збільшити розмір шрифту",
     "resetFontSize": "Reset (Скид)",
-    "resetFontSizeAria": "Відновити шрифт"
+    "resetFontSizeAria": "Відновити шрифт",
+    "opsAlertsHeading": "Оперативні сповіщення",
+    "nodeSilenceAlertMinutes": "Сповіщення про мовчання спостережуваного вузла (хвилини)",
+    "nodeSilenceAlertMinutesPlaceholder": "Протокол за замовчуванням",
+    "nodeSilenceAlertMinutesHint": "Залиште порожнім, щоб використовувати застарілий поріг кожного протоколу. Ескалація стріляє в 2рази більше цього значення.",
+    "nodeBatteryLowThreshold": "Пороговий рівень заряду акумулятора (%)",
+    "notifyOnLinkDown": "Сповіщати про несподіване вимкнення радіо"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -450,7 +456,8 @@
     "switchToMeshtasticWithUnread": "Перейти на Meshtastic, {{count}} непрочитано",
     "switchToMeshCoreWithUnread": "Перейти на MeshCore, {{count}} непрочитано",
     "switchToReticulumWithUnread": "Переключитися на Reticulum, {{count}} непрочитано",
-    "tabWithUnread": "{{label}}, {{count}} непрочитано"
+    "tabWithUnread": "{{label}}, {{count}} непрочитано",
+    "tabWithOpenIncidents": "{{label}}, {{count}} відкриті травневі або ТЕРМІНОВІ ІНЦИДЕНТИ"
   },
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
@@ -790,7 +797,34 @@
     "reticulumSendAwaitingPeerReceipt": "Надіслано (очікується отримання від колеги)",
     "reticulumChatNeedsLxmfDelivery": "Цей вузол ще не має адреси доставки LXMF (чат не може використовувати призначення лише для голосу). Дочекайтеся оголошення LXMF або вставте їх 32-символьний хеш LXMF.",
     "saveAttachment": "Зберегти",
-    "revealAttachment": "У теці"
+    "revealAttachment": "У теці",
+    "outboxRemoveFailed": "Повідомлення надіслано, але не вдалося видалити його з папки \"Вихідні\". Скасувати поставлену в чергу копію.",
+    "sendErrors": {
+      "notConnected": "Не підключено — підключіть радіоприймач і повторіть спробу.",
+      "emptyPayload": "Потрібен текст повідомлення.",
+      "missingDestinationKey": "Неможливо надіслати це пряме повідомлення — відсутній ключ шифрування одержувача. Дочекайтеся синхронізації контактів або повторного підключення.",
+      "encryptionBlocked": "Неможливо надіслати — відсутній ключ шифрування.",
+      "timeout": "Час очікування надсилання закінчився. Спробуйте ще раз.",
+      "invalidReaction": "Ця реакція недійсна.",
+      "reactionTargetMissing": "Повідомлення, на яке потрібно відреагувати, не знайдено.",
+      "bleUnavailable": "Bluetooth не готовий. Повторно підключіться та повторіть спробу.",
+      "roomSessionExpired": "Сесія в кімнаті закінчилася — увійдіть знову, щоб опублікувати допис.",
+      "noSavedRoomCredential": "Немає збереженого пароля кімнати. Спочатку увійдіть в кімнату."
+    },
+    "reticulumDmDestHashesAria": "Призначення LXMF та хеші ідентифікації",
+    "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
+    "reticulumDmIdentityPrefix": "ID {{prefix}}…",
+    "reticulumDmCopyLxmfAria": "Копіювати хеш LXMF, починаючи з {{prefix}}",
+    "reticulumDmCopyIdentityAria": "Копіювати хеш посвідчення особи, починаючи з {{prefix}}",
+    "reticulumDmStaleAlternateAria": "Можливий інший пункт призначення LXMF для цього вузла",
+    "reticulumDmStaleAlternate": "Цей чат - LXMF {{openPrefix}}…. У вас також є інший LXMF {{alternatePrefix}}…, який може бути тією самою людиною в іншому додатку. Підтвердьте → повідомлення Network LXMF/ Peers або оголосіть зараз з обох сторін.",
+    "reticulumDmStaleAlternateNamed": "Цей чат - LXMF {{openPrefix}}…. Інший LXMF {{alternatePrefix}}… ({{name}}) може бути тією самою людиною в іншому додатку. Відкрийте → повідомлення однолітків на цьому хеші або оголосіть зараз з обох сторін.",
+    "reticulumDmStaleAlternateDismissAria": "Відхилити попередження про місце призначення",
+    "outboxEmergencyBadge": "У разі надзвичайної ситуації",
+    "outboxEmergencyWillSend": "Продовжить повторювати спробу, доки не буде надісла",
+    "outboxEmergencyCapBlocked": "Призупинено: забагато аварійних повідомлень у черзі. Повторіть спробу або скасуйте цю.",
+    "outboxEmergencyCancelConfirm": "Скасувати це екстрене повідомлення? Його не буде надіслано.",
+    "retryOutboxEmergencyAttempt": "Спроба {{count}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -836,7 +870,7 @@
     "hoursAgo": "{{count}} год тому",
     "daysAgo": "{{count}} дн. тому",
     "days": "днів",
-    "emDash": "-",
+    "emDash": "—",
     "saving": "Триває збереження…",
     "peers": "Вузли",
     "colorGreen": "Зелений",
@@ -889,7 +923,6 @@
     "selectSerialPort": "Виберіть послідовний порт",
     "noSerialPorts": "Послідовних портів не знайдено. Переконайтеся, що ваш пристрій підключено до мережі.",
     "enterPin": "Введіть PIN-код, який відображається на вашому пристрої:",
-    "pinExpiring": "{{count}}s — швидко введіть PIN-код, вікно сполучення BlueZ закривається",
     "submit": "Надіслати",
     "rePairDevice": "Видалити та повторно підключити пристрій",
     "mqttConnection": "Підключення MQTT",
@@ -960,19 +993,14 @@
     "stageConfiguring": "Налаштування пристрою…",
     "stageConnecting": "Підключення до пристрою…",
     "stageScanning": "Сканування — виберіть свій пристрій, коли він з’явиться нижче",
-    "stageConnectingSaved": "Підключення до збереженого пристрою Bluetooth…",
-    "stageSelectBluetooth": "Виберіть свій пристрій Bluetooth нижче",
     "stageEnterPin": "Введіть PIN-код, який відображається на вашому пристрої",
     "stageEnterPinPair": "Введіть PIN-код, щоб з’єднати пристрій",
     "stagePairingBluetooth": "Сполучення за допомогою PIN-коду (bluetoothctl)…",
     "stageRemoving": "Видалення пристрою…",
     "stagePairingPin": "Сполучення з PIN-кодом…",
-    "stagePairing": "Створення пари…",
-    "stageSelectBluetoothDots": "Виберіть свій пристрій Bluetooth…",
     "stagePairingFailed": "Не вдалося створити пару. Підключіть пристрій повторно.",
     "stageCheckingPairing": "Перевірка з’єднання Bluetooth…",
     "stageEnterPinLinux": "Введіть PIN-код, який відображається на вашому пристрої (спочатку з’єднайте з Linux)",
-    "stageReconnecting": "Повторне підключення до останнього пристрою Bluetooth…",
     "pinPlaceholder": "PIN",
     "humanize": {
       "prefixedHint": "{{message}} — {{hint}}",
@@ -994,7 +1022,6 @@
       },
       "ble": {
         "adapterWindowsHint": "Перевірте Налаштування > Bluetooth і пристрої. Якщо Bluetooth увімкнено, але він недоступний, оновіть драйвер Bluetooth у диспетчері пристроїв.",
-        "adapterLinuxHint": "Переконайтеся, що Bluetooth увімкнено та встановлено прапорець експерименту Web Bluetooth. Спробуйте: systemctl status bluetooth",
         "adapterGenericHint": "Переконайтеся, що Bluetooth увімкнено. У Linux запустіть: systemctl status bluetooth",
         "securityPermissionHint": "У дозволі Bluetooth відмовлено. Переконайтеся, що програма має доступ до пристрою Bluetooth.",
         "gattDisconnectedHint": "З’єднання GATT розірвано. Спробуйте підійти ближче до пристрою та повторно підключитися.",
@@ -1201,7 +1228,8 @@
         "i2p": "Магістраль I2P через маршрутизатор на цьому комп'ютері. Увімкніть міст додатків SAM (127.0.0.1:7656), а не проксі-сервери HTTP/HTTPS I2PTunnel (4444/4445). Перезапустіть I2P після ввімкнення SAM, щоб міст прослуховував, а потім перезапустіть стек Reticulum, якщо цей інтерфейс не працює.",
         "serial": "Загальне послідовне посилання на TNC, модем або інший хост по дроту. Встановіть параметри лінії відповідно до дальнього кінця.",
         "ax25kiss": "Пакетне радіо AX.25 через KISS TNC. Потрібен ваш позивний і ідентифікатор SSID (0-15), що ідентифікує цю станцію.",
-        "local": "Роз'єм зі спільним екземпляром на цьому комп'ютері. Інші локальні інструменти (rnsd, Nomad Network, rnsh) можуть підключатися до цього стека через нього. Шлях до сокета походить від імені цього інтерфейсу, тому перейменування його змінює адресу, яку повинні використовувати інші інструменти."
+        "local": "Роз'єм зі спільним екземпляром на цьому комп'ютері. Інші локальні інструменти (rnsd, Nomad Network, rnsh) можуть підключатися до цього стека через нього. Шлях до сокета походить від імені цього інтерфейсу, тому перейменування його змінює адресу, яку повинні використовувати інші інструменти.",
+        "backbone": "Публічний TCP-слухач магістралі (сценарій A). Публікує шлюз, до якого однорангові вузли можуть автоматично підключатися, коли увімкнено виявлення RMAP — задайте reachable_on як загальнодоступне ім'я хоста або IP-адресу."
       },
       "rfProfile": {
         "coordinated": "Узгоджена обл",
@@ -1339,7 +1367,9 @@
         "preamble": "Преамбула (мс)",
         "txtail": "TX Tail (мс)",
         "persistence": "Наполегливість.",
-        "slottime": "Час слота (мс)"
+        "slottime": "Час слота (мс)",
+        "listen_on": "Адреса прослуховування",
+        "target_host": "Віддалений хост (режим клієнта)"
       },
       "fieldOption": {
         "parity": {
@@ -1364,7 +1394,9 @@
       "profilesRename": "Rename",
       "profilesSaveRename": "Save",
       "profilesDelete": "Delete",
-      "profilesRenameAria": "Rename profile {{name}}"
+      "profilesRenameAria": "Rename profile {{name}}",
+      "bootstrapOnly": "Лише Bootstrap",
+      "bootstrapOnlyHint": "Від'єднайте цей інтерфейс після автоматичного підключення достатньої кількості виявлених серверів магістралі/TCP (потрібен ліміт → автоматичного підключення до мережі > 0)."
     },
     "reticulumPeers": {
       "hops": "Хопи",
@@ -1394,15 +1426,13 @@
       "tcpUnreachableHint": "Віддалений екземпляр Reticulum може бути offline або блокувати з'єднання. Вимкніть цей інтерфейс або перевірте хост і порт. Часті перезапуски mesh-client або стека можуть призвести до того, що концентратори Reticulum 1.4.0+ заблокують вашу IP-адресу на 12 годин — краще зачекати, ніж перезапускати знову.",
       "connectingHintBle": "Посилання BLE RNode може зайняти до 60 секунд після запуску стека (вікно пароля ОС). Якщо буде запропоновано, введіть поточний PIN-код RNode — ніколи не 123456. Це нормально, а не помилка. Пристрій може з’явитися в налаштуваннях системи лише після успішного підключення.",
       "offlineHintBle": "Щоб усунути цю помилку, можливо, доведеться видалити цей інтерфейс і додати його знову (Вибрати пристрій), щоб оновити збережений Bluetooth‑ідентифікатор, а потім перезапустити стек. ОС може запитати 6‑цифровий Bluetooth PIN (macOS, Windows або Linux). RNode генерує новий код під час кожного сполучення — ніколи не використовуйте 123456 (це типовий код Meshtastic, не RNode). RNode не обовʼязково має зʼявлятися в Системних параметрах → Bluetooth до підключення цієї програми; діалогове вікно ОС зʼявляється, коли стек сполучається. Радіо без дисплея: підключіть USB → Reticulum Admin → Bluetooth → Почати сполучення → введіть PIN, показаний у панелі Admin (не на дисплеї радіо), у діалоговому вікні ОС. Радіо з дисплеєм: утримуйте кнопку ~7 с на пристроях Heltec (час різний; ~10 с на багатьох платах вмикає Wi‑Fi AP), прочитайте PIN на екрані та введіть його в діалоговому вікні ОС. Очистіть невдалі звʼязки в параметрах Bluetooth ОС перед повторною спробою.",
-      "offlineHintBleBondStale": "macOS досі показує цей RNode як сполучений, але ключі Bluetooth більше не збігаються (одноранговий вузол видалив інформацію про сполучення). Забудьте пристрій у Системних параметрах → Bluetooth, переведіть RNode у режим сполучення (Admin → Bluetooth → Почати сполучення або утримуйте кнопку ~7 с), потім видаліть і знову додайте цей інтерфейс (Вибрати пристрій), перезапустіть стек і введіть новий 6‑цифровий PIN за запитом.",
+      "offlineHintBleBondStale": "macOS досі показує Paired, але Bluetooth відхилив зв'язок (Peer removed pairing information). Забудьте цей RNode у Системних параметрах → Bluetooth, потім знову сполучіть: USB → Reticulum Admin → Bluetooth → Clear paired / Start pairing і введіть новий PIN. Віддавайте перевагу USB serial або Wi-Fi (tcp://), якщо радіо має бути онлайн одразу.",
       "tcpFastFlap": "{{name}}: концентратор, ймовірно, заблокував вашу IP-адресу після частих перезавантажень стека ({{host}}:{{port}})",
       "tcpFastFlapHint": "Публічні концентратори Reticulum 1.4.0+ блокують IP-адресу після п'яти коротких сеансів TCP протягом 12 годин. Швидкі перезапуски mesh-client або стека враховуються. Вимкніть цей концентратор і зачекайте до 12 годин — повторний запуск подовжує блокування."
     },
     "autoConnectingTo": "Автоматичне підключення до {{deviceName}}…",
     "autoReconnectInProgress": "Триває автоматичне повторне підключення…",
     "stageAutoConnectingBle": "Підключення до {{deviceName}}…",
-    "stageWaitingNobleBleMeshtastic": "Очікування завершення Meshtastic Bluetooth — MeshCore автоматично підключиться до {{deviceName}}, коли це буде зроблено…",
-    "stageWaitingNobleBleMeshcore": "Очікування завершення MeshCore Bluetooth — Meshtastic автоматично підключиться до {{deviceName}}, коли це буде зроблено…",
     "reticulumStats": {
       "interfaces": "{{count}} інтерфейси",
       "peers": "{{count}} однолітків"
@@ -1475,7 +1505,7 @@
       "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
       "shareInstanceHint": "Екземпляр Share увімкнено — повністю закрийте інші програми Reticulum (MeshChatX, Ratspeak, автономний rnsd) і перезапустіть цей стек перед повторною спробою DM.",
       "bleBondRemoved": "{{name}}: з’єднання Bluetooth застаріле (ОС все ще відображає сполучення)",
-      "bleBondRemovedHint": "Спочатку забудьте цей RNode у Системних параметрах → Bluetooth (macOS не знімає Paired автоматично). За можливості надавайте перевагу USB serial або Wi‑Fi (tcp://), щоб уникнути BLE-зв’язків. Далі: Admin → Bluetooth → Очистити спарені пристрої (USB, ESP32) якщо доступно, Почати сполучення, видаліть і знову додайте цей BLE-інтерфейс (Вибрати пристрій), перезапустіть стек і введіть новий 6-значний PIN.",
+      "bleBondRemovedHint": "Автоматичний exclusive reconnect не зміг відновити цей зв'язок. Забудьте RNode у Системних параметрах → Bluetooth, потім Admin → Clear paired / Start pairing і введіть новий PIN. До повторного сполучення віддавайте перевагу USB serial або Wi-Fi (tcp://). LoRa BLE (MeshCore/Meshtastic) залишається на паузі, поки цей RNode використовує Bluetooth.",
       "blePairingTimedOut": "{{name}}: час очікування обміну паролем Bluetooth минув",
       "blePairingTimedOutHint": "Зупиніть стек, почніть сполучення знову (Адміністратор → Bluetooth показує PIN-код на панелі — дисплей радіо може залишатися порожнім — або утримуйте кнопку ~7 с для введення PIN-коду на екрані), перезапустіть стек один раз і введіть цей PIN-код у діалоговому вікні ОС протягом ~60 секунд. Ніколи не використовуйте 123456 (Meshtastic за умовчанням).",
       "bleBondRemovedStopStack": "Зупинити стек",
@@ -1485,7 +1515,9 @@
       "txQueueDropsHintNeutral": "Цей канал інтерфейсу TX заповнений. Перевірте здоров'я зв'язку цього інтерфейсу (або вимкніть його), щоб зупинити падіння.",
       "txQueueDropsHintBleFlowControl": "Зворотний тиск у черзі TX хоста, коли радіоприймач зайнятий (контроль потоку ввімкнено). Очікується в умовах радіочастотної перевантаженості — не застрягло посилання. Зменшіть вихідне навантаження або зачекайте ефірного часу.",
       "tcpResetByPeer": "{{name}}: скидання концентратором сеансу TCP (скидання з'єднання вузлом)",
-      "tcpReadEof": "{{name}}: концентратор закрив TCP чисто (ІНФОРМАЦІЯ: TCP читання: EOF)"
+      "tcpReadEof": "{{name}}: концентратор закрив TCP чисто (ІНФОРМАЦІЯ: TCP читання: EOF)",
+      "bleLtkDesyncPurged": "Невідповідність ключа шифрування (розсинхронізація LTK) — застарілий зв'язок ОС видалено. Повторне з'єднання: Admin → Bluetooth → Start pairing, потім введіть новий PIN.",
+      "bleLtkDesyncManualForget": "Невідповідність ключа шифрування (розсинхронізація LTK). Забудьте цей RNode у Системних параметрах → Bluetooth, потім Admin → Start pairing. Встановіть blueutil (brew install blueutil), щоб дозволити автоматичне від'єднання на macOS."
     },
     "reticulumSidecarBundledMissing": "У цій інсталяції відсутній Reticulum sidecar. Оновіть до новішого випуску або повідомте про проблему — збірка з вихідного коду недоступна в пакетних встановленнях.",
     "radioMqttRootDivergesWarning": "Коренева тема радіо MQTT - {{radioRoot}}, але ця панель підписується на {{appPrefix}}. Підключіть радіоприймач, щоб обмежити загальнонаціональний трафік вузлів — оновіть префікс теми та повторно підключіть MQTT.",
@@ -1535,7 +1567,6 @@
     "linkQuality": "Якість зв'язку",
     "linkQualityMs": "{{ms}} мс",
     "linkQualityUnavailable": "—",
-    "signalUnavailableWebBluetooth": "Недоступно (веб Bluetooth)",
     "meshcoreCaBroker": "Брокер MeshCore.CA",
     "meshcoreCaPrimary": "Осн.",
     "meshcoreCaBackup": "Заднім ходом",
@@ -1558,7 +1589,24 @@
     "pickerDeviceAriaWithRssi": "{{name}} {{address}}, {{rssi}} дБм",
     "bluetoothMac": "Bluetooth MAC",
     "bluetoothId": "Ідентифікатор Bluetooth",
-    "reticulumAutoResendOnAnnounce": "Повторіть невдалі повідомлення, коли вузол оголошує"
+    "reticulumAutoResendOnAnnounce": "Повторіть невдалі повідомлення, коли вузол оголошує",
+    "errors": {
+      "ble": {
+        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
+        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
+        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
+        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
+        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
+        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
+        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
+        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
+        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
+        "feature_disabled": "Bluetooth GATT support is not available in this build.",
+        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+      }
+    }
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -1862,7 +1910,8 @@
         "rmap_transport_disabled": "Інтерфейси, які можна виявити, налаштовані, але режим транспортування вимкнено.",
         "rmap_i2p_not_connectable": "Інтерфейс I2P \"{{name}}\" можна виявити, але неможливо підключити.",
         "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
-        "rmap_mode_autocorrect": "Інтерфейс \"{{name}}\" можна виявити в режимі без AP/шлюзу — Reticulum запускатиме його як точку доступу, якщо не встановлено ignore_config_warnings. Відредагуйте інтерфейс або перезапустіть стек, щоб mesh-client міг відмітити відмову."
+        "rmap_mode_autocorrect": "Інтерфейс \"{{name}}\" можна виявити в режимі без AP/шлюзу — Reticulum запускатиме його як точку доступу, якщо не встановлено ignore_config_warnings. Відредагуйте інтерфейс або перезапустіть стек, щоб mesh-client міг відмітити відмову.",
+        "rmap_missing_reachable_on": "Магістральний інтерфейс \"{{name}}\" можна виявити, але відсутній REACHABLE_ON."
       },
       "runtime": {
         "rnsNotReady": "Стек RNS не готовий",
@@ -1905,7 +1954,7 @@
     },
     "routingPort": {
       "nodeInfo": "NodeInfo",
-      "telemetry": "Телеметрія",
+      "telemetry": "Telemetry",
       "neighborInfo": "NeighborInfo",
       "traceroute": "Traceroute",
       "position": "Позиція",
@@ -1936,7 +1985,9 @@
     "severityWarnings_few": "Попередження ({{count}})",
     "severityWarnings_many": "Попередження ({{count}})",
     "warningCount_few": "{{count}} попередження",
-    "warningCount_many": "{{count}} попереджень"
+    "warningCount_many": "{{count}} попереджень",
+    "exportJson": "Експортувати JSON",
+    "exportJsonAria": "Експортувати видимі рядки діагностики як JSON"
   },
   "diagnosticsPing": {
     "title": "Безперервний пінг",
@@ -2305,7 +2356,42 @@
     "layerCongestionHalos": "Ореоли заторів",
     "waypointDefaultName": "Точка шляху",
     "waypointDelete": "Видалити маршрутну точку",
-    "noGpsNodes": "Ще немає вузлів із позиціями GPS"
+    "noGpsNodes": "Ще немає вузлів із позиціями GPS",
+    "offlineMaps": {
+      "heading": "- офлайн мапи",
+      "autoCache": "Автоматичне кешування в режимі очікування",
+      "autoCacheAria": "Автоматично завантажувати поточний перегляд карти під час роботи в Інтернеті",
+      "downloadView": "Завантажити поточний перегляд",
+      "downloadAria": "Оцінка та завантаження поточного перегляду карти для використання в автономному режимі",
+      "estimating": "оцінка…",
+      "confirm": "{{count}} плитки (~{{size}}), збільшення {{minZoom}}–{{maxZoom}}. Завантажити зараз?",
+      "confirmYes": "Завантаження",
+      "confirmDownloadAria": "Підтвердити завантаження карти в автономному режимі",
+      "cancelConfirm": "Не зараз",
+      "cancelConfirmAria": "Скасувати підтвердження завантаження карти в автономному режимі",
+      "progress": "{{completed}} / {{total}} плитки ({{failed}} не вдалося)",
+      "paused": "Призупинено — очікування мережі…",
+      "cancel": "Скасувати завантаження",
+      "cancelAria": "Скасувати завантаження офлайн-карти",
+      "cancelled": "Завантаження скасовано.",
+      "done": "Завантажено {{completed}} плитки (помилка {{failed}}).",
+      "tooLarge": "Ця область занадто велика. Збільшити або зменшити діапазон масштабування.",
+      "noViewport": "Спочатку панорамуйте карту, щоб зберегти вікно перегляду.",
+      "cacheStats": "Кеш: {{count}} плитки ({{size}})",
+      "clear": "Очистити кеш плитки",
+      "clearAria": "Очистити кеш плитки офлайн-карти",
+      "cleared": "Кеш плитки очищено."
+    },
+    "basemapUsgsTopo": "USGS TOPO (тільки США)",
+    "layerIncidents": "Надзвичайні ситуації",
+    "layerMgrsGrid": "MGRS GRID",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "СВЕРДЛО {{sender}}: {{codes}}",
+    "measure": "Вимірювання",
+    "measureStartAria": "Почати вимірювання відстані",
+    "measureStopAria": "Припинити вимірювання та очистити",
+    "measureHint": "Натисніть карту, щоб додати бали",
+    "measureTotal": "{{km}} км / {{mi}} миль"
   },
   "meshCongestion": {
     "blockTitle": "Чому ви бачите повторюваний трафік",
@@ -2336,10 +2422,7 @@
       "bleAlreadyInProgress": "З’єднання Bluetooth уже встановлено. Зачекайте, доки він закінчиться, або спробуйте натомість послідовний порт/USB.",
       "bleMissingServices": "Пристрій не підтримує протокол MeshCore BLE. Переконайтеся, що на пристрої встановлено прошивку MeshCore.",
       "blePeripheralInUse": "Цей пристрій уже підключено через Meshtastic BLE. Перш ніж підключатися як MeshCore, від’єднайте його.",
-      "bleTimeoutWebBtHandshake": "Час очікування рукостискання MeshCore минув (Web Bluetooth). Радіо може спершу потребувати PIN-коду, сполученого з Linux: скористайтеся командою «Видалити та повторно з’єднати пристрій» і введіть PIN-код, який відображається на пристрої, або з’єднайте з bluetoothctl, а потім знову торкніться «Підключити».",
-      "bleTimeoutWebBt": "Час очікування підключення Bluetooth закінчився під час відкриття MeshCore через Web Bluetooth. Повторіть спробу, залиште пристрій активним, увімкніть BLE на радіо або скористайтеся послідовним портом/TCP.",
       "bleTimeoutHandshake": "Bluetooth підключено, але рукостискання протоколу MeshCore не завершилося до відключення/часу очікування. Повторіть спробу, залиште пристрій активним і тримайте його поблизу, увімкніть живлення BLE або використовуйте послідовний порт/TCP.",
-      "bleTimeoutNoble": "Час очікування підключення Bluetooth закінчився під час відкриття MeshCore через Noble IPC. Повторіть спробу, увімкніть живлення BLE на пристрої або скористайтеся послідовним портом/TCP.",
       "roomPost": {
         "badState": "Повідомлення в кімнаті відхилено (не ввійшов на радіо). Вийдіть, увійдіть знову та повторіть спробу.",
         "illegalArg": "Публікацію кімнати відхилено (недійсний формат повідомлення).",
@@ -2365,11 +2448,11 @@
         "rejected": "Вихід із кімнати відхилено по радіо.",
         "failed": "Не вдалося залишити кімнату"
       },
-      "repeaterRpcInProgress": "Запит на цей ретранслятор уже виконується",
       "cliDangerNotConfirmed": "Деструктивні команди CLI вимагають підтвердження на панелі повторювачів.",
       "pingFailed": "Ping не вдався",
       "floodScopeBusy": "Перевизначення обсягу затоплення недоступне, поки виконується адміністрування повторювача або трасування. Повторіть спробу під час очікування.",
-      "removeContactFailed": "Видалено локально, але радіо відхилило removeContact. Контакт може знову з’явитися після оновлення."
+      "removeContactFailed": "Видалено локально, але радіо відхилило removeContact. Контакт може знову з’явитися після оновлення.",
+      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Перевірте ім’я користувача v1_, підпис маркера та аудиторію JWT проти брокера; див. docs/letsmesh-mqtt-auth.md. За потреби вставте маркер, виданий оператором, за допомогою Custom.",
@@ -2878,7 +2961,23 @@
       "pathMediumRf": "RF (RNode)",
       "pathMediumPreferenceAria": "Глобальне бажане середовище шляху",
       "pathMediumPreferenceSaved": "Налаштування носія шляху збережено.",
-      "pathMediumPreferenceSaveFailed": "Не вдалося зберегти налаштування середнього шляху."
+      "pathMediumPreferenceSaveFailed": "Не вдалося зберегти налаштування середнього шляху.",
+      "discoveryConsumeTitle": "Виявлені інтерфейси (споживання)",
+      "discoveryConsumeHint": "Слухання завжди ввімкнено. Автоматичне підключення залишається вимкненим (0), якщо ви не ввімкнете його — виявлені магістральні сервери/сервери TCP набираються за допомогою rsReticulum, а не за допомогою mesh-client.",
+      "autoconnectDiscovered": "Обмеження автопідключення",
+      "autoconnectDiscoveredAria": "Максимальна кількість виявлених інтерфейсів для автоматичного підключення",
+      "autoconnectDiscoveredHint": "0 = ніколи не набирати номер автоматично. Значення вище 0 дозволяють Reticulum виховувати ефемерних клієнтів магістралі з оголошень про виявлення.",
+      "requiredDiscoveryValue": "Мінімальна марка відкриття",
+      "requiredDiscoveryValueAria": "Мінімальне значення криптографічної печатки для прийнятого відкриття оголошує",
+      "discoverySources": "Довірені джерела виявлення",
+      "discoverySourcesAria": "Хеші ідентифікації мережі або транспорту, розділені комами",
+      "discoverySourcesPlaceholder": "32-х шістнадцяткові хеші, розділені комами (порожній = прийняти будь-який)",
+      "discoverySourcesHint": "Коли встановлено, приймаються лише оголошення від цих ідентифікаторів (все ще підлягають гербовій вартості).",
+      "discoverySourcesInvalid": "Кожне джерело виявлення має бути 32-символьним шістнадцятковим хешем ідентичності.",
+      "networkIdentity": "Шлях мережевої ідентифікації",
+      "networkIdentityAria": "Шлях до файлу мережевої ідентифікації для шифрування та розшифрування виявлення",
+      "networkIdentityPlaceholder": "~/.reticulum/storage/identities/my_network",
+      "networkIdentityHint": "Необов'язково. Потрібно для розшифрування зашифрованих сповіщень про виявлення (і для шифрування під час публікації за допомогою discovery_encrypt)."
     },
     "reticulumConfigImport": {
       "title": "Імпорт конфігурації Reticulum",
@@ -3345,7 +3444,8 @@
     "summaryOnline_few": "{{count}} онлайн",
     "summaryOnline_many": "{{count}} онлайн",
     "summaryStale_few": "{{count}} застарілі",
-    "summaryStale_many": "{{count}} застарілих"
+    "summaryStale_many": "{{count}} застарілих",
+    "buttonExportCsv": "Експорт у CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3510,7 +3610,10 @@
     "hopsAway_few": "за {{count}} хопи",
     "hopsAway_many": "за {{count}} хопів",
     "downloadFile": "Завантаження",
-    "dismissPreview": "Відпустити"
+    "dismissPreview": "Відпустити",
+    "clearBrowserCaches": "Очистити кеш сторінок і зображень",
+    "clearedBrowserCaches": "Кеш сторінок і зображень Nomad очищено",
+    "clearBrowserCachesHint": "Очистити кеші сторінок і зображень Nomad у пам'яті. Кеші не зберігаються на диск. Зображення більше 2 МіБ (base64) ніколи не кешуються."
   },
   "packetDistribution": {
     "overallDistribution": "Загальний розподіл",
@@ -3654,7 +3757,11 @@
     "pathMediumTitle": "Носій активного шляху: {{medium}}",
     "chatNeedsLxmfDelivery": "Ще немає адреси доставки LXMF для цього вузла. Дочекайтеся оголошення LXMF або відкрийте чат за допомогою 32-символьного хешу LXMF. Місця призначення Voice (lxst.telephony) не можуть отримувати чат.",
     "voiceAspectBadge": "Голос",
-    "voiceAspectTitle": "Цей рядок таблиці шляхів є пунктом призначення телефонії LXST. Перенаправлення чату на хеш доставки LXMF колеги, коли він відомий."
+    "voiceAspectTitle": "Цей рядок таблиці шляхів є пунктом призначення телефонії LXST. Перенаправлення чату на хеш доставки LXMF колеги, коли він відомий.",
+    "heardViaTcpHub": "Концентратор TCP",
+    "heardViaTcpHubTitle": "Активний шлях проходить через TCP/транспортний вузол ({{interface}}). Під час тестування чату, призначеного лише для радіочастот, віддавайте перевагу радіочастотам або вимкніть концентратори.",
+    "staleAlternateToast": "Чат відкрито на LXMF {{openPrefix}}…. Інший LXMF {{alternatePrefix}}… може бути тією самою людиною в іншому додатку — підтвердьте Network LXMF, перш ніж покладатися на Delivered.",
+    "staleAlternateToastNamed": "Чат відкрито на LXMF {{openPrefix}}…. Інший LXMF {{alternatePrefix}}… ({{name}}) може бути тією самою людиною в іншому додатку — підтвердьте Network LXMF, перш ніж покладатися на Delivered."
   },
   "radioPanel": {
     "offloadedContacts": "Вивантажено {{count}} контакти до бази даних.",
@@ -4425,7 +4532,7 @@
     "jumpToNode": "Перейти до вузла {{name}}",
     "pingTraceNodeTooltip": "Запустити ping/trace до {{name}}",
     "jumpToNodeTooltip": "Відомості про відкритий вузол для {{name}}",
-    "meshtasticHopsAbsent": "-",
+    "meshtasticHopsAbsent": "—",
     "colTimeTooltip": "Коли пакет був захоплений. При наведенні в рядку відображається точний час.",
     "colHbTooltip": "Hop count: довжина шляху MeshCore або Meshtastic hopStart − hopLimit на RF.",
     "colTypeTooltip": "Тип корисного навантаження пакета (MeshCore) або ім'я порту Meshtastic.",
@@ -4845,14 +4952,25 @@
     "reachableOnError": {
       "invalid": "Недійсне значення для значення.",
       "invalidHost": "Недійсне ім'я хосту для reachable_on.",
-      "tooLong": "Доступне значення занадто довго."
+      "tooLong": "Доступне значення занадто довго.",
+      "required": "Для магістральної публікації потрібен доступний скрипт імені хосту, IP-адреси або роздільної здатності."
     },
     "openGlobalMap": "Відкрити глобальну карту",
     "openGlobalMapAria": "Відкрити глобальну карту RMAP v4 на rmap.world",
     "applyPartialSuccess": "Налаштування RMAP застосовуються до інтерфейсів {{applied}} з {{total}}.",
     "disablePartialSuccess": "Видання RMAP вимкнено на {{applied}} з {{total}} інтерфейсів.",
     "hint": "Вмикає публікацію RMAP і GPS-координати програми на всіх увімкнених інтерфейсах із підтримкою RMAP (RNode/Multi, KISS, BLE peer, I2P, UDP, pipe). Прапорець увімкнено, лише якщо публікується кожен придатний інтерфейс; частковий стан є невизначеним — перевірте ще раз, щоб синхронізувати решту. Використовувати для кожного інтерфейсу RMAP перемикає підключення для точного контролю. Шляхи LoRa також забезпечують транспорт і центр rmap.world.",
-    "disabledShareOff": "Увімкніть \"Поділитися своїм місцезнаходженням\" в додатку → GPS /\"Місцезнаходження\" для публікації в RMAP"
+    "disabledShareOff": "Увімкніть \"Поділитися своїм місцезнаходженням\" в додатку → GPS /\"Місцезнаходження\" для публікації в RMAP",
+    "reachableOnRequired": "Доступно на (обов'язково для Backbone)",
+    "discoveryLxmfAddress": "Адреса оператора LXMF (необов'язково, шістнадцяткова)",
+    "discoveryStampValue": "Вартість марки Discovery",
+    "discoveryEncrypt": "Зашифрувати оголошення про виявлення",
+    "publishIfac": "Опублікувати облікові дані IFAC",
+    "advancedHint": "Параметри шифрування та IFAC призначені для приватних мереж, які мають спільну мережеву ідентифікацію. Залиште їх для публічної публікації RMAP.",
+    "lxmfAddressError": {
+      "invalid": "Адреса оператора LXMF повинна бути шістнадцятковою парної довжини.",
+      "tooLong": "Адреса оператора LXMF занадто довга."
+    }
   },
   "reticulumTopology": {
     "title": "Топологія мережі",
@@ -4924,17 +5042,12 @@
     "postCount": "{{count}} дописів",
     "lastPost": "Крайній допис",
     "loginTitle": "Увійдіть на сервер",
-    "adminLoginTitle": "Вхід адміністратора",
     "loginHelp": "Введіть пароль гостя, щоб приєднатися та опублікувати. За замовчуванням часто «hello». Для серверів без пароля гостя скористайтеся «Продовжити лише для читання» (вхід надсилає «hello», якщо поле порожнє).",
-    "adminLoginHelp": "Введіть пароль адміністратора кімнати, щоб керувати налаштуваннями та ACL. За замовчуванням часто «hello».",
     "guestPasswordLabel": "Пароль гостя",
     "guestPasswordPlaceholder": "hello",
-    "adminPasswordLabel": "Пароль адміна",
-    "adminPasswordPlaceholder": "пароль",
     "loginButton": "Вхід",
     "loggingIn": "Вхід в систему",
     "loginFailed": "Помилка входу",
-    "cancelLoginDialog": "Скасувати діалогове вікно входу в кімнату",
     "continueReadOnly": "Продовжити лише для читання",
     "readOnlyBadge": "Лише читання",
     "readOnlyHint": "Ви маєте доступ лише для читання. Увійдіть, використовуючи пароль гостя або адміністратора, щоб опублікувати допис.",
@@ -5166,7 +5279,8 @@
     "network": "Мережа",
     "rrc": "RRC",
     "remote": "Віддалений",
-    "games": "Ігри"
+    "games": "Ігри",
+    "incident": "Подія"
   },
   "takServerPanel": {
     "title": "Сервер TAK",
@@ -5283,7 +5397,8 @@
     "menuToastUpToDateBody": "Ви в останній версії.",
     "menuToastAvailableTitle": "Доступне оновлення",
     "menuToastAvailableBody": "Доступна версія {{version}}.",
-    "menuToastErrorTitle": "Помилка перевірки оновлення"
+    "menuToastErrorTitle": "Помилка перевірки оновлення",
+    "pausedOffline": "Оновлення призупинено (офлайн)"
   },
   "reticulumMap": {
     "title": "Карта відкриттів",
@@ -5316,13 +5431,23 @@
       "noDiscoveries": "Інтерфейси виявлення RMAP ще не чути.",
       "filterEmpty": "Жоден інтерфейс не відповідає цьому фільтру.",
       "hint": "Вузли з'являються лише тоді, коли оператори вмикають публікацію RMAP. Для шляхів LoRa потрібен концентратор TCP (наприклад, rmap.world:4242) для ретрансляції оголошень. Щоб отримати глобальне покриття, скористайтеся посиланням на глобальну карту."
-    }
+    },
+    "stampStatus": "Штамп {{stamp}} · {{status}} · {{hops}} хопів",
+    "addAsInterface": "Додати як інтерфейс",
+    "addAsInterfaceBusy": "Додавання…",
+    "addAsInterfaceAria": "Додайте {{name}} як постійний магістральний інтерфейс",
+    "addAsInterfaceSuccess": "Додано {{name}} до → інтерфейсів з'єднання. Перезапустіть стек, якщо він не піднімається.",
+    "addAsInterfaceFailed": "Не вдалося додати інтерфейс: {{error}}",
+    "addAsInterfaceNotAddable": "Цей рядок виявлення не можна додати (потрібна магістральна адреса або адреса сервера TCP).",
+    "addAsInterfaceAdded": "Додано",
+    "addAsInterfaceAddedAria": "{{name}} вже додано як інтерфейс підключення"
   },
   "rrc": {
     "hubsTitle": "RRC Hubs",
     "hubs": {
       "favourites": "Favourites",
-      "discovered": "Discovered"
+      "discovered": "Discovered",
+      "connected": "Підключені"
     },
     "searchHubs": "Search hubs…",
     "searchRooms": "Search rooms…",
@@ -5331,23 +5456,23 @@
     "expandSidebar": "Expand hub list",
     "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
-    "connectManual": "Connect to hash",
+    "connectManual": "Підключитися до хешу",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
-    "connectFailed": "Could not connect to RRC hub.",
-    "joinFailed": "Could not join room.",
-    "sendFailed": "Could not send message.",
+    "connectFailed": "Не вдалося підключитися до RRC-хаба.",
+    "joinFailed": "Не вдалося приєднатися до кімнати.",
+    "sendFailed": "Не вдалося надіслати повідомлення.",
     "selectHub": "Select hub {{name}}",
-    "selectHubPrompt": "Select an RRC hub to connect.",
+    "selectHubPrompt": "Виберіть RRC-хаб для підключення.",
     "favoriteHub": "Favourite hub",
     "unfavoriteHub": "Remove hub favourite",
     "hopsAway_one": "за {{count}} хоп",
     "hopsAway_other": "за {{count}} хопи",
-    "noDiscoveredHubs": "No live RRC hubs discovered yet. Keep the stack running to listen for announces.",
+    "noDiscoveredHubs": "Ще не виявлено живих RRC-хабів. Залиште стек запущеним, щоб слухати announce.",
     "rooms": "Rooms",
     "joinRoom": "Room name",
     "join": "Join room",
-    "joinRoomPrompt": "Join a room to start chatting.",
-    "noRoomsJoined": "No rooms joined yet.",
+    "joinRoomPrompt": "Приєднайтеся до кімнати, щоб почати спілкування.",
+    "noRoomsJoined": "Ще немає приєднаних кімнат.",
     "selectRoom": "Open room {{name}}",
     "leaveRoom": "Leave room",
     "disconnect": "Disconnect",
@@ -5442,8 +5567,8 @@
     "roomAutoJoinOnHint": "Автоматичне приєднання ввімкнено — натисніть, щоб вимкнути",
     "roomAutoJoinOffHint": "Автоматичне приєднання вимкнено — натисніть, щоб приєднатися до цієї кімнати, коли з'єднається концентратор",
     "roomLegend": "★ вибране · A перемикає автоматичне приєднання",
-    "disconnectFailed": "Could not disconnect from RRC hub.",
-    "partFailed": "Could not leave room.",
+    "disconnectFailed": "Не вдалося відключитися від RRC-хаба.",
+    "partFailed": "Не вдалося вийти з кімнати.",
     "selectHubUnread": "Select hub {{name}}, {{marker}}, {{count}} unread",
     "clearHistory": "Очистити історію",
     "clearHistoryTitle": "Очистити історію кімнати",
@@ -5476,13 +5601,14 @@
     },
     "roomNameLimit": {
       "overMax": "Назва кімнати задовга — ліміт концентратора становить {{limit}} байт"
-    }
+    },
+    "noConnectedHubs": "Немає підключених концентраторів RRC. З'єднуйтеся з вибраного, виявленого або за хешем."
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",
     "snr": "Відношення сигнал/ шум",
     "rssiValue": "{{value}} дБм",
-    "noData": "-",
+    "noData": "—",
     "aria": "Вимірювач сигналу: RSSI {{rssi}}, SNR {{snr}}, рівень {{level}}"
   },
   "gpxExport": {
@@ -5801,7 +5927,7 @@
     "capabilityHeardShort": "LXST",
     "capabilityUnknownShort": "?",
     "help": {
-      "interop": "Голос LXST потребує однорангової телефонії LXST (бічний діапазон, Ratspeak або mesh-client). Не кліп голосової замітки. Python LXST є еталоном; rsLXST є експериментальним."
+      "interop": "Голос LXST потребує однорангової телефонії LXST (Sideband, Ratspeak або mesh-client). Не кліп голосової замітки. Python LXST є еталоном; rsLXST є експериментальним."
     },
     "toast": {
       "busy": "Лінія зайнята.",
@@ -5843,46 +5969,46 @@
     "sendChallengeAria": "Надіслати челендж",
     "sendChallenge": "Надіслати челендж",
     "selectSessionPrompt": "Виберіть ігровий сеанс для відтворення.",
-    "opponentLabel": "Опонент: {{peer}}",
+    "opponentLabel": "Суперник: {{peer}}",
     "acceptAria": "Прийняти виклик",
     "accept": "Прийняти",
     "declineAria": "Відхилити виклик",
     "decline": "Відмовитися",
     "resignAria": "Здатись",
     "resign": "Здатись",
-    "acceptDrawAria": "Прийняти пропозицію розіграшу",
-    "acceptDraw": "Прийняти розіграш",
-    "declineDrawAria": "Відхилити пропозицію розіграшу",
-    "declineDraw": "Відхилити розіграш",
-    "offerDrawAria": "Розіграш пропозицій",
-    "offerDraw": "Розіграш пропозицій",
+    "acceptDrawAria": "Прийняти нічию",
+    "acceptDraw": "Прийняти нічию",
+    "declineDrawAria": "Відхилити нічию",
+    "declineDraw": "Відхилити нічию",
+    "offerDrawAria": "Запропонувати нічию",
+    "offerDraw": "Запропонувати нічию",
     "resendAria": "Надіслати останню дію ще раз",
     "resend": "Відправити повторно",
     "deleteSessionAria": "Вилучити сеанс...",
     "deleteSession": "Вилучити сеанс...",
-    "resignConfirmTitle": "Вийти з гри?",
-    "resignConfirmMessage": "Ви впевнені, що хочете вийти з цієї гри? Цю дію неможливо скасувати.",
-    "drawOfferedBanner": "Ваш суперник запропонував нічию.",
-    "challenge": "Проблема",
-    "challengeAria": "Виклик грі",
+    "resignConfirmTitle": "Здатись?",
+    "resignConfirmMessage": "Справді здатися в цій грі? Цю дію не можна скасувати.",
+    "drawOfferedBanner": "Суперник запропонував нічию.",
+    "challenge": "Виклик",
+    "challengeAria": "Виклик",
     "challengeAppAria": "Виклик {{app}}",
     "challengeSent": "{{app}} виклик надіслано",
     "ttt": {
       "youWon": "Ви виграли!",
       "opponentWon": "Противник переміг.",
-      "draw": "Балка",
+      "draw": "Нічия.",
       "yourTurn": "Ваш хід.",
       "opponentTurn": "Хід опонента",
       "yourMarker": "Вас звати {{marker}}",
       "moveCount": "{{count}} ходів",
       "boardAria": "Дошка Tic-Tac-Toe",
-      "cellEmptyAria": "Cell {{index}}, empty",
-      "cellOccupiedAria": "Cell {{index}}, {{marker}}"
+      "cellEmptyAria": "Клітинка {{index}}, порожня",
+      "cellOccupiedAria": "Клітинка {{index}}, {{marker}}"
     },
     "fourInARow": {
       "youWon": "Ви виграли!",
       "opponentWon": "Противник переміг.",
-      "draw": "Балка",
+      "draw": "Нічия.",
       "yourTurn": "Ваш хід.",
       "opponentTurn": "Хід опонента",
       "yourMarker": "Вас звати {{marker}}",
@@ -5895,7 +6021,7 @@
     "chess": {
       "youWon": "Ви виграли!",
       "opponentWon": "Противник переміг.",
-      "draw": "Балка",
+      "draw": "Нічия.",
       "yourTurn": "Ваш хід.",
       "yourTurnInCheck": "Ваша черга — ви на чеку",
       "opponentTurn": "Хід опонента",
@@ -5935,24 +6061,18 @@
     },
     "deleteConfirmTitle": "Вилучити сеанс...",
     "deleteConfirmMessage": "Видалити цю ігрову сесію зі списку? Цю дію неможливо скасувати.",
-    "claimThreefold": "Заявити потрійне повторення",
-    "claimThreefoldAria": "Заявити нічию за потрійним повторенням позиції",
-    "claimFiftyMove": "Заявити 50 ходів",
-    "claimFiftyMoveAria": "Заявити нічию за правилом п'ятдесяти ходів",
+    "claimThreefold": "Потрійне повторення",
+    "claimThreefoldAria": "Потрійне повторення",
+    "claimFiftyMove": "Заявити правило 50 ходів",
+    "claimFiftyMoveAria": "Заявити правило 50 ходів",
     "delivery": {
       "sending": "Надсилання…",
       "propagating": "Офлайн-скринька…",
       "propagated": "Збережено",
       "failed": "Потрібна повторна спроба"
     },
-    "drawOfferWaitingBanner": "Надіслано пропозицію розіграшу. Очікування опонента…",
-    "idleExpiryNotice": "Термін дії ігор закінчується після бездіяльності, а потім їх можна видалити. Проблеми без відповіді: 24 години (всі ігри). Активні ігри: хрестики-ноги через 24 години, шахи та чотири в ряд через 7 днів."
-  },
-  "longSession": {
-    "title": "Рекомендовано перезапустити",
-    "body": "mesh-client працює протягом чотирьох днів з підключеним Bluetooth-радіо. Перезапустіть додаток, щоб зменшити ризик аварій під час тривалих сеансів Noble BLE.",
-    "restart": "Перезапуск",
-    "dismiss": "Відпустити"
+    "drawOfferWaitingBanner": "Пропозицію нічиєї надіслано. Очікування суперника…",
+    "idleExpiryNotice": "Ігри закінчуються після простою і тоді їх можна лише видалити. Виклики без відповіді: 24 години (усі ігри). Активні ігри: хрестики-нулики через 24 години, шахи та чотири в ряд через 7 днів."
   },
   "reticulumSetup": {
     "eyebrow": "Reticulum · ПОЧАТОК РОБОТИ",
@@ -6044,5 +6164,147 @@
     "interfaceSaveFailed": "Не вдалося зберегти це підключення. Перевірте налаштування підключення та повторіть спробу.",
     "interfacesUnavailable": "Не вдалося прочитати ваші підключення. Переконайтеся, що Reticulum запущено, а потім повторіть спробу.",
     "identitySaveFailed": "Не вдалося зберегти налаштування ідентифікації. Спробуйте знову."
+  },
+  "mecp": {
+    "severity": {
+      "mayday": "MAYDAY",
+      "urgent": "ТЕРМІНОВО",
+      "safety": "БЕЗПЕКА",
+      "routine": "ЗВИЧАЙНЕ"
+    },
+    "incomingToast": "{{severity}} MECP від {{sender}}",
+    "notificationTitle": "Сповіщення MECP",
+    "exportLog": "Експортувати журнал MECP",
+    "compose": {
+      "title": "Скласти звіт MECP",
+      "button": "MECP",
+      "open": "Відкрити складання MECP",
+      "severity": "Серйозність",
+      "category": "Категорія",
+      "codes": "Коди",
+      "removeCode": "Видалити код {{code}}",
+      "freetext": "Вільний текст (pax, GPS, нотатки)",
+      "addPax": "Додати 1pax",
+      "attachGps": "Додати GPS",
+      "byteBudget": "{{used}} / {{max}} байт",
+      "send": "Надіслати MECP",
+      "gpsFailed": "Не вдалося отримати виправлення GPS",
+      "sendFailed": "Не вдалося надіслати звіт MECP",
+      "maydayButton": "MAYDAY",
+      "maydayAria": "Створіть MAYDAY одним дотиком за допомогою GPS"
+    },
+    "rebroadcast": {
+      "title": "Повторна передача MECP RF",
+      "hint": "За бажанням пересилати MECP з каналу одного протоколу на інший. Типово вимкнено. Увімкніть двосторонній режим, щоб також зворотний шлях.",
+      "add": "Додати правило мосту",
+      "remove": "Видалити правило мосту",
+      "enableRule": "Увімкнено",
+      "bidirectional": "Двосторонній",
+      "endpointA": "Слухати / джерело (A)",
+      "endpointB": "Пересилати / призначення (B)",
+      "protocol": "Протокол",
+      "channelIndex": "Індекс каналу"
+    },
+    "exportLogSuccess": "Журнал MECP експортовано",
+    "exportLogSuccessPath": "Журнал MECP експортовано до {{path}}",
+    "exportLogFailed": "Не вдалося експортувати журнал MECP",
+    "section": {
+      "title": "MECP",
+      "hint": "Mesh Emergency Communication Protocol — складайте звіти з чату, об'єднуйте RF між Meshtastic та MeshCore тут та експортуйте довговічний отриманий журнал аудиту.",
+      "learnMore": "Як працює MECP",
+      "protocolSource": "Джерело протоколу на GitHub",
+      "showComposeButton": "Показати кнопку MECP в чаті",
+      "showComposeButtonHint": "Вимкнено за замовчуванням. Якщо ввімкнено, у чаті відображається кнопка MECP для створення та надсилання звітів про надзвичайні ситуації.",
+      "showMaydayButton": "Показати кнопку MAYDAY у чаті",
+      "showMaydayButtonHint": "Вимкнено за замовчуванням. Якщо ввімкнено, чат відображає кнопку MAYDAY одним дотиком, яка відкривається зі ступенем серйозності 0 з підключеним GPS. Незалежно від кнопки створення MECP.",
+      "showQuickStatusBar": "Показати швидкий рядок стану в чаті",
+      "showQuickStatusBarHint": "Вимкнено за замовчуванням. Якщо ввімкнено, чат показує OK / Need help / In position / Lost comms / Returning / Roll call над композитором."
+    },
+    "exportLogEmpty": "У отриманому журналі ще немає повідомлень MECP"
+  },
+  "notificationSounds": {
+    "title": "Сигнали сповіщень",
+    "hint": "Виберіть тон для кожної події або імпортуйте аудіофайл тривалістю до 10 секунд і 2 Мб. Вибір файлів запускається в системній папці звуків, коли вона доступна. Імпортовані звуки копіюються у ваш профіль; системні налаштування не змінюються.",
+    "emergencyHint": "MAYDAY і URGENT звучать навіть за вимкненого звуку сповіщень, із гучністю щонайменше 10%. SAFETY і ROUTINE дотримуються звичайних налаштувань вимкнення звуку. Попереднє прослуховування працює навіть за вимкненого звуку сповіщень.",
+    "channel": "Повідомлення каналу",
+    "dm": "Приватні повідомлення",
+    "reply": "Відповіді та згадки",
+    "mecp": "MECP ROUTINE",
+    "mecpSafety": "MECP SAFETY",
+    "mecpEas": "MECP URGENT",
+    "mecpSiren": "MECP MAYDAY",
+    "default": "Оригінальний тон",
+    "chime": "Дзвін",
+    "bell": "Дзвін",
+    "ping": "Подвійний пінг",
+    "alert": "Зростаюча тривога",
+    "toneFor": "Тон для {{event}}",
+    "preview": "Перегляд",
+    "stop": "Зупинити",
+    "choose": "Оберіть файл",
+    "reset": "Reset (Скид)",
+    "volume": "Volume",
+    "volumeFor": "Гучність для {{event}}",
+    "previewFor": "Попередній перегляд {{event}}",
+    "stopFor": "Зупинити попередній перегляд для {{event}}",
+    "chooseFor": "Виберіть аудіофайл для {{event}}",
+    "resetFor": "Скинути {{event}}",
+    "saving": "Збереження налаштувань звуку…",
+    "importFailed": "Не вдалося імпортувати цей звук. Виберіть підтримуваний аудіофайл тривалістю не більше 10 секунд і не більше 2 МБ.",
+    "saveFailed": "Не вдалося зберегти налаштування звуку. Попередній вибір не змінився.",
+    "previewFailed": "Не вдалося відтворити цей звук. Спробуйте інший файл або поверніться до початкового тону.",
+    "connectionLost": "Радіоканал втрачено",
+    "batteryLow": "Низький заряд батареї"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} низький заряд акумулятора",
+    "batteryLowBody": "Акумулятор на {{percent}}%",
+    "silenceEscalationTitle": "{{name}} все ще мовчить",
+    "silenceEscalationBody": "Не чути протягом {{minutes}} хв",
+    "linkDownTitle": "{{protocol}} посилання вниз",
+    "linkDownBody": "Радіозв'язок втрачено, і повторне з'єднання не вдалося"
+  },
+  "incidentPanel": {
+    "title": "Надзвичайні ситуації",
+    "empty": "Відкритих аварійних ситуацій немає.",
+    "listAria": "Відкриті аварійні ситуації",
+    "resolve": "Виконати",
+    "resolveAria": "Вирішення інциденту з {{sender}}",
+    "ack": "Підтвердити",
+    "ackAria": "Визнати інцидент від {{sender}}",
+    "ackBeacon": "Підтвердити сигнал",
+    "ackBeaconAria": "Підтвердити сигнал лиха від {{sender}}",
+    "ackCount_one": "{{count}} підтвердження",
+    "ackCount_other": "{{count}} підтвердження",
+    "protocolsSeen": "Слухали: {{protocols}}",
+    "beaconActive": "Маяк активний",
+    "drill": "Дриль",
+    "ackSent": "Підтвердження надіслано {{sender}}",
+    "ackQueued": "Підтвердження до {{sender}} в черзі; він надішле, коли радіо буде доступне",
+    "ackFailed": "Не вдалося надіслати або поставити в чергу підтвердження",
+    "ackCount_few": "{{count}} підтвердження",
+    "ackCount_many": "{{count}} підтвердження",
+    "intro": "Загальна операційна картина для надзвичайних ситуацій MECP, почута за будь-яким протоколом. Відкрийте MAYDAY та ТЕРМІНОВІ рядки, позначте цю вкладку; тренування перераховані, але ніколи не враховуються. Використовуйте \"Підтвердити\" (або \"Підтвердити\" для активного маяка), щоб відповісти на сітку, а потім \"Вирішити\", коли інцидент закривається локально.",
+    "emptyHint": "Вхідні звіти MECP з'являються тут автоматично. Щоб надіслати його, увімкніть кнопку → App → MECP Show MECP у чаті, а потім використовуйте MECP або MAYDAY у чаті. → Шари карт можуть показувати відкриті інциденти з координатами.",
+    "ackQueuedBadge": "ACK в черзі",
+    "pendingAckListAria": "Підтвердження в черзі за цим інцидентом",
+    "cancelPendingAck": "Скасувати",
+    "cancelPendingAckAria": "Скасувати підтвердження в черзі для {{sender}}",
+    "resolveBeacon": "Скасувати сигнал",
+    "resolveBeaconAria": "Скасуйте сигнал лиха та скажіть сіті, що ви в порядку ({{sender}})",
+    "beaconCancelSent": "Маяк скасовано надіслано. Інші станції очищають сигнал лиха, коли чують його.",
+    "beaconCancelQueued": "Маяк скасування в черзі. Він надсилатиметься, коли радіостанція буде доступна.",
+    "beaconCancelFailed": "Не вдалося надіслати або поставити в чергу скасування сигналу. Інцидент досі відкрито."
+  },
+  "quickStatus": {
+    "ok": "Гаразд",
+    "needHelp": "Потрібна допомога",
+    "inPosition": "КОЛИ НА ПОЗИЦІЇ",
+    "lostComms": "Втрата зв’язку",
+    "returning": "Повернення",
+    "barAria": "Швидкі попередні налаштування стану",
+    "rollCall": "Перевірка присутності",
+    "rollCallAria": "Трансляція переклички та підрахунок відповіді OK",
+    "rollCallTally": "{{responded}}/{{expected}} відповів"
   }
 }

@@ -26,3 +26,12 @@ export function formatRrcErrorMessage(message: string, t: (key: string) => strin
   if (key) return t(key);
   return formatReticulumProxyErrorMessage(message, t);
 }
+
+/**
+ * True when a send/nick IPC error means the hub Link is already gone (sidecar
+ * rejected the call) while the UI may still show Connected.
+ */
+export function isRrcDeadSessionSendError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return lower.includes('not connected to an rrc hub') || lower.includes('rrc session not active');
+}

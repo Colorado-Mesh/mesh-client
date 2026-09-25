@@ -225,7 +225,7 @@ finish_pending_release() {
   commit_tag_and_push_release "$new_version"
 }
 
-# ====================== NEW: Generate nice copy-paste release notes ======================
+# ====================== Generate copy-paste release notes ======================
 generate_release_notes() {
   local last_tag="$1"
   local new_version="$2"

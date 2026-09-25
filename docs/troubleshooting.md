@@ -20,6 +20,7 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 - [Chat, nodes, and notifications](#chat-nodes-and-notifications)
 - [Diagnostics and map](#diagnostics-and-map)
 - [App, updates, and localization](#app-updates-and-localization)
+- [MECP (emergency reports)](#mecp-emergency-reports)
 
 ## Quick reference
 
@@ -61,7 +62,7 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 | `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                               |
 | `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                        |
 
-Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups).
+Zip contents also include **`mesh-client.log.1`** when present (prior session preserved on restart, or size-rotated backup; export may tail-cap large backups). When present, support bundles also include **`mecp-received.log`** / **`mecp-received.log.1`** (durable MECP emergency audit trail — separate from the session app log).
 
 The top-level **`legend`** explains that ids like `offline-meshcore` are **internal hydration-slot store keys**, not “disconnected.” When connect reuses that slot (`hydrationSlotIsLiveSession: true`), the id still contains `offline-` while BLE/MQTT are up — that is **expected**.
 
@@ -158,7 +159,7 @@ Optional persistent mitigation:
 
 ### "A native module failed to load" dialog on startup
 
-**Cause**: `@stoprocent/noble` (or `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
+**Cause**: A native addon (e.g. `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
 
 **Fix**: Run `pnpm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
 
@@ -255,7 +256,7 @@ See [reticulum.md](reticulum.md#chat-lxmf) and [sidecar IPC](reticulum-sidecar-i
 ### Reticulum Games challenge fails or board does not update
 
 - **Stack not running / games disabled:** Games need a live `rns-stack` sidecar with sibling `lrgp-rs`. Check Connection → Start stack and `GET` status via Games tab (or logs for `games requires live rns-stack`).
-- **`unsupported_app`:** Peer lacks that LRGP app (mesh-client and Ratspeak ship Tic-Tac-Toe + Chess). Challenge with `ttt` or `chess`.
+- **`unsupported_app`:** Peer lacks that LRGP app (mesh-client and Ratspeak ship Tic-Tac-Toe, Chess, and Four in a Row). Challenge with `ttt`, `chess`, or `four_in_a_row`.
 - **`not_your_turn` / `invalid_move`:** Local validation rejected the move before send; wait for opponent or pick a legal cell/UCI move.
 - **Challenge never arrives:** Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list (sidebar Games badge + DM-style ping on inbound challenge).
 - **Accept does nothing / session stays Pending:** After a stack restart the Games tab can still list SQLite sessions; the sidecar now rehydrates those into memory on spawn. If Accept still fails, check the action error toast (`unknown_session` / `no_propagation_node`) and that the stack is running.
@@ -305,7 +306,7 @@ Older releases also shipped a **universal** NSIS installer (x64 + arm64 in one `
 **Fix**
 
 1. Delete the broken install folder: `%LOCALAPPDATA%\Programs\Mesh-client\`
-2. Download the **arm64** installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases): `Mesh-client Setup {version}-arm64.exe` (not the x64-only `Mesh-client Setup {version}.exe`).
+2. Download the **arm64** installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases): `Mesh-client-Setup-{version}-arm64.exe` (not the x64-only `Mesh-client-Setup-{version}.exe`). Older releases may show dotted GitHub names (`Mesh-client.Setup.{version}-arm64.exe`) — use that file if the hyphenated name is missing.
 3. Re-run the installer. Confirm `Mesh-client.exe` exists in the install folder and the app appears in **Installed apps**.
 
 **Diagnostic checklist (if the exe is still missing)**
@@ -314,7 +315,7 @@ Capture this before opening a GitHub issue — it helps isolate NSIS extract vs 
 
 1. **NSIS install log** — run the installer from Command Prompt or PowerShell with logging:
    ```bat
-   "Mesh-client Setup {version}-arm64.exe" /LOG=%USERPROFILE%\Desktop\mesh-install.log
+   "Mesh-client-Setup-{version}-arm64.exe" /LOG=%USERPROFILE%\Desktop\mesh-install.log
    ```
    After failure, open `mesh-install.log` and search for `Mesh-client.exe`, `CopyFiles`, or `error`.
 2. **Event Viewer** — **Windows Logs → Application** during the install window; note any errors from `MsiInstaller`, `Application Error`, or antivirus agents.
@@ -322,7 +323,7 @@ Capture this before opening a GitHub issue — it helps isolate NSIS extract vs 
 4. **Install path** — confirm `%LOCALAPPDATA%` is on a local NTFS volume, not OneDrive-redirected or sync-rooted.
 5. **Custom install directory** — test a short path:
    ```bat
-   "Mesh-client Setup {version}-arm64.exe" /D=C:\mc-test /LOG=%USERPROFILE%\Desktop\mesh-install.log
+   "Mesh-client-Setup-{version}-arm64.exe" /D=C:\mc-test /LOG=%USERPROFILE%\Desktop\mesh-install.log
    ```
 6. **Clean tree** — ensure no leftover `Mesh-client` folder or running `Mesh-client.exe` from a prior partial install before re-running the installer.
 
@@ -562,10 +563,9 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 - **Device not discovered**: make sure the device is in advertising/pairing mode and within range. Try stopping and restarting the scan.
 - If BLE is unreliable, prefer Serial (USB) or TCP/HTTP for a stable connection.
 
-#### BLE debug: `mtu=null` and `MTU updated: …` in logs
+#### BLE debug: MTU negotiation in logs
 
-- After **Noble** `connectAsync`, **`mtu=null`** is common until the stack finishes ATT MTU negotiation.
-- A line like **`MTU updated: 20`** comes from the Noble `mtu` event. ATT_MTU must be **≥ 23** per spec; the client **coerces reported values below 23 to 23** for write sizing (treating odd values such as **20** as a Noble/binding quirk, not a literal 20-octet ATT MTU). A **one-time debug** line may note the raw value when that happens (not a warning).
+- After sidecar GATT connect, ATT MTU may still be negotiating; write sizing uses `bleAttWriteLimit.ts` (spec min **23**).
 - **Slow NodeDB / large config sync over BLE** can still be limited by **`@meshtastic/core`** queue timing (hundreds of ms between queued packets), not only GATT MTU. Use **Log → Analyze** for hints, or try **USB serial** / **TCP** if throughput matters.
 
 **Windows-specific:**
@@ -574,23 +574,17 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 **Linux-specific:**
 
-- The app uses Web Bluetooth (Chromium's built-in BLE API). You still need a working Bluetooth stack (`systemctl status bluetooth`).
-- Linux BLE uses the in-app Bluetooth picker (triggered from a button click); if no picker appears, restart the app and try Connect again.
-- **Immediate "User cancelled the requestDevice() chooser"** on Connect (AppImage / `.deb` / `.rpm`) without dismissing a picker:
-  1. Chromium multi-fires `select-bluetooth-device`; the app must retain the first callback (#749).
-  2. A fire-and-forget cancel-before-connect can also race behind the new chooser and kill it (seen on CachyOS / Arch with 5.25.0). Builds that **await** `cancelBluetoothSelection` before `requestDevice()` fix that race.
-     Upgrade to a release that includes both fixes, then retry Connect. If the picker still never opens, check `systemctl status bluetooth` and `rfkill list`.
-- **Flatpak:** Connect that fails with little or no UI often means the sandbox lacked `--allow=bluetooth` (needed with `--system-talk-name=org.bluez`). Reinstall a Flatpak from a release that includes that finish-arg. If pairing then fails with **bluetoothctl not found**, use the official AppImage/`.deb`/`.rpm`, or pair the radio on the host with `bluetoothctl` and retry.
+- LoRa BLE uses the reticulum-sidecar **btleplug** stack (same as macOS/Windows), not Web Bluetooth. You still need a working Bluetooth stack (`systemctl status bluetooth` / `rfkill list`).
+- **Flatpak:** Ensure the package allows Bluetooth (`--allow=bluetooth` with BlueZ talk-name). If pairing tools are missing in the sandbox, use the official AppImage/`.deb`/`.rpm`, or pair the radio on the host with `bluetoothctl` and retry.
 - If the Bluetooth adapter isn't detected, check: `systemctl status bluetooth` and `rfkill list`.
-- **MeshCore:** After you pick a radio, the app checks `bluetoothctl info <MAC>`. If the device is **not** paired at the OS level, you are prompted for the **PIN shown on the device** and pairing runs via **`bluetooth-pair`** before Web Bluetooth finishes connecting. Meshtastic does not use this gate in the same way (it may use PIN `123456` on the first pairing prompt from Chromium).
-- If device pairing fails with "Connection attempt failed", try the **"Remove & Re-pair Device"** button in the app, or manually remove via `bluetoothctl`:
+- If device pairing fails with `pairing_required` / connection attempt failed, try **"Remove & Re-pair Device"** in the app, or manually remove via `bluetoothctl`:
   ```bash
   bluetoothctl
   # Inside bluetoothctl:
   remove XX:XX:XX:XX:XX:XX # Replace with your device MAC
   # Then re-pair from the app
   ```
-- For **Meshtastic** devices, the first Chromium pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio (and the pre-connect prompt when BlueZ reports not paired).
+- For **Meshtastic** devices, the first pairing attempt may use PIN `123456`. For **MeshCore**, always use the PIN shown on the radio.
 - If devices won't pair or connect, power-cycle Bluetooth:
   ```bash
   bluetoothctl power off
@@ -600,20 +594,20 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 ### BLE auto-reconnect: "No previously connected BLE device found"
 
-**Cause**: The reconnect card appeared, but the browser lost the cached device handle; for example, the app was fully quit and relaunched.
+**Cause**: The reconnect card appeared, but no remembered BLE peripheral id was available (for example after Forget device).
 
-**Fix**: Click **Forget this device** on the reconnect card and pair fresh using the Bluetooth picker.
+**Fix**: Click **Forget this device** if shown, then **Connect** and select the radio again.
 
-### Dual-radio Noble BLE startup serialization (macOS/Windows)
+### Dual-radio BLE startup / wake stagger
 
-When both Meshtastic and MeshCore have **different** saved BLE peripherals, startup auto-connect is serialized so two Noble connects do not race:
+When both Meshtastic and MeshCore have **different** saved BLE peripherals, concurrent sidecar GATT sessions are allowed. Startup and wake still **stagger** auto-connect so both stacks do not contend on the adapter at once:
 
-- Coordinator: `meshcoreDualNobleBleInit.ts`; wired from **`App.tsx` `useLayoutEffect`** (not `useEffect` — child ConnectionPanel auto-connect effects must see primary/secondary roles first).
+- Coordinator: `meshcoreDualNobleBleInit.ts` (historical name); wired from **`App.tsx` `useLayoutEffect`**.
 - **Primary** is chosen from `mesh-client:protocol` localStorage (`meshcore` / `meshtastic`; Reticulum or missing → Meshtastic).
-- **Secondary** waits on `awaitNobleBlePrimaryAutoConnectSettled()` (GATT + handshake ready or first attempt settled) — not full device configure.
-- All Noble IPC connects go through `withNobleBleConnectMutex()`.
+- **Secondary** waits for primary GATT + handshake settle (or first attempt failure) — not full device configure.
+- Active scans may return `scan_busy` while another owner holds the scan mutex.
 
-See also wake recovery under [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions) (Meshtastic-first stagger). For Reticulum BLE RNode vs Noble, see [Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE](#reticulum-ble-rnode-blocks-meshtasticmeshcore-noble-ble).
+See also wake recovery under [Sleep, wake, and long-running sessions](#sleep-wake-and-long-running-sessions) (Meshtastic-first stagger). For Reticulum scan contention, see [Reticulum BLE RNode blocks Meshtastic/MeshCore BLE](#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble).
 
 ## USB serial
 
@@ -705,7 +699,7 @@ IPv6 addresses work for Meshtastic Wi‑Fi, MeshCore TCP, and Reticulum RNode Wi
 
 ### Connection panel Link quality (TCP) shows "—" or unexpected latency
 
-**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). **Reticulum** hub rows use a short-lived TCP connect probe **only while the sidecar is starting** (before RNS owns the session); once the stack is ready, probes stop so a second raw connect cannot collide with the sidecar link.
+**Cause:** For **Meshtastic WiFi/TCP** and **MeshCore TCP/IP OpenHop**, the Connection panel signal bars reflect **live-session responsiveness** — an EWMA of write→first-data delay on the already-open TCP socket — not a separate connect probe. Bars may show **"—"** until traffic has produced a sample, or after ~2 minutes without a completed sample (covers idle heartbeat gaps). Meshtastic **WiFi/HTTP** still uses a `/json/report` RTT probe (separate from the TCP session). **Reticulum** hub rows use a short-lived TCP connect probe while the sidecar is **starting**, and a short **seed burst after ready** only when no finite RTT sample exists yet (shared across Interfaces / stack panels). Continuous probes stop once seeded so a second raw connect cannot keep colliding with the sidecar link.
 
 **Why not a second TCP connect?** Probing the same `host:port` as the live session every few seconds can RST ESP32/lwIP-class devices (see PR discussion around competing connections).
 
@@ -723,28 +717,28 @@ Local/private targets include RFC1918 IPv4 (`10.x`, `172.16–31.x`, `192.168.x`
 
 ### macOS sleep / wake and auto-reconnect
 
-After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use Noble BLE, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
+After the lid closes or the Mac sleeps, mesh-client pauses reconnect backoff and MQTT I/O until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use BLE, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
 
-- **Noble BLE:** The client tries an immediate connect (main-process peripheral cache) before scanning up to **30 seconds** for a new advertisement.
+- **Sidecar GATT BLE:** The client tries an immediate connect (remembered peripheral) before scanning up to **30 seconds** for a new advertisement. LoRa BLE uses `ensureForBle()` so the sidecar is up without a Reticulum UI Start.
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or quit the app and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent Noble scans from both tabs can block recovery.
-- **BLE stack stuck after wake** (`unknown peripheral`, `connectAsync timed out`, `peripheral not found` in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent scans from both tabs can return `scan_busy`.
+- **BLE stack stuck after wake** (`connect_timeout`, `adapter_missing`, or peripheral not found in the app log): **Quit mesh-client fully** (Cmd+Q), toggle **Bluetooth off → on** in System Settings (or power-cycle the radios), reopen the app, wait ~5 seconds, then use **Connect** on the Connection tab.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 - **Renderer hung after wake:** If the log shows `[main] System resumed` followed by `[main] renderer unresponsive after system resume (no heartbeat within 30s)` and **no** `[usePowerRecovery]` lines, the renderer event loop was already dead before wake recovery ran. **Quit mesh-client fully** and relaunch — do not rely on Disconnect alone.
 
 ### Windows sleep / wake and auto-reconnect
 
-After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use Noble BLE over Noble IPC, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
+After sleep or hibernate, mesh-client uses the same resume path as macOS: reconnect backoff and MQTT I/O pause until the OS resumes. Recovery is **Meshtastic-first**: expect roughly **4 seconds** after wake before Meshtastic RF auto-reconnect runs, then MeshCore about **8 seconds** later. When both protocols use BLE, MeshCore's auto-reconnect additionally waits (up to **30 seconds**) for the Meshtastic BLE link's GATT connection + protocol handshake to settle — not for full device configure — before it starts its own connect.
 
-- **Noble BLE:** Same immediate-connect-then-scan behavior as macOS (peripheral cache, then up to **30 seconds** scanning for a new advertisement).
+- **Sidecar GATT BLE:** Same immediate-connect-then-scan behavior as macOS (remembered peripheral, then up to **30 seconds** scanning for a new advertisement).
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.
-- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent Noble scans from both tabs can block recovery.
+- **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent scans from both tabs can return `scan_busy`.
 - **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
-- **BLE stuck after wake** (`connectAsync timed out`, `peripheral not found`, or GATT notify watchdog messages in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
+- **BLE stuck after wake** (`connect_timeout`, peripheral not found, or GATT session errors in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 - **Renderer hung after wake:** Same as macOS — if you see `[main] renderer unresponsive after system resume (no heartbeat within 30s)` without `[usePowerRecovery]` logs, quit fully and relaunch.
 
-**Linux Web Bluetooth:** Manual reconnect from the connection banner still requires a user gesture (Connect / picker). Linux does not use Noble IPC; see **Linux-specific** under [BLE known issues](#ble-known-issues) above for pairing and adapter reset steps.
+**Linux:** Same sidecar GATT path as macOS/Windows; see **Linux-specific** under [BLE known issues](#ble-known-issues) for BlueZ / Flatpak steps.
 
 **Reticulum (all platforms):** On suspend, `onPowerSuspend` clears in-memory rnsh sessions and rncp transfers. On resume, `onPowerResume` restarts the sidecar via `connect()` unless the user disconnected.
 
@@ -752,16 +746,14 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 
 If mesh-client stays open for **days** on a busy mesh (especially **MeshCore BLE-only** with hundreds of repeaters):
 
-- **Restart the app every 1–2 days** to limit main-process uptime (reduces risk of native BLE / V8 edge cases after ~72h).
-- After **4 days** with **Noble BLE connected** on **macOS or Windows**, mesh-client shows a **persistent restart banner** plus an OS notification (Dock badge on macOS, taskbar flash on Windows). Restart relaunches the process; Dismiss hides the nudge for 12 hours. Linux uses Web Bluetooth (different stack) and does not show this prompt. Serial/TCP-only sessions are not prompted.
-- Mid-session `EXC_BREAKPOINT` / SIGTRAP after multi-day Noble BLE is **confirmed on macOS**; the same failure class on Windows is **unconfirmed**, so the day-4 prompt there is precautionary. The mechanism is **suspected** to be a native Noble / Electron main-process teardown race (working hypothesis: a timer tick intersecting V8 GC firing into freed CoreBluetooth state) — not established. What is certain is that it is **outside mesh-client’s JavaScript control** — not a corrupt database and not catchable with `try/catch`. Mitigation is process recycle (restart) and preferring Serial/TCP for always-on desks. Tracked upstream as [stoprocent/noble#140](https://github.com/stoprocent/noble/issues/140) — attach your `.ips` crash report there if you can reproduce it.
+- Prefer **Serial/TCP** for always-on desks when practical.
 - **MeshCore:** default contact cap is **10,000** (App settings); enable **auto-prune by age** if you want SQLite trimmed below that. Avoid bulk repeater status/neighbors refresh when not needed — thousands of `syncNextMessage timed out` lines in the log usually mean the companion radio is overloaded.
 - **Meshtastic:** default node cap is **10,000**; enable **auto-prune** in App settings as needed.
 - **Reticulum:** restart the sidecar/stack periodically on always-on nodes; message retention prunes run at startup and every 6 hours while the app is open.
-- If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching. Main-process crashes often show `EXC_BREAKPOINT` during a timer/GC; include the `.ips` and exported log when reporting.
-- **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines. Upgrade to the latest release when convenient — crashes on very old builds are harder to reproduce.
+- If the app crashes, save **`~/Library/Logs/DiagnosticReports/Mesh-client-*.ips`** (macOS) before relaunching; include the `.ips` and exported log when reporting.
+- **Reporting a crash or lockup:** Prefer **Export for Developer / GitHub before restart** if the UI still responds. After a forced restart, export anyway — startup preserves the previous session log as `mesh-client.log.1` (also included in support bundles). Note app version, OS, uptime (`[main] long-session health` / snapshot `mainLiveness`), whether MeshCore BLE was connected, and any `[main] renderer heartbeat stalled` / `webContents unresponsive` lines.
 
-After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory, per-session BLE timer state, and Noble connection age. While the window is visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`.
+After **24 hours** of uptime, the main process logs periodic **long-session health** lines (`[main] long-session health …`) with memory and per-session BLE timer state. While the window and renderer document are visible, missing renderer heartbeats for ~90s also log `[main] renderer heartbeat stalled`. Heartbeats intentionally pause for hidden documents, including windows fully covered by another window on macOS; the renderer reports that pause to the watchdog. Refocusing the app rearms detection. A heartbeat warning alone does not establish a renderer hang or a system-wide freeze.
 
 ### App shows "disconnected" but device is still on
 
@@ -1063,6 +1055,10 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 - Fixed by declaring `semver` as a direct production dependency (same class of issue as `builder-util-runtime` on hoisted `dist:win` builds). Updater falls back to GitHub Releases API until you install a build with the fix.
 
+**Windows packaged updater: `Cannot download … Mesh-client-Setup-….exe status:404` (crash dialog)**:
+
+- `latest.yml` asks for hyphenated Setup names. GitHub stored dotted names when CI uploaded spaced NSIS filenames (`Mesh-client Setup {version}.exe` → `Mesh-client.Setup.{version}.exe`). Download the installer from [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases) manually (dotted or hyphenated name). Repair steps for a published release: [release-process.md](release-process.md#repair-windows-updater-assets-on-an-already-published-release).
+
 **Retest checklist (after upgrading from a known-good build)**:
 
 1. Connect MeshCore over TCP or BLE; confirm nodes load.
@@ -1100,13 +1096,16 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 
 ### RRC hub dropped vs Disconnect
 
-**Symptoms**: Hub shows **Reconnecting…** with an error, rooms still listed; or the hub disappears after you clicked Disconnect.
+**Symptoms**: Hub shows **Reconnecting…** with an error, rooms still listed; or the hub disappears after you clicked Disconnect. Coming back after idle may also show a fresh `room …: registered` NOTICE and `/who` member list even though the laptop did not sleep and the hub process stayed up.
+
+**Cause (idle flaps):** RRC session lifetime is the RNS Link. Initiator keepalive/stale (RTT-scaled; on a fast TCP path this can be ~5s keepalive / ~10s stale) tears the Link when keepalive echoes miss — Wi‑Fi power save, brief NAT stalls, or a pinned next-hop iface that died while another path to the hub still works. Sidecar then emits `rrc.disconnected` with `will_reconnect: true`, re-HELLO/JOINs, and the client re-arms `/who`. Log `reason=` values: `timeout` (keepalive/stale), `transport_error` (iface/endpoint terminal), `remote_close` (hub closed Link). A historical `resource_offers_closed` label was usually a raced real `Closed` reason (fixed in `rrc_link`).
 
 **What to do**:
 
-1. **Unintended drop** (`will_reconnect: true`): sidecar retries with backoff (~2–30 s), preserves desired rooms (including join keys), and rejoins after WELCOME. Wait for **Active** or check `rrc.error` / link-close reasons in the log.
+1. **Unintended drop** (`will_reconnect: true`): sidecar retries with backoff (~2–30 s), DropPath+RequestPath on timeout/transport/remote close so the next Link can attach on a live interface, preserves desired rooms (including join keys), and rejoins after WELCOME. Wait for **Active** or check `rrc.error` / link-close reasons in the log (`[useReticulumRuntime] rrc.disconnected … reason=`).
 2. **Explicit Disconnect / Cancel** (`local_disconnect` or `will_reconnect: false`): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.
 3. Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.
+4. If flaps are frequent on multi-iface stacks, check Connection → Interfaces for Auto/TCP competition and prefer a stable path to the hub.
 
 ### RRC false self-PART / hubParted banner
 
@@ -1135,7 +1134,7 @@ AGPL Rust sidecar (`mesh-client-reticulum`), interfaces, LXMF, RRC, and RNode Wi
 0. **Identity wizard**: click **Start stack** at the top of the Reticulum Connection panel before generating or importing a mnemonic. The sidecar must be running for `reticulum:proxyGet` / `proxyPost` identity routes.
 1. **Dev — binary missing**: build once from repo root: `pnpm run reticulum:sidecar:build` (requires [Rust](https://rustup.rs/); see [development-environment.md](development-environment.md#reticulum-sidecar-optional)). Electron **Start stack** can auto-run `cargo build` on first click, but you need `cargo` on `PATH`. Error text `sidecar binary not found` means `reticulum-sidecar/target/debug/mesh-client-reticulum` does not exist yet.
 2. **Dev — run / health**: `pnpm run reticulum:sidecar:dev` or confirm `curl http://127.0.0.1:19437/api/v1/status` after **Start stack** (`status` should be `ok`; `rns_ready`/`lxmf_ready` may still be `false` for a short window).
-3. **Packaged app — sidecar missing from installer**: older Electron releases (before CI bundled the sidecar) ship without `mesh-client-reticulum` under `resources/reticulum-sidecar/`; the UI shows a message about a missing bundled sidecar — **upgrade to a newer release** (or use Flatpak on Linux). WoA needs the **arm64** installer (`Mesh-client Setup {version}-arm64.exe`) with an **arm64** sidecar inside, not the x64 binary.
+3. **Packaged app — sidecar missing from installer**: older Electron releases (before CI bundled the sidecar) ship without `mesh-client-reticulum` under `resources/reticulum-sidecar/`; the UI shows a message about a missing bundled sidecar — **upgrade to a newer release** (or use Flatpak on Linux). WoA needs the **arm64** installer (`Mesh-client-Setup-{version}-arm64.exe`) with an **arm64** sidecar inside, not the x64 binary.
 4. **Packaged app — verify install**: confirm `mesh-client-reticulum` (or `.exe` on Windows) exists under the app resources (`reticulum-sidecar/` beside the executable).
 5. **macOS Gatekeeper**: unsigned local sidecar builds may need `xattr -cr` on the binary or ad-hoc signing for dev.
 6. **Port conflict**: sidecar picks an ephemeral port; stale processes under `~/Library/Application Support/mesh-client/reticulum/` are rare — quit the app fully and retry.
@@ -1154,7 +1153,7 @@ Keep Rust current with `pnpm run update` (runs `rustup update` and rebuilds the 
 
 **Symptoms**: Click **Cancel** during **Start stack** (especially while cargo is building), then **Connect** / **Start** again; UI or logs show `RETICULUM_SIDECAR_START_ABORTED` and the stack never comes up.
 
-**Cause (fixed):** Older builds rejoined the aborted start promise. Current builds set an abort flag and return from **Cancel** without waiting on cargo/BLE; the next **start** waits for the doomed promise to clear, then starts fresh. Noble yield for BLE RNode runs only after health, so Cancel during cargo does not suspend Meshtastic/MeshCore.
+**Cause (fixed):** Older builds rejoined the aborted start promise. Current builds set an abort flag and return from **Cancel** without waiting on cargo/BLE; the next **start** waits for the doomed promise to clear, then starts fresh. Cancel during cargo does not tear down Meshtastic/MeshCore GATT; LoRa BLE uses `ensureForBle()` independently of Reticulum UI Start.
 
 **What to do**: Upgrade to a build with listen-first Cancel fix. If you still see `START_ABORTED` after Cancel+Connect on a current build, quit the app fully and **Start stack** once.
 
@@ -1312,6 +1311,8 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 
 Unrecognized codes pass through unchanged.
 
+**Images reload every revisit:** Page/image LRUs are **in-memory only** (lost on Close viewer, Clear caches, or app restart). `/media` blobs larger than **2 MiB base64** (~1.5 MiB binary) are shown once but never stored — see [reticulum.md § Nomad browser caches](reticulum.md#nomad-browser-caches).
+
 TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_hops, 3, 7)`) and a LinkClient proof wait of the **remaining overall MeshChat deadline** (~45s TCP after instant pubkey recall), matching v5.25.0. Do not cap LRPROOF at hops×6 or a 30s floor — that false-failed multi-hop hub pages that still load on release. First attempts use a cached path when present (no DropPath storm); missing paths RequestPath briefly and may return `path_timeout`. On TCP `link_timeout`, the sidecar suppresses the dead iface, drops the failed via, promotes ranked path-slot backups / other live hubs (extra RequestPath when another TCP/RF iface is up), then retries inside the same fetch. LXMF Direct chat uses the same path exhaustion before the **multi-PN cascade**. `force_path_ok=true` means rediscovered after absence only (cache hits log `force_path_ok=false`). Failure logs (`[nomadNetworkStore] … fetch failed` and sidecar `Nomad Link query failed`) include `path_hops`, `link_hops`, `proof_budget_secs`, `force_path_ok`, `path_ensure_kind`, `elapsed_ms`, `tried_interfaces`, `failover_rounds`, `iface`, and `raw=`. UI errors distinguish cached-path vs rediscovered-path link failures.
 
 **Cause**: Older `LinkClient` always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all `nomadnetwork.node` announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).
@@ -1344,9 +1345,9 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 
 **Symptoms**: You set an announce interval on the Network tab, then saved **Stack settings** (transport / log level) and the interval returned to **0**.
 
-**Cause**: `PUT /api/v1/stack/settings` replaces all four fields (`enable_transport`, `share_instance`, `loglevel`, `announce_interval_sec`). A partial JSON body omits `announce_interval_sec`, which deserializes as **0**. `GET /api/v1/stack/settings` and missing keys in rnsd config default to **3600** s (1 h) after bootstrap migration — a value of **0** in the UI usually means an explicit setting or a partial PUT, not the new GET default.
+**Cause**: Older sidecars treated `PUT /api/v1/stack/settings` as a full replace. A partial JSON body omitted `announce_interval_sec`, which deserialized as **0**.
 
-**Fix**: Current Network UI merge-reads settings before PUT. If you hit this on an older build, re-save the announce interval after stack settings changes.
+**Fix**: Current builds merge omitted fields on the sidecar under a config lock. Clients should PUT only the fields they intend to change. `GET /api/v1/stack/settings` and missing keys in rnsd config default to **3600** s (1 h) after bootstrap migration — a value of **0** in the UI means an explicit setting.
 
 ### Clear announces does not empty the Peers tab under rns-stack
 
@@ -1388,22 +1389,21 @@ TCP/network Nomad Links use path-scaled initiator hops (`link_hops = clamp(path_
 7. **Stub sidecar** — dev builds without `rns-stack` return an empty discovered list.
 8. **Filter empty** — interface-type filter pills may exclude all rows; try **All**.
 9. **Refresh errors** — transient sidecar errors show inline `refreshFailed` without clearing last-good markers.
-10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery. Eligible types are RNode / RNode Multi / KISS (with serial), BLE peer, I2P, UDP, and pipe.
+10. **No publish-capable interface** — Auto and outbound TCP client types cannot publish RMAP discovery. Eligible types are RNode / KISS / AX.25 KISS (with serial), I2P, and Backbone (requires `reachable_on`). UDP, pipe, BLE peer, and RNode Multi are not advertizable by rsReticulum.
 11. **Partial publishing (amber X of Y)** — Connection shows **publishing X of Y** in amber when some but not all eligible interfaces have `discoverable=yes`. TCP hubs never count toward Y. Use Network → **Publish on RMAP v4** (check again while indeterminate) or per-interface **RMAP** toggles on Connection to sync the rest.
 
-### Reticulum BLE RNode blocks Meshtastic/MeshCore Noble BLE
+### Reticulum BLE RNode blocks Meshtastic/MeshCore BLE
 
-**Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with “Bluetooth scan in progress (reticulum)” or Noble sessions stay disconnected.
+**Symptoms**: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with `scan_busy` / “Bluetooth scan in progress (reticulum)” or `mac_conflict`.
 
-**Cause**: On macOS/Windows, sidecar start **yields Noble BLE** so btleplug can pair the RNode. While the yield holds `scanOwner === 'reticulum'`, Meshtastic/MeshCore Noble connect is rejected. After grace, yield stops re-contending so an offline RNode cannot thrash LoRa BLE. mesh-client releases the scan mutex when the RNode connects, the grace window expires, prepare fails closed after Noble disconnect timeout, or the stack stops. When Reticulum **Auto-start** is on, Meshtastic/MeshCore BLE autostart also waits `awaitReticulumBleCoexistenceClear` (default max ~**65 s**).
+**Cause**: The app checks BLE device ownership and serializes app-requested scans and LoRa connection setup. A conflicting configured address or active scan can block Connect. LoRa GATT and Reticulum run in the same sidecar process with separate centrals; Reticulum's autonomous discovery/reconnect does not use the app's scan lease. The inverse is also normal: RNode Signal meter advertisement polls may see `scan_busy (gatt)` while Meshtastic/MeshCore GATT connect holds the scan mutex — that is expected contention (logged at debug), not a stuck lease; meters already seeded from connect-time `host_rssi` skip those polls.
 
 **Fix**:
 
-1. Wait up to ~**60s** after stack start for the BLE RNode to connect (Connection tab interface status **up** / **online**) — that matches the OS passkey window (~65 s including the RF autostart buffer).
-2. Stop the Reticulum stack if you need immediate Meshtastic/MeshCore BLE access.
-3. Ensure you are on a current build with watcher-only yield (`useReticulumNobleBleYieldWatcher` — not interface-snapshot release), `reticulumNobleBleYield.ts`, and `ble-coexistence-coordinator.assertCanConnect`.
-4. Check Device logs for `[BleCoexistence]` and `[useReticulumNobleBleYieldWatcher]`.
-5. If CoreBluetooth logs **“Event receiver died”**, Noble connect raced mid-pair — wait for coexistence clear or stop the Reticulum stack before retrying LoRa BLE.
+1. Wait for the Reticulum BLE scan/connect to finish, then retry Meshtastic/MeshCore Connect.
+2. Stop the Reticulum stack or disable the BLE RNode if you need exclusive LoRa BLE access.
+3. Check Device logs for `[BleCoexistence]` / `[GATT]` and sidecar `scan_busy` / `mac_conflict` codes.
+4. Ensure Meshtastic/MeshCore and the RNode use **different** Bluetooth addresses.
 
 ### Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)
 
@@ -1535,16 +1535,16 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 ### Reticulum: announces / Nomad / RRC work but Chat fails both ways
 
-**Symptoms**: Both mesh-client instances hear announces, Nomad pages and RRC work, probes look reachable, but Chat DMs never arrive either way. Developer bundles show outbound `to_hash` values that are **not** the peer’s Network **LXMF** hash. Pasting the peer’s **identity** hash and their **LXMF** hash opens **two** Chat tabs. Diagnostics may list **Direct LXMF link … timed out** against a hash that identity activity marks as `lxst.telephony` (or against the RNS identity hash). When **MeshChatX** (or another RNS app) runs on one side, the other may briefly show **Delivered** via RF — that Complete is for MeshChatX’s LXMF identity, not mesh-client Chat. Peers may appear in the list (announce heard) while Network topology shows **no** RF edge (`hops` null / no path). Prefer **RF** is not the same as disabling TCP hubs.
+**Symptoms**: Both mesh-client instances hear announces, Nomad pages and RRC work, probes look reachable, but Chat DMs never arrive either way. Developer bundles show outbound `to_hash` values that are **not** the peer’s Network **LXMF** hash. Pasting the peer’s **identity** hash and their **LXMF** hash opens **two** Chat tabs. Diagnostics may list **Direct LXMF link … timed out** against a hash that identity activity marks as `lxst.telephony` (or against the RNS identity hash). When **MeshChatX** (or another RNS app) runs on one side, the other may briefly show **Delivered** via RF — that Complete is for MeshChatX’s LXMF identity, not mesh-client Chat. **Delivered to a MeshChatX-era favorite (e.g. `d010ea44…` / Ceorl-wired) is not delivery into a different mesh-client LXMF (e.g. `e3359f…` / Ceorl-test).** Peers may appear in the list (announce heard) while Network topology shows **no** RF edge (`hops` null / no path). Prefer **RF** is not the same as disabling TCP hubs.
 
-**Cause**: The RNS path table lists **every** destination aspect. Opening **Peers → Message** (or a stale DM) on an `lxst.telephony` row, or pasting the peer’s **RNS identity** hash, used to send LXMF Chat to a non-`lxmf.delivery` destination. mesh-client remaps identity and telephony to the peer’s `lxmf.delivery` hash when identity activity knows it; without an LXMF announce it refuses send. A peer coming online after the other side’s hourly announce can miss the reverse LXMF path until **Announce now**. With Propagation **Off**, Direct timeout has no PN cascade. A prior link-timeout failure bridge could also leave later Sends stuck on **Sending** for the same dest until a new outbound clears that dedupe.
+**Cause**: The RNS path table lists **every** destination aspect. Opening **Peers → Message** (or a stale DM) on an `lxst.telephony` row, or pasting the peer’s **RNS identity** hash, used to send LXMF Chat to a non-`lxmf.delivery` destination. mesh-client remaps identity and telephony to the peer’s `lxmf.delivery` hash when identity activity knows it; without an LXMF announce it refuses send. A peer coming online after the other side’s hourly announce can miss the reverse LXMF path until **Announce now**. With Propagation **Off**, Direct timeout has no PN cascade. A prior link-timeout failure bridge could also leave later Sends stuck on **Sending** for the same dest until a new outbound clears that dedupe. Favoriting an older MeshChatX LXMF while the peer’s live mesh-client identity uses a new LXMF produces green **Delivered** Completes that never appear in the other app’s Chat.
 
 **Fix / retest checklist**:
 
 1. **Fully quit** MeshChatX / other Reticulum apps on both machines during a mesh-client ↔ mesh-client test.
 2. On **Network**, confirm each side’s **LXMF** hash (not only the identity hash). Example pair: upstairs `ac978c…` ↔ downstairs `e3359f…`.
 3. Both sides **Announce now**, then wait until each sees the peer’s **LXMF** row with a path (hops ≥ 0) or Probe succeeds.
-4. Open Chat from Peers **Message** (or paste the peer’s 32-character **LXMF** hash — not the identity hash). The DM header shows a copyable **LXMF** prefix — it must match Network, not identity-only or a Voice-only row.
+4. Open Chat from Peers **Message** (or paste the peer’s 32-character **LXMF** hash — not the identity hash). The DM header shows copyable **LXMF** and **identity** prefixes — the LXMF prefix must match Network, not a MeshChatX-era favorite or a Voice-only row.
 5. If Direct still fails, set Propagation to **Auto** or **Manual** with a usable PN (Propagation **Off** has no cascade after Direct timeout). Prefer RF does not disable TCP — turn TCP hubs off on Connection → Interfaces when testing RF-only.
 6. Export **both** Developer bundles; check `reticulum_messages.to_hash` against `reticulum_identity_activity` (`lxmf.delivery` vs identity / `lxst.telephony`) and `reticulum/lxmf-outbound.log` for Direct Completes / Failed lines. Stuck `reticulum-pending-*` / `sending` rows after link timeouts are a client bridge bug (fixed builds clear dest dedupe on each new Send).
 
@@ -1744,7 +1744,7 @@ On **Windows**, unread messages use a red taskbar overlay. On **Linux**, launche
 
 MQTT ingest must map inbound text to the **receiver's** local channel slot using the MQTT topic channel name (`LongFast`, regional names, etc.) via `channelNameToIndex`. `MeshPacket.channel` in the ServiceEnvelope is the **sender's** local RF slot and must not drive attribution — remote gateways often use a different slot layout (e.g. LongFast on slot 1 while you use slot 0).
 
-Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, or MQTT connecting before RF channel configs arrive (cold-start empty map).
+Mis-filed messages also occur when `channelNameToIndex` is stale or incomplete: unnamed default-public on slot 1 without radio sync, MQTT-only without `ChannelName@index=` manual PSK lines, MQTT connecting before RF channel configs arrive (cold-start empty map), or (fixed in current builds) a mid-stream radio sync that temporarily wiped `LongFast` while channel packets arrived one-by-one after cycling radios — topic→index and radio PSKs are now merge-safe so a partial `OnTrail=0` push cannot drop `LongFast=1` or private decrypt keys, and `radioSessionId` clears prior radio maps when the RF identity changes.
 
 **Fix**
 
@@ -1939,19 +1939,19 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 ### Map tab without internet (offline / no WAN)
 
-**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). **Without internet access, new tiles cannot be fetched**, so the basemap may look **blank, gray, or incomplete**, or show only **tiles previously cached** by the embedded browser (caching is best-effort and not guaranteed).
+**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). Tiles are served through the privileged **`mesh-tiles:`** protocol and stored under the app **userData** `tile-cache/` directory (viewed tiles cache automatically while online; ~1 GiB LRU). Use **Layers → Offline maps → Download current view** while online to pre-fetch a region (estimate + confirm; a single job is capped at about **half** the cache budget so downloaded tiles are not immediately evicted). Downloads pause if the link drops and resume after a stable connection (~60s). Optional **Auto-cache** downloads the current view after a short settle when the viewport key changes. On high-DPI displays, **Carto Dark** region downloads may fetch `@2x` tiles. **Clear tile cache** frees disk. **Without internet access, uncached areas look blank**; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline. Agent detail: [`docs/agents/offline-maps.md`](agents/offline-maps.md).
 
 **Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
 
-**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. See **GPS "Location unavailable" or stuck on the map** above for IP-based fallbacks and manual entry. Positions heard over the mesh do not require internet.
+**Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. The IP-geolocation fallback returns immediately with code `OFFLINE` when there is no WAN. See **GPS "Location unavailable" or stuck on the map** above. Positions heard over the mesh do not require internet.
 
 ### Verifying offline behavior (manual QA)
 
 With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if possible:
 
 1. Confirm the app **window loads** and core tabs work; connect via **USB serial** or **BLE** to a local radio if you need RF features.
-2. Open the **Map** tab: expect **missing or stale basemap tiles** as described above; **markers and trails** may still appear when position data exists.
-3. A non-fatal **update check** message in the console is expected without WAN; see **Update check fails / footer update status** above.
+2. Open the **Map** tab: expect **blank basemap** where tiles were never cached; **markers and trails** may still appear when position data exists. Pre-downloaded regions should still show tiles.
+3. The footer shows a muted **Updates paused (offline)** state (not amber **Update error**) when WAN is missing; update checks do not retry in a loop. If an update was already downloaded (**ready** / install prompt), that ready state is kept when going offline.
 
 ## App, updates, and localization
 
@@ -1983,11 +1983,70 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 ### Update check fails / footer update status
 
-The app functions fully offline; this is not a critical error. If "Update check failed" appears in the console, verify network connectivity. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached. The footer shows **Update error** when a check fails; use **Check for updates** in the app menu or retry from the footer when applicable.
+The app functions fully offline; this is not a critical error. When there is no WAN, the footer shows a muted **Updates paused (offline)** state and does not amber-nag or retry in a loop. If an update was already downloaded (**ready**), the footer keeps that ready/install state instead of switching to offline. When connectivity returns and stays stable (~60s), one quiet update check runs (including after a network-class failure while the browser still reports online). If a real (non-network) update error occurs, the footer shows **Update error**; use **Check for updates** in the app menu or retry from the footer when applicable. Update checks are rate-limited by the GitHub API and may silently skip when the limit is reached.
 
 **Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (draft-fork race). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. Repair with `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`, or edit the release in the GitHub UI. Future releases are blocked at CI verify when the draft tag is wrong.
 
 ### Language and Translations
+
+## MECP (emergency reports)
+
+**Where is the MECP received log?**
+
+Inbound MECP messages are appended to a durable audit file under the app `userData` folder (not the rotating session `mesh-client.log`):
+
+- macOS: `~/Library/Application Support/mesh-client/mecp-received.log` (rotated backup `mecp-received.log.1`)
+- Windows: `%APPDATA%\mesh-client\mecp-received.log`
+- Linux: `~/.config/mesh-client/mecp-received.log`
+
+Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bundle (includes the file when non-empty). Agent reference: [`docs/agents/mecp.md`](agents/mecp.md).
+
+**MAYDAY/URGENT alerts ignore mute**
+
+Default Web Audio tones (`chatNotifications.ts` profiles; overrideable in **App → Notifications**):
+
+| Severity  | Event key    | Default sound                                             |
+| --------- | ------------ | --------------------------------------------------------- |
+| 0 MAYDAY  | `mecpSiren`  | Six sweeping siren cycles (~5.0 s; same length as URGENT) |
+| 1 URGENT  | `mecpEas`    | US EAS-style 853+960 Hz attention tone, 5 seconds         |
+| 2 SAFETY  | `mecpSafety` | Short–long (dit–dah) pairs × 6, 1175 Hz square (~4.4s)    |
+| 3 ROUTINE | `mecp`       | Repeated ascending triple pulse                           |
+
+MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/agents/mecp.md`](agents/mecp.md).
+
+**MECP / MAYDAY button missing in Chat**
+
+App → MECP → **Show MECP button in Chat** and **Show MAYDAY button in Chat** are each off by default. Enable them separately to show MECP compose and/or one-tap MAYDAY. The **Incident** tab still receives inbound MECP without either enabled.
+
+**What is the Incident tab?**
+
+**Incident** (sidebar, just above **App**) is the EMCOMM common operating picture — not a chat history. It lists **open** MECP emergencies only (resolved rows disappear; drills stay listed but never badge). Each row shows:
+
+- Severity (MAYDAY / URGENT / SAFETY / ROUTINE) and MECP codes
+- Sender name, optional free text, ACK count, and which protocols heard the report
+- **Beacon active** when a distress beacon is still running
+- **Acknowledge** (R01) or **Confirm** (B02 for an active beacon) — best-effort on the mesh, not a read receipt
+- **Resolve** to close the incident on this workstation only
+
+Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP or you enable Chat compose / MAYDAY under App → MECP. See the README **EMCOMM / Incident Command** section and [`docs/agents/emcomm.md`](agents/emcomm.md).
+
+**MAYDAY stuck / “will send when connected”**
+
+Emergency MECP uses the durable outbox (`priority: emergency`). It keeps retrying after reconnect (no 24h age stop). Check Chat for the emergency OutboxBubble; Cancel requires confirm. See [`docs/agents/emcomm.md`](agents/emcomm.md).
+
+**Incident tab empty after restart**
+
+Incidents persist across restarts in local storage (`mesh-client:incidents`), and on startup the MECP watcher also upserts any MECP still in the hydrated chat history — without re-alerting. The tab can still be empty on a cold start when: local storage was cleared (or this is a fresh install / new profile), the incident was **Resolved** (only open/acked rows are listed), or the original message aged out of chat history before the store saw it. Drills are listed but never counted in the badge. The durable record is always `mecp-received.log` (above).
+
+**Watched node silence / battery / link-down alerts**
+
+Ops alerts use App settings (`nodeSilenceAlertMinutes`, `nodeBatteryLowThreshold`, `notifyOnLinkDown`) and **watched** nodes only — watch a node from node detail first. Silence escalation fires at **2×** the silence threshold (the first offline notice comes from the normal watch notifier); with no silence minutes set, escalation is off. Battery low needs battery telemetry (ignored when the node reports 0 or >100 % / charging) and re-arms after recovering 5 points above the threshold. Link-down waits ~5 s, never fires on manual disconnect or while RF reconnect is in progress, and fires once reconnect gives up. Reticulum has no battery telemetry or link-down alert.
+
+**USGS Topo blank offline**
+
+**USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See [offline-maps.md](agents/offline-maps.md).
+
+## Language / i18n
 
 **How do I change the language?**
 

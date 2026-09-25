@@ -27,7 +27,12 @@
  *    [Data] placeholders, bare PH N / <ph> / HTML tag residue, and sample-name garbage on nameLabel;
  *    rawPacketLog.reticulum RX/TX verbatim tokens and destination punctuation garbage;
  *    reticulumTopology.self pronoun and hopBadge {{count}} placeholder;
- *    flasher.noSerialPorts French inverted "trouvé(s):" empty-state wording.
+ *    flasher.noSerialPorts French inverted "trouvé(s):" empty-state wording;
+ *    TX/RX Texas on any key; tcp:// / Wi-Fi / I2P spacing; flood/advert/room/backbone
+ *    by English meaning; routing-port identifiers verbatim by English value; gamesPanel
+ *    resign/draw/challenge/threefold; rrc leftover-English errors;
+ *    single-character dash placeholders (common.emDash, signalMeter.noData, and
+ *    any other English value that is only a dash) must match English.
  *
  * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
  *

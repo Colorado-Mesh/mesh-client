@@ -110,7 +110,6 @@ import {
   roomPostRowKey,
   roomPostVirtualizerKey,
   scheduleVirtualRowRemeasure,
-  VIRTUALIZER_SCROLL_END_THRESHOLD,
 } from '../lib/chatScrollUtils';
 import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -306,6 +305,10 @@ export default function RoomsPanel({
   const [persistedRoomsLastRead, setPersistedRoomsLastRead] = useState(() =>
     loadPersistedRoomsLastRead(),
   );
+  const persistedRoomsLastReadRef = useRef(persistedRoomsLastRead);
+  useEffect(() => {
+    persistedRoomsLastReadRef.current = persistedRoomsLastRead;
+  }, [persistedRoomsLastRead]);
   const [streamView, setStreamView] = useState<'posts' | 'starred'>('posts');
   const [starred, setStarred] = useState<StarredMessage[]>(() => loadStarred('meshcore'));
   const [membersOpen, setMembersOpen] = useState(false);
@@ -468,7 +471,7 @@ export default function RoomsPanel({
     },
     anchorTo: 'end',
     followOnAppend: true,
-    scrollEndThreshold: VIRTUALIZER_SCROLL_END_THRESHOLD,
+    scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
   });
 
   postVirtualizer.shouldAdjustScrollPositionOnItemSizeChange = createChatScrollAdjustPredicate({
@@ -557,7 +560,7 @@ export default function RoomsPanel({
     isPinnedToBottomRef.current = atEnd;
     setShowScrollButton(!atEnd);
     const scrollTop = streamRef.current?.scrollTop ?? 0;
-    setShowScrollTopButton(scrollTop > CHAT_SCROLL_END_THRESHOLD);
+    setShowScrollTopButton(scrollTop > 200);
     const distFromBottom = getDistFromChatBottom(
       streamRef.current,
       messagesEndRef.current,
@@ -742,7 +745,8 @@ export default function RoomsPanel({
 
   useEffect(() => {
     if (selectedRoomId == null) return;
-    const snapshot = persistedRoomsLastRead[selectedRoomId] ?? 0;
+    // Read-watermark updates are not navigation and must not restart the scroll-to-unread flow.
+    const snapshot = persistedRoomsLastReadRef.current[selectedRoomId] ?? 0;
     setUnreadDividerTimestamp(snapshot);
     if (suppressNextRoomSwitchScrollRef.current) {
       // An explicit row-key jump (e.g. "Go to message" from Starred) selected this
@@ -752,7 +756,7 @@ export default function RoomsPanel({
       return;
     }
     setTriggerScrollToUnread((n) => n + 1);
-  }, [selectedRoomId, persistedRoomsLastRead]);
+  }, [selectedRoomId]);
 
   const loadSyncConfig = useCallback((nodeId: number) => {
     const config = getMeshcoreRoomSyncConfig(nodeId);

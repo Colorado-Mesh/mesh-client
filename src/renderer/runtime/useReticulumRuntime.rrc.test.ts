@@ -18,12 +18,7 @@ import { useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
 import type { ReticulumSidecarEvent } from '@/shared/reticulum-types';
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
-  fetchRecentInboundLxmf: vi.fn().mockResolvedValue([]),
   fetchRecentInboundLxmfDetailed: vi.fn().mockResolvedValue({ messages: [], ringLen: 0 }),
-}));
-
-vi.mock('@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher', () => ({
-  useReticulumNobleBleYieldWatcher: () => {},
 }));
 
 vi.mock('@/renderer/lib/reticulum/useReticulumPropagationAutoSync', () => ({
@@ -136,10 +131,18 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
 
   it('routes /who notices through applyRrcWhoInboundNotice and drops unmatched rooms', () => {
     expect(SOURCE).toContain('applyRrcWhoInboundNotice');
+    expect(SOURCE).toContain('clearWhoReplyPending');
     expect(SOURCE).toMatch(
       /whoResult\.action === 'unjoined' \|\| whoResult\.action === 'nicklist-only'[\s\S]*?return;/,
     );
     expect(SOURCE).toMatch(/whoResult\.action === 'transcript'[\s\S]*?room = whoResult\.room/);
+  });
+
+  it('accumulates Ratspeak chunked /list notices into listedRooms', () => {
+    expect(SOURCE).toContain('beginListedRoomsDirectory');
+    expect(SOURCE).toContain('appendListedRooms');
+    expect(SOURCE).toMatch(/listed\?\.action === 'begin'/);
+    expect(SOURCE).toMatch(/listed\?\.action === 'append'/);
   });
 
   it('routes direct NOTICE into per-peer @hash DMs via applyRrcDirectMessageRoom', () => {
@@ -185,6 +188,18 @@ describe('useReticulumRuntime RRC event routing (regression)', () => {
     expect(SOURCE).toMatch(/console\.debug\(\s*'\[useReticulumRuntime\] rrc\.room\.parted hub='/);
     expect(SOURCE).toMatch(/voluntary='/);
     expect(SOURCE).toMatch(/will_reconnect='/);
+  });
+
+  it('reconciles RRC session status after WS lag and reconnect', () => {
+    expect(SOURCE).toMatch(
+      /import \{ scheduleRrcSessionStatusReconcile \} from '@\/renderer\/lib\/reconcileRrcSessionsFromSnapshot'/,
+    );
+    expect(SOURCE).toMatch(
+      /evt\.type === 'events_lagged'[\s\S]*?void scheduleRrcSessionStatusReconcile\('events_lagged'\)/,
+    );
+    expect(SOURCE).toMatch(
+      /evt\.type === 'ws_connected'[\s\S]*?reconnect === true[\s\S]*?void scheduleRrcSessionStatusReconcile\('ws_reconnect'\)/,
+    );
   });
 });
 

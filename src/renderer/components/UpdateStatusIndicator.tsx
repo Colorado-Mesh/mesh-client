@@ -114,6 +114,18 @@ export default function UpdateStatusIndicator({
           <span className="text-amber-500/90">{t('updateStatus.updateError')}</span>
         </button>
       )}
+
+      {phase === 'offline' && (
+        <button
+          type="button"
+          onClick={onCheck}
+          className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-400 transition-colors hover:text-gray-200"
+          title={t('updateStatus.checkForUpdates')}
+          aria-label={t('updateStatus.pausedOffline')}
+        >
+          <span>{t('updateStatus.pausedOffline')}</span>
+        </button>
+      )}
     </span>
   );
 }

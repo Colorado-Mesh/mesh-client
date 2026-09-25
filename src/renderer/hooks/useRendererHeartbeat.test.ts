@@ -30,7 +30,7 @@ describe('useRendererHeartbeat', () => {
     });
     expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledTimes(1);
     expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledWith(
-      expect.objectContaining({ ts: expect.any(Number) }),
+      expect.objectContaining({ ts: expect.any(Number), hidden: false }),
     );
   });
 
@@ -47,12 +47,17 @@ describe('useRendererHeartbeat', () => {
     expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledTimes(2);
   });
 
-  it('does not send an initial heartbeat when the document starts hidden', () => {
+  it('reports an initial hidden document without starting periodic heartbeats', () => {
     setDocumentHidden(true);
     renderHook(() => {
       useRendererHeartbeat();
     });
-    expect(window.electronAPI.sendRendererHeartbeat).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(90_000);
+    expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledWith({
+      ts: expect.any(Number),
+      hidden: true,
+    });
   });
 
   it('stops the interval when the document becomes hidden', () => {
@@ -65,7 +70,11 @@ describe('useRendererHeartbeat', () => {
     document.dispatchEvent(new Event('visibilitychange'));
 
     vi.advanceTimersByTime(90_000);
-    expect(window.electronAPI.sendRendererHeartbeat).not.toHaveBeenCalled();
+    expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledWith({
+      ts: expect.any(Number),
+      hidden: true,
+    });
   });
 
   it('resumes heartbeats (with an immediate send) when the document becomes visible again', () => {
@@ -80,6 +89,10 @@ describe('useRendererHeartbeat', () => {
     document.dispatchEvent(new Event('visibilitychange'));
 
     expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.sendRendererHeartbeat).toHaveBeenLastCalledWith({
+      ts: expect.any(Number),
+      hidden: false,
+    });
   });
 
   it('does not double-start the interval on repeated visible visibilitychange events', () => {

@@ -49,6 +49,11 @@ describe('shouldForwardReticulumSidecarStdout', () => {
         'INFO target=propagation-retrieve pn_hash=abc client /get stalled while establishing',
       ),
     ).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        '2026-09-12T13:00:00Z INFO rrc: rrc DropAndRefresh failover',
+      ),
+    ).toBe(true);
   });
 
   it('does not forward INFO when PN markers appear only in message text', () => {
@@ -68,6 +73,7 @@ describe('shouldForwardReticulumSidecarStdout', () => {
 describe('resolveSidecarRustLog', () => {
   it('defaults to warn', () => {
     expect(resolveSidecarRustLog({})).toBe(SIDECAR_DEFAULT_RUST_LOG);
+    expect(SIDECAR_DEFAULT_RUST_LOG).toContain('rrc=info');
   });
 
   it('honors MESH_CLIENT_RUST_LOG over RUST_LOG', () => {

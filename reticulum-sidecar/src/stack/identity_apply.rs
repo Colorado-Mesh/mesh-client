@@ -182,7 +182,7 @@ mod rns {
         Ok(Some(from_file))
     }
 
-    #[allow(dead_code)] // retained for tests / future replace-guard paths
+    #[cfg(test)]
     pub fn backup_conflicts_with_file(
         config_dir: &Path,
         backup_identity_hash: &str,

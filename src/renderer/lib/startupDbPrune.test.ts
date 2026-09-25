@@ -179,6 +179,36 @@ describe('runStartupDbPrune', () => {
     expect(pruneRnActivity).toHaveBeenCalledWith(14);
     expect(pruneRnByCount).toHaveBeenCalledWith(2000);
   });
+
+  it('forwards incident exempt node ids to position-history prunes', async () => {
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ positionHistoryPruneEnabled: true, positionHistoryPruneDays: 5 }),
+    );
+    const prunePosition = vi.fn().mockResolvedValue(0);
+    const prunePositionPerNode = vi.fn().mockResolvedValue(0);
+    vi.mocked(window.electronAPI.db).prunePositionHistory = prunePosition;
+    vi.mocked(window.electronAPI.db).prunePositionHistoryPerNode = prunePositionPerNode;
+
+    await runSessionDbPrune({ exemptNodeIds: new Set(['!abcd1234', '!0000beef']) });
+
+    expect(prunePosition).toHaveBeenCalledWith(5, ['!abcd1234', '!0000beef']);
+    expect(prunePositionPerNode).toHaveBeenCalledWith(2000, ['!abcd1234', '!0000beef']);
+  });
+
+  it('omits exempt arg when no exempt node ids are provided', async () => {
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ positionHistoryPruneEnabled: true, positionHistoryPruneDays: 5 }),
+    );
+    const prunePosition = vi.fn().mockResolvedValue(0);
+    vi.mocked(window.electronAPI.db).prunePositionHistory = prunePosition;
+    vi.mocked(window.electronAPI.db).prunePositionHistoryPerNode = vi.fn().mockResolvedValue(0);
+
+    await runSessionDbPrune({ exemptNodeIds: [] });
+
+    expect(prunePosition.mock.calls[0]).toEqual([5]);
+  });
 });
 
 describe('scheduleReticulumVacuumIfNeeded', () => {

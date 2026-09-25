@@ -14,12 +14,16 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
+import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { normalizeLastHeardMs } from '@/renderer/lib/nodeStatus';
+import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import {
   classifyReticulumVia,
   formatReticulumViaBadgeLabel,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
+import { collectReticulumOutboundDestStatsFromRecords } from '@/renderer/lib/reticulum/collectReticulumChatOutboundDestStats';
 import {
+  normalizeReticulumNodeId,
   registerReticulumDestinationHash,
   reticulumHashToNodeId,
 } from '@/renderer/lib/reticulum/destHash';
@@ -27,6 +31,10 @@ import {
   isReticulumTelephonyOnlyDestination,
   resolveReticulumChatLxmfDestination,
 } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
+import {
+  isReticulumPeerHeardViaTcpHub,
+  resolveReticulumStaleChatDest,
+} from '@/renderer/lib/reticulum/resolveReticulumStaleChatDest';
 import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticulumDestinationInput';
 import {
   refreshReticulumPeerRouteFromPaths,
@@ -52,10 +60,12 @@ import {
   probeReticulumPeer,
   requestReticulumPeerPath,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { isReticulumStaleAlternateDismissed } from '@/renderer/lib/reticulum/reticulumStaleAlternateDismiss';
 import type { ReticulumPeer } from '@/shared/reticulum-types';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 import type { MeshNode } from '../lib/types';
+import { useMessageStore } from '../stores/messageStore';
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import {
@@ -181,6 +191,16 @@ const PeerTableRow = memo(function PeerTableRow({
             destinationHash={peer.destination_hash}
           />
           <span className="truncate">{displayLabel}</span>
+          {isReticulumPeerHeardViaTcpHub(peer.interface) ? (
+            <span
+              className="shrink-0 rounded bg-sky-900/50 px-1 py-0.5 text-[10px] font-medium text-sky-300"
+              title={t('peerListPanel.heardViaTcpHubTitle', {
+                interface: peer.interface?.trim() || '—',
+              })}
+            >
+              {t('peerListPanel.heardViaTcpHub')}
+            </span>
+          ) : null}
           {verified ? (
             <Check
               className="text-readable-green h-3.5 w-3.5 shrink-0"
@@ -618,6 +638,54 @@ export default function ReticulumPeerListPanel({
 
   const tableColSpan = activeTab === 'peers' ? 6 : 5;
 
+  const maybeToastStaleAlternate = useCallback(
+    (openLxmfHash: string) => {
+      const identityId =
+        getIdentityIdForProtocol('reticulum') ?? getOfflineIdentityIdForProtocol('reticulum');
+      const bucket = useMessageStore.getState().messages[identityId] ?? {};
+      const ownIds = new Set<number>();
+      for (const msg of Object.values(bucket)) {
+        // Outbound rows always set status; treat their `from` as self for dest stats.
+        if (
+          (msg.status === 'acked' || msg.status === 'failed' || msg.status === 'sending') &&
+          msg.to > 0
+        ) {
+          ownIds.add(normalizeReticulumNodeId(msg.from));
+        }
+      }
+      const stats = collectReticulumOutboundDestStatsFromRecords(Object.values(bucket), ownIds);
+      const peerStore = useReticulumPeerStore.getState();
+      const peers = [
+        ...peerStore.peers.values(),
+        ...peerStore.contacts.values(),
+        ...peerStore.history.values(),
+      ];
+      const openNorm = openLxmfHash.replace(/[^0-9a-f]/gi, '').toLowerCase();
+      const hint = resolveReticulumStaleChatDest({
+        openHash: openLxmfHash,
+        activityByDestination: useReticulumIdentityActivityStore.getState().byDestination,
+        peers,
+        failedOutboundHashes: stats.failedOutboundHashes,
+        openHasDelivered: stats.deliveredOutboundHashes.has(openNorm),
+      });
+      if (hint.status !== 'stale_alternate') return;
+      if (isReticulumStaleAlternateDismissed(hint.openHash, hint.alternateHash)) return;
+      const openPrefix = openNorm.slice(0, 8);
+      const alternatePrefix = hint.alternateHash.slice(0, 8);
+      addToast(
+        hint.alternateDisplayName
+          ? t('peerListPanel.staleAlternateToastNamed', {
+              openPrefix,
+              alternatePrefix,
+              name: hint.alternateDisplayName,
+            })
+          : t('peerListPanel.staleAlternateToast', { openPrefix, alternatePrefix }),
+        'warning',
+      );
+    },
+    [addToast, t],
+  );
+
   const renderActionButtons = (peer: ReticulumPeer, busy: boolean) => {
     const telephonyOnly = isReticulumTelephonyOnlyDestination(peer.destination_hash);
     const chatResolved = resolveReticulumChatLxmfDestination(peer.destination_hash);
@@ -643,6 +711,7 @@ export default function ReticulumPeerListPanel({
             }
             const nodeId = peerHashToNodeNum(resolved.hash);
             registerReticulumDestinationHash(nodeId, resolved.hash);
+            maybeToastStaleAlternate(resolved.hash);
             onSendMessage(nodeId);
           }}
           aria-label={t('peerListPanel.openChat')}

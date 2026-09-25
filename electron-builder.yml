@@ -14,7 +14,7 @@ files:
   - package.json
 asarUnpack:
   - 'node_modules/systeminformation/**/*'
-  - 'node_modules/@stoprocent/**/*'
+  # Native BLE moved to reticulum-sidecar (btleplug); @stoprocent/noble removed.
 publish:
   provider: github
   owner: Colorado-Mesh
@@ -113,3 +113,7 @@ nsis:
   useZip: true
   differentialPackage: false
   include: resources/installer.nsh
+  # Do not set artifactName. ${archSuffix} is not an electron-builder macro, and
+  # ${arch} would add -x64 to the x64 installer (latest.yml omits that suffix).
+  # Default names contain spaces; normalize-win-setup-artifact-names.mjs
+  # hyphenates them so disk == latest.yml == GitHub asset names.

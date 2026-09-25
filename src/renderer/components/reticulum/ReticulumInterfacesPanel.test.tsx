@@ -36,6 +36,8 @@ vi.mock('@/renderer/lib/sessions/reticulumSession', () => ({
   }),
 }));
 
+import { resetReticulumTcpLinkQualityStickyCacheForTests } from '@/renderer/hooks/useReticulumTcpLinkQualityMap';
+
 import { ReticulumInterfacesPanel } from './ReticulumInterfacesPanel';
 
 const defaultProps = {
@@ -71,6 +73,7 @@ const rmapWorldHub: ReticulumInterfaceRow = {
 
 describe('ReticulumInterfacesPanel', () => {
   beforeEach(() => {
+    resetReticulumTcpLinkQualityStickyCacheForTests();
     addToastMock.mockClear();
     restartStackMock.mockClear();
     localStorage.removeItem(GPS_SETTINGS_STORAGE_KEY);
@@ -80,7 +83,11 @@ describe('ReticulumInterfacesPanel', () => {
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyDelete = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.hostLink.probeTcpRtt = vi.fn().mockResolvedValue(42);
-    window.electronAPI.bleCoexistence.acquireScan = vi.fn().mockResolvedValue({});
+    window.electronAPI.bleCoexistence.acquireScan = vi.fn().mockResolvedValue({
+      ok: true,
+      connections: [],
+      scanOwner: 'reticulum',
+    });
     window.electronAPI.bleCoexistence.releaseScan = vi.fn().mockResolvedValue({});
     hydrateAxeThemeColors(document.documentElement);
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
@@ -319,6 +326,51 @@ describe('ReticulumInterfacesPanel', () => {
     });
   });
 
+  it('shows BLE RSSI from iface.host_rssi when scan map is empty', () => {
+    window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
+      if (path === '/api/v1/ble/availability') {
+        return Promise.resolve({ available: true });
+      }
+      if (typeof path === 'string' && path.startsWith('/api/v1/ble/scan')) {
+        return Promise.resolve({ devices: [] });
+      }
+      if (path === '/api/v1/serial/ports') return Promise.resolve({ ports: [] });
+      if (path === '/api/v1/rnode/presets') return Promise.resolve({ presets: [] });
+      if (path === '/api/v1/config/audit') return Promise.resolve({ issues: [] });
+      if (path === '/api/v1/stack/settings') {
+        return Promise.resolve({
+          enable_transport: true,
+          share_instance: false,
+          loglevel: 4,
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    render(
+      <ReticulumInterfacesPanel
+        {...defaultProps}
+        interfaces={[
+          {
+            id: 'rnode-ble',
+            name: 'RNode BLE',
+            type: 'rnode',
+            enabled: true,
+            status: 'up',
+            serial_port: 'ble://AA:BB:CC:DD:EE:FF',
+            host_rssi: -54,
+          },
+        ]}
+      />,
+    );
+
+    const meter = screen.getByTestId('reticulum-ble-signal-rnode-ble');
+    expect(within(meter).getByText('connectionPanel.bleRssiDbm')).toBeInTheDocument();
+    expect(
+      within(meter).queryByText('connectionPanel.hostSignalUnavailable'),
+    ).not.toBeInTheDocument();
+  });
+
   it('seeds BLE RSSI while sidecar is running during connecting (api not ready)', async () => {
     window.electronAPI.reticulum.proxyGet = vi.fn().mockImplementation((path: string) => {
       if (path === '/api/v1/ble/availability') {
@@ -384,6 +436,18 @@ describe('ReticulumInterfacesPanel', () => {
 
     const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     expect(meter).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(meter).getByText('connectionPanel.linkQualityMs')).toBeInTheDocument();
+    });
+    expect(window.electronAPI.hostLink.probeTcpRtt).toHaveBeenCalledWith('rmap.world', 4242);
+  });
+
+  it('seeds Link quality when sidecar is already ready and cache is empty', async () => {
+    render(
+      <ReticulumInterfacesPanel {...defaultProps} sidecarApiReady interfaces={[rmapWorldHub]} />,
+    );
+
+    const meter = screen.getByTestId('reticulum-tcp-link-rmap-world');
     await waitFor(() => {
       expect(within(meter).getByText('connectionPanel.linkQualityMs')).toBeInTheDocument();
     });
@@ -712,6 +776,7 @@ describe('ReticulumInterfacesPanel', () => {
         callsign: 'NV0N',
         name: '192.168.1.10',
         mode: 'access_point',
+        bootstrap_only: false,
       });
     });
   });
@@ -2060,21 +2125,19 @@ describe('ReticulumInterfacesPanel', () => {
         serial_port: '/dev/ttyUSB0',
       },
       {
-        id: 'rnode-multi-1',
-        name: 'RNode Multi',
-        type: 'rnode_multi',
-        serial_port: '/dev/ttyUSB1',
-      },
-      {
         id: 'kiss-1',
         name: 'KISS',
         type: 'kiss',
         serial_port: '/dev/kiss',
       },
-      { id: 'ble-1', name: 'BLE Peer', type: 'ble_peer' },
+      {
+        id: 'ax25-1',
+        name: 'AX.25',
+        type: 'ax25kiss',
+        serial_port: '/dev/ax25',
+      },
       { id: 'i2p-1', name: 'I2P', type: 'i2p' },
-      { id: 'udp-1', name: 'UDP', type: 'udp' },
-      { id: 'pipe-1', name: 'Pipe', type: 'pipe' },
+      { id: 'backbone-1', name: 'Public Gateway', type: 'backbone' },
     ] as const)('shows RMAP checkbox for eligible $type', (partial) => {
       render(
         <ReticulumInterfacesPanel
@@ -2089,7 +2152,7 @@ describe('ReticulumInterfacesPanel', () => {
       ).toBeInTheDocument();
     });
 
-    it('hides RMAP checkbox for tcp hubs and system-managed rows', () => {
+    it('hides RMAP checkbox for tcp hubs, system-managed, and non-advertizable types', () => {
       render(
         <ReticulumInterfacesPanel
           {...defaultProps}
@@ -2109,6 +2172,17 @@ describe('ReticulumInterfacesPanel', () => {
               type: 'auto',
               enabled: true,
               status: 'up',
+            },
+            { id: 'ble-1', name: 'BLE Peer', type: 'ble_peer', enabled: true, status: 'up' },
+            { id: 'udp-1', name: 'UDP', type: 'udp', enabled: true, status: 'up' },
+            { id: 'pipe-1', name: 'Pipe', type: 'pipe', enabled: true, status: 'up' },
+            {
+              id: 'multi-1',
+              name: 'RNode Multi',
+              type: 'rnode_multi',
+              enabled: true,
+              status: 'up',
+              serial_port: '/dev/ttyUSB1',
             },
           ]}
         />,

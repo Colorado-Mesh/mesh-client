@@ -5,44 +5,76 @@ import { describe, expect, it } from 'vitest';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
 const PRELOAD_SOURCE = readFileSync(join(__dirname, '../preload/index.ts'), 'utf-8');
+const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
+
+describe('notification audio metadata CSP', () => {
+  it('permits local blob metadata probes without allowing remote media', () => {
+    const html = readFileSync(join(__dirname, '../renderer/index.html'), 'utf-8');
+    expect(/media-src\s+([^;]+)/.exec(html)?.[1]).toBe("'self' blob:");
+  });
+});
 
 describe('IPC payload size limits (source contract)', () => {
-  it('defines meshcore tcp-write, http:write, and noble-ble limits and uses them in handlers', () => {
-    expect(INDEX_SOURCE).toContain('const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024');
-    expect(INDEX_SOURCE).toContain('MESHCORE_TCP_DATA_MAX_BYTES');
+  it('defines meshcore tcp-write, http:write, and gatt to-radio limits and uses them in handlers', () => {
+    expect(TCP_BRIDGE_SOURCE).toContain('export const TCP_BRIDGE_WRITE_MAX_BYTES = 256 * 1024');
+    expect(TCP_BRIDGE_SOURCE).toContain('TCP_BRIDGE_DATA_MAX_BYTES');
     expect(INDEX_SOURCE).toContain('const HTTP_WRITE_TO_RADIO_MAX_BYTES = 256 * 1024');
-    expect(INDEX_SOURCE).toContain('const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512');
-    expect(INDEX_SOURCE).toMatch(/maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES/);
-    expect(INDEX_SOURCE).toMatch(/bytes\.length > MESHCORE_TCP_WRITE_MAX_BYTES/);
+    expect(INDEX_SOURCE).toContain('const GATT_TO_RADIO_MAX_BYTES = 512');
+    expect(INDEX_SOURCE).toMatch(/GATT_TO_RADIO_MAX_BYTES/);
+    expect(TCP_BRIDGE_SOURCE).toMatch(/bytes\.length > TCP_BRIDGE_WRITE_MAX_BYTES/);
     expect(INDEX_SOURCE).toMatch(/data\.length > HTTP_WRITE_TO_RADIO_MAX_BYTES/);
     expect(INDEX_SOURCE).toMatch(/http:write: byte values must be integers 0-255/);
   });
 });
 
-describe('Noble BLE disconnect handling (source contract)', () => {
-  it('classifies expected disconnect write races and ignores them in noble-ble-to-radio', () => {
-    expect(INDEX_SOURCE).toContain("import { handleNobleBleToRadioWrite } from './noble-ble-ipc'");
-    expect(INDEX_SOURCE).toMatch(/const result = await handleNobleBleToRadioWrite\(/);
-    expect(INDEX_SOURCE).toMatch(/result === 'ignored-expected-disconnect'/);
+describe('GATT BLE disconnect handling (source contract)', () => {
+  it('routes gatt:to-radio through the tested disconnect-race handler', () => {
+    expect(INDEX_SOURCE).toContain("ipcMain.handle('gatt:to-radio'");
+    expect(INDEX_SOURCE).toContain('await writeGattToRadio(gattSidecarProxy, sessionId, buf)');
+  });
+
+  it('latches isQuitting before async GATT teardown on before-quit', () => {
     expect(INDEX_SOURCE).toMatch(
-      /noble-ble-to-radio: disconnected during write, ignoring session=/,
+      /app\.on\('before-quit'[\s\S]{0,800}isQuitting = true;[\s\S]{0,200}event\.preventDefault\(\)/,
     );
   });
 
   it('resolves meshtastic:tcp-write with no-socket instead of rejecting when the socket is gone', () => {
-    expect(INDEX_SOURCE).toMatch(
-      /meshtastic:tcp-write[\s\S]{0,800}console\.debug\('\[IPC\] meshtastic:tcp-write: no active socket'\)[\s\S]{0,80}return 'no-socket'/,
+    expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'no-socket'");
+    expect(TCP_BRIDGE_SOURCE).toContain("writeMissing: 'reject'");
+    expect(TCP_BRIDGE_SOURCE).toMatch(
+      /writeMissing === 'no-socket'[\s\S]{0,200}console\.debug\(`\[IPC\] \$\{writeChannel\}: no active socket`\)[\s\S]{0,80}return 'no-socket'/,
     );
-    expect(INDEX_SOURCE).toContain('meshtasticTcpWriteErrorIsNoSocket');
-    expect(INDEX_SOURCE).toMatch(/sock\.destroyed \|\| sock\.writableEnded/);
+    expect(TCP_BRIDGE_SOURCE).toContain('meshtasticTcpWriteErrorIsNoSocket');
+    expect(TCP_BRIDGE_SOURCE).toMatch(/sock\.destroyed \|\| sock\.writableEnded/);
     expect(PRELOAD_SOURCE).toMatch(/result === 'no-socket'/);
     expect(PRELOAD_SOURCE).toMatch(/throw new Error\('meshtastic:tcp-write: no active socket'\)/);
   });
 
-  it('returns scan_busy result instead of throwing when Reticulum holds the scan mutex', () => {
-    expect(INDEX_SOURCE).toContain('BleScanBusyError');
+  it('returns scan_busy from gattSidecarProxy.startScan without throwing', () => {
+    expect(INDEX_SOURCE).toContain('gattSidecarProxy.startScan');
+    const start = INDEX_SOURCE.indexOf("ipcMain.handle('gatt:start-scan'");
+    const end = INDEX_SOURCE.indexOf("ipcMain.handle('gatt:stop-scan'");
+    const handler = INDEX_SOURCE.slice(start, end);
+    expect(handler).toContain("bleCoexistenceCoordinator.withScan('gatt'");
+    expect(handler).toContain('gattSidecarProxy.startScan(sessionId)');
+    expect(handler).toContain("code: 'scan_busy'");
+  });
+
+  it('returns scan_busy from bleCoexistence:acquireScan without throwing', () => {
+    const start = INDEX_SOURCE.indexOf("ipcMain.handle('bleCoexistence:acquireScan'");
+    const end = INDEX_SOURCE.indexOf("ipcMain.handle('bleCoexistence:releaseScan'");
+    const handler = INDEX_SOURCE.slice(start, end);
+    expect(handler).toContain('BleScanBusyError');
+    expect(handler).toContain("code: 'scan_busy'");
+    expect(handler).toContain('ok: false as const');
+    expect(handler).toMatch(/console\.debug\([\s\S]*bleCoexistence:acquireScan busy/);
+  });
+
+  it('invalidates GATT proxy port when shared sidecar process exits', () => {
+    expect(INDEX_SOURCE).toContain('gattSidecarProxy.invalidateAfterSidecarExit()');
     expect(INDEX_SOURCE).toMatch(
-      /noble-ble-start-scan[\s\S]{0,1200}err instanceof BleScanBusyError[\s\S]{0,400}code: 'scan_busy'/,
+      /mgr\.on\('status'[\s\S]{0,200}!\(status\.processRunning \?\? status\.running\)[\s\S]{0,120}invalidateAfterSidecarExit/,
     );
   });
 });
@@ -328,6 +360,9 @@ describe('Reticulum sidecar IPC handlers (source contract)', () => {
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:stop'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:getStatus'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain("'reticulum:syncInterfaceIssueScope'");
+    expect(RETICULUM_HANDLERS_SOURCE).toContain(
+      "'reticulum:clearBleBondIssuesForOnlineInterfaces'",
+    );
     expect(RETICULUM_HANDLERS_SOURCE).toContain("ipcMain.handle('reticulum:proxyGet'");
     expect(RETICULUM_HANDLERS_SOURCE).toContain('settleReticulumProxyFailure');
     expect(RETICULUM_HANDLERS_SOURCE).toContain('reticulumProxyIpcErrorEnvelope');
@@ -409,42 +444,34 @@ describe('HTTP bridge IPC handlers (source contract)', () => {
 });
 
 describe('Host link quality IPC (source contract)', () => {
-  it('forwards Noble link RSSI and registers HTTP/TCP RTT probes', () => {
-    expect(INDEX_SOURCE).toContain("webContents.send('noble-ble-link-rssi'");
+  it('forwards GATT link RSSI and registers HTTP/TCP RTT probes', () => {
+    expect(INDEX_SOURCE).toContain("webContents.send('gatt-link-rssi'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeHttpRtt'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:probeTcpRtt'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('hostLink:getSessionMeter'");
   });
 
   it('wires live-session meters on both Meshtastic and MeshCore TCP bridges', () => {
-    expect(INDEX_SOURCE).toContain("resetLiveSessionMeter('meshtastic')");
-    expect(INDEX_SOURCE).toContain("resetLiveSessionMeter('meshcore')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionWrite('meshtastic')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionWrite('meshcore')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionData('meshtastic')");
-    expect(INDEX_SOURCE).toContain("noteLiveSessionData('meshcore')");
-    expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshtastic')");
-    expect(INDEX_SOURCE).toContain("clearLiveSessionMeter('meshcore')");
+    expect(TCP_BRIDGE_SOURCE).toContain('resetLiveSessionMeter(protocol)');
+    expect(TCP_BRIDGE_SOURCE).toContain('noteLiveSessionWrite(protocol)');
+    expect(TCP_BRIDGE_SOURCE).toContain('noteLiveSessionData(protocol)');
+    expect(TCP_BRIDGE_SOURCE).toContain('clearLiveSessionMeter(protocol)');
     // Accounting must ignore superseded sockets (same active-ref guard as #792 disconnect IPC).
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshcoreTcpSocket === socket\) \{\s*noteLiveSessionData\('meshcore'\)/,
+    expect(TCP_BRIDGE_SOURCE).toMatch(
+      /if \(activeSocket === socket\) \{\s*noteLiveSessionData\(protocol\)/,
     );
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshtasticTcpSocket === socket\) \{\s*noteLiveSessionData\('meshtastic'\)/,
+    expect(TCP_BRIDGE_SOURCE).toMatch(
+      /if \(activeSocket === sock\) \{\s*noteLiveSessionWrite\(protocol\)/,
     );
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshcoreTcpSocket === sock\) \{\s*noteLiveSessionWrite\('meshcore'\)/,
-    );
-    expect(INDEX_SOURCE).toMatch(
-      /if \(meshtasticTcpSocket === sock\) \{\s*noteLiveSessionWrite\('meshtastic'\)/,
-    );
+    expect(INDEX_SOURCE).toContain('registerTcpBridgeIpcHandlers({');
+    expect(INDEX_SOURCE).toContain('destroyRegisteredTcpBridgeSockets(');
   });
 });
 
 describe('Host link quality preload surface (source contract)', () => {
-  it('exposes onNobleBleLinkRssi and hostLink probe APIs', () => {
-    expect(PRELOAD_SOURCE).toContain('onNobleBleLinkRssi:');
-    expect(PRELOAD_SOURCE).toContain("ipcRenderer.on('noble-ble-link-rssi'");
+  it('exposes onGattLinkRssi and hostLink probe APIs', () => {
+    expect(PRELOAD_SOURCE).toContain('onGattLinkRssi:');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.on('gatt-link-rssi'");
     expect(PRELOAD_SOURCE).toContain('hostLink:');
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeHttpRtt'");
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('hostLink:probeTcpRtt'");
@@ -460,6 +487,13 @@ describe('Native crash observability (source contract)', () => {
     expect(INDEX_SOURCE).toContain('crashReporter.start({ uploadToServer: false })');
     expect(INDEX_SOURCE).toContain("'[main] crashDumps path:'");
     expect(INDEX_SOURCE).toContain("'[main] child-process-gone:'");
+  });
+
+  it('registers mesh-tiles as a privileged scheme before ready and handles it', () => {
+    expect(INDEX_SOURCE).toContain("scheme: 'mesh-tiles'");
+    expect(INDEX_SOURCE).toContain('protocol.registerSchemesAsPrivileged');
+    expect(INDEX_SOURCE).toContain("protocol.handle(\n      'mesh-tiles'");
+    expect(INDEX_SOURCE).toContain('createMeshTilesProtocolHandler');
   });
 
   it('flushes logs on uncaught errors and records will-quit breadcrumbs', () => {
@@ -489,14 +523,6 @@ describe('Long-session maintenance (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(/if \(opts\.relaunch\) \{\s*app\.relaunch\(\);/);
     expect(INDEX_SOURCE).toContain('app.exit(0)');
   });
-
-  it('registers long-session OS notify IPC with sender checks', () => {
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:longSessionRestart'");
-    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:longSessionRestart')");
-    expect(INDEX_SOURCE).toContain("ipcMain.handle('notify:clearLongSessionNudge'");
-    expect(INDEX_SOURCE).toContain("assertIpcSender(event, 'notify:clearLongSessionNudge')");
-    expect(INDEX_SOURCE).toContain('createLongSessionNudgeController');
-  });
 });
 
 describe('Unread app badge wiring (source contract)', () => {
@@ -507,7 +533,7 @@ describe('Unread app badge wiring (source contract)', () => {
     expect(refresh).toContain('Notification.isSupported()');
     expect(refresh).not.toContain('new Notification');
     expect(refresh).not.toContain('.show()');
-    expect(refresh).toContain('shouldSuppressUnreadDockBadge()');
+    expect(refresh).toContain('suppressDockBadge: () => false');
     expect(refresh).toContain('mainWindow.isDestroyed()');
   });
 
@@ -633,5 +659,16 @@ describe('Native Electron call guards (source contract)', () => {
     expect(INDEX_SOURCE).toMatch(
       /ipcMain\.handle\('app:getProcessUptimeSec'[\s\S]*?assertIpcSender\(event, 'app:getProcessUptimeSec'\)/,
     );
+  });
+});
+
+describe('notification sound preferences', () => {
+  it('registers the sound boundary and gives only its bounded settings blob a larger limit', () => {
+    expect(INDEX_SOURCE).toContain('registerNotificationSoundHandlers();');
+    expect(INDEX_SOURCE).toContain("  'notificationSounds',");
+    expect(INDEX_SOURCE).toContain("if (key === 'notificationSounds') return 4096;");
+    expect(INDEX_SOURCE).toContain('const APP_SETTINGS_MAX_VALUE_LENGTH = 256;');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:choose')");
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:read', event, id)");
   });
 });

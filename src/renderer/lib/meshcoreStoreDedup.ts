@@ -13,14 +13,8 @@ import {
 import type { MessageRecord } from '../stores/messageStore';
 import { deleteMessage, upsertMessage, useMessageStore } from '../stores/messageStore';
 import { errLikeToLogString } from './errLikeToLogString';
-import type {
-  BuildMeshcoreChannelIncomingOpts,
-  BuildMeshcoreDmIncomingOpts,
-} from './meshcoreChannelText';
-import {
-  parseMeshcoreChannelIncomingFromThread,
-  parseMeshcoreDmIncomingFromThread,
-} from './meshcoreChannelText';
+import type { BuildMeshcoreChannelIncomingOpts } from './meshcoreChannelText';
+import { parseMeshcoreChannelIncomingFromThread } from './meshcoreChannelText';
 import {
   indexMeshcoreMessageForDedupe,
   lookupMeshcoreMessageIdByDedupeKey,
@@ -103,14 +97,6 @@ export function ingestMeshcoreChannelMessage(
   opts: BuildMeshcoreChannelIncomingOpts,
 ): ChatMessage {
   return parseMeshcoreChannelIncomingFromThread(meshcoreSortedStorePrior(identityId), opts);
-}
-
-/** Live DM ingest against the identity store thread. */
-export function ingestMeshcoreDmMessage(
-  identityId: IdentityId,
-  opts: BuildMeshcoreDmIncomingOpts,
-): ChatMessage {
-  return parseMeshcoreDmIncomingFromThread(meshcoreSortedStorePrior(identityId), opts);
 }
 
 /** Prefer freshly parsed/repaired reply metadata over stale store rows (RF/MQTT dedup). */

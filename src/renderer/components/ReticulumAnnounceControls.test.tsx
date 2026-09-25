@@ -82,9 +82,6 @@ describe('ReticulumAnnounceControls', () => {
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
-        enable_transport: false,
-        share_instance: true,
-        loglevel: 4,
         announce_interval_sec: 300,
       });
     });
@@ -105,10 +102,9 @@ describe('ReticulumAnnounceControls', () => {
     await user.click(screen.getByRole('button', { name: 'common.save' }));
 
     await waitFor(() => {
-      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith(
-        '/api/v1/stack/settings',
-        expect.objectContaining({ announce_interval_sec: 86400 }),
-      );
+      expect(window.electronAPI.reticulum.proxyPut).toHaveBeenCalledWith('/api/v1/stack/settings', {
+        announce_interval_sec: 86400,
+      });
     });
   });
 

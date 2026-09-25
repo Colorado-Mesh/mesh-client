@@ -674,34 +674,63 @@ describe('RrcChatView stick-to-bottom', () => {
     }
   });
 
-  it('does not follow appends when scrolled up and shows Jump to Latest', async () => {
-    const user = userEvent.setup();
-    const { rerender } = render(
-      <RrcChatView {...baseProps} messages={[makeMsg({ id: '1', body: 'one' })]} />,
-    );
-    await waitFor(() => {
-      expect(mockScrollToEnd).toHaveBeenCalled();
-    });
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      ['#general', '[hub]', `@${'bb'.repeat(16)}`].flatMap((activeRoom) =>
+        [2, 3, 8, 60, 150].map((distance) => ({ platform, activeRoom, distance })),
+      ),
+    ),
+  )(
+    'follows appends only within the bottom tolerance ($distance px in $activeRoom on $platform)',
+    async ({ platform, activeRoom, distance }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const props = { ...baseProps, activeRoom };
+      const user = userEvent.setup();
+      const { rerender } = render(
+        <RrcChatView {...props} messages={[makeMsg({ id: '1', body: 'one', room: activeRoom })]} />,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
 
-    mockIsAtEnd = false;
-    fireEvent.scroll(screen.getByTestId('rrc-message-stream'));
-    expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
+      const stream = screen.getByTestId('rrc-message-stream');
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1600 - distance, writable: true, configurable: true },
+      });
+      fireEvent.scroll(stream);
+      if (distance <= 2) {
+        expect(screen.queryByLabelText('rrc.jumpToLatest')).not.toBeInTheDocument();
+      } else {
+        expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
+      }
 
-    mockScrollToEnd.mockClear();
-    rerender(
-      <RrcChatView
-        {...baseProps}
-        messages={[makeMsg({ id: '1', body: 'one' }), makeMsg({ id: '2', body: 'two' })]}
-      />,
-    );
-    await waitFor(() => {
-      expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
-    });
-    expect(mockScrollToEnd).not.toHaveBeenCalled();
+      mockScrollToEnd.mockClear();
+      rerender(
+        <RrcChatView
+          {...props}
+          messages={[
+            makeMsg({ id: '1', body: 'one', room: activeRoom }),
+            makeMsg({ id: '2', body: 'two', room: activeRoom }),
+          ]}
+        />,
+      );
+      if (distance <= 2) {
+        await waitFor(() => {
+          expect(mockScrollToEnd).toHaveBeenCalled();
+        });
+      } else {
+        await waitFor(() => {
+          expect(screen.getByLabelText('rrc.jumpToLatest')).toBeInTheDocument();
+        });
+        expect(mockScrollToEnd).not.toHaveBeenCalled();
 
-    await user.click(screen.getByLabelText('rrc.jumpToLatest'));
-    expect(mockScrollToEnd).toHaveBeenCalledWith({ behavior: 'smooth' });
-  });
+        await user.click(screen.getByLabelText('rrc.jumpToLatest'));
+        expect(mockScrollToEnd).toHaveBeenCalledWith({ behavior: 'smooth' });
+      }
+    },
+  );
 
   it('scrolls to end when activeRoom changes', async () => {
     const { rerender } = render(

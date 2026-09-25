@@ -113,9 +113,6 @@ export function computeRoomLoginSentWaitMs(
     : MESHCORE_ROOM_LOGIN_SENT_WAIT_DIRECT_MS;
 }
 
-/** Cap wait for SendLogin / room post `sendTextMessage` Sent response (meshcore.js has no timeout). */
-export const MESHCORE_ROOM_POST_SENT_TIMEOUT_MS = 45_000;
-
 /** Wall clock for room post including repeater RPC queue wait behind a stuck login. */
 export function computeRoomPostTotalTimeoutMs(
   hopsAway?: number | null,
@@ -235,16 +232,21 @@ export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS = 12 * MS_PER_SECO
 export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS = 30 * MS_PER_SECOND;
 
 /** BLE/serial configure stall watchdog — force disconnect if FromRadio progress stalls. */
-export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 60 * MS_PER_SECOND;
+export const MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS = 120 * MS_PER_SECOND;
+
+/**
+ * Coalesce `mqtt.updateChannelKeys` while RF channel configs stream in one-by-one.
+ * Main-process topic→index is also merge-safe; this cuts IPC churn during configure.
+ */
+export const MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS = 300;
 
 /**
  * Hard ceiling for one LoRa reconnect open+configure/attach attempt (Meshtastic + MeshCore),
- * applied to every transport (name is historical — BLE was the only transport with a deadline
- * at all until TCP/serial/HTTP reconnects were found hanging indefinitely with none). For BLE,
- * covers darwin dual createBleConnection attempts (~45–50s) + configure/attach margin so
- * deferred Noble disconnect flush always runs instead of stalling retries at edge of range.
+ * applied to every transport. For BLE, covers createBleConnection attempts (~45–50s) +
+ * configure/attach margin so deferred GATT disconnect flush always runs instead of stalling
+ * retries at edge of range.
  */
-export const NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS =
+export const BLE_RECONNECT_ATTEMPT_BUDGET_MS =
   60 * MS_PER_SECOND + MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS;
 
 /**
@@ -267,15 +269,6 @@ export const POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS = 30_000;
 
 /** Poll interval inside `awaitDualNobleBleMeshtasticSettle`. */
 export const MESHCORE_DUAL_NOBLE_BLE_POLL_MS = 200;
-
-/** BlueZ is slower than macOS CBCentralManager — requestDevice / reuse granted device. */
-export const MESHCORE_WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS = 60_000;
-
-/** Web Bluetooth transport connect (Linux MeshCore companion). */
-export const MESHCORE_WEB_BLUETOOTH_CONNECT_TIMEOUT_MS = 60_000;
-
-/** MeshCore BLE protocol handshake after Web Bluetooth connect. */
-export const MESHCORE_WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
 
 /** Cap meshcore.js deviceQuery during Noble IPC handshake (onConnected otherwise hangs until outer timeout). */
 export const MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS = 8_000;

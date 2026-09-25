@@ -2,7 +2,6 @@ import { touch } from '@/shared/touch';
 
 import { isValidLatLon } from '../../shared/geoCoords';
 import {
-  meshcorePackPathLenByte,
   meshcorePubkeyPathPrefix,
   meshcoreTraceDataHashLayout,
   meshcoreUnpackPathLenByte,
@@ -130,13 +129,6 @@ export function meshcoreTraceResultToOutPathBytes(
   const bytes = Uint8Array.from(pathHashes.slice(0, take).map((h) => h & 0xff));
   if (bytes.length > 0) return bytes;
   return meshcorePubkeyPathPrefix(destPubKey, 1);
-}
-
-/** Packed contact `out_path_len` byte from TraceData pathLen + flags. */
-export function meshcoreTraceResultPackedPathLen(pathLenByte: number, traceFlags: number): number {
-  const layout = meshcoreTraceDataHashLayout(pathLenByte, traceFlags);
-  if (layout.hopCount <= 0) return 0;
-  return meshcorePackPathLenByte(layout.hopCount, layout.hashSizeBytes);
 }
 
 /** MeshCore companion lines that are transport metadata, not user channel chat (splitting on `:` would mispick `SNR:`). */

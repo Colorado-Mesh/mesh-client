@@ -12,9 +12,10 @@ import {
   saveActiveChannel,
   saveDraft,
 } from '../lib/chatPanelProtocolStorage';
-import { getDistFromChatBottom, VIRTUALIZER_SCROLL_END_THRESHOLD } from '../lib/chatScrollUtils';
+import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
+import { resetMeshtasticTextSendPacingForTests } from '../lib/meshtasticTextSendPacing';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import type { MessageRecord } from '../stores/messageStore';
@@ -54,7 +55,11 @@ async function waitForComposer(): Promise<HTMLTextAreaElement> {
   return textarea;
 }
 
-vi.mock('../lib/chatNotifications', () => ({ playMessageNotification: vi.fn() }));
+vi.mock('../lib/chatNotifications', () => ({
+  playMessageNotification: vi.fn(),
+  playMecpSiren: vi.fn(),
+  playMecpEasAttention: vi.fn(),
+}));
 
 let mockIsAtEnd = true;
 let mockScrollDirection: 'forward' | 'backward' | null = 'forward';
@@ -1266,7 +1271,7 @@ describe('ChatPanel scroll pinning', () => {
     );
     expect(lastVirtualizerOptions?.anchorTo).toBe('end');
     expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
-    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
+    expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(CHAT_SCROLL_END_THRESHOLD);
     expect(lastVirtualizerOptions?.measureElement).toBeTypeOf('function');
     const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (
       item: { index: number },
@@ -1495,6 +1500,135 @@ describe('ChatPanel scroll pinning', () => {
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
+  it.each(
+    (['linux', 'darwin', 'win32'] as const).flatMap((platform) =>
+      (
+        [
+          { protocol: 'meshtastic', view: 'channel' },
+          { protocol: 'meshtastic', view: 'dm' },
+          { protocol: 'meshcore', view: 'channel' },
+          { protocol: 'meshcore', view: 'dm' },
+          { protocol: 'reticulum', view: 'dm' },
+        ] as const
+      ).map((chat) => ({ platform, ...chat })),
+    ),
+  )(
+    'preserves a small scroll away from latest through repeated $protocol $view arrivals on $platform',
+    async ({ platform, protocol, view }) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const props = {
+        ...baseProps,
+        protocol,
+        dmOnlyChat: protocol === 'reticulum',
+        initialDmTarget: view === 'dm' ? 2 : undefined,
+        ownNodeIds: [1],
+      };
+      const makeViewMessage = (index: number): ChatMessage => ({
+        ...makeMsg(index),
+        ...(view === 'dm' ? { channel: -1, to: 1 } : {}),
+      });
+      let messages = Array.from({ length: 5 }, (_, i) => makeViewMessage(i));
+      const { container, rerender } = render(
+        <ToastProvider>
+          <ChatPanel {...props} messages={messages} />
+        </ToastProvider>,
+      );
+      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1600, writable: true, configurable: true },
+      });
+      for (const distance of [3, 8, 60, 150]) {
+        stream.scrollTop = 1600 - distance;
+        fireEvent.scroll(stream);
+        mockScrollToEnd.mockClear();
+        messages = [...messages, makeViewMessage(messages.length)];
+        rerender(
+          <ToastProvider>
+            <ChatPanel {...props} messages={messages} />
+          </ToastProvider>,
+        );
+        await waitFor(() => {
+          expect(screen.getByText(messages.at(-1)!.payload)).toBeInTheDocument();
+          expect(
+            screen.getByRole('button', { name: /Jump to (Latest|Unread)/ }),
+          ).toBeInTheDocument();
+        });
+        expect(mockScrollToEnd).not.toHaveBeenCalled();
+        expect(stream.scrollTop).toBe(1600 - distance);
+      }
+      stream.scrollTop = 1600 - 2;
+      fireEvent.scroll(stream);
+      mockScrollToEnd.mockClear();
+      messages = [...messages, makeViewMessage(messages.length)];
+      rerender(
+        <ToastProvider>
+          <ChatPanel {...props} messages={messages} />
+        </ToastProvider>,
+      );
+      await waitFor(() => {
+        expect(mockScrollToEnd).toHaveBeenCalled();
+      });
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'hides Jump to Latest on reaching the bottom before the virtualizer catches up on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      mockIsAtEnd = false;
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
+        </ToastProvider>,
+      );
+      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1000, writable: true, configurable: true },
+      });
+      fireEvent.scroll(stream);
+      expect(await screen.findByRole('button', { name: 'Jump to Latest' })).toBeInTheDocument();
+
+      // React's scroll handler can run before the virtualizer updates its cached offset.
+      stream.scrollTop = 1600;
+      fireEvent.scroll(stream);
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: 'Jump to Latest' })).not.toBeInTheDocument();
+      });
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'clears a stale Jump to Latest button when clicking at the bottom causes no scroll event on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      mockIsAtEnd = false;
+      const { container } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
+        </ToastProvider>,
+      );
+      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      Object.defineProperties(stream, {
+        scrollHeight: { value: 2000, configurable: true },
+        clientHeight: { value: 400, configurable: true },
+        scrollTop: { value: 1000, writable: true, configurable: true },
+      });
+      fireEvent.scroll(stream);
+      const jump = await screen.findByRole('button', { name: 'Jump to Latest' });
+      stream.scrollTop = 1600;
+      mockScrollToEnd.mockClear();
+      fireEvent.click(jump);
+      expect(mockScrollToEnd).toHaveBeenCalledWith({ behavior: 'smooth' });
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: 'Jump to Latest' })).not.toBeInTheDocument();
+      });
+    },
+  );
+
   it('shows Jump to Latest when virtualizer reports not at end', async () => {
     mockIsAtEnd = false;
     const longMessages = Array.from({ length: 20 }, (_, idx) => makeMsg(idx));
@@ -1569,6 +1703,8 @@ describe('ChatPanel scroll pinning', () => {
     );
 
     const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
+    Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
       value: 500,
       writable: true,
@@ -4115,9 +4251,13 @@ describe('ChatPanel — channel selection restored across reconnect', () => {
 
 describe('ChatPanel — notification sound on new messages', () => {
   const playMock = vi.mocked(chatNotifications.playMessageNotification);
+  const sirenMock = vi.mocked(chatNotifications.playMecpSiren);
+  const easMock = vi.mocked(chatNotifications.playMecpEasAttention);
 
   beforeEach(() => {
     playMock.mockClear();
+    sirenMock.mockClear();
+    easMock.mockClear();
     localStorage.removeItem('mesh-client:notifMuted');
   });
 
@@ -4254,6 +4394,95 @@ describe('ChatPanel — notification sound on new messages', () => {
 
     await waitForComposer();
     expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays MECP siren when focused on the receiving chat for severity 0', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    playMock.mockClear();
+    sirenMock.mockClear();
+
+    const mecpMsg = makeMsg({
+      sender_id: 2,
+      channel: 0,
+      payload: 'MECP/0/M01',
+      packetId: 9001,
+      isHistory: undefined,
+    });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[mecpMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    expect(sirenMock).toHaveBeenCalledOnce();
+    expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays EAS attention tone when focused on the receiving chat for severity 1', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    playMock.mockClear();
+    sirenMock.mockClear();
+    easMock.mockClear();
+
+    const mecpMsg = makeMsg({
+      sender_id: 2,
+      channel: 0,
+      payload: 'MECP/1/T04',
+      packetId: 9003,
+      isHistory: undefined,
+    });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[mecpMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    expect(easMock).toHaveBeenCalledOnce();
+    expect(sirenMock).not.toHaveBeenCalled();
+    expect(playMock).not.toHaveBeenCalled();
+  });
+
+  it('plays noticeable mecp tone when focused on the receiving chat for severity 3', async () => {
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    playMock.mockClear();
+    sirenMock.mockClear();
+
+    const mecpMsg = makeMsg({
+      sender_id: 2,
+      channel: 0,
+      payload: 'MECP/3/L01',
+      packetId: 9002,
+      isHistory: undefined,
+    });
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[mecpMsg]} isActive />
+      </ToastProvider>,
+    );
+
+    await waitForComposer();
+    expect(playMock).toHaveBeenCalledWith('mecp');
+    expect(sirenMock).not.toHaveBeenCalled();
   });
 });
 
@@ -5312,5 +5541,120 @@ describe('ChatPanel reticulum dm-only chat', () => {
     await user.click(screen.getByRole('button', { name: 'Unknown Peer' }));
     expect(onPeerClick).not.toHaveBeenCalled();
     expect(onNodeClick).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatPanel quick status bar', () => {
+  const baseProps = {
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 1,
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    nodes: new Map<number, MeshNode>(),
+    isActive: true,
+    messages: [] as ChatMessage[],
+  };
+
+  beforeEach(() => {
+    resetMeshtasticTextSendPacingForTests();
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ quickStatusBarEnabled: true }),
+    );
+    window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+  });
+
+  it('hides the bar when the App setting is off', () => {
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ quickStatusBarEnabled: false }),
+    );
+    window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isConnected onSend={vi.fn()} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'OK' })).toBeNull();
+    expect(screen.queryByLabelText('Quick status presets')).toBeNull();
+  });
+
+  it('queues a normal-priority outbox row when offline', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.chat.outbox.add).mockClear();
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isConnected={false} onSend={onSend} />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Need help' }));
+    await waitFor(() => {
+      expect(window.electronAPI.chat.outbox.add).toHaveBeenCalledWith(
+        expect.objectContaining({ payload: 'Need help', priority: 'normal', channel: 0 }),
+      );
+    });
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it('sends live when connected', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isConnected onSend={onSend} />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: 'OK' }));
+    await waitFor(() => {
+      expect(onSend).toHaveBeenCalledWith('OK', 0, undefined, undefined);
+    });
+  });
+
+  it('roll call broadcasts the command and tallies OK replies from online peers', async () => {
+    const user = userEvent.setup();
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const now = Date.now();
+    const peer = (id: number): MeshNode => ({
+      node_id: id,
+      long_name: `Peer ${id}`,
+      short_name: `P${id}`,
+      hw_model: '',
+      snr: 0,
+      battery: 0,
+      last_heard: now,
+      latitude: null,
+      longitude: null,
+    });
+    const nodes = new Map<number, MeshNode>([
+      [2, peer(2)],
+      [3, peer(3)],
+    ]);
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} nodes={nodes} isConnected onSend={onSend} />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('button', { name: /roll call/i }));
+    await waitFor(() => {
+      expect(onSend).toHaveBeenCalledWith('Roll call: reply OK', 0, undefined, undefined);
+    });
+    expect(await screen.findByText('0/2 responded')).toBeInTheDocument();
+
+    const reply: ChatMessage = {
+      sender_id: 2,
+      sender_name: 'Peer 2',
+      payload: 'OK',
+      channel: 0,
+      timestamp: Date.now() + 1000,
+      status: 'acked',
+    };
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} nodes={nodes} isConnected onSend={onSend} messages={[reply]} />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('1/2 responded')).toBeInTheDocument();
   });
 });

@@ -26,6 +26,7 @@ import {
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { assertUpdateYmlArtifacts } from './assert-update-yml-artifacts.mjs';
 import {
   assertBundledReticulumSidecarInBundle,
   resolveBundledSidecarPath,
@@ -713,6 +714,12 @@ function main() {
         validateAppBundle(dmgBundle, dmgLabel, expectedArch);
         validatedSources.push(dmgLabel);
       });
+    }
+
+    try {
+      assertUpdateYmlArtifacts({ rootDir: releaseDir, requiredFiles: ['latest-mac.yml'] });
+    } catch (e) {
+      fail(e instanceof Error ? e.message : String(e));
     }
 
     const version = readPackageVersion();

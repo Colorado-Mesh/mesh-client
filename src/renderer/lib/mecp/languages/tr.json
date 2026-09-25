@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Tıbbi",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Arazi / Altyapı",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Hava / Çevre",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Malzeme",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Konum / Hareket",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Koordinasyon",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Yanıt",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Tatbikat / Test",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Günlük / Boş zaman",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Tehdit / Güvenlik",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Mevcut / Kaynak sunma",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "İşaret",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Yaralanma",
+    "M02": "Bilinçsiz kişi",
+    "M03": "Solunum güçlüğü",
+    "M04": "Kalp krizi",
+    "M05": "Hipotermi",
+    "M06": "Şiddetli kanama",
+    "M07": "Kırık / hareket edemiyor",
+    "M08": "Yanık",
+    "M09": "Çok sayıda yaralı",
+    "M10": "Ölüm",
+    "M11": "Hayvan ısırması / sokması",
+    "M12": "Alerjik reaksiyon / anafilaksi",
+    "M13": "Zehirlenme / toksik maruziyet",
+    "M14": "Kişiler canlı bulundu",
+    "M15": "Alan arandı, kurban bulunamadı",
+    "T01": "Yol kapalı",
+    "T02": "Köprü yıkık",
+    "T03": "Bina çökmüş",
+    "T04": "Sel",
+    "T05": "Heyelan",
+    "T06": "Elektrik kesintisi",
+    "T07": "Yangın",
+    "T08": "Çığ",
+    "T09": "Yol geçilmez",
+    "T10": "Barınak mevcut",
+    "T11": "Boğulma / su kurtarma gerekli",
+    "T12": "Su kirliliği",
+    "T13": "Deprem",
+    "T14": "Gaz sızıntısı",
+    "T15": "Kimyasal sızıntı / HAZMAT",
+    "T16": "Araç kazası",
+    "T17": "Araç yangını",
+    "W01": "Fırtına yaklaşıyor",
+    "W02": "Görüş sıfır",
+    "W03": "Aşırı soğuk",
+    "W04": "Aşırı sıcak",
+    "W05": "Hava kalitesi tehlikeli",
+    "W06": "Tsunami / gelgit dalgası uyarısı",
+    "S01": "Su gerekli",
+    "S02": "Gıda gerekli",
+    "S03": "İlaç gerekli",
+    "S04": "Pil / güç gerekli",
+    "S05": "Yakıt gerekli",
+    "S06": "Alet / ekipman gerekli",
+    "P01": "Mahsur / sıkışmış",
+    "P02": "Tahliye ediliyor, yön:",
+    "P03": "Yerinde sığınıyor",
+    "P04": "Yolda, hedef:",
+    "P05": "GPS koordinatlarında",
+    "P06": "Kayıp",
+    "P07": "Grup dağıldı",
+    "C01": "Kurtarma gönderin",
+    "C02": "Nakil aracı gerekli",
+    "C03": "Bu mesajı iletin",
+    "C04": "Alındığını onaylayın",
+    "C05": "Kaç kişi",
+    "C06": "Durum nedir",
+    "C07": "Ulaşabilir misiniz",
+    "C08": "Buluşma noktası:",
+    "R01": "Anlaşıldı",
+    "R02": "Yardım geliyor",
+    "R03": "Tahmini varış [dakika]",
+    "R04": "Yardım edilemiyor",
+    "R05": "Yönlendiriliyor:",
+    "R06": "Bekleyin",
+    "R07": "Durum çözüldü / tehlike geçti",
+    "D01": "Bu bir tatbikattır",
+    "D02": "Bu bir testtir",
+    "D03": "Tatbikat sonu",
+    "D04": "Öncekini yok sayın — yanlışlıkla gönderildi",
+    "L01": "Bira / içecekler",
+    "L02": "Kahve",
+    "L03": "Yemek hazır",
+    "L04": "Zirveye ulaşıldı",
+    "L05": "Kampta",
+    "L06": "Gecikiyorum",
+    "L07": "Burada iyi sinyal",
+    "L08": "Fotoğraf fırsatı",
+    "L09": "Yaban hayatı görüldü",
+    "L10": "Güzel manzara",
+    "L11": "Patika durumu iyi",
+    "L12": "Patika durumu kötü",
+    "L13": "Molaya ihtiyacım var",
+    "L14": "Eve dönüyorum",
+    "L15": "Günaydın / giriş",
+    "L16": "İyi geceler",
+    "L17": "Teşekkürler",
+    "L18": "Eğleniyorum",
+    "L19": "Festival / etkinlik burada",
+    "L20": "Düğüm testi / ping",
+    "X01": "Tehlikeli kişi / yakında tehdit",
+    "X02": "Alan güvensiz — kaçının",
+    "X03": "Silah sesi / patlama duyuldu",
+    "X04": "Toplumsal kargaşa / kalabalık tehlikesi",
+    "X05": "Hırsızlık / yağma bildirildi",
+    "X06": "Yetkililer / acil servisler mevcut",
+    "X07": "Kontrol noktası / yol kapatma (yetkili)",
+    "H01": "Su mevcut",
+    "H02": "Gıda mevcut",
+    "H03": "Tıbbi malzeme mevcut",
+    "H04": "Güç / şarj mevcut",
+    "H05": "Yakıt mevcut",
+    "H06": "Alet / ekipman mevcut",
+    "H07": "Barınak / [N] kişilik yer mevcut",
+    "H08": "Nakil aracı / araç mevcut",
+    "B01": "Otomatik tehlike işareti etkin — gönderen yanıt veremeyebilir",
+    "B02": "İşaret onaylandı — iletim sıklığını azalt",
+    "B03": "İşareti iptal et — iyiyim"
+  }
+}

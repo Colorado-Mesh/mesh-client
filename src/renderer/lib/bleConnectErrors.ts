@@ -80,42 +80,73 @@ export function isMeshcoreRetryableBleErrorMessage(message: string): boolean {
   );
 }
 
-// ─── Web Bluetooth (Linux) error detection ───────────────────────────────────
+/** Stable sidecar GATT error codes → `connectionPanel.errors.ble.*`. */
+export const GATT_BLE_ERROR_CODES = [
+  'adapter_missing',
+  'permission_denied',
+  'scan_busy',
+  'mac_conflict',
+  'connect_timeout',
+  'gatt_discover_failed',
+  'pairing_required',
+  'bond_removed',
+  'write_failed',
+  'session_not_found',
+  'notified_read_forbidden',
+  'feature_disabled',
+  'sidecar_down',
+] as const;
+
+export type GattBleErrorCode = (typeof GATT_BLE_ERROR_CODES)[number];
+
+const GATT_BLE_ERROR_CODE_SET = new Set<string>(GATT_BLE_ERROR_CODES);
+
+export function isGattBleErrorCode(code: string): code is GattBleErrorCode {
+  return GATT_BLE_ERROR_CODE_SET.has(code);
+}
+
+export function gattBleErrorI18nKey(
+  code: string,
+): `connectionPanel.errors.ble.${GattBleErrorCode}` | null {
+  if (!isGattBleErrorCode(code)) return null;
+  return `connectionPanel.errors.ble.${code}`;
+}
 
 /**
- * BlueZ error patterns that indicate pairing/authentication failures on Linux.
- * These appear in DOMException.message when Chrome/Chromium communicates with BlueZ.
+ * Extract a stable GATT error code from IPC `{ code }` shapes or `code: message` strings.
  */
+export function extractGattBleErrorCode(err: unknown): GattBleErrorCode | null {
+  if (err && typeof err === 'object' && 'code' in err) {
+    const code = err.code;
+    if (typeof code === 'string' && isGattBleErrorCode(code)) return code;
+  }
+  const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : '';
+  if (!msg) return null;
+  if (isGattBleErrorCode(msg)) return msg;
+  const prefixed = /^([a-z_]+)\s*:/.exec(msg);
+  if (prefixed?.[1] && isGattBleErrorCode(prefixed[1])) return prefixed[1];
+  if (/gatt sidecar ensure not configured|sidecar.*(down|not running|failed to start)/i.test(msg)) {
+    return 'sidecar_down';
+  }
+  return null;
+}
+
+/** BlueZ / OS pairing patterns that may still appear in adapter logs. */
 const BLUEZ_PAIRING_ERROR_RE =
   /le-connection-abort-by-local|auth failed|connection rejected|pin failed|authentication failed|org\.bluez\.Error/i;
 
-/**
- * Chrome DOMException error.name values that often indicate pairing issues on Linux.
- * - SecurityError: Authentication failure, permission denied
- * - NetworkError: Connection attempt failed (includes BlueZ pairing failures)
- */
 const CHROME_PAIRING_ERROR_NAMES = new Set(['SecurityError', 'NetworkError']);
 
-/**
- * Check if a DOMException from Web Bluetooth is likely a pairing-related error.
- * On Linux with BlueZ, pairing failures surface as generic NetworkError or SecurityError.
- */
-export function isWebBluetoothPairingError(err: unknown): boolean {
+/** True when an error looks like OS-level BLE pairing/auth failure. */
+export function isBlePairingError(err: unknown): boolean {
+  if (extractGattBleErrorCode(err) === 'pairing_required') return true;
   if (err instanceof DOMException) {
-    if (CHROME_PAIRING_ERROR_NAMES.has(err.name)) {
-      return true;
-    }
-    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {
-      return true;
-    }
+    if (CHROME_PAIRING_ERROR_NAMES.has(err.name)) return true;
+    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) return true;
   }
   if (err instanceof Error) {
-    if (err.message.includes('GATT Error: Not supported')) {
-      return true;
-    }
-    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) {
-      return true;
-    }
+    if (err.message.includes('GATT Error: Not supported')) return true;
+    if (BLUEZ_PAIRING_ERROR_RE.test(err.message)) return true;
   }
   return false;
 }

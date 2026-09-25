@@ -15,7 +15,7 @@ import { errLikeToLogString } from './errLikeToLogString';
 import type { RfReconnectController } from './rfReconnectController';
 import { rfMaxReconnectAttemptsForTransport } from './rfReconnectShared';
 import { delayUnlessSuspended } from './systemPowerState';
-import { NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS } from './timeConstants';
+import { BLE_RECONNECT_ATTEMPT_BUDGET_MS } from './timeConstants';
 
 export type LoraRfReconnectOverlapCheck = 'beforeOpening' | 'afterOpening';
 
@@ -228,8 +228,8 @@ export async function runLoraRfReconnectAttempt<TParams>(
     // defers to that attempt settling; without a deadline, a hang wedges the reconnect machine.
     await raceWithDeadline(
       reconnectWork,
-      NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS,
-      `Reconnect attempt timed out after ${NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
+      BLE_RECONNECT_ATTEMPT_BUDGET_MS,
+      `Reconnect attempt timed out after ${BLE_RECONNECT_ATTEMPT_BUDGET_MS}ms`,
     );
   } catch (err) {
     // catch-no-log-ok protocol onAttemptError logs the failure (warn/debug)

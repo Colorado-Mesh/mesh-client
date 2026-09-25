@@ -71,20 +71,26 @@ export function resetReticulumVacuumScheduleForTests(): void {
   reticulumVacuumScheduled = false;
 }
 
+export interface DbPruneOptions {
+  /** Node ids whose position history is kept regardless of age/per-node caps (open incidents). */
+  exemptNodeIds?: ReadonlySet<string> | readonly string[];
+}
+
 /**
  * One-shot startup DB maintenance (node/message retention, migrations).
- * Single-flight per app session so unstable React deps cannot re-trigger IPC.
+ * Single-flight per app session so unstable React deps cannot re-trigger IPC;
+ * options from later calls while in flight are ignored.
  */
-export function runStartupDbPrune(): Promise<void> {
+export function runStartupDbPrune(opts?: DbPruneOptions): Promise<void> {
   if (startupDbPrunePromise) return startupDbPrunePromise;
-  startupDbPrunePromise = executeDbPrune('startup');
+  startupDbPrunePromise = executeDbPrune('startup', opts);
   return startupDbPrunePromise;
 }
 
 /** Periodic maintenance while the app stays connected (same ops as startup prune). */
-export function runSessionDbPrune(): Promise<void> {
+export function runSessionDbPrune(opts?: DbPruneOptions): Promise<void> {
   if (sessionDbPrunePromise) return sessionDbPrunePromise;
-  sessionDbPrunePromise = executeDbPrune('session').finally(() => {
+  sessionDbPrunePromise = executeDbPrune('session', opts).finally(() => {
     sessionDbPrunePromise = null;
   });
   return sessionDbPrunePromise;
@@ -96,7 +102,7 @@ export function resetStartupDbPruneForTests(): void {
   sessionDbPrunePromise = null;
 }
 
-async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
+async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOptions): Promise<void> {
   const raw =
     parseStoredJson<Record<string, unknown>>(getAppSettingsRaw(), 'App startup node pruning') ?? {};
   const s = { ...DEFAULT_APP_SETTINGS_SHARED, ...raw };
@@ -142,11 +148,20 @@ async function executeDbPrune(label: 'startup' | 'session'): Promise<void> {
       typeof s.positionHistoryPruneDays === 'number' && s.positionHistoryPruneDays > 0
         ? s.positionHistoryPruneDays
         : 30;
+    const exempt = opts?.exemptNodeIds ? [...opts.exemptNodeIds] : [];
+    const prunePosition =
+      exempt.length > 0
+        ? window.electronAPI.db.prunePositionHistory(days, exempt)
+        : window.electronAPI.db.prunePositionHistory(days);
+    const prunePositionPerNode =
+      exempt.length > 0
+        ? window.electronAPI.db.prunePositionHistoryPerNode(2000, exempt)
+        : window.electronAPI.db.prunePositionHistoryPerNode(2000);
     ops.push(
-      window.electronAPI.db.prunePositionHistory(days).catch((e: unknown) => {
+      prunePosition.catch((e: unknown) => {
         console.warn(`[App] ${label} prunePositionHistory failed ` + errLikeToLogString(e));
       }),
-      window.electronAPI.db.prunePositionHistoryPerNode(2000).catch((e: unknown) => {
+      prunePositionPerNode.catch((e: unknown) => {
         console.warn(`[App] ${label} prunePositionHistoryPerNode failed ` + errLikeToLogString(e));
       }),
     );

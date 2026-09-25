@@ -9,7 +9,7 @@ import { withTimeout } from '../../shared/withTimeout';
 import { useMeshcoreRuntime } from '../runtime/useMeshcoreRuntime';
 import { resetMeshcoreRuntimeElectronMocks } from '../vitestClearHelpers';
 
-describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
+describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   let userAgentSpy: { mockRestore: () => void } | null = null;
@@ -26,8 +26,8 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       .mockReturnValue('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
-    vi.mocked(window.electronAPI.disconnectNobleBle).mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.disconnectGatt).mockResolvedValue(undefined);
     vi.mocked(withTimeout).mockImplementation((promise: Promise<unknown>) => promise);
   });
 
@@ -41,7 +41,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
   });
 
   it('fails fast with user-facing timeout guidance when IPC open times out', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue(
       new Error('MeshCore BLE IPC open timed out after 25000ms'),
     );
 
@@ -51,20 +51,20 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-1');
       }),
-    ).rejects.toThrow('meshcore.errors.bleTimeoutNoble');
+    ).rejects.toThrow('meshcore.errors.bleTimeoutGatt');
 
-    expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcore');
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: MeshCore BLE IPC open timed out after 25000ms/,
+        /\[MeshCoreTransport\] GATT BLE attempt 1\/2 failed: MeshCore BLE IPC open timed out after 25000ms/,
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutNoble","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"MeshCore BLE IPC open timed out after 25000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
@@ -89,11 +89,11 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
     ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
     expect(handshakeAttempt).toBe(2);
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledWith('meshcore', 'ble-device-2');
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
-    expect(window.electronAPI.disconnectNobleBle).toHaveBeenCalledWith('meshcore');
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledWith('meshcore', 'ble-device-2');
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.disconnectGatt).toHaveBeenCalledWith('meshcore');
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
+      '[useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"protocol-handshake"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringMatching(
@@ -103,7 +103,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
   });
 
   it('retries once after IPC-open timeout before second-attempt handshake timeout', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle)
+    vi.mocked(window.electronAPI.connectGatt)
       .mockRejectedValueOnce(new Error('MeshCore BLE IPC open timed out after 25000ms'))
       .mockResolvedValueOnce({ ok: true });
 
@@ -124,17 +124,17 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       }),
     ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed:/),
+      expect.stringMatching(/\[MeshCoreTransport\] GATT BLE attempt 1\/2 failed:/),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 2\/2 failed:/),
+      expect.stringMatching(/\[MeshCoreTransport\] GATT BLE attempt 2\/2 failed:/),
     );
   });
 
   it('does not retry non-timeout BLE failures', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue(
       new Error('Bluetooth adapter is not available'),
     );
 
@@ -146,14 +146,14 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       }),
     ).rejects.toThrow('Bluetooth adapter is not available');
 
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed:/),
+      expect.stringMatching(/\[MeshCoreTransport\] GATT BLE attempt 1\/2 failed:/),
     );
   });
 
   it('does not misclassify native debugfs permission stderr as BLE timeout stage', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue(
       new Error(
         'cannot create /sys/kernel/debug/bluetooth/hci0/conn_min_interval: Permission denied',
       ),
@@ -169,15 +169,15 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       'cannot create /sys/kernel/debug/bluetooth/hci0/conn_min_interval: Permission denied',
     );
 
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringMatching(/\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed:/),
+      expect.stringMatching(/\[MeshCoreTransport\] GATT BLE attempt 1\/2 failed:/),
     );
   });
 
   it('logs peripheral disconnect signal during handshake timeout path', async () => {
     let onDisconnected: ((sessionId: 'meshtastic' | 'meshcore') => void) | null = null;
-    vi.mocked(window.electronAPI.onNobleBleDisconnected).mockImplementation((cb) => {
+    vi.mocked(window.electronAPI.onGattDisconnected).mockImplementation((cb) => {
       onDisconnected = cb;
       return () => {};
     });
@@ -200,13 +200,15 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       }),
     ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
-    expect(warnSpy).toHaveBeenCalledWith('[IpcNobleConnection:meshcore] peripheral disconnected');
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[IpcSidecarGattConnection:meshcore] peripheral disconnected',
+    );
   });
 
   it('retries and surfaces timeout guidance when main-process BLE connectAsync times out', async () => {
     // Simulates the Linux/Windows case where peripheral.connectAsync() in the main process
     // times out and the error propagates through IPC to the renderer.
-    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue(
       new Error('BLE connectAsync timed out after 30000ms'),
     );
 
@@ -216,25 +218,25 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       act(async () => {
         await result.current.connect('ble', undefined, 'ble-device-linux');
       }),
-    ).rejects.toThrow('meshcore.errors.bleTimeoutNoble');
+    ).rejects.toThrow('meshcore.errors.bleTimeoutGatt');
 
     // Should retry once (main-process timeout is now recognized as a retryable timeout).
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: BLE connectAsync timed out after 30000ms/,
+        /\[MeshCoreTransport\] GATT BLE attempt 1\/2 failed: BLE connectAsync timed out after 30000ms/,
       ),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect: BLE Noble IPC timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect: BLE GATT timed out; advise retry, BLE power-cycle, or Serial/TCP fallback {"stage":"ipc-open"}',
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutNoble","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
+      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"BLE connectAsync timed out after 30000ms","bleTimeoutStage":"ipc-open"}',
     );
   });
 
   it('stringifies object-shaped non-timeout BLE errors', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue({
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue({
       code: 'BLE_CUSTOM',
       detail: 'adapter glitch',
     });
@@ -252,7 +254,7 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
   });
 
   it('retries once on retryable non-timeout "already in progress" errors', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle).mockRejectedValue(
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue(
       new Error('Connection already in progress'),
     );
     const { result } = renderHook(() => useMeshcoreRuntime());
@@ -263,16 +265,16 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       }),
     ).rejects.toThrow('meshcore.errors.bleAlreadyInProgress');
 
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: Connection already in progress/,
+        /\[MeshCoreTransport\] GATT BLE attempt 1\/2 failed: Connection already in progress/,
       ),
     );
   });
 
   it('retries once after WinRT GATT unreachable during service discovery', async () => {
-    vi.mocked(window.electronAPI.connectNobleBle)
+    vi.mocked(window.electronAPI.connectGatt)
       .mockRejectedValueOnce(new Error('Device is unreachable while discovering services'))
       .mockResolvedValueOnce({ ok: true });
 
@@ -293,10 +295,10 @@ describe('useMeshcoreRuntime BLE Noble IPC timeout handling', () => {
       }),
     ).rejects.toThrow('meshcore.errors.bleTimeoutHandshake');
 
-    expect(window.electronAPI.connectNobleBle).toHaveBeenCalledTimes(2);
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringMatching(
-        /\[MeshCoreTransport\] Noble BLE attempt 1\/2 failed: Device is unreachable while discovering services/,
+        /\[MeshCoreTransport\] GATT BLE attempt 1\/2 failed: Device is unreachable while discovering services/,
       ),
     );
   });
@@ -316,7 +318,7 @@ describe('useMeshcoreRuntime Linux BLE routing', () => {
       );
     vi.mocked(window.electronAPI.db.getMeshcoreContacts).mockResolvedValue([]);
     vi.mocked(window.electronAPI.db.getMeshcoreMessages).mockResolvedValue([]);
-    vi.mocked(window.electronAPI.connectNobleBle).mockResolvedValue({ ok: true });
+    vi.mocked(window.electronAPI.connectGatt).mockResolvedValue({ ok: true });
   });
 
   afterEach(() => {
@@ -328,16 +330,15 @@ describe('useMeshcoreRuntime Linux BLE routing', () => {
     });
   });
 
-  it('uses Web Bluetooth path on Linux and does not call Noble IPC connect', async () => {
+  it('uses sidecar GATT on Linux and requires a peripheral id', async () => {
     const { result } = renderHook(() => useMeshcoreRuntime());
 
     await expect(
       act(async () => {
-        // Linux path does not require a peripheral ID and should not touch noble IPC.
         await result.current.connect('ble', undefined, undefined);
       }),
-    ).rejects.toThrow(/Web Bluetooth is not available|navigator\.bluetooth/i);
+    ).rejects.toThrow(/BLE peripheral ID required|peripheral/i);
 
-    expect(window.electronAPI.connectNobleBle).not.toHaveBeenCalled();
+    expect(window.electronAPI.connectGatt).not.toHaveBeenCalled();
   });
 });

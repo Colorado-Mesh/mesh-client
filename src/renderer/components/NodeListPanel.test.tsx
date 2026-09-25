@@ -923,6 +923,40 @@ describe('NodeListPanel JSON export', () => {
     expect(parsed.nodes[0]?.last_heard_unit).toBe('unix_sec');
     expect(parsed.nodes[0]?.last_heard).toBeLessThan(1_000_000_000_000);
   });
+
+  it('JSON and CSV exports include status and health_score', async () => {
+    const user = userEvent.setup();
+    const nodes = new Map<number, MeshNode>([
+      [42, makeNode({ node_id: 42, long_name: 'Export Node', last_heard: Date.now() })],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    const [jsonBlob] = vi.mocked(downloadBlob).mock.calls[0];
+    const parsed = JSON.parse(await jsonBlob.text()) as {
+      format: string;
+      nodes: { status: string; health_score: number; protocol: string }[];
+    };
+    expect(parsed.format).toBe('mesh-client-topology');
+    expect(parsed.nodes[0]?.status).toBe('online');
+    expect(typeof parsed.nodes[0]?.health_score).toBe('number');
+    expect(parsed.nodes[0]?.protocol).toBe('meshtastic');
+
+    await user.click(screen.getByRole('button', { name: 'Export CSV' }));
+    const [csvBlob, csvName] = vi.mocked(downloadBlob).mock.calls[1];
+    expect(csvName).toMatch(/\.csv$/);
+    const header = (await csvBlob.text()).split('\r\n')[0];
+    expect(header).toContain('status');
+    expect(header).toContain('health_score');
+  });
 });
 
 describe('NodeListPanel show on map', () => {

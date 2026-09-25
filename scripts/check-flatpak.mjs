@@ -274,6 +274,23 @@ function checkManifestBranchAndElectronPayload(pkg) {
       });
     }
   }
+  // Electron zips keep `electron`, `locales/` and `resources/` at the archive root.
+  // flatpak-builder defaults to strip-components:1, which flattens locales/*.pak and
+  // resources/default_app.asar into dest; Chromium's ResourceBundle init then fails and
+  // the browser process exits 1 with no output.
+  const electronArchiveBlocks = yaml
+    .split(/^\s*- type: archive\s*$/m)
+    .filter((block) => /electron-v[\d.]+-linux-(?:x64|arm64)\.zip/.test(block));
+  for (const block of electronArchiveBlocks) {
+    if (!/strip-components:\s*0\b/.test(block)) {
+      violations.push({
+        file: rel,
+        message:
+          'electron zip archive sources must set strip-components: 0 (default 1 flattens locales/ and resources/, Electron then exits 1)',
+      });
+      break;
+    }
+  }
 
   if (!yaml.includes('resources /app/lib/mesh-client/')) {
     violations.push({
@@ -312,6 +329,22 @@ function checkManifestReticulumSidecarPayload() {
       file: rel,
       message:
         'manifest must copy resources/ into /app/lib/mesh-client/ (Reticulum sidecar under resources/reticulum-sidecar/)',
+    });
+  }
+
+  // Flatpak must force +x after copy — GitHub artifact downloads strip execute bits (#1044).
+  if (
+    !yaml.includes(
+      'chmod 755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum',
+    ) &&
+    !yaml.includes(
+      'install -Dm755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum',
+    )
+  ) {
+    violations.push({
+      file: rel,
+      message:
+        'manifest must chmod 755 (or install -Dm755) the Reticulum sidecar under /app/lib/mesh-client/resources/reticulum-sidecar/',
     });
   }
 
@@ -630,6 +663,109 @@ export function flatpakWorkflowTestBuildContractViolations(doc, fileLabel) {
   return violations;
 }
 
+/**
+ * Flatpak MeshCore BLE / Reticulum require an executable sidecar (#1044).
+ * Raw GitHub artifact uploads strip +x — workflow must tar-wrap and smoke with test -x.
+ *
+ * @param {unknown} doc
+ * @param {string} fileLabel
+ * @returns {{ file: string, message: string }[]}
+ */
+export function flatpakWorkflowSidecarExecutableContractViolations(doc, fileLabel) {
+  const violations = [];
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
+    violations.push({ file: fileLabel, message: 'flatpak.yaml must parse to a mapping' });
+    return violations;
+  }
+
+  const jobs = doc.jobs;
+  if (!jobs || typeof jobs !== 'object' || Array.isArray(jobs)) {
+    violations.push({ file: fileLabel, message: 'flatpak.yaml must define jobs' });
+    return violations;
+  }
+
+  const sidecarJob = jobs['reticulum-sidecar'];
+  if (!sidecarJob || typeof sidecarJob !== 'object' || Array.isArray(sidecarJob)) {
+    violations.push({
+      file: fileLabel,
+      message: 'flatpak.yaml must define a reticulum-sidecar job',
+    });
+  } else {
+    const steps = Array.isArray(sidecarJob.steps) ? sidecarJob.steps : [];
+    let sawTarCreate = false;
+    let sawTarUpload = false;
+    for (const step of steps) {
+      if (!step || typeof step !== 'object' || Array.isArray(step)) continue;
+      const run = typeof step.run === 'string' ? step.run : '';
+      if (/tar\s+-cf\b/.test(run) && /mesh-client-reticulum/.test(run)) {
+        sawTarCreate = true;
+      }
+      const withBlock =
+        step.with && typeof step.with === 'object' && !Array.isArray(step.with) ? step.with : null;
+      if (
+        typeof step.uses === 'string' &&
+        step.uses.includes('upload-artifact') &&
+        withBlock &&
+        typeof withBlock.path === 'string' &&
+        withBlock.path.includes('mesh-client-reticulum') &&
+        withBlock.path.endsWith('.tar')
+      ) {
+        sawTarUpload = true;
+      }
+    }
+    if (!sawTarCreate) {
+      violations.push({
+        file: fileLabel,
+        message:
+          'reticulum-sidecar job must tar the sidecar binary so execute bits survive artifact upload',
+      });
+    }
+    if (!sawTarUpload) {
+      violations.push({
+        file: fileLabel,
+        message: 'reticulum-sidecar job must upload a .tar artifact (not the raw binary)',
+      });
+    }
+  }
+
+  const flatpakJob = jobs.flatpak;
+  if (!flatpakJob || typeof flatpakJob !== 'object' || Array.isArray(flatpakJob)) {
+    violations.push({ file: fileLabel, message: 'flatpak.yaml must define a flatpak job' });
+    return violations;
+  }
+  const steps = Array.isArray(flatpakJob.steps) ? flatpakJob.steps : [];
+  let sawTarExtract = false;
+  let sawSmokeExecutable = false;
+  for (const step of steps) {
+    if (!step || typeof step !== 'object' || Array.isArray(step)) continue;
+    const run = typeof step.run === 'string' ? step.run : '';
+    if (/tar\s+-xf\b/.test(run) && /mesh-client-reticulum/.test(run)) {
+      sawTarExtract = true;
+    }
+    if (
+      /test\s+-x\s+\/app\/lib\/mesh-client\/resources\/reticulum-sidecar\/mesh-client-reticulum/.test(
+        run,
+      )
+    ) {
+      sawSmokeExecutable = true;
+    }
+  }
+  if (!sawTarExtract) {
+    violations.push({
+      file: fileLabel,
+      message: 'flatpak job must tar -xf the sidecar artifact into resources/reticulum-sidecar/',
+    });
+  }
+  if (!sawSmokeExecutable) {
+    violations.push({
+      file: fileLabel,
+      message:
+        'flatpak smoke must test -x the bundled sidecar (not merely test -f) under /app/lib/mesh-client/resources/reticulum-sidecar/',
+    });
+  }
+  return violations;
+}
+
 function checkManifestCiBuildInfoExport() {
   const violations = [];
   if (!fs.existsSync(MANIFEST)) return violations;
@@ -663,7 +799,10 @@ function checkFlatpakWorkflowTestBuildContracts() {
       },
     ];
   }
-  return flatpakWorkflowTestBuildContractViolations(doc, rel);
+  return [
+    ...flatpakWorkflowTestBuildContractViolations(doc, rel),
+    ...flatpakWorkflowSidecarExecutableContractViolations(doc, rel),
+  ];
 }
 
 function main() {

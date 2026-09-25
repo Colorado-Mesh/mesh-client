@@ -24,7 +24,7 @@ const PNPM_ARCHIVE_SOURCES_RE =
   / {6}- type: archive\n {8}url: https:\/\/github\.com\/pnpm\/pnpm\/releases\/download\/v[\d.]+\/pnpm-linux-x64\.tar\.gz\n {8}sha256: [a-f0-9]{64}\n {8}dest: pnpm-vendor\n {8}#[^\n]*\n {8}strip-components: 0\n {8}only-arches: \[x86_64\]\n {6}- type: archive\n {8}url: https:\/\/github\.com\/pnpm\/pnpm\/releases\/download\/v[\d.]+\/pnpm-linux-arm64\.tar\.gz\n {8}sha256: [a-f0-9]{64}\n {8}dest: pnpm-vendor\n {8}strip-components: 0\n {8}only-arches: \[aarch64\]/;
 
 const ELECTRON_ARCHIVE_SOURCES_RE =
-  / {6}- type: archive\n {8}url: https:\/\/github\.com\/electron\/electron\/releases\/download\/v[\d.]+\/electron-v[\d.]+-linux-x64\.zip\n {8}sha256: [a-f0-9]{64}\n {8}dest: electron-prebuilt\n {8}only-arches: \[x86_64\]\n {6}- type: archive\n {8}url: https:\/\/github\.com\/electron\/electron\/releases\/download\/v[\d.]+\/electron-v[\d.]+-linux-arm64\.zip\n {8}sha256: [a-f0-9]{64}\n {8}dest: electron-prebuilt\n {8}only-arches: \[aarch64\]/;
+  / {6}- type: archive\n {8}url: https:\/\/github\.com\/electron\/electron\/releases\/download\/v[\d.]+\/electron-v[\d.]+-linux-x64\.zip\n {8}sha256: [a-f0-9]{64}\n {8}dest: electron-prebuilt\n {8}#[^\n]*\n {8}strip-components: 0\n {8}only-arches: \[x86_64\]\n {6}- type: archive\n {8}url: https:\/\/github\.com\/electron\/electron\/releases\/download\/v[\d.]+\/electron-v[\d.]+-linux-arm64\.zip\n {8}sha256: [a-f0-9]{64}\n {8}dest: electron-prebuilt\n {8}strip-components: 0\n {8}only-arches: \[aarch64\]/;
 
 export function assertSafeElectronSemverVersion(version) {
   if (typeof version !== 'string' || !SAFE_ELECTRON_SEMVER_RE.test(version)) {
@@ -77,16 +77,19 @@ export function validateElectronSha256ByZipArch(sha256ByZipArch, version) {
 export function buildElectronArchiveSourcesYaml(version, sha256ByZipArch) {
   const safeVersion = assertSafeElectronSemverVersion(version);
   const validated = validateElectronSha256ByZipArch(sha256ByZipArch, safeVersion);
+  const stripComment =
+    '\n        # Electron zip has root-level `electron` + `locales/` + `resources/`; default strip-components:1 flattens them.';
   const blocks = [
-    { zipArch: 'x64', onlyArch: 'x86_64' },
-    { zipArch: 'arm64', onlyArch: 'aarch64' },
+    { zipArch: 'x64', onlyArch: 'x86_64', comment: stripComment },
+    { zipArch: 'arm64', onlyArch: 'aarch64', comment: '' },
   ];
   return blocks
     .map(
-      ({ zipArch, onlyArch }) => `      - type: archive
+      ({ zipArch, onlyArch, comment }) => `      - type: archive
         url: https://github.com/electron/electron/releases/download/v${safeVersion}/electron-v${safeVersion}-linux-${zipArch}.zip
         sha256: ${validated[zipArch]}
-        dest: electron-prebuilt
+        dest: electron-prebuilt${comment}
+        strip-components: 0
         only-arches: [${onlyArch}]`,
     )
     .join('\n');

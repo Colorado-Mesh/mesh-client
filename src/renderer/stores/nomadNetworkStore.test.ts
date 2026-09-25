@@ -25,6 +25,12 @@ vi.stubGlobal('window', {
   },
 });
 
+import {
+  clearNomadImageCache,
+  nomadImageCacheSizeForTests,
+  setNomadImageCache,
+} from '@/renderer/lib/nomad/nomadImageCache';
+
 import { resetNomadEgressCacheForTests, useNomadNetworkStore } from './nomadNetworkStore';
 
 describe('nomadNetworkStore', () => {
@@ -35,6 +41,7 @@ describe('nomadNetworkStore', () => {
     fetchReticulumInterfaces.mockReset();
     fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
     resetNomadEgressCacheForTests();
+    clearNomadImageCache();
     useNomadNetworkStore.setState({
       nodes: new Map(),
       lastRefreshAt: null,
@@ -212,6 +219,98 @@ describe('nomadNetworkStore', () => {
       '/api/v1/nomadnetwork/media/abc?path=%2Fmedia%2Fdemo.webp',
     );
     expect(res).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
+    expect(nomadImageCacheSizeForTests()).toBe(1);
+  });
+
+  it('fetchNomadMedia returns cached media without a second proxyGet', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    proxyGet.mockResolvedValue({
+      ok: true,
+      file_name: 'demo.webp',
+      content_base64: 'aGVsbG8=',
+    });
+
+    const first = await useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
+    expect(first).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
+    expect(proxyGet).toHaveBeenCalledTimes(1);
+
+    const second = await useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
+    expect(second).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
+    expect(proxyGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetchNomadMedia bypasses image cache when forcePathRefresh is set', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    proxyGet.mockResolvedValue({
+      ok: true,
+      file_name: 'fresh.webp',
+      content_base64: 'ZnJlc2g=',
+    });
+
+    setNomadImageCache(
+      { hash: 'abc', mediaPath: '/media/demo.webp' },
+      { content_base64: 'aGVsbG8=', file_name: 'demo.webp' },
+    );
+
+    const res = await useNomadNetworkStore
+      .getState()
+      .fetchNomadMedia('abc', '/media/demo.webp', { forcePathRefresh: true });
+
+    expect(proxyGet).toHaveBeenCalledWith(
+      '/api/v1/nomadnetwork/media/abc?path=%2Fmedia%2Fdemo.webp&force_path_refresh=true',
+    );
+    expect(res).toEqual({ ok: true, file_name: 'fresh.webp', content_base64: 'ZnJlc2g=' });
+  });
+
+  it('fetchNomadMedia hits the network again after clearNomadImageCache', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    proxyGet.mockResolvedValue({
+      ok: true,
+      file_name: 'demo.webp',
+      content_base64: 'aGVsbG8=',
+    });
+
+    await useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
+    expect(proxyGet).toHaveBeenCalledTimes(1);
+
+    clearNomadImageCache();
+    expect(nomadImageCacheSizeForTests()).toBe(0);
+
+    const res = await useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
+    expect(res).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
+    expect(proxyGet).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not repopulate image cache when cleared during an in-flight fetch', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    fetchReticulumInterfaces.mockResolvedValue([{ type: 'tcp', enabled: true }]);
+    let resolveProxy: ((value: unknown) => void) | undefined;
+    proxyGet.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProxy = resolve;
+        }),
+    );
+
+    const pending = useNomadNetworkStore.getState().fetchNomadMedia('abc', '/media/demo.webp');
+    await vi.waitFor(() => {
+      expect(proxyGet).toHaveBeenCalledTimes(1);
+    });
+
+    clearNomadImageCache();
+    expect(nomadImageCacheSizeForTests()).toBe(0);
+
+    resolveProxy?.({
+      ok: true,
+      file_name: 'demo.webp',
+      content_base64: 'aGVsbG8=',
+    });
+    const res = await pending;
+    expect(res).toEqual({ ok: true, file_name: 'demo.webp', content_base64: 'aGVsbG8=' });
+    expect(nomadImageCacheSizeForTests()).toBe(0);
   });
 
   it('logs failure warning with link budget when page fetch returns ok:false', async () => {

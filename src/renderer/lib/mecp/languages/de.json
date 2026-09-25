@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Medizin",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Gelände / Infrastruktur",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Wetter / Umwelt",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Versorgung",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Position / Bewegung",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Koordination",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Antwort",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Übung / Test",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Alltag / Freizeit",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Bedrohung / Sicherheit",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Vorhanden / Ressourcen anbieten",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "Leuchtfeuer",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Verletzung",
+    "M02": "Bewusstlose Person",
+    "M03": "Atemnot",
+    "M04": "Herznotfall",
+    "M05": "Unterkühlung",
+    "M06": "Starke Blutung",
+    "M07": "Fraktur / nicht gehfähig",
+    "M08": "Verbrennungen",
+    "M09": "Mehrere Verletzte",
+    "M10": "Verstorben",
+    "M11": "Tierbiss / -stich",
+    "M12": "Allergische Reaktion / Anaphylaxie",
+    "M13": "Vergiftung / Schadstoffkontakt",
+    "M14": "Personen lebend gefunden",
+    "M15": "Gebiet durchsucht, keine Opfer",
+    "T01": "Straße blockiert",
+    "T02": "Brücke zerstört",
+    "T03": "Gebäude eingestürzt",
+    "T04": "Überschwemmung",
+    "T05": "Erdrutsch",
+    "T06": "Stromausfall",
+    "T07": "Feuer",
+    "T08": "Lawine",
+    "T09": "Weg unpassierbar",
+    "T10": "Unterkunft verfügbar",
+    "T11": "Ertrinken / Wasserrettung nötig",
+    "T12": "Wasserverunreinigung",
+    "T13": "Erdbeben",
+    "T14": "Gasleck",
+    "T15": "Chemieunfall / Gefahrgut",
+    "T16": "Verkehrsunfall",
+    "T17": "Fahrzeugbrand",
+    "W01": "Sturm im Anmarsch",
+    "W02": "Sicht null",
+    "W03": "Extreme Kälte",
+    "W04": "Extreme Hitze",
+    "W05": "Luftqualität gefährlich",
+    "W06": "Tsunami- / Sturmflutwarnung",
+    "S01": "Brauche Wasser",
+    "S02": "Brauche Nahrung",
+    "S03": "Brauche Medikamente",
+    "S04": "Brauche Batterie / Strom",
+    "S05": "Brauche Treibstoff",
+    "S06": "Brauche Werkzeug / Ausrüstung",
+    "P01": "Gestrandet / festsitzend",
+    "P02": "Evakuierung Richtung",
+    "P03": "Vor Ort verschanzt",
+    "P04": "Unterwegs nach",
+    "P05": "An GPS-Koordinaten",
+    "P06": "Verirrt",
+    "P07": "Gruppe getrennt",
+    "C01": "Rettung schicken",
+    "C02": "Brauche Transport",
+    "C03": "Nachricht weiterleiten",
+    "C04": "Empfang bestätigen",
+    "C05": "Wie viele Personen",
+    "C06": "Was ist der Status",
+    "C07": "Könnt ihr erreichen",
+    "C08": "Treffpunkt bei",
+    "R01": "Bestätigt",
+    "R02": "Hilfe kommt",
+    "R03": "Ankunft in [Minuten]",
+    "R04": "Kann nicht helfen",
+    "R05": "Umleitung nach",
+    "R06": "Bitte warten",
+    "R07": "Lage gelöst / Entwarnung",
+    "D01": "Dies ist eine Übung",
+    "D02": "Dies ist ein Test",
+    "D03": "Ende der Übung",
+    "D04": "Vorherige ignorieren — irrtümlich gesendet",
+    "L01": "Bier / Getränke",
+    "L02": "Kaffee",
+    "L03": "Essen fertig",
+    "L04": "Gipfel erreicht",
+    "L05": "Im Lager",
+    "L06": "Verspätet",
+    "L07": "Gutes Signal hier",
+    "L08": "Fotogelegenheit",
+    "L09": "Wildtier gesichtet",
+    "L10": "Schöne Aussicht",
+    "L11": "Wegverhältnisse gut",
+    "L12": "Wegverhältnisse schlecht",
+    "L13": "Brauche Pause",
+    "L14": "Auf dem Heimweg",
+    "L15": "Guten Morgen / Meldung",
+    "L16": "Gute Nacht",
+    "L17": "Danke",
+    "L18": "Macht Spaß",
+    "L19": "Fest / Veranstaltung hier",
+    "L20": "Knotentest / Ping",
+    "X01": "Gefährliche Person / Bedrohung in Nähe",
+    "X02": "Gebiet unsicher — meiden",
+    "X03": "Schüsse / Explosionen gehört",
+    "X04": "Unruhen / Menschenmenge gefährlich",
+    "X05": "Diebstahl / Plünderung gemeldet",
+    "X06": "Behörden / Rettungsdienste vor Ort",
+    "X07": "Kontrollpunkt / Straßensperre (Behörde)",
+    "H01": "Wasser verfügbar",
+    "H02": "Nahrung verfügbar",
+    "H03": "Medizinisches Material vorhanden",
+    "H04": "Strom / Ladestation vorhanden",
+    "H05": "Treibstoff vorhanden",
+    "H06": "Werkzeug / Ausrüstung vorhanden",
+    "H07": "Unterkunft / Platz für [N] Pers.",
+    "H08": "Transport / Fahrzeug vorhanden",
+    "B01": "Automatisches Notsignal aktiv — Absender möglicherweise nicht ansprechbar",
+    "B02": "Leuchtfeuer bestätigt — Senderate reduzieren",
+    "B03": "Leuchtfeuer abbrechen — mir geht es gut"
+  }
+}

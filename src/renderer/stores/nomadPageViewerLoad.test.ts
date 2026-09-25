@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  clearNomadImageCache,
+  nomadImageCacheSizeForTests,
+  setNomadImageCache,
+} from '@/renderer/lib/nomad/nomadImageCache';
+import {
   clearNomadPageCache,
   getNomadPageCache,
   nomadPageCacheSizeForTests,
+  setNomadPageCache,
 } from '@/renderer/lib/nomad/nomadPageCache';
 import {
   NOMAD_PAGE_FETCH_DEBOUNCE_MS,
@@ -25,6 +31,7 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', async (importOriginal)
 describe('nomadPageViewerStore loadPage cache', () => {
   beforeEach(() => {
     clearNomadPageCache();
+    clearNomadImageCache();
     resetNomadPageViewerStoreForTests();
     resetNomadEgressCacheForTests();
     useNomadNetworkStore.setState({
@@ -60,6 +67,22 @@ describe('nomadPageViewerStore loadPage cache', () => {
     await useNomadPageViewerStore.getState().loadPage('abc1234567890', '/page/index.mu');
     expect(fetchNomadPage).toHaveBeenCalledTimes(1);
     expect(useNomadPageViewerStore.getState().pageContent).toBe('hello');
+  });
+
+  it('closeViewer clears page and image caches', () => {
+    setNomadPageCache({ hash: 'abc1234567890', path: '/page/index.mu' }, { content: 'cached' });
+    setNomadImageCache(
+      { hash: 'abc1234567890', mediaPath: '/media/demo.webp' },
+      { content_base64: 'aGVsbG8=' },
+    );
+    expect(nomadPageCacheSizeForTests()).toBe(1);
+    expect(nomadImageCacheSizeForTests()).toBe(1);
+
+    useNomadPageViewerStore.getState().closeViewer();
+
+    expect(nomadPageCacheSizeForTests()).toBe(0);
+    expect(nomadImageCacheSizeForTests()).toBe(0);
+    expect(useNomadPageViewerStore.getState().selectedHash).toBeNull();
   });
 
   it('updates countdown budget from sidecar egress on uncached RF responses', async () => {

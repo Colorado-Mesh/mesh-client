@@ -6,10 +6,12 @@ import { CircleMarker, useMap } from 'react-leaflet';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { isValidMapBasemapId } from '@/renderer/lib/mapBasemapUtils';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 
 import { useToast } from '../Toast';
+import { OfflineMapsSection } from './OfflineMapsSection';
 
 const MAP_STYLE_ID = 'map-styles';
 const LORA_MAP_STYLE_ID = 'map-lora-panel-styles';
@@ -190,6 +192,8 @@ export function MapBasemapControl() {
   const setLayersPanelOpen = useMapLayerStore((s) => s.setLayersPanelOpen);
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const setBasemapId = useMapLayerStore((s) => s.setBasemapId);
+  const showIncidents = useMapLayerStore((s) => s.showIncidents);
+  const setShowIncidents = useMapLayerStore((s) => s.setShowIncidents);
 
   return (
     <div className="flex w-52 flex-col items-stretch gap-2">
@@ -216,13 +220,31 @@ export function MapBasemapControl() {
               value={basemapId}
               onChange={(e) => {
                 const v = e.target.value;
-                if (v === 'dark' || v === 'osm') setBasemapId(v);
+                if (isValidMapBasemapId(v)) setBasemapId(v);
               }}
             >
               <option value="dark">{t('mapPanel.basemapDark')}</option>
               <option value="osm">{t('mapPanel.basemapOsm')}</option>
+              <option value="usgs-topo">{t('mapPanel.basemapUsgsTopo')}</option>
             </select>
           </div>
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
+              {t('mapPanel.layersHeading')}
+            </div>
+            <label className="text-muted flex cursor-pointer items-center gap-2 text-xs">
+              <input
+                type="checkbox"
+                className="accent-brand-green"
+                checked={showIncidents}
+                onChange={(e) => {
+                  setShowIncidents(e.target.checked);
+                }}
+              />
+              {t('mapPanel.layerIncidents')}
+            </label>
+          </div>
+          <OfflineMapsSection />
         </div>
       ) : null}
     </div>

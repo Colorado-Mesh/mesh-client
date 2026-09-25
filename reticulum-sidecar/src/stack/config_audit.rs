@@ -269,8 +269,10 @@ fn is_valid_lat_lon(lat: f64, lon: f64) -> bool {
 }
 
 fn is_local_rnode_publish_target(row: &InterfaceRow) -> bool {
-    if row.iface_type != "rnode" && row.iface_type != "rnode_multi" && row.iface_type != "kiss" {
-        return row.iface_type == "ble_peer";
+    // Match rsReticulum discovery_config_for_interface RF arms (RNode / KISS /
+    // AX.25 KISS). Multi / BLE peer / UDP / pipe are not advertizable.
+    if row.iface_type != "rnode" && row.iface_type != "kiss" && row.iface_type != "ax25kiss" {
+        return false;
     }
     row.serial_port
         .as_ref()
@@ -328,6 +330,26 @@ fn audit_rmap_discovery(
                 ),
                 Some("edit"),
             ));
+        }
+
+        if row.iface_type == "backbone" {
+            let reachable_ok = row
+                .reachable_on
+                .as_ref()
+                .is_some_and(|v| !v.trim().is_empty());
+            if !reachable_ok {
+                issues.push(issue(
+                    "rmap_missing_reachable_on",
+                    "error",
+                    Some(row.id.clone()),
+                    Some(row.name.clone()),
+                    format!(
+                        "Backbone interface \"{}\" is discoverable but reachable_on is missing",
+                        row.name
+                    ),
+                    Some("edit"),
+                ));
+            }
         }
 
         // Discoverable + Full/Roaming/Boundary (etc.) is silently rewritten to AP
@@ -640,6 +662,33 @@ longitude = 2.3522
     }
 
     #[test]
+    fn rmap_missing_reachable_on_when_backbone_discoverable() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[Public Gateway]]
+type = BackboneInterface
+enabled = Yes
+listen_on = 0.0.0.0
+port = 4242
+mode = gateway
+discoverable = Yes
+latitude = 40.0
+longitude = -105.0
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            enable_transport: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        assert!(issues.iter().any(|i| i.kind == "rmap_missing_reachable_on"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn shared_instance_client_suppresses_tcp_unreachable() {
         let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
         fs::create_dir_all(&dir).unwrap();
@@ -687,12 +736,18 @@ target_port = 4242
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         });
         let settings = StackSettings {

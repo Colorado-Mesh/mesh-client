@@ -8,7 +8,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 
 | Workflow                    | Trigger                                      | Purpose                                                                         |
 | --------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, Flatpak manifest validation                             |
+| `ci.yaml`                   | Push/PR/`merge_group`/`workflow_dispatch`    | Lint, typecheck, build, policy scanners, Flatpak manifest validation            |
 | `tests.yaml`                | Push/PR/`merge_group`/`workflow_dispatch`    | Vitest coverage + merge; Reticulum sidecar `llvm-cov` when sidecar paths change |
 | `buttonmash.yaml`           | PR/`merge_group`/`workflow_dispatch`         | Browser-based chaos testing of the Vite renderer                                |
 | `e2e.yaml`                  | Daily on `main` + manual `workflow_dispatch` | Playwright Electron E2E (unpackaged build, 3-OS; not a PR gate)                 |
@@ -27,10 +27,11 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 Runs on every push, pull request, and merge-queue `merge_group` for `main` (and `workflow_dispatch`). Independent lanes start concurrently; only Flatpak waits for change detection:
 
 - **Code quality:** format, markdownlint, license allowlist, actionlint, dependency audit, and yamllint
-- **ESLint:** full repository lint with two workers, in parallel with formatting; all type-aware rules and the zero-warning gate remain enabled
+- **ESLint:** full repository lint with two workers, using `eslint.ci.config.mjs` to avoid running Prettier again for extensions already covered by the required Code quality job. All type-aware rules and the zero-warning gate remain enabled; local lint still checks formatting.
 - **Typecheck:** `pnpm run typecheck`
 - **Application build:** `pnpm run build`
 - **Flatpak checks:** only when Flatpak inputs change; runs `check:flatpak`, `check:flatpak-offline-pnpm`, `desktop-file-validate`, and `appstreamcli validate`
+- **Policy scanners:** cheap always-on `check:*` set from pre-commit/release (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap scanners) so `--no-verify` and GitHub-only edits cannot skip them
 
 Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. The final `Build & Test` job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.
 
@@ -60,10 +61,10 @@ Runs on every push, pull request, and merge-queue `merge_group` for `main`:
 2. **Pull requests:** run `vitest related` without coverage for the affected project lanes. Docs-only changes skip Vitest. Shared contracts select all projects.
 3. **Safe fallback:** test infrastructure, dependency manifests, deleted/renamed paths, oversized output, or detector failures run the full matrix.
 4. **Protected events:** `merge_group`, pushes to `main`, and manual runs always run full coverage across `renderer-ui`, `renderer-logic`, and `main`.
-5. **Sharding:** `renderer-ui` runs in three shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Each shard uploads a uniquely named blob report. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
-6. **Merge job:** combine scoped blob reports for PR feedback, or run `pnpm run test:coverage:merge` on protected events to enforce global thresholds.
+5. **Sharding:** `renderer-ui` runs in three shards; `renderer-logic` and `main` each run once. This applies to both related tests and full coverage. Full runs upload blob reports; related runs write JUnit reports named `junit-<project>-<shard>-<total>.xml` and print results in each shard's log. The existing `Coverage (...)` required checks verify that detection and every shard succeeded.
+6. **Merge job:** collect related JUnit reports without checkout, Node/pnpm setup, or dependency installation. Full runs (protected events and PRs that cannot be safely scoped) still run `pnpm run test:coverage:merge` to enforce global thresholds.
 7. **`reticulum-sidecar-coverage`:** when sidecar paths change, clone the `.rsstack/` workspace, run `cargo llvm-cov --fail-under-lines 45`, and upload `lcov.info`.
-8. Upload merged test results (retained 7 days).
+8. Upload the `vitest-report` artifact (retained 7 days): separate JUnit files for related shards, including empty shards and available reports from failed runs; one merged `junit.xml` for full runs.
 
 The three `Coverage (...)` job names and `Merge coverage` remain stable for the repository ruleset, including when a project or the whole test matrix has no relevant PR work. Superseded runs for the same pull request or ref are cancelled.
 
@@ -88,7 +89,9 @@ Local: `pnpm run test:e2e:build`. See [development-environment.md](development-e
 Path-filtered on `reticulum-sidecar/**` and related scripts:
 
 1. **`lint` job (ubuntu-latest)** — `cargo fmt --check` + `cargo clippy` with `rns-stack,rns-ble,rns-rnode-tcp` (`-D warnings`)
-2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows (including WoA arm64 jobs)
+2. **Build matrix** — stub + full-stack `cargo test` and release builds on Linux, macOS, and Windows. The WoA arm64 jobs cross-compile release binaries on Windows x64 runners; the Windows x64 matrix jobs run the corresponding host tests once.
+
+The full-stack matrix and the two WoA jobs cache Cargo downloads and compiled dependencies with `Swatinem/rust-cache`, separately by job, target triple, and Rust toolchain. The cache is restored after cloning the current Ratspeak sources, applying overlays, and selecting the toolchain. The sidecar workspace crate is excluded, so every run still invokes Cargo to rebuild changed path dependencies and the executable. Host tests run on cache hits as well as misses; a cache miss performs a normal build. Release optimization and linking still run, so warm jobs retain some compilation cost.
 
 CI and local **dev** clones float the `.rsstack/` workspace via `scripts/clone-ratspeak-stack.sh` to `origin/main` (overlays must apply; optional `RS_RETICULUM_REF` / `RS_LXMF_REF` / `RS_NOMAD_REF` / `RS_LXST_REF` / `RS_LRGP_REF` for bisect only — CI never pins Ratspeak SHAs). Open upstream feature PRs needed before they land on `main` (e.g. [rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26) ReplyFile, [rsLXMF#7](https://github.com/ratspeak/rsLXMF/pull/7) multi-file attachments) are carried as overlays under `reticulum-sidecar/patches/` and tracked by `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`. **Release** packaging (`scripts/build-reticulum-sidecar-release.mjs`) runs the same clone and records the resolved commit SHAs for all five crates in `.rsstack/RESOLVED_SHAS.txt` so artifacts retain the exact source revisions used — set `RS_*_REF` only when a release must not float.
 
@@ -220,6 +223,8 @@ Do not use `npm install`; it will create a `package-lock.json` and may not respe
 
 Container mode runs GitHub Actions jobs inside Linux containers using a Docker-compatible engine (Podman preferred). Host mode runs the same pnpm/cargo steps directly — use this when no container engine is available or act cannot reach the daemon. `pnpm run check:environment` warns if no container engine or act is missing but does not block commits. Use **native** scripts when no Docker-compatible engine is available or act cannot reach the daemon.
 
+Docker `pnpm run act:ci` runs the real `ci.yaml` work jobs (`quality`, `lint`, `typecheck`, `app-build`, `policy-scanners`) in sequence. It does **not** invoke the `Build & Test` aggregator (`build`) — that job only checks sibling results on GitHub so the required check name stays stable. Path-filtered Flatpak checks are not part of container `act:ci` (native `act:ci:native` still runs them; or change Flatpak inputs and use the `flatpak` job / `act:flatpak`).
+
 **macOS note:** [Podman Desktop](https://podman.io/) is the preferred Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at `/var/run/docker.sock`; pass that path to `act` via `ACT_DOCKER_SOCKET`, or let `act` detect it automatically if Podman created the symlink. If you use Docker Desktop instead, its socket is typically under `~/.docker/run/docker.sock`.
 
 Install act (container mode only):
@@ -246,6 +251,8 @@ pnpm run act:pull-images
 pnpm run act:list
 
 # PR parity — container (act + Podman/Docker)
+# act:ci runs quality / lint / typecheck / app-build / policy-scanners
+# (not the GitHub-only Build & Test aggregator job)
 pnpm run act:ci
 pnpm run act:tests
 pnpm run act:pr
@@ -367,6 +374,7 @@ The ruleset is already **active** with `merge_group` triggers on `ci.yaml` / `te
 All PRs (and merge-queue groups) for `main` must pass the **required check names** listed above. Those jobs cover:
 
 - Lint, format, markdown, licenses, actionlint, yamllint (`pnpm run lint` and related steps in `ci.yaml`)
+- Cheap always-on policy scanners (`check:electron-security`, log/XSS/console/IPC/protocol-string gates, and the matching cheap `check:*` set)
 - Typecheck and build (`pnpm run typecheck`, `pnpm run build`)
 - Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on `merge_group`, `main`, and manual runs
 
@@ -386,7 +394,7 @@ The pre-commit hook (`.githooks/pre-commit`) runs checks beyond what GitHub Acti
 
 **PR CI** ([`tests.yaml`](../.github/workflows/tests.yaml)) selects merge-base-related Vitest work and fails closed to the full suite when scoping is unsafe. The merge queue and **`pnpm run release`** always run full Vitest; green pre-commit does not replace those gates.
 
-CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
+CI focuses on lint, typecheck, build, cheap always-on policy scanners, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (`locale-quality.test.ts`).
 
 ---
 
@@ -414,6 +422,18 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 ## Packaging smoke builds (`build.yaml` / `flatpak.yaml` / `release.yaml`)
 
+`build.yaml` and `release.yaml` call `packaging-sidecars.yaml` to build the x64 and ARM64 Reticulum sidecars in parallel on separate runners (job UI: **Stage Reticulum**). Each OS runs the full-feature host tests once in its native architecture job. Release platform selection applies to both the sidecar and Electron matrices. Packaging starts after the selected sidecars succeed, so a failed build or test blocks the installers.
+
+The sidecars reach the packaging jobs as tar archives from the same workflow run (`ci-reticulum-staged-{platform}-{arch}` — internal handoff only; not installer downloads). Tar preserves Unix executable permissions; each architecture also carries its own `RESOLVED_SHAS.txt` for the freshly cloned Ratspeak sources. The download action verifies that both platform binaries are staged before Electron packaging. Installer names, signing, updater metadata, and the four packaging smoke jobs remain the same. The existing `reticulum-sidecar.yaml` checks remain independent.
+
+**Actions artifact zip names (installer downloads):** Release keeps `mesh-client-{macos|linux|windows}-{sha}`. Build Binaries (always `workflow_dispatch`) uses the same names with a `test-` prefix (`test-mesh-client-…`) so testers can tell them apart from official packaging runs. Filenames _inside_ those zips still get `-run{N}` on Build Binaries (see below).
+
+Local `node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin` still runs host tests and builds both architectures. `--arch x64|arm64` selects one target; CI uses `--skip-tests` only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.
+
+Packaging sidecars cache Cargo dependencies with `Swatinem/rust-cache`, separately by target triple, runner OS/architecture, and Rust toolchain. The packaging key is separate from validation jobs. The sidecar workspace crate and Cargo-installed tools are excluded. Every run still clones the current Ratspeak sources, applies overlays, runs the native host tests, and builds/stages the selected target; a cache hit never skips those steps. Missing caches fall back to a normal build.
+
+To test sidecar staging or compare cold and warm cache timings without building installers or publishing a release, run **Packaging sidecars** manually and select `all`, `mac`, `linux`, or `win`. It uses the same jobs as Build Binaries and Release and uploads only the staged sidecar artifacts.
+
 ### Build channel stamp (test vs release)
 
 **Build Binaries** (`build.yaml`), **Release** (`release.yaml`), and **Build Flatpak** (`flatpak.yaml`) run `scripts/ci-write-build-info-env.mjs` before packaging. That writes a JSON `MESH_CLIENT_BUILD_INFO` blob into `$GITHUB_ENV`, which `scripts/esbuild-main-build.mjs` embeds via esbuild `--define` into the main process. Flatpak also writes `flatpak/ci-build-info.json` (gitignored) so the sandbox `pnpm run build` sees the same env.
@@ -434,7 +454,7 @@ CI focuses on lint, typecheck, build, Flatpak metadata validation, and coverage 
 
 | Workflow       | When                       | Filename stamp                                                                                                                                                                                                                            |
 | -------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `build.yaml`   | Always (dispatch-only)     | After `dist:*`, `scripts/rename-test-build-artifacts.mjs` renames AppImage/deb/rpm/DMG/ZIP/Setup under `release/` to include `-run{GITHUB_RUN_NUMBER}` (e.g. `Mesh-client-5.26.0-run214.AppImage`, `Mesh-client Setup 5.26.0-run214.exe`) |
+| `build.yaml`   | Always (dispatch-only)     | After `dist:*`, `scripts/rename-test-build-artifacts.mjs` renames AppImage/deb/rpm/DMG/ZIP/Setup under `release/` to include `-run{GITHUB_RUN_NUMBER}` (e.g. `Mesh-client-5.26.0-run214.AppImage`, `Mesh-client-Setup-5.26.0-run214.exe`) |
 | `flatpak.yaml` | `workflow_dispatch` only   | After in-job smoke, rename to `org.coloradomesh.MeshClient-run{N}.flatpak`, then upload                                                                                                                                                   |
 | `flatpak.yaml` | tag `v*` (release publish) | Clean `org.coloradomesh.MeshClient.flatpak` (no `-run{N}`)                                                                                                                                                                                |
 | `release.yaml` | tag publish                | Clean electron-builder names (no rename step)                                                                                                                                                                                             |

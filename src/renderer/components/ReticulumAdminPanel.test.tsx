@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -25,11 +25,25 @@ vi.mock('@/renderer/lib/reticulum/useReticulumSidecarApi', () => ({
 }));
 
 vi.mock('./flasher/RNodeFlasherSection', () => ({
-  RNodeFlasherSection: ({ portBlocked }: { portBlocked: boolean }) => (
-    <div data-testid="flasher-mock" data-port-blocked={String(portBlocked)} />
+  RNodeFlasherSection: ({
+    portBlocked,
+    focusBluetoothNonce,
+  }: {
+    portBlocked: boolean;
+    focusBluetoothNonce?: number;
+  }) => (
+    <div
+      data-testid="flasher-mock"
+      data-port-blocked={String(portBlocked)}
+      data-focus-bluetooth-nonce={String(focusBluetoothNonce ?? 0)}
+    />
   ),
 }));
 
+import {
+  requestReticulumAdminBluetoothFocus,
+  resetReticulumAdminBluetoothFocusForTests,
+} from '@/renderer/lib/reticulum/reticulumAdminBluetoothFocus';
 import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSidecarApi';
 
 import { ReticulumAdminPanel } from './ReticulumAdminPanel';
@@ -37,6 +51,7 @@ import { ToastProvider } from './Toast';
 
 describe('ReticulumAdminPanel', () => {
   beforeEach(() => {
+    resetReticulumAdminBluetoothFocusForTests();
     refreshIdentity.mockReset();
     vi.mocked(useReticulumSidecarApi).mockReturnValue({
       sidecarUiRunning: true,
@@ -59,6 +74,32 @@ describe('ReticulumAdminPanel', () => {
     expect(screen.getByTestId('flasher-mock')).toBeInTheDocument();
     expect(screen.getByText('radioPanel.dangerZone')).toBeInTheDocument();
     expect(screen.getByText('adminPanel.reticulumFactoryReset.button')).toBeInTheDocument();
+  });
+
+  it('expands the flasher section when Admin Bluetooth focus is requested', async () => {
+    const scrollIntoView = vi.fn();
+    vi.spyOn(HTMLElement.prototype, 'scrollIntoView').mockImplementation(scrollIntoView);
+
+    render(
+      <ToastProvider>
+        <ReticulumAdminPanel connecting={false} onStartStack={async () => {}} />
+      </ToastProvider>,
+    );
+
+    const summary = screen.getByText('flasher.title');
+    const details = summary.closest('details');
+    expect(details).not.toHaveAttribute('open');
+
+    act(() => {
+      requestReticulumAdminBluetoothFocus();
+    });
+
+    await waitFor(() => {
+      expect(details).toHaveAttribute('open');
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('flasher-mock')).toHaveAttribute('data-focus-bluetooth-nonce', '1');
+    });
   });
 
   it('collapses the flasher section by default and expands on click', async () => {

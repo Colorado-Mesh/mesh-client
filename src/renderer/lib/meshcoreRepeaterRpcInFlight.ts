@@ -176,11 +176,6 @@ export function getMeshcoreCompanionRepeaterRfBusySnapshot(): {
 export const resetMeshcoreRepeaterRpcInFlightOnDisconnect =
   resetMeshcoreRepeaterRpcInFlightForTests;
 
-/** Repeater pings/traces queued or running (MeshCore allows one trace at a time on the radio). */
-export function meshcoreRepeaterTraceInFlightCount(): number {
-  return traceInFlightByKey.size;
-}
-
 /** True while the per-node ping/trace RPC wrapper is still running (includes direct-retry window). */
 export function meshcoreRepeaterTraceActiveForNode(nodeId: number): boolean {
   return (traceInFlightCountByNode.get(nodeId >>> 0) ?? 0) > 0;

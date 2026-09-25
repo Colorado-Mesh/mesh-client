@@ -1,8 +1,14 @@
-import { dispatchNobleBleYieldReleased } from '@/renderer/lib/nobleBleYieldReleased';
 import type { BlePeripheralOwner } from '@/shared/electron-api.types';
 import { normalizeBleMac } from '@/shared/normalizeBleMac';
 
 export { normalizeBleMac };
+
+/** Fired when Reticulum releases the BLE adapter lease so LoRa stacks can retry. */
+export const BLE_ADAPTER_LEASE_RELEASED_EVENT = 'mesh-client:bleAdapterLeaseReleased';
+
+export function dispatchBleAdapterLeaseReleased(): void {
+  window.dispatchEvent(new CustomEvent(BLE_ADAPTER_LEASE_RELEASED_EVENT));
+}
 
 export function isBleScanBusyErrorMessage(message: string): boolean {
   return /Bluetooth scan in progress/i.test(message);
@@ -12,14 +18,13 @@ export function isBlePeripheralConflictErrorMessage(message: string): boolean {
   return /already in use by/i.test(message);
 }
 
-/** @deprecated Use isBleScanBusyErrorMessage or isBlePeripheralConflictErrorMessage. */
-export function isReticulumBleBusyErrorMessage(message: string): boolean {
-  return isBleScanBusyErrorMessage(message) || isBlePeripheralConflictErrorMessage(message);
-}
-
 export async function acquireReticulumBleScan(): Promise<boolean> {
   try {
-    await window.electronAPI.bleCoexistence.acquireScan('reticulum');
+    const result = await window.electronAPI.bleCoexistence.acquireScan('reticulum');
+    if (!result.ok) {
+      console.debug('[Reticulum] bleCoexistence acquireScan busy:', result.owner);
+      return false;
+    }
     return true;
   } catch (err) {
     console.warn('[Reticulum] bleCoexistence acquireScan failed:', err);
@@ -35,16 +40,18 @@ export async function releaseReticulumBleScan(): Promise<void> {
   }
 }
 
-/** Yield Noble BLE so the sidecar (btleplug) can pair/connect a BLE RNode on macOS/Windows. */
+/** Ensure sidecar is up for BLE RNode; does not tear down LoRa GATT sessions. */
 export async function prepareReticulumBleRnodeConnect(): Promise<boolean> {
   try {
-    await window.electronAPI.bleCoexistence.suspendNobleForReticulumBleConnect();
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 500);
-    });
+    // Scan lease only — LoRa GATT sessions stay up (single sidecar adapter owner).
+    const result = await window.electronAPI.bleCoexistence.acquireScan('reticulum');
+    if (!result.ok) {
+      console.debug('[Reticulum] prepareReticulumBleRnodeConnect busy:', result.owner);
+      return false;
+    }
     return true;
   } catch (err) {
-    console.warn('[Reticulum] suspendNobleForReticulumBleConnect failed:', err);
+    console.warn('[Reticulum] prepareReticulumBleRnodeConnect failed:', err);
     return false;
   }
 }
@@ -62,7 +69,7 @@ export async function releaseReticulumBleRnodeConnect(
 ): Promise<void> {
   await releaseReticulumBleScan();
   if (options?.notify ?? true) {
-    dispatchNobleBleYieldReleased();
+    dispatchBleAdapterLeaseReleased();
   }
 }
 
@@ -92,31 +99,13 @@ export function parseBleMacFromReticulumSerialPort(serialPort: string): string |
 
 export function bleOwnerI18nKey(owner: BlePeripheralOwner): string | null {
   switch (owner) {
-    case 'noble:meshtastic':
-    case 'webbt:meshtastic':
+    case 'gatt:meshtastic':
       return 'connectionPanel.bleOwner.meshtastic';
-    case 'noble:meshcore':
-    case 'webbt:meshcore':
+    case 'gatt:meshcore':
       return 'connectionPanel.bleOwner.meshcore';
     case 'reticulum':
       return 'connectionPanel.bleOwner.reticulum';
     default:
       return null;
-  }
-}
-
-/** English fallback for logs/tests; UI should use bleOwnerI18nKey + t(). */
-export function reticulumOwnerLabel(owner: BlePeripheralOwner): string {
-  switch (owner) {
-    case 'noble:meshtastic':
-    case 'webbt:meshtastic':
-      return 'Meshtastic';
-    case 'noble:meshcore':
-    case 'webbt:meshcore':
-      return 'MeshCore';
-    case 'reticulum':
-      return 'Reticulum';
-    default:
-      return owner;
   }
 }

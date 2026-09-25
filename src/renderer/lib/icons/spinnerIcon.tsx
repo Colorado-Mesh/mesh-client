@@ -1,6 +1,6 @@
 import { Loader } from 'lucide-react-motion';
 
-import { ICON_SM, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
+import { ICON_SM } from '@/renderer/lib/icons/iconClass';
 
 interface SpinnerIconProps {
   className?: string;
@@ -20,19 +20,6 @@ export function SpinnerIcon({ className, active = true }: SpinnerIconProps) {
       mode="signature"
       repeat={Infinity}
       size={16}
-    />
-  );
-}
-
-export function SpinnerIconMd({ className }: { className?: string }) {
-  return (
-    <Loader
-      aria-hidden
-      className={className ?? `${ICON_SM_PLUS} text-gray-400`}
-      trigger="mount"
-      mode="signature"
-      repeat={Infinity}
-      size={14}
     />
   );
 }

@@ -3,6 +3,8 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ESLint } from 'eslint';
+import { load } from 'js-yaml';
 import { describe, expect, it } from 'vitest';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -49,15 +51,47 @@ describe('CI workflow contracts', () => {
       'typecheck:',
       'app-build:',
       'flatpak:',
+      'policy-scanners:',
       'build:',
     ]) {
       expect(ciWorkflow).toContain(`  ${job}`);
     }
-    expect(ciWorkflow).toContain('needs: [changes, quality, lint, typecheck, app-build, flatpak]');
+    expect(ciWorkflow).toContain(
+      'needs: [changes, quality, lint, typecheck, app-build, flatpak, policy-scanners]',
+    );
     expect(ciWorkflow).toContain('FLATPAK_RESULT: ${{ needs.flatpak.result }}');
+    expect(ciWorkflow).toContain('POLICY_SCANNERS_RESULT: ${{ needs.policy-scanners.result }}');
     expect(ciWorkflow).toContain(
       '[[ "$FLATPAK_RESULT" == \'success\' || "$FLATPAK_RESULT" == \'skipped\' ]]',
     );
+  });
+
+  it('runs the cheap always-on policy scanners in CI', () => {
+    const job = ciWorkflow.split('  policy-scanners:')[1].split('  build:')[0];
+    for (const script of [
+      'check:electron-security',
+      'check:log-injection',
+      'check:log-service-sinks',
+      'check:codeql-extensions',
+      'check:insecure-temp-files',
+      'check:ipc-contract',
+      'check:console-log',
+      'check:silent-catches',
+      'check:url-hostname-sanitization',
+      'check:xss-patterns',
+      'check:protocol-string-gates',
+      'check:log-panel-filter',
+    ]) {
+      expect(job).toContain(`pnpm run ${script}`);
+    }
+    const runs = job
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.startsWith('pnpm run '));
+    expect(runs.some((line) => line === 'pnpm run check:pr')).toBe(false);
+    expect(runs.some((line) => line.startsWith('pnpm run check:i18n'))).toBe(false);
+    expect(runs.some((line) => line === 'pnpm run check:licenses')).toBe(false);
+    expect(runs.some((line) => line.startsWith('pnpm run check:flatpak'))).toBe(false);
   });
 
   it('blocks required coverage checks when detection or any shard fails', () => {
@@ -76,25 +110,57 @@ describe('CI workflow contracts', () => {
     }
   });
 
-  it('includes ESLint failure in the required build gate', () => {
-    const gate = ciWorkflow
-      .split('      - name: Verify CI fan-out')[1]
-      .split('        run: |\n')[1];
-    const success = {
-      ...process.env,
-      CHANGES_RESULT: 'success',
-      QUALITY_RESULT: 'success',
-      LINT_RESULT: 'success',
-      TYPECHECK_RESULT: 'success',
-      BUILD_RESULT: 'success',
-      FLATPAK_RESULT: 'skipped',
-      GITHUB_STEP_SUMMARY: '/dev/null',
-    };
-    for (const lint of ['success', 'failure', 'cancelled', 'skipped']) {
-      const result = spawnSync('bash', ['-c', gate], {
-        env: { ...success, LINT_RESULT: lint },
+  it.each(['LINT_RESULT', 'QUALITY_RESULT', 'POLICY_SCANNERS_RESULT'])(
+    'includes %s failure in the required build gate',
+    (job) => {
+      const gate = ciWorkflow
+        .split('      - name: Verify CI fan-out')[1]
+        .split('        run: |\n')[1];
+      const success = {
+        ...process.env,
+        CHANGES_RESULT: 'success',
+        QUALITY_RESULT: 'success',
+        LINT_RESULT: 'success',
+        TYPECHECK_RESULT: 'success',
+        BUILD_RESULT: 'success',
+        POLICY_SCANNERS_RESULT: 'success',
+        FLATPAK_RESULT: 'skipped',
+        GITHUB_STEP_SUMMARY: '/dev/null',
+      };
+      for (const status of ['success', 'failure', 'cancelled', 'skipped']) {
+        const result = spawnSync('bash', ['-c', gate], {
+          env: { ...success, [job]: status },
+        });
+        expect(result.status === 0).toBe(status === 'success');
+      }
+    },
+  );
+
+  it('delegates only duplicate formatting rules to the required format check', async () => {
+    const local = new ESLint({ cwd: ROOT });
+    const ci = new ESLint({ cwd: ROOT, overrideConfigFile: 'eslint.ci.config.mjs' });
+    const quality = ciWorkflow.split('  quality:')[1].split('  lint:')[0];
+    expect(quality).toContain('run: pnpm run format:check');
+    expect(quality).not.toMatch(/\bif:|continue-on-error:/);
+    expect(ciWorkflow).toContain('pnpm run lint --concurrency 2 --config eslint.ci.config.mjs');
+    const scripts = JSON.parse(read('package.json')).scripts;
+    expect(scripts['format:check']).toContain('**/*.{ts,tsx,js,jsx,json,css,md,sh}');
+    expect(scripts.lint).toBe('eslint . --max-warnings 0');
+
+    for (const file of ['src/shared/tcpPort.ts', 'src/renderer/App.tsx', 'e2e/startup.spec.ts']) {
+      const original = await local.calculateConfigForFile(file);
+      const optimized = await ci.calculateConfigForFile(file);
+      expect(original.rules['prettier/prettier'][0], file).toBe(2);
+      expect(optimized.rules, file).toEqual({
+        ...original.rules,
+        'prettier/prettier': [0],
       });
-      expect(result.status === 0).toBe(lint === 'success');
+    }
+    // format:check does not include these extensions; preserve their existing rules.
+    for (const file of ['vitest.harness.mts', 'scripts/electron-binary.mjs']) {
+      expect((await ci.calculateConfigForFile(file)).rules, file).toEqual(
+        (await local.calculateConfigForFile(file)).rules,
+      );
     }
   });
 
@@ -102,6 +168,79 @@ describe('CI workflow contracts', () => {
     expect(testsWorkflow).toContain('name: vitest-blob-${{ matrix.project }}-${{ matrix.shard }}');
     expect(testsWorkflow).toContain('VITEST_SHARD: ${{ matrix.shard }}/${{ matrix.shards }}');
     expect(ciWorkflow).toContain('pnpm run lint --concurrency 2');
+  });
+
+  it('collects related JUnit reports without installing the application in the merge job', () => {
+    const mergeJob = testsWorkflow.split('  merge-reports:')[1];
+    const steps = mergeJob.split(/^ {6}- /m).slice(1);
+    for (const requiredStep of [
+      'uses: actions/checkout@',
+      'uses: ./.github/actions/setup-node-pnpm',
+      'name: Download blob reports',
+      'name: Merge coverage reports',
+    ]) {
+      const step = steps.find((value) => value.startsWith(requiredStep));
+      expect(step, requiredStep).toBeDefined();
+      expect(step).toContain("if: needs.changes.outputs.vitest_mode == 'full'");
+    }
+    expect(mergeJob).not.toContain('pnpm exec vitest run --merge-reports');
+    const download = steps.find((step) => step.startsWith('name: Download scoped test results'));
+    expect(download).toContain("if: always() && needs.changes.outputs.vitest_mode == 'related'");
+    expect(download).toContain('uses: actions/download-artifact@v7');
+    expect(download).toContain('pattern: vitest-junit-*');
+    expect(download).toContain('path: test-results');
+    expect(download).toContain('merge-multiple: true');
+    expect(mergeJob).toContain('name: vitest-report');
+    expect(mergeJob).toContain('retention-days: 7');
+    expect(mergeJob).toContain('run: pnpm run test:coverage:merge');
+  });
+
+  it('uploads only the selected report format and retains reports from failing shards', () => {
+    const shards = testsWorkflow.split('  test-shards:')[1].split('  tests:')[0];
+    const steps = shards.split(/^ {6}- /m).slice(1);
+    for (const [name, mode, artifact, reportPath] of [
+      ['Upload blob report', 'full', 'vitest-blob', '.vitest-reports/*'],
+      [
+        'Upload scoped test results',
+        'related',
+        'vitest-junit',
+        'test-results/junit-${{ matrix.project }}-${{ matrix.shard }}-${{ matrix.shards }}.xml',
+      ],
+    ]) {
+      const upload = steps.find((step) => step.startsWith(`name: ${name}\n`));
+      expect(upload).toContain(`always() && needs.changes.outputs.vitest_mode == '${mode}' &&`);
+      expect(upload).toContain(
+        'contains(fromJSON(needs.changes.outputs.vitest_projects), matrix.project)',
+      );
+      expect(upload).toContain(`name: ${artifact}-\${{ matrix.project }}-\${{ matrix.shard }}`);
+      expect(upload).toContain(`path: ${reportPath}`);
+      expect(upload).toContain('if-no-files-found: error');
+    }
+  });
+
+  it.each(['full', 'related', 'skip'])('preserves the final required gate for %s runs', (mode) => {
+    const gate = testsWorkflow
+      .split('      - name: Verify selected test jobs')[1]
+      .split('      # actions/checkout')[0]
+      .split('        run: |\n')[1];
+    const success = {
+      ...process.env,
+      CHANGES_RESULT: 'success',
+      SIDECAR_SELECTED: 'false',
+      SIDECAR_RESULT: 'skipped',
+      TESTS_RESULT: mode === 'skip' ? 'skipped' : 'success',
+      VITEST_MODE: mode,
+    };
+    expect(spawnSync('bash', ['-c', gate], { env: success }).status).toBe(0);
+    for (const status of ['failure', 'cancelled', 'skipped']) {
+      for (const env of [
+        { CHANGES_RESULT: status },
+        { SIDECAR_SELECTED: 'true', SIDECAR_RESULT: status },
+        ...(mode === 'skip' ? [] : [{ TESTS_RESULT: status }]),
+      ]) {
+        expect(spawnSync('bash', ['-c', gate], { env: { ...success, ...env } }).status).toBe(1);
+      }
+    }
   });
 
   it('scopes pull request tests and keeps protected events on full coverage', () => {
@@ -118,6 +257,9 @@ describe('CI workflow contracts', () => {
     expect(testsWorkflow).toContain('cancel-in-progress: true');
     expect(ciWorkflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(testsWorkflow).toContain('uses: ./.github/actions/setup-node-pnpm');
+    expect(read('.github/workflows/buttonmash.yaml')).toContain(
+      'uses: ./.github/actions/setup-node-pnpm',
+    );
     expect(setupAction).toContain(`pnpm/action-setup@${PNPM_ACTION_SETUP_SHA}`);
     expect(setupAction).toContain(`actions/setup-node@${SETUP_NODE_SHA}`);
     expect(setupAction).toContain("default: '22.23.2'");
@@ -183,11 +325,132 @@ describe('CI workflow contracts', () => {
   });
 
   it('pins checkout and removes persisted credentials before running repository code', () => {
-    expect(ciWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(6);
+    expect(ciWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(7);
     expect(testsWorkflow.match(new RegExp(`actions/checkout@${CHECKOUT_SHA}`, 'g'))).toHaveLength(
       4,
     );
-    expect(ciWorkflow.match(/persist-credentials: false/g)).toHaveLength(6);
+    expect(ciWorkflow.match(/persist-credentials: false/g)).toHaveLength(7);
     expect(testsWorkflow.match(/persist-credentials: false/g)).toHaveLength(4);
   });
+});
+
+describe('full-stack sidecar cache', () => {
+  const workflow = load(read('.github/workflows/reticulum-sidecar.yaml'));
+  const job = workflow.jobs['build-rns-stack'];
+  const cacheIndex = job.steps.findIndex((step) => step.uses?.startsWith('Swatinem/rust-cache@'));
+
+  it('restores dependencies after fresh upstream sources and the selected toolchain', () => {
+    const cloneIndex = job.steps.findIndex((step) =>
+      step.run?.includes('bash scripts/clone-ratspeak-stack.sh'),
+    );
+    const toolchainIndex = job.steps.findIndex((step) =>
+      step.uses?.startsWith('dtolnay/rust-toolchain@'),
+    );
+    expect(cloneIndex).toBeGreaterThanOrEqual(0);
+    expect(toolchainIndex).toBeGreaterThanOrEqual(0);
+    expect(cacheIndex).toBeGreaterThan(cloneIndex);
+    expect(cacheIndex).toBeGreaterThan(toolchainIndex);
+    expect(job.steps[cacheIndex].uses).toMatch(/^Swatinem\/rust-cache@[0-9a-f]{40}$/);
+    expect(job.steps[cacheIndex].with).toMatchObject({
+      workspaces: 'reticulum-sidecar -> target',
+      'cache-bin': false,
+      'cache-workspace-crates': false,
+    });
+  });
+
+  it('isolates matrix targets and retains the action’s job/toolchain cache keys', () => {
+    const inputs = job.steps[cacheIndex].with;
+    expect(inputs.key).toBe('${{ matrix.target }}');
+    const targets = job.strategy.matrix.include.map((row) => row.target);
+    expect(new Set(targets).size).toBe(targets.length);
+    expect(inputs['shared-key']).toBeUndefined();
+    expect(inputs['add-job-id-key']).not.toBe(false);
+    expect(inputs['add-rust-environment-hash-key']).not.toBe(false);
+  });
+
+  it('always tests and rebuilds before uploading, including on a cache hit', () => {
+    const testIndex = job.steps.findIndex((step) =>
+      step.run?.startsWith('cargo test --features rns-stack,rns-ble,rns-rnode-tcp'),
+    );
+    const buildIndex = job.steps.findIndex((step) =>
+      step.run?.startsWith('cargo build --release --target'),
+    );
+    const uploadIndex = job.steps.findIndex((step) =>
+      step.uses?.startsWith('actions/upload-artifact@'),
+    );
+    expect(testIndex).toBeGreaterThan(cacheIndex);
+    expect(buildIndex).toBeGreaterThan(testIndex);
+    expect(uploadIndex).toBeGreaterThan(buildIndex);
+    for (const step of job.steps.filter((step) => step.run?.includes('cargo '))) {
+      expect(step.if).toBeUndefined();
+      expect(step['continue-on-error']).toBeUndefined();
+      expect(step['working-directory']).toBe('reticulum-sidecar');
+    }
+    expect(job.if).toBeUndefined();
+    expect(job['continue-on-error']).toBeUndefined();
+  });
+});
+
+describe('Windows ARM64 sidecar builds', () => {
+  const workflow = read('.github/workflows/reticulum-sidecar.yaml');
+  const variants = [
+    { suffix: '', features: '', artifact: 'mesh-client-reticulum-win-arm64' },
+    {
+      suffix: '-rns-stack',
+      features: ' --features rns-stack,rns-ble,rns-rnode-tcp',
+      artifact: 'mesh-client-reticulum-rns-win-arm64',
+    },
+  ];
+
+  function job(name) {
+    const body = workflow.split(`\n  ${name}:\n`)[1];
+    expect(body, `job ${name}`).toBeDefined();
+    return body.split(/\n {2}[\w-]+:\n/)[0];
+  }
+
+  it.each(variants)('keeps $artifact builds and matching Windows host tests', (variant) => {
+    const native = job(`build${variant.suffix}`);
+    expect(native).toContain('os: windows-latest');
+    expect(native).toContain('target: x86_64-pc-windows-msvc');
+    const testStep = native
+      .split('\n      - ')
+      .find((step) => step.startsWith('name: Test sidecar'));
+    expect(testStep).toBeDefined();
+    expect(testStep.split('\n').map((line) => line.trim())).toContain(
+      `run: cargo test${variant.features}`,
+    );
+    expect(testStep).not.toMatch(/\bif:|cargo build/);
+    expect(native).not.toMatch(/continue-on-error:/);
+
+    const arm64 = job(`build-windows-arm64${variant.suffix}`);
+    expect(arm64).toContain('runs-on: windows-latest');
+    expect(arm64).not.toMatch(/cargo test|\bif:|continue-on-error:/);
+    expect(arm64).toContain(
+      `run: cargo build --release --target aarch64-pc-windows-msvc${variant.features}\n`,
+    );
+    expect(arm64).toContain('working-directory: reticulum-sidecar');
+    expect(arm64).toContain(`name: ${variant.artifact}\n`);
+    expect(arm64).toContain(
+      'path: reticulum-sidecar/target/aarch64-pc-windows-msvc/release/mesh-client-reticulum.exe',
+    );
+  });
+
+  it.each(variants)(
+    'caches dependencies after fresh source/toolchain setup for $artifact',
+    (variant) => {
+      const arm64 = job(`build-windows-arm64${variant.suffix}`);
+      const clone = requireIndex(arm64, 'run: bash scripts/clone-ratspeak-stack.sh', 'clone');
+      const toolchain = requireIndex(arm64, 'targets: aarch64-pc-windows-msvc', 'toolchain');
+      const cache = requireIndex(arm64, 'uses: Swatinem/rust-cache@', 'cache');
+      const build = requireIndex(arm64, 'run: cargo build', 'build');
+      expect(clone).toBeLessThan(cache);
+      expect(toolchain).toBeLessThan(cache);
+      expect(cache).toBeLessThan(build);
+      expect(arm64).toMatch(/Swatinem\/rust-cache@[0-9a-f]{40}\n/);
+      expect(arm64).toContain('workspaces: reticulum-sidecar -> target');
+      expect(arm64).toContain('key: aarch64-pc-windows-msvc');
+      expect(arm64).toContain('cache-workspace-crates: false');
+      expect(arm64).not.toMatch(/shared-key:|add-job-id-key: false/);
+    },
+  );
 });

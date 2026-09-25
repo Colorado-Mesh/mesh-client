@@ -65,6 +65,36 @@ describe('MeshtasticProtocol.subscribe', () => {
     teardown();
   });
 
+  it('emits text_message for decoded ALERT_APP port (MECP / critical alerts)', () => {
+    const { device, emit } = mockMeshDevice();
+    const events: DomainEvent[] = [];
+    const teardown = meshtasticProtocol.subscribe(device, (e) => events.push(e));
+    emit('onMeshPacket', {
+      payloadVariant: {
+        case: 'decoded',
+        value: {
+          portnum: Portnums.PortNum.ALERT_APP,
+          payload: new TextEncoder().encode('MECP/0/M01'),
+        },
+      },
+      from: 0xabcd,
+      to: 0xffffffff,
+      id: 88,
+      channel: 0,
+      rxTime: 1_700_000_000,
+    });
+    const text = events.find((e) => e.type === 'text_message');
+    expect(text).toMatchObject({
+      type: 'text_message',
+      payload: {
+        id: '88',
+        payload: 'MECP/0/M01',
+        channelIndex: 0,
+      },
+    });
+    teardown();
+  });
+
   it('computes hopCount from hopStart/hopLimit on RF text', () => {
     const { device, emit } = mockMeshDevice();
     const events: DomainEvent[] = [];

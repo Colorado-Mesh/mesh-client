@@ -252,7 +252,7 @@ export function ReticulumStackPanel({
   if (sidecarUiRunning) {
     stackStatusClass = 'text-brand-green';
   } else if (connecting) {
-    stackStatusClass = 'animate-pulse text-yellow-400';
+    stackStatusClass = 'text-yellow-400';
   }
 
   let stackStatusText = t('connectionPanel.disconnected');
@@ -297,7 +297,14 @@ export function ReticulumStackPanel({
       <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
         <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
           <h2 className="font-medium text-gray-200">{t('connectionPanel.reticulumStackTitle')}</h2>
-          <span className={`text-xs font-medium ${stackStatusClass}`}>● {stackStatusText}</span>
+          <span
+            className={`inline-flex items-center gap-1 text-xs font-medium ${stackStatusClass}`}
+          >
+            <span aria-hidden className={connecting ? 'inline-block animate-pulse' : undefined}>
+              ●
+            </span>{' '}
+            <span>{stackStatusText}</span>
+          </span>
         </div>
         <div className="space-y-3 p-4">
           <p className="text-muted text-xs">{t('connectionPanel.reticulumStackHint')}</p>

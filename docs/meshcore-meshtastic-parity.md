@@ -104,7 +104,7 @@ mesh-client enforces this in two layers:
 
 **Repeater admin RPC wire shape:** Status and Telemetry use pubkey-framed companion commands (`meshcoreRepeaterStatusRpc.ts`, `meshcoreRepeaterTelemetryRpc.ts`). Neighbors uses `runMeshcoreRepeaterBinaryRequest` with queued send and **paged** GetNeighbours (`count` + `offset`; append into `meshcoreNeighbors` via `mergeMeshcoreNeighborPage`). Status/Telemetry/Neighbors throw on disconnect so UI toasts fire. Login is optional for CLI/telemetry when a password is saved; Status/Neighbors typically work without login on direct (0-hop) repeaters.
 
-Implementation reference: trace priming constants and PathUpdated wait helpers in [`meshcoreHookPreamble.ts`](../src/renderer/hooks/meshcore/meshcoreHookPreamble.ts); flood-advert priming rounds in [`meshcoreTraceRoutePrime.ts`](../src/renderer/lib/meshcoreTraceRoutePrime.ts); `runMeshcoreTracePathMultiplexed` in [`meshcoreTracePathMultiplex.ts`](../src/renderer/lib/meshcoreTracePathMultiplex.ts); pubkey-framed Status/Telemetry via [`meshcoreRepeaterPrefixPushRpc.ts`](../src/renderer/lib/meshcoreRepeaterPrefixPushRpc.ts); `traceRoute` / ping in [`useMeshcoreRuntime.ts`](../src/renderer/runtime/useMeshcoreRuntime.ts).
+Implementation reference: trace priming constants and PathUpdated wait helpers in [`meshcoreHookPreamble.ts`](../src/renderer/hooks/meshcore/meshcoreHookPreamble.ts); flood-advert priming rounds in [`meshcoreTraceRoutePrime.ts`](../src/renderer/lib/meshcoreTraceRoutePrime.ts); `startMeshcoreTracePathMultiplexed` in [`meshcoreTracePathMultiplex.ts`](../src/renderer/lib/meshcoreTracePathMultiplex.ts); pubkey-framed Status/Telemetry via [`meshcoreRepeaterPrefixPushRpc.ts`](../src/renderer/lib/meshcoreRepeaterPrefixPushRpc.ts); `traceRoute` / ping in [`useMeshcoreRuntime.ts`](../src/renderer/runtime/useMeshcoreRuntime.ts).
 
 ## Windows: MeshCore over BLE
 
@@ -112,7 +112,7 @@ Pair the radio in **Settings → Bluetooth & devices** before connecting from th
 
 ## Linux: MeshCore over BLE
 
-Linux uses **Web Bluetooth** in the renderer (not Noble). After you pick a device, the client reads **`bluetoothctl info <MAC>`**. If the radio is **not** paired in BlueZ, the UI asks for the **PIN shown on the device** and runs **`bluetooth-pair`** before resolving the pending Web Bluetooth `requestDevice()` selection. If a handshake times out, a **single retry** reuses the granted device via `getDevices()` so `requestDevice()` is not called again without a click. See [development-environment.md](development-environment.md#linux-bluetooth-ble) and [troubleshooting.md](troubleshooting.md#ble-known-issues).
+Linux MeshCore BLE uses the reticulum-sidecar **btleplug** GATT stack (the same path as macOS and Windows). After you pick a device in the in-app scanner, the client reads **`bluetoothctl info <MAC>`**. If the radio is **not** paired in BlueZ, the UI asks for the **PIN shown on the device** and runs **`bluetoothctl pair`** before the sidecar GATT connect. See [development-environment.md](development-environment.md#linux-bluetooth-ble) and [troubleshooting.md](troubleshooting.md#ble-known-issues).
 
 ## Chat mention tokens
 

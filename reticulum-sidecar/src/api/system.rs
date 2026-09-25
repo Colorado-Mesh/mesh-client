@@ -5,6 +5,22 @@ use axum::extract::{Query, State};
 
 use crate::stack::StackHandle;
 
+pub async fn stack_start(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    // First-run identity setup needs the HTTP shell before a live identity exists.
+    #[cfg(feature = "rns-stack")]
+    if !stack.identity_status().await.configured {
+        return Json(serde_json::json!({
+            "ok": true,
+            "rns_ready": false,
+            "identity_required": true,
+        }));
+    }
+    match stack.attach_live().await {
+        Ok(()) => Json(serde_json::json!({ "ok": true, "rns_ready": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn stack_restart(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     match stack.request_stack_restart().await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
@@ -15,6 +31,13 @@ pub async fn stack_restart(State(stack): State<Arc<StackHandle>>) -> Json<serde_
 /// Detach BLE RNode GATT before the Electron host SIGTERM/SIGKILL's the process.
 pub async fn stack_prepare_stop(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     match stack.prepare_stop().await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn stack_flush_state(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
+    match stack.flush_discovery_state().await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
@@ -114,4 +137,51 @@ pub async fn list_packets(
 pub async fn clear_packets(State(stack): State<Arc<StackHandle>>) -> Json<serde_json::Value> {
     stack.clear_packets();
     Json(serde_json::json!({ "ok": true }))
+}
+
+#[cfg(all(test, feature = "rns-stack"))]
+mod tests {
+    use super::*;
+
+    async fn test_stack() -> (tempfile::TempDir, Arc<StackHandle>) {
+        let dir = tempfile::tempdir().expect("temporary stack");
+        let (events, _) = tokio::sync::broadcast::channel(32);
+        let stack = Arc::new(
+            Box::pin(StackHandle::bootstrap(
+                dir.path().join("config"),
+                dir.path().join("storage"),
+                events,
+            ))
+            .await,
+        );
+        (dir, stack)
+    }
+
+    #[tokio::test]
+    async fn stack_start_allows_identity_setup_without_claiming_live_rns() {
+        let (_dir, stack) = test_stack().await;
+        let Json(body) = stack_start(State(Arc::clone(&stack))).await;
+        assert_eq!(body["ok"], true);
+        assert_eq!(body["identity_required"], true);
+        assert_eq!(body["rns_ready"], false);
+        assert!(!stack.rns_ready().await);
+    }
+
+    #[tokio::test]
+    async fn stack_start_reports_a_broken_existing_identity() {
+        let (dir, stack) = test_stack().await;
+        stack
+            .identity_generate(None, false)
+            .await
+            .expect("identity");
+        std::fs::write(dir.path().join("config/identity"), b"invalid key").expect("break identity");
+        let Json(body) = stack_start(State(Arc::clone(&stack))).await;
+        assert_eq!(body["ok"], false);
+        assert!(
+            body["error"]
+                .as_str()
+                .is_some_and(|e| e.contains("identity"))
+        );
+        assert!(!stack.rns_ready().await);
+    }
 }

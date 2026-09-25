@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  getNomadImageCache,
+  getNomadImageCacheGeneration,
+  setNomadImageCache,
+} from '@/renderer/lib/nomad/nomadImageCache';
+import {
   resolveReticulumOutboundViaFromInterfaces,
   type ReticulumVia,
 } from '@/renderer/lib/reticulum/classifyReticulumVia';
@@ -325,14 +330,36 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       requestId: opts?.requestId,
     }),
 
-  fetchNomadMedia: async (hash, path, opts) =>
-    fetchNomadResource<NomadFileResponse>('media', {
+  fetchNomadMedia: async (hash, path, opts) => {
+    const cached = opts?.forcePathRefresh
+      ? undefined
+      : getNomadImageCache({ hash, mediaPath: path });
+    if (cached) {
+      return {
+        ok: true,
+        content_base64: cached.content_base64,
+        ...(cached.file_name ? { file_name: cached.file_name } : {}),
+      };
+    }
+    const generation = getNomadImageCacheGeneration();
+    const res = await fetchNomadResource<NomadFileResponse>('media', {
       hash,
       path,
       nodes: get().nodes,
       forcePathRefresh: opts?.forcePathRefresh,
       requestId: opts?.requestId,
-    }),
+    });
+    if (res.ok && res.content_base64 && generation === getNomadImageCacheGeneration()) {
+      setNomadImageCache(
+        { hash, mediaPath: path },
+        {
+          content_base64: res.content_base64,
+          ...(res.file_name ? { file_name: res.file_name } : {}),
+        },
+      );
+    }
+    return res;
+  },
 
   toggleFavorite: async (hash, favorited) => {
     if (!(await isReticulumSidecarRunning())) return;

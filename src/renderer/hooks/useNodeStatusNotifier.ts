@@ -1,25 +1,77 @@
 import { useEffect, useRef } from 'react';
 
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { formatDisplayTime } from '../lib/formatDisplayTime';
 import i18n from '../lib/i18n';
 import { getNodeStatus } from '../lib/nodeStatus';
+import { PROTOCOL_THEME } from '../lib/protocolTheme';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
-import type { MeshNode } from '../lib/types';
+import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 
-function computeIsOnline(node: MeshNode, capabilities: ProtocolCapabilities | null): boolean {
+/** Brand name from the protocol theme (Meshtastic / MeshCore / Reticulum). */
+export function protocolNotificationLabel(protocol: MeshProtocol | null | undefined): string {
+  return PROTOCOL_THEME[protocol ?? 'meshtastic'].displayName;
+}
+
+/**
+ * Id shown when a watched node has no long or short name.
+ * Reticulum uses the existing 12-hex destination-hash prefix (peer/chat short id);
+ * without a hash, the folded node id in uppercase hex — same fallback as Reticulum labels.
+ */
+export function fallbackWatchedNodeId(
+  nodeId: number,
+  protocol: MeshProtocol | null | undefined,
+  reticulumDestinationHash?: string,
+): string {
+  if (protocol === 'meshcore') {
+    return `Node-${nodeId.toString(16).toUpperCase()}`;
+  }
+  if (protocol === 'reticulum') {
+    const hash = reticulumDestinationHash
+      ?.replace(/[^0-9a-f]/gi, '')
+      .toLowerCase()
+      .slice(0, 12);
+    if (hash) return hash;
+    return (nodeId >>> 0).toString(16).toUpperCase();
+  }
+  return formatMeshtasticNodeId(nodeId);
+}
+
+export function notificationNodeName(
+  node: Pick<MeshNode, 'long_name' | 'short_name' | 'reticulum_destination_hash'>,
+  nodeId: number,
+  protocol: MeshProtocol | null | undefined,
+): string {
+  return (
+    node.long_name ||
+    node.short_name ||
+    fallbackWatchedNodeId(nodeId, protocol, node.reticulum_destination_hash)
+  );
+}
+
+function computeIsOnline(
+  node: MeshNode,
+  capabilities: ProtocolCapabilities | null,
+  silenceThresholdMs: number | null,
+): boolean {
   const status = getNodeStatus(
     node.last_heard,
-    capabilities?.nodeStaleThresholdMs,
+    silenceThresholdMs ?? capabilities?.nodeStaleThresholdMs,
     capabilities?.nodeOfflineThresholdMs,
   );
   return status === 'online';
 }
 
-function fireNotification(title: string, body: string): void {
+export interface NodeStatusNotifierOptions {
+  /** User `nodeSilenceAlertMinutes`; replaces the capability stale threshold when set. */
+  silenceThresholdMinutes?: number | null;
+}
+
+export function fireNotification(title: string, body: string): void {
   try {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
@@ -41,7 +93,13 @@ function fireNotification(title: string, body: string): void {
 export function useNodeStatusNotifier(
   nodes: Map<number, MeshNode>,
   capabilities: ProtocolCapabilities | null,
+  options: NodeStatusNotifierOptions = {},
 ): void {
+  const silenceMinutes = options.silenceThresholdMinutes;
+  const silenceThresholdMs =
+    typeof silenceMinutes === 'number' && Number.isFinite(silenceMinutes) && silenceMinutes > 0
+      ? silenceMinutes * MS_PER_MINUTE
+      : null;
   const watchedNodeIds = useWatchedNodesStore((s) => s.watchedNodeIds);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const prevOnlineRef = useRef<Map<number, boolean>>(new Map());
@@ -56,19 +114,15 @@ export function useNodeStatusNotifier(
       const node = nodes.get(nodeId);
       if (!node) continue;
 
-      const isOnline = computeIsOnline(node, capabilities);
+      const isOnline = computeIsOnline(node, capabilities, silenceThresholdMs);
       next.set(nodeId, isOnline);
 
       if (!prev.has(nodeId)) continue;
       const wasOnline = prev.get(nodeId)!;
 
-      const protocolLabel = capabilities?.protocol === 'meshcore' ? 'MeshCore' : 'Meshtastic';
-      const name =
-        node.long_name ||
-        node.short_name ||
-        (capabilities?.protocol === 'meshcore'
-          ? `Node-${nodeId.toString(16).toUpperCase()}`
-          : formatMeshtasticNodeId(nodeId));
+      const protocol = capabilities?.protocol;
+      const protocolLabel = protocolNotificationLabel(protocol);
+      const name = notificationNodeName(node, nodeId, protocol);
       if (!wasOnline && isOnline) {
         fireNotification(
           i18n.t('nodeStatusNotifier.onlineTitle', { name }),
@@ -91,5 +145,5 @@ export function useNodeStatusNotifier(
     }
 
     prevOnlineRef.current = next;
-  }, [nodes, watchedNodeIds, capabilities, use24HourTime]);
+  }, [nodes, watchedNodeIds, capabilities, use24HourTime, silenceThresholdMs]);
 }

@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Médical",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Terrain / Infrastructure",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Météo / Environnement",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Approvisionnement",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Position / Déplacement",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Coordination",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Réponse",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Exercice / Test",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Quotidien / Loisirs",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Menace / Sécurité",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Disponible / Offrir des ressources",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "Balise",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Blessure",
+    "M02": "Personne inconsciente",
+    "M03": "Difficulté respiratoire",
+    "M04": "Urgence cardiaque",
+    "M05": "Hypothermie",
+    "M06": "Hémorragie grave",
+    "M07": "Fracture / immobilisé",
+    "M08": "Brûlures",
+    "M09": "Victimes multiples",
+    "M10": "Décédé",
+    "M11": "Morsure / piqûre d’animal",
+    "M12": "Réaction allergique / anaphylaxie",
+    "M13": "Empoisonnement / exposition toxique",
+    "M14": "Personnes trouvées vivantes",
+    "M15": "Zone fouillée, aucune victime",
+    "T01": "Route bloquée",
+    "T02": "Pont détruit",
+    "T03": "Bâtiment effondré",
+    "T04": "Inondation",
+    "T05": "Glissement de terrain",
+    "T06": "Coupure de courant",
+    "T07": "Incendie",
+    "T08": "Avalanche",
+    "T09": "Chemin impraticable",
+    "T10": "Abri disponible",
+    "T11": "Noyade / sauvetage aquatique nécessaire",
+    "T12": "Contamination de l’eau",
+    "T13": "Séisme",
+    "T14": "Fuite de gaz",
+    "T15": "Déversement chimique / matières dangereuses",
+    "T16": "Accident de véhicule",
+    "T17": "Véhicule en feu",
+    "W01": "Tempête en approche",
+    "W02": "Visibilité nulle",
+    "W03": "Froid extrême",
+    "W04": "Chaleur extrême",
+    "W05": "Qualité de l’air dangereuse",
+    "W06": "Alerte tsunami / raz-de-marée",
+    "S01": "Besoin d’eau",
+    "S02": "Besoin de nourriture",
+    "S03": "Besoin de médicaments",
+    "S04": "Besoin de batterie / courant",
+    "S05": "Besoin de carburant",
+    "S06": "Besoin d’outils / équipement",
+    "P01": "Bloqué / coincé",
+    "P02": "Évacuation vers",
+    "P03": "Confiné sur place",
+    "P04": "En route vers",
+    "P05": "Aux coordonnées GPS",
+    "P06": "Perdu",
+    "P07": "Groupe séparé",
+    "C01": "Envoyer les secours",
+    "C02": "Besoin de transport",
+    "C03": "Relayer ce message",
+    "C04": "Confirmer la réception",
+    "C05": "Combien de personnes",
+    "C06": "Quel est le statut",
+    "C07": "Pouvez-vous atteindre",
+    "C08": "Rendez-vous à",
+    "R01": "Reçu",
+    "R02": "Secours en route",
+    "R03": "Arrivée dans [minutes]",
+    "R04": "Ne peut pas aider",
+    "R05": "Redirection vers",
+    "R06": "Veuillez patienter",
+    "R07": "Situation résolue / fin d’alerte",
+    "D01": "Ceci est un exercice",
+    "D02": "Ceci est un test",
+    "D03": "Fin de l’exercice",
+    "D04": "Ignorer le précédent — envoyé par erreur",
+    "L01": "Bière / boissons",
+    "L02": "Café",
+    "L03": "Repas prêt",
+    "L04": "Sommet atteint",
+    "L05": "Au camp",
+    "L06": "En retard",
+    "L07": "Bon signal ici",
+    "L08": "Occasion photo",
+    "L09": "Faune observée",
+    "L10": "Belle vue",
+    "L11": "Sentier en bon état",
+    "L12": "Sentier en mauvais état",
+    "L13": "Besoin d’une pause",
+    "L14": "Retour à la maison",
+    "L15": "Bonjour / pointage",
+    "L16": "Bonne nuit",
+    "L17": "Merci",
+    "L18": "On s’amuse bien",
+    "L19": "Festival / événement ici",
+    "L20": "Test de nœud / ping",
+    "X01": "Personne dangereuse / menace à proximité",
+    "X02": "Zone dangereuse — à éviter",
+    "X03": "Coups de feu / explosions entendus",
+    "X04": "Troubles civils / foule dangereuse",
+    "X05": "Vol / pillage signalé",
+    "X06": "Autorités / services d’urgence sur place",
+    "X07": "Point de contrôle / barrage routier (autorités)",
+    "H01": "Eau disponible",
+    "H02": "Nourriture disponible",
+    "H03": "Matériel médical disponible",
+    "H04": "Courant / recharge disponible",
+    "H05": "Carburant disponible",
+    "H06": "Outils / équipement disponibles",
+    "H07": "Abri / place pour [N] pers.",
+    "H08": "Transport / véhicule disponible",
+    "B01": "Balise de détresse automatique active — l'expéditeur peut ne pas répondre",
+    "B02": "Balise confirmée — réduire la fréquence d'émission",
+    "B03": "Annuler la balise — je vais bien"
+  }
+}

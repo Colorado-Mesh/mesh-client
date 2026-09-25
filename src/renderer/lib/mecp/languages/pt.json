@@ -1,0 +1,162 @@
+{
+  "categories": {
+    "M": {
+      "name": "Médico",
+      "icon": "medical"
+    },
+    "T": {
+      "name": "Terreno / Infraestrutura",
+      "icon": "terrain"
+    },
+    "W": {
+      "name": "Meteorologia / Ambiente",
+      "icon": "weather"
+    },
+    "S": {
+      "name": "Suprimentos",
+      "icon": "supplies"
+    },
+    "P": {
+      "name": "Posição / Movimento",
+      "icon": "position"
+    },
+    "C": {
+      "name": "Coordenação",
+      "icon": "coordination"
+    },
+    "R": {
+      "name": "Resposta",
+      "icon": "response"
+    },
+    "D": {
+      "name": "Simulacro / Teste",
+      "icon": "drill"
+    },
+    "L": {
+      "name": "Vida / Lazer",
+      "icon": "leisure"
+    },
+    "X": {
+      "name": "Ameaça / Segurança",
+      "icon": "threat"
+    },
+    "H": {
+      "name": "Disponível / Oferta de Recursos",
+      "icon": "resources"
+    },
+    "B": {
+      "name": "Baliza",
+      "icon": "beacon"
+    }
+  },
+  "codes": {
+    "M01": "Ferimento",
+    "M02": "Pessoa inconsciente",
+    "M03": "Dificuldade respiratória",
+    "M04": "Evento cardíaco",
+    "M05": "Hipotermia",
+    "M06": "Hemorragia grave",
+    "M07": "Fratura / imóvel",
+    "M08": "Queimaduras",
+    "M09": "Múltiplas vítimas",
+    "M10": "Falecido",
+    "M11": "Mordida / picada de animal",
+    "M12": "Reação alérgica / anafilaxia",
+    "M13": "Envenenamento / exposição tóxica",
+    "M14": "Pessoas localizadas com vida",
+    "M15": "Área pesquisada, sem vítimas",
+    "T01": "Estrada bloqueada",
+    "T02": "Ponte destruída",
+    "T03": "Edifício desabado",
+    "T04": "Inundação",
+    "T05": "Deslizamento de terra",
+    "T06": "Sem eletricidade",
+    "T07": "Incêndio",
+    "T08": "Avalanche",
+    "T09": "Caminho intransitável",
+    "T10": "Abrigo disponível",
+    "T11": "Afogamento / resgate aquático necessário",
+    "T12": "Contaminação da água",
+    "T13": "Terramoto",
+    "T14": "Fuga de gás",
+    "T15": "Derrame químico / HAZMAT",
+    "T16": "Acidente de viação",
+    "T17": "Veículo em chamas",
+    "W01": "Tempestade a aproximar-se",
+    "W02": "Visibilidade nula",
+    "W03": "Frio extremo",
+    "W04": "Calor extremo",
+    "W05": "Qualidade do ar perigosa",
+    "W06": "Alerta de tsunami / maré de tempestade",
+    "S01": "Precisa de água",
+    "S02": "Precisa de comida",
+    "S03": "Precisa de medicação",
+    "S04": "Precisa de bateria / energia",
+    "S05": "Precisa de combustível",
+    "S06": "Precisa de ferramentas / equipamento",
+    "P01": "Retido / preso",
+    "P02": "A evacuar em direção a",
+    "P03": "Abrigado no local",
+    "P04": "A caminho de",
+    "P05": "Nas coordenadas GPS",
+    "P06": "Perdido",
+    "P07": "Grupo separado",
+    "C01": "Enviar resgate",
+    "C02": "Precisa de transporte",
+    "C03": "Retransmitir esta mensagem",
+    "C04": "Confirmar receção",
+    "C05": "Quantas pessoas",
+    "C06": "Qual é o estado",
+    "C07": "Consegue contactar",
+    "C08": "Encontro em",
+    "R01": "Recebido",
+    "R02": "Ajuda a caminho",
+    "R03": "Chegada em [minutos]",
+    "R04": "Não é possível ajudar",
+    "R05": "Redirecionando para",
+    "R06": "Aguarde",
+    "R07": "Situação resolvida / tudo limpo",
+    "D01": "Isto é um simulacro",
+    "D02": "Isto é um teste",
+    "D03": "Fim do simulacro",
+    "D04": "Ignorar anterior — enviado por erro",
+    "L01": "Cerveja / bebidas",
+    "L02": "Café",
+    "L03": "Comida pronta",
+    "L04": "Cume alcançado",
+    "L05": "No acampamento",
+    "L06": "Atrasado",
+    "L07": "Bom sinal aqui",
+    "L08": "Oportunidade de foto",
+    "L09": "Vida selvagem avistada",
+    "L10": "Vista bonita",
+    "L11": "Condições do trilho boas",
+    "L12": "Condições do trilho más",
+    "L13": "Preciso de uma pausa",
+    "L14": "A caminho de casa",
+    "L15": "Bom dia / check-in",
+    "L16": "Boa noite",
+    "L17": "Obrigado",
+    "L18": "A divertir-me",
+    "L19": "Festival / evento aqui",
+    "L20": "Teste de nó / ping",
+    "X01": "Pessoa perigosa / ameaça próxima",
+    "X02": "Área insegura — evitar",
+    "X03": "Tiros / explosões ouvidos",
+    "X04": "Agitação civil / perigo de multidão",
+    "X05": "Roubo / pilhagem reportados",
+    "X06": "Autoridades / serviços de emergência presentes",
+    "X07": "Posto de controlo / estrada cortada (autoridade)",
+    "H01": "Água disponível",
+    "H02": "Comida disponível",
+    "H03": "Material médico disponível",
+    "H04": "Energia / carregamento disponível",
+    "H05": "Combustível disponível",
+    "H06": "Ferramentas / equipamento disponível",
+    "H07": "Abrigo / espaço para [N]pax",
+    "H08": "Transporte / veículo disponível",
+    "B01": "Baliza de socorro automática ativa — remetente pode não responder",
+    "B02": "Baliza confirmada — reduzir frequência de transmissão",
+    "B03": "Cancelar baliza — estou bem"
+  }
+}

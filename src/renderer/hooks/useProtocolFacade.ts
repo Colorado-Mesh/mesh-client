@@ -1,21 +1,24 @@
 import { useMemo } from 'react';
 
-import type { MeshProtocol } from '../lib/types';
+import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
+import type { IdentityId, MeshProtocol } from '../lib/types';
 import { useActiveMeshIdentity } from './useActiveMeshIdentity';
+import type { ConnectionActionsByProtocol } from './useAllProtocolConnectionActions';
 import type { PanelActionsByProtocol } from './useAllProtocolPanelActions';
 import { useConnectionQueue } from './useConnectionStatus';
 import { useConnectionView } from './useConnectionView';
 import { useMessages } from './useMessages';
 import { useNodes } from './useNodes';
 import { type PanelActionsBundle, usePanelActions } from './usePanelActions';
-import { useProtocolConnectionActions } from './useProtocolConnection';
+import type { ProtocolConnectionActions } from './useProtocolConnection';
 
 export interface ProtocolFacade {
   protocol: MeshProtocol;
-  focusedIdentityId: string | null;
-  meshtasticIdentityId: string | null;
-  meshcoreIdentityId: string | null;
-  connection: ReturnType<typeof useProtocolConnectionActions>;
+  focusedIdentityId: IdentityId | null;
+  identityIdByProtocol: Record<MeshProtocol, IdentityId | null>;
+  reticulumIdentityId: IdentityId | null;
+  capabilities: ProtocolCapabilities;
+  connection: ProtocolConnectionActions;
   connectionView: ReturnType<typeof useConnectionView>;
   queue: ReturnType<typeof useConnectionQueue>;
   panel: PanelActionsBundle;
@@ -30,11 +33,11 @@ export interface ProtocolFacade {
 export function useProtocolFacade(
   protocol: MeshProtocol,
   panelPrebuilt: PanelActionsByProtocol,
+  connectionPrebuilt: ConnectionActionsByProtocol,
 ): ProtocolFacade {
-  const { identityIdByProtocol, focusedIdentityId } = useActiveMeshIdentity(protocol);
-  const meshtasticIdentityId = identityIdByProtocol.meshtastic;
-  const meshcoreIdentityId = identityIdByProtocol.meshcore;
-  const connection = useProtocolConnectionActions(protocol);
+  const { identityIdByProtocol, focusedIdentityId, capabilities } = useActiveMeshIdentity(protocol);
+  const reticulumIdentityId = identityIdByProtocol.reticulum;
+  const connection = connectionPrebuilt[protocol];
   const connectionView = useConnectionView(focusedIdentityId);
   const queue = useConnectionQueue(focusedIdentityId);
   const panel = usePanelActions(protocol, focusedIdentityId, panelPrebuilt);
@@ -45,8 +48,9 @@ export function useProtocolFacade(
     () => ({
       protocol,
       focusedIdentityId,
-      meshtasticIdentityId,
-      meshcoreIdentityId,
+      identityIdByProtocol,
+      reticulumIdentityId,
+      capabilities,
       connection,
       connectionView,
       queue,
@@ -57,8 +61,9 @@ export function useProtocolFacade(
     [
       protocol,
       focusedIdentityId,
-      meshtasticIdentityId,
-      meshcoreIdentityId,
+      identityIdByProtocol,
+      reticulumIdentityId,
+      capabilities,
       connection,
       connectionView,
       queue,

@@ -36,8 +36,16 @@ jobs:
           path: READ-ME-FIRST-test-build.md
           retention-days: 30
 
-  build:
+  sidecars:
+    name: Stage Reticulum
     needs: schema-release-compare
+    permissions:
+      contents: read
+    uses: ./.github/workflows/packaging-sidecars.yaml
+
+  build:
+    name: Package ${{ matrix.sidecar_platform }}
+    needs: [schema-release-compare, sidecars]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -50,15 +58,12 @@ jobs:
           - os: macos-latest
             build_script: pnpm run dist:mac
             sidecar_platform: darwin
-            rust_targets: x86_64-apple-darwin,aarch64-apple-darwin
           - os: ubuntu-latest
             build_script: pnpm run dist:linux
             sidecar_platform: linux
-            rust_targets: x86_64-unknown-linux-gnu,aarch64-unknown-linux-gnu
           - os: windows-latest
             build_script: pnpm run dist:win
             sidecar_platform: win32
-            rust_targets: x86_64-pc-windows-msvc,aarch64-pc-windows-msvc
 
     steps:
       - name: Checkout code
@@ -101,18 +106,10 @@ jobs:
             pkg-config \
             gcc-aarch64-linux-gnu
 
-      - name: Install Rust toolchain for Reticulum sidecar
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      - name: Download Reticulum sidecars for Electron packaging
+        uses: ./.github/actions/download-packaging-sidecars
         with:
-          targets: ${{ matrix.rust_targets }}
-
-      - name: Build Reticulum sidecar for Electron packaging
-        env:
-          WORKSPACE_ROOT: ${{ github.workspace }}/.rsstack
-        run: node scripts/build-reticulum-sidecar-release.mjs --platform ${{ matrix.sidecar_platform }}
-
-      - name: Verify staged Reticulum sidecars
-        run: node scripts/verify-reticulum-sidecar-staged.mjs --platform ${{ matrix.sidecar_platform }}
+          platform: ${{ matrix.sidecar_platform }}
 
       - name: Validate Windows build runner
         if: contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'
@@ -186,7 +183,7 @@ jobs:
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v7
         with:
-          name: mesh-client-macos-${{ github.sha }}
+          name: test-mesh-client-macos-${{ github.sha }}
           path: |
             release/mac/**/*.dmg
             release/mac/**/*.zip
@@ -198,6 +195,7 @@ jobs:
             release/mac-universal/**/*.zip
             release/*.dmg
             release/*.zip
+            release/latest-mac.yml
             release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
@@ -205,11 +203,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v7
         with:
-          name: mesh-client-linux-${{ github.sha }}
+          name: test-mesh-client-linux-${{ github.sha }}
           path: |
             release/*.AppImage
             release/*.deb
             release/*.rpm
+            release/latest-linux.yml
+            release/latest-linux-arm64.yml
             release/READ-ME-FIRST-test-build.md
           retention-days: 30
 
@@ -217,10 +217,11 @@ jobs:
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v7
         with:
-          name: mesh-client-windows-${{ github.sha }}
+          name: test-mesh-client-windows-${{ github.sha }}
           path: |
             # Per-arch NSIS installers (test builds: …-run{N}.exe / …-run{N}-arm64.exe)
             release/*.exe
+            release/latest.yml
             release/READ-ME-FIRST-test-build.md
           if-no-files-found: error
           retention-days: 30
@@ -236,20 +237,29 @@ jobs:
         include:
           - os: macos-latest
             label: macOS packaging
-            artifact: mesh-client-macos-${{ github.sha }}
-            smoke_run: node scripts/verify-mac-packaging.mjs
+            artifact: test-mesh-client-macos-${{ github.sha }}
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest-mac.yml
+              && node scripts/verify-mac-packaging.mjs
           - os: ubuntu-latest
             label: Linux packaging
-            artifact: mesh-client-linux-${{ github.sha }}
-            smoke_run: node scripts/verify-linux-packaging.mjs && node scripts/test-linux-appimage-reticulum-sidecar.mjs
+            artifact: test-mesh-client-linux-${{ github.sha }}
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest-linux.yml
+              --require latest-linux-arm64.yml && node scripts/verify-linux-packaging.mjs
+              && node scripts/test-linux-appimage-reticulum-sidecar.mjs
           - os: windows-latest
             label: x64 NSIS install
-            artifact: mesh-client-windows-${{ github.sha }}
-            smoke_run: node scripts/test-win-nsis-install.mjs --arch x64
+            artifact: test-mesh-client-windows-${{ github.sha }}
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest.yml
+              && node scripts/test-win-nsis-install.mjs --arch x64
           - os: windows-11-vs2026-arm
             label: arm64 NSIS install (WoA)
-            artifact: mesh-client-windows-${{ github.sha }}
-            smoke_run: node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
+            artifact: test-mesh-client-windows-${{ github.sha }}
+            smoke_run: >-
+              node scripts/assert-update-yml-artifacts.mjs --require latest.yml
+              && node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z
     steps:
       - name: Checkout code
         uses: actions/checkout@v6

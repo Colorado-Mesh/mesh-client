@@ -78,7 +78,7 @@ Also useful:
   - [Reticulum in mesh-client](reticulum.md) (sidecar, interfaces, LXMF chat, **RRC**, **Remote** rnsh/rncp, **Nomad My Pages**, propagation)
   - [Sidecar IPC contract](reticulum-sidecar-ipc.md)
   - [Reticulum troubleshooting](troubleshooting.md#reticulum) (sidecar, interfaces, Nomad, Remote transfer, RNode Wi‑Fi)
-  - Noble BLE coexistence when a Reticulum BLE RNode is connected — [Troubleshooting](troubleshooting.md#reticulum-ble-rnode-blocks-meshtasticmeshcore-noble-ble)
+  - BLE scan busy when a Reticulum BLE RNode holds the adapter — [Troubleshooting](troubleshooting.md#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble)
   - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
 - **Support**
   - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic & MeshCore tabs), Reticulum interface audit; protocol-scoped row filtering

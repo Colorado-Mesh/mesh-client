@@ -10,13 +10,13 @@ describe('Buttonmash CI', () => {
   it('runs the Vite renderer through the browser-safe Electron API stub', () => {
     expect(workflow).toContain('pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort');
     expect(workflow).toContain('target: http://127.0.0.1:4173');
-    expect(workflow).toContain('pnpm install --frozen-lockfile');
+    expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
   });
 
   it('pins actions and the CLI while keeping the run bounded and safe', () => {
     expect(workflow).toContain('uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803');
     expect(workflow).toContain('persist-credentials: false');
-    expect(workflow).toContain('uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38');
+    expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(workflow).toContain("node-version: '22.23.2'");
     expect(workflow).toContain('uses: cj-vana/buttonmash@3dfe5aa15e824accfd5f72c176ac64b2f63450db');
     expect(workflow).toContain(
@@ -41,20 +41,27 @@ describe('Buttonmash CI', () => {
     });
     expect(config.guardrails.billing.mode).toBe('refuse');
     expect(config.detectors.ignorePatterns).toContain(
-      '\\[useMeshtasticRuntime\\] Connection failed: BLE peripheral ID required on Mac/Windows',
-    );
-    expect(config.detectors.ignorePatterns).toContain(
       'controls\\.start\\(\\) should only be called after a component has mounted',
     );
     expect(config.detectors.ignorePatterns).toContain(
       "Cannot read properties of undefined \\(reading '_leaflet_pos'\\)",
     );
-    // Headless CI Chromium exposes no Web Bluetooth; the MeshCore/Meshtastic connect
-    // attempts log console.error, which is environmental rather than a renderer defect.
+    // Headless CI Chromium may still surface legacy Web Bluetooth noise from stubs.
     expect(config.detectors.ignorePatterns).toContain(
       '\\[WebBluetooth\\] navigator\\.bluetooth is UNDEFINED!',
     );
     expect(config.detectors.ignorePatterns).toContain('Web Bluetooth is not available');
     expect(config.failOn).toBe('high');
+  });
+
+  it.each([
+    '[useMeshtasticRuntime] Connection failed: BLE peripheral ID required',
+    '[useMeshcoreRuntime] connect error BLE peripheral ID required',
+  ])('keeps missing-device wiring failures visible: %s', (message) => {
+    const ignored = config.detectors.ignorePatterns.some((pattern) =>
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
+      new RegExp(pattern).test(message),
+    );
+    expect(ignored).toBe(false);
   });
 });

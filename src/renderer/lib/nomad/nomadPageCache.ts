@@ -5,7 +5,7 @@ import { normalizeNomadPagePath, serializeNomadPageRequestDataKey } from './micr
 /** Cap cached page size — aligned with NomadNetworkPanel display limit. */
 export const MAX_NOMAD_PAGE_CACHE_CHARS = 256 * 1024;
 
-const MAX_NOMAD_PAGE_CACHE_ENTRIES = 32;
+const MAX_NOMAD_PAGE_CACHE_ENTRIES = 128;
 
 export interface NomadPageCacheEntry {
   content: string;

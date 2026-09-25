@@ -73,6 +73,8 @@ modules:
       # pnpm --ignore-scripts skips electron's postinstall; unpack vendored release zips instead
       - cp -a electron-prebuilt /app/lib/mesh-client/electron
       - cp -a dist dist-electron node_modules resources /app/lib/mesh-client/
+      # Ensure Reticulum sidecar is executable (CI artifacts / cp can lose +x)
+      - chmod 755 /app/lib/mesh-client/resources/reticulum-sidecar/mesh-client-reticulum
       # Wrapper script
       - install -Dm755 flatpak/mesh-client-wrapper.sh /app/bin/mesh-client
       # Icons
@@ -94,15 +96,15 @@ modules:
         path: .
       - flatpak/generated-sources.json
       - type: archive
-        url: https://github.com/pnpm/pnpm/releases/download/v12.3.4/pnpm-linux-x64.tar.gz
-        sha256: 9705e5704b4679fb503c963a18d1ac4f105e39aafafca8a2ed346facdf820cd0
+        url: https://github.com/pnpm/pnpm/releases/download/v12.4.2/pnpm-linux-x64.tar.gz
+        sha256: ce1ed690fe9c2f091d7267e1afbe9380abb08bb577e95348fda194a41147d2ec
         dest: pnpm-vendor
         # pnpm tarball has root-level `pnpm` + `dist/`; default strip-components:1 drops the binary.
         strip-components: 0
         only-arches: [x86_64]
       - type: archive
-        url: https://github.com/pnpm/pnpm/releases/download/v12.3.4/pnpm-linux-arm64.tar.gz
-        sha256: 95e71a2a30bbc0b77511f95cf096779068dcad6ffcbbfdf0cd4dde9de2b2b97c
+        url: https://github.com/pnpm/pnpm/releases/download/v12.4.2/pnpm-linux-arm64.tar.gz
+        sha256: dc4a29d9848ef005bec3d36d49aae84b115ec3b18c110a3a7f33c37f7fd520bf
         dest: pnpm-vendor
         strip-components: 0
         only-arches: [aarch64]
@@ -110,9 +112,12 @@ modules:
         url: https://github.com/electron/electron/releases/download/v44.1.1/electron-v44.1.1-linux-x64.zip
         sha256: 043327f5bf2c492f744a806544d1aabd0dbec8674f10d3043ef0c455291b3a33
         dest: electron-prebuilt
+        # Electron zip has root-level `electron` + `locales/` + `resources/`; default strip-components:1 flattens them.
+        strip-components: 0
         only-arches: [x86_64]
       - type: archive
         url: https://github.com/electron/electron/releases/download/v44.1.1/electron-v44.1.1-linux-arm64.zip
         sha256: b06e4dfbed6689f5b2065666d52a5221e842c266b6902a01f352b7ebd8ce1784
         dest: electron-prebuilt
+        strip-components: 0
         only-arches: [aarch64]

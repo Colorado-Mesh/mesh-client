@@ -3,6 +3,9 @@
  * Prefer this over a new `scripts/check-*.mjs` for file-local / small-glob invariants.
  * Suppress with `// source-policy-ok <rule-id> <reason>` on the violating line (forbid)
  * or anywhere in the file (require).
+ *
+ * Cross-file “every lazy export must mount in App.tsx” is not expressible as a
+ * per-file regex; that invariant lives in `lazyPanelsMounted.test.ts`.
  */
 export interface SourcePolicyRule {
   id: string;
@@ -46,5 +49,23 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     forbid: /rxTime\s*\*\s*1000/,
     message:
       'SDK PacketMetadata.rxTime is Date (ms); use meshtasticPacketRxTimeMs — never rxTime * 1000',
+  },
+  {
+    id: 'emcomm-mecp-compose-default-off',
+    include: ['src/renderer/lib/defaultAppSettings.ts'],
+    require: /mecpComposeEnabled:\s*false/,
+    message: 'mecpComposeEnabled must default false (EMCOMM safety S14)',
+  },
+  {
+    id: 'emcomm-mecp-mayday-button-default-off',
+    include: ['src/renderer/lib/defaultAppSettings.ts'],
+    require: /mecpMaydayButtonEnabled:\s*false/,
+    message: 'mecpMaydayButtonEnabled must default false (EMCOMM safety S14)',
+  },
+  {
+    id: 'emcomm-quick-status-bar-default-off',
+    include: ['src/renderer/lib/defaultAppSettings.ts'],
+    require: /quickStatusBarEnabled:\s*false/,
+    message: 'quickStatusBarEnabled must default false (EMCOMM Chat clutter opt-in)',
   },
 ];

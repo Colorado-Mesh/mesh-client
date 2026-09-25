@@ -1,6 +1,10 @@
-import type { NobleBleSessionId, NobleBleStartScanResult } from '@/shared/electron-api.types';
+import type { GattBleSessionId, GattBleStartScanResult } from '@/shared/electron-api.types';
+import { bleIdsMatch } from '@/shared/normalizeBleMac';
 
-import { isMeshcoreSetupAbortError } from './bleConnectErrors';
+import {
+  isMeshcoreMissingServicesErrorMessage,
+  isMeshcoreSetupAbortError,
+} from './bleConnectErrors';
 import { errLikeToLogString } from './errLikeToLogString';
 import { isBleScanBusyErrorMessage } from './reticulum/reticulumBleAdapterLease';
 import type { MeshProtocol } from './types';
@@ -11,32 +15,23 @@ export const BLE_RECONNECT_SCAN_TIMEOUT_MS = 60_000;
 export const BLE_SCAN_BUSY_RETRY_INTERVAL_MS = 250;
 
 /**
- * Max wait for scan mutex before failing Noble reconnect / connect retry.
+ * Max wait for scan mutex before failing GATT reconnect / connect retry.
  * Keep >= Reticulum BLE RNode connect grace (30s in reticulumLocalInterfaceRefresh)
  * so Meshtastic primary auto-connect can wait out a start yield.
  * 60s also covers longer multi-protocol scan-mutex holds under spotty BLE.
  */
 export const BLE_SCAN_BUSY_MAX_WAIT_MS = 60_000;
 
-/** Noble wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
-export const BLE_NOBLE_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
+/** GATT wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
+export const BLE_GATT_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
 
-function isLinuxPlatform(): boolean {
-  return typeof window !== 'undefined' && window.electronAPI.getPlatform() === 'linux';
-}
-
-function isLinuxWebBluetoothPlatform(): boolean {
-  return typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('linux');
-}
-
-function isNobleBleStartScanBusyResult(
-  result: NobleBleStartScanResult,
-): result is Extract<NobleBleStartScanResult, { ok: false; code: 'scan_busy' }> {
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime guard protects external or callback-mutated state.
+function isGattStartScanBusyResult(
+  result: GattBleStartScanResult,
+): result is Extract<GattBleStartScanResult, { ok: false; code: 'scan_busy' }> {
   return !result.ok && result.code === 'scan_busy';
 }
 
-function nobleBleStartScanBusyMessage(owner: string): string {
+function gattStartScanBusyMessage(owner: string): string {
   return `Bluetooth scan in progress (${owner})`;
 }
 
@@ -46,9 +41,9 @@ function sleep(ms: number): Promise<void> {
   });
 }
 
-/** Start Noble scan; retry when Reticulum or another owner holds the scan mutex. */
-export async function startNobleBleScanningWithRetry(
-  sessionId: NobleBleSessionId,
+/** Start sidecar GATT scan; retry when Reticulum or another owner holds the scan mutex. */
+export async function startGattScanningWithRetry(
+  sessionId: GattBleSessionId,
   opts?: { maxWaitMs?: number; retryIntervalMs?: number },
 ): Promise<void> {
   const maxWaitMs = opts?.maxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
@@ -57,11 +52,11 @@ export async function startNobleBleScanningWithRetry(
   let lastOwner = 'unknown';
 
   while (Date.now() < deadline) {
-    const result = await window.electronAPI.startNobleBleScanning(sessionId);
+    const result = await window.electronAPI.startGattScanning(sessionId);
     if (result.ok) {
       return;
     }
-    if (isNobleBleStartScanBusyResult(result)) {
+    if (isGattStartScanBusyResult(result)) {
       lastOwner = result.owner;
       console.debug(
         `[bleReconnectHelper] scan busy (owner=${result.owner}) — retrying in ${retryIntervalMs}ms`,
@@ -69,21 +64,21 @@ export async function startNobleBleScanningWithRetry(
       await sleep(retryIntervalMs);
       continue;
     }
-    throw new Error('Noble BLE scan failed');
+    throw new Error('GATT BLE scan failed');
   }
 
-  throw new Error(nobleBleStartScanBusyMessage(lastOwner));
+  throw new Error(gattStartScanBusyMessage(lastOwner));
 }
 
 /**
- * Noble GATT connect; retry when Reticulum (or another owner) holds the scan yield.
- * Meshtastic dual-Noble auto-connect is primary and often races a short RNode yield —
+ * Sidecar GATT connect; retry when Reticulum (or another owner) holds the scan yield.
+ * Meshtastic dual-radio auto-connect is primary and often races a short RNode yield —
  * hard-failing here left MeshCore able to connect after release while Meshtastic stayed down.
  */
-export async function connectNobleBleWithScanBusyRetry(
-  sessionId: NobleBleSessionId,
+export async function connectGattWithScanBusyRetry(
+  sessionId: GattBleSessionId,
   peripheralId: string,
-  opts?: { maxWaitMs?: number; retryIntervalMs?: number },
+  opts?: { maxWaitMs?: number; retryIntervalMs?: number; shouldAbort?: () => boolean },
 ): Promise<void> {
   const maxWaitMs = opts?.maxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
   const retryIntervalMs = opts?.retryIntervalMs ?? BLE_SCAN_BUSY_RETRY_INTERVAL_MS;
@@ -91,14 +86,21 @@ export async function connectNobleBleWithScanBusyRetry(
   let lastError = 'BLE connect failed';
 
   while (Date.now() < deadline) {
-    const result = await window.electronAPI.connectNobleBle(sessionId, peripheralId);
+    if (opts?.shouldAbort?.()) {
+      throw new Error('RNode bond recovery holds the Bluetooth adapter');
+    }
+    const result = await window.electronAPI.connectGatt(sessionId, peripheralId);
     if (result.ok) {
       return;
     }
     const message = result.error || 'BLE connect failed';
-    lastError = message;
-    if (!isBleScanBusyErrorMessage(message)) {
-      throw new Error(message);
+    const code = 'code' in result && typeof result.code === 'string' ? result.code : undefined;
+    lastError = code && code !== 'scan_busy' ? `${code}: ${message}` : message;
+    if (code === 'rnode_bond_recovery' || /RNode bond recovery/i.test(message)) {
+      throw new Error(lastError);
+    }
+    if (!isBleScanBusyErrorMessage(message) && code !== 'scan_busy') {
+      throw new Error(lastError);
     }
     console.debug(
       `[bleReconnectHelper] connect scan busy — retrying in ${retryIntervalMs}ms (${message})`,
@@ -131,38 +133,47 @@ export async function raceWithDeadline<T>(
   }
 }
 
-/** Verify Noble BLE GATT is still connected after configure (macOS/Windows). */
-export async function verifyNobleBleRfLink(
+/** Verify sidecar GATT is still connected after configure. */
+export async function verifyGattRfLink(
   rfType: 'ble' | 'serial' | 'tcp' | 'http',
-  sessionId: NobleBleSessionId,
+  sessionId: GattBleSessionId,
 ): Promise<boolean> {
   if (rfType !== 'ble') return true;
-  if (isLinuxWebBluetoothPlatform()) return true;
   try {
-    return await window.electronAPI.isNobleBleConnected(sessionId);
+    return await window.electronAPI.isGattConnected(sessionId);
   } catch {
-    // catch-no-log-ok Noble IPC may fail during teardown; treat as dead link
+    // catch-no-log-ok GATT IPC may fail during teardown; treat as dead link
     return false;
   }
 }
 
+function shouldScanAfterConnectFailure(message: string): boolean {
+  if (isMeshcoreMissingServicesErrorMessage(message)) return false;
+  if (/runtime is not mounted/i.test(message)) return false;
+  // Sidecar / adapter needs discovery before connect (Noble UUID cold start).
+  if (/scan first|not found|unknown peripheral|no such device/i.test(message)) return true;
+  // Transient connect failures may clear after a fresh scan.
+  if (/connect_timeout|timed out|unreachable/i.test(message)) return true;
+  return false;
+}
+
 /**
- * Noble macOS/Windows: connect immediately (main process uses knownPeripherals cache),
- * then scan until the peripheral appears if connect fails, then retry connect.
- * Linux Web Bluetooth and serial/HTTP/TCP reconnect use {@link rfReconnectHelper} instead.
+ * Connect immediately (sidecar may already know the peripheral), then scan until the
+ * peripheral appears if connect fails, then retry connect. Serial/HTTP/TCP reconnect use
+ * {@link rfReconnectHelper} instead.
+ *
+ * @param matchIds — optional aliases (e.g. stored Noble UUID + bleMac) matched against
+ *   discovered `deviceId` / `address` via hex-normalized equality.
+ * @param connect — optional `resolvedPeripheralId` is the discovered id when scan matched
+ *   via an alias (MAC / alternate UUID); omit to use the original stored id.
  */
 export async function reconnectBleWithScan(
   protocol: MeshProtocol,
   peripheralId: string,
-  connect: () => Promise<void>,
-  opts?: { scanTimeoutMs?: number; scanBusyMaxWaitMs?: number },
+  connect: (resolvedPeripheralId?: string) => Promise<void>,
+  opts?: { scanTimeoutMs?: number; scanBusyMaxWaitMs?: number; matchIds?: string[] },
 ): Promise<void> {
-  if (isLinuxPlatform()) {
-    await connect();
-    return;
-  }
-
-  // Fast path: main connect() resolves from Noble cache without a new discovery event.
+  // Fast path: connect resolves without a new discovery event.
   try {
     await connect();
     return;
@@ -175,17 +186,24 @@ export async function reconnectBleWithScan(
       throw err;
     }
     const message = errLikeToLogString(err);
-    // Session not registered yet — scanning cannot help and steals the BLE mutex from Reticulum.
-    if (message.includes('runtime is not mounted')) {
+    if (!shouldScanAfterConnectFailure(message)) {
       throw err instanceof Error ? err : new Error(message);
     }
     console.debug('[bleReconnectHelper] immediate connect failed — scanning ' + message);
   }
 
-  const sessionId: NobleBleSessionId = protocol;
+  const sessionId: GattBleSessionId = protocol;
   const timeoutMs = opts?.scanTimeoutMs ?? BLE_RECONNECT_SCAN_TIMEOUT_MS;
   const scanBusyMaxWaitMs = opts?.scanBusyMaxWaitMs ?? BLE_SCAN_BUSY_MAX_WAIT_MS;
   const scanStartedAt = Date.now();
+  const wantedIds = [peripheralId, ...(opts?.matchIds ?? [])].filter(
+    (id): id is string => typeof id === 'string' && id.trim().length > 0,
+  );
+
+  const deviceMatches = (device: { deviceId: string; address?: string | null }): boolean => {
+    const candidates = [device.deviceId, device.address ?? ''];
+    return wantedIds.some((want) => candidates.some((c) => c && bleIdsMatch(want, c)));
+  };
 
   return new Promise<void>((resolve, reject) => {
     const abortController = new AbortController();
@@ -200,8 +218,8 @@ export async function reconnectBleWithScan(
       }
       offDiscovered?.();
       offDiscovered = null;
-      void window.electronAPI.stopNobleBleScanning(sessionId).catch((e: unknown) => {
-        console.debug('[bleReconnectHelper] stopNobleBleScanning ' + errLikeToLogString(e));
+      void window.electronAPI.stopGattScanning(sessionId).catch((e: unknown) => {
+        console.debug('[bleReconnectHelper] stopGattScanning ' + errLikeToLogString(e));
       });
     };
 
@@ -213,10 +231,11 @@ export async function reconnectBleWithScan(
 
     signal.addEventListener('abort', cleanup, { once: true });
 
-    offDiscovered = window.electronAPI.onNobleBleDeviceDiscovered((device) => {
-      if (signal.aborted || device.deviceId !== peripheralId) return;
+    offDiscovered = window.electronAPI.onGattDeviceDiscovered((device) => {
+      if (signal.aborted || !deviceMatches(device)) return;
+      const resolvedId = device.deviceId.trim() || peripheralId;
       finish(() => {
-        void connect().then(resolve).catch(reject);
+        void connect(resolvedId).then(resolve).catch(reject);
       });
     });
 
@@ -227,7 +246,7 @@ export async function reconnectBleWithScan(
       });
     }, remainingDiscoveryMs);
 
-    void startNobleBleScanningWithRetry(sessionId, { maxWaitMs: scanBusyMaxWaitMs }).catch(
+    void startGattScanningWithRetry(sessionId, { maxWaitMs: scanBusyMaxWaitMs }).catch(
       (err: unknown) => {
         finish(() => {
           const message = err instanceof Error ? err.message : String(err);

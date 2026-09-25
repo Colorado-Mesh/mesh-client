@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { spawnSync } from 'node:child_process';
+
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
@@ -77,8 +79,13 @@ describe('Windows packaging (contract)', () => {
       expect(script).toMatch(
         /pnpm run build && node scripts\/dist-win-hoisted-install\.mjs && electron-builder --win/,
       );
+      expect(script).toContain('node scripts/normalize-win-setup-artifact-names.mjs');
       expect(script).toContain('node scripts/verify-win-packaging.mjs');
       expect(script).toContain('node scripts/dist-win-restore-node-modules.mjs');
+      const normalizeIdx = script!.indexOf('normalize-win-setup-artifact-names.mjs');
+      const verifyIdx = script!.indexOf('verify-win-packaging.mjs');
+      expect(normalizeIdx).toBeGreaterThan(-1);
+      expect(verifyIdx).toBeGreaterThan(normalizeIdx);
     }
   });
 
@@ -89,6 +96,8 @@ describe('Windows packaging (contract)', () => {
     expect(yml).toMatch(/useZip:\s*true/);
     expect(yml).toMatch(/differentialPackage:\s*false/);
     expect(yml).toContain('include: resources/installer.nsh');
+    expect(yml).not.toMatch(/^\s*artifactName:/m);
+    expect(yml).toContain('normalize-win-setup-artifact-names.mjs');
 
     const installerNsh = readFileSync(join(REPO_ROOT, 'resources', 'installer.nsh'), 'utf-8');
     expect(installerNsh).toContain('Mesh-client.exe');
@@ -101,6 +110,8 @@ describe('Windows packaging (contract)', () => {
     expect(verifyScript).toContain('win-arm64-unpacked');
     expect(verifyScript).toContain('collectWinSetupInstallers');
     expect(verifyScript).toContain('win-setup-installer-names');
+    expect(verifyScript).toContain('assert-update-yml-artifacts');
+    expect(verifyScript).toContain("requiredFiles: ['latest.yml']");
     expect(verifyScript).toContain('reticulum-sidecar');
     expect(verifyScript).toContain('assertBundledReticulumSidecarInBundle');
     expect(verifyScript).not.toContain('resedit');
@@ -110,6 +121,7 @@ describe('Windows packaging (contract)', () => {
       'utf-8',
     );
     expect(setupNamesScript).toContain('-arm64.exe');
+    expect(setupNamesScript).toContain('Mesh-client-Setup-');
     expect(setupNamesScript).toContain('^-run\\d+-arm64$');
   });
 
@@ -226,9 +238,17 @@ describe('Windows packaging (contract)', () => {
     expect(readFileSync(join(REPO_ROOT, 'scripts', 'resolve-release-matrix.mjs'), 'utf-8')).toMatch(
       /platform_key:\s*'win'[\s\S]*build_script:\s*'pnpm run dist:win'/,
     );
-    expect(readFileSync(join(REPO_ROOT, 'scripts', 'resolve-release-matrix.mjs'), 'utf-8')).toMatch(
-      /platform_key:\s*'mac'[\s\S]*rust_targets:\s*'x86_64-apple-darwin,aarch64-apple-darwin'/,
+    const macSidecars = spawnSync(
+      process.execPath,
+      [join(REPO_ROOT, 'scripts', 'resolve-release-matrix.mjs'), '--sidecars', 'mac'],
+      { encoding: 'utf8' },
     );
+    expect(macSidecars.status, macSidecars.stderr).toBe(0);
+    const macTargets = JSON.parse(macSidecars.stdout) as { target: string }[];
+    expect(macTargets.map(({ target }) => target)).toEqual([
+      'x86_64-apple-darwin',
+      'aarch64-apple-darwin',
+    ]);
     expect(releaseWorkflow).toContain('scripts/resolve-release-matrix.mjs');
     expect(releaseWorkflow).toContain(
       "contains(matrix.build_script, 'dist:win') && matrix.os != 'windows-latest'",
@@ -261,6 +281,10 @@ describe('Windows packaging (contract)', () => {
       'node scripts/test-win-nsis-install.mjs --arch arm64 --probe-7z',
     );
     expect(releaseWorkflow).toContain('needs: [release, finalize-github-release]');
+    expect(releaseWorkflow).toContain('node scripts/assert-github-release-update-yml.mjs');
+    expect(releaseWorkflow).toContain(
+      'node scripts/assert-update-yml-artifacts.mjs --require latest.yml',
+    );
     expect(releaseWorkflow).not.toContain('win-arm64-install:');
 
     const releaseJobBlock = releaseWorkflow.slice(
@@ -336,7 +360,8 @@ describe('Windows packaging (contract)', () => {
       join(REPO_ROOT, '.github', 'workflows', 'build.yaml'),
       'utf-8',
     );
-    expect(buildWorkflow).toContain('rust_targets: x86_64-apple-darwin,aarch64-apple-darwin');
+    expect(buildWorkflow).toContain('uses: ./.github/workflows/packaging-sidecars.yaml');
+    expect(buildWorkflow).toContain('sidecar_platform: darwin');
     expect(buildWorkflow).toContain('release/mac-x64/**/*.dmg');
     expect(buildWorkflow).toContain('release/mac-x64/**/*.zip');
 
@@ -374,7 +399,14 @@ describe('Windows packaging (contract)', () => {
     expect(linuxVerify).toContain('.AppImage');
     expect(linuxVerify).toContain('.deb');
     expect(linuxVerify).toContain('.rpm');
+    expect(linuxVerify).toContain('assert-update-yml-artifacts');
+    expect(macVerify).toContain('assert-update-yml-artifacts');
 
+    const downloadSidecars = readFileSync(
+      join(REPO_ROOT, '.github', 'actions', 'download-packaging-sidecars', 'action.yaml'),
+      'utf-8',
+    );
+    expect(downloadSidecars).toContain('verify-reticulum-sidecar-staged.mjs');
     for (const workflowName of ['build.yaml', 'release.yaml'] as const) {
       const workflow = readFileSync(join(REPO_ROOT, '.github', 'workflows', workflowName), 'utf-8');
       expect(workflow).toContain('packaging-smoke:');
@@ -384,7 +416,21 @@ describe('Windows packaging (contract)', () => {
       expect(workflow).toContain('node scripts/verify-mac-packaging.mjs');
       expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
       expect(workflow).toContain('node scripts/test-linux-appimage-reticulum-sidecar.mjs');
-      expect(workflow).toContain('verify-reticulum-sidecar-staged.mjs');
+      expect(workflow).toContain(
+        'node scripts/assert-update-yml-artifacts.mjs --require latest-mac.yml',
+      );
+      expect(workflow).toContain(
+        'node scripts/assert-update-yml-artifacts.mjs --require latest-linux.yml',
+      );
+      expect(workflow).toContain('--require latest-linux-arm64.yml');
+      expect(workflow).toContain(
+        'node scripts/assert-update-yml-artifacts.mjs --require latest.yml',
+      );
+      expect(workflow).toContain('release/latest-mac.yml');
+      expect(workflow).toContain('release/latest-linux.yml');
+      expect(workflow).toContain('release/latest-linux-arm64.yml');
+      expect(workflow).toContain('release/latest.yml');
+      expect(workflow).toContain('uses: ./.github/actions/download-packaging-sidecars');
       expect(workflow).not.toContain('release/mac*/**/Mesh-client.app/**');
       expect(workflow).toMatch(/upload-artifact@v7[\s\S]*?symlinks/);
     }

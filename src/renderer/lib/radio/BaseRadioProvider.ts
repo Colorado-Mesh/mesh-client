@@ -170,8 +170,8 @@ export interface ProtocolCapabilities {
   hasReticulumVoiceMemo: boolean;
   /** Reticulum: LRGP games (Games tab, Peers / Chat DM Challenge) */
   hasLrgpGames: boolean;
-  /** Whether Cancel/disconnect should stop Noble BLE scanning (Meshtastic/MeshCore on macOS/Windows). */
-  hasNobleBleScanning: boolean;
+  /** Whether Cancel/disconnect should stop GATT BLE scanning (Meshtastic/MeshCore). */
+  hasGattBleScanning: boolean;
   /** Reticulum: LXMF encrypted paper message share/scan (Chat DM) */
   hasLxmfPaper: boolean;
   /** DM composer payload limit (Reticulum LXMF only) */
@@ -256,7 +256,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasLxstVoice: false,
   hasReticulumVoiceMemo: false,
   hasLrgpGames: false,
-  hasNobleBleScanning: true,
+  hasGattBleScanning: true,
   hasLxmfPaper: false,
 };
 
@@ -339,7 +339,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasLxstVoice: false,
   hasReticulumVoiceMemo: false,
   hasLrgpGames: false,
-  hasNobleBleScanning: true,
+  hasGattBleScanning: true,
   hasLxmfPaper: false,
 };
 
@@ -421,7 +421,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasLxstVoice: true,
   hasReticulumVoiceMemo: true,
   hasLrgpGames: true,
-  hasNobleBleScanning: false,
+  hasGattBleScanning: false,
   hasLxmfPaper: true,
   // Keep in sync with RETICULUM_LXMF_PAYLOAD_LIMIT in chatComposerLimits.ts (no import — avoids cycle).
   lxmfPayloadLimit: 4096,

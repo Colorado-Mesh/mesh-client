@@ -45,6 +45,7 @@ import { translateRoutingRowDescription } from '../lib/diagnostics/diagnosticsLa
 import { snrMeaningfulForNodeDiagnostics } from '../lib/diagnostics/snrMeaningfulForNodeDiagnostics';
 import { downloadBlob } from '../lib/downloadBlob';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
+import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../lib/exportFormats';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
@@ -73,14 +74,10 @@ import {
   MeshtasticMqttOnlyPathIcons,
   resolveMeshtasticPathBadge,
 } from '../lib/meshtasticSourceIcons';
+import { nodesToExportRows } from '../lib/nodeExportRows';
 import { nodeHealthScore, nodeHealthTier } from '../lib/nodeHealthScore';
 import { getNodeTypeIcon } from '../lib/nodeIcons';
-import {
-  getNodeStatus,
-  haversineDistanceKm,
-  lastHeardToUnixSeconds,
-  normalizeLastHeardMs,
-} from '../lib/nodeStatus';
+import { getNodeStatus, haversineDistanceKm, normalizeLastHeardMs } from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { RoleDisplay } from '../lib/roleInfo';
@@ -811,27 +808,24 @@ export default function NodeListPanel({
             aria-label={t('nodeListPanel.buttonExportJson')}
             className="flex w-full items-center justify-center gap-2 rounded border border-gray-600/50 px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-200 min-[480px]:w-auto"
             onClick={() => {
-              const payload = nodeList.map((n) => ({
-                node_id: n.node_id,
-                hex_id: formatMeshtasticNodeId(n.node_id),
-                long_name: n.long_name,
-                short_name: n.short_name,
-                hw_model: n.hw_model,
-                snr: n.snr,
-                rssi: n.rssi,
-                battery: n.battery,
-                voltage: n.voltage,
-                last_heard: lastHeardToUnixSeconds(n.last_heard),
-                last_heard_unit: 'unix_sec',
-                latitude: n.latitude,
-                longitude: n.longitude,
-                altitude: n.altitude,
-                hops_away: n.hops_away,
-                via_mqtt: n.via_mqtt,
-                favorited: n.favorited,
-              }));
+              const payload = nodesToExportRows(nodeList, {
+                protocol: mode,
+                staleThresholdMs: nodeStaleThresholdMs,
+                offlineThresholdMs: nodeOfflineThresholdMs,
+              });
               const blob = new Blob(
-                [JSON.stringify({ exportedAt: new Date().toISOString(), nodes: payload }, null, 2)],
+                [
+                  JSON.stringify(
+                    {
+                      format: TOPOLOGY_EXPORT_FORMAT,
+                      version: EXPORT_FORMAT_VERSION,
+                      exportedAt: new Date().toISOString(),
+                      nodes: payload,
+                    },
+                    null,
+                    2,
+                  ),
+                ],
                 {
                   type: 'application/json',
                 },
@@ -840,6 +834,26 @@ export default function NodeListPanel({
             }}
           >
             {t('nodeListPanel.buttonExportJson')}
+          </button>
+          <button
+            type="button"
+            aria-label={t('nodeListPanel.buttonExportCsv')}
+            className="flex w-full items-center justify-center gap-2 rounded border border-gray-600/50 px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-200 min-[480px]:w-auto"
+            onClick={() => {
+              const csv = nodesToCsv(
+                nodesToExportRows(nodeList, {
+                  protocol: mode,
+                  staleThresholdMs: nodeStaleThresholdMs,
+                  offlineThresholdMs: nodeOfflineThresholdMs,
+                }),
+              );
+              downloadBlob(
+                new Blob([csv], { type: 'text/csv' }),
+                `mesh-topology-${new Date().toISOString().slice(0, 10)}.csv`,
+              );
+            }}
+          >
+            {t('nodeListPanel.buttonExportCsv')}
           </button>
         </div>
       </div>

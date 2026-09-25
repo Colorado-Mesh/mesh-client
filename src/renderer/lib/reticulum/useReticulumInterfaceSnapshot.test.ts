@@ -5,7 +5,6 @@ import {
   getReticulumBleConnectGraceExpiresAt,
   resetReticulumBleConnectGraceForTests,
 } from '@/renderer/lib/reticulum/reticulumBleConnectGrace';
-import { syncReticulumNobleBleYield } from '@/renderer/lib/reticulum/reticulumNobleBleYield';
 import {
   noteReticulumProxyRateLimitHit,
   resetReticulumProxyRateLimitBackoffForTests,
@@ -18,12 +17,10 @@ vi.mock('@/renderer/lib/reticulum/reticulumBleAdapterConflict', () => ({
   syncReticulumBleRegistry: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/renderer/lib/reticulum/reticulumNobleBleYield', () => ({
-  syncReticulumNobleBleYield: vi.fn().mockResolvedValue(undefined),
-}));
+vi.mock('@/renderer/lib/reticulum/reticulumBleAdapterLease', () => ({}));
 
 vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceLogging', () => ({
-  logReticulumLocalInterfaceHealthChanges: vi.fn(),
+  logReticulumLocalInterfaceHealthChanges: vi.fn().mockReturnValue([]),
 }));
 
 vi.mock('@/renderer/lib/reticulum/reticulumLocalInterfaceRefresh', () => ({
@@ -214,11 +211,10 @@ const BLE_RNODE_ROW = {
   serial_port: 'ble://AA:BB:CC:DD:EE:FF',
 };
 
-describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
+describe('useReticulumInterfaceSnapshot BLE RNode grace', () => {
   beforeEach(() => {
     resetReticulumBleConnectGraceForTests();
     invalidateReticulumInterfacesCache();
-    vi.mocked(syncReticulumNobleBleYield).mockClear();
     vi.mocked(window.electronAPI.reticulum.getStatus).mockResolvedValue({
       running: true,
       port: 19437,
@@ -236,16 +232,16 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
     });
   });
 
-  it('does not own Noble yield sync (watcher owns lifecycle)', async () => {
+  it('does not own BLE adapter lease lifecycle (lease helpers own release)', async () => {
     renderHook(() => useReticulumInterfaceSnapshot({ sidecarRunning: true, pollActive: false }));
 
     await waitFor(() => {
       expect(window.electronAPI.reticulum.proxyGet).toHaveBeenCalledWith('/api/v1/interfaces');
     });
-    expect(syncReticulumNobleBleYield).not.toHaveBeenCalled();
+    expect(window.electronAPI.bleCoexistence.releaseScan).not.toHaveBeenCalled();
   });
 
-  it('does not release Noble yield when sidecar stops running', async () => {
+  it('does not clear BLE connect grace when sidecar stops running', async () => {
     const { result, rerender } = renderHook(
       ({ running }: { running: boolean }) =>
         useReticulumInterfaceSnapshot({ sidecarRunning: running, pollActive: false }),
@@ -259,14 +255,12 @@ describe('useReticulumInterfaceSnapshot Noble BLE yield', () => {
     const graceBefore = getReticulumBleConnectGraceExpiresAt();
     expect(graceBefore).toBeGreaterThan(Date.now());
 
-    vi.mocked(syncReticulumNobleBleYield).mockClear();
     rerender({ running: false });
 
     await waitFor(() => {
       expect(result.current.interfaces).toEqual([]);
     });
-    expect(syncReticulumNobleBleYield).not.toHaveBeenCalled();
-    // Grace clock is owned by the watcher — snapshot must not clear it on stop.
+    // Grace clock is owned outside the snapshot — must not clear it on stop.
     expect(getReticulumBleConnectGraceExpiresAt()).toBe(graceBefore);
   });
 });

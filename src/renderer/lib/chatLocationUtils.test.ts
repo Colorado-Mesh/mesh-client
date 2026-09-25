@@ -57,7 +57,7 @@ describe('chatLocationUtils', () => {
     expect(tile.x).toBeGreaterThan(0);
     expect(tile.y).toBeGreaterThan(0);
     const url = buildStaticTileUrl(39.7392, -104.9903, 14);
-    expect(url).toBe(`https://tile.openstreetmap.org/${tile.z}/${tile.x}/${tile.y}.png`);
+    expect(url).toBe(`mesh-tiles://osm/${tile.z}/${tile.x}/${tile.y}.png`);
   });
 
   it('round-trips format → parse', () => {

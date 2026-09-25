@@ -13,6 +13,7 @@ import {
   Notification,
   powerMonitor,
   powerSaveBlocker,
+  protocol,
   safeStorage,
   screen,
   type Session,
@@ -21,7 +22,6 @@ import {
   Tray,
 } from 'electron';
 import fs from 'fs';
-import net from 'net';
 import path from 'path';
 import zlib from 'zlib';
 
@@ -35,7 +35,7 @@ import {
 } from '../shared/appSettingsKeyPrefixes';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
-import { formatHostForSocket, parseConnectHostPort } from '../shared/connectHost';
+import { parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
 import {
@@ -53,18 +53,21 @@ import { effectiveMessageTimestampMs } from '../shared/messageTimestampSkew';
 import { sanitizeUnicodeReactionScalar } from '../shared/reactionEmoji';
 import type { ReticulumSidecarStatus } from '../shared/reticulum-types';
 import type { TAKServerStatus, TAKSettings } from '../shared/tak-types';
-import { MS_PER_MINUTE, MS_PER_SECOND } from '../shared/timeConstants';
+import { MS_PER_MINUTE } from '../shared/timeConstants';
 import {
   bleCoexistenceCoordinator,
+  BlePeripheralConflictError,
   type BlePeripheralOwner,
   BleScanBusyError,
   type BleScanOwner,
 } from './ble-coexistence-coordinator';
+import { formatBluetoothctlSpawnError } from './bluetoothctlSpawnError';
 import { ensureCameraAccess, isAllowedCameraPrivacySettingsUrl } from './cameraAccess';
 import {
   assertChatExportMessageSizes,
   formatChatExportLinesWithTotalCap,
 } from './chatExportFormat';
+import { showCrashReportDialog } from './crash-report-dialog';
 import {
   addContactToGroup,
   closeDatabase,
@@ -98,6 +101,7 @@ import {
   prunePositionHistoryPerNode,
   recordMeshcorePathOutcome,
   removeContactFromGroup,
+  sanitizeExemptNodeIdsArg,
   saveMeshcoreContactsBatch,
   saveMeshcoreHopHistory,
   saveMeshcoreTraceHistory,
@@ -110,30 +114,28 @@ import {
 import { finishDbIpcHandler, finishDbIpcReadHandler, getDbForIpc } from './db-ipc-lifecycle';
 import { formatDatabaseSchemaTooNewMessage, showFatalStartupError } from './fatal-startup-dialog';
 import { fetchLinkPreview } from './fetchLinkPreview';
+import {
+  type GattDiscoveredDevice,
+  type GattSessionProfile,
+  gattSidecarProxy,
+} from './gatt-sidecar-proxy';
+import { writeGattToRadio } from './gattIpcWrite';
 import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
+import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
+import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
 import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
+import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
 import { createIpcRateLimiter } from './ipcRateLimit';
-import { registerLinuxWebBluetoothCancelIpcHandlers } from './linuxWebBluetoothCancelIpc';
-import {
-  formatBluetoothctlSpawnError,
-  linuxWebBluetoothDeviceSelection,
-} from './linuxWebBluetoothDeviceSelection';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
-import {
-  clearLiveSessionMeter,
-  noteLiveSessionData,
-  noteLiveSessionWrite,
-  resetLiveSessionMeter,
-  snapshotLiveSessionMeter,
-} from './live-session-meter';
+import { snapshotLiveSessionMeter } from './live-session-meter';
 import {
   clearLogFile,
   exportLogTo,
@@ -149,18 +151,17 @@ import {
   setMainWindow,
 } from './log-service';
 import {
-  createLongSessionNudgeController,
-  type LongSessionNudgeController,
-  parseLongSessionRestartPayload,
-} from './longSessionNudge';
+  appendMecpReceivedLog,
+  isValidMecpAppendPayload,
+  readMecpReceivedLogForExport,
+} from './mecp-received-log';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
-import { meshtasticTcpWriteErrorIsNoSocket } from './meshtasticTcpWriteResult';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
-import { handleNobleBleToRadioWrite } from './noble-ble-ipc';
-import { type NobleBleDevice, NobleBleManager, type NobleSessionId } from './noble-ble-manager';
+import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
+import { createTileCache, type TileCache } from './offline-maps/tile-cache';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
@@ -198,6 +199,14 @@ try {
     sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
   );
 }
+
+// Custom scheme for offline map tiles (must register before app.whenReady).
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'mesh-tiles',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true },
+  },
+]);
 
 // Linux: SIGSEGV in Electron GPU process on some Wayland / driver stacks (electron#41980).
 // Must run before app.whenReady(). CLI flags --disable-gpu also work; env avoids wrapper scripts.
@@ -277,8 +286,6 @@ function isWindowStateOnScreen(state: WindowState): boolean {
 
 const mqttManager = new MQTTManager();
 const meshcoreMqttAdapter = new MeshcoreMqttAdapter();
-const nobleBleManager = new NobleBleManager();
-bleCoexistenceCoordinator.setNobleManager(nobleBleManager);
 
 /** TAK status before the lazy-loaded `TakServerManager` module is imported. */
 const IDLE_TAK_STATUS: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
@@ -309,6 +316,30 @@ function ensureReticulumSidecarManager(): ReticulumSidecarManager {
   return reticulumSidecarManager;
 }
 
+gattSidecarProxy.setEnsureSidecar(async () => {
+  if (isQuitting) {
+    throw new Error('gatt sidecar ensure blocked: app is quitting');
+  }
+  const mgr = ensureReticulumSidecarManager();
+  const port = await mgr.ensureForBle();
+  gattSidecarProxy.setPort(port);
+  return port;
+});
+bleCoexistenceCoordinator.setGattProxy(gattSidecarProxy);
+
+// When the shared sidecar process exits (Stop / Quit / crash), clear GATT's
+// cached port so LoRa reconnect does not hammer a dead HTTP port.
+{
+  const mgr = ensureReticulumSidecarManager();
+  mgr.on('status', (status: { running: boolean; processRunning?: boolean; port: number }) => {
+    if (!(status.processRunning ?? status.running)) {
+      gattSidecarProxy.invalidateAfterSidecarExit();
+    } else if (status.port > 0) {
+      gattSidecarProxy.setPort(status.port);
+    }
+  });
+}
+
 function attachTakForwarders(manager: TakServerManager): void {
   manager.on('status', (status) => {
     if (mainWindow) mainWindow.webContents.send('tak:status', status);
@@ -335,16 +366,12 @@ async function ensureTakServerManager(): Promise<TakServerManager> {
   return takServerManagerLoadPromise;
 }
 
-/** Max bytes per MeshCore TCP IPC write (DoS guard). */
-const MESHCORE_TCP_WRITE_MAX_BYTES = 256 * 1024;
-/** Cap per-chunk IPC fan-out from OpenHop/companion TCP reads (align with write max). */
-const MESHCORE_TCP_DATA_MAX_BYTES = MESHCORE_TCP_WRITE_MAX_BYTES;
 /** Min node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
 const MESHCORE_CHAT_STUB_ID_MIN = 0xa0000000 >>> 0;
 /** Max node ID for MeshCore chat stub nodes (derived from meshcoreUtils). */
 const MESHCORE_CHAT_STUB_ID_MAX = 0xafffffff >>> 0;
 /** Max bytes per BLE write IPC (DoS guard). */
-const NOBLE_BLE_TO_RADIO_MAX_BYTES = 512;
+const GATT_TO_RADIO_MAX_BYTES = 512;
 /** Max bytes for Meshtastic Xmodem file upload (DoS guard; matches meshcore:openJsonFile). */
 const MESHTASTIC_XMODEM_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -354,6 +381,7 @@ function isAnyMqttConnected(): boolean {
 
 let mainWindow: BrowserWindow | null = null;
 const rendererHeartbeatWatchdog = createRendererHeartbeatWatchdog();
+let offlineTileCache: TileCache | null = null;
 /** Win32 About: native About panel can hard-crash; use a small HTML BrowserWindow instead (#406). */
 let windowsAboutWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -364,64 +392,13 @@ let appMenu: Menu | null = null;
 let isConnected = false;
 let isQuitting = false;
 let shutdownDone = false;
-/** Shared quit/relaunch single-flight (app:quit, app:relaunch, OS nudge Restart). */
+/** Shared quit/relaunch single-flight (app:quit, app:relaunch). */
 let quitMainInFlight = false;
-/** Last tray unread count — restore Dock badge after long-session nudge clears. */
+/** Last tray unread count for Dock/taskbar badge. */
 let lastTrayUnreadCount = 0;
-let longSessionNudge: LongSessionNudgeController | null = null;
-
-function getLongSessionNudge(): LongSessionNudgeController {
-  longSessionNudge ??= createLongSessionNudgeController({
-    platform: process.platform,
-    isNotificationSupported: () => Notification.isSupported(),
-    createNotification: (opts) => {
-      const note = new Notification(opts);
-      return {
-        on: (event, listener) => {
-          if (event === 'action') {
-            note.on('action', (...args: unknown[]) => {
-              listener(...args);
-            });
-          } else {
-            note.on('click', (...args: unknown[]) => {
-              listener(...args);
-            });
-          }
-        },
-        show: () => {
-          note.show();
-        },
-        close: () => {
-          note.close();
-        },
-      };
-    },
-    setDockBadge: (badge) => {
-      app.dock?.setBadge(badge);
-    },
-    flashFrame: (flash) => {
-      if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.flashFrame(flash);
-      }
-    },
-    showAndFocusMainWindow: () => {
-      if (!mainWindow || mainWindow.isDestroyed()) return;
-      mainWindow.show();
-      mainWindow.focus();
-    },
-    relaunchApp: () => {
-      void quitMainProcess({ relaunch: true });
-    },
-    getLastUnreadCount: () => lastTrayUnreadCount,
-    logWarn: (message) => {
-      console.warn(sanitizeLogMessage(message));
-    },
-  });
-  return longSessionNudge;
-}
 
 /**
- * Graceful main-process exit used by app:quit / app:relaunch / OS long-session Restart.
+ * Graceful main-process exit used by app:quit / app:relaunch.
  * Mirrors historical app:quit cleanup; optional relaunch schedules a new instance before exit.
  */
 async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void> {
@@ -429,49 +406,23 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
   quitMainInFlight = true;
   isQuitting = true;
   isConnected = false;
+  // Drop exclusive hold locally without HTTP so quit never ensurePort()-respawns sidecar.
+  gattSidecarProxy.setRnodeBondRecoveryExclusive(false);
   try {
     try {
-      getLongSessionNudge().clear();
-    } catch {
-      // catch-no-log-ok best-effort OS cue clear before exit
-    }
-    await nobleBleManager.stopAllScanning();
-    try {
-      await nobleBleManager.disconnectAll();
+      await gattSidecarProxy.disconnectAll();
     } catch (err) {
       console.error(
-        '[main] quitMainProcess BLE disconnectAll failed:',
+        '[main] quitMainProcess GATT disconnectAll failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
     }
 
     await shutdownAppResources();
 
-    if (meshcoreTcpSocket) {
-      try {
-        meshcoreTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] quitMainProcess TCP socket destroy (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshcoreTcpSocket = null;
-    }
-    if (meshtasticTcpSocket) {
-      try {
-        meshtasticTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] quitMainProcess TCP socket destroy (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshtasticTcpSocket = null;
-    }
+    destroyRegisteredTcpBridgeSockets('quitMainProcess TCP socket destroy (ignored)');
     stopPowerSaveBlocker();
 
-    nobleBleManager.releaseNobleProcessHandles();
     tray?.destroy();
     tray = null;
     if (opts.relaunch) {
@@ -608,11 +559,6 @@ function clearPendingSerialSelectionTimer(): void {
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
 
-// Linux Web Bluetooth device selection session: linuxWebBluetoothDeviceSelection
-// (retain-first callback + device merge — see linuxWebBluetoothDeviceSelection.ts)
-// MeshCore may need bluetoothctl pairing + PIN before resolving requestDevice().
-const BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS = 300 * MS_PER_SECOND;
-
 // Bluetooth pairing state (Linux only — setBluetoothPairingHandler)
 // Electron's Response type requires confirmed: boolean, pin is optional
 interface BluetoothPairingResponse {
@@ -643,19 +589,10 @@ process.on('uncaughtException', (error) => {
     sanitizeLogMessage(error?.stack ?? error?.message ?? String(error)),
   );
   void flushLogBeforeQuit();
-  try {
-    dialog.showErrorBox(
-      'Mesh-Client — Unexpected Error',
-      `${error.message}\n\n${error.stack ?? ''}`,
-    );
-  } catch {
-    // catch-no-log-ok dialog unavailable during early startup; error already logged above
-  }
+  // Offer a consent-gated crash report. The dialog throttles itself (60s) and
+  // fails silently if a native dialog is unavailable (early startup / after quit).
+  showCrashReportDialog({ source: 'uncaughtException', error });
 });
-
-// Throttle user-visible dialog so a tight loop of rejections does not spam the user
-let lastUnhandledRejectionDialogAt = 0;
-const UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS = 60_000;
 
 process.on('unhandledRejection', (reason) => {
   if (isHarmlessSocketOptionError(reason)) {
@@ -670,19 +607,9 @@ process.on('unhandledRejection', (reason) => {
     sanitizeLogMessage(reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)),
   );
   void flushLogBeforeQuit();
-  const now = Date.now();
-  if (now - lastUnhandledRejectionDialogAt < UNHANDLED_REJECTION_DIALOG_COOLDOWN_MS) return;
-  lastUnhandledRejectionDialogAt = now;
-  const message =
-    reason instanceof Error ? `${reason.message}\n\n${reason.stack ?? ''}` : String(reason);
-  try {
-    dialog.showErrorBox(
-      'Mesh-Client — Unhandled Promise Rejection',
-      `A promise rejected without a handler. Check the main process terminal for full details.\n\n${message.slice(0, 1500)}${message.length > 1500 ? '…' : ''}`,
-    );
-  } catch {
-    // catch-no-log-ok dialog unavailable during early startup; rejection already logged above
-  }
+  // Normalize to an Error so the report includes a stack trace where possible.
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  showCrashReportDialog({ source: 'unhandledRejection', error });
 });
 
 // ─── Bluetooth pairing handler (Linux only) ──────────────────────────
@@ -1040,6 +967,12 @@ function validateMqttUpdateChannelKeysArgs(args: unknown): void {
       }
     }
   }
+  if (a.radioSessionId !== undefined) {
+    if (typeof a.radioSessionId !== 'string')
+      throw new Error('mqtt:updateChannelKeys: radioSessionId must be a string');
+    if (a.radioSessionId.length > 64)
+      throw new Error('mqtt:updateChannelKeys: radioSessionId too long');
+  }
 }
 
 function validateMqttUpdateTopicPrefixArgs(args: unknown): void {
@@ -1180,14 +1113,10 @@ function validateMqttPublishWaypointArgs(args: unknown): void {
   validateOptionalPskBase64(a.pskBase64, 'mqtt:publishWaypoint');
 }
 
-// Enable Web Serial; on Linux also enable Web Bluetooth at the process level
-// (per-webContents enableBlinkFeatures is not enough — Chromium gates WebBluetooth behind this switch).
+// Enable Web Serial at the process level (LoRa BLE uses sidecar btleplug, not Web Bluetooth).
+app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 if (process.platform === 'linux') {
-  app.commandLine.appendSwitch('enable-blink-features', 'Serial,WebBluetooth');
-  app.commandLine.appendSwitch('enable-features', 'WebBluetooth');
   app.commandLine.appendSwitch('enable-experimental-web-platform-features');
-} else {
-  app.commandLine.appendSwitch('enable-blink-features', 'Serial');
 }
 
 // ─── Icon Path Helper ──────────────────────────────────────────────
@@ -1757,6 +1686,7 @@ function openExternalHttpOrHttpsIfExternal(currentUrl: string, targetUrl: string
 }
 
 function createWindow() {
+  rendererHeartbeatWatchdog.expectVisibleHeartbeat();
   const savedState = loadWindowState();
   const bounds = isWindowStateOnScreen(savedState) ? savedState : DEFAULT_WINDOW_STATE;
   const center = bounds === DEFAULT_WINDOW_STATE;
@@ -1930,37 +1860,14 @@ function createWindow() {
   );
 
   // ─── Web Bluetooth: Device Selection (Linux) ───────────────────────
-  // On Linux, Electron does not show a native Bluetooth chooser. Instead it fires
-  // select-bluetooth-device on the webContents. Without a handler the request is
-  // immediately cancelled ("User cancelled the requestDevice() chooser.").
-  // Chromium multi-fires this event with a new callback each time — retain the first
-  // via linuxWebBluetoothDeviceSelection and merge device lists (do not overwrite).
+  // LoRa BLE uses sidecar GATT on all platforms. Cancel Chromium's chooser so a
+  // stray requestDevice() cannot hang the session.
   mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault();
-
-    const { isNewRequest, devices, generation } =
-      linuxWebBluetoothDeviceSelection.beginOrMergeDiscovery(deviceList, callback);
-
-    if (isNewRequest) {
-      // 60s was too short and left the session empty so selectBluetoothDevice was ignored.
-      linuxWebBluetoothDeviceSelection.armStaleTimeout(
-        BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS,
-        () => {
-          console.warn(
-            `[IPC] Bluetooth device selection stale after ${BLUETOOTH_DEVICE_SELECTION_TIMEOUT_MS / MS_PER_SECOND}s — auto-cancelling`,
-          );
-        },
-      );
-    }
-
-    console.debug(`[IPC] select-bluetooth-device: ${deviceList.length} device(s) found`);
-
-    if (!mainWindow || mainWindow.isDestroyed()) {
-      console.warn('[IPC] select-bluetooth-device: mainWindow unavailable — cancelling selection');
-      linuxWebBluetoothDeviceSelection.cancelSelection();
-      return;
-    }
-    mainWindow.webContents.send('bluetooth-devices-discovered', devices, generation);
+    console.debug(
+      `[IPC] select-bluetooth-device: cancelling (${deviceList.length} device(s); Web BT LoRa removed)`,
+    );
+    callback('');
   });
 
   // ─── Web Bluetooth: Pairing Handler (Linux) ───────────────────────────
@@ -2174,13 +2081,28 @@ function createWindow() {
   });
 
   win.on('focus', () => {
-    getLongSessionNudge().onMainWindowFocus();
+    rendererHeartbeatWatchdog.expectVisibleHeartbeat();
     refreshUnreadAppBadge();
   });
 
   setupTray(mainWindow);
 
   initUpdater(mainWindow);
+
+  if (!offlineTileCache) {
+    offlineTileCache = createTileCache(app.getPath('userData'));
+    protocol.handle(
+      'mesh-tiles',
+      createMeshTilesProtocolHandler({
+        cache: offlineTileCache,
+        getAppVersion: () => app.getVersion(),
+      }),
+    );
+    registerOfflineMapsIpcHandlers(
+      () => mainWindow,
+      () => offlineTileCache,
+    );
+  }
 }
 
 // ─── Tray unread badge ──────────────────────────────────────────────
@@ -2198,7 +2120,7 @@ function refreshUnreadAppBadge(): void {
         // https://github.com/electron/electron/blob/v44.1.1/shell/browser/notifications/mac/notification_presenter_mac.mm
         Notification.isSupported();
       },
-      suppressDockBadge: () => getLongSessionNudge().shouldSuppressUnreadDockBadge(),
+      suppressDockBadge: () => false,
       setDockBadge: (text) => {
         app.dock?.setBadge(text);
       },
@@ -2317,32 +2239,6 @@ ipcMain.on('serial-port-cancelled', (event) => {
   }
   lastSerialPortIds.clear();
 });
-
-// ─── IPC: Bluetooth device selected by user (Linux Web Bluetooth) ────
-ipcMain.on('bluetooth-device-selected', (event, deviceId: unknown) => {
-  if (!validateIpcSender(event)) {
-    console.warn('[IPC] bluetooth-device-selected: unauthorized sender');
-    return;
-  }
-  if (!linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
-    console.warn(
-      '[IPC] bluetooth-device-selected: no pending selection (ignored — may have timed out or already resolved)',
-    );
-    return;
-  }
-  const id = typeof deviceId === 'string' ? deviceId : '';
-  if (id !== '' && !linuxWebBluetoothDeviceSelection.knownDeviceIds().has(id)) {
-    console.warn('[IPC] bluetooth-device-selected: ignoring unknown deviceId');
-    return;
-  }
-  console.debug('[IPC] bluetooth-device-selected:', sanitizeLogMessage(id || '(cancelled)'));
-  if (!linuxWebBluetoothDeviceSelection.resolveSelection(id)) {
-    console.warn('[IPC] bluetooth-device-selected: resolve ignored');
-  }
-});
-
-// ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-registerLinuxWebBluetoothCancelIpcHandlers();
 
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
 // Not used on routine disconnect; only ConnectionPanel manual re-pair flow.
@@ -2864,47 +2760,51 @@ ipcMain.on('device-disconnected', (event) => {
   stopPowerSaveBlocker();
 });
 
-// ─── Noble BLE: Forward manager events to renderer ──────────────────
-nobleBleManager.on('adapterState', (state: string) => {
-  mainWindow?.webContents.send('noble-ble-adapter-state', state);
+// ─── GATT BLE: Forward proxy events to renderer ─────────────────────
+gattSidecarProxy.on('adapterState', (state: string) => {
+  mainWindow?.webContents.send('gatt-adapter-state', state);
 });
-nobleBleManager.on('deviceDiscovered', (device: NobleBleDevice) => {
-  mainWindow?.webContents.send('noble-ble-device-discovered', device);
+gattSidecarProxy.on('deviceDiscovered', (device: GattDiscoveredDevice) => {
+  mainWindow?.webContents.send('gatt-device-discovered', device);
 });
-nobleBleManager.on(
+gattSidecarProxy.on(
   'linkRssi',
-  ({ sessionId, rssi }: { sessionId: NobleSessionId; rssi: number | null }) => {
-    mainWindow?.webContents.send('noble-ble-link-rssi', { sessionId, rssi });
+  ({ sessionId, rssi }: { sessionId: GattSessionProfile; rssi: number | null }) => {
+    mainWindow?.webContents.send('gatt-link-rssi', { sessionId, rssi });
   },
 );
-nobleBleManager.on('connected', ({ sessionId }: { sessionId: NobleSessionId }) => {
-  mainWindow?.webContents.send('noble-ble-connected', { sessionId });
+gattSidecarProxy.on('connected', ({ sessionId }: { sessionId: GattSessionProfile }) => {
+  mainWindow?.webContents.send('gatt-connected', { sessionId });
 });
-nobleBleManager.on('disconnected', ({ sessionId }: { sessionId: NobleSessionId }) => {
-  mainWindow?.webContents.send('noble-ble-disconnected', { sessionId });
+gattSidecarProxy.on('disconnected', ({ sessionId }: { sessionId: GattSessionProfile }) => {
+  mainWindow?.webContents.send('gatt-disconnected', { sessionId });
 });
-nobleBleManager.on(
+gattSidecarProxy.on(
   'connect-aborted',
-  ({ sessionId, message }: { sessionId: NobleSessionId; message: string }) => {
-    mainWindow?.webContents.send('noble-ble-connect-aborted', { sessionId, message });
+  ({ sessionId, message }: { sessionId: GattSessionProfile; message: string }) => {
+    mainWindow?.webContents.send('gatt-connect-aborted', { sessionId, message });
   },
 );
-nobleBleManager.on(
+gattSidecarProxy.on(
   'fromRadio',
-  ({ sessionId, bytes }: { sessionId: NobleSessionId; bytes: Uint8Array }) => {
-    mainWindow?.webContents.send('noble-ble-from-radio', { sessionId, bytes });
+  ({ sessionId, bytes }: { sessionId: GattSessionProfile; bytes: Uint8Array }) => {
+    mainWindow?.webContents.send('gatt-from-radio', { sessionId, bytes });
+  },
+);
+gattSidecarProxy.on(
+  'issue',
+  (payload: { sessionId?: GattSessionProfile; code: string; message: string }) => {
+    mainWindow?.webContents.send('gatt:issue', payload);
   },
 );
 
-// ─── Noble BLE: IPC command handlers ────────────────────────────────
+// ─── GATT BLE: IPC command handlers ─────────────────────────────────
 const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
-  'noble:meshtastic',
-  'noble:meshcore',
-  'webbt:meshtastic',
-  'webbt:meshcore',
+  'gatt:meshtastic',
+  'gatt:meshcore',
   'reticulum',
 ]);
-const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['noble', 'reticulum', 'webbt']);
+const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['gatt', 'reticulum']);
 
 ipcMain.handle('bleCoexistence:register', (event, mac: unknown, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:register');
@@ -2949,12 +2849,21 @@ ipcMain.handle('bleCoexistence:getState', (event) => {
 ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:acquireScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
-    throw new Error('bleCoexistence:acquireScan: owner must be noble, reticulum, or webbt');
+    throw new Error('bleCoexistence:acquireScan: owner must be gatt or reticulum');
   }
   try {
     await bleCoexistenceCoordinator.acquireScan(owner as BleScanOwner);
-    return bleCoexistenceCoordinator.getState();
+    return { ok: true as const, ...bleCoexistenceCoordinator.getState() };
   } catch (err) {
+    if (err instanceof BleScanBusyError) {
+      console.debug('[main] bleCoexistence:acquireScan busy:', sanitizeLogMessage(err.message));
+      return {
+        ok: false as const,
+        code: 'scan_busy' as const,
+        owner: err.scanOwner,
+        ...bleCoexistenceCoordinator.getState(),
+      };
+    }
     console.error(
       '[main] bleCoexistence:acquireScan failed:',
       sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
@@ -2965,148 +2874,146 @@ ipcMain.handle('bleCoexistence:acquireScan', async (event, owner: unknown) => {
 ipcMain.handle('bleCoexistence:releaseScan', (event, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:releaseScan');
   if (typeof owner !== 'string' || !BLE_SCAN_OWNERS.has(owner as BleScanOwner)) {
-    throw new Error('bleCoexistence:releaseScan: owner must be noble, reticulum, or webbt');
+    throw new Error('bleCoexistence:releaseScan: owner must be gatt or reticulum');
   }
   bleCoexistenceCoordinator.releaseScan(owner as BleScanOwner);
   return bleCoexistenceCoordinator.getState();
 });
-ipcMain.handle('bleCoexistence:pauseNobleScan', async (event) => {
-  assertIpcSender(event, 'bleCoexistence:pauseNobleScan');
-  try {
-    await bleCoexistenceCoordinator.pauseNobleScan();
-    return bleCoexistenceCoordinator.getState();
-  } catch (err) {
-    console.error(
-      '[main] bleCoexistence:pauseNobleScan failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
-});
-ipcMain.handle('bleCoexistence:suspendNobleForReticulumBleConnect', async (event) => {
-  assertIpcSender(event, 'bleCoexistence:suspendNobleForReticulumBleConnect');
-  try {
-    await bleCoexistenceCoordinator.suspendNobleForReticulumBleConnect();
-    return bleCoexistenceCoordinator.getState();
-  } catch (err) {
-    console.error(
-      '[main] bleCoexistence:suspendNobleForReticulumBleConnect failed:',
-      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-    );
-    throw err;
-  }
+ipcMain.handle('bleCoexistence:suspendForReticulumBleConnect', async (event) => {
+  assertIpcSender(event, 'bleCoexistence:suspendForReticulumBleConnect');
+  await bleCoexistenceCoordinator.suspendForReticulumBleConnect();
+  return bleCoexistenceCoordinator.getState();
 });
 
-ipcMain.handle('noble-ble-start-scan', async (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-start-scan');
+ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:start-scan');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-start-scan: sessionId must be meshtastic or meshcore');
-  }
-  if (process.platform === 'linux') {
-    throw new Error(
-      'BLE scanning is not supported on Linux via Noble — use Web Bluetooth in the renderer',
-    );
+    throw new Error('gatt:start-scan: sessionId must be meshtastic or meshcore');
   }
   if (isQuitting) {
-    console.debug('[main] noble-ble-start-scan: ignoring (app is quitting)');
+    console.debug('[main] gatt:start-scan: ignoring (app is quitting)');
     return { ok: true as const };
   }
   try {
-    await nobleBleManager.startScanning(sessionId);
-    return { ok: true as const };
+    return await bleCoexistenceCoordinator.withScan('gatt', () =>
+      gattSidecarProxy.startScan(sessionId),
+    );
   } catch (err) {
     if (err instanceof BleScanBusyError) {
-      console.debug(
-        `[main] noble-ble-start-scan: scan busy (owner=${err.scanOwner}) session=${sessionId}`,
-      );
       return { ok: false as const, code: 'scan_busy' as const, owner: err.scanOwner };
     }
     throw err;
   }
 });
-ipcMain.handle('noble-ble-stop-scan', async (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-stop-scan');
+ipcMain.handle('gatt:stop-scan', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:stop-scan');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-stop-scan: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:stop-scan: sessionId must be meshtastic or meshcore');
   }
   try {
-    await nobleBleManager.stopScanning(sessionId);
+    await gattSidecarProxy.stopScan(sessionId);
   } catch (err) {
     console.error(
-      `[main] noble-ble-stop-scan failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      `[main] gatt:stop-scan failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
     );
     throw err;
   }
 });
-ipcMain.handle('noble-ble-connect', async (event, sessionId: unknown, peripheralId: unknown) => {
-  assertIpcSender(event, 'noble-ble-connect');
+ipcMain.handle('gatt:connect', async (event, sessionId: unknown, peripheralId: unknown) => {
+  assertIpcSender(event, 'gatt:connect');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-connect: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:connect: sessionId must be meshtastic or meshcore');
   }
   if (typeof peripheralId !== 'string')
-    throw new Error('noble-ble-connect: peripheralId must be a string');
+    throw new Error('gatt:connect: peripheralId must be a string');
   if (isQuitting) {
-    console.debug(`[main] noble-ble-connect: ignoring session=${sessionId} (app is quitting)`);
+    console.debug(`[main] gatt:connect: ignoring session=${sessionId} (app is quitting)`);
     return { ok: false as const, error: 'App is quitting' };
   }
   try {
-    await nobleBleManager.connect(sessionId, peripheralId);
-    return { ok: true as const };
+    if (gattSidecarProxy.isRnodeBondRecoveryExclusive()) {
+      return {
+        ok: false as const,
+        error: 'RNode bond recovery holds the Bluetooth adapter',
+        code: 'rnode_bond_recovery' as const,
+      };
+    }
+    return await bleCoexistenceCoordinator.withScan('gatt', () =>
+      gattSidecarProxy.connect(sessionId, peripheralId),
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.debug(
-      `[main] noble-ble-connect failed: session=${sessionId} peripheral=${peripheralId} message=${sanitizeLogMessage(message)}`,
+      `[main] gatt:connect failed: session=${sessionId} peripheral=${peripheralId} message=${sanitizeLogMessage(message)}`,
     );
-    return { ok: false as const, error: sanitizeLogMessage(message) };
+    return {
+      ok: false as const,
+      error: sanitizeLogMessage(message),
+      ...(err instanceof BleScanBusyError ? { code: 'scan_busy' } : {}),
+      ...(err instanceof BlePeripheralConflictError ? { code: 'mac_conflict' } : {}),
+    };
   }
 });
-ipcMain.handle('noble-ble-disconnect', async (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-disconnect');
+ipcMain.handle('gatt:disconnect', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:disconnect');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-disconnect: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:disconnect: sessionId must be meshtastic or meshcore');
   }
   try {
-    await nobleBleManager.disconnect(sessionId);
+    await gattSidecarProxy.disconnect(sessionId);
   } catch (err) {
     console.error(
-      `[main] noble-ble-disconnect failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+      `[main] gatt:disconnect failed: session=${sessionId} message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
     );
     throw err;
   }
 });
-ipcMain.handle('noble-ble-is-connected', (event, sessionId: unknown) => {
-  assertIpcSender(event, 'noble-ble-is-connected');
-  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-is-connected: sessionId must be meshtastic or meshcore');
+ipcMain.handle('gatt:release-ble-central', async (event) => {
+  assertIpcSender(event, 'gatt:release-ble-central');
+  if (isQuitting) {
+    console.debug('[main] gatt:release-ble-central: ignoring (app is quitting)');
+    return;
   }
-  return nobleBleManager.isConnected(sessionId);
+  try {
+    await gattSidecarProxy.releaseBleCentral();
+  } catch (err) {
+    console.error(
+      `[main] gatt:release-ble-central failed: message=${sanitizeLogMessage(err instanceof Error ? err.message : String(err))}`,
+    );
+    throw err;
+  }
 });
-ipcMain.handle('noble-ble-to-radio', async (event, sessionId: unknown, bytes: unknown) => {
-  assertIpcSender(event, 'noble-ble-to-radio');
+ipcMain.handle('gatt:clear-bond-recovery-exclusive', (event) => {
+  assertIpcSender(event, 'gatt:clear-bond-recovery-exclusive');
+  if (isQuitting) {
+    console.debug('[main] gatt:clear-bond-recovery-exclusive: ignoring (app is quitting)');
+    return;
+  }
+  gattSidecarProxy.setRnodeBondRecoveryExclusive(false);
+});
+ipcMain.handle('gatt:is-connected', async (event, sessionId: unknown) => {
+  assertIpcSender(event, 'gatt:is-connected');
   if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
-    throw new Error('noble-ble-to-radio: sessionId must be meshtastic or meshcore');
+    throw new Error('gatt:is-connected: sessionId must be meshtastic or meshcore');
   }
-  const result = await handleNobleBleToRadioWrite({
-    sessionId,
-    bytes,
-    isQuitting,
-    maxBytes: NOBLE_BLE_TO_RADIO_MAX_BYTES,
-    manager: nobleBleManager,
-  });
-  if (result === 'ignored-quitting') {
-    console.debug(`[main] noble-ble-to-radio: ignoring session=${sessionId} (app is quitting)`);
+  return gattSidecarProxy.isConnected(sessionId);
+});
+ipcMain.handle('gatt:to-radio', async (event, sessionId: unknown, bytes: unknown) => {
+  assertIpcSender(event, 'gatt:to-radio');
+  if (sessionId !== 'meshtastic' && sessionId !== 'meshcore') {
+    throw new Error('gatt:to-radio: sessionId must be meshtastic or meshcore');
+  }
+  if (isQuitting) {
+    console.debug(`[main] gatt:to-radio: ignoring session=${sessionId} (app is quitting)`);
     return;
   }
-  if (result === 'ignored-disconnected') {
-    console.debug(`[main] noble-ble-to-radio: session=${sessionId} not connected, ignoring`);
-    return;
-  }
-  if (result === 'ignored-expected-disconnect') {
-    console.debug(
-      '[main] noble-ble-to-radio: disconnected during write, ignoring session=',
-      sanitizeLogMessage(sessionId),
+  const buf = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes as Uint8Array);
+  if (buf.length > GATT_TO_RADIO_MAX_BYTES) {
+    throw new Error(
+      `gatt:to-radio: payload exceeds ${GATT_TO_RADIO_MAX_BYTES} bytes (${buf.length})`,
     );
   }
+  await writeGattToRadio(gattSidecarProxy, sessionId, buf);
 });
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────
@@ -3343,8 +3250,13 @@ ipcMain.handle('mqtt:updateChannelKeys', (event, args) => {
   try {
     console.debug('[IPC] mqtt:updateChannelKeys');
     validateMqttUpdateChannelKeysArgs(args);
-    const a = args as { entries: { name: string; pskBase64: string }[] };
-    mqttManager.updateChannelKeys(a.entries);
+    const a = args as {
+      entries: { name: string; pskBase64: string; index?: number }[];
+      radioSessionId?: string;
+    };
+    mqttManager.updateChannelKeys(a.entries, {
+      radioSessionId: a.radioSessionId,
+    });
   } catch (err) {
     console.error(
       '[IPC] mqtt:updateChannelKeys failed:',
@@ -3651,6 +3563,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 });
 
 registerGpsIpcHandlers();
+registerNotificationSoundHandlers();
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────
@@ -3668,18 +3581,6 @@ ipcMain.handle('notify:message', (event, title: unknown, body: unknown) => {
       sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
     );
   }
-});
-
-ipcMain.handle('notify:longSessionRestart', (event, payload: unknown) => {
-  assertIpcSender(event, 'notify:longSessionRestart');
-  const parsed = parseLongSessionRestartPayload(payload);
-  if (!parsed) return;
-  getLongSessionNudge().show(parsed);
-});
-
-ipcMain.handle('notify:clearLongSessionNudge', (event) => {
-  assertIpcSender(event, 'notify:clearLongSessionNudge');
-  getLongSessionNudge().clear();
 });
 
 // ─── IPC: Safe storage (OS-keychain-backed encryption) ─────────────
@@ -3814,6 +3715,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'storeForwardAutoFetchHistory',
   'reduceMotion',
   'use24HourTime',
+  'notificationSounds',
   'alwaysShowMessageActions',
   'reticulumAutostart',
   'reticulumAutoResendOnAnnounce',
@@ -3838,6 +3740,7 @@ function isAppSettingsKeyAllowed(key: string): boolean {
 }
 
 function appSettingsMaxValueLengthForKey(key: string): number {
+  if (key === 'notificationSounds') return 4096;
   if (
     key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
@@ -3847,10 +3750,10 @@ function appSettingsMaxValueLengthForKey(key: string): number {
   return APP_SETTINGS_MAX_VALUE_LENGTH;
 }
 
-ipcMain.handle('app:rendererHeartbeat', (event, payload?: { ts?: number }) => {
+ipcMain.handle('app:rendererHeartbeat', (event, payload?: { ts?: number; hidden?: boolean }) => {
   if (!validateIpcSender(event)) return;
-  if (!mainWindow) return;
-  rendererHeartbeatWatchdog.recordHeartbeat(payload?.ts);
+  if (event.sender !== mainWindow?.webContents) return;
+  rendererHeartbeatWatchdog.recordHeartbeat(payload?.ts, payload?.hidden === true);
 });
 
 ipcMain.handle('appSettings:get', (event) => {
@@ -4563,12 +4466,12 @@ ipcMain.handle('db:deleteNodesWithoutLongname', (event) => {
   }
 });
 
-ipcMain.handle('db:prunePositionHistory', (event, days: number) => {
+ipcMain.handle('db:prunePositionHistory', (event, days: number, exemptNodeIds?: unknown) => {
   if (!validateIpcSender(event)) throw new Error('db:prunePositionHistory: unauthorized sender');
   try {
     if (!getDbForIpc('db:prunePositionHistory')) return 0;
     const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
-    const changes = prunePositionHistory(safeDays);
+    const changes = prunePositionHistory(safeDays, sanitizeExemptNodeIdsArg(exemptNodeIds));
     if (changes > 0) {
       console.debug(
         `[IPC] db:prunePositionHistory: pruned ${changes} rows older than ${safeDays}d`,
@@ -4580,23 +4483,26 @@ ipcMain.handle('db:prunePositionHistory', (event, days: number) => {
   }
 });
 
-ipcMain.handle('db:prunePositionHistoryPerNode', (event, maxPerNode: number) => {
-  if (!validateIpcSender(event))
-    throw new Error('db:prunePositionHistoryPerNode: unauthorized sender');
-  try {
-    if (!getDbForIpc('db:prunePositionHistoryPerNode')) return 0;
-    const cap = typeof maxPerNode === 'number' && maxPerNode > 0 ? Math.floor(maxPerNode) : 2000;
-    const changes = prunePositionHistoryPerNode(cap);
-    if (changes > 0) {
-      console.debug(
-        `[IPC] db:prunePositionHistoryPerNode: pruned ${changes} rows, keeping ${cap} per node`,
-      );
+ipcMain.handle(
+  'db:prunePositionHistoryPerNode',
+  (event, maxPerNode: number, exemptNodeIds?: unknown) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:prunePositionHistoryPerNode: unauthorized sender');
+    try {
+      if (!getDbForIpc('db:prunePositionHistoryPerNode')) return 0;
+      const cap = typeof maxPerNode === 'number' && maxPerNode > 0 ? Math.floor(maxPerNode) : 2000;
+      const changes = prunePositionHistoryPerNode(cap, sanitizeExemptNodeIdsArg(exemptNodeIds));
+      if (changes > 0) {
+        console.debug(
+          `[IPC] db:prunePositionHistoryPerNode: pruned ${changes} rows, keeping ${cap} per node`,
+        );
+      }
+      return changes;
+    } catch (err) {
+      finishDbIpcHandler('db:prunePositionHistoryPerNode', err);
     }
-    return changes;
-  } catch (err) {
-    finishDbIpcHandler('db:prunePositionHistoryPerNode', err);
-  }
-});
+  },
+);
 
 ipcMain.handle('db:deleteMeshcoreContactsNeverAdvertised', (event) => {
   if (!validateIpcSender(event))
@@ -4957,6 +4863,44 @@ ipcMain.handle('chat:export', async (event, messages: unknown) => {
   }
 });
 
+ipcMain.handle('mecp:appendReceived', async (event, entry: unknown) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  if (!isValidMecpAppendPayload(entry)) {
+    throw new Error('mecp:appendReceived: invalid entry');
+  }
+  await appendMecpReceivedLog(entry);
+  return { ok: true as const };
+});
+
+ipcMain.handle('mecp:exportReceivedLog', async (event) => {
+  if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
+  exportIpcRateLimit.checkOrThrow();
+  if (!mainWindow) return { success: false as const, reason: 'error' as const };
+  try {
+    const text = await readMecpReceivedLogForExport();
+    if (!text.trim()) return { success: false as const, reason: 'empty' as const };
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export MECP received log',
+      defaultPath: `mecp-received-${new Date().toISOString().slice(0, 10)}.txt`,
+      filters: [
+        { name: 'Text file', extensions: ['txt'] },
+        { name: 'JSON Lines', extensions: ['jsonl'] },
+      ],
+    });
+    if (result.canceled || !result.filePath) {
+      return { success: false as const, reason: 'cancelled' as const };
+    }
+    await fs.promises.writeFile(result.filePath, text, 'utf8');
+    return { success: true as const, path: result.filePath };
+  } catch (err) {
+    console.error(
+      '[IPC] mecp:exportReceivedLog failed:',
+      sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+    );
+    throw err;
+  }
+});
+
 ipcMain.handle('gps:exportGpx', async (event, opts: unknown) => {
   if (!validateIpcSender(event)) throw new Error('IPC sender validation failed');
   const o = opts && typeof opts === 'object' ? (opts as Record<string, unknown>) : {};
@@ -5214,8 +5158,9 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
       .prepareOnce(
         `INSERT INTO chat_outbox
         (protocol, view_key, channel, to_node, payload, reply_id, status, error,
-         attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total)
-       VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?)`,
+         attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total,
+         priority)
+       VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?)`,
       )
       .run(
         e.protocol,
@@ -5232,6 +5177,7 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
         e.groupId ?? null,
         e.groupIndex ?? null,
         e.groupTotal ?? null,
+        e.priority === 'emergency' ? 'emergency' : 'normal',
       );
     const row = db
       .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
@@ -5319,6 +5265,7 @@ function rowToOutboxEntry(row: Record<string, unknown>) {
     groupId: (row.group_id as string | null) ?? null,
     groupIndex: (row.group_index as number | null) ?? null,
     groupTotal: (row.group_total as number | null) ?? null,
+    priority: (row.priority as string) === 'emergency' ? 'emergency' : 'normal',
   };
 }
 
@@ -6343,326 +6290,12 @@ ipcMain.handle('db:deleteAllMeshcorePathHistory', (event) => {
   }
 });
 
-// ─── MeshCore TCP bridge ───────────────────────────────────────────
-let meshcoreTcpSocket: net.Socket | null = null;
-
-ipcMain.handle('meshcore:tcp-connect', (event, host: string, port: number) => {
-  assertIpcSender(event, 'meshcore:tcp-connect');
-  return new Promise<void>((resolve, reject) => {
-    let settled = false;
-    const p = port;
-    if (!Number.isInteger(p) || p < 1 || p > 65535) {
-      reject(new Error('Invalid port'));
-      return;
-    }
-    try {
-      validateHttpHost(host);
-    } catch (err) {
-      // catch-no-log-ok validation error forwarded to promise reject
-      reject(err instanceof Error ? err : new Error(String(err)));
-      return;
-    }
-    if (meshcoreTcpSocket) {
-      // Null before destroy so the superseded socket's 'close' does not emit
-      // meshcore:tcp-disconnected (renderer reconnect is driven by that event — #792).
-      const prev = meshcoreTcpSocket;
-      meshcoreTcpSocket = null;
-      clearLiveSessionMeter('meshcore');
-      prev.destroy();
-    }
-    const socketHost = formatHostForSocket(host);
-    const socket = new net.Socket();
-    // MeshCore Open / official companion TCP clients use TCP_NODELAY; Node defaults can
-    // Nagle-batch small companion RPCs and OpenHop peers often FIN mid-init.
-    socket.setNoDelay(true);
-    socket.setKeepAlive(true, MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS);
-    meshcoreTcpSocket = socket;
-    const connectTimeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      if (meshcoreTcpSocket === socket) {
-        meshcoreTcpSocket = null;
-        clearLiveSessionMeter('meshcore');
-      }
-      socket.destroy();
-      reject(new Error('meshcore:tcp-connect: connection timeout'));
-    }, MESHCORE_TCP_CONNECT_TIMEOUT_MS);
-    socket.connect(p, socketHost, () => {
-      clearTimeout(connectTimeout);
-      console.debug('[IPC] meshcore:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
-      logDeviceConnection(
-        `transport=tcp stack=meshcore host=${sanitizeLogMessage(socketHost)} port=${p}`,
-      );
-      resetLiveSessionMeter('meshcore');
-      if (!settled) {
-        settled = true;
-        resolve();
-      }
-    });
-    socket.on('data', (data) => {
-      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (chunk.length > MESHCORE_TCP_DATA_MAX_BYTES) {
-        console.warn(
-          `[IPC] meshcore:tcp-data oversized chunk (${chunk.length} > ${MESHCORE_TCP_DATA_MAX_BYTES}); dropping socket`,
-        );
-        try {
-          socket.destroy();
-        } catch (e) {
-          console.debug(
-            '[IPC] meshcore:tcp-data destroy after oversize ' +
-              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-          );
-        }
-        return;
-      }
-      // Superseded sockets must not update the live session meter (#792 connect-replace).
-      if (meshcoreTcpSocket === socket) {
-        noteLiveSessionData('meshcore');
-      }
-      mainWindow?.webContents.send('meshcore:tcp-data', new Uint8Array(chunk));
-    });
-    socket.on('close', (hadError) => {
-      clearTimeout(connectTimeout);
-      // readableEnded=true after peer FIN; local destroy-before-null tear downs do not hit this
-      // branch as active (ref cleared first). Log fields help triage n7eal post-contacts hangs.
-      const remote = socket.remoteAddress
-        ? `${socket.remoteAddress}:${socket.remotePort ?? '?'}`
-        : 'unknown';
-      console.debug(
-        '[IPC] meshcore:tcp socket closed',
-        hadError ? '(hadError)' : '(clean)',
-        `remote=${sanitizeLogMessage(remote)}`,
-        `readableEnded=${socket.readableEnded}`,
-        `writableEnded=${socket.writableEnded}`,
-      );
-      // Only notify when this socket is still the active bridge. connect/disconnect clear the
-      // ref before destroy(), so superseded closes must not look like a live link drop
-      // (renderer reconnect is driven by this event — see #792).
-      if (meshcoreTcpSocket === socket) {
-        meshcoreTcpSocket = null;
-        clearLiveSessionMeter('meshcore');
-        mainWindow?.webContents.send('meshcore:tcp-disconnected');
-      }
-    });
-    socket.on('error', (err) => {
-      clearTimeout(connectTimeout);
-      console.error('[IPC] meshcore:tcp-connect error:', sanitizeLogMessage(err.message));
-      if (!settled) {
-        settled = true;
-        reject(err);
-      }
-      // Do not null meshcoreTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
-      // etc.; nulling early makes close's active-socket guard fail and swallows
-      // meshcore:tcp-disconnected (renderer never reconnects). close owns that transition.
-    });
-  });
-});
-
-ipcMain.handle('meshcore:tcp-write', (event, bytes: number[]) => {
-  assertIpcSender(event, 'meshcore:tcp-write');
-  if (!Array.isArray(bytes) || bytes.length > MESHCORE_TCP_WRITE_MAX_BYTES) {
-    return Promise.reject(
-      new Error(
-        `meshcore:tcp-write: invalid or oversized payload (max ${MESHCORE_TCP_WRITE_MAX_BYTES} bytes)`,
-      ),
-    );
-  }
-  // Validate each element is a valid byte value so Uint8Array coercion is not silently lossy.
-  if (!bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
-    return Promise.reject(new Error('meshcore:tcp-write: byte values must be integers 0-255'));
-  }
-  if (!meshcoreTcpSocket) {
-    const msg = 'meshcore:tcp-write: no active socket';
-    console.warn(`[IPC] ${msg}`);
-    return Promise.reject(new Error(msg));
-  }
-  const sock = meshcoreTcpSocket;
-  return new Promise<void>((resolve, reject) => {
-    sock.write(new Uint8Array(bytes), (err) => {
-      if (err) {
-        console.error('[IPC] meshcore:tcp-write error:', sanitizeLogMessage(err.message));
-        reject(err);
-      } else {
-        // Ignore write completions from a superseded socket.
-        if (meshcoreTcpSocket === sock) {
-          noteLiveSessionWrite('meshcore');
-        }
-        resolve();
-      }
-    });
-  });
-});
-
-ipcMain.handle('meshcore:tcp-disconnect', (event) => {
-  assertIpcSender(event, 'meshcore:tcp-disconnect');
-  if (meshcoreTcpSocket) {
-    console.debug('[IPC] meshcore:tcp-disconnect');
-    // Null before destroy so this teardown close is not reported as a live link drop.
-    const prev = meshcoreTcpSocket;
-    meshcoreTcpSocket = null;
-    clearLiveSessionMeter('meshcore');
-    prev.destroy();
-  }
-});
-
-// ─── Meshtastic TCP bridge ──────────────────────────────────────────
-// Independent from meshcoreTcpSocket: Meshtastic and MeshCore may be
-// connected simultaneously, each over its own transport.
-let meshtasticTcpSocket: net.Socket | null = null;
-
-ipcMain.handle('meshtastic:tcp-connect', (event, host: string, port: number) => {
-  assertIpcSender(event, 'meshtastic:tcp-connect');
-  return new Promise<void>((resolve, reject) => {
-    let settled = false;
-    const p = port;
-    if (!Number.isInteger(p) || p < 1 || p > 65535) {
-      reject(new Error('Invalid port'));
-      return;
-    }
-    try {
-      validateHttpHost(host);
-    } catch (err) {
-      // catch-no-log-ok validation error forwarded to promise reject
-      reject(err instanceof Error ? err : new Error(String(err)));
-      return;
-    }
-    if (meshtasticTcpSocket) {
-      // Null before destroy so the superseded socket's 'close' does not emit
-      // meshtastic:tcp-disconnected (renderer reconnect is driven by that event — #792).
-      const prev = meshtasticTcpSocket;
-      meshtasticTcpSocket = null;
-      clearLiveSessionMeter('meshtastic');
-      prev.destroy();
-    }
-    const socketHost = formatHostForSocket(host);
-    const socket = new net.Socket();
-    socket.setNoDelay(true);
-    socket.setKeepAlive(true, MESHTASTIC_TCP_KEEPALIVE_INITIAL_DELAY_MS);
-    meshtasticTcpSocket = socket;
-    const connectTimeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      if (meshtasticTcpSocket === socket) {
-        meshtasticTcpSocket = null;
-        clearLiveSessionMeter('meshtastic');
-      }
-      socket.destroy();
-      reject(new Error('meshtastic:tcp-connect: connection timeout'));
-    }, MESHTASTIC_TCP_CONNECT_TIMEOUT_MS);
-    socket.connect(p, socketHost, () => {
-      clearTimeout(connectTimeout);
-      console.debug('[IPC] meshtastic:tcp-connect connected to', sanitizeLogMessage(socketHost), p);
-      logDeviceConnection(
-        `transport=tcp stack=meshtastic host=${sanitizeLogMessage(socketHost)} port=${p}`,
-      );
-      resetLiveSessionMeter('meshtastic');
-      if (!settled) {
-        settled = true;
-        resolve();
-      }
-    });
-    socket.on('data', (data) => {
-      const chunk = Buffer.isBuffer(data) ? data : Buffer.from(data);
-      if (chunk.length > MESHTASTIC_TCP_DATA_MAX_BYTES) {
-        console.warn(
-          `[IPC] meshtastic:tcp-data oversized chunk (${chunk.length} > ${MESHTASTIC_TCP_DATA_MAX_BYTES}); dropping socket`,
-        );
-        try {
-          socket.destroy();
-        } catch (e) {
-          console.debug(
-            '[IPC] meshtastic:tcp-data destroy after oversize ' +
-              sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-          );
-        }
-        return;
-      }
-      // Superseded sockets must not update the live session meter (#792 connect-replace).
-      if (meshtasticTcpSocket === socket) {
-        noteLiveSessionData('meshtastic');
-      }
-      mainWindow?.webContents.send('meshtastic:tcp-data', new Uint8Array(chunk));
-    });
-    socket.on('close', (hadError) => {
-      clearTimeout(connectTimeout);
-      console.debug('[IPC] meshtastic:tcp socket closed', hadError ? '(hadError)' : '(clean)');
-      // Only notify when this socket is still the active bridge. connect/disconnect clear the
-      // ref before destroy(), so superseded closes must not look like a live link drop
-      // (renderer reconnect is driven by this event — see #792).
-      if (meshtasticTcpSocket === socket) {
-        meshtasticTcpSocket = null;
-        clearLiveSessionMeter('meshtastic');
-        mainWindow?.webContents.send('meshtastic:tcp-disconnected');
-      }
-    });
-    socket.on('error', (err) => {
-      clearTimeout(connectTimeout);
-      console.error('[IPC] meshtastic:tcp-connect error:', sanitizeLogMessage(err.message));
-      if (!settled) {
-        settled = true;
-        reject(err);
-      }
-      // Do not null meshtasticTcpSocket here. Node fires 'error' before 'close' on ECONNRESET
-      // etc.; nulling early makes close's active-socket guard fail and swallows
-      // meshtastic:tcp-disconnected (renderer never reconnects). close owns that transition.
-    });
-  });
-});
-
-ipcMain.handle('meshtastic:tcp-write', (event, bytes: number[]) => {
-  assertIpcSender(event, 'meshtastic:tcp-write');
-  if (!Array.isArray(bytes) || bytes.length > MESHTASTIC_TCP_WRITE_MAX_BYTES) {
-    return Promise.reject(
-      new Error(
-        `meshtastic:tcp-write: invalid or oversized payload (max ${MESHTASTIC_TCP_WRITE_MAX_BYTES} bytes)`,
-      ),
-    );
-  }
-  // Validate each element is a valid byte value so Uint8Array coercion is not silently lossy.
-  if (!bytes.every((b) => Number.isInteger(b) && b >= 0 && b <= 255)) {
-    return Promise.reject(new Error('meshtastic:tcp-write: byte values must be integers 0-255'));
-  }
-  if (!meshtasticTcpSocket) {
-    // Expected reconnect race — resolve so Electron does not log handler [error].
-    console.debug('[IPC] meshtastic:tcp-write: no active socket');
-    return 'no-socket';
-  }
-  const sock = meshtasticTcpSocket;
-  if (sock.destroyed || sock.writableEnded) {
-    console.debug('[IPC] meshtastic:tcp-write: no active socket');
-    return 'no-socket';
-  }
-  return new Promise<'no-socket' | undefined>((resolve, reject) => {
-    sock.write(new Uint8Array(bytes), (err) => {
-      if (err) {
-        if (meshtasticTcpWriteErrorIsNoSocket(sock, err)) {
-          console.debug('[IPC] meshtastic:tcp-write: no active socket');
-          resolve('no-socket');
-          return;
-        }
-        console.error('[IPC] meshtastic:tcp-write error:', sanitizeLogMessage(err.message));
-        reject(err);
-      } else {
-        // Ignore write completions from a superseded socket.
-        if (meshtasticTcpSocket === sock) {
-          noteLiveSessionWrite('meshtastic');
-        }
-        resolve(undefined);
-      }
-    });
-  });
-});
-
-ipcMain.handle('meshtastic:tcp-disconnect', (event) => {
-  assertIpcSender(event, 'meshtastic:tcp-disconnect');
-  if (meshtasticTcpSocket) {
-    console.debug('[IPC] meshtastic:tcp-disconnect');
-    // Null before destroy so this teardown close is not reported as a live link drop.
-    const prev = meshtasticTcpSocket;
-    meshtasticTcpSocket = null;
-    clearLiveSessionMeter('meshtastic');
-    prev.destroy();
-  }
+// ─── MeshCore / Meshtastic TCP bridges ─────────────────────────────
+// Independent sockets (two createTcpBridge instances). writeMissing is the
+// only protocol fork: MeshCore rejects; Meshtastic returns 'no-socket'.
+registerTcpBridgeIpcHandlers({
+  getMainWindow: () => mainWindow,
+  validateHost: validateHttpHost,
 });
 
 // ─── Meshtastic HTTP bridge ─────────────────────────────────────────
@@ -6722,16 +6355,6 @@ async function readBoundedArrayBuffer(response: Response, maxBytes: number): Pro
   }
   return merged.buffer;
 }
-const MESHCORE_TCP_CONNECT_TIMEOUT_MS = 20_000;
-/** Initial TCP keepalive probe delay for MeshCore companion sockets (ms). */
-const MESHCORE_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
-const MESHTASTIC_TCP_CONNECT_TIMEOUT_MS = 20_000;
-/** Initial TCP keepalive probe delay for Meshtastic WiFi/TCP sockets (ms). */
-const MESHTASTIC_TCP_KEEPALIVE_INITIAL_DELAY_MS = 30_000;
-/** Max Meshtastic TCP toRadio write payload (aligned with meshcore:tcp-write cap). */
-const MESHTASTIC_TCP_WRITE_MAX_BYTES = 256 * 1024;
-/** Cap inbound Meshtastic TCP chunks before IPC fan-out (same as write max). */
-const MESHTASTIC_TCP_DATA_MAX_BYTES = MESHTASTIC_TCP_WRITE_MAX_BYTES;
 const CHAT_EXPORT_MAX_MESSAGES = 10_000;
 const DB_SAVE_NODE_PATH_MAX_BYTES = 16 * 1024;
 /** Max Meshtastic HTTP toRadio payload (aligned with meshcore:tcp-write cap). */
@@ -7043,9 +6666,8 @@ void app
         if (process.uptime() < MAIN_PROCESS_HEALTH_UPTIME_THRESHOLD_SEC) return;
         const uptimeSec = Math.floor(process.uptime());
         const mem = process.memoryUsage();
-        const ble = nobleBleManager.getLongSessionHealthSnapshot();
         console.debug(
-          `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed} ble=${JSON.stringify(ble)}`,
+          `[main] long-session health uptimeSec=${uptimeSec} rss=${mem.rss} heapUsed=${mem.heapUsed}`,
         );
       }, MAIN_PROCESS_HEALTH_LOG_INTERVAL_MS).unref();
 
@@ -7123,56 +6745,36 @@ void app
 app.on('before-quit', (event) => {
   rendererHeartbeatWatchdog.stopStallWatchdog();
   rendererHeartbeatWatchdog.clearResumeWatchdog();
-  // Clean up any pending Bluetooth device selection to prevent callback leak
-  if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
-    console.debug('[main] before-quit: cleaning up pending Bluetooth callback');
-    linuxWebBluetoothDeviceSelection.cancelSelection();
-  }
 
   if (shutdownDone) {
     return;
   }
 
-  if (nobleBleManager.isBleSessionActive()) {
-    event.preventDefault();
-    void (async () => {
-      try {
-        await nobleBleManager.stopAllScanning();
-        await nobleBleManager.disconnectAll();
-      } catch (err) {
-        console.error(
-          '[main] Noble BLE shutdown failed:',
-          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-        );
-      } finally {
-        // quit() must run even if shutdown throws: before-quit was prevented, so an
-        // escaping rejection here would leave the app running with no path to exit.
-        try {
-          await shutdownAppResources();
-        } catch (err) {
-          console.error(
-            '[main] shutdownAppResources failed before quit:',
-            sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-          );
-        }
-        app.quit();
-      }
-    })();
-    return;
-  }
-
+  // Latch before async teardown so late gatt:to-radio / MQTT IPC ignore dead-sidecar races.
+  isQuitting = true;
   event.preventDefault();
-  void shutdownAppResources()
-    .then(() => {
-      app.quit();
-    })
-    .catch((err: unknown) => {
+  void (async () => {
+    try {
+      await gattSidecarProxy.disconnectAll();
+    } catch (err) {
       console.error(
-        '[main] shutdownAppResources failed before quit:',
+        '[main] GATT shutdown failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
+    } finally {
+      // quit() must run even if shutdown throws: before-quit was prevented, so an
+      // escaping rejection here would leave the app running with no path to exit.
+      try {
+        await shutdownAppResources();
+      } catch (err) {
+        console.error(
+          '[main] shutdownAppResources failed before quit:',
+          sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
+        );
+      }
       app.quit();
-    });
+    }
+  })();
 });
 
 app.on('will-quit', (event) => {
@@ -7212,44 +6814,15 @@ app.on('will-quit', (event) => {
         err instanceof Error ? err.message : err,
       ); // log-injection-ok internal library error during cleanup
     }
-    if (meshcoreTcpSocket) {
-      try {
-        meshcoreTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] TCP socket destroy during will-quit (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshcoreTcpSocket = null;
-    }
-    if (meshtasticTcpSocket) {
-      try {
-        meshtasticTcpSocket.destroy();
-      } catch (err) {
-        console.debug(
-          '[main] TCP socket destroy during will-quit (ignored):',
-          err instanceof Error ? err.message : err,
-        ); // log-injection-ok internal Node.js socket error during cleanup
-      }
-      meshtasticTcpSocket = null;
-    }
+    destroyRegisteredTcpBridgeSockets('TCP socket destroy during will-quit (ignored)');
     stopPowerSaveBlocker();
-    nobleBleManager.releaseNobleProcessHandles();
     tray?.destroy();
     tray = null;
-    // releaseNobleProcessHandles() above calls noble._bindings.stop() which releases the native
-    // BLEManager and its CBqueue GCD dispatch queue — without that, the process cannot exit on macOS.
     app.exit(0);
   })();
 });
 
 app.on('window-all-closed', () => {
-  // Clean up any pending Bluetooth device selection to prevent callback leak
-  if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
-    console.debug('[main] window-all-closed: cleaning up pending Bluetooth callback');
-    linuxWebBluetoothDeviceSelection.cancelSelection();
-  }
   const hasConnection = isConnected || isAnyMqttConnected();
   // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)
   if (process.platform !== 'darwin' || isQuitting || !hasConnection) {

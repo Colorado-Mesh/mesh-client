@@ -72,16 +72,6 @@ pub fn classify_path_interface_name(
     classify_interface(path_interface_name)
 }
 
-/// Resolve transport for a peer destination hash from a path-table interface name.
-/// Prefer [`resolve_path_sent_via`] when local interface rows are available.
-#[allow(dead_code)] // legacy path-table helper; live stack uses resolve_path_sent_via
-pub fn resolve_peer_sent_via(peer_interface: Option<&str>) -> &'static str {
-    match peer_interface {
-        Some(name) if !name.is_empty() => classify_interface(name),
-        _ => "network",
-    }
-}
-
 /// Path-table egress label: match local interface row when possible.
 pub fn resolve_path_sent_via(
     peer_interface: Option<&str>,
@@ -125,12 +115,6 @@ pub fn resolve_lxmf_sent_via(
         return via.to_string();
     }
     resolve_outbound_sent_via_with_primary(interfaces, primary_local_serial_id).to_string()
-}
-
-/// Pick the primary outbound transport from enabled stub interfaces.
-#[allow(dead_code)] // stub-stack egress; live stack uses resolve_outbound_sent_via_with_primary
-pub fn resolve_stub_sent_via(interfaces: &[InterfaceRow]) -> &'static str {
-    resolve_outbound_sent_via_with_primary(interfaces, None)
 }
 
 /// Local capability egress (enabled interfaces). For Nomad timeouts / no-path fallback only —
@@ -239,11 +223,16 @@ pub fn merge_live_interfaces_with_config(
             live_row.announce_interval_min = cfg.announce_interval_min;
             live_row.connectable = cfg.connectable;
             live_row.reachable_on = cfg.reachable_on.clone();
+            live_row.discovery_lxmf_address = cfg.discovery_lxmf_address.clone();
+            live_row.discovery_stamp_value = cfg.discovery_stamp_value;
+            live_row.discovery_encrypt = cfg.discovery_encrypt;
+            live_row.publish_ifac = cfg.publish_ifac;
             // Config is source of truth for IFAC / extras / BLE seeds (live stats omit them).
             live_row.network_name = cfg.network_name.clone();
             live_row.passphrase = cfg.passphrase.clone();
             live_row.flow_control = cfg.flow_control;
             live_row.ignore_config_warnings = cfg.ignore_config_warnings;
+            live_row.bootstrap_only = cfg.bootstrap_only;
             live_row.extra_config = cfg.extra_config.clone();
             live_row.seed_addresses = cfg.seed_addresses.clone();
             // Config INI is the source of truth for user enable/disable; live stats only
@@ -308,12 +297,18 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }
     }
@@ -438,15 +433,20 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
-        assert_eq!(resolve_stub_sent_via(&ifaces), "rf");
         assert_eq!(resolve_outbound_sent_via(&ifaces), "rf");
     }
 
@@ -480,12 +480,18 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let live = vec![InterfaceRow {
@@ -516,12 +522,18 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -565,12 +577,18 @@ mod tests {
                 announce_interval_min: None,
                 connectable: None,
                 reachable_on: None,
+                discovery_lxmf_address: None,
+                discovery_stamp_value: None,
+                discovery_encrypt: None,
+                publish_ifac: None,
                 network_name: None,
                 passphrase: None,
                 flow_control: None,
                 ignore_config_warnings: None,
+                bootstrap_only: None,
                 tx_queue_used: None,
                 tx_queue_max: None,
+                host_rssi: None,
                 extra_config: std::collections::HashMap::new(),
             },
             InterfaceRow {
@@ -601,12 +619,18 @@ mod tests {
                 announce_interval_min: None,
                 connectable: None,
                 reachable_on: None,
+                discovery_lxmf_address: None,
+                discovery_stamp_value: None,
+                discovery_encrypt: None,
+                publish_ifac: None,
                 network_name: None,
                 passphrase: None,
                 flow_control: None,
                 ignore_config_warnings: None,
+                bootstrap_only: None,
                 tx_queue_used: None,
                 tx_queue_max: None,
+                host_rssi: None,
                 extra_config: std::collections::HashMap::new(),
             },
         ];
@@ -648,12 +672,18 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -695,12 +725,18 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: Some("ttp_internal".into()),
             passphrase: Some("resistance202606".into()),
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: Some(true),
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: extra.clone(),
         }];
         let live = vec![InterfaceRow {
@@ -731,12 +767,18 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         }];
         let merged = merge_live_interfaces_with_config(&config, live);
@@ -753,6 +795,7 @@ mod tests {
             row.extra_config.get("forward_interval").map(String::as_str),
             Some("300")
         );
+        assert_eq!(row.bootstrap_only, Some(true));
         assert_eq!(row.seed_addresses, vec!["AA:BB:CC:DD:EE:FF".to_string()]);
     }
 

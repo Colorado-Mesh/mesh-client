@@ -1,226 +1,139 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  BleCoexistenceCoordinator,
-  BlePeripheralConflictError,
-  BleScanBusyError,
-  normalizeBleMac,
-} from './ble-coexistence-coordinator';
+import { BleCoexistenceCoordinator } from './ble-coexistence-coordinator';
+import type { GattSessionProfile, GattSidecarProxy } from './gatt-sidecar-proxy';
+
+function gattReservations(connections: ReturnType<GattSidecarProxy['getConnections']>) {
+  return {
+    getConnections: () => connections,
+    setConnectionGuard:
+      vi.fn<(guard: (session: GattSessionProfile, address: string) => void) => void>(),
+    disconnectAll: vi.fn().mockResolvedValue(undefined),
+  };
+}
 
 describe('BleCoexistenceCoordinator', () => {
-  it('normalizes MAC addresses for registry keys', () => {
-    expect(normalizeBleMac('AA:BB:CC:DD:EE:FF')).toBe('aa:bb:cc:dd:ee:ff');
-    expect(normalizeBleMac('AABBCCDDEEFF')).toBe('aa:bb:cc:dd:ee:ff');
+  beforeEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('registers and unregisters peripheral ownership', () => {
+  it('rejects same MAC for two owners', () => {
     const coordinator = new BleCoexistenceCoordinator();
-    coordinator.register('AA:BB:CC:DD:EE:01', 'noble:meshtastic');
-    expect(coordinator.getState().connections).toEqual([
-      { mac: 'aa:bb:cc:dd:ee:01', owner: 'noble:meshtastic' },
-    ]);
-    expect(coordinator.getState().nobleYieldDecisionPending).toBe(false);
-    coordinator.unregister('AA:BB:CC:DD:EE:01', 'noble:meshtastic');
-    expect(coordinator.getState().connections).toEqual([]);
-  });
-
-  it('tracks nobleYieldDecisionPending for RF coexistence gate', () => {
-    const coordinator = new BleCoexistenceCoordinator();
-    coordinator.setNobleYieldDecisionPending(true);
-    expect(coordinator.getState().nobleYieldDecisionPending).toBe(true);
-    coordinator.setNobleYieldDecisionPending(false);
-    expect(coordinator.getState().nobleYieldDecisionPending).toBe(false);
-  });
-
-  it('rejects registering the same MAC to a different owner', () => {
-    const coordinator = new BleCoexistenceCoordinator();
-    coordinator.register('aa:bb:cc:dd:ee:02', 'noble:meshcore');
+    coordinator.register('AA:BB:CC:DD:EE:01', 'gatt:meshtastic');
     expect(() => {
-      coordinator.register('AA:BB:CC:DD:EE:02', 'reticulum');
-    }).toThrow(BlePeripheralConflictError);
+      coordinator.register('AA:BB:CC:DD:EE:01', 'gatt:meshcore');
+    }).toThrow(/already in use/);
   });
 
-  it('serializes scan leases without disconnecting noble sessions', async () => {
-    const noble = {
-      pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
-      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
-    };
+  it('allows different MACs for meshtastic and meshcore', () => {
     const coordinator = new BleCoexistenceCoordinator();
-    coordinator.setNobleManager(noble as never);
-
-    await coordinator.acquireScan('noble');
-    expect(coordinator.getState().scanOwner).toBe('noble');
-
-    await expect(coordinator.acquireScan('reticulum')).rejects.toBeInstanceOf(BleScanBusyError);
-
-    coordinator.releaseScan('noble');
-    await coordinator.acquireScan('reticulum');
-    expect(noble.pauseScanningForExternalScan).toHaveBeenCalled();
-    expect(coordinator.getState().scanOwner).toBe('reticulum');
-
-    coordinator.releaseScan('reticulum');
-    expect(noble.resumeScanningAfterExternalScan).toHaveBeenCalled();
-    expect(coordinator.getState().scanOwner).toBeNull();
+    coordinator.register('AA:BB:CC:DD:EE:01', 'gatt:meshtastic');
+    coordinator.register('AA:BB:CC:DD:EE:02', 'gatt:meshcore');
+    const state = coordinator.getState();
+    expect(state.connections).toEqual(
+      expect.arrayContaining([
+        { mac: 'aa:bb:cc:dd:ee:01', owner: 'gatt:meshtastic' },
+        { mac: 'aa:bb:cc:dd:ee:02', owner: 'gatt:meshcore' },
+      ]),
+    );
   });
 
-  it.each(['darwin', 'win32'] as const)(
-    'suspendNobleForReticulumBleConnect acquires reticulum scan and disconnects noble sessions on %s',
-    async (platform) => {
-      const noble = {
-        pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
-        resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
-        disconnectAllSessions: vi.fn().mockResolvedValue(undefined),
-      };
-      const coordinator = new BleCoexistenceCoordinator();
-      coordinator.setNobleManager(noble as never);
-
-      const originalPlatform = process.platform;
-      Object.defineProperty(process, 'platform', { value: platform, configurable: true });
-
-      try {
-        await coordinator.suspendNobleForReticulumBleConnect();
-        expect(coordinator.getState().scanOwner).toBe('reticulum');
-        expect(noble.pauseScanningForExternalScan).toHaveBeenCalled();
-        expect(noble.disconnectAllSessions).toHaveBeenCalled();
-      } finally {
-        Object.defineProperty(process, 'platform', {
-          value: originalPlatform,
-          configurable: true,
-        });
-      }
-    },
-  );
-
-  it('suspendNobleForReticulumBleConnect acquires reticulum scan but does not disconnect noble sessions on linux', async () => {
-    // Linux mesh BLE uses Web Bluetooth (no Noble GATT sessions to contend with); only
-    // macOS/Windows CoreBluetooth/WinRT need the disconnect-all handshake before btleplug connects.
-    const noble = {
-      pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
-      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
-      disconnectAllSessions: vi.fn().mockResolvedValue(undefined),
-    };
+  it('rejects a LoRa connect to a registered Reticulum device', () => {
     const coordinator = new BleCoexistenceCoordinator();
-    coordinator.setNobleManager(noble as never);
+    const gatt = gattReservations([]);
+    coordinator.setGattProxy(gatt);
+    coordinator.register('AA:BB:CC:DD:EE:01', 'reticulum');
 
-    const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
-
-    try {
-      await coordinator.suspendNobleForReticulumBleConnect();
-      expect(coordinator.getState().scanOwner).toBe('reticulum');
-      expect(noble.pauseScanningForExternalScan).toHaveBeenCalled();
-      expect(noble.disconnectAllSessions).not.toHaveBeenCalled();
-    } finally {
-      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
-    }
-  });
-
-  it.each(['darwin', 'win32'] as const)(
-    'suspendNobleForReticulumBleConnect releases yield when Noble disconnect times out on %s',
-    async (platform) => {
-      const noble = {
-        pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
-        resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
-        disconnectAllSessions: vi.fn().mockImplementation(
-          () => new Promise(() => undefined), // never resolves
-        ),
-      };
-      const coordinator = new BleCoexistenceCoordinator();
-      coordinator.setNobleManager(noble as never);
-
-      const originalPlatform = process.platform;
-      Object.defineProperty(process, 'platform', { value: platform, configurable: true });
-      vi.useFakeTimers();
-
-      try {
-        const pending = coordinator.suspendNobleForReticulumBleConnect();
-        const expectation = expect(pending).rejects.toThrow(/Noble disconnectAll timeout/);
-        await vi.advanceTimersByTimeAsync(30_000);
-        await expectation;
-        expect(coordinator.getState().scanOwner).toBeNull();
-      } finally {
-        vi.useRealTimers();
-        Object.defineProperty(process, 'platform', {
-          value: originalPlatform,
-          configurable: true,
-        });
-      }
-    },
-  );
-
-  it('assertCanConnect rejects Noble while reticulum holds the scan yield', async () => {
-    const coordinator = new BleCoexistenceCoordinator();
-    await coordinator.acquireScan('reticulum');
+    const guard = gatt.setConnectionGuard.mock.calls[0]?.[0];
+    expect(guard).toBeDefined();
     expect(() => {
-      coordinator.assertCanConnect('noble:meshtastic', 'aa:bb:cc:dd:ee:01');
-    }).toThrow(BleScanBusyError);
+      guard('meshcore', 'aabbccddee01');
+    }).toThrow(/already in use by reticulum/);
     expect(() => {
-      coordinator.assertCanConnect('noble:meshcore', 'aa:bb:cc:dd:ee:02');
-    }).toThrow(BleScanBusyError);
-    coordinator.releaseScan('reticulum');
-    expect(() => {
-      coordinator.assertCanConnect('noble:meshtastic', 'aa:bb:cc:dd:ee:01');
+      guard('meshtastic', 'AA:BB:CC:DD:EE:02');
     }).not.toThrow();
   });
 
-  it('nests same-owner acquireScan so nested release does not drop the outer lease', async () => {
-    const noble = {
-      pauseScanningForExternalScan: vi.fn().mockResolvedValue(undefined),
-      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
-    };
+  it('rejects Reticulum registration while a LoRa connection is pending', () => {
     const coordinator = new BleCoexistenceCoordinator();
-    coordinator.setNobleManager(noble as never);
+    const connections: ReturnType<GattSidecarProxy['getConnections']> = [
+      { mac: 'AA:BB:CC:DD:EE:01', owner: 'gatt:meshcore' },
+    ];
+    coordinator.setGattProxy(gattReservations(connections));
 
-    // Outer hold (Noble yield for BLE RNode connect).
-    await coordinator.acquireScan('reticulum');
-    expect(coordinator.getState().scanOwner).toBe('reticulum');
-
-    // Nested RSSI poll acquire — same owner.
-    await coordinator.acquireScan('reticulum');
-    expect(coordinator.getState().scanOwner).toBe('reticulum');
-
-    // Nested release must not drop the yield hold.
-    coordinator.releaseScan('reticulum');
-    expect(coordinator.getState().scanOwner).toBe('reticulum');
-    expect(noble.resumeScanningAfterExternalScan).not.toHaveBeenCalled();
-
-    // Outer release clears ownership.
-    coordinator.releaseScan('reticulum');
-    expect(coordinator.getState().scanOwner).toBeNull();
-    expect(noble.resumeScanningAfterExternalScan).toHaveBeenCalledTimes(1);
+    expect(() => {
+      coordinator.register('aabbccddee01', 'reticulum');
+    }).toThrow(/already in use by gatt:meshcore/);
+    connections.length = 0;
+    expect(() => {
+      coordinator.register('aabbccddee01', 'reticulum');
+    }).not.toThrow();
   });
 
-  it('serializes concurrent same-owner acquireScan so nested release keeps the outer lease', async () => {
-    let resolvePause: (() => void) | null = null;
-    const noble = {
-      pauseScanningForExternalScan: vi.fn().mockImplementation(
-        () =>
-          new Promise<void>((resolve) => {
-            resolvePause = resolve;
-          }),
-      ),
-      resumeScanningAfterExternalScan: vi.fn().mockResolvedValue(undefined),
-    };
+  it('reports live LoRa reservations together with Reticulum ownership', () => {
     const coordinator = new BleCoexistenceCoordinator();
-    coordinator.setNobleManager(noble as never);
+    coordinator.setGattProxy(
+      gattReservations([{ mac: 'AA:BB:CC:DD:EE:01', owner: 'gatt:meshtastic' }]),
+    );
+    coordinator.register('AA:BB:CC:DD:EE:02', 'reticulum');
 
-    const first = coordinator.acquireScan('reticulum');
-    const second = coordinator.acquireScan('reticulum');
-
-    expect(noble.pauseScanningForExternalScan).toHaveBeenCalledTimes(1);
-    expect(resolvePause).not.toBeNull();
-    resolvePause!();
-
-    await Promise.all([first, second]);
-    expect(coordinator.getState().scanOwner).toBe('reticulum');
-
-    // One release must leave the nested hold active.
-    coordinator.releaseScan('reticulum');
-    expect(coordinator.getState().scanOwner).toBe('reticulum');
-    expect(noble.resumeScanningAfterExternalScan).not.toHaveBeenCalled();
-
-    coordinator.releaseScan('reticulum');
-    expect(coordinator.getState().scanOwner).toBeNull();
-    expect(noble.resumeScanningAfterExternalScan).toHaveBeenCalledTimes(1);
+    expect(coordinator.getState().connections).toEqual(
+      expect.arrayContaining([
+        { mac: 'aa:bb:cc:dd:ee:01', owner: 'gatt:meshtastic' },
+        { mac: 'aa:bb:cc:dd:ee:02', owner: 'reticulum' },
+      ]),
+    );
   });
+
+  it('rejects a GATT scan while Reticulum is scanning', async () => {
+    const coordinator = new BleCoexistenceCoordinator();
+    const scan = vi.fn().mockResolvedValue(undefined);
+    await coordinator.acquireScan('reticulum');
+
+    await expect(coordinator.withScan('gatt', scan)).rejects.toThrow(/Bluetooth scan in progress/);
+    expect(scan).not.toHaveBeenCalled();
+    expect(coordinator.getState().scanOwner).toBe('reticulum');
+  });
+
+  it.each([false, true])(
+    'releases the GATT scan lease after completion (failure=%s)',
+    async (fails) => {
+      const coordinator = new BleCoexistenceCoordinator();
+      const operation = coordinator.withScan('gatt', async () => {
+        await expect(coordinator.acquireScan('reticulum')).rejects.toThrow(
+          /Bluetooth scan in progress/,
+        );
+        if (fails) throw new Error('adapter unavailable');
+        return 'done';
+      });
+      if (fails) await expect(operation).rejects.toThrow('adapter unavailable');
+      else await expect(operation).resolves.toBe('done');
+      await expect(coordinator.acquireScan('reticulum')).resolves.toBeUndefined();
+    },
+  );
+
+  it('suspendForReticulumBleConnect does not disconnect GATT sessions', async () => {
+    const coordinator = new BleCoexistenceCoordinator();
+    const gatt = gattReservations([]);
+    coordinator.setGattProxy(gatt);
+    await coordinator.suspendForReticulumBleConnect();
+    expect(gatt.disconnectAll).not.toHaveBeenCalled();
+  });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'suspendForReticulumBleConnect is a no-op on %s',
+    async (platform) => {
+      const original = process.platform;
+      Object.defineProperty(process, 'platform', { value: platform });
+      try {
+        const coordinator = new BleCoexistenceCoordinator();
+        const gatt = gattReservations([]);
+        coordinator.setGattProxy(gatt);
+        await coordinator.suspendForReticulumBleConnect();
+        expect(gatt.disconnectAll).not.toHaveBeenCalled();
+      } finally {
+        Object.defineProperty(process, 'platform', { value: original });
+      }
+    },
+  );
 });

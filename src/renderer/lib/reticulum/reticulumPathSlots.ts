@@ -36,21 +36,6 @@ export function backupReticulumPathSlots(paths: readonly ReticulumPathSlot[]): R
 /** RRC link establishment uses path-scaled hops; reject stale multi-hop TCP routes. */
 export const RRC_MAX_CONNECT_HOPS = 8;
 
-/** Lowest-hop live network slot suitable for RRC auto-connect. */
-export function bestReticulumRrcNetworkPathSlot(
-  paths: readonly ReticulumPathSlot[],
-): ReticulumPathSlot | null {
-  let best: ReticulumPathSlot | null = null;
-  for (const slot of paths) {
-    if (slot.expired || slot.medium !== 'network') continue;
-    if (slot.hops == null || slot.hops < 0 || slot.hops > RRC_MAX_CONNECT_HOPS) continue;
-    if (!best || (best.hops ?? Number.POSITIVE_INFINITY) > slot.hops) {
-      best = slot;
-    }
-  }
-  return best;
-}
-
 /** Lowest-hop live slot (any medium) within the RRC hop cap. */
 export function bestReticulumRrcPathSlot(
   paths: readonly ReticulumPathSlot[],

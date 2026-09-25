@@ -30,11 +30,6 @@ fn load_profiles() -> Vec<RfProfile> {
         .unwrap_or_default()
 }
 
-#[allow(dead_code)] // catalog helper; presets use rf_profile_by_id
-pub fn all_rf_profiles() -> Vec<RfProfile> {
-    load_profiles()
-}
-
 pub fn rf_profile_by_id(id: &str) -> Option<RfProfile> {
     load_profiles().into_iter().find(|p| p.id == id)
 }
@@ -211,12 +206,18 @@ mod tests {
             announce_interval_min: None,
             connectable: None,
             reachable_on: None,
+            discovery_lxmf_address: None,
+            discovery_stamp_value: None,
+            discovery_encrypt: None,
+            publish_ifac: None,
             network_name: None,
             passphrase: None,
             flow_control: None,
             ignore_config_warnings: None,
+            bootstrap_only: None,
             tx_queue_used: None,
             tx_queue_max: None,
+            host_rssi: None,
             extra_config: std::collections::HashMap::new(),
         };
         assert!(!row_params_match_preset(&row));

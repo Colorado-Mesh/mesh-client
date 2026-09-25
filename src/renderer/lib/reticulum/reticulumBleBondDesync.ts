@@ -1,6 +1,6 @@
 /**
- * Sticky flag while sidecar latched `bleBondRemoved` — yield watcher must not
- * re-contend for Noble, and reconnect thrash should not hold the scan mutex.
+ * Active while sidecar latched `bleBondRemoved` — yield watcher must not
+ * re-contend for Noble. Clears when the alert drains (recovery / stale window).
  */
 
 let bondDesyncActive = false;

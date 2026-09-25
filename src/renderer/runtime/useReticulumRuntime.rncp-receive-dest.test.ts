@@ -33,12 +33,7 @@ vi.mock('@/renderer/lib/applyRncpReceiveDestShare', async (importOriginal) => {
 });
 
 vi.mock('@/renderer/lib/reticulum/fetchRecentInboundLxmf', () => ({
-  fetchRecentInboundLxmf: vi.fn(),
   fetchRecentInboundLxmfDetailed: vi.fn(),
-}));
-
-vi.mock('@/renderer/lib/reticulum/useReticulumNobleBleYieldWatcher', () => ({
-  useReticulumNobleBleYieldWatcher: () => {},
 }));
 
 vi.mock('@/renderer/lib/reticulum/useReticulumPropagationAutoSync', () => ({

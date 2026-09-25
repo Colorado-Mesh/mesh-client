@@ -59,10 +59,6 @@ export function setReticulumAnnounceBusPressureActive(active: boolean): void {
   pendingActivityByKey = next;
 }
 
-export function isReticulumAnnounceBusPressureActive(): boolean {
-  return announceBusPressureActive;
-}
-
 function activityBatchKey(row: ReticulumIdentityActivityRow): string {
   return `${row.destination_hash}\0${row.aspect}`;
 }

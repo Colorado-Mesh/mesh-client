@@ -15,6 +15,12 @@ import type { DiagnosticRow, MeshNode, RoutingDiagnosticRow } from '../lib/types
 import type { ForeignLoraDetection } from '../stores/diagnosticsStore';
 import DiagnosticsPanel from './DiagnosticsPanel';
 
+vi.mock('../lib/downloadBlob', () => ({
+  downloadBlob: vi.fn(),
+}));
+
+import { downloadBlob } from '../lib/downloadBlob';
+
 const diagnosticsStoreState: {
   diagnosticRows: DiagnosticRow[];
   packetStats: Map<number, unknown>;
@@ -118,6 +124,61 @@ describe('DiagnosticsPanel accessibility', () => {
     const input = screen.getByLabelText(/distance offset/i);
     expect(input).toBeInTheDocument();
     expect(input).toHaveValue(0);
+  });
+});
+
+describe('DiagnosticsPanel export', () => {
+  it('exports visible rows as mesh-client-diagnostics JSON', async () => {
+    const row: RoutingDiagnosticRow = {
+      kind: 'routing',
+      id: 'routing:4660',
+      nodeId: 0x1234,
+      type: 'hop_goblin',
+      severity: 'warning',
+      description: 'Test anomaly',
+      detectedAt: 1,
+    };
+    diagnosticsStoreState.diagnosticRows = [row];
+    diagnosticsStoreState.packetStats = new Map();
+    vi.mocked(downloadBlob).mockClear();
+    render(
+      <DiagnosticsPanel
+        nodes={new Map([[0x1234, minimalNode(0x1234)]])}
+        myNodeNum={0}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Export visible diagnostics rows as JSON' }),
+    );
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob, name] = vi.mocked(downloadBlob).mock.calls[0];
+    expect(name).toMatch(/^mesh-diagnostics-meshtastic-.*\.json$/);
+    const parsed = JSON.parse(await blob.text()) as { format: string; rowCount: number };
+    expect(parsed.format).toBe('mesh-client-diagnostics');
+    expect(parsed.rowCount).toBe(1);
+  });
+
+  it('disables export when there are no rows', () => {
+    diagnosticsStoreState.diagnosticRows = [];
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Export visible diagnostics rows as JSON' }),
+    ).toBeDisabled();
   });
 });
 
@@ -808,5 +869,45 @@ describe('DiagnosticsPanel reticulum scope', () => {
     expect(screen.queryByText(/no diagnostics detected/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/RNode 41F4/).length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /edit interface/i })).toBeInTheDocument();
+  });
+});
+
+describe('DiagnosticsPanel tracing pulse', () => {
+  it('pulses a decorative dot, not the tracing label', () => {
+    const nodeId = 0x1234;
+    const node = minimalNode(nodeId);
+    const row: RoutingDiagnosticRow = {
+      kind: 'routing',
+      id: `routing:${nodeId}`,
+      nodeId,
+      type: 'hop_goblin',
+      severity: 'warning',
+      description: 'Test anomaly',
+      detectedAt: Date.now(),
+    };
+    diagnosticsStoreState.diagnosticRows = [row];
+    diagnosticsStoreState.packetStats = new Map();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map<number, MeshNode>([[nodeId, node]])}
+        myNodeNum={0}
+        onTraceRoute={() => new Promise(() => {})}
+        isConnected
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Trace Route/i }));
+    const labels = screen.getAllByText('Tracing…');
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) {
+      expect(label).not.toHaveClass('animate-pulse');
+    }
+    expect(
+      labels.some((label) => label.previousElementSibling?.classList.contains('animate-pulse')),
+    ).toBe(true);
   });
 });

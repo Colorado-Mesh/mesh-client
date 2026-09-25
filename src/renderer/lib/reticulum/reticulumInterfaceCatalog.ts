@@ -66,10 +66,6 @@ export function reticulumCatalogFields(ifaceType: string): readonly ReticulumCat
   return reticulumCatalogEntry(ifaceType)?.fields ?? [];
 }
 
-export function isReticulumCatalogType(ifaceType: string): ifaceType is ReticulumIfaceUiType {
-  return Object.hasOwn(RETICULUM_INTERFACE_CATALOG, ifaceType);
-}
-
 /** i18n key for a catalog field label (`connectionPanel.reticulumInterfaces.field.*`). */
 export function reticulumCatalogFieldLabelKey(field: ReticulumCatalogField): string {
   return `connectionPanel.reticulumInterfaces.field.${field.key}`;

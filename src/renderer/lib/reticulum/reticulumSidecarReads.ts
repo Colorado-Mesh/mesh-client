@@ -116,12 +116,18 @@ export interface ReticulumSidecarInterfaceRow {
   announce_interval_min?: number | null;
   connectable?: boolean | null;
   reachable_on?: string | null;
+  discovery_lxmf_address?: string | null;
+  discovery_stamp_value?: number | null;
+  discovery_encrypt?: boolean | null;
+  publish_ifac?: boolean | null;
   network_name?: string | null;
   passphrase?: string | null;
   flow_control?: boolean | null;
   ignore_config_warnings?: boolean | null;
   tx_queue_used?: number | null;
   tx_queue_max?: number | null;
+  /** Host↔BLE RNode link RSSI (dBm) from connect/scan cache. */
+  host_rssi?: number | null;
   extra_config?: Record<string, string> | null;
 }
 

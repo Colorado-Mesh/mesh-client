@@ -7,12 +7,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getGpsFix, GpsHardwareError, shouldUseWifiNetworksPreflight } from './gps';
 
+const harness = vi.hoisted(() => ({ isOnline: true }));
+
 // gps.ts uses `import https from 'https'` (default import) and `import si from 'systeminformation'`
 // Mocks must export a `default` to satisfy default imports.
 vi.mock('systeminformation', () => ({
   default: {
     wifiNetworks: vi.fn(),
     inetChecksite: vi.fn(),
+  },
+}));
+vi.mock('electron', () => ({
+  net: {
+    isOnline: () => harness.isOnline,
   },
 }));
 vi.mock('https', () => ({
@@ -72,6 +79,7 @@ describe('GpsHardwareError', () => {
 describe('getGpsFix', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    harness.isOnline = true;
     vi.mocked(si.wifiNetworks).mockResolvedValue([]);
     vi.mocked(si.inetChecksite).mockResolvedValue({
       url: 'https://ipwho.is',
@@ -83,6 +91,15 @@ describe('getGpsFix', () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('returns OFFLINE immediately when net.isOnline is false', async () => {
+    harness.isOnline = false;
+    const result = await getGpsFix();
+    expect(result).toMatchObject({ status: 'error', code: 'OFFLINE' });
+    expect(https.request).not.toHaveBeenCalled();
+    expect(si.wifiNetworks).not.toHaveBeenCalled();
+    expect(si.inetChecksite).not.toHaveBeenCalled();
   });
 
   it('returns GpsFix with lat/lon when IP geolocation succeeds', async () => {

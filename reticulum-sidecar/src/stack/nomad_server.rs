@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use nomad_core::{
+    DEFAULT_CONVERSION_MAX_DIMENSION, DEFAULT_CONVERSION_QUALITY, MediaCacheConfig,
     NomadContentRoots, NomadContentStore, NomadError, NomadNode, NomadNodeConfig,
     normalize_file_route, normalize_page_route,
 };
@@ -228,6 +229,11 @@ impl NomadServerHandle {
                 announce_interval: Some(Duration::from_secs(DEFAULT_ANNOUNCE_INTERVAL_SECS)),
                 announce_at_start: true,
                 allow_executable_pages: false,
+                // Host conversion cache for /media (NomadNet 1.4.3+); memory-only
+                // until we expose an embedder-owned disk root + clear API.
+                media_cache: MediaCacheConfig::memory_only(),
+                media_conversion_quality: DEFAULT_CONVERSION_QUALITY,
+                media_conversion_max_dimension: DEFAULT_CONVERSION_MAX_DIMENSION,
             },
         )
         .await

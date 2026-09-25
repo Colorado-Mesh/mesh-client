@@ -3,7 +3,6 @@ export const MAIN_ESBUILD_EXTERNALS = [
   'electron',
   'electron-updater',
   'systeminformation',
-  '@stoprocent/noble',
   'node-forge',
   'jszip',
   'mqtt',

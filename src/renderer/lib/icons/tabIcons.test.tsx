@@ -28,6 +28,7 @@ vi.mock('lucide-react-motion', async (importOriginal) => {
     GitBranch: MockIcon,
     Shield: MockIcon,
     Gamepad2: MockIcon,
+    Siren: MockIcon,
   };
 });
 
@@ -36,6 +37,15 @@ describe('TabIcon', () => {
     render(
       <IconMotionProvider>
         <TabIcon name="Chat" />
+      </IconMotionProvider>,
+    );
+    expect(screen.getByTestId('tab-svg')).toBeInTheDocument();
+  });
+
+  it('renders svg for the Incident slot', () => {
+    render(
+      <IconMotionProvider>
+        <TabIcon name="Incident" />
       </IconMotionProvider>,
     );
     expect(screen.getByTestId('tab-svg')).toBeInTheDocument();
