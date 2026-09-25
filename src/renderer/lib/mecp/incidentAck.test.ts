@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { composeIncidentAck, resolveIncidentAckRoute } from './incidentAck';
+import {
+  composeIncidentAck,
+  incidentAckViewKey,
+  parseIncidentAckViewKey,
+  resolveIncidentAckRoute,
+} from './incidentAck';
 import type { EmergencyIncident } from './incidentTypes';
 
 function incident(partial: Partial<EmergencyIncident> = {}): EmergencyIncident {
@@ -70,8 +75,16 @@ describe('resolveIncidentAckRoute', () => {
     expect(route).toMatchObject({ protocol: 'meshcore', channel: 0, viaActiveProtocol: true });
   });
 
-  it('targets the incident protocol (queued) when not heard on the active protocol', () => {
-    const route = resolveIncidentAckRoute(incident(), 'reticulum', never);
+  it('targets the origin protocol (queued) when not heard on the active protocol', () => {
+    const route = resolveIncidentAckRoute(
+      incident({
+        protocol: 'meshcore',
+        protocolsSeen: ['meshtastic', 'meshcore'],
+        channel: '2',
+      }),
+      'reticulum',
+      never,
+    );
     expect(route).toMatchObject({ protocol: 'meshtastic', channel: 2, viaActiveProtocol: false });
   });
 
@@ -88,5 +101,17 @@ describe('resolveIncidentAckRoute', () => {
     expect(resolveIncidentAckRoute(incident({ channel: 'x' }), 'meshtastic', never).channel).toBe(
       0,
     );
+  });
+});
+
+describe('incidentAckViewKey', () => {
+  it('round-trips the incident id for channel and DM destinations', () => {
+    expect(
+      parseIncidentAckViewKey(incidentAckViewKey('mecp-1', { toNode: null, channel: 2 })),
+    ).toBe('mecp-1');
+    expect(parseIncidentAckViewKey(incidentAckViewKey('mecp-1', { toNode: 42, channel: 0 }))).toBe(
+      'mecp-1',
+    );
+    expect(parseIncidentAckViewKey('ch:0')).toBeNull();
   });
 });

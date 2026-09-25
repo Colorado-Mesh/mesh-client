@@ -417,34 +417,6 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     db.close();
   });
 
-  it('creates node_status_events with ts index and event_type CHECK on existing databases', () => {
-    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-node-status-events-'));
-    const db = new NodeSqliteDB(join(dir, 'test.db'));
-    db.execScript('CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT);');
-    db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
-    runSchemaUpgrade(db);
-
-    const idx = db
-      .prepare(
-        "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_node_status_events_ts'",
-      )
-      .all();
-    expect(idx).toHaveLength(1);
-
-    const insert = db.prepareOnce(
-      'INSERT INTO node_status_events (node_id, protocol, event_type, ts_ms) VALUES (?, ?, ?, ?)',
-    );
-    insert.run('!abcd1234', 'meshtastic', 'went_stale', 1_700_000_000_000);
-    insert.run('!abcd1234', 'meshtastic', 'online', 1_700_000_060_000);
-    expect(() => insert.run('!abcd1234', 'meshtastic', 'exploded', 1)).toThrow();
-
-    const rows = db
-      .prepareOnce('SELECT event_type FROM node_status_events ORDER BY ts_ms')
-      .all() as { event_type: string }[];
-    expect(rows.map((r) => r.event_type)).toEqual(['went_stale', 'online']);
-    db.close();
-  });
-
   it('adds chat_outbox.priority to legacy outbox rows with a normal default', () => {
     dir = mkdtempSync(join(tmpdir(), 'mesh-schema-outbox-priority-'));
     const db = new NodeSqliteDB(join(dir, 'test.db'));

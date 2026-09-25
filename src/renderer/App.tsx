@@ -64,6 +64,7 @@ import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import {
   composeIncidentAck,
+  incidentAckViewKey,
   incidentNeedsBeaconAck,
   resolveIncidentAckRoute,
 } from '@/renderer/lib/mecp/incidentAck';
@@ -1676,6 +1677,7 @@ function AppContent() {
       const text = composeIncidentAck(incident);
       const beaconAck = incidentNeedsBeaconAck(incident);
       // ACKs are routine traffic: queue as normal priority so they never compete with reports.
+      // Tag viewKey so the App-level drain can send them without Chat open and recordAck on TX.
       void sendTextWithOutboxFallback(
         text,
         {
@@ -1687,7 +1689,7 @@ function AppContent() {
             return row;
           },
           protocol: route.protocol,
-          viewKey: route.toNode != null ? `dm:${route.toNode}` : `ch:${route.channel}`,
+          viewKey: incidentAckViewKey(incident.id, route),
           channel: route.channel,
           toNode: route.toNode,
         },

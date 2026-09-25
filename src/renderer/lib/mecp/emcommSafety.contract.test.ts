@@ -17,6 +17,8 @@
  * S12 Incident-open nodes exempt from position_history prune.
  * S13 USGS/topo tiles only via allowlisted hosts; no user URL template.
  * S14 `mecpComposeEnabled` and `mecpMaydayButtonEnabled` defaults remain `false`.
+ * S15 Incident ACKs queue as normal priority; recordAck only on live `'sent'` (drain path tags viewKey).
+ * S16 App mounts emergency+ACK outbox drain once for all protocols.
  *
  * Behavioral coverage for S2/S3 lives in useChatOutbox.test.ts and emergencySend.test.ts.
  */
@@ -115,19 +117,21 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(readSrc('renderer/hooks/useOperationalAlerts.ts')).not.toMatch(/outbox/i);
   });
 
-  it('S11: incident ACKs queue as normal priority and only record ACK when actually sent', () => {
+  it('S15: incident ACKs queue as normal priority and only record ACK when actually sent', () => {
     const app = readSrc('renderer/App.tsx');
     const ack = /const handleIncidentAck = useCallback\([\s\S]*?\n {2}\);/.exec(app)?.[0] ?? '';
     expect(ack).toMatch(/sendTextWithOutboxFallback\(/);
     expect(ack).toMatch(/'normal',\s*\)/);
     expect(ack).not.toMatch(/sendEmergencyText\(/);
+    expect(ack).toMatch(/incidentAckViewKey\(/);
     expect(ack).toMatch(/if \(outcome === 'sent'\) \{[\s\S]*?confirmBeacon[\s\S]*?recordAck/);
   });
 
-  it('S11: App mounts the emergency outbox drain once for all protocols', () => {
+  it('S16: App mounts the emergency outbox drain once for all protocols', () => {
     const app = readSrc('renderer/App.tsx');
     expect(app.match(/useEmergencyOutboxDrain\(\{/g)).toHaveLength(1);
     expect(app).toMatch(/REGISTERED_MESH_PROTOCOLS\.map\(\(p\) => \(\{/);
+    expect(readSrc('renderer/hooks/useEmergencyOutboxDrain.ts')).toMatch(/isAppManagedOutboxRow/);
   });
 
   it('S12: startup and session prune pass incident-exempt node ids; main excludes them', () => {

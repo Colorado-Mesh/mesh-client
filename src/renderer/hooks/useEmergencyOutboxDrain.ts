@@ -11,7 +11,7 @@ import {
   type ChatOutboxSendFn,
   drainChatOutboxOnce,
   earliestEmergencyRetryAt,
-  isEmergencyOutboxPriority,
+  isAppManagedOutboxRow,
   outboxRetryTimerDelayMs,
 } from './useChatOutbox';
 
@@ -81,9 +81,10 @@ function scheduleEmergencyRetryTimer(
 
 /**
  * App-level emergency outbox drain for every protocol, independent of whether ChatPanel is
- * mounted. Only `priority: 'emergency'` rows are sent here; normal rows stay with ChatPanel's
- * `useChatOutbox`. Drains share {@link drainChatOutboxOnce}'s per-protocol lock with ChatPanel so
- * a row is never sent twice. Mount once from App.
+ * mounted. Sends `priority: 'emergency'` rows and Incident ACK rows tagged with
+ * {@link incidentAckViewKey}; other normal rows stay with ChatPanel's `useChatOutbox`. Drains
+ * share {@link drainChatOutboxOnce}'s per-protocol lock with ChatPanel so a row is never sent
+ * twice. Mount once from App.
  */
 export function useEmergencyOutboxDrain({
   drains,
@@ -119,7 +120,7 @@ export function useEmergencyOutboxDrain({
           },
           isSendAvailable: () =>
             drainsRef.current.find((d) => d.protocol === protocol)?.isSendAvailable === true,
-          rowFilter: isEmergencyOutboxPriority,
+          rowFilter: isAppManagedOutboxRow,
           ...(reticulumReceiptTimeoutMs != null ? { reticulumReceiptTimeoutMs } : {}),
         });
         const at = earliestEmergencyRetryAt(result.rows);

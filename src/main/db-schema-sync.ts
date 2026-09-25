@@ -307,14 +307,6 @@ export const CANONICAL_TABLES_DDL = `
         group_total INTEGER,
         priority TEXT NOT NULL DEFAULT 'normal'
       );
-
-      CREATE TABLE IF NOT EXISTS node_status_events (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        node_id TEXT NOT NULL,
-        protocol TEXT NOT NULL,
-        event_type TEXT NOT NULL CHECK(event_type IN ('went_stale','offline','online')),
-        ts_ms INTEGER NOT NULL
-      );
     `;
 
 /**
@@ -357,7 +349,6 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_reticulum_remote_addresses_service ON reticulum_remote_addresses(service, destination_hash)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_remote_addresses_last_used ON reticulum_remote_addresses(last_used_at)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_inbound_policy_decision ON reticulum_inbound_policy(decision)',
-  'CREATE INDEX IF NOT EXISTS idx_node_status_events_ts ON node_status_events(ts_ms)',
 ];
 
 /** Tables + indexes for empty new databases (createBaseTables). */

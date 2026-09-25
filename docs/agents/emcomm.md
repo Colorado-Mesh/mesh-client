@@ -2,7 +2,7 @@
 
 Deep subsystem reference for AI assistants. Open when a task touches Incident Command, the emergency outbox, MECP send reliability, ACK/beacon, ops alerts, quick status / roll call, EMCOMM exports, SAR map tools, or track retention. MECP wire format, siren alerts, audit log, and RF rebroadcast live in [mecp.md](mecp.md). Hard rules live in [`AGENTS.md`](../../AGENTS.md).
 
-## Safety invariants (S1–S14)
+## Safety invariants (S1–S16)
 
 Keep this list in sync with the header comment in [`emcommSafety.contract.test.ts`](../../src/renderer/lib/mecp/emcommSafety.contract.test.ts). Every invariant has a source contract and/or behavioral test today; do not weaken one without updating both the test and this table.
 
@@ -22,12 +22,15 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
 | S12 | Incident-open nodes exempt from `position_history` prune                                                         | **Enforced** — `position-history-prune.test.ts` + `useAppStartupDbPrune.test.ts`                                          |
 | S13 | USGS/topo tiles only via allowlisted hosts; no user URL template                                                 | **Enforced** — contract + `basemapRegistry.test.ts`                                                                       |
 | S14 | `mecpComposeEnabled` and `mecpMaydayButtonEnabled` default remain `false`                                        | **Enforced** — contract + source-policy rules `emcomm-mecp-compose-default-off` / `emcomm-mecp-mayday-button-default-off` |
+| S15 | Incident ACKs queue as normal priority; `recordAck` only on live `'sent'` (drain tags `ackIncident:` viewKey)    | **Enforced** — contract + App `handleIncidentAck` + `applyIncidentAckAfterOutboxSend`                                     |
+| S16 | App mounts emergency+ACK outbox drain once for all protocols                                                     | **Enforced** — contract + `useEmergencyOutboxDrain.test.ts`                                                               |
 
 ## WS1 — Incident tab, store, watcher hydrate upsert
 
 - **Types:** [`incidentTypes.ts`](../../src/renderer/lib/mecp/incidentTypes.ts) — `EmergencyIncident` (`status: 'open' | 'acked' | 'resolved'`, `protocolsSeen`, `ackPeerIds`/`ackCount`, `beaconActive`/`beaconAcked`, `lat`/`lon` + `coordsSource: 'message' | 'lastKnown' | null`, `isDrill`).
 - **Store:** [`incidentStore.ts`](../../src/renderer/stores/incidentStore.ts) (Zustand `persist`, localStorage key `mesh-client:incidents`, cap `MAX_INCIDENTS = 200`).
-  - Fingerprint strips GPS from freetext so a GPS update does not fork a row. Bridged copies from a **different** sender id merge within `CROSS_PROTOCOL_MERGE_WINDOW_MS` (10 min) on codes + stripped freetext; original `senderId` is kept and relays go in `relaySenderIds`.
+- Fingerprint strips GPS from freetext so a GPS update does not fork a row. Bridged copies from a **different** sender id merge within `CROSS_PROTOCOL_MERGE_WINDOW_MS` (10 min) only when the relay arrives on a **new** protocol, stripped text is **non-empty**, and the full payload (including coords) matches; original `senderId` is kept and relays go in `relaySenderIds`. GPS-only one-tap MAYDAYs from two victims never merge. Relays never overwrite victim coords / `lastKnown`.
+- Resolve / prune tombstones both the sender fingerprint and `incidentPayloadMatchKey` so seed cannot reopen via a relay or escalated copy.
   - Cap eviction: resolved → drills → higher severity number → oldest; **never** evict open non-drill sev 0/1 (temporary over-cap allowed).
   - `resolvedTombstones` survive incident prune/`clearAll` of live rows so hydration cannot reopen resolved MAYDAYs. Live path may reopen after `INCIDENT_REOPEN_GRACE_MS`.
   - Seed (`fromSeed`): applies the same own/history/S&F/tapback skips as the live watcher path, skips messages older than `INCIDENT_SEED_MAX_AGE_MS` (24h), and honors tombstones.
@@ -43,15 +46,15 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
   - Emergency send failures always schedule `nextRetryAt` with the normal backoff (30s → 2m → 10m, then 10m forever) — no `MAX_ATTEMPTS` stop. Encryption-blocked errors still go to `blocked` without retry.
   - **Soft cap:** `EMERGENCY_OUTBOX_SOFT_CAP = 20` counts **non-blocked** emergency rows only. Cap blocks the least-urgent non-MAYDAY row (never blocks `MECP/0` payloads); if only MAYDAYs remain, over-cap is allowed. Rows are never deleted.
   - **Order:** `drainChatOutboxOnce` sends emergency rows before normal, then oldest first.
-  - **Always-on drain:** `useEmergencyOutboxDrain` mounts once in `App.tsx` for all three protocols (registers drain listeners + wakes at earliest emergency `nextRetryAt`). ChatPanel still owns UI + normal rows. Shared `withChatOutboxDrainLock` prevents double-send.
-  - Incident ACKs enqueue as **`normal`** priority; `recordAck` / `confirmBeacon` only run when the send outcome is `'sent'` (queued shows toast only).
-- **Send helper:** [`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts) — Reticulum live sends wait for LXMF receipt before reporting `'sent'`; timeout/failure queues. DM-only with no destination throws (does not silently succeed).
+  - **Always-on drain:** `useEmergencyOutboxDrain` mounts once in `App.tsx` for all three protocols (registers drain listeners + wakes at earliest App-managed `nextRetryAt`). Sends emergency rows **and** Incident ACK rows tagged `ackIncident:<id>:…`. ChatPanel still owns UI + other normal rows. Shared `withChatOutboxDrainLock` + per-row `OUTBOX_DRAIN_ROW_TIMEOUT_MS` watchdog prevent double-send / hung locks.
+  - Incident ACKs enqueue as **`normal`** priority with `incidentAckViewKey`; `recordAck` / `confirmBeacon` run on live `'sent'` **or** when the tagged ACK row drains successfully (`applyIncidentAckAfterOutboxSend`).
+- **Send helper:** [`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts) — Reticulum live sends wait for LXMF receipt (or PN cascade `propagated`/`stored_locally`) before reporting `'sent'`; timeout/failure queues. DM-only with no destination throws (does not silently succeed).
 
 ## WS3 — ACK (R01) vs beacon (B01 / B02 / B03)
 
 - **Codes** ([`mecpAck.ts`](../../src/renderer/lib/mecp/mecpAck.ts)): `R01` general ACK (`MECP/<sev>/R01 <echoed codes> [freetext] ~CALLSIGN`), `B01` beacon, `B02` beacon ACK (reduce beacon rate), `B03` beacon cancel (sender OK). `composeGeneralAck` never emits B02 (S7); `composeBeaconAck` / `composeBeaconCancel` emit only their marker. All composers stay within `MAX_MESSAGE_BYTES` (freetext truncated first, then trailing echoed codes dropped; callsign suffix preserved).
 - **Correlation:** `findOpenIncidentForAck` scores unresolved incidents by exact echoed-code set, overlap, active beacon (for B02), matching severity, then recency. Incidents raised by the ACK sender are never candidates; the store's `recordAck` also ignores the incident sender acking themselves.
-- **Incident ACK button** ([`incidentAck.ts`](../../src/renderer/lib/mecp/incidentAck.ts)): `incidentNeedsBeaconAck` (active, unconfirmed beacon) → B02 **Confirm**, else R01 **ACK**. `resolveIncidentAckRoute` prefers the active protocol if the incident was heard there (live send on the incident channel), otherwise targets the protocol of the latest copy (queued for that protocol's outbox drain). DM-only protocols (Reticulum) route the ACK straight back to the sender. `App.tsx` `handleIncidentAck` sends via `sendTextWithOutboxFallback(..., 'normal')`, then `confirmBeacon` / `recordAck` **only when outcome is `'sent'`**.
+- **Incident ACK button** ([`incidentAck.ts`](../../src/renderer/lib/mecp/incidentAck.ts)): `incidentNeedsBeaconAck` (active, unconfirmed beacon) → B02 **Confirm**, else R01 **ACK**. `resolveIncidentAckRoute` prefers the active protocol if the incident was heard there; otherwise targets the victim's **original** protocol (`protocolsSeen[0]`), not the latest relay stamp on `incident.protocol`. DM-only protocols (Reticulum) route the ACK straight back to the sender. `App.tsx` `handleIncidentAck` sends via `sendTextWithOutboxFallback(..., 'normal')` with `incidentAckViewKey`, then `confirmBeacon` / `recordAck` **only when outcome is `'sent'`**.
 - **ACK honesty:** broadcast ACKs are **heard-by-network, best effort** — an ACK count means R01/B02 copies were overheard, not that the distressed operator read anything. UI copy must not imply read receipts.
 
 ## WS4 — Operational alerts
@@ -71,13 +74,11 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
 - **UI:** [`QuickStatusBar.tsx`](../../src/renderer/components/chat/QuickStatusBar.tsx) above the Chat composer (always shown; disabled with the composer for DM-only chat with no peer / Reticulum peer without LXMF). `ChatPanel` sends presets and the roll-call command through `sendTextWithOutboxFallback(text, deps, 'normal')` in `emergencySend.ts` (live send, or a normal-priority outbox row when offline / on send failure). Roll call keeps `RollCallState` in ChatPanel: expected peers are watched nodes, else currently-online nodes (own node excluded); the tally is derived from the current view's messages via `tallyRollCallReplies` and shown as `rollCallSummary` until the window expires.
 - **One-tap MAYDAY:** when App → MECP → **Show MAYDAY button in Chat** is on (default off, S14), Chat shows **MAYDAY**. It opens `MecpComposeModal` with `initialSeverity={0}` and `autoAttachGps` (prefill applied once per open; remount via `key={mecpComposeSession}`), then sends through `sendEmergencyText` (WS2). The MECP compose button is a separate opt-in (`mecpComposeEnabled`).
 
-## WS6 — Exports and after-action report
+## WS6 — Exports
 
 - **UI:** NodeListPanel **Export JSON** (topology envelope over `nodesToExportRows`) / **Export CSV**; DiagnosticsPanel **Export JSON** (visible rows for the active protocol); MECP audit log via App → MECP.
 - **Serializers** ([`exportFormats.ts`](../../src/renderer/lib/exportFormats.ts), pure): `nodesToCsv` (RFC 4180, CSV-injection guarded, canonical `TOPOLOGY_NODE_FIELDS` first then extra keys), `nodesToTopologyJson` (`format: 'mesh-client-topology'`, `version`), `diagnosticsRowsToJson` (`format: 'mesh-client-diagnostics'`), `toJsonSafe` (Maps/Sets/bigint/Dates/cycles).
-- **Report assembler** ([`src/main/emcommReport.ts`](../../src/main/emcommReport.ts), pure, English export artifact): `assembleEmcommReportJson` / `assembleEmcommReportMarkdown` merge `mecp-received.log` JSONL lines (malformed lines counted, not fatal), `node_status_events`, and incident snapshots into a sorted timeline + summary. `escapeMarkdownCell` neutralizes mesh-sourced text.
-- **Schema:** `node_status_events (node_id, protocol, event_type CHECK IN ('went_stale','offline','online'), ts_ms)` + `idx_node_status_events_ts` in `db-schema-sync.ts`.
-- **Not yet wired (intentionally out of this PR's merge-critical path):** no IPC/UI calls the report assembler, and nothing writes `node_status_events` rows yet — do not advertise "EMCOMM report export" in UI until both are connected. Prefer a follow-up PR rather than expanding #1050 further.
+- **After-action report:** deferred to a follow-up (assembler + `node_status_events` writer intentionally not in this PR).
 - **Ops link-down:** Meshtastic + MeshCore RF drivers only. Reticulum uses the sidecar (not an RF `ConnectionDriver` link), so link-down alerts intentionally omit it.
 
 ## WS7 — SAR map tools (MGRS grid, measure, bearing)
@@ -107,7 +108,7 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
 | Ops alerts                | `src/renderer/lib/operationalAlerts.ts`, `src/renderer/hooks/useOperationalAlerts.ts`                                        |
 | Quick status / roll call  | `src/renderer/lib/quickStatusMessages.ts`, `src/renderer/lib/rollCall.ts`                                                    |
 | Quick status bar / MAYDAY | `src/renderer/components/chat/QuickStatusBar.tsx`, `src/renderer/components/ChatPanel.tsx`                                   |
-| Exports / report          | `src/renderer/lib/exportFormats.ts`, `src/main/emcommReport.ts`                                                              |
+| Exports                   | `src/renderer/lib/exportFormats.ts`                                                                                          |
 | SAR map                   | `src/renderer/lib/map/mgrsGrid.ts`, `src/renderer/lib/map/measureMath.ts`, `src/renderer/components/map/emcommMapLayers.tsx` |
 | Topo / track retention    | `src/shared/offlineMaps/basemapRegistry.ts`, `src/renderer/lib/incidentTrackExemption.ts`, `src/main/database.ts`            |
 | Safety contract           | `src/renderer/lib/mecp/emcommSafety.contract.test.ts`                                                                        |

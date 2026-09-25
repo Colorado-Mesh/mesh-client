@@ -2,6 +2,7 @@ import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import type { MessageStatus } from '@/renderer/stores/messageStore';
 import { useMessageStore } from '@/renderer/stores/messageStore';
+import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 export const RETICULUM_RECEIPT_TIMEOUT_MS = 30_000;
 
@@ -20,6 +21,8 @@ function captureReticulumMessageIds(identityId: string): Set<string> {
 /**
  * Follow one outbound attempt by store id. Pending → LXMF hash rekey is detected when
  * the tracked id disappears and exactly one new id appears in the same store update.
+ * Propagation-node / local-prop cascade (`propagated` / `stored_locally`) counts as acked so
+ * emergency outbox retries do not spam a new LXMF copy every backoff while the peer is offline.
  */
 export async function waitForReticulumOutboundTerminal(
   identityId: string,
@@ -29,7 +32,7 @@ export async function waitForReticulumOutboundTerminal(
   let trackedId = attemptStoreId;
   let knownIds = captureReticulumMessageIds(identityId);
 
-  const readStatus = (): MessageStatus | undefined => {
+  const readTerminal = (): ReticulumOutboundTerminal | undefined => {
     const messagesByIdentity = useMessageStore.getState().messages;
     if (!Object.hasOwn(messagesByIdentity, identityId)) return undefined;
     const byId = messagesByIdentity[identityId];
@@ -42,10 +45,15 @@ export async function waitForReticulumOutboundTerminal(
       trackedId = added[0];
     }
     knownIds = currentIds;
-    return Object.hasOwn(byId, trackedId) ? byId[trackedId].status : undefined;
+    if (!Object.hasOwn(byId, trackedId)) return undefined;
+    const msg = byId[trackedId];
+    const status: MessageStatus | undefined = msg.status;
+    if (status === 'acked' || status === 'failed') return status;
+    if (isPnCascadeDeliveryMethod(msg.reticulumDeliveryMethod)) return 'acked';
+    return undefined;
   };
 
-  const immediate = readStatus();
+  const immediate = readTerminal();
   if (immediate === 'acked' || immediate === 'failed') return immediate;
   return await new Promise<ReticulumOutboundTerminal>((resolve) => {
     const timeout = setTimeout(() => {
@@ -53,7 +61,7 @@ export async function waitForReticulumOutboundTerminal(
       resolve('timeout');
     }, timeoutMs);
     const unsubscribe = useMessageStore.subscribe(() => {
-      const status = readStatus();
+      const status = readTerminal();
       if (status === 'acked' || status === 'failed') {
         clearTimeout(timeout);
         unsubscribe();
@@ -65,8 +73,9 @@ export async function waitForReticulumOutboundTerminal(
 
 /**
  * Resolve only when a Reticulum send attempt (store id returned by the send fn) reaches a
- * remote `acked` receipt. Throws `chatPanel.reticulumSendFailed` / `chatPanel.reticulumSendTimeout`
- * i18n keys otherwise so callers can keep the payload durable in the outbox.
+ * remote `acked` receipt or parks on a propagation node. Throws
+ * `chatPanel.reticulumSendFailed` / `chatPanel.reticulumSendTimeout` i18n keys otherwise so
+ * callers can keep the payload durable in the outbox.
  */
 export async function assertReticulumSendAcked(
   identityId: string | null,

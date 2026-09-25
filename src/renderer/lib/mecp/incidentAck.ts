@@ -37,17 +37,40 @@ function parseChannel(channel: string | null): number {
 
 /**
  * Prefer the active protocol when the incident was heard on it (live send); otherwise target the
- * protocol of the latest copy, which the caller should enqueue for that protocol's outbox drain.
+ * victim's *original* protocol (`protocolsSeen[0]`), not the latest relay protocol stamped on
+ * `incident.protocol`.
  */
 export function resolveIncidentAckRoute(
   incident: Pick<EmergencyIncident, 'protocol' | 'protocolsSeen' | 'channel' | 'senderId'>,
   activeProtocol: MeshProtocol,
   isDmOnly: (protocol: MeshProtocol) => boolean,
 ): IncidentAckRoute {
+  const originProtocol = incident.protocolsSeen[0] ?? incident.protocol;
   const viaActiveProtocol = incident.protocolsSeen.includes(activeProtocol);
-  const protocol = viaActiveProtocol ? activeProtocol : incident.protocol;
-  const channel = protocol === incident.protocol ? parseChannel(incident.channel) : 0;
+  const protocol = viaActiveProtocol ? activeProtocol : originProtocol;
+  const channel = protocol === originProtocol ? parseChannel(incident.channel) : 0;
   const sender = Number(incident.senderId);
   const toNode = isDmOnly(protocol) && Number.isFinite(sender) ? sender : null;
   return { protocol, channel, toNode, viaActiveProtocol };
+}
+
+/** Prefix for Incident Command ACK outbox rows (`ackIncident:<id>:…`). */
+export const INCIDENT_ACK_VIEW_KEY_PREFIX = 'ackIncident:';
+
+/** Build a viewKey that tags the row as an incident ACK for App-level drain + recordAck. */
+export function incidentAckViewKey(
+  incidentId: string,
+  route: { toNode: number | null; channel: number },
+): string {
+  const dest = route.toNode != null ? `dm:${route.toNode}` : `ch:${route.channel}`;
+  return `${INCIDENT_ACK_VIEW_KEY_PREFIX}${incidentId}:${dest}`;
+}
+
+/** Extract the incident id from an ACK outbox viewKey, or null when not an ACK row. */
+export function parseIncidentAckViewKey(viewKey: string): string | null {
+  if (!viewKey.startsWith(INCIDENT_ACK_VIEW_KEY_PREFIX)) return null;
+  const rest = viewKey.slice(INCIDENT_ACK_VIEW_KEY_PREFIX.length);
+  const colon = rest.indexOf(':');
+  const id = colon < 0 ? rest : rest.slice(0, colon);
+  return id.length > 0 ? id : null;
 }

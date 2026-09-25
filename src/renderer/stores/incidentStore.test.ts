@@ -226,6 +226,78 @@ describe('incidentStore', () => {
     expect(inc.protocolsSeen).toEqual(['meshtastic', 'meshcore']);
   });
 
+  it('does not merge two senders with the same GPS-only canned MAYDAY', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const a = s.upsertFromMecp(
+      report('MECP/0/M01 39.7,-105.0', {
+        senderId: '!alice',
+        messageId: 'a',
+        receivedAt: 1_000,
+      }),
+    )!;
+    const b = s.upsertFromMecp(
+      report('MECP/0/M01 40.1,-104.5', {
+        senderId: '!bob',
+        messageId: 'b',
+        receivedAt: 2_000,
+      }),
+    )!;
+    expect(b).not.toBe(a);
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(2);
+    expect(useIncidentStore.getState().incidents[a].senderId).toBe('!alice');
+    expect(useIncidentStore.getState().incidents[b].senderId).toBe('!bob');
+  });
+
+  it('does not apply relay lastKnown over the victim pin', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const a = s.upsertFromMecp(
+      report('MECP/0/M01 trapped', {
+        senderId: '!victim',
+        protocol: 'meshtastic',
+        lastKnown: { lat: 39.7, lon: -105.0 },
+        receivedAt: 1_000,
+      }),
+    )!;
+    s.upsertFromMecp(
+      report('MECP/0/M01 trapped', {
+        senderId: '!bridge',
+        protocol: 'meshcore',
+        lastKnown: { lat: 1, lon: 2 },
+        receivedAt: 2_000,
+      }),
+    );
+    const inc = useIncidentStore.getState().incidents[a];
+    expect(inc.lat).toBeCloseTo(39.7);
+    expect(inc.lon).toBeCloseTo(-105.0);
+    expect(inc.coordsSource).toBe('lastKnown');
+  });
+
+  it('seed path honors payload tombstones for relayed copies', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(
+      report('MECP/0/M01 trapped', {
+        senderId: '!victim',
+        protocol: 'meshtastic',
+        receivedAt: Date.now(),
+      }),
+    )!;
+    s.resolveIncident(id);
+    expect(
+      s.upsertFromMecp({
+        ...report('MECP/0/M01 trapped', {
+          senderId: '!bridge',
+          protocol: 'meshcore',
+          receivedAt: Date.now(),
+          messageId: 'seed-relay',
+        }),
+        fromSeed: true,
+      }),
+    ).toBeNull();
+  });
+
   it('never evicts open MAYDAY when the cap is exceeded', async () => {
     const { useIncidentStore, MAX_INCIDENTS } = await loadStore();
     const s = useIncidentStore.getState();

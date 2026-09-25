@@ -7,7 +7,9 @@ import { findOpenIncidentForAck, isGeneralAck } from '@/renderer/lib/mecp/mecpAc
 import {
   extractMecpCoords,
   incidentFingerprint,
+  incidentPayloadMatchKey,
   type MecpParsed,
+  normalizeMecpFreetext,
   normalizeMecpFreetextForMatch,
 } from '@/renderer/lib/mecp/mecpMessages';
 import type { MeshProtocol } from '@/shared/meshProtocol';
@@ -116,7 +118,9 @@ function pruneIncidents(
     }
     if (i < keepFrom) {
       if (inc.status === 'resolved' || isUnresolved(inc)) {
-        nextTombs[inc.id] = inc.resolvedAt ?? inc.lastSeenAt;
+        const at = inc.resolvedAt ?? inc.lastSeenAt;
+        nextTombs[inc.id] = at;
+        nextTombs[payloadTombstoneKey(inc.severity, inc.codes, inc.freetext)] = at;
       }
       continue;
     }
@@ -155,6 +159,7 @@ function findExistingIncident(
   opts: {
     id: string;
     senderId: string;
+    protocol: MeshProtocol;
     severity: Severity;
     codes: string[];
     freetext: string;
@@ -165,24 +170,39 @@ function findExistingIncident(
   if (byId) return byId;
 
   const matchText = normalizeMecpFreetextForMatch(opts.freetext);
+  const matchFull = normalizeMecpFreetext(opts.freetext);
 
   let sameSender: EmergencyIncident | undefined;
   let crossProtocol: EmergencyIncident | undefined;
   for (const inc of Object.values(all)) {
     if (!isUnresolved(inc)) continue;
     if (!sameCodeSet(inc.codes, opts.codes)) continue;
-    if (normalizeMecpFreetextForMatch(inc.freetext) !== matchText) continue;
-    // Codes + stripped freetext match; severity may differ (escalation). Same sender always
-    // wins; different sender within the bridge window is treated as a relayed copy.
+    // Same sender: GPS-stripped text match so a position update does not fork a row.
     if (inc.senderId === opts.senderId) {
+      if (normalizeMecpFreetextForMatch(inc.freetext) !== matchText) continue;
       sameSender = inc;
       break;
     }
+    // Bridged relay: only a *new* protocol, non-empty stripped text, and identical payload
+    // including coords. Empty stripped text (GPS-only one-tap MAYDAY) must not merge two
+    // victims on the same or different protocols.
+    if (inc.protocolsSeen.includes(opts.protocol)) continue;
+    if (matchText.length === 0) continue;
+    if (normalizeMecpFreetext(inc.freetext) !== matchFull) continue;
     if (opts.now - inc.receivedAt <= CROSS_PROTOCOL_MERGE_WINDOW_MS && !crossProtocol) {
       crossProtocol = inc;
     }
   }
   return sameSender ?? crossProtocol;
+}
+
+/** Tombstone key for payload identity (survives relay / escalated fingerprint variants). */
+function payloadTombstoneKey(
+  severity: Severity,
+  codes: readonly string[],
+  freetext: string,
+): string {
+  return `payload:${incidentPayloadMatchKey({ severity, codes: [...codes], freetext })}`;
 }
 
 /**
@@ -231,15 +251,17 @@ export const useIncidentStore = create<IncidentStoreState>()(
 
         const freetext = parsed.freetext ?? '';
         const id = incidentFingerprint({ severity, codes: parsed.codes, freetext, senderId });
+        const payloadTomb = payloadTombstoneKey(severity, parsed.codes, freetext);
 
         if (input.fromSeed) {
-          if (tombs[id] != null) return null;
+          if (tombs[id] != null || tombs[payloadTomb] != null) return null;
           if (now > 0 && Date.now() - now > INCIDENT_SEED_MAX_AGE_MS) return null;
         }
 
         const existing = findExistingIncident(all, {
           id,
           senderId,
+          protocol,
           severity,
           codes: parsed.codes,
           freetext,
@@ -249,18 +271,27 @@ export const useIncidentStore = create<IncidentStoreState>()(
         if (
           input.fromSeed &&
           existing &&
-          (tombs[existing.id] != null || existing.status === 'resolved')
+          (tombs[existing.id] != null ||
+            tombs[payloadTombstoneKey(existing.severity, existing.codes, existing.freetext)] !=
+              null ||
+            existing.status === 'resolved')
         ) {
           return null;
         }
 
+        const isRelay = existing != null && existing.senderId !== senderId;
         const msgCoords = extractMecpCoords(freetext);
-        const coords = msgCoords ?? input.lastKnown ?? null;
-        const coordsSource = msgCoords ? 'message' : input.lastKnown ? 'lastKnown' : null;
+        // Relays must not overwrite the victim's pin with the bridge node's lastKnown.
+        const coords = msgCoords ?? (isRelay ? null : input.lastKnown) ?? null;
+        const coordsSource = msgCoords
+          ? 'message'
+          : !isRelay && input.lastKnown
+            ? 'lastKnown'
+            : null;
         const beacon = isBeacon(parsed.codes);
 
         if (!existing) {
-          if (input.fromSeed && tombs[id] != null) return null;
+          if (input.fromSeed && (tombs[id] != null || tombs[payloadTomb] != null)) return null;
           const created: EmergencyIncident = {
             id,
             protocol,
@@ -290,7 +321,6 @@ export const useIncidentStore = create<IncidentStoreState>()(
           return id;
         }
 
-        const isRelay = existing.senderId !== senderId;
         const reopen =
           existing.status === 'resolved' &&
           now - (existing.resolvedAt ?? 0) > INCIDENT_REOPEN_GRACE_MS;
@@ -300,8 +330,8 @@ export const useIncidentStore = create<IncidentStoreState>()(
           input.messageId && !existing.messageIds.includes(input.messageId)
             ? [...existing.messageIds, input.messageId].slice(-MAX_MESSAGE_IDS_PER_INCIDENT)
             : existing.messageIds;
-        // Message coordinates always win over lastKnown; never downgrade message → lastKnown.
-        const keepCoords = existing.coordsSource === 'message' && !msgCoords;
+        // Message coordinates always win over lastKnown; never apply coords from a relay copy.
+        const keepCoords = isRelay || (existing.coordsSource === 'message' && !msgCoords);
         const relaySenderIds = isRelay
           ? [...new Set([...(existing.relaySenderIds ?? []), senderId])].slice(-20)
           : existing.relaySenderIds;
@@ -315,21 +345,28 @@ export const useIncidentStore = create<IncidentStoreState>()(
           lastSeenAt: Math.max(existing.lastSeenAt, now),
           // Keep original victim identity; relays are recorded separately.
           senderName: isRelay ? existing.senderName : (input.senderName ?? existing.senderName),
-          channel: input.channel ?? existing.channel,
+          channel: isRelay ? existing.channel : (input.channel ?? existing.channel),
           messageIds,
           ...(relaySenderIds ? { relaySenderIds } : {}),
           ...(keepCoords || !coords
             ? {}
             : { lat: coords.lat, lon: coords.lon, coordsSource: coordsSource }),
-          freetext: msgCoords ? freetext : existing.freetext,
+          freetext: isRelay ? existing.freetext : msgCoords ? freetext : existing.freetext,
           beaconActive: existing.beaconActive || beacon,
           ...(reopen ? { status: 'open' as const, resolvedAt: undefined } : {}),
         };
         set((s) => {
           let nextTombs = s.resolvedTombstones;
-          if (reopen && s.resolvedTombstones[existing.id] != null) {
+          if (reopen) {
+            const payloadKey = payloadTombstoneKey(
+              existing.severity,
+              existing.codes,
+              existing.freetext,
+            );
             nextTombs = Object.fromEntries(
-              Object.entries(s.resolvedTombstones).filter(([key]) => key !== existing.id),
+              Object.entries(s.resolvedTombstones).filter(
+                ([key]) => key !== existing.id && key !== payloadKey,
+              ),
             );
           }
           return {
@@ -382,6 +419,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
             resolvedTombstones: pruneTombstones({
               ...s.resolvedTombstones,
               [incidentId]: resolvedAt,
+              [payloadTombstoneKey(inc.severity, inc.codes, inc.freetext)]: resolvedAt,
             }),
           };
         }),

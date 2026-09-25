@@ -14,6 +14,7 @@ import {
   isEncryptionBlockedSendError,
   persistableChatSendError,
 } from '../lib/chatSendErrorI18n';
+import { incidentNeedsBeaconAck, parseIncidentAckViewKey } from '../lib/mecp/incidentAck';
 import { recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { getRadioCapabilities } from '../lib/radio/providerFactory';
@@ -22,6 +23,7 @@ import {
   resolveReticulumIdentityId,
   RETICULUM_RECEIPT_TIMEOUT_MS,
 } from '../lib/reticulumOutboundReceipt';
+import { useIncidentStore } from '../stores/incidentStore';
 
 export type { OutboxEntry };
 
@@ -37,12 +39,24 @@ export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
  */
 export const EMERGENCY_OUTBOX_SOFT_CAP = 20;
 const EMERGENCY_CAP_BLOCKED_KEY = 'chatPanel.outboxEmergencyCapBlocked';
+/** Per-row send watchdog so a hung TX cannot hold {@link withChatOutboxDrainLock} forever. */
+export const OUTBOX_DRAIN_ROW_TIMEOUT_MS = RETICULUM_RECEIPT_TIMEOUT_MS + 15_000;
 const MAX_TIMER_DELAY_MS = 2_147_483_647;
 const MECP_MAYDAY_PAYLOAD_RE = /^MECP\/0\b/i;
 const MECP_SEVERITY_PAYLOAD_RE = /^MECP\/(\d)\b/i;
 
 export function isEmergencyOutboxPriority(row: Pick<OutboxEntry, 'priority'>): boolean {
   return row.priority === 'emergency';
+}
+
+/** Incident ACK rows tagged via {@link incidentAckViewKey} (normal priority, App-drained). */
+export function isIncidentAckOutboxRow(row: Pick<OutboxEntry, 'viewKey'>): boolean {
+  return parseIncidentAckViewKey(row.viewKey) != null;
+}
+
+/** Rows the App-level drain may send without ChatPanel mounted. */
+export function isAppManagedOutboxRow(row: Pick<OutboxEntry, 'priority' | 'viewKey'>): boolean {
+  return isEmergencyOutboxPriority(row) || isIncidentAckOutboxRow(row);
 }
 
 /** True when an outbox payload is an MECP severity-0 (MAYDAY) report. */
@@ -57,8 +71,8 @@ function emergencyPayloadSeverity(payload: string): number {
 }
 
 /**
- * Earliest future `nextRetryAt` among emergency `queued` / `failed` rows, or null when none are
- * waiting on backoff.
+ * Earliest future `nextRetryAt` among App-managed (`emergency` or incident-ACK) `queued` /
+ * `failed` rows, or null when none are waiting on backoff.
  */
 export function earliestEmergencyRetryAt(
   rows: readonly OutboxEntry[],
@@ -66,7 +80,7 @@ export function earliestEmergencyRetryAt(
 ): number | null {
   let earliest: number | null = null;
   for (const r of rows) {
-    if (!isEmergencyOutboxPriority(r)) continue;
+    if (!isAppManagedOutboxRow(r)) continue;
     if (r.status !== 'queued' && r.status !== 'failed') continue;
     if (r.nextRetryAt == null || r.nextRetryAt <= now) continue;
     if (earliest == null || r.nextRetryAt < earliest) earliest = r.nextRetryAt;
@@ -124,11 +138,44 @@ function retryDelayMs(attemptCount: number): number {
   return RETRY_DELAYS_MS[Math.min(attemptCount - 1, RETRY_DELAYS_MS.length - 1)];
 }
 
+/** Mark the incident ACK'd once a tagged ACK outbox row actually leaves the radio. */
+export function applyIncidentAckAfterOutboxSend(
+  row: Pick<OutboxEntry, 'viewKey' | 'payload'>,
+): void {
+  const incidentId = parseIncidentAckViewKey(row.viewKey);
+  if (incidentId == null) return;
+  const store = useIncidentStore.getState();
+  const inc = store.incidents[incidentId];
+  if (inc == null || inc.status === 'resolved') return;
+  if (incidentNeedsBeaconAck(inc)) {
+    store.confirmBeacon(incidentId);
+  } else {
+    store.recordAck(incidentId, 'local');
+  }
+}
+
+async function withOutboxDrainRowTimeout<T>(fn: () => Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      fn(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error('chatPanel.outboxDrainTimeout'));
+        }, OUTBOX_DRAIN_ROW_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timer != null) clearTimeout(timer);
+  }
+}
+
 async function finalizeSuccessfulOutboxSend(
   row: OutboxEntry,
   removeRow: (id: number) => void,
   updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
 ): Promise<void> {
+  applyIncidentAckAfterOutboxSend(row);
   try {
     await window.electronAPI.chat.outbox.remove(row.id);
     removeRow(row.id);
@@ -270,20 +317,25 @@ async function sendOneOutboxRow(
   await window.electronAPI.chat.outbox.updateStatus(row.id, 'sending');
   updateRow(row.id, { status: 'sending' });
   try {
-    const reticulumIdentityId = protocol === 'reticulum' ? resolveReticulumIdentityId() : null;
-    const sendResult = await sendFn(
-      row.payload,
-      row.channel,
-      row.toNode ?? undefined,
-      row.replyId ?? undefined,
-    );
-    if (protocol === 'reticulum') {
-      await assertReticulumSendAcked(reticulumIdentityId, sendResult, reticulumReceiptTimeoutMs);
-    }
-    // Keep the app-wide single-packet fast-send clock honest: a drained row is airtime too.
-    if (isMeshProtocol(row.protocol) && getRadioCapabilities(row.protocol).composerMaxChunks <= 1) {
-      recordMeshcoreSend();
-    }
+    await withOutboxDrainRowTimeout(async () => {
+      const reticulumIdentityId = protocol === 'reticulum' ? resolveReticulumIdentityId() : null;
+      const sendResult = await sendFn(
+        row.payload,
+        row.channel,
+        row.toNode ?? undefined,
+        row.replyId ?? undefined,
+      );
+      if (protocol === 'reticulum') {
+        await assertReticulumSendAcked(reticulumIdentityId, sendResult, reticulumReceiptTimeoutMs);
+      }
+      // Keep the app-wide single-packet fast-send clock honest: a drained row is airtime too.
+      if (
+        isMeshProtocol(row.protocol) &&
+        getRadioCapabilities(row.protocol).composerMaxChunks <= 1
+      ) {
+        recordMeshcoreSend();
+      }
+    });
     await finalizeSuccessfulOutboxSend(row, removeRow, updateRow);
   } catch (err: unknown) {
     // catch-no-log-ok recordOutboxSendFailure logs the send failure
@@ -306,7 +358,7 @@ export interface DrainChatOutboxOnceOptions {
   /** Re-checked before every row so a mid-drain disconnect stops further sends. */
   isSendAvailable: () => boolean;
   reticulumReceiptTimeoutMs?: number;
-  /** Restrict which eligible rows are sent (App-level drain passes emergency-only). */
+  /** Restrict which eligible rows are sent (App-level drain passes emergency + ACK rows). */
   rowFilter?: (row: OutboxEntry) => boolean;
   onRowsListed?: (rows: OutboxEntry[]) => void;
   updateRow?: OutboxRowPatchFn;

@@ -96,10 +96,16 @@ describe('useEmergencyOutboxDrain', () => {
     });
   });
 
-  it('drains only emergency rows without ChatPanel mounted', async () => {
+  it('drains emergency and incident-ACK rows without ChatPanel mounted', async () => {
     stored = [
       makeEntry({ id: 1, payload: 'routine', createdAt: Date.now() - 2_000 }),
       makeEntry({ id: 2, payload: 'MECP/0/M01', priority: 'emergency' }),
+      makeEntry({
+        id: 3,
+        payload: 'MECP/0/R01 M01',
+        priority: 'normal',
+        viewKey: 'ackIncident:mecp-x:ch:0',
+      }),
     ];
     const sendFn = vi.fn().mockResolvedValue(undefined);
     renderHook(() => {
@@ -107,10 +113,42 @@ describe('useEmergencyOutboxDrain', () => {
     });
     await waitFor(() => {
       expect(mockOutbox.remove).toHaveBeenCalledWith(2);
+      expect(mockOutbox.remove).toHaveBeenCalledWith(3);
     });
-    expect(sendFn).toHaveBeenCalledTimes(1);
-    expect(sendFn).toHaveBeenCalledWith('MECP/0/M01', 0, undefined, undefined);
+    expect(sendFn).toHaveBeenCalledTimes(2);
     expect(stored.map((r) => r.id)).toEqual([1]);
+  });
+
+  it('wakes at nextRetryAt for emergency rows when ChatPanel is not mounted', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const dueAt = Date.now() + 5_000;
+      stored = [
+        makeEntry({
+          id: 9,
+          payload: 'MECP/0/M01',
+          priority: 'emergency',
+          status: 'failed',
+          nextRetryAt: dueAt,
+          attemptCount: 1,
+        }),
+      ];
+      const sendFn = vi.fn().mockResolvedValue(undefined);
+      renderHook(() => {
+        useEmergencyOutboxDrain({ drains: drainsFor({ meshcore: sendFn }, { meshcore: true }) });
+      });
+      // Initial drain sees nextRetryAt in the future and arms the timer without sending.
+      await waitFor(() => {
+        expect(mockOutbox.list).toHaveBeenCalled();
+      });
+      expect(sendFn).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(5_100);
+      await waitFor(() => {
+        expect(sendFn).toHaveBeenCalledWith('MECP/0/M01', 0, undefined, undefined);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('does not drain protocols whose send is unavailable', async () => {
