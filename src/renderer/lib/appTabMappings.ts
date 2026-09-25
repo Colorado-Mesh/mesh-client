@@ -4,6 +4,7 @@ import type { ProtocolCapabilities } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
+export const INCIDENT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Incident');
 export const GAMES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Games');
 export const RRC_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RRC');
 export const REMOTE_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Remote');
@@ -27,7 +28,8 @@ export const GRAPH_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Graph');
 
 type TabCapabilityRequirement = keyof ProtocolCapabilities | { or: (keyof ProtocolCapabilities)[] };
 
-const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
+/** Parallel to `TAB_SLOT_IDS`; `undefined` = always visible. */
+export const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   undefined, // Connection
   undefined, // Chat
   'hasLrgpGames', // Games
@@ -43,6 +45,7 @@ const TAB_CAPABILITY_REQUIREMENTS: (TabCapabilityRequirement | undefined)[] = [
   'hasEnvironmentTelemetry', // Telemetry
   'hasSecurityPanel', // Security
   'hasTakPanel', // TAK
+  undefined, // Incident (rarely used; keep below day-to-day tabs)
   undefined, // App
   'hasDiagnosticsPanel', // Diagnostics
   'hasRawPacketLog', // Stats

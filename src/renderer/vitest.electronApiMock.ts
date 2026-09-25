@@ -19,6 +19,7 @@ function makeOutboxMockRow(entry: OutboxEntryInput): OutboxEntry {
     createdAt: now,
     updatedAt: now,
     ...entry,
+    priority: entry.priority === 'emergency' ? 'emergency' : 'normal',
   };
 }
 

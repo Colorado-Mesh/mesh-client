@@ -104,6 +104,56 @@ export function isMecpComposeEnabled(): boolean {
   return parsed?.mecpComposeEnabled ?? DEFAULT_APP_SETTINGS_SHARED.mecpComposeEnabled;
 }
 
+/** Whether Chat shows the one-tap MAYDAY button (App → MECP; default off). */
+export function isMecpMaydayButtonEnabled(): boolean {
+  const parsed = parseStoredJson<{ mecpMaydayButtonEnabled?: boolean }>(
+    getAppSettingsRaw(),
+    'isMecpMaydayButtonEnabled',
+  );
+  return parsed?.mecpMaydayButtonEnabled ?? DEFAULT_APP_SETTINGS_SHARED.mecpMaydayButtonEnabled;
+}
+
+/** Whether Chat shows the quick-status / roll-call bar (App → MECP; default off). */
+export function isQuickStatusBarEnabled(): boolean {
+  const parsed = parseStoredJson<{ quickStatusBarEnabled?: boolean }>(
+    getAppSettingsRaw(),
+    'isQuickStatusBarEnabled',
+  );
+  return parsed?.quickStatusBarEnabled ?? DEFAULT_APP_SETTINGS_SHARED.quickStatusBarEnabled;
+}
+
+export interface OperationalAlertSettings {
+  /** null = protocol capability defaults. */
+  nodeSilenceAlertMinutes: number | null;
+  nodeBatteryLowThreshold: number;
+  notifyOnLinkDown: boolean;
+}
+
+/** Watched-node silence / battery and RF link-down alert settings (App tab). */
+export function getOperationalAlertSettings(): OperationalAlertSettings {
+  const parsed = parseStoredJson<{
+    nodeSilenceAlertMinutes?: unknown;
+    nodeBatteryLowThreshold?: unknown;
+    notifyOnLinkDown?: unknown;
+  }>(getAppSettingsRaw(), 'getOperationalAlertSettings');
+  const silence = parsed?.nodeSilenceAlertMinutes;
+  const battery = parsed?.nodeBatteryLowThreshold;
+  return {
+    nodeSilenceAlertMinutes:
+      typeof silence === 'number' && Number.isFinite(silence) && silence > 0
+        ? silence
+        : DEFAULT_APP_SETTINGS_SHARED.nodeSilenceAlertMinutes,
+    nodeBatteryLowThreshold:
+      typeof battery === 'number' && Number.isFinite(battery) && battery > 0 && battery <= 100
+        ? battery
+        : DEFAULT_APP_SETTINGS_SHARED.nodeBatteryLowThreshold,
+    notifyOnLinkDown:
+      typeof parsed?.notifyOnLinkDown === 'boolean'
+        ? parsed.notifyOnLinkDown
+        : DEFAULT_APP_SETTINGS_SHARED.notifyOnLinkDown,
+  };
+}
+
 /** Whether the Reticulum sidecar should start when the Reticulum connection panel mounts. */
 export function isReticulumAutostartEnabled(): boolean {
   const parsed = parseStoredJson<{ reticulumAutostart?: boolean }>(

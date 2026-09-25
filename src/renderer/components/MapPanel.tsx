@@ -31,7 +31,7 @@ import {
 } from '../lib/diagnostics/diagnosticRows';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
-import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import { getMapOverlayColors, isValidMapBasemapId, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
@@ -45,6 +45,7 @@ import { useMapLayerStore } from '../stores/mapLayerStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
+import { IncidentMarkersLayer, MeasureControl, MgrsGridLayer } from './map/emcommMapLayers';
 import {
   ensureLoRaMapPanelStyles,
   LocateMeControl,
@@ -457,6 +458,10 @@ function MapLayerControl({
   const setShowNodes = useMapLayerStore((s) => s.setShowNodes);
   const showWaypoints = useMapLayerStore((s) => s.showWaypoints);
   const setShowWaypoints = useMapLayerStore((s) => s.setShowWaypoints);
+  const showIncidents = useMapLayerStore((s) => s.showIncidents);
+  const setShowIncidents = useMapLayerStore((s) => s.setShowIncidents);
+  const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
+  const setShowMgrsGrid = useMapLayerStore((s) => s.setShowMgrsGrid);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
@@ -508,11 +513,12 @@ function MapLayerControl({
               value={basemapId}
               onChange={(e) => {
                 const v = e.target.value;
-                if (v === 'dark' || v === 'osm') setBasemapId(v);
+                if (isValidMapBasemapId(v)) setBasemapId(v);
               }}
             >
               <option value="dark">{t('mapPanel.basemapDark')}</option>
               <option value="osm">{t('mapPanel.basemapOsm')}</option>
+              <option value="usgs-topo">{t('mapPanel.basemapUsgsTopo')}</option>
             </select>
           </div>
           <div className="space-y-1.5">
@@ -522,6 +528,8 @@ function MapLayerControl({
             {layerRow('nodes', t('mapPanel.layerNodes'), showNodes, setShowNodes)}
             {layerRow('paths', t('mapPanel.layerPaths'), showPaths, setShowPaths)}
             {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
+            {layerRow('incidents', t('mapPanel.layerIncidents'), showIncidents, setShowIncidents)}
+            {layerRow('mgrsGrid', t('mapPanel.layerMgrsGrid'), showMgrsGrid, setShowMgrsGrid)}
             {routeWeightsSupported &&
               layerRow(
                 'routeWeights',
@@ -640,6 +648,8 @@ export default function MapPanel({
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const showNodes = useMapLayerStore((s) => s.showNodes);
   const showWaypoints = useMapLayerStore((s) => s.showWaypoints);
+  const showIncidents = useMapLayerStore((s) => s.showIncidents);
+  const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
   const basemap = MAP_BASEMAPS[basemapId];
   const overlayColors = useMemo(() => getMapOverlayColors(basemap.isDark), [basemap.isDark]);
 
@@ -1074,13 +1084,16 @@ export default function MapPanel({
           shouldFitOnMount={shouldFitOnMount}
         />
         <LocateMeControl onLocateMe={onLocateMe} />
+        <MeasureControl />
         <TileLayer
           key={basemapId}
           url={basemap.url}
           attribution={basemap.attribution}
+          maxNativeZoom={basemap.maxNativeZoom}
           keepBuffer={1}
           updateWhenIdle
         />
+        {showMgrsGrid ? <MgrsGridLayer /> : null}
         {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
           <PathPolyline
             key={`path-${nodeId}`}
@@ -1154,6 +1167,7 @@ export default function MapPanel({
               </Popup>
             </Marker>
           ))}
+        {showIncidents ? <IncidentMarkersLayer /> : null}
       </MapContainer>
 
       {nodesToRender.length === 0 && (

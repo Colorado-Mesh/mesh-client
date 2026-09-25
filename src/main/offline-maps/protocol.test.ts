@@ -36,6 +36,14 @@ describe('mesh-tiles protocol', () => {
     expect(parseMeshTilesRequestUrl('mesh-tiles://dark/14/1/2@2x.png')?.retina).toBe(true);
     expect(parseMeshTilesRequestUrl('mesh-tiles://osm/../1/2.png')).toBeNull();
     expect(parseMeshTilesRequestUrl('https://evil/1/2/3.png')).toBeNull();
+    expect(parseMeshTilesRequestUrl('mesh-tiles://usgs-topo/14/1/2.png')).toEqual({
+      basemapId: 'usgs-topo',
+      z: 14,
+      x: 1,
+      y: 2,
+      retina: false,
+    });
+    expect(parseMeshTilesRequestUrl('mesh-tiles://esri/14/1/2.png')).toBeNull();
   });
 
   it('serves cache hits without fetching', async () => {

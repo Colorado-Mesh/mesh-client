@@ -43,7 +43,7 @@ describe('NotificationSoundSettings', () => {
 
   it('exposes distinct event controls and emergency volume floors accessibly', async () => {
     const { container } = open();
-    expect(screen.getAllByRole('combobox')).toHaveLength(7);
+    expect(screen.getAllByRole('combobox')).toHaveLength(9);
     expect(screen.getByRole('slider', { name: 'Volume for MECP MAYDAY' })).toHaveAttribute(
       'min',
       '10',

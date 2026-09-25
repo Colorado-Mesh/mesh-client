@@ -172,6 +172,12 @@ interface AppSettings {
   meshcorePathHashMode: 0 | 1 | 2;
   rrcUnreadAllRoomMessages: boolean;
   mecpComposeEnabled: boolean;
+  mecpMaydayButtonEnabled: boolean;
+  quickStatusBarEnabled: boolean;
+  nodeSilenceAlertMinutes: number | null;
+  nodeBatteryLowThreshold: number;
+  notifyOnLinkDown: boolean;
+  rollCallWindowMinutes: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -2120,6 +2126,69 @@ export default function AppPanel({
           </label>
         </div>
         <NotificationSoundSettings />
+        <div className="space-y-2 border-t border-slate-700/60 pt-2">
+          <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
+            {t('appPanel.opsAlertsHeading')}
+          </h4>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="nodeSilenceAlertMinutes" className="text-sm text-gray-300">
+              {t('appPanel.nodeSilenceAlertMinutes')}
+            </label>
+            <input
+              id="nodeSilenceAlertMinutes"
+              type="number"
+              min={1}
+              max={10080}
+              placeholder={t('appPanel.nodeSilenceAlertMinutesPlaceholder')}
+              aria-label={t('appPanel.nodeSilenceAlertMinutes')}
+              value={settings.nodeSilenceAlertMinutes ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                updateSetting(
+                  'nodeSilenceAlertMinutes',
+                  raw === '' ? null : Math.max(1, parseInt(raw, 10) || 1),
+                );
+              }}
+              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+            />
+            <p className="text-muted text-xs">{t('appPanel.nodeSilenceAlertMinutesHint')}</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="nodeBatteryLowThreshold" className="text-sm text-gray-300">
+              {t('appPanel.nodeBatteryLowThreshold')}
+            </label>
+            <input
+              id="nodeBatteryLowThreshold"
+              type="number"
+              min={1}
+              max={100}
+              aria-label={t('appPanel.nodeBatteryLowThreshold')}
+              value={settings.nodeBatteryLowThreshold}
+              onChange={(e) => {
+                updateSetting(
+                  'nodeBatteryLowThreshold',
+                  Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 10)),
+                );
+              }}
+              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="notifyOnLinkDown"
+              checked={settings.notifyOnLinkDown}
+              onChange={(e) => {
+                updateSetting('notifyOnLinkDown', e.target.checked);
+              }}
+              aria-label={t('appPanel.notifyOnLinkDown')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label htmlFor="notifyOnLinkDown" className="cursor-pointer text-sm text-gray-300">
+              {t('appPanel.notifyOnLinkDown')}
+            </label>
+          </div>
+        </div>
         {hasRrcPanel && (
           <div className="space-y-1">
             <div className="flex items-center gap-3">
@@ -2193,6 +2262,49 @@ export default function AppPanel({
           </div>
           <p className="text-muted pl-7 text-xs leading-relaxed">
             {t('mecp.section.showComposeButtonHint')}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="mecpMaydayButtonEnabled"
+              checked={settings.mecpMaydayButtonEnabled}
+              onChange={(e) => {
+                updateSetting('mecpMaydayButtonEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.showMaydayButton')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label
+              htmlFor="mecpMaydayButtonEnabled"
+              className="cursor-pointer text-sm text-gray-300"
+            >
+              {t('mecp.section.showMaydayButton')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.showMaydayButtonHint')}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="quickStatusBarEnabled"
+              checked={settings.quickStatusBarEnabled}
+              onChange={(e) => {
+                updateSetting('quickStatusBarEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.showQuickStatusBar')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label htmlFor="quickStatusBarEnabled" className="cursor-pointer text-sm text-gray-300">
+              {t('mecp.section.showQuickStatusBar')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.showQuickStatusBarHint')}
           </p>
         </div>
         <button

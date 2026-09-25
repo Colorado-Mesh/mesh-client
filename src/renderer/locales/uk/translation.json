@@ -431,7 +431,13 @@
     "decreaseFontSize": "Зменшити розмір шрифту",
     "increaseFontSize": "Збільшити розмір шрифту",
     "resetFontSize": "Reset (Скид)",
-    "resetFontSizeAria": "Відновити шрифт"
+    "resetFontSizeAria": "Відновити шрифт",
+    "opsAlertsHeading": "Оперативні сповіщення",
+    "nodeSilenceAlertMinutes": "Сповіщення про мовчання спостережуваного вузла (хвилини)",
+    "nodeSilenceAlertMinutesPlaceholder": "Протокол за замовчуванням",
+    "nodeSilenceAlertMinutesHint": "Залиште порожнім, щоб використовувати застарілий поріг кожного протоколу. Ескалація стріляє в 2рази більше цього значення.",
+    "nodeBatteryLowThreshold": "Пороговий рівень заряду акумулятора (%)",
+    "notifyOnLinkDown": "Сповіщати про несподіване вимкнення радіо"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -450,7 +456,8 @@
     "switchToMeshtasticWithUnread": "Перейти на Meshtastic, {{count}} непрочитано",
     "switchToMeshCoreWithUnread": "Перейти на MeshCore, {{count}} непрочитано",
     "switchToReticulumWithUnread": "Переключитися на Reticulum, {{count}} непрочитано",
-    "tabWithUnread": "{{label}}, {{count}} непрочитано"
+    "tabWithUnread": "{{label}}, {{count}} непрочитано",
+    "tabWithOpenIncidents": "{{label}}, {{count}} відкриті травневі або ТЕРМІНОВІ ІНЦИДЕНТИ"
   },
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
@@ -812,7 +819,12 @@
     "reticulumDmStaleAlternateAria": "Можливий інший пункт призначення LXMF для цього вузла",
     "reticulumDmStaleAlternate": "Цей чат - LXMF {{openPrefix}}…. У вас також є інший LXMF {{alternatePrefix}}…, який може бути тією самою людиною в іншому додатку. Підтвердьте → повідомлення Network LXMF/ Peers або оголосіть зараз з обох сторін.",
     "reticulumDmStaleAlternateNamed": "Цей чат - LXMF {{openPrefix}}…. Інший LXMF {{alternatePrefix}}… ({{name}}) може бути тією самою людиною в іншому додатку. Відкрийте → повідомлення однолітків на цьому хеші або оголосіть зараз з обох сторін.",
-    "reticulumDmStaleAlternateDismissAria": "Відхилити попередження про місце призначення"
+    "reticulumDmStaleAlternateDismissAria": "Відхилити попередження про місце призначення",
+    "outboxEmergencyBadge": "У разі надзвичайної ситуації",
+    "outboxEmergencyWillSend": "Продовжить повторювати спробу, доки не буде надісла",
+    "outboxEmergencyCapBlocked": "Призупинено: забагато аварійних повідомлень у черзі. Повторіть спробу або скасуйте цю.",
+    "outboxEmergencyCancelConfirm": "Скасувати це екстрене повідомлення? Його не буде надіслано.",
+    "retryOutboxEmergencyAttempt": "Спроба {{count}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -1973,7 +1985,9 @@
     "severityWarnings_few": "Попередження ({{count}})",
     "severityWarnings_many": "Попередження ({{count}})",
     "warningCount_few": "{{count}} попередження",
-    "warningCount_many": "{{count}} попереджень"
+    "warningCount_many": "{{count}} попереджень",
+    "exportJson": "Експортувати JSON",
+    "exportJsonAria": "Експортувати видимі рядки діагностики як JSON"
   },
   "diagnosticsPing": {
     "title": "Безперервний пінг",
@@ -2367,7 +2381,17 @@
       "clear": "Очистити кеш плитки",
       "clearAria": "Очистити кеш плитки офлайн-карти",
       "cleared": "Кеш плитки очищено."
-    }
+    },
+    "basemapUsgsTopo": "USGS TOPO (тільки США)",
+    "layerIncidents": "Надзвичайні ситуації",
+    "layerMgrsGrid": "MGRS GRID",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "СВЕРДЛО {{sender}}: {{codes}}",
+    "measure": "Вимірювання",
+    "measureStartAria": "Почати вимірювання відстані",
+    "measureStopAria": "Припинити вимірювання та очистити",
+    "measureHint": "Натисніть карту, щоб додати бали",
+    "measureTotal": "{{km}} км / {{mi}} миль"
   },
   "meshCongestion": {
     "blockTitle": "Чому ви бачите повторюваний трафік",
@@ -3421,7 +3445,8 @@
     "summaryOnline_few": "{{count}} онлайн",
     "summaryOnline_many": "{{count}} онлайн",
     "summaryStale_few": "{{count}} застарілі",
-    "summaryStale_many": "{{count}} застарілих"
+    "summaryStale_many": "{{count}} застарілих",
+    "buttonExportCsv": "Експорт у CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5255,7 +5280,8 @@
     "network": "Мережа",
     "rrc": "RRC",
     "remote": "Віддалений",
-    "games": "Ігри"
+    "games": "Ігри",
+    "incident": "Подія"
   },
   "takServerPanel": {
     "title": "Сервер TAK",
@@ -6164,7 +6190,9 @@
       "byteBudget": "{{used}} / {{max}} байт",
       "send": "Надіслати MECP",
       "gpsFailed": "Не вдалося отримати виправлення GPS",
-      "sendFailed": "Не вдалося надіслати звіт MECP"
+      "sendFailed": "Не вдалося надіслати звіт MECP",
+      "maydayButton": "MAYDAY",
+      "maydayAria": "Створіть MAYDAY одним дотиком за допомогою GPS"
     },
     "rebroadcast": {
       "title": "Повторна передача MECP RF",
@@ -6187,7 +6215,11 @@
       "learnMore": "Як працює MECP",
       "protocolSource": "Джерело протоколу на GitHub",
       "showComposeButton": "Показати кнопку MECP в чаті",
-      "showComposeButtonHint": "Вимкнено за замовчуванням. Якщо ввімкнено, у чаті відображається кнопка MECP для створення та надсилання звітів про надзвичайні ситуації."
+      "showComposeButtonHint": "Вимкнено за замовчуванням. Якщо ввімкнено, у чаті відображається кнопка MECP для створення та надсилання звітів про надзвичайні ситуації.",
+      "showMaydayButton": "Показати кнопку MAYDAY у чаті",
+      "showMaydayButtonHint": "Вимкнено за замовчуванням. Якщо ввімкнено, чат відображає кнопку MAYDAY одним дотиком, яка відкривається зі ступенем серйозності 0 з підключеним GPS. Незалежно від кнопки створення MECP.",
+      "showQuickStatusBar": "Показати швидкий рядок стану в чаті",
+      "showQuickStatusBarHint": "Вимкнено за замовчуванням. Якщо ввімкнено, чат показує OK / Need help / In position / Lost comms / Returning / Roll call над композитором."
     },
     "exportLogEmpty": "У отриманому журналі ще немає повідомлень MECP"
   },
@@ -6221,6 +6253,54 @@
     "saving": "Збереження налаштувань звуку…",
     "importFailed": "Не вдалося імпортувати цей звук. Виберіть підтримуваний аудіофайл тривалістю не більше 10 секунд і не більше 2 МБ.",
     "saveFailed": "Не вдалося зберегти налаштування звуку. Попередній вибір не змінився.",
-    "previewFailed": "Не вдалося відтворити цей звук. Спробуйте інший файл або поверніться до початкового тону."
+    "previewFailed": "Не вдалося відтворити цей звук. Спробуйте інший файл або поверніться до початкового тону.",
+    "connectionLost": "Радіоканал втрачено",
+    "batteryLow": "Низький заряд батареї"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} низький заряд акумулятора",
+    "batteryLowBody": "Акумулятор на {{percent}}%",
+    "silenceEscalationTitle": "{{name}} все ще мовчить",
+    "silenceEscalationBody": "Не чути протягом {{minutes}} хв",
+    "linkDownTitle": "{{protocol}} посилання вниз",
+    "linkDownBody": "Радіозв'язок втрачено, і повторне з'єднання не вдалося"
+  },
+  "incidentPanel": {
+    "title": "Надзвичайні ситуації",
+    "empty": "Відкритих аварійних ситуацій немає.",
+    "listAria": "Відкриті аварійні ситуації",
+    "resolve": "Виконати",
+    "resolveAria": "Вирішення інциденту з {{sender}}",
+    "ack": "Підтвердити",
+    "ackAria": "Визнати інцидент від {{sender}}",
+    "ackBeacon": "Підтвердити сигнал",
+    "ackBeaconAria": "Підтвердити сигнал лиха від {{sender}}",
+    "ackCount_one": "{{count}} підтвердження",
+    "ackCount_other": "{{count}} підтвердження",
+    "protocolsSeen": "Слухали: {{protocols}}",
+    "beaconActive": "Маяк активний",
+    "drill": "Дриль",
+    "ackSent": "Підтвердження надіслано {{sender}}",
+    "ackQueued": "Підтвердження до {{sender}} в черзі; він надішле, коли радіо буде доступне",
+    "ackFailed": "Не вдалося надіслати або поставити в чергу підтвердження",
+    "ackCount_few": "{{count}} підтвердження",
+    "ackCount_many": "{{count}} підтвердження",
+    "intro": "Загальна операційна картина для надзвичайних ситуацій MECP, почута за будь-яким протоколом. Відкрийте MAYDAY та ТЕРМІНОВІ рядки, позначте цю вкладку; тренування перераховані, але ніколи не враховуються. Використовуйте \"Підтвердити\" (або \"Підтвердити\" для активного маяка), щоб відповісти на сітку, а потім \"Вирішити\", коли інцидент закривається локально.",
+    "emptyHint": "Вхідні звіти MECP з'являються тут автоматично. Щоб надіслати його, увімкніть кнопку → App → MECP Show MECP у чаті, а потім використовуйте MECP або MAYDAY у чаті. → Шари карт можуть показувати відкриті інциденти з координатами.",
+    "ackQueuedBadge": "ACK в черзі",
+    "pendingAckListAria": "Підтвердження в черзі за цим інцидентом",
+    "cancelPendingAck": "Скасувати",
+    "cancelPendingAckAria": "Скасувати підтвердження в черзі для {{sender}}"
+  },
+  "quickStatus": {
+    "ok": "Гаразд",
+    "needHelp": "Потрібна допомога",
+    "inPosition": "КОЛИ НА ПОЗИЦІЇ",
+    "lostComms": "Втрата зв’язку",
+    "returning": "Повернення",
+    "barAria": "Швидкі попередні налаштування стану",
+    "rollCall": "Перевірка присутності",
+    "rollCallAria": "Трансляція переклички та підрахунок відповіді OK",
+    "rollCallTally": "{{responded}}/{{expected}} відповів"
   }
 }

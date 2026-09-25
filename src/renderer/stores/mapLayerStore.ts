@@ -14,13 +14,21 @@ interface MapLayerPersisted {
   mapBasemapId?: unknown;
   mapShowNodes?: unknown;
   mapShowWaypoints?: unknown;
+  mapShowMgrsGrid?: unknown;
+  mapShowIncidents?: unknown;
 }
 
 export function readPersistedBoolean(value: unknown, defaultValue: boolean): boolean {
   return typeof value === 'boolean' ? value : defaultValue;
 }
 
-function loadPersisted(): { basemapId: MapBasemapId; showNodes: boolean; showWaypoints: boolean } {
+function loadPersisted(): {
+  basemapId: MapBasemapId;
+  showNodes: boolean;
+  showWaypoints: boolean;
+  showMgrsGrid: boolean;
+  showIncidents: boolean;
+} {
   const settings = parseStoredJson<MapLayerPersisted>(
     getAppSettingsRaw(),
     'mapLayerStore loadPersisted',
@@ -32,6 +40,8 @@ function loadPersisted(): { basemapId: MapBasemapId; showNodes: boolean; showWay
         : DEFAULT_MAP_BASEMAP_ID,
     showNodes: readPersistedBoolean(settings?.mapShowNodes, true),
     showWaypoints: readPersistedBoolean(settings?.mapShowWaypoints, true),
+    showMgrsGrid: readPersistedBoolean(settings?.mapShowMgrsGrid, false),
+    showIncidents: readPersistedBoolean(settings?.mapShowIncidents, true),
   };
 }
 
@@ -39,10 +49,14 @@ interface MapLayerState {
   basemapId: MapBasemapId;
   showNodes: boolean;
   showWaypoints: boolean;
+  showMgrsGrid: boolean;
+  showIncidents: boolean;
   layersPanelOpen: boolean;
   setBasemapId: (id: MapBasemapId) => void;
   setShowNodes: (enabled: boolean) => void;
   setShowWaypoints: (enabled: boolean) => void;
+  setShowMgrsGrid: (enabled: boolean) => void;
+  setShowIncidents: (enabled: boolean) => void;
   setLayersPanelOpen: (open: boolean) => void;
   hydrateFromDatabase: () => Promise<void>;
 }
@@ -59,6 +73,8 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   basemapId: initial.basemapId,
   showNodes: initial.showNodes,
   showWaypoints: initial.showWaypoints,
+  showMgrsGrid: initial.showMgrsGrid,
+  showIncidents: initial.showIncidents,
   layersPanelOpen: false,
   setBasemapId: (basemapId) => {
     mergeAppSetting('mapBasemapId', basemapId, 'mapLayerStore setBasemapId');
@@ -72,6 +88,14 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   setShowWaypoints: (showWaypoints) => {
     mergeAppSetting('mapShowWaypoints', showWaypoints, 'mapLayerStore setShowWaypoints');
     set({ showWaypoints });
+  },
+  setShowMgrsGrid: (showMgrsGrid) => {
+    mergeAppSetting('mapShowMgrsGrid', showMgrsGrid, 'mapLayerStore setShowMgrsGrid');
+    set({ showMgrsGrid });
+  },
+  setShowIncidents: (showIncidents) => {
+    mergeAppSetting('mapShowIncidents', showIncidents, 'mapLayerStore setShowIncidents');
+    set({ showIncidents });
   },
   setLayersPanelOpen: (layersPanelOpen) => {
     set({ layersPanelOpen });

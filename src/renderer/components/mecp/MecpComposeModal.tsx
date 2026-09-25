@@ -36,18 +36,32 @@ interface MecpComposeModalProps {
   onSend: (mecpString: string) => void | Promise<void>;
   /** App GPS waterfall (device → static → browser → IP). Prefer over raw geolocation. */
   resolveGps?: () => Promise<{ lat: number; lon: number } | null>;
+  /** Prefill severity when opening (e.g. 0 for one-tap MAYDAY). */
+  initialSeverity?: Severity;
+  /** Prefill freetext when opening. */
+  initialFreetext?: string;
+  /** When true, attach GPS via resolveGps on open. */
+  autoAttachGps?: boolean;
 }
 
 const DEFAULT_MECP_SEVERITY: Severity = 3;
 const DEFAULT_MECP_CATEGORY: CategoryLetter = 'D';
 const DEFAULT_MECP_CODES: string[] = [];
 
-export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComposeModalProps) {
+export function MecpComposeModal({
+  open,
+  onClose,
+  onSend,
+  resolveGps,
+  initialSeverity,
+  initialFreetext,
+  autoAttachGps = false,
+}: MecpComposeModalProps) {
   const { t, i18n } = useTranslation();
-  const [severity, setSeverity] = useState<Severity>(DEFAULT_MECP_SEVERITY);
+  const [severity, setSeverity] = useState<Severity>(initialSeverity ?? DEFAULT_MECP_SEVERITY);
   const [category, setCategory] = useState<CategoryLetter>(DEFAULT_MECP_CATEGORY);
   const [codes, setCodes] = useState<string[]>(() => [...DEFAULT_MECP_CODES]);
-  const [freetext, setFreetext] = useState('');
+  const [freetext, setFreetext] = useState(initialFreetext ?? '');
   const [langFile, setLangFile] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
   );
@@ -64,6 +78,36 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
   useEffect(() => {
     void loadMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')).then(setLangFile);
   }, [i18n.language]);
+
+  // Severity/freetext prefill comes from the useState initializers (callers remount via `key` per
+  // compose session). Auto GPS runs once per open: `resolveGps` identity changes on every parent
+  // render, so without the ref it would re-append coordinates while the operator is editing.
+  const autoGpsAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!open) {
+      autoGpsAppliedRef.current = false;
+      return;
+    }
+    if (autoGpsAppliedRef.current || !autoAttachGps || !resolveGps) return;
+    autoGpsAppliedRef.current = true;
+    void resolveGps()
+      .then((fix) => {
+        if (!fix) {
+          setError(t('mecp.compose.gpsFailed'));
+          return;
+        }
+        setFreetext((prev) => {
+          const tag = `#${fix.lat.toFixed(5)},${fix.lon.toFixed(5)}`;
+          if (prev.includes(tag)) return prev;
+          const trimmed = prev.trim();
+          return trimmed ? `${trimmed} ${tag}` : tag;
+        });
+      })
+      .catch((e: unknown) => {
+        console.warn('[MecpComposeModal] auto GPS failed', e instanceof Error ? e.message : e);
+        setError(t('mecp.compose.gpsFailed'));
+      });
+  }, [open, autoAttachGps, resolveGps, t]);
 
   useEffect(() => {
     if (!open) return;

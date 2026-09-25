@@ -50,4 +50,22 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message:
       'SDK PacketMetadata.rxTime is Date (ms); use meshtasticPacketRxTimeMs — never rxTime * 1000',
   },
+  {
+    id: 'emcomm-mecp-compose-default-off',
+    include: ['src/renderer/lib/defaultAppSettings.ts'],
+    require: /mecpComposeEnabled:\s*false/,
+    message: 'mecpComposeEnabled must default false (EMCOMM safety S14)',
+  },
+  {
+    id: 'emcomm-mecp-mayday-button-default-off',
+    include: ['src/renderer/lib/defaultAppSettings.ts'],
+    require: /mecpMaydayButtonEnabled:\s*false/,
+    message: 'mecpMaydayButtonEnabled must default false (EMCOMM safety S14)',
+  },
+  {
+    id: 'emcomm-quick-status-bar-default-off',
+    include: ['src/renderer/lib/defaultAppSettings.ts'],
+    require: /quickStatusBarEnabled:\s*false/,
+    message: 'quickStatusBarEnabled must default false (EMCOMM Chat clutter opt-in)',
+  },
 ];

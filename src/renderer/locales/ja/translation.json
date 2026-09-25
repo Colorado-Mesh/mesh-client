@@ -415,7 +415,13 @@
     "decreaseFontSize": "フォントサイズを小さく",
     "increaseFontSize": "フォントサイズを大きく",
     "resetFontSize": "リセット",
-    "resetFontSizeAria": "フォントサイズをリセット"
+    "resetFontSizeAria": "フォントサイズをリセット",
+    "opsAlertsHeading": "運用上のアラート",
+    "nodeSilenceAlertMinutes": "監視ノードのサイレンスアラート（分）",
+    "nodeSilenceAlertMinutesPlaceholder": "プロトコルのデフォルト",
+    "nodeSilenceAlertMinutesHint": "各プロトコルの古いしきい値を使用するには、空白のままにします。エスカレーションはこの値の2倍で発生します。",
+    "nodeBatteryLowThreshold": "バッテリー低閾値(%)",
+    "notifyOnLinkDown": "予期しない無線リンクダウン時に通知する"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Meshtastic に切り替え、{{count}} は未読",
     "switchToMeshCoreWithUnread": "MeshCore に切り替え、{{count}} 未読",
     "switchToReticulumWithUnread": "Reticulum に切り替え、{{count}} 未読",
-    "tabWithUnread": "{{label}}、{{count}}未読"
+    "tabWithUnread": "{{label}}、{{count}}未読",
+    "tabWithOpenIncidents": "{{label}}、{{count}} OPEN MAYDAYまたは緊急事態"
   },
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "このピアに異なる可能性のあるLXMF宛先",
     "reticulumDmStaleAlternate": "こちらのチャットはLXMF {{openPrefix}} …です。また、別のアプリに同じ人物である可能性のある別のLXMF {{alternatePrefix}}があります。ネットワークLXMF/ピアメッセージを確認→するか、両側で今すぐアナウンスします。",
     "reticulumDmStaleAlternateNamed": "こちらのチャットはLXMF {{openPrefix}} …です。別のLXMF {{alternatePrefix}} … （ {{name}} ）は、別のアプリで同じ人物である可能性があります。→そのハッシュのピアメッセージを開くか、両側で今すぐアナウンスします。",
-    "reticulumDmStaleAlternateDismissAria": "行き先に関する警告を非表示にする"
+    "reticulumDmStaleAlternateDismissAria": "行き先に関する警告を非表示にする",
+    "outboxEmergencyBadge": "緊急",
+    "outboxEmergencyWillSend": "送信されるまで再試行を続けます",
+    "outboxEmergencyCapBlocked": "一時停止：待機中の緊急メッセージが多すぎます。再度お試しいただくか、こちらをキャンセルしてください。",
+    "outboxEmergencyCancelConfirm": "この緊急メッセージをキャンセルしますか？送信されません。",
+    "retryOutboxEmergencyAttempt": "{{count}}を試みる"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -1921,7 +1933,9 @@
     "km": "km",
     "distanceOffsetHelp": "ホップゴブリンおよび不良ルートの距離しきい値 (0 ～ 50) にフラット km フロアを追加します。",
     "ignoreMqttToggle": "MQTT を無視",
-    "ignoreMqttHelp": "MQTT のみのノードをグレー表示し、診断から除外します"
+    "ignoreMqttHelp": "MQTT のみのノードをグレー表示し、診断から除外します",
+    "exportJson": "JSON のエクスポート",
+    "exportJsonAria": "表示されている診断行をJSONとしてエクスポートする"
   },
   "diagnosticsPing": {
     "title": "連続ping",
@@ -2315,7 +2329,17 @@
       "clear": "タイルキャッシュをクリア",
       "clearAria": "オフラインマップタイルキャッシュをクリア",
       "cleared": "キャッシュはクリアされました。"
-    }
+    },
+    "basemapUsgsTopo": "USGS Topo （米国のみ）",
+    "layerIncidents": "緊急事態",
+    "layerMgrsGrid": "マネージャーグリッド",
+    "incidentMarker": "{{sender}} ： {{codes}}",
+    "incidentMarkerDrill": "ドリル{{sender}} ： {{codes}}",
+    "measure": "測定",
+    "measureStartAria": "距離の測定を開始する",
+    "measureStopAria": "測定を停止してクリア",
+    "measureHint": "マップをクリックしてポイントを追加します",
+    "measureTotal": "{{km}} km/{{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "なし",
     "meshcoreTypeUnknown": "不明",
     "columnHealth": "ノード健全性",
-    "hasPublicKeyTitle": "公開鍵"
+    "hasPublicKeyTitle": "公開鍵",
+    "buttonExportCsv": "CSV をエクスポート"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "ネットワーク",
     "rrc": "RRC",
     "remote": "リモート",
-    "games": "ゲーム"
+    "games": "ゲーム",
+    "incident": "案件"
   },
   "takServerPanel": {
     "title": "TAKサーバー",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "GPS修正を取得できませんでした",
-      "sendFailed": "MECPレポートの送信に失敗しました"
+      "sendFailed": "MECPレポートの送信に失敗しました",
+      "maydayButton": "メーデー",
+      "maydayAria": "GPSでワンタップでメイデイを作成"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6093,7 +6121,11 @@
       "learnMore": "MECPの仕組み",
       "protocolSource": "GitHub上のプロトコルソース",
       "showComposeButton": "チャットにMECPボタンを表示する",
-      "showComposeButtonHint": "デフォルトではオフになっています。有効にすると、チャットに緊急レポートを作成して送信するためのMECPボタンが表示されます。"
+      "showComposeButtonHint": "デフォルトではオフになっています。有効にすると、チャットに緊急レポートを作成して送信するためのMECPボタンが表示されます。",
+      "showMaydayButton": "チャットでメイデイボタンを表示",
+      "showMaydayButtonHint": "デフォルトでオフになっています。有効にすると、チャットにワンタップメイデイボタンが表示され、GPSが接続された状態で深刻度0で作成が開きます。MECP作成ボタンとは無関係です。",
+      "showQuickStatusBar": "チャットにクイックステータスバーを表示する",
+      "showQuickStatusBarHint": "デフォルトではオフになっています。有効にすると、チャットは作曲者の上にOK/ヘルプが必要/位置にある/通信が途絶えた/リターン/ロールコールが表示されます。"
     },
     "exportLogEmpty": "受信したログにMECPメッセージはまだありません"
   },
@@ -6127,6 +6159,52 @@
     "saving": "サウンド設定を保存しています…",
     "importFailed": "このサウンドをインポートできませんでした。サポートされているオーディオファイルを10秒以内、2 MiB以内で選択してください。",
     "saveFailed": "サウンド設定を保存できませんでした。以前の選択は変更されていません。",
-    "previewFailed": "このサウンドを再生できませんでした。別のファイルを試すか、元のトーンにリセットしてください。"
+    "previewFailed": "このサウンドを再生できませんでした。別のファイルを試すか、元のトーンにリセットしてください。",
+    "connectionLost": "無線リンクが失われました",
+    "batteryLow": "低バッテリー"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}}バッテリー残量不足",
+    "batteryLowBody": "{{percent}} %のバッテリー",
+    "silenceEscalationTitle": "{{name}}はまだ静かです",
+    "silenceEscalationBody": "{{minutes}}分間聞こえませんでした",
+    "linkDownTitle": "{{protocol}} LINK DOWN",
+    "linkDownBody": "無線接続が切断され、再接続に失敗しました"
+  },
+  "incidentPanel": {
+    "title": "緊急事態",
+    "empty": "未解決の緊急事態はありません。",
+    "listAria": "未解決の緊急事態",
+    "resolve": "決心",
+    "resolveAria": "{{sender}}以降のインシデントを解決する",
+    "ack": "承認",
+    "ackAria": "{{sender}}からインシデントが発生したことを確認します。",
+    "ackBeacon": "ビーコンの確認",
+    "ackBeaconAria": "{{sender}}からの遭難ビーコンの確認",
+    "ackCount_one": "{{count}}確認",
+    "ackCount_other": "{{count}}謝辞",
+    "protocolsSeen": "お知らせ： {{protocols}}",
+    "beaconActive": "ビーコン有効",
+    "drill": "ドリル",
+    "ackSent": "お知らせを{{sender}}に送信しました",
+    "ackQueued": "{{sender}}への確認待ち。無線が利用可能になると送信されます",
+    "ackFailed": "確認応答を送信またはキューイングできませんでした",
+    "intro": "任意のプロトコルで聞かれるMECP緊急事態の一般的な操作イメージ。MAYDAYと緊急行を開くと、このタブにバッジが表示されます。ドリルはリストされていますが、カウントされません。確認（またはアクティブなビーコンの確認）を使用してメッシュに返信し、インシデントがローカルで閉じられたときに解決します。",
+    "emptyHint": "インバウンドMECPレポートはここに自動的に表示されます。送信するには、チャットでApp → MECP → Show MECPボタンを有効にし、チャットでMECPまたはMAYDAYを使用します。→マップレイヤーは、座標でオープンなインシデントを表示できます。",
+    "ackQueuedBadge": "待機中のACK",
+    "pendingAckListAria": "このインシデントのキューイング確認",
+    "cancelPendingAck": "キャンセル",
+    "cancelPendingAckAria": "{{sender}}のキューイング確認をキャンセルする"
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "ご使用のHPE製品/サービス/ソリューションについて",
+    "inPosition": "定位置",
+    "lostComms": "通信が途絶えました",
+    "returning": "リピート",
+    "barAria": "クイックステータスプリセット",
+    "rollCall": "点呼",
+    "rollCallAria": "ブロードキャストロールコールとOK返信の集計",
+    "rollCallTally": "{{responded}}/{{expected}}からの返答"
   }
 }

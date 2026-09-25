@@ -143,3 +143,38 @@ export function haversineDistanceKm(
     Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+
+/** Initial great-circle bearing from point 1 to point 2 in degrees [0, 360); NaN if invalid. */
+export function bearingBetween(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  if (
+    !Number.isFinite(lat1) ||
+    !Number.isFinite(lon1) ||
+    !Number.isFinite(lat2) ||
+    !Number.isFinite(lon2)
+  ) {
+    return NaN;
+  }
+  const toRad = Math.PI / 180;
+  const phi1 = lat1 * toRad;
+  const phi2 = lat2 * toRad;
+  const dLambda = (lon2 - lon1) * toRad;
+  const y = Math.sin(dLambda) * Math.cos(phi2);
+  const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+  const deg = (Math.atan2(y, x) * 180) / Math.PI;
+  return (deg + 360) % 360;
+}
+
+/** Three-digit degrees, e.g. `045°`; `—` when not finite. */
+export function formatBearing(deg: number): string {
+  if (!Number.isFinite(deg)) return '—';
+  const whole = Math.round(((deg % 360) + 360) % 360) % 360;
+  return `${String(whole).padStart(3, '0')}°`;
+}
+
+/** Metres below 1 km, one decimal below 100 km, whole km beyond; `—` when invalid. */
+export function formatRangeKm(km: number): string {
+  if (!Number.isFinite(km) || km < 0) return '—';
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  if (km < 100) return `${km.toFixed(1)} km`;
+  return `${Math.round(km)} km`;
+}

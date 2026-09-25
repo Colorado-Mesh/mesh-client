@@ -304,7 +304,8 @@ export const CANONICAL_TABLES_DDL = `
         updated_at INTEGER NOT NULL,
         group_id TEXT,
         group_index INTEGER,
-        group_total INTEGER
+        group_total INTEGER,
+        priority TEXT NOT NULL DEFAULT 'normal'
       );
     `;
 
@@ -520,6 +521,9 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     verified: 'INTEGER DEFAULT 0',
     verified_identity_hash: 'TEXT',
     verified_at: 'INTEGER',
+  },
+  chat_outbox: {
+    priority: "TEXT NOT NULL DEFAULT 'normal'",
   },
 };
 

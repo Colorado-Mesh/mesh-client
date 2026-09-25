@@ -290,6 +290,9 @@ const NOTIFICATION_TYPE_PRIORITY: Record<ChatNotificationType, number> = {
   mecpSafety: -1,
   mecpSiren: -1,
   mecpEas: -1,
+  // Operational alerts are not message-driven
+  connectionLost: -1,
+  batteryLow: -1,
 };
 
 export function resolveChatNotificationType(

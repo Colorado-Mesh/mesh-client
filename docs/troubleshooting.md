@@ -20,6 +20,7 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 - [Chat, nodes, and notifications](#chat-nodes-and-notifications)
 - [Diagnostics and map](#diagnostics-and-map)
 - [App, updates, and localization](#app-updates-and-localization)
+- [MECP (emergency reports)](#mecp-emergency-reports)
 
 ## Quick reference
 
@@ -2012,6 +2013,38 @@ Default Web Audio tones (`chatNotifications.ts` profiles; overrideable in **App 
 | 3 ROUTINE | `mecp`       | Repeated ascending triple pulse                           |
 
 MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/agents/mecp.md`](agents/mecp.md).
+
+**MECP / MAYDAY button missing in Chat**
+
+App → MECP → **Show MECP button in Chat** and **Show MAYDAY button in Chat** are each off by default. Enable them separately to show MECP compose and/or one-tap MAYDAY. The **Incident** tab still receives inbound MECP without either enabled.
+
+**What is the Incident tab?**
+
+**Incident** (sidebar, just above **App**) is the EMCOMM common operating picture — not a chat history. It lists **open** MECP emergencies only (resolved rows disappear; drills stay listed but never badge). Each row shows:
+
+- Severity (MAYDAY / URGENT / SAFETY / ROUTINE) and MECP codes
+- Sender name, optional free text, ACK count, and which protocols heard the report
+- **Beacon active** when a distress beacon is still running
+- **Acknowledge** (R01) or **Confirm** (B02 for an active beacon) — best-effort on the mesh, not a read receipt
+- **Resolve** to close the incident on this workstation only
+
+Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP or you enable Chat compose / MAYDAY under App → MECP. See the README **EMCOMM / Incident Command** section and [`docs/agents/emcomm.md`](agents/emcomm.md).
+
+**MAYDAY stuck / “will send when connected”**
+
+Emergency MECP uses the durable outbox (`priority: emergency`). It keeps retrying after reconnect (no 24h age stop). Check Chat for the emergency OutboxBubble; Cancel requires confirm. See [`docs/agents/emcomm.md`](agents/emcomm.md).
+
+**Incident tab empty after restart**
+
+Incidents persist across restarts in local storage (`mesh-client:incidents`), and on startup the MECP watcher also upserts any MECP still in the hydrated chat history — without re-alerting. The tab can still be empty on a cold start when: local storage was cleared (or this is a fresh install / new profile), the incident was **Resolved** (only open/acked rows are listed), or the original message aged out of chat history before the store saw it. Drills are listed but never counted in the badge. The durable record is always `mecp-received.log` (above).
+
+**Watched node silence / battery / link-down alerts**
+
+Ops alerts use App settings (`nodeSilenceAlertMinutes`, `nodeBatteryLowThreshold`, `notifyOnLinkDown`) and **watched** nodes only — watch a node from node detail first. Silence escalation fires at **2×** the silence threshold (the first offline notice comes from the normal watch notifier); with no silence minutes set, escalation is off. Battery low needs battery telemetry (ignored when the node reports 0 or >100 % / charging) and re-arms after recovering 5 points above the threshold. Link-down waits ~5 s, never fires on manual disconnect or while RF reconnect is in progress, and fires once reconnect gives up. Reticulum has no battery telemetry or link-down alert.
+
+**USGS Topo blank offline**
+
+**USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See [offline-maps.md](agents/offline-maps.md).
 
 ## Language / i18n
 

@@ -415,7 +415,13 @@
     "decreaseFontSize": "글꼴 작게",
     "increaseFontSize": "글꼴 크기 증가",
     "resetFontSize": "초기화",
-    "resetFontSizeAria": "편지함 선택"
+    "resetFontSizeAria": "편지함 선택",
+    "opsAlertsHeading": "운영 경고",
+    "nodeSilenceAlertMinutes": "감시 노드 침묵 경고 (분)",
+    "nodeSilenceAlertMinutesPlaceholder": "프로토콜 기본값",
+    "nodeSilenceAlertMinutesHint": "각 프로토콜의 유효하지 않은 임계값을 사용하려면 비워 두십시오. 에스컬레이션은 이 값의 2배에 해당합니다.",
+    "nodeBatteryLowThreshold": "배터리 부족 임계값 (%)",
+    "notifyOnLinkDown": "예기치 않은 라디오 링크 다운 알림"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Meshtastic으로 전환하세요. {{count}} 읽지 않았습니다.",
     "switchToMeshCoreWithUnread": "MeshCore로 전환, {{count}} 읽지 않음",
     "switchToReticulumWithUnread": "Reticulum으로 전환, {{count}} 읽지 않음",
-    "tabWithUnread": "{{label}}, {{count}} 읽지 않음"
+    "tabWithUnread": "{{label}}, {{count}} 읽지 않음",
+    "tabWithOpenIncidents": "{{label}}, {{count}} 오픈 메이데이 또는 긴급 사건"
   },
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "이 피어에 대해 가능한 다른 LXMF 대상",
     "reticulumDmStaleAlternate": "이 채팅은 LXMF {{openPrefix}} 입니다. 다른 앱에 동일한 LXMF {{alternatePrefix}} 이 (가) 있을 수도 있습니다. 네트워크 LXMF/동료 → 메시지를 확인하거나 양쪽에서 지금 발표하십시오.",
     "reticulumDmStaleAlternateNamed": "이 채팅은 LXMF {{openPrefix}} 입니다. 다른 LXMF {{alternatePrefix}} … ({{name}}) 는 다른 앱에서 동일한 사람일 수 있습니다. 해당 해시에서 Peers → Message를 열거나 양쪽에서 Announce now를 엽니다.",
-    "reticulumDmStaleAlternateDismissAria": "목적지 경고 무시"
+    "reticulumDmStaleAlternateDismissAria": "목적지 경고 무시",
+    "outboxEmergencyBadge": "긴급",
+    "outboxEmergencyWillSend": "전송될 때까지 계속 재시도합니다.",
+    "outboxEmergencyCapBlocked": "일시 중지됨: 대기 중인 긴급 메시지가 너무 많습니다. 다시 시도하거나 취소하세요.",
+    "outboxEmergencyCancelConfirm": "이 긴급 메시지를 취소하시겠어요? 전송되지 않습니다.",
+    "retryOutboxEmergencyAttempt": "시도 {{count}}"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -1921,7 +1933,9 @@
     "km": "km",
     "distanceOffsetHelp": "홉-고블린 및 잘못된 경로 거리 임계값(0-50)에 평평한 km 층을 추가합니다.",
     "ignoreMqttToggle": "MQTT 무시",
-    "ignoreMqttHelp": "MQTT 전용 노드를 흐리게 표시하고 진단에서 제외합니다"
+    "ignoreMqttHelp": "MQTT 전용 노드를 흐리게 표시하고 진단에서 제외합니다",
+    "exportJson": "JSON 내보내기",
+    "exportJsonAria": "눈에 보이는 진단 행을 JSON으로 내보내기"
   },
   "diagnosticsPing": {
     "title": "연속 핑",
@@ -2315,7 +2329,17 @@
       "clear": "타일 캐시 지우기",
       "clearAria": "오프라인 지도 타일 캐시 지우기",
       "cleared": "타일 캐시가 지워졌습니다."
-    }
+    },
+    "basemapUsgsTopo": "USGS TOPO (미국만 해당)",
+    "layerIncidents": "긴급 사안",
+    "layerMgrsGrid": "MGRS 그리드",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "드릴 {{sender}}: {{codes}}",
+    "measure": "측정",
+    "measureStartAria": "거리 측정 시작",
+    "measureStopAria": "측정을 중지하고 지우기",
+    "measureHint": "포인트를 추가하려면 지도를 클릭하세요.",
+    "measureTotal": "{{km}} km/{{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "없음",
     "meshcoreTypeUnknown": "미상",
     "columnHealth": "노드 상태",
-    "hasPublicKeyTitle": "공개 키"
+    "hasPublicKeyTitle": "공개 키",
+    "buttonExportCsv": "CSV(엑셀)로 내보내기"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "회로망",
     "rrc": "RRC",
     "remote": "원격",
-    "games": "게임"
+    "games": "게임",
+    "incident": "인시던트"
   },
   "takServerPanel": {
     "title": "TAK 서버",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "GPS 수정을 받을 수 없습니다",
-      "sendFailed": "MECP 보고서 전송 실패"
+      "sendFailed": "MECP 보고서 전송 실패",
+      "maydayButton": "메이데이",
+      "maydayAria": "GPS로 한 번의 탭으로 메이데이 만들기"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6093,7 +6121,11 @@
       "learnMore": "MECP 이용 방법",
       "protocolSource": "GitHub의 프로토콜 소스",
       "showComposeButton": "채팅에 MECP 버튼 표시",
-      "showComposeButtonHint": "기본적으로 꺼짐. 활성화되면 채팅에 MECP 버튼이 표시되어 비상 보고서를 작성하고 전송할 수 있습니다."
+      "showComposeButtonHint": "기본적으로 꺼짐. 활성화되면 채팅에 MECP 버튼이 표시되어 비상 보고서를 작성하고 전송할 수 있습니다.",
+      "showMaydayButton": "채팅에 메이데이 버튼 표시",
+      "showMaydayButtonHint": "기본적으로 꺼짐. 활성화되면 채팅에 GPS가 연결된 심각도 0에서 작성 을 여는 한 번의 탭으로 메이데이 버튼이 표시됩니다. MECP 작성 버튼과 무관합니다.",
+      "showQuickStatusBar": "채팅에 빠른 상태 표시줄 표시",
+      "showQuickStatusBarHint": "기본적으로 꺼짐. 활성화되면 채팅에 OK/도움이 필요함/In position/Lost comms/Return/Roll call이 작곡가 위에 표시됩니다."
     },
     "exportLogEmpty": "아직 수신된 로그에 MECP 메시지가 없습니다"
   },
@@ -6127,6 +6159,52 @@
     "saving": "사운드 설정 저장 중...",
     "importFailed": "이 소리를 가져올 수 없습니다. 지원되는 오디오 파일을 10초 이상 2MiB 이하로 선택하십시오.",
     "saveFailed": "사운드 설정을 저장할 수 없습니다. 이전 선택은 변경되지 않았습니다.",
-    "previewFailed": "이 소리를 재생할 수 없습니다. 다른 파일을 시도하거나 원래 톤으로 재설정하십시오."
+    "previewFailed": "이 소리를 재생할 수 없습니다. 다른 파일을 시도하거나 원래 톤으로 재설정하십시오.",
+    "connectionLost": "라디오 링크 분실",
+    "batteryLow": "배터리 부족"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} 배터리 부족",
+    "batteryLowBody": "{{percent}} % 의 배터리",
+    "silenceEscalationTitle": "{{name}} 아직 침묵 중",
+    "silenceEscalationBody": "{{minutes}} 분 동안 들리지 않음",
+    "linkDownTitle": "{{protocol}} 링크 다운",
+    "linkDownBody": "무선 연결이 끊어져 다시 연결하지 못했습니다"
+  },
+  "incidentPanel": {
+    "title": "긴급 사안",
+    "empty": "열린 비상 사고가 없습니다.",
+    "listAria": "긴급 상황 발생",
+    "resolve": "분석",
+    "resolveAria": "{{sender}} 님의 사안 해결",
+    "ack": "인정",
+    "ackAria": "{{sender}} 님의 사안 확인",
+    "ackBeacon": "Beacon 확인",
+    "ackBeaconAria": "{{sender}} 의 조난 신호 확인",
+    "ackCount_one": "{{count}} 확인",
+    "ackCount_other": "{{count}} 확인 사항",
+    "protocolsSeen": "소식 듣기: {{protocols}}",
+    "beaconActive": "Beacon 활성",
+    "drill": "드릴",
+    "ackSent": "{{sender}} (으) 로 확인 메시지가 전송되었습니다.",
+    "ackQueued": "{{sender}} 대기열에 대한 확인; 라디오를 사용할 수 있을 때 전송됩니다.",
+    "ackFailed": "확인 메시지를 보내거나 대기열에 넣을 수 없습니다.",
+    "intro": "모든 프로토콜에서 들리는 MECP 비상 사태에 대한 일반적인 작동 그림. 메이데이 및 긴급 행 열기 배지가 이 탭에 표시됩니다. 훈련은 나열되지만 계산되지 않습니다. 메시에 회신하려면 '확인' (또는 활성화된 비콘의 경우 '확인') 을 사용하고, 현지에서 사건이 종결되면 '해결' 을 사용하세요.",
+    "emptyHint": "인바운드 MECP 보고서는 자동으로 여기에 표시됩니다. 앱을 전송하려면 채팅에서 앱 → MECP → Show MECP 버튼을 활성화한 다음 채팅에서 MECP 또는 Mayday를 사용하세요. 지도 → 레이어는 열린 인시던트를 좌표로 표시할 수 있습니다.",
+    "ackQueuedBadge": "ACK 대기열",
+    "pendingAckListAria": "이 사건에 대한 확인 대기 중",
+    "cancelPendingAck": "취소",
+    "cancelPendingAckAria": "{{sender}} 에 대한 대기 중인 수신 확인 취소"
+  },
+  "quickStatus": {
+    "ok": "확인",
+    "needHelp": "도움이 필요하세요?",
+    "inPosition": "정위치",
+    "lostComms": "분실된 커뮤니케이션",
+    "returning": "재방문자",
+    "barAria": "빠른 상태 사전 설정",
+    "rollCall": "롤콜",
+    "rollCallAria": "브로드캐스트 롤 콜 및 집계 확인 응답",
+    "rollCallTally": "{{responded}}/{{expected}} 님이 응답했습니다"
   }
 }

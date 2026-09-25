@@ -31,6 +31,12 @@ describe('notification sound preferences', () => {
     expect(settings.reply).toEqual({ sound: 'default', volume: 100 });
   });
 
+  it('defaults operational alert events without a mute floor', () => {
+    const settings = normalizeNotificationSoundSettings({ batteryLow: { volume: 0 } });
+    expect(settings.connectionLost).toEqual({ sound: 'default', volume: 100 });
+    expect(settings.batteryLow).toEqual({ sound: 'default', volume: 0 });
+  });
+
   it('serializes edits to different events and preserves unrelated settings', async () => {
     mergeAppSetting('locale', 'en', 'test');
     await Promise.all([

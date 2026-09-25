@@ -53,6 +53,8 @@ import {
 } from '../lib/diagnostics/RemediationEngine';
 import { isReticulumDiagnosticRow } from '../lib/diagnostics/ReticulumDiagnosticEngine';
 import { hasLocalStatsData } from '../lib/diagnostics/RFDiagnosticEngine';
+import { downloadBlob } from '../lib/downloadBlob';
+import { diagnosticsRowsToJson } from '../lib/exportFormats';
 import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
@@ -840,14 +842,31 @@ export default function DiagnosticsPanel({
         <h2 className="text-xl font-semibold text-gray-200">
           {t('diagnosticsPanel.networkDiagnosticsTitle')}
         </h2>
-        <a
-          href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/diagnostics.md"
-          target="_blank"
-          rel="noreferrer"
-          className="text-muted hover:text-brand-green text-xs transition-colors"
-        >
-          {t('diagnosticsPanel.docsLink')}
-        </a>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            aria-label={t('diagnosticsPanel.exportJsonAria')}
+            disabled={visibleDiagnosticRows.length === 0}
+            className="rounded border border-gray-600/50 px-2 py-1 text-xs text-gray-300 transition-colors hover:border-gray-500 hover:text-gray-100 disabled:opacity-50"
+            onClick={() => {
+              const payload = diagnosticsRowsToJson(visibleDiagnosticRows);
+              downloadBlob(
+                new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }),
+                `mesh-diagnostics-${protocol}-${payload.exportedAt.slice(0, 10)}.json`,
+              );
+            }}
+          >
+            {t('diagnosticsPanel.exportJson')}
+          </button>
+          <a
+            href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/diagnostics.md"
+            target="_blank"
+            rel="noreferrer"
+            className="text-muted hover:text-brand-green text-xs transition-colors"
+          >
+            {t('diagnosticsPanel.docsLink')}
+          </a>
+        </div>
       </div>
 
       {capabilities?.hasReticulumNativeDiagnostics ? <DiagnosticsPingPanel /> : null}

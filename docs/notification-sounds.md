@@ -13,6 +13,8 @@ Surveyed against `c63bccf3` (Electron 44.1.1), September 23, 2026.
 | MECP SAFETY                              | Short–long (dit–dah) pairs × 6, piercing square (~4.4s)    | Same                                         |
 | MECP URGENT                              | 853+960 Hz attention tone, 5 seconds                       | Same                                         |
 | MECP MAYDAY                              | Six sweeping siren cycles, ~5.0 seconds (matches URGENT)   | Same                                         |
+| Radio link lost (`connectionLost`)       | 784→523 Hz falling double pulse                            | Same, gated by `operationalAlerts.ts`        |
+| Node battery low (`batteryLow`)          | 440 Hz flat double pulse                                   | Same, gated by `operationalAlerts.ts`        |
 | RRC room messages, mentions and whispers | Reuses channel/reply/DM categories                         | `rrcInactiveNotifications.ts`                |
 | Reticulum game activity                  | Reuses DM                                                  | `reticulumGamesNotifications.ts`             |
 | Watched node online/offline              | OS default notification sound                              | `useNodeStatusNotifier.ts`                   |
@@ -45,7 +47,7 @@ Keep a single Web Audio owner for chat/MECP. Adding a second native sound path w
 
 ## Controls
 
-**App → Notifications → Notification tones** provides an independent selection for channel messages, DMs, replies/mentions, and each of the four MECP severities. DM settings also apply to game notifications and RRC whispers; RRC mentions use the reply setting.
+**App → Notifications → Notification tones** provides an independent selection for channel messages, DMs, replies/mentions, each of the four MECP severities, and the operational alerts (radio link lost, node battery low). DM settings also apply to game notifications and RRC whispers; RRC mentions use the reply setting.
 
 Each row offers the original sound, four additional presets, **Choose file**, **Preview/Stop**, volume, and **Reset**. Existing users retain their original sounds until they choose another. Preview is an explicit playback action even when notifications are muted. MAYDAY and URGENT retain mute bypass and a 10% minimum volume; this cannot override a muted output device or guarantee that a custom recording is audible.
 

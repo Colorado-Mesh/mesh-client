@@ -415,7 +415,13 @@
     "decreaseFontSize": "减小字体大小",
     "increaseFontSize": "增加字体大小",
     "resetFontSize": "一键复原",
-    "resetFontSizeAria": "重置字体大小"
+    "resetFontSizeAria": "重置字体大小",
+    "opsAlertsHeading": "运营警报",
+    "nodeSilenceAlertMinutes": "监视节点静默警报（分钟）",
+    "nodeSilenceAlertMinutesPlaceholder": "使用通訊協定預設值(U)",
+    "nodeSilenceAlertMinutesHint": "留空以使用每个方案的过时阈值。升级以此值的2倍触发。",
+    "nodeBatteryLowThreshold": "电池低阈值(%)",
+    "notifyOnLinkDown": "无线电链路意外中断时通知"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "切换到 Meshtastic，{{count}} 未读",
     "switchToMeshCoreWithUnread": "切换到MeshCore，{{count}}未读",
     "switchToReticulumWithUnread": "切换到 Reticulum，{{count}} 未读",
-    "tabWithUnread": "{{label}}, {{count}}未读"
+    "tabWithUnread": "{{label}}, {{count}}未读",
+    "tabWithOpenIncidents": "{{label}}, {{count}} OPEN MAYDAY或紧急事件"
   },
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "此对等方可能有不同的LXMF目标",
     "reticulumDmStaleAlternate": "此聊天是LXMF {{openPrefix}} ……。您还有另一个LXMF {{alternatePrefix}} ……在不同的应用程序上可能是同一个人。确认网络LXMF/对等→消息，或立即在双方宣布。",
     "reticulumDmStaleAlternateNamed": "此聊天是LXMF {{openPrefix}} ……。另一个LXMF {{alternatePrefix}} … ({{name}})可能是不同应用程序上的同一人。在该哈希上打开同行→消息，或立即在双方宣布。",
-    "reticulumDmStaleAlternateDismissAria": "忽略目的地警告"
+    "reticulumDmStaleAlternateDismissAria": "忽略目的地警告",
+    "outboxEmergencyBadge": "急诊",
+    "outboxEmergencyWillSend": "将继续重试，直到发送",
+    "outboxEmergencyCapBlocked": "已暂停：排队的紧急消息过多。请重试或取消此操作。",
+    "outboxEmergencyCancelConfirm": "要取消此紧急消息吗？它不会被发送。",
+    "retryOutboxEmergencyAttempt": "尝试{{count}}"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -1921,7 +1933,9 @@
     "km": "公里",
     "distanceOffsetHelp": "为跳妖精和不良路线距离阈值添加平坦的公里下限 (0–50)。",
     "ignoreMqttToggle": "忽略MQTT",
-    "ignoreMqttHelp": "灰显仅限MQTT的节点，并将其排除在诊断之外"
+    "ignoreMqttHelp": "灰显仅限MQTT的节点，并将其排除在诊断之外",
+    "exportJson": "导出JSON",
+    "exportJsonAria": "将可见诊断行导出为JSON"
   },
   "diagnosticsPing": {
     "title": "持续ping",
@@ -2315,7 +2329,17 @@
       "clear": "清除磁贴缓存",
       "clearAria": "清除离线地图图块缓存",
       "cleared": "缓存已清除。"
-    }
+    },
+    "basemapUsgsTopo": "USGS Topo （仅限美国）",
+    "layerIncidents": "紧急事件",
+    "layerMgrsGrid": "MGRS网格",
+    "incidentMarker": "{{sender}} ： {{codes}}",
+    "incidentMarkerDrill": "电钻{{sender}} ： {{codes}}",
+    "measure": "措施",
+    "measureStartAria": "开始测量距离",
+    "measureStopAria": "停止测量并清除",
+    "measureHint": "单击地图以添加点",
+    "measureTotal": "{{km}}公里/{{mi}}英里"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "无",
     "meshcoreTypeUnknown": "未知",
     "columnHealth": "节点健康状况",
-    "hasPublicKeyTitle": "公钥"
+    "hasPublicKeyTitle": "公钥",
+    "buttonExportCsv": "导出 CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "网络",
     "rrc": "RRC",
     "remote": "远程",
-    "games": "出賽"
+    "games": "出賽",
+    "incident": "事件"
   },
   "takServerPanel": {
     "title": "TAK服务器",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}}/{{max}}字节",
       "send": "发送MECP",
       "gpsFailed": "无法获取GPS修复",
-      "sendFailed": "无法发送报告文件"
+      "sendFailed": "无法发送报告文件",
+      "maydayButton": "飞机陷落",
+      "maydayAria": "使用GPS轻触一键撰写MAYDAY"
     },
     "rebroadcast": {
       "title": "MECP射频重播",
@@ -6093,7 +6121,11 @@
       "learnMore": "MECP的工作原理",
       "protocolSource": "GitHub上的协议源",
       "showComposeButton": "在聊天中显示MECP按钮",
-      "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。"
+      "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。",
+      "showMaydayButton": "在聊天中显示“五月天”按钮",
+      "showMaydayButtonHint": "默认情况下关闭。启用后，聊天显示一个一键式MAYDAY按钮，该按钮在连接GPS的情况下以严重程度0打开撰写。独立于MECP撰写按钮。",
+      "showQuickStatusBar": "在聊天中显示快速状态栏",
+      "showQuickStatusBarHint": "默认情况下关闭。启用后，聊天显示撰写器上方的确定/需要帮助/就位/失去通信/返回/点名。"
     },
     "exportLogEmpty": "收到的日志中还没有MECP消息"
   },
@@ -6127,6 +6159,52 @@
     "saving": "正在保存声音设置…",
     "importFailed": "无法导入此声音。选择不超过10秒且不超过2 MiB的受支持音频文件。",
     "saveFailed": "无法保存声音设置。您之前的选择保持不变。",
-    "previewFailed": "无法播放此声音。尝试其他文件或重置为原始音调。"
+    "previewFailed": "无法播放此声音。尝试其他文件或重置为原始音调。",
+    "connectionLost": "无线电链路",
+    "batteryLow": "电池电量低"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}}电池电量低",
+    "batteryLowBody": "电池电量为{{percent}} %",
+    "silenceEscalationTitle": "{{name}}仍然保持沉默",
+    "silenceEscalationBody": "{{minutes}}分钟内未听到",
+    "linkDownTitle": "{{protocol}} LINK DOWN",
+    "linkDownBody": "无线电连接中断，重新连接失败"
+  },
+  "incidentPanel": {
+    "title": "紧急事件",
+    "empty": "无未决紧急事件。",
+    "listAria": "未决紧急事件",
+    "resolve": "解决",
+    "resolveAria": "从{{sender}}解决事件",
+    "ack": "确认",
+    "ackAria": "确认来自{{sender}}的事件",
+    "ackBeacon": "确认信标",
+    "ackBeaconAria": "确认来自{{sender}}的遇险信标",
+    "ackCount_one": "{{count}}确认",
+    "ackCount_other": "{{count}}致谢",
+    "protocolsSeen": "听说： {{protocols}}",
+    "beaconActive": "信标已激活",
+    "drill": "全民演习",
+    "ackSent": "确认已发送至{{sender}}",
+    "ackQueued": "确认{{sender}}已排队；当收音机可用时，它将发送",
+    "ackFailed": "无法发送或排队确认",
+    "intro": "在任何方案中都能听到MECP紧急情况的常见操作画面。打开MAYDAY和紧急行标记此选项卡；列出了钻孔，但从未计数。使用确认（或确认活动信标）在网格上回复，然后在本地关闭事件时解决。",
+    "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP或MAYDAY。地图→层可以用坐标显示未决事件。",
+    "ackQueuedBadge": "ACK已排队",
+    "pendingAckListAria": "已排队确认此事件",
+    "cancelPendingAck": "取消",
+    "cancelPendingAckAria": "取消{{sender}}的排队确认"
+  },
+  "quickStatus": {
+    "ok": "确认",
+    "needHelp": "需要帮助",
+    "inPosition": "未招聘",
+    "lostComms": "通讯中断",
+    "returning": "返回中",
+    "barAria": "快速状态预设",
+    "rollCall": "点名",
+    "rollCallAria": "广播点名和记录OK回复",
+    "rollCallTally": "{{responded}}/{{expected}}已回复"
   }
 }

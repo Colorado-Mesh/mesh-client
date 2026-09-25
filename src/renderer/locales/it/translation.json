@@ -415,7 +415,13 @@
     "decreaseFontSize": "Diminuisci dimensioni carattere",
     "increaseFontSize": "Aumenta dimensioni carattere",
     "resetFontSize": "Reimposta",
-    "resetFontSizeAria": "Organizzazione:"
+    "resetFontSizeAria": "Organizzazione:",
+    "opsAlertsHeading": "Allarmi operativi",
+    "nodeSilenceAlertMinutes": "Avviso di silenzio del nodo controllato (minuti)",
+    "nodeSilenceAlertMinutesPlaceholder": "Protocollo predefinito",
+    "nodeSilenceAlertMinutesHint": "Lasciare vuoto per utilizzare la soglia obsoleta di ciascun protocollo. L'escalation spara a 2× questo valore.",
+    "nodeBatteryLowThreshold": "Soglia batteria bassa (%)",
+    "notifyOnLinkDown": "Notifica in caso di link-down radio imprevisto"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Passa a Meshtastic, {{count}} non letto",
     "switchToMeshCoreWithUnread": "Passa a MeshCore, {{count}} non letto",
     "switchToReticulumWithUnread": "Passa a Reticulum, {{count}} non letto",
-    "tabWithUnread": "{{label}}, {{count}} non letti"
+    "tabWithUnread": "{{label}}, {{count}} non letti",
+    "tabWithOpenIncidents": "{{label}}, {{count}} MAYDAY aperto o incidenti URGENTI"
   },
   "battery": {
     "percentCharging": "Batteria {{percent}} percento, in carica",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "Possibile diversa destinazione LXMF per questo peer",
     "reticulumDmStaleAlternate": "Questa chat è LXMF {{openPrefix}}…. Ha anche un altro LXMF {{alternatePrefix}}... che potrebbe essere la stessa persona su un'altra app. Conferma il → messaggio di rete LXMF/ Peers o annuncia ora su entrambi i lati.",
     "reticulumDmStaleAlternateNamed": "Questa chat è LXMF {{openPrefix}}…. Un altro LXMF {{alternatePrefix}}… ({{name}}) potrebbe essere la stessa persona su un'altra app. Apri il → messaggio peer su quell' hash o annuncia ora su entrambi i lati.",
-    "reticulumDmStaleAlternateDismissAria": "Ignora avviso di destinazione"
+    "reticulumDmStaleAlternateDismissAria": "Ignora avviso di destinazione",
+    "outboxEmergencyBadge": "Emergenza",
+    "outboxEmergencyWillSend": "Continuerà a riprovare fino all'invio",
+    "outboxEmergencyCapBlocked": "In pausa: troppi messaggi di emergenza in coda. Riprova o annulla questo.",
+    "outboxEmergencyCancelConfirm": "Annullare questo messaggio di emergenza? Non verrà inviato.",
+    "retryOutboxEmergencyAttempt": "Tentativo {{count}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -1921,7 +1933,9 @@
     "km": "km",
     "distanceOffsetHelp": "Aggiunge un limite di km piatto alle soglie di distanza hop-goblin e percorso errato (0–50).",
     "ignoreMqttToggle": "Ignora MQTT",
-    "ignoreMqttHelp": "Disattiva visivamente i nodi solo MQTT ed escludili dalla diagnostica"
+    "ignoreMqttHelp": "Disattiva visivamente i nodi solo MQTT ed escludili dalla diagnostica",
+    "exportJson": "Esporta in JSON",
+    "exportJsonAria": "Esporta le righe di diagnostica visibili come JSON"
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -2315,7 +2329,17 @@
       "clear": "Svuota la cache delle tessere",
       "clearAria": "Svuota la cache delle tessere della mappa offline",
       "cleared": "Cache cancellata"
-    }
+    },
+    "basemapUsgsTopo": "USGS topo (solo USA)",
+    "layerIncidents": "Incidenti di emergenza",
+    "layerMgrsGrid": "Griglia MGRS",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "TRAPANO {{sender}}: {{codes}}",
+    "measure": "Measure",
+    "measureStartAria": "Inizio misurazione distanza",
+    "measureStopAria": "Interrompi la misurazione e cancella",
+    "measureHint": "Clicca sulla mappa per aggiungere punti",
+    "measureTotal": "{{km}} km / {{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "Perché vedi traffico duplicato",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "Nessuna",
     "meshcoreTypeUnknown": "Sconosciuto",
     "columnHealth": "SALUTE CERCHIO",
-    "hasPublicKeyTitle": "Public key"
+    "hasPublicKeyTitle": "Public key",
+    "buttonExportCsv": "Esporta CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "Rete",
     "rrc": "RRC",
     "remote": "Remoto",
-    "games": "Giochi"
+    "games": "Giochi",
+    "incident": "Incidente"
   },
   "takServerPanel": {
     "title": "TAK Server",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Impossibile ottenere una correzione GPS",
-      "sendFailed": "Non è stato possibile inviare il report"
+      "sendFailed": "Non è stato possibile inviare il report",
+      "maydayButton": "MAYDAY",
+      "maydayAria": "Componi MAYDAY in un solo tocco con il GPS"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6093,7 +6121,11 @@
       "learnMore": "Come funziona MeCP",
       "protocolSource": "Fonte del protocollo su GitHub",
       "showComposeButton": "Mostra pulsante MeCP in chat",
-      "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza."
+      "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza.",
+      "showMaydayButton": "Mostra il pulsante MAYDAY in chat",
+      "showMaydayButtonHint": "Disattivata per impostazione predefinita. Se abilitata, la chat mostra un pulsante MAYDAY con un solo tocco che si apre per comporre con gravità 0 con GPS collegato. Indipendente dal pulsante di composizione MeCP.",
+      "showQuickStatusBar": "Mostra la barra di stato rapido in Chat",
+      "showQuickStatusBarHint": "OFF per impostazione predefinita. Se abilitata, Chat mostra OK / Need help / In position / Lost comms / Returning / Roll call above the composer."
     },
     "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto"
   },
@@ -6127,6 +6159,52 @@
     "saving": "Salvataggio delle impostazioni audio in corso...",
     "importFailed": "Impossibile importare questo suono. Scegli un file audio supportato non più lungo di 10 secondi e non più grande di 2 MiB.",
     "saveFailed": "Impossibile salvare le impostazioni audio. La selezione precedente è invariata.",
-    "previewFailed": "Impossibile riprodurre questo suono. Prova un altro file o ripristina il tono originale."
+    "previewFailed": "Impossibile riprodurre questo suono. Prova un altro file o ripristina il tono originale.",
+    "connectionLost": "cavo hertziano",
+    "batteryLow": "BATTERY LOW"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} batteria scarica",
+    "batteryLowBody": "Batteria a {{percent}}%",
+    "silenceEscalationTitle": "{{name}} ancora silenzioso",
+    "silenceEscalationBody": "Non si sente per {{minutes}} minuti",
+    "linkDownTitle": "{{protocol}} link giù",
+    "linkDownBody": "Connessione radio persa e riconnessione non riuscita"
+  },
+  "incidentPanel": {
+    "title": "Incidenti di emergenza",
+    "empty": "Nessun incidente di emergenza aperto.",
+    "listAria": "Apri incidenti di emergenza",
+    "resolve": "Delibera",
+    "resolveAria": "Risolvi l'incidente da {{sender}}",
+    "ack": "Conferma",
+    "ackAria": "Conferma incidente da {{sender}}",
+    "ackBeacon": "Acknowledge beacon",
+    "ackBeaconAria": "Conferma segnale di soccorso da {{sender}}",
+    "ackCount_one": "{{count}} riconoscimento",
+    "ackCount_other": "{{count}} riconoscimenti",
+    "protocolsSeen": "Sentito il: {{protocols}}",
+    "beaconActive": "Beacon attivo",
+    "drill": "Drillo",
+    "ackSent": "Conferma inviata a {{sender}}",
+    "ackQueued": "Conferma a {{sender}} in coda; invierà quando la radio sarà disponibile",
+    "ackFailed": "Impossibile inviare o accodare la conferma",
+    "intro": "Quadro operativo comune per le emergenze MeCP sentito su qualsiasi protocollo. Apri MAYDAY e le righe URGENTI contrassegnano questa scheda; le esercitazioni sono elencate ma mai contate. Utilizzare Conferma (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente.",
+    "emptyHint": "I rapporti MeCP in entrata vengono visualizzati qui automaticamente. Per inviarne uno, abilita il → pulsante App MeCP → Show MeCP in Chat, quindi utilizza MeCP o MAYDAY in Chat. → I livelli mappa possono mostrare incidenti aperti con coordinate.",
+    "ackQueuedBadge": "ACK in coda",
+    "pendingAckListAria": "Riconoscimenti in coda per questo incidente",
+    "cancelPendingAck": "Annulla",
+    "cancelPendingAckAria": "Annulla conferma in coda per {{sender}}"
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "Bisogno di assistenza",
+    "inPosition": "In posizione",
+    "lostComms": "Comunicazioni perse",
+    "returning": "Restituzione in corso",
+    "barAria": "Preimpostazioni rapide di stato",
+    "rollCall": "Appello",
+    "rollCallAria": "Trasmetti l'appello e conta le risposte OK",
+    "rollCallTally": "{{responded}}/{{expected}} hanno risposto"
   }
 }

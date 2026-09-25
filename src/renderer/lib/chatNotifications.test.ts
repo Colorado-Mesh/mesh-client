@@ -140,6 +140,16 @@ describe('playMessageNotification', () => {
     expect(oscillatorFrequencies).toEqual([853, 960]);
   });
 
+  it('plays a falling pair for connectionLost', () => {
+    playMessageNotification('connectionLost');
+    expect(oscillatorFrequencies).toEqual([783.99, 523.25]);
+  });
+
+  it('plays a flat pair for batteryLow', () => {
+    playMessageNotification('batteryLow');
+    expect(oscillatorFrequencies).toEqual([440, 440]);
+  });
+
   it('plays a multi-cycle siren for mecpSiren at elevated gain', () => {
     const gainLevels: number[] = [];
     class MockAudioContextWithGainCapture {

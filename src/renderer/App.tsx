@@ -18,9 +18,15 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import type { ChatOutboxSendFn } from '@/renderer/hooks/useChatOutbox';
+import {
+  isChatOutboxSendAvailable,
+  useEmergencyOutboxDrain,
+} from '@/renderer/hooks/useEmergencyOutboxDrain';
 import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
@@ -47,6 +53,7 @@ import {
   setDebugSnapshotMeshtasticContext,
 } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
+import { sendTextWithOutboxFallback } from '@/renderer/lib/emergencySend';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -55,6 +62,12 @@ import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
+import {
+  composeIncidentAck,
+  incidentAckViewKey,
+  incidentNeedsBeaconAck,
+  resolveIncidentAckRoute,
+} from '@/renderer/lib/mecp/incidentAck';
 import {
   readMeshcoreAutoOffloadWhenFull,
   writeMeshcoreAutoOffloadWhenFull,
@@ -95,6 +108,11 @@ import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
+import {
+  type EmergencyIncident,
+  openMaydayUrgentCount,
+  useIncidentStore,
+} from '@/renderer/stores/incidentStore';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 import {
   meshtasticDeviceRoleFromConfigSlice,
@@ -139,6 +157,7 @@ import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelAction
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
+import { useOperationalAlerts, useOperationalAlertSettings } from './hooks/useOperationalAlerts';
 import { usePowerRecovery } from './hooks/usePowerRecovery';
 import { useProtocolConnect, useProtocolDisconnect } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
@@ -157,6 +176,7 @@ import {
   ChannelUtilizationChart,
   DiagnosticsPanel,
   GamesPanel,
+  IncidentPanel,
   MapPanel,
   ModulePanel,
   NomadNetworkPanel,
@@ -193,6 +213,7 @@ import {
   findFilteredTabIndexForPanel,
   GAMES_PANEL_INDEX,
   GRAPH_PANEL_INDEX,
+  INCIDENT_PANEL_INDEX,
   MAP_TAB_PANEL_INDEX,
   MODULES_PANEL_INDEX,
   NODES_PANEL_INDEX,
@@ -1310,8 +1331,23 @@ function AppContent() {
       messages: meshtasticStoreMessages,
       ownNodeIds: meshtasticOwnNodeIdSet,
       ownSenderId: meshtasticRuntime.state.myNodeNum,
+      resolveLastKnown: (senderId: string) => {
+        const hex = senderId.startsWith('!') ? senderId.slice(1) : senderId;
+        const asNum = senderId.startsWith('!')
+          ? Number.parseInt(hex, 16)
+          : Number.parseInt(senderId, 10);
+        const node = Number.isFinite(asNum) ? meshtasticUiNodes.get(asNum) : undefined;
+        if (node?.latitude == null || node.longitude == null) return null;
+        if (!Number.isFinite(node.latitude) || !Number.isFinite(node.longitude)) return null;
+        return { lat: node.latitude, lon: node.longitude };
+      },
     }),
-    [meshtasticStoreMessages, meshtasticOwnNodeIdSet, meshtasticRuntime.state.myNodeNum],
+    [
+      meshtasticStoreMessages,
+      meshtasticOwnNodeIdSet,
+      meshtasticRuntime.state.myNodeNum,
+      meshtasticUiNodes,
+    ],
   );
   const mecpMeshcoreSlice = useMemo(
     () => ({
@@ -1319,8 +1355,23 @@ function AppContent() {
       messages: meshcoreStoreMessages,
       ownNodeIds: meshcoreOwnNodeIdSet,
       ownSenderId: meshcoreRuntime.selfNodeId,
+      resolveLastKnown: (senderId: string) => {
+        const asNum = Number.parseInt(senderId, 10);
+        const byId = Number.isFinite(asNum) ? meshcoreUiNodes.get(asNum) : undefined;
+        const node =
+          byId ??
+          [...meshcoreUiNodes.values()].find(
+            (n) =>
+              String(n.node_id) === senderId ||
+              (typeof n.public_key_hex === 'string' &&
+                n.public_key_hex.toLowerCase() === senderId.toLowerCase()),
+          );
+        if (node?.latitude == null || node.longitude == null) return null;
+        if (!Number.isFinite(node.latitude) || !Number.isFinite(node.longitude)) return null;
+        return { lat: node.latitude, lon: node.longitude };
+      },
     }),
-    [meshcoreStoreMessages, meshcoreOwnNodeIdSet, meshcoreRuntime.selfNodeId],
+    [meshcoreStoreMessages, meshcoreOwnNodeIdSet, meshcoreRuntime.selfNodeId, meshcoreUiNodes],
   );
   const mecpReticulumSlice = useMemo(
     () => ({
@@ -1328,6 +1379,7 @@ function AppContent() {
       messages: reticulumStoreMessages,
       ownNodeIds: reticulumOwnNodeIdSet,
       ownSenderId: reticulumRuntime.state.myNodeNum,
+      resolveLastKnown: () => null,
     }),
     [reticulumStoreMessages, reticulumOwnNodeIdSet, reticulumRuntime.state.myNodeNum],
   );
@@ -1547,7 +1599,132 @@ function AppContent() {
       ? reticulumPathPeerCount
       : nodesForUi.size;
 
-  useNodeStatusNotifier(nodesForUi, capabilities);
+  const operationalAlertSettings = useOperationalAlertSettings();
+  useNodeStatusNotifier(nodesForUi, capabilities, {
+    silenceThresholdMinutes: operationalAlertSettings.nodeSilenceAlertMinutes,
+  });
+  const meshtasticLinkStatus = meshtasticConnectionView.state.status;
+  const meshtasticLinkLoss = meshtasticConnectionView.state.connectionLoss;
+  const meshcoreLinkStatus = meshcoreConnectionView.state.status;
+  const meshcoreLinkLoss = meshcoreConnectionView.state.connectionLoss;
+  const operationalLinks = useMemo(
+    () => [
+      {
+        key: 'meshtastic',
+        label: 'Meshtastic',
+        status: meshtasticLinkStatus,
+        connectionLoss: meshtasticLinkLoss,
+      },
+      {
+        key: 'meshcore',
+        label: 'MeshCore',
+        status: meshcoreLinkStatus,
+        connectionLoss: meshcoreLinkLoss,
+      },
+    ],
+    [meshtasticLinkStatus, meshtasticLinkLoss, meshcoreLinkStatus, meshcoreLinkLoss],
+  );
+  useOperationalAlerts({
+    nodes: nodesForUi,
+    capabilities,
+    links: operationalLinks,
+    settings: operationalAlertSettings,
+  });
+
+  const incidentBadgeCount = useIncidentStore(openMaydayUrgentCount);
+
+  const chatSendAvailableByProtocol = useMemo(
+    () =>
+      protocolRecord(
+        isChatOutboxSendAvailable('meshtastic', meshtasticConnectionView),
+        isChatOutboxSendAvailable('meshcore', meshcoreConnectionView),
+        isChatOutboxSendAvailable('reticulum', reticulumConnectionView),
+      ),
+    [meshtasticConnectionView, meshcoreConnectionView, reticulumConnectionView],
+  );
+  const meshtasticSendMessage = useSendMessage(meshtasticIdentityId);
+  const meshcoreSendMessage = useSendMessage(meshcoreIdentityId);
+  const reticulumSendMessage = useSendMessage(reticulumIdentityId);
+  const outboxSendFnByProtocol = useMemo(() => {
+    const wrap =
+      (send: typeof meshtasticSendMessage): ChatOutboxSendFn =>
+      (text, channel, destination, replyId) =>
+        send(text, channel, destination, replyId == null ? undefined : String(replyId));
+    return protocolRecord(
+      wrap(meshtasticSendMessage),
+      wrap(meshcoreSendMessage),
+      wrap(reticulumSendMessage),
+    );
+  }, [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage]);
+  const emergencyOutboxDrains = useMemo(
+    () =>
+      REGISTERED_MESH_PROTOCOLS.map((p) => ({
+        protocol: p,
+        isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, p),
+        sendFn: selectByProtocol(outboxSendFnByProtocol, p),
+      })),
+    [chatSendAvailableByProtocol, outboxSendFnByProtocol],
+  );
+  useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
+
+  const handleIncidentAck = useCallback(
+    (incident: EmergencyIncident) => {
+      const route = resolveIncidentAckRoute(
+        incident,
+        protocol,
+        (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
+      );
+      const text = composeIncidentAck(incident);
+      const beaconAck = incidentNeedsBeaconAck(incident);
+      // ACKs are routine traffic: queue as normal priority so they never compete with reports.
+      // Tag viewKey so the App-level drain can send them without Chat open and recordAck on TX.
+      void sendTextWithOutboxFallback(
+        text,
+        {
+          isSendAvailable: selectByProtocol(chatSendAvailableByProtocol, route.protocol),
+          sendFn: selectByProtocol(outboxSendFnByProtocol, route.protocol),
+          queueOutbox: async (entry) => {
+            const row = await window.electronAPI.chat.outbox.add(entry);
+            requestChatOutboxDrain(route.protocol);
+            return row;
+          },
+          protocol: route.protocol,
+          viewKey: incidentAckViewKey(incident.id, route),
+          channel: route.channel,
+          toNode: route.toNode,
+        },
+        'normal',
+      )
+        .then((outcome) => {
+          // Only mark acknowledged once the ACK actually left; a queued ACK may never send.
+          if (outcome === 'sent') {
+            if (beaconAck) {
+              useIncidentStore.getState().confirmBeacon(incident.id);
+            } else {
+              useIncidentStore.getState().recordAck(incident.id, 'local');
+            }
+          }
+          addToast(
+            t(outcome === 'sent' ? 'incidentPanel.ackSent' : 'incidentPanel.ackQueued', {
+              sender: incident.senderName,
+            }),
+            outcome === 'sent' ? 'success' : 'info',
+          );
+        })
+        .catch((e: unknown) => {
+          console.warn('[App] incident ACK send failed: ' + errLikeToLogString(e));
+          addToast(t('incidentPanel.ackFailed'), 'error');
+        });
+    },
+    [
+      protocol,
+      capabilitiesByProtocol,
+      chatSendAvailableByProtocol,
+      outboxSendFnByProtocol,
+      addToast,
+      t,
+    ],
+  );
 
   const chatUnreadByProtocol = useMemo(
     () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
@@ -3330,6 +3507,7 @@ function AppContent() {
                   : 0
               }
               gamesUnread={protocol === 'reticulum' && capabilities.hasLrgpGames ? gamesUnread : 0}
+              incidentBadgeCount={incidentBadgeCount}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />
@@ -4502,6 +4680,21 @@ function AppContent() {
                               atakMessages={meshtasticRuntime.atakMessages}
                               capabilities={capabilities}
                             />
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
+                      id={`panel-${INCIDENT_PANEL_INDEX}`}
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), INCIDENT_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== INCIDENT_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                    >
+                      {activePanelIndex === INCIDENT_PANEL_INDEX ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <IncidentPanel onAck={handleIncidentAck} />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

@@ -415,7 +415,13 @@
     "decreaseFontSize": "Reducir el tamaño de letra",
     "increaseFontSize": "Aumentar el tamaño de letra",
     "resetFontSize": "Restablecimiento",
-    "resetFontSizeAria": "Restablecer tamaño de fuente"
+    "resetFontSizeAria": "Restablecer tamaño de fuente",
+    "opsAlertsHeading": "ALERTAS OPERATIVAS",
+    "nodeSilenceAlertMinutes": "Alerta de silencio de nodo vigilado (minutos)",
+    "nodeSilenceAlertMinutesPlaceholder": "Protocolo predeterminado",
+    "nodeSilenceAlertMinutesHint": "Déjelo en blanco para usar el umbral obsoleto de cada protocolo. La escalada se dispara a 2× este valor.",
+    "nodeBatteryLowThreshold": "Umbral bajo de la batería (%)",
+    "notifyOnLinkDown": "Notificar sobre un enlace de radio inesperado"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Cambiar a Meshtastic, {{count}} no leído",
     "switchToMeshCoreWithUnread": "Cambiar a MeshCore, {{count}} no leído",
     "switchToReticulumWithUnread": "Cambiar a Reticulum, {{count}} sin leer",
-    "tabWithUnread": "{{label}}, {{count}} sin leer"
+    "tabWithUnread": "{{label}}, {{count}} sin leer",
+    "tabWithOpenIncidents": "{{label}}, {{count}} abierto MAYDAY o incidentes URGENTES"
   },
   "battery": {
     "percentCharging": "Batería {{percent}} por ciento, cargando",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "Posible destino LXMF diferente para este compañero",
     "reticulumDmStaleAlternate": "Este chat es LXMF {{openPrefix}}…. También tienes otro LXMF {{alternatePrefix}}... que puede ser la misma persona en una aplicación diferente. Confirme el → mensaje de Network LXMF/ Peers, o Anúncielo ahora en ambos lados.",
     "reticulumDmStaleAlternateNamed": "Este chat es LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}… ({{name}}) puede ser la misma persona en una aplicación diferente. Abra el → mensaje de pares en ese hash, o Anúncielo ahora en ambos lados.",
-    "reticulumDmStaleAlternateDismissAria": "Descartar advertencia de destino"
+    "reticulumDmStaleAlternateDismissAria": "Descartar advertencia de destino",
+    "outboxEmergencyBadge": "Emergencia",
+    "outboxEmergencyWillSend": "Seguirá intentándolo hasta que se envíe",
+    "outboxEmergencyCapBlocked": "En pausa: demasiados mensajes de emergencia en cola. Vuelve a intentarlo o cancela este.",
+    "outboxEmergencyCancelConfirm": "¿Quieres cancelar este mensaje de emergencia? No se enviará.",
+    "retryOutboxEmergencyAttempt": "Intento {{count}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -1921,7 +1933,9 @@
     "km": "kilómetros",
     "distanceOffsetHelp": "Agrega un piso de kilómetros plano a los umbrales de distancia de salto-duende y mala ruta (0-50).",
     "ignoreMqttToggle": "Ignorar MQTT",
-    "ignoreMqttHelp": "Atenuar los nodos que solo usan MQTT y excluirlos de los diagnósticos"
+    "ignoreMqttHelp": "Atenuar los nodos que solo usan MQTT y excluirlos de los diagnósticos",
+    "exportJson": "Exportar a Json",
+    "exportJsonAria": "Exportar filas de diagnóstico visibles como JSON"
   },
   "diagnosticsPing": {
     "title": "Ping continuo",
@@ -2315,7 +2329,17 @@
       "clear": "Borrar caché de mosaicos",
       "clearAria": "Borrar caché de mosaicos de mapas sin conexión",
       "cleared": "Carpeta del caché limpiada."
-    }
+    },
+    "basemapUsgsTopo": "USGS topo (solo en EE. UU.)",
+    "layerIncidents": "Incidentes de emergencia",
+    "layerMgrsGrid": "Cuadrícula MGRS",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "TALADRO {{sender}}: {{codes}}",
+    "measure": "Medir",
+    "measureStartAria": "Empezar a medir la distancia",
+    "measureStopAria": "Dejar de medir y borrar",
+    "measureHint": "Haz clic en el mapa para añadir puntos",
+    "measureTotal": "{{km}} km / {{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "Ninguno",
     "meshcoreTypeUnknown": "Desconocido",
     "columnHealth": "Salud del nodo",
-    "hasPublicKeyTitle": "Clave Pública"
+    "hasPublicKeyTitle": "Clave Pública",
+    "buttonExportCsv": "Exportar CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "Red",
     "rrc": "RRC",
     "remote": "Remoto",
-    "games": "Juegos"
+    "games": "Juegos",
+    "incident": "Incidente"
   },
   "takServerPanel": {
     "title": "Servidor TAK",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Enviar MECP",
       "gpsFailed": "No se ha podido obtener una solución de GPS",
-      "sendFailed": "Error al enviar el informe"
+      "sendFailed": "Error al enviar el informe",
+      "maydayButton": "MEIDEI",
+      "maydayAria": "Redacta MAYDAY con un solo toque con GPS"
     },
     "rebroadcast": {
       "title": "Retransmisión MECP RF",
@@ -6093,7 +6121,11 @@
       "learnMore": "Cómo funciona MECP",
       "protocolSource": "Fuente del protocolo en GitHub",
       "showComposeButton": "Mostrar botón MECP en el chat",
-      "showComposeButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MECP para redactar y enviar informes de emergencia."
+      "showComposeButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MECP para redactar y enviar informes de emergencia.",
+      "showMaydayButton": "Mostrar el botón MAYDAY en el chat",
+      "showMaydayButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MAYDAY de un toque que se abre en redacción con gravedad 0 con GPS conectado. Independiente del botón de redacción MECP.",
+      "showQuickStatusBar": "Mostrar barra de estado rápida en el chat",
+      "showQuickStatusBarHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra OK / Need help / In position / Lost comms / Returning / Roll call encima del compositor."
     },
     "exportLogEmpty": "Aún no hay mensajes MECP en el registro recibido"
   },
@@ -6127,6 +6159,52 @@
     "saving": "Guardando ajustes de sonido...",
     "importFailed": "No se ha podido importar este sonido. Elige un archivo de audio compatible que no supere los 10 segundos ni los 2 MB.",
     "saveFailed": "No se han podido guardar los ajustes de sonido. Su selección anterior no ha cambiado.",
-    "previewFailed": "No se ha podido reproducir este sonido. Prueba con otro archivo o restablece el tono original."
+    "previewFailed": "No se ha podido reproducir este sonido. Prueba con otro archivo o restablece el tono original.",
+    "connectionLost": "radioenlace",
+    "batteryLow": "Batería baja"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} batería baja",
+    "batteryLowBody": "Batería a {{percent}}%",
+    "silenceEscalationTitle": "{{name}} sigue en silencio",
+    "silenceEscalationBody": "No se ha escuchado durante {{minutes}} minutos",
+    "linkDownTitle": "{{protocol}} enlace abajo",
+    "linkDownBody": "La conexión de radio se perdió y la reconexión no tuvo éxito"
+  },
+  "incidentPanel": {
+    "title": "Incidentes de emergencia",
+    "empty": "No hay incidentes de emergencia abiertos.",
+    "listAria": "Incidentes de emergencia abiertos",
+    "resolve": "Resolver",
+    "resolveAria": "Resolver incidente desde {{sender}}",
+    "ack": "Reconocer",
+    "ackAria": "Reconocer incidente de {{sender}}",
+    "ackBeacon": "Reconocer baliza",
+    "ackBeaconAria": "Reconocer baliza de socorro de {{sender}}",
+    "ackCount_one": "{{count}} reconocimiento",
+    "ackCount_other": "{{count}} agradecimientos",
+    "protocolsSeen": "Oído el: {{protocols}}",
+    "beaconActive": "Baliza activa",
+    "drill": "Taladro",
+    "ackSent": "Acuse de recibo enviado a {{sender}}",
+    "ackQueued": "Acuse de recibo a {{sender}} en cola; se enviará cuando la radio esté disponible",
+    "ackFailed": "No se ha podido enviar o poner en cola el acuse de recibo",
+    "intro": "Cuadro operativo común para emergencias MECP escuchado en cualquier protocolo. Abra MAYDAY y las filas URGENTES en esta pestaña; los ejercicios se enumeran pero nunca se cuentan. Utilice Reconocer (o Confirmar para una baliza activa) para responder en la malla y, a continuación, Resolver cuando el incidente se cierre localmente.",
+    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP o MAYDAY en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas.",
+    "ackQueuedBadge": "ACK en cola",
+    "pendingAckListAria": "Reconocimientos en cola por este incidente",
+    "cancelPendingAck": "Cancelar",
+    "cancelPendingAckAria": "Cancelar acuse de recibo en cola para {{sender}}"
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "Necesita ayuda",
+    "inPosition": "En posición",
+    "lostComms": "Comunicaciones perdidas",
+    "returning": "Volviendo",
+    "barAria": "Preajustes rápidos de estado",
+    "rollCall": "Votación nominal",
+    "rollCallAria": "Transmitir llamadas nominales y contar las respuestas correctas",
+    "rollCallTally": "{{responded}}/{{expected}} respondió"
   }
 }

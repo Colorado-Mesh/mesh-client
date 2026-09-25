@@ -174,31 +174,111 @@ export function getDatabaseIfOpen(): NodeSqliteDB | null {
   return db;
 }
 
-export function prunePositionHistory(days: number): number {
-  const d = getDatabase();
-  const cutoff = Date.now() - days * MS_PER_DAY;
-  const result = d.prepareOnce('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff);
-  return Number(result.changes);
+export type PositionPruneExemptNodeIds =
+  ReadonlySet<string | number> | readonly (string | number)[];
+
+/** Upper bound on exempt ids accepted per prune call (IPC payload guard). */
+export const MAX_POSITION_PRUNE_EXEMPT_IDS = 10_000;
+
+/**
+ * Normalize exempt node ids to uint32 `position_history.node_id` values.
+ * Accepts numbers, decimal strings, `!hex` (Meshtastic) and `0x` hex; drops anything else.
+ */
+export function normalizePositionPruneExemptNodeIds(
+  exempt: PositionPruneExemptNodeIds | null | undefined,
+): number[] {
+  if (!exempt) return [];
+  const out = new Set<number>();
+  for (const raw of exempt) {
+    if (out.size >= MAX_POSITION_PRUNE_EXEMPT_IDS) break;
+    let n: number | null = null;
+    if (typeof raw === 'number') {
+      n = Number.isInteger(raw) && raw > 0 && raw <= 0xffffffff ? raw : null;
+    } else if (typeof raw === 'string') {
+      const s = raw.trim().toLowerCase();
+      const hex = /^(?:!|0x)([0-9a-f]{1,8})$/.exec(s);
+      if (hex?.[1]) n = parseInt(hex[1], 16);
+      else if (/^\d{1,10}$/.test(s)) n = Number(s);
+      if (n != null && (n <= 0 || n > 0xffffffff)) n = null;
+    }
+    if (n != null) out.add(n);
+  }
+  return [...out];
 }
 
-/** Keep only the newest `maxPerNode` rows per node_id (matches in-memory cap). */
-export function prunePositionHistoryPerNode(maxPerNode: number): number {
-  if (maxPerNode < 1) return 0;
-  const d = getDatabase();
+/** Validate an untrusted IPC exempt-ids argument; non-arrays become `undefined`. */
+export function sanitizeExemptNodeIdsArg(value: unknown): (string | number)[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return value
+    .slice(0, MAX_POSITION_PRUNE_EXEMPT_IDS)
+    .filter((v): v is string | number => typeof v === 'string' || typeof v === 'number');
+}
+
+export function prunePositionHistoryOn(
+  d: NodeSqliteDB,
+  days: number,
+  exemptNodeIds?: PositionPruneExemptNodeIds | null,
+): number {
+  const cutoff = Date.now() - days * MS_PER_DAY;
+  const exempt = normalizePositionPruneExemptNodeIds(exemptNodeIds);
+  if (exempt.length === 0) {
+    return Number(
+      d.prepareOnce('DELETE FROM position_history WHERE recorded_at < ?').run(cutoff).changes,
+    );
+  }
   const result = d
     .prepareOnce(
       `DELETE FROM position_history
-       WHERE id NOT IN (
+       WHERE recorded_at < ?
+         AND node_id NOT IN (SELECT value FROM json_each(?))`,
+    )
+    .run(cutoff, JSON.stringify(exempt));
+  return Number(result.changes);
+}
+
+export function prunePositionHistory(
+  days: number,
+  exemptNodeIds?: PositionPruneExemptNodeIds | null,
+): number {
+  return prunePositionHistoryOn(getDatabase(), days, exemptNodeIds);
+}
+
+/** Keep only the newest `maxPerNode` rows per node_id (matches in-memory cap). */
+export function prunePositionHistoryPerNodeOn(
+  d: NodeSqliteDB,
+  maxPerNode: number,
+  exemptNodeIds?: PositionPruneExemptNodeIds | null,
+): number {
+  if (maxPerNode < 1) return 0;
+  const exempt = normalizePositionPruneExemptNodeIds(exemptNodeIds);
+  const keepNewest = `id NOT IN (
          SELECT id FROM (
            SELECT id,
              ROW_NUMBER() OVER (PARTITION BY node_id ORDER BY recorded_at DESC, id DESC) AS rn
            FROM position_history
          )
          WHERE rn <= ?
-       )`,
+       )`;
+  if (exempt.length === 0) {
+    return Number(
+      d.prepareOnce(`DELETE FROM position_history WHERE ${keepNewest}`).run(maxPerNode).changes,
+    );
+  }
+  const result = d
+    .prepareOnce(
+      `DELETE FROM position_history
+       WHERE ${keepNewest}
+         AND node_id NOT IN (SELECT value FROM json_each(?))`,
     )
-    .run(maxPerNode);
+    .run(maxPerNode, JSON.stringify(exempt));
   return Number(result.changes);
+}
+
+export function prunePositionHistoryPerNode(
+  maxPerNode: number,
+  exemptNodeIds?: PositionPruneExemptNodeIds | null,
+): number {
+  return prunePositionHistoryPerNodeOn(getDatabase(), maxPerNode, exemptNodeIds);
 }
 
 /** Delete room BBS rows for the given room-server node ids (FTS triggers keep search in sync). */

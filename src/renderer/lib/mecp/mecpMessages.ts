@@ -129,6 +129,83 @@ export function severityLabelKey(severity: Severity): string {
   }
 }
 
+/** Same shape as the decoder GPS pattern, plus the optional `#` tag prefix. */
+const MECP_COORDS_REGEX = /#?(-?\d+\.\d+),\s*(-?\d+\.\d+)/g;
+
+/** Parse `lat,lon` / `#lat,lon` from MECP freetext; null when absent or out of range. */
+export function extractMecpCoords(freetext: string): { lat: number; lon: number } | null {
+  if (typeof freetext !== 'string' || freetext.length === 0) return null;
+  MECP_COORDS_REGEX.lastIndex = 0;
+  const match = MECP_COORDS_REGEX.exec(freetext);
+  if (!match) return null;
+  const lat = parseFloat(match[1]);
+  const lon = parseFloat(match[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+  return { lat, lon };
+}
+
+/** Remove GPS tokens so resent reports with updated coordinates still fingerprint-match. */
+export function stripMecpCoordsFromFreetext(freetext: string): string {
+  if (typeof freetext !== 'string' || freetext.length === 0) return '';
+  MECP_COORDS_REGEX.lastIndex = 0;
+  return freetext.replace(MECP_COORDS_REGEX, ' ').replace(/\s+/g, ' ').trim();
+}
+
+export function normalizeMecpFreetext(freetext: string): string {
+  return freetext.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/** Normalized freetext with coordinates stripped (identity for incident merge / fingerprint). */
+export function normalizeMecpFreetextForMatch(freetext: string): string {
+  return normalizeMecpFreetext(stripMecpCoordsFromFreetext(freetext));
+}
+
+/** cyrb53: fast non-cryptographic 53-bit string hash (stable across sessions). */
+function cyrb53(str: string): string {
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0');
+}
+
+/**
+ * Protocol-independent incident id so the same report heard over Meshtastic,
+ * MeshCore, and Reticulum (e.g. via the RF rebroadcast bridge) merges into one row.
+ * Coordinates are stripped so a GPS update from the same sender does not fork a new row.
+ */
+export function incidentFingerprint(parts: {
+  severity: number;
+  codes: string[];
+  freetext: string;
+  senderId: string;
+}): string {
+  const codes = [...new Set(parts.codes.map((c) => c.trim().toUpperCase()))].sort().join(',');
+  const key = [
+    String(parts.severity),
+    codes,
+    normalizeMecpFreetextForMatch(parts.freetext),
+    parts.senderId.trim().toLowerCase(),
+  ].join('|');
+  return `mecp-${cyrb53(key)}`;
+}
+
+/** Payload identity without sender — used to merge bridged copies from a relay node id. */
+export function incidentPayloadMatchKey(parts: {
+  severity: number;
+  codes: string[];
+  freetext: string;
+}): string {
+  const codes = [...new Set(parts.codes.map((c) => c.trim().toUpperCase()))].sort().join(',');
+  return [String(parts.severity), codes, normalizeMecpFreetextForMatch(parts.freetext)].join('|');
+}
+
 export function localizeMecpCodes(parsed: MecpParsed, lang: LanguageFile): string {
   const parts: string[] = [];
   for (const code of parsed.codes) {

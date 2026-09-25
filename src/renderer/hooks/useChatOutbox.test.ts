@@ -1,6 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resetChatOutboxDrainLocksForTests } from '@/renderer/lib/chatOutboxDrain';
+import { tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
 import {
   isMeshcoreSendTooFast,
   resetMeshcoreSendRateForTests,
@@ -8,10 +10,20 @@ import {
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { OFFLINE_RETICULUM_IDENTITY_ID } from '@/renderer/lib/offlineProtocolIdentities';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
+import { useIncidentStore } from '@/renderer/stores/incidentStore';
 import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry } from '@/shared/electron-api.types';
 
-import { useChatOutbox } from './useChatOutbox';
+import {
+  applyIncidentAckAfterOutboxSend,
+  earliestEmergencyRetryAt,
+  EMERGENCY_OUTBOX_SOFT_CAP,
+  isEmergencyOutboxPriority,
+  isMaydayEmergencyOutboxPayload,
+  OUTBOX_MAX_AGE_MS,
+  useChatOutbox,
+} from './useChatOutbox';
 
 function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
   return {
@@ -31,6 +43,7 @@ function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
     groupId: null,
     groupIndex: null,
     groupTotal: null,
+    priority: 'normal',
     ...overrides,
   };
 }
@@ -41,6 +54,7 @@ describe('useChatOutbox', () => {
   beforeEach(() => {
     resetMeshtasticTextSendPacingForTests();
     resetMeshcoreSendRateForTests();
+    resetChatOutboxDrainLocksForTests();
     vi.mocked(mockOutbox.list).mockClear();
     vi.mocked(mockOutbox.add).mockClear();
     vi.mocked(mockOutbox.updateStatus).mockClear();
@@ -858,5 +872,376 @@ describe('useChatOutbox', () => {
     await waitFor(() => {
       expect(result.current.rows.find((r) => r.id === 71)?.status).toBe('failed');
     });
+  });
+
+  describe('emergency priority', () => {
+    it('isEmergencyOutboxPriority only matches emergency rows', () => {
+      expect(isEmergencyOutboxPriority(makeEntry({ priority: 'emergency' }))).toBe(true);
+      expect(isEmergencyOutboxPriority(makeEntry())).toBe(false);
+    });
+
+    it('skips normal rows older than 24h but still drains emergency rows past 24h', async () => {
+      const old = Date.now() - OUTBOX_MAX_AGE_MS - 60_000;
+      const normal = makeEntry({ id: 100, protocol: 'meshcore', payload: 'stale', createdAt: old });
+      const emergency = makeEntry({
+        id: 101,
+        protocol: 'meshcore',
+        payload: 'mayday',
+        createdAt: old,
+        priority: 'emergency',
+      });
+      vi.mocked(mockOutbox.list).mockResolvedValue([normal, emergency]);
+      const sendFn = vi.fn().mockResolvedValue(undefined);
+      renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+      await waitFor(() => {
+        expect(mockOutbox.remove).toHaveBeenCalledWith(101);
+      });
+      expect(sendFn).toHaveBeenCalledTimes(1);
+      expect(sendFn).toHaveBeenCalledWith('mayday', 0, undefined, undefined);
+    });
+
+    it('keeps scheduling nextRetryAt for emergency rows beyond MAX_ATTEMPTS', async () => {
+      const entry = makeEntry({ id: 102, attemptCount: 7, priority: 'emergency' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }),
+      );
+      await waitFor(() => {
+        expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+          102,
+          'failed',
+          'chatPanel.sendFailed',
+          expect.any(Number),
+          8,
+        );
+      });
+      await waitFor(() => {
+        expect(result.current.rows.find((r) => r.id === 102)?.nextRetryAt).toEqual(
+          expect.any(Number),
+        );
+      });
+    });
+
+    it('still blocks emergency rows on encryption errors without retry', async () => {
+      const entry = makeEntry({ id: 103, priority: 'emergency' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn().mockRejectedValue(new Error('no encryption key'));
+      renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+      await waitFor(() => {
+        expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+          103,
+          'blocked',
+          'chatPanel.sendErrors.encryptionBlocked',
+          undefined,
+          1,
+        );
+      });
+    });
+
+    it('queue preserves emergency priority on the stored row', async () => {
+      const sendFn = vi.fn();
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: false, sendFn }),
+      );
+      const row = await result.current.queue({
+        protocol: 'meshtastic',
+        viewKey: 'ch:0',
+        channel: 0,
+        toNode: null,
+        payload: 'mayday',
+        replyId: null,
+        status: 'queued',
+        error: null,
+        nextRetryAt: null,
+        groupId: null,
+        groupIndex: null,
+        groupTotal: null,
+        priority: 'emergency',
+      });
+      expect(mockOutbox.add).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: 'emergency' }),
+      );
+      expect(row.priority).toBe('emergency');
+      await waitFor(() => {
+        expect(result.current.rows.find((r) => r.id === 99)?.priority).toBe('emergency');
+      });
+      expect(sendFn).not.toHaveBeenCalled();
+    });
+
+    const emergencyInput = (payload: string) => ({
+      protocol: 'meshtastic',
+      viewKey: 'ch:0',
+      channel: 0,
+      toNode: null,
+      payload,
+      replyId: null,
+      status: 'queued' as const,
+      error: null,
+      nextRetryAt: null,
+      groupId: null,
+      groupIndex: null,
+      groupTotal: null,
+      priority: 'emergency' as const,
+    });
+
+    async function queueOverCap(existing: OutboxEntry[], newPayload = 'MECP/0/M01') {
+      const newRow = makeEntry({
+        id: 99,
+        priority: 'emergency',
+        payload: newPayload,
+        createdAt: Date.now(),
+      });
+      vi.mocked(mockOutbox.add).mockResolvedValue(newRow);
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: false, sendFn: vi.fn() }),
+      );
+      await waitFor(() => {
+        expect(mockOutbox.list).toHaveBeenCalled();
+      });
+      vi.mocked(mockOutbox.list).mockResolvedValue([...existing, newRow]);
+      await result.current.queue(emergencyInput(newPayload));
+    }
+
+    it('isMaydayEmergencyOutboxPayload only matches MECP severity 0', () => {
+      expect(isMaydayEmergencyOutboxPayload('MECP/0/M01 2pax')).toBe(true);
+      expect(isMaydayEmergencyOutboxPayload('mecp/0/M01')).toBe(true);
+      expect(isMaydayEmergencyOutboxPayload('MECP/1/T04')).toBe(false);
+      expect(isMaydayEmergencyOutboxPayload('MECP/01/M01')).toBe(false);
+      expect(isMaydayEmergencyOutboxPayload('hello MECP/0/M01')).toBe(false);
+    });
+
+    it('blocks the oldest active non-MAYDAY emergency row when the soft cap is exceeded', async () => {
+      const base = Date.now() - 10_000;
+      // One already-blocked row plus CAP active rows: blocked rows do not count toward the cap.
+      const existing = Array.from({ length: EMERGENCY_OUTBOX_SOFT_CAP + 1 }, (_, i) =>
+        makeEntry({
+          id: 200 + i,
+          priority: 'emergency',
+          payload: 'MECP/2/M01',
+          status: i === 0 ? 'blocked' : 'failed',
+          createdAt: base + i,
+        }),
+      );
+      await queueOverCap(existing);
+      expect(mockOutbox.updateStatus).toHaveBeenCalledTimes(1);
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        201,
+        'blocked',
+        'chatPanel.outboxEmergencyCapBlocked',
+        undefined,
+      );
+    });
+
+    it('ignores blocked rows when counting toward the soft cap', async () => {
+      const blocked = Array.from({ length: EMERGENCY_OUTBOX_SOFT_CAP }, (_, i) =>
+        makeEntry({ id: 400 + i, priority: 'emergency', status: 'blocked', payload: 'MECP/2/M01' }),
+      );
+      const active = makeEntry({ id: 450, priority: 'emergency', payload: 'MECP/2/M01' });
+      await queueOverCap([...blocked, active]);
+      expect(mockOutbox.updateStatus).not.toHaveBeenCalled();
+    });
+
+    it('prefers the least urgent severity over older more urgent rows', async () => {
+      const base = Date.now() - 10_000;
+      const existing = Array.from({ length: EMERGENCY_OUTBOX_SOFT_CAP }, (_, i) =>
+        makeEntry({
+          id: 500 + i,
+          priority: 'emergency',
+          payload: i === 5 ? 'MECP/3/L01' : 'MECP/1/T04',
+          status: 'failed',
+          createdAt: base + i,
+        }),
+      );
+      await queueOverCap(existing);
+      expect(mockOutbox.updateStatus).toHaveBeenCalledTimes(1);
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        505,
+        'blocked',
+        'chatPanel.outboxEmergencyCapBlocked',
+        undefined,
+      );
+    });
+
+    it('never blocks a MAYDAY row; allows temporary over-cap when only MAYDAYs remain', async () => {
+      const { restore } = mockConsoleWarn();
+      try {
+        const existing = Array.from({ length: EMERGENCY_OUTBOX_SOFT_CAP }, (_, i) =>
+          makeEntry({
+            id: 600 + i,
+            priority: 'emergency',
+            payload: 'MECP/0/M01',
+            status: 'failed',
+            createdAt: Date.now() - 10_000 + i,
+          }),
+        );
+        await queueOverCap(existing, 'MECP/2/M01');
+        expect(mockOutbox.updateStatus).not.toHaveBeenCalled();
+      } finally {
+        restore();
+      }
+    });
+
+    it('drains emergency rows before older normal rows', async () => {
+      const base = Date.now() - 10_000;
+      const normalOld = makeEntry({
+        id: 700,
+        protocol: 'meshcore',
+        payload: 'n1',
+        createdAt: base,
+      });
+      const emergencyNew = makeEntry({
+        id: 701,
+        protocol: 'meshcore',
+        payload: 'e2',
+        createdAt: base + 2,
+        priority: 'emergency',
+      });
+      const emergencyOld = makeEntry({
+        id: 702,
+        protocol: 'meshcore',
+        payload: 'e1',
+        createdAt: base + 1,
+        priority: 'emergency',
+      });
+      vi.mocked(mockOutbox.list).mockResolvedValue([normalOld, emergencyNew, emergencyOld]);
+      const sendFn = vi.fn().mockResolvedValue(undefined);
+      renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+      await waitFor(() => {
+        expect(sendFn).toHaveBeenCalledTimes(3);
+      });
+      expect(sendFn.mock.calls.map((c: unknown[]) => c[0])).toEqual(['e1', 'e2', 'n1']);
+    });
+
+    it('earliestEmergencyRetryAt only considers future emergency queued/failed rows', () => {
+      const now = 1_000_000;
+      const rows = [
+        makeEntry({ id: 1, priority: 'emergency', status: 'failed', nextRetryAt: now + 5_000 }),
+        makeEntry({ id: 2, priority: 'emergency', status: 'queued', nextRetryAt: now + 1_000 }),
+        makeEntry({ id: 3, priority: 'normal', status: 'failed', nextRetryAt: now + 10 }),
+        makeEntry({ id: 4, priority: 'emergency', status: 'blocked', nextRetryAt: now + 20 }),
+        makeEntry({ id: 5, priority: 'emergency', status: 'failed', nextRetryAt: now - 1 }),
+      ];
+      expect(earliestEmergencyRetryAt(rows, now)).toBe(now + 1_000);
+      expect(earliestEmergencyRetryAt([], now)).toBeNull();
+    });
+
+    it('wakes a drain at the earliest emergency nextRetryAt after a failed send', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const { restore } = mockConsoleWarn();
+      try {
+        const entry = makeEntry({ id: 800, protocol: 'meshcore', priority: 'emergency' });
+        vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+        const sendFn = vi
+          .fn()
+          .mockRejectedValueOnce(new Error('radio busy'))
+          .mockResolvedValue(undefined);
+        renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+        await waitFor(() => {
+          expect(sendFn).toHaveBeenCalledTimes(1);
+        });
+        await waitFor(() => {
+          expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+            800,
+            'failed',
+            expect.any(String),
+            expect.any(Number),
+            1,
+          );
+        });
+        vi.mocked(mockOutbox.list).mockResolvedValue([
+          { ...entry, status: 'failed', attemptCount: 1, nextRetryAt: Date.now() - 1 },
+        ]);
+        await vi.advanceTimersByTimeAsync(31_000);
+        await waitFor(() => {
+          expect(sendFn).toHaveBeenCalledTimes(2);
+        });
+      } finally {
+        restore();
+        vi.useRealTimers();
+      }
+    });
+
+    it('does not enforce the soft cap at or below the limit', async () => {
+      const existing = Array.from({ length: EMERGENCY_OUTBOX_SOFT_CAP - 1 }, (_, i) =>
+        makeEntry({ id: 300 + i, priority: 'emergency', status: 'failed' }),
+      );
+      const newRow = makeEntry({ id: 99, priority: 'emergency' });
+      vi.mocked(mockOutbox.add).mockResolvedValue(newRow);
+      vi.mocked(mockOutbox.list).mockResolvedValue([...existing, newRow]);
+      const sendFn = vi.fn();
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: false, sendFn }),
+      );
+      await result.current.queue({
+        protocol: 'meshtastic',
+        viewKey: 'ch:0',
+        channel: 0,
+        toNode: null,
+        payload: 'mayday',
+        replyId: null,
+        status: 'queued',
+        error: null,
+        nextRetryAt: null,
+        groupId: null,
+        groupIndex: null,
+        groupTotal: null,
+        priority: 'emergency',
+      });
+      expect(mockOutbox.updateStatus).not.toHaveBeenCalledWith(
+        expect.any(Number),
+        'blocked',
+        'chatPanel.outboxEmergencyCapBlocked',
+        undefined,
+      );
+    });
+  });
+});
+
+describe('applyIncidentAckAfterOutboxSend', () => {
+  beforeEach(() => {
+    useIncidentStore.setState({ incidents: {}, resolvedTombstones: {} });
+  });
+
+  it('confirms beacon from a B02 payload even if the incident no longer needs beacon ACK', () => {
+    const parsed = tryParseMecp('MECP/0/B01 M01')!;
+    const id = useIncidentStore.getState().upsertFromMecp({
+      protocol: 'meshtastic',
+      parsed,
+      senderId: '!v',
+      receivedAt: 1,
+    })!;
+    // Operator already confirmed locally; a drained R01 must not re-confirm — and a drained
+    // B02 must still confirmBeacon based on payload, not current incidentNeedsBeaconAck.
+    useIncidentStore.getState().confirmBeacon(id);
+    applyIncidentAckAfterOutboxSend({
+      viewKey: `ackIncident:${id}:ch:0`,
+      payload: 'MECP/0/B02',
+    });
+    expect(useIncidentStore.getState().incidents[id].beaconAcked).toBe(true);
+  });
+
+  it('records a general ACK from an R01 payload without confirmBeacon', () => {
+    const parsed = tryParseMecp('MECP/0/M01 help')!;
+    const id = useIncidentStore.getState().upsertFromMecp({
+      protocol: 'meshtastic',
+      parsed,
+      senderId: '!v',
+      receivedAt: 1,
+    })!;
+    // Start a beacon after the R01 was queued — must not confirmBeacon from R01.
+    useIncidentStore.setState((s) => ({
+      incidents: {
+        ...s.incidents,
+        [id]: { ...s.incidents[id], beaconActive: true, beaconAcked: false },
+      },
+    }));
+    applyIncidentAckAfterOutboxSend({
+      viewKey: `ackIncident:${id}:ch:0`,
+      payload: 'MECP/0/R01 M01',
+    });
+    const inc = useIncidentStore.getState().incidents[id];
+    expect(inc.beaconAcked).toBe(false);
+    expect(inc.ackCount).toBe(1);
   });
 });
