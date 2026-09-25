@@ -31,8 +31,6 @@ describe('ConnectionPanel manual GATT selection', () => {
     });
     vi.mocked(window.electronAPI.startGattScanning).mockReset().mockResolvedValue({ ok: true });
     vi.mocked(window.electronAPI.stopGattScanning).mockClear();
-    vi.mocked(window.electronAPI.selectBluetoothDevice).mockClear();
-    vi.mocked(window.electronAPI.cancelBluetoothSelection).mockClear();
     vi.mocked(window.electronAPI.bluetoothGetInfo).mockResolvedValue('Paired: yes');
     vi.mocked(window.electronAPI.bluetoothPair).mockReset().mockResolvedValue(undefined);
   });
@@ -72,8 +70,6 @@ describe('ConnectionPanel manual GATT selection', () => {
     await waitFor(() => {
       expect(onConnect).toHaveBeenCalledExactlyOnceWith('ble', undefined, device.deviceId);
     });
-    expect(window.electronAPI.selectBluetoothDevice).not.toHaveBeenCalled();
-    expect(window.electronAPI.cancelBluetoothSelection).not.toHaveBeenCalled();
   });
 
   it.each(['linux', 'darwin', 'win32'] as const)(
@@ -134,7 +130,6 @@ describe('ConnectionPanel manual GATT selection', () => {
         expect(window.electronAPI.bluetoothPair).toHaveBeenCalledWith(device.deviceId, '3456');
         expect(onConnect).toHaveBeenCalledExactlyOnceWith('ble', undefined, device.deviceId);
       });
-      expect(window.electronAPI.selectBluetoothDevice).not.toHaveBeenCalled();
     },
   );
 

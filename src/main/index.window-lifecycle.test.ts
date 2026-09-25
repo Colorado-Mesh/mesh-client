@@ -73,8 +73,12 @@ describe('Linux Web Bluetooth device selection', () => {
   it('cancels Chromium select-bluetooth-device (LoRa BLE uses sidecar GATT)', () => {
     expect(INDEX_SOURCE).not.toContain("from './linuxWebBluetoothDeviceSelection'");
     expect(INDEX_SOURCE).not.toContain("from './linuxWebBluetoothCancelIpc'");
+    expect(INDEX_SOURCE).not.toContain('linuxWebBluetoothDeviceSelection');
     expect(INDEX_SOURCE).not.toContain('beginOrMergeDiscovery');
     expect(INDEX_SOURCE).not.toContain('armStaleTimeout');
+    expect(INDEX_SOURCE).not.toContain("ipcMain.on('bluetooth-device-selected'");
+    expect(INDEX_SOURCE).not.toContain("ipcMain.handle('bluetooth-device-cancel'");
+    expect(INDEX_SOURCE).not.toContain('bluetooth-devices-discovered');
     const handlerIdx = INDEX_SOURCE.indexOf("on('select-bluetooth-device'");
     expect(handlerIdx).toBeGreaterThan(-1);
     const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
