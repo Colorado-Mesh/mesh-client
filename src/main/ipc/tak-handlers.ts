@@ -50,21 +50,46 @@ function errorMessage(err: unknown): string {
   return sanitizeLogMessage(err instanceof Error ? err.message : String(err));
 }
 
+/**
+ * Read one chosen file through a single handle, so the type and size checks apply to the bytes
+ * actually read, and never read more than the credential size cap.
+ */
+async function readCredentialFile(filePath: string): Promise<TakCredentialFile> {
+  const name = path.basename(filePath);
+  const notAFile = () => new Error(`${name} is not a regular file`);
+  let handle: fs.promises.FileHandle;
+  try {
+    // OS-specific: O_NONBLOCK stops open() from waiting for a writer when the pick is a FIFO
+    // (POSIX); Windows has no such flag and cannot open a FIFO path this way.
+    handle = await fs.promises.open(
+      filePath,
+      fs.constants.O_RDONLY | (fs.constants.O_NONBLOCK ?? 0),
+    );
+  } catch (err) {
+    // OS-specific: Windows refuses to open a directory; POSIX opens it and fstat rejects it below.
+    if ((err as NodeJS.ErrnoException).code === 'EISDIR') throw notAFile();
+    throw err;
+  }
+  try {
+    const stat = await handle.stat();
+    if (!stat.isFile()) throw notAFile();
+    const tooLarge = () => new Error(`${name} is too large to be a certificate file`);
+    if (stat.size > TAK_CREDENTIAL_FILE_MAX_BYTES) throw tooLarge();
+    // One byte past the cap detects a file that grew after the size check.
+    const buffer = Buffer.alloc(TAK_CREDENTIAL_FILE_MAX_BYTES + 1);
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+    if (bytesRead > TAK_CREDENTIAL_FILE_MAX_BYTES) throw tooLarge();
+    return { name: filePath, data: buffer.subarray(0, bytesRead) };
+  } finally {
+    await handle.close();
+  }
+}
+
 async function readCredentialFiles(filePaths: string[]): Promise<TakCredentialFile[]> {
   if (filePaths.length > TAK_CREDENTIAL_FILES_MAX) {
     throw new Error(`Select at most ${TAK_CREDENTIAL_FILES_MAX} certificate files`);
   }
-  return Promise.all(
-    filePaths.map(async (filePath) => {
-      const stat = await fs.promises.stat(filePath);
-      // A FIFO or device reports size 0 and would read without bound.
-      if (!stat.isFile()) throw new Error(`${path.basename(filePath)} is not a regular file`);
-      if (stat.size > TAK_CREDENTIAL_FILE_MAX_BYTES) {
-        throw new Error(`${path.basename(filePath)} is too large to be a certificate file`);
-      }
-      return { name: filePath, data: await fs.promises.readFile(filePath) };
-    }),
-  );
+  return Promise.all(filePaths.map(readCredentialFile));
 }
 
 /** Register TAK server IPC handlers (`tak:*`). */

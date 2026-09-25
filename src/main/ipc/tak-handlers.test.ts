@@ -29,6 +29,7 @@ vi.mock('../tak/remote-settings', async (importOriginal) => ({
   loadTakRemoteSettings: vi.fn(() => null),
 }));
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -236,6 +237,9 @@ describe('remote relay handlers', () => {
       const summary = await get('tak:remoteImportCredentials')(event, 'atakatak');
 
       expect(vi.mocked(parseTakCredentialFiles).mock.calls[0]?.[1]).toBe('atakatak');
+      expect(vi.mocked(parseTakCredentialFiles).mock.calls[0]?.[0][0]?.data).toEqual(
+        Buffer.alloc(10, 1),
+      );
       expect(saveTakRemoteCredentials).toHaveBeenCalledWith({
         ca: 'ca-pem',
         cert: 'cert-pem',
@@ -272,5 +276,22 @@ describe('remote relay handlers', () => {
       await expect(get('tak:remoteImportCredentials')(event)).rejects.toThrow(/not a regular file/);
       expect(saveTakRemoteCredentials).not.toHaveBeenCalled();
     });
+
+    // OS-specific: named pipes via mkfifo exist on POSIX only.
+    it.skipIf(process.platform === 'win32')(
+      'rejects a FIFO without waiting for a writer',
+      async () => {
+        const fifo = path.join(dir, 'pipe.p12');
+        execFileSync('mkfifo', [fifo]);
+        vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
+          canceled: false,
+          filePaths: [fifo],
+        });
+        const { get } = await register();
+        await expect(get('tak:remoteImportCredentials')(event)).rejects.toThrow(
+          /not a regular file/,
+        );
+      },
+    );
   });
 });
