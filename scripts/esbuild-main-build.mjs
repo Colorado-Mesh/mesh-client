@@ -47,6 +47,7 @@ export function parseEsbuildMainBuildArgs(argv) {
  *   metafilePath?: string | null
  *   buildInfoRaw?: string
  *   absWorkingDir?: string
+ *   outfile?: string
  * }} [opts]
  */
 export async function buildMainProcess(opts = {}) {
@@ -54,13 +55,14 @@ export async function buildMainProcess(opts = {}) {
   const metafilePath = opts.metafilePath ?? null;
   const buildInfoRaw = opts.buildInfoRaw ?? process.env.MESH_CLIENT_BUILD_INFO ?? '';
   const absWorkingDir = opts.absWorkingDir ?? projectRoot;
+  const outfile = opts.outfile ?? 'dist-electron/main/index.js';
 
   const result = await esbuild.build({
     absWorkingDir,
     entryPoints: ['src/main/index.ts'],
     bundle: true,
     platform: 'node',
-    outfile: 'dist-electron/main/index.js',
+    outfile,
     external: [...MAIN_ESBUILD_EXTERNALS],
     format: 'cjs',
     define: {
