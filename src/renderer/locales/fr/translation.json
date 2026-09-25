@@ -6194,7 +6194,12 @@
     "ackQueuedBadge": "ACK en file d'attente",
     "pendingAckListAria": "Accusés de réception en file d'attente pour cet incident",
     "cancelPendingAck": "Annuler",
-    "cancelPendingAckAria": "Annuler l'accusé de réception en file d'attente pour {{sender}}"
+    "cancelPendingAckAria": "Annuler l'accusé de réception en file d'attente pour {{sender}}",
+    "resolveBeacon": "Annuler la balise",
+    "resolveBeaconAria": "Annulez votre balise de détresse et dites au maillage que vous êtes OK ({{sender}})",
+    "beaconCancelSent": "Annulation de balise envoyée. D'autres stations effacent votre balise de détresse lorsqu'elles l'entendent.",
+    "beaconCancelQueued": "L'annulation de la balise est mise en file d'attente. Elle sera envoyée lorsque la radio sera disponible.",
+    "beaconCancelFailed": "Impossible d'envoyer ou de mettre en file d'attente l'annulation de la balise. L'incident est toujours ouvert."
   },
   "quickStatus": {
     "ok": "OK",

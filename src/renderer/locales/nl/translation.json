@@ -6194,7 +6194,12 @@
     "ackQueuedBadge": "ACK in de wachtrij",
     "pendingAckListAria": "Bevestigingen in de wachtrij voor dit incident",
     "cancelPendingAck": "Annuleren",
-    "cancelPendingAckAria": "Annuleer de bevestiging in de wachtrij voor {{sender}}"
+    "cancelPendingAckAria": "Annuleer de bevestiging in de wachtrij voor {{sender}}",
+    "resolveBeacon": "Baken annuleren",
+    "resolveBeaconAria": "Annuleer je noodbaken en vertel het netwerk dat je in orde bent ({{sender}})",
+    "beaconCancelSent": "Baken annuleren verzonden. Andere stations wissen je noodbaken wanneer ze het horen.",
+    "beaconCancelQueued": "Beacon annuleert in de wachtrij. Het wordt verzonden wanneer de radio beschikbaar is.",
+    "beaconCancelFailed": "Kon het baken niet verzenden of in de wachtrij plaatsen annuleren. Het incident is nog steeds open."
   },
   "quickStatus": {
     "ok": "OK",

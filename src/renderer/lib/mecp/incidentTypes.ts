@@ -30,6 +30,15 @@ export interface EmergencyIncident {
   ackPeerIds: string[];
   beaconActive: boolean;
   beaconAcked: boolean;
+  /**
+   * This station transmitted the beacon. Not on the wire — receivers match B03 by sender id.
+   * Optional so rows saved before beacon cancel still load.
+   */
+  localOrigin?: boolean;
+  /**
+   * Unicast destination of an originated beacon. Absent means the cancel is a channel broadcast.
+   */
+  beaconCancelToNode?: number;
   isDrill: boolean;
   status: IncidentStatus;
   resolvedAt?: number;

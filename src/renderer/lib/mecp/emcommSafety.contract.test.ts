@@ -19,6 +19,7 @@
  * S14 `mecpComposeEnabled`, `mecpMaydayButtonEnabled`, and `quickStatusBarEnabled` defaults remain `false`.
  * S15 Incident ACKs queue as normal priority; recordAck only on live `'sent'` (drain path tags viewKey).
  * S16 App mounts emergency+ACK outbox drain once for all protocols.
+ * Beacon cancel: resolving an originated beacon sends B03 via sendEmergencyText (beaconCancel.ts).
  *
  * Behavioral coverage for S2/S3 lives in useChatOutbox.test.ts and emergencySend.test.ts.
  */
@@ -127,6 +128,15 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(ack).not.toMatch(/sendEmergencyText\(/);
     expect(ack).toMatch(/incidentAckViewKey\(/);
     expect(ack).toMatch(/if \(outcome === 'sent'\) \{[\s\S]*?confirmBeacon[\s\S]*?recordAck/);
+  });
+
+  it('originated beacon resolve sends B03 through the emergency outbox', () => {
+    const app = readSrc('renderer/App.tsx');
+    expect(app).toMatch(/resolveIncidentWithBeaconCancel\(/);
+    expect(app).toMatch(/onResolve=\{handleIncidentResolve\}/);
+    const cancel = readSrc('renderer/lib/mecp/beaconCancel.ts');
+    expect(cancel).toMatch(/composeBeaconCancel\(/);
+    expect(cancel).toMatch(/sendEmergencyText\(/);
   });
 
   it('S16: App mounts the emergency outbox drain once for all protocols', () => {

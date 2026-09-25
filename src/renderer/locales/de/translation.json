@@ -6194,7 +6194,12 @@
     "ackQueuedBadge": "ACK in Warteschlange gestellt",
     "pendingAckListAria": "Bestätigungen für diesen Vorfall in der Warteschlange",
     "cancelPendingAck": "Abbrechen",
-    "cancelPendingAckAria": "In der Warteschlange stehende Bestätigung für {{sender}} abbrechen"
+    "cancelPendingAckAria": "In der Warteschlange stehende Bestätigung für {{sender}} abbrechen",
+    "resolveBeacon": "Bake abbrechen",
+    "resolveBeaconAria": "Lösche dein Notsignal und teile dem Netz mit, dass du in Ordnung bist ({{sender}})",
+    "beaconCancelSent": "Signalabbruch gesendet. Andere Sender löschen dein Notsignal, wenn sie es hören.",
+    "beaconCancelQueued": "Beacon-Abbruch in der Warteschlange. Wird gesendet, wenn das Radio verfügbar ist.",
+    "beaconCancelFailed": "Das Beacon konnte nicht gesendet oder in die Warteschlange gestellt werden. Der Vorfall ist noch offen."
   },
   "quickStatus": {
     "ok": "i.O.",

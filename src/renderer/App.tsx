@@ -62,6 +62,7 @@ import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
+import { ownSenderIdSet, resolveIncidentWithBeaconCancel } from '@/renderer/lib/mecp/beaconCancel';
 import {
   composeIncidentAck,
   incidentAckViewKey,
@@ -1667,6 +1668,26 @@ function AppContent() {
   );
   useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
 
+  const incidentOwnSenderIds = useMemo(
+    () =>
+      ownSenderIdSet([
+        ...meshtasticOwnNodeIdSet,
+        ...meshcoreOwnNodeIdSet,
+        ...reticulumOwnNodeIdSet,
+        meshtasticRuntime.state.myNodeNum,
+        meshcoreRuntime.selfNodeId,
+        reticulumRuntime.state.myNodeNum,
+      ]),
+    [
+      meshtasticOwnNodeIdSet,
+      meshcoreOwnNodeIdSet,
+      reticulumOwnNodeIdSet,
+      meshtasticRuntime.state.myNodeNum,
+      meshcoreRuntime.selfNodeId,
+      reticulumRuntime.state.myNodeNum,
+    ],
+  );
+
   const handleIncidentAck = useCallback(
     (incident: EmergencyIncident) => {
       const route = resolveIncidentAckRoute(
@@ -1721,6 +1742,47 @@ function AppContent() {
       capabilitiesByProtocol,
       chatSendAvailableByProtocol,
       outboxSendFnByProtocol,
+      addToast,
+      t,
+    ],
+  );
+
+  const handleIncidentResolve = useCallback(
+    (incident: EmergencyIncident) => {
+      void resolveIncidentWithBeaconCancel(
+        incident,
+        incidentOwnSenderIds,
+        {
+          isSendAvailable: (p) => selectByProtocol(chatSendAvailableByProtocol, p),
+          sendFn: (p) => selectByProtocol(outboxSendFnByProtocol, p),
+          queueOutbox: (entry) => window.electronAPI.chat.outbox.add(entry),
+        },
+        (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
+      )
+        .then((result) => {
+          if (result === 'cancel-sent' || result === 'cancel-queued') {
+            addToast(
+              t(
+                result === 'cancel-sent'
+                  ? 'incidentPanel.beaconCancelSent'
+                  : 'incidentPanel.beaconCancelQueued',
+              ),
+              result === 'cancel-sent' ? 'success' : 'info',
+            );
+          } else if (result === 'cancel-failed') {
+            addToast(t('incidentPanel.beaconCancelFailed'), 'error');
+          }
+        })
+        .catch((e: unknown) => {
+          console.warn('[App] beacon cancel failed: ' + errLikeToLogString(e));
+          addToast(t('incidentPanel.beaconCancelFailed'), 'error');
+        });
+    },
+    [
+      incidentOwnSenderIds,
+      chatSendAvailableByProtocol,
+      outboxSendFnByProtocol,
+      capabilitiesByProtocol,
       addToast,
       t,
     ],
@@ -4694,7 +4756,11 @@ function AppContent() {
                       {activePanelIndex === INCIDENT_PANEL_INDEX ? (
                         <ErrorBoundary>
                           <Suspense fallback={<PanelSkeleton />}>
-                            <IncidentPanel onAck={handleIncidentAck} />
+                            <IncidentPanel
+                              onAck={handleIncidentAck}
+                              onResolve={handleIncidentResolve}
+                              ownSenderIds={incidentOwnSenderIds}
+                            />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

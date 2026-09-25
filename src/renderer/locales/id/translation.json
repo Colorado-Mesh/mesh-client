@@ -6194,7 +6194,12 @@
     "ackQueuedBadge": "ACK antri",
     "pendingAckListAria": "Pengakuan antrian atas insiden ini",
     "cancelPendingAck": "Batal",
-    "cancelPendingAckAria": "Batalkan konfirmasi antrean untuk {{sender}}"
+    "cancelPendingAckAria": "Batalkan konfirmasi antrean untuk {{sender}}",
+    "resolveBeacon": "Batalkan suar",
+    "resolveBeaconAria": "Batalkan suar marabahaya Anda dan beri tahu mesh bahwa Anda baik - baik saja ({{sender}})",
+    "beaconCancelSent": "Pembatalan suar terkirim. Stasiun lain membersihkan suar marabahaya Anda saat mereka mendengarnya.",
+    "beaconCancelQueued": "Suar dibatalkan dalam antrean. Suar akan dikirim saat radio tersedia.",
+    "beaconCancelFailed": "Tidak dapat mengirim atau mengantre pembatalan suar. Insiden ini masih terbuka."
   },
   "quickStatus": {
     "ok": "OK",

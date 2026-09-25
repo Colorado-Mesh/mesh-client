@@ -48,6 +48,10 @@ export interface MecpIncidentInput {
    * Live path leaves this unset.
    */
   fromSeed?: boolean;
+  /** Set when the message is this station's own distress beacon (or its B03). */
+  localOrigin?: boolean;
+  /** Unicast `to` of an originated beacon; omitted for channel broadcasts. */
+  beaconCancelToNode?: number | null;
 }
 
 interface IncidentStoreState {
@@ -66,6 +70,10 @@ interface IncidentStoreState {
   recordAck: (incidentId: string, peerId: string) => void;
   /** Local operator acknowledged a B01 beacon (sent B02). */
   confirmBeacon: (incidentId: string) => void;
+  /**
+   * Close the row locally. Does not transmit — an originated beacon cancel is
+   * `resolveIncidentWithBeaconCancel` in `beaconCancel.ts`.
+   */
   resolveIncident: (incidentId: string, at?: number) => void;
   clearAll: () => void;
 }
@@ -333,6 +341,10 @@ export const useIncidentStore = create<IncidentStoreState>()(
             ackPeerIds: [],
             beaconActive: beacon,
             beaconAcked: false,
+            ...(input.localOrigin && beacon ? { localOrigin: true } : {}),
+            ...(beacon && typeof input.beaconCancelToNode === 'number'
+              ? { beaconCancelToNode: input.beaconCancelToNode }
+              : {}),
             isDrill: parsed.isDrill,
             status: 'open',
           };
@@ -357,6 +369,13 @@ export const useIncidentStore = create<IncidentStoreState>()(
         const relaySenderIds = isRelay
           ? [...new Set([...(existing.relaySenderIds ?? []), senderId])].slice(-20)
           : existing.relaySenderIds;
+        const markLocalOrigin =
+          existing.localOrigin === true || (!isRelay && input.localOrigin === true);
+        const beaconCancelToNode =
+          existing.beaconCancelToNode ??
+          (!isRelay && beacon && typeof input.beaconCancelToNode === 'number'
+            ? input.beaconCancelToNode
+            : undefined);
         const merged: EmergencyIncident = {
           ...existing,
           protocol,
@@ -375,6 +394,8 @@ export const useIncidentStore = create<IncidentStoreState>()(
             : { lat: coords.lat, lon: coords.lon, coordsSource: coordsSource }),
           freetext: isRelay ? existing.freetext : msgCoords ? freetext : existing.freetext,
           beaconActive: existing.beaconActive || beacon,
+          ...(markLocalOrigin ? { localOrigin: true } : {}),
+          ...(beaconCancelToNode != null ? { beaconCancelToNode } : {}),
           ...(reopen ? { status: 'open' as const, resolvedAt: undefined } : {}),
         };
         set((s) => {

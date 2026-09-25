@@ -6194,7 +6194,12 @@
     "ackQueuedBadge": "ACK in coda",
     "pendingAckListAria": "Riconoscimenti in coda per questo incidente",
     "cancelPendingAck": "Annulla",
-    "cancelPendingAckAria": "Annulla conferma in coda per {{sender}}"
+    "cancelPendingAckAria": "Annulla conferma in coda per {{sender}}",
+    "resolveBeacon": "Annulla beacon",
+    "resolveBeaconAria": "Annulla il tuo segnale di soccorso e comunica alla rete che stai bene ({{sender}})",
+    "beaconCancelSent": "Faro annullato inviato. Altre stazioni cancellano il tuo segnale di soccorso quando lo sentono.",
+    "beaconCancelQueued": "Beacon annullato in coda. Verrà inviato quando la radio è disponibile.",
+    "beaconCancelFailed": "Impossibile inviare o accodare l'annullamento del beacon. L'incidente è ancora aperto."
   },
   "quickStatus": {
     "ok": "OK",
