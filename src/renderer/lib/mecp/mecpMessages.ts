@@ -13,6 +13,12 @@ import {
   MAX_MESSAGE_BYTES,
   MECP_PREFIX,
 } from './engine';
+/**
+ * Vendored MECP packs (CC BY 4.0, https://github.com/xiang-dev-1/MECP `languages/`).
+ * Upstream JSON includes a website `ui` block and other unread metadata; this app
+ * strips those keys. A resync must strip them again and keep `codes` / `categories`.
+ * English stays on the main chunk; other packs load on demand.
+ */
 import enLanguage from './languages/en.json';
 
 /** Meta.ai / plan wire check: MECP/<0-3>/… */
@@ -23,35 +29,33 @@ export type MecpParsed = ParsedMessage;
 export type { CategoryLetter, EncodeResult, LanguageFile, Severity };
 export { CATEGORIES, encode, getByteLength, isMECP, MAX_MESSAGE_BYTES, MECP_PREFIX };
 
-const FALLBACK_LANGUAGE: LanguageFile = enLanguage as LanguageFile;
+const FALLBACK_LANGUAGE: LanguageFile = enLanguage;
 
 const LANGUAGE_MODULES: Partial<Record<string, LanguageFile>> = {
   en: FALLBACK_LANGUAGE,
 };
 
-/** Lazy-load non-English packs so the default path stays light. */
+/**
+ * Lazy-load non-English packs so the default path stays light.
+ * Keys must stay inside the range of `mecpLanguageForAppLocale` (fa/no/sk/sr/sv
+ * are omitted: that function never returns them). `zh-tw` stays: the mapper
+ * returns it for `zh-tw`, `zh-hant`, and `zh-tw*`.
+ */
 const LANGUAGE_LOADERS: Partial<Record<string, () => Promise<{ default: LanguageFile }>>> = {
-  cs: () => import('./languages/cs.json').then((m) => ({ default: m.default as LanguageFile })),
-  de: () => import('./languages/de.json').then((m) => ({ default: m.default as LanguageFile })),
-  es: () => import('./languages/es.json').then((m) => ({ default: m.default as LanguageFile })),
-  fa: () => import('./languages/fa.json').then((m) => ({ default: m.default as LanguageFile })),
-  fr: () => import('./languages/fr.json').then((m) => ({ default: m.default as LanguageFile })),
-  it: () => import('./languages/it.json').then((m) => ({ default: m.default as LanguageFile })),
-  ja: () => import('./languages/ja.json').then((m) => ({ default: m.default as LanguageFile })),
-  nl: () => import('./languages/nl.json').then((m) => ({ default: m.default as LanguageFile })),
-  no: () => import('./languages/no.json').then((m) => ({ default: m.default as LanguageFile })),
-  pl: () => import('./languages/pl.json').then((m) => ({ default: m.default as LanguageFile })),
-  pt: () => import('./languages/pt.json').then((m) => ({ default: m.default as LanguageFile })),
-  ru: () => import('./languages/ru.json').then((m) => ({ default: m.default as LanguageFile })),
-  sk: () => import('./languages/sk.json').then((m) => ({ default: m.default as LanguageFile })),
-  sr: () => import('./languages/sr.json').then((m) => ({ default: m.default as LanguageFile })),
-  sv: () => import('./languages/sv.json').then((m) => ({ default: m.default as LanguageFile })),
-  tr: () => import('./languages/tr.json').then((m) => ({ default: m.default as LanguageFile })),
-  uk: () => import('./languages/uk.json').then((m) => ({ default: m.default as LanguageFile })),
-  'zh-cn': () =>
-    import('./languages/zh-cn.json').then((m) => ({ default: m.default as LanguageFile })),
-  'zh-tw': () =>
-    import('./languages/zh-tw.json').then((m) => ({ default: m.default as LanguageFile })),
+  cs: () => import('./languages/cs.json'),
+  de: () => import('./languages/de.json'),
+  es: () => import('./languages/es.json'),
+  fr: () => import('./languages/fr.json'),
+  it: () => import('./languages/it.json'),
+  ja: () => import('./languages/ja.json'),
+  nl: () => import('./languages/nl.json'),
+  pl: () => import('./languages/pl.json'),
+  pt: () => import('./languages/pt.json'),
+  ru: () => import('./languages/ru.json'),
+  tr: () => import('./languages/tr.json'),
+  uk: () => import('./languages/uk.json'),
+  'zh-cn': () => import('./languages/zh-cn.json'),
+  'zh-tw': () => import('./languages/zh-tw.json'),
 };
 
 export function mecpLanguageForAppLocale(appLocale: string): string {
