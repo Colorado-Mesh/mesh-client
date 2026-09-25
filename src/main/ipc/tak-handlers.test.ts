@@ -244,7 +244,7 @@ describe('remote relay handlers', () => {
       expect(dialog.showOpenDialog).not.toHaveBeenCalled();
     });
 
-    it('rejects too many files and files too large to be certificates', async () => {
+    it('rejects too many files, oversized files, and anything that is not a file', async () => {
       const { get } = await register();
       vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
         canceled: false,
@@ -257,6 +257,12 @@ describe('remote relay handlers', () => {
         filePaths: [tempFile('huge.p12', 65)],
       });
       await expect(get('tak:remoteImportCredentials')(event)).rejects.toThrow(/too large/);
+
+      vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
+        canceled: false,
+        filePaths: [dir],
+      });
+      await expect(get('tak:remoteImportCredentials')(event)).rejects.toThrow(/not a regular file/);
       expect(saveTakRemoteCredentials).not.toHaveBeenCalled();
     });
   });

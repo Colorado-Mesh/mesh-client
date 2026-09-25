@@ -15,6 +15,12 @@ export const TAK_REMOTE_RECONNECT_MAX_MS = 30 * MS_PER_SECOND;
 /** TCP keepalive so a NAT or firewall does not silently drop an idle stream. */
 const TAK_REMOTE_KEEPALIVE_MS = 60 * MS_PER_SECOND;
 /**
+ * A stream must stay up this long before the reconnect backoff resets. Under TLS 1.3 the server
+ * checks the client certificate after the client's handshake has finished, so a rejected
+ * certificate looks like a connection that closes moments later.
+ */
+export const TAK_REMOTE_STABLE_MS = 10 * MS_PER_SECOND;
+/**
  * Stop queueing CoT once this much is waiting on a slow server; the replicator re-sends every
  * node on its refresh cycle, so dropped events recover without growing memory.
  */
@@ -28,6 +34,43 @@ export interface TakRemoteClientOptions {
 }
 
 type ConnectFn = (options: tls.ConnectionOptions) => tls.TLSSocket;
+
+const UNTRUSTED_SERVER = "The server certificate is not trusted; import the server's CA";
+
+/** Plain-language status text for the socket and certificate errors a TAK user can act on. */
+const SOCKET_ERROR_TEXT: Record<string, string> = {
+  ECONNREFUSED: 'Connection refused; check the server address and port',
+  ENOTFOUND: 'Server address not found',
+  EAI_AGAIN: 'Server address could not be resolved',
+  ETIMEDOUT: 'Connection timed out',
+  EHOSTUNREACH: 'Server unreachable',
+  ENETUNREACH: 'Network unreachable',
+  ECONNRESET: 'Connection reset by the server',
+  DEPTH_ZERO_SELF_SIGNED_CERT: UNTRUSTED_SERVER,
+  SELF_SIGNED_CERT_IN_CHAIN: UNTRUSTED_SERVER,
+  UNABLE_TO_VERIFY_LEAF_SIGNATURE: UNTRUSTED_SERVER,
+  UNABLE_TO_GET_ISSUER_CERT_LOCALLY: UNTRUSTED_SERVER,
+  CERT_HAS_EXPIRED: 'The server certificate has expired',
+  ERR_TLS_CERT_ALTNAME_INVALID: 'The server certificate is not for this address',
+};
+
+/**
+ * Turn a socket error into status text. OpenSSL errors arrive as
+ * `<id>:error:<code>:SSL routines:<fn>:<reason>:<file>:<line>`; only the reason is useful.
+ */
+export function describeTakRemoteError(err: NodeJS.ErrnoException): string {
+  const known = err.code ? SOCKET_ERROR_TEXT[err.code] : undefined;
+  if (known) return known;
+  const reason = /error:[0-9A-F]+:[^:]*:[^:]*:([^:]+)/i.exec(err.message)?.[1]?.trim();
+  if (!reason) return err.message;
+  if (reason.includes('certificate required')) {
+    return 'The server requires a client certificate; import one';
+  }
+  if (/alert (bad certificate|unknown ca|certificate unknown|certificate revoked)/.test(reason)) {
+    return `The server rejected the client certificate (${reason})`;
+  }
+  return reason;
+}
 
 /**
  * One TLS stream to a remote TAK server. Sends newline-terminated CoT (the same format the
@@ -122,6 +165,8 @@ export class TakRemoteClient extends EventEmitter {
     }
     this.socket = socket;
     let lastError: string | undefined;
+    let secureAt = 0;
+    let stableTimer: ReturnType<typeof setTimeout> | null = null;
 
     socket.setTimeout(TAK_REMOTE_CONNECT_TIMEOUT_MS);
     socket.once('timeout', () => {
@@ -130,22 +175,34 @@ export class TakRemoteClient extends EventEmitter {
     socket.once('secureConnect', () => {
       socket.setTimeout(0);
       socket.setKeepAlive(true, TAK_REMOTE_KEEPALIVE_MS);
-      this.failedAttempts = 0;
+      secureAt = Date.now();
+      stableTimer = setTimeout(() => {
+        this.failedAttempts = 0;
+      }, TAK_REMOTE_STABLE_MS);
       this.setStatus({ state: 'connected', host, port, connectedAt: Date.now() });
       console.debug(`[TakRemote] Connected to ${sanitizeLogMessage(host)}:${port}`);
       this.emit('connected');
     });
     // Servers stream other users' CoT back; read and drop it so their send buffer never fills.
     socket.resume();
-    socket.on('error', (err) => {
-      lastError = sanitizeLogMessage(err.message);
-      console.warn(`[TakRemote] ${sanitizeLogMessage(host)}:${port} error: ${lastError}`);
+    socket.on('error', (err: NodeJS.ErrnoException) => {
+      lastError = sanitizeLogMessage(describeTakRemoteError(err));
+      console.warn(
+        `[TakRemote] ${sanitizeLogMessage(host)}:${port} error: ${sanitizeLogMessage(err.message)}`,
+      );
     });
     socket.once('close', () => {
+      if (stableTimer) clearTimeout(stableTimer);
       if (this.socket !== socket) return;
       this.socket = null;
       if (this.stopped) return;
-      this.scheduleReconnect(lastError ?? 'connection closed');
+      const closedAfterHandshake = secureAt > 0 && Date.now() - secureAt < TAK_REMOTE_STABLE_MS;
+      this.scheduleReconnect(
+        lastError ??
+          (closedAfterHandshake
+            ? 'The server closed the connection right after the TLS handshake; it may not accept the client certificate'
+            : 'connection closed'),
+      );
     });
   }
 

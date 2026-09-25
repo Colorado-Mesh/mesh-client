@@ -13,9 +13,11 @@ vi.mock('../log-service', async () => {
 import type { TAKRemoteStatus } from '../../shared/tak-types';
 import { createTakTestPki, type TakTestPki } from '../fixtures/tak-test-pki';
 import {
+  describeTakRemoteError,
   TAK_REMOTE_MAX_BUFFERED_BYTES,
   TAK_REMOTE_RECONNECT_BASE_MS,
   TAK_REMOTE_RECONNECT_MAX_MS,
+  TAK_REMOTE_STABLE_MS,
   TakRemoteClient,
   type TakRemoteClientOptions,
 } from './remote-client';
@@ -160,6 +162,14 @@ describe('TakRemoteClient over loopback TLS', () => {
     expect(counts.tcpConnections).toBe(1);
   }, 10_000);
 
+  it('explains a server that requires a client certificate', async () => {
+    const { port } = await startServer();
+    const c = client(port, { credentials: { ca: pki.ca.certPem } });
+    c.start();
+    const status = await waitForStatus(c, (s) => s.error !== undefined);
+    expect(status.error).toMatch(/client certificate/);
+  });
+
   it('reports unusable credentials without throwing or retrying', () => {
     const c = client(1, { credentials: { cert: 'not a pem', key: 'not a pem' } });
     expect(() => {
@@ -231,7 +241,7 @@ describe('TakRemoteClient reconnect and output', () => {
     c.stop();
   });
 
-  it('resets the backoff after a successful handshake', () => {
+  it('resets the backoff once a stream has stayed up', () => {
     vi.useFakeTimers();
     const { c, sockets, connect } = withFakeSockets();
     c.start();
@@ -240,9 +250,32 @@ describe('TakRemoteClient reconnect and output', () => {
     sockets.at(-1)?.emit('close');
     vi.advanceTimersByTime(2 * TAK_REMOTE_RECONNECT_BASE_MS);
     sockets.at(-1)?.emit('secureConnect');
+    vi.advanceTimersByTime(TAK_REMOTE_STABLE_MS);
     sockets.at(-1)?.emit('close');
     const before = connect.mock.calls.length;
     vi.advanceTimersByTime(TAK_REMOTE_RECONNECT_BASE_MS);
+    expect(connect.mock.calls.length).toBe(before + 1);
+    c.stop();
+  });
+
+  it('keeps backing off when the server drops each stream right after the handshake', () => {
+    vi.useFakeTimers();
+    const { c, sockets, connect } = withFakeSockets();
+    c.start();
+    // Attempts 1 and 2 fail outright; attempt 3 completes the handshake and is closed at once,
+    // which is how a TLS 1.3 server rejects a client certificate.
+    sockets.at(-1)?.emit('close');
+    vi.advanceTimersByTime(TAK_REMOTE_RECONNECT_BASE_MS);
+    sockets.at(-1)?.emit('close');
+    vi.advanceTimersByTime(2 * TAK_REMOTE_RECONNECT_BASE_MS);
+    sockets.at(-1)?.emit('secureConnect');
+    sockets.at(-1)?.emit('close');
+
+    expect(c.getStatus().error).toMatch(/right after the TLS handshake/);
+    const before = connect.mock.calls.length;
+    vi.advanceTimersByTime(4 * TAK_REMOTE_RECONNECT_BASE_MS - 1);
+    expect(connect.mock.calls.length).toBe(before);
+    vi.advanceTimersByTime(1);
     expect(connect.mock.calls.length).toBe(before + 1);
     c.stop();
   });
@@ -279,5 +312,37 @@ describe('TakRemoteClient reconnect and output', () => {
     expect(sockets[0]?.destroy).toHaveBeenCalledWith(expect.any(Error));
     expect(c.getStatus()).toMatchObject({ state: 'connecting', error: 'connection timed out' });
     c.stop();
+  });
+});
+
+describe('describeTakRemoteError', () => {
+  function err(message: string, code?: string): NodeJS.ErrnoException {
+    return Object.assign(new Error(message), code ? { code } : {});
+  }
+
+  it.each([
+    ['ECONNREFUSED', /refused/],
+    ['ENOTFOUND', /not found/],
+    ['UNABLE_TO_VERIFY_LEAF_SIGNATURE', /import the server's CA/],
+    ['ERR_TLS_CERT_ALTNAME_INVALID', /not for this address/],
+  ])('describes %s', (code, text) => {
+    expect(describeTakRemoteError(err('raw', code))).toMatch(text);
+  });
+
+  it('reduces an OpenSSL error to its reason', () => {
+    const openssl =
+      '80A15EED01000000:error:0A00045C:SSL routines:ssl3_read_bytes:tlsv13 alert certificate required:../deps/openssl/ssl/record/rec_layer_s3.c:916:SSL alert number 116';
+    expect(describeTakRemoteError(err(openssl))).toBe(
+      'The server requires a client certificate; import one',
+    );
+    expect(
+      describeTakRemoteError(
+        err('1:error:0A000418:SSL routines:ssl3_read_bytes:tlsv1 alert unknown ca:x.c:1'),
+      ),
+    ).toBe('The server rejected the client certificate (tlsv1 alert unknown ca)');
+  });
+
+  it('passes other messages through', () => {
+    expect(describeTakRemoteError(err('socket hang up'))).toBe('socket hang up');
   });
 });

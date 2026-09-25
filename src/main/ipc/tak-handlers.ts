@@ -56,8 +56,10 @@ async function readCredentialFiles(filePaths: string[]): Promise<TakCredentialFi
   }
   return Promise.all(
     filePaths.map(async (filePath) => {
-      const { size } = await fs.promises.stat(filePath);
-      if (size > TAK_CREDENTIAL_FILE_MAX_BYTES) {
+      const stat = await fs.promises.stat(filePath);
+      // A FIFO or device reports size 0 and would read without bound.
+      if (!stat.isFile()) throw new Error(`${path.basename(filePath)} is not a regular file`);
+      if (stat.size > TAK_CREDENTIAL_FILE_MAX_BYTES) {
         throw new Error(`${path.basename(filePath)} is too large to be a certificate file`);
       }
       return { name: filePath, data: await fs.promises.readFile(filePath) };

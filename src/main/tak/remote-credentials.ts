@@ -1,6 +1,6 @@
 import { createPrivateKey, type KeyObject, X509Certificate } from 'node:crypto';
 
-import { app } from 'electron';
+import { app, safeStorage } from 'electron';
 import fs from 'fs';
 import * as forge from 'node-forge';
 import path from 'path';
@@ -28,7 +28,9 @@ export const TAK_CREDENTIAL_FILES_MAX = 4;
 const CREDENTIAL_FILES = {
   ca: 'ca.pem',
   cert: 'client-cert.pem',
+  /** Written only when OS-backed encryption (safeStorage) is unavailable. */
   key: 'client-key.pem',
+  encryptedKey: 'client-key.pem.enc',
 } as const;
 
 const PEM_BLOCK_RE = /-----BEGIN ([A-Z0-9 ]+)-----[\s\S]*?-----END \1-----/g;
@@ -143,13 +145,15 @@ export function parseTakCredentialFiles(
   files: readonly TakCredentialFile[],
   password: string,
 ): TakRemoteCredentials {
-  const certs: X509Certificate[] = [];
+  // Keyed by fingerprint: a truststore and a client .p12 usually both carry the same CA.
+  const certsByFingerprint = new Map<string, X509Certificate>();
   const keys: KeyObject[] = [];
   for (const file of files) {
     const parsed = parseFile(file, password);
-    certs.push(...parsed.certs);
+    for (const cert of parsed.certs) certsByFingerprint.set(cert.fingerprint256, cert);
     keys.push(...parsed.keys);
   }
+  const certs = [...certsByFingerprint.values()];
   if (keys.length > 1) throw new Error('Import one client private key at a time');
   if (certs.length === 0) throw new Error('No certificates found in the selected files');
 
@@ -168,28 +172,61 @@ export function parseTakCredentialFiles(
   return out;
 }
 
-function writeAtomic(file: string, contents: string, mode: number): void {
+function writeAtomic(file: string, contents: string | Buffer, mode: number): void {
   const tmp = `${file}.tmp`;
   fs.writeFileSync(tmp, contents, { mode });
   fs.renameSync(tmp, file);
 }
 
 /**
+ * The client key is an identity on someone else's server, so it is encrypted with the OS
+ * keychain (safeStorage: Keychain, DPAPI, libsecret) when that is available. Otherwise it is
+ * written owner-only as PEM (POSIX modes; Windows relies on the per-user profile ACL), the same
+ * protection the local server's keys in tak-certs get.
+ */
+function writeClientKey(dir: string, keyPem: string): void {
+  const encrypted = path.join(dir, CREDENTIAL_FILES.encryptedKey);
+  const plain = path.join(dir, CREDENTIAL_FILES.key);
+  if (safeStorage.isEncryptionAvailable()) {
+    writeAtomic(encrypted, safeStorage.encryptString(keyPem), 0o600);
+    fs.rmSync(plain, { force: true });
+  } else {
+    writeAtomic(plain, keyPem, 0o600);
+    fs.rmSync(encrypted, { force: true });
+  }
+}
+
+function readClientKey(dir: string): string | undefined {
+  const encrypted = path.join(dir, CREDENTIAL_FILES.encryptedKey);
+  if (fs.existsSync(encrypted)) {
+    try {
+      return safeStorage.decryptString(fs.readFileSync(encrypted));
+    } catch (err) {
+      throw new Error(
+        'The saved client key could not be decrypted; import the client certificate again',
+        { cause: err },
+      );
+    }
+  }
+  const plain = path.join(dir, CREDENTIAL_FILES.key);
+  return fs.existsSync(plain) ? fs.readFileSync(plain, 'utf-8') : undefined;
+}
+
+/**
  * Store an import next to what is already saved: a new CA set replaces the old one, and a new
  * client identity replaces the old certificate and key together.
- * The key file is written owner-only (POSIX; Windows ignores the mode and relies on the
- * per-user profile ACL, like the local server's keys in tak-certs).
  */
 export function saveTakRemoteCredentials(creds: TakRemoteCredentials): void {
   const dir = getRemoteCertsDir();
   fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   if (creds.ca) writeAtomic(path.join(dir, CREDENTIAL_FILES.ca), creds.ca, 0o644);
   if (creds.cert && creds.key) {
-    writeAtomic(path.join(dir, CREDENTIAL_FILES.key), creds.key, 0o600);
+    writeClientKey(dir, creds.key);
     writeAtomic(path.join(dir, CREDENTIAL_FILES.cert), creds.cert, 0o644);
   }
 }
 
+/** Throws when an encrypted key exists but the OS keychain cannot decrypt it. */
 export function loadTakRemoteCredentials(): TakRemoteCredentials {
   const dir = getRemoteCertsDir();
   const read = (name: string): string | undefined => {
@@ -197,7 +234,7 @@ export function loadTakRemoteCredentials(): TakRemoteCredentials {
     return fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : undefined;
   };
   const cert = read(CREDENTIAL_FILES.cert);
-  const key = read(CREDENTIAL_FILES.key);
+  const key = cert ? readClientKey(dir) : undefined;
   const ca = read(CREDENTIAL_FILES.ca);
   return {
     ...(ca ? { ca } : {}),

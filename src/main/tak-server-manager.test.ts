@@ -313,6 +313,27 @@ describe('TakServerManager multi-protocol node cache', () => {
     expect(writtenUids(socket).sort()).toEqual(['MC-42', 'MESH-42', 'RN-42']);
   });
 
+  it('evicts the least recently updated node, whatever unit its last_heard uses', () => {
+    const manager = new TakServerManager();
+    const internals = manager as unknown as { nodeCache: Map<string, unknown> };
+    // MQTT-fed Meshtastic nodes carry epoch milliseconds...
+    for (let id = 1; id <= 2000; id++) {
+      manager.onNodeUpdate({ node_id: id, last_heard: Date.now() - 3_600_000 });
+    }
+    // ...while MeshCore reports seconds, which compare as far older.
+    manager.onNodeUpdate({ node_id: 77, protocol: 'meshcore', last_heard: Date.now() / 1000 });
+
+    expect(internals.nodeCache.size).toBe(2000);
+    expect(internals.nodeCache.has('meshcore:77')).toBe(true);
+    expect(internals.nodeCache.has('meshtastic:1')).toBe(false);
+
+    // Updating an entry makes it the most recent, so the next eviction skips it.
+    manager.onNodeUpdate({ node_id: 2 });
+    manager.onNodeUpdate({ node_id: 78, protocol: 'meshcore' });
+    expect(internals.nodeCache.has('meshtastic:2')).toBe(true);
+    expect(internals.nodeCache.has('meshtastic:3')).toBe(false);
+  });
+
   it('broadcasts a live update with the protocol uid prefix', () => {
     const manager = new TakServerManager();
     const socket = connectMockClient(manager);

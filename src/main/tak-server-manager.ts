@@ -182,14 +182,16 @@ export class TakServerManager extends EventEmitter {
     console.debug('[TakServer] Stopped');
   }
 
+  /**
+   * Evict the least recently updated entries. onNodeUpdate re-inserts every key it touches, so
+   * Map order is update order by the main-process clock. Feeds report last_heard in different
+   * units (MQTT milliseconds, MeshCore and Reticulum seconds), so it cannot rank entries.
+   */
   private pruneNodeCache(): void {
-    if (this.nodeCache.size <= NODE_CACHE_MAX_SIZE) return;
-    // A partial update may not carry last_heard yet; treat it as oldest so it prunes first.
-    const sorted = [...this.nodeCache.entries()].sort(
-      (a, b) => (a[1].last_heard || 0) - (b[1].last_heard || 0),
-    );
-    const toRemove = sorted.slice(0, this.nodeCache.size - NODE_CACHE_MAX_SIZE);
-    for (const [id] of toRemove) this.nodeCache.delete(id);
+    for (const key of this.nodeCache.keys()) {
+      if (this.nodeCache.size <= NODE_CACHE_MAX_SIZE) return;
+      this.nodeCache.delete(key);
+    }
   }
 
   onNodeUpdate(node: TakNodeUpdate): void {
@@ -197,6 +199,7 @@ export class TakServerManager extends EventEmitter {
     const key = `${protocol}:${node.node_id}`;
     const existing = this.nodeCache.get(key) ?? ({} as CachedTakNode);
     const merged: CachedTakNode = { ...existing, ...node, protocol, cachedAtMs: Date.now() };
+    this.nodeCache.delete(key);
     this.nodeCache.set(key, merged);
     this.pruneNodeCache();
 

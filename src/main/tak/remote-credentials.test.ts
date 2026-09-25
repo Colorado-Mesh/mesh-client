@@ -8,8 +8,19 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-tak-remote-creds-'));
 
+/** Stand-in for the OS keychain: reversible, but never leaves PEM text on disk. */
+const keychain = vi.hoisted(() => ({ available: true, broken: false }));
+
 vi.mock('electron', () => ({
   app: { getPath: () => userData },
+  safeStorage: {
+    isEncryptionAvailable: () => keychain.available,
+    encryptString: (text: string) => Buffer.from(text, 'utf-8').reverse(),
+    decryptString: (data: Buffer) => {
+      if (keychain.broken) throw new Error('keychain locked');
+      return Buffer.from(data).reverse().toString('utf-8');
+    },
+  },
 }));
 
 import { createTakTestPki, type TakTestPki, toPkcs12 } from '../fixtures/tak-test-pki';
@@ -138,6 +149,16 @@ describe('parseTakCredentialFiles', () => {
     ).toThrow(/one client private key/);
   });
 
+  it('stores a CA once when two files carry it', () => {
+    const truststore = toPkcs12([pki.ca.cert], 'atakatak');
+    const user = toPkcs12([pki.client.cert, pki.ca.cert], 'atakatak', pki.client.key);
+    const creds = parseTakCredentialFiles(
+      [file('truststore.p12', truststore), file('user.p12', user)],
+      'atakatak',
+    );
+    expect(summarizeTakRemoteCredentials(creds).caSubjects).toEqual(['Test TAK CA']);
+  });
+
   it('rejects files without certificates', () => {
     expect(() => parseTakCredentialFiles([file('user.key', pki.client.keyPem)], '')).toThrow(
       /No certificates found/,
@@ -146,8 +167,31 @@ describe('parseTakCredentialFiles', () => {
 });
 
 describe('stored remote credentials', () => {
+  const certsDir = () => getRemoteCertsDir();
+  const saveClient = () => {
+    saveTakRemoteCredentials(
+      parseTakCredentialFiles([file('u.pem', pki.client.certPem + pki.client.keyPem)], ''),
+    );
+  };
+
   beforeEach(() => {
+    keychain.available = true;
+    keychain.broken = false;
     clearTakRemoteCredentials();
+  });
+
+  it('encrypts the private key with the OS keychain when it is available', () => {
+    saveClient();
+    expect(fs.existsSync(path.join(certsDir(), 'client-key.pem'))).toBe(false);
+    const onDisk = fs.readFileSync(path.join(certsDir(), 'client-key.pem.enc'), 'utf-8');
+    expect(onDisk).not.toContain('PRIVATE KEY');
+    expect(loadTakRemoteCredentials().key).toMatch(/^-----BEGIN PRIVATE KEY-----/);
+  });
+
+  it('asks for a re-import when the saved key cannot be decrypted', () => {
+    saveClient();
+    keychain.broken = true;
+    expect(() => loadTakRemoteCredentials()).toThrow(/import the client certificate again/);
   });
 
   it('keeps a client identity when a later import only brings a CA, and the reverse', () => {
@@ -180,10 +224,8 @@ describe('stored remote credentials', () => {
   });
 
   it('ignores a certificate whose key file is missing', () => {
-    saveTakRemoteCredentials(
-      parseTakCredentialFiles([file('u.pem', pki.client.certPem + pki.client.keyPem)], ''),
-    );
-    fs.rmSync(path.join(getRemoteCertsDir(), 'client-key.pem'));
+    saveClient();
+    fs.rmSync(path.join(certsDir(), 'client-key.pem.enc'));
     expect(loadTakRemoteCredentials()).toEqual({});
   });
 
@@ -199,12 +241,19 @@ describe('stored remote credentials', () => {
     expect(summarizeTakRemoteCredentials({})).toEqual({ caSubjects: [] });
   });
 
+  it('falls back to a PEM key file without a keychain, replacing an encrypted one', () => {
+    saveClient();
+    keychain.available = false;
+    saveClient();
+    expect(fs.existsSync(path.join(certsDir(), 'client-key.pem.enc'))).toBe(false);
+    expect(loadTakRemoteCredentials().key).toMatch(/^-----BEGIN PRIVATE KEY-----/);
+  });
+
   // OS-specific: POSIX file modes; Windows protects the per-user profile with ACLs instead.
-  it.skipIf(process.platform === 'win32')('writes the private key owner-only', () => {
-    saveTakRemoteCredentials(
-      parseTakCredentialFiles([file('u.pem', pki.client.certPem + pki.client.keyPem)], ''),
-    );
-    const mode = fs.statSync(path.join(getRemoteCertsDir(), 'client-key.pem')).mode & 0o777;
+  it.skipIf(process.platform === 'win32')('writes a plaintext private key owner-only', () => {
+    keychain.available = false;
+    saveClient();
+    const mode = fs.statSync(path.join(certsDir(), 'client-key.pem')).mode & 0o777;
     expect(mode).toBe(0o600);
   });
 });
