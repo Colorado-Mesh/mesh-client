@@ -39,6 +39,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
 | systeminformation          | MIT                           | ^5.33.13        | 5.33.13           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.11.0         | 8.11.0            | git+https://github.com/nodejs/undici.git                                       |
+| ws                         | MIT                           | ^8.21.0         | 8.21.3            | git+https://github.com/websockets/ws.git                                       |
 
 ## Development dependencies
 
