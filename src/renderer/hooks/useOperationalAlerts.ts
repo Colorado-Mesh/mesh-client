@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { MS_PER_MINUTE, MS_PER_SECOND } from '@/shared/timeConstants';
 
 import {
@@ -18,7 +17,7 @@ import {
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConnectionStatus, MeshNode } from '../lib/types';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
-import { fireNotification } from './useNodeStatusNotifier';
+import { fireNotification, notificationNodeName } from './useNodeStatusNotifier';
 import { useNowMs } from './useNowMs';
 
 /** Battery must recover this far above the threshold before a new low-battery alert can fire. */
@@ -49,11 +48,7 @@ function isLinkUp(status: ConnectionStatus): boolean {
 }
 
 function nodeDisplayName(node: MeshNode, capabilities: ProtocolCapabilities | null): string {
-  if (node.long_name) return node.long_name;
-  if (node.short_name) return node.short_name;
-  return capabilities?.protocol === 'meshcore'
-    ? `Node-${node.node_id.toString(16).toUpperCase()}`
-    : formatMeshtasticNodeId(node.node_id);
+  return notificationNodeName(node, node.node_id, capabilities?.protocol);
 }
 
 /** App-settings slice for ops alerts; re-reads when App settings change. */

@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
-import { useNodeStatusNotifier } from './useNodeStatusNotifier';
+import {
+  fallbackWatchedNodeId,
+  protocolNotificationLabel,
+  useNodeStatusNotifier,
+} from './useNodeStatusNotifier';
 
 function makeNode(overrides: Partial<MeshNode> = {}): MeshNode {
   return {
@@ -34,6 +38,37 @@ const meshcoreCaps = {
   ...meshtasticCaps,
   protocol: 'meshcore',
 } as unknown as ProtocolCapabilities;
+
+const reticulumCaps = {
+  ...meshtasticCaps,
+  protocol: 'reticulum',
+} as unknown as ProtocolCapabilities;
+
+const RETICULUM_HASH = 'abcdef1234567890abcdef1234567890';
+
+describe('protocol node labels', () => {
+  it.each([
+    ['meshtastic', 'Meshtastic'],
+    ['meshcore', 'MeshCore'],
+    ['reticulum', 'Reticulum'],
+  ] as const)('labels %s as %s', (protocol, label) => {
+    expect(protocolNotificationLabel(protocol)).toBe(label);
+  });
+
+  it('defaults a missing protocol to Meshtastic', () => {
+    expect(protocolNotificationLabel(null)).toBe('Meshtastic');
+    expect(protocolNotificationLabel(undefined)).toBe('Meshtastic');
+  });
+
+  it.each([
+    ['meshtastic', '!0bcd5737', 0x0bcd5737, undefined],
+    ['meshcore', 'Node-F6', 0xf6, undefined],
+    ['reticulum', 'abcdef123456', 0xabc, RETICULUM_HASH],
+    ['reticulum', 'ABC', 0xabc, undefined],
+  ] as const)('formats %s fallback as %s', (protocol, expected, nodeId, hash) => {
+    expect(fallbackWatchedNodeId(nodeId, protocol, hash)).toBe(expected);
+  });
+});
 
 describe('useNodeStatusNotifier', () => {
   let notificationSpy: ReturnType<typeof vi.fn>;
@@ -219,6 +254,47 @@ describe('useNodeStatusNotifier', () => {
     rerender({ nodes: onlineNodes });
     const [title] = notificationSpy.mock.calls[0] as [string];
     expect(title).toBe('!0bcd5737 is online');
+  });
+
+  it('uses "Reticulum" label and hash prefix when names are empty', () => {
+    const nodeId = 0xabc;
+    useWatchedNodesStore.setState({ watchedNodeIds: new Set([nodeId]) });
+    const offlineNodes = new Map([
+      [
+        nodeId,
+        makeNode({
+          node_id: nodeId,
+          long_name: '',
+          short_name: '',
+          reticulum_destination_hash: RETICULUM_HASH,
+          last_heard: OFFLINE_LAST_HEARD,
+        }),
+      ],
+    ]);
+    const onlineNodes = new Map([
+      [
+        nodeId,
+        makeNode({
+          node_id: nodeId,
+          long_name: '',
+          short_name: '',
+          reticulum_destination_hash: RETICULUM_HASH,
+          last_heard: ONLINE_LAST_HEARD,
+        }),
+      ],
+    ]);
+
+    const { rerender } = renderHook(
+      ({ nodes }: { nodes: Map<number, MeshNode> }) => {
+        useNodeStatusNotifier(nodes, reticulumCaps);
+      },
+      { initialProps: { nodes: offlineNodes } },
+    );
+    rerender({ nodes: onlineNodes });
+    expect(notificationSpy).toHaveBeenCalledWith(
+      'abcdef123456 is online',
+      expect.objectContaining({ body: 'Reticulum node came online' }),
+    );
   });
 
   it('uses MeshCore hex fallback when names are empty', () => {
