@@ -41,6 +41,9 @@ import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError'
 import type {
   TAKClientInfo,
   TAKNodeUpdate,
+  TAKRemoteCredentialSummary,
+  TAKRemoteSettings,
+  TAKRemoteStatus,
   TAKServerStatus,
   TAKSettings,
 } from '../shared/tak-types';
@@ -1201,6 +1204,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
       };
       ipcRenderer.on('tak:clientDisconnected', handler);
       return () => ipcRenderer.off('tak:clientDisconnected', handler);
+    },
+    remoteStart: (settings: TAKRemoteSettings): Promise<void> =>
+      ipcRenderer.invoke('tak:remoteStart', settings),
+    remoteStop: (): Promise<void> => ipcRenderer.invoke('tak:remoteStop'),
+    remoteGetStatus: (): Promise<TAKRemoteStatus> => ipcRenderer.invoke('tak:remoteGetStatus'),
+    remoteGetSettings: (): Promise<TAKRemoteSettings | null> =>
+      ipcRenderer.invoke('tak:remoteGetSettings'),
+    remoteGetCredentials: (): Promise<TAKRemoteCredentialSummary> =>
+      ipcRenderer.invoke('tak:remoteGetCredentials'),
+    remoteImportCredentials: (password?: string): Promise<TAKRemoteCredentialSummary | null> =>
+      ipcRenderer.invoke('tak:remoteImportCredentials', password),
+    remoteClearCredentials: (): Promise<TAKRemoteCredentialSummary> =>
+      ipcRenderer.invoke('tak:remoteClearCredentials'),
+    onRemoteStatus: (cb: (status: TAKRemoteStatus) => void): (() => void) => {
+      const handler = (_: unknown, status: TAKRemoteStatus) => {
+        cb(status);
+      };
+      ipcRenderer.on('tak:remoteStatus', handler);
+      return () => ipcRenderer.off('tak:remoteStatus', handler);
     },
   },
 

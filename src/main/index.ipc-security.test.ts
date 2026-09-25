@@ -420,6 +420,13 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:regenerateCertificates',
     'tak:pushNodeUpdate',
     'tak:pushNodeUpdates',
+    'tak:remoteStart',
+    'tak:remoteStop',
+    'tak:remoteGetStatus',
+    'tak:remoteGetSettings',
+    'tak:remoteGetCredentials',
+    'tak:remoteImportCredentials',
+    'tak:remoteClearCredentials',
   ] as const;
 
   it.each(takChannels)('tak handler %s calls assertIpcSender', (channel) => {
@@ -453,6 +460,13 @@ describe('tak:start settings validation (source contract)', () => {
     expect(handlerIdx).toBeGreaterThan(-1);
     const handlerBody = TAK_IPC_SOURCE.slice(handlerIdx, handlerIdx + 400);
     expect(handlerBody).toContain('validateTakSettings(');
+  });
+
+  it('calls validateTakRemoteSettings in the tak:remoteStart handler', () => {
+    const handlerIdx = TAK_IPC_SOURCE.indexOf("ipcMain.handle('tak:remoteStart'");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const handlerBody = TAK_IPC_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    expect(handlerBody).toContain('validateTakRemoteSettings(');
   });
 
   it('validateTakSettings checks port range 1024-65535', () => {

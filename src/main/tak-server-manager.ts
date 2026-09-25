@@ -7,11 +7,20 @@ import tls from 'tls';
 
 import type { MeshNode } from '../renderer/lib/types';
 import type { MeshProtocol } from '../shared/meshProtocol';
-import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
+import type {
+  TAKClientInfo,
+  TAKRemoteSettings,
+  TAKRemoteStatus,
+  TAKServerStatus,
+  TAKSettings,
+} from '../shared/tak-types';
 import { sanitizeLogMessage } from './log-service';
 import { type CertBundle, loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
-import { meshNodeToCot } from './tak/cot-converter';
+import { COT_STALE_MS, meshNodeToCot } from './tak/cot-converter';
 import { generateDataPackage } from './tak/data-package';
+import { TakRemoteClient } from './tak/remote-client';
+import { loadTakRemoteCredentials } from './tak/remote-credentials';
+import { DEFAULT_TAK_REMOTE_PORT, saveTakRemoteSettings } from './tak/remote-settings';
 
 interface ConnectedClient {
   socket: tls.TLSSocket;
@@ -25,6 +34,8 @@ export type TakNodeUpdate = Partial<MeshNode> & { node_id: number; protocol?: Me
 
 interface CachedTakNode extends MeshNode {
   protocol: MeshProtocol;
+  /** When this entry last received an update, by the main-process clock. */
+  cachedAtMs: number;
 }
 
 const NODE_CACHE_MAX_SIZE = 2000;
@@ -41,6 +52,12 @@ export class TakServerManager extends EventEmitter {
   private nodeCache = new Map<string, CachedTakNode>();
   private certBundle: CertBundle | null = null;
   private _status: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
+  private remote: TakRemoteClient | null = null;
+  private remoteStatus: TAKRemoteStatus = {
+    state: 'disconnected',
+    host: '',
+    port: DEFAULT_TAK_REMOTE_PORT,
+  };
 
   private get settingsPath(): string {
     return path.join(app.getPath('userData'), 'tak-settings.json');
@@ -52,7 +69,44 @@ export class TakServerManager extends EventEmitter {
 
   /** True while node updates have somewhere to go; the IPC feed skips them otherwise. */
   hasActiveSink(): boolean {
-    return this._status.running;
+    return this._status.running || this.remote !== null;
+  }
+
+  getRemoteStatus(): TAKRemoteStatus {
+    return { ...this.remoteStatus };
+  }
+
+  /**
+   * Start (or restart with new settings) the relay to a remote TAK server. Credentials are read
+   * from disk here, so an import takes effect on the next start. The relay is independent of
+   * the local server: either can run without the other.
+   */
+  startRemote(settings: TAKRemoteSettings): void {
+    saveTakRemoteSettings(settings);
+    this.stopRemote();
+    const remote = new TakRemoteClient({
+      host: settings.host.trim(),
+      port: settings.port,
+      verifyServer: settings.verifyServer,
+      credentials: loadTakRemoteCredentials(),
+    });
+    remote.on('status', (status: TAKRemoteStatus) => {
+      this.remoteStatus = status;
+      this.emit('remote-status', { ...status });
+    });
+    remote.on('connected', () => {
+      this.forEachFreshCot((cot) => remote.write(cot));
+    });
+    this.remote = remote;
+    remote.start();
+  }
+
+  stopRemote(): void {
+    const remote = this.remote;
+    if (!remote) return;
+    this.remote = null;
+    remote.stop();
+    remote.removeAllListeners();
   }
 
   getConnectedClients(): TAKClientInfo[] {
@@ -142,15 +196,17 @@ export class TakServerManager extends EventEmitter {
     const protocol = node.protocol ?? 'meshtastic';
     const key = `${protocol}:${node.node_id}`;
     const existing = this.nodeCache.get(key) ?? ({} as CachedTakNode);
-    const merged: CachedTakNode = { ...existing, ...node, protocol };
+    const merged: CachedTakNode = { ...existing, ...node, protocol, cachedAtMs: Date.now() };
     this.nodeCache.set(key, merged);
     this.pruneNodeCache();
 
     if (merged.latitude == null || merged.longitude == null) return;
-    if (this.clients.size === 0) return;
+    const remote = this.remote?.isConnected() ? this.remote : null;
+    if (this.clients.size === 0 && !remote) return;
 
     const cot = meshNodeToCot(merged, protocol);
     if (!cot) return;
+    remote?.write(cot);
 
     const data = cot + '\n';
     for (const [id, client] of this.clients) {
@@ -162,6 +218,20 @@ export class TakServerManager extends EventEmitter {
           sanitizeLogMessage(String(err)),
         );
       }
+    }
+  }
+
+  /**
+   * CoT for every cached node updated within the CoT stale window, for a sink that just
+   * connected. Older entries would already have gone stale on a client that was connected all
+   * along, so sending them now would present old positions as current.
+   */
+  private forEachFreshCot(send: (cot: string) => void): void {
+    const cutoff = Date.now() - COT_STALE_MS;
+    for (const node of this.nodeCache.values()) {
+      if (node.cachedAtMs < cutoff) continue;
+      const cot = meshNodeToCot(node, node.protocol);
+      if (cot) send(cot);
     }
   }
 
@@ -274,17 +344,13 @@ export class TakServerManager extends EventEmitter {
     this.emit('status', this.getStatus());
     console.debug(`[TakServer] Client connected: ${address} (${id})`);
 
-    // Flush cached node positions to new client
-    for (const node of this.nodeCache.values()) {
-      if (node.latitude == null || node.longitude == null) continue;
-      const cot = meshNodeToCot(node, node.protocol);
-      if (!cot) continue;
+    this.forEachFreshCot((cot) => {
       try {
         socket.write(cot + '\n');
       } catch {
         // catch-no-log-ok: socket may close between connection and flush; not actionable
       }
-    }
+    });
 
     this.resetClientIdleTimer(id, client);
 

@@ -1,14 +1,41 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
   ipcMain: { handle: vi.fn() },
+  dialog: { showOpenDialog: vi.fn() },
+  BrowserWindow: { fromWebContents: vi.fn(() => ({})) },
 }));
 
 vi.mock('../validate-ipc-sender', () => ({
   assertIpcSender: vi.fn(),
 }));
 
+vi.mock('../tak/remote-credentials', () => ({
+  TAK_CREDENTIAL_FILE_MAX_BYTES: 64,
+  TAK_CREDENTIAL_FILES_MAX: 2,
+  parseTakCredentialFiles: vi.fn(() => ({ ca: 'ca-pem', cert: 'cert-pem', key: 'key-pem' })),
+  saveTakRemoteCredentials: vi.fn(),
+  loadTakRemoteCredentials: vi.fn(() => ({ ca: 'ca-pem', cert: 'cert-pem', key: 'key-pem' })),
+  summarizeTakRemoteCredentials: vi.fn(() => ({
+    caSubjects: ['Test CA'],
+    clientSubject: 'atak-user',
+  })),
+  clearTakRemoteCredentials: vi.fn(),
+}));
+
+vi.mock('../tak/remote-settings', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  loadTakRemoteSettings: vi.fn(() => null),
+}));
+
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+import { dialog } from 'electron';
+
+import { parseTakCredentialFiles, saveTakRemoteCredentials } from '../tak/remote-credentials';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerTakIpcHandlers } from './tak-handlers';
 
@@ -112,5 +139,125 @@ describe('tak:pushNodeUpdates', () => {
     expect(() => {
       handler({}, nodes);
     }).toThrow(/at most 500/);
+  });
+});
+
+describe('remote relay handlers', () => {
+  type Handler = (event: unknown, ...args: unknown[]) => unknown;
+
+  async function register(manager: unknown = null) {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    handle.mockClear();
+    const ensure = vi.fn().mockResolvedValue(manager);
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: ensure,
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    const get = (channel: string) =>
+      handle.mock.calls.find((c) => c[0] === channel)?.[1] as Handler;
+    return { get, ensure };
+  }
+
+  const event = { sender: {} };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  it('validates settings before starting the relay', async () => {
+    const startRemote = vi.fn();
+    const { get } = await register({ startRemote });
+    await expect(get('tak:remoteStart')(event, { host: '', port: 8089 })).rejects.toThrow(/host/);
+    expect(startRemote).not.toHaveBeenCalled();
+
+    const settings = {
+      host: 'tak.example.org',
+      port: 8089,
+      verifyServer: true,
+      autoConnect: false,
+    };
+    await get('tak:remoteStart')(event, settings);
+    expect(startRemote).toHaveBeenCalledWith(settings);
+  });
+
+  it('reports an idle relay before the TAK module loads', async () => {
+    const { get } = await register(null);
+    expect(get('tak:remoteGetStatus')(event)).toEqual({
+      state: 'disconnected',
+      host: '',
+      port: 8089,
+    });
+    expect(() => get('tak:remoteStop')(event)).not.toThrow();
+  });
+
+  describe('tak:remoteImportCredentials', () => {
+    let dir: string;
+
+    beforeEach(() => {
+      dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-tak-import-'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(dir, { recursive: true, force: true });
+    });
+
+    function tempFile(name: string, bytes: number): string {
+      const file = path.join(dir, name);
+      fs.writeFileSync(file, Buffer.alloc(bytes, 1));
+      return file;
+    }
+
+    it('returns null when the chooser is cancelled', async () => {
+      vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({ canceled: true, filePaths: [] });
+      const { get } = await register();
+      await expect(get('tak:remoteImportCredentials')(event)).resolves.toBeNull();
+      expect(saveTakRemoteCredentials).not.toHaveBeenCalled();
+    });
+
+    it('parses, stores, and returns only a summary', async () => {
+      const file = tempFile('user.p12', 10);
+      vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
+        canceled: false,
+        filePaths: [file],
+      });
+      const { get } = await register();
+
+      const summary = await get('tak:remoteImportCredentials')(event, 'atakatak');
+
+      expect(vi.mocked(parseTakCredentialFiles).mock.calls[0]?.[1]).toBe('atakatak');
+      expect(saveTakRemoteCredentials).toHaveBeenCalledWith({
+        ca: 'ca-pem',
+        cert: 'cert-pem',
+        key: 'key-pem',
+      });
+      expect(summary).toEqual({ caSubjects: ['Test CA'], clientSubject: 'atak-user' });
+      expect(JSON.stringify(summary)).not.toContain('key-pem');
+    });
+
+    it('rejects a non-string password before opening the chooser', async () => {
+      const { get } = await register();
+      await expect(get('tak:remoteImportCredentials')(event, 42)).rejects.toThrow(/password/);
+      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    });
+
+    it('rejects too many files and files too large to be certificates', async () => {
+      const { get } = await register();
+      vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
+        canceled: false,
+        filePaths: [tempFile('a.pem', 1), tempFile('b.pem', 1), tempFile('c.pem', 1)],
+      });
+      await expect(get('tak:remoteImportCredentials')(event)).rejects.toThrow(/at most 2/);
+
+      vi.mocked(dialog.showOpenDialog).mockResolvedValueOnce({
+        canceled: false,
+        filePaths: [tempFile('huge.p12', 65)],
+      });
+      await expect(get('tak:remoteImportCredentials')(event)).rejects.toThrow(/too large/);
+      expect(saveTakRemoteCredentials).not.toHaveBeenCalled();
+    });
   });
 });

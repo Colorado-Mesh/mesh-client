@@ -2,7 +2,8 @@ import type { MeshNode } from '../../renderer/lib/types';
 import type { MeshProtocol } from '../../shared/meshProtocol';
 import { escapeXml } from '../../shared/xmlEscape';
 
-const TEN_MINUTES_MS = 10 * 60 * 1000;
+/** ATAK hides an event this long after it was sent unless a newer one arrives. */
+export const COT_STALE_MS = 10 * 60 * 1000;
 
 /**
  * CoT uid prefix per protocol. Node ids from the three protocols share one uint32 space,
@@ -32,7 +33,7 @@ export function meshNodeToCot(
 
   const now = Date.now();
   const time = new Date(now).toISOString();
-  const stale = new Date(now + TEN_MINUTES_MS).toISOString();
+  const stale = new Date(now + COT_STALE_MS).toISOString();
   const hae = node.altitude ?? 0;
   const uid = `${COT_UID_PREFIX[protocol]}${node.node_id}`;
   const callsign = escapeXml(node[CALLSIGN_FIELD[protocol]] || String(node.node_id));

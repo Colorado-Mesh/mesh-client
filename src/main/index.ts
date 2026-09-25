@@ -180,6 +180,7 @@ import {
   defaultSupportBundleFilename,
   isSupportBundleMode,
 } from './support-bundle';
+import { loadTakRemoteSettings } from './tak/remote-settings';
 import type { TakServerManager } from './tak-server-manager';
 import { updateUnreadAppBadge } from './unreadAppBadge';
 import { getCheckNowFromMenu, initUpdater } from './updater';
@@ -353,6 +354,10 @@ function attachTakForwarders(manager: TakServerManager): void {
     if (mainWindow) mainWindow.webContents.send('tak:clientDisconnected', clientId);
     else console.debug('[main] tak:clientDisconnected dropped (mainWindow not ready)');
   });
+  manager.on('remote-status', (status) => {
+    if (mainWindow) mainWindow.webContents.send('tak:remoteStatus', status);
+    else console.debug('[main] tak:remoteStatus dropped (mainWindow not ready)');
+  });
 }
 
 async function ensureTakServerManager(): Promise<TakServerManager> {
@@ -451,6 +456,7 @@ async function shutdownAppResources(): Promise<void> {
   isQuitting = true;
   try {
     takServerManager?.stop();
+    takServerManager?.stopRemote();
   } catch (err) {
     console.debug(
       '[main] TAK server stop during shutdown (ignored):',
@@ -6648,6 +6654,28 @@ void app
         );
       }
 
+      // Reconnect the remote TAK relay when it was saved with autoConnect.
+      try {
+        const remoteSettings = loadTakRemoteSettings();
+        if (remoteSettings?.autoConnect) {
+          void ensureTakServerManager()
+            .then((m) => {
+              m.startRemote(remoteSettings);
+            })
+            .catch((e: unknown) => {
+              console.error(
+                '[TAK] Remote relay auto-connect failed:',
+                sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+              );
+            });
+        }
+      } catch (e: unknown) {
+        console.warn(
+          '[TAK] Remote relay settings restore failed:',
+          sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
+        );
+      }
+
       // Force the dock icon in development on macOS
       if (!app.isPackaged && process.platform === 'darwin') {
         const iconPath = path.join(
@@ -6795,6 +6823,7 @@ app.on('will-quit', (event) => {
     ]);
     try {
       takServerManager?.stop();
+      takServerManager?.stopRemote();
     } catch (err) {
       console.debug(
         '[main] TAK server stop during will-quit (ignored):',

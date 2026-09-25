@@ -26,7 +26,52 @@ vi.mock('./tak/certificate-manager', () => ({
   regenerateCerts: vi.fn(),
 }));
 
+interface FakeRemoteClient extends EventEmitter {
+  options: { host: string; port: number };
+  connected: boolean;
+  written: string[];
+  start: ReturnType<typeof vi.fn>;
+  stop: ReturnType<typeof vi.fn>;
+}
+
+const remoteClients = vi.hoisted(() => [] as FakeRemoteClient[]);
+
+vi.mock('./tak/remote-client', async () => {
+  const { EventEmitter: Emitter } = await import('events');
+  class FakeTakRemoteClient extends Emitter {
+    connected = false;
+    written: string[] = [];
+    start = vi.fn();
+    stop = vi.fn(() => {
+      this.connected = false;
+      this.emit('status', { state: 'disconnected', host: this.options.host, port: 8089 });
+    });
+    constructor(public options: { host: string; port: number }) {
+      super();
+      remoteClients.push(this);
+    }
+    isConnected(): boolean {
+      return this.connected;
+    }
+    write(cot: string): boolean {
+      this.written.push(cot);
+      return true;
+    }
+  }
+  return { TakRemoteClient: FakeTakRemoteClient };
+});
+
+vi.mock('./tak/remote-settings', () => ({
+  DEFAULT_TAK_REMOTE_PORT: 8089,
+  saveTakRemoteSettings: vi.fn(),
+}));
+
+vi.mock('./tak/remote-credentials', () => ({
+  loadTakRemoteCredentials: vi.fn(() => ({ ca: 'ca-pem' })),
+}));
+
 import { regenerateCerts } from './tak/certificate-manager';
+import { saveTakRemoteSettings } from './tak/remote-settings';
 import { TakServerManager } from './tak-server-manager';
 
 interface CertBundleLike {
@@ -283,5 +328,98 @@ describe('TakServerManager multi-protocol node cache', () => {
 
     expect(writtenUids(socket)).toEqual(['MC-5']);
     expect(String(vi.mocked(socket.write).mock.calls[0]?.[0])).toContain('callsign="Ridge"');
+  });
+});
+
+describe('TakServerManager remote relay', () => {
+  const SETTINGS = { host: 'tak.example.org', port: 8089, verifyServer: true, autoConnect: true };
+  const POSITION = { latitude: 39.7, longitude: -105, last_heard: 100 };
+
+  function uids(lines: string[]): string[] {
+    return lines.map((line) => /uid="([^"]+)"/.exec(line)?.[1] ?? '');
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    remoteClients.length = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('counts as an active sink without the local server and saves its settings', () => {
+    const manager = new TakServerManager();
+    expect(manager.hasActiveSink()).toBe(false);
+
+    manager.startRemote(SETTINGS);
+
+    expect(manager.hasActiveSink()).toBe(true);
+    expect(manager.getStatus().running).toBe(false);
+    expect(saveTakRemoteSettings).toHaveBeenCalledWith(SETTINGS);
+    expect(remoteClients[0]?.start).toHaveBeenCalled();
+  });
+
+  it('streams node updates to the relay once it is connected', () => {
+    const manager = new TakServerManager();
+    manager.startRemote(SETTINGS);
+    const remote = remoteClients[0];
+
+    manager.onNodeUpdate({ node_id: 1, protocol: 'meshcore', ...POSITION });
+    expect(remote.written).toEqual([]);
+
+    remote.connected = true;
+    manager.onNodeUpdate({ node_id: 2, protocol: 'reticulum', ...POSITION });
+    expect(uids(remote.written)).toEqual(['RN-2']);
+  });
+
+  it('flushes nodes cached within the CoT stale window when the relay connects', () => {
+    const manager = new TakServerManager();
+    manager.onNodeUpdate({ node_id: 1, ...POSITION });
+    vi.advanceTimersByTime(11 * 60 * 1000);
+    manager.onNodeUpdate({ node_id: 2, protocol: 'meshcore', ...POSITION });
+    manager.onNodeUpdate({ node_id: 3, protocol: 'meshcore', last_heard: 100 });
+
+    manager.startRemote(SETTINGS);
+    const remote = remoteClients[0];
+    remote.connected = true;
+    remote.emit('connected');
+
+    // Node 1 was cached 11 minutes ago and would already be stale in ATAK; node 3 has no position.
+    expect(uids(remote.written)).toEqual(['MC-2']);
+  });
+
+  it('forwards relay status and returns to idle after stopRemote', () => {
+    const manager = new TakServerManager();
+    const statuses: unknown[] = [];
+    manager.on('remote-status', (s) => statuses.push(s));
+    manager.startRemote(SETTINGS);
+    remoteClients[0]?.emit('status', { state: 'connecting', host: 'tak.example.org', port: 8089 });
+    expect(manager.getRemoteStatus().state).toBe('connecting');
+
+    manager.stopRemote();
+
+    expect(remoteClients[0]?.stop).toHaveBeenCalled();
+    expect(manager.hasActiveSink()).toBe(false);
+    expect(manager.getRemoteStatus().state).toBe('disconnected');
+    expect(statuses.at(-1)).toMatchObject({ state: 'disconnected' });
+  });
+
+  it('replaces the running relay when started again', () => {
+    const manager = new TakServerManager();
+    manager.startRemote(SETTINGS);
+    manager.startRemote({ ...SETTINGS, host: 'other.example.org' });
+
+    expect(remoteClients).toHaveLength(2);
+    expect(remoteClients[0]?.stop).toHaveBeenCalled();
+    expect(remoteClients[1]?.options.host).toBe('other.example.org');
+  });
+
+  it('keeps the relay running when the local server stops', () => {
+    const manager = new TakServerManager();
+    manager.startRemote(SETTINGS);
+    manager.stop();
+    expect(remoteClients[0]?.stop).not.toHaveBeenCalled();
+    expect(manager.hasActiveSink()).toBe(true);
   });
 });

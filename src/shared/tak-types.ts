@@ -38,3 +38,37 @@ export interface TAKNodeUpdate {
   /** Unix seconds; main also accepts epoch milliseconds. */
   last_heard?: number;
 }
+
+/** Remote TAK server (OpenTAKServer, FreeTAKServer, TAK Server) that the relay streams CoT to. */
+export interface TAKRemoteSettings {
+  host: string;
+  /** TLS streaming port; TAK servers default to 8089. */
+  port: number;
+  /**
+   * Verify the server certificate. With an imported CA the chain must lead to that CA and the
+   * hostname is not checked, which matches ATAK; without one, the system roots and the hostname
+   * are checked.
+   */
+  verifyServer: boolean;
+  /** Connect when the app starts. */
+  autoConnect: boolean;
+}
+
+export interface TAKRemoteStatus {
+  /** `connecting` also covers the wait before a reconnect attempt. */
+  state: 'disconnected' | 'connecting' | 'connected';
+  host: string;
+  port: number;
+  /** Last connection or TLS error, sanitized for display. */
+  error?: string;
+  connectedAt?: number;
+}
+
+/** What the renderer may know about stored remote credentials; never key material. */
+export interface TAKRemoteCredentialSummary {
+  /** Subject CN of each trusted CA certificate. */
+  caSubjects: string[];
+  clientSubject?: string;
+  /** Client certificate expiry, epoch milliseconds. */
+  clientExpiresAt?: number;
+}
