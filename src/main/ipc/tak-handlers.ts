@@ -1,7 +1,12 @@
 import { ipcMain } from 'electron';
 
-import type { TAKServerStatus, TAKSettings } from '../../shared/tak-types';
+import {
+  TAK_NODE_UPDATE_BATCH_MAX,
+  type TAKServerStatus,
+  type TAKSettings,
+} from '../../shared/tak-types';
 import { sanitizeLogMessage } from '../log-service';
+import { parseTakNodeUpdate } from '../tak/node-update';
 import type { TakServerManager } from '../tak-server-manager';
 import { assertIpcSender } from '../validate-ipc-sender';
 
@@ -83,24 +88,41 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
   ipcMain.handle('tak:pushNodeUpdate', async (event, node: unknown) => {
     assertIpcSender(event, 'tak:pushNodeUpdate');
     try {
-      if (!node || typeof node !== 'object')
-        throw new Error('tak:pushNodeUpdate: node must be object');
-      const n = node as Record<string, unknown>;
-      const nodeId = Number(n.node_id);
-      if (!Number.isFinite(nodeId) || nodeId <= 0)
-        throw new Error('tak:pushNodeUpdate: invalid node_id');
+      const update = parseTakNodeUpdate(node);
+      if (!update) throw new Error('tak:pushNodeUpdate: invalid node update');
       const m = await ensureTakServerManager();
-      if (!m.getStatus().running) {
-        console.debug('[IPC] tak:pushNodeUpdate: TAK server not running, skipping');
+      if (!m.hasActiveSink()) {
+        console.debug('[IPC] tak:pushNodeUpdate: no TAK sink active, skipping');
         return;
       }
-      m.onNodeUpdate(n as Parameters<TakServerManager['onNodeUpdate']>[0]);
+      m.onNodeUpdate(update);
     } catch (err) {
       console.error(
         '[IPC] tak:pushNodeUpdate failed:',
         sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
       );
       throw err;
+    }
+  });
+
+  ipcMain.handle('tak:pushNodeUpdates', (event, nodes: unknown) => {
+    assertIpcSender(event, 'tak:pushNodeUpdates');
+    if (!Array.isArray(nodes) || nodes.length > TAK_NODE_UPDATE_BATCH_MAX) {
+      throw new Error(
+        `tak:pushNodeUpdates: nodes must be an array of at most ${TAK_NODE_UPDATE_BATCH_MAX} updates`,
+      );
+    }
+    // Nothing is listening until a sink starts, so do not load the TAK module just to drop these.
+    const m = getTakServerManager();
+    if (!m?.hasActiveSink()) return;
+    let rejected = 0;
+    for (const raw of nodes) {
+      const update = parseTakNodeUpdate(raw);
+      if (update) m.onNodeUpdate(update);
+      else rejected++;
+    }
+    if (rejected > 0) {
+      console.debug(`[IPC] tak:pushNodeUpdates: dropped ${rejected} invalid node update(s)`);
     }
   });
 }

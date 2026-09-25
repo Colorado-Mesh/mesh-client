@@ -50,6 +50,11 @@ export class TakServerManager extends EventEmitter {
     return { ...this._status };
   }
 
+  /** True while node updates have somewhere to go; the IPC feed skips them otherwise. */
+  hasActiveSink(): boolean {
+    return this._status.running;
+  }
+
   getConnectedClients(): TAKClientInfo[] {
     return Array.from(this.clients.values()).map((c) => ({ ...c.info }));
   }

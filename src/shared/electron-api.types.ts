@@ -61,7 +61,7 @@ import type {
   RrcUpsertHubRequest,
 } from './rrc-types';
 import type { SupportBundleMode } from './support-bundle.types';
-import type { TAKClientInfo, TAKServerStatus, TAKSettings } from './tak-types';
+import type { TAKClientInfo, TAKNodeUpdate, TAKServerStatus, TAKSettings } from './tak-types';
 import type {
   VoiceAudioRequest,
   VoiceCallRequest,
@@ -1281,6 +1281,8 @@ export interface ElectronAPI {
     generateDataPackage: () => Promise<void>;
     regenerateCertificates: () => Promise<void>;
     pushNodeUpdate: (node: { node_id: number } & Record<string, unknown>) => Promise<void>;
+    /** Up to `TAK_NODE_UPDATE_BATCH_MAX` updates; dropped in main while no TAK sink is active. */
+    pushNodeUpdates: (nodes: TAKNodeUpdate[]) => Promise<void>;
     onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
     onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
     onClientDisconnected: (cb: (clientId: string) => void) => () => void;

@@ -419,6 +419,7 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:generateDataPackage',
     'tak:regenerateCertificates',
     'tak:pushNodeUpdate',
+    'tak:pushNodeUpdates',
   ] as const;
 
   it.each(takChannels)('tak handler %s calls assertIpcSender', (channel) => {

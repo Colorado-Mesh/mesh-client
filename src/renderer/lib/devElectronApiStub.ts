@@ -339,6 +339,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       generateDataPackage: noopAsync,
       regenerateCertificates: noopAsync,
       pushNodeUpdate: noopAsync,
+      pushNodeUpdates: noopAsync,
       onStatus: noopUnsub,
       onClientConnected: noopUnsub,
       onClientDisconnected: noopUnsub,

@@ -38,7 +38,12 @@ import type {
   ReticulumSidecarStatus,
 } from '../shared/reticulum-types';
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
-import type { TAKClientInfo, TAKServerStatus, TAKSettings } from '../shared/tak-types';
+import type {
+  TAKClientInfo,
+  TAKNodeUpdate,
+  TAKServerStatus,
+  TAKSettings,
+} from '../shared/tak-types';
 
 export type { GattBleDevice, GattBleSessionId, SerialPort };
 
@@ -1174,6 +1179,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     regenerateCertificates: (): Promise<void> => ipcRenderer.invoke('tak:regenerateCertificates'),
     pushNodeUpdate: (node: Record<string, unknown>): Promise<void> =>
       ipcRenderer.invoke('tak:pushNodeUpdate', node),
+    pushNodeUpdates: (nodes: TAKNodeUpdate[]): Promise<void> =>
+      ipcRenderer.invoke('tak:pushNodeUpdates', nodes),
     onStatus: (cb: (status: TAKServerStatus) => void): (() => void) => {
       const handler = (_: unknown, status: TAKServerStatus) => {
         cb(status);

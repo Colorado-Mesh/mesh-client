@@ -168,6 +168,7 @@ import { useRrcStartupAutoConnect } from './hooks/useRrcStartupAutoConnect';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
+import { useTakNodeReplicator } from './hooks/useTakNodeReplicator';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
@@ -1205,6 +1206,24 @@ function AppContent() {
     [sendMessage],
   );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
+  const reticulumSelfNodeId = asNumericNodeId(reticulumRuntime.selfNodeId);
+  const reticulumStackUp =
+    reticulumRuntime.state.status === 'configured' ||
+    reticulumRuntime.state.status === 'connected' ||
+    reticulumRuntime.state.status === 'stale';
+  const reticulumSelfName = reticulumUiNodes.get(reticulumSelfNodeId)?.long_name ?? '';
+  const takReticulumSelf = useMemo(
+    () =>
+      reticulumStackUp && reticulumSelfNodeId > 0
+        ? { nodeId: reticulumSelfNodeId, name: reticulumSelfName }
+        : null,
+    [reticulumStackUp, reticulumSelfNodeId, reticulumSelfName],
+  );
+  useTakNodeReplicator({
+    active: takStatus.running,
+    nodesByProtocol: uiNodesByProtocol,
+    reticulumSelf: takReticulumSelf,
+  });
   const activeRuntime = useRuntime(protocol);
   const activeSelfNodeNum = asNumericNodeId(
     activeRuntime.selfNodeId,
