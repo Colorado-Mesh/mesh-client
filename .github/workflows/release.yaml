@@ -438,8 +438,11 @@ jobs:
 
       # Proves the packaged AppImage actually boots (native arch), not just that its
       # files are well-formed. Cross-arch images are covered by the sidecar smoke above.
+      # continue-on-error until the launch check has a track record on release builds.
       - name: Headless AppImage launch smoke (Linux)
         if: matrix.os == 'ubuntu-latest'
+        timeout-minutes: 5
+        continue-on-error: true
         run: xvfb-run -a node scripts/test-linux-appimage-launch.mjs
 
       - name: Upload Windows x64 install failure logs

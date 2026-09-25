@@ -299,6 +299,7 @@ jobs:
       # files are well-formed. Cross-arch images are covered by the sidecar smoke above.
       - name: Headless AppImage launch smoke (Linux)
         if: matrix.os == 'ubuntu-latest'
+        timeout-minutes: 5
         run: xvfb-run -a node scripts/test-linux-appimage-launch.mjs
 
       - name: Upload Windows x64 install failure logs

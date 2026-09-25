@@ -8,13 +8,16 @@
  * the unpackaged dev build, not the shipped AppImage. This closes that gap: it
  * extracts the AppImage and launches its `AppRun` under Xvfb with a throwaway
  * user-data dir, then asserts:
- *   1. the process stays alive past a startup threshold (no immediate crash), and
- *   2. `mesh-client.log` in the user-data dir shows main-process startup lines.
+ *   1. the process stays alive past a startup threshold (no crash exit), and
+ *   2. `mesh-client.log` shows the renderer actually loaded — a `[Startup] renderer URL:`
+ *      line or a `[renderer` source line — and does not contain renderer-gone,
+ *      failed-load, or child-process-gone lines.
  *
  * Only the native-arch AppImage is launched: an arm64 runtime cannot execute on
  * an x64 runner (that image is still covered by the sidecar extraction smoke).
  *
- * Exits 0 on success, 1 on failure with diagnostics.
+ * Exits 0 on success. Failures throw so the extract and user-data dirs are removed
+ * before the process exits 1.
  */
 import { spawn, spawnSync } from 'child_process';
 import {
@@ -39,20 +42,35 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, '..');
 const releaseDir = path.join(projectRoot, 'release');
 
-const LOG_FILENAME = 'mesh-client.log';
+export const LOG_FILENAME = 'mesh-client.log';
 /** How long the process must stay alive to count as "booted" (ms). */
 export const STARTUP_ALIVE_MS = 20_000;
-/** How long to wait for the startup log lines to appear (ms). */
+/** How long to wait for the renderer-loaded log line to appear (ms). */
 export const LOG_WAIT_MS = 25_000;
 /** Poll interval while waiting for the log file (ms). */
 const LOG_POLL_MS = 500;
 /** Grace period for a clean kill before SIGKILL (ms). */
 const KILL_GRACE_MS = 5_000;
+/** `--appimage-extract` must finish within this or the smoke fails (ms). */
+const EXTRACT_TIMEOUT_MS = 120_000;
+/** Keep only the tail of a child's stdio so a noisy boot cannot grow without bound. */
+const STDIO_TAIL_MAX = 64 * 1024;
+
+/**
+ * Thrown by {@link fail} so `main`'s `finally` still removes temp dirs.
+ * `process.exit` would skip that cleanup.
+ */
+export class LaunchSmokeError extends Error {
+  /** @param {string} message */
+  constructor(message) {
+    super(message);
+    this.name = 'LaunchSmokeError';
+  }
+}
 
 /** @param {string} msg */
 function fail(msg) {
-  console.error(`[test-linux-appimage-launch] ${msg}`);
-  process.exit(1);
+  throw new LaunchSmokeError(msg);
 }
 
 /** @param {string} name */
@@ -61,13 +79,34 @@ function isArm64Name(name) {
 }
 
 /**
- * A crash-free boot is proven by these main-process startup markers appearing in
- * mesh-client.log. `[main]` is the tag every early main-process log line uses.
+ * True when the log shows the renderer was loaded.
+ *
+ * `formatLine` in `src/main/log-service.ts` writes every main-process line as
+ * `[level] [main] …`, so a bare `[main]` match is true for errors and for lines
+ * written before any window exists. A real boot logs `[Startup] renderer URL:`
+ * (console.debug, just before `loadURL`) and, once the page runs, renderer-source
+ * lines (`[renderer]` / `[renderer:file:line]` via `forwardRendererConsoleMessage`).
  * @param {string} logText
  */
 export function logShowsStartup(logText) {
   if (typeof logText !== 'string' || logText.length === 0) return false;
-  return /\[main\]/.test(logText);
+  return /\[Startup\] renderer URL:|\[renderer/.test(logText);
+}
+
+/**
+ * True when the log or captured stdio shows the renderer/window failed.
+ *
+ * These paths (`render-process-gone`, `did-fail-load`, `child-process-gone`) log
+ * and then call a blocking `dialog.showErrorBox`, so the process stays alive.
+ * `console.error` echoes to stderr before that dialog; the async log append may
+ * not flush while the dialog blocks, so callers must pass stderr as well as the file.
+ * @param {string} text
+ */
+export function logShowsRendererFailure(text) {
+  if (typeof text !== 'string' || text.length === 0) return false;
+  return /\[main\] Renderer process gone:|\[main\] Failed to load:|\[main\] Failed to load renderer:|\[main\] child-process-gone:/.test(
+    text,
+  );
 }
 
 /**
@@ -99,10 +138,28 @@ export function buildLaunchEnv(baseEnv = process.env) {
   return { ...baseEnv, MESH_CLIENT_DISABLE_GPU: '1' };
 }
 
+/** @param {string} text @param {number} [max] */
+function tailText(text, max = 8192) {
+  if (text.length <= max) return text;
+  return text.slice(-max);
+}
+
+/**
+ * @param {string} message
+ * @param {import('child_process').SpawnSyncReturns<string>} result
+ */
+function failExtract(message, result) {
+  const stdout = typeof result.stdout === 'string' ? result.stdout : '';
+  const stderr = typeof result.stderr === 'string' ? result.stderr : '';
+  const output = tailText(`${stdout}\n${stderr}`.trim());
+  fail(output ? `${message}\n--- extract output (tail) ---\n${output}` : message);
+}
+
 /**
  * Extract an AppImage to a fresh dir and return the squashfs-root path.
  * Uses the native `--appimage-extract` (same-arch); callers gate on
  * {@link shouldLaunchOnHost} so cross-arch extraction is never needed here.
+ * File listing stays out of the CI log unless extraction fails.
  * @param {string} appImagePath
  * @param {string} extractDir
  */
@@ -112,18 +169,27 @@ function extractAppImage(appImagePath, extractDir) {
   chmodSync(appImagePath, 0o755);
   const result = spawnSync(appImagePath, ['--appimage-extract'], {
     cwd: extractDir,
-    stdio: 'inherit',
     env: process.env,
+    encoding: 'utf8',
+    timeout: EXTRACT_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
+    maxBuffer: 8 * 1024 * 1024,
   });
   if (result.error) {
-    fail(`Failed to run AppImage extract: ${result.error.message}`);
+    const timedOut = result.error.code === 'ETIMEDOUT';
+    failExtract(
+      timedOut
+        ? `AppImage extract timed out after ${EXTRACT_TIMEOUT_MS}ms for ${appImagePath}`
+        : `Failed to run AppImage extract: ${result.error.message}`,
+      result,
+    );
   }
   if ((result.status ?? 1) !== 0) {
-    fail(`AppImage extract exited ${result.status ?? 'null'} for ${appImagePath}`);
+    failExtract(`AppImage extract exited ${result.status ?? 'null'} for ${appImagePath}`, result);
   }
   const payloadRoot = path.join(extractDir, 'squashfs-root');
   if (!existsSync(payloadRoot)) {
-    fail(`AppImage extract did not create squashfs-root under ${extractDir}`);
+    failExtract(`AppImage extract did not create squashfs-root under ${extractDir}`, result);
   }
   return payloadRoot;
 }
@@ -134,24 +200,12 @@ function sleepMs(ms) {
 }
 
 /**
- * Poll for the log file to appear and contain startup markers, up to LOG_WAIT_MS.
- * @param {string} logPath
+ * @param {string} buf
+ * @param {string} chunk
  */
-async function waitForStartupLog(logPath) {
-  const deadline = Date.now() + LOG_WAIT_MS;
-  let lastText = '';
-  while (Date.now() < deadline) {
-    if (existsSync(logPath)) {
-      try {
-        lastText = readFileSync(logPath, 'utf-8');
-      } catch {
-        // catch-no-log-ok transient read while the app is writing
-      }
-      if (logShowsStartup(lastText)) return { ok: true, text: lastText };
-    }
-    await sleepMs(LOG_POLL_MS);
-  }
-  return { ok: false, text: lastText };
+function appendCapped(buf, chunk) {
+  const next = buf + chunk;
+  return next.length <= STDIO_TAIL_MAX ? next : next.slice(-STDIO_TAIL_MAX);
 }
 
 /**
@@ -163,101 +217,161 @@ async function waitForStartupLog(logPath) {
 async function killChild(child, state) {
   state.teardownStarted = true;
   if (child.exitCode !== null || child.signalCode !== null) return;
-  child.kill('SIGTERM');
+  try {
+    child.kill('SIGTERM');
+  } catch {
+    // catch-no-log-ok process already exited
+    return;
+  }
   const deadline = Date.now() + KILL_GRACE_MS;
   while (Date.now() < deadline) {
     if (child.exitCode !== null || child.signalCode !== null) return;
     await sleepMs(100);
   }
-  child.kill('SIGKILL');
+  try {
+    child.kill('SIGKILL');
+  } catch {
+    // catch-no-log-ok process already exited
+  }
 }
 
 /**
- * Launch AppRun from an extracted AppImage and assert it boots.
- * @param {string} payloadRoot
- * @param {string} userDataDir
+ * @param {string} logPath
+ * @param {string} previous
  */
-async function launchAndAssert(payloadRoot, userDataDir) {
-  const appRun = path.join(payloadRoot, 'AppRun');
-  if (!existsSync(appRun)) {
-    fail(`AppRun not found in extracted AppImage: ${appRun}`);
+function readLog(logPath, previous) {
+  if (!existsSync(logPath)) return previous;
+  try {
+    return readFileSync(logPath, 'utf-8');
+  } catch {
+    // catch-no-log-ok transient read while the app is writing
+    return previous;
   }
-  chmodSync(appRun, 0o755);
+}
 
+/**
+ * Spawn a command and assert it boots: it must stay alive for `startupAliveMs`
+ * and its user-data log must show a renderer-loaded signal with no renderer
+ * failure lines. Production passes the extracted AppRun; tests pass `node -e`.
+ *
+ * @param {object} opts
+ * @param {string} opts.command Executable to spawn (AppRun, or `process.execPath` in tests).
+ * @param {string[]} [opts.args]
+ * @param {string} [opts.cwd]
+ * @param {NodeJS.ProcessEnv} [opts.env]
+ * @param {string} opts.userDataDir
+ * @param {number} [opts.startupAliveMs]
+ * @param {number} [opts.logWaitMs]
+ * @param {number} [opts.pollMs]
+ */
+export async function launchAndAssert({
+  command,
+  args = [],
+  cwd,
+  env = buildLaunchEnv(),
+  userDataDir,
+  startupAliveMs = STARTUP_ALIVE_MS,
+  logWaitMs = LOG_WAIT_MS,
+  pollMs = LOG_POLL_MS,
+}) {
   const logPath = path.join(userDataDir, LOG_FILENAME);
-  /** @type {string} */
-  let stderrBuf = '';
+  let stdioBuf = '';
   /** Shared teardown flag so our own SIGTERM/SIGKILL is not counted as a crash. */
   const state = { teardownStarted: false };
-  /** @type {{ code: number | null, signal: NodeJS.Signals | null } | null} */
+  /** @type {{ code: number | null, signal: NodeJS.Signals | null, error?: string } | null} */
   let crashExit = null;
 
   const spawnedAt = Date.now();
-  const child = spawn(appRun, buildLaunchArgs(userDataDir), {
-    cwd: payloadRoot,
-    env: buildLaunchEnv(),
+  const child = spawn(command, args, {
+    cwd,
+    env,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  child.stdout.on('data', () => {});
-  child.stderr.on('data', (d) => {
-    stderrBuf += String(d);
+  const onChunk = (d) => {
+    stdioBuf = appendCapped(stdioBuf, String(d));
+  };
+  child.stdout.on('data', onChunk);
+  child.stderr.on('data', onChunk);
+  child.on('error', (err) => {
+    if (!state.teardownStarted && !crashExit) {
+      crashExit = { code: null, signal: null, error: err.message };
+    }
   });
   child.on('exit', (code, signal) => {
     // Any exit before we start teardown is a crash — including signal exits
     // (OOM kill, external SIGTERM). Only exits after killChild() are expected.
-    if (!state.teardownStarted) {
+    if (!state.teardownStarted && !crashExit) {
       crashExit = { code, signal };
     }
   });
 
-  /** Fail with the crash exit details plus captured stderr. @param {string} phase */
-  const failCrash = async (phase) => {
-    await killChild(child, state);
-    fail(
-      `App exited ${phase} (code=${crashExit?.code}, signal=${crashExit?.signal}).\n` +
-        `--- stderr (last 2KB) ---\n${stderrBuf.slice(-2048)}`,
-    );
-  };
+  const observedText = (logText) => `${logText}\n${stdioBuf}`;
 
-  // Wait for the startup log while also watching for an early crash exit.
-  const logResult = await waitForStartupLog(logPath);
+  try {
+    let logText = '';
+    let sawStartup = false;
+    const logDeadline = spawnedAt + logWaitMs;
 
-  if (crashExit) {
-    await failCrash('during startup');
-  }
+    // One wait: hold until startupAliveMs has elapsed since spawn (the renderer
+    // marker can show up in well under a second) while a crash exit or a
+    // renderer-failure line fails the run immediately.
+    while (!sawStartup || Date.now() - spawnedAt < startupAliveMs) {
+      if (crashExit) {
+        const extra = crashExit.error ? ` error=${crashExit.error}` : '';
+        fail(
+          `App exited ${sawStartup ? 'shortly after startup' : 'during startup'} ` +
+            `(code=${crashExit.code}, signal=${crashExit.signal}${extra}).\n` +
+            `--- stderr/stdout (last 2KB) ---\n${tailText(stdioBuf, 2048)}`,
+        );
+      }
 
-  if (!logResult.ok) {
-    await killChild(child, state);
-    fail(
-      `No main-process startup lines in ${LOG_FILENAME} within ${LOG_WAIT_MS}ms.\n` +
-        `--- log (last 2KB) ---\n${logResult.text.slice(-2048)}\n` +
-        `--- stderr (last 2KB) ---\n${stderrBuf.slice(-2048)}`,
-    );
-  }
+      logText = readLog(logPath, logText);
+      if (logShowsRendererFailure(observedText(logText))) {
+        fail(
+          'Renderer failed to stay up (renderer-gone, failed-load, or child-process-gone).\n' +
+            `--- log (last 2KB) ---\n${tailText(logText, 2048)}\n` +
+            `--- stderr/stdout (last 2KB) ---\n${tailText(stdioBuf, 2048)}`,
+        );
+      }
 
-  // Hold until STARTUP_ALIVE_MS has genuinely elapsed *since spawn* (the log can
-  // appear in well under a second), polling for a delayed crash the whole time.
-  while (Date.now() - spawnedAt < STARTUP_ALIVE_MS) {
-    if (crashExit) {
-      await failCrash('shortly after startup');
+      if (!sawStartup && logShowsStartup(logText)) {
+        sawStartup = true;
+      }
+
+      if (sawStartup && Date.now() - spawnedAt >= startupAliveMs) break;
+
+      if (!sawStartup && Date.now() >= logDeadline) {
+        fail(
+          `No renderer-loaded signal in ${LOG_FILENAME} within ${logWaitMs}ms ` +
+            '(expected "[Startup] renderer URL:" or a "[renderer" line).\n' +
+            `--- log (last 2KB) ---\n${tailText(logText, 2048)}\n` +
+            `--- stderr/stdout (last 2KB) ---\n${tailText(stdioBuf, 2048)}`,
+        );
+      }
+
+      await sleepMs(pollMs);
     }
-    await sleepMs(200);
-  }
-  // Hold until STARTUP_ALIVE_MS has genuinely elapsed *since spawn* (the log can
-  // appear in well under a second), polling for a delayed crash the whole time.
-  while (Date.now() - spawnedAt < STARTUP_ALIVE_MS) {
+
+    logText = readLog(logPath, logText);
     if (crashExit) {
-      await failCrash('shortly after startup');
+      const extra = crashExit.error ? ` error=${crashExit.error}` : '';
+      fail(
+        `App exited shortly after startup (code=${crashExit.code}, signal=${crashExit.signal}${extra}).\n` +
+          `--- stderr/stdout (last 2KB) ---\n${tailText(stdioBuf, 2048)}`,
+      );
     }
-    await sleepMs(200);
-  }
-  // Final guard in case the exit fired between the last poll and here.
-  if (crashExit) {
-    await failCrash('shortly after startup');
+    if (logShowsRendererFailure(observedText(logText))) {
+      fail(
+        'Renderer failed to stay up (renderer-gone, failed-load, or child-process-gone).\n' +
+          `--- log (last 2KB) ---\n${tailText(logText, 2048)}\n` +
+          `--- stderr/stdout (last 2KB) ---\n${tailText(stdioBuf, 2048)}`,
+      );
+    }
+  } finally {
+    await killChild(child, state);
   }
 
-  await killChild(child, state);
-  console.debug(`[test-linux-appimage-launch] OK — app booted and logged startup lines`);
+  console.debug('[test-linux-appimage-launch] OK — app booted and the renderer loaded');
 }
 
 async function main() {
@@ -289,15 +403,26 @@ async function main() {
 
   for (const name of launchable) {
     const appImagePath = path.join(releaseDir, name);
-    if (statSync(appImagePath).size < 50 * 1024 * 1024) {
-      fail(`AppImage too small (${statSync(appImagePath).size} bytes): ${appImagePath}`);
+    const size = statSync(appImagePath).size;
+    if (size < 50 * 1024 * 1024) {
+      fail(`AppImage too small (${size} bytes): ${appImagePath}`);
     }
     const label = isArm64Name(name) ? 'arm64' : 'x64';
     const extractDir = mkdtempSync(path.join(tmpdir(), `mesh-client-launch-${label}-`));
     const userDataDir = mkdtempSync(path.join(tmpdir(), `mesh-client-userdata-${label}-`));
     try {
       const payloadRoot = extractAppImage(appImagePath, extractDir);
-      await launchAndAssert(payloadRoot, userDataDir);
+      const appRun = path.join(payloadRoot, 'AppRun');
+      if (!existsSync(appRun)) {
+        fail(`AppRun not found in extracted AppImage: ${appRun}`);
+      }
+      chmodSync(appRun, 0o755);
+      await launchAndAssert({
+        command: appRun,
+        args: buildLaunchArgs(userDataDir),
+        cwd: payloadRoot,
+        userDataDir,
+      });
     } finally {
       rmSync(extractDir, { recursive: true, force: true });
       rmSync(userDataDir, { recursive: true, force: true });
@@ -311,8 +436,12 @@ async function main() {
 const isMain = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMain) {
-  main().catch((e) => {
-    console.error('[test-linux-appimage-launch] Unexpected error:', e);
+  main().catch((err) => {
+    if (err instanceof LaunchSmokeError) {
+      console.error(`[test-linux-appimage-launch] ${err.message}`);
+    } else {
+      console.error('[test-linux-appimage-launch] Unexpected error:', err);
+    }
     process.exit(1);
   });
 }
