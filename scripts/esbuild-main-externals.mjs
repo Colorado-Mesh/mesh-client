@@ -8,6 +8,10 @@ export const MAIN_ESBUILD_EXTERNALS = [
   'mqtt',
   '@bufbuild/protobuf',
   '@meshtastic/protobufs',
+  // Large Node HTTP/WebSocket stacks — keep out of the minified main outfile
+  // (undici alone was ~1.3 MiB of metafile inputs and pushed the bundle to 1.0mb).
+  'undici',
+  'ws',
 ];
 
 /** CLI args: `--external:electron --external:...` */
