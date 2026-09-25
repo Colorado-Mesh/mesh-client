@@ -249,9 +249,6 @@ export const MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS = 300;
 export const BLE_RECONNECT_ATTEMPT_BUDGET_MS =
   60 * MS_PER_SECOND + MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS;
 
-/** @deprecated Use BLE_RECONNECT_ATTEMPT_BUDGET_MS */
-export const NOBLE_BLE_RECONNECT_ATTEMPT_BUDGET_MS = BLE_RECONNECT_ATTEMPT_BUDGET_MS;
-
 /**
  * Raw packet log: startup (and similar) can deliver two distinct LOG_RX frames for the same node's
  * FLOOD ADVERT within seconds; coalesce so the sniffer shows one row (newest wins).
@@ -272,15 +269,6 @@ export const POWER_RESUME_MESHCORE_MESHTASTIC_SETTLE_MS = 30_000;
 
 /** Poll interval inside `awaitDualNobleBleMeshtasticSettle`. */
 export const MESHCORE_DUAL_NOBLE_BLE_POLL_MS = 200;
-
-/** BlueZ is slower than macOS CBCentralManager — requestDevice / reuse granted device. */
-export const MESHCORE_WEB_BLUETOOTH_REQUEST_DEVICE_TIMEOUT_MS = 60_000;
-
-/** Web Bluetooth transport connect (Linux MeshCore companion). */
-export const MESHCORE_WEB_BLUETOOTH_CONNECT_TIMEOUT_MS = 60_000;
-
-/** MeshCore BLE protocol handshake after Web Bluetooth connect. */
-export const MESHCORE_WEB_BLUETOOTH_HANDSHAKE_TIMEOUT_MS = 20_000;
 
 /** Cap meshcore.js deviceQuery during Noble IPC handshake (onConnected otherwise hangs until outer timeout). */
 export const MESHCORE_BLE_DEVICE_QUERY_TIMEOUT_MS = 8_000;

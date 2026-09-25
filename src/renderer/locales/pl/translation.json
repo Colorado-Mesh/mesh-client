@@ -2448,7 +2448,6 @@
         "rejected": "Wylogowanie z pokoju odrzucone przez radio.",
         "failed": "Nie można było opuścić pokoju"
       },
-      "repeaterRpcInProgress": "Żądanie dotyczące tego wzmacniaka jest już w toku",
       "cliDangerNotConfirmed": "Niszczące polecenia CLI wymagają potwierdzenia w panelu Przemienniki.",
       "pingFailed": "PING nie powiódł się",
       "floodScopeBusy": "Zastąpienie zakresu Flood jest niedostępne, gdy trwa administracja wzmacniaka lub funkcja Traroute. Spróbuj ponownie w stanie bezczynności.",

@@ -508,12 +508,6 @@ export async function meshcoreRoomTryRelogin(
   return roleOk;
 }
 
-export function meshcoreRoomEnsureLoggedIn(nodeId: number, mode: 'post' | 'admin'): boolean {
-  if (!meshcoreIsRoomLoggedIn(nodeId)) return false;
-  if (mode === 'admin') return meshcoreRoomCanAdmin(nodeId);
-  return meshcoreRoomCanPost(nodeId);
-}
-
 /** Best-effort admin login before room server status/telemetry/CLI. */
 export async function meshcoreRoomTryAdminLogin(
   conn: MeshcoreRoomLoginConn,

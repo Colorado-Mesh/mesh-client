@@ -2396,7 +2396,6 @@
         "rejected": "Raumabmeldung per Funk abgelehnt.",
         "failed": "Konnte den Raum nicht verlassen"
       },
-      "repeaterRpcInProgress": "Eine Anfrage für diesen Repeater ist bereits in Bearbeitung",
       "cliDangerNotConfirmed": "Destruktive CLI-Befehle müssen im Repeater-Panel bestätigt werden.",
       "pingFailed": "Ping fehlgeschlagen",
       "floodScopeBusy": "Das Überschreiben des Flood-Bereichs ist nicht verfügbar, während die Repeater-Administration oder Traceroute ausgeführt wird. Versuchen Sie es im Ruhezustand erneut.",

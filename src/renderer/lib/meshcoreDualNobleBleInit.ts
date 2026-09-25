@@ -17,9 +17,6 @@ export function isRendererGattBlePlatform(): boolean {
   return true;
 }
 
-/** @deprecated Use isRendererGattBlePlatform */
-export const isRendererNobleBlePlatform = isRendererGattBlePlatform;
-
 /**
  * USB serial and TCP share single-flight companion RPC + WritableStream writes;
  * init must run getSelfInfo → getContacts → getChannels before post-init side effects.
@@ -146,9 +143,6 @@ export function notifyBlePrimaryRfLinkReady(protocol: MeshProtocol): void {
   notifyNobleBlePrimaryAutoConnectSettled();
 }
 
-/** @deprecated Use notifyBlePrimaryRfLinkReady */
-export const notifyNobleBlePrimaryRfLinkReady = notifyBlePrimaryRfLinkReady;
-
 /**
  * Secondary protocol waits for the primary auto-connect attempt to finish (or timeout).
  * Failure point: primary never settles — proceed after cap so secondary is not stuck forever.
@@ -200,14 +194,6 @@ export function resetNobleBleConnectMutexForTests(): void {
   bleDualRadioStartupInitialized = false;
 }
 
-/** @deprecated Mutex removed — sidecar GATT serializes in main; passthrough for call-site cleanup. */
-export async function withNobleBleConnectMutex<T>(
-  _protocol: MeshProtocol,
-  work: () => Promise<T>,
-): Promise<T> {
-  return work();
-}
-
 export interface NobleBleConnectMutexSnapshot {
   queued: MeshProtocol | null;
   active: MeshProtocol | null;
@@ -222,9 +208,4 @@ export function getNobleBleConnectMutexSnapshot(): NobleBleConnectMutexSnapshot 
     primaryAutoConnectInFlight: dualNobleBleBothRadiosConfigured() && !blePrimaryAutoConnectSettled,
     primaryProtocol: bleDualRadioPrimary,
   };
-}
-
-/** No-op: connect mutex was removed when LoRa BLE moved to sidecar GATT. */
-export function subscribeNobleBleConnectMutexWait(): () => void {
-  return () => {};
 }

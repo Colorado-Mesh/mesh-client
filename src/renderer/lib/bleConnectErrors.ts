@@ -150,8 +150,3 @@ export function isBlePairingError(err: unknown): boolean {
   }
   return false;
 }
-
-/** @deprecated Use {@link isBlePairingError}. */
-export function isWebBluetoothPairingError(err: unknown): boolean {
-  return isBlePairingError(err);
-}

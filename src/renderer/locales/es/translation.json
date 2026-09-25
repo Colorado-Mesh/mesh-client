@@ -2396,7 +2396,6 @@
         "rejected": "Cierre de sesión de sala rechazado por radio.",
         "failed": "No se pudo salir de la sala"
       },
-      "repeaterRpcInProgress": "Ya hay una solicitud en curso para este repetidor.",
       "cliDangerNotConfirmed": "Los comandos CLI destructivos requieren confirmación en el panel de repetidores.",
       "pingFailed": "Falló el ping",
       "floodScopeBusy": "La anulación del alcance Flood no está disponible mientras la administración del repetidor o el traceroute están en curso. Inténtalo de nuevo cuando esté inactivo.",

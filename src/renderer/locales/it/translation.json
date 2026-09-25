@@ -2396,7 +2396,6 @@
         "rejected": "Logout dalla sala rifiutato via radio.",
         "failed": "Impossibile lasciare la stanza"
       },
-      "repeaterRpcInProgress": "Una richiesta per questo ripetitore è già in corso",
       "cliDangerNotConfirmed": "I comandi CLI distruttivi richiedono la conferma nel pannello Ripetitori.",
       "pingFailed": "Ping non eseguito correttamente!",
       "floodScopeBusy": "La sostituzione dell'ambito del Flood non è disponibile mentre è in corso l'amministrazione del ripetitore o il traceroute. Riprovare quando è inattivo.",

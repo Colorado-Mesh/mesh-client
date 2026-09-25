@@ -2423,7 +2423,6 @@
         "rejected": "Odhlášení z místnosti bylo rádiem odmítnuto.",
         "failed": "Nelze opustit místnost"
       },
-      "repeaterRpcInProgress": "Žádost o tento opakovač již probíhá",
       "cliDangerNotConfirmed": "Destruktivní příkazy CLI vyžadují potvrzení na panelu Opakovače.",
       "pingFailed": "Ping selhal",
       "floodScopeBusy": "Potlačení rozsahu zaplavení není dostupné, když probíhá správa opakovače nebo traceroute. Zkuste to znovu při nečinnosti.",
