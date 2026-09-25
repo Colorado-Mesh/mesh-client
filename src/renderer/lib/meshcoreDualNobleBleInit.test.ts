@@ -25,7 +25,6 @@ import {
   notifyNobleBlePrimaryAutoConnectSettled,
   resetNobleBleConnectMutexForTests,
   resolveNobleBleDualRadioPrimaryProtocol,
-  withNobleBleConnectMutex,
 } from './meshcoreDualNobleBleInit';
 
 const meshtasticProtocol = { type: 'meshtastic' } as const;
@@ -228,42 +227,6 @@ describe('meshcoreDualNobleBleInit', () => {
     localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
     localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
   });
-
-  it.each(['darwin', 'win32', 'linux'] as const)(
-    'withNobleBleConnectMutex is a passthrough on %s (sidecar GATT serializes in main)',
-    async (platform) => {
-      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
-      localStorage.removeItem('mesh-client:lastBleDevice:meshtastic');
-      localStorage.removeItem('mesh-client:lastBleDevice:meshcore');
-      const order: string[] = [];
-      let releaseFirst!: () => void;
-      const firstBlocked = new Promise<void>((resolve) => {
-        releaseFirst = resolve;
-      });
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- exercising legacy passthrough alias
-      const first = withNobleBleConnectMutex('meshtastic', async () => {
-        order.push('first-start');
-        await firstBlocked;
-        order.push('first-end');
-        return 1;
-      });
-      await Promise.resolve();
-      // eslint-disable-next-line @typescript-eslint/no-deprecated -- exercising legacy passthrough alias
-      const second = withNobleBleConnectMutex('meshcore', () => {
-        order.push('second');
-        return Promise.resolve(2);
-      });
-      // Passthrough: second may complete while first is still blocked; queue is unused.
-      expect(getNobleBleConnectMutexSnapshot().queued).toBeNull();
-      expect(getNobleBleConnectMutexSnapshot().active).toBeNull();
-      await expect(second).resolves.toBe(2);
-      releaseFirst();
-      await expect(first).resolves.toBe(1);
-      expect(order).toContain('first-start');
-      expect(order).toContain('second');
-      expect(order).toContain('first-end');
-    },
-  );
 
   it('dual-radio primary settle still unblocks secondary without connect mutex', async () => {
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('darwin');

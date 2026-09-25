@@ -2396,7 +2396,6 @@
         "rejected": "房间注销被无线电拒绝。",
         "failed": "无法离开房间"
       },
-      "repeaterRpcInProgress": "对此转发器的请求已在进行中",
       "cliDangerNotConfirmed": "破坏性CLI命令需要在Repeaters （中继器）面板中确认。",
       "pingFailed": "Ping失败",
       "floodScopeBusy": "当中继器管理或跟踪路由正在进行时，泛洪范围覆盖不可用。空闲时再试一次。",

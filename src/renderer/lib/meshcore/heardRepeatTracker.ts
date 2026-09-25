@@ -358,13 +358,3 @@ export function resolveMeshcoreHeardRepeaterFromNode(
   const name = node.long_name?.trim() || node.short_name?.trim() || undefined;
   return { nodeId, name };
 }
-
-/** Any foreign contact as a path hop (fallback when role is not Repeater/Room). */
-export function resolveMeshcoreHeardPathHopFromNode(
-  nodeId: number,
-  node: { long_name?: string | null; short_name?: string | null } | null,
-): MeshcoreHeardRepeater | null {
-  if (!node) return null;
-  const name = node.long_name?.trim() || node.short_name?.trim() || undefined;
-  return { nodeId, name };
-}

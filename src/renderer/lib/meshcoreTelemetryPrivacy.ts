@@ -11,7 +11,6 @@ export const MESHCORE_TELEM_MODE_ALLOW_FLAGS = 1;
 export const MESHCORE_TELEM_MODE_ALLOW_ALL = 2;
 
 /** Contact flags: LSB = favourite; upper bits (after >>1) are TELEM_PERM_* for "specific contacts" mode. */
-export const MESHCORE_CONTACT_FLAG_FAVORITE = 0x01;
 export const MESHCORE_CONTACT_FLAG_TELEM_BASE = 0x02;
 export const MESHCORE_CONTACT_FLAG_TELEM_LOCATION = 0x04;
 export const MESHCORE_CONTACT_FLAG_TELEM_ENVIRONMENT = 0x08;

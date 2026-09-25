@@ -2396,7 +2396,6 @@
         "rejected": "무선으로 룸 로그아웃이 거부되었습니다.",
         "failed": "룸에서 나갈 수 없습니다."
       },
-      "repeaterRpcInProgress": "이 중계기에 대한 요청이 이미 진행 중입니다.",
       "cliDangerNotConfirmed": "파괴적인 CLI 명령은 반복기 패널에서 확인해야 합니다.",
       "pingFailed": "핑 실패",
       "floodScopeBusy": "리피터 관리 또는 경로 추적이 진행 중인 동안에는 플러드 범위 재정의를 사용할 수 없습니다. 유휴 상태일 때 다시 시도하세요.",

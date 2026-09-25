@@ -2396,7 +2396,6 @@
         "rejected": "Déconnexion de la salle refusée par radio.",
         "failed": "Impossible de quitter la salle"
       },
-      "repeaterRpcInProgress": "Une demande pour ce répéteur est déjà en cours",
       "cliDangerNotConfirmed": "Les commandes CLI destructives nécessitent une confirmation dans le panneau Répéteurs.",
       "pingFailed": "Échec du ping",
       "floodScopeBusy": "Le remplacement de la portée Flood n'est pas disponible pendant que l'administration du répéteur ou le traceroute est en cours. Réessayez lorsque vous êtes inactif.",

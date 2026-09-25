@@ -25,9 +25,6 @@ export const BLE_SCAN_BUSY_MAX_WAIT_MS = 60_000;
 /** GATT wait-for-peripheral + scan fallback; ConnectionPanel must not use a shorter UI timeout. */
 export const BLE_GATT_AUTO_CONNECT_MAX_MS = 30_000 + BLE_RECONNECT_SCAN_TIMEOUT_MS + 15_000;
 
-/** @deprecated Use BLE_GATT_AUTO_CONNECT_MAX_MS */
-export const BLE_NOBLE_AUTO_CONNECT_MAX_MS = BLE_GATT_AUTO_CONNECT_MAX_MS;
-
 function isGattStartScanBusyResult(
   result: GattBleStartScanResult,
 ): result is Extract<GattBleStartScanResult, { ok: false; code: 'scan_busy' }> {

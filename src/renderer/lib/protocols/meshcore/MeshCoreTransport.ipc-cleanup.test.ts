@@ -50,7 +50,6 @@ vi.mock('../../bleReconnectHelper', () => ({
 
 vi.mock('../../meshcoreDualNobleBleInit', () => ({
   notifyBlePrimaryRfLinkReady: vi.fn(),
-  notifyNobleBlePrimaryRfLinkReady: vi.fn(),
 }));
 
 vi.mock('../../meshcoreCompanionTxEchoFilter', () => ({

@@ -2396,7 +2396,6 @@
         "rejected": "Uitloggen van ruimte geweigerd via de radio.",
         "failed": "Kon de ruimte niet verlaten"
       },
-      "repeaterRpcInProgress": "Er is al een aanvraag voor deze repeater in behandeling",
       "cliDangerNotConfirmed": "Destructieve CLI-opdrachten moeten worden bevestigd in het paneel Herhalers.",
       "pingFailed": "Ping mislukt",
       "floodScopeBusy": "Het overschrijven van de Floodsscope is niet beschikbaar terwijl repeaterbeheer of traceroute bezig is. Probeer het opnieuw wanneer het apparaat inactief is.",

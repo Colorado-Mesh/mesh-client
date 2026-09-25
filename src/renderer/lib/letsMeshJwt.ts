@@ -37,9 +37,6 @@ export const MESHCORE_CA_HOST_BACKUP = 'mqtt2.meshcore.ca';
 /** EastMesh AU broker (WebSocket TLS on 443, JWT auth; `/mqtt` websocket path). */
 export const EASTMESH_HOST = 'mqtt2.eastmesh.au';
 
-/** @deprecated Use {@link LETSMESH_HOST_US} */
-export const LETSMESH_HOST = LETSMESH_HOST_US;
-
 /**
  * All device-signing MQTT brokers (WebSocket TLS on 443, JWT auth) mapped to their required
  * WebSocket path. Single source of truth for both the host allowlist ({@link isLetsMeshSettings})

@@ -2396,7 +2396,6 @@
         "rejected": "Logout ruangan ditolak oleh radio.",
         "failed": "Tidak bisa meninggalkan ruangan"
       },
-      "repeaterRpcInProgress": "Permintaan untuk repeater ini sedang dalam proses",
       "cliDangerNotConfirmed": "Perintah CLI yang merusak memerlukan konfirmasi di panel Repeater.",
       "pingFailed": "Ping gagal",
       "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur.",

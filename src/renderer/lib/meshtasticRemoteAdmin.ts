@@ -152,9 +152,6 @@ export function remoteConfigLoadingWatchdogMsForRoute(route: RemoteConfigLoading
   }
 }
 
-/** @deprecated Use {@link remoteConfigLoadingWatchdogMsForRoute} */
-export const REMOTE_ADMIN_ESSENTIAL_LOADING_WATCHDOG_MS = REMOTE_ADMIN_RADIO_LOADING_WATCHDOG_MS;
-
 export function delayMs(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);

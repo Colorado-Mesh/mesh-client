@@ -8,7 +8,6 @@ vi.mock('@meshtastic/core', () => ({
 
 vi.mock('./meshcoreDualNobleBleInit', () => ({
   notifyBlePrimaryRfLinkReady: vi.fn(),
-  notifyNobleBlePrimaryRfLinkReady: vi.fn(),
 }));
 
 vi.mock('./transportSidecarGatt', () => ({
