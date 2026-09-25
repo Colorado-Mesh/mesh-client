@@ -70,7 +70,10 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-/** Severity definition within a language file */
+/**
+ * Upstream severity label pair. Stripped language packs do not include
+ * `severities`; the app uses i18n keys (`mecp.severity.*`) instead.
+ */
 export interface SeverityDef {
   /** Localized label */
   local: string;
@@ -86,30 +89,21 @@ export interface CategoryDef {
   icon: string;
 }
 
-/** Complete language file structure */
+/**
+ * Fields this app reads from a vendored MECP language pack.
+ *
+ * Upstream packs (https://github.com/xiang-dev-1/MECP `languages/`, CC BY 4.0)
+ * also include a website `ui` block — mecp.radio copy such as `site_hero_headline`
+ * and `site_nav_github` — plus metadata this app does not read: `language`,
+ * `language_name`, `language_name_en`, `language_name_latin`, `flag_emoji`,
+ * `text_direction`, `severities`, and `deprecations`. Those keys are stripped on
+ * purpose. A resync must strip them again and leave `codes` and `categories` unchanged.
+ */
 export interface LanguageFile {
-  /** ISO 639-1 language code */
-  language: string;
-  /** Language name in its own script */
-  language_name: string;
-  /** Language name in English */
-  language_name_en: string;
-  /** Language name in Latin script (for non-Latin scripts) */
-  language_name_latin: string;
-  /** Flag emoji */
-  flag_emoji: string;
-  /** Text direction: "ltr" or "rtl" */
-  text_direction: 'ltr' | 'rtl';
-  /** Severity level definitions */
-  severities: Record<string, SeverityDef>;
   /** Category definitions */
   categories: Record<string, CategoryDef>;
   /** Code translations: code -> localized text */
   codes: Record<string, string>;
-  /** UI string translations */
-  ui: Record<string, string>;
-  /** Deprecation notices for codes */
-  deprecations: Record<string, string>;
 }
 
 /** Maximum MECP message size in bytes (UTF-8) */
