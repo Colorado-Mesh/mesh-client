@@ -169,6 +169,7 @@ import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakNodeReplicator } from './hooks/useTakNodeReplicator';
+import { useTakRemoteStatus } from './hooks/useTakRemoteRelay';
 import { useTakServer } from './hooks/useTakServer';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
@@ -1206,6 +1207,7 @@ function AppContent() {
     [sendMessage],
   );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
+  const takRemoteStatus = useTakRemoteStatus();
   const reticulumSelfNodeId = asNumericNodeId(reticulumRuntime.selfNodeId);
   const reticulumStackUp =
     reticulumRuntime.state.status === 'configured' ||
@@ -1220,7 +1222,7 @@ function AppContent() {
     [reticulumStackUp, reticulumSelfNodeId, reticulumSelfName],
   );
   useTakNodeReplicator({
-    active: takStatus.running,
+    active: takStatus.running || takRemoteStatus.state !== 'disconnected',
     nodesByProtocol: uiNodesByProtocol,
     reticulumSelf: takReticulumSelf,
   });
