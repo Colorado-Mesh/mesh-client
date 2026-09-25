@@ -303,4 +303,9 @@ describe('ALLOWED_LICENSE_IDS', () => {
     expect(ALLOWED_LICENSE_IDS).toContain('Hippocratic-2.1');
     expect(ALLOWED_LICENSE_IDS).toContain('Hippocratic-3.0');
   });
+
+  it('includes PSF-2.0 alongside Python-2.0', () => {
+    expect(ALLOWED_LICENSE_IDS).toContain('Python-2.0');
+    expect(ALLOWED_LICENSE_IDS).toContain('PSF-2.0');
+  });
 });
