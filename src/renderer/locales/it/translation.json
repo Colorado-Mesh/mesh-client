@@ -832,7 +832,7 @@
     "hoursAgo": "{{count}}h fa",
     "daysAgo": "{{count}}d fa",
     "days": "giorni",
-    "emDash": "—^",
+    "emDash": "—",
     "saving": "Salvataggio in corso...",
     "peers": "Compagni",
     "colorGreen": "Verde",
@@ -5519,7 +5519,7 @@
     "rssi": "RSSI",
     "snr": "SNR",
     "rssiValue": "{{value}} dBm",
-    "noData": "—^",
+    "noData": "—",
     "aria": "Misuratore di segnale: RSSI {{rssi}}, SNR {{snr}}, livello {{level}}"
   },
   "gpxExport": {

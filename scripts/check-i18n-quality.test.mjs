@@ -2406,4 +2406,53 @@ describe('i18n accuracy sweep (meaning-gated rules)', () => {
       }),
     ).toEqual([]);
   });
+
+  it('flags caret residue on common.emDash', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'common.emDash',
+      enVal: '—',
+      val: '—^',
+    });
+    expectIssue(issues, 'common.emDash dash placeholder must equal English "—"');
+  });
+
+  it('flags hyphen substitution on signalMeter.noData', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'uk',
+      flatKey: 'signalMeter.noData',
+      enVal: '—',
+      val: '-',
+    });
+    expectIssue(issues, 'signalMeter.noData dash placeholder must equal English "—"');
+  });
+
+  it('passes dash placeholders that match English', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'uk',
+        flatKey: 'common.emDash',
+        enVal: '—',
+        val: '—',
+      }),
+    ).toEqual([]);
+    expect(
+      localeStringQualityIssues({
+        locale: 'it',
+        flatKey: 'roleInfo.placeholderDash',
+        enVal: '-',
+        val: '-',
+      }),
+    ).toEqual([]);
+  });
+
+  it('does not force translated noData sentences to be a dash', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'it',
+      flatKey: 'channelUtilization.noData',
+      enVal: 'No channel utilization data available yet',
+      val: 'Non sono ancora disponibili dati sull’utilizzo del canale',
+    });
+    expect(issues.some((msg) => msg.includes('dash placeholder'))).toBe(false);
+  });
 });
