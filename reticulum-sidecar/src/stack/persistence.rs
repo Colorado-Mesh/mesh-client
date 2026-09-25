@@ -4,16 +4,14 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use uuid::Uuid;
-
 use serde::Deserialize;
 
 use super::path_medium::{PathMediumPreferenceSetting, PathMediumSetting, PeerMediumPins};
 use super::pn_hosting_policy::PnHostingPolicy;
 use super::propagation_mode::PropagationMode;
 use super::types::{
-    AddInterfaceRequest, ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest,
-    NomadNodeRow, PeerRow, PropagationRow, RrcHubRow, StackIdentity,
+    ContactRow, InterfaceRow, LxmfReactionRequest, LxmfSendRequest, NomadNodeRow, PeerRow,
+    PropagationRow, RrcHubRow, StackIdentity,
 };
 use super::via::resolve_outbound_sent_via;
 
@@ -334,77 +332,6 @@ impl PersistedState {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs()
-    }
-
-    /// Stub-stack interface CRUD (live stack uses config file writes).
-    #[allow(dead_code)]
-    pub fn add_interface(&mut self, req: AddInterfaceRequest) -> Result<InterfaceRow, String> {
-        if !self.identity.configured {
-            return Err("identity not configured".into());
-        }
-        let id = Uuid::new_v4().to_string();
-        let name = req
-            .name
-            .unwrap_or_else(|| format!("{}-{}", req.iface_type, &id[..8]));
-        let row = InterfaceRow {
-            id: id.clone(),
-            name,
-            iface_type: req.iface_type.clone(),
-            enabled: true,
-            status: "pending".into(),
-            host: req.host,
-            port: req.port,
-            preset: req.preset,
-            serial_port: req.serial_port,
-            frequency: req.frequency,
-            bandwidth: req.bandwidth,
-            txpower: req.txpower,
-            spreading_factor: req.spreading_factor,
-            coding_rate: req.coding_rate,
-            callsign: req.callsign,
-            id_interval: req.id_interval,
-            mode: req.mode,
-            runtime_mode: None,
-            seed_addresses: req.seed_addresses,
-            discoverable: req.discoverable,
-            latitude: req.latitude,
-            longitude: req.longitude,
-            height: req.height,
-            discovery_name: req.discovery_name,
-            announce_interval_min: req.announce_interval_min,
-            connectable: req.connectable,
-            reachable_on: req.reachable_on,
-            discovery_lxmf_address: req.discovery_lxmf_address,
-            discovery_stamp_value: req.discovery_stamp_value,
-            discovery_encrypt: req.discovery_encrypt,
-            publish_ifac: req.publish_ifac,
-            network_name: req.network_name,
-            passphrase: req.passphrase,
-            flow_control: req
-                .flow_control
-                .or_else(|| super::config::default_flow_control_for_iface_type(&req.iface_type)),
-            ignore_config_warnings: req.ignore_config_warnings,
-            bootstrap_only: req.bootstrap_only,
-            tx_queue_used: None,
-            tx_queue_max: None,
-            host_rssi: None,
-            extra_config: req.extra_config,
-        };
-        self.interfaces.push(row.clone());
-        self.rns_ready = true;
-        Ok(row)
-    }
-
-    #[allow(dead_code)]
-    pub fn set_interface_enabled(&mut self, id: &str, enabled: bool) -> Result<(), String> {
-        let iface = self
-            .interfaces
-            .iter_mut()
-            .find(|i| i.id == id)
-            .ok_or_else(|| format!("interface not found: {id}"))?;
-        iface.enabled = enabled;
-        iface.status = if enabled { "up" } else { "down" }.into();
-        Ok(())
     }
 
     pub fn set_propagation_enabled(&mut self, id: &str, enabled: bool) -> Result<(), String> {

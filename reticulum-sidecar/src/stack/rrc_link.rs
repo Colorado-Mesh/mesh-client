@@ -71,8 +71,6 @@ pub enum RrcLinkEvent {
 pub struct RrcLinkHandle {
     cmd_tx: mpsc::Sender<RrcLinkCommand>,
     pub event_rx: mpsc::Receiver<RrcLinkEvent>,
-    #[allow(dead_code)] // exposed for session correlation / debugging
-    pub link_id: [u8; 16],
 }
 
 enum RrcLinkCommand {
@@ -313,14 +311,7 @@ pub async fn open_rrc_link_with_path_refresh(
         }
     });
 
-    Ok((
-        RrcLinkHandle {
-            cmd_tx,
-            event_rx,
-            link_id,
-        },
-        route,
-    ))
+    Ok((RrcLinkHandle { cmd_tx, event_rx }, route))
 }
 
 /// When the resource-offers receiver ends, prefer an already-queued session

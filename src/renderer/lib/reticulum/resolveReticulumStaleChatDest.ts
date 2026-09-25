@@ -4,10 +4,7 @@
  */
 
 import { classifyReticulumVia } from '@/renderer/lib/reticulum/classifyReticulumVia';
-import {
-  LXMF_DELIVERY_ASPECT,
-  type ResolveReticulumChatLxmfDestResult,
-} from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
+import { LXMF_DELIVERY_ASPECT } from '@/renderer/lib/reticulum/resolveReticulumChatLxmfDest';
 import type { ReticulumIdentityActivityRow } from '@/renderer/stores/reticulumIdentityActivityStore';
 import { canonicalizeReticulumDestinationHash } from '@/shared/reticulumDestinationHash';
 
@@ -275,13 +272,4 @@ export function resolveReticulumStaleChatDest(
     alternateDisplayName: best.displayName,
     reason: best.reason,
   };
-}
-
-/** Convenience: map chat LXMF resolve result through stale detection when send is ok. */
-export function staleHintAfterChatLxmfResolve(
-  resolved: ResolveReticulumChatLxmfDestResult,
-  input: Omit<ResolveReticulumStaleChatDestInput, 'openHash'>,
-): ResolveReticulumStaleChatDestResult {
-  if (resolved.status !== 'ok') return { status: 'ok' };
-  return resolveReticulumStaleChatDest({ ...input, openHash: resolved.hash });
 }
