@@ -6217,7 +6217,9 @@
       "showComposeButton": "Pokaż przycisk MECP na czacie",
       "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych.",
       "showMaydayButton": "Pokaż przycisk MAYDAY na czacie",
-      "showMaydayButtonHint": "Domyślnie wyłączone. Po włączeniu czat pokazuje przycisk MAYDAY, który otwiera się z wagą 0 z dołączonym GPS. Niezależnie od przycisku komponuj MECP."
+      "showMaydayButtonHint": "Domyślnie wyłączone. Po włączeniu czat pokazuje przycisk MAYDAY, który otwiera się z wagą 0 z dołączonym GPS. Niezależnie od przycisku komponuj MECP.",
+      "showQuickStatusBar": "Pokaż szybki pasek stanu w czacie",
+      "showQuickStatusBarHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje OK / Potrzebna pomoc / Na pozycji / Utracona komunikacja / Powrót /Wywołanie nad edytorem."
     },
     "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku"
   },

@@ -37,7 +37,11 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { isMecpComposeEnabled, isMecpMaydayButtonEnabled } from '@/renderer/lib/appSettingsStorage';
+import {
+  isMecpComposeEnabled,
+  isMecpMaydayButtonEnabled,
+  isQuickStatusBarEnabled,
+} from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -956,6 +960,9 @@ function ChatPanel({
   const [mecpMaydayButtonEnabled, setMecpMaydayButtonEnabled] = useState(() =>
     isMecpMaydayButtonEnabled(),
   );
+  const [quickStatusBarEnabled, setQuickStatusBarEnabled] = useState(() =>
+    isQuickStatusBarEnabled(),
+  );
   const [mecpMaydayMode, setMecpMaydayMode] = useState(false);
   const [mecpLang, setMecpLang] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
@@ -966,6 +973,7 @@ function ChatPanel({
     const sync = () => {
       setMecpComposeEnabled(isMecpComposeEnabled());
       setMecpMaydayButtonEnabled(isMecpMaydayButtonEnabled());
+      setQuickStatusBarEnabled(isQuickStatusBarEnabled());
     };
     window.addEventListener('mesh-client:appSettings', sync);
     return () => {
@@ -3989,12 +3997,14 @@ function ChatPanel({
           }}
         />
       ) : null}
-      <QuickStatusBar
-        disabled={(dmOnlyChat && activeDmNode == null) || reticulumDmMissingLxmf}
-        onSend={sendQuickStatusText}
-        onRollCall={handleRollCall}
-        rollCallSummary={rollCallSummary}
-      />
+      {quickStatusBarEnabled ? (
+        <QuickStatusBar
+          disabled={(dmOnlyChat && activeDmNode == null) || reticulumDmMissingLxmf}
+          onSend={sendQuickStatusText}
+          onRollCall={handleRollCall}
+          rollCallSummary={rollCallSummary}
+        />
+      ) : null}
       <ChatComposer
         className="mt-1"
         protocol={protocol}

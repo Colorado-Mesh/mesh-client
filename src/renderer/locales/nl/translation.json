@@ -6123,7 +6123,9 @@
       "showComposeButton": "Toon de MECP-knop in de chat",
       "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden.",
       "showMaydayButton": "Toon de MAYDAY-KNOP in de chat",
-      "showMaydayButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een Mayday-knop met één tik die compose opent met ernst 0 met GPS aangesloten. Onafhankelijk van de MECP COMPOSE-knop."
+      "showMaydayButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een Mayday-knop met één tik die compose opent met ernst 0 met GPS aangesloten. Onafhankelijk van de MECP COMPOSE-knop.",
+      "showQuickStatusBar": "Snelle statusbalk weergeven in chat",
+      "showQuickStatusBarHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont de chat OK / Hulp nodig/ In positie / Verloren communicatie / Terugkeren /Roloproep boven de componist."
     },
     "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek"
   },

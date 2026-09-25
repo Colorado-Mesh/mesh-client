@@ -6123,7 +6123,9 @@
       "showComposeButton": "Mostra pulsante MeCP in chat",
       "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza.",
       "showMaydayButton": "Mostra il pulsante MAYDAY in chat",
-      "showMaydayButtonHint": "Disattivata per impostazione predefinita. Se abilitata, la chat mostra un pulsante MAYDAY con un solo tocco che si apre per comporre con gravità 0 con GPS collegato. Indipendente dal pulsante di composizione MeCP."
+      "showMaydayButtonHint": "Disattivata per impostazione predefinita. Se abilitata, la chat mostra un pulsante MAYDAY con un solo tocco che si apre per comporre con gravità 0 con GPS collegato. Indipendente dal pulsante di composizione MeCP.",
+      "showQuickStatusBar": "Mostra la barra di stato rapido in Chat",
+      "showQuickStatusBarHint": "OFF per impostazione predefinita. Se abilitata, Chat mostra OK / Need help / In position / Lost comms / Returning / Roll call above the composer."
     },
     "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto"
   },

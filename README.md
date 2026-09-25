@@ -220,7 +220,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - **One-tap MAYDAY** (when App → MECP → **Show MAYDAY button in Chat** is on; default off): opens compose pre-filled with severity 0 and GPS — independent of the MECP compose button opt-in
 - **ACK honesty**: broadcast acknowledgements are **heard by the network** / best effort — not read receipts
 - **Ops alerts** (App → Notifications): watched-node silence escalation, battery low (where telemetry exists), and unexpected link-down (never on manual disconnect or during reconnect)
-- **Quick status** presets above the Chat composer (OK, Need help, In position, Lost comms, Returning) plus a one-tap roll-call broadcast
+- **Quick status** presets (OK, Need help, In position, Lost comms, Returning) plus roll call — shown only when App → MECP → **Show quick status bar in Chat** is on (default off)
 - **Exports**: node list as topology JSON or CSV, Diagnostics rows as JSON, and the durable MECP audit log (App → MECP)
 
 **Map & Position**

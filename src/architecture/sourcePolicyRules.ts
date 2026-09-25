@@ -62,4 +62,10 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     require: /mecpMaydayButtonEnabled:\s*false/,
     message: 'mecpMaydayButtonEnabled must default false (EMCOMM safety S14)',
   },
+  {
+    id: 'emcomm-quick-status-bar-default-off',
+    include: ['src/renderer/lib/defaultAppSettings.ts'],
+    require: /quickStatusBarEnabled:\s*false/,
+    message: 'quickStatusBarEnabled must default false (EMCOMM Chat clutter opt-in)',
+  },
 ];

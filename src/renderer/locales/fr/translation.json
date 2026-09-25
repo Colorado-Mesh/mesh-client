@@ -6123,7 +6123,9 @@
       "showComposeButton": "Afficher le bouton MECP dans le chat",
       "showComposeButtonHint": "Désactivé par défaut. Lorsqu'il est activé, Chat affiche un bouton MECP pour composer et envoyer des rapports d'urgence.",
       "showMaydayButton": "Afficher le bouton MAYDAY dans le chat",
-      "showMaydayButtonHint": "Désactivé par défaut. Lorsqu'il est activé, Chat affiche un bouton MAYDAY en un seul clic qui ouvre composer à la gravité 0 avec GPS attaché. Indépendamment du bouton de composition MECP."
+      "showMaydayButtonHint": "Désactivé par défaut. Lorsqu'il est activé, Chat affiche un bouton MAYDAY en un seul clic qui ouvre composer à la gravité 0 avec GPS attaché. Indépendamment du bouton de composition MECP.",
+      "showQuickStatusBar": "Afficher la barre d'état rapide dans le chat",
+      "showQuickStatusBarHint": "Désactivé par défaut. Lorsqu'il est activé, le chat affiche OK / Besoin d'aide/En position /Communications perdues/ Retour / Appel lancé au-dessus du compositeur."
     },
     "exportLogEmpty": "Aucun message MECP dans le journal reçu pour le moment"
   },

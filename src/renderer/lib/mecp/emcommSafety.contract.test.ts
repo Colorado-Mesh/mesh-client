@@ -16,7 +16,7 @@
  * S11 Link-down suppressed while RF reconnect is in progress.
  * S12 Incident-open nodes exempt from position_history prune.
  * S13 USGS/topo tiles only via allowlisted hosts; no user URL template.
- * S14 `mecpComposeEnabled` and `mecpMaydayButtonEnabled` defaults remain `false`.
+ * S14 `mecpComposeEnabled`, `mecpMaydayButtonEnabled`, and `quickStatusBarEnabled` defaults remain `false`.
  * S15 Incident ACKs queue as normal priority; recordAck only on live `'sent'` (drain path tags viewKey).
  * S16 App mounts emergency+ACK outbox drain once for all protocols.
  *
@@ -37,10 +37,11 @@ function readSrc(relFromSrc: string): string {
 }
 
 describe('EMCOMM safety invariants (source contracts)', () => {
-  it('S14: mecpComposeEnabled and mecpMaydayButtonEnabled default to false', () => {
+  it('S14: mecpComposeEnabled, mecpMaydayButtonEnabled, and quickStatusBarEnabled default to false', () => {
     const defaults = readSrc('renderer/lib/defaultAppSettings.ts');
     expect(defaults).toMatch(/mecpComposeEnabled:\s*false/);
     expect(defaults).toMatch(/mecpMaydayButtonEnabled:\s*false/);
+    expect(defaults).toMatch(/quickStatusBarEnabled:\s*false/);
   });
 
   it('S2: OutboxEntry carries a normal/emergency priority', () => {
@@ -97,10 +98,11 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(readSrc('renderer/stores/incidentStore.ts')).toMatch(/openMaydayUrgentCount/);
   });
 
-  it('S14 remains: mecp compose and MAYDAY buttons default false (duplicate guard)', () => {
+  it('S14 remains: mecp compose, MAYDAY, and quick-status bar default false (duplicate guard)', () => {
     const defaults = readSrc('renderer/lib/defaultAppSettings.ts');
     expect(defaults).toMatch(/mecpComposeEnabled:\s*false/);
     expect(defaults).toMatch(/mecpMaydayButtonEnabled:\s*false/);
+    expect(defaults).toMatch(/quickStatusBarEnabled:\s*false/);
   });
 
   it('S10/S11: link-down predicate excludes manual disconnect and in-progress reconnect', () => {

@@ -173,6 +173,7 @@ interface AppSettings {
   rrcUnreadAllRoomMessages: boolean;
   mecpComposeEnabled: boolean;
   mecpMaydayButtonEnabled: boolean;
+  quickStatusBarEnabled: boolean;
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
@@ -2284,6 +2285,26 @@ export default function AppPanel({
           </div>
           <p className="text-muted pl-7 text-xs leading-relaxed">
             {t('mecp.section.showMaydayButtonHint')}
+          </p>
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="quickStatusBarEnabled"
+              checked={settings.quickStatusBarEnabled}
+              onChange={(e) => {
+                updateSetting('quickStatusBarEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.showQuickStatusBar')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label htmlFor="quickStatusBarEnabled" className="cursor-pointer text-sm text-gray-300">
+              {t('mecp.section.showQuickStatusBar')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.showQuickStatusBarHint')}
           </p>
         </div>
         <button

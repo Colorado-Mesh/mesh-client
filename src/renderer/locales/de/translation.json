@@ -6123,7 +6123,9 @@
       "showComposeButton": "MECP-Schaltfläche im Chat anzeigen",
       "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an.",
       "showMaydayButton": "Mayday-Schaltfläche im Chat anzeigen",
-      "showMaydayButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt der Chat eine Mayday-Schaltfläche mit einem Fingertipp an, die das Verfassen mit Schweregrad 0 mit angeschlossenem GPS öffnet. Unabhängig von der MECP-Kompositionstaste."
+      "showMaydayButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt der Chat eine Mayday-Schaltfläche mit einem Fingertipp an, die das Verfassen mit Schweregrad 0 mit angeschlossenem GPS öffnet. Unabhängig von der MECP-Kompositionstaste.",
+      "showQuickStatusBar": "Schnellstatusleiste im Chat anzeigen",
+      "showQuickStatusBarHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat OK /Hilfe benötigen/ In Position / Verlorene Kommunikation / Wiederkehrender / Roll-Aufruf über dem Komponisten an."
     },
     "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll"
   },

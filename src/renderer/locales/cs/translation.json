@@ -6171,7 +6171,9 @@
       "showComposeButton": "Zobrazit tlačítko MECP v chatu",
       "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv.",
       "showMaydayButton": "Zobrazit tlačítko MAYDAY v chatu",
-      "showMaydayButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazí tlačítko MAYDAY jedním klepnutím, které se otevře při závažnosti 0 s připojeným GPS. Nezávisle na tlačítku MECP Compose."
+      "showMaydayButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazí tlačítko MAYDAY jedním klepnutím, které se otevře při závažnosti 0 s připojeným GPS. Nezávisle na tlačítku MECP Compose.",
+      "showQuickStatusBar": "Zobrazit rychlý stavový řádek v chatu",
+      "showQuickStatusBarHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazí OK / Potřebujete pomoc / V poloze / Ztracená komunikace / Vracející se /Uskutečněný hovor nad skladatelem."
     },
     "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP"
   },

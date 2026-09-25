@@ -6123,7 +6123,9 @@
       "showComposeButton": "Tampilkan tombol MECP di Obrolan",
       "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat.",
       "showMaydayButton": "Tampilkan tombol MAYDAY di Obrolan",
-      "showMaydayButtonHint": "Tidak aktif secara default. Saat diaktifkan, Obrolan menampilkan tombol MAYDAY sekali ketuk yang membuka compose pada tingkat keparahan 0 dengan GPS terpasang. Independen dari tombol compose MECP."
+      "showMaydayButtonHint": "Tidak aktif secara default. Saat diaktifkan, Obrolan menampilkan tombol MAYDAY sekali ketuk yang membuka compose pada tingkat keparahan 0 dengan GPS terpasang. Independen dari tombol compose MECP.",
+      "showQuickStatusBar": "Tampilkan bilah status cepat di Obrolan",
+      "showQuickStatusBarHint": "Mati secara default. Saat diaktifkan, Obrolan menunjukkan OK / Perlu bantuan / Dalam posisi /Komunikasi yang hilang/ Pengembalian /Panggilan gulung di atas komposer."
     },
     "exportLogEmpty": "Belum ada pesan MECP di log yang diterima"
   },

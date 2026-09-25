@@ -74,6 +74,8 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   mecpComposeEnabled: false,
   /** When true, show the one-tap MAYDAY button in Chat (default off; separate from MECP compose). */
   mecpMaydayButtonEnabled: false,
+  /** When true, show the quick-status / roll-call bar above the Chat composer (default off). */
+  quickStatusBarEnabled: false,
   /** Node silence alert threshold; null = use protocol capability defaults. */
   nodeSilenceAlertMinutes: null as number | null,
   /** Battery percent at or below which a watched node raises a low-battery alert. */

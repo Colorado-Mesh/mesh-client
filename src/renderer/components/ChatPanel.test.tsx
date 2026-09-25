@@ -5558,6 +5558,26 @@ describe('ChatPanel quick status bar', () => {
 
   beforeEach(() => {
     resetMeshtasticTextSendPacingForTests();
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ quickStatusBarEnabled: true }),
+    );
+    window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+  });
+
+  it('hides the bar when the App setting is off', () => {
+    localStorage.setItem(
+      'mesh-client:appSettings',
+      JSON.stringify({ quickStatusBarEnabled: false }),
+    );
+    window.dispatchEvent(new CustomEvent('mesh-client:appSettings'));
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} isConnected onSend={vi.fn()} />
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'OK' })).toBeNull();
+    expect(screen.queryByLabelText('Quick status presets')).toBeNull();
   });
 
   it('queues a normal-priority outbox row when offline', async () => {

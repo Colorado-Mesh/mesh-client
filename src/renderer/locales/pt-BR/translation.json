@@ -6123,7 +6123,9 @@
       "showComposeButton": "Mostrar botão MECP no Chat",
       "showComposeButtonHint": "Desligado por padrão. Quando ativado, o Chat mostra um botão MECP para compor e enviar relatórios de emergência.",
       "showMaydayButton": "Mostrar botão MAYDAY no chat",
-      "showMaydayButtonHint": "Desligado por padrão. Quando ativado, o bate-papo mostra um botão MAYDAY com um toque que abre a composição na gravidade 0 com o GPS conectado. Independente do botão de composição do MECP."
+      "showMaydayButtonHint": "Desligado por padrão. Quando ativado, o bate-papo mostra um botão MAYDAY com um toque que abre a composição na gravidade 0 com o GPS conectado. Independente do botão de composição do MECP.",
+      "showQuickStatusBar": "Mostrar barra de status rápida no Chat",
+      "showQuickStatusBarHint": "Desligado por padrão. Quando ativado, o bate-papo mostra OK / Precisa de ajuda / Em posição /Comunicações perdidas/ Retornando / Chamada nominal acima do compositor."
     },
     "exportLogEmpty": "Nenhuma mensagem MECP no registro recebido ainda"
   },

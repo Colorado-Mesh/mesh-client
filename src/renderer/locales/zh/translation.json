@@ -6123,7 +6123,9 @@
       "showComposeButton": "在聊天中显示MECP按钮",
       "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。",
       "showMaydayButton": "在聊天中显示“五月天”按钮",
-      "showMaydayButtonHint": "默认情况下关闭。启用后，聊天显示一个一键式MAYDAY按钮，该按钮在连接GPS的情况下以严重程度0打开撰写。独立于MECP撰写按钮。"
+      "showMaydayButtonHint": "默认情况下关闭。启用后，聊天显示一个一键式MAYDAY按钮，该按钮在连接GPS的情况下以严重程度0打开撰写。独立于MECP撰写按钮。",
+      "showQuickStatusBar": "在聊天中显示快速状态栏",
+      "showQuickStatusBarHint": "默认情况下关闭。启用后，聊天显示撰写器上方的确定/需要帮助/就位/失去通信/返回/点名。"
     },
     "exportLogEmpty": "收到的日志中还没有MECP消息"
   },

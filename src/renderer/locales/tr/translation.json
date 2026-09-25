@@ -6123,7 +6123,9 @@
       "showComposeButton": "Sohbette MECP düğmesini göster",
       "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir.",
       "showMaydayButton": "Sohbette MAYDAY düğmesini göster",
-      "showMaydayButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet GPS takılıyken 0 şiddetinde açılan tek dokunuşlu bir ACİL Durum düğmesi gösterir. MECP oluşturma düğmesinden bağımsızdır."
+      "showMaydayButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet GPS takılıyken 0 şiddetinde açılan tek dokunuşlu bir ACİL Durum düğmesi gösterir. MECP oluşturma düğmesinden bağımsızdır.",
+      "showQuickStatusBar": "Sohbet'te hızlı durum çubuğunu göster",
+      "showQuickStatusBarHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet düzenleyicinin üzerinde Tamam / Yardıma ihtiyacım var/ Pozisyonda / Kayıp iletişim / Geri dönüş / Roll çağrısı gösterir."
     },
     "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok"
   },

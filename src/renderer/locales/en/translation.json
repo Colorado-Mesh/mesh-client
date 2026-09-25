@@ -6123,7 +6123,9 @@
       "showComposeButton": "Show MECP button in Chat",
       "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports.",
       "showMaydayButton": "Show MAYDAY button in Chat",
-      "showMaydayButtonHint": "Off by default. When enabled, Chat shows a one-tap MAYDAY button that opens compose at severity 0 with GPS attached. Independent of the MECP compose button."
+      "showMaydayButtonHint": "Off by default. When enabled, Chat shows a one-tap MAYDAY button that opens compose at severity 0 with GPS attached. Independent of the MECP compose button.",
+      "showQuickStatusBar": "Show quick status bar in Chat",
+      "showQuickStatusBarHint": "Off by default. When enabled, Chat shows OK / Need help / In position / Lost comms / Returning / Roll call above the composer."
     },
     "compose": {
       "title": "Compose MECP report",
