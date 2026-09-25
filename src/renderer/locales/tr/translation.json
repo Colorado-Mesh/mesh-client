@@ -415,7 +415,13 @@
     "decreaseFontSize": "Yazı tipi boyutunu küçült",
     "increaseFontSize": "Yazı tipi boyutunu büyüt",
     "resetFontSize": "Sıfırlayın",
-    "resetFontSizeAria": "Yazı tipi boyutunu sıfırla"
+    "resetFontSizeAria": "Yazı tipi boyutunu sıfırla",
+    "opsAlertsHeading": "Operasyonel Uyarılar",
+    "nodeSilenceAlertMinutes": "İzlenen düğüm sessizlik uyarısı (dakika)",
+    "nodeSilenceAlertMinutesPlaceholder": "Protokol varsayılanı",
+    "nodeSilenceAlertMinutesHint": "Her protokolün eski eşiğini kullanmak için boş bırakın. Bu değerin 2 katında eskalasyon yangınları.",
+    "nodeBatteryLowThreshold": "Pil alt eşiği (%)",
+    "notifyOnLinkDown": "Beklenmedik radyo bağlantısı kesildiğinde bildir"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Meshtastic'e geç, {{count}} okunmadı",
     "switchToMeshCoreWithUnread": "MeshCore'a geç, {{count}} okunmadı",
     "switchToReticulumWithUnread": "Reticulum'a geç, {{count}} okunmadı",
-    "tabWithUnread": "{{label}}, {{count}} okunmamış"
+    "tabWithUnread": "{{label}}, {{count}} okunmamış",
+    "tabWithOpenIncidents": "{{label}}, {{count}} açık İMDAT veya ACİL OLAYLAR"
   },
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "Bu akran için olası farklı LXMF hedefi",
     "reticulumDmStaleAlternate": "Bu sohbet LXMF {{openPrefix}}…. Ayrıca farklı bir uygulamada aynı kişi olabilecek başka bir LXMF {{alternatePrefix}}… var. Ağ LXMF/ Akran → Mesajını Onaylayın veya Şimdi her iki tarafı da Duyurun.",
     "reticulumDmStaleAlternateNamed": "Bu sohbet LXMF {{openPrefix}}…. Başka bir LXMF {{alternatePrefix}} … ({{name}}) farklı bir uygulamada aynı kişi olabilir. Bu karmadaki Eşler → Mesajını açın veya her iki tarafta da Şimdi duyurun.",
-    "reticulumDmStaleAlternateDismissAria": "Varış noktası uyarısını kapat"
+    "reticulumDmStaleAlternateDismissAria": "Varış noktası uyarısını kapat",
+    "outboxEmergencyBadge": "Acil durum",
+    "outboxEmergencyWillSend": "Gönderilene kadar yeniden denemeye devam edecek",
+    "outboxEmergencyCapBlocked": "Duraklatıldı: Çok fazla sıralanmış acil durum mesajı var. Bunu yeniden deneyin veya iptal edin.",
+    "outboxEmergencyCancelConfirm": "Bu acil durum mesajı iptal edilsin mi? Gönderilmeyecektir.",
+    "retryOutboxEmergencyAttempt": "Deneme {{count}}"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -1921,7 +1933,9 @@
     "km": "kilometre",
     "distanceOffsetHelp": "Hop-goblin ve kötü rota mesafe eşiklerine (0-50) düz bir kilometre tabanı ekler.",
     "ignoreMqttToggle": "MQTT'yi yok say",
-    "ignoreMqttHelp": "Yalnızca MQTT kullanan düğümleri soluk göster ve tanılamadan hariç tut"
+    "ignoreMqttHelp": "Yalnızca MQTT kullanan düğümleri soluk göster ve tanılamadan hariç tut",
+    "exportJson": "JSON olarak dışa aktar",
+    "exportJsonAria": "Görünür tanılama satırlarını JSON olarak dışa aktar"
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",
@@ -2315,7 +2329,17 @@
       "clear": "Döşeme önbelleğini temizle",
       "clearAria": "Çevrimdışı harita döşeme önbelleğini temizle",
       "cleared": "Ön bellek temizlendi."
-    }
+    },
+    "basemapUsgsTopo": "USGS Topo (yalnızca ABD)",
+    "layerIncidents": "Acil durum olayları",
+    "layerMgrsGrid": "MGRS IZGARASI",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "DRILL {{sender}}: {{codes}}",
+    "measure": "Ölç",
+    "measureStartAria": "Mesafeyi ölçmeye başlayın",
+    "measureStopAria": "Ölçümü durdur ve temizle",
+    "measureHint": "Puan eklemek için haritaya tıklayın",
+    "measureTotal": "{{km}} km / {{mi}} mil"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "Yok",
     "meshcoreTypeUnknown": "Bilinmiyor",
     "columnHealth": "Düğüm sağlığı",
-    "hasPublicKeyTitle": "Genel anahtar"
+    "hasPublicKeyTitle": "Genel anahtar",
+    "buttonExportCsv": "CSV olarak dışa aktar"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "Ağ",
     "rrc": "RRC",
     "remote": "Uzak",
-    "games": "Oyun"
+    "games": "Oyun",
+    "incident": "Olay"
   },
   "takServerPanel": {
     "title": "TAK Sunucusu",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "GPS düzeltmesi alınamadı",
-      "sendFailed": "MECP raporu gönderilemedi"
+      "sendFailed": "MECP raporu gönderilemedi",
+      "maydayButton": "Mayday",
+      "maydayAria": "GPS ile tek dokunuşla MAYDAY OLUŞTURUN"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6093,7 +6121,9 @@
       "learnMore": "MECP nasıl çalışır?",
       "protocolSource": "GitHub'daki protokol kaynağı",
       "showComposeButton": "Sohbette MECP düğmesini göster",
-      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir."
+      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir.",
+      "showMaydayButton": "Sohbette MAYDAY düğmesini göster",
+      "showMaydayButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet GPS takılıyken 0 şiddetinde açılan tek dokunuşlu bir ACİL Durum düğmesi gösterir. MECP oluşturma düğmesinden bağımsızdır."
     },
     "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok"
   },
@@ -6127,6 +6157,48 @@
     "saving": "Ses ayarları kaydediliyor...",
     "importFailed": "Bu ses içe aktarılamadı. 10 saniyeden uzun olmayan ve 2 MB'den büyük olmayan desteklenen bir ses dosyası seçin.",
     "saveFailed": "Ses ayarları kaydedilemedi. Önceki seçiminiz değişmedi.",
-    "previewFailed": "Bu ses çalınamadı. Başka bir dosya deneyin veya orijinal tona sıfırlayın."
+    "previewFailed": "Bu ses çalınamadı. Başka bir dosya deneyin veya orijinal tona sıfırlayın.",
+    "connectionLost": "Radyo bağlantısı kayboldu",
+    "batteryLow": "Batarya zayif"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} pil zayıf",
+    "batteryLowBody": "Pil % {{percent}}",
+    "silenceEscalationTitle": "{{name}} hala sessiz",
+    "silenceEscalationBody": "{{minutes}} dakika boyunca duyulmadı",
+    "linkDownTitle": "{{protocol}} bağlantı aşağı",
+    "linkDownBody": "Radyo bağlantısı kesildi ve yeniden bağlanılamadı"
+  },
+  "incidentPanel": {
+    "title": "Acil durum olayları",
+    "empty": "Açık acil durum olayı yok.",
+    "listAria": "Açık acil durum olayları",
+    "resolve": "Çözümleme",
+    "resolveAria": "Olayı {{sender}} 'dan çöz",
+    "ack": "Onay",
+    "ackAria": "Olayı {{sender}} 'dan onaylayın",
+    "ackBeacon": "İşaretçiyi onayla",
+    "ackBeaconAria": "{{sender}} 'dan tehlike işaretini onaylayın",
+    "ackCount_one": "{{count}} onay",
+    "ackCount_other": "{{count}} teşekkür",
+    "protocolsSeen": "Şu tarihte duydum: {{protocols}}",
+    "beaconActive": "Yol gösterici aktif",
+    "drill": "Matkap",
+    "ackSent": "Onay {{sender}} adresine gönderildi",
+    "ackQueued": "{{sender}} kuyruğuna alındı; radyo uygun olduğunda gönderilecektir",
+    "ackFailed": "Onay gönderilemedi veya kuyruğa alınamadı",
+    "intro": "Herhangi bir protokolde duyulan MECP acil durumları için ortak çalışma resmi. ACİL DURUM ve ACİL satırlar rozetini bu sekmede açın; tatbikatlar listelenir ancak asla sayılmaz. Ağa yanıt vermek için Onayla'yı (veya etkin bir işaretçi için Onayla'yı) kullanın, ardından olay yerel olarak kapatıldığında çözün.",
+    "emptyHint": "Gelen MECP raporları burada otomatik olarak görünür. Bir tane göndermek için, Sohbet'te Uygulama → MECP → Göster MECP düğmesini etkinleştirin, ardından Sohbet'te MECP veya MAYDAY'İ kullanın. Harita → Katmanları açık olayları koordinatlarla gösterebilir."
+  },
+  "quickStatus": {
+    "ok": "Tamam",
+    "needHelp": "Yardım gerekliyse",
+    "inPosition": "in position.",
+    "lostComms": "Kayıp iletişim",
+    "returning": "Dönüş",
+    "barAria": "Hızlı durum ön ayarları",
+    "rollCall": "Yoklama",
+    "rollCallAria": "Yoklama ve sayım tamam yanıtlarını yayınlayın",
+    "rollCallTally": "{{responded}}/{{expected}} yanıtladı"
   }
 }

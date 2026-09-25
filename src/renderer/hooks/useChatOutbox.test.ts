@@ -11,7 +11,12 @@ import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConst
 import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry } from '@/shared/electron-api.types';
 
-import { useChatOutbox } from './useChatOutbox';
+import {
+  EMERGENCY_OUTBOX_SOFT_CAP,
+  isEmergencyOutboxPriority,
+  OUTBOX_MAX_AGE_MS,
+  useChatOutbox,
+} from './useChatOutbox';
 
 function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
   return {
@@ -31,6 +36,7 @@ function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
     groupId: null,
     groupIndex: null,
     groupTotal: null,
+    priority: 'normal',
     ...overrides,
   };
 }
@@ -857,6 +863,181 @@ describe('useChatOutbox', () => {
     });
     await waitFor(() => {
       expect(result.current.rows.find((r) => r.id === 71)?.status).toBe('failed');
+    });
+  });
+
+  describe('emergency priority', () => {
+    it('isEmergencyOutboxPriority only matches emergency rows', () => {
+      expect(isEmergencyOutboxPriority(makeEntry({ priority: 'emergency' }))).toBe(true);
+      expect(isEmergencyOutboxPriority(makeEntry())).toBe(false);
+    });
+
+    it('skips normal rows older than 24h but still drains emergency rows past 24h', async () => {
+      const old = Date.now() - OUTBOX_MAX_AGE_MS - 60_000;
+      const normal = makeEntry({ id: 100, protocol: 'meshcore', payload: 'stale', createdAt: old });
+      const emergency = makeEntry({
+        id: 101,
+        protocol: 'meshcore',
+        payload: 'mayday',
+        createdAt: old,
+        priority: 'emergency',
+      });
+      vi.mocked(mockOutbox.list).mockResolvedValue([normal, emergency]);
+      const sendFn = vi.fn().mockResolvedValue(undefined);
+      renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+      await waitFor(() => {
+        expect(mockOutbox.remove).toHaveBeenCalledWith(101);
+      });
+      expect(sendFn).toHaveBeenCalledTimes(1);
+      expect(sendFn).toHaveBeenCalledWith('mayday', 0, undefined, undefined);
+    });
+
+    it('keeps scheduling nextRetryAt for emergency rows beyond MAX_ATTEMPTS', async () => {
+      const entry = makeEntry({ id: 102, attemptCount: 7, priority: 'emergency' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }),
+      );
+      await waitFor(() => {
+        expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+          102,
+          'failed',
+          'chatPanel.sendFailed',
+          expect.any(Number),
+          8,
+        );
+      });
+      await waitFor(() => {
+        expect(result.current.rows.find((r) => r.id === 102)?.nextRetryAt).toEqual(
+          expect.any(Number),
+        );
+      });
+    });
+
+    it('still blocks emergency rows on encryption errors without retry', async () => {
+      const entry = makeEntry({ id: 103, priority: 'emergency' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn().mockRejectedValue(new Error('no encryption key'));
+      renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
+      await waitFor(() => {
+        expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+          103,
+          'blocked',
+          'chatPanel.sendErrors.encryptionBlocked',
+          undefined,
+          1,
+        );
+      });
+    });
+
+    it('queue preserves emergency priority on the stored row', async () => {
+      const sendFn = vi.fn();
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: false, sendFn }),
+      );
+      const row = await result.current.queue({
+        protocol: 'meshtastic',
+        viewKey: 'ch:0',
+        channel: 0,
+        toNode: null,
+        payload: 'mayday',
+        replyId: null,
+        status: 'queued',
+        error: null,
+        nextRetryAt: null,
+        groupId: null,
+        groupIndex: null,
+        groupTotal: null,
+        priority: 'emergency',
+      });
+      expect(mockOutbox.add).toHaveBeenCalledWith(
+        expect.objectContaining({ priority: 'emergency' }),
+      );
+      expect(row.priority).toBe('emergency');
+      await waitFor(() => {
+        expect(result.current.rows.find((r) => r.id === 99)?.priority).toBe('emergency');
+      });
+      expect(sendFn).not.toHaveBeenCalled();
+    });
+
+    it('blocks the oldest other emergency row when the soft cap is exceeded', async () => {
+      const base = Date.now() - 10_000;
+      const existing = Array.from({ length: EMERGENCY_OUTBOX_SOFT_CAP }, (_, i) =>
+        makeEntry({
+          id: 200 + i,
+          priority: 'emergency',
+          status: i === 0 ? 'blocked' : 'failed',
+          createdAt: base + i,
+        }),
+      );
+      const newRow = makeEntry({ id: 99, priority: 'emergency', createdAt: Date.now() });
+      vi.mocked(mockOutbox.add).mockResolvedValue(newRow);
+      const sendFn = vi.fn();
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: false, sendFn }),
+      );
+      await waitFor(() => {
+        expect(mockOutbox.list).toHaveBeenCalled();
+      });
+      vi.mocked(mockOutbox.list).mockResolvedValue([...existing, newRow]);
+      await result.current.queue({
+        protocol: 'meshtastic',
+        viewKey: 'ch:0',
+        channel: 0,
+        toNode: null,
+        payload: 'mayday',
+        replyId: null,
+        status: 'queued',
+        error: null,
+        nextRetryAt: null,
+        groupId: null,
+        groupIndex: null,
+        groupTotal: null,
+        priority: 'emergency',
+      });
+      // Row 200 is already blocked, so the oldest active emergency row (201) is the victim.
+      expect(mockOutbox.updateStatus).toHaveBeenCalledTimes(1);
+      expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+        201,
+        'blocked',
+        'chatPanel.outboxEmergencyCapBlocked',
+        undefined,
+      );
+    });
+
+    it('does not enforce the soft cap at or below the limit', async () => {
+      const existing = Array.from({ length: EMERGENCY_OUTBOX_SOFT_CAP - 1 }, (_, i) =>
+        makeEntry({ id: 300 + i, priority: 'emergency', status: 'failed' }),
+      );
+      const newRow = makeEntry({ id: 99, priority: 'emergency' });
+      vi.mocked(mockOutbox.add).mockResolvedValue(newRow);
+      vi.mocked(mockOutbox.list).mockResolvedValue([...existing, newRow]);
+      const sendFn = vi.fn();
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshtastic', isSendAvailable: false, sendFn }),
+      );
+      await result.current.queue({
+        protocol: 'meshtastic',
+        viewKey: 'ch:0',
+        channel: 0,
+        toNode: null,
+        payload: 'mayday',
+        replyId: null,
+        status: 'queued',
+        error: null,
+        nextRetryAt: null,
+        groupId: null,
+        groupIndex: null,
+        groupTotal: null,
+        priority: 'emergency',
+      });
+      expect(mockOutbox.updateStatus).not.toHaveBeenCalledWith(
+        expect.any(Number),
+        'blocked',
+        'chatPanel.outboxEmergencyCapBlocked',
+        undefined,
+      );
     });
   });
 });

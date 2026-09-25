@@ -8,6 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 
 import {
+  incidentMarkersFrom,
+  IncidentMarkersLayer,
+} from '@/renderer/components/map/emcommMapLayers';
+import {
   ensureMapStyles,
   flyMapToBounds,
   LocateMeControl,
@@ -39,6 +43,7 @@ import {
   fetchReticulumRmapDiscovered,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { useIncidentStore } from '@/renderer/stores/incidentStore';
 import { useMapLayerStore } from '@/renderer/stores/mapLayerStore';
 import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
@@ -129,6 +134,10 @@ export default function ReticulumMapPanel({
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const basemap = MAP_BASEMAPS[basemapId] ?? MAP_BASEMAPS[DEFAULT_MAP_BASEMAP_ID];
   const overlayColors = getMapOverlayColors(basemap.isDark);
+  const showIncidents = useMapLayerStore((s) => s.showIncidents);
+  const incidents = useIncidentStore((s) => s.incidents);
+  const openIncidentMarkers = useMemo(() => incidentMarkersFrom(incidents), [incidents]);
+  const hasIncidentMarkers = showIncidents && openIncidentMarkers.length > 0;
   const savedViewport = useMapViewportStore((s) => s.viewport);
 
   const discovered = useReticulumDiscoveryMapStore((s) => s.discovered);
@@ -293,20 +302,35 @@ export default function ReticulumMapPanel({
     listScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const emptyReason = !stackConfigured
-    ? 'stackOff'
-    : discovered.length === 0
-      ? 'noDiscoveries'
-      : filteredMarkers.length === 0 && filteredListOnly.length === 0
-        ? 'filterEmpty'
-        : null;
+  const emptyReason = hasIncidentMarkers
+    ? null
+    : !stackConfigured
+      ? 'stackOff'
+      : discovered.length === 0
+        ? 'noDiscoveries'
+        : filteredMarkers.length === 0 && filteredListOnly.length === 0
+          ? 'filterEmpty'
+          : null;
 
   const hasMapPositions =
-    filteredMarkers.length > 0 || selfCoords != null || filteredListOnly.length > 0;
-  const shouldFitOnMount = savedViewport == null && filteredMarkers.length > 0;
+    filteredMarkers.length > 0 ||
+    selfCoords != null ||
+    filteredListOnly.length > 0 ||
+    hasIncidentMarkers;
+  const shouldFitOnMount =
+    savedViewport == null && (filteredMarkers.length > 0 || hasIncidentMarkers);
 
   const reachableCount = useMemo(() => listRows.filter((row) => row.reachable).length, [listRows]);
   const heardOnlyCount = listRows.length - reachableCount;
+
+  const fitMarkers = useMemo(() => {
+    if (filteredMarkers.length > 0) return filteredMarkers;
+    if (!hasIncidentMarkers) return [];
+    return openIncidentMarkers.map((inc) => ({
+      latitude: inc.lat,
+      longitude: inc.lon,
+    }));
+  }, [filteredMarkers, hasIncidentMarkers, openIncidentMarkers]);
 
   return (
     <div className="flex h-full min-h-[500px] flex-col gap-3">
@@ -425,6 +449,7 @@ export default function ReticulumMapPanel({
               key={basemapId}
               url={basemap.url}
               attribution={basemap.attribution}
+              maxNativeZoom={basemap.maxNativeZoom}
               keepBuffer={1}
               updateWhenIdle
             />
@@ -433,7 +458,7 @@ export default function ReticulumMapPanel({
             <LocateMeControl onLocateMe={locateMe} />
             <MapFlyToController target={flyTarget} />
             <FitBoundsOnMarkers
-              markers={filteredMarkers}
+              markers={fitMarkers}
               selfLat={selfCoords?.lat}
               selfLon={selfCoords?.lon}
               shouldFitOnMount={shouldFitOnMount}
@@ -495,6 +520,7 @@ export default function ReticulumMapPanel({
                 </Popup>
               </Marker>
             ))}
+            {showIncidents ? <IncidentMarkersLayer /> : null}
           </MapContainer>
 
           {emptyReason ? (

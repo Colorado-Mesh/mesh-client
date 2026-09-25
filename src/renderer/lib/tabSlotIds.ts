@@ -15,6 +15,7 @@ export const TAB_SLOT_IDS = [
   'Telemetry',
   'Security',
   'TAK',
+  'Incident',
   'App',
   'Diagnostics',
   'Stats',

@@ -6,6 +6,8 @@ export const NOTIFICATION_SOUND_EVENTS = [
   'mecpSafety',
   'mecpEas',
   'mecpSiren',
+  'connectionLost',
+  'batteryLow',
 ] as const;
 
 export type NotificationSoundEvent = (typeof NOTIFICATION_SOUND_EVENTS)[number];

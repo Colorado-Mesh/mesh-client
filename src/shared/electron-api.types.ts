@@ -11,6 +11,7 @@ import type {
 } from './games-types';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
+import type { OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
 import type {
   PathCapability,
   RemoteAddressBookRow,
@@ -274,9 +275,17 @@ export interface OutboxEntry {
   groupId: string | null;
   groupIndex: number | null;
   groupTotal: number | null;
+  /** `'emergency'` rows skip the 24h drain age cap and retry indefinitely (EMCOMM WS2). */
+  priority: OutboxPriority;
 }
 
-export type OutboxEntryInput = Omit<OutboxEntry, 'id' | 'attemptCount' | 'updatedAt' | 'createdAt'>;
+export type OutboxPriority = 'normal' | 'emergency';
+
+/** `priority` defaults to `'normal'` when omitted. */
+export type OutboxEntryInput = Omit<
+  OutboxEntry,
+  'id' | 'attemptCount' | 'updatedAt' | 'createdAt' | 'priority'
+> & { priority?: OutboxPriority };
 
 export interface SpellcheckReplacePayload {
   suggestion: string;
@@ -433,8 +442,9 @@ export interface ElectronAPI {
     deleteNodesBySource: (source: string) => Promise<number>;
     migrateRfStubNodes: () => Promise<number>;
     deleteNodesWithoutLongname: () => Promise<number>;
-    prunePositionHistory: (days: number) => Promise<number>;
-    prunePositionHistoryPerNode: (maxPerNode: number) => Promise<number>;
+    /** `exemptNodeIds`: node ids (`!hex`, `0x` hex, or decimal) whose rows are never pruned. */
+    prunePositionHistory: (days: number, exemptNodeIds?: string[]) => Promise<number>;
+    prunePositionHistoryPerNode: (maxPerNode: number, exemptNodeIds?: string[]) => Promise<number>;
     clearNodePositions: () => Promise<void>;
     updateMessageReceivedVia: (packetId: number, rxHops?: number | null) => Promise<void>;
     /** Meshtastic: replace optimistic temp `packet_id` with RF `sendText()` id for `reply_id` / tapback matching. */
@@ -1018,7 +1028,7 @@ export interface ElectronAPI {
       bounds: { north: number; south: number; east: number; west: number };
       minZoom: number;
       maxZoom: number;
-      basemapId: 'osm' | 'dark';
+      basemapId: OfflineMapBasemapId;
       /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
       retina?: boolean;
     }) => Promise<{ tileCount: number; sizeEstimateBytes: number; withinCaps: boolean }>;
@@ -1026,7 +1036,7 @@ export interface ElectronAPI {
       bounds: { north: number; south: number; east: number; west: number };
       minZoom: number;
       maxZoom: number;
-      basemapId: 'osm' | 'dark';
+      basemapId: OfflineMapBasemapId;
       /** CARTO `@2x` tiles when devicePixelRatio > 1; ignored for OSM. */
       retina?: boolean;
     }) => Promise<{ jobId: string }>;
@@ -1034,7 +1044,7 @@ export interface ElectronAPI {
     status: () => Promise<{
       activeJobs: {
         jobId: string;
-        source: 'osm' | 'dark';
+        source: OfflineMapBasemapId;
         completed: number;
         total: number;
         failed: number;
@@ -1044,7 +1054,7 @@ export interface ElectronAPI {
       stats: { tileCount: number; diskBytes: number };
       regions: {
         id: string;
-        basemapId: 'osm' | 'dark';
+        basemapId: OfflineMapBasemapId;
         bounds: { north: number; south: number; east: number; west: number };
         minZoom: number;
         maxZoom: number;
@@ -1053,11 +1063,11 @@ export interface ElectronAPI {
       }[];
       sources: Record<string, { tileCount: number; diskBytes: number }>;
     }>;
-    clear: (source?: 'osm' | 'dark' | 'all') => Promise<{ ok: boolean }>;
+    clear: (source?: OfflineMapBasemapId | 'all') => Promise<{ ok: boolean }>;
     onProgress: (
       cb: (info: {
         jobId: string;
-        source: 'osm' | 'dark';
+        source: OfflineMapBasemapId;
         completed: number;
         total: number;
         failed: number;

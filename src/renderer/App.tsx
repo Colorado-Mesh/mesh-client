@@ -21,6 +21,7 @@ import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcor
 import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
+import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import {
   clearPersistedLastReadForProtocol,
   clearPersistedRoomsLastRead,
@@ -47,6 +48,7 @@ import {
   setDebugSnapshotMeshtasticContext,
 } from '@/renderer/lib/debugSnapshotMeshtasticContext';
 import { setDebugSnapshotUiContext } from '@/renderer/lib/debugSnapshotUiContext';
+import { sendEmergencyText } from '@/renderer/lib/emergencySend';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { readStoredStaticGps, resolveOurPosition } from '@/renderer/lib/gpsSource';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
@@ -55,6 +57,11 @@ import { MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
+import {
+  composeIncidentAck,
+  incidentNeedsBeaconAck,
+  resolveIncidentAckRoute,
+} from '@/renderer/lib/mecp/incidentAck';
 import {
   readMeshcoreAutoOffloadWhenFull,
   writeMeshcoreAutoOffloadWhenFull,
@@ -95,6 +102,11 @@ import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
+import {
+  type EmergencyIncident,
+  openMaydayUrgentCount,
+  useIncidentStore,
+} from '@/renderer/stores/incidentStore';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
 import {
   meshtasticDeviceRoleFromConfigSlice,
@@ -139,6 +151,7 @@ import type { useMeshtasticPanelActions } from './hooks/useMeshtasticPanelAction
 import { useMessages } from './hooks/useMessages';
 import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
+import { useOperationalAlerts, useOperationalAlertSettings } from './hooks/useOperationalAlerts';
 import { usePowerRecovery } from './hooks/usePowerRecovery';
 import { useProtocolConnect, useProtocolDisconnect } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
@@ -157,6 +170,7 @@ import {
   ChannelUtilizationChart,
   DiagnosticsPanel,
   GamesPanel,
+  IncidentPanel,
   MapPanel,
   ModulePanel,
   NomadNetworkPanel,
@@ -193,6 +207,7 @@ import {
   findFilteredTabIndexForPanel,
   GAMES_PANEL_INDEX,
   GRAPH_PANEL_INDEX,
+  INCIDENT_PANEL_INDEX,
   MAP_TAB_PANEL_INDEX,
   MODULES_PANEL_INDEX,
   NODES_PANEL_INDEX,
@@ -1547,7 +1562,90 @@ function AppContent() {
       ? reticulumPathPeerCount
       : nodesForUi.size;
 
-  useNodeStatusNotifier(nodesForUi, capabilities);
+  const operationalAlertSettings = useOperationalAlertSettings();
+  useNodeStatusNotifier(nodesForUi, capabilities, {
+    silenceThresholdMinutes: operationalAlertSettings.nodeSilenceAlertMinutes,
+  });
+  const meshtasticLinkStatus = meshtasticConnectionView.state.status;
+  const meshtasticLinkLoss = meshtasticConnectionView.state.connectionLoss;
+  const meshcoreLinkStatus = meshcoreConnectionView.state.status;
+  const meshcoreLinkLoss = meshcoreConnectionView.state.connectionLoss;
+  const operationalLinks = useMemo(
+    () => [
+      {
+        key: 'meshtastic',
+        label: 'Meshtastic',
+        status: meshtasticLinkStatus,
+        connectionLoss: meshtasticLinkLoss,
+      },
+      {
+        key: 'meshcore',
+        label: 'MeshCore',
+        status: meshcoreLinkStatus,
+        connectionLoss: meshcoreLinkLoss,
+      },
+    ],
+    [meshtasticLinkStatus, meshtasticLinkLoss, meshcoreLinkStatus, meshcoreLinkLoss],
+  );
+  useOperationalAlerts({
+    nodes: nodesForUi,
+    capabilities,
+    links: operationalLinks,
+    settings: operationalAlertSettings,
+  });
+
+  const incidentBadgeCount = useIncidentStore(openMaydayUrgentCount);
+
+  // Mirrors ChatPanel's outbox availability (operational or MQTT, but not MQTT-only MeshCore).
+  const activeLinkOperational =
+    activeConnectionView.state.status === 'configured' ||
+    activeConnectionView.state.status === 'stale';
+  const activeMqttConnected = activeConnectionView.mqttStatus === 'connected';
+  const activeChatSendAvailable =
+    activeLinkOperational || (activeMqttConnected && protocol !== 'meshcore');
+
+  const handleIncidentAck = useCallback(
+    (incident: EmergencyIncident) => {
+      const route = resolveIncidentAckRoute(
+        incident,
+        protocol,
+        (p) => selectByProtocol(capabilitiesByProtocol, p).hasReticulumInterfaceConfig,
+      );
+      const text = composeIncidentAck(incident);
+      const beaconAck = incidentNeedsBeaconAck(incident);
+      void sendEmergencyText(text, {
+        isSendAvailable: route.viaActiveProtocol && activeChatSendAvailable,
+        sendFn: (payload, channel, destination) => handleSend(payload, channel, destination),
+        queueOutbox: async (entry) => {
+          const row = await window.electronAPI.chat.outbox.add(entry);
+          requestChatOutboxDrain(route.protocol);
+          return row;
+        },
+        protocol: route.protocol,
+        viewKey: route.toNode != null ? `dm:${route.toNode}` : `ch:${route.channel}`,
+        channel: route.channel,
+        toNode: route.toNode,
+      })
+        .then((outcome) => {
+          if (beaconAck) {
+            useIncidentStore.getState().confirmBeacon(incident.id);
+          } else {
+            useIncidentStore.getState().recordAck(incident.id, 'local');
+          }
+          addToast(
+            t(outcome === 'sent' ? 'incidentPanel.ackSent' : 'incidentPanel.ackQueued', {
+              sender: incident.senderName,
+            }),
+            outcome === 'sent' ? 'success' : 'info',
+          );
+        })
+        .catch((e: unknown) => {
+          console.warn('[App] incident ACK send failed: ' + errLikeToLogString(e));
+          addToast(t('incidentPanel.ackFailed'), 'error');
+        });
+    },
+    [protocol, capabilitiesByProtocol, activeChatSendAvailable, handleSend, addToast, t],
+  );
 
   const chatUnreadByProtocol = useMemo(
     () => protocolRecord(meshtasticChatUnread, meshcoreChatUnread, reticulumChatUnread),
@@ -3330,6 +3428,7 @@ function AppContent() {
                   : 0
               }
               gamesUnread={protocol === 'reticulum' && capabilities.hasLrgpGames ? gamesUnread : 0}
+              incidentBadgeCount={incidentBadgeCount}
               collapsed={sidebarCollapsed}
               onToggle={handleSidebarToggle}
             />
@@ -4502,6 +4601,21 @@ function AppContent() {
                               atakMessages={meshtasticRuntime.atakMessages}
                               capabilities={capabilities}
                             />
+                          </Suspense>
+                        </ErrorBoundary>
+                      ) : null}
+                    </div>
+                    <div
+                      id={`panel-${INCIDENT_PANEL_INDEX}`}
+                      role="tabpanel"
+                      aria-labelledby={`tab-${Math.max(0, findFilteredTabIndexForPanel(selectByProtocol(tabsByProtocol, protocol), INCIDENT_PANEL_INDEX))}`}
+                      hidden={activePanelIndex !== INCIDENT_PANEL_INDEX}
+                      className="h-full w-full min-w-0"
+                    >
+                      {activePanelIndex === INCIDENT_PANEL_INDEX ? (
+                        <ErrorBoundary>
+                          <Suspense fallback={<PanelSkeleton />}>
+                            <IncidentPanel onAck={handleIncidentAck} />
                           </Suspense>
                         </ErrorBoundary>
                       ) : null}

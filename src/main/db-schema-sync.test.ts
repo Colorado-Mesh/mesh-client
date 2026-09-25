@@ -416,4 +416,77 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     expect(row.status).toBe('acked');
     db.close();
   });
+
+  it('creates node_status_events with ts index and event_type CHECK on existing databases', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-node-status-events-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.execScript('CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT);');
+    db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
+    runSchemaUpgrade(db);
+
+    const idx = db
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='index' AND name='idx_node_status_events_ts'",
+      )
+      .all();
+    expect(idx).toHaveLength(1);
+
+    const insert = db.prepareOnce(
+      'INSERT INTO node_status_events (node_id, protocol, event_type, ts_ms) VALUES (?, ?, ?, ?)',
+    );
+    insert.run('!abcd1234', 'meshtastic', 'went_stale', 1_700_000_000_000);
+    insert.run('!abcd1234', 'meshtastic', 'online', 1_700_000_060_000);
+    expect(() => insert.run('!abcd1234', 'meshtastic', 'exploded', 1)).toThrow();
+
+    const rows = db
+      .prepareOnce('SELECT event_type FROM node_status_events ORDER BY ts_ms')
+      .all() as { event_type: string }[];
+    expect(rows.map((r) => r.event_type)).toEqual(['went_stale', 'online']);
+    db.close();
+  });
+
+  it('adds chat_outbox.priority to legacy outbox rows with a normal default', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-schema-outbox-priority-'));
+    const db = new NodeSqliteDB(join(dir, 'test.db'));
+    db.execScript(`
+      CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT);
+      CREATE TABLE chat_outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        protocol TEXT NOT NULL,
+        view_key TEXT NOT NULL,
+        channel INTEGER NOT NULL,
+        to_node INTEGER,
+        payload TEXT NOT NULL,
+        reply_id INTEGER,
+        status TEXT NOT NULL DEFAULT 'queued',
+        error TEXT,
+        attempt_count INTEGER NOT NULL DEFAULT 0,
+        next_retry_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        group_id TEXT,
+        group_index INTEGER,
+        group_total INTEGER
+      );
+      INSERT INTO chat_outbox (protocol, view_key, channel, payload, created_at, updated_at)
+        VALUES ('meshtastic', 'ch:0', 0, 'legacy', 1, 1);
+    `);
+    db.pragma(`user_version = ${CURRENT_SCHEMA_VERSION}`);
+    runSchemaUpgrade(db);
+
+    const legacy = db
+      .prepareOnce("SELECT priority FROM chat_outbox WHERE payload = 'legacy'")
+      .get() as { priority: string };
+    expect(legacy.priority).toBe('normal');
+
+    db.prepareOnce(
+      `INSERT INTO chat_outbox (protocol, view_key, channel, payload, created_at, updated_at, priority)
+       VALUES ('meshcore', 'ch:0', 0, 'mayday', 2, 2, 'emergency')`,
+    ).run();
+    const emergency = db
+      .prepareOnce("SELECT priority FROM chat_outbox WHERE payload = 'mayday'")
+      .get() as { priority: string };
+    expect(emergency.priority).toBe('emergency');
+    db.close();
+  });
 });

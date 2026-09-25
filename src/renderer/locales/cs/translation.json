@@ -423,7 +423,13 @@
     "decreaseFontSize": "Zmenšit velikost písma",
     "increaseFontSize": "Zvětšit velikost písma",
     "resetFontSize": "Obnovit",
-    "resetFontSizeAria": "Obnovit velikost písma"
+    "resetFontSizeAria": "Obnovit velikost písma",
+    "opsAlertsHeading": "Provozní výstrahy",
+    "nodeSilenceAlertMinutes": "Upozornění na ticho sledovaného uzlu (minuty)",
+    "nodeSilenceAlertMinutesPlaceholder": "Výchozí nastavení protokolu",
+    "nodeSilenceAlertMinutesHint": "Ponechte prázdné pro použití zastaralého prahu každého protokolu. Eskalace se spustí při 2násobku této hodnoty.",
+    "nodeBatteryLowThreshold": "Prahová hodnota nízkého stavu baterie (%)",
+    "notifyOnLinkDown": "Upozornit na nečekané rádiové spojení"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -442,7 +448,8 @@
     "switchToMeshtasticWithUnread": "Přepnout na Meshtastic, {{count}} nepřečteno",
     "switchToMeshCoreWithUnread": "Přepnout na MeshCore, {{count}} nepřečteno",
     "switchToReticulumWithUnread": "Přepnout na Reticulum, {{count}} nepřečteno",
-    "tabWithUnread": "{{label}}, {{count}} nepřečteno"
+    "tabWithUnread": "{{label}}, {{count}} nepřečteno",
+    "tabWithOpenIncidents": "{{label}}, {{count}} otevřené MAYDAY nebo NALÉHAVÉ INCIDENTY"
   },
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
@@ -794,7 +801,12 @@
     "reticulumDmStaleAlternateAria": "Možný jiný cíl LXMF pro tohoto kolegu",
     "reticulumDmStaleAlternate": "Tento chat je LXMF {{openPrefix}}…. Máte také další LXMF {{alternatePrefix}}… což může být stejná osoba v jiné aplikaci. Potvrďte → zprávu Network LXMF/ Peers nebo oznamte nyní na obou stranách.",
     "reticulumDmStaleAlternateNamed": "Tento chat je LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… ({{name}}) může být stejná osoba v jiné aplikaci. Otevřete → zprávu kolegů na tomto hash, nebo oznamte nyní na obou stranách.",
-    "reticulumDmStaleAlternateDismissAria": "Zavřít varování o cíli"
+    "reticulumDmStaleAlternateDismissAria": "Zavřít varování o cíli",
+    "outboxEmergencyBadge": "Stav nouze",
+    "outboxEmergencyWillSend": "Zkusí to znovu, dokud nebude odesláno",
+    "outboxEmergencyCapBlocked": "Pozastaveno: příliš mnoho nouzových zpráv ve frontě. Zkus to znovu nebo to zruš.",
+    "outboxEmergencyCancelConfirm": "Zrušit tuto nouzovou zprávu? Nebude odesláno.",
+    "retryOutboxEmergencyAttempt": "Pokus {{count}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -1948,7 +1960,9 @@
     "severityErrors_few": "Chyby ({{count}})",
     "severityNotes_few": "Poznámky ({{count}})",
     "severityWarnings_few": "Upozornění ({{count}})",
-    "warningCount_few": "{{count}} varování"
+    "warningCount_few": "{{count}} varování",
+    "exportJson": "Exportovat JSON",
+    "exportJsonAria": "Exportovat viditelné diagnostické řádky jako JSON"
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",
@@ -2342,7 +2356,17 @@
       "clear": "Vymazat mezipaměť dlaždic",
       "clearAria": "Vymazat offline mezipaměť mapových dlaždic",
       "cleared": "Mezipaměť vymazána."
-    }
+    },
+    "basemapUsgsTopo": "USGS Topo (pouze USA)",
+    "layerIncidents": "Nouzové události",
+    "layerMgrsGrid": "MŘÍŽKA MGRS",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "VRTÁK {{sender}}: {{codes}}",
+    "measure": "Opatření",
+    "measureStartAria": "Začněte měřit vzdálenost",
+    "measureStopAria": "Zastavit měření a vyčistit",
+    "measureHint": "Klikněte na mapu pro přidání bodů",
+    "measureTotal": "{{km}} km / {{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -3384,7 +3408,8 @@
     "importResultSuccessWithSkipped_few": "Importovány {{count}} kontakty, přeskočeno {{skipped}}.",
     "summaryOffline_few": "{{count}} offline",
     "summaryOnline_few": "{{count}} online",
-    "summaryStale_few": "{{count}} zastaralé"
+    "summaryStale_few": "{{count}} zastaralé",
+    "buttonExportCsv": "Export CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5216,7 +5241,8 @@
     "network": "Síť",
     "rrc": "RRC",
     "remote": "Vzdálený přístup",
-    "games": "Herní aktivity"
+    "games": "Herní aktivity",
+    "incident": "Incident"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -6118,7 +6144,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Nepodařilo se získat opravu GPS",
-      "sendFailed": "Nepodařilo se odeslat zprávu MECP"
+      "sendFailed": "Nepodařilo se odeslat zprávu MECP",
+      "maydayButton": "MEJ DEJ",
+      "maydayAria": "Sestavte MAYDAY jedním klepnutím s GPS"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6141,7 +6169,9 @@
       "learnMore": "Jak MECP funguje",
       "protocolSource": "Zdroj protokolu na GitHub",
       "showComposeButton": "Zobrazit tlačítko MECP v chatu",
-      "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv."
+      "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv.",
+      "showMaydayButton": "Zobrazit tlačítko MAYDAY v chatu",
+      "showMaydayButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazí tlačítko MAYDAY jedním klepnutím, které se otevře při závažnosti 0 s připojeným GPS. Nezávisle na tlačítku MECP Compose."
     },
     "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP"
   },
@@ -6175,6 +6205,49 @@
     "saving": "Ukládání nastavení zvuku…",
     "importFailed": "Tento zvuk nelze importovat. Vyberte podporovaný zvukový soubor ne delší než 10 sekund a ne větší než 2 MiB.",
     "saveFailed": "Nelze uložit nastavení zvuku. Váš předchozí výběr se nezměnil.",
-    "previewFailed": "Tento zvuk nelze přehrát. Zkuste jiný soubor nebo obnovte původní tón."
+    "previewFailed": "Tento zvuk nelze přehrát. Zkuste jiný soubor nebo obnovte původní tón.",
+    "connectionLost": "Ztráta rádiového spojení",
+    "batteryLow": "Slabá baterie"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} vybitá baterie",
+    "batteryLowBody": "Baterie při {{percent}}%",
+    "silenceEscalationTitle": "{{name}} stále mlčí",
+    "silenceEscalationBody": "Neslyšel/a po dobu {{minutes}} minut",
+    "linkDownTitle": "{{protocol}} odkaz dolů",
+    "linkDownBody": "Ztráta rádiového spojení a opětovné připojení se nezdařilo"
+  },
+  "incidentPanel": {
+    "title": "Nouzové události",
+    "empty": "Žádné otevřené nouzové incidenty.",
+    "listAria": "Otevřené nouzové incidenty",
+    "resolve": "Vyřešit",
+    "resolveAria": "Vyřešit incident z {{sender}}",
+    "ack": "Potvrdit@ info",
+    "ackAria": "Potvrzení incidentu z {{sender}}",
+    "ackBeacon": "Potvrďte maják",
+    "ackBeaconAria": "Potvrďte nouzový signál z {{sender}}",
+    "ackCount_one": "{{count}} potvrzení",
+    "ackCount_other": "{{count}} poděkování",
+    "protocolsSeen": "Slyšeno dne: {{protocols}}",
+    "beaconActive": "Beacon aktivní",
+    "drill": "dril",
+    "ackSent": "Potvrzení odesláno na {{sender}}",
+    "ackQueued": "Potvrzení o zařazení do {{sender}} fronty; odešle se, až bude rádio k dispozici",
+    "ackFailed": "Potvrzení nelze odeslat nebo zařadit do fronty",
+    "ackCount_few": "{{count}} poděkování",
+    "intro": "Společný provozní obraz pro nouzové situace MECP slyšený na jakémkoli protokolu. Otevřené MAYDAY a URGENTNÍ řádky označují tuto kartu; cvičení jsou uvedena, ale nikdy se nezapočítávají. Pomocí Potvrzení (nebo Potvrdit pro aktivní maják) odpovězte na síť a poté vyřešte, když je incident lokálně uzavřen.",
+    "emptyHint": "Příchozí zprávy MECP se zde zobrazují automaticky. Chcete-li ji odeslat, povolte tlačítko App → MECP → Show MECP v chatu a poté použijte MECP nebo MAYDAY v chatu. Mapové → vrstvy mohou zobrazit otevřené incidenty se souřadnicemi."
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "Potřebuješ pomoc",
+    "inPosition": "V pozici",
+    "lostComms": "Ztracená komunikace",
+    "returning": "Vracejicí se",
+    "barAria": "Předvolby rychlého stavu",
+    "rollCall": "jmenovitě",
+    "rollCallAria": "Vysílání jmenovitého volání a sčítání odpovědí OK",
+    "rollCallTally": "{{responded}}/{{expected}} odpověděl/a"
   }
 }

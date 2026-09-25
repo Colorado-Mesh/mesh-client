@@ -31,6 +31,7 @@ import type {
   NotificationSoundImport,
   NotificationSoundRecord,
 } from '../shared/notificationSounds';
+import type { OfflineMapBasemapId } from '../shared/offlineMaps/basemapRegistry';
 import type {
   ReticulumSidecarEvent,
   ReticulumSidecarStartOptions,
@@ -132,9 +133,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteNodesBySource: (source: string) => ipcRenderer.invoke('db:deleteNodesBySource', source),
     migrateRfStubNodes: () => ipcRenderer.invoke('db:migrateRfStubNodes'),
     deleteNodesWithoutLongname: () => ipcRenderer.invoke('db:deleteNodesWithoutLongname'),
-    prunePositionHistory: (days: number) => ipcRenderer.invoke('db:prunePositionHistory', days),
-    prunePositionHistoryPerNode: (maxPerNode: number) =>
-      ipcRenderer.invoke('db:prunePositionHistoryPerNode', maxPerNode),
+    prunePositionHistory: (days: number, exemptNodeIds?: string[]) =>
+      ipcRenderer.invoke('db:prunePositionHistory', days, exemptNodeIds),
+    prunePositionHistoryPerNode: (maxPerNode: number, exemptNodeIds?: string[]) =>
+      ipcRenderer.invoke('db:prunePositionHistoryPerNode', maxPerNode, exemptNodeIds),
     clearNodePositions: () => ipcRenderer.invoke('db:clearNodePositions'),
     updateMessageReceivedVia: (packetId: number, rxHops?: number | null) =>
       ipcRenderer.invoke('db:updateMessageReceivedVia', packetId, rxHops),
@@ -928,23 +930,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
       bounds: { north: number; south: number; east: number; west: number };
       minZoom: number;
       maxZoom: number;
-      basemapId: 'osm' | 'dark';
+      basemapId: OfflineMapBasemapId;
       retina?: boolean;
     }) => ipcRenderer.invoke('offline-maps:estimate', req),
     download: (req: {
       bounds: { north: number; south: number; east: number; west: number };
       minZoom: number;
       maxZoom: number;
-      basemapId: 'osm' | 'dark';
+      basemapId: OfflineMapBasemapId;
       retina?: boolean;
     }) => ipcRenderer.invoke('offline-maps:download', req),
     cancel: (jobId: string) => ipcRenderer.invoke('offline-maps:cancel', jobId),
     status: () => ipcRenderer.invoke('offline-maps:status'),
-    clear: (source?: 'osm' | 'dark' | 'all') => ipcRenderer.invoke('offline-maps:clear', source),
+    clear: (source?: OfflineMapBasemapId | 'all') =>
+      ipcRenderer.invoke('offline-maps:clear', source),
     onProgress: (
       cb: (info: {
         jobId: string;
-        source: 'osm' | 'dark';
+        source: OfflineMapBasemapId;
         completed: number;
         total: number;
         failed: number;
@@ -956,7 +959,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         _: unknown,
         info: {
           jobId: string;
-          source: 'osm' | 'dark';
+          source: OfflineMapBasemapId;
           completed: number;
           total: number;
           failed: number;

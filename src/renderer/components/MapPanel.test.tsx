@@ -72,6 +72,8 @@ vi.mock('react-leaflet', () => ({
   Polyline: polylineMock,
   CircleMarker: () => null,
   Circle: circleMock,
+  Rectangle: () => null,
+  Tooltip: () => null,
   useMap: () => mockMapInstance,
   useMapEvents: () => mockMapInstance,
 }));

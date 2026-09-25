@@ -431,7 +431,13 @@
     "decreaseFontSize": "Zmniejsz rozmiar czcionki",
     "increaseFontSize": "Zwiększ rozmiar czcionki",
     "resetFontSize": "Zresetuj",
-    "resetFontSizeAria": "resetuj wielkość czcionek"
+    "resetFontSizeAria": "resetuj wielkość czcionek",
+    "opsAlertsHeading": "Alerty operacyjne",
+    "nodeSilenceAlertMinutes": "Alert wyciszenia węzła obserwowanego (minuty)",
+    "nodeSilenceAlertMinutesPlaceholder": "Domyślny protokół",
+    "nodeSilenceAlertMinutesHint": "Pozostaw puste, aby użyć nieaktualnego progu każdego protokołu. Eskalacja uruchamia się przy 2-krotności tej wartości.",
+    "nodeBatteryLowThreshold": "Próg niskiego poziomu naładowania akumulatora (%)",
+    "notifyOnLinkDown": "Powiadom o nieoczekiwanym wyłączeniu łącza radiowego"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -450,7 +456,8 @@
     "switchToMeshtasticWithUnread": "Przełącz na Meshtastic, {{count}} nieprzeczytane",
     "switchToMeshCoreWithUnread": "Przełącz na MeshCore, {{count}} nieprzeczytane",
     "switchToReticulumWithUnread": "Przełącz na Reticulum, {{count}} nieprzeczytane",
-    "tabWithUnread": "{{label}}, {{count}} nieprzeczytane"
+    "tabWithUnread": "{{label}}, {{count}} nieprzeczytane",
+    "tabWithOpenIncidents": "{{label}}, {{count}} otwarte MAYDAY lub PILNE INCYDENTY"
   },
   "battery": {
     "percentCharging": "Bateria {{percent}} procent, ładowanie",
@@ -812,7 +819,12 @@
     "reticulumDmStaleAlternateAria": "Możliwe różne miejsca docelowe LXMF dla tego partnera",
     "reticulumDmStaleAlternate": "Ten czat to LXMF {{openPrefix}}…. Masz również inny LXMF {{alternatePrefix}}… który może być tą samą osobą w innej aplikacji. Potwierdź → wiadomość sieciową LXMF/ Peers lub ogłoś teraz po obu stronach.",
     "reticulumDmStaleAlternateNamed": "Ten czat to LXMF {{openPrefix}}…. Inna LXMF {{alternatePrefix}}… ({{name}}) może być tą samą osobą w innej aplikacji. Otwórz → wiadomość rówieśniczą na tym haszu lub ogłoś teraz po obu stronach.",
-    "reticulumDmStaleAlternateDismissAria": "Odrzuć ostrzeżenie o miejscu docelowym"
+    "reticulumDmStaleAlternateDismissAria": "Odrzuć ostrzeżenie o miejscu docelowym",
+    "outboxEmergencyBadge": "Sytuacja awaryjna",
+    "outboxEmergencyWillSend": "Będzie ponawiać próby do momentu wysłania",
+    "outboxEmergencyCapBlocked": "Wstrzymano: zbyt wiele wiadomości alarmowych w kolejce. Spróbuj ponownie lub anuluj to.",
+    "outboxEmergencyCancelConfirm": "Anulować tę wiadomość alarmową? Nie zostanie wysłany.",
+    "retryOutboxEmergencyAttempt": "Próba {{count}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -1973,7 +1985,9 @@
     "severityWarnings_few": "Ostrzeżenia ({{count}})",
     "severityWarnings_many": "Ostrzeżenia ({{count}})",
     "warningCount_few": "{{count}} ostrzeżenia",
-    "warningCount_many": "{{count}} ostrzeżeń"
+    "warningCount_many": "{{count}} ostrzeżeń",
+    "exportJson": "Eksportowanie jako JSON",
+    "exportJsonAria": "Eksportuj widoczne wiersze diagnostyki jako JSON"
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",
@@ -2367,7 +2381,17 @@
       "clear": "Wyczyść pamięć podręczną kafli",
       "clearAria": "Wyczyść pamięć podręczną offline",
       "cleared": "Pamieć podręczna opróżniona"
-    }
+    },
+    "basemapUsgsTopo": "USGS Topo (tylko USA)",
+    "layerIncidents": "Zdarzenia awaryjne",
+    "layerMgrsGrid": "Siatka MGRS",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "WIERTŁO {{sender}}: {{codes}}",
+    "measure": "Miernik",
+    "measureStartAria": "Rozpocznij pomiar odległości",
+    "measureStopAria": "Zatrzymaj pomiar i wyczyść",
+    "measureHint": "Kliknij mapę, aby dodać punkty",
+    "measureTotal": "{{km}} km / {{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",
@@ -3421,7 +3445,8 @@
     "summaryOnline_few": "{{count}} w Internecie",
     "summaryOnline_many": "{{count}} w Internecie",
     "summaryStale_few": "{{count}} nieaktualne",
-    "summaryStale_many": "{{count}} nieaktualnych"
+    "summaryStale_many": "{{count}} nieaktualnych",
+    "buttonExportCsv": "Eksportuj do CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5255,7 +5280,8 @@
     "network": "Sieć",
     "rrc": "RRC",
     "remote": "Zdalny",
-    "games": "Gry"
+    "games": "Gry",
+    "incident": "Zdarzenie"
   },
   "takServerPanel": {
     "title": "Serwer TAK",
@@ -6164,7 +6190,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Nie można uzyskać poprawki GPS",
-      "sendFailed": "Nie udało się wysłać raportu MECP"
+      "sendFailed": "Nie udało się wysłać raportu MECP",
+      "maydayButton": "MAYDAY",
+      "maydayAria": "Skomponuj MAYDAY jednym dotknięciem za pomocą GPS"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6187,7 +6215,9 @@
       "learnMore": "Jak działa MECP",
       "protocolSource": "Źródło protokołu na GitHub",
       "showComposeButton": "Pokaż przycisk MECP na czacie",
-      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych."
+      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych.",
+      "showMaydayButton": "Pokaż przycisk MAYDAY na czacie",
+      "showMaydayButtonHint": "Domyślnie wyłączone. Po włączeniu czat pokazuje przycisk MAYDAY, który otwiera się z wagą 0 z dołączonym GPS. Niezależnie od przycisku komponuj MECP."
     },
     "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku"
   },
@@ -6221,6 +6251,50 @@
     "saving": "Zapisywanie ustawień dźwięku…",
     "importFailed": "Nie można zaimportować tego dźwięku. Wybierz obsługiwany plik audio nie dłuższy niż 10 sekund i nie większy niż 2 MB.",
     "saveFailed": "Nie można zapisać ustawień dźwięku. Twój poprzedni wybór pozostaje niezmieniony.",
-    "previewFailed": "Nie można odtworzyć tego dźwięku. Spróbuj użyć innego pliku lub zresetuj do oryginalnego tonu."
+    "previewFailed": "Nie można odtworzyć tego dźwięku. Spróbuj użyć innego pliku lub zresetuj do oryginalnego tonu.",
+    "connectionLost": "linia radiowa teletransmisyjna",
+    "batteryLow": "Niski poziom naładowania akumulatora"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "Niski poziom baterii {{name}}",
+    "batteryLowBody": "Akumulator przy {{percent}}%",
+    "silenceEscalationTitle": "{{name}} nadal milczy",
+    "silenceEscalationBody": "Nie słychać przez {{minutes}} min",
+    "linkDownTitle": "{{protocol}} link w dół",
+    "linkDownBody": "Utrata połączenia radiowego i ponowne połączenie nie powiodło się"
+  },
+  "incidentPanel": {
+    "title": "Zdarzenia awaryjne",
+    "empty": "Brak otwartych zdarzeń awaryjnych.",
+    "listAria": "Otwarte zdarzenia awaryjne",
+    "resolve": "Resolve",
+    "resolveAria": "Rozwiąż incydent z {{sender}}",
+    "ack": "Potwierdzenie",
+    "ackAria": "Potwierdź incydent z {{sender}}",
+    "ackBeacon": "Potwierdź sygnał nawigacyjny",
+    "ackBeaconAria": "Potwierdź sygnał alarmowy z {{sender}}",
+    "ackCount_one": "{{count}} potwierdzenie",
+    "ackCount_other": "Podziękowania: {{count}}",
+    "protocolsSeen": "Usłyszano dnia: {{protocols}}",
+    "beaconActive": "Sygnalizator aktywny",
+    "drill": "Wiertło",
+    "ackSent": "Potwierdzenie wysłane do {{sender}}",
+    "ackQueued": "Potwierdzenie do {{sender}} w kolejce; zostanie wysłane, gdy radio będzie dostępne",
+    "ackFailed": "Nie można wysłać lub ustawić w kolejce potwierdzenia",
+    "ackCount_few": "Podziękowania: {{count}}",
+    "ackCount_many": "Podziękowania: {{count}}",
+    "intro": "Wspólny obraz operacyjny dla sytuacji awaryjnych MECP słyszany w dowolnym protokole. Otwórz kartę MAYDAY i PILNE wiersze; ćwiczenia są wymienione, ale nigdy nie są liczone. Użyj opcji Potwierdź (lub Potwierdź dla aktywnego sygnalizatora), aby odpowiedzieć na siatce, a następnie Rozwiąż, gdy incydent zostanie zamknięty lokalnie.",
+    "emptyHint": "Przychodzące raporty MECP pojawiają się tutaj automatycznie. Aby wysłać, włącz przycisk App → MECP → Show MECP w Czacie, a następnie użyj MECP lub MAYDAY w Czacie. → Warstwy mapy mogą wyświetlać otwarte incydenty ze współrzędnymi."
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "Wymagana pomoc",
+    "inPosition": "W pozycji",
+    "lostComms": "Utracona komunikacja",
+    "returning": "Zwracanie",
+    "barAria": "Szybkie ustawienia stanu",
+    "rollCall": "Wezwanie imienne",
+    "rollCallAria": "Rozgłaszanie apelu i odpowiedzi prawidłowe",
+    "rollCallTally": "{{responded}}/{{expected}} odpowiedział (a)"
   }
 }

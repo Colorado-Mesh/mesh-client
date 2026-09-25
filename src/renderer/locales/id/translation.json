@@ -415,7 +415,13 @@
     "decreaseFontSize": "Perkecil Ukuran Font",
     "increaseFontSize": "Perbesarl Ukuran Font",
     "resetFontSize": "Atur ulang",
-    "resetFontSizeAria": "Atur ulang ukuran font"
+    "resetFontSizeAria": "Atur ulang ukuran font",
+    "opsAlertsHeading": "Peringatan operasional",
+    "nodeSilenceAlertMinutes": "Peringatan diam node yang diawasi (menit)",
+    "nodeSilenceAlertMinutesPlaceholder": "Protokol default",
+    "nodeSilenceAlertMinutesHint": "Biarkan kosong untuk menggunakan ambang batas basi setiap protokol. Eskalasi terjadi pada 2× nilai ini.",
+    "nodeBatteryLowThreshold": "Ambang batas rendah baterai (%)",
+    "notifyOnLinkDown": "Beri tahu tentang tautan radio yang tidak terduga"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Beralih ke Meshtastic, {{count}} belum dibaca",
     "switchToMeshCoreWithUnread": "Beralih ke MeshCore, {{count}} belum dibaca",
     "switchToReticulumWithUnread": "Beralih ke Reticulum, {{count}} belum dibaca",
-    "tabWithUnread": "{{label}}, {{count}} belum dibaca"
+    "tabWithUnread": "{{label}}, {{count}} belum dibaca",
+    "tabWithOpenIncidents": "{{label}}, {{count}} buka MAYDAY atau insiden MENDESAK"
   },
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "Kemungkinan tujuan LXMF yang berbeda untuk rekan ini",
     "reticulumDmStaleAlternate": "Obrolan ini adalah LXMF {{openPrefix}}…. Anda juga memiliki LXMF {{alternatePrefix}} lainnya… yang mungkin orang yang sama di aplikasi lain. Konfirmasi → Pesan LXMF / Peers Jaringan, atau Umumkan sekarang di kedua sisi.",
     "reticulumDmStaleAlternateNamed": "Obrolan ini adalah LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya… ({{name}}) mungkin orang yang sama di aplikasi lain. Buka → Pesan Rekan pada hash itu, atau Umumkan sekarang di kedua sisi.",
-    "reticulumDmStaleAlternateDismissAria": "Abaikan peringatan tujuan"
+    "reticulumDmStaleAlternateDismissAria": "Abaikan peringatan tujuan",
+    "outboxEmergencyBadge": "Keadaan Darurat",
+    "outboxEmergencyWillSend": "Akan terus mencoba lagi sampai dikirim",
+    "outboxEmergencyCapBlocked": "Dijeda: terlalu banyak pesan darurat yang diantrekan. Coba lagi atau batalkan yang ini.",
+    "outboxEmergencyCancelConfirm": "Batalkan pesan darurat ini? Itu tidak akan dikirim.",
+    "retryOutboxEmergencyAttempt": "Upaya {{count}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -1921,7 +1933,9 @@
     "km": "km",
     "distanceOffsetHelp": "Menambahkan lantai km datar ke ambang batas jarak hop-goblin dan rute buruk (0–50).",
     "ignoreMqttToggle": "Abaikan MQTT",
-    "ignoreMqttHelp": "Redupkan node yang hanya menggunakan MQTT dan kecualikan dari diagnostik"
+    "ignoreMqttHelp": "Redupkan node yang hanya menggunakan MQTT dan kecualikan dari diagnostik",
+    "exportJson": "Ekspor ke JSON",
+    "exportJsonAria": "Ekspor baris diagnostik yang terlihat sebagai JSON"
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",
@@ -2315,7 +2329,17 @@
       "clear": "Bersihkan singgahan ubin",
       "clearAria": "Bersihkan cache ubin peta offline",
       "cleared": "Cache ubin dikosongkan."
-    }
+    },
+    "basemapUsgsTopo": "USGS Topo (khusus AS)",
+    "layerIncidents": "Insiden darurat",
+    "layerMgrsGrid": "MGRS Grid",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "BOR {{sender}}: {{codes}}",
+    "measure": "Measure",
+    "measureStartAria": "Mulai mengukur jarak",
+    "measureStopAria": "Berhenti mengukur dan bersihkan",
+    "measureHint": "Klik peta untuk menambahkan poin",
+    "measureTotal": "{{km}} km / {{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "Tidak Ada",
     "meshcoreTypeUnknown": "Tidak Diketahui",
     "columnHealth": "Kesehatan node",
-    "hasPublicKeyTitle": "Kunci Publik"
+    "hasPublicKeyTitle": "Kunci Publik",
+    "buttonExportCsv": "Ekspor CSV"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "Jaringan",
     "rrc": "RRC",
     "remote": "Jarak jauh",
-    "games": "Game"
+    "games": "Game",
+    "incident": "Insiden"
   },
   "takServerPanel": {
     "title": "Server TAK",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Tidak bisa mendapatkan perbaikan GPS",
-      "sendFailed": "Gagal mengirim laporan MECP"
+      "sendFailed": "Gagal mengirim laporan MECP",
+      "maydayButton": "MAYDAY",
+      "maydayAria": "Susun MAYDAY sekali ketuk dengan GPS"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6093,7 +6121,9 @@
       "learnMore": "Cara kerja MECP",
       "protocolSource": "Sumber protokol di GitHub",
       "showComposeButton": "Tampilkan tombol MECP di Obrolan",
-      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat."
+      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat.",
+      "showMaydayButton": "Tampilkan tombol MAYDAY di Obrolan",
+      "showMaydayButtonHint": "Tidak aktif secara default. Saat diaktifkan, Obrolan menampilkan tombol MAYDAY sekali ketuk yang membuka compose pada tingkat keparahan 0 dengan GPS terpasang. Independen dari tombol compose MECP."
     },
     "exportLogEmpty": "Belum ada pesan MECP di log yang diterima"
   },
@@ -6127,6 +6157,48 @@
     "saving": "Menyimpan pengaturan suara…",
     "importFailed": "Tidak dapat mengimpor suara ini. Pilih file audio yang didukung tidak lebih dari 10 detik dan tidak lebih besar dari 2 MiB.",
     "saveFailed": "Tidak dapat menyimpan pengaturan suara. Pilihan Anda sebelumnya tidak berubah.",
-    "previewFailed": "Tidak dapat memutar suara ini. Coba file lain atau atur ulang ke nada asli."
+    "previewFailed": "Tidak dapat memutar suara ini. Coba file lain atau atur ulang ke nada asli.",
+    "connectionLost": "Tautan radio hilang",
+    "batteryLow": "Baterai node lemah"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} baterai lemah",
+    "batteryLowBody": "Baterai pada {{percent}}%",
+    "silenceEscalationTitle": "{{name}} masih diam",
+    "silenceEscalationBody": "Tidak terdengar selama {{minutes}} menit",
+    "linkDownTitle": "{{protocol}} tautan turun",
+    "linkDownBody": "Koneksi radio terputus dan tersambung kembali tidak berhasil"
+  },
+  "incidentPanel": {
+    "title": "Insiden darurat",
+    "empty": "Tidak ada insiden darurat terbuka.",
+    "listAria": "Buka insiden darurat",
+    "resolve": "Selesaikan",
+    "resolveAria": "Selesaikan insiden dari {{sender}}",
+    "ack": "Mengakui",
+    "ackAria": "Mengakui insiden dari {{sender}}",
+    "ackBeacon": "Akui suar",
+    "ackBeaconAria": "Akui suar marabahaya dari {{sender}}",
+    "ackCount_one": "{{count}} pengakuan",
+    "ackCount_other": "{{count}} pengakuan",
+    "protocolsSeen": "Mendengar di: {{protocols}}",
+    "beaconActive": "Suar aktif",
+    "drill": "Bor",
+    "ackSent": "Ucapan terima kasih dikirim ke {{sender}}",
+    "ackQueued": "Ucapan terima kasih kepada {{sender}} antri; akan dikirimkan saat radio tersedia",
+    "ackFailed": "Tidak dapat mengirim atau mengantre pengakuan",
+    "intro": "Gambaran operasi umum untuk keadaan darurat MECP terdengar pada protokol apa pun. Buka MAYDAY dan lencana baris MENDESAK tab ini; latihan terdaftar tetapi tidak pernah dihitung. Gunakan Acknowledge (atau Confirm untuk suar aktif) untuk membalas di mesh, lalu Resolve ketika insiden ditutup secara lokal.",
+    "emptyHint": "Laporan MECP masuk muncul di sini secara otomatis. Untuk mengirimkannya, aktifkan App → MECP → Tampilkan tombol MECP di Obrolan, lalu gunakan MECP atau MAYDAY di Obrolan. → Lapisan Peta dapat menunjukkan insiden terbuka dengan koordinat."
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "Butuh bantuan?",
+    "inPosition": "..........................................................................\tdalam\tjabatan",
+    "lostComms": "Komunikasi yang hilang",
+    "returning": "Pengembalian",
+    "barAria": "Preset status cepat",
+    "rollCall": "Panggilan gulung",
+    "rollCallAria": "Panggilan roll siaran dan penghitungan balasan OK",
+    "rollCallTally": "{{responded}}/{{expected}} menanggapi"
   }
 }

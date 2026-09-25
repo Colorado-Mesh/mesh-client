@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
+import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
 import { formatDisplayTime } from '../lib/formatDisplayTime';
 import i18n from '../lib/i18n';
@@ -10,16 +11,25 @@ import type { MeshNode } from '../lib/types';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
 
-function computeIsOnline(node: MeshNode, capabilities: ProtocolCapabilities | null): boolean {
+function computeIsOnline(
+  node: MeshNode,
+  capabilities: ProtocolCapabilities | null,
+  silenceThresholdMs: number | null,
+): boolean {
   const status = getNodeStatus(
     node.last_heard,
-    capabilities?.nodeStaleThresholdMs,
+    silenceThresholdMs ?? capabilities?.nodeStaleThresholdMs,
     capabilities?.nodeOfflineThresholdMs,
   );
   return status === 'online';
 }
 
-function fireNotification(title: string, body: string): void {
+export interface NodeStatusNotifierOptions {
+  /** User `nodeSilenceAlertMinutes`; replaces the capability stale threshold when set. */
+  silenceThresholdMinutes?: number | null;
+}
+
+export function fireNotification(title: string, body: string): void {
   try {
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
@@ -41,7 +51,13 @@ function fireNotification(title: string, body: string): void {
 export function useNodeStatusNotifier(
   nodes: Map<number, MeshNode>,
   capabilities: ProtocolCapabilities | null,
+  options: NodeStatusNotifierOptions = {},
 ): void {
+  const silenceMinutes = options.silenceThresholdMinutes;
+  const silenceThresholdMs =
+    typeof silenceMinutes === 'number' && Number.isFinite(silenceMinutes) && silenceMinutes > 0
+      ? silenceMinutes * MS_PER_MINUTE
+      : null;
   const watchedNodeIds = useWatchedNodesStore((s) => s.watchedNodeIds);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const prevOnlineRef = useRef<Map<number, boolean>>(new Map());
@@ -56,7 +72,7 @@ export function useNodeStatusNotifier(
       const node = nodes.get(nodeId);
       if (!node) continue;
 
-      const isOnline = computeIsOnline(node, capabilities);
+      const isOnline = computeIsOnline(node, capabilities, silenceThresholdMs);
       next.set(nodeId, isOnline);
 
       if (!prev.has(nodeId)) continue;
@@ -91,5 +107,5 @@ export function useNodeStatusNotifier(
     }
 
     prevOnlineRef.current = next;
-  }, [nodes, watchedNodeIds, capabilities, use24HourTime]);
+  }, [nodes, watchedNodeIds, capabilities, use24HourTime, silenceThresholdMs]);
 }

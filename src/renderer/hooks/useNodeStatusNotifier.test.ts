@@ -109,6 +109,33 @@ describe('useNodeStatusNotifier', () => {
     );
   });
 
+  it('uses silenceThresholdMinutes override instead of the capability stale threshold', () => {
+    useWatchedNodesStore.setState({ watchedNodeIds: new Set([1]) });
+    const fresh = new Map([[1, makeNode({ node_id: 1, last_heard: Date.now() })]]);
+    // 20 minutes silent: online under the 2h capability threshold, offline under a 15m override.
+    const silent = new Map([[1, makeNode({ node_id: 1, last_heard: Date.now() - 20 * 60_000 })]]);
+
+    const withDefault = renderHook(
+      ({ nodes }: { nodes: Map<number, MeshNode> }) => {
+        useNodeStatusNotifier(nodes, meshtasticCaps);
+      },
+      { initialProps: { nodes: fresh } },
+    );
+    withDefault.rerender({ nodes: silent });
+    expect(notificationSpy).not.toHaveBeenCalled();
+
+    const withOverride = renderHook(
+      ({ nodes }: { nodes: Map<number, MeshNode> }) => {
+        useNodeStatusNotifier(nodes, meshtasticCaps, { silenceThresholdMinutes: 15 });
+      },
+      { initialProps: { nodes: fresh } },
+    );
+    withOverride.rerender({ nodes: silent });
+    expect(notificationSpy).toHaveBeenCalledOnce();
+    const [title] = notificationSpy.mock.calls[0] as [string];
+    expect(title).toBe('TestNode went offline');
+  });
+
   it('does not fire when watched set is empty', () => {
     useWatchedNodesStore.setState({ watchedNodeIds: new Set() });
     const onlineNodes = new Map([[1, makeNode({ node_id: 1, last_heard: ONLINE_LAST_HEARD })]]);

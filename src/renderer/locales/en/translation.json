@@ -303,6 +303,12 @@
     "shareLocationSendWaypointHint": "When enabled, Meshtastic location shares send both a text message and a Waypoint packet so official apps show a map pin. Disable on busy meshes to send text only.",
     "notificationsSection": "Notifications",
     "soundNotifications": "Sound notifications",
+    "opsAlertsHeading": "Operational alerts",
+    "nodeSilenceAlertMinutes": "Watched-node silence alert (minutes)",
+    "nodeSilenceAlertMinutesPlaceholder": "Protocol default",
+    "nodeSilenceAlertMinutesHint": "Leave blank to use each protocol’s stale threshold. Escalation fires at 2× this value.",
+    "nodeBatteryLowThreshold": "Battery-low threshold (%)",
+    "notifyOnLinkDown": "Notify on unexpected radio link-down",
     "rrcUnreadAllRoomMessages": "RRC unread for all room messages",
     "rrcUnreadAllRoomMessagesHint": "When on, any new RRC room message marks unread and can play a channel sound. Turn off for IRC-style alerts: only direct messages and @mentions.",
     "unknownError": "Unknown error",
@@ -434,6 +440,7 @@
     "switchToMeshCoreWithUnread": "Switch to MeshCore, {{count}} unread",
     "switchToReticulumWithUnread": "Switch to Reticulum, {{count}} unread",
     "tabWithUnread": "{{label}}, {{count}} unread",
+    "tabWithOpenIncidents": "{{label}}, {{count}} open MAYDAY or URGENT incidents",
     "backToTop": "Back to top"
   },
   "battery": {
@@ -717,6 +724,11 @@
     "outboxStatusFailed": "Failed",
     "outboxLegacyMultipartBlocked": "This queued message used multi-part MeshCore splitting, which is no longer sent. Cancel it and send a shorter message (or several separate shorter messages).",
     "outboxRemoveFailed": "Message was sent, but removing it from the outbox failed. Cancel the queued copy.",
+    "outboxEmergencyBadge": "Emergency",
+    "outboxEmergencyWillSend": "Will keep retrying until sent",
+    "outboxEmergencyCapBlocked": "Paused: too many queued emergency messages. Retry or cancel this one.",
+    "outboxEmergencyCancelConfirm": "Cancel this emergency message? It will not be sent.",
+    "retryOutboxEmergencyAttempt": "Attempt {{count}}",
     "sendErrors": {
       "notConnected": "Not connected — connect the radio and try again.",
       "emptyPayload": "Message text is required.",
@@ -1603,6 +1615,8 @@
     "diagnosticsHeading": "Diagnostics ({{count}})",
     "networkDiagnosticsTitle": "Network Diagnostics",
     "docsLink": "Docs ↗",
+    "exportJson": "Export JSON",
+    "exportJsonAria": "Export visible diagnostics rows as JSON",
     "restoredSessionBanner": "Showing diagnostics restored from last session ({{time}}) — they will refresh as new packets arrive.",
     "stopRestoringOnLaunch": "Stop restoring on next launch",
     "networkHealthLabel": "Network health",
@@ -2423,10 +2437,20 @@
     "basemapSelectAria": "Select map basemap",
     "basemapDark": "Dark (Carto)",
     "basemapOsm": "OpenStreetMap (light)",
+    "basemapUsgsTopo": "USGS Topo (US only)",
     "layersHeading": "Overlays",
     "layerNodes": "Node markers",
     "layerPaths": "Movement trails",
     "layerWaypoints": "Waypoints",
+    "layerIncidents": "Emergency incidents",
+    "layerMgrsGrid": "MGRS grid",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "DRILL {{sender}}: {{codes}}",
+    "measure": "Measure",
+    "measureStartAria": "Start measuring distance",
+    "measureStopAria": "Stop measuring and clear",
+    "measureHint": "Click the map to add points",
+    "measureTotal": "{{km}} km / {{mi}} mi",
     "layerRouteWeights": "Route weights",
     "layerAnomalyHalos": "Anomaly halos",
     "layerCongestionHalos": "Congestion halos",
@@ -3480,6 +3504,7 @@
     "buttonFloodAdvert": "Flood Advert",
     "buttonImportContacts": "Import Contacts",
     "buttonExportJson": "Export JSON",
+    "buttonExportCsv": "Export CSV",
     "meshcoreTypeChat": "Chat",
     "meshcoreTypeRepeater": "Repeater",
     "meshcoreTypeRoom": "Room",
@@ -3501,6 +3526,14 @@
     "offlineTitle": "{{name}} went offline",
     "offlineBody": "Last heard: {{time}}",
     "unknown": "unknown"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} battery low",
+    "batteryLowBody": "Battery at {{percent}}%",
+    "silenceEscalationTitle": "{{name}} still silent",
+    "silenceEscalationBody": "Not heard for {{minutes}} minutes",
+    "linkDownTitle": "{{protocol}} link down",
+    "linkDownBody": "Radio connection lost and reconnect did not succeed"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5816,6 +5849,7 @@
   "tabs": {
     "connection": "Connection",
     "chat": "Chat",
+    "incident": "Incident",
     "games": "Games",
     "rrc": "RRC",
     "remote": "Remote",
@@ -6046,6 +6080,27 @@
     "interfaceSaveFailed": "Could not save this connection. Check your connection settings and try again.",
     "identitySaveFailed": "Could not save your identity settings. Try again."
   },
+  "incidentPanel": {
+    "title": "Emergency incidents",
+    "intro": "Common operating picture for MECP emergencies heard on any protocol. Open MAYDAY and URGENT rows badge this tab; drills are listed but never counted. Use Acknowledge (or Confirm for an active beacon) to reply on the mesh, then Resolve when the incident is closed locally.",
+    "empty": "No open emergency incidents.",
+    "emptyHint": "Inbound MECP reports appear here automatically. To send one, enable App → MECP → Show MECP button in Chat and/or Show MAYDAY button in Chat, then use those controls in Chat. Map → Layers can show open incidents with coordinates.",
+    "listAria": "Open emergency incidents",
+    "resolve": "Resolve",
+    "resolveAria": "Resolve incident from {{sender}}",
+    "ack": "Acknowledge",
+    "ackAria": "Acknowledge incident from {{sender}}",
+    "ackBeacon": "Acknowledge beacon",
+    "ackBeaconAria": "Acknowledge distress beacon from {{sender}}",
+    "ackCount_one": "{{count}} acknowledgement",
+    "ackCount_other": "{{count}} acknowledgements",
+    "protocolsSeen": "Heard on: {{protocols}}",
+    "beaconActive": "Beacon active",
+    "drill": "Drill",
+    "ackSent": "Acknowledgement sent to {{sender}}",
+    "ackQueued": "Acknowledgement to {{sender}} queued; it will send when the radio is available",
+    "ackFailed": "Could not send or queue the acknowledgement"
+  },
   "mecp": {
     "severity": {
       "mayday": "MAYDAY",
@@ -6066,12 +6121,16 @@
       "learnMore": "How MECP works (site & video)",
       "protocolSource": "Protocol source on GitHub",
       "showComposeButton": "Show MECP button in Chat",
-      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports."
+      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports.",
+      "showMaydayButton": "Show MAYDAY button in Chat",
+      "showMaydayButtonHint": "Off by default. When enabled, Chat shows a one-tap MAYDAY button that opens compose at severity 0 with GPS attached. Independent of the MECP compose button."
     },
     "compose": {
       "title": "Compose MECP report",
       "button": "MECP",
       "open": "Open MECP compose",
+      "maydayButton": "MAYDAY",
+      "maydayAria": "Compose one-tap MAYDAY with GPS",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6108,6 +6167,8 @@
     "mecpSafety": "MECP SAFETY",
     "mecpEas": "MECP URGENT",
     "mecpSiren": "MECP MAYDAY",
+    "connectionLost": "Radio link lost",
+    "batteryLow": "Node battery low",
     "default": "Original tone",
     "chime": "Chime",
     "bell": "Bell",
@@ -6128,5 +6189,16 @@
     "importFailed": "Could not import this sound. Choose a supported audio file no longer than 10 seconds and no larger than 2 MiB.",
     "saveFailed": "Could not save sound settings. Your previous selection is unchanged.",
     "previewFailed": "Could not play this sound. Try another file or reset to the original tone."
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "Need help",
+    "inPosition": "In position",
+    "lostComms": "Lost comms",
+    "returning": "Returning",
+    "barAria": "Quick status presets",
+    "rollCall": "Roll call",
+    "rollCallAria": "Broadcast roll call and tally OK replies",
+    "rollCallTally": "{{responded}}/{{expected}} responded"
   }
 }

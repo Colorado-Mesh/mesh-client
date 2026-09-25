@@ -250,6 +250,8 @@ describe('store shape contracts', () => {
         [
           "basemapId",
           "layersPanelOpen",
+          "showIncidents",
+          "showMgrsGrid",
           "showNodes",
           "showWaypoints",
         ]
@@ -263,6 +265,8 @@ describe('store shape contracts', () => {
           "hydrateFromDatabase",
           "setBasemapId",
           "setLayersPanelOpen",
+          "setShowIncidents",
+          "setShowMgrsGrid",
           "setShowNodes",
           "setShowWaypoints",
         ]

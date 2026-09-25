@@ -479,6 +479,11 @@ vi.mock('./lib/appSettingsStorage', () => ({
   mergeAppSetting: vi.fn(),
   mergeAppSettingsPartial: vi.fn(),
   isShareMyLocationEnabled: vi.fn().mockReturnValue(true),
+  getOperationalAlertSettings: vi.fn().mockReturnValue({
+    nodeSilenceAlertMinutes: null,
+    nodeBatteryLowThreshold: 20,
+    notifyOnLinkDown: true,
+  }),
 }));
 
 vi.mock('./lib/firmwareCheck', () => ({

@@ -22,6 +22,7 @@ import {
   sendMecpRebroadcastOnProtocol,
 } from '@/renderer/lib/mecp/sendMecpRebroadcast';
 import type { MeshProtocol } from '@/renderer/lib/types';
+import { useIncidentStore } from '@/renderer/stores/incidentStore';
 import type { MessageRecord } from '@/renderer/stores/messageStore';
 
 export interface MecpWatcherProtocolSlice {
@@ -33,6 +34,21 @@ export interface MecpWatcherProtocolSlice {
 
 function messageDedupKey(protocol: string, id: string): string {
   return `${protocol}:${id}`;
+}
+
+/** Upsert into the Incident Command store (no alert/audit). Safe for hydrate + live paths. */
+function upsertIncidentFromMessage(slice: MecpWatcherProtocolSlice, msg: MessageRecord): void {
+  const parsed = tryParseMecp(msg.payload);
+  if (parsed?.severity == null) return;
+  useIncidentStore.getState().upsertFromMecp({
+    protocol: slice.protocol,
+    parsed,
+    senderId: String(msg.from),
+    senderName: msg.senderName,
+    channel: msg.channelIndex != null ? String(msg.channelIndex) : null,
+    messageId: msg.id,
+    receivedAt: typeof msg.timestamp === 'number' ? msg.timestamp : Date.now(),
+  });
 }
 
 function isOwnMessage(
@@ -148,6 +164,8 @@ async function processNewMessages(
     // Claim before any await so concurrent effect runs cannot double-process.
     inFlight.add(key);
 
+    upsertIncidentFromMessage(slice, msg);
+
     if (!alerted.has(key)) {
       alerted.add(key);
       fireAlert(slice, msg, parsed, mutedViews);
@@ -233,12 +251,14 @@ export function useMecpAlertWatcher(
   const seededRef = useRef(false);
 
   // Seed once from the current snapshot so hydration does not alert/audit.
+  // Still upsert open incidents silently so the Incident tab has a COP on cold start (S4).
   useEffect(() => {
     if (seededRef.current) return;
     const seed = new Set<string>();
     for (const slice of [meshtastic, meshcore, reticulum]) {
       for (const msg of slice.messages) {
         seed.add(messageDedupKey(slice.protocol, msg.id));
+        upsertIncidentFromMessage(slice, msg);
       }
     }
     seenRef.current = seed;

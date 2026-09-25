@@ -72,4 +72,13 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   rrcUnreadAllRoomMessages: true,
   /** When true, show the Chat MECP compose button (default off). */
   mecpComposeEnabled: false,
+  /** When true, show the one-tap MAYDAY button in Chat (default off; separate from MECP compose). */
+  mecpMaydayButtonEnabled: false,
+  /** Node silence alert threshold; null = use protocol capability defaults. */
+  nodeSilenceAlertMinutes: null as number | null,
+  /** Battery percent at or below which a watched node raises a low-battery alert. */
+  nodeBatteryLowThreshold: 10,
+  /** Alert when an RF link drops unexpectedly (not manual, not mid-reconnect). */
+  notifyOnLinkDown: true,
+  rollCallWindowMinutes: 15,
 };

@@ -101,6 +101,7 @@ import {
   prunePositionHistoryPerNode,
   recordMeshcorePathOutcome,
   removeContactFromGroup,
+  sanitizeExemptNodeIdsArg,
   saveMeshcoreContactsBatch,
   saveMeshcoreHopHistory,
   saveMeshcoreTraceHistory,
@@ -4508,12 +4509,12 @@ ipcMain.handle('db:deleteNodesWithoutLongname', (event) => {
   }
 });
 
-ipcMain.handle('db:prunePositionHistory', (event, days: number) => {
+ipcMain.handle('db:prunePositionHistory', (event, days: number, exemptNodeIds?: unknown) => {
   if (!validateIpcSender(event)) throw new Error('db:prunePositionHistory: unauthorized sender');
   try {
     if (!getDbForIpc('db:prunePositionHistory')) return 0;
     const safeDays = typeof days === 'number' && days > 0 ? Math.floor(days) : 30;
-    const changes = prunePositionHistory(safeDays);
+    const changes = prunePositionHistory(safeDays, sanitizeExemptNodeIdsArg(exemptNodeIds));
     if (changes > 0) {
       console.debug(
         `[IPC] db:prunePositionHistory: pruned ${changes} rows older than ${safeDays}d`,
@@ -4525,23 +4526,26 @@ ipcMain.handle('db:prunePositionHistory', (event, days: number) => {
   }
 });
 
-ipcMain.handle('db:prunePositionHistoryPerNode', (event, maxPerNode: number) => {
-  if (!validateIpcSender(event))
-    throw new Error('db:prunePositionHistoryPerNode: unauthorized sender');
-  try {
-    if (!getDbForIpc('db:prunePositionHistoryPerNode')) return 0;
-    const cap = typeof maxPerNode === 'number' && maxPerNode > 0 ? Math.floor(maxPerNode) : 2000;
-    const changes = prunePositionHistoryPerNode(cap);
-    if (changes > 0) {
-      console.debug(
-        `[IPC] db:prunePositionHistoryPerNode: pruned ${changes} rows, keeping ${cap} per node`,
-      );
+ipcMain.handle(
+  'db:prunePositionHistoryPerNode',
+  (event, maxPerNode: number, exemptNodeIds?: unknown) => {
+    if (!validateIpcSender(event))
+      throw new Error('db:prunePositionHistoryPerNode: unauthorized sender');
+    try {
+      if (!getDbForIpc('db:prunePositionHistoryPerNode')) return 0;
+      const cap = typeof maxPerNode === 'number' && maxPerNode > 0 ? Math.floor(maxPerNode) : 2000;
+      const changes = prunePositionHistoryPerNode(cap, sanitizeExemptNodeIdsArg(exemptNodeIds));
+      if (changes > 0) {
+        console.debug(
+          `[IPC] db:prunePositionHistoryPerNode: pruned ${changes} rows, keeping ${cap} per node`,
+        );
+      }
+      return changes;
+    } catch (err) {
+      finishDbIpcHandler('db:prunePositionHistoryPerNode', err);
     }
-    return changes;
-  } catch (err) {
-    finishDbIpcHandler('db:prunePositionHistoryPerNode', err);
-  }
-});
+  },
+);
 
 ipcMain.handle('db:deleteMeshcoreContactsNeverAdvertised', (event) => {
   if (!validateIpcSender(event))
@@ -5197,8 +5201,9 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
       .prepareOnce(
         `INSERT INTO chat_outbox
         (protocol, view_key, channel, to_node, payload, reply_id, status, error,
-         attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total)
-       VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?)`,
+         attempt_count, next_retry_at, created_at, updated_at, group_id, group_index, group_total,
+         priority)
+       VALUES (?,?,?,?,?,?,?,?,0,?,?,?,?,?,?,?)`,
       )
       .run(
         e.protocol,
@@ -5215,6 +5220,7 @@ ipcMain.handle('chat:outbox:add', (event, entry: unknown) => {
         e.groupId ?? null,
         e.groupIndex ?? null,
         e.groupTotal ?? null,
+        e.priority === 'emergency' ? 'emergency' : 'normal',
       );
     const row = db
       .prepareOnce('SELECT * FROM chat_outbox WHERE id = ?')
@@ -5302,6 +5308,7 @@ function rowToOutboxEntry(row: Record<string, unknown>) {
     groupId: (row.group_id as string | null) ?? null,
     groupIndex: (row.group_index as number | null) ?? null,
     groupTotal: (row.group_total as number | null) ?? null,
+    priority: (row.priority as string) === 'emergency' ? 'emergency' : 'normal',
   };
 }
 

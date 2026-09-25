@@ -25,6 +25,16 @@ const RETRY_DELAYS_MS = [30_000, 120_000, 600_000, 600_000];
 const MAX_ATTEMPTS = 5;
 /** Drop outbox rows older than this from automatic drain (manual retry still allowed). */
 export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+/**
+ * Max live emergency rows (queued/sending/failed/blocked) per protocol outbox. Enqueueing past
+ * the cap blocks the oldest other emergency row so a stuck backlog cannot grow unbounded.
+ */
+export const EMERGENCY_OUTBOX_SOFT_CAP = 20;
+const EMERGENCY_CAP_BLOCKED_KEY = 'chatPanel.outboxEmergencyCapBlocked';
+
+export function isEmergencyOutboxPriority(row: Pick<OutboxEntry, 'priority'>): boolean {
+  return row.priority === 'emergency';
+}
 
 /** Legacy mesh-client `[i/N] ` chunk prefix on outbox payloads queued before single-packet. */
 const LEGACY_MULTIPART_PREFIX_RE = /^\[\d+\/\d+\]\s/;
@@ -56,8 +66,12 @@ function isEligibleForDrain(row: OutboxEntry, now: number): boolean {
   return (
     (row.status === 'queued' || row.status === 'failed') &&
     (row.nextRetryAt == null || row.nextRetryAt <= now) &&
-    now - row.createdAt <= OUTBOX_MAX_AGE_MS
+    (isEmergencyOutboxPriority(row) || now - row.createdAt <= OUTBOX_MAX_AGE_MS)
   );
+}
+
+function retryDelayMs(attemptCount: number): number {
+  return RETRY_DELAYS_MS[Math.min(attemptCount - 1, RETRY_DELAYS_MS.length - 1)];
 }
 
 async function finalizeSuccessfulOutboxSend(
@@ -97,10 +111,10 @@ async function recordOutboxSendFailure(
   const isBlocked = isEncryptionBlockedSendError(rawMsg) || isEncryptionBlockedSendError(errMsg);
   const nextAttemptCount = row.attemptCount + 1;
   const newStatus: OutboxStatus = isBlocked ? 'blocked' : 'failed';
-  const nextRetryAt =
-    !isBlocked && nextAttemptCount < MAX_ATTEMPTS
-      ? Date.now() + RETRY_DELAYS_MS[Math.min(nextAttemptCount - 1, RETRY_DELAYS_MS.length - 1)]
-      : undefined;
+  // Emergency rows never stop retrying on attempt count; encryption blocks still halt them.
+  const keepRetrying =
+    !isBlocked && (isEmergencyOutboxPriority(row) || nextAttemptCount < MAX_ATTEMPTS);
+  const nextRetryAt = keepRetrying ? Date.now() + retryDelayMs(nextAttemptCount) : undefined;
   try {
     await window.electronAPI.chat.outbox.updateStatus(
       row.id,
@@ -140,6 +154,42 @@ async function quarantineLegacyMultipartOutboxRow(
   }
   updateRow(row.id, { status: 'blocked', error, nextRetryAt: null });
   console.warn('[useChatOutbox] quarantined legacy multipart outbox row', row.id);
+}
+
+/**
+ * When emergency rows (any status, including `newRow`) exceed {@link EMERGENCY_OUTBOX_SOFT_CAP},
+ * block the oldest still-active emergency row other than `newRow`. Failure point: list /
+ * updateStatus IPC — logged; the new row stays queued so enqueue never fails on cap bookkeeping.
+ */
+async function enforceEmergencyOutboxSoftCap(
+  newRow: OutboxEntry,
+  updateRow: (id: number, patch: Partial<OutboxEntry>) => void,
+): Promise<void> {
+  try {
+    const listed = await window.electronAPI.chat.outbox.list(newRow.protocol);
+    const emergency = listed.filter((r) => isEmergencyOutboxPriority(r) && r.id !== newRow.id);
+    if (emergency.length + 1 <= EMERGENCY_OUTBOX_SOFT_CAP) return;
+    let victim: OutboxEntry | undefined;
+    for (const r of emergency) {
+      if (r.status === 'blocked') continue;
+      if (victim == null || r.createdAt < victim.createdAt) victim = r;
+    }
+    if (victim == null) return;
+    await window.electronAPI.chat.outbox.updateStatus(
+      victim.id,
+      'blocked',
+      EMERGENCY_CAP_BLOCKED_KEY,
+      undefined,
+    );
+    updateRow(victim.id, {
+      status: 'blocked',
+      error: EMERGENCY_CAP_BLOCKED_KEY,
+      nextRetryAt: null,
+    });
+    console.warn('[useChatOutbox] emergency soft cap blocked oldest row', victim.id);
+  } catch (err: unknown) {
+    console.warn('[useChatOutbox] emergency soft cap enforcement failed', newRow.id, err);
+  }
 }
 
 async function sendOneOutboxRow(
@@ -317,13 +367,16 @@ export function useChatOutbox({
     async (entry: OutboxEntryInput): Promise<OutboxEntry> => {
       const newRow = await window.electronAPI.chat.outbox.add(entry);
       setRows((prev) => [...prev, newRow]);
+      if (isEmergencyOutboxPriority(newRow)) {
+        await enforceEmergencyOutboxSoftCap(newRow, updateRow);
+      }
       if (isSendAvailable) {
         // Attempt immediate drain on next tick
         setTimeout(() => void drainOnce(), 0);
       }
       return newRow;
     },
-    [drainOnce, isSendAvailable],
+    [drainOnce, isSendAvailable, updateRow],
   );
 
   const retry = useCallback(

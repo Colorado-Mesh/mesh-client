@@ -4,8 +4,10 @@ import { describe, expect, it } from 'vitest';
 import {
   computeTabMappings,
   findFilteredTabIndexForPanel,
+  INCIDENT_PANEL_INDEX,
   NODES_PANEL_INDEX,
   RADIO_TAB_PANEL_INDEX,
+  TAB_CAPABILITY_REQUIREMENTS,
 } from './appTabMappings';
 import {
   MESHCORE_CAPABILITIES,
@@ -17,6 +19,25 @@ import { TAB_SLOT_IDS } from './tabSlotIds';
 const identityT = ((key: string) => key) as TFunction;
 
 describe('computeTabMappings', () => {
+  it('keeps TAB_CAPABILITY_REQUIREMENTS parallel to TAB_SLOT_IDS', () => {
+    expect(TAB_CAPABILITY_REQUIREMENTS).toHaveLength(TAB_SLOT_IDS.length);
+  });
+
+  it.each([
+    ['meshtastic', MESHTASTIC_CAPABILITIES],
+    ['meshcore', MESHCORE_CAPABILITIES],
+    ['reticulum', RETICULUM_CAPABILITIES],
+  ] as const)('shows Incident tab just before App for %s', (protocol, caps) => {
+    const tabs = computeTabMappings(identityT, protocol, caps);
+    expect(INCIDENT_PANEL_INDEX).toBe(TAB_SLOT_IDS.indexOf('App') - 1);
+    expect(TAB_CAPABILITY_REQUIREMENTS[INCIDENT_PANEL_INDEX]).toBeUndefined();
+    const incidentTab = findFilteredTabIndexForPanel(tabs, INCIDENT_PANEL_INDEX);
+    const appTab = findFilteredTabIndexForPanel(tabs, TAB_SLOT_IDS.indexOf('App'));
+    expect(incidentTab).toBe(appTab - 1);
+    expect(tabs.displayTabLabels[incidentTab]).toBe('tabs.incident');
+    expect(tabs.tabSlotIds[incidentTab]).toBe('Incident');
+  });
+
   it('shows Map tab for Reticulum via hasReticulumDiscoveryMap', () => {
     const tabs = computeTabMappings(identityT, 'reticulum', RETICULUM_CAPABILITIES);
     const mapPanelIndex = TAB_SLOT_IDS.indexOf('Map');

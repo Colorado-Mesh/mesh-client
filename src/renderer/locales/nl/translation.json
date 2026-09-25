@@ -415,7 +415,13 @@
     "decreaseFontSize": "Lettertype verkleinen",
     "increaseFontSize": "Lettertype vergroten",
     "resetFontSize": "Resetten",
-    "resetFontSizeAria": "Lettertype herstellen"
+    "resetFontSizeAria": "Lettertype herstellen",
+    "opsAlertsHeading": "Operationele waarschuwingen",
+    "nodeSilenceAlertMinutes": "Stiltewaarschuwing kijkknooppunt (minuten)",
+    "nodeSilenceAlertMinutesPlaceholder": "Protocolstandaard",
+    "nodeSilenceAlertMinutesHint": "Laat leeg om de verouderde drempelwaarde van elk protocol te gebruiken. Escalatie vuurt op 2× deze waarde.",
+    "nodeBatteryLowThreshold": "Batterij-lage drempel (%)",
+    "notifyOnLinkDown": "Melding bij onverwachte radio link-down"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -434,7 +440,8 @@
     "switchToMeshtasticWithUnread": "Schakel over naar Meshtastic, {{count}} ongelezen",
     "switchToMeshCoreWithUnread": "Schakel over naar MeshCore, {{count}} ongelezen",
     "switchToReticulumWithUnread": "Schakel over naar Reticulum, {{count}} ongelezen",
-    "tabWithUnread": "{{label}}, {{count}} ongelezen"
+    "tabWithUnread": "{{label}}, {{count}} ongelezen",
+    "tabWithOpenIncidents": "{{label}}, {{count}} open MAYDAY of DRINGENDE INCIDENTEN"
   },
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
@@ -774,7 +781,12 @@
     "reticulumDmStaleAlternateAria": "Mogelijke verschillende LXMF-bestemmingen voor deze peer",
     "reticulumDmStaleAlternate": "Deze chat is LXMF {{openPrefix}}…. Je hebt ook een andere LXMF {{alternatePrefix}}… die mogelijk dezelfde persoon is in een andere app. Bevestig het netwerk LXMF/→Peers-bericht of kondig het nu aan beide kanten aan.",
     "reticulumDmStaleAlternateNamed": "Deze chat is LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… ({{name}}) kan dezelfde persoon zijn in een andere app. Open het → bericht van collega's op die hash of kondig nu aan beide kanten aan.",
-    "reticulumDmStaleAlternateDismissAria": "Bestemmingswaarschuwing negeren"
+    "reticulumDmStaleAlternateDismissAria": "Bestemmingswaarschuwing negeren",
+    "outboxEmergencyBadge": "Noodstop",
+    "outboxEmergencyWillSend": "Zal het opnieuw proberen totdat het wordt verzonden",
+    "outboxEmergencyCapBlocked": "Gepauzeerd: te veel noodberichten in de wachtrij. Probeer het opnieuw of annuleer deze.",
+    "outboxEmergencyCancelConfirm": "Dit noodbericht annuleren? Het wordt niet verzonden.",
+    "retryOutboxEmergencyAttempt": "Poging {{count}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -1921,7 +1933,9 @@
     "km": "km",
     "distanceOffsetHelp": "Voegt een vlakke km-vloer toe aan de afstandsdrempels voor hop-goblin en slechte route (0-50).",
     "ignoreMqttToggle": "MQTT negeren",
-    "ignoreMqttHelp": "Maak nodes die alleen MQTT gebruiken grijs en sluit ze uit van diagnostiek"
+    "ignoreMqttHelp": "Maak nodes die alleen MQTT gebruiken grijs en sluit ze uit van diagnostiek",
+    "exportJson": "Exporteer als JSON",
+    "exportJsonAria": "Zichtbare diagnoserijen exporteren als JSON"
   },
   "diagnosticsPing": {
     "title": "Continue ping",
@@ -2315,7 +2329,17 @@
       "clear": "Tegelcache wissen",
       "clearAria": "Offline kaarttegelcache wissen",
       "cleared": "Cache gewist"
-    }
+    },
+    "basemapUsgsTopo": "USGS Topo (alleen VS)",
+    "layerIncidents": "Calamiteiten",
+    "layerMgrsGrid": "Mgrs-raster",
+    "incidentMarker": "{{sender}}: {{codes}}",
+    "incidentMarkerDrill": "DRILL {{sender}}: {{codes}}",
+    "measure": "Meten",
+    "measureStartAria": "Start meten afstand",
+    "measureStopAria": "Stop met meten en wis",
+    "measureHint": "Klik op de kaart om punten toe te voegen",
+    "measureTotal": "{{km}} km / {{mi}} mi"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -3345,7 +3369,8 @@
     "meshcoreTypeNone": "Geen",
     "meshcoreTypeUnknown": "Onbekend",
     "columnHealth": "Knooppuntgezondheid",
-    "hasPublicKeyTitle": "Openbare sleutel"
+    "hasPublicKeyTitle": "Openbare sleutel",
+    "buttonExportCsv": "CSV exporteren"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -5175,7 +5200,8 @@
     "network": "Netwerk",
     "rrc": "RRC",
     "remote": "Op afstand",
-    "games": "Games"
+    "games": "Games",
+    "incident": "Incident"
   },
   "takServerPanel": {
     "title": "TAK-server",
@@ -6070,7 +6096,9 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Kon geen GPS-fix krijgen",
-      "sendFailed": "Kan MECP-rapport niet verzenden"
+      "sendFailed": "Kan MECP-rapport niet verzenden",
+      "maydayButton": "may-day",
+      "maydayAria": "Stel MAYDAY met één tik samen met GPS"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6093,7 +6121,9 @@
       "learnMore": "Hoe MECP werkt",
       "protocolSource": "Protocolbron op GitHub",
       "showComposeButton": "Toon de MECP-knop in de chat",
-      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden."
+      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden.",
+      "showMaydayButton": "Toon de MAYDAY-KNOP in de chat",
+      "showMaydayButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een Mayday-knop met één tik die compose opent met ernst 0 met GPS aangesloten. Onafhankelijk van de MECP COMPOSE-knop."
     },
     "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek"
   },
@@ -6127,6 +6157,48 @@
     "saving": "Geluidsinstellingen opslaan...",
     "importFailed": "Kan dit geluid niet importeren. Kies een ondersteund audiobestand niet langer dan 10 seconden en niet groter dan 2 MiB.",
     "saveFailed": "Kon geluidsinstellingen niet opslaan. Uw vorige selectie is ongewijzigd.",
-    "previewFailed": "Kan dit geluid niet afspelen. Probeer een ander bestand of zet de oorspronkelijke toon terug."
+    "previewFailed": "Kan dit geluid niet afspelen. Probeer een ander bestand of zet de oorspronkelijke toon terug.",
+    "connectionLost": "straalverbinding",
+    "batteryLow": "LAGE BATTERIJ"
+  },
+  "operationalAlerts": {
+    "batteryLowTitle": "{{name}} batterij bijna leeg",
+    "batteryLowBody": "Accu bij {{percent}}%",
+    "silenceEscalationTitle": "{{name}} nog steeds stil",
+    "silenceEscalationBody": "{{minutes}} minuten niet gehoord",
+    "linkDownTitle": "{{protocol}} link omlaag",
+    "linkDownBody": "Radioverbinding verbroken en opnieuw verbinden is niet gelukt"
+  },
+  "incidentPanel": {
+    "title": "Calamiteiten",
+    "empty": "Geen open noodincidenten.",
+    "listAria": "Open noodincidenten",
+    "resolve": "Oplossen",
+    "resolveAria": "Incident van {{sender}} oplossen",
+    "ack": "Onderkennen",
+    "ackAria": "Erken incident van {{sender}}",
+    "ackBeacon": "Erken baken",
+    "ackBeaconAria": "Erken noodbaken van {{sender}}",
+    "ackCount_one": "{{count}} erkenning",
+    "ackCount_other": "{{count}} bevestigingen",
+    "protocolsSeen": "Gehoord op: {{protocols}}",
+    "beaconActive": "Baken actief",
+    "drill": "Boormachine",
+    "ackSent": "Bevestiging verzonden naar {{sender}}",
+    "ackQueued": "Bevestiging aan {{sender}} in de wachtrij; deze wordt verzonden wanneer de radio beschikbaar is",
+    "ackFailed": "Kon de bevestiging niet verzenden of in de wachtrij plaatsen",
+    "intro": "Gemeenschappelijk operationeel beeld voor MECP-noodsituaties gehoord op elk protocol. Open de badge voor MAYDAY en DRINGENDE rijen op dit tabblad; oefeningen worden vermeld, maar worden nooit geteld. Gebruik Bevestigen (of Bevestig voor een actief baken) om op het netwerk te reageren en vervolgens Oplossen wanneer het incident lokaal wordt gesloten.",
+    "emptyHint": "Inkomende MECP-rapporten verschijnen hier automatisch. Om er een te verzenden, schakelt u → de App MECP → Show MECP-knop in in Chat en gebruikt u vervolgens MECP of MAYDAY in Chat. → Kaartlagen kunnen open incidenten weergeven met coördinaten."
+  },
+  "quickStatus": {
+    "ok": "OK",
+    "needHelp": "Hulp nodig?",
+    "inPosition": "In positie",
+    "lostComms": "Verloren communicatie",
+    "returning": "In retour",
+    "barAria": "Snelle statusvoorinstellingen",
+    "rollCall": "Appel",
+    "rollCallAria": "Roloproep uitzenden en OK-antwoorden tellen",
+    "rollCallTally": "{{responded}}/{{expected}} heeft gereageerd"
   }
 }

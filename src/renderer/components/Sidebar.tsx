@@ -23,6 +23,8 @@ interface SidebarProps {
   remotePendingOffers?: number;
   /** Unread LRGP game session count for Games tab badge; 0 hides badge */
   gamesUnread?: number;
+  /** Open non-drill MAYDAY/URGENT incident count for Incident tab badge; 0 hides badge */
+  incidentBadgeCount?: number;
   /** Set of tab indices that are disabled (greyed out, non-clickable) */
   disabledTabs?: Set<number>;
   collapsed: boolean;
@@ -39,6 +41,7 @@ export default function Sidebar({
   rrcUnread = 0,
   remotePendingOffers = 0,
   gamesUnread = 0,
+  incidentBadgeCount = 0,
   disabledTabs,
   collapsed,
   onToggle,
@@ -72,6 +75,7 @@ export default function Sidebar({
           const showRrcBadge = slotId === 'RRC' && rrcUnread > 0;
           const showRemoteBadge = slotId === 'Remote' && remotePendingOffers > 0;
           const showGamesBadge = slotId === 'Games' && gamesUnread > 0;
+          const showIncidentBadge = slotId === 'Incident' && incidentBadgeCount > 0;
           const badgeCount = showChatBadge
             ? chatUnread
             : showRoomsBadge
@@ -82,18 +86,31 @@ export default function Sidebar({
                   ? remotePendingOffers
                   : showGamesBadge
                     ? gamesUnread
-                    : 0;
+                    : showIncidentBadge
+                      ? incidentBadgeCount
+                      : 0;
           const showBadge =
-            showChatBadge || showRoomsBadge || showRrcBadge || showRemoteBadge || showGamesBadge;
+            showChatBadge ||
+            showRoomsBadge ||
+            showRrcBadge ||
+            showRemoteBadge ||
+            showGamesBadge ||
+            showIncidentBadge;
+          const cappedBadgeCount = badgeCount > 99 ? '99+' : badgeCount;
           const tabAriaLabel = showBadge
             ? showRemoteBadge
               ? badgeCount > 99
                 ? t('reticulumRemote.transfer.pendingOffersBadgeAriaCapped')
                 : t('reticulumRemote.transfer.pendingOffersBadgeAria', { count: badgeCount })
-              : t('aria.tabWithUnread', {
-                  label: displayLabel,
-                  count: badgeCount > 99 ? '99+' : badgeCount,
-                })
+              : showIncidentBadge
+                ? t('aria.tabWithOpenIncidents', {
+                    label: displayLabel,
+                    count: cappedBadgeCount,
+                  })
+                : t('aria.tabWithUnread', {
+                    label: displayLabel,
+                    count: cappedBadgeCount,
+                  })
             : displayLabel;
 
           return (

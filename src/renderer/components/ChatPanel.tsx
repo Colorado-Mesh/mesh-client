@@ -37,7 +37,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
+import { isMecpComposeEnabled, isMecpMaydayButtonEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -97,7 +97,7 @@ import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
-import { useChatOutbox } from '../hooks/useChatOutbox';
+import { isEmergencyOutboxPriority, useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
 import { chatDmPeerMessageCounts } from '../lib/chatDmPeerIndex';
@@ -143,6 +143,7 @@ import {
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
+import { sendEmergencyText, sendTextWithOutboxFallback } from '../lib/emergencySend';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import {
   getCachedMecpLanguage,
@@ -161,6 +162,7 @@ import {
   meshcoreConfiguredChannelIndexSet,
 } from '../lib/meshcoreConfiguredChatChannels';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
+import { getNodeStatus } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import {
@@ -175,6 +177,13 @@ import {
   truncateReplyPreviewText,
 } from '../lib/replyPreview';
 import {
+  createRollCall,
+  isRollCallExpired,
+  ROLL_CALL_COMMAND_TEXT,
+  type RollCallState,
+  tallyRollCallReplies,
+} from '../lib/rollCall';
+import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
@@ -183,6 +192,8 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { useWatchedNodesStore } from '../stores/watchedNodesStore';
+import { QuickStatusBar } from './chat/QuickStatusBar';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -317,12 +328,32 @@ function OutboxBubble({
           ? 'text-amber-400'
           : 'text-red-400';
   const displayError = row.error ? translateChatSendError(t, row.error) : null;
+  const isEmergency = isEmergencyOutboxPriority(row);
   return (
     <div className="mb-1 flex justify-end px-4">
-      <div className="max-w-[75%] rounded-xl bg-slate-700 px-3 py-2 opacity-80">
+      <div
+        className={`max-w-[75%] rounded-xl bg-slate-700 px-3 py-2 ${
+          isEmergency ? 'border border-red-500' : 'opacity-80'
+        }`}
+      >
+        {isEmergency && (
+          <div className="mb-1 flex items-center gap-2 text-[11px]">
+            <span className="rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">
+              {t('chatPanel.outboxEmergencyBadge')}
+            </span>
+            {row.status !== 'blocked' && (
+              <span className="text-gray-300">{t('chatPanel.outboxEmergencyWillSend')}</span>
+            )}
+          </div>
+        )}
         <div className="text-sm text-white">{row.payload}</div>
         <div className={`mt-1 flex items-center gap-2 text-[11px] ${statusColor}`}>
           <span>{statusLabel}</span>
+          {isEmergency && row.attemptCount > 0 && (
+            <span className="text-gray-300">
+              {t('chatPanel.retryOutboxEmergencyAttempt', { count: row.attemptCount })}
+            </span>
+          )}
           {displayError && (
             <span className="text-muted max-w-[140px] truncate" title={displayError}>
               — {displayError}
@@ -344,6 +375,9 @@ function OutboxBubble({
             type="button"
             aria-label={t('chatPanel.cancelOutboxMessage')}
             onClick={() => {
+              if (isEmergency && !window.confirm(t('chatPanel.outboxEmergencyCancelConfirm'))) {
+                return;
+              }
               onCancel(row.id);
             }}
             className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
@@ -919,13 +953,19 @@ function ChatPanel({
   const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
   const [mecpComposeSession, setMecpComposeSession] = useState(0);
   const [mecpComposeEnabled, setMecpComposeEnabled] = useState(() => isMecpComposeEnabled());
+  const [mecpMaydayButtonEnabled, setMecpMaydayButtonEnabled] = useState(() =>
+    isMecpMaydayButtonEnabled(),
+  );
+  const [mecpMaydayMode, setMecpMaydayMode] = useState(false);
   const [mecpLang, setMecpLang] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
   );
+  const mecpControlsEnabled = mecpComposeEnabled || mecpMaydayButtonEnabled;
 
   useEffect(() => {
     const sync = () => {
       setMecpComposeEnabled(isMecpComposeEnabled());
+      setMecpMaydayButtonEnabled(isMecpMaydayButtonEnabled());
     };
     window.addEventListener('mesh-client:appSettings', sync);
     return () => {
@@ -934,8 +974,11 @@ function ChatPanel({
   }, []);
 
   useEffect(() => {
-    if (!mecpComposeEnabled) setMecpComposeOpen(false);
-  }, [mecpComposeEnabled]);
+    if (!mecpControlsEnabled) {
+      setMecpComposeOpen(false);
+      setMecpMaydayMode(false);
+    }
+  }, [mecpControlsEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1461,6 +1504,7 @@ function ChatPanel({
     [onSend],
   );
 
+  const outboxSendAvailable = isConnected && !(isMqttOnly && protocol === 'meshcore');
   const {
     rows: outboxRows,
     queue: queueOutbox,
@@ -1468,7 +1512,7 @@ function ChatPanel({
     cancel: cancelOutbox,
   } = useChatOutbox({
     protocol,
-    isSendAvailable: isConnected && !(isMqttOnly && protocol === 'meshcore'),
+    isSendAvailable: outboxSendAvailable,
     sendFn: outboxSendFn,
   });
 
@@ -1944,6 +1988,82 @@ function ChatPanel({
       viewMode,
     ],
   );
+
+  const sendQuickStatusText = useCallback(
+    async (text: string) => {
+      if (viewMode === 'dm' && activeDmNode == null) {
+        setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
+        return;
+      }
+      try {
+        await sendTextWithOutboxFallback(
+          text,
+          {
+            isSendAvailable: outboxSendAvailable,
+            sendFn: async (payload) => {
+              await handleSendChunk(payload);
+              return undefined;
+            },
+            queueOutbox,
+            protocol,
+            viewKey,
+            channel,
+            toNode: viewMode === 'dm' && activeDmNode != null ? activeDmNode : null,
+          },
+          'normal',
+        );
+        setUnreadDividerTimestamp(0);
+      } catch (err) {
+        console.warn('[ChatPanel] quick status send failed ' + errLikeToLogString(err));
+        setChatActionError({ message: t('chatPanel.sendFailed'), viewKey });
+      }
+    },
+    [
+      activeDmNode,
+      channel,
+      handleSendChunk,
+      outboxSendAvailable,
+      protocol,
+      queueOutbox,
+      t,
+      viewKey,
+      viewMode,
+    ],
+  );
+
+  const [rollCall, setRollCall] = useState<RollCallState | null>(null);
+  const rollCallNowMs = useNowMs(rollCall != null, 30_000);
+  const rollCallTally = useMemo(
+    () => (rollCall ? tallyRollCallReplies(rollCall, viewMessages, isOwnNode) : null),
+    [rollCall, viewMessages, isOwnNode],
+  );
+  const rollCallSummary =
+    rollCallTally && rollCallNowMs > 0 && !isRollCallExpired(rollCallTally, rollCallNowMs)
+      ? {
+          responded: rollCallTally.respondedPeerIds.length,
+          expected: rollCallTally.expectedPeerIds.length,
+        }
+      : null;
+
+  const handleRollCall = useCallback(async () => {
+    const watched = useWatchedNodesStore.getState().watchedNodeIds;
+    const candidates = [...nodes.values()].filter((n) => !isOwnNode(n.node_id));
+    const watchedPeers = candidates.filter((n) => watched.has(n.node_id));
+    const expected = (
+      watchedPeers.length > 0
+        ? watchedPeers
+        : candidates.filter(
+            (n) =>
+              getNodeStatus(
+                n.last_heard,
+                capabilities.nodeStaleThresholdMs,
+                capabilities.nodeOfflineThresholdMs,
+              ) === 'online',
+          )
+    ).map((n) => String(n.node_id));
+    setRollCall(createRollCall(expected));
+    await sendQuickStatusText(ROLL_CALL_COMMAND_TEXT);
+  }, [capabilities, isOwnNode, nodes, sendQuickStatusText]);
 
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
@@ -3803,39 +3923,76 @@ function ChatPanel({
       {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
       ) : null}
-      {mecpComposeEnabled ? (
+      {mecpControlsEnabled ? (
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
-            aria-label={t('mecp.compose.open')}
-            onClick={() => {
-              setMecpComposeSession((n) => n + 1);
-              setMecpComposeOpen(true);
-            }}
-          >
-            {t('mecp.compose.button')}
-          </button>
+          {mecpComposeEnabled ? (
+            <button
+              type="button"
+              className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
+              aria-label={t('mecp.compose.open')}
+              onClick={() => {
+                setMecpMaydayMode(false);
+                setMecpComposeSession((n) => n + 1);
+                setMecpComposeOpen(true);
+              }}
+            >
+              {t('mecp.compose.button')}
+            </button>
+          ) : null}
+          {mecpMaydayButtonEnabled ? (
+            <button
+              type="button"
+              className="rounded border border-red-500 bg-red-700 px-2 py-1 text-xs font-bold text-white hover:bg-red-600"
+              aria-label={t('mecp.compose.maydayAria')}
+              onClick={() => {
+                setMecpMaydayMode(true);
+                setMecpComposeSession((n) => n + 1);
+                setMecpComposeOpen(true);
+              }}
+            >
+              {t('mecp.compose.maydayButton')}
+            </button>
+          ) : null}
         </div>
       ) : null}
-      {mecpComposeEnabled ? (
+      {mecpControlsEnabled ? (
         <MecpComposeModal
           key={mecpComposeSession}
           open={mecpComposeOpen}
           onClose={() => {
             setMecpComposeOpen(false);
+            setMecpMaydayMode(false);
           }}
           resolveGps={resolveShareLocation}
+          initialSeverity={mecpMaydayMode ? 0 : undefined}
+          autoAttachGps={mecpMaydayMode}
           onSend={async (text) => {
             if (viewMode === 'dm' && activeDmNode == null) {
               const message = t('chatPanel.selectDmFirst');
               setChatActionError({ message, viewKey });
               throw new Error(message);
             }
-            await handleSendChunk(text);
+            await sendEmergencyText(text, {
+              isSendAvailable: outboxSendAvailable,
+              sendFn: async (payload) => {
+                await handleSendChunk(payload);
+                return undefined;
+              },
+              queueOutbox,
+              protocol,
+              viewKey,
+              channel,
+              toNode: viewMode === 'dm' && activeDmNode != null ? activeDmNode : null,
+            });
           }}
         />
       ) : null}
+      <QuickStatusBar
+        disabled={(dmOnlyChat && activeDmNode == null) || reticulumDmMissingLxmf}
+        onSend={sendQuickStatusText}
+        onRollCall={handleRollCall}
+        rollCallSummary={rollCallSummary}
+      />
       <ChatComposer
         className="mt-1"
         protocol={protocol}

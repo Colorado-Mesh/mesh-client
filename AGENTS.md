@@ -157,6 +157,7 @@ Deep, file-level subsystem detail now lives in [`docs/agents/`](docs/agents/READ
 | i18n / localization workflow, auto-translate, language selector                               | [`docs/agents/i18n.md`](docs/agents/i18n.md)                             |
 | Connection panel helpers (error hints, rehydrate, storage migrations)                         | [`docs/agents/connection-panel.md`](docs/agents/connection-panel.md)     |
 | MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/agents/mecp.md`](docs/agents/mecp.md)                             |
+| EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/agents/emcomm.md`](docs/agents/emcomm.md)                         |
 | Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/agents/offline-maps.md`](docs/agents/offline-maps.md)             |
 | Symptom → where-to-check index                                                                | [`docs/agents/common-issues.md`](docs/agents/common-issues.md)           |
 

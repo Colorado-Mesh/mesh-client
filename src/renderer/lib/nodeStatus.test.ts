@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  bearingBetween,
   clampLastHeardSec,
   clampReadWatermarkMs,
   effectiveLastHeardMs,
   effectiveMessageTimestampMs,
+  formatBearing,
+  formatRangeKm,
   getNodeStatus,
   lastHeardToUnixSeconds,
   mergeMeshcoreLastHeardFromAdvert,
@@ -201,5 +204,47 @@ describe('clampReadWatermarkMs', () => {
     expect(clampReadWatermarkMs(Number.NaN, nowMs)).toBe(0);
     expect(clampReadWatermarkMs(Number.POSITIVE_INFINITY, nowMs)).toBe(0);
     expect(clampReadWatermarkMs(-1, nowMs)).toBe(0);
+  });
+});
+
+describe('bearingBetween', () => {
+  it('returns ~0° for due north', () => {
+    expect(bearingBetween(40, -105, 41, -105)).toBeCloseTo(0, 6);
+  });
+
+  it('returns ~90° for due east along the equator', () => {
+    expect(bearingBetween(0, 0, 0, 1)).toBeCloseTo(90, 6);
+  });
+
+  it('returns ~180° for due south and ~270° for due west', () => {
+    expect(bearingBetween(41, -105, 40, -105)).toBeCloseTo(180, 6);
+    expect(bearingBetween(0, 1, 0, 0)).toBeCloseTo(270, 6);
+  });
+
+  it('stays in [0, 360) and returns NaN for invalid input', () => {
+    const b = bearingBetween(40, -105, 40.5, -105.5);
+    expect(b).toBeGreaterThanOrEqual(0);
+    expect(b).toBeLessThan(360);
+    expect(bearingBetween(NaN, 0, 1, 1)).toBeNaN();
+  });
+});
+
+describe('formatBearing', () => {
+  it('pads to three digits and wraps 360 to 000', () => {
+    expect(formatBearing(0)).toBe('000°');
+    expect(formatBearing(45.4)).toBe('045°');
+    expect(formatBearing(359.6)).toBe('000°');
+    expect(formatBearing(-90)).toBe('270°');
+    expect(formatBearing(NaN)).toBe('—');
+  });
+});
+
+describe('formatRangeKm', () => {
+  it('uses metres, one decimal, or whole km by magnitude', () => {
+    expect(formatRangeKm(0.4321)).toBe('432 m');
+    expect(formatRangeKm(12.345)).toBe('12.3 km');
+    expect(formatRangeKm(123.6)).toBe('124 km');
+    expect(formatRangeKm(-1)).toBe('—');
+    expect(formatRangeKm(Infinity)).toBe('—');
   });
 });

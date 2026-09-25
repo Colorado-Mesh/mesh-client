@@ -13,6 +13,7 @@ function stubOutboxEntry(entry: OutboxEntryInput, id: number): OutboxEntry {
     createdAt: now,
     updatedAt: now,
     ...entry,
+    priority: entry.priority === 'emergency' ? 'emergency' : 'normal',
   };
 }
 

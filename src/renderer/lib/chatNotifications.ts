@@ -38,7 +38,9 @@ export type ChatNotificationType =
   | 'mecpSafety'
   | 'mecpSiren'
   /** US EAS-style attention signal (853+960 Hz) for MECP severity 1 URGENT. */
-  | 'mecpEas';
+  | 'mecpEas'
+  | 'connectionLost'
+  | 'batteryLow';
 
 type SoundProfile =
   | { kind: 'single'; freq: number; dur: number; gain?: number }
@@ -127,6 +129,9 @@ const SOUND_PROFILES: Record<ChatNotificationType, SoundProfile> = {
   },
   // FCC EAS attention signal frequencies; shortened from the full ~8s broadcast tone.
   mecpEas: { kind: 'eas', freqs: [853, 960], dur: 5, gain: 0.4 },
+  // Falling pair (inverse of the DM rise) so a dropped link does not read as a new message.
+  connectionLost: { kind: 'dual', pulse1Freq: 783.99, pulse2Freq: 523.25, dur: 0.12, gap: 0.06 },
+  batteryLow: { kind: 'dual', pulse1Freq: 440, pulse2Freq: 440, dur: 0.1, gap: 0.12 },
 };
 
 const PRESET_PROFILES: Record<

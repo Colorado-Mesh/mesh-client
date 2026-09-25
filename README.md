@@ -211,16 +211,27 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - Distance filter, favorite/pin nodes, device role icons
 - Node Detail Modal: DM, trace route with per-hop display, delete node, neighbor info, **Map Report** (Meshtastic), PaxCounter, Detection Sensor, **channel utilization** (Meshtastic), **export/share contact** (MeshCore), **node notes** (free-text, SQLite-persisted), **watch / notify** (OS desktop notification on online/offline transition)
 - **Node Health Score**: composite 0–100 badge on each node row (signal 40 pts, recency 30 pts, load 20 pts, battery 10 pts); color-coded green / yellow / red with tooltip breakdown
-- **JSON export**: export the full node list as JSON from NodeListPanel
+- **Node export**: export the node list as topology JSON or CSV from NodeListPanel
+
+**EMCOMM / Incident Command**
+
+- **Incident** tab (always visible on all three protocols; placed just above **App** in the sidebar — rarely needed day-to-day, but the red badge counts open MAYDAY/URGENT so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress **beacon** is active. Coordinates come from the report or the sender's last known position and can appear on the Map (**Layers → Emergency incidents**) for Meshtastic, MeshCore, **and Reticulum** (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). **Acknowledge** sends R01 (or **Confirm** / B02 when a beacon is active); **Resolve** closes the row locally. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed but never badge. Details for agents: [`docs/agents/emcomm.md`](docs/agents/emcomm.md).
+- **Emergency outbox**: MECP / MAYDAY sends that can't go out live are queued as emergency priority and keep retrying after reconnect (no 24h age cutoff or attempt limit; a soft cap blocks, never deletes)
+- **One-tap MAYDAY** (when App → MECP → **Show MAYDAY button in Chat** is on; default off): opens compose pre-filled with severity 0 and GPS — independent of the MECP compose button opt-in
+- **ACK honesty**: broadcast acknowledgements are **heard by the network** / best effort — not read receipts
+- **Ops alerts** (App → Notifications): watched-node silence escalation, battery low (where telemetry exists), and unexpected link-down (never on manual disconnect or during reconnect)
+- **Quick status** presets above the Chat composer (OK, Need help, In position, Lost comms, Returning) plus a one-tap roll-call broadcast
+- **Exports**: node list as topology JSON or CSV, Diagnostics rows as JSON, and the durable MECP audit log (App → MECP)
 
 **Map & Position**
 
-- Interactive map with node positions and your current location (device GPS → browser geolocation → IP-based city-level fallback); default **OpenStreetMap** basemap with optional **Carto Dark**
-- **Layers** control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos); basemap preference persists in SQLite and localStorage
+- Interactive map with node positions and your current location (device GPS → browser geolocation → IP-based city-level fallback); default **OpenStreetMap** basemap with optional **Carto Dark** and **USGS Topo** (US only; offline-cacheable like the other basemaps)
+- **Layers** control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos, open **incidents**, **MGRS grid**); basemap preference persists in SQLite and localStorage
 - **Show on map** from the node list pin or node detail; switches to the Map tab and flies to that node
-- **Position trail**: persisted path overlay (configurable 1 h – 7 days); survives restarts via SQLite; toggle and window size in App tab; wipe via Danger Zone
+- **Position trail**: persisted path overlay (configurable 1 h – 7 days); survives restarts via SQLite; senders of open incidents keep their track through retention pruning until the incident is resolved; toggle and window size in App tab; wipe via Danger Zone
+- **SAR tools**: MGRS grid overlay and a distance **measure** tool on the Map tab
 - Auto-refresh at configurable intervals; manual static position entry; send your position back to your device
-- **Reticulum Map tab** uses RMAP v4 discovery (opt-in heard interfaces), not Meshtastic/MeshCore node positions — see [Reticulum Features](#reticulum-features)
+- **Reticulum Map tab** uses RMAP v4 discovery (opt-in heard interfaces), not Meshtastic/MeshCore node positions — plus the same **Emergency incidents** overlay when open MECP rows have coordinates (MECP over LXMF chat) — see [Reticulum Features](#reticulum-features)
 
 **Telemetry**
 
@@ -230,7 +241,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **16** sidebar tabs (including **Administration**, **Security**, **TAK**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **16** tabs (**TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **15** tabs (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **17** sidebar tabs (including **Administration**, **Security**, **TAK**, **Incident** just above **App**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **17** tabs (**Incident** always visible just above **App**; **TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **16** tabs (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, **Incident**, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 

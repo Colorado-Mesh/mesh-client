@@ -18,6 +18,7 @@ import {
   Radio,
   Settings,
   Shield,
+  Siren,
   Terminal,
   Users,
   Wifi,
@@ -39,6 +40,8 @@ export function TabIcon({ name }: { name: string }) {
       return <Link2 {...p} />;
     case 'Chat':
       return <MessageCircle {...p} />;
+    case 'Incident':
+      return <Siren {...p} />;
     case 'Games':
       return <Gamepad2 {...p} />;
     case 'RRC':
