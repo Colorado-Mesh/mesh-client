@@ -143,6 +143,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshcoreRoomSyncStorage.test.ts',
   'src/renderer/lib/meshcoreStoreDedup.test.ts',
   'src/renderer/lib/meshcoreDirectMessageDecode.test.ts',
+  'src/renderer/lib/mecp/beaconCancel.test.ts',
   'src/renderer/lib/mqttAutoLaunch.test.ts',
   'src/renderer/lib/mqttSettingsStorage.test.ts',
   'src/renderer/lib/protocols/meshcore/MeshCoreTransport.serial-writable.test.ts',

@@ -42,6 +42,8 @@ export const ALLOWED_LICENSE_IDS = Object.freeze([
   'Hippocratic-3.0',
   'BlueOak-1.0.0',
   'Python-2.0',
+  // argparse@3+ (via markdown-it@15 / markdownlint-cli2) uses SPDX PSF-2.0.
+  'PSF-2.0',
   'Zlib',
   'WTFPL',
   'Public Domain',
