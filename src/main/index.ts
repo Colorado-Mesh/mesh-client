@@ -559,8 +559,6 @@ function clearPendingSerialSelectionTimer(): void {
 // (empty string always allowed = cancel). Prevents arbitrary id injection from a compromised renderer.
 let lastSerialPortIds = new Set<string>();
 
-/** Linux Web Bluetooth picker removed — LoRa BLE uses sidecar GATT on all platforms. */
-
 // Bluetooth pairing state (Linux only — setBluetoothPairingHandler)
 // Electron's Response type requires confirmed: boolean, pin is optional
 interface BluetoothPairingResponse {
@@ -2242,31 +2240,6 @@ ipcMain.on('serial-port-cancelled', (event) => {
   lastSerialPortIds.clear();
 });
 
-// ─── IPC: Bluetooth device selected by user (Linux Web Bluetooth) ────
-ipcMain.on('bluetooth-device-selected', (event, deviceId: unknown) => {
-  if (!validateIpcSender(event)) {
-    console.warn('[IPC] bluetooth-device-selected: unauthorized sender');
-    return;
-  }
-  if (!linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
-    console.warn(
-      '[IPC] bluetooth-device-selected: no pending selection (ignored — may have timed out or already resolved)',
-    );
-    return;
-  }
-  const id = typeof deviceId === 'string' ? deviceId : '';
-  if (id !== '' && !linuxWebBluetoothDeviceSelection.knownDeviceIds().has(id)) {
-    console.warn('[IPC] bluetooth-device-selected: ignoring unknown deviceId');
-    return;
-  }
-  console.debug('[IPC] bluetooth-device-selected:', sanitizeLogMessage(id || '(cancelled)'));
-  if (!linuxWebBluetoothDeviceSelection.resolveSelection(id)) {
-    console.warn('[IPC] bluetooth-device-selected: resolve ignored');
-  }
-});
-
-// ─── IPC: Cancel Bluetooth selection ────────────────────────────────
-
 // ─── IPC: Unpair Bluetooth device (Linux only — bluetoothctl remove) ──
 // Not used on routine disconnect; only ConnectionPanel manual re-pair flow.
 ipcMain.handle('bluetooth-unpair', async (event, macAddress: unknown) => {
@@ -2833,15 +2806,6 @@ const BLE_PERIPHERAL_OWNERS = new Set<BlePeripheralOwner>([
 ]);
 const BLE_SCAN_OWNERS = new Set<BleScanOwner>(['gatt', 'reticulum']);
 
-/** Linux Web Bluetooth picker removed — LoRa BLE uses sidecar GATT on all platforms. */
-const linuxWebBluetoothDeviceSelection = {
-  cancelSelection: () => {},
-  hasPendingSelection: () => false,
-  knownDeviceIds: () => new Set<string>(),
-  resolveSelection: (id: string) => id.length < 0,
-  clear: () => {},
-};
-
 ipcMain.handle('bleCoexistence:register', (event, mac: unknown, owner: unknown) => {
   assertIpcSender(event, 'bleCoexistence:register');
   if (
@@ -2919,13 +2883,6 @@ ipcMain.handle('bleCoexistence:suspendForReticulumBleConnect', async (event) => 
   assertIpcSender(event, 'bleCoexistence:suspendForReticulumBleConnect');
   await bleCoexistenceCoordinator.suspendForReticulumBleConnect();
   return bleCoexistenceCoordinator.getState();
-});
-
-/** Web Bluetooth chooser cancel — no-op after LoRa BLE moved to sidecar GATT. */
-ipcMain.handle('bluetooth-device-cancel', (event) => {
-  assertIpcSender(event, 'bluetooth-device-cancel');
-  linuxWebBluetoothDeviceSelection.cancelSelection();
-  return { cancelled: false as const };
 });
 
 ipcMain.handle('gatt:start-scan', async (event, sessionId: unknown) => {
@@ -6788,11 +6745,6 @@ void app
 app.on('before-quit', (event) => {
   rendererHeartbeatWatchdog.stopStallWatchdog();
   rendererHeartbeatWatchdog.clearResumeWatchdog();
-  // Clean up any pending Bluetooth device selection to prevent callback leak
-  if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
-    console.debug('[main] before-quit: cleaning up pending Bluetooth callback');
-    linuxWebBluetoothDeviceSelection.cancelSelection();
-  }
 
   if (shutdownDone) {
     return;
@@ -6871,11 +6823,6 @@ app.on('will-quit', (event) => {
 });
 
 app.on('window-all-closed', () => {
-  // Clean up any pending Bluetooth device selection to prevent callback leak
-  if (linuxWebBluetoothDeviceSelection.hasPendingSelection()) {
-    console.debug('[main] window-all-closed: cleaning up pending Bluetooth callback');
-    linuxWebBluetoothDeviceSelection.cancelSelection();
-  }
   const hasConnection = isConnected || isAnyMqttConnected();
   // On macOS: quit when user chose Quit, or when there's no connection (window closed with nothing to keep running for)
   if (process.platform !== 'darwin' || isQuitting || !hasConnection) {

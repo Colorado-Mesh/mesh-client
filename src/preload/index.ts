@@ -770,33 +770,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.send('serial-port-cancelled');
   },
 
-  // ─── Bluetooth device selection (Linux Web Bluetooth) ──────────────
-  // Main process intercepts select-bluetooth-device and sends the device
-  // list here. Renderer shows a picker, then calls selectBluetoothDevice.
-  onBluetoothDevicesDiscovered: (
-    callback: (devices: GattBleDevice[], generation?: number) => void,
-  ) => {
-    const handler = (_event: unknown, devices: GattBleDevice[], generation?: number) => {
-      callback(devices, generation);
-    };
-    ipcRenderer.on('bluetooth-devices-discovered', handler);
-    return () => {
-      ipcRenderer.removeListener('bluetooth-devices-discovered', handler);
-    };
-  },
-
-  selectBluetoothDevice: (deviceId: string) => {
-    ipcRenderer.send('bluetooth-device-selected', deviceId);
-  },
-
-  // Awaitable invoke so Connect can clear a stale chooser before requestDevice()
-  // (fire-and-forget send raced behind select-bluetooth-device and cancelled the new session).
-  cancelBluetoothSelection: async (generation?: number | null): Promise<{ cancelled: boolean }> => {
-    const gen =
-      typeof generation === 'number' && Number.isFinite(generation) ? generation : undefined;
-    return (await ipcRenderer.invoke('bluetooth-device-cancel', gen)) as { cancelled: boolean };
-  },
-
   // ─── Bluetooth pairing (Linux) ──────────────────────────────────────
   // Unpair a device via bluetoothctl remove
   bluetoothUnpair: (macAddress: string): Promise<void> =>

@@ -966,18 +966,6 @@ export interface ElectronAPI {
   selectSerialPort: (portId: string) => void;
   cancelSerialSelection: () => void;
 
-  // ─── Bluetooth device selection (Linux Web Bluetooth) ────────────────────────
-  onBluetoothDevicesDiscovered: (
-    callback: (devices: GattBleDevice[], generation?: number) => void,
-  ) => () => void;
-  selectBluetoothDevice: (deviceId: string) => void;
-  /**
-   * Cancel the Linux Web Bluetooth chooser.
-   * Pass the generation from onBluetoothDevicesDiscovered to ignore stale cancels.
-   * Await before starting a new requestDevice() so force-clear cannot race the new session.
-   */
-  cancelBluetoothSelection: (generation?: number | null) => Promise<{ cancelled: boolean }>;
-
   // ─── Bluetooth pairing (Linux) ──────────────────────────────────────────────
   bluetoothUnpair: (macAddress: string) => Promise<void>;
   bluetoothStartScan: () => Promise<void>;
