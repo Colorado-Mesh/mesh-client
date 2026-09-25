@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
   isRrcWhisperPeerHash,
   parseRrcDmRoomKey,
@@ -1052,9 +1053,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         Boolean(msg.nickname && msg.nickname === s.nickname && !msg.sender_hash);
       // Only the focused RRC panel + hub+room counts as "viewing" — sticky
       // activeRoom after leaving the panel (or switching protocols) must not
-      // suppress unread. A background hub's activeRoom also must not suppress.
+      // suppress unread. Neither a background window nor another hub's activeRoom
+      // counts as viewing; read focus here so an arriving event cannot race a React effect.
       const viewing =
         s.rrcPanelFocused &&
+        !isAppWindowInactive() &&
         hub === s.focusedHubHash &&
         session.activeRoom != null &&
         rrcRoomsMatch(session.activeRoom, roomKey);
