@@ -83,6 +83,32 @@ describe('useOperationalAlerts', () => {
   });
 
   describe('battery low', () => {
+    it.each([
+      ['meshtastic', '!0bcd5737 battery low', 0x0bcd5737, undefined],
+      ['meshcore', 'Node-F6 battery low', 0xf6, undefined],
+      ['reticulum', 'abcdef123456 battery low', 0xabc, 'abcdef1234567890abcdef1234567890'],
+      ['reticulum', 'ABC battery low', 0xabc, undefined],
+    ] as const)('notifies an unnamed %s node as %s', (protocol, title, nodeId, hash) => {
+      useWatchedNodesStore.setState({ watchedNodeIds: new Set([nodeId]) });
+      setup({
+        nodes: new Map([
+          [
+            nodeId,
+            makeNode({
+              node_id: nodeId,
+              long_name: '',
+              short_name: '',
+              battery: 5,
+              ...(hash ? { reticulum_destination_hash: hash } : {}),
+            }),
+          ],
+        ]),
+        capabilities: { ...caps, protocol },
+      });
+      expect(notificationSpy).toHaveBeenCalledOnce();
+      expect(notificationSpy.mock.calls[0]?.[0]).toBe(title);
+    });
+
     it('fires once at or below threshold and plays batteryLow', () => {
       const { rerender } = setup({ nodes: new Map([[1, makeNode({ battery: 50 })]]) });
       expect(notificationSpy).not.toHaveBeenCalled();
