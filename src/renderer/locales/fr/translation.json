@@ -6190,7 +6190,11 @@
     "ackQueued": "Accusé de réception à {{sender}} en file d'attente ; il sera envoyé lorsque la radio sera disponible",
     "ackFailed": "Impossible d'envoyer ou de mettre en file d'attente l'accusé de réception",
     "intro": "Image opérationnelle commune pour les urgences MECP entendues sur n'importe quel protocole. Ouvrez le badge MAYDAY et les lignes URGENTES dans cet onglet ; les exercices sont répertoriés mais jamais comptés. Utilisez Acquitter (ou Confirmer pour une balise active) pour répondre sur le maillage, puis Résoudre lorsque l'incident est fermé localement.",
-    "emptyHint": "Les rapports MECP entrants apparaissent ici automatiquement. Pour en envoyer un, activez le bouton → Afficher → le MECP de l'application dans le chat, puis utilisez le MECP ou MAYDAY dans le chat. → Les couches de carte peuvent afficher les incidents ouverts avec des coordonnées."
+    "emptyHint": "Les rapports MECP entrants apparaissent ici automatiquement. Pour en envoyer un, activez le bouton → Afficher → le MECP de l'application dans le chat, puis utilisez le MECP ou MAYDAY dans le chat. → Les couches de carte peuvent afficher les incidents ouverts avec des coordonnées.",
+    "ackQueuedBadge": "ACK en file d'attente",
+    "pendingAckListAria": "Accusés de réception en file d'attente pour cet incident",
+    "cancelPendingAck": "Annuler",
+    "cancelPendingAckAria": "Annuler l'accusé de réception en file d'attente pour {{sender}}"
   },
   "quickStatus": {
     "ok": "OK",

@@ -6190,7 +6190,11 @@
     "ackQueued": "Bevestiging aan {{sender}} in de wachtrij; deze wordt verzonden wanneer de radio beschikbaar is",
     "ackFailed": "Kon de bevestiging niet verzenden of in de wachtrij plaatsen",
     "intro": "Gemeenschappelijk operationeel beeld voor MECP-noodsituaties gehoord op elk protocol. Open de badge voor MAYDAY en DRINGENDE rijen op dit tabblad; oefeningen worden vermeld, maar worden nooit geteld. Gebruik Bevestigen (of Bevestig voor een actief baken) om op het netwerk te reageren en vervolgens Oplossen wanneer het incident lokaal wordt gesloten.",
-    "emptyHint": "Inkomende MECP-rapporten verschijnen hier automatisch. Om er een te verzenden, schakelt u → de App MECP → Show MECP-knop in in Chat en gebruikt u vervolgens MECP of MAYDAY in Chat. → Kaartlagen kunnen open incidenten weergeven met coördinaten."
+    "emptyHint": "Inkomende MECP-rapporten verschijnen hier automatisch. Om er een te verzenden, schakelt u → de App MECP → Show MECP-knop in in Chat en gebruikt u vervolgens MECP of MAYDAY in Chat. → Kaartlagen kunnen open incidenten weergeven met coördinaten.",
+    "ackQueuedBadge": "ACK in de wachtrij",
+    "pendingAckListAria": "Bevestigingen in de wachtrij voor dit incident",
+    "cancelPendingAck": "Annuleren",
+    "cancelPendingAckAria": "Annuleer de bevestiging in de wachtrij voor {{sender}}"
   },
   "quickStatus": {
     "ok": "OK",

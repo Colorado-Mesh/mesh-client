@@ -2,7 +2,6 @@ import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import type { MessageStatus } from '@/renderer/stores/messageStore';
 import { useMessageStore } from '@/renderer/stores/messageStore';
-import { isPnCascadeDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 export const RETICULUM_RECEIPT_TIMEOUT_MS = 30_000;
 
@@ -21,8 +20,11 @@ function captureReticulumMessageIds(identityId: string): Set<string> {
 /**
  * Follow one outbound attempt by store id. Pending → LXMF hash rekey is detected when
  * the tracked id disappears and exactly one new id appears in the same store update.
- * Propagation-node / local-prop cascade (`propagated` / `stored_locally`) counts as acked so
- * emergency outbox retries do not spam a new LXMF copy every backoff while the peer is offline.
+ *
+ * Remote PN cascade (`propagated`) counts as acked so emergency outbox retries do not spam
+ * a new LXMF copy every backoff while the peer is offline. Local-prop `stored_locally` is
+ * *not* counted early — mid-cascade `sending`+`stored_locally` may not survive an app restart
+ * (stale sending → failed on sidecar startup); wait for terminal `acked` instead.
  */
 export async function waitForReticulumOutboundTerminal(
   identityId: string,
@@ -49,7 +51,7 @@ export async function waitForReticulumOutboundTerminal(
     const msg = byId[trackedId];
     const status: MessageStatus | undefined = msg.status;
     if (status === 'acked' || status === 'failed') return status;
-    if (isPnCascadeDeliveryMethod(msg.reticulumDeliveryMethod)) return 'acked';
+    if (msg.reticulumDeliveryMethod === 'propagated') return 'acked';
     return undefined;
   };
 

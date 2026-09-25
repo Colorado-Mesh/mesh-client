@@ -298,6 +298,31 @@ describe('incidentStore', () => {
     ).toBeNull();
   });
 
+  it('does not payload-tombstone GPS-only MAYDAYs so other victims can still seed', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const a = s.upsertFromMecp(
+      report('MECP/0/M01 39.7,-105.0', {
+        senderId: '!alice',
+        receivedAt: Date.now(),
+      }),
+    )!;
+    s.resolveIncident(a);
+    const tombs = useIncidentStore.getState().resolvedTombstones;
+    expect(tombs[a]).toBeDefined();
+    expect(Object.keys(tombs).some((k) => k.startsWith('payload:'))).toBe(false);
+    expect(
+      s.upsertFromMecp({
+        ...report('MECP/0/M01 40.1,-104.5', {
+          senderId: '!bob',
+          receivedAt: Date.now(),
+          messageId: 'bob-seed',
+        }),
+        fromSeed: true,
+      }),
+    ).not.toBeNull();
+  });
+
   it('never evicts open MAYDAY when the cap is exceeded', async () => {
     const { useIncidentStore, MAX_INCIDENTS } = await loadStore();
     const s = useIncidentStore.getState();

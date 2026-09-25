@@ -6190,7 +6190,11 @@
     "ackQueued": "Conferma a {{sender}} in coda; invierà quando la radio sarà disponibile",
     "ackFailed": "Impossibile inviare o accodare la conferma",
     "intro": "Quadro operativo comune per le emergenze MeCP sentito su qualsiasi protocollo. Apri MAYDAY e le righe URGENTI contrassegnano questa scheda; le esercitazioni sono elencate ma mai contate. Utilizzare Conferma (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente.",
-    "emptyHint": "I rapporti MeCP in entrata vengono visualizzati qui automaticamente. Per inviarne uno, abilita il → pulsante App MeCP → Show MeCP in Chat, quindi utilizza MeCP o MAYDAY in Chat. → I livelli mappa possono mostrare incidenti aperti con coordinate."
+    "emptyHint": "I rapporti MeCP in entrata vengono visualizzati qui automaticamente. Per inviarne uno, abilita il → pulsante App MeCP → Show MeCP in Chat, quindi utilizza MeCP o MAYDAY in Chat. → I livelli mappa possono mostrare incidenti aperti con coordinate.",
+    "ackQueuedBadge": "ACK in coda",
+    "pendingAckListAria": "Riconoscimenti in coda per questo incidente",
+    "cancelPendingAck": "Annulla",
+    "cancelPendingAckAria": "Annulla conferma in coda per {{sender}}"
   },
   "quickStatus": {
     "ok": "OK",

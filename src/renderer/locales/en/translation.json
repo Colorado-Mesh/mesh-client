@@ -6099,7 +6099,11 @@
     "drill": "Drill",
     "ackSent": "Acknowledgement sent to {{sender}}",
     "ackQueued": "Acknowledgement to {{sender}} queued; it will send when the radio is available",
-    "ackFailed": "Could not send or queue the acknowledgement"
+    "ackFailed": "Could not send or queue the acknowledgement",
+    "ackQueuedBadge": "ACK queued",
+    "pendingAckListAria": "Queued acknowledgements for this incident",
+    "cancelPendingAck": "Cancel",
+    "cancelPendingAckAria": "Cancel queued acknowledgement for {{sender}}"
   },
   "mecp": {
     "severity": {

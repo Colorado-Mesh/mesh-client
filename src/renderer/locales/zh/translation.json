@@ -6190,7 +6190,11 @@
     "ackQueued": "确认{{sender}}已排队；当收音机可用时，它将发送",
     "ackFailed": "无法发送或排队确认",
     "intro": "在任何方案中都能听到MECP紧急情况的常见操作画面。打开MAYDAY和紧急行标记此选项卡；列出了钻孔，但从未计数。使用确认（或确认活动信标）在网格上回复，然后在本地关闭事件时解决。",
-    "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP或MAYDAY。地图→层可以用坐标显示未决事件。"
+    "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP或MAYDAY。地图→层可以用坐标显示未决事件。",
+    "ackQueuedBadge": "ACK已排队",
+    "pendingAckListAria": "已排队确认此事件",
+    "cancelPendingAck": "取消",
+    "cancelPendingAckAria": "取消{{sender}}的排队确认"
   },
   "quickStatus": {
     "ok": "确认",

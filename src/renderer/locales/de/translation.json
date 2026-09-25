@@ -6190,7 +6190,11 @@
     "ackQueued": "Bestätigung an {{sender}} in der Warteschlange; es wird gesendet, wenn das Radio verfügbar ist",
     "ackFailed": "Bestätigung konnte nicht gesendet oder in die Warteschlange gestellt werden",
     "intro": "Gemeinsames Betriebsbild für MECP-Notfälle, die auf jedem Protokoll zu hören sind. Offene MAYDAY- und DRINGENDE Zeilen kennzeichnen diese Registerkarte; Bohrer werden aufgelistet, aber nie gezählt. Verwenden Sie Acknowledge (oder Confirm for an active beacon), um auf dem Netz zu antworten, und dann Resolve, wenn der Vorfall lokal geschlossen wird.",
-    "emptyHint": "Eingehende MECP-Berichte werden hier automatisch angezeigt. Um eine zu senden, aktivieren Sie die Schaltfläche App → MECP MECP → anzeigen im Chat und verwenden Sie dann MECP oder MAYDAY im Chat. → Kartenebenen können offene Vorfälle mit Koordinaten anzeigen."
+    "emptyHint": "Eingehende MECP-Berichte werden hier automatisch angezeigt. Um eine zu senden, aktivieren Sie die Schaltfläche App → MECP MECP → anzeigen im Chat und verwenden Sie dann MECP oder MAYDAY im Chat. → Kartenebenen können offene Vorfälle mit Koordinaten anzeigen.",
+    "ackQueuedBadge": "ACK in Warteschlange gestellt",
+    "pendingAckListAria": "Bestätigungen für diesen Vorfall in der Warteschlange",
+    "cancelPendingAck": "Abbrechen",
+    "cancelPendingAckAria": "In der Warteschlange stehende Bestätigung für {{sender}} abbrechen"
   },
   "quickStatus": {
     "ok": "i.O.",

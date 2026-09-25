@@ -2,6 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resetChatOutboxDrainLocksForTests } from '@/renderer/lib/chatOutboxDrain';
+import { tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
 import {
   isMeshcoreSendTooFast,
   resetMeshcoreSendRateForTests,
@@ -10,10 +11,12 @@ import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtastic
 import { OFFLINE_RETICULUM_IDENTITY_ID } from '@/renderer/lib/offlineProtocolIdentities';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
+import { useIncidentStore } from '@/renderer/stores/incidentStore';
 import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry } from '@/shared/electron-api.types';
 
 import {
+  applyIncidentAckAfterOutboxSend,
   earliestEmergencyRetryAt,
   EMERGENCY_OUTBOX_SOFT_CAP,
   isEmergencyOutboxPriority,
@@ -1192,5 +1195,53 @@ describe('useChatOutbox', () => {
         undefined,
       );
     });
+  });
+});
+
+describe('applyIncidentAckAfterOutboxSend', () => {
+  beforeEach(() => {
+    useIncidentStore.setState({ incidents: {}, resolvedTombstones: {} });
+  });
+
+  it('confirms beacon from a B02 payload even if the incident no longer needs beacon ACK', () => {
+    const parsed = tryParseMecp('MECP/0/B01 M01')!;
+    const id = useIncidentStore.getState().upsertFromMecp({
+      protocol: 'meshtastic',
+      parsed,
+      senderId: '!v',
+      receivedAt: 1,
+    })!;
+    // Operator already confirmed locally; a drained R01 must not re-confirm — and a drained
+    // B02 must still confirmBeacon based on payload, not current incidentNeedsBeaconAck.
+    useIncidentStore.getState().confirmBeacon(id);
+    applyIncidentAckAfterOutboxSend({
+      viewKey: `ackIncident:${id}:ch:0`,
+      payload: 'MECP/0/B02',
+    });
+    expect(useIncidentStore.getState().incidents[id].beaconAcked).toBe(true);
+  });
+
+  it('records a general ACK from an R01 payload without confirmBeacon', () => {
+    const parsed = tryParseMecp('MECP/0/M01 help')!;
+    const id = useIncidentStore.getState().upsertFromMecp({
+      protocol: 'meshtastic',
+      parsed,
+      senderId: '!v',
+      receivedAt: 1,
+    })!;
+    // Start a beacon after the R01 was queued — must not confirmBeacon from R01.
+    useIncidentStore.setState((s) => ({
+      incidents: {
+        ...s.incidents,
+        [id]: { ...s.incidents[id], beaconActive: true, beaconAcked: false },
+      },
+    }));
+    applyIncidentAckAfterOutboxSend({
+      viewKey: `ackIncident:${id}:ch:0`,
+      payload: 'MECP/0/R01 M01',
+    });
+    const inc = useIncidentStore.getState().incidents[id];
+    expect(inc.beaconAcked).toBe(false);
+    expect(inc.ackCount).toBe(1);
   });
 });

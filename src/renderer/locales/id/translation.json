@@ -6190,7 +6190,11 @@
     "ackQueued": "Ucapan terima kasih kepada {{sender}} antri; akan dikirimkan saat radio tersedia",
     "ackFailed": "Tidak dapat mengirim atau mengantre pengakuan",
     "intro": "Gambaran operasi umum untuk keadaan darurat MECP terdengar pada protokol apa pun. Buka MAYDAY dan lencana baris MENDESAK tab ini; latihan terdaftar tetapi tidak pernah dihitung. Gunakan Acknowledge (atau Confirm untuk suar aktif) untuk membalas di mesh, lalu Resolve ketika insiden ditutup secara lokal.",
-    "emptyHint": "Laporan MECP masuk muncul di sini secara otomatis. Untuk mengirimkannya, aktifkan App → MECP → Tampilkan tombol MECP di Obrolan, lalu gunakan MECP atau MAYDAY di Obrolan. → Lapisan Peta dapat menunjukkan insiden terbuka dengan koordinat."
+    "emptyHint": "Laporan MECP masuk muncul di sini secara otomatis. Untuk mengirimkannya, aktifkan App → MECP → Tampilkan tombol MECP di Obrolan, lalu gunakan MECP atau MAYDAY di Obrolan. → Lapisan Peta dapat menunjukkan insiden terbuka dengan koordinat.",
+    "ackQueuedBadge": "ACK antri",
+    "pendingAckListAria": "Pengakuan antrian atas insiden ini",
+    "cancelPendingAck": "Batal",
+    "cancelPendingAckAria": "Batalkan konfirmasi antrean untuk {{sender}}"
   },
   "quickStatus": {
     "ok": "OK",

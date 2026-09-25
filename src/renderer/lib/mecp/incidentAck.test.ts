@@ -88,6 +88,43 @@ describe('resolveIncidentAckRoute', () => {
     expect(route).toMatchObject({ protocol: 'meshtastic', channel: 2, viaActiveProtocol: false });
   });
 
+  it('DMs the relay on a non-origin DM-only protocol, else falls back to origin', () => {
+    const viaRelay = resolveIncidentAckRoute(
+      incident({
+        protocol: 'reticulum',
+        protocolsSeen: ['meshtastic', 'reticulum'],
+        senderId: '!victim',
+        relaySenderIds: ['99'],
+        channel: '2',
+      }),
+      'reticulum',
+      (p) => p === 'reticulum',
+    );
+    expect(viaRelay).toMatchObject({
+      protocol: 'reticulum',
+      channel: 0,
+      toNode: 99,
+      viaActiveProtocol: true,
+    });
+
+    const fallback = resolveIncidentAckRoute(
+      incident({
+        protocol: 'reticulum',
+        protocolsSeen: ['meshtastic', 'reticulum'],
+        senderId: '42',
+        channel: '2',
+      }),
+      'reticulum',
+      (p) => p === 'reticulum',
+    );
+    expect(fallback).toMatchObject({
+      protocol: 'meshtastic',
+      channel: 2,
+      toNode: null,
+      viaActiveProtocol: true,
+    });
+  });
+
   it('DMs the sender on DM-only protocols', () => {
     const route = resolveIncidentAckRoute(
       incident({ protocol: 'reticulum', protocolsSeen: ['reticulum'], channel: '0' }),

@@ -6190,7 +6190,11 @@
     "ackQueued": "Acuse de recibo a {{sender}} en cola; se enviará cuando la radio esté disponible",
     "ackFailed": "No se ha podido enviar o poner en cola el acuse de recibo",
     "intro": "Cuadro operativo común para emergencias MECP escuchado en cualquier protocolo. Abra MAYDAY y las filas URGENTES en esta pestaña; los ejercicios se enumeran pero nunca se cuentan. Utilice Reconocer (o Confirmar para una baliza activa) para responder en la malla y, a continuación, Resolver cuando el incidente se cierre localmente.",
-    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP o MAYDAY en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas."
+    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP o MAYDAY en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas.",
+    "ackQueuedBadge": "ACK en cola",
+    "pendingAckListAria": "Reconocimientos en cola por este incidente",
+    "cancelPendingAck": "Cancelar",
+    "cancelPendingAckAria": "Cancelar acuse de recibo en cola para {{sender}}"
   },
   "quickStatus": {
     "ok": "OK",

@@ -6190,7 +6190,11 @@
     "ackQueued": "Reconhecimento para {{sender}} na fila; será enviado quando o rádio estiver disponível",
     "ackFailed": "Não foi possível enviar ou enfileirar a confirmação",
     "intro": "Imagem operacional comum para emergências MECP ouvida em qualquer protocolo. Abrir MAYDAY e linhas URGENTES marcam esta guia; os exercícios são listados, mas nunca contados. Use Confirmar (ou Confirmar para um sinalizador ativo) para responder na malha e, em seguida, Resolva quando o incidente for fechado localmente.",
-    "emptyHint": "Os relatórios de MECP de entrada aparecem aqui automaticamente. Para enviar um, ative o botão App → MECP → Show MECP no Chat e, em seguida, use MECP ou MAYDAY no Chat. → As camadas de mapa podem mostrar incidentes abertos com coordenadas."
+    "emptyHint": "Os relatórios de MECP de entrada aparecem aqui automaticamente. Para enviar um, ative o botão App → MECP → Show MECP no Chat e, em seguida, use MECP ou MAYDAY no Chat. → As camadas de mapa podem mostrar incidentes abertos com coordenadas.",
+    "ackQueuedBadge": "ACK na fila",
+    "pendingAckListAria": "Reconhecimentos em fila para este incidente",
+    "cancelPendingAck": "Cancelar",
+    "cancelPendingAckAria": "Cancelar confirmação na fila para {{sender}}"
   },
   "quickStatus": {
     "ok": "OK",

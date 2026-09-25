@@ -35,22 +35,50 @@ function parseChannel(channel: string | null): number {
   return Number.isInteger(n) && n >= 0 ? n : 0;
 }
 
+/** Last relay sender id that parses as a finite node number (e.g. Reticulum dest). */
+export function pickRelayDmToNode(relaySenderIds: readonly string[] | undefined): number | null {
+  if (relaySenderIds == null || relaySenderIds.length === 0) return null;
+  for (let i = relaySenderIds.length - 1; i >= 0; i--) {
+    const n = Number(relaySenderIds[i]);
+    if (Number.isFinite(n)) return n;
+  }
+  return null;
+}
+
 /**
  * Prefer the active protocol when the incident was heard on it (live send); otherwise target the
  * victim's *original* protocol (`protocolsSeen[0]`), not the latest relay protocol stamped on
  * `incident.protocol`.
+ *
+ * On a DM-only protocol that is not the origin, the victim's `senderId` is from another protocol —
+ * DM the latest numeric relay id for that protocol, or fall back to the origin protocol.
  */
 export function resolveIncidentAckRoute(
-  incident: Pick<EmergencyIncident, 'protocol' | 'protocolsSeen' | 'channel' | 'senderId'>,
+  incident: Pick<
+    EmergencyIncident,
+    'protocol' | 'protocolsSeen' | 'channel' | 'senderId' | 'relaySenderIds'
+  >,
   activeProtocol: MeshProtocol,
   isDmOnly: (protocol: MeshProtocol) => boolean,
 ): IncidentAckRoute {
   const originProtocol = incident.protocolsSeen[0] ?? incident.protocol;
   const viaActiveProtocol = incident.protocolsSeen.includes(activeProtocol);
-  const protocol = viaActiveProtocol ? activeProtocol : originProtocol;
+  let protocol = viaActiveProtocol ? activeProtocol : originProtocol;
+
+  if (isDmOnly(protocol) && protocol !== originProtocol) {
+    const relayNode = pickRelayDmToNode(incident.relaySenderIds);
+    if (relayNode != null) {
+      return { protocol, channel: 0, toNode: relayNode, viaActiveProtocol };
+    }
+    protocol = originProtocol;
+  }
+
   const channel = protocol === originProtocol ? parseChannel(incident.channel) : 0;
-  const sender = Number(incident.senderId);
-  const toNode = isDmOnly(protocol) && Number.isFinite(sender) ? sender : null;
+  let toNode: number | null = null;
+  if (isDmOnly(protocol)) {
+    const sender = Number(incident.senderId);
+    toNode = Number.isFinite(sender) ? sender : null;
+  }
   return { protocol, channel, toNode, viaActiveProtocol };
 }
 

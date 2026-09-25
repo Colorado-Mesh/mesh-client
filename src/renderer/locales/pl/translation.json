@@ -6286,7 +6286,11 @@
     "ackCount_few": "Podziękowania: {{count}}",
     "ackCount_many": "Podziękowania: {{count}}",
     "intro": "Wspólny obraz operacyjny dla sytuacji awaryjnych MECP słyszany w dowolnym protokole. Otwórz kartę MAYDAY i PILNE wiersze; ćwiczenia są wymienione, ale nigdy nie są liczone. Użyj opcji Potwierdź (lub Potwierdź dla aktywnego sygnalizatora), aby odpowiedzieć na siatce, a następnie Rozwiąż, gdy incydent zostanie zamknięty lokalnie.",
-    "emptyHint": "Przychodzące raporty MECP pojawiają się tutaj automatycznie. Aby wysłać, włącz przycisk App → MECP → Show MECP w Czacie, a następnie użyj MECP lub MAYDAY w Czacie. → Warstwy mapy mogą wyświetlać otwarte incydenty ze współrzędnymi."
+    "emptyHint": "Przychodzące raporty MECP pojawiają się tutaj automatycznie. Aby wysłać, włącz przycisk App → MECP → Show MECP w Czacie, a następnie użyj MECP lub MAYDAY w Czacie. → Warstwy mapy mogą wyświetlać otwarte incydenty ze współrzędnymi.",
+    "ackQueuedBadge": "ACK W kolejce",
+    "pendingAckListAria": "Kolejka podziękowań dla tego incydentu",
+    "cancelPendingAck": "Anuluj",
+    "cancelPendingAckAria": "Anuluj oczekujące potwierdzenie dla {{sender}}"
   },
   "quickStatus": {
     "ok": "OK",

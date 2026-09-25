@@ -120,7 +120,8 @@ function pruneIncidents(
       if (inc.status === 'resolved' || isUnresolved(inc)) {
         const at = inc.resolvedAt ?? inc.lastSeenAt;
         nextTombs[inc.id] = at;
-        nextTombs[payloadTombstoneKey(inc.severity, inc.codes, inc.freetext)] = at;
+        const payloadKey = payloadTombstoneKeyIfDistinct(inc.severity, inc.codes, inc.freetext);
+        if (payloadKey != null) nextTombs[payloadKey] = at;
       }
       continue;
     }
@@ -206,6 +207,19 @@ function payloadTombstoneKey(
 }
 
 /**
+ * Payload tombs omit sender, so GPS-only MAYDAYs (empty stripped text) would collide across
+ * victims. Only tombstone by payload when stripped freetext is non-empty.
+ */
+function payloadTombstoneKeyIfDistinct(
+  severity: Severity,
+  codes: readonly string[],
+  freetext: string,
+): string | null {
+  if (normalizeMecpFreetextForMatch(freetext).length === 0) return null;
+  return payloadTombstoneKey(severity, codes, freetext);
+}
+
+/**
  * Prefer selectors (`useIncidentStore((s) => s.incidents[id])`, `openIncidentCount`) over
  * bare `useIncidentStore()` so components re-render only on the slice they read.
  */
@@ -251,10 +265,10 @@ export const useIncidentStore = create<IncidentStoreState>()(
 
         const freetext = parsed.freetext ?? '';
         const id = incidentFingerprint({ severity, codes: parsed.codes, freetext, senderId });
-        const payloadTomb = payloadTombstoneKey(severity, parsed.codes, freetext);
+        const payloadTomb = payloadTombstoneKeyIfDistinct(severity, parsed.codes, freetext);
 
         if (input.fromSeed) {
-          if (tombs[id] != null || tombs[payloadTomb] != null) return null;
+          if (tombs[id] != null || (payloadTomb != null && tombs[payloadTomb] != null)) return null;
           if (now > 0 && Date.now() - now > INCIDENT_SEED_MAX_AGE_MS) return null;
         }
 
@@ -268,15 +282,19 @@ export const useIncidentStore = create<IncidentStoreState>()(
           now,
         });
 
-        if (
-          input.fromSeed &&
-          existing &&
-          (tombs[existing.id] != null ||
-            tombs[payloadTombstoneKey(existing.severity, existing.codes, existing.freetext)] !=
-              null ||
-            existing.status === 'resolved')
-        ) {
-          return null;
+        if (input.fromSeed && existing) {
+          const existingPayloadTomb = payloadTombstoneKeyIfDistinct(
+            existing.severity,
+            existing.codes,
+            existing.freetext,
+          );
+          if (
+            tombs[existing.id] != null ||
+            (existingPayloadTomb != null && tombs[existingPayloadTomb] != null) ||
+            existing.status === 'resolved'
+          ) {
+            return null;
+          }
         }
 
         const isRelay = existing != null && existing.senderId !== senderId;
@@ -291,7 +309,11 @@ export const useIncidentStore = create<IncidentStoreState>()(
         const beacon = isBeacon(parsed.codes);
 
         if (!existing) {
-          if (input.fromSeed && (tombs[id] != null || tombs[payloadTomb] != null)) return null;
+          if (
+            input.fromSeed &&
+            (tombs[id] != null || (payloadTomb != null && tombs[payloadTomb] != null))
+          )
+            return null;
           const created: EmergencyIncident = {
             id,
             protocol,
@@ -358,7 +380,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
         set((s) => {
           let nextTombs = s.resolvedTombstones;
           if (reopen) {
-            const payloadKey = payloadTombstoneKey(
+            const payloadKey = payloadTombstoneKeyIfDistinct(
               existing.severity,
               existing.codes,
               existing.freetext,
@@ -406,6 +428,12 @@ export const useIncidentStore = create<IncidentStoreState>()(
           const inc = s.incidents[incidentId];
           if (!inc || inc.status === 'resolved') return s;
           const resolvedAt = at ?? Date.now();
+          const nextTombs: Record<string, number> = {
+            ...s.resolvedTombstones,
+            [incidentId]: resolvedAt,
+          };
+          const payloadKey = payloadTombstoneKeyIfDistinct(inc.severity, inc.codes, inc.freetext);
+          if (payloadKey != null) nextTombs[payloadKey] = resolvedAt;
           return {
             incidents: {
               ...s.incidents,
@@ -416,11 +444,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
                 beaconActive: false,
               },
             },
-            resolvedTombstones: pruneTombstones({
-              ...s.resolvedTombstones,
-              [incidentId]: resolvedAt,
-              [payloadTombstoneKey(inc.severity, inc.codes, inc.freetext)]: resolvedAt,
-            }),
+            resolvedTombstones: pruneTombstones(nextTombs),
           };
         }),
 

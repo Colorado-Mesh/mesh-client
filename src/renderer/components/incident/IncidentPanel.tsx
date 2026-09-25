@@ -7,7 +7,7 @@ import {
   useIncidentStore,
 } from '@/renderer/stores/incidentStore';
 
-import { EmergencyIncidentRow } from './EmergencyIncidentRow';
+import { EmergencyIncidentRow, useIncidentAckOutboxRows } from './EmergencyIncidentRow';
 
 export interface IncidentPanelProps {
   onAck?: (incident: EmergencyIncident) => void;
@@ -17,6 +17,7 @@ export default function IncidentPanel({ onAck }: IncidentPanelProps) {
   const { t } = useTranslation();
   const incidents = useIncidentStore((s) => s.incidents);
   const open = useMemo(() => selectOpenIncidentsSorted({ incidents }), [incidents]);
+  const { rowsByIncidentId, cancelAck } = useIncidentAckOutboxRows();
 
   return (
     <section aria-labelledby="incident-panel-title" className="flex flex-col gap-2 p-3">
@@ -32,7 +33,15 @@ export default function IncidentPanel({ onAck }: IncidentPanelProps) {
       ) : (
         <ul aria-label={t('incidentPanel.listAria')} className="flex flex-col gap-2">
           {open.map((inc) => (
-            <EmergencyIncidentRow key={inc.id} incident={inc} onAck={onAck} />
+            <EmergencyIncidentRow
+              key={inc.id}
+              incident={inc}
+              onAck={onAck}
+              pendingAckRows={rowsByIncidentId.get(inc.id) ?? []}
+              onCancelPendingAck={(row) => {
+                void cancelAck(row);
+              }}
+            />
           ))}
         </ul>
       )}

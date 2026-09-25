@@ -14,7 +14,9 @@ import {
   isEncryptionBlockedSendError,
   persistableChatSendError,
 } from '../lib/chatSendErrorI18n';
-import { incidentNeedsBeaconAck, parseIncidentAckViewKey } from '../lib/mecp/incidentAck';
+import { isBeaconAck } from '../lib/mecp/engine';
+import { parseIncidentAckViewKey } from '../lib/mecp/incidentAck';
+import { tryParseMecp } from '../lib/mecp/mecpMessages';
 import { recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { getRadioCapabilities } from '../lib/radio/providerFactory';
@@ -122,7 +124,7 @@ function isEligibleForDrain(row: OutboxEntry, now: number): boolean {
   return (
     (row.status === 'queued' || row.status === 'failed') &&
     (row.nextRetryAt == null || row.nextRetryAt <= now) &&
-    (isEmergencyOutboxPriority(row) || now - row.createdAt <= OUTBOX_MAX_AGE_MS)
+    (isAppManagedOutboxRow(row) || now - row.createdAt <= OUTBOX_MAX_AGE_MS)
   );
 }
 
@@ -147,13 +149,21 @@ export function applyIncidentAckAfterOutboxSend(
   const store = useIncidentStore.getState();
   const inc = store.incidents[incidentId];
   if (inc == null || inc.status === 'resolved') return;
-  if (incidentNeedsBeaconAck(inc)) {
+  // Decide from the *sent* payload — a queued R01 must not confirmBeacon if a beacon
+  // started after the ACK was composed.
+  const parsed = tryParseMecp(row.payload);
+  if (parsed != null && isBeaconAck(parsed.codes)) {
     store.confirmBeacon(incidentId);
   } else {
     store.recordAck(incidentId, 'local');
   }
 }
 
+/**
+ * Per-row send watchdog so a hung TX cannot hold {@link withChatOutboxDrainLock} forever.
+ * The underlying send is not aborted — a timed-out attempt may still transmit later (duplicate
+ * MECP is acceptable; callers should not assume cancellation).
+ */
 async function withOutboxDrainRowTimeout<T>(fn: () => Promise<T>): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -208,9 +218,10 @@ async function recordOutboxSendFailure(
   const isBlocked = isEncryptionBlockedSendError(rawMsg) || isEncryptionBlockedSendError(errMsg);
   const nextAttemptCount = row.attemptCount + 1;
   const newStatus: OutboxStatus = isBlocked ? 'blocked' : 'failed';
-  // Emergency rows never stop retrying on attempt count; encryption blocks still halt them.
+  // Emergency and incident-ACK rows never stop retrying on attempt count; encryption blocks
+  // still halt them. Other normal rows stop after MAX_ATTEMPTS.
   const keepRetrying =
-    !isBlocked && (isEmergencyOutboxPriority(row) || nextAttemptCount < MAX_ATTEMPTS);
+    !isBlocked && (isAppManagedOutboxRow(row) || nextAttemptCount < MAX_ATTEMPTS);
   const nextRetryAt = keepRetrying ? Date.now() + retryDelayMs(nextAttemptCount) : undefined;
   try {
     await window.electronAPI.chat.outbox.updateStatus(
