@@ -5267,7 +5267,8 @@
     "remoteImport": "Certificaten importeren",
     "remoteClear": "alle certificaten verwijderen.",
     "remoteConnect": "Verbinden",
-    "remoteDisconnect": "Verbinding verbreken"
+    "remoteDisconnect": "Verbinding verbreken",
+    "remoteVerifyOffWarning": "Zonder verificatie ontvangt iedereen die deze verbinding kan onderscheppen de doorgegeven posities."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

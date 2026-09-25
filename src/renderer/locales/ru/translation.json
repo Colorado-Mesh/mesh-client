@@ -5349,7 +5349,8 @@
     "remoteImport": "Импорт сертификатов",
     "remoteClear": "Удалить сертификаты",
     "remoteConnect": "Подключить",
-    "remoteDisconnect": "Разъединить"
+    "remoteDisconnect": "Разъединить",
+    "remoteVerifyOffWarning": "Без проверки любой, кто может перехватить это соединение, получает ретранслируемые позиции."
   },
   "telemetryPanel": {
     "title": "Телеметрия",

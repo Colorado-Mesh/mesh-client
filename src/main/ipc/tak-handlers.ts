@@ -280,6 +280,8 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
         password ?? '',
       );
       saveTakRemoteCredentials(creds);
+      // A running relay holds its credentials in memory; reconnect it with the new ones.
+      getTakServerManager()?.restartRemote();
       console.debug(
         `[IPC] tak:remoteImportCredentials: imported${creds.ca ? ' CA' : ''}${creds.cert ? ' client certificate' : ''}`,
       );

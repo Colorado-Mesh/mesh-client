@@ -232,7 +232,8 @@ describe('remote relay handlers', () => {
         canceled: false,
         filePaths: [file],
       });
-      const { get } = await register();
+      const restartRemote = vi.fn();
+      const { get } = await register({ restartRemote });
 
       const summary = await get('tak:remoteImportCredentials')(event, 'atakatak');
 
@@ -247,6 +248,7 @@ describe('remote relay handlers', () => {
       });
       expect(summary).toEqual({ caSubjects: ['Test CA'], clientSubject: 'atak-user' });
       expect(JSON.stringify(summary)).not.toContain('key-pem');
+      expect(restartRemote).toHaveBeenCalled();
     });
 
     it('rejects a non-string password before opening the chooser', async () => {

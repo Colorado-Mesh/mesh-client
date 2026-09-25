@@ -5267,7 +5267,8 @@
     "remoteImport": "Sertifikaları İçeriye Aktar",
     "remoteClear": "Sertifikaları Kaldır",
     "remoteConnect": "Bağlan",
-    "remoteDisconnect": "Bağlantıyı kes"
+    "remoteDisconnect": "Bağlantıyı kes",
+    "remoteVerifyOffWarning": "Doğrulama olmadan, bu bağlantıyı kesebilen herkes aktarılan konumları alır."
   },
   "telemetryPanel": {
     "title": "Telemetri",

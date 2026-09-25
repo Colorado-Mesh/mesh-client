@@ -5267,7 +5267,8 @@
     "remoteImport": "証明書をインポート",
     "remoteClear": "証明書を削除",
     "remoteConnect": "接続",
-    "remoteDisconnect": "接続を解除"
+    "remoteDisconnect": "接続を解除",
+    "remoteVerifyOffWarning": "検証なしで、この接続を傍受できる人は誰でも中継された位置を受け取ります。"
   },
   "telemetryPanel": {
     "title": "テレメトリー",

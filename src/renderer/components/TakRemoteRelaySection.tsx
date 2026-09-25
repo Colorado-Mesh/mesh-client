@@ -116,6 +116,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           </label>
           <input
             id={`${id}-host`}
+            aria-label={t('takServerPanel.remoteHostLabel')}
             type="text"
             maxLength={253}
             autoComplete="off"
@@ -137,6 +138,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           </label>
           <input
             id={`${id}-port`}
+            aria-label={t('takServerPanel.remotePortLabel')}
             type="number"
             min={TCP_PORT_MIN}
             max={TCP_PORT_MAX}
@@ -157,6 +159,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
         <div className="flex items-center gap-2">
           <input
             id={`${id}-verify`}
+            aria-label={t('takServerPanel.remoteVerifyServer')}
             type="checkbox"
             checked={verifyServer}
             onChange={(e) => {
@@ -169,9 +172,13 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             {t('takServerPanel.remoteVerifyServer')}
           </label>
         </div>
+        {!verifyServer && (
+          <p className="text-xs text-amber-300">{t('takServerPanel.remoteVerifyOffWarning')}</p>
+        )}
         <div className="flex items-center gap-2">
           <input
             id={`${id}-autoconnect`}
+            aria-label={t('takServerPanel.remoteAutoConnect')}
             type="checkbox"
             checked={autoConnect}
             onChange={(e) => {
@@ -199,6 +206,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             </label>
             <input
               id={`${id}-password`}
+              aria-label={t('takServerPanel.remotePasswordLabel')}
               type="password"
               autoComplete="off"
               value={password}
@@ -212,6 +220,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           <button
             type="button"
             onClick={handleImport}
+            aria-label={t('takServerPanel.remoteImport')}
             disabled={active || isBusy}
             className="bg-secondary-dark rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 disabled:opacity-50"
           >
@@ -221,6 +230,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             <button
               type="button"
               onClick={relay.clearCredentials}
+              aria-label={t('takServerPanel.remoteClear')}
               disabled={active || isBusy}
               className="bg-secondary-dark rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-red-800 hover:text-red-300 disabled:opacity-50"
             >
@@ -235,6 +245,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           <button
             type="button"
             onClick={relay.disconnect}
+            aria-label={t('takServerPanel.remoteDisconnect')}
             disabled={isBusy}
             className="rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:opacity-50"
           >
@@ -244,6 +255,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           <button
             type="button"
             onClick={handleConnect}
+            aria-label={t('takServerPanel.remoteConnect')}
             disabled={isBusy || !hostValid || !portValid}
             className="bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
           >

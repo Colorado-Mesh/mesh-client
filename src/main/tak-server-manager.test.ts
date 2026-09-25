@@ -449,6 +449,20 @@ describe('TakServerManager remote relay', () => {
     expect(remoteClients[1]?.options.host).toBe('other.example.org');
   });
 
+  it('restarts a running relay with the same settings to pick up new credentials', () => {
+    const manager = new TakServerManager();
+    manager.restartRemote();
+    expect(remoteClients).toHaveLength(0);
+
+    manager.startRemote(SETTINGS);
+    manager.restartRemote();
+
+    expect(remoteClients).toHaveLength(2);
+    expect(remoteClients[0]?.stop).toHaveBeenCalled();
+    expect(remoteClients[1]?.options.host).toBe('tak.example.org');
+    expect(manager.hasActiveSink()).toBe(true);
+  });
+
   it('keeps the relay running when the local server stops', () => {
     const manager = new TakServerManager();
     manager.startRemote(SETTINGS);

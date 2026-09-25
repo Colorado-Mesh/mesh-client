@@ -5267,7 +5267,8 @@
     "remoteImport": "Importer des certificats",
     "remoteClear": "Supprimer tous les certificats",
     "remoteConnect": "Connect",
-    "remoteDisconnect": "Déconnecter"
+    "remoteDisconnect": "Déconnecter",
+    "remoteVerifyOffWarning": "Sans vérification, toute personne pouvant intercepter cette connexion reçoit les positions relayées."
   },
   "telemetryPanel": {
     "title": "Télémétrie",

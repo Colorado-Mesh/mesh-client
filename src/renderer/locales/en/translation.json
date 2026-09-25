@@ -5928,6 +5928,7 @@
     "remotePortLabel": "Port",
     "remotePortError": "Port must be between 1 and 65535",
     "remoteVerifyServer": "Verify the server certificate (recommended)",
+    "remoteVerifyOffWarning": "Without verification, anyone who can intercept this connection receives the relayed positions.",
     "remoteAutoConnect": "Connect on application launch",
     "remoteCertificates": "Certificates",
     "remoteCaSummary": "Trusted CA: {{names}}",

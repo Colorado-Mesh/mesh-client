@@ -5309,7 +5309,8 @@
     "remoteImport": "Importovat certifikáty",
     "remoteClear": "\"Odstranit všechny certifikáty\"",
     "remoteConnect": "Připojení",
-    "remoteDisconnect": "Odpojení"
+    "remoteDisconnect": "Odpojení",
+    "remoteVerifyOffWarning": "Bez ověření obdrží každý, kdo může toto spojení zachytit, přenášené pozice."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

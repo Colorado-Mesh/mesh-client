@@ -53,6 +53,7 @@ export class TakServerManager extends EventEmitter {
   private certBundle: CertBundle | null = null;
   private _status: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
   private remote: TakRemoteClient | null = null;
+  private remoteSettings: TAKRemoteSettings | null = null;
   private remoteStatus: TAKRemoteStatus = {
     state: 'disconnected',
     host: '',
@@ -84,6 +85,7 @@ export class TakServerManager extends EventEmitter {
   startRemote(settings: TAKRemoteSettings): void {
     saveTakRemoteSettings(settings);
     this.stopRemote();
+    this.remoteSettings = settings;
     const remote = new TakRemoteClient({
       host: settings.host.trim(),
       port: settings.port,
@@ -102,6 +104,11 @@ export class TakServerManager extends EventEmitter {
     });
     this.remote = remote;
     remote.start();
+  }
+
+  /** Reconnect a running relay so newly imported credentials replace the ones it holds. */
+  restartRemote(): void {
+    if (this.remote && this.remoteSettings) this.startRemote(this.remoteSettings);
   }
 
   stopRemote(): void {

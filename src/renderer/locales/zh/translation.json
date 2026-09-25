@@ -5267,7 +5267,8 @@
     "remoteImport": "导入证书",
     "remoteClear": "删除证书",
     "remoteConnect": "连接",
-    "remoteDisconnect": "断开连接"
+    "remoteDisconnect": "断开连接",
+    "remoteVerifyOffWarning": "未经验证，任何可以拦截此连接的人都会收到中继位置。"
   },
   "telemetryPanel": {
     "title": "遥测",

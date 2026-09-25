@@ -68,6 +68,14 @@ describe('TakRemoteRelaySection', () => {
     });
   });
 
+  it('warns when server verification is turned off', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    expect(screen.queryByText(/without verification/i)).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText(/verify the server certificate/i));
+    expect(screen.getByText(/without verification/i)).toBeInTheDocument();
+  });
+
   it('shows inline errors for an invalid host and port', async () => {
     const user = userEvent.setup();
     await renderSection();

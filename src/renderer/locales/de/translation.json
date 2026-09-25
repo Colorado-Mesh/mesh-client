@@ -5267,7 +5267,8 @@
     "remoteImport": "Zertifikate importieren",
     "remoteClear": "Alle Zertifikate entfernen",
     "remoteConnect": "Verbinden",
-    "remoteDisconnect": "Verbindung trennen"
+    "remoteDisconnect": "Verbindung trennen",
+    "remoteVerifyOffWarning": "Ohne Überprüfung erhält jeder, der diese Verbindung abfangen kann, die weitergeleiteten Positionen."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

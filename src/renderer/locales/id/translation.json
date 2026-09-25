@@ -5267,7 +5267,8 @@
     "remoteImport": "Sertifikat impor",
     "remoteClear": "Hapus Sertifikat",
     "remoteConnect": "Sambungkan",
-    "remoteDisconnect": "Putuskan"
+    "remoteDisconnect": "Putuskan",
+    "remoteVerifyOffWarning": "Tanpa verifikasi, siapa pun yang dapat mencegat koneksi ini akan menerima posisi relay."
   },
   "telemetryPanel": {
     "title": "Telemetri",
