@@ -6193,7 +6193,12 @@
     "ackQueuedBadge": "待機中のACK",
     "pendingAckListAria": "このインシデントのキューイング確認",
     "cancelPendingAck": "キャンセル",
-    "cancelPendingAckAria": "{{sender}}のキューイング確認をキャンセルする"
+    "cancelPendingAckAria": "{{sender}}のキューイング確認をキャンセルする",
+    "resolveBeacon": "ビーコンをキャンセル",
+    "resolveBeaconAria": "遭難ビーコンをキャンセルし、メッシュに問題がないことを伝えます（ {{sender}} ）",
+    "beaconCancelSent": "ビーコンキャンセルが送信されました。他のステーションは、それを聞いたときにあなたの救難ビーコンをクリアします。",
+    "beaconCancelQueued": "ビーコンキャンセルキューされました。ラジオが利用可能になると送信されます。",
+    "beaconCancelFailed": "ビーコンキャンセルを送信またはキューイングできませんでした。インシデントはまだ発生していません。"
   },
   "quickStatus": {
     "ok": "OK",

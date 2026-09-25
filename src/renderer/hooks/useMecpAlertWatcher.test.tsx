@@ -170,6 +170,62 @@ describe('useMecpAlertWatcher', () => {
     expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(0);
   });
 
+  it('seeds an own distress beacon without alerting so the originator can cancel it', () => {
+    const own = new Set<number>([9]);
+    renderHook(() => {
+      useMecpAlertWatcher(
+        {
+          protocol: 'meshtastic',
+          messages: [msg({ id: 'own-b01', payload: 'MECP/0/B01 M01', from: 9, to: 15 })],
+          ownNodeIds: own,
+          ownSenderId: 9,
+        },
+        { protocol: 'meshcore', messages: [], ownNodeIds: own },
+        { protocol: 'reticulum', messages: [], ownNodeIds: own },
+      );
+    });
+    const open = selectOpenIncidentsSorted(useIncidentStore.getState());
+    expect(open).toHaveLength(1);
+    expect(open[0]).toMatchObject({
+      senderId: '9',
+      beaconActive: true,
+      localOrigin: true,
+      beaconCancelToNode: 15,
+    });
+    expect(triggerMecpAlert).not.toHaveBeenCalled();
+    expect(appendReceived).not.toHaveBeenCalled();
+  });
+
+  it('applies an own B03 to the originated beacon without alerting', async () => {
+    const own = new Set<number>([9]);
+    const beacon = msg({ id: 'own-b01', payload: 'MECP/0/B01', from: 9 });
+    const { rerender } = renderHook(
+      ({ messages }: { messages: MessageRecord[] }) => {
+        useMecpAlertWatcher(
+          { protocol: 'meshtastic', messages, ownNodeIds: own, ownSenderId: 9 },
+          { protocol: 'meshcore', messages: [], ownNodeIds: own },
+          { protocol: 'reticulum', messages: [], ownNodeIds: own },
+        );
+      },
+      { initialProps: { messages: [] as MessageRecord[] } },
+    );
+    rerender({ messages: [beacon] });
+    await vi.waitFor(() => {
+      expect(selectOpenIncidentsSorted(useIncidentStore.getState())).toHaveLength(1);
+    });
+    expect(triggerMecpAlert).not.toHaveBeenCalled();
+
+    rerender({
+      messages: [beacon, msg({ id: 'own-b03', payload: 'MECP/0/B03', from: 9 })],
+    });
+    await vi.waitFor(() => {
+      const inc = selectOpenIncidentsSorted(useIncidentStore.getState())[0];
+      expect(inc?.beaconActive).toBe(false);
+      expect(inc?.status).toBe('open');
+    });
+    expect(triggerMecpAlert).not.toHaveBeenCalled();
+  });
+
   it('does not open an incident for a hydrated B02 beacon ACK', () => {
     const own = new Set<number>([1]);
     renderHook(() => {

@@ -17,11 +17,16 @@ import { ResolveIncidentButton } from './ResolveIncidentButton';
 export function EmergencyIncidentRow({
   incident,
   onAck,
+  onResolve,
+  transmitsBeaconCancel = false,
   pendingAckRows = [],
   onCancelPendingAck,
 }: {
   incident: EmergencyIncident;
   onAck?: (incident: EmergencyIncident) => void;
+  onResolve?: (incident: EmergencyIncident) => void;
+  /** Show Cancel beacon when resolving will transmit B03. */
+  transmitsBeaconCancel?: boolean;
   /** Queued / failed ACK outbox rows tagged for this incident (not visible in Chat). */
   pendingAckRows?: readonly OutboxEntry[];
   onCancelPendingAck?: (row: OutboxEntry) => void;
@@ -78,7 +83,11 @@ export function EmergencyIncidentRow({
         </span>
         <span className="ml-auto flex gap-2">
           {onAck ? <AckIncidentButton incident={incident} onAck={onAck} /> : null}
-          <ResolveIncidentButton incidentId={incident.id} senderName={incident.senderName} />
+          <ResolveIncidentButton
+            incident={incident}
+            transmitsBeaconCancel={transmitsBeaconCancel}
+            onResolve={onResolve}
+          />
         </span>
       </div>
     </li>

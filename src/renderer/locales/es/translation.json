@@ -6193,7 +6193,12 @@
     "ackQueuedBadge": "ACK en cola",
     "pendingAckListAria": "Reconocimientos en cola por este incidente",
     "cancelPendingAck": "Cancelar",
-    "cancelPendingAckAria": "Cancelar acuse de recibo en cola para {{sender}}"
+    "cancelPendingAckAria": "Cancelar acuse de recibo en cola para {{sender}}",
+    "resolveBeacon": "Cancelar baliza",
+    "resolveBeaconAria": "Cancela tu baliza de socorro y dile a la malla que estás bien ({{sender}})",
+    "beaconCancelSent": "Cancelación de baliza enviada. Otras estaciones borran tu baliza de socorro cuando la escuchan.",
+    "beaconCancelQueued": "Baliza de cancelación en cola. Se enviará cuando la radio esté disponible.",
+    "beaconCancelFailed": "No se ha podido enviar ni poner en cola la cancelación de la baliza. El incidente sigue abierto."
   },
   "quickStatus": {
     "ok": "OK",

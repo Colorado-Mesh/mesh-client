@@ -6289,7 +6289,12 @@
     "ackQueuedBadge": "ACK W kolejce",
     "pendingAckListAria": "Kolejka podziękowań dla tego incydentu",
     "cancelPendingAck": "Anuluj",
-    "cancelPendingAckAria": "Anuluj oczekujące potwierdzenie dla {{sender}}"
+    "cancelPendingAckAria": "Anuluj oczekujące potwierdzenie dla {{sender}}",
+    "resolveBeacon": "Anuluj sygnał nawigacyjny",
+    "resolveBeaconAria": "Anuluj sygnał alarmowy i powiedz siatce, że wszystko w porządku ({{sender}})",
+    "beaconCancelSent": "Anulowanie sygnału nawigacyjnego wysłane. Inne stacje usuwają sygnał alarmowy, gdy go usłyszą.",
+    "beaconCancelQueued": "Anulowanie Beacona w kolejce. Wyśle się, gdy radio będzie dostępne.",
+    "beaconCancelFailed": "Nie można wysłać lub ustawić w kolejce anulowania sygnału nawigacyjnego. Incydent jest nadal otwarty."
   },
   "quickStatus": {
     "ok": "OK",

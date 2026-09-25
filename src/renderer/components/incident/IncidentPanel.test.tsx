@@ -65,4 +65,22 @@ describe('IncidentPanel', () => {
     );
     expect(screen.getAllByRole('listitem')).toHaveLength(1);
   });
+
+  it('labels an originated beacon as Cancel beacon and leaves other beacons as Resolve', async () => {
+    const user = userEvent.setup();
+    ingest('MECP/0/B01 M01', '42', 'Ada');
+    ingest('MECP/0/B01', '99', 'Other');
+    const onResolve = vi.fn();
+    render(<IncidentPanel onResolve={onResolve} ownSenderIds={new Set(['42'])} />);
+
+    await user.click(
+      screen.getByRole('button', { name: 'incidentPanel.resolveBeaconAria:{"sender":"Ada"}' }),
+    );
+    expect(onResolve).toHaveBeenCalledWith(
+      expect.objectContaining({ senderId: '42', beaconActive: true }),
+    );
+    expect(
+      screen.getByRole('button', { name: 'incidentPanel.resolveAria:{"sender":"Other"}' }),
+    ).toBeInTheDocument();
+  });
 });

@@ -6242,7 +6242,12 @@
     "ackQueuedBadge": "ACK ve frontě",
     "pendingAckListAria": "Poděkování za tento incident ve frontě",
     "cancelPendingAck": "Zrušit",
-    "cancelPendingAckAria": "Zrušit potvrzení o zařazení do fronty pro {{sender}}"
+    "cancelPendingAckAria": "Zrušit potvrzení o zařazení do fronty pro {{sender}}",
+    "resolveBeacon": "Zrušit maják",
+    "resolveBeaconAria": "Zrušte nouzový maják a řekněte síti, že jste v pořádku ({{sender}})",
+    "beaconCancelSent": "Zrušení signálu odesláno. Ostatní stanice váš nouzový signál vyčistí, jakmile jej uslyší.",
+    "beaconCancelQueued": "Beacon byl zrušen ve frontě. Bude odeslán, až bude rádio k dispozici.",
+    "beaconCancelFailed": "Nelze odeslat nebo zařadit maják do fronty na zrušení. Incident je stále otevřený."
   },
   "quickStatus": {
     "ok": "OK",

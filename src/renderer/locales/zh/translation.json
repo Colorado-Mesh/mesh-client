@@ -6193,7 +6193,12 @@
     "ackQueuedBadge": "ACK已排队",
     "pendingAckListAria": "已排队确认此事件",
     "cancelPendingAck": "取消",
-    "cancelPendingAckAria": "取消{{sender}}的排队确认"
+    "cancelPendingAckAria": "取消{{sender}}的排队确认",
+    "resolveBeacon": "取消信标",
+    "resolveBeaconAria": "取消遇险信标，并告诉网格您没事（ {{sender}} ）",
+    "beaconCancelSent": "信标取消已发送。其他电台听到它时会清除您的遇险信标。",
+    "beaconCancelQueued": "信标取消已排队。当无线电可用时，它将发送。",
+    "beaconCancelFailed": "无法发送或排队信标取消。事件仍未解决。"
   },
   "quickStatus": {
     "ok": "确认",

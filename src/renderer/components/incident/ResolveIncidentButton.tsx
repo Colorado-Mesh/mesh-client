@@ -1,26 +1,34 @@
 import { useTranslation } from 'react-i18next';
 
-import { useIncidentStore } from '@/renderer/stores/incidentStore';
+import { type EmergencyIncident, useIncidentStore } from '@/renderer/stores/incidentStore';
 
 export function ResolveIncidentButton({
-  incidentId,
-  senderName,
+  incident,
+  transmitsBeaconCancel = false,
+  onResolve,
 }: {
-  incidentId: string;
-  senderName: string;
+  incident: EmergencyIncident;
+  /** Originated active beacon: Resolve airs B03 before closing the row. */
+  transmitsBeaconCancel?: boolean;
+  onResolve?: (incident: EmergencyIncident) => void;
 }) {
   const { t } = useTranslation();
   const resolveIncident = useIncidentStore((s) => s.resolveIncident);
+  const labelKey = transmitsBeaconCancel ? 'incidentPanel.resolveBeacon' : 'incidentPanel.resolve';
+  const ariaKey = transmitsBeaconCancel
+    ? 'incidentPanel.resolveBeaconAria'
+    : 'incidentPanel.resolveAria';
   return (
     <button
       type="button"
-      aria-label={t('incidentPanel.resolveAria', { sender: senderName })}
+      aria-label={t(ariaKey, { sender: incident.senderName })}
       onClick={() => {
-        resolveIncident(incidentId);
+        if (onResolve) onResolve(incident);
+        else resolveIncident(incident.id);
       }}
       className="rounded bg-slate-700 px-2 py-1 text-xs font-semibold text-white hover:bg-slate-600"
     >
-      {t('incidentPanel.resolve')}
+      {t(labelKey)}
     </button>
   );
 }

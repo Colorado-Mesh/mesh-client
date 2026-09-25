@@ -6193,7 +6193,12 @@
     "ackQueuedBadge": "ACK kuyruğa alındı",
     "pendingAckListAria": "Bu olay için kuyruğa alınmış onaylar",
     "cancelPendingAck": "İptal",
-    "cancelPendingAckAria": "{{sender}} için kuyruğa alınmış onayı iptal et"
+    "cancelPendingAckAria": "{{sender}} için kuyruğa alınmış onayı iptal et",
+    "resolveBeacon": "İşaretçiyi iptal et",
+    "resolveBeaconAria": "İmdat sinyalinizi iptal edin ve ağa iyi olduğunuzu söyleyin ({{sender}})",
+    "beaconCancelSent": "Yol gösterici iptali gönderildi. Diğer istasyonlar, duyduklarında yardım işaretçinizi temizler.",
+    "beaconCancelQueued": "Beacon iptal kuyruğa alındı. Telsiz müsait olduğunda gönderilecek.",
+    "beaconCancelFailed": "Beacon iptali gönderilemedi veya kuyruğa alınamadı. Olay hala açık."
   },
   "quickStatus": {
     "ok": "Tamam",

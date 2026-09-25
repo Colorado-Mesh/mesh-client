@@ -6193,7 +6193,12 @@
     "ackQueuedBadge": "ACK 대기열",
     "pendingAckListAria": "이 사건에 대한 확인 대기 중",
     "cancelPendingAck": "취소",
-    "cancelPendingAckAria": "{{sender}} 에 대한 대기 중인 수신 확인 취소"
+    "cancelPendingAckAria": "{{sender}} 에 대한 대기 중인 수신 확인 취소",
+    "resolveBeacon": "Beacon 취소",
+    "resolveBeaconAria": "조난 신호를 해제하고 메시에 괜찮다고 말하세요 ({{sender}})",
+    "beaconCancelSent": "비콘 취소가 전송되었습니다. 다른 스테이션은 조난 비콘을 들으면 비콘을 지웁니다.",
+    "beaconCancelQueued": "Beacon 취소가 대기 중입니다. 라디오를 사용할 수 있을 때 전송됩니다.",
+    "beaconCancelFailed": "Beacon 취소를 보내거나 대기열에 넣을 수 없습니다. 이 사안은 아직 진행 중입니다."
   },
   "quickStatus": {
     "ok": "확인",
