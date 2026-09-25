@@ -2302,6 +2302,10 @@
       "unclassified": {
         "label": "Inne ostrzeżenia i błędy",
         "recommendation": "Te wiersze dziennika nie pasują do znanej diagnozy i mogą zawierać oczekiwane komunikaty odzyskiwania. Przejrzyj ich znaczniki czasu i otaczający je kontekst. Jeśli problem będzie się powtarzał, wyeksportuj pełny dziennik z tym raportem."
+      },
+      "tak-remote": {
+        "label": "Problemy ze zdalnym przekaźnikiem TAK",
+        "recommendation": "Zdalny przekaźnik TAK nie mógł się połączyć lub utracił połączenie. Sprawdź adres i port serwera oraz czy zaimportowany certyfikat CA i klienta należą do tego serwera."
       }
     },
     "recommendationGroups": {
@@ -5322,7 +5326,34 @@
     "durationHourMin": "{{h}}h {{m}}m",
     "packets_few": "{{count}} pakiety",
     "packets_many": "{{count}} pakietów",
-    "atakUndecodable": "Ładunek nie został rozpoznany jako pakiet TAK"
+    "atakUndecodable": "Ładunek nie został rozpoznany jako pakiet TAK",
+    "remoteTitle": "Zdalny serwer TAK",
+    "remoteDescription": "Przesyłaj strumieniowo pozycje węzłów z każdego protokołu do OpenTAKServer, FreeTAKServer lub TAK Server przez TLS. Współpracuje z lokalnym serwerem lub bez niego.",
+    "remoteConnected": "Połączono z {{host}}:{{port}}",
+    "remoteConnecting": "Łączenie z {{host}}:{{port}}…",
+    "remoteDisconnected": "Nie połączono",
+    "remoteLastError": "Ostatni błąd: {{error}}",
+    "remoteHostLabel": "Adres serwera",
+    "remoteHostError": "Wprowadź nazwę hosta lub adres IP",
+    "remotePortLabel": "Port",
+    "remotePortError": "Port musi mieć wartość od 1 do 65535",
+    "remoteVerifyServer": "Sprawdź certyfikat serwera (zalecane)",
+    "remoteAutoConnect": "Połącz po uruchomieniu aplikacji",
+    "remoteCertificates": "Certyfikaty",
+    "remoteCaSummary": "Zaufany CA: {{names}}",
+    "remoteNoCa": "Nie zaimportowano CA. Serwer jest sprawdzany w magazynie zaufania systemu.",
+    "remoteClientSummary": "Certyfikat klienta: {{subject}}, wygasa {{date}}",
+    "remoteNoClient": "Nie zaimportowano certyfikatu klienta",
+    "remoteImportHint": "Wybierz plik .p12 lub pliki PEM. Pakiety danych TAK zawierają magazyn zaufanych certyfikatów i plik klienta .p12, zwykle z hasłem atakatak.",
+    "remotePasswordLabel": "Hasło certyfikatu",
+    "remoteImport": "Importuj certyfikaty",
+    "remoteClear": "Usuń certyfikaty",
+    "remoteConnect": "Połącz",
+    "remoteDisconnect": "Rozłącz",
+    "remoteVerifyOffWarning": "Bez weryfikacji każdy, kto może przechwycić to połączenie, otrzymuje pozycje przekaźnikowe.",
+    "remoteAllowNameMismatch": "Zaakceptuj certyfikat wydany dla innej nazwy (tylko importowane CA, tak jak ATAK)",
+    "remoteNameMismatchNeedsCa": "Zaimportuj CA serwera, aby użyć tej opcji.",
+    "remoteAutoConnectNeedsVerify": "Połączenie podczas uruchamiania pozostaje wyłączone, dopóki nie zostanie włączona weryfikacja."
   },
   "telemetryPanel": {
     "title": "Telemetria",

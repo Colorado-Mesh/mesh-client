@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "기타 경고 및 오류",
         "recommendation": "이러한 로그 라인은 알려진 진단과 일치하지 않으며 예상되는 복구 메시지를 포함할 수 있습니다. 타임스탬프와 주변 맥락을 검토합니다. 문제가 지속되면 이 보고서로 전체 로그를 내보냅니다."
+      },
+      "tak-remote": {
+        "label": "원격 TAK 릴레이 문제",
+        "recommendation": "원격 TAK 릴레이가 연결되지 않거나 연결이 끊어졌습니다. 서버 주소와 포트를 확인하고 가져온 CA 및 클라이언트 인증서가 해당 서버에 속해 있는지 확인하십시오."
       }
     },
     "recommendationGroups": {
@@ -5240,7 +5244,34 @@
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
     "durationHourMin": "{{h}}h {{m}}m",
-    "atakUndecodable": "페이로드가 TAK 패킷으로 인식되지 않음"
+    "atakUndecodable": "페이로드가 TAK 패킷으로 인식되지 않음",
+    "remoteTitle": "원격 TAK 서버",
+    "remoteDescription": "TLS를 통해 모든 프로토콜의 노드 위치를 OpenTAKServer, FreeTAKServer 또는 TAK Server로 스트리밍합니다. 로컬 서버와 함께 또는 로컬 서버 없이 작동합니다.",
+    "remoteConnected": "{{host}} 에 연결됨: {{port}}",
+    "remoteConnecting": "{{host}} 에 연결 중: {{port}} …",
+    "remoteDisconnected": "연결되지 않음",
+    "remoteLastError": "마지막 오류: {{error}}",
+    "remoteHostLabel": "서버 주소",
+    "remoteHostError": "호스트 이름 또는 IP 주소 입력",
+    "remotePortLabel": "포팅하기",
+    "remotePortError": "포트는 1에서 65535 사이여야 합니다",
+    "remoteVerifyServer": "서버 인증서 확인 (권장)",
+    "remoteAutoConnect": "애플리케이션 시작 시 연결",
+    "remoteCertificates": "수료증",
+    "remoteCaSummary": "신뢰할 수 있는 CA: {{names}}",
+    "remoteNoCa": "가져온 CA가 없습니다. 서버가 시스템 트러스트 저장소에 대해 검사됩니다.",
+    "remoteClientSummary": "고객 인증서: {{subject}}, 만료일: {{date}}",
+    "remoteNoClient": "가져온 클라이언트 인증서가 없습니다",
+    "remoteImportHint": ".p12 파일 또는 PEM 파일을 선택하십시오. TAK 데이터 패키지에는 일반적으로 암호가 atakatak인 트러스트스토어와 클라이언트 .p12가 포함됩니다.",
+    "remotePasswordLabel": "인증서 암호",
+    "remoteImport": "인증서 가져오기",
+    "remoteClear": "인증서 제거",
+    "remoteConnect": "연결",
+    "remoteDisconnect": "연결 해제",
+    "remoteVerifyOffWarning": "검증 없이 이 연결을 가로챌 수 있는 사람은 릴레이된 포지션을 받습니다.",
+    "remoteAllowNameMismatch": "다른 이름으로 발급된 인증서 수락 (ATAK와 마찬가지로 가져온 CA만 해당)",
+    "remoteNameMismatchNeedsCa": "이 옵션을 사용하려면 서버의 CA를 가져옵니다.",
+    "remoteAutoConnectNeedsVerify": "앱을 시작할 때의 자동 연결은 검증을 켤 때까지 꺼진 상태로 유지됩니다."
   },
   "telemetryPanel": {
     "title": "원격 측정",

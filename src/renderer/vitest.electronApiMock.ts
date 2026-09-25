@@ -392,9 +392,18 @@ export function createElectronAPIMock(): ElectronAPI {
       generateDataPackage: vi.fn().mockResolvedValue(undefined),
       regenerateCertificates: vi.fn().mockResolvedValue(undefined),
       pushNodeUpdate: vi.fn().mockResolvedValue(undefined),
+      pushNodeUpdates: vi.fn().mockResolvedValue(undefined),
       onStatus: vi.fn().mockReturnValue(() => {}),
       onClientConnected: vi.fn().mockReturnValue(() => {}),
       onClientDisconnected: vi.fn().mockReturnValue(() => {}),
+      remoteStart: vi.fn().mockResolvedValue(undefined),
+      remoteStop: vi.fn().mockResolvedValue(undefined),
+      remoteGetStatus: vi.fn().mockResolvedValue({ state: 'disconnected', host: '', port: 8089 }),
+      remoteGetSettings: vi.fn().mockResolvedValue(null),
+      remoteGetCredentials: vi.fn().mockResolvedValue({ caSubjects: [] }),
+      remoteImportCredentials: vi.fn().mockResolvedValue(null),
+      remoteClearCredentials: vi.fn().mockResolvedValue({ caSubjects: [] }),
+      onRemoteStatus: vi.fn().mockReturnValue(() => {}),
     },
     bleCoexistence: {
       register: vi.fn().mockResolvedValue({

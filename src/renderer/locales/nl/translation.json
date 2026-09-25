@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Andere waarschuwingen en fouten",
         "recommendation": "Deze logregels komen niet overeen met een bekende diagnose en kunnen verwachte herstelberichten bevatten. Bekijk hun tijdstempels en omringende context. Als een probleem zich blijft voordoen, exporteer dan het volledige logboek met dit rapport."
+      },
+      "tak-remote": {
+        "label": "Remote TAK Relay Problemen",
+        "recommendation": "Het externe TAK-RELAIS kon geen verbinding maken of verloor zijn verbinding. Controleer het serveradres en de poort en of de geïmporteerde CA en het clientcertificaat tot die server behoren."
       }
     },
     "recommendationGroups": {
@@ -5240,7 +5244,34 @@
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
     "durationHourMin": "{{h}}h {{m}}m",
-    "atakUndecodable": "Laadvermogen niet herkend als een TAK-pakket"
+    "atakUndecodable": "Laadvermogen niet herkend als een TAK-pakket",
+    "remoteTitle": "Remote TAK SERVER",
+    "remoteDescription": "Stream knooppuntposities van elk protocol naar een OpenTAKServer, FreeTAKServer of TAK Server via TLS. Werkt met of zonder de lokale server.",
+    "remoteConnected": "Verbonden met {{host}}:{{port}}",
+    "remoteConnecting": "Aansluiten op {{host}}:{{port}}…",
+    "remoteDisconnected": "Niet verbonden",
+    "remoteLastError": "Laatste fout: {{error}}",
+    "remoteHostLabel": "Serveradres",
+    "remoteHostError": "Voer een hostnaam of IP-adres in",
+    "remotePortLabel": "Poort",
+    "remotePortError": "Poort moet tussen 1 en 65535 liggen",
+    "remoteVerifyServer": "Verifieer het servercertificaat (aanbevolen)",
+    "remoteAutoConnect": "Verbinden bij het starten van de applicatie",
+    "remoteCertificates": "Certificaten",
+    "remoteCaSummary": "Vertrouwde CA: {{names}}",
+    "remoteNoCa": "Geen CA geïmporteerd. De server wordt gecontroleerd aan de hand van het systeemvertrouwensarchief.",
+    "remoteClientSummary": "Klantcertificaat: {{subject}}, verloopt {{date}}",
+    "remoteNoClient": "Geen clientcertificaat geïmporteerd",
+    "remoteImportHint": "Kies een .p12-bestand of PEM-bestanden. TAK datapakketten bevatten een truststore en een client .p12, meestal met het wachtwoord atakatak.",
+    "remotePasswordLabel": "Certificaatwachtwoord",
+    "remoteImport": "Certificaten importeren",
+    "remoteClear": "alle certificaten verwijderen.",
+    "remoteConnect": "Verbinden",
+    "remoteDisconnect": "Verbinding verbreken",
+    "remoteVerifyOffWarning": "Zonder verificatie ontvangt iedereen die deze verbinding kan onderscheppen de doorgegeven posities.",
+    "remoteAllowNameMismatch": "Accepteer een certificaat dat is uitgegeven voor een andere naam (alleen geïmporteerde CA, zoals ATAK doet)",
+    "remoteNameMismatchNeedsCa": "Importeer de CA van de server om deze optie te gebruiken.",
+    "remoteAutoConnectNeedsVerify": "Verbinding maken bij de lancering blijft uitgeschakeld totdat de verificatie is ingeschakeld."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

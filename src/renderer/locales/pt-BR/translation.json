@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Outros avisos e erros",
         "recommendation": "Essas linhas de registro não correspondem a um diagnóstico conhecido e podem incluir mensagens de recuperação esperadas. Revise os carimbos de data e hora e o contexto ao redor. Se um problema persistir, exporte o registro completo com este relatório."
+      },
+      "tak-remote": {
+        "label": "Problemas com o relé TAK REMOTO",
+        "recommendation": "O relé TAK remoto não conseguiu se conectar ou perdeu sua conexão. Verifique o endereço e a porta do servidor e se a autoridade de certificação e o certificado do cliente importados pertencem a esse servidor."
       }
     },
     "recommendationGroups": {
@@ -5240,7 +5244,34 @@
     "durationSec": "{{s}}s",
     "durationMin": "{{m}}m",
     "durationHourMin": "{{h}}h {{m}}m",
-    "atakUndecodable": "Carga útil não reconhecida como um pacote TAK"
+    "atakUndecodable": "Carga útil não reconhecida como um pacote TAK",
+    "remoteTitle": "Servidor TAK REMOTO",
+    "remoteDescription": "Transmita as posições dos nós de cada protocolo para um OpenTAKServer, FreeTAKServer ou TAK Server por TLS. Funciona com ou sem o servidor local.",
+    "remoteConnected": "Conectado a {{host}}:{{port}}",
+    "remoteConnecting": "Conectando-se a {{host}}:{{port}}…",
+    "remoteDisconnected": "Não Conectado",
+    "remoteLastError": "Último erro: {{error}}",
+    "remoteHostLabel": "Endereço do servidor",
+    "remoteHostError": "Insira um nome de host ou endereço IP",
+    "remotePortLabel": "Bombordo",
+    "remotePortError": "A porta deve estar entre 1 e 65535",
+    "remoteVerifyServer": "Verifique o certificado do servidor (recomendado)",
+    "remoteAutoConnect": "Conectar no lançamento do aplicativo",
+    "remoteCertificates": "Certificates",
+    "remoteCaSummary": "CA confiável: {{names}}",
+    "remoteNoCa": "Nenhuma CA importada. O servidor é verificado em relação ao repositório de confiança do sistema.",
+    "remoteClientSummary": "Certificado do cliente: {{subject}}, expira em {{date}}",
+    "remoteNoClient": "Nenhum certificado de cliente importado",
+    "remoteImportHint": "Escolha um arquivo .p12 ou arquivos PEM. Os pacotes de dados TAK incluem um truststore e um client .p12, geralmente com a senha atakatak.",
+    "remotePasswordLabel": "Senha do Certificado",
+    "remoteImport": "Certificados de Importação",
+    "remoteClear": "Remover certificados",
+    "remoteConnect": "Conectar",
+    "remoteDisconnect": "Desconectar",
+    "remoteVerifyOffWarning": "Sem verificação, qualquer pessoa que possa interceptar essa conexão recebe as posições retransmitidas.",
+    "remoteAllowNameMismatch": "Aceitar um certificado emitido para um nome diferente (apenas CA importado, como faz o ATAK)",
+    "remoteNameMismatchNeedsCa": "Importe a autoridade de certificação do servidor para usar esta opção.",
+    "remoteAutoConnectNeedsVerify": "A conexão no lançamento permanece desativada até que a verificação seja ativada."
   },
   "telemetryPanel": {
     "title": "Telemetria",

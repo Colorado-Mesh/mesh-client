@@ -2277,6 +2277,10 @@
       "unclassified": {
         "label": "Další varování a chyby",
         "recommendation": "Tyto řádky protokolu neodpovídají známé diagnóze a mohou obsahovat očekávané zprávy o obnovení. Zkontrolujte jejich časová razítka a okolní kontext. Pokud problém přetrvává, exportujte celý protokol s touto zprávou."
+      },
+      "tak-remote": {
+        "label": "Problémy se vzdáleným relé TAK",
+        "recommendation": "Vzdálené relé TAK se nemohlo připojit nebo ztratilo spojení. Zkontrolujte adresu a port serveru a zda importovaná certifikační autorita a klientský certifikát patří k tomuto serveru."
       }
     },
     "recommendationGroups": {
@@ -5282,7 +5286,34 @@
     "durationMin": "{{m}}m",
     "durationHourMin": "{{h}}h {{m}}m",
     "packets_few": "{{count}} pakety",
-    "atakUndecodable": "Užitečné zatížení nebylo rozpoznáno jako paket TAK"
+    "atakUndecodable": "Užitečné zatížení nebylo rozpoznáno jako paket TAK",
+    "remoteTitle": "Vzdálený server TAK",
+    "remoteDescription": "Streamujte pozice uzlů z každého protokolu na OpenTAKServer, FreeTAKServer nebo TAK Server přes TLS. Pracuje s místním serverem nebo bez něj.",
+    "remoteConnected": "Připojeno k {{host}}:{{port}}",
+    "remoteConnecting": "Připojení k {{host}}:{{port}}…",
+    "remoteDisconnected": "Nepřipojeno",
+    "remoteLastError": "Poslední chyba: {{error}}",
+    "remoteHostLabel": "Adresa serveru",
+    "remoteHostError": "Zadej název hostitele nebo IP adresu",
+    "remotePortLabel": "Port",
+    "remotePortError": "Port musí být mezi 1 a 65535",
+    "remoteVerifyServer": "Ověřte certifikát serveru (doporučeno)",
+    "remoteAutoConnect": "Připojit při spuštění aplikace",
+    "remoteCertificates": "Bezpečnostní listy",
+    "remoteCaSummary": "Důvěryhodná CA: {{names}}",
+    "remoteNoCa": "Nebyla importována žádná certifikační autorita. Server je zkontrolován proti úložišti důvěryhodnosti systému.",
+    "remoteClientSummary": "Certifikát klienta: {{subject}}, vyprší {{date}}",
+    "remoteNoClient": "Nebyl importován žádný klientský certifikát",
+    "remoteImportHint": "Vyberte soubor .p12 nebo soubory PEM. Datové balíčky TAK obsahují truststore a klientský .p12, obvykle s heslem atakatak.",
+    "remotePasswordLabel": "Heslo certifikátu",
+    "remoteImport": "Importovat certifikáty",
+    "remoteClear": "\"Odstranit všechny certifikáty\"",
+    "remoteConnect": "Připojení",
+    "remoteDisconnect": "Odpojení",
+    "remoteVerifyOffWarning": "Bez ověření obdrží každý, kdo může toto spojení zachytit, přenášené pozice.",
+    "remoteAllowNameMismatch": "Přijmout certifikát vydaný pro jiný název (pouze importovaná CA, jak to dělá ATAK)",
+    "remoteNameMismatchNeedsCa": "Chcete-li použít tuto možnost, importujte certifikační autoritu serveru.",
+    "remoteAutoConnectNeedsVerify": "Připojení při spuštění zůstane vypnuté, dokud nebude zapnuté ověření."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

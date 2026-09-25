@@ -73,7 +73,7 @@ describe('TakServerPanel', () => {
     const user = userEvent.setup();
     render(<TakServerPanel />);
     await act(async () => {});
-    const portInput = screen.getByRole('spinbutton');
+    const portInput = screen.getByLabelText(/port \(1024/i);
     await user.clear(portInput);
     await user.type(portInput, '80');
     expect(screen.getByRole('button', { name: /start server/i })).toBeDisabled();
@@ -83,7 +83,7 @@ describe('TakServerPanel', () => {
     const user = userEvent.setup();
     render(<TakServerPanel />);
     await act(async () => {});
-    const portInput = screen.getByRole('spinbutton');
+    const portInput = screen.getByLabelText(/port \(1024/i);
     await user.clear(portInput);
     await user.type(portInput, '80');
     expect(screen.getByText(/port must be 1024/i)).toBeInTheDocument();
