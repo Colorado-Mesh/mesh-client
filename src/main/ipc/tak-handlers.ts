@@ -297,6 +297,10 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
   ipcMain.handle('tak:remoteClearCredentials', (event) => {
     assertIpcSender(event, 'tak:remoteClearCredentials');
     console.debug('[IPC] tak:remoteClearCredentials');
+    // An import still in its chooser would write its files after this clear finished.
+    if (choosingCredentials) {
+      throw new Error('Wait for the certificate import to finish before removing certificates');
+    }
     // A running relay holds the credentials in memory; stop it so it cannot reconnect with them.
     getTakServerManager()?.stopRemote();
     clearTakRemoteCredentials();

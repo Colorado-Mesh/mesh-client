@@ -227,6 +227,16 @@ export function saveTakRemoteCredentials(creds: TakRemoteCredentials): void {
 }
 
 /** Throws when an encrypted key exists but the OS keychain cannot decrypt it. */
+/** False for a pair that cannot authenticate together, including unreadable PEM. */
+function keyMatchesCert(certPem: string, keyPem: string): boolean {
+  try {
+    return new X509Certificate(certPem).checkPrivateKey(createPrivateKey(keyPem));
+  } catch {
+    // catch-no-log-ok the caller logs the mismatch once and reports no client identity
+    return false;
+  }
+}
+
 export function loadTakRemoteCredentials(): TakRemoteCredentials {
   const dir = getRemoteCertsDir();
   const read = (name: string): string | undefined => {
@@ -236,10 +246,18 @@ export function loadTakRemoteCredentials(): TakRemoteCredentials {
   const cert = read(CREDENTIAL_FILES.cert);
   const key = cert ? readClientKey(dir) : undefined;
   const ca = read(CREDENTIAL_FILES.ca);
+  // The key and certificate are written as two files, so an interrupted import can leave a
+  // new key beside the old certificate. Report no identity rather than fail the handshake.
+  const identityMatches = Boolean(cert && key && keyMatchesCert(cert, key));
+  if (cert && key && !identityMatches) {
+    console.warn(
+      '[TakRemote] Stored client certificate and key do not match; import the client certificate again',
+    );
+  }
   return {
     ...(ca ? { ca } : {}),
     // A certificate without its key (or the reverse) cannot authenticate; use neither.
-    ...(cert && key ? { cert, key } : {}),
+    ...(cert && key && identityMatches ? { cert, key } : {}),
   };
 }
 

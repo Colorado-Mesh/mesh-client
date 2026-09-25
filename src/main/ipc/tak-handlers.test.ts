@@ -193,6 +193,25 @@ describe('remote relay handlers', () => {
     expect(stopRemote).toHaveBeenCalled();
   });
 
+  it('refuses to clear credentials while an import is choosing files', async () => {
+    let finishChooser: ((r: { canceled: boolean; filePaths: string[] }) => void) | undefined;
+    vi.mocked(dialog.showOpenDialog).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishChooser = resolve;
+      }),
+    );
+    const { get } = await register();
+    const importing = get('tak:remoteImportCredentials')(event);
+
+    expect(() => get('tak:remoteClearCredentials')(event)).toThrow(
+      /Wait for the certificate import/,
+    );
+
+    finishChooser?.({ canceled: true, filePaths: [] });
+    await expect(importing).resolves.toBeNull();
+    expect(() => get('tak:remoteClearCredentials')(event)).not.toThrow();
+  });
+
   it('reports an idle relay before the TAK module loads', async () => {
     const { get } = await register(null);
     expect(get('tak:remoteGetStatus')(event)).toEqual({

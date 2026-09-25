@@ -223,6 +223,17 @@ describe('stored remote credentials', () => {
     expect(JSON.stringify(summary)).not.toContain('PRIVATE KEY');
   });
 
+  it('reports no client identity when the stored key and certificate do not match', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    saveClient();
+    // An import interrupted between its two writes: new certificate, old key.
+    fs.writeFileSync(path.join(certsDir(), 'client-cert.pem'), pki.server.certPem);
+
+    expect(loadTakRemoteCredentials()).toEqual({});
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('do not match'));
+    warn.mockRestore();
+  });
+
   it('ignores a certificate whose key file is missing', () => {
     saveClient();
     fs.rmSync(path.join(certsDir(), 'client-key.pem.enc'));
