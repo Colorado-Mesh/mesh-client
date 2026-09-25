@@ -2302,6 +2302,10 @@
       "unclassified": {
         "label": "Inne ostrzeżenia i błędy",
         "recommendation": "Te wiersze dziennika nie pasują do znanej diagnozy i mogą zawierać oczekiwane komunikaty odzyskiwania. Przejrzyj ich znaczniki czasu i otaczający je kontekst. Jeśli problem będzie się powtarzał, wyeksportuj pełny dziennik z tym raportem."
+      },
+      "tak-remote": {
+        "label": "Problemy ze zdalnym przekaźnikiem TAK",
+        "recommendation": "Zdalny przekaźnik TAK nie mógł się połączyć lub utracił połączenie. Sprawdź adres i port serwera oraz czy zaimportowany certyfikat CA i klienta należą do tego serwera."
       }
     },
     "recommendationGroups": {

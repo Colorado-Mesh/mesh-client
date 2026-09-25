@@ -2325,6 +2325,10 @@
         "label": "TAK Server Issues",
         "recommendation": "TAK server error. Check certificate status and port availability."
       },
+      "tak-remote": {
+        "label": "Remote TAK Relay Issues",
+        "recommendation": "The remote TAK relay could not connect or lost its connection. Check the server address and port, and that the imported CA and client certificate belong to that server."
+      },
       "updater": {
         "label": "App Updater Errors",
         "recommendation": "App updater error. Check your internet connection or try a manual update from GitHub."

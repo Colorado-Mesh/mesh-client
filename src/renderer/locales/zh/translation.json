@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "其他警告和错误",
         "recommendation": "这些日志行与已知诊断不匹配，可能包括预期的恢复消息。查看他们的时间戳和周围环境。如果问题仍然存在，请导出包含此报告的完整日志。"
+      },
+      "tak-remote": {
+        "label": "远程TAK继电器问题",
+        "recommendation": "远程TAK继电器无法连接或失去连接。检查服务器地址和端口，导入的CA和客户端证书是否属于该服务器。"
       }
     },
     "recommendationGroups": {

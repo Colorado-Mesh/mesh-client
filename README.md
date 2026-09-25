@@ -149,14 +149,16 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 - Per-node redundancy score derived from the last 20 observed packets; `+N` echo count in the node list; collapsible Path History in node detail
 
-**TAK Server (CoT Gateway)** (Meshtastic only)
+**TAK Server (CoT Gateway)**
 
-- **TAK** tab (between Security and App): broadcast mesh node positions as Cursor on Target (CoT) XML events over TLS TCP (port 8089)
+- **TAK** tab (between Security and Incident) on Meshtastic, MeshCore, and Reticulum: broadcast node positions as Cursor on Target (CoT) XML events over TLS TCP (port 8089)
+- Feeds every protocol at once, whichever tab is open: Meshtastic and MeshCore nodes heard within their protocol's online window, Reticulum RMAP-discovered interfaces with coordinates, and your own Reticulum position when a static GPS position is set. Positions are re-sent every 5 minutes so markers do not go stale in ATAK
 - Enables **ATAK, WinTAK, and iTAK clients** to see mesh nodes on their tactical maps
+- **Remote TAK server relay**: stream the same positions to an OpenTAKServer, FreeTAKServer, or TAK Server over mutual TLS. Import the server truststore and your client certificate as `.p12` or PEM files; the private key stays in the main process. The server is verified against the imported CA, the relay reconnects on its own, and it can connect at launch
 - **Certificate management**: self-signed CA + server + client certificates via node-forge; regenerate anytime from the TAK tab
 - **Data package generator**: export ATAK-compatible (ca.pem, client.p12, connection.pref) for direct import on TAK devices
 - Auto-start option (off by default); status indicator in header when running
-- **ATAK Plugin Messages**: incoming ATAK plugin packets from mesh nodes are displayed in the TAK tab with sender node and packet counts
+- **ATAK Plugin Messages** (Meshtastic): incoming ATAK plugin packets from mesh nodes are displayed in the TAK tab with sender node and packet counts
 
 ---
 
@@ -241,7 +243,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 ### MeshCore Features
 
-MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **17** sidebar tabs (including **Administration**, **Security**, **TAK**, **Incident** just above **App**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **17** tabs (**Incident** always visible just above **App**; **TAK** is hidden; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **16** tabs (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, **Incident**, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
+MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protocol switcher in the header to bring MeshCore into view; the other sessions stay connected in the background. **Meshtastic** shows **17** sidebar tabs (including **Administration**, **Security**, **TAK**, **Incident** just above **App**, **Stats**, and **Sniffer**; no **Rooms** tab). **MeshCore** shows **18** tabs (**TAK** and **Incident** just above **App**; **Contacts** replaces **Nodes**, **Repeaters** replaces **Modules**, and **Rooms** is MeshCore-only; **Security** shows backup/restore and crypto tools only). **Reticulum** shows **17** tabs (Connection, Chat, **Games**, **RRC**, Nomad Network, **Remote**, Peers, **Map**, Network, Admin, **TAK**, **Incident**, App, Diagnostics, **Stats**, **Sniffer**, Topology). **Stats** and **Sniffer** are available in all three protocols; **RF** and **Graph** are LoRa-only (Meshtastic and MeshCore).
 
 - **Transmit queue**: header badge (with tooltip) when the connected radio reports outbound queue depth (STATS).
 

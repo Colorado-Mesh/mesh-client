@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Otras advertencias y errores",
         "recommendation": "Estas líneas de registro no coinciden con un diagnóstico conocido y pueden incluir mensajes de recuperación esperados. Revise sus marcas de tiempo y el contexto circundante. Si el problema persiste, exporte el registro completo con este informe."
+      },
+      "tak-remote": {
+        "label": "Problemas con EL RELÉ TAK REMOTO",
+        "recommendation": "El relé TAK remoto no pudo conectarse o perdió su conexión. Compruebe la dirección y el puerto del servidor, y que la CA importada y el certificado del cliente pertenecen a ese servidor."
       }
     },
     "recommendationGroups": {

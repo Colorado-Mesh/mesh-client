@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Peringatan dan kesalahan lainnya",
         "recommendation": "Garis log ini tidak cocok dengan diagnosis yang diketahui dan mungkin mencakup pesan pemulihan yang diharapkan. Tinjau stempel waktu dan konteks sekitarnya. Jika masalah berlanjut, ekspor log lengkap dengan laporan ini."
+      },
+      "tak-remote": {
+        "label": "Masalah Relai TAK Jarak Jauh",
+        "recommendation": "Relai TAK jarak jauh tidak dapat tersambung atau kehilangan koneksinya. Periksa alamat dan port server, dan bahwa sertifikat CA dan klien yang diimpor milik server tersebut."
       }
     },
     "recommendationGroups": {

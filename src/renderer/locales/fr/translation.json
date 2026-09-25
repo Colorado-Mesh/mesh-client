@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Autres avertissements et erreurs",
         "recommendation": "Ces lignes de journal ne correspondent pas à un diagnostic connu et peuvent inclure des messages de récupération attendus. Passez en revue leurs horodatages et le contexte environnant. Si un problème persiste, exportez le journal complet avec ce rapport."
+      },
+      "tak-remote": {
+        "label": "Problèmes de relais TAK à distance",
+        "recommendation": "Le relais TAK distant n'a pas pu se connecter ou a perdu sa connexion. Vérifiez l'adresse et le port du serveur, et que l'autorité de certification importée et le certificat client appartiennent à ce serveur."
       }
     },
     "recommendationGroups": {

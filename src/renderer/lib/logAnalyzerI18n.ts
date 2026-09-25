@@ -23,6 +23,7 @@ export const LOG_ANALYZER_CATEGORY_LABEL_KEYS: Record<string, string> = {
   'database-chmod': 'logAnalyzer.categories.database-chmod.label',
   'database-writable': 'logAnalyzer.categories.database-writable.label',
   'tak-server': 'logAnalyzer.categories.tak-server.label',
+  'tak-remote': 'logAnalyzer.categories.tak-remote.label',
   updater: 'logAnalyzer.categories.updater.label',
   'meshcore-tcp': 'logAnalyzer.categories.meshcore-tcp.label',
   'ble-meshcore-notify-watchdog': 'logAnalyzer.categories.ble-meshcore-notify-watchdog.label',
@@ -57,6 +58,7 @@ export const LOG_ANALYZER_CATEGORY_RECOMMENDATION_KEYS: Partial<Record<string, s
   'database-chmod': 'logAnalyzer.categories.database-chmod.recommendation',
   'database-writable': 'logAnalyzer.categories.database-writable.recommendation',
   'tak-server': 'logAnalyzer.categories.tak-server.recommendation',
+  'tak-remote': 'logAnalyzer.categories.tak-remote.recommendation',
   updater: 'logAnalyzer.categories.updater.recommendation',
   'meshcore-tcp': 'logAnalyzer.categories.meshcore-tcp.recommendation',
   'ble-meshcore-notify-watchdog':

@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Diğer uyarılar ve hatalar",
         "recommendation": "Bu günlük satırları bilinen bir tanıyla eşleşmez ve beklenen kurtarma mesajlarını içerebilir. Zaman damgalarını ve çevresindeki bağlamı gözden geçirin. Bir sorun devam ederse, günlüğün tamamını bu raporla dışa aktarın."
+      },
+      "tak-remote": {
+        "label": "Uzaktan TAK Röle Sorunları",
+        "recommendation": "Uzaktan TAK rölesi bağlanamadı veya bağlantısını kaybetti. Sunucu adresini ve bağlantı noktasını ve içe aktarılan CA ve istemci sertifikasının o sunucuya ait olup olmadığını kontrol edin."
       }
     },
     "recommendationGroups": {

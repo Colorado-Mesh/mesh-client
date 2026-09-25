@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Sonstige Warnungen und Fehler",
         "recommendation": "Diese Protokolllinien stimmen nicht mit einer bekannten Diagnose überein und können erwartete Wiederherstellungsmeldungen enthalten. Überprüfen Sie ihre Zeitstempel und den umgebenden Kontext. Wenn ein Problem weiterhin besteht, exportieren Sie das vollständige Protokoll mit diesem Bericht."
+      },
+      "tak-remote": {
+        "label": "Probleme mit dem Remote-TAK-Relay",
+        "recommendation": "Das Remote-TAK-Relay konnte keine Verbindung herstellen oder hat die Verbindung verloren. Prüfen Sie Serveradresse und Port und ob die importierte CA und das Client-Zertifikat zu diesem Server gehören."
       }
     },
     "recommendationGroups": {

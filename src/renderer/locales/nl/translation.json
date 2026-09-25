@@ -2250,6 +2250,10 @@
       "unclassified": {
         "label": "Andere waarschuwingen en fouten",
         "recommendation": "Deze logregels komen niet overeen met een bekende diagnose en kunnen verwachte herstelberichten bevatten. Bekijk hun tijdstempels en omringende context. Als een probleem zich blijft voordoen, exporteer dan het volledige logboek met dit rapport."
+      },
+      "tak-remote": {
+        "label": "Remote TAK Relay Problemen",
+        "recommendation": "Het externe TAK-RELAIS kon geen verbinding maken of verloor zijn verbinding. Controleer het serveradres en de poort en of de geïmporteerde CA en het clientcertificaat tot die server behoren."
       }
     },
     "recommendationGroups": {

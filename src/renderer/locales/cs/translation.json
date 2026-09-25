@@ -2277,6 +2277,10 @@
       "unclassified": {
         "label": "Další varování a chyby",
         "recommendation": "Tyto řádky protokolu neodpovídají známé diagnóze a mohou obsahovat očekávané zprávy o obnovení. Zkontrolujte jejich časová razítka a okolní kontext. Pokud problém přetrvává, exportujte celý protokol s touto zprávou."
+      },
+      "tak-remote": {
+        "label": "Problémy se vzdáleným relé TAK",
+        "recommendation": "Vzdálené relé TAK se nemohlo připojit nebo ztratilo spojení. Zkontrolujte adresu a port serveru a zda importovaná certifikační autorita a klientský certifikát patří k tomuto serveru."
       }
     },
     "recommendationGroups": {
