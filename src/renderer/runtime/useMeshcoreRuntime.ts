@@ -151,7 +151,7 @@ import {
   registerMeshcoreContactsFullOffloadRunner,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
-import { syncMeshcoreDmAckToMessageStore } from '../lib/meshcore/meshcoreDmAckRuntime';
+import { armMeshcoreDmAckPending } from '../lib/meshcore/meshcoreDmAckRuntime';
 import type {
   CayenneLppEntry,
   DeviceLogEntry,
@@ -8076,57 +8076,24 @@ export function useMeshcoreRuntime() {
   }, [meshcoreIdentityId, state, mqttStatus]);
 
   const scheduleMeshcoreDmAckPendingImpl = useCallback(
-    ({
-      identityId,
-      ackKeyU32,
-      estTimeoutMs,
-      destNodeId,
-    }: {
+    (params: {
       identityId: IdentityId;
       ackKeyU32: number;
       estTimeoutMs: number;
       destNodeId?: number;
     }) => {
-      const pendingMapKeys = meshcorePendingDmAckMapKeys(ackKeyU32);
+      const destNodeId = params.destNodeId;
       const outPathRaw = destNodeId != null ? outPathMapRef.current.get(destNodeId) : undefined;
-      const sendPathBytes = outPathRaw && outPathRaw.length > 0 ? Array.from(outPathRaw) : [];
-      const sendPathHash = sendPathBytes.length > 0 ? computePathHash(sendPathBytes) : '';
       const hopsAway =
         destNodeId != null
           ? (getIdentityNode(meshcoreIdentityIdRef.current, destNodeId)?.hops_away ?? 0)
           : 0;
-      if (sendPathBytes.length > 0 && destNodeId != null) {
-        usePathHistoryStore
-          .getState()
-          .recordPathUpdated(destNodeId, sendPathBytes, hopsAway, false);
-      }
-      const timeoutId = setTimeout(() => {
-        for (const k of pendingMapKeys) {
-          pendingAcksRef.current.delete(k);
-        }
-        if (destNodeId != null && sendPathHash) {
-          usePathHistoryStore.getState().recordOutcome(destNodeId, sendPathHash, false);
-        }
-        syncMeshcoreDmAckToMessageStore(identityId, ackKeyU32, myNodeNumRef.current, 'failed');
-        void window.electronAPI.db
-          .updateMeshcoreMessageStatus(ackKeyU32, 'failed')
-          .catch((e: unknown) => {
-            console.warn(
-              '[useMeshcoreRuntime] updateMeshcoreMessageStatus (DM ack timeout) error ' +
-                errLikeToLogString(e),
-            );
-          });
-      }, estTimeoutMs);
-      const pendingEntry: PendingDmAckEntry = {
-        timeoutId,
-        mapKeys: pendingMapKeys,
-        canonicalPacketIdU32: ackKeyU32,
-        destNodeId,
-        pathHash: sendPathHash,
-      };
-      for (const k of pendingMapKeys) {
-        pendingAcksRef.current.set(k, pendingEntry);
-      }
+      armMeshcoreDmAckPending(params, {
+        pendingAcks: pendingAcksRef.current,
+        getSelfNodeId: () => myNodeNumRef.current,
+        outPath: outPathRaw,
+        hopsAway,
+      });
     },
     [],
   );
