@@ -8,18 +8,18 @@ export function reconnectBannerMaxAttempts(connectionType: string | null | undef
 
 /** Text stays fully opaque; pulse animation is on the status dot/icon only (contrast). */
 export const CONNECTION_HEADER_PULSE_RED_TEXT = 'text-red-400';
-export const CONNECTION_HEADER_PULSE_RED_ICON = 'animate-pulse text-red-400';
-export const CONNECTION_HEADER_PULSE_RED_DOT = 'bg-red-500 animate-pulse';
+export const CONNECTION_HEADER_PULSE_RED_ICON = 'animate-pulse motion-status text-red-400';
+export const CONNECTION_HEADER_PULSE_RED_DOT = 'bg-red-500 animate-pulse motion-status';
 export const CONNECTION_HEADER_IDLE_TEXT = 'text-gray-400';
 export const CONNECTION_HEADER_IDLE_DOT = 'bg-gray-500';
 export const CONNECTION_HEADER_WARN_TEXT = 'text-yellow-400';
-export const CONNECTION_HEADER_WARN_ICON = 'animate-pulse text-yellow-400';
-export const CONNECTION_HEADER_WARN_DOT = 'bg-yellow-500 animate-pulse';
+export const CONNECTION_HEADER_WARN_ICON = 'animate-pulse motion-status text-yellow-400';
+export const CONNECTION_HEADER_WARN_DOT = 'bg-yellow-500 animate-pulse motion-status';
 export const CONNECTION_HEADER_OK_TEXT = 'text-brand-green';
 export const CONNECTION_HEADER_OK_DOT = 'bg-green-500';
 /** Small pulsing dot for in-progress room login (matches header connecting style, green). */
 export const ROOM_LOGIN_PROGRESS_DOT =
-  'inline-block h-2 w-2 shrink-0 rounded-full bg-brand-green animate-pulse';
+  'inline-block h-2 w-2 shrink-0 rounded-full bg-brand-green animate-pulse motion-status';
 export const CONNECTION_HEADER_CONNECTED_DOT = 'bg-blue-500';
 export const CONNECTION_HEADER_MUTED_TEXT = 'text-muted';
 

@@ -43,7 +43,7 @@ export function MecpSeverityBadge({
       {pulse && severity <= 1 ? (
         <span
           aria-hidden
-          className={`absolute inset-0 animate-pulse rounded ${MECP_SEVERITY_BADGE_CLASSES[severity]} opacity-60`}
+          className={`motion-status absolute inset-0 animate-pulse rounded ${MECP_SEVERITY_BADGE_CLASSES[severity]} opacity-60`}
         />
       ) : null}
       <span

@@ -47,6 +47,25 @@
   --color-message-action-button-hover: #94a3b8;
 }
 
+/*
+ * App > Appearance > Reduce motion (seeded from the OS setting on first run): stop decorative
+ * pulses and shorten transitions app-wide. Spinners and status pulses (class `motion-status`:
+ * connecting, logging in, sending, MAYDAY / URGENT) keep moving, as the setting's description
+ * promises. Also spares the battery on field laptops.
+ */
+html[data-reduce-motion='true'] .animate-pulse:not(.motion-status),
+html[data-reduce-motion='true'] .animate-ping:not(.motion-status),
+html[data-reduce-motion='true'] .animate-bounce:not(.motion-status) {
+  animation: none !important;
+}
+
+html[data-reduce-motion='true'] *,
+html[data-reduce-motion='true'] *::before,
+html[data-reduce-motion='true'] *::after {
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
 /* Leaflet container needs explicit height */
 .leaflet-container {
   width: 100%;

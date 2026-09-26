@@ -43,7 +43,7 @@ export function MeshcoreFloodAdvertHeaderButton({ disabled, onSend }: Props) {
     >
       <RadioTower
         aria-hidden
-        className={`h-3.5 w-3.5 ${sending ? 'animate-pulse' : ''}`}
+        className={`h-3.5 w-3.5 ${sending ? 'motion-status animate-pulse' : ''}`}
         size={14}
       />
       <span className="hidden xl:inline">{t('radioPanel.floodAdvertButton')}</span>

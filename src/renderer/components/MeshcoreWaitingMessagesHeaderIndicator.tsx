@@ -26,7 +26,7 @@ function WaitingMessagesSpinner() {
 function WaitingMessagesDeferredIcon() {
   return (
     <span
-      className="inline-block h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-amber-400"
+      className="motion-status inline-block h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-amber-400"
       aria-hidden
     />
   );
