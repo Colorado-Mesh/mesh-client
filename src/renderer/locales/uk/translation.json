@@ -838,7 +838,14 @@
       "empty": "Немає відповідних каналів"
     },
     "toolbarLabel": "Інструменти розмови",
-    "composeHint": "Enter, щоб надіслати; Shift+Enter для нового рядка"
+    "composeHint": "Enter, щоб надіслати; Shift+Enter для нового рядка",
+    "dmSwitcher": {
+      "trigger": "Усі особисті повідомлення ({{total}})",
+      "triggerWithUnread": "Усі особисті повідомлення ({{total}}), непрочитаних: {{unread}}",
+      "search": "Знайти розмову",
+      "listLabel": "Особисті повідомлення",
+      "empty": "Немає відповідних розмов"
+    }
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

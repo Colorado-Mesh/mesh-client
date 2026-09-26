@@ -96,3 +96,33 @@ describe('ChatChannelSwitcher', () => {
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 });
+
+describe('ChatChannelSwitcher for direct messages', () => {
+  const DMS = [
+    { index: 0x1a2b3c4d, name: 'Trail Dave' },
+    { index: 0x0badf00d, name: 'Ridge Fox' },
+    { index: 0x12345678, name: 'Mesa HQ' },
+  ];
+
+  it('uses the direct message wording and finds a conversation by name', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    render(
+      <ChatChannelSwitcher
+        kind="dms"
+        channels={DMS}
+        unreadCounts={new Map([[0x0badf00d, 2]])}
+        activeIndex={0x1a2b3c4d}
+        onSelect={onSelect}
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: 'All direct messages (3), 2 unread' });
+    await user.click(trigger);
+    expect(screen.getByRole('listbox', { name: 'Direct messages' })).toBeInTheDocument();
+    // Node numbers are not shown the way channel indexes are.
+    expect(screen.queryByText(String(0x0badf00d))).not.toBeInTheDocument();
+    await user.type(screen.getByRole('combobox', { name: 'Find a conversation' }), 'ridge');
+    await user.keyboard('{Enter}');
+    expect(onSelect).toHaveBeenCalledWith(0x0badf00d);
+  });
+});

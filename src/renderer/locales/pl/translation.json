@@ -838,7 +838,14 @@
       "empty": "Brak pasujących kanałów"
     },
     "toolbarLabel": "Narzędzia rozmowy",
-    "composeHint": "Enter, aby wysłać; Shift+Enter, aby dodać nowy wiersz"
+    "composeHint": "Enter, aby wysłać; Shift+Enter, aby dodać nowy wiersz",
+    "dmSwitcher": {
+      "trigger": "Wszystkie wiadomości prywatne ({{total}})",
+      "triggerWithUnread": "Wszystkie wiadomości prywatne ({{total}}), nieprzeczytane: {{unread}}",
+      "search": "Znajdź rozmowę",
+      "listLabel": "Wiadomości prywatne",
+      "empty": "Brak pasujących rozmów"
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

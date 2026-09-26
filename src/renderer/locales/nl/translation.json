@@ -800,7 +800,14 @@
       "empty": "Geen kanalen gevonden"
     },
     "toolbarLabel": "Gesprekshulpmiddelen",
-    "composeHint": "Enter om te verzenden, Shift+Enter voor een nieuwe regel"
+    "composeHint": "Enter om te verzenden, Shift+Enter voor een nieuwe regel",
+    "dmSwitcher": {
+      "trigger": "Alle privéberichten ({{total}})",
+      "triggerWithUnread": "Alle privéberichten ({{total}}), {{unread}} ongelezen",
+      "search": "Gesprek zoeken",
+      "listLabel": "Privéberichten",
+      "empty": "Geen gesprekken gevonden"
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

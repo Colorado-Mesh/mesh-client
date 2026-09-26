@@ -800,7 +800,14 @@
       "empty": "Aucun canal ne correspond"
     },
     "toolbarLabel": "Outils de conversation",
-    "composeHint": "Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne"
+    "composeHint": "Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne",
+    "dmSwitcher": {
+      "trigger": "Tous les messages privés ({{total}})",
+      "triggerWithUnread": "Tous les messages privés ({{total}}), {{unread}} non lus",
+      "search": "Rechercher une conversation",
+      "listLabel": "Messages privés",
+      "empty": "Aucune conversation ne correspond"
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

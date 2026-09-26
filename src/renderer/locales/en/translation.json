@@ -800,7 +800,14 @@
       "empty": "No channels match"
     },
     "toolbarLabel": "Conversation tools",
-    "composeHint": "Enter to send, Shift+Enter for a new line"
+    "composeHint": "Enter to send, Shift+Enter for a new line",
+    "dmSwitcher": {
+      "trigger": "All direct messages ({{total}})",
+      "triggerWithUnread": "All direct messages ({{total}}), {{unread}} unread",
+      "search": "Find a conversation",
+      "listLabel": "Direct messages",
+      "empty": "No conversations match"
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

@@ -838,7 +838,14 @@
       "empty": "Нет подходящих каналов"
     },
     "toolbarLabel": "Инструменты беседы",
-    "composeHint": "Enter, чтобы отправить; Shift+Enter для новой строки"
+    "composeHint": "Enter, чтобы отправить; Shift+Enter для новой строки",
+    "dmSwitcher": {
+      "trigger": "Все личные сообщения ({{total}})",
+      "triggerWithUnread": "Все личные сообщения ({{total}}), непрочитанных: {{unread}}",
+      "search": "Найти беседу",
+      "listLabel": "Личные сообщения",
+      "empty": "Нет подходящих бесед"
+    }
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

@@ -820,7 +820,14 @@
       "empty": "Žádný kanál neodpovídá"
     },
     "toolbarLabel": "Nástroje konverzace",
-    "composeHint": "Enter pro odeslání, Shift+Enter pro nový řádek"
+    "composeHint": "Enter pro odeslání, Shift+Enter pro nový řádek",
+    "dmSwitcher": {
+      "trigger": "Všechny přímé zprávy ({{total}})",
+      "triggerWithUnread": "Všechny přímé zprávy ({{total}}), nepřečteno: {{unread}}",
+      "search": "Najít konverzaci",
+      "listLabel": "Přímé zprávy",
+      "empty": "Žádná konverzace neodpovídá"
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

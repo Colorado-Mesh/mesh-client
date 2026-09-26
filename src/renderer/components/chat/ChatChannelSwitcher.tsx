@@ -1,4 +1,4 @@
-import { ChevronDown, Hash } from 'lucide-react-motion';
+import { ChevronDown, Hash, Users } from 'lucide-react-motion';
 import type { KeyboardEvent } from 'react';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -20,6 +20,11 @@ export interface ChatChannelSwitcherProps {
   /** Channel open in the chat, or null while a DM or the starred view is open. */
   activeIndex: number | null;
   onSelect: (index: number) => void;
+  /**
+   * `channels` (default): channel strip, rows show the channel index. `dms`: the direct message
+   * row (option `index` is the node number), for people with dozens of open conversations.
+   */
+  kind?: 'channels' | 'dms';
 }
 
 /** Popover width in px at the default text size; rendered in rem so it grows with Text size. */
@@ -36,17 +41,19 @@ export function channelButtonLabel(name: string, unread: number): string {
 }
 
 /**
- * "Channels" trigger plus a searchable list of every channel. The strip beside it scrolls in one
- * row, so a radio with dozens of channels never pushes the messages down; this list is how you
- * reach the ones scrolled out of view.
+ * "Channels" (or "Direct messages") trigger plus a searchable list of every entry. The strip
+ * beside it scrolls in one row, so dozens of channels or open DMs never push the messages down;
+ * this list is how you reach the ones scrolled out of view.
  */
 export function ChatChannelSwitcher({
   channels,
   unreadCounts,
   activeIndex,
   onSelect,
+  kind = 'channels',
 }: ChatChannelSwitcherProps) {
   const { t } = useTranslation();
+  const isDms = kind === 'dms';
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
@@ -147,13 +154,23 @@ export function ChatChannelSwitcher({
       ?.scrollIntoView?.({ block: 'nearest' });
   }, [open, activeOption, optionIdPrefix]);
 
-  const triggerLabel =
-    unreadElsewhere > 0
-      ? t('chatPanel.channelSwitcher.triggerWithUnread', {
-          total: channels.length,
-          unread: formatUnread(unreadElsewhere),
-        })
-      : t('chatPanel.channelSwitcher.trigger', { total: channels.length });
+  const unreadText = formatUnread(unreadElsewhere);
+  const total = channels.length;
+  const triggerLabel = isDms
+    ? unreadElsewhere > 0
+      ? t('chatPanel.dmSwitcher.triggerWithUnread', { total, unread: unreadText })
+      : t('chatPanel.dmSwitcher.trigger', { total })
+    : unreadElsewhere > 0
+      ? t('chatPanel.channelSwitcher.triggerWithUnread', { total, unread: unreadText })
+      : t('chatPanel.channelSwitcher.trigger', { total });
+  const searchLabel = isDms
+    ? t('chatPanel.dmSwitcher.search')
+    : t('chatPanel.channelSwitcher.search');
+  const listLabel = isDms
+    ? t('chatPanel.dmSwitcher.listLabel')
+    : t('chatPanel.channelSwitcher.listLabel');
+  const emptyLabel = isDms ? t('chatPanel.dmSwitcher.empty') : t('chatPanel.channelSwitcher.empty');
+  const TriggerIcon = isDms ? Users : Hash;
 
   return (
     <>
@@ -170,7 +187,7 @@ export function ChatChannelSwitcher({
         }}
         className="border-secondary-dark bg-sidebar-active-bg hover:bg-secondary-dark text-control inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 font-medium text-slate-200 transition-colors"
       >
-        <Hash aria-hidden className={`${ICON_SM_PLUS} text-muted`} size={14} />
+        <TriggerIcon aria-hidden className={`${ICON_SM_PLUS} text-muted`} size={14} />
         <span className="text-meta font-mono text-slate-300 tabular-nums">{channels.length}</span>
         {unreadElsewhere > 0 && (
           <span
@@ -206,8 +223,8 @@ export function ChatChannelSwitcher({
                 aria-activedescendant={
                   activeOption ? `${optionIdPrefix}-${activeOption.index}` : undefined
                 }
-                aria-label={t('chatPanel.channelSwitcher.search')}
-                placeholder={t('chatPanel.channelSwitcher.search')}
+                aria-label={searchLabel}
+                placeholder={searchLabel}
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
@@ -220,13 +237,11 @@ export function ChatChannelSwitcher({
             <div
               id={listId}
               role="listbox"
-              aria-label={t('chatPanel.channelSwitcher.listLabel')}
+              aria-label={listLabel}
               className="min-h-0 flex-1 overflow-y-auto p-1"
             >
               {filtered.length === 0 ? (
-                <p className="text-muted px-2.5 py-3 text-center text-xs">
-                  {t('chatPanel.channelSwitcher.empty')}
-                </p>
+                <p className="text-muted px-2.5 py-3 text-center text-xs">{emptyLabel}</p>
               ) : (
                 filtered.map((ch) => {
                   const unread = ch.index === activeIndex ? 0 : (unreadCounts.get(ch.index) ?? 0);
@@ -257,9 +272,11 @@ export function ChatChannelSwitcher({
                         highlighted ? 'bg-sidebar-active-bg text-slate-100' : 'text-slate-300'
                       }`}
                     >
-                      <span className="text-muted text-label w-6 shrink-0 font-mono tabular-nums">
-                        {ch.index}
-                      </span>
+                      {!isDms && (
+                        <span className="text-muted text-label w-6 shrink-0 font-mono tabular-nums">
+                          {ch.index}
+                        </span>
+                      )}
                       <span
                         className={`min-w-0 flex-1 truncate ${selected ? 'text-bright-green font-medium' : ''}`}
                       >

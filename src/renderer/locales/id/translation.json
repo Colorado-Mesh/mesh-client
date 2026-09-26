@@ -800,7 +800,14 @@
       "empty": "Tidak ada kanal yang cocok"
     },
     "toolbarLabel": "Alat percakapan",
-    "composeHint": "Enter untuk mengirim, Shift+Enter untuk baris baru"
+    "composeHint": "Enter untuk mengirim, Shift+Enter untuk baris baru",
+    "dmSwitcher": {
+      "trigger": "Semua pesan langsung ({{total}})",
+      "triggerWithUnread": "Semua pesan langsung ({{total}}), {{unread}} belum dibaca",
+      "search": "Cari percakapan",
+      "listLabel": "Pesan langsung",
+      "empty": "Tidak ada percakapan yang cocok"
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

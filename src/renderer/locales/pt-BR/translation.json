@@ -800,7 +800,14 @@
       "empty": "Nenhum canal corresponde"
     },
     "toolbarLabel": "Ferramentas da conversa",
-    "composeHint": "Enter para enviar, Shift+Enter para nova linha"
+    "composeHint": "Enter para enviar, Shift+Enter para nova linha",
+    "dmSwitcher": {
+      "trigger": "Todas as mensagens diretas ({{total}})",
+      "triggerWithUnread": "Todas as mensagens diretas ({{total}}), {{unread}} não lidas",
+      "search": "Encontrar uma conversa",
+      "listLabel": "Mensagens diretas",
+      "empty": "Nenhuma conversa corresponde"
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

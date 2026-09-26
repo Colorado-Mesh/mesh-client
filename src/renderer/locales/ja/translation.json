@@ -800,7 +800,14 @@
       "empty": "一致するチャンネルはありません"
     },
     "toolbarLabel": "会話ツール",
-    "composeHint": "Enter で送信、Shift+Enter で改行"
+    "composeHint": "Enter で送信、Shift+Enter で改行",
+    "dmSwitcher": {
+      "trigger": "すべてのダイレクトメッセージ（{{total}}）",
+      "triggerWithUnread": "すべてのダイレクトメッセージ（{{total}}）、未読 {{unread}}",
+      "search": "会話を検索",
+      "listLabel": "ダイレクトメッセージ",
+      "empty": "一致する会話はありません"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

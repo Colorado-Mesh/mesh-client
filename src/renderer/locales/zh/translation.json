@@ -800,7 +800,14 @@
       "empty": "没有匹配的频道"
     },
     "toolbarLabel": "会话工具",
-    "composeHint": "按 Enter 发送，Shift+Enter 换行"
+    "composeHint": "按 Enter 发送，Shift+Enter 换行",
+    "dmSwitcher": {
+      "trigger": "所有私信（{{total}}）",
+      "triggerWithUnread": "所有私信（{{total}}），{{unread}} 条未读",
+      "search": "查找会话",
+      "listLabel": "私信",
+      "empty": "没有匹配的会话"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",

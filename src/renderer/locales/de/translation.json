@@ -800,7 +800,14 @@
       "empty": "Keine passenden Kanäle"
     },
     "toolbarLabel": "Unterhaltungswerkzeuge",
-    "composeHint": "Eingabetaste zum Senden, Umschalt+Eingabetaste für eine neue Zeile"
+    "composeHint": "Eingabetaste zum Senden, Umschalt+Eingabetaste für eine neue Zeile",
+    "dmSwitcher": {
+      "trigger": "Alle Direktnachrichten ({{total}})",
+      "triggerWithUnread": "Alle Direktnachrichten ({{total}}), {{unread}} ungelesen",
+      "search": "Unterhaltung suchen",
+      "listLabel": "Direktnachrichten",
+      "empty": "Keine passenden Unterhaltungen"
+    }
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

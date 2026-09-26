@@ -2440,6 +2440,15 @@ function ChatPanel({
   const dmTabPills = (
     <>
       <span className="text-muted shrink-0 text-xs font-medium">{t('chatPanel.dms')}</span>
+      {visibleDmTabs.length > 0 && (
+        <ChatChannelSwitcher
+          kind="dms"
+          channels={visibleDmTabs.map((nodeNum) => ({ index: nodeNum, name: getDmLabel(nodeNum) }))}
+          unreadCounts={dmUnreadCounts}
+          activeIndex={viewMode === 'dm' ? activeDmNode : null}
+          onSelect={openDmTo}
+        />
+      )}
       {visibleDmTabs.length === 0 ? (
         <span className="text-muted text-xs">
           {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}

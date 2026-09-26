@@ -800,7 +800,14 @@
       "empty": "Ningún canal coincide"
     },
     "toolbarLabel": "Herramientas de la conversación",
-    "composeHint": "Intro para enviar, Mayús+Intro para una nueva línea"
+    "composeHint": "Intro para enviar, Mayús+Intro para una nueva línea",
+    "dmSwitcher": {
+      "trigger": "Todos los mensajes directos ({{total}})",
+      "triggerWithUnread": "Todos los mensajes directos ({{total}}), {{unread}} sin leer",
+      "search": "Buscar una conversación",
+      "listLabel": "Mensajes directos",
+      "empty": "Ninguna conversación coincide"
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

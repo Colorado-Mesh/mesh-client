@@ -800,7 +800,14 @@
       "empty": "Nessun canale corrispondente"
     },
     "toolbarLabel": "Strumenti della conversazione",
-    "composeHint": "Invio per inviare, Maiusc+Invio per andare a capo"
+    "composeHint": "Invio per inviare, Maiusc+Invio per andare a capo",
+    "dmSwitcher": {
+      "trigger": "Tutti i messaggi diretti ({{total}})",
+      "triggerWithUnread": "Tutti i messaggi diretti ({{total}}), {{unread}} non letti",
+      "search": "Trova una conversazione",
+      "listLabel": "Messaggi diretti",
+      "empty": "Nessuna conversazione corrispondente"
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

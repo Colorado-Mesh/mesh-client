@@ -800,7 +800,14 @@
       "empty": "일치하는 채널이 없습니다"
     },
     "toolbarLabel": "대화 도구",
-    "composeHint": "Enter 키로 보내기, Shift+Enter 키로 줄 바꿈"
+    "composeHint": "Enter 키로 보내기, Shift+Enter 키로 줄 바꿈",
+    "dmSwitcher": {
+      "trigger": "모든 개인 메시지 ({{total}})",
+      "triggerWithUnread": "모든 개인 메시지 ({{total}}), 읽지 않음 {{unread}}",
+      "search": "대화 찾기",
+      "listLabel": "개인 메시지",
+      "empty": "일치하는 대화가 없습니다"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

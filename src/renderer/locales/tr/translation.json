@@ -800,7 +800,14 @@
       "empty": "Eşleşen kanal yok"
     },
     "toolbarLabel": "Sohbet araçları",
-    "composeHint": "Göndermek için Enter, yeni satır için Shift+Enter"
+    "composeHint": "Göndermek için Enter, yeni satır için Shift+Enter",
+    "dmSwitcher": {
+      "trigger": "Tüm doğrudan mesajlar ({{total}})",
+      "triggerWithUnread": "Tüm doğrudan mesajlar ({{total}}), {{unread}} okunmamış",
+      "search": "Sohbet bul",
+      "listLabel": "Doğrudan mesajlar",
+      "empty": "Eşleşen sohbet yok"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
