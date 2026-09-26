@@ -14,17 +14,50 @@
   --color-muted: #a1a1aa;
 
   /*
-   * UI text sizes between Tailwind's text-xs (12px) and text-sm (14px), in rem so App > Appearance
-   * > Text size scales them with everything else. Never use px font sizes (text-[13px]).
+   * Type scale from the Colorado Mesh style guide (IBM Plex Sans / Mono), in rem so App > Appearance
+   * > Text size scales everything. Readable text is 12px or larger (caption); 13px is the dense body,
+   * 14px the standard body. The two smaller steps are for count pills and badge text only. Never use
+   * px font sizes (text-[13px]).
    */
-  --text-3xs: 0.5625rem; /* 9px */
-  --text-2xs: 0.625rem; /* 10px: badges */
-  --text-label: 0.6875rem; /* 11px: rail labels, captions */
-  --text-meta: 0.71875rem; /* 11.5px: mono metadata */
-  --text-control: 0.78125rem; /* 12.5px: small buttons, chips */
-  --text-body: 0.8125rem; /* 13px: rows, inputs, menu items */
-  --text-body-lg: 0.84375rem; /* 13.5px */
-  --text-title: 0.9375rem; /* 15px: pane titles */
+  --text-3xs: 0.625rem; /* 10px: count pills only */
+  --text-3xs--line-height: 0.875rem;
+  --text-2xs: 0.6875rem; /* 11px: badges and tags only */
+  --text-2xs--line-height: 1rem;
+  --text-label: 0.75rem; /* 12px: caption, rail labels, field labels */
+  --text-label--line-height: 1rem;
+  --text-meta: 0.75rem; /* 12px: mono metadata */
+  --text-meta--line-height: 1rem;
+  --text-control: 0.8125rem; /* 13px: small buttons, chips */
+  --text-control--line-height: 1.125rem;
+  --text-body: 0.8125rem; /* 13px: dense body — rows, inputs, menu items */
+  --text-body--line-height: 1.125rem;
+  --text-body-lg: 0.875rem; /* 14px: body — chat messages, paragraphs */
+  --text-body-lg--line-height: 1.25rem;
+  --text-title: 1rem; /* 16px: H4 — pane titles */
+  --text-title--line-height: 1.375rem;
+
+  /*
+   * Radius tokens (style guide): rounded-badge 2px (badges, chips, tags), rounded-control 4px
+   * (buttons, inputs, selects), rounded-card 6px (cards, panels, popovers, menus), rounded-modal 8px
+   * (modals, sheets), rounded-container 12px (page sections). Change a whole family here.
+   */
+  --radius-badge: 0.125rem;
+  --radius-control: 0.25rem;
+  --radius-card: 0.375rem;
+  --radius-modal: 0.5rem;
+  --radius-container: 0.75rem;
+
+  /*
+   * Elevation for dark surfaces (style guide): Tailwind's default shadows vanish on near-black, so
+   * each level is darker and wider. xs/sm level 1 (cards), md level 2 (dropdowns, popovers), lg
+   * level 3 (modals), xl/2xl level 4 (toasts, floating panels).
+   */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.45), 0 1px 2px -1px rgb(0 0 0 / 0.45);
+  --shadow-md: 0 4px 8px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.45);
+  --shadow-lg: 0 10px 20px -3px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 20px 32px -5px rgb(0 0 0 / 0.6), 0 8px 12px -6px rgb(0 0 0 / 0.55);
+  --shadow-2xl: 0 28px 56px -12px rgb(0 0 0 / 0.7);
   /* Bundled IBM Plex (OFL-1.1, assets/fonts/plex) so the UI renders the same offline on every OS;
      system stacks cover scripts outside the bundled latin, latin-ext and cyrillic subsets (CJK). */
   --font-sans:

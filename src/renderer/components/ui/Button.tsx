@@ -8,7 +8,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 export type ButtonSize = 'sm' | 'md';
 
 const BUTTON_BASE =
-  'inline-flex shrink-0 items-center justify-center rounded-lg border font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex shrink-0 items-center justify-center rounded-control border font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-not-allowed disabled:opacity-50';
 
 export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'border-transparent bg-brand-green text-app-bg hover:bg-brand-green/90',
@@ -30,7 +30,7 @@ export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
  * line (App > Danger zone). Outline like `danger`, left-aligned, wraps instead of truncating.
  */
 export const DANGER_ROW_CLASS =
-  'flex w-full flex-col items-start gap-0.5 rounded-lg border border-red-400/45 bg-transparent px-3.5 py-2 text-left text-body font-medium text-red-400 transition-colors hover:bg-red-400/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-not-allowed disabled:opacity-50';
+  'flex w-full flex-col items-start gap-0.5 rounded-control border border-red-400/45 bg-transparent px-3.5 py-2 text-left text-body font-medium text-red-400 transition-colors hover:bg-red-400/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-not-allowed disabled:opacity-50';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -122,7 +122,7 @@ export function IconButton({
       type={type}
       title={title ?? rest['aria-label']}
       className={[
-        'focus-visible:outline-brand-green inline-flex shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'focus-visible:outline-brand-green rounded-control inline-flex shrink-0 items-center justify-center border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         ICON_BUTTON_SIZE[size],
         active ? ICON_BUTTON_ACTIVE[active] : ICON_BUTTON_VARIANT[variant],
         className,

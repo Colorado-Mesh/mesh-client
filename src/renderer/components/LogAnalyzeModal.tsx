@@ -145,7 +145,7 @@ export default function LogAnalyzeModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="log-analyze-title"
-        className="bg-deep-black relative z-10 flex max-h-[80vh] w-full max-w-2xl flex-col rounded-xl border border-zinc-700 shadow-2xl"
+        className="bg-deep-black rounded-modal relative z-10 flex max-h-[80vh] w-full max-w-2xl flex-col border border-zinc-700 shadow-lg"
       >
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-700 px-5 py-4">
           <h2 id="log-analyze-title" className="text-lg font-semibold text-zinc-100">

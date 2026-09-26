@@ -207,7 +207,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
       />
       <div
         ref={panelRef}
-        className="bg-deep-black relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-red-700/50 p-4 shadow-xl"
+        className="bg-deep-black rounded-modal relative max-h-[90vh] w-full max-w-lg overflow-y-auto border border-red-700/50 p-4 shadow-xl"
         role="dialog"
         aria-modal="true"
         aria-label={t('mecp.compose.title')}

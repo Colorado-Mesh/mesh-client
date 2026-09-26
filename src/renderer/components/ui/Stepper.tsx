@@ -57,7 +57,7 @@ export function Stepper({
       <label htmlFor={inputId} className="text-muted text-xs">
         {label}
       </label>
-      <div className="border-secondary-dark bg-app-bg inline-flex w-fit items-center overflow-hidden rounded-lg border">
+      <div className="border-secondary-dark bg-app-bg rounded-control inline-flex w-fit items-center overflow-hidden border">
         <button
           type="button"
           aria-label={t('ui.stepper.decrease', { label })}

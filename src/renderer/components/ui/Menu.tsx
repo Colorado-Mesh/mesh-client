@@ -156,7 +156,7 @@ export function Menu({
         top: position?.top ?? -9999,
         left: position?.left ?? -9999,
       }}
-      className="border-secondary-dark bg-deep-black fixed rounded-lg border p-1 shadow-2xl"
+      className="border-secondary-dark bg-deep-black rounded-card fixed border p-1 shadow-md"
     >
       {entries.map((entry, index) =>
         entry === 'separator' ? (
@@ -177,7 +177,7 @@ export function Menu({
               closeAndRefocus();
               entry.onSelect();
             }}
-            className={`text-body flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`text-body rounded-badge flex w-full items-start gap-2.5 px-2.5 py-2 text-left transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
               entry.tone === 'danger'
                 ? 'text-red-400 hover:bg-red-400/10 focus-visible:bg-red-400/10'
                 : 'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-zinc-200'
@@ -377,7 +377,7 @@ export function SplitButton({
     <div
       role="group"
       aria-label={groupLabel}
-      className={`flex shrink-0 overflow-hidden rounded-lg border ${SPLIT_GROUP[variant]}`}
+      className={`rounded-control flex shrink-0 overflow-hidden border ${SPLIT_GROUP[variant]}`}
     >
       <button
         type="button"

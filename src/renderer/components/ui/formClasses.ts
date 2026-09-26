@@ -8,7 +8,7 @@
  * no size: use the `*_CLASS` / `*_BOX_CLASS` constants below, which add height, padding and text.
  */
 export const FIELD_SURFACE_CLASS =
-  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green aria-invalid:border-red-500 rounded-lg border text-zinc-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green aria-invalid:border-red-500 rounded-control border text-zinc-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
 /** Text, number and search input without a width, for inputs sized by their row (`w-24`, `flex-1`). 32px, 40px on touch. */
 export const INPUT_BOX_CLASS = `${FIELD_SURFACE_CLASS} h-8 px-2.5 text-body pointer-coarse:h-10`;
@@ -46,7 +46,7 @@ export const CHECKBOX_CLASS = 'accent-brand-green h-4 w-4 shrink-0';
 /** Small toggle chip (`aria-pressed`) for presets and regions; `sm` fits inside list rows. */
 export function chipClass(active: boolean, size: 'sm' | 'md' = 'md'): string {
   const box = size === 'sm' ? 'h-6 px-2 text-label' : 'h-7 px-2.5 text-control';
-  return `${box} rounded-lg border font-medium transition-colors ${
+  return `${box} rounded-badge border font-medium transition-colors ${
     active
       ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
       : 'border-zinc-800 bg-deep-black text-zinc-300 hover:border-secondary-dark hover:text-zinc-100'
@@ -55,8 +55,9 @@ export function chipClass(active: boolean, size: 'sm' | 'md' = 'md'): string {
 
 /** Inline notices inside a panel. */
 export const NOTICE_CLASS: Record<'info' | 'warn' | 'error' | 'success', string> = {
-  info: 'rounded-lg border border-zinc-800 bg-app-bg px-3 py-2 text-xs text-zinc-300',
-  warn: 'rounded-lg border border-orange-700/50 bg-orange-950/40 px-3 py-2 text-xs text-orange-200',
-  error: 'rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-200',
-  success: 'rounded-lg border border-green-500/35 bg-green-500/10 px-3 py-2 text-xs text-green-300',
+  info: 'rounded-card border border-zinc-800 bg-app-bg px-3 py-2 text-xs text-zinc-300',
+  warn: 'rounded-card border border-orange-700/50 bg-orange-950/40 px-3 py-2 text-xs text-orange-200',
+  error: 'rounded-card border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-200',
+  success:
+    'rounded-card border border-green-500/35 bg-green-500/10 px-3 py-2 text-xs text-green-300',
 };

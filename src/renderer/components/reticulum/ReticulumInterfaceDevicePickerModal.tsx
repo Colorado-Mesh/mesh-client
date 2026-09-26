@@ -110,7 +110,7 @@ export function ReticulumInterfaceDevicePickerModal({
         role="dialog"
         aria-modal="true"
         aria-label={t(titleKey(mode))}
-        className="bg-deep-black relative w-full max-w-lg overflow-hidden rounded-lg border border-zinc-600 shadow-xl"
+        className="bg-deep-black rounded-modal relative w-full max-w-lg overflow-hidden border border-zinc-600 shadow-xl"
       >
         <div className="bg-secondary-dark flex items-center justify-between border-b border-zinc-600 px-4 py-2.5">
           <span className="text-sm font-medium text-zinc-200">{t(titleKey(mode))}</span>

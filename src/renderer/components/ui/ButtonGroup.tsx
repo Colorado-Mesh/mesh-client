@@ -14,7 +14,7 @@ export function ButtonGroup({
     <div
       role="group"
       aria-label={ariaLabel}
-      className={`border-secondary-dark bg-sidebar-active-bg [&>*+*]:border-secondary-dark flex shrink-0 overflow-hidden rounded-lg border [&>*+*]:border-l ${className ?? ''}`}
+      className={`border-secondary-dark bg-sidebar-active-bg [&>*+*]:border-secondary-dark rounded-control flex shrink-0 overflow-hidden border [&>*+*]:border-l ${className ?? ''}`}
     >
       {children}
     </div>

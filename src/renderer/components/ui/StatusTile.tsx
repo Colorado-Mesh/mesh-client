@@ -21,10 +21,10 @@ export interface StatusTileProps {
 export function StatusTile({ icon, label, status, tone, pulse, detail, action }: StatusTileProps) {
   const active = tone === 'ok';
   return (
-    <div className="bg-deep-black flex min-w-0 flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border border-zinc-800 px-4.5 py-4">
+    <div className="bg-deep-black rounded-card flex min-w-0 flex-wrap items-center gap-x-3.5 gap-y-2 border border-zinc-800 px-4.5 py-4">
       <span
         aria-hidden="true"
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${
+        className={`rounded-control flex h-10 w-10 shrink-0 items-center justify-center ${
           active ? 'bg-green-500/12 text-green-400' : 'bg-sidebar-active-bg text-muted'
         }`}
       >

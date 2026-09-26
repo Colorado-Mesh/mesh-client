@@ -133,7 +133,7 @@ export function ChatDmPaperShareControl({
         />
         <div
           ref={dialogPanelRef}
-          className="bg-deep-black relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-zinc-700 p-4 shadow-xl"
+          className="bg-deep-black rounded-modal relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto border border-zinc-700 p-4 shadow-xl"
           role="dialog"
           aria-modal="true"
           aria-label={t('chatPanel.shareAsPaperTitle')}

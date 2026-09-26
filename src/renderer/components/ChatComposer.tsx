@@ -1226,7 +1226,7 @@ export function ChatComposer({
               setGifPreviewFailed(false);
             }}
           />
-          <div className="bg-deep-black relative mx-4 w-full max-w-md space-y-4 rounded-xl border border-zinc-600 p-6 shadow-2xl">
+          <div className="bg-deep-black rounded-modal relative mx-4 w-full max-w-md space-y-4 border border-zinc-600 p-6 shadow-lg">
             <h3 className="text-lg font-semibold text-zinc-200">
               {t('chatPanel.meshcoreGifTitle')}
             </h3>
