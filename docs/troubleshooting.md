@@ -2028,7 +2028,7 @@ App → MECP → **Show MECP button in Chat** is off by default. Enable it to sh
 - **Acknowledge** (R01) or **Confirm** (B02 for an active beacon) — best-effort on the mesh, not a read receipt
 - **Resolve** to close the incident on this workstation only
 
-Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP or you enable Chat compose / MAYDAY under App → MECP. See the README **EMCOMM / Incident Command** section and [`docs/agents/emcomm.md`](agents/emcomm.md).
+Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP or you enable Chat compose under App → MECP. See the README **EMCOMM / Incident Command** section and [`docs/agents/emcomm.md`](agents/emcomm.md).
 
 **MAYDAY stuck / “will send when connected”**
 
