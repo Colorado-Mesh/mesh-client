@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Laat leeg om de verouderde drempelwaarde van elk protocol te gebruiken. Escalatie vuurt op 2× deze waarde.",
     "nodeBatteryLowThreshold": "Batterij-lage drempel (%)",
     "notifyOnLinkDown": "Melding bij onverwachte radio link-down",
-    "aboutSection": "Over"
+    "aboutSection": "Over",
+    "themePresets": {
+      "heading": "Thema",
+      "hint": "Kies een startpalet en pas daaronder losse kleuren aan.",
+      "custom": "Eigen kleuren. Kies een thema om opnieuw te beginnen vanaf een voorinstelling.",
+      "default": "Standaard",
+      "highContrast": "Hoog contrast",
+      "midnight": "Middernacht",
+      "teal": "Petrol accent",
+      "amber": "Amber accent"
+    }
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

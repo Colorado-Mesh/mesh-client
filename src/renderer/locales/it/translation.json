@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Lasciare vuoto per utilizzare la soglia obsoleta di ciascun protocollo. L'escalation spara a 2× questo valore.",
     "nodeBatteryLowThreshold": "Soglia batteria bassa (%)",
     "notifyOnLinkDown": "Notifica in caso di link-down radio imprevisto",
-    "aboutSection": "Informazioni"
+    "aboutSection": "Informazioni",
+    "themePresets": {
+      "heading": "Tema",
+      "hint": "Scegli una tavolozza di partenza, poi regola i singoli colori qui sotto.",
+      "custom": "Colori personalizzati. Scegli un tema per ripartire da una preimpostazione.",
+      "default": "Predefinito",
+      "highContrast": "Contrasto elevato",
+      "midnight": "Mezzanotte",
+      "teal": "Accento verde acqua",
+      "amber": "Accento ambra"
+    }
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

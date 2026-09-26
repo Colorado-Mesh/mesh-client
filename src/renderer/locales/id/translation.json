@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Biarkan kosong untuk menggunakan ambang batas basi setiap protokol. Eskalasi terjadi pada 2× nilai ini.",
     "nodeBatteryLowThreshold": "Ambang batas rendah baterai (%)",
     "notifyOnLinkDown": "Beri tahu tentang tautan radio yang tidak terduga",
-    "aboutSection": "Tentang"
+    "aboutSection": "Tentang",
+    "themePresets": {
+      "heading": "Tema",
+      "hint": "Pilih palet awal, lalu sesuaikan warna satu per satu di bawah.",
+      "custom": "Warna kustom. Pilih tema untuk mulai lagi dari preset.",
+      "default": "Bawaan",
+      "highContrast": "Kontras tinggi",
+      "midnight": "Tengah malam",
+      "teal": "Aksen teal",
+      "amber": "Aksen amber"
+    }
   },
   "aria": {
     "closeDialog": "Tutup dialog",

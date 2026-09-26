@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "각 프로토콜의 유효하지 않은 임계값을 사용하려면 비워 두십시오. 에스컬레이션은 이 값의 2배에 해당합니다.",
     "nodeBatteryLowThreshold": "배터리 부족 임계값 (%)",
     "notifyOnLinkDown": "예기치 않은 라디오 링크 다운 알림",
-    "aboutSection": "정보"
+    "aboutSection": "정보",
+    "themePresets": {
+      "heading": "테마",
+      "hint": "기본 팔레트를 고른 뒤 아래에서 개별 색상을 조정하세요.",
+      "custom": "사용자 지정 색상입니다. 테마를 고르면 프리셋에서 다시 시작합니다.",
+      "default": "기본값",
+      "highContrast": "고대비",
+      "midnight": "미드나이트",
+      "teal": "청록색 강조",
+      "amber": "호박색 강조"
+    }
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

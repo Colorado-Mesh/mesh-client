@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "各プロトコルの古いしきい値を使用するには、空白のままにします。エスカレーションはこの値の2倍で発生します。",
     "nodeBatteryLowThreshold": "バッテリー低閾値(%)",
     "notifyOnLinkDown": "予期しない無線リンクダウン時に通知する",
-    "aboutSection": "このアプリについて"
+    "aboutSection": "このアプリについて",
+    "themePresets": {
+      "heading": "テーマ",
+      "hint": "基本のパレットを選び、下で個別の色を調整します。",
+      "custom": "カスタムカラーです。テーマを選ぶとプリセットからやり直せます。",
+      "default": "デフォルト",
+      "highContrast": "ハイコントラスト",
+      "midnight": "ミッドナイト",
+      "teal": "ティールのアクセント",
+      "amber": "アンバーのアクセント"
+    }
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

@@ -61,6 +61,7 @@ import {
   THEME_TOKEN_META,
   type ThemeColorKey,
 } from '../lib/themeColors';
+import { matchThemePreset, THEME_PRESETS, type ThemePreset } from '../lib/themePresets';
 import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -334,6 +335,15 @@ export default function AppPanel({
       persistThemeColors(applied);
       return applied;
     });
+  }, []);
+
+  const activeThemePresetId = useMemo(() => matchThemePreset(themeColors), [themeColors]);
+
+  const handleApplyThemePreset = useCallback((preset: ThemePreset) => {
+    const applied = applyThemeColors({ ...preset.colors });
+    if (!applied) return;
+    persistThemeColors(applied);
+    setThemeColors(applied);
   }, []);
 
   const handleSaveThemeSnapshot = useCallback(() => {
@@ -1990,6 +2000,60 @@ export default function AppPanel({
             </button>
           </div>
         </div>
+        <section aria-labelledby="app-theme-presets-heading" className="space-y-2">
+          <div>
+            <h4 id="app-theme-presets-heading" className="text-sm font-medium text-slate-200">
+              {t('appPanel.themePresets.heading')}
+            </h4>
+            <p className="text-muted text-xs">
+              {activeThemePresetId === null
+                ? t('appPanel.themePresets.custom')
+                : t('appPanel.themePresets.hint')}
+            </p>
+          </div>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-2">
+            {THEME_PRESETS.map((preset) => {
+              const active = activeThemePresetId === preset.id;
+              const c = preset.colors;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    handleApplyThemePreset(preset);
+                  }}
+                  className={`flex flex-col gap-2 rounded-lg border p-2 text-left transition-colors ${
+                    active
+                      ? 'border-brand-green/35 bg-brand-green/12'
+                      : 'bg-deep-black hover:border-secondary-dark border-slate-800'
+                  }`}
+                >
+                  {/* Mini preview: app background, a card, the accent and muted text. */}
+                  <span
+                    aria-hidden="true"
+                    className="flex h-10 items-center gap-1.5 rounded-md border px-2"
+                    style={{ backgroundColor: c.appBg, borderColor: c.sidebarActiveBg }}
+                  >
+                    <span
+                      className="h-6 flex-1 rounded"
+                      style={{
+                        backgroundColor: c.deepBlack,
+                        border: `1px solid ${c.secondaryDark}`,
+                      }}
+                    />
+                    <span
+                      className="h-4 w-4 rounded-full"
+                      style={{ backgroundColor: c.brandGreen }}
+                    />
+                    <span className="h-1.5 w-5 rounded-full" style={{ backgroundColor: c.muted }} />
+                  </span>
+                  <span className="text-body font-medium text-slate-200">{t(preset.labelKey)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
         <details className="group bg-secondary-dark rounded-lg border border-gray-700">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">
             <span>{t('appPanel.colorScheme')}</span>

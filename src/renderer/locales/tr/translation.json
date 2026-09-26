@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Her protokolün eski eşiğini kullanmak için boş bırakın. Bu değerin 2 katında eskalasyon yangınları.",
     "nodeBatteryLowThreshold": "Pil alt eşiği (%)",
     "notifyOnLinkDown": "Beklenmedik radyo bağlantısı kesildiğinde bildir",
-    "aboutSection": "Hakkında"
+    "aboutSection": "Hakkında",
+    "themePresets": {
+      "heading": "Tema",
+      "hint": "Bir başlangıç paleti seçin, ardından aşağıda tek tek renkleri ayarlayın.",
+      "custom": "Özel renkler. Hazır ayardan yeniden başlamak için bir tema seçin.",
+      "default": "Varsayılan",
+      "highContrast": "Yüksek kontrast",
+      "midnight": "Gece yarısı",
+      "teal": "Camgöbeği vurgu",
+      "amber": "Kehribar vurgu"
+    }
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

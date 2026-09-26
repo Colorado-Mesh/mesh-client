@@ -427,7 +427,17 @@
       "orange400": "Orange 400",
       "yellow400": "Yellow 400"
     },
-    "aboutSection": "About"
+    "aboutSection": "About",
+    "themePresets": {
+      "heading": "Theme",
+      "hint": "Pick a starting palette, then adjust single colors below.",
+      "custom": "Custom colors. Pick a theme to start over from a preset.",
+      "default": "Default",
+      "highContrast": "High contrast",
+      "midnight": "Midnight",
+      "teal": "Teal accent",
+      "amber": "Amber accent"
+    }
   },
   "aria": {
     "closeDialog": "Close dialog",

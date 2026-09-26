@@ -443,7 +443,17 @@
     "nodeSilenceAlertMinutesHint": "Pozostaw puste, aby użyć nieaktualnego progu każdego protokołu. Eskalacja uruchamia się przy 2-krotności tej wartości.",
     "nodeBatteryLowThreshold": "Próg niskiego poziomu naładowania akumulatora (%)",
     "notifyOnLinkDown": "Powiadom o nieoczekiwanym wyłączeniu łącza radiowego",
-    "aboutSection": "O aplikacji"
+    "aboutSection": "O aplikacji",
+    "themePresets": {
+      "heading": "Motyw",
+      "hint": "Wybierz paletę startową, a potem dostosuj pojedyncze kolory poniżej.",
+      "custom": "Własne kolory. Wybierz motyw, aby zacząć od gotowego zestawu.",
+      "default": "Domyślny",
+      "highContrast": "Wysoki kontrast",
+      "midnight": "Północ",
+      "teal": "Akcent morski",
+      "amber": "Akcent bursztynowy"
+    }
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

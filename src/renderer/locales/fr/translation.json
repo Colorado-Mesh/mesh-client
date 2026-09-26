@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Laissez vide pour utiliser le seuil périmé de chaque protocole. L'escalade se déclenche à 2× cette valeur.",
     "nodeBatteryLowThreshold": "Seuil bas de la batterie (%)",
     "notifyOnLinkDown": "Notifier en cas de coupure inattendue de la liaison radio",
-    "aboutSection": "À propos"
+    "aboutSection": "À propos",
+    "themePresets": {
+      "heading": "Thème",
+      "hint": "Choisissez une palette de départ, puis ajustez les couleurs une à une ci-dessous.",
+      "custom": "Couleurs personnalisées. Choisissez un thème pour repartir d'un préréglage.",
+      "default": "Par défaut",
+      "highContrast": "Contraste élevé",
+      "midnight": "Minuit",
+      "teal": "Accent sarcelle",
+      "amber": "Accent ambre"
+    }
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

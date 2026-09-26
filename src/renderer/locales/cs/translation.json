@@ -435,7 +435,17 @@
     "nodeSilenceAlertMinutesHint": "Ponechte prázdné pro použití zastaralého prahu každého protokolu. Eskalace se spustí při 2násobku této hodnoty.",
     "nodeBatteryLowThreshold": "Prahová hodnota nízkého stavu baterie (%)",
     "notifyOnLinkDown": "Upozornit na nečekané rádiové spojení",
-    "aboutSection": "O aplikaci"
+    "aboutSection": "O aplikaci",
+    "themePresets": {
+      "heading": "Motiv",
+      "hint": "Vyberte výchozí paletu a níže upravte jednotlivé barvy.",
+      "custom": "Vlastní barvy. Vyberte motiv a začněte znovu od předvolby.",
+      "default": "Výchozí",
+      "highContrast": "Vysoký kontrast",
+      "midnight": "Půlnoc",
+      "teal": "Tyrkysový akcent",
+      "amber": "Jantarový akcent"
+    }
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

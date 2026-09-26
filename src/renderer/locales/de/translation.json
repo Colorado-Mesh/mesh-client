@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Leer lassen, um den veralteten Schwellenwert jedes Protokolls zu verwenden. Eskalationsfeuer bei 2x diesem Wert.",
     "nodeBatteryLowThreshold": "Batterieleistungsschwelle (%)",
     "notifyOnLinkDown": "Benachrichtigung bei unerwarteter Funkverbindung",
-    "aboutSection": "Über"
+    "aboutSection": "Über",
+    "themePresets": {
+      "heading": "Design",
+      "hint": "Wählen Sie eine Ausgangspalette und passen Sie unten einzelne Farben an.",
+      "custom": "Eigene Farben. Wählen Sie ein Design, um von einer Vorlage neu zu beginnen.",
+      "default": "Standard",
+      "highContrast": "Hoher Kontrast",
+      "midnight": "Mitternacht",
+      "teal": "Petrol-Akzent",
+      "amber": "Bernstein-Akzent"
+    }
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

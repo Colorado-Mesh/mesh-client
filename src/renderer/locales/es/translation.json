@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Déjelo en blanco para usar el umbral obsoleto de cada protocolo. La escalada se dispara a 2× este valor.",
     "nodeBatteryLowThreshold": "Umbral bajo de la batería (%)",
     "notifyOnLinkDown": "Notificar sobre un enlace de radio inesperado",
-    "aboutSection": "Acerca de"
+    "aboutSection": "Acerca de",
+    "themePresets": {
+      "heading": "Tema",
+      "hint": "Elige una paleta de partida y ajusta colores sueltos abajo.",
+      "custom": "Colores personalizados. Elige un tema para volver a empezar desde un ajuste predefinido.",
+      "default": "Predeterminado",
+      "highContrast": "Alto contraste",
+      "midnight": "Medianoche",
+      "teal": "Acento verde azulado",
+      "amber": "Acento ámbar"
+    }
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

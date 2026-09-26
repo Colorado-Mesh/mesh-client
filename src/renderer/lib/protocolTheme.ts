@@ -23,8 +23,10 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     monogram: 'MT',
     ariaSwitchKey: 'aria.switchToMeshtastic',
     ariaSwitchWithUnreadKey: 'aria.switchToMeshtasticWithUnread',
-    railActiveClass: 'bg-brand-green/15 text-brand-green ring-[1.5px] ring-inset ring-brand-green',
-    nameTextClass: 'text-bright-green',
+    // Fixed Meshtastic green (green-300, the default accent), not the themeable accent token, so the
+    // protocol keeps its identity under Midnight / Teal / Amber themes.
+    railActiveClass: 'bg-green-300/15 text-green-300 ring-[1.5px] ring-inset ring-green-300',
+    nameTextClass: 'text-green-300',
     unreadBadgeFillClass: 'bg-readable-green',
   },
   meshcore: {

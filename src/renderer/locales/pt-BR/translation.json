@@ -427,7 +427,17 @@
     "nodeSilenceAlertMinutesHint": "Deixe em branco para usar o limite obsoleto de cada protocolo. O escalonamento dispara a 2vezes esse valor.",
     "nodeBatteryLowThreshold": "Limite de bateria baixa (%)",
     "notifyOnLinkDown": "Notificar no link de rádio inesperado",
-    "aboutSection": "Sobre"
+    "aboutSection": "Sobre",
+    "themePresets": {
+      "heading": "Tema",
+      "hint": "Escolha uma paleta inicial e ajuste cores individuais abaixo.",
+      "custom": "Cores personalizadas. Escolha um tema para recomeçar a partir de uma predefinição.",
+      "default": "Padrão",
+      "highContrast": "Alto contraste",
+      "midnight": "Meia-noite",
+      "teal": "Destaque verde-azulado",
+      "amber": "Destaque âmbar"
+    }
   },
   "aria": {
     "closeDialog": "Fechar janela",

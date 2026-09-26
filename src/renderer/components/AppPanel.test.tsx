@@ -136,6 +136,48 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
   });
 });
 
+describe('AppPanel: theme presets', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:themeColors');
+  });
+
+  it('applies a preset in one click and marks which one is active', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const standard = await screen.findByRole('button', { name: 'Default' });
+    expect(standard).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(screen.getByRole('button', { name: 'High contrast' }));
+    expect(screen.getByRole('button', { name: 'High contrast' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(standard).toHaveAttribute('aria-pressed', 'false');
+    const stored = JSON.parse(localStorage.getItem('mesh-client:themeColors') ?? '{}') as Record<
+      string,
+      string
+    >;
+    expect(stored.muted).toBe('#cbd5e1');
+    expect(document.documentElement.style.getPropertyValue('--color-muted')).toBe('#cbd5e1');
+
+    fireEvent.click(standard);
+    expect(standard).toHaveAttribute('aria-pressed', 'true');
+    expect(localStorage.getItem('mesh-client:themeColors')).toBeNull();
+  });
+});
+
 describe('AppPanel: sound notification toggle', () => {
   const defaultProps = {
     protocol: 'meshtastic' as const,

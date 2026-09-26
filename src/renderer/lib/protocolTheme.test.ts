@@ -20,6 +20,14 @@ describe('protocolTheme', () => {
     expect(new Set(monograms).size).toBe(monograms.length);
   });
 
+  it('keeps protocol identity colors fixed, independent of the themeable accent', () => {
+    for (const theme of Object.values(PROTOCOL_THEME)) {
+      expect(theme.railActiveClass).not.toMatch(/brand-green|bright-green/);
+      expect(theme.nameTextClass).not.toMatch(/brand-green|bright-green/);
+    }
+    expect(PROTOCOL_THEME.meshtastic.railActiveClass).toContain('green-300');
+  });
+
   it('meshcore unread badge uses accessible cyan fill for contrast', () => {
     expect(PROTOCOL_THEME.meshcore.unreadBadgeFillClass).toBe('bg-cyan-800 text-white');
     expect(PROTOCOL_THEME.meshcore.railActiveClass).toContain('cyan');
