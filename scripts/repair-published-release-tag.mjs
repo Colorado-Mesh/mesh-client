@@ -12,7 +12,7 @@ import {
   fail,
   getRelease,
   listReleasesForTag,
-  patchReleaseTagMetadataRequired,
+  repairReleaseTagAndCleanupOrphan,
   resolveTag,
 } from './github-release-api.mjs';
 import { isUntaggedPlaceholderTag } from './github-release-version.mjs';
@@ -44,7 +44,7 @@ export async function repairPublishedReleaseTag(tag, token, fallbackToken) {
   console.debug(
     `[repair-published-release-tag] Repairing release ${target.id} (${String(target.tag_name)} → ${tag})`,
   );
-  return patchReleaseTagMetadataRequired(target.id, tag, token, { fallbackToken });
+  return repairReleaseTagAndCleanupOrphan(target, tag, token, { fallbackToken });
 }
 
 async function main() {

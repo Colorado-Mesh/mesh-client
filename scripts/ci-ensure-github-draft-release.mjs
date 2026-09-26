@@ -4,8 +4,8 @@ import { pathToFileURL } from 'node:url';
 import {
   authToken,
   ensureGithubDraftRelease,
+  resolveCreateTargetCommitish,
   resolveTag,
-  resolveTargetCommitish,
   trustedGithubReleaseId,
 } from './github-release-api.mjs';
 
@@ -32,7 +32,7 @@ async function main() {
   const release = await ensureGithubDraftRelease({
     tag,
     token,
-    targetCommitish: resolveTargetCommitish(process.env),
+    targetCommitish: resolveCreateTargetCommitish(process.env),
     allowCreate,
     fallbackToken,
   });
