@@ -17,6 +17,7 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 - [Meshtastic](#meshtastic)
 - [MeshCore](#meshcore)
 - [Reticulum](#reticulum)
+- [TAK (CoT gateway)](#tak-cot-gateway)
 - [Chat, nodes, and notifications](#chat-nodes-and-notifications)
 - [Diagnostics and map](#diagnostics-and-map)
 - [App, updates, and localization](#app-updates-and-localization)
@@ -1723,6 +1724,21 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 **Cause**: The main-process watchdog (`reticulumSidecarWatchdog.ts`) polls `/api/v1/status` every **30 s** while the sidecar process is alive. After **2** consecutive unresponsive polls (5 s fetch timeout) it attempts **one** restart. Process-exit crashes are not handled here — those are owned by the renderer autostart path.
 
 **What to do**: Usually no action; the watchdog recovers a wedged-but-alive sidecar. If restarts loop, check for a stuck link/interface or resource exhaustion in the sidecar log and **Stop stack** to clear state.
+
+## TAK (CoT gateway)
+
+### EUD reports “TLS certificate invalid” / cannot connect with a mesh-client data package
+
+**Cause**: The data package’s `connection.pref` dials your LAN IP over TLS. Older mesh-client builds issued a server certificate with only CN=`serverName` (e.g. `mesh-client`) and no Subject Alternative Name, so strict EUDs (iTAK, WinTAK, newer ATAK) reject the certificate.
+
+**Fix**:
+
+1. Update mesh-client (server certs now include DNS + LAN IP in SAN).
+2. On the **TAK** tab, start the local server (or **Regenerate Certificates** if it was already running on an older build).
+3. **Generate data package** again and import the new zip on the EUD (remove any previous mesh-client connection/package first).
+4. If your LAN IP changed since the last package, generate a new package and re-import — the connect string and cert SAN must match.
+
+Also confirm the phone/tablet is on the same LAN as the desktop, the TAK server is running, and the firewall allows inbound TCP on the configured port (default 8089).
 
 ## Chat, nodes, and notifications
 

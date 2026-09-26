@@ -2,29 +2,14 @@ import { app, shell } from 'electron';
 import fs from 'fs';
 import JSZip from 'jszip';
 import * as forge from 'node-forge';
-import os from 'os';
 import path from 'path';
 
 import type { TAKSettings } from '../../shared/tak-types';
 import { sanitizeLogMessage } from '../sanitize-log-message';
 import type { CertBundle } from './certificate-manager';
+import { getLanIp } from './lan-ip';
 
 const PKCS12_PASSWORD = 'atakatak';
-
-function getLanIp(): string {
-  const ifaces = os.networkInterfaces();
-  for (const name of Object.keys(ifaces)) {
-    const iface = ifaces[name];
-    if (!iface) continue;
-    for (const addr of iface) {
-      if (addr.family === 'IPv4' && !addr.internal) {
-        return addr.address;
-      }
-    }
-  }
-  console.warn('[TAK] No LAN IPv4 found, falling back to 127.0.0.1');
-  return '127.0.0.1';
-}
 
 function buildManifestXml(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
