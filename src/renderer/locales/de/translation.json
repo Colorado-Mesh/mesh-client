@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "Wird wiederholt, bis es gesendet wird",
     "outboxEmergencyCapBlocked": "Pausiert: zu viele Notfallmeldungen in der Warteschlange. Versuchen Sie es erneut oder brechen Sie diese ab.",
     "outboxEmergencyCancelConfirm": "Diese Notfallnachricht abbrechen? Es wird nicht gesendet.",
-    "retryOutboxEmergencyAttempt": "Versuch {{count}}"
+    "retryOutboxEmergencyAttempt": "Versuch {{count}}",
+    "channelSwitcher": {
+      "trigger": "Alle Kanäle ({{total}})",
+      "triggerWithUnread": "Alle Kanäle ({{total}}), {{unread}} ungelesen",
+      "search": "Kanal suchen",
+      "listLabel": "Kanäle",
+      "empty": "Keine passenden Kanäle"
+    }
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

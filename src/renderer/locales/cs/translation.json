@@ -803,7 +803,14 @@
     "outboxEmergencyWillSend": "Zkusí to znovu, dokud nebude odesláno",
     "outboxEmergencyCapBlocked": "Pozastaveno: příliš mnoho nouzových zpráv ve frontě. Zkus to znovu nebo to zruš.",
     "outboxEmergencyCancelConfirm": "Zrušit tuto nouzovou zprávu? Nebude odesláno.",
-    "retryOutboxEmergencyAttempt": "Pokus {{count}}"
+    "retryOutboxEmergencyAttempt": "Pokus {{count}}",
+    "channelSwitcher": {
+      "trigger": "Všechny kanály ({{total}})",
+      "triggerWithUnread": "Všechny kanály ({{total}}), nepřečteno: {{unread}}",
+      "search": "Najít kanál",
+      "listLabel": "Kanály",
+      "empty": "Žádný kanál neodpovídá"
+    }
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

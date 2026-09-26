@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "Continuará a tentar novamente até ser enviado",
     "outboxEmergencyCapBlocked": "Pausado: muitas mensagens de emergência na fila. Tente novamente ou cancele este.",
     "outboxEmergencyCancelConfirm": "Cancelar esta mensagem de emergência? Não será enviado.",
-    "retryOutboxEmergencyAttempt": "Tentativa {{count}}"
+    "retryOutboxEmergencyAttempt": "Tentativa {{count}}",
+    "channelSwitcher": {
+      "trigger": "Todos os canais ({{total}})",
+      "triggerWithUnread": "Todos os canais ({{total}}), {{unread}} não lidas",
+      "search": "Encontrar um canal",
+      "listLabel": "Canais",
+      "empty": "Nenhum canal corresponde"
+    }
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

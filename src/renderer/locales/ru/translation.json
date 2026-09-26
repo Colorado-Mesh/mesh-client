@@ -821,7 +821,14 @@
     "outboxEmergencyWillSend": "Продолжит повторять попытку, пока не будет отправлено",
     "outboxEmergencyCapBlocked": "Приостановлено: слишком много экстренных сообщений в очереди. Повторите попытку или отмените ее.",
     "outboxEmergencyCancelConfirm": "Отменить это экстренное сообщение? Он не будет отправлен.",
-    "retryOutboxEmergencyAttempt": "Попытка {{count}}"
+    "retryOutboxEmergencyAttempt": "Попытка {{count}}",
+    "channelSwitcher": {
+      "trigger": "Все каналы ({{total}})",
+      "triggerWithUnread": "Все каналы ({{total}}), непрочитанных: {{unread}}",
+      "search": "Найти канал",
+      "listLabel": "Каналы",
+      "empty": "Нет подходящих каналов"
+    }
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

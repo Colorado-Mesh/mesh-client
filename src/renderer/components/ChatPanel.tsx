@@ -21,6 +21,7 @@ import {
   Search,
   Smile,
   Star,
+  X,
 } from 'lucide-react-motion';
 import {
   type ComponentProps,
@@ -184,6 +185,7 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -212,12 +214,44 @@ import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
+import { Button } from './ui/Button';
+import { chipClass, INPUT_CLASS } from './ui/formClasses';
+import { ScrollStrip } from './ui/ScrollStrip';
 
 function chatPanelIsLinux(): boolean {
   return window.electronAPI.getPlatform() === 'linux';
 }
 
 /** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
+const CHAT_TOOLBAR_BUTTON_BASE =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors';
+
+/** Icon buttons in the chat header: idle, toggled on, or a warning state (muted). */
+function chatToolbarButtonClass(state: 'idle' | 'active' | 'starred' | 'warn' = 'idle'): string {
+  switch (state) {
+    case 'active':
+      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-bright-green`;
+    case 'starred':
+      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-amber-400`;
+    case 'warn':
+      return `${CHAT_TOOLBAR_BUTTON_BASE} text-amber-400 hover:bg-sidebar-active-bg hover:text-amber-300`;
+    default:
+      return `${CHAT_TOOLBAR_BUTTON_BASE} text-muted hover:bg-sidebar-active-bg hover:text-slate-200`;
+  }
+}
+
+/** Inline unread count for chips in a scrolling strip (absolute badges would be clipped). */
+function ChipUnreadBadge({ count }: { count: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] leading-none font-bold text-white"
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
 function ChatToolbarTooltipButton({
   tooltip,
   children,
@@ -233,9 +267,7 @@ function ChatToolbarTooltipButton({
       <button
         type="button"
         {...{ [PARENT_HOVER_ATTR]: '' }}
-        className={
-          className ?? 'text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300'
-        }
+        className={className ?? chatToolbarButtonClass()}
         {...buttonProps}
       >
         {children}
@@ -2407,154 +2439,155 @@ function ChatPanel({
   /** Shared DMS label + pills (Row 1 when dmOnlyChat; Row 2 otherwise). */
   const dmTabPills = (
     <>
-      <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-        {t('chatPanel.dms')}
-      </span>
+      <span className="text-muted shrink-0 text-xs font-medium">{t('chatPanel.dms')}</span>
       {visibleDmTabs.length === 0 ? (
-        <span className="text-[10px] text-gray-600 italic">
+        <span className="text-muted text-xs">
           {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}
         </span>
       ) : (
-        visibleDmTabs.map((nodeNum) => {
-          const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
-          const showDmUnreadBadge =
-            dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
-          const faceHash =
-            protocol === 'reticulum'
-              ? resolveReticulumDmFaceHash(nodeNum, nodes.get(nodeNum)?.reticulum_destination_hash)
-              : null;
-          const appearance = faceHash ? peerAppearanceByHash.get(faceHash) : undefined;
-          return (
-            <div
-              key={`dm-${protocol}-${nodeNum}`}
-              className={`relative flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                viewMode === 'dm' && activeDmNode === nodeNum
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-secondary-dark text-muted hover:text-gray-200'
-              }`}
-            >
-              <button
-                type="button"
-                aria-label={getDmLabel(nodeNum)}
-                className={`inline-flex max-w-full min-w-0 items-center gap-1 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
-                  viewMode === 'dm' && activeDmNode === nodeNum
-                    ? 'text-white'
-                    : 'text-muted hover:text-gray-200'
+        <ScrollStrip
+          aria-label={t('chatPanel.dms')}
+          activeKey={viewMode === 'dm' ? activeDmNode : null}
+          className="flex-1"
+        >
+          {visibleDmTabs.map((nodeNum) => {
+            const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
+            const isActiveDm = viewMode === 'dm' && activeDmNode === nodeNum;
+            const showDmUnreadBadge = dmUnread > 0 && !isActiveDm;
+            const dmMuted = mutedViews.has(`dm:${nodeNum}`);
+            const faceHash =
+              protocol === 'reticulum'
+                ? resolveReticulumDmFaceHash(
+                    nodeNum,
+                    nodes.get(nodeNum)?.reticulum_destination_hash,
+                  )
+                : null;
+            const appearance = faceHash ? peerAppearanceByHash.get(faceHash) : undefined;
+            return (
+              <div
+                key={`dm-${protocol}-${nodeNum}`}
+                data-strip-active={isActiveDm ? 'true' : undefined}
+                className={`flex h-7 shrink-0 items-center gap-1 rounded-lg border pr-1 pl-2 text-[12.5px] font-medium transition-colors ${
+                  isActiveDm
+                    ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
+                    : 'bg-deep-black hover:border-secondary-dark border-slate-800 text-slate-300 hover:text-slate-100'
                 }`}
-                onClick={() => {
-                  openDmTo(nodeNum);
-                }}
               >
-                {protocol === 'reticulum' ? (
-                  <ReticulumProfileIconSlot
-                    iconName={appearance?.icon_name}
-                    iconColor={appearance?.icon_color}
-                    destinationHash={faceHash}
-                    size={14}
-                    className="shrink-0"
-                  />
-                ) : null}
-                <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  toggleMuteView(`dm:${nodeNum}`);
-                }}
-                aria-label={
-                  mutedViews.has(`dm:${nodeNum}`)
-                    ? t('chatPanel.unmuteConversation')
-                    : t('chatPanel.muteConversation')
-                }
-                className={`ml-0.5 text-[10px] leading-none transition-colors ${
-                  mutedViews.has(`dm:${nodeNum}`)
-                    ? 'text-amber-500 hover:text-amber-300'
-                    : 'text-muted hover:text-white'
-                }`}
-                title={
-                  mutedViews.has(`dm:${nodeNum}`)
-                    ? t('chatPanel.unmuteConversation')
-                    : t('chatPanel.muteConversation')
-                }
-              >
-                {mutedViews.has(`dm:${nodeNum}`) ? (
-                  <BellOff
-                    aria-hidden
-                    className="h-2.5 w-2.5"
-                    trigger={parentIconTrigger}
-                    size={10}
-                  />
-                ) : (
-                  <Bell aria-hidden className="h-2.5 w-2.5" trigger={parentIconTrigger} size={10} />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  closeDmTab(nodeNum);
-                }}
-                aria-label={t('chatPanel.closeDmTab')}
-                className="text-muted ml-0.5 text-[10px] leading-none hover:text-white"
-                title={t('chatPanel.closeDm')}
-              >
-                x
-              </button>
-              {showDmUnreadBadge && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                  {dmUnread > 99 ? '99+' : dmUnread}
-                </span>
-              )}
-            </div>
-          );
-        })
+                <button
+                  type="button"
+                  aria-label={getDmLabel(nodeNum)}
+                  aria-pressed={isActiveDm}
+                  className="inline-flex max-w-[12rem] min-w-0 items-center gap-1 truncate text-left"
+                  onClick={() => {
+                    openDmTo(nodeNum);
+                  }}
+                >
+                  {protocol === 'reticulum' ? (
+                    <ReticulumProfileIconSlot
+                      iconName={appearance?.icon_name}
+                      iconColor={appearance?.icon_color}
+                      destinationHash={faceHash}
+                      size={14}
+                      className="shrink-0"
+                    />
+                  ) : null}
+                  <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
+                </button>
+                {showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleMuteView(`dm:${nodeNum}`);
+                  }}
+                  aria-label={
+                    dmMuted ? t('chatPanel.unmuteConversation') : t('chatPanel.muteConversation')
+                  }
+                  className={`flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                    dmMuted
+                      ? 'text-amber-400 hover:text-amber-300'
+                      : 'text-muted hover:text-slate-100'
+                  }`}
+                  title={
+                    dmMuted ? t('chatPanel.unmuteConversation') : t('chatPanel.muteConversation')
+                  }
+                >
+                  {dmMuted ? (
+                    <BellOff
+                      aria-hidden
+                      className="h-3 w-3"
+                      trigger={parentIconTrigger}
+                      size={12}
+                    />
+                  ) : (
+                    <Bell aria-hidden className="h-3 w-3" trigger={parentIconTrigger} size={12} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeDmTab(nodeNum);
+                  }}
+                  aria-label={t('chatPanel.closeDmTab')}
+                  className="text-muted flex h-5 w-5 items-center justify-center rounded hover:text-slate-100"
+                  title={t('chatPanel.closeDm')}
+                >
+                  <X aria-hidden className="h-3 w-3" size={12} />
+                </button>
+              </div>
+            );
+          })}
+        </ScrollStrip>
       )}
     </>
   );
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      {/* Row 1 — Channel selector (or Reticulum DMs) + toolbar utilities */}
+      {/* Row 1 — Channels (or Reticulum DMs) in one scrolling row + toolbar utilities */}
       <div
-        className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-50' : ''}`}
+        className={`mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
       >
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2" data-testid="chat-conversation-row">
           {dmOnlyChat ? (
             dmTabPills
           ) : (
             <>
-              <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-                {t('chatPanel.channels')}
-              </span>
-              {channels.map((ch, chIdx) => {
-                const unread = unreadCounts.get(ch.index) ?? 0;
-                const channelUnreadSuffix =
-                  unread > 0 && !(viewMode === 'channels' && channel === ch.index)
-                    ? ` ${unread > 99 ? '99+' : unread}`
-                    : '';
-                return (
-                  <button
-                    type="button"
-                    key={`ch-${ch.index}-${chIdx}-${ch.name}`}
-                    aria-label={`${ch.name}${channelUnreadSuffix}`}
-                    onClick={() => {
-                      selectChannel(ch.index);
-                      setViewMode('channels');
-                    }}
-                    className={`relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                      viewMode === 'channels' && channel === ch.index
-                        ? 'bg-readable-green text-white'
-                        : 'bg-secondary-dark text-muted hover:text-gray-200'
-                    }`}
-                  >
-                    {ch.name}
-                    {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                        {unread > 99 ? '99+' : unread}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              <ChatChannelSwitcher
+                channels={channels}
+                unreadCounts={unreadCounts}
+                activeIndex={viewMode === 'channels' ? channel : null}
+                onSelect={(index) => {
+                  selectChannel(index);
+                  setViewMode('channels');
+                }}
+              />
+              <ScrollStrip
+                aria-label={t('chatPanel.channels')}
+                activeKey={viewMode === 'channels' ? channel : null}
+                className="flex-1"
+              >
+                {channels.map((ch, chIdx) => {
+                  const isActiveChannel = viewMode === 'channels' && channel === ch.index;
+                  const unread = isActiveChannel ? 0 : (unreadCounts.get(ch.index) ?? 0);
+                  return (
+                    <button
+                      type="button"
+                      key={`ch-${ch.index}-${chIdx}-${ch.name}`}
+                      aria-label={channelButtonLabel(ch.name, unread)}
+                      aria-pressed={isActiveChannel}
+                      data-strip-active={isActiveChannel ? 'true' : undefined}
+                      onClick={() => {
+                        selectChannel(ch.index);
+                        setViewMode('channels');
+                      }}
+                      className={`${chipClass(isActiveChannel)} inline-flex shrink-0 items-center gap-1.5`}
+                    >
+                      {ch.name}
+                      {unread > 0 && <ChipUnreadBadge count={unread} />}
+                    </button>
+                  );
+                })}
+              </ScrollStrip>
               {meshcoreChannelSources && onSetMeshcoreChannel ? (
                 <MeshcoreChatChannelManager
                   channels={meshcoreChannelSources}
@@ -2570,16 +2603,12 @@ function ChatPanel({
           )}
         </div>
 
-        <div className="flex shrink-0 items-start gap-2 self-start">
+        <div className="flex shrink-0 items-center gap-0.5">
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.jumpToDate')}
             aria-pressed={showDatePicker}
             aria-label={t('chatPanel.jumpToDate')}
-            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-              showDatePicker
-                ? 'bg-brand-green/20 text-bright-green'
-                : 'text-muted hover:text-gray-300'
-            }`}
+            className={chatToolbarButtonClass(showDatePicker ? 'active' : 'idle')}
             onClick={() => {
               setShowDatePicker((v) => !v);
             }}
@@ -2644,9 +2673,7 @@ function ChatPanel({
             tooltip={t('chatPanel.searchMessages')}
             aria-pressed={showSearch}
             aria-label={t('chatPanel.searchMessages')}
-            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-              showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
-            }`}
+            className={chatToolbarButtonClass(showSearch ? 'active' : 'idle')}
             onClick={() => {
               toggleSearch();
             }}
@@ -2667,11 +2694,7 @@ function ChatPanel({
                   ? t('chatPanel.unmuteConversation')
                   : t('chatPanel.muteConversation')
               }
-              className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-                mutedViews.has(viewKey)
-                  ? 'text-amber-500 hover:text-amber-300'
-                  : 'text-muted hover:text-gray-300'
-              }`}
+              className={chatToolbarButtonClass(mutedViews.has(viewKey) ? 'warn' : 'idle')}
               onClick={() => {
                 toggleMuteView(viewKey);
               }}
@@ -2688,11 +2711,7 @@ function ChatPanel({
             tooltip={t('chatPanel.starredMessages')}
             aria-pressed={viewMode === 'starred'}
             aria-label={t('chatPanel.starredMessages')}
-            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-              viewMode === 'starred'
-                ? 'bg-brand-green/20 text-amber-400'
-                : 'text-muted hover:text-gray-300'
-            }`}
+            className={chatToolbarButtonClass(viewMode === 'starred' ? 'starred' : 'idle')}
             onClick={() => {
               setViewMode((v) => (v === 'starred' ? (dmOnlyChat ? 'dm' : 'channels') : 'starred'));
             }}
@@ -2717,43 +2736,40 @@ function ChatPanel({
       {/* Row 2 — DM tabs (Meshtastic/MeshCore; Reticulum promotes DMs into Row 1) */}
       {!dmOnlyChat ? (
         <div
-          className={`mb-2 flex min-h-[1.75rem] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+          className={`mb-2 flex min-h-7 min-w-0 items-center gap-2 ${viewMode === 'channels' ? 'opacity-60' : ''}`}
         >
           {dmTabPills}
         </div>
       ) : null}
 
       {protocol === 'reticulum' && dmOnlyChat ? (
-        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-1">
-          <input
-            type="text"
-            value={dmAddressInput}
-            onChange={(e) => {
-              setDmAddressInput(e.target.value);
-              if (dmAddressError) setDmAddressError(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                submitDmByAddress();
-              }
-            }}
-            placeholder={t('chatPanel.dmAddressPlaceholder')}
-            aria-label={t('chatPanel.dmAddressAria')}
-            aria-invalid={dmAddressError != null}
-            spellCheck={false}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 min-w-0 flex-1 rounded border border-gray-600/50 px-2 py-1 font-mono text-xs text-gray-200 focus:outline-none sm:max-w-md"
-          />
-          <button
-            type="button"
-            disabled={!dmAddressInput.trim()}
-            onClick={submitDmByAddress}
-            className="bg-secondary-dark text-muted shrink-0 rounded border border-gray-600/50 px-2.5 py-1 text-xs hover:text-gray-200 disabled:opacity-40"
-          >
+        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1 sm:max-w-md">
+            <input
+              type="text"
+              value={dmAddressInput}
+              onChange={(e) => {
+                setDmAddressInput(e.target.value);
+                if (dmAddressError) setDmAddressError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  submitDmByAddress();
+                }
+              }}
+              placeholder={t('chatPanel.dmAddressPlaceholder')}
+              aria-label={t('chatPanel.dmAddressAria')}
+              aria-invalid={dmAddressError != null}
+              spellCheck={false}
+              className={`${INPUT_CLASS} font-mono`}
+            />
+          </div>
+          <Button size="sm" disabled={!dmAddressInput.trim()} onClick={submitDmByAddress}>
             {t('chatPanel.openDmByAddress')}
-          </button>
+          </Button>
           {dmAddressError ? (
-            <span className="w-full text-[10px] text-red-400" role="alert">
+            <span className="w-full text-xs text-red-400" role="alert">
               {dmAddressError}
             </span>
           ) : null}
@@ -2774,7 +2790,7 @@ function ChatPanel({
               placeholder={t('chatPanel.searchMessagesPlaceholder')}
               aria-label={t('chatPanel.searchMessagesPlaceholder')}
               spellCheck={false}
-              className="bg-secondary-dark/80 focus:border-brand-green/50 min-w-0 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+              className="bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green h-8 min-w-0 flex-1 rounded-lg border px-2.5 text-[13px] text-slate-200 focus:outline-none"
             />
             {searchQuery && (
               <button
@@ -2808,7 +2824,7 @@ function ChatPanel({
               setJumpDate(e.target.value);
               handleJumpToDate(e.target.value);
             }}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+            className="bg-app-bg border-secondary-dark focus:border-brand-green h-8 rounded-lg border px-2.5 text-[13px] text-slate-200 focus:outline-none"
           />
           {jumpDate && (
             <button
@@ -2850,7 +2866,7 @@ function ChatPanel({
 
       {/* Disconnected overlay */}
       {!isConnected && (
-        <div className="bg-deep-black/60 mb-2 rounded-xl border border-gray-700 p-4 text-center">
+        <div className="bg-deep-black mb-2 rounded-xl border border-slate-800 p-4 text-center">
           <p className="text-muted text-sm">{t('chatPanel.readOnlyDisconnected')}</p>
         </div>
       )}
@@ -3042,7 +3058,7 @@ function ChatPanel({
                             }
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}
-                          className="rounded p-1 text-[10px] text-gray-500 hover:text-blue-400"
+                          className="rounded p-1 text-[10px] text-slate-400 hover:text-blue-400"
                           title={t('chatPanel.goToMessage')}
                           aria-label={t('chatPanel.goToMessage')}
                         >
@@ -3130,11 +3146,11 @@ function ChatPanel({
                 // Day separator
                 const daySeparator = daySeparatorIndices.has(i) ? (
                   <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1 border-t border-gray-700" />
+                    <div className="flex-1 border-t border-slate-800" />
                     <span className="text-muted shrink-0 text-xs font-medium">
                       {formatDayLabel(msg.timestamp, t)}
                     </span>
-                    <div className="flex-1 border-t border-gray-700" />
+                    <div className="flex-1 border-t border-slate-800" />
                   </div>
                 ) : null;
 
@@ -3279,7 +3295,7 @@ function ChatPanel({
                                         className={`shrink-0 rounded px-1 py-0.5 text-[9px] transition-colors ${
                                           filterSender === msg.sender_id
                                             ? 'bg-blue-700/40 text-blue-300'
-                                            : 'text-gray-600 hover:text-blue-400'
+                                            : 'text-slate-500 hover:text-blue-400'
                                         }`}
                                         title={t('chatPanel.filterBySender')}
                                       >
@@ -3297,13 +3313,13 @@ function ChatPanel({
                                       </span>
                                     )}
                                     <span
-                                      className="text-muted/70 text-[10px]"
+                                      className="text-muted text-[10px]"
                                       title={formatFullTimestamp(msg.timestamp)}
                                     >
                                       {formatTime(msg.timestamp)}
                                     </span>
                                     {channels.length > 1 && !isDm && (
-                                      <span className="text-[10px] text-gray-600">
+                                      <span className="text-muted font-mono text-[10px]">
                                         ch{msg.channel}
                                       </span>
                                     )}
@@ -3314,7 +3330,7 @@ function ChatPanel({
                             {showContinuationTime && (
                               <div className={`mb-0.5 ${isOwn ? 'flex justify-end' : ''}`}>
                                 <span
-                                  className="text-muted/70 text-[10px]"
+                                  className="text-muted text-[10px]"
                                   title={formatFullTimestamp(msg.timestamp)}
                                 >
                                   {formatTime(msg.timestamp)}
@@ -3373,7 +3389,7 @@ function ChatPanel({
                                   !!orig && (reticulumReplyHash != null || msg.replyId != null);
                                 if (!quoteSnippet && !quotedLabel) return null;
                                 const quoteClassName =
-                                  'bg-secondary-dark/50 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left';
+                                  'bg-app-bg/60 mb-1.5 flex w-full gap-1.5 rounded-lg border border-slate-800 px-2 py-1.5 text-left';
                                 const quoteBody = (
                                   <>
                                     <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
@@ -3382,7 +3398,7 @@ function ChatPanel({
                                         {quotedLabel}
                                       </span>
                                       {quoteSnippet ? (
-                                        <span className="line-clamp-2 block text-[11px] break-words text-gray-500">
+                                        <span className="line-clamp-2 block text-[11px] break-words text-slate-400">
                                           {quoteSnippet}
                                         </span>
                                       ) : null}
@@ -3508,7 +3524,7 @@ function ChatPanel({
                                         onResend(msg);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      className="text-slate-400 transition-colors hover:text-slate-200"
                                       title={t('chatPanel.resendMessage')}
                                     >
                                       <RotateCcw
@@ -3600,7 +3616,7 @@ function ChatPanel({
                                 });
                               }}
                               {...{ [PARENT_HOVER_ATTR]: '' }}
-                              className="message-action rounded p-1 text-xs text-gray-600"
+                              className="message-action rounded p-1 text-xs text-slate-500"
                               aria-label={t('chatPanel.copyMessage')}
                               title={t('chatPanel.copyMessage')}
                             >
@@ -3620,7 +3636,7 @@ function ChatPanel({
                                     composerInputRef.current?.focus();
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="message-action rounded p-1 text-xs text-gray-600"
+                                  className="message-action rounded p-1 text-xs text-slate-500"
                                   aria-label={t('chatPanel.replyToMessage')}
                                   title={t('chatPanel.replyButton')}
                                 >
@@ -3684,7 +3700,7 @@ function ChatPanel({
                                         }
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="message-action rounded p-1 text-xs text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                      className="message-action rounded p-1 text-xs text-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
                                       aria-label={reactLabel}
                                       title={reactTitle}
                                     >
@@ -3709,7 +3725,7 @@ function ChatPanel({
                                         openDmTo(msg.sender_id);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="message-action rounded p-1 text-xs text-gray-600"
+                                      className="message-action rounded p-1 text-xs text-slate-500"
                                       aria-label={t('chatPanel.directMessage', {
                                         name: msg.sender_name,
                                       })}
@@ -3737,7 +3753,7 @@ function ChatPanel({
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
                                       className={`message-action-star rounded p-1 text-xs ${
-                                        isStarred ? 'starred' : 'text-gray-600'
+                                        isStarred ? 'starred' : 'text-slate-500'
                                       }`}
                                       aria-label={
                                         isStarred
@@ -3799,7 +3815,7 @@ function ChatPanel({
                                       ? `r-${r.id}`
                                       : `r-${r.sender_id}-${r.emoji}-${rIdx}`
                                   }
-                                  className="bg-secondary-dark/80 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border border-gray-600/50 px-1.5 py-0.5 text-xs"
+                                  className="bg-deep-black inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border border-slate-800 px-1.5 py-0.5 text-xs"
                                   title={titleText}
                                   aria-label={ariaLabel}
                                 >
@@ -3834,7 +3850,7 @@ function ChatPanel({
             onClick={() => {
               scrollToUnreadOrBottom();
             }}
-            className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+            className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg transition-all"
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" trigger={parentIconTrigger} size={14} />
             {hasUnreadDivider ? t('chatPanel.jumpToUnread') : t('chatPanel.jumpToLatest')}

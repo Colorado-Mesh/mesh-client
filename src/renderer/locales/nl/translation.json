@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "Zal het opnieuw proberen totdat het wordt verzonden",
     "outboxEmergencyCapBlocked": "Gepauzeerd: te veel noodberichten in de wachtrij. Probeer het opnieuw of annuleer deze.",
     "outboxEmergencyCancelConfirm": "Dit noodbericht annuleren? Het wordt niet verzonden.",
-    "retryOutboxEmergencyAttempt": "Poging {{count}}"
+    "retryOutboxEmergencyAttempt": "Poging {{count}}",
+    "channelSwitcher": {
+      "trigger": "Alle kanalen ({{total}})",
+      "triggerWithUnread": "Alle kanalen ({{total}}), {{unread}} ongelezen",
+      "search": "Kanaal zoeken",
+      "listLabel": "Kanalen",
+      "empty": "Geen kanalen gevonden"
+    }
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

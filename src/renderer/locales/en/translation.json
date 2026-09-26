@@ -783,6 +783,13 @@
       "tooLargeForWire": "Voice memo is too large to send. Record a shorter clip.",
       "tooLargeForPropagation": "Voice message is larger than the propagation-node limit. It will deliver only when the recipient is online. Shorten it to store it for offline delivery.",
       "directOnlyBadge": "Direct only — too large for offline storage"
+    },
+    "channelSwitcher": {
+      "trigger": "All channels ({{total}})",
+      "triggerWithUnread": "All channels ({{total}}), {{unread}} unread",
+      "search": "Find a channel",
+      "listLabel": "Channels",
+      "empty": "No channels match"
     }
   },
   "chatPayload": {

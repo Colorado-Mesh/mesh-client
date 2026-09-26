@@ -821,7 +821,14 @@
     "outboxEmergencyWillSend": "Продовжить повторювати спробу, доки не буде надісла",
     "outboxEmergencyCapBlocked": "Призупинено: забагато аварійних повідомлень у черзі. Повторіть спробу або скасуйте цю.",
     "outboxEmergencyCancelConfirm": "Скасувати це екстрене повідомлення? Його не буде надіслано.",
-    "retryOutboxEmergencyAttempt": "Спроба {{count}}"
+    "retryOutboxEmergencyAttempt": "Спроба {{count}}",
+    "channelSwitcher": {
+      "trigger": "Усі канали ({{total}})",
+      "triggerWithUnread": "Усі канали ({{total}}), непрочитаних: {{unread}}",
+      "search": "Знайти канал",
+      "listLabel": "Канали",
+      "empty": "Немає відповідних каналів"
+    }
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "Gönderilene kadar yeniden denemeye devam edecek",
     "outboxEmergencyCapBlocked": "Duraklatıldı: Çok fazla sıralanmış acil durum mesajı var. Bunu yeniden deneyin veya iptal edin.",
     "outboxEmergencyCancelConfirm": "Bu acil durum mesajı iptal edilsin mi? Gönderilmeyecektir.",
-    "retryOutboxEmergencyAttempt": "Deneme {{count}}"
+    "retryOutboxEmergencyAttempt": "Deneme {{count}}",
+    "channelSwitcher": {
+      "trigger": "Tüm kanallar ({{total}})",
+      "triggerWithUnread": "Tüm kanallar ({{total}}), {{unread}} okunmamış",
+      "search": "Kanal bul",
+      "listLabel": "Kanallar",
+      "empty": "Eşleşen kanal yok"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

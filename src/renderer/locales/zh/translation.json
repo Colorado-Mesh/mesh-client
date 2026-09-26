@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "将继续重试，直到发送",
     "outboxEmergencyCapBlocked": "已暂停：排队的紧急消息过多。请重试或取消此操作。",
     "outboxEmergencyCancelConfirm": "要取消此紧急消息吗？它不会被发送。",
-    "retryOutboxEmergencyAttempt": "尝试{{count}}"
+    "retryOutboxEmergencyAttempt": "尝试{{count}}",
+    "channelSwitcher": {
+      "trigger": "所有频道（{{total}}）",
+      "triggerWithUnread": "所有频道（{{total}}），{{unread}} 条未读",
+      "search": "查找频道",
+      "listLabel": "频道",
+      "empty": "没有匹配的频道"
+    }
   },
   "chatPayload": {
     "mention": "提及{{label}}",

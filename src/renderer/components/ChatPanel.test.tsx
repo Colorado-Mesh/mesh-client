@@ -2325,7 +2325,7 @@ describe('ChatPanel unread watermarks', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
-    const aliceTab = screen.getByRole('button', { name: 'Alice' }).closest('.relative');
+    const aliceTab = screen.getByRole('button', { name: 'Alice' }).parentElement;
     expect(aliceTab?.querySelector('.bg-red-600')?.textContent).toBe('1');
 
     await user.click(screen.getByRole('button', { name: 'Alice' }));
@@ -2644,8 +2644,9 @@ describe('ChatPanel unread watermarks', () => {
     expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
   });
 
-  it('wraps channel pills in a dedicated column so toolbar utilities stay visible', () => {
-    const manyChannels = Array.from({ length: 24 }, (_, index) => ({
+  it('keeps many channels in one scrolling row with a searchable switcher', async () => {
+    const user = userEvent.setup();
+    const manyChannels = Array.from({ length: 25 }, (_, index) => ({
       index,
       name: `Ch${index}`,
     }));
@@ -2655,21 +2656,36 @@ describe('ChatPanel unread watermarks', () => {
       </ToastProvider>,
     );
 
-    const label = screen.getByText('Channels');
-    const channelsContainer = label.parentElement;
-    expect(channelsContainer?.className).toMatch(/flex-wrap/);
-    expect(channelsContainer?.className).not.toMatch(/whitespace-nowrap/);
+    // One row that scrolls sideways: channel count never grows the header.
+    const strip = screen.getByRole('group', { name: 'Channels' });
+    expect(strip.className).toMatch(/overflow-x-auto/);
+    expect(strip.className).toMatch(/whitespace-nowrap/);
+    expect(strip.className).not.toMatch(/flex-wrap/);
+    expect(screen.getByRole('button', { name: 'Ch24' })).toBeInTheDocument();
 
-    const headerRow = channelsContainer?.parentElement;
+    const headerRow = strip.closest('.grid');
     expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
-
     const exportBtn = screen.getByRole('button', { name: 'Export chat' });
-    const starredBtn = screen.getByRole('button', { name: 'Starred messages' });
-    expect(channelsContainer?.contains(exportBtn)).toBe(false);
-    expect(channelsContainer?.contains(starredBtn)).toBe(false);
+    expect(strip.contains(exportBtn)).toBe(false);
     expect(headerRow?.contains(exportBtn)).toBe(true);
-    expect(headerRow?.contains(starredBtn)).toBe(true);
-    expect(screen.getByRole('button', { name: 'Ch23' })).toBeInTheDocument();
+
+    // The switcher lists every channel and filters as you type.
+    await user.click(screen.getByRole('button', { name: 'All channels (25)' }));
+    const search = screen.getByRole('combobox', { name: 'Find a channel' });
+    expect(search).toHaveFocus();
+    expect(screen.getAllByRole('option')).toHaveLength(25);
+    await user.type(search, 'Ch2');
+    expect(screen.getAllByRole('option').map((o) => o.getAttribute('aria-label'))).toEqual([
+      'Ch2',
+      'Ch20',
+      'Ch21',
+      'Ch22',
+      'Ch23',
+      'Ch24',
+    ]);
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ch20' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('clears the unread divider without scrolling when all unread messages are visible', async () => {
@@ -4726,11 +4742,11 @@ describe('ChatPanel reticulum dm-only chat', () => {
     });
     expect(screen.queryByText('many one')).not.toBeInTheDocument();
     const lastFocusedBtn = screen.getAllByRole('button', { name: 'Last Focused' })[0];
-    expect(lastFocusedBtn.className).toMatch(/text-white/);
+    expect(lastFocusedBtn).toHaveAttribute('aria-pressed', 'true');
     expect(localStorage.getItem('mesh-client:activeDm:reticulum')).toBe(String(lastFocusedId));
   });
 
-  it('promotes DM pills into the channel grid column with flex-wrap (no separate DM row)', () => {
+  it('promotes DM pills into the channel row as one scrolling strip (no separate DM row)', () => {
     const peerIds = [0x101, 0x102, 0x103, 0x104, 0x105, 0x106];
     localStorage.setItem('mesh-client:openDmTabs:reticulum', JSON.stringify(peerIds));
     const nodes = new Map<number, MeshNode>(
@@ -4758,20 +4774,19 @@ describe('ChatPanel reticulum dm-only chat', () => {
       </ToastProvider>,
     );
 
-    expect(screen.queryByText('Channels')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Channels' })).not.toBeInTheDocument();
 
-    const label = screen.getByText('DMs');
-    const dmsContainer = label.parentElement;
-    expect(dmsContainer?.className).toMatch(/flex-wrap/);
-    expect(dmsContainer?.className).not.toMatch(/whitespace-nowrap/);
+    const dmsStrip = screen.getByRole('group', { name: 'DMs' });
+    expect(dmsStrip.className).toMatch(/overflow-x-auto/);
+    expect(dmsStrip.className).not.toMatch(/flex-wrap/);
 
-    const headerRow = dmsContainer?.parentElement;
+    const headerRow = dmsStrip.closest('.grid');
     expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
 
     const exportBtn = screen.getByRole('button', { name: 'Export chat' });
     const starredBtn = screen.getByRole('button', { name: 'Starred messages' });
-    expect(dmsContainer?.contains(exportBtn)).toBe(false);
-    expect(dmsContainer?.contains(starredBtn)).toBe(false);
+    expect(dmsStrip.contains(exportBtn)).toBe(false);
+    expect(dmsStrip.contains(starredBtn)).toBe(false);
     expect(headerRow?.contains(exportBtn)).toBe(true);
     expect(headerRow?.contains(starredBtn)).toBe(true);
 

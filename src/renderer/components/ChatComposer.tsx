@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { ChevronDown, ChevronUp, CornerUpLeft, MapPin, Mic } from 'lucide-react-motion';
+import { ChevronDown, ChevronUp, CornerUpLeft, MapPin, Mic, Smile } from 'lucide-react-motion';
 import {
   type ReactNode,
   type RefObject,
@@ -1165,11 +1165,11 @@ export function ChatComposer({
 
   const textareaClass =
     variant === 'room'
-      ? 'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-gray-200 transition-colors focus:outline-none focus:border-brand-green/50 focus:ring-1 focus:ring-brand-green/30'
-      : `max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-xl border px-4 py-2.5 text-gray-200 transition-colors focus:outline-none ${
+      ? 'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-secondary-dark bg-app-bg px-3 py-2 text-sm text-slate-200 placeholder:text-muted transition-colors focus:outline-none focus:border-brand-green'
+      : `max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border px-3.5 py-2.5 text-sm text-slate-200 placeholder:text-muted transition-colors focus:outline-none ${
           isDmMode
-            ? 'border-purple-600/50 bg-purple-900/20 focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/30'
-            : 'bg-secondary-dark/80 focus:border-brand-green/50 focus:ring-brand-green/30 border-gray-600/50 focus:ring-1'
+            ? 'border-purple-500/50 bg-purple-950/30 focus:border-purple-400'
+            : 'bg-app-bg border-secondary-dark focus:border-brand-green'
         }`;
 
   const floodScopeOverrideActive = floodScopeOverride !== '';
@@ -1181,28 +1181,28 @@ export function ChatComposer({
   const sendButtonToneClass =
     variant === 'room'
       ? 'bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 border text-sm font-medium disabled:opacity-40'
-      : `font-medium transition-colors ${
+      : `text-sm font-medium transition-colors disabled:bg-secondary-dark disabled:text-muted ${
           showQueueButton
-            ? 'disabled:text-muted bg-slate-600 text-white hover:bg-slate-500 disabled:bg-gray-600'
+            ? 'bg-slate-600 text-white hover:bg-slate-500'
             : isDmMode
-              ? 'disabled:text-muted bg-purple-600 text-white hover:bg-purple-500 disabled:bg-gray-600'
-              : 'disabled:text-muted bg-green-500 text-white hover:bg-green-400 disabled:bg-gray-600'
+              ? 'bg-purple-600 text-white hover:bg-purple-500'
+              : 'bg-readable-green hover:bg-readable-green/90 text-white'
         }`;
 
   const sendButtonClass =
     variant === 'room'
       ? `${sendButtonToneClass} rounded px-4 py-2`
-      : `${sendButtonToneClass} rounded-xl px-5 py-2.5`;
+      : `${sendButtonToneClass} h-[2.625rem] rounded-lg px-4`;
 
   const sendButtonSplitMainClass =
     variant === 'room'
       ? `${sendButtonToneClass} rounded-l border-r-0 px-4 py-2`
-      : `${sendButtonToneClass} rounded-l-xl px-5 py-2.5`;
+      : `${sendButtonToneClass} h-[2.625rem] rounded-l-lg px-4`;
 
   const sendButtonSplitChevronClass =
     variant === 'room'
       ? `${sendButtonToneClass} rounded-r border-l border-l-black/20 px-1.5 py-2`
-      : `${sendButtonToneClass} rounded-r-xl border-l border-l-black/20 px-1.5 py-2.5`;
+      : `${sendButtonToneClass} h-[2.625rem] rounded-r-lg border-l border-l-black/20 px-1.5`;
 
   // Suppress the hover tooltip while the scope menu is open so it cannot cover the options.
   const floodScopeChevronTooltipProps = floodScopeMenuOpen ? { 'data-no-instant-tooltip': '' } : {};
@@ -1212,12 +1212,12 @@ export function ChatComposer({
       ? `rounded-lg px-2.5 py-2 transition-colors disabled:opacity-50 ${
           showComposePicker
             ? 'bg-brand-green/20 text-brand-green'
-            : 'border border-gray-600 bg-gray-800 text-gray-400 hover:text-gray-200'
+            : 'border-secondary-dark bg-sidebar-active-bg text-muted border hover:text-slate-200'
         }`
-      : `rounded-xl px-2.5 py-2.5 transition-colors disabled:opacity-50 ${
+      : `flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
           showComposePicker
-            ? 'bg-brand-green/20 text-bright-green'
-            : 'bg-secondary-dark/80 text-muted border border-gray-600/50 hover:text-gray-300'
+            ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
+            : 'border-secondary-dark bg-sidebar-active-bg text-muted hover:text-slate-200'
         }`;
 
   const showMeshcoreGifButton =
@@ -1302,7 +1302,7 @@ export function ChatComposer({
       )}
 
       {replyTo && onReplyClear && (
-        <div className="bg-secondary-dark/80 mb-1 flex items-center gap-2 rounded-xl border border-gray-600/50 px-3 py-1.5 text-xs">
+        <div className="bg-deep-black mb-1 flex items-center gap-2 rounded-lg border border-slate-800 px-3 py-1.5 text-xs">
           <CornerUpLeft
             aria-hidden
             className="h-3 w-3 shrink-0 text-blue-400"
@@ -1316,7 +1316,7 @@ export function ChatComposer({
             </span>
             :
           </span>
-          <span className="flex-1 truncate text-gray-500">
+          <span className="text-muted flex-1 truncate">
             {replyTo.payload.length > 60 ? replyTo.payload.slice(0, 60) + '…' : replyTo.payload}
           </span>
           <button
@@ -1359,7 +1359,7 @@ export function ChatComposer({
         </span>
       )}
 
-      <div className="flex min-w-0 gap-2">
+      <div className="flex min-w-0 items-end gap-2">
         <div className="relative min-w-0 flex-1">
           {mentionQuery != null && mentionCandidates.length > 0 && (
             <MentionAutocomplete
@@ -1441,7 +1441,7 @@ export function ChatComposer({
             aria-label={t('chatPanel.emojiButton')}
             className={emojiButtonClass}
           >
-            😊
+            <Smile aria-hidden className="h-4 w-4" trigger={iconTrigger} size={16} />
           </button>
         </HelpTooltip>
         {showMeshcoreGifButton && (

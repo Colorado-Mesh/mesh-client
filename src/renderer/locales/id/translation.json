@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "Akan terus mencoba lagi sampai dikirim",
     "outboxEmergencyCapBlocked": "Dijeda: terlalu banyak pesan darurat yang diantrekan. Coba lagi atau batalkan yang ini.",
     "outboxEmergencyCancelConfirm": "Batalkan pesan darurat ini? Itu tidak akan dikirim.",
-    "retryOutboxEmergencyAttempt": "Upaya {{count}}"
+    "retryOutboxEmergencyAttempt": "Upaya {{count}}",
+    "channelSwitcher": {
+      "trigger": "Semua kanal ({{total}})",
+      "triggerWithUnread": "Semua kanal ({{total}}), {{unread}} belum dibaca",
+      "search": "Cari kanal",
+      "listLabel": "Kanal",
+      "empty": "Tidak ada kanal yang cocok"
+    }
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

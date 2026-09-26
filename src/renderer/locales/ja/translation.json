@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "送信されるまで再試行を続けます",
     "outboxEmergencyCapBlocked": "一時停止：待機中の緊急メッセージが多すぎます。再度お試しいただくか、こちらをキャンセルしてください。",
     "outboxEmergencyCancelConfirm": "この緊急メッセージをキャンセルしますか？送信されません。",
-    "retryOutboxEmergencyAttempt": "{{count}}を試みる"
+    "retryOutboxEmergencyAttempt": "{{count}}を試みる",
+    "channelSwitcher": {
+      "trigger": "すべてのチャンネル（{{total}}）",
+      "triggerWithUnread": "すべてのチャンネル（{{total}}）、未読 {{unread}}",
+      "search": "チャンネルを検索",
+      "listLabel": "チャンネル",
+      "empty": "一致するチャンネルはありません"
+    }
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

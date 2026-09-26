@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "Continuerà a riprovare fino all'invio",
     "outboxEmergencyCapBlocked": "In pausa: troppi messaggi di emergenza in coda. Riprova o annulla questo.",
     "outboxEmergencyCancelConfirm": "Annullare questo messaggio di emergenza? Non verrà inviato.",
-    "retryOutboxEmergencyAttempt": "Tentativo {{count}}"
+    "retryOutboxEmergencyAttempt": "Tentativo {{count}}",
+    "channelSwitcher": {
+      "trigger": "Tutti i canali ({{total}})",
+      "triggerWithUnread": "Tutti i canali ({{total}}), {{unread}} non letti",
+      "search": "Trova un canale",
+      "listLabel": "Canali",
+      "empty": "Nessun canale corrispondente"
+    }
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "전송될 때까지 계속 재시도합니다.",
     "outboxEmergencyCapBlocked": "일시 중지됨: 대기 중인 긴급 메시지가 너무 많습니다. 다시 시도하거나 취소하세요.",
     "outboxEmergencyCancelConfirm": "이 긴급 메시지를 취소하시겠어요? 전송되지 않습니다.",
-    "retryOutboxEmergencyAttempt": "시도 {{count}}"
+    "retryOutboxEmergencyAttempt": "시도 {{count}}",
+    "channelSwitcher": {
+      "trigger": "모든 채널 ({{total}})",
+      "triggerWithUnread": "모든 채널 ({{total}}), 읽지 않음 {{unread}}",
+      "search": "채널 찾기",
+      "listLabel": "채널",
+      "empty": "일치하는 채널이 없습니다"
+    }
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

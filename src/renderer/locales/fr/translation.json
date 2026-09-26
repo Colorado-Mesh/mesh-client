@@ -783,7 +783,14 @@
     "outboxEmergencyWillSend": "Continuera à réessayer jusqu'à l'envoi",
     "outboxEmergencyCapBlocked": "En pause : trop de messages d'urgence en file d'attente. Réessayez ou annulez celui-ci.",
     "outboxEmergencyCancelConfirm": "Annuler ce message d'urgence ? Il ne sera pas envoyé.",
-    "retryOutboxEmergencyAttempt": "Tentative {{count}}"
+    "retryOutboxEmergencyAttempt": "Tentative {{count}}",
+    "channelSwitcher": {
+      "trigger": "Tous les canaux ({{total}})",
+      "triggerWithUnread": "Tous les canaux ({{total}}), {{unread}} non lus",
+      "search": "Rechercher un canal",
+      "listLabel": "Canaux",
+      "empty": "Aucun canal ne correspond"
+    }
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

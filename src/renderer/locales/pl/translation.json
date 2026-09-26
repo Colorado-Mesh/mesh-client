@@ -821,7 +821,14 @@
     "outboxEmergencyWillSend": "Będzie ponawiać próby do momentu wysłania",
     "outboxEmergencyCapBlocked": "Wstrzymano: zbyt wiele wiadomości alarmowych w kolejce. Spróbuj ponownie lub anuluj to.",
     "outboxEmergencyCancelConfirm": "Anulować tę wiadomość alarmową? Nie zostanie wysłany.",
-    "retryOutboxEmergencyAttempt": "Próba {{count}}"
+    "retryOutboxEmergencyAttempt": "Próba {{count}}",
+    "channelSwitcher": {
+      "trigger": "Wszystkie kanały ({{total}})",
+      "triggerWithUnread": "Wszystkie kanały ({{total}}), nieprzeczytane: {{unread}}",
+      "search": "Znajdź kanał",
+      "listLabel": "Kanały",
+      "empty": "Brak pasujących kanałów"
+    }
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
