@@ -121,6 +121,9 @@ describe('update.sh Reticulum stack functionality check', () => {
     expect(result.stdout).toContain('  rsLXMF');
     expect(result.stdout).toContain('  rsLXST');
     expect(result.stdout).toContain('  lrgp-rs');
+    expect(result.stdout).toContain('MECP_UPSTREAM_WATCH_ENTRIES:');
+    expect(result.stdout).toContain('MECP_PR_WATCH_ENTRIES:');
+    expect(result.stdout).toContain('xiang-dev-1/MECP|5|M16 medical supply drop|');
   });
 
   it('tracks ReplyFile and multi-file attachment overlays in RATSPEAK_PATCH_ENTRIES', () => {
@@ -239,6 +242,104 @@ exit 0
     expect(patchesCall).toBeGreaterThanOrEqual(0);
     expect(upstreamCall).toBeGreaterThan(patchesCall);
   });
+
+  it('wires check_mecp_prs after check_mecp_upstream', () => {
+    expect(updateScript).toContain('check_mecp_prs()');
+    expect(updateScript).toContain('MECP_PR_WATCH_ENTRIES');
+    const mecpUpstreamCall = updateScript.lastIndexOf('\ncheck_mecp_upstream\n');
+    const mecpPrsCall = updateScript.lastIndexOf('\ncheck_mecp_prs\n');
+    expect(mecpUpstreamCall).toBeGreaterThanOrEqual(0);
+    expect(mecpPrsCall).toBeGreaterThan(mecpUpstreamCall);
+  });
+
+  /**
+   * Fake `gh api repos/.../pulls/N` for check_mecp_prs.
+   * @param {'open' | 'merged' | 'closed' | 'unavailable'} mode
+   */
+  function prepareMecpPrGhFixture(mode) {
+    const work = mkdtempSync(path.join(os.tmpdir(), 'mesh-update-mecp-pr-'));
+    tempDirs.push(work);
+    const binDir = path.join(work, 'bin');
+    mkdirSync(binDir, { recursive: true });
+    const ghPath = path.join(binDir, 'gh');
+    let body;
+    if (mode === 'open') {
+      body = '{"state":"open","merged":false}';
+    } else if (mode === 'merged') {
+      body = '{"state":"closed","merged":true,"merged_at":"2026-09-26T00:00:00Z"}';
+    } else if (mode === 'closed') {
+      body = '{"state":"closed","merged":false}';
+    } else {
+      // Empty / malformed → github_pr_state prints unknown (unavailable).
+      body = '{}';
+    }
+    writeFileSync(
+      ghPath,
+      `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${1:-}" != "api" ]]; then
+  echo "unexpected gh args: $*" >&2
+  exit 1
+fi
+path="\${2:-}"
+if [[ "$path" == repos/*/pulls/* ]]; then
+  printf '%s' ${JSON.stringify(body)}
+  exit 0
+fi
+echo "unexpected gh api path: $path" >&2
+exit 1
+`,
+      'utf8',
+    );
+    chmodSync(ghPath, 0o755);
+    return { work, binDir };
+  }
+
+  it.each([
+    {
+      mode: /** @type {const} */ ('open'),
+      expectedWarning: '0',
+      stdoutMatch: /M16 medical supply drop: upstream PR still open/,
+    },
+    {
+      mode: /** @type {const} */ ('merged'),
+      expectedWarning: '1',
+      stdoutMatch: /xiang-dev-1\/MECP#5 merged — re-vendor languages/,
+    },
+    {
+      mode: /** @type {const} */ ('closed'),
+      expectedWarning: '1',
+      stdoutMatch: /xiang-dev-1\/MECP#5 closed without merge/,
+    },
+    {
+      mode: /** @type {const} */ ('unavailable'),
+      expectedWarning: '0',
+      stdoutMatch: /could not query xiang-dev-1\/MECP#5/,
+    },
+  ])(
+    'mecp-prs-only maps $mode to HAS_WARNING=$expectedWarning',
+    ({ mode, expectedWarning, stdoutMatch }) => {
+      const fixture = prepareMecpPrGhFixture(mode);
+      const result = runUpdate([], {
+        UPDATE_SH_TEST_HOOK: 'mecp-prs-only',
+        PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+      });
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      expect(result.stdout).toContain(`HAS_WARNING=${expectedWarning}`);
+      expect(result.stdout).toMatch(stdoutMatch);
+      if (expectedWarning === '0' && mode === 'open') {
+        expect(result.stdout).toContain('MECP PR watch complete.');
+      }
+      if (mode === 'merged') {
+        expect(result.stdout).toContain('WARNING:');
+        expect(result.stdout).toContain('upstream MERGED');
+      }
+      if (mode === 'closed') {
+        expect(result.stdout).toContain('WARNING:');
+        expect(result.stdout).toContain('PR closed (not merged?)');
+      }
+    },
+  );
 
   it('wires check_pinned_majors into the warn summary', () => {
     expect(updateScript).toContain('check_pinned_majors()');
