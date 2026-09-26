@@ -40,6 +40,7 @@ import { useTranslation } from 'react-i18next';
 
 import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
@@ -3834,7 +3835,11 @@ function ChatPanel({
                           <div
                             className={`${pickerOpensAbove ? 'order-first mb-1' : 'mt-1'} ${isOwn ? 'self-end' : 'self-start'}`}
                           >
-                            <emoji-picker ref={reactionPickerRef} style={{ width: '320px' }} />
+                            <emoji-picker
+                              ref={reactionPickerRef}
+                              data-source={BUNDLED_EMOJI_DATA_SOURCE}
+                              style={{ width: '320px' }}
+                            />
                           </div>
                         )}
 

@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 
 import ErrorBoundary from './components/ErrorBoundary';
+import { installBundledEmojiData } from './lib/bundledEmojiData';
 import { runConnectionPanelStorageMigrations } from './lib/connectionPanelStorageMigrations';
 import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
 import i18n from './lib/i18n';
@@ -44,6 +45,8 @@ if (import.meta.env.DEV) {
 }
 
 installRendererUnhandledRejectionLogger();
+// Linux emoji picker reads vendored data instead of cdn.jsdelivr.net (works offline).
+installBundledEmojiData();
 
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);

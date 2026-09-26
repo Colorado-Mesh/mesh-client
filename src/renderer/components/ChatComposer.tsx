@@ -24,6 +24,7 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -1284,6 +1285,7 @@ export function ChatComposer({
       {isLinux && showComposePicker && (
         <emoji-picker
           ref={emojiPickerRef}
+          data-source={BUNDLED_EMOJI_DATA_SOURCE}
           style={{ width: '100%', maxWidth: '350px', alignSelf: 'flex-start' }}
         />
       )}
