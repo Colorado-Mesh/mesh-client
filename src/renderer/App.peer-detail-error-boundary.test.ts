@@ -13,8 +13,15 @@ const SOURCE = readFileSync(join(TEST_DIR, 'App.tsx'), 'utf-8');
 describe('App ReticulumPeerDetailModal ErrorBoundary (regression)', () => {
   it('wraps ReticulumPeerDetailModal in ReticulumPeerDetailErrorBoundary with Suspense fallback', () => {
     expect(SOURCE).toContain('ReticulumPeerDetailErrorBoundary');
+    // v6: one render helper serves both the Peers detail pane and the modal fallback.
     expect(SOURCE).toMatch(
-      /hasReticulumPeerDetailModal && selectedPeerHash !== null && \(\s*<ReticulumPeerDetailErrorBoundary[\s\S]*?peerHash=\{selectedPeerHash\}[\s\S]*?suspenseFallback=\{<DialogLazyFallback \/>\}[\s\S]*?ReticulumPeerDetailModal/,
+      /const renderPeerDetail = \(variant: 'modal' \| 'pane'\) =>\s*selectedPeerHash === null \? null : \(\s*<ReticulumPeerDetailErrorBoundary[\s\S]*?peerHash=\{selectedPeerHash\}[\s\S]*?suspenseFallback=\{<DialogLazyFallback \/>\}[\s\S]*?<ReticulumPeerDetailModal/,
     );
+  });
+
+  it('mounts the peer detail only through the boundary-wrapped helper', () => {
+    expect(SOURCE.match(/<ReticulumPeerDetailModal\b/g)).toHaveLength(1);
+    expect(SOURCE).toContain("peerDetailPaneOpen && renderPeerDetail('pane')");
+    expect(SOURCE).toContain("peerDetailModalOpen && renderPeerDetail('modal')");
   });
 });
