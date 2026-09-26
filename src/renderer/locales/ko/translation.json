@@ -6279,7 +6279,8 @@
       "hintPin": "고정",
       "panelCount_one": "패널 {{count}}개",
       "panelCount_other": "패널 {{count}}개"
-    }
+    },
+    "more": "더보기"
   },
   "ui": {
     "stepper": {

@@ -6279,7 +6279,8 @@
       "hintPin": "épingler",
       "panelCount_one": "{{count}} panneau",
       "panelCount_other": "{{count}} panneaux"
-    }
+    },
+    "more": "Plus"
   },
   "ui": {
     "stepper": {

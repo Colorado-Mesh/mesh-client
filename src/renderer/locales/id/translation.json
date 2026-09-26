@@ -6279,7 +6279,8 @@
       "hintPin": "sematkan",
       "panelCount_one": "{{count}} panel",
       "panelCount_other": "{{count}} panel"
-    }
+    },
+    "more": "Lainnya"
   },
   "ui": {
     "stepper": {

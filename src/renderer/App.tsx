@@ -142,6 +142,7 @@ import { ReticulumPeerDetailErrorBoundary } from './components/ReticulumPeerDeta
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import { ReticulumTxBufferingHeaderIndicator } from './components/ReticulumTxBufferingHeaderIndicator';
 import { AppRail } from './components/shell/AppRail';
+import { BottomNav } from './components/shell/BottomNav';
 import { PanelLauncher } from './components/shell/PanelLauncher';
 import { SectionHeader } from './components/shell/SectionHeader';
 import { StatusBar, StatusBarButton } from './components/shell/StatusBar';
@@ -239,6 +240,7 @@ import {
   TELEMETRY_PANEL_INDEX,
   TOPOLOGY_PANEL_INDEX,
 } from './lib/appTabMappings';
+import { SHELL_COMPACT_QUERY } from './lib/bottomNav';
 import { playMessageNotification } from './lib/chatNotifications';
 import {
   deviceHeaderVariant,
@@ -561,6 +563,8 @@ function AppContent() {
     setSelectedNodeIdState(nodeId);
   }, []);
   const nodeDetailPaneFits = useMediaQuery(NODE_DETAIL_PANE_MEDIA_QUERY);
+  /** Phones and very narrow windows: bottom bar instead of the rail (future mobile builds). */
+  const shellCompact = useMediaQuery(SHELL_COMPACT_QUERY);
   const [selectedPeerHash, setSelectedPeerHashState] = useState<string | null>(null);
   /** Same rule as nodes: picked from the Peers list on a wide window shows in a side pane. */
   const [peerDetailInPane, setPeerDetailInPane] = useState(false);
@@ -3587,19 +3591,21 @@ function AppContent() {
       )}
       <div className="bg-app-bg flex h-screen w-screen min-w-0 flex-col overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-1">
-          <AppRail
-            header={
-              <ProtocolSwitcher
-                protocol={protocol}
-                unreadByProtocol={protocolSwitcherUnreadByProtocol}
-                onProtocolChange={handleProtocolChange}
-              />
-            }
-            sections={navSections}
-            activeSectionId={activeNavSection?.id}
-            badgeCounts={navBadgeCounts}
-            onSectionSelect={handleNavSectionSelect}
-          />
+          {!shellCompact && (
+            <AppRail
+              header={
+                <ProtocolSwitcher
+                  protocol={protocol}
+                  unreadByProtocol={protocolSwitcherUnreadByProtocol}
+                  onProtocolChange={handleProtocolChange}
+                />
+              }
+              sections={navSections}
+              activeSectionId={activeNavSection?.id}
+              badgeCounts={navBadgeCounts}
+              onSectionSelect={handleNavSectionSelect}
+            />
+          )}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <SectionHeader
               section={activeNavSection}
@@ -3670,7 +3676,7 @@ function AppContent() {
                 {/* Scroll container - no padding so scrollbars pin to viewport edges */}
                 <div ref={mainViewportRef} className="bg-app-bg h-full w-full overflow-auto">
                   {/* Content wrapper - padding lives here, not on the scroll container */}
-                  <div className="h-full min-h-full min-w-0 px-8 pt-8 pb-8">
+                  <div className="h-full min-h-full min-w-0 p-3 sm:p-5 lg:p-8">
                     <ProtocolAutoConnectCoordinator
                       meshtastic={{
                         state: meshtasticConnection.state,
@@ -5329,6 +5335,16 @@ function AppContent() {
             />
           )}
         </StatusBar>
+        {shellCompact && (
+          <BottomNav
+            sections={navSections}
+            activeSectionId={activeNavSection?.id}
+            badgeCounts={navBadgeCounts}
+            onSectionSelect={handleNavSectionSelect}
+            moreOpen={launcherOpen}
+            onMore={toggleLauncher}
+          />
+        )}
       </div>
 
       {launcherOpen && (
@@ -5340,6 +5356,17 @@ function AppContent() {
           onTogglePin={handleToggleLauncherPin}
           onOpenTab={openTabFromLauncher}
           onClose={closeLauncher}
+          variant={shellCompact ? 'sheet' : 'dialog'}
+          header={
+            shellCompact ? (
+              <ProtocolSwitcher
+                orientation="horizontal"
+                protocol={protocol}
+                unreadByProtocol={protocolSwitcherUnreadByProtocol}
+                onProtocolChange={handleProtocolChange}
+              />
+            ) : undefined
+          }
         />
       )}
 

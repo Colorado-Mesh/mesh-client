@@ -10,13 +10,16 @@ export interface ProtocolSwitcherProps {
   /** Per-protocol unread for inactive protocols (Reticulum includes RRC). */
   unreadByProtocol: Record<MeshProtocol, number>;
   onProtocolChange: (protocol: MeshProtocol) => void;
+  /** `vertical` at the top of the rail; `horizontal` in the phone More sheet. */
+  orientation?: 'vertical' | 'horizontal';
 }
 
-/** Stacked MT / MC / RN buttons at the top of the app rail. */
+/** MT / MC / RN buttons: stacked at the top of the app rail, in a row in the phone More sheet. */
 export function ProtocolSwitcher({
   protocol,
   unreadByProtocol,
   onProtocolChange,
+  orientation = 'vertical',
 }: ProtocolSwitcherProps) {
   const { t } = useTranslation();
 
@@ -24,7 +27,7 @@ export function ProtocolSwitcher({
     <div
       role="group"
       aria-label={t('aria.protocolSwitcher')}
-      className="flex shrink-0 flex-col items-center gap-2"
+      className={`flex shrink-0 items-center gap-2 ${orientation === 'vertical' ? 'flex-col' : 'flex-row'}`}
     >
       {REGISTERED_MESH_PROTOCOLS.map((proto) => {
         const theme = PROTOCOL_THEME[proto];

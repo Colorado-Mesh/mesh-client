@@ -33,14 +33,13 @@ export function slotBadge(slot: TabSlotId, counts: NavBadgeCounts): NavBadge | n
 }
 
 /**
- * Sum of a section's tab badges for the rail. Unread wins the tone so the rail stays red while any
- * message is waiting, then incidents, then pending file offers.
+ * Sum of several badges. Unread wins the tone so a nav item stays red while any message is waiting,
+ * then incidents, then pending file offers.
  */
-export function sectionBadge(section: NavSection, counts: NavBadgeCounts): NavBadge | null {
+export function sumNavBadges(badges: readonly (NavBadge | null)[]): NavBadge | null {
   let total = 0;
   const tones = new Set<NavBadgeTone>();
-  for (const tab of section.tabs) {
-    const badge = slotBadge(tab.slot, counts);
+  for (const badge of badges) {
     if (!badge) continue;
     total += badge.count;
     tones.add(badge.tone);
@@ -52,6 +51,11 @@ export function sectionBadge(section: NavSection, counts: NavBadgeCounts): NavBa
       ? 'incident'
       : 'pending';
   return { count: total, tone };
+}
+
+/** Sum of a section's tab badges for the rail (tone precedence as in `sumNavBadges`). */
+export function sectionBadge(section: NavSection, counts: NavBadgeCounts): NavBadge | null {
+  return sumNavBadges(section.tabs.map((tab) => slotBadge(tab.slot, counts)));
 }
 
 export function formatBadgeCount(count: number): string {

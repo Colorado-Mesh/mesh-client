@@ -6279,7 +6279,8 @@
       "hintPin": "固定",
       "panelCount_one": "{{count}} 个面板",
       "panelCount_other": "{{count}} 个面板"
-    }
+    },
+    "more": "更多"
   },
   "ui": {
     "stepper": {

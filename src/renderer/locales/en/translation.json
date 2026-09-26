@@ -6279,7 +6279,8 @@
       "hintPin": "pin",
       "panelCount_one": "{{count}} panel",
       "panelCount_other": "{{count}} panels"
-    }
+    },
+    "more": "More"
   },
   "ui": {
     "stepper": {

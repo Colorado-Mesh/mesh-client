@@ -6326,7 +6326,8 @@
       "panelCount_one": "{{count}} panel",
       "panelCount_few": "{{count}} panely",
       "panelCount_other": "{{count}} panelů"
-    }
+    },
+    "more": "Více"
   },
   "ui": {
     "stepper": {

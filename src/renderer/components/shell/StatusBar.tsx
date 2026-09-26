@@ -54,7 +54,7 @@ export function StatusBar({ children, stats, update, liveStatus }: StatusBarProp
       <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {liveStatus}
       </span>
-      <div className="flex min-w-0 items-center gap-0.5">{children}</div>
+      <div className="flex min-w-0 items-center gap-0.5 overflow-hidden">{children}</div>
       <div aria-hidden="true" className="min-w-2 flex-1" />
       <span className="hidden shrink-0 px-2.5 whitespace-nowrap lg:inline">{stats}</span>
       <span className="flex shrink-0 items-center px-2.5 font-sans">{update}</span>

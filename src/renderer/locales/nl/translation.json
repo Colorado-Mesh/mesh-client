@@ -6279,7 +6279,8 @@
       "hintPin": "vastzetten",
       "panelCount_one": "{{count}} paneel",
       "panelCount_other": "{{count}} panelen"
-    }
+    },
+    "more": "Meer"
   },
   "ui": {
     "stepper": {

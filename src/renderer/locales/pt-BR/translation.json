@@ -6279,7 +6279,8 @@
       "hintPin": "fixar",
       "panelCount_one": "{{count}} painel",
       "panelCount_other": "{{count}} painéis"
-    }
+    },
+    "more": "Mais"
   },
   "ui": {
     "stepper": {

@@ -6371,7 +6371,8 @@
       "panelCount_few": "{{count}} панелі",
       "panelCount_many": "{{count}} панелей",
       "panelCount_other": "{{count}} панелі"
-    }
+    },
+    "more": "Більше"
   },
   "ui": {
     "stepper": {

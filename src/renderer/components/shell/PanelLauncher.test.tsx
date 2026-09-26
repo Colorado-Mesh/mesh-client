@@ -60,6 +60,31 @@ function renderLauncher(
 }
 
 describe('PanelLauncher', () => {
+  it('as a phone sheet, shows the header slot and focuses the sheet instead of the search field', () => {
+    render(
+      <PanelLauncher
+        sections={sections}
+        badgeCounts={{}}
+        pins={[]}
+        platform="linux"
+        onOpenTab={vi.fn()}
+        onTogglePin={vi.fn()}
+        onClose={vi.fn()}
+        variant="sheet"
+        header={<div data-testid="sheet-header" />}
+      />,
+    );
+    const sheet = screen.getByRole('dialog', { name: 'All panels' });
+    expect(within(sheet).getByTestId('sheet-header')).toBeInTheDocument();
+    expect(document.activeElement).toBe(sheet);
+    expect(sheet.className).toContain('rounded-t-xl');
+  });
+
+  it('focuses the search field as a dialog', () => {
+    renderLauncher();
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Search panels' }));
+  });
+
   it('lists all 18 MeshCore panels grouped by section', () => {
     renderLauncher();
     const dialog = screen.getByRole('dialog', { name: 'All panels' });

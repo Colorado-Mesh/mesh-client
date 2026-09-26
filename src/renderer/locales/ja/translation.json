@@ -6279,7 +6279,8 @@
       "hintPin": "ピン留め",
       "panelCount_one": "{{count}} 個のパネル",
       "panelCount_other": "{{count}} 個のパネル"
-    }
+    },
+    "more": "その他"
   },
   "ui": {
     "stepper": {

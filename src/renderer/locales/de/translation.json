@@ -6279,7 +6279,8 @@
       "hintPin": "anheften",
       "panelCount_one": "{{count}} Panel",
       "panelCount_other": "{{count}} Panels"
-    }
+    },
+    "more": "Mehr"
   },
   "ui": {
     "stepper": {

@@ -6279,7 +6279,8 @@
       "hintPin": "fissa",
       "panelCount_one": "{{count}} pannello",
       "panelCount_other": "{{count}} pannelli"
-    }
+    },
+    "more": "Altro"
   },
   "ui": {
     "stepper": {

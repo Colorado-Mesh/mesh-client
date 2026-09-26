@@ -2026,6 +2026,65 @@ describe('App ConnectionPanel facade wiring', () => {
   );
 });
 
+describe('App phone layout (bottom bar)', () => {
+  function stubPhoneWindow() {
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        media: query,
+        matches: query.startsWith('(max-width'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    onTestFinished(() => {
+      if (original) Object.defineProperty(window, 'matchMedia', original);
+      else Reflect.deleteProperty(window, 'matchMedia');
+    });
+  }
+
+  it('replaces the rail with a bottom bar that keeps Incident and puts the rest under More', () => {
+    stubPhoneWindow();
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    const nav = appRail();
+    const items = Array.from(nav.querySelectorAll('[data-nav-section]')).map((el) =>
+      el.getAttribute('data-nav-section'),
+    );
+    expect(items[0]).toBe('chat');
+    expect(items).toContain('incident');
+    expect(items.at(-1)).toBe('more');
+    expect(items).not.toContain('device');
+    expect(within(nav).queryByRole('group', { name: 'Protocol switcher' })).toBeNull();
+    // Device (Connection) opens on launch, so More shows as the active item.
+    expect(within(nav).getByRole('button', { name: 'More' }).className).toContain(
+      'text-bright-green',
+    );
+  });
+
+  it('opens the launcher as a sheet with the protocol switcher from More', () => {
+    stubPhoneWindow();
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    const more = within(appRail()).getByRole('button', { name: 'More' });
+    expect(more).toHaveAttribute('aria-haspopup', 'dialog');
+    fireEvent.click(more);
+    const sheet = screen.getByRole('dialog', { name: 'All panels' });
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+    expect(within(sheet).getByRole('group', { name: 'Protocol switcher' })).toBeInTheDocument();
+    // Focus stays off the search field so the on-screen keyboard does not open.
+    expect(document.activeElement).toBe(sheet);
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Map/ }));
+    expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
+    expect(within(appRail()).getByRole('button', { name: 'Map' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+});
+
 describe('App node detail pane (Option B Contacts)', () => {
   function stubWideWindow(matches: boolean) {
     const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
@@ -2034,7 +2093,8 @@ describe('App node detail pane (Option B Contacts)', () => {
       writable: true,
       value: vi.fn((query: string) => ({
         media: query,
-        matches,
+        // Only the pane's min-width query; the phone shell (max-width) stays off.
+        matches: matches && query.startsWith('(min-width'),
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
       })),

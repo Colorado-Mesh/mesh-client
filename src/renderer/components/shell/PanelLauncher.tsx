@@ -1,5 +1,5 @@
 import { Pin, Search } from 'lucide-react-motion';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -38,6 +38,13 @@ export interface PanelLauncherProps {
   /** Open a panel by filtered tab index; the parent closes the launcher. */
   onOpenTab: (tabIndex: number) => void;
   onClose: () => void;
+  /**
+   * `dialog` (default): centered, search focused. `sheet`: phone More sheet from the bottom edge;
+   * focus goes to the sheet, not the search field, so the on-screen keyboard stays down.
+   */
+  variant?: 'dialog' | 'sheet';
+  /** Shown under the search row (the phone sheet puts the protocol switcher here). */
+  header?: ReactNode;
 }
 
 interface LauncherGroup {
@@ -61,6 +68,8 @@ export function PanelLauncher({
   onTogglePin,
   onOpenTab,
   onClose,
+  variant = 'dialog',
+  header,
 }: PanelLauncherProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -71,11 +80,12 @@ export function PanelLauncher({
   // Focus the search field on open; hand focus back to the opener on close.
   useLayoutEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    inputRef.current?.focus();
+    if (variant === 'sheet') dialogRef.current?.focus();
+    else inputRef.current?.focus();
     return () => {
       if (opener?.isConnected) opener.focus();
     };
-  }, []);
+  }, [variant]);
 
   // Escape closes; Tab stays inside the dialog while it is open.
   useEffect(() => {
@@ -178,7 +188,9 @@ export function PanelLauncher({
 
   return (
     <div
-      className="fixed inset-0 flex items-start justify-center px-4 pt-[12vh]"
+      className={`fixed inset-0 flex justify-center ${
+        variant === 'sheet' ? 'items-end' : 'items-start px-4 pt-[12vh]'
+      }`}
       style={{ zIndex: Z_NODE_DETAIL_MODAL }}
     >
       <button
@@ -193,7 +205,12 @@ export function PanelLauncher({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="border-secondary-dark bg-deep-black relative flex max-h-[76vh] w-full max-w-170 flex-col overflow-hidden rounded-xl border shadow-2xl"
+        tabIndex={-1}
+        className={`border-secondary-dark bg-deep-black relative flex w-full flex-col overflow-hidden border shadow-2xl outline-none ${
+          variant === 'sheet'
+            ? 'max-h-[85vh] rounded-t-xl border-b-0 pb-[env(safe-area-inset-bottom)]'
+            : 'max-h-[76vh] max-w-170 rounded-xl'
+        }`}
       >
         <h2 id={titleId} className="sr-only">
           {t('shell.launcher.title')}
@@ -216,6 +233,11 @@ export function PanelLauncher({
           />
           <Kbd>Esc</Kbd>
         </div>
+        {header && (
+          <div className="flex shrink-0 items-center justify-center border-b border-slate-800 px-4 py-3">
+            {header}
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {groups.length === 0 ? (
@@ -317,15 +339,15 @@ export function PanelLauncher({
         </div>
 
         <div className="text-muted flex h-10 shrink-0 items-center gap-4 border-t border-slate-800 px-4 text-xs">
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5 pointer-coarse:hidden">
             <Kbd>{'↑↓'}</Kbd>
             {t('shell.launcher.hintMove')}
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5 pointer-coarse:hidden">
             <Kbd>Enter</Kbd>
             {t('shell.launcher.hintOpen')}
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5 pointer-coarse:hidden">
             <Kbd>{formatShortcut('P', platform)}</Kbd>
             {t('shell.launcher.hintPin')}
           </span>
