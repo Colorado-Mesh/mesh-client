@@ -269,16 +269,16 @@
         "description": "Kenar çubuğu gezintisinde o anda seçili olan sekmenin arka planı."
       },
       "brandGreen": {
-        "label": "Göstergeler ve kenar vurguları",
-        "description": "Yapılandırıldığında kenarlıklar için vurgu, çevrimiçi/MQTT göstergeleri, vurgular ve ilerleme doldurmaları."
+        "label": "Vurgu yeşili",
+        "description": "Birincil düğmeler ve Gönder (koyu metinle), yeşil metin, etkin öğeler, çevrim içi göstergeleri ve ilerleme dolguları. Uygulama arka planında okunaklı kalır."
       },
       "brightGreen": {
         "label": "Uygulama başlığı, bağlantılar ve düğüm vurgusu",
         "description": "Uygulama başlığı, vurgu metni, alt bilgideki bağlantılar ve düğüm listesinde atlama/kendini vurgulama."
       },
       "readableGreen": {
-        "label": "Eylem düğmeleri ve seçilen haplar",
-        "description": "Beyaz metinle dolu dolgular; kontrast için seçilen kanal hapları ve birincil eylem düğmeleri."
+        "label": "Meshtastic rozeti yeşili",
+        "description": "Meshtastic protokol rozetinde beyaz metnin altındaki düz dolgu."
       },
       "deepBlack": {
         "label": "Kenar çubuğu, başlık ve modal yüzeyler",

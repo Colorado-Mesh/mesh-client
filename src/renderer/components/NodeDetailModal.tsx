@@ -1453,7 +1453,7 @@ export default function NodeDetailModal({
                     {recent.map((point) => (
                       <div
                         key={point.timestamp}
-                        className="bg-readable-green min-w-0 flex-1 rounded-sm"
+                        className="bg-brand-green min-w-0 flex-1 rounded-sm"
                         style={{
                           height: `${Math.max(8, Math.round((point.count / maxCount) * 100))}%`,
                         }}

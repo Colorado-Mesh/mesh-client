@@ -26,7 +26,7 @@ describe('Button', () => {
     );
     const connect = screen.getByRole('button', { name: 'Connect' });
     expect(connect).toHaveAttribute('type', 'button');
-    expect(connect.className).toContain('bg-readable-green');
+    expect(connect.className).toContain('bg-brand-green');
     const disconnect = screen.getByRole('button', { name: 'Disconnect' });
     expect(disconnect.className).toContain('text-red-400');
     expect(disconnect.className).not.toContain('w-full');

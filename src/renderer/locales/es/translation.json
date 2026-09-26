@@ -269,16 +269,16 @@
         "description": "Fondo de la pestaña actualmente seleccionada en la navegación de la barra lateral."
       },
       "brandGreen": {
-        "label": "Indicadores y aspectos destacados de las fronteras",
-        "description": "Acento para los bordes cuando se configuran, indicadores en línea/MQTT, resaltados y rellenos de progreso."
+        "label": "Verde de acento",
+        "description": "Botones principales y Enviar (con texto oscuro), texto verde, elementos activos, indicadores en línea y rellenos de progreso. Se mantiene legible sobre el fondo de la aplicación."
       },
       "brightGreen": {
         "label": "Título de la aplicación, enlaces y énfasis en los nodos",
         "description": "Título de la aplicación, texto de énfasis, enlaces en el pie de página y resaltados de salto/auto en la lista de nodos."
       },
       "readableGreen": {
-        "label": "Botones de acción y pastillas seleccionadas",
-        "description": "Rellenos sólidos con texto blanco: píldoras de canales seleccionados y botones de acción principal para contrastar."
+        "label": "Verde de la insignia de Meshtastic",
+        "description": "Relleno sólido bajo texto blanco en la insignia del protocolo Meshtastic."
       },
       "deepBlack": {
         "label": "Barra lateral, encabezado y superficies modales",

@@ -269,16 +269,16 @@
         "description": "侧边栏导航中当前选定选项卡的背景。"
       },
       "brandGreen": {
-        "label": "指标和边框亮点",
-        "description": "配置时强调边框、在线/MQTT 指示器、突出显示和进度填充。"
+        "label": "强调绿色",
+        "description": "主要按钮和发送按钮（深色文字）、绿色文字、活动项、在线指示和进度填充。在应用背景上保持清晰可读。"
       },
       "brightGreen": {
         "label": "应用程序标题、链接和节点重点",
         "description": "应用程序标题、强调文本、页脚中的链接以及节点列表中的跳跃/自我突出显示。"
       },
       "readableGreen": {
-        "label": "操作按钮和选定的药丸",
-        "description": "实心填充白色文本 - 选定的通道药丸和主要操作按钮以进行对比。"
+        "label": "Meshtastic 徽标绿色",
+        "description": "Meshtastic 协议徽标上白色文字下方的实心填充。"
       },
       "deepBlack": {
         "label": "侧边栏、标题和模态界面",

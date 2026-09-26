@@ -141,7 +141,7 @@ function ConfigToggle({
           }}
           disabled={disabled}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-            checked ? 'bg-readable-green' : 'bg-gray-600'
+            checked ? 'bg-brand-green' : 'bg-gray-600'
           }`}
         >
           <span
@@ -292,7 +292,7 @@ function ModuleSection({
           type="button"
           onClick={onApply}
           disabled={applyDisabled}
-          className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
+          className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:bg-gray-600"
         >
           {applying
             ? t('modulePanel.applyingButton')
@@ -1829,7 +1829,7 @@ export default function ModulePanel({
               setAmbientCurrent(Number(e.target.value));
             }}
             disabled={disabled || !ambientLedState}
-            className="accent-readable-green w-full disabled:opacity-50"
+            className="accent-brand-green w-full disabled:opacity-50"
           />
           <p className="text-muted text-xs">{t('modulePanel.fields.brightnessHint')}</p>
         </div>

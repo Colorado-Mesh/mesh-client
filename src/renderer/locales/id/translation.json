@@ -269,16 +269,16 @@
         "description": "Latar belakang tab yang dipilih saat ini di navigasi sidebar."
       },
       "brandGreen": {
-        "label": "Indikator & sorotan perbatasan",
-        "description": "Aksen untuk batas saat dikonfigurasi, indikator online/MQTT, sorotan, dan pengisian kemajuan."
+        "label": "Hijau aksen",
+        "description": "Tombol utama dan Kirim (dengan teks gelap), teks hijau, item aktif, indikator online, dan isian progres. Tetap mudah dibaca di latar belakang aplikasi."
       },
       "brightGreen": {
         "label": "Judul aplikasi, tautan & penekanan simpul",
         "description": "Judul aplikasi, teks penekanan, tautan di footer, dan sorotan hop/diri di daftar simpul."
       },
       "readableGreen": {
-        "label": "Tombol tindakan & pil yang dipilih",
-        "description": "Isian padat dengan teks putih—pil saluran yang dipilih dan tombol tindakan utama untuk kontras."
+        "label": "Hijau lencana Meshtastic",
+        "description": "Isian solid di bawah teks putih pada lencana protokol Meshtastic."
       },
       "deepBlack": {
         "label": "Permukaan sidebar, header & modal",

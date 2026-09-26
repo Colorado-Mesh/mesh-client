@@ -198,7 +198,7 @@ export function ReticulumDefaultHubsPickerModal({
               onConfirm(selectedIds);
             }}
             disabled={confirming || selectedIds.size === 0}
-            className="bg-readable-green flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:opacity-50"
+            className="bg-brand-green text-app-bg flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors hover:bg-green-600 disabled:opacity-50"
             aria-label={t('connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria', {
               count: actionableSelectedCount,
             })}

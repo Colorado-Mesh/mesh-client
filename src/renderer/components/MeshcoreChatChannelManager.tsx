@@ -217,7 +217,7 @@ export default function MeshcoreChatChannelManager({
                   type="submit"
                   disabled={!valid || saving || disabled}
                   aria-label={saving ? t('common.saving') : t('common.save')}
-                  className="bg-readable-green hover:bg-readable-green/90 rounded px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-400"
+                  className="bg-brand-green hover:bg-brand-green/90 text-app-bg rounded px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-400"
                 >
                   {saving ? t('common.saving') : t('common.save')}
                 </button>

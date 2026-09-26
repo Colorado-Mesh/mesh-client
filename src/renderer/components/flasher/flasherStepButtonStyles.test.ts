@@ -10,14 +10,14 @@ describe('flasherStepButtonClass', () => {
     },
   );
 
-  it('uses readable-green for ready, busy, and done', () => {
-    expect(flasherStepButtonClass('ready')).toContain('bg-readable-green');
-    expect(flasherStepButtonClass('busy')).toContain('bg-readable-green');
-    expect(flasherStepButtonClass('done')).toContain('bg-readable-green');
+  it('uses the accent green for ready, busy, and done', () => {
+    expect(flasherStepButtonClass('ready')).toContain('bg-brand-green');
+    expect(flasherStepButtonClass('busy')).toContain('bg-brand-green');
+    expect(flasherStepButtonClass('done')).toContain('bg-brand-green');
   });
 
   it('uses outline style when disabled', () => {
     expect(flasherStepButtonClass('disabled')).toContain('border-gray-600');
-    expect(flasherStepButtonClass('disabled')).not.toContain('bg-readable-green');
+    expect(flasherStepButtonClass('disabled')).not.toContain('bg-brand-green');
   });
 });

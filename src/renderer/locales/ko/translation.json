@@ -269,16 +269,16 @@
         "description": "사이드바 탐색에서 현재 선택된 탭의 배경입니다."
       },
       "brandGreen": {
-        "label": "표시기 및 테두리 하이라이트",
-        "description": "구성된 경우 테두리에 대한 강조, 온라인/MQTT 표시기, 하이라이트 및 진행률 채우기."
+        "label": "강조 녹색",
+        "description": "기본 버튼과 보내기(어두운 글자), 녹색 텍스트, 활성 항목, 온라인 표시, 진행 채우기. 앱 배경에서 읽기 쉽게 유지됩니다."
       },
       "brightGreen": {
         "label": "앱 제목, 링크 및 노드 강조",
         "description": "앱 제목, 강조 텍스트, 바닥글의 링크, 노드 목록의 홉/자체 강조 표시."
       },
       "readableGreen": {
-        "label": "작업 버튼 및 선택한 알약",
-        "description": "흰색 텍스트로 채워진 단색 - 선택된 채널 알약과 대비를 위한 기본 작업 버튼."
+        "label": "Meshtastic 배지 녹색",
+        "description": "Meshtastic 프로토콜 배지의 흰색 글자 아래 단색 채우기입니다."
       },
       "deepBlack": {
         "label": "사이드바, 헤더 및 모달 표면",

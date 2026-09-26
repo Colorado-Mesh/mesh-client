@@ -579,7 +579,7 @@ export default function ReticulumPropagationSection({
                       </span>
                     ) : null}
                     {preferredId === node.id ? (
-                      <span className="text-readable-green ml-1 text-xs">
+                      <span className="text-bright-green ml-1 text-xs">
                         {t('reticulumPropagation.preferred')}
                       </span>
                     ) : null}

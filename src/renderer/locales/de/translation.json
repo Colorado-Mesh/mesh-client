@@ -269,16 +269,16 @@
         "description": "Hintergrund der aktuell ausgewählten Registerkarte in der Seitenleistennavigation."
       },
       "brandGreen": {
-        "label": "Indikatoren und Grenzmarkierungen",
-        "description": "Akzentuierung von Rändern bei Konfiguration, Online-/MQTT-Indikatoren, Hervorhebungen und Fortschrittsfüllungen."
+        "label": "Akzentgrün",
+        "description": "Primäre Schaltflächen und Senden (mit dunklem Text), grüner Text, aktive Elemente, Online-Anzeigen und Fortschrittsfüllungen. Bleibt auf dem App-Hintergrund lesbar."
       },
       "brightGreen": {
         "label": "App-Titel, Links und Knotenhervorhebung",
         "description": "App-Titel, Hervorhebungstext, Links in der Fußzeile und Hop-/Selbst-Hervorhebungen in der Knotenliste."
       },
       "readableGreen": {
-        "label": "Aktionsschaltflächen und ausgewählte Pillen",
-        "description": "Feste Füllungen mit weißem Text – ausgewählte Kanalpillen und primäre Aktionsschaltflächen als Kontrast."
+        "label": "Grün des Meshtastic-Abzeichens",
+        "description": "Vollfläche unter weißem Text auf dem Meshtastic-Protokollabzeichen."
       },
       "deepBlack": {
         "label": "Seitenleiste, Kopfzeile und modale Oberflächen",

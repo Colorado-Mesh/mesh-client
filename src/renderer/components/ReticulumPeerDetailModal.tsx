@@ -474,7 +474,7 @@ export default function ReticulumPeerDetailModal({
               />
               <button
                 type="button"
-                className="bg-readable-green rounded px-2 py-1 text-xs text-white"
+                className="bg-brand-green text-app-bg rounded px-2 py-1 text-xs"
                 onClick={() => {
                   void saveName();
                 }}
@@ -531,7 +531,7 @@ export default function ReticulumPeerDetailModal({
             <span
               className={
                 isContact
-                  ? 'bg-readable-green/20 text-readable-green text-2xs rounded px-1.5 py-0.5 font-sans font-medium'
+                  ? 'bg-brand-green/12 text-bright-green text-2xs rounded px-1.5 py-0.5 font-sans font-medium'
                   : 'text-muted text-2xs rounded px-1.5 py-0.5 font-sans'
               }
             >
@@ -797,7 +797,7 @@ export default function ReticulumPeerDetailModal({
         </button>
         <button
           type="button"
-          className="border-readable-green text-readable-green flex items-center gap-1 rounded border px-3 py-1.5 text-sm hover:bg-green-950/30"
+          className="border-brand-green/35 text-bright-green flex items-center gap-1 rounded border px-3 py-1.5 text-sm hover:bg-green-950/30"
           onClick={openChat}
         >
           <MessageCircle className="h-4 w-4" aria-hidden />

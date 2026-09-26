@@ -96,6 +96,18 @@ describe('themeColors', () => {
       expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
     });
 
+    it('resets a brandGreen override that is too dark for text or dark-on-green fills', () => {
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ brandGreen: '#14532d' }));
+      const colors = loadThemeColors();
+      expect(colors.brandGreen).toBe('#86efac');
+      expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
+    });
+
+    it('keeps a light enough brandGreen override', () => {
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ brandGreen: '#4ade80' }));
+      expect(loadThemeColors().brandGreen).toBe('#4ade80');
+    });
+
     it('keeps accessible readableGreen override', () => {
       localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ readableGreen: '#14532d' }));
       const colors = loadThemeColors();

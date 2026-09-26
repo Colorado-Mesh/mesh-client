@@ -253,7 +253,7 @@ export function ReticulumVoiceMemoLine({
               key={i}
               aria-hidden
               className={`w-1 min-w-0 rounded-sm transition-colors ${
-                played ? 'bg-readable-green' : 'bg-gray-600'
+                played ? 'bg-brand-green' : 'bg-gray-600'
               }`}
               style={{ height: `${Math.max(BAR_MIN_HEIGHT, Math.round(height * 28))}px` }}
             />

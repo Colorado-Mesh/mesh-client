@@ -257,7 +257,7 @@ export function KeyBackupRestoreSection({
       <p className="text-muted text-xs">{t('securityPanel.keyBackupNotIncluded')}</p>
       <div className="text-muted flex items-center gap-2 text-xs">
         <span
-          className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-readable-green' : 'bg-gray-600'}`}
+          className={`h-2 w-2 rounded-full ${backupAvailable ? 'bg-brand-green' : 'bg-gray-600'}`}
         />
         {backupAvailable
           ? t('securityPanel.backupAvailableForNode', { label: nodeDisplayLabel })

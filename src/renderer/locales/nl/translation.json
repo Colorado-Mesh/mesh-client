@@ -269,16 +269,16 @@
         "description": "Achtergrond van het momenteel geselecteerde tabblad in de zijbalknavigatie."
       },
       "brandGreen": {
-        "label": "Indicatoren en grensmarkeringen",
-        "description": "Accent voor randen indien geconfigureerd, online/MQTT-indicatoren, hoogtepunten en voortgangsvullingen."
+        "label": "Accentgroen",
+        "description": "Primaire knoppen en Verzenden (met donkere tekst), groene tekst, actieve items, online-indicatoren en voortgangsvullingen. Blijft leesbaar op de app-achtergrond."
       },
       "brightGreen": {
         "label": "App-titel, links en nadruk op knooppunten",
         "description": "App-titel, nadruktekst, links in de voettekst en hop/self-highlights in de knooppuntenlijst."
       },
       "readableGreen": {
-        "label": "Actieknoppen en geselecteerde pillen",
-        "description": "Effen vullingen met witte tekst: geselecteerde kanaalpillen en primaire actieknoppen voor contrast."
+        "label": "Groen van de Meshtastic-badge",
+        "description": "Volle vulling onder witte tekst op de Meshtastic-protocolbadge."
       },
       "deepBlack": {
         "label": "Zijbalk, koptekst en modale oppervlakken",

@@ -608,7 +608,7 @@ function ConfigSection({
             type="button"
             onClick={onApply}
             disabled={disabled || applying}
-            className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
+            className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:bg-gray-600"
           >
             {applying
               ? t('modulePanel.applyingButton')
@@ -2533,7 +2533,7 @@ export default function RadioPanel({
               title={
                 !locationSendAllowed ? t('radioPanel.sendPositionDisabledShareOff') : undefined
               }
-              className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
+              className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:bg-gray-600"
             >
               {t('radioPanel.sendPositionToDevice')}
             </button>
@@ -3418,7 +3418,7 @@ function ChannelUrlImportExport({
                 onClick={() => {
                   setConfirmApply(parsed);
                 }}
-                className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted rounded-lg px-3 py-1.5 text-sm font-medium text-white disabled:bg-gray-600"
+                className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg rounded-lg px-3 py-1.5 text-sm font-medium disabled:bg-gray-600"
                 aria-label={t('radioPanel.channelUrl.apply')}
               >
                 {applying ? t('radioPanel.channelUrl.applying') : t('radioPanel.channelUrl.apply')}
@@ -3790,7 +3790,7 @@ function ChannelSection({
             type="button"
             onClick={saveChannel}
             disabled={disabled || saving}
-            className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
+            className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors disabled:bg-gray-600"
           >
             {saving ? t('radioPanel.savingChannel') : t('radioPanel.saveChannel')}
           </button>
@@ -3918,7 +3918,7 @@ function ChannelSection({
                 onRetryRemoteChannelsTail();
               }}
               disabled={disabled || remoteChannelsTailStatus === 'loading'}
-              className="text-readable-green hover:text-bright-green text-xs underline disabled:opacity-50"
+              className="text-bright-green hover:text-bright-green text-xs underline disabled:opacity-50"
               aria-label={t('radioPanel.retryRemoteChannels')}
             >
               {t('radioPanel.retryRemoteChannels')}
@@ -4206,7 +4206,7 @@ function MeshcoreChannelSection({
           type="button"
           onClick={handleSave}
           disabled={disabled || saving || !isValidHex || (mode === 'add' && newIdx === '')}
-          className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
+          className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors disabled:bg-gray-600"
         >
           {saving ? t('common.saving') : t('common.save')}
         </button>

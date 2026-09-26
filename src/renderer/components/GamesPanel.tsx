@@ -254,7 +254,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                 type="button"
                 className={`rounded px-2 py-1 text-xs ${
                   filter === f
-                    ? 'bg-readable-green text-white'
+                    ? 'bg-brand-green text-app-bg'
                     : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
                 }`}
                 aria-label={t(`gamesPanel.filters.${f}`)}
@@ -349,7 +349,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             </select>
             <button
               type="button"
-              className="bg-readable-green flex-1 rounded px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+              className="bg-brand-green text-app-bg flex-1 rounded px-2 py-1 text-xs font-medium hover:opacity-90 disabled:opacity-50"
               aria-label={t('gamesPanel.sendChallengeAria')}
               disabled={actionBusy || !challengeHash.trim()}
               onClick={() => void handleSendChallenge()}
@@ -453,7 +453,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                     <>
                       <button
                         type="button"
-                        className="bg-readable-green rounded px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+                        className="bg-brand-green text-app-bg rounded px-3 py-1 text-xs font-medium disabled:opacity-50"
                         aria-label={t('gamesPanel.acceptDrawAria')}
                         disabled={actionBusy}
                         onClick={() => {

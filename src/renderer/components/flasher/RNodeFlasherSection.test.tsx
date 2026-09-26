@@ -36,7 +36,7 @@ describe('RNodeFlasherSection', () => {
     const provision = screen.getByRole('button', { name: /provision/i });
     expect(provision).toBeDisabled();
     expect(provision.className).toContain('border-gray-600');
-    expect(provision.className).not.toContain('bg-readable-green');
+    expect(provision.className).not.toContain('bg-brand-green');
   });
 
   it('keeps set firmware hash disabled until provision completes', () => {
@@ -59,7 +59,7 @@ describe('RNodeFlasherSection', () => {
     render(<RNodeFlasherSection portBlocked={false} />);
     const provision = screen.getByRole('button', { name: /provision/i });
     expect(provision).not.toBeDisabled();
-    expect(provision.className).toContain('bg-readable-green');
+    expect(provision.className).toContain('bg-brand-green');
     expect(screen.getByRole('button', { name: /set firmware hash/i })).toBeDisabled();
   });
 

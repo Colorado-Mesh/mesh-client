@@ -1185,7 +1185,7 @@ export function ChatComposer({
   const sendButtonToneClass = `text-sm font-medium transition-colors disabled:bg-secondary-dark disabled:text-muted ${
     showQueueButton
       ? 'bg-slate-600 text-white hover:bg-slate-500'
-      : 'bg-readable-green hover:bg-readable-green/90 text-white'
+      : 'bg-brand-green hover:bg-brand-green/90 text-app-bg'
   }`;
 
   const sendButtonClass = `${sendButtonToneClass} inline-flex h-[2.625rem] items-center gap-1.5 rounded-lg px-4`;

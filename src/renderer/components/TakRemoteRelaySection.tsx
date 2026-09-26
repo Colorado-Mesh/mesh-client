@@ -293,7 +293,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             onClick={handleConnect}
             aria-label={t('takServerPanel.remoteConnect')}
             disabled={isBusy || !hostValid || !portValid}
-            className="bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-50"
+            className="bg-brand-green hover:bg-brand-green/90 text-app-bg rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {t('takServerPanel.remoteConnect')}
           </button>

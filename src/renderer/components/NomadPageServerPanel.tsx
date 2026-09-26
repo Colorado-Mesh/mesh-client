@@ -285,7 +285,7 @@ export default function NomadPageServerPanel({
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-medium text-gray-100">{t('nomadNetwork.serving.title')}</h3>
         {serving ? (
-          <span className="bg-readable-green text-2xs rounded px-2 py-0.5 font-medium text-white">
+          <span className="bg-brand-green text-2xs text-app-bg rounded px-2 py-0.5 font-medium">
             {t('nomadNetwork.serving.servingChip')}
           </span>
         ) : null}

@@ -269,16 +269,16 @@
         "description": "Pozadí aktuálně vybrané karty v navigaci postranního panelu."
       },
       "brandGreen": {
-        "label": "Indikátory a zvýraznění hranic",
-        "description": "Zvýraznění okrajů při konfiguraci, indikátory online/MQTT, zvýraznění a vyplnění průběhu."
+        "label": "Zvýrazňující zelená",
+        "description": "Hlavní tlačítka a Odeslat (s tmavým textem), zelený text, aktivní položky, indikátory online a výplně průběhu. Zůstává čitelná na pozadí aplikace."
       },
       "brightGreen": {
         "label": "Název aplikace, odkazy a zvýraznění uzlu",
         "description": "Název aplikace, zdůrazněný text, odkazy v zápatí a zvýraznění skoků/samo v seznamu uzlů."
       },
       "readableGreen": {
-        "label": "Akční tlačítka a vybrané prášky",
-        "description": "Plné výplně s bílým textem – vybrané pilulky kanálu a tlačítka primární akce pro kontrast."
+        "label": "Zelená odznaku Meshtastic",
+        "description": "Plná výplň pod bílým textem na odznaku protokolu Meshtastic."
       },
       "deepBlack": {
         "label": "Postranní panel, záhlaví a modální povrchy",

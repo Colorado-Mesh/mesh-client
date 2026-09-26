@@ -37,7 +37,7 @@ export function Switch({ checked, onChange, label, description, disabled }: Swit
           onChange(!checked);
         }}
         className={`focus-visible:outline-brand-green relative h-5 w-9 shrink-0 rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-          checked ? 'bg-readable-green' : 'bg-secondary-dark'
+          checked ? 'bg-brand-green' : 'bg-secondary-dark'
         }`}
       >
         <span

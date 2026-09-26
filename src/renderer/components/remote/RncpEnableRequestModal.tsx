@@ -258,7 +258,7 @@ export function RncpEnableRequestModal() {
         <div className="mt-4 flex flex-col gap-2">
           <button
             type="button"
-            className="bg-readable-green rounded px-3 py-2 text-sm font-medium text-white"
+            className="bg-brand-green text-app-bg rounded px-3 py-2 text-sm font-medium"
             aria-label={t('reticulumRemote.enableRequest.enableAskAria')}
             onClick={() => void enableListener(false)}
           >

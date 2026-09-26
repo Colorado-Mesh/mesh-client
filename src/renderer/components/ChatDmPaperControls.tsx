@@ -157,7 +157,7 @@ export function ChatDmPaperShareControl({
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="bg-readable-green rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                  className="bg-brand-green text-app-bg rounded px-3 py-1.5 text-xs font-medium disabled:opacity-40"
                   disabled={busy || !text.trim() || !focusedIdentityId}
                   onClick={() => {
                     void createPaper();
@@ -183,7 +183,7 @@ export function ChatDmPaperShareControl({
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="bg-readable-green rounded px-3 py-1.5 text-xs font-medium text-white"
+                  className="bg-brand-green text-app-bg rounded px-3 py-1.5 text-xs font-medium"
                   onClick={() => {
                     void writeClipboardText(uri)
                       .then(() => {

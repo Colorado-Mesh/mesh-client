@@ -225,7 +225,7 @@ const PeerTableRow = memo(function PeerTableRow({
           ) : null}
           {verified ? (
             <Check
-              className="text-readable-green h-3.5 w-3.5 shrink-0"
+              className="text-bright-green h-3.5 w-3.5 shrink-0"
               aria-label={t('peerDetailModal.verifiedRowAria')}
             />
           ) : null}
@@ -237,7 +237,7 @@ const PeerTableRow = memo(function PeerTableRow({
             <span
               className={
                 contacted
-                  ? 'bg-readable-green/20 text-readable-green text-2xs rounded px-1.5 py-0.5 font-medium'
+                  ? 'bg-brand-green/12 text-bright-green text-2xs rounded px-1.5 py-0.5 font-medium'
                   : 'text-muted text-2xs'
               }
             >

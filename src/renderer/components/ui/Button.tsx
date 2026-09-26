@@ -11,7 +11,7 @@ const BUTTON_BASE =
   'inline-flex shrink-0 items-center justify-center rounded-lg border font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-not-allowed disabled:opacity-50';
 
 export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
-  primary: 'border-transparent bg-readable-green text-white hover:bg-readable-green/90',
+  primary: 'border-transparent bg-brand-green text-app-bg hover:bg-brand-green/90',
   secondary:
     'border-secondary-dark bg-sidebar-active-bg text-slate-200 hover:bg-secondary-dark disabled:hover:bg-sidebar-active-bg',
   danger:

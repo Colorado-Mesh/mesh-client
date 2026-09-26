@@ -185,9 +185,7 @@ describe('ChatComposer', () => {
     );
     fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hi' } });
     expect(screen.getByRole('textbox').className).not.toMatch(/purple/);
-    const send = screen
-      .getAllByRole('button')
-      .find((b) => b.className.includes('bg-readable-green'));
+    const send = screen.getAllByRole('button').find((b) => b.className.includes('bg-brand-green'));
     expect(send).toBeDefined();
     expect(send?.className).not.toMatch(/purple/);
   });

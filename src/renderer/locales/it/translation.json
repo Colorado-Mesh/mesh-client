@@ -269,16 +269,16 @@
         "description": "Sfondo della scheda attualmente selezionata nella navigazione della barra laterale."
       },
       "brandGreen": {
-        "label": "Indicatori ed evidenziazioni dei bordi",
-        "description": "Accento per i bordi quando configurati, indicatori online/MQTT, evidenziazioni e riempimenti di avanzamento."
+        "label": "Verde di accento",
+        "description": "Pulsanti principali e Invia (con testo scuro), testo verde, elementi attivi, indicatori online e riempimenti di avanzamento. Resta leggibile sullo sfondo dell'app."
       },
       "brightGreen": {
         "label": "Titolo dell'app, collegamenti ed enfasi sul nodo",
         "description": "Titolo dell'app, testo in enfasi, collegamenti nel piè di pagina ed evidenziazioni hop/self nell'elenco dei nodi."
       },
       "readableGreen": {
-        "label": "Pulsanti di azione e pillole selezionate",
-        "description": "Riempimenti solidi con testo bianco: pillole di canali selezionati e pulsanti di azione principali per il contrasto."
+        "label": "Verde del badge Meshtastic",
+        "description": "Riempimento pieno sotto il testo bianco sul badge del protocollo Meshtastic."
       },
       "deepBlack": {
         "label": "Barra laterale, intestazione e superfici modali",

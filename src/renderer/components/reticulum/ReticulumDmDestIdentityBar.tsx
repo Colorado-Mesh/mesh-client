@@ -72,7 +72,7 @@ export function ReticulumDmDestIdentityBar({
       >
         <button
           type="button"
-          className="hover:text-readable-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-gray-300 hover:bg-slate-700/60"
+          className="hover:text-bright-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-gray-300 hover:bg-slate-700/60"
           aria-label={t('chatPanel.reticulumDmCopyLxmfAria', { prefix: lxmfPrefix })}
           title={lxmfHash}
           onClick={() => {
@@ -82,13 +82,13 @@ export function ReticulumDmDestIdentityBar({
           <span>{t('chatPanel.reticulumDmLxmfPrefix', { prefix: lxmfPrefix })}</span>
           <Copy className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
           {copied === 'lxmf' ? (
-            <span className="text-readable-green text-2xs">{t('common.copied')}</span>
+            <span className="text-bright-green text-2xs">{t('common.copied')}</span>
           ) : null}
         </button>
         {identityHash && identityPrefix ? (
           <button
             type="button"
-            className="hover:text-readable-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-gray-300 hover:bg-slate-700/60"
+            className="hover:text-bright-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-gray-300 hover:bg-slate-700/60"
             aria-label={t('chatPanel.reticulumDmCopyIdentityAria', { prefix: identityPrefix })}
             title={identityHash}
             onClick={() => {
@@ -98,7 +98,7 @@ export function ReticulumDmDestIdentityBar({
             <span>{t('chatPanel.reticulumDmIdentityPrefix', { prefix: identityPrefix })}</span>
             <Copy className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
             {copied === 'identity' ? (
-              <span className="text-readable-green text-2xs">{t('common.copied')}</span>
+              <span className="text-bright-green text-2xs">{t('common.copied')}</span>
             ) : null}
           </button>
         ) : null}

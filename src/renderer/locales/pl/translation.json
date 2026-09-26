@@ -269,16 +269,16 @@
         "description": "Tło aktualnie wybranej zakładki w nawigacji paska bocznego."
       },
       "brandGreen": {
-        "label": "Wskaźniki i podświetlenia obramowań",
-        "description": "Akcent dla obramowań po skonfigurowaniu, wskaźniki online/MQTT, wyróżnienia i wypełnienia postępu."
+        "label": "Zielony akcent",
+        "description": "Przyciski główne i Wyślij (z ciemnym tekstem), zielony tekst, aktywne elementy, wskaźniki online i wypełnienia postępu. Pozostaje czytelny na tle aplikacji."
       },
       "brightGreen": {
         "label": "Tytuł aplikacji, linki i podkreślenie węzła",
         "description": "Tytuł aplikacji, wyróżniony tekst, linki w stopce i przeskoki/samodzielne wyróżnienia na liście węzłów."
       },
       "readableGreen": {
-        "label": "Przyciski akcji i wybrane pigułki",
-        "description": "Pełne wypełnienie białym tekstem — wybrane pigułki kanałów i podstawowe przyciski akcji dla kontrastu."
+        "label": "Zieleń plakietki Meshtastic",
+        "description": "Pełne wypełnienie pod białym tekstem na plakietce protokołu Meshtastic."
       },
       "deepBlack": {
         "label": "Pasek boczny, nagłówek i powierzchnie modalne",

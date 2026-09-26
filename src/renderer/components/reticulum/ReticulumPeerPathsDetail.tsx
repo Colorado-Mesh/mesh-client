@@ -182,7 +182,7 @@ export function ReticulumPeerPathsDetail({
               key={`${slot.interface_id ?? 'x'}-${slot.via_hash ?? index}-${slot.hops ?? 'h'}`}
               className={
                 slot.active
-                  ? 'border-readable-green/40 bg-readable-green/10 rounded border px-2 py-1.5'
+                  ? 'border-brand-green/35 bg-brand-green/10 rounded border px-2 py-1.5'
                   : 'rounded border border-gray-800 px-2 py-1.5'
               }
             >

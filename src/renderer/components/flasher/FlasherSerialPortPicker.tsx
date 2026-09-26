@@ -86,12 +86,12 @@ export function FlasherSerialPortPicker({
                 onClick={() => {
                   onSelect(port.portId);
                 }}
-                className={`hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0${isLastUsed ? 'border-l-readable-green bg-secondary-dark/40 border-l-2' : ''}`}
+                className={`hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0 ${isLastUsed ? 'bg-sidebar-active-bg' : ''}`}
               >
                 <div className="flex items-center gap-2 text-sm text-gray-200">
                   <span>{title}</span>
                   {isLastUsed ? (
-                    <span className="bg-readable-green/20 text-readable-green text-2xs rounded px-1.5 py-0.5 font-medium">
+                    <span className="bg-brand-green/12 text-bright-green text-2xs rounded px-1.5 py-0.5 font-medium">
                       {t('flasher.lastUsedPort')}
                     </span>
                   ) : null}

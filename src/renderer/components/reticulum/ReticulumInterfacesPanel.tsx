@@ -2875,7 +2875,7 @@ function InterfacesSection({
                                   </span>
                                 ) : null}
                                 {isPrimaryRow ? (
-                                  <span className="text-readable-green text-2xs tracking-wide uppercase">
+                                  <span className="text-bright-green text-2xs tracking-wide uppercase">
                                     {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
                                   </span>
                                 ) : null}

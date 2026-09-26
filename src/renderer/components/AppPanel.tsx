@@ -1782,7 +1782,7 @@ export default function AppPanel({
               aria-label={t('appPanel.exportForGitHub')}
               disabled={supportBundleExporting !== null}
               onClick={() => void handleExportSupportBundle('github')}
-              className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-3 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              className="bg-brand-green hover:bg-brand-green/90 text-app-bg w-full rounded-lg px-4 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               {supportBundleExporting === 'github'
                 ? t('common.loading')

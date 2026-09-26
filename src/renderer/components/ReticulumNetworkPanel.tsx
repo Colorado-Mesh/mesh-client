@@ -937,7 +937,7 @@ export function ReticulumNetworkPanel({
           </p>
         ) : null}
         {identityNotice ? (
-          <p className="text-readable-green mt-2 text-sm" role="status">
+          <p className="text-bright-green mt-2 text-sm" role="status">
             {identityNotice}
           </p>
         ) : null}
@@ -1485,7 +1485,7 @@ function IdentitySlotsSection({
               <div className="min-w-0">
                 <span className="font-medium text-gray-200">{label}</span>
                 {slot.active ? (
-                  <span className="text-readable-green text-2xs ml-2">
+                  <span className="text-bright-green text-2xs ml-2">
                     {t('connectionPanel.reticulumIdentity.slotActive')}
                   </span>
                 ) : null}
@@ -1528,7 +1528,7 @@ function IdentitySlotsSection({
         })}
       </ul>
       {notice ? (
-        <p className="text-readable-green text-label" role="status">
+        <p className="text-bright-green text-label" role="status">
           {notice}
         </p>
       ) : null}
@@ -1741,7 +1741,7 @@ function IdentityConfiguredView({
         {t('connectionPanel.reticulumIdentity.saveDisplayName')}
       </button>
       {saveNotice ? (
-        <p className="text-readable-green mt-1 text-xs" role="status">
+        <p className="text-bright-green mt-1 text-xs" role="status">
           {saveNotice}
         </p>
       ) : null}

@@ -269,16 +269,16 @@
         "description": "Arrière-plan de l'onglet actuellement sélectionné dans la barre de navigation latérale."
       },
       "brandGreen": {
-        "label": "Indicateurs et faits marquants à la frontière",
-        "description": "Accentuez les bordures une fois configurées, les indicateurs en ligne/MQTT, les surlignages et les remplissages de progression."
+        "label": "Vert d'accent",
+        "description": "Boutons principaux et Envoyer (avec texte sombre), texte vert, éléments actifs, indicateurs en ligne et remplissages de progression. Reste lisible sur le fond de l'application."
       },
       "brightGreen": {
         "label": "Titre de l'application, liens et accentuation des nœuds",
         "description": "Titre de l'application, texte d'accentuation, liens dans le pied de page et surlignages du saut/auto dans la liste des nœuds."
       },
       "readableGreen": {
-        "label": "Boutons d'action et pilules sélectionnées",
-        "description": "Remplissages unis avec texte blanc : pilules de canal sélectionnées et boutons d'action principaux pour le contraste."
+        "label": "Vert du badge Meshtastic",
+        "description": "Remplissage plein sous le texte blanc du badge du protocole Meshtastic."
       },
       "deepBlack": {
         "label": "Barre latérale, en-tête et surfaces modales",

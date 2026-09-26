@@ -246,7 +246,9 @@ export function applyThemeColors(
   colors: Record<ThemeColorKey, string>,
 ): Record<ThemeColorKey, string> | null {
   const merged = { ...colors };
-  if (ensureReadableGreenContrast(merged)) {
+  const readableReset = ensureReadableGreenContrast(merged);
+  const brandReset = ensureBrandGreenContrast(merged);
+  if (readableReset || brandReset) {
     persistThemeColors(merged);
   }
   const resolved: Record<ThemeColorKey, string> = { ...DEFAULT_THEME_COLORS };
@@ -283,6 +285,7 @@ export function applyThemeColors(
 }
 
 const READABLE_GREEN_ON_WHITE_MIN_RATIO = 4.5;
+const BRAND_GREEN_ON_APP_BG_MIN_RATIO = 4.5;
 
 /** readableGreen is for white-on-green fills — persisted overrides must meet WCAG AA. */
 function ensureReadableGreenContrast(colors: Record<ThemeColorKey, string>): boolean {
@@ -290,6 +293,22 @@ function ensureReadableGreenContrast(colors: Record<ThemeColorKey, string>): boo
   if (!hex || contrastRatio('#ffffff', hex) < READABLE_GREEN_ON_WHITE_MIN_RATIO) {
     const wasDifferent = colors.readableGreen !== DEFAULT_THEME_COLORS.readableGreen;
     colors.readableGreen = DEFAULT_THEME_COLORS.readableGreen;
+    return wasDifferent;
+  }
+  return false;
+}
+
+/**
+ * brandGreen is the one accent green: green text on the app background and primary fills (buttons,
+ * Send) under `text-app-bg`. Both need it to keep 4.5:1 against appBg, so an override that does
+ * not is reset to the default.
+ */
+function ensureBrandGreenContrast(colors: Record<ThemeColorKey, string>): boolean {
+  const green = normalizeHex(colors.brandGreen);
+  const bg = normalizeHex(colors.appBg) ?? DEFAULT_THEME_COLORS.appBg;
+  if (!green || contrastRatio(bg, green) < BRAND_GREEN_ON_APP_BG_MIN_RATIO) {
+    const wasDifferent = colors.brandGreen !== DEFAULT_THEME_COLORS.brandGreen;
+    colors.brandGreen = DEFAULT_THEME_COLORS.brandGreen;
     return wasDifferent;
   }
   return false;
@@ -312,7 +331,9 @@ export function loadThemeColors(): Record<ThemeColorKey, string> {
       if (typeof v === 'string' && normalizeHex(v)) merged[key] = normalizeHex(v)!;
     }
   }
-  if (ensureReadableGreenContrast(merged)) {
+  const readableReset = ensureReadableGreenContrast(merged);
+  const brandReset = ensureBrandGreenContrast(merged);
+  if (readableReset || brandReset) {
     persistThemeColors(merged);
   }
   return merged;
@@ -385,6 +406,7 @@ export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
     }
   }
   ensureReadableGreenContrast(merged);
+  ensureBrandGreenContrast(merged);
   persistThemeColors(merged);
   // Persist visibility before the single applyThemeColors pass below so the
   // messageActionsBarBg opacity branch reads the restored value, not the stale one.

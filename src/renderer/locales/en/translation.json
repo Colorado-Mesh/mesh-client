@@ -357,16 +357,16 @@
         "description": "Background of the currently selected tab in the sidebar navigation."
       },
       "brandGreen": {
-        "label": "Indicators & border highlights",
-        "description": "Accent for borders when configured, online/MQTT indicators, highlights, and progress fills."
+        "label": "Accent green",
+        "description": "Primary buttons and Send (with dark text), green text, active items, online indicators and progress fills. Kept readable on the app background."
       },
       "brightGreen": {
         "label": "App title, links & node emphasis",
         "description": "App title, emphasis text, links in footer, and hop/self highlights in node list."
       },
       "readableGreen": {
-        "label": "Action buttons & selected pills",
-        "description": "Solid fills with white text—selected channel pills and primary action buttons for contrast."
+        "label": "Meshtastic badge green",
+        "description": "Solid fill under white text on the Meshtastic protocol badge."
       },
       "deepBlack": {
         "label": "Sidebar, header & modal surfaces",
