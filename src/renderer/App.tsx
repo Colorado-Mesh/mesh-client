@@ -410,6 +410,11 @@ export interface UpdateState {
 
 /** Wide enough for the Nodes/Contacts list plus a 340-400px detail pane beside it. */
 const NODE_DETAIL_PANE_MEDIA_QUERY = '(min-width: 1280px)';
+/** List or map beside a detail pane (Option B master-detail). */
+const DETAIL_PANE_GRID_CLASS =
+  'grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(340px,400px)] gap-4';
+/** Which view a node / peer detail pane sits beside. */
+type DetailPaneHost = 'list' | 'map';
 const LOG_PANEL_VISIBLE_KEY = 'mesh-client:logPanelVisible';
 /** Legacy key (pre–footer indicator): `checkOnStartup` / `dismissedVersion` — removed on launch so updates always check on startup. */
 const LEGACY_UPDATE_SETTINGS_KEY = 'mesh-client:updateSettings';
@@ -557,19 +562,27 @@ function AppContent() {
    * for the detail pane (Option B); null means the modal. Every other entry point (map, chat,
    * diagnostics) opens the modal.
    */
-  const [nodeDetailPaneProtocol, setNodeDetailPaneProtocol] = useState<MeshProtocol | null>(null);
+  /**
+   * Where a node picked on a wide window shows its detail inline: beside the Nodes / Contacts list
+   * or beside the map (maintainer + designer: inline on desktop, modal on small screens). Null
+   * means the modal (picked elsewhere, or the window was narrow).
+   */
+  const [nodeDetailPane, setNodeDetailPane] = useState<{
+    protocol: MeshProtocol;
+    host: DetailPaneHost;
+  } | null>(null);
   const setSelectedNodeId = useCallback((nodeId: number | null) => {
-    setNodeDetailPaneProtocol(null);
+    setNodeDetailPane(null);
     setSelectedNodeIdState(nodeId);
   }, []);
   const nodeDetailPaneFits = useMediaQuery(NODE_DETAIL_PANE_MEDIA_QUERY);
   /** Phones and very narrow windows: bottom bar instead of the rail (future mobile builds). */
   const shellCompact = useMediaQuery(SHELL_COMPACT_QUERY);
   const [selectedPeerHash, setSelectedPeerHashState] = useState<string | null>(null);
-  /** Same rule as nodes: picked from the Peers list on a wide window shows in a side pane. */
-  const [peerDetailInPane, setPeerDetailInPane] = useState(false);
+  /** Same rule as nodes: picked from the Peers list or the map on a wide window shows in a pane. */
+  const [peerDetailPaneHost, setPeerDetailPaneHost] = useState<DetailPaneHost | null>(null);
   const setSelectedPeerHash = useCallback((hash: string | null) => {
-    setPeerDetailInPane(false);
+    setPeerDetailPaneHost(null);
     setSelectedPeerHashState(hash);
   }, []);
   // Stable array ref from Map.get — safe for React 19 useSyncExternalStore (not latestPositionHistoryPoint).
@@ -3348,26 +3361,45 @@ function AppContent() {
     shortcut: formatShortcut('K', platform),
   });
 
-  const onNodesPanelOfPaneProtocol =
-    activePanelIndex === NODES_PANEL_INDEX && nodeDetailPaneProtocol === protocol;
+  const panelIndexForPaneHost = (host: DetailPaneHost) =>
+    host === 'map' ? MAP_TAB_PANEL_INDEX : NODES_PANEL_INDEX;
+  const onNodePaneHostPanel =
+    nodeDetailPane !== null &&
+    nodeDetailPane.protocol === protocol &&
+    activePanelIndex === panelIndexForPaneHost(nodeDetailPane.host);
   const nodeDetailPaneOpen =
     selectedNodeId !== null &&
     nodeDetailPaneFits &&
-    onNodesPanelOfPaneProtocol &&
+    onNodePaneHostPanel &&
     !capabilities.hasReticulumPeersList;
-  // A pane selection stays hidden on other panels and protocols and comes back on that Nodes list;
-  // it only falls back to the modal when the window gets too narrow while the list is open.
+  const nodeDetailPaneOnList = nodeDetailPaneOpen && nodeDetailPane?.host === 'list';
+  const nodeDetailPaneOnMap = nodeDetailPaneOpen && nodeDetailPane?.host === 'map';
+  // A pane selection stays hidden on other panels and protocols and comes back on the list or map
+  // it was picked from; it only falls back to the modal when the window gets too narrow there.
   const nodeDetailModalOpen =
     selectedNodeId !== null &&
-    (nodeDetailPaneProtocol === null || (!nodeDetailPaneFits && onNodesPanelOfPaneProtocol));
+    (nodeDetailPane === null || (!nodeDetailPaneFits && onNodePaneHostPanel));
+  /** Node clicks on the list or the map: inline pane on a wide window, modal otherwise. */
+  const selectNodeFrom = (host: DetailPaneHost, nodeId: number) => {
+    setNodeDetailPane(nodeDetailPaneFits ? { protocol, host } : null);
+    setSelectedNodeIdState(nodeId);
+  };
 
-  const onPeersList = activePanelIndex === NODES_PANEL_INDEX && capabilities.hasReticulumPeersList;
-  const peerDetailPaneOpen =
-    selectedPeerHash !== null && peerDetailInPane && nodeDetailPaneFits && onPeersList;
+  const onPeerPaneHostPanel =
+    peerDetailPaneHost !== null &&
+    capabilities.hasReticulumPeersList &&
+    activePanelIndex === panelIndexForPaneHost(peerDetailPaneHost);
+  const peerDetailPaneOpen = selectedPeerHash !== null && nodeDetailPaneFits && onPeerPaneHostPanel;
+  const peerDetailPaneOnList = peerDetailPaneOpen && peerDetailPaneHost === 'list';
+  const peerDetailPaneOnMap = peerDetailPaneOpen && peerDetailPaneHost === 'map';
   const peerDetailModalOpen =
     capabilities.hasReticulumPeerDetailModal &&
     selectedPeerHash !== null &&
-    (!peerDetailInPane || (!nodeDetailPaneFits && onPeersList));
+    (peerDetailPaneHost === null || (!nodeDetailPaneFits && onPeerPaneHostPanel));
+  const selectPeerFrom = (host: DetailPaneHost, hash: string) => {
+    setPeerDetailPaneHost(nodeDetailPaneFits ? host : null);
+    setSelectedPeerHashState(hash);
+  };
 
   const renderPeerDetail = (variant: 'modal' | 'pane') =>
     selectedPeerHash === null ? null : (
@@ -4124,8 +4156,8 @@ function AppContent() {
                               {capabilities.hasReticulumPeersList ? (
                                 <div
                                   className={
-                                    peerDetailPaneOpen
-                                      ? 'grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(340px,400px)] gap-4'
+                                    peerDetailPaneOnList
+                                      ? DETAIL_PANE_GRID_CLASS
                                       : 'h-full min-h-0 min-w-0'
                                   }
                                 >
@@ -4134,11 +4166,10 @@ function AppContent() {
                                       isConnected={isConnectedOrOperational}
                                       contactNodes={reticulumUiNodes}
                                       onPeerClick={(hash) => {
-                                        setPeerDetailInPane(nodeDetailPaneFits);
-                                        setSelectedPeerHashState(hash);
+                                        selectPeerFrom('list', hash);
                                       }}
                                       selectedPeerHash={
-                                        peerDetailPaneOpen ? selectedPeerHash : null
+                                        peerDetailPaneOnList ? selectedPeerHash : null
                                       }
                                       onSendMessage={handleMessageNode}
                                       onRefresh={reticulumPanelActions.requestRefresh}
@@ -4162,13 +4193,13 @@ function AppContent() {
                                       hasLrgpGames={capabilities.hasLrgpGames}
                                     />
                                   </div>
-                                  {peerDetailPaneOpen && renderPeerDetail('pane')}
+                                  {peerDetailPaneOnList && renderPeerDetail('pane')}
                                 </div>
                               ) : (
                                 <div
                                   className={
-                                    nodeDetailPaneOpen
-                                      ? 'grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(340px,400px)] gap-4'
+                                    nodeDetailPaneOnList
+                                      ? DETAIL_PANE_GRID_CLASS
                                       : 'h-full min-h-0 min-w-0'
                                   }
                                 >
@@ -4177,12 +4208,9 @@ function AppContent() {
                                       nodes={nodesForUi}
                                       myNodeNum={activeSelfNodeNum}
                                       onNodeClick={(node) => {
-                                        setNodeDetailPaneProtocol(
-                                          nodeDetailPaneFits ? protocol : null,
-                                        );
-                                        setSelectedNodeIdState(node.node_id);
+                                        selectNodeFrom('list', node.node_id);
                                       }}
-                                      selectedNodeId={nodeDetailPaneOpen ? selectedNodeId : null}
+                                      selectedNodeId={nodeDetailPaneOnList ? selectedNodeId : null}
                                       mqttConnected={
                                         activeConnectionView.mqttStatus === 'connected'
                                       }
@@ -4243,7 +4271,7 @@ function AppContent() {
                                       onShowOnMap={handleShowOnMap}
                                     />
                                   </div>
-                                  {nodeDetailPaneOpen && renderNodeDetail('pane')}
+                                  {nodeDetailPaneOnList && renderNodeDetail('pane')}
                                 </div>
                               )}
                             </div>
@@ -4260,56 +4288,75 @@ function AppContent() {
                         {activePanelIndex === MAP_TAB_PANEL_INDEX ? (
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
-                              {protocol === 'reticulum' && capabilities.hasReticulumDiscoveryMap ? (
-                                <ReticulumMapPanel
-                                  stackConfigured={
-                                    reticulumConnection.state.status === 'configured'
-                                  }
-                                  onPeerClick={setSelectedPeerHash}
-                                  onOpenRmapSettings={() => {
-                                    const networkTabIdx = tabSlotIds.indexOf('Radio');
-                                    if (networkTabIdx >= 0) {
-                                      setActiveTab(networkTabIdx);
-                                    }
-                                  }}
-                                  onOpenAppGpsSettings={() => {
-                                    const appTabIdx = tabSlotIds.indexOf('App');
-                                    if (appTabIdx >= 0) {
-                                      setAppTabVisited(true);
-                                      setActiveTab(appTabIdx);
-                                    }
-                                  }}
-                                />
-                              ) : capabilities.hasFullPositionConfig ||
-                                capabilities.nodeListTabUsesContactsLabel ? (
-                                <MapPanel
-                                  nodes={nodesForUi}
-                                  myNodeNum={activeSelfNodeNum}
-                                  locationFilter={locationFilter}
-                                  ourPosition={activeOurPosition}
-                                  onLocateMe={
-                                    capabilities.hasFullPositionConfig
-                                      ? () =>
-                                          meshtasticPanelActions
-                                            .refreshOurPosition()
-                                            .then((p) => (p ? { lat: p.lat, lon: p.lon } : null))
-                                      : undefined
-                                  }
-                                  waypoints={activeWaypoints}
-                                  onSendWaypoint={
-                                    capabilities.hasFullPositionConfig
-                                      ? meshtasticPanelActions.sendWaypoint
-                                      : undefined
-                                  }
-                                  onDeleteWaypoint={
-                                    capabilities.hasFullPositionConfig
-                                      ? meshtasticPanelActions.deleteWaypoint
-                                      : undefined
-                                  }
-                                  onNodeClick={setSelectedNodeId}
-                                  protocol={protocol}
-                                />
-                              ) : null}
+                              <div
+                                className={
+                                  nodeDetailPaneOnMap || peerDetailPaneOnMap
+                                    ? DETAIL_PANE_GRID_CLASS
+                                    : 'h-full min-h-0 min-w-0'
+                                }
+                              >
+                                <div className="h-full min-h-0 min-w-0">
+                                  {protocol === 'reticulum' &&
+                                  capabilities.hasReticulumDiscoveryMap ? (
+                                    <ReticulumMapPanel
+                                      stackConfigured={
+                                        reticulumConnection.state.status === 'configured'
+                                      }
+                                      onPeerClick={(hash) => {
+                                        selectPeerFrom('map', hash);
+                                      }}
+                                      onOpenRmapSettings={() => {
+                                        const networkTabIdx = tabSlotIds.indexOf('Radio');
+                                        if (networkTabIdx >= 0) {
+                                          setActiveTab(networkTabIdx);
+                                        }
+                                      }}
+                                      onOpenAppGpsSettings={() => {
+                                        const appTabIdx = tabSlotIds.indexOf('App');
+                                        if (appTabIdx >= 0) {
+                                          setAppTabVisited(true);
+                                          setActiveTab(appTabIdx);
+                                        }
+                                      }}
+                                    />
+                                  ) : capabilities.hasFullPositionConfig ||
+                                    capabilities.nodeListTabUsesContactsLabel ? (
+                                    <MapPanel
+                                      nodes={nodesForUi}
+                                      myNodeNum={activeSelfNodeNum}
+                                      locationFilter={locationFilter}
+                                      ourPosition={activeOurPosition}
+                                      onLocateMe={
+                                        capabilities.hasFullPositionConfig
+                                          ? () =>
+                                              meshtasticPanelActions
+                                                .refreshOurPosition()
+                                                .then((p) =>
+                                                  p ? { lat: p.lat, lon: p.lon } : null,
+                                                )
+                                          : undefined
+                                      }
+                                      waypoints={activeWaypoints}
+                                      onSendWaypoint={
+                                        capabilities.hasFullPositionConfig
+                                          ? meshtasticPanelActions.sendWaypoint
+                                          : undefined
+                                      }
+                                      onDeleteWaypoint={
+                                        capabilities.hasFullPositionConfig
+                                          ? meshtasticPanelActions.deleteWaypoint
+                                          : undefined
+                                      }
+                                      onNodeClick={(nodeId) => {
+                                        selectNodeFrom('map', nodeId);
+                                      }}
+                                      protocol={protocol}
+                                    />
+                                  ) : null}
+                                </div>
+                                {nodeDetailPaneOnMap && renderNodeDetail('pane')}
+                                {peerDetailPaneOnMap && renderPeerDetail('pane')}
+                              </div>
                             </Suspense>
                           </ErrorBoundary>
                         ) : null}

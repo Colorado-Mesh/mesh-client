@@ -60,6 +60,9 @@ const mockMapInstance = {
   on: vi.fn(),
   off: vi.fn(),
   getPane: vi.fn().mockReturnValue(null),
+  // MapResizeInvalidator: re-measure on activation and container resize.
+  invalidateSize: vi.fn(),
+  getContainer: vi.fn(() => document.createElement('div')),
   createPane: vi.fn().mockReturnValue({ style: {} }),
   getBounds: vi.fn().mockReturnValue({ isValid: () => false }),
 };

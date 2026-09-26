@@ -77,6 +77,7 @@ const {
   lastAppPanelProps,
   lastChatPanelProps,
   lastConnectionPanelProps,
+  lastMapPanelProps,
   lastNodeDetailModalProps,
   lastNodeListPanelProps,
   reticulumRefreshMessagesFromDb,
@@ -262,6 +263,7 @@ const {
   lastAppPanelProps: { current: null as null | Record<string, unknown> },
   lastChatPanelProps: { current: null as null | Record<string, unknown> },
   lastConnectionPanelProps: { current: null as null | Record<string, unknown> },
+  lastMapPanelProps: { current: null as null | Record<string, unknown> },
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
   lastNodeListPanelProps: { current: null as null | Record<string, unknown> },
   reticulumRefreshMessagesFromDb: vi.fn().mockResolvedValue(undefined),
@@ -281,6 +283,7 @@ beforeEach(() => {
   lastAppPanelProps.current = null;
   lastChatPanelProps.current = null;
   lastConnectionPanelProps.current = null;
+  lastMapPanelProps.current = null;
   lastNodeDetailModalProps.current = null;
   lastNodeListPanelProps.current = null;
   reticulumRefreshNodesFromDb.mockClear();
@@ -459,7 +462,10 @@ vi.mock('./lazyTabPanels', () => ({
   },
   DiagnosticsPanel: () => null,
   GamesPanel: () => <div data-testid="games-panel-mock">games</div>,
-  MapPanel: () => null,
+  MapPanel: (props: Record<string, unknown>) => {
+    lastMapPanelProps.current = props;
+    return null;
+  },
   ModulePanel: () => null,
   PacketDistributionPanel: () => <div data-testid="packet-distribution-mock">dist</div>,
   PeerGraphPanel: () => null,
@@ -2152,6 +2158,51 @@ describe('App node detail pane (Option B Contacts)', () => {
     await waitFor(() => {
       expect(lastNodeDetailModalProps.current?.variant).toBe('modal');
     });
+  });
+
+  it('uses the modal for map selections on narrow windows', async () => {
+    stubWideWindow(false);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Map/);
+    await waitFor(() => {
+      expect(lastMapPanelProps.current).not.toBeNull();
+    });
+    const onMapNodeClick = lastMapPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | undefined;
+    act(() => {
+      onMapNodeClick?.(0x23456789);
+    });
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('modal');
+    });
+  });
+
+  it('shows map selections in a pane beside the map on wide windows', async () => {
+    stubWideWindow(true);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Map/);
+    await waitFor(() => {
+      expect(lastMapPanelProps.current).not.toBeNull();
+    });
+    const onMapNodeClick = lastMapPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | undefined;
+    act(() => {
+      onMapNodeClick?.(0x23456789);
+    });
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('pane');
+    });
+
+    // The map's pane does not follow the user to the Nodes list.
+    lastNodeDetailModalProps.current = null;
+    openPanel(/^Network/, /^Nodes/);
+    await waitFor(() => {
+      expect(lastNodeListPanelProps.current).not.toBeNull();
+    });
+    expect(lastNodeDetailModalProps.current).toBeNull();
+    expect(lastNodeListPanelProps.current?.selectedNodeId).toBeNull();
   });
 
   it('keeps the modal for list selections on narrow windows', async () => {

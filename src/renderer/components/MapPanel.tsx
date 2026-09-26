@@ -49,6 +49,7 @@ import { IncidentMarkersLayer, MeasureControl, MgrsGridLayer } from './map/emcom
 import {
   ensureLoRaMapPanelStyles,
   LocateMeControl,
+  MapResizeInvalidator,
   MapViewportSaver,
 } from './map/leafletMapControls';
 import { OfflineMapsSection } from './map/OfflineMapsSection';
@@ -1075,6 +1076,7 @@ export default function MapPanel({
         className="absolute inset-0"
         preferCanvas
       >
+        <MapResizeInvalidator active />
         <DiagnosticPanes />
         <MapViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
         <MapFocusController />

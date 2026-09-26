@@ -280,15 +280,31 @@ export function MapViewportSaver({ hasAnyPositions }: { hasAnyPositions: boolean
   return null;
 }
 
+/**
+ * Keeps Leaflet's size in step with its container: once when the map becomes active, and whenever
+ * the container resizes (a detail pane opening beside the map, the text size setting, the window).
+ * Leaflet only tracks window resizes on its own, so without this tiles misalign when the pane opens.
+ */
 export function MapResizeInvalidator({ active }: { active: boolean }) {
   const map = useMap();
   useEffect(() => {
     if (!active) return;
-    const id = window.requestAnimationFrame(() => {
+    let frame = window.requestAnimationFrame(() => {
       map.invalidateSize();
     });
+    const observer =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(() => {
+            window.cancelAnimationFrame(frame);
+            frame = window.requestAnimationFrame(() => {
+              map.invalidateSize();
+            });
+          });
+    observer?.observe(map.getContainer());
     return () => {
-      window.cancelAnimationFrame(id);
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
     };
   }, [active, map]);
   return null;

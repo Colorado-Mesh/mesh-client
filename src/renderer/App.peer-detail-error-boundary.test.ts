@@ -21,7 +21,9 @@ describe('App ReticulumPeerDetailModal ErrorBoundary (regression)', () => {
 
   it('mounts the peer detail only through the boundary-wrapped helper', () => {
     expect(SOURCE.match(/<ReticulumPeerDetailModal\b/g)).toHaveLength(1);
-    expect(SOURCE).toContain("peerDetailPaneOpen && renderPeerDetail('pane')");
+    // Pane beside the Peers list or beside the map, modal otherwise.
+    expect(SOURCE).toContain("peerDetailPaneOnList && renderPeerDetail('pane')");
+    expect(SOURCE).toContain("peerDetailPaneOnMap && renderPeerDetail('pane')");
     expect(SOURCE).toContain("peerDetailModalOpen && renderPeerDetail('modal')");
   });
 });
