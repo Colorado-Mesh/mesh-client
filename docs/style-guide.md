@@ -101,10 +101,10 @@ Never use `#000000` or `#ffffff` as a surface, gradients, glows, text shadows, o
 
 ## Type
 
-- Body text uses the system UI font. Message text is 14px, most UI text 13px, secondary labels 12px, badges and status bar 11 to 11.5px.
+- Body text uses IBM Plex Sans (`font-sans`). Message text is 14px, most UI text 13px, secondary labels 12px, badges and status bar 11 to 11.5px.
 - Use the mono stack (`font-mono`) for IDs, keys, numbers, times, queue counts and the status bar. Add `tabular-nums` where numbers update in place.
 - Section titles are 16px semibold; panel titles 18px semibold.
-- A bundled font (IBM Plex Sans and Mono, OFL-1.1, via `@fontsource`) is proposed in #1062 and not adopted yet. Do not add web font links; the app must work offline.
+- The UI typeface is IBM Plex Sans with IBM Plex Mono for mono text (OFL-1.1), bundled under `src/renderer/assets/fonts/plex` with latin, latin-ext and cyrillic subsets so every locale except CJK renders in Plex; CJK falls back to the system font. Weights: sans 400, 500 and 600; mono 400 and 500. Never add web font links; the app must work offline.
 
 ## Controls
 

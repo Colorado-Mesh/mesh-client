@@ -44,9 +44,10 @@ Application source (Electron main / preload / renderer) is **GPL-3.0-or-later**;
 
 ### Bundled fonts
 
-| Font / file                                                         | License | Role                                                                                                                  |
-| ------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
-| `MeshClientNomadMono.woff2` (JetBrains Mono Nerd Font Mono, subset) | OFL-1.1 | Nomad Micron viewer monospace + Nerd/FA PUA icons ([OFL](../src/renderer/assets/fonts/OFL-JetBrainsMonoNerdFont.txt)) |
+| Font / file                                                                                                                 | License | Role                                                                                                                  |
+| --------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `MeshClientNomadMono.woff2` (JetBrains Mono Nerd Font Mono, subset)                                                         | OFL-1.1 | Nomad Micron viewer monospace + Nerd/FA PUA icons ([OFL](../src/renderer/assets/fonts/OFL-JetBrainsMonoNerdFont.txt)) |
+| `assets/fonts/plex/*.woff2` (IBM Plex Sans and IBM Plex Mono, latin, latin-ext and cyrillic subsets, from Fontsource 5.3.0) | OFL-1.1 | App UI typeface, bundled so it works offline ([OFL](../src/renderer/assets/fonts/plex/OFL-IBMPlex.txt))               |
 
 ### Vendored
 
