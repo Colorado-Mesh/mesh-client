@@ -71,17 +71,25 @@ export default function LanguageSelector() {
     };
   }, [isOpen]);
 
-  // Close on scroll/resize so fixed menu does not drift from the trigger
+  // Close on outside scroll/resize so fixed menu does not drift from the trigger.
+  // Ignore scroll inside the portaled list itself (overflow-y-auto).
   useEffect(() => {
     if (!isOpen) return;
-    const handleDismiss = () => {
+    const handleScroll = (e: Event) => {
+      const target = e.target;
+      if (target instanceof Node && menuRef.current?.contains(target)) {
+        return;
+      }
       closeMenu();
     };
-    window.addEventListener('scroll', handleDismiss, true);
-    window.addEventListener('resize', handleDismiss);
+    const handleResize = () => {
+      closeMenu();
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
     return () => {
-      window.removeEventListener('scroll', handleDismiss, true);
-      window.removeEventListener('resize', handleDismiss);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
 

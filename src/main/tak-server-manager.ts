@@ -15,9 +15,15 @@ import type {
   TAKSettings,
 } from '../shared/tak-types';
 import { sanitizeLogMessage } from './log-service';
-import { type CertBundle, loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
+import {
+  type CertBundle,
+  loadOrGenerateCerts,
+  regenerateCerts,
+  type TakServerIdentity,
+} from './tak/certificate-manager';
 import { COT_STALE_MS, meshNodeToCot } from './tak/cot-converter';
 import { generateDataPackage } from './tak/data-package';
+import { getLanIp } from './tak/lan-ip';
 import { TakRemoteClient } from './tak/remote-client';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { DEFAULT_TAK_REMOTE_PORT, saveTakRemoteSettings } from './tak/remote-settings';
@@ -126,6 +132,11 @@ export class TakServerManager extends EventEmitter {
     return Array.from(this.clients.values()).map((c) => ({ ...c.info }));
   }
 
+  /** Server cert identity: UI server name + current LAN IP for EUD hostname checks. */
+  private resolveServerIdentity(serverName: string): TakServerIdentity {
+    return { serverName, ipAddresses: [getLanIp()] };
+  }
+
   async start(settings: TAKSettings): Promise<void> {
     if (this.server) {
       this.stop();
@@ -135,7 +146,7 @@ export class TakServerManager extends EventEmitter {
     fs.writeFileSync(this.settingsPath, JSON.stringify(settings, null, 2));
 
     try {
-      this.certBundle = await loadOrGenerateCerts(settings.serverName);
+      this.certBundle = await loadOrGenerateCerts(this.resolveServerIdentity(settings.serverName));
     } catch (err) {
       const msg = `Certificate generation failed: ${String(err)}`;
       this._status = { running: false, port: settings.port, clientCount: 0, error: msg };
@@ -252,8 +263,19 @@ export class TakServerManager extends EventEmitter {
   }
 
   async generateDataPackage(): Promise<string> {
-    if (!this.certBundle || !this.settings) {
+    if (!this.settings) {
       throw new Error('TAK server must be started before generating a data package');
+    }
+    // Align cert SAN with the LAN IP written into connection.pref (may regen + restart).
+    const identity = this.resolveServerIdentity(this.settings.serverName);
+    const previousServerCert = this.certBundle?.serverCert;
+    this.certBundle = await loadOrGenerateCerts(identity);
+    if (
+      this._status.running &&
+      previousServerCert &&
+      previousServerCert !== this.certBundle.serverCert
+    ) {
+      await this.start(this.settings);
     }
     return generateDataPackage(this.certBundle, this.settings);
   }
@@ -281,7 +303,7 @@ export class TakServerManager extends EventEmitter {
 
     let newCertBundle: CertBundle;
     try {
-      newCertBundle = await regenerateCerts(serverName);
+      newCertBundle = await regenerateCerts(this.resolveServerIdentity(serverName));
     } catch (err) {
       const msg = `Certificate regeneration failed: ${String(err)}`;
       console.error('[TakServer]', sanitizeLogMessage(msg));

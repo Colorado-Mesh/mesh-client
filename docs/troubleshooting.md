@@ -17,6 +17,7 @@ Setup (clone, prerequisites, Flatpak build steps) is in [development-environment
 - [Meshtastic](#meshtastic)
 - [MeshCore](#meshcore)
 - [Reticulum](#reticulum)
+- [TAK (CoT gateway)](#tak-cot-gateway)
 - [Chat, nodes, and notifications](#chat-nodes-and-notifications)
 - [Diagnostics and map](#diagnostics-and-map)
 - [App, updates, and localization](#app-updates-and-localization)
@@ -1724,6 +1725,21 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 **What to do**: Usually no action; the watchdog recovers a wedged-but-alive sidecar. If restarts loop, check for a stuck link/interface or resource exhaustion in the sidecar log and **Stop stack** to clear state.
 
+## TAK (CoT gateway)
+
+### EUD reports “TLS certificate invalid” / cannot connect with a mesh-client data package
+
+**Cause**: The data package’s `connection.pref` dials your LAN IP over TLS. Older mesh-client builds issued a server certificate with only CN=`serverName` (e.g. `mesh-client`) and no Subject Alternative Name, so strict EUDs (iTAK, WinTAK, newer ATAK) reject the certificate.
+
+**Fix**:
+
+1. Update mesh-client (server certs now include DNS + LAN IP in SAN).
+2. On the **TAK** tab, start the local server (or **Regenerate Certificates** if it was already running on an older build).
+3. **Generate data package** again and import the new zip on the EUD (remove any previous mesh-client connection/package first).
+4. If your LAN IP changed since the last package, generate a new package and re-import — the connect string and cert SAN must match.
+
+Also confirm the phone/tablet is on the same LAN as the desktop, the TAK server is running, and the firewall allows inbound TCP on the configured port (default 8089).
+
 ## Chat, nodes, and notifications
 
 ### Unread messages but no app-icon badge
@@ -2014,9 +2030,9 @@ Default Web Audio tones (`chatNotifications.ts` profiles; overrideable in **App 
 
 MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/agents/mecp.md`](agents/mecp.md).
 
-**MECP / MAYDAY button missing in Chat**
+**MECP button missing in Chat**
 
-App → MECP → **Show MECP button in Chat** and **Show MAYDAY button in Chat** are each off by default. Enable them separately to show MECP compose and/or one-tap MAYDAY. The **Incident** tab still receives inbound MECP without either enabled.
+App → MECP → **Show MECP button in Chat** is off by default. Enable it to show MECP compose in Chat. The **Incident** tab still receives inbound MECP without compose enabled.
 
 **What is the Incident tab?**
 
@@ -2028,7 +2044,7 @@ App → MECP → **Show MECP button in Chat** and **Show MAYDAY button in Chat**
 - **Acknowledge** (R01) or **Confirm** (B02 for an active beacon) — best-effort on the mesh, not a read receipt
 - **Resolve** to close the incident on this workstation only
 
-Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP or you enable Chat compose / MAYDAY under App → MECP. See the README **EMCOMM / Incident Command** section and [`docs/agents/emcomm.md`](agents/emcomm.md).
+Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP. Enabling Chat compose under App → MECP only shows the compose control so you can send one — it does not populate the Incident list by itself. See the README **EMCOMM / Incident Command** section and [`docs/agents/emcomm.md`](agents/emcomm.md).
 
 **MAYDAY stuck / “will send when connected”**
 

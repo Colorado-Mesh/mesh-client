@@ -159,7 +159,6 @@
     "dataManagementDesc": "Export your local database (messages & nodes) as a .db file, or import/merge another user's database into yours.",
     "supportSection": "Support / Bug reports",
     "supportSectionDesc": "One-click exports replace collecting the debug snapshot, log file, and database separately when reporting issues.",
-    "aboutSection": "About",
     "exportForGitHub": "Export support bundle for GitHub",
     "exportForGitHubButton": "Export for GitHub",
     "exportForGitHubDesc": "Includes debug snapshot and log files in one zip. Safe to attach to public GitHub issues.",
@@ -419,7 +418,8 @@
       "pink400": "Pink 400",
       "orange400": "Orange 400",
       "yellow400": "Yellow 400"
-    }
+    },
+    "aboutSection": "About"
   },
   "aria": {
     "closeDialog": "Close dialog",
@@ -5838,35 +5838,6 @@
     "importingPrivateKey": "Importing...",
     "regenerateKeysConfirm": "Regenerating keys will replace your current DM public and private keys. Any existing encrypted messages will no longer be decryptable. Are you sure?"
   },
-  "shell": {
-    "section": {
-      "monitor": "Monitor",
-      "device": "Device"
-    },
-    "sectionPanelsAria": "{{section}} panels",
-    "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Go to a panel ({{shortcut}})",
-    "status": {
-      "radio": "Radio: {{status}}",
-      "radioWithNode": "Radio: {{status}}, node {{node}}",
-      "radioNode": "{{node}}, {{detail}}"
-    },
-    "launcher": {
-      "title": "All panels",
-      "searchLabel": "Search panels",
-      "placeholder": "Go to a panel",
-      "noResults": "No panels match your search",
-      "otherGroup": "Other",
-      "pin": "Pin {{label}}",
-      "unpin": "Unpin {{label}}",
-      "pinLimit": "Up to {{max}} panels can be pinned. Unpin one first.",
-      "hintMove": "move",
-      "hintOpen": "open",
-      "hintPin": "pin",
-      "panelCount_one": "{{count}} panel",
-      "panelCount_other": "{{count}} panels"
-    }
-  },
   "sidebar": {
     "disabledTabTooltip": "Not available in this mode"
   },
@@ -6154,7 +6125,7 @@
     "title": "Emergency incidents",
     "intro": "Common operating picture for MECP emergencies heard on any protocol. Open MAYDAY and URGENT rows badge this tab; drills are listed but never counted. Use Acknowledge (or Confirm for an active beacon) to reply on the mesh, then Resolve when the incident is closed locally. If you sent the distress beacon, Cancel beacon also transmits B03 so other stations clear it.",
     "empty": "No open emergency incidents.",
-    "emptyHint": "Inbound MECP reports appear here automatically. To send one, enable App → MECP → Show MECP button in Chat and/or Show MAYDAY button in Chat, then use those controls in Chat. Map → Layers can show open incidents with coordinates.",
+    "emptyHint": "Inbound MECP reports appear here automatically. To send one, enable App → MECP → Show MECP button in Chat, then use MECP in Chat. Map → Layers can show open incidents with coordinates.",
     "listAria": "Open emergency incidents",
     "resolve": "Resolve",
     "resolveAria": "Resolve incident from {{sender}}",
@@ -6200,18 +6171,12 @@
       "learnMore": "How MECP works (site & video)",
       "protocolSource": "Protocol source on GitHub",
       "showComposeButton": "Show MECP button in Chat",
-      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports.",
-      "showMaydayButton": "Show MAYDAY button in Chat",
-      "showMaydayButtonHint": "Off by default. When enabled, Chat shows a one-tap MAYDAY button that opens compose at severity 0 with GPS attached. Independent of the MECP compose button.",
-      "showQuickStatusBar": "Show quick status bar in Chat",
-      "showQuickStatusBarHint": "Off by default. When enabled, Chat shows OK / Need help / In position / Lost comms / Returning / Roll call above the composer."
+      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports."
     },
     "compose": {
       "title": "Compose MECP report",
       "button": "MECP",
       "open": "Open MECP compose",
-      "maydayButton": "MAYDAY",
-      "maydayAria": "Compose one-tap MAYDAY with GPS",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6271,16 +6236,34 @@
     "saveFailed": "Could not save sound settings. Your previous selection is unchanged.",
     "previewFailed": "Could not play this sound. Try another file or reset to the original tone."
   },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "Need help",
-    "inPosition": "In position",
-    "lostComms": "Lost comms",
-    "returning": "Returning",
-    "barAria": "Quick status presets",
-    "rollCall": "Roll call",
-    "rollCallAria": "Broadcast roll call and tally OK replies",
-    "rollCallTally": "{{responded}}/{{expected}} responded"
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Device"
+    },
+    "sectionPanelsAria": "{{section}} panels",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Go to a panel ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, node {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "All panels",
+      "searchLabel": "Search panels",
+      "placeholder": "Go to a panel",
+      "noResults": "No panels match your search",
+      "otherGroup": "Other",
+      "pin": "Pin {{label}}",
+      "unpin": "Unpin {{label}}",
+      "pinLimit": "Up to {{max}} panels can be pinned. Unpin one first.",
+      "hintMove": "move",
+      "hintOpen": "open",
+      "hintPin": "pin",
+      "panelCount_one": "{{count}} panel",
+      "panelCount_other": "{{count}} panels"
+    }
   },
   "ui": {
     "stepper": {

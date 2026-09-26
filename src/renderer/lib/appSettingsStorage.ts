@@ -104,24 +104,6 @@ export function isMecpComposeEnabled(): boolean {
   return parsed?.mecpComposeEnabled ?? DEFAULT_APP_SETTINGS_SHARED.mecpComposeEnabled;
 }
 
-/** Whether Chat shows the one-tap MAYDAY button (App → MECP; default off). */
-export function isMecpMaydayButtonEnabled(): boolean {
-  const parsed = parseStoredJson<{ mecpMaydayButtonEnabled?: boolean }>(
-    getAppSettingsRaw(),
-    'isMecpMaydayButtonEnabled',
-  );
-  return parsed?.mecpMaydayButtonEnabled ?? DEFAULT_APP_SETTINGS_SHARED.mecpMaydayButtonEnabled;
-}
-
-/** Whether Chat shows the quick-status / roll-call bar (App → MECP; default off). */
-export function isQuickStatusBarEnabled(): boolean {
-  const parsed = parseStoredJson<{ quickStatusBarEnabled?: boolean }>(
-    getAppSettingsRaw(),
-    'isQuickStatusBarEnabled',
-  );
-  return parsed?.quickStatusBarEnabled ?? DEFAULT_APP_SETTINGS_SHARED.quickStatusBarEnabled;
-}
-
 export interface OperationalAlertSettings {
   /** null = protocol capability defaults. */
   nodeSilenceAlertMinutes: number | null;

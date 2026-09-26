@@ -24,6 +24,15 @@ vi.mock('./tak/certificate-manager', () => ({
     clientKey: '',
   }),
   regenerateCerts: vi.fn(),
+  serverCertMatchesIdentity: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock('./tak/data-package', () => ({
+  generateDataPackage: vi.fn().mockResolvedValue('/tmp/mesh-client-test/tak-package.zip'),
+}));
+
+vi.mock('./tak/lan-ip', () => ({
+  getLanIp: vi.fn(() => '192.168.1.10'),
 }));
 
 interface FakeRemoteClient extends EventEmitter {
@@ -70,7 +79,8 @@ vi.mock('./tak/remote-credentials', () => ({
   loadTakRemoteCredentials: vi.fn(() => ({ ca: 'ca-pem' })),
 }));
 
-import { regenerateCerts } from './tak/certificate-manager';
+import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
+import { generateDataPackage } from './tak/data-package';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
 import { TakServerManager } from './tak-server-manager';
@@ -273,6 +283,51 @@ describe('TakServerManager.regenerateCertificates', () => {
 
     expect(startSpy).not.toHaveBeenCalled();
     expect(internal.certBundle).toEqual(NEW_CERT_BUNDLE);
+    expect(regenerateCerts).toHaveBeenCalledWith({
+      serverName: 'mesh-client-test',
+      ipAddresses: ['192.168.1.10'],
+    });
+  });
+});
+
+describe('TakServerManager.generateDataPackage', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('ensures certs for the current LAN IP then builds the package', async () => {
+    const manager = new TakServerManager();
+    const internal = manager as unknown as TakServerManagerInternals;
+    internal._status = { running: true, port: 8089, clientCount: 0 };
+    internal.settings = { serverName: 'mesh-client', port: 8089, requireClientCert: true };
+    internal.certBundle = OLD_CERT_BUNDLE;
+    vi.mocked(loadOrGenerateCerts).mockResolvedValueOnce(NEW_CERT_BUNDLE);
+    const startSpy = vi.spyOn(manager, 'start').mockResolvedValue(undefined);
+
+    const path = await manager.generateDataPackage();
+
+    expect(path).toBe('/tmp/mesh-client-test/tak-package.zip');
+    expect(loadOrGenerateCerts).toHaveBeenCalledWith({
+      serverName: 'mesh-client',
+      ipAddresses: ['192.168.1.10'],
+    });
+    expect(startSpy).toHaveBeenCalled();
+    expect(generateDataPackage).toHaveBeenCalledWith(NEW_CERT_BUNDLE, internal.settings);
+  });
+
+  it('does not restart when the loaded cert bundle is unchanged', async () => {
+    const manager = new TakServerManager();
+    const internal = manager as unknown as TakServerManagerInternals;
+    internal._status = { running: true, port: 8089, clientCount: 0 };
+    internal.settings = { serverName: 'mesh-client', port: 8089, requireClientCert: true };
+    internal.certBundle = OLD_CERT_BUNDLE;
+    vi.mocked(loadOrGenerateCerts).mockResolvedValueOnce(OLD_CERT_BUNDLE);
+    const startSpy = vi.spyOn(manager, 'start');
+
+    await manager.generateDataPackage();
+
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(generateDataPackage).toHaveBeenCalledWith(OLD_CERT_BUNDLE, internal.settings);
   });
 });
 

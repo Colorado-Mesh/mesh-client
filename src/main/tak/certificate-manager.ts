@@ -14,8 +14,59 @@ export interface CertBundle {
   clientKey: string;
 }
 
+/** Identity baked into the local TAK server certificate (CN + SAN). */
+export interface TakServerIdentity {
+  serverName: string;
+  ipAddresses: string[];
+}
+
+interface ForgeAltName {
+  type: number;
+  value?: string;
+  ip?: string;
+}
+
+interface ForgeSanExtension {
+  name: string;
+  altNames?: ForgeAltName[];
+}
+
+interface ForgeCertField {
+  value?: unknown;
+}
+
 export function getCertsDir(): string {
   return path.join(app.getPath('userData'), 'tak-certs');
+}
+
+function isIpv4Literal(value: string): boolean {
+  const parts = value.split('.');
+  if (parts.length !== 4) return false;
+  return parts.every((part) => {
+    if (!/^\d{1,3}$/.test(part)) return false;
+    const n = Number(part);
+    return n >= 0 && n <= 255;
+  });
+}
+
+function buildServerAltNames(identity: TakServerIdentity): ForgeAltName[] {
+  const altNames: ForgeAltName[] = [];
+  const name = identity.serverName.trim();
+  if (name) {
+    if (isIpv4Literal(name)) {
+      altNames.push({ type: 7, ip: name });
+    } else {
+      altNames.push({ type: 2, value: name });
+    }
+  }
+  const seenIps = new Set(altNames.filter((a) => a.type === 7 && a.ip).map((a) => a.ip!));
+  for (const ip of identity.ipAddresses) {
+    const trimmed = ip.trim();
+    if (!trimmed || !isIpv4Literal(trimmed) || seenIps.has(trimmed)) continue;
+    seenIps.add(trimmed);
+    altNames.push({ type: 7, ip: trimmed });
+  }
+  return altNames;
 }
 
 function generateKeyPairAsync(): Promise<forge.pki.rsa.KeyPair> {
@@ -34,6 +85,7 @@ function buildCert(
   signingKey: forge.pki.rsa.PrivateKey,
   isCA: boolean,
   validityYears: number,
+  altNames?: ForgeAltName[],
 ): forge.pki.Certificate {
   const cert = forge.pki.createCertificate();
   cert.publicKey = publicKey;
@@ -56,15 +108,57 @@ function buildCert(
       keyEncipherment: true,
     });
     extensions.push({ name: 'extKeyUsage', serverAuth: true, clientAuth: true });
+    if (altNames && altNames.length > 0) {
+      extensions.push({ name: 'subjectAltName', altNames });
+    }
   }
   cert.setExtensions(extensions);
   cert.sign(signingKey, forge.md.sha256.create());
   return cert;
 }
 
-export async function loadOrGenerateCerts(serverName: string): Promise<CertBundle> {
-  const certsDir = getCertsDir();
-  const paths = {
+/** True when the PEM server cert CN and SAN cover the requested identity. */
+export function serverCertMatchesIdentity(
+  serverCertPem: string,
+  identity: TakServerIdentity,
+): boolean {
+  try {
+    const cert = forge.pki.certificateFromPem(serverCertPem);
+    const cnField = cert.subject.getField('CN') as ForgeCertField | null;
+    const cn = typeof cnField?.value === 'string' ? cnField.value : '';
+    if (cn !== identity.serverName.trim()) return false;
+
+    const san = cert.getExtension('subjectAltName') as ForgeSanExtension | null;
+    const altNames = san?.altNames ?? [];
+    const dns = new Set(
+      altNames.filter((a) => a.type === 2 && typeof a.value === 'string').map((a) => a.value!),
+    );
+    const ips = new Set(
+      altNames.filter((a) => a.type === 7 && typeof a.ip === 'string').map((a) => a.ip!),
+    );
+
+    const name = identity.serverName.trim();
+    if (name) {
+      if (isIpv4Literal(name)) {
+        if (!ips.has(name)) return false;
+      } else if (!dns.has(name)) {
+        return false;
+      }
+    }
+
+    for (const ip of identity.ipAddresses) {
+      const trimmed = ip.trim();
+      if (trimmed && isIpv4Literal(trimmed) && !ips.has(trimmed)) return false;
+    }
+    return true;
+  } catch {
+    // catch-no-log-ok: malformed PEM / extension parse → treat as identity mismatch
+    return false;
+  }
+}
+
+function certPaths(certsDir: string) {
+  return {
     caCert: path.join(certsDir, 'ca-cert.pem'),
     caKey: path.join(certsDir, 'ca-key.pem'),
     serverCert: path.join(certsDir, 'server-cert.pem'),
@@ -72,20 +166,25 @@ export async function loadOrGenerateCerts(serverName: string): Promise<CertBundl
     clientCert: path.join(certsDir, 'client-cert.pem'),
     clientKey: path.join(certsDir, 'client-key.pem'),
   };
+}
 
-  const allExist = Object.values(paths).every((p) => fs.existsSync(p));
-  if (allExist) {
-    return {
-      caCert: fs.readFileSync(paths.caCert, 'utf-8'),
-      caKey: fs.readFileSync(paths.caKey, 'utf-8'),
-      serverCert: fs.readFileSync(paths.serverCert, 'utf-8'),
-      serverKey: fs.readFileSync(paths.serverKey, 'utf-8'),
-      clientCert: fs.readFileSync(paths.clientCert, 'utf-8'),
-      clientKey: fs.readFileSync(paths.clientKey, 'utf-8'),
-    };
-  }
+function readBundle(paths: ReturnType<typeof certPaths>): CertBundle {
+  return {
+    caCert: fs.readFileSync(paths.caCert, 'utf-8'),
+    caKey: fs.readFileSync(paths.caKey, 'utf-8'),
+    serverCert: fs.readFileSync(paths.serverCert, 'utf-8'),
+    serverKey: fs.readFileSync(paths.serverKey, 'utf-8'),
+    clientCert: fs.readFileSync(paths.clientCert, 'utf-8'),
+    clientKey: fs.readFileSync(paths.clientKey, 'utf-8'),
+  };
+}
 
+async function generateAndPersistCerts(identity: TakServerIdentity): Promise<CertBundle> {
+  const certsDir = getCertsDir();
+  const paths = certPaths(certsDir);
   fs.mkdirSync(certsDir, { recursive: true });
+
+  const altNames = buildServerAltNames(identity);
 
   // Generate CA
   const caKeyPair = await generateKeyPairAsync();
@@ -99,9 +198,11 @@ export async function loadOrGenerateCerts(serverName: string): Promise<CertBundl
     20,
   );
 
-  // Generate server cert
+  // Generate server cert (CN + SAN for EUD hostname checks)
   const serverKeyPair = await generateKeyPairAsync();
-  const serverSubject: forge.pki.CertificateField[] = [{ name: 'commonName', value: serverName }];
+  const serverSubject: forge.pki.CertificateField[] = [
+    { name: 'commonName', value: identity.serverName },
+  ];
   const serverCert = buildCert(
     serverSubject,
     caSubject,
@@ -109,6 +210,7 @@ export async function loadOrGenerateCerts(serverName: string): Promise<CertBundl
     caKeyPair.privateKey,
     false,
     10,
+    altNames,
   );
 
   // Generate client cert
@@ -156,12 +258,35 @@ export async function loadOrGenerateCerts(serverName: string): Promise<CertBundl
   return bundle;
 }
 
-export async function regenerateCerts(serverName: string): Promise<CertBundle> {
+/**
+ * Load on-disk certs when they match `identity`; otherwise generate (or regenerate)
+ * so CN + SAN cover `serverName` and every LAN IP the data package will dial.
+ */
+export async function loadOrGenerateCerts(identity: TakServerIdentity): Promise<CertBundle> {
+  const certsDir = getCertsDir();
+  const paths = certPaths(certsDir);
+
+  const allExist = Object.values(paths).every((p) => fs.existsSync(p));
+  if (allExist) {
+    const bundle = readBundle(paths);
+    if (serverCertMatchesIdentity(bundle.serverCert, identity)) {
+      return bundle;
+    }
+    console.debug(
+      '[TAK] On-disk server certificate identity mismatch; regenerating for current LAN IP / server name',
+    );
+    return regenerateCerts(identity);
+  }
+
+  return generateAndPersistCerts(identity);
+}
+
+export async function regenerateCerts(identity: TakServerIdentity): Promise<CertBundle> {
   const certsDir = getCertsDir();
   if (fs.existsSync(certsDir)) {
     for (const file of fs.readdirSync(certsDir)) {
       fs.rmSync(path.join(certsDir, file));
     }
   }
-  return loadOrGenerateCerts(serverName);
+  return generateAndPersistCerts(identity);
 }

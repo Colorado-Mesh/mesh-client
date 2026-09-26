@@ -37,11 +37,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import {
-  isMecpComposeEnabled,
-  isMecpMaydayButtonEnabled,
-  isQuickStatusBarEnabled,
-} from '@/renderer/lib/appSettingsStorage';
+import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -147,7 +143,7 @@ import {
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
-import { sendEmergencyText, sendTextWithOutboxFallback } from '../lib/emergencySend';
+import { sendEmergencyText } from '../lib/emergencySend';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import {
   getCachedMecpLanguage,
@@ -166,7 +162,6 @@ import {
   meshcoreConfiguredChannelIndexSet,
 } from '../lib/meshcoreConfiguredChatChannels';
 import { nodeDisplayName } from '../lib/nodeLongNameOrHex';
-import { getNodeStatus } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import {
@@ -181,13 +176,6 @@ import {
   truncateReplyPreviewText,
 } from '../lib/replyPreview';
 import {
-  createRollCall,
-  isRollCallExpired,
-  ROLL_CALL_COMMAND_TEXT,
-  type RollCallState,
-  tallyRollCallReplies,
-} from '../lib/rollCall';
-import {
   groupChatReactionsByParentKey,
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
@@ -196,8 +184,6 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
-import { useWatchedNodesStore } from '../stores/watchedNodesStore';
-import { QuickStatusBar } from './chat/QuickStatusBar';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -957,23 +943,13 @@ function ChatPanel({
   const [mecpComposeOpen, setMecpComposeOpen] = useState(false);
   const [mecpComposeSession, setMecpComposeSession] = useState(0);
   const [mecpComposeEnabled, setMecpComposeEnabled] = useState(() => isMecpComposeEnabled());
-  const [mecpMaydayButtonEnabled, setMecpMaydayButtonEnabled] = useState(() =>
-    isMecpMaydayButtonEnabled(),
-  );
-  const [quickStatusBarEnabled, setQuickStatusBarEnabled] = useState(() =>
-    isQuickStatusBarEnabled(),
-  );
-  const [mecpMaydayMode, setMecpMaydayMode] = useState(false);
   const [mecpLang, setMecpLang] = useState(() =>
     getCachedMecpLanguage(mecpLanguageForAppLocale(i18n.language || 'en')),
   );
-  const mecpControlsEnabled = mecpComposeEnabled || mecpMaydayButtonEnabled;
 
   useEffect(() => {
     const sync = () => {
       setMecpComposeEnabled(isMecpComposeEnabled());
-      setMecpMaydayButtonEnabled(isMecpMaydayButtonEnabled());
-      setQuickStatusBarEnabled(isQuickStatusBarEnabled());
     };
     window.addEventListener('mesh-client:appSettings', sync);
     return () => {
@@ -982,11 +958,10 @@ function ChatPanel({
   }, []);
 
   useEffect(() => {
-    if (!mecpControlsEnabled) {
+    if (!mecpComposeEnabled) {
       setMecpComposeOpen(false);
-      setMecpMaydayMode(false);
     }
-  }, [mecpControlsEnabled]);
+  }, [mecpComposeEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -2016,80 +1991,6 @@ function ChatPanel({
     },
     [sendChunkForResult],
   );
-
-  const sendQuickStatusText = useCallback(
-    async (text: string) => {
-      if ((viewMode === 'dm' || dmOnlyChat) && activeDmNode == null) {
-        setChatActionError({ message: t('chatPanel.selectDmFirst'), viewKey });
-        return;
-      }
-      try {
-        await sendTextWithOutboxFallback(
-          text,
-          {
-            isSendAvailable: outboxSendAvailable,
-            sendFn: (payload) => sendChunkForResult(payload),
-            queueOutbox,
-            protocol,
-            viewKey,
-            channel,
-            toNode: viewMode === 'dm' && activeDmNode != null ? activeDmNode : null,
-          },
-          'normal',
-        );
-        setUnreadDividerTimestamp(0);
-      } catch (err) {
-        console.warn('[ChatPanel] quick status send failed ' + errLikeToLogString(err));
-        setChatActionError({ message: t('chatPanel.sendFailed'), viewKey });
-      }
-    },
-    [
-      activeDmNode,
-      channel,
-      dmOnlyChat,
-      outboxSendAvailable,
-      protocol,
-      queueOutbox,
-      sendChunkForResult,
-      t,
-      viewKey,
-      viewMode,
-    ],
-  );
-
-  const [rollCall, setRollCall] = useState<RollCallState | null>(null);
-  const rollCallNowMs = useNowMs(rollCall != null, 30_000);
-  const rollCallTally = useMemo(
-    () => (rollCall ? tallyRollCallReplies(rollCall, viewMessages, isOwnNode) : null),
-    [rollCall, viewMessages, isOwnNode],
-  );
-  const rollCallSummary =
-    rollCallTally && rollCallNowMs > 0 && !isRollCallExpired(rollCallTally, rollCallNowMs)
-      ? {
-          responded: rollCallTally.respondedPeerIds.length,
-          expected: rollCallTally.expectedPeerIds.length,
-        }
-      : null;
-
-  const handleRollCall = useCallback(async () => {
-    const watched = useWatchedNodesStore.getState().watchedNodeIds;
-    const candidates = [...nodes.values()].filter((n) => !isOwnNode(n.node_id));
-    const watchedPeers = candidates.filter((n) => watched.has(n.node_id));
-    const expected = (
-      watchedPeers.length > 0
-        ? watchedPeers
-        : candidates.filter(
-            (n) =>
-              getNodeStatus(
-                n.last_heard,
-                capabilities.nodeStaleThresholdMs,
-                capabilities.nodeOfflineThresholdMs,
-              ) === 'online',
-          )
-    ).map((n) => String(n.node_id));
-    setRollCall(createRollCall(expected));
-    await sendQuickStatusText(ROLL_CALL_COMMAND_TEXT);
-  }, [capabilities, isOwnNode, nodes, sendQuickStatusText]);
 
   const handleReact = async (glyph: string, packetId: number, msgChannel: number) => {
     // Match handleSend: UI uses channel -1 as "primary"; MeshCore/Meshtastic send expects 0.
@@ -3972,49 +3873,29 @@ function ChatPanel({
       {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
       ) : null}
-      {mecpControlsEnabled ? (
+      {mecpComposeEnabled ? (
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          {mecpComposeEnabled ? (
-            <button
-              type="button"
-              className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
-              aria-label={t('mecp.compose.open')}
-              onClick={() => {
-                setMecpMaydayMode(false);
-                setMecpComposeSession((n) => n + 1);
-                setMecpComposeOpen(true);
-              }}
-            >
-              {t('mecp.compose.button')}
-            </button>
-          ) : null}
-          {mecpMaydayButtonEnabled ? (
-            <button
-              type="button"
-              className="rounded border border-red-500 bg-red-700 px-2 py-1 text-xs font-bold text-white hover:bg-red-600"
-              aria-label={t('mecp.compose.maydayAria')}
-              onClick={() => {
-                setMecpMaydayMode(true);
-                setMecpComposeSession((n) => n + 1);
-                setMecpComposeOpen(true);
-              }}
-            >
-              {t('mecp.compose.maydayButton')}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
+            aria-label={t('mecp.compose.open')}
+            onClick={() => {
+              setMecpComposeSession((n) => n + 1);
+              setMecpComposeOpen(true);
+            }}
+          >
+            {t('mecp.compose.button')}
+          </button>
         </div>
       ) : null}
-      {mecpControlsEnabled ? (
+      {mecpComposeEnabled ? (
         <MecpComposeModal
           key={mecpComposeSession}
           open={mecpComposeOpen}
           onClose={() => {
             setMecpComposeOpen(false);
-            setMecpMaydayMode(false);
           }}
           resolveGps={resolveShareLocation}
-          initialSeverity={mecpMaydayMode ? 0 : undefined}
-          autoAttachGps={mecpMaydayMode}
           onSend={async (text) => {
             if ((viewMode === 'dm' || dmOnlyChat) && activeDmNode == null) {
               const message = t('chatPanel.selectDmFirst');
@@ -4031,14 +3912,6 @@ function ChatPanel({
               toNode: viewMode === 'dm' && activeDmNode != null ? activeDmNode : null,
             });
           }}
-        />
-      ) : null}
-      {quickStatusBarEnabled ? (
-        <QuickStatusBar
-          disabled={(dmOnlyChat && activeDmNode == null) || reticulumDmMissingLxmf}
-          onSend={sendQuickStatusText}
-          onRollCall={handleRollCall}
-          rollCallSummary={rollCallSummary}
         />
       ) : null}
       <ChatComposer
