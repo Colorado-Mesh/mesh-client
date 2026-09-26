@@ -911,7 +911,6 @@
     "disconnectRadio": "Verbreek de verbinding",
     "manualContactApproval": "Handmatige contactgoedkeuring",
     "manualContactApprovalDesc": "Handmatige goedkeuring vereisen voordat nieuwe contacten verschijnen",
-    "disconnected": "● losgekoppeld",
     "bluetoothDevice": "Bluetooth-apparaat",
     "serialDevice": "Serieel apparaat",
     "wifiDevice": "WiFi-apparaat",
@@ -940,10 +939,6 @@
     "stageLinuxUnpaired": "Het opgeslagen apparaat is niet gekoppeld in Linux Bluetooth. Selecteer het hieronder om de pincode in te voeren en verbinding te maken.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Verbinden",
-    "mqttStatusConnected": "aangesloten",
-    "mqttStatusConnecting": "verbinden",
-    "mqttStatusError": "fout",
-    "mqttStatusDisconnected": "losgekoppeld",
     "stageSelectDevice": "Selecteer hieronder uw apparaat",
     "stageSelectSerial": "Selecteer hieronder een seriële poort",
     "stageConnectingLast": "Verbinding maken met het laatste Bluetooth-apparaat…",
@@ -1030,7 +1025,6 @@
     "reticulumSidecarStartFailed": "Kon Reticulum-stack niet starten: {{message}}",
     "reticulumStopStack": "Stack stoppen",
     "reticulumAutostart": "Stack automatisch starten bij het openen van Verbinding",
-    "reticulumStackRunning": "Stack actief",
     "reticulumIdentity": {
       "title": "Reticulum-identiteit",
       "startStackFirst": "Start de Reticulum-stack om de identiteit te configureren.",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Verbindingsstatus",
+      "radioLink": "Radioverbinding",
+      "stack": "Stack",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Fout",
+      "running": "Actief",
+      "stopped": "Gestopt",
+      "clientLost": "Client verloren",
+      "takPort": "Poort {{port}}",
+      "openTak": "TAK openen"
+    },
+    "disconnectAll": "Radio en MQTT loskoppelen",
+    "disconnectRadioGroup": "Radio loskoppelen",
+    "moreDisconnectOptions": "Meer opties voor loskoppelen",
+    "disconnectOptions": "Opties voor loskoppelen",
+    "disconnectAndQuitHelp": "Verbreekt alle verbindingen en sluit daarna Mesh Client.",
+    "quitHelp": "Sluit Mesh Client.",
+    "lastConnectionLabel": "Laatste verbinding"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",
@@ -6266,6 +6280,12 @@
       "hintPin": "vastzetten",
       "panelCount_one": "{{count}} paneel",
       "panelCount_other": "{{count}} panelen"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "{{label}} verlagen",
+      "increase": "{{label}} verhogen"
     }
   }
 }

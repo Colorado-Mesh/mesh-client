@@ -912,7 +912,6 @@
     "disconnectRadio": "切断する",
     "manualContactApproval": "手動による連絡先の承認",
     "manualContactApprovalDesc": "新しい連絡先が表示される前に手動承認が必要",
-    "disconnected": "● 切断されました",
     "bluetoothDevice": "Bluetooth デバイス",
     "serialDevice": "シリアルデバイス",
     "wifiDevice": "WiFiデバイス",
@@ -941,10 +940,6 @@
     "stageLinuxUnpaired": "保存されたデバイスは Linux Bluetooth でペアリングされていません。下で選択して PIN を入力し、接続します。",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "接続する",
-    "mqttStatusConnected": "接続された",
-    "mqttStatusConnecting": "接続する",
-    "mqttStatusError": "エラー",
-    "mqttStatusDisconnected": "切断された",
     "stageSelectDevice": "以下からデバイスを選択してください",
     "stageSelectSerial": "以下のシリアルポートを選択してください",
     "stageConnectingLast": "最後の Bluetooth デバイスに接続中…",
@@ -1031,7 +1026,6 @@
     "reticulumSidecarStartFailed": "Reticulumスタックを開始できませんでした: {{message}}",
     "reticulumStopStack": "スタックを停止",
     "reticulumAutostart": "接続を開いたときにスタックを自動的に開始する",
-    "reticulumStackRunning": "スタック実行中",
     "reticulumIdentity": {
       "title": "Reticulum ID",
       "startStackFirst": "Reticulumスタックを起動して、アイデンティティを設定します。",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "リンクの状態",
+      "radioLink": "無線リンク",
+      "stack": "スタック",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "エラー",
+      "running": "実行中",
+      "stopped": "停止中",
+      "clientLost": "クライアント切断",
+      "takPort": "ポート {{port}}",
+      "openTak": "TAK を開く"
+    },
+    "disconnectAll": "無線機と MQTT を切断",
+    "disconnectRadioGroup": "無線機を切断",
+    "moreDisconnectOptions": "その他の切断オプション",
+    "disconnectOptions": "切断オプション",
+    "disconnectAndQuitHelp": "すべてのリンクを切断してから Mesh Client を終了します。",
+    "quitHelp": "Mesh Client を終了します。",
+    "lastConnectionLabel": "前回の接続"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -6266,6 +6280,12 @@
       "hintPin": "ピン留め",
       "panelCount_one": "{{count}} 個のパネル",
       "panelCount_other": "{{count}} 個のパネル"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "{{label}}を減らす",
+      "increase": "{{label}}を増やす"
     }
   }
 }

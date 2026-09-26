@@ -912,7 +912,6 @@
     "disconnectRadio": "연결 끊기",
     "manualContactApproval": "수동 연락처 승인",
     "manualContactApprovalDesc": "새 연락처가 표시되기 전에 수동 승인 필요",
-    "disconnected": "● 연결이 끊어졌습니다.",
     "bluetoothDevice": "블루투스 장치",
     "serialDevice": "직렬 장치",
     "wifiDevice": "WiFi 장치",
@@ -941,10 +940,6 @@
     "stageLinuxUnpaired": "저장된 장치는 Linux Bluetooth에 페어링되어 있지 않습니다. 아래에서 선택하여 PIN을 입력하고 연결하세요.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "연결하다",
-    "mqttStatusConnected": "연결됨",
-    "mqttStatusConnecting": "연결",
-    "mqttStatusError": "오류",
-    "mqttStatusDisconnected": "연결이 끊어진",
     "stageSelectDevice": "아래에서 기기를 선택하세요.",
     "stageSelectSerial": "아래에서 직렬 포트를 선택하세요.",
     "stageConnectingLast": "마지막 블루투스 기기에 연결 중…",
@@ -1031,7 +1026,6 @@
     "reticulumSidecarStartFailed": "Reticulum 스택을 시작할 수 없습니다: {{message}}",
     "reticulumStopStack": "스택 중지",
     "reticulumAutostart": "연결을 열 때 스택 자동 시작",
-    "reticulumStackRunning": "스택 실행 중",
     "reticulumIdentity": {
       "title": "Reticulum 정체성",
       "startStackFirst": "아이덴티티를 구성하려면 Reticulum 스택을 시작합니다.",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "링크 상태",
+      "radioLink": "무선 링크",
+      "stack": "스택",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "오류",
+      "running": "실행 중",
+      "stopped": "중지됨",
+      "clientLost": "클라이언트 끊김",
+      "takPort": "포트 {{port}}",
+      "openTak": "TAK 열기"
+    },
+    "disconnectAll": "무전기와 MQTT 연결 해제",
+    "disconnectRadioGroup": "무전기 연결 해제",
+    "moreDisconnectOptions": "추가 연결 해제 옵션",
+    "disconnectOptions": "연결 해제 옵션",
+    "disconnectAndQuitHelp": "모든 링크 연결을 해제한 뒤 Mesh Client를 종료합니다.",
+    "quitHelp": "Mesh Client를 종료합니다.",
+    "lastConnectionLabel": "마지막 연결"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -6266,6 +6280,12 @@
       "hintPin": "고정",
       "panelCount_one": "패널 {{count}}개",
       "panelCount_other": "패널 {{count}}개"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "{{label}} 줄이기",
+      "increase": "{{label}} 늘리기"
     }
   }
 }

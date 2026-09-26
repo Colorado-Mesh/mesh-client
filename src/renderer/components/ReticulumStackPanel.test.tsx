@@ -110,13 +110,13 @@ describe('ReticulumStackPanel', () => {
       />,
     );
 
-    const status = (await screen.findByText('connectionPanel.disconnected')).parentElement;
+    const status = await screen.findByText('connectionPanel.tiles.stopped');
     const startButton = screen.getByRole('button', {
       name: 'connectionPanel.reticulumStartStack',
     });
 
-    expect(status).toHaveClass('text-gray-300');
-    expect(startButton).toHaveClass('bg-amber-700', 'text-white', 'hover:bg-amber-800');
+    expect(status.previousElementSibling).toHaveClass('bg-slate-600');
+    expect(startButton).toHaveClass('bg-readable-green', 'text-white');
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -133,15 +133,11 @@ describe('ReticulumStackPanel', () => {
       <ReticulumStackPanel connecting onStartStack={async () => {}} onStopStack={async () => {}} />,
     );
 
-    const title = await screen.findByText('connectionPanel.reticulumStackTitle');
-    const header = title.closest('.bg-secondary-dark');
-    expect(header).toBeTruthy();
-    const statusText = within(header as HTMLElement).getByText('connectionPanel.connecting');
-    const status = statusText.parentElement;
-    expect(status).toHaveClass('text-yellow-400');
+    const tiles = await screen.findByRole('group', { name: 'connectionPanel.tiles.groupLabel' });
+    const statusText = within(tiles).getByText('app.deviceStatus.connecting');
     expect(statusText).not.toHaveClass('animate-pulse');
-    expect(status).not.toHaveClass('animate-pulse');
-    expect(statusText.previousElementSibling).toHaveClass('animate-pulse');
+    expect(statusText.parentElement).not.toHaveClass('animate-pulse');
+    expect(statusText.previousElementSibling).toHaveClass('bg-yellow-500', 'animate-pulse');
   });
 
   it('shows local interface alert when serial port is stale', async () => {

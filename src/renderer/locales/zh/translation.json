@@ -911,7 +911,6 @@
     "lastData": "最后数据",
     "disconnectRadio": "断开",
     "manualContactApproval": "手动联系批准",
-    "disconnected": "● 断开连接",
     "bluetoothDevice": "蓝牙设备",
     "serialDevice": "串口设备",
     "wifiDevice": "WiFi设备",
@@ -941,10 +940,6 @@
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "连接",
     "manualContactApprovalDesc": "新联系人出现之前需要手动批准",
-    "mqttStatusConnected": "已连接",
-    "mqttStatusConnecting": "连接",
-    "mqttStatusError": "错误",
-    "mqttStatusDisconnected": "断开连接",
     "stageSelectDevice": "在下面选择您的设备",
     "stageSelectSerial": "选择下面的串口",
     "stageConnectingLast": "正在连接到最后一个蓝牙设备...",
@@ -1031,7 +1026,6 @@
     "reticulumSidecarStartFailed": "无法启动 Reticulum 堆栈：{{message}}",
     "reticulumStopStack": "停止堆栈",
     "reticulumAutostart": "打开连接时自动启动堆栈",
-    "reticulumStackRunning": "堆栈运行",
     "reticulumIdentity": {
       "title": "Reticulum 身份",
       "startStackFirst": "启动Reticulum堆栈以配置标识。",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "链路状态",
+      "radioLink": "无线电链路",
+      "stack": "协议栈",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "错误",
+      "running": "运行中",
+      "stopped": "已停止",
+      "clientLost": "客户端已断开",
+      "takPort": "端口 {{port}}",
+      "openTak": "打开 TAK"
+    },
+    "disconnectAll": "断开无线电和 MQTT",
+    "disconnectRadioGroup": "断开无线电",
+    "moreDisconnectOptions": "更多断开选项",
+    "disconnectOptions": "断开选项",
+    "disconnectAndQuitHelp": "断开所有链路，然后关闭 Mesh Client。",
+    "quitHelp": "关闭 Mesh Client。",
+    "lastConnectionLabel": "上次连接"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -6266,6 +6280,12 @@
       "hintPin": "固定",
       "panelCount_one": "{{count}} 个面板",
       "panelCount_other": "{{count}} 个面板"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "减少{{label}}",
+      "increase": "增加{{label}}"
     }
   }
 }

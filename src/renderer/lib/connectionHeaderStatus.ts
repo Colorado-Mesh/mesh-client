@@ -119,3 +119,25 @@ export function headerDotClass(variant: ConnectionHeaderVariant): string {
       return CONNECTION_HEADER_IDLE_DOT;
   }
 }
+
+/** Status-dot tone names shared with `components/ui/StatusDot` (kept here so lib stays UI-free). */
+export type HeaderDotTone = 'ok' | 'info' | 'warn' | 'error' | 'off';
+
+/** Dot tone and pulse for a header variant: in-progress and error states pulse the dot only. */
+export function headerVariantDot(variant: ConnectionHeaderVariant): {
+  tone: HeaderDotTone;
+  pulse: boolean;
+} {
+  switch (variant) {
+    case 'ok':
+      return { tone: 'ok', pulse: false };
+    case 'connected':
+      return { tone: 'info', pulse: false };
+    case 'warn':
+      return { tone: 'warn', pulse: true };
+    case 'error':
+      return { tone: 'error', pulse: true };
+    default:
+      return { tone: 'off', pulse: false };
+  }
+}

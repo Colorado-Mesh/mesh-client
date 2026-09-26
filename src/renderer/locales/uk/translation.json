@@ -950,7 +950,6 @@
     "disconnectRadio": "Відключити",
     "manualContactApproval": "Схвалення контакту вручну",
     "manualContactApprovalDesc": "Вимагати підтвердження вручну перед появою нових контактів",
-    "disconnected": "● відключений",
     "bluetoothDevice": "пристрій Bluetooth",
     "serialDevice": "Послідовний пристрій",
     "wifiDevice": "пристрій WiFi",
@@ -979,10 +978,6 @@
     "stageLinuxUnpaired": "Збережений пристрій не сполучено в Linux Bluetooth — виберіть його нижче, щоб ввести PIN-код і підключитися.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Підключитися",
-    "mqttStatusConnected": "підключений",
-    "mqttStatusConnecting": "підключення",
-    "mqttStatusError": "помилка",
-    "mqttStatusDisconnected": "відключений",
     "stageSelectDevice": "Виберіть свій пристрій нижче",
     "stageSelectSerial": "Виберіть послідовний порт нижче",
     "stageConnectingLast": "Підключення до останнього пристрою Bluetooth…",
@@ -1069,7 +1064,6 @@
     "reticulumSidecarStartFailed": "Не вдалося запустити стек Reticulum: {{message}}",
     "reticulumStopStack": "Зупинити стек",
     "reticulumAutostart": "Автозапуск стека при відкритті з'єднання",
-    "reticulumStackRunning": "Стек працює",
     "reticulumIdentity": {
       "title": "Ідентичність Reticulum",
       "startStackFirst": "Запустіть стек Reticulum, щоб налаштувати ідентичність.",
@@ -1603,7 +1597,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Стан з'єднань",
+      "radioLink": "Радіозв'язок",
+      "stack": "Стек",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Помилка",
+      "running": "Працює",
+      "stopped": "Зупинено",
+      "clientLost": "Клієнта втрачено",
+      "takPort": "Порт {{port}}",
+      "openTak": "Відкрити TAK"
+    },
+    "disconnectAll": "Від'єднати радіо та MQTT",
+    "disconnectRadioGroup": "Від'єднати радіо",
+    "moreDisconnectOptions": "Інші варіанти від'єднання",
+    "disconnectOptions": "Варіанти від'єднання",
+    "disconnectAndQuitHelp": "Від'єднує всі з'єднання й закриває Mesh Client.",
+    "quitHelp": "Закриває Mesh Client.",
+    "lastConnectionLabel": "Останнє з'єднання"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -6364,6 +6378,12 @@
       "panelCount_few": "{{count}} панелі",
       "panelCount_many": "{{count}} панелей",
       "panelCount_other": "{{count}} панелі"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Зменшити: {{label}}",
+      "increase": "Збільшити: {{label}}"
     }
   }
 }

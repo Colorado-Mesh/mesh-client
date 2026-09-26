@@ -912,7 +912,6 @@
     "disconnectRadio": "Memutuskan",
     "manualContactApproval": "Persetujuan Kontak Manual",
     "manualContactApprovalDesc": "Memerlukan persetujuan manual sebelum kontak baru muncul",
-    "disconnected": "● terputus",
     "bluetoothDevice": "perangkat Bluetooth",
     "serialDevice": "Perangkat serial",
     "wifiDevice": "perangkat WiFi",
@@ -941,10 +940,6 @@
     "stageLinuxUnpaired": "Perangkat yang disimpan tidak dipasangkan di Linux Bluetooth — pilih di bawah untuk memasukkan PIN dan menghubungkan.",
     "liamServerNote": "Liam's server hanya uplink — node Anda muncul di petanya tetapi Anda tidak akan menerima pesan darinya.",
     "connectButton": "Menghubungkan",
-    "mqttStatusConnected": "terhubung",
-    "mqttStatusConnecting": "menghubungkan",
-    "mqttStatusError": "kesalahan",
-    "mqttStatusDisconnected": "terputus",
     "stageSelectDevice": "Pilih perangkat Anda di bawah",
     "stageSelectSerial": "Pilih port serial di bawah ini",
     "stageConnectingLast": "Menghubungkan ke perangkat Bluetooth terakhir…",
@@ -1031,7 +1026,6 @@
     "reticulumSidecarStartFailed": "Tidak dapat memulai stack Reticulum: {{message}}",
     "reticulumStopStack": "Hentikan tumpukan",
     "reticulumAutostart": "Mulai otomatis tumpukan saat membuka Koneksi",
-    "reticulumStackRunning": "Stack berjalan",
     "reticulumIdentity": {
       "title": "Identitas Reticulum",
       "startStackFirst": "Mulai tumpukan Reticulum untuk mengonfigurasi identitas.",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Status tautan",
+      "radioLink": "Tautan radio",
+      "stack": "Stack",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Galat",
+      "running": "Berjalan",
+      "stopped": "Berhenti",
+      "clientLost": "Klien terputus",
+      "takPort": "Port {{port}}",
+      "openTak": "Buka TAK"
+    },
+    "disconnectAll": "Putuskan radio dan MQTT",
+    "disconnectRadioGroup": "Putuskan radio",
+    "moreDisconnectOptions": "Opsi pemutusan lainnya",
+    "disconnectOptions": "Opsi pemutusan",
+    "disconnectAndQuitHelp": "Memutus semua tautan, lalu menutup Mesh Client.",
+    "quitHelp": "Menutup Mesh Client.",
+    "lastConnectionLabel": "Koneksi terakhir"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",
@@ -6266,6 +6280,12 @@
       "hintPin": "sematkan",
       "panelCount_one": "{{count}} panel",
       "panelCount_other": "{{count}} panel"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Kurangi {{label}}",
+      "increase": "Tambah {{label}}"
     }
   }
 }

@@ -8,6 +8,7 @@ import {
   headerDotClass,
   headerIconClass,
   headerTextClass,
+  headerVariantDot,
   isDeviceErrorDisconnect,
   isMqttErrorDisconnect,
   isTakErrorDisconnect,
@@ -122,6 +123,19 @@ describe('connectionHeaderStatus', () => {
       [null, RF_MAX_RECONNECT_ATTEMPTS],
     ] as const)('maps %s → %s', (type, expected) => {
       expect(reconnectBannerMaxAttempts(type)).toBe(expected);
+    });
+  });
+
+  describe('headerVariantDot', () => {
+    it.each([
+      ['ok', 'ok', false],
+      ['connected', 'info', false],
+      ['warn', 'warn', true],
+      ['error', 'error', true],
+      ['idle', 'off', false],
+      ['muted', 'off', false],
+    ] as const)('maps %s to a %s dot (pulse %s)', (variant, tone, pulse) => {
+      expect(headerVariantDot(variant)).toEqual({ tone, pulse });
     });
   });
 });

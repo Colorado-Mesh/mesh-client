@@ -931,7 +931,6 @@
     "disconnectRadio": "Odpojit",
     "manualContactApproval": "Schválení ručního kontaktu",
     "manualContactApprovalDesc": "Před zobrazením nových kontaktů vyžadovat ruční schválení",
-    "disconnected": "● odpojeno",
     "bluetoothDevice": "Bluetooth zařízení",
     "serialDevice": "Sériové zařízení",
     "wifiDevice": "WiFi zařízení",
@@ -960,10 +959,6 @@
     "stageLinuxUnpaired": "Uložené zařízení není spárováno v Linuxu Bluetooth – vyberte jej níže, zadejte PIN a připojte se.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Připojit",
-    "mqttStatusConnected": "připojeno",
-    "mqttStatusConnecting": "spojovací",
-    "mqttStatusError": "chyba",
-    "mqttStatusDisconnected": "odpojeno",
     "stageSelectDevice": "Níže vyberte své zařízení",
     "stageSelectSerial": "Níže vyberte sériový port",
     "stageConnectingLast": "Připojování k poslednímu zařízení Bluetooth…",
@@ -1050,7 +1045,6 @@
     "reticulumSidecarStartFailed": "Nelze spustit zásobník Reticulum: {{message}}",
     "reticulumStopStack": "Zastavit zásobník",
     "reticulumAutostart": "Automatické spuštění zásobníku při otevření připojení",
-    "reticulumStackRunning": "Zásobník spuštěn",
     "reticulumIdentity": {
       "title": "Reticulum identita",
       "startStackFirst": "Spusťte zásobník Reticulum pro konfiguraci identity.",
@@ -1585,7 +1579,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Stav spojení",
+      "radioLink": "Rádiové spojení",
+      "stack": "Zásobník",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Chyba",
+      "running": "Běží",
+      "stopped": "Zastaveno",
+      "clientLost": "Klient ztracen",
+      "takPort": "Port {{port}}",
+      "openTak": "Otevřít TAK"
+    },
+    "disconnectAll": "Odpojit rádio a MQTT",
+    "disconnectRadioGroup": "Odpojit rádio",
+    "moreDisconnectOptions": "Další možnosti odpojení",
+    "disconnectOptions": "Možnosti odpojení",
+    "disconnectAndQuitHelp": "Odpojí všechna spojení a pak zavře Mesh Client.",
+    "quitHelp": "Zavře Mesh Client.",
+    "lastConnectionLabel": "Poslední připojení"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
@@ -6316,6 +6330,12 @@
       "panelCount_one": "{{count}} panel",
       "panelCount_few": "{{count}} panely",
       "panelCount_other": "{{count}} panelů"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Snížit: {{label}}",
+      "increase": "Zvýšit: {{label}}"
     }
   }
 }

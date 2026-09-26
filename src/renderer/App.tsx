@@ -3256,6 +3256,28 @@ function AppContent() {
     'buffering' in legacyQueue &&
     legacyQueue.buffering === true;
   const reticulumTxBuffering = reticulumQueueBuffering;
+  const connectionTakSummary = useMemo(
+    () =>
+      capabilities.hasTakPanel
+        ? {
+            running: takStatus.running,
+            port: takStatus.port,
+            serverError: takServerError,
+            clientLoss: takClientLoss,
+            onOpen: () => {
+              openSlotPanel('TAK');
+            },
+          }
+        : undefined,
+    [
+      capabilities.hasTakPanel,
+      openSlotPanel,
+      takClientLoss,
+      takServerError,
+      takStatus.port,
+      takStatus.running,
+    ],
+  );
   const takStatusLabel =
     takClientLoss && takStatus.running
       ? t('app.takClientLost')
@@ -3460,6 +3482,7 @@ function AppContent() {
                                   : undefined
                               }
                               protocol={protocol}
+                              tak={connectionTakSummary}
                               firmwareCheckState={
                                 showConnectionFirmwareCheck ? firmwareCheckState : undefined
                               }

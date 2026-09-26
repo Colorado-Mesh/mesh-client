@@ -122,6 +122,27 @@ Never use `#000000` or `#ffffff` as a surface, gradients, glows, text shadows, o
 - Cards and panels: `bg-deep-black`, `border-slate-800`, radius 12px.
 - Status: a dot only where it carries state (online, stale, offline; connected, stopped). Pulses go on a separate `aria-hidden` element, never on small text (see `ProtocolUnreadBadge.tsx`).
 
+## Components
+
+Use the shared primitives in [`src/renderer/components/ui/`](https://github.com/Colorado-Mesh/mesh-client/tree/main/src/renderer/components/ui) instead of restyling native elements per panel. They already carry the sizes, tokens and ARIA wiring above.
+
+| Need                                                           | Use                                              |
+| -------------------------------------------------------------- | ------------------------------------------------ |
+| Button (primary, secondary, danger, ghost) or icon-only button | `Button`, `IconButton` (`Button.tsx`)            |
+| Related actions with shared borders                            | `ButtonGroup`, `GroupButton`                     |
+| Main action with rare variants; row overflow actions           | `SplitButton`, `MenuButton`, `Menu` (`Menu.tsx`) |
+| Filter or mode choice                                          | `SegmentedControl` (radio group, arrow keys)     |
+| On/off setting with a description                              | `Switch`                                         |
+| Small integers (retry counts)                                  | `Stepper`                                        |
+| Card with a 56px header, title, status and actions             | `Panel`                                          |
+| One link at a glance (radio, MQTT, TAK)                        | `StatusTile`, `StatusDot`                        |
+| Label and value pairs                                          | `LabelValueGrid`, `LabelValue`                   |
+| Read-only value with a copy button                             | `CopyField`                                      |
+| Shortcut hint                                                  | `Kbd`                                            |
+| Inputs, selects, checkboxes, chips, inline notices             | class strings in `formClasses.ts`                |
+
+Menus render in a portal above modals (`Z_POPOVER_MENU` in `lib/modalZIndex.ts`), close on Escape or outside click, and return focus to their trigger.
+
 ## Copy
 
 - No em or en dashes. Use a comma, a period or a hyphen.

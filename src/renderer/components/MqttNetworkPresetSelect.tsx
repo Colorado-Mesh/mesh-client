@@ -1,3 +1,5 @@
+import { SELECT_CLASS } from './ui/formClasses';
+
 export interface MqttNetworkPresetOption {
   /** Preset id stored as the select value. */
   value: string;
@@ -33,7 +35,7 @@ export function MqttNetworkPresetSelect({
       onChange={(e) => {
         onSelect(e.target.value);
       }}
-      className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-xs font-medium text-gray-200 focus:outline-none"
+      className={SELECT_CLASS}
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>

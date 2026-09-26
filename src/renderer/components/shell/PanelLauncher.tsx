@@ -26,6 +26,8 @@ import {
 } from '@/renderer/lib/panelLauncher';
 import type { TabSlotId } from '@/renderer/lib/tabSlotIds';
 
+import { Kbd } from '../ui/Kbd';
+
 export interface PanelLauncherProps {
   sections: readonly NavSection[];
   badgeCounts: NavBadgeCounts;
@@ -46,15 +48,6 @@ interface LauncherGroup {
 
 const ENTRY_SELECTOR = '[data-launcher-entry]';
 const FOCUSABLE_SELECTOR = 'input:not([disabled]), button:not([disabled])';
-
-/** Kbd chip for shortcut hints. */
-function Kbd({ children }: { children: string }) {
-  return (
-    <kbd className="border-secondary-dark bg-sidebar-active-bg rounded-[3px] border px-1.5 py-px font-mono text-[11px] leading-4 text-slate-300">
-      {children}
-    </kbd>
-  );
-}
 
 /**
  * All-panels launcher (Ctrl+K, Cmd+K on macOS). Every panel visible for the active protocol,

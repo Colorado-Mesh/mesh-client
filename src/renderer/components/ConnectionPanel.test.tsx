@@ -1038,13 +1038,11 @@ describe('ConnectionPanel status i18n and pulse', () => {
         protocol="meshtastic"
       />,
     );
-    const mqttCard = screen.getByText('MQTT Connection').closest('.bg-deep-black');
-    expect(mqttCard).toBeTruthy();
-    const statusText = within(mqttCard as HTMLElement).getByText('connecting');
+    const tiles = screen.getByRole('group', { name: 'Link status' });
+    const statusText = within(tiles).getByText('Connecting');
     expect(statusText).not.toHaveClass('animate-pulse');
-    expect(statusText.parentElement).toHaveClass('text-yellow-400');
     expect(statusText.parentElement).not.toHaveClass('animate-pulse');
-    expect(statusText.previousElementSibling).toHaveClass('animate-pulse');
+    expect(statusText.previousElementSibling).toHaveClass('bg-yellow-500', 'animate-pulse');
   });
 
   it('translates last-connection transport type', () => {
@@ -2502,5 +2500,103 @@ describe('ConnectionPanel BLE MAC identity', () => {
     } finally {
       userAgentSpy.mockRestore();
     }
+  });
+});
+
+describe('ConnectionPanel link tiles and disconnect actions', () => {
+  const tak = {
+    running: true,
+    port: 8087,
+    serverError: false,
+    clientLoss: false,
+  };
+
+  it('shows radio, MQTT and TAK tiles and opens the TAK panel', async () => {
+    const user = userEvent.setup();
+    const onOpen = vi.fn();
+    const { container } = render(
+      <ConnectionPanel
+        state={configuredState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connected"
+        protocol="meshtastic"
+        tak={{ ...tak, onOpen }}
+      />,
+    );
+    const tiles = screen.getByRole('group', { name: 'Link status' });
+    expect(within(tiles).getByText('Radio link')).toBeInTheDocument();
+    expect(within(tiles).getByText('Configured')).toBeInTheDocument();
+    expect(within(tiles).getByText('MQTT')).toBeInTheDocument();
+    expect(within(tiles).getByText('Connected')).toBeInTheDocument();
+    expect(within(tiles).getByText('Running')).toBeInTheDocument();
+    expect(within(tiles).getByText('Port 8087')).toBeInTheDocument();
+
+    await user.click(within(tiles).getByRole('button', { name: 'Open TAK' }));
+    expect(onOpen).toHaveBeenCalledOnce();
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('offers disconnecting radio and MQTT together from the split menu', async () => {
+    const user = userEvent.setup();
+    const onDisconnect = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(window.electronAPI.mqtt.disconnect).mockClear();
+    render(
+      <ConnectionPanel
+        state={configuredState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={onDisconnect}
+        mqttStatus="connected"
+        protocol="meshtastic"
+      />,
+    );
+    const radio = screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!;
+    await user.click(within(radio).getByRole('button', { name: 'More disconnect options' }));
+    await user.click(screen.getByRole('menuitem', { name: /Disconnect radio and MQTT/ }));
+
+    expect(onDisconnect).toHaveBeenCalledOnce();
+    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshtastic');
+  });
+
+  it('uses a plain Disconnect button when MQTT is not connected', async () => {
+    const user = userEvent.setup();
+    const onDisconnect = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ConnectionPanel
+        state={configuredState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={onDisconnect}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    const radio = screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!;
+    expect(
+      within(radio).queryByRole('button', { name: 'More disconnect options' }),
+    ).not.toBeInTheDocument();
+    await user.click(within(radio).getByRole('button', { name: 'Disconnect' }));
+    expect(onDisconnect).toHaveBeenCalledOnce();
+  });
+
+  it('keeps Quit at the bottom of the panel with its explanation', () => {
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    const quit = screen.getByRole('button', { name: /^Quit$/i });
+    const buttons = screen.getAllByRole('button');
+    expect(buttons[buttons.length - 1]).toBe(quit);
+    expect(screen.getByText('Closes Mesh Client.')).toBeInTheDocument();
   });
 });

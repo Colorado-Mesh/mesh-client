@@ -912,7 +912,6 @@
     "disconnectRadio": "Bağlantıyı kes",
     "manualContactApproval": "Manuel İletişim Onayı",
     "manualContactApprovalDesc": "Yeni kişiler görünmeden önce manuel onay gerektir",
-    "disconnected": "● bağlantısı kesildi",
     "bluetoothDevice": "Bluetooth cihazı",
     "serialDevice": "Seri cihaz",
     "wifiDevice": "Wi-Fi cihazı",
@@ -941,10 +940,6 @@
     "stageLinuxUnpaired": "Kaydedilen cihaz Linux Bluetooth'ta eşleştirilmemiş; PIN'i girmek ve bağlanmak için aşağıdan seçin.",
     "liamServerNote": "Liam's sunucusu yalnızca yukarı bağlantıya yöneliktir; düğümünüz onun haritasında görünür ancak ondan mesaj almazsınız.",
     "connectButton": "Bağlamak",
-    "mqttStatusConnected": "bağlı",
-    "mqttStatusConnecting": "bağlanıyor",
-    "mqttStatusError": "hata",
-    "mqttStatusDisconnected": "bağlantısı kesildi",
     "stageSelectDevice": "Aşağıdan cihazınızı seçin",
     "stageSelectSerial": "Aşağıdan bir seri bağlantı noktası seçin",
     "stageConnectingLast": "Son Bluetooth cihazına bağlanılıyor…",
@@ -1031,7 +1026,6 @@
     "reticulumSidecarStartFailed": "Reticulum yığını başlatılamadı: {{message}}",
     "reticulumStopStack": "Yığını durdur",
     "reticulumAutostart": "Bağlantı açılırken yığını otomatik olarak başlat",
-    "reticulumStackRunning": "Yığın çalışıyor",
     "reticulumIdentity": {
       "title": "Reticulum kimliği",
       "startStackFirst": "Kimliği yapılandırmak için Reticulum yığınını başlatın.",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Bağlantı durumu",
+      "radioLink": "Radyo bağlantısı",
+      "stack": "Yığın",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Hata",
+      "running": "Çalışıyor",
+      "stopped": "Durduruldu",
+      "clientLost": "İstemci koptu",
+      "takPort": "Bağlantı noktası {{port}}",
+      "openTak": "TAK'ı aç"
+    },
+    "disconnectAll": "Radyo ve MQTT bağlantısını kes",
+    "disconnectRadioGroup": "Radyo bağlantısını kes",
+    "moreDisconnectOptions": "Diğer bağlantı kesme seçenekleri",
+    "disconnectOptions": "Bağlantı kesme seçenekleri",
+    "disconnectAndQuitHelp": "Tüm bağlantıları keser, ardından Mesh Client'ı kapatır.",
+    "quitHelp": "Mesh Client'ı kapatır.",
+    "lastConnectionLabel": "Son bağlantı"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",
@@ -6266,6 +6280,12 @@
       "hintPin": "sabitle",
       "panelCount_one": "{{count}} panel",
       "panelCount_other": "{{count}} panel"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "{{label}} azalt",
+      "increase": "{{label}} artır"
     }
   }
 }

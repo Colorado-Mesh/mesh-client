@@ -912,7 +912,6 @@
     "disconnectRadio": "Desconectar",
     "manualContactApproval": "Aprovação manual de contato",
     "manualContactApprovalDesc": "Exigir aprovação manual antes que novos contatos apareçam",
-    "disconnected": "● desconectado",
     "bluetoothDevice": "Dispositivo Bluetooth",
     "serialDevice": "Dispositivo serial",
     "wifiDevice": "Dispositivo Wi-Fi",
@@ -941,10 +940,6 @@
     "stageLinuxUnpaired": "O dispositivo salvo não está emparelhado no Linux Bluetooth – selecione-o abaixo para inserir o PIN e conectar.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Conectar",
-    "mqttStatusConnected": "conectado",
-    "mqttStatusConnecting": "conectando",
-    "mqttStatusError": "erro",
-    "mqttStatusDisconnected": "desconectado",
     "stageSelectDevice": "Selecione seu dispositivo abaixo",
     "stageSelectSerial": "Selecione uma porta serial abaixo",
     "stageConnectingLast": "Conectando ao último dispositivo Bluetooth…",
@@ -1031,7 +1026,6 @@
     "reticulumSidecarStartFailed": "Não foi possível iniciar a pilha Reticulum: {{message}}",
     "reticulumStopStack": "Parar pilha",
     "reticulumAutostart": "Iniciar pilha automaticamente ao abrir a Conexão",
-    "reticulumStackRunning": "Pilha em execução",
     "reticulumIdentity": {
       "title": "Identidade Reticulum",
       "startStackFirst": "Inicie a pilha Reticulum para configurar a identidade.",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Status das conexões",
+      "radioLink": "Link de rádio",
+      "stack": "Pilha",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Erro",
+      "running": "Em execução",
+      "stopped": "Parado",
+      "clientLost": "Cliente perdido",
+      "takPort": "Porta {{port}}",
+      "openTak": "Abrir TAK"
+    },
+    "disconnectAll": "Desconectar rádio e MQTT",
+    "disconnectRadioGroup": "Desconectar rádio",
+    "moreDisconnectOptions": "Mais opções de desconexão",
+    "disconnectOptions": "Opções de desconexão",
+    "disconnectAndQuitHelp": "Desconecta todos os links e fecha o Mesh Client.",
+    "quitHelp": "Fecha o Mesh Client.",
+    "lastConnectionLabel": "Última conexão"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -6266,6 +6280,12 @@
       "hintPin": "fixar",
       "panelCount_one": "{{count}} painel",
       "panelCount_other": "{{count}} painéis"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Diminuir {{label}}",
+      "increase": "Aumentar {{label}}"
     }
   }
 }

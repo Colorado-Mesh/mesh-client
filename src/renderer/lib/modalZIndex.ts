@@ -6,3 +6,6 @@ export const Z_NESTED_AUTH_OVERLAY = 10_001;
 
 /** Instant tooltips (portal) — must sit above node/peer detail modals and nested auth. */
 export const Z_INSTANT_TOOLTIP = 10_100;
+
+/** Popup menus (portal): above detail modals and nested auth, below instant tooltips. */
+export const Z_POPOVER_MENU = 10_050;

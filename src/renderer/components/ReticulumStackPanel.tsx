@@ -1,3 +1,4 @@
+import { Network, Play, Square } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -7,7 +8,9 @@ import {
   isReticulumAutoResendOnAnnounceEnabled,
   setReticulumAutoResendOnAnnounceEnabled,
 } from '@/renderer/lib/appSettingsStorage';
+import type { ConnectionHeaderVariant } from '@/renderer/lib/connectionHeaderStatus';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { ICON_LG, ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
   collectReticulumInterfaceAlerts,
@@ -24,6 +27,10 @@ import {
   type ReticulumSidecarEvent,
 } from '@/shared/reticulum-types';
 
+import {
+  ConnectionStatusTiles,
+  type ConnectionTakSummary,
+} from './connection/ConnectionStatusTiles';
 import { ReticulumInterfacesPanel } from './reticulum/ReticulumInterfacesPanel';
 import {
   type ReticulumSetupDestination,
@@ -34,6 +41,9 @@ import { ReticulumLocalInterfaceConnectingBlock } from './ReticulumLocalInterfac
 import { ReticulumRmapConnectionStatus } from './ReticulumRmapConnectionStatus';
 import { ReticulumSharedInstanceClientBanner } from './ReticulumSharedInstanceClientBanner';
 import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
+import { Button } from './ui/Button';
+import { CHECKBOX_CLASS, NOTICE_CLASS } from './ui/formClasses';
+import { Panel } from './ui/Panel';
 
 export interface ReticulumStackPanelProps {
   connecting: boolean;
@@ -45,6 +55,8 @@ export interface ReticulumStackPanelProps {
   /** Open Admin → Bluetooth (USB Clear paired / Start pairing) for BLE bond recovery. */
   onOpenAdminBluetooth?: () => void;
   onOpenSetupDestination?: (destination: ReticulumSetupDestination) => boolean;
+  /** TAK server summary for the link tiles. */
+  tak?: ConnectionTakSummary;
 }
 
 /** Connection tab: stack lifecycle, interface CRUD, and local interface health. */
@@ -57,6 +69,7 @@ export function ReticulumStackPanel({
   onOpenAppGpsSettings,
   onOpenAdminBluetooth,
   onOpenSetupDestination,
+  tak,
 }: ReticulumStackPanelProps) {
   const { t } = useTranslation();
   const [restartError, setRestartError] = useState<string | null>(null);
@@ -248,24 +261,32 @@ export function ReticulumStackPanel({
     lxmfHash: identity?.lxmf_hash ?? null,
   });
 
-  let stackStatusClass = 'text-gray-300';
+  let stackVariant: ConnectionHeaderVariant = 'idle';
+  let stackStatusText = t('connectionPanel.tiles.stopped');
   if (sidecarUiRunning) {
-    stackStatusClass = 'text-brand-green';
+    stackVariant = 'ok';
+    stackStatusText = t('connectionPanel.tiles.running');
   } else if (connecting) {
-    stackStatusClass = 'text-yellow-400';
+    stackVariant = 'warn';
+    stackStatusText = t('app.deviceStatus.connecting');
   }
-
-  let stackStatusText = t('connectionPanel.disconnected');
-  if (sidecarUiRunning) {
-    stackStatusText = stackStatusIdentityLabel
+  const stackStatusDetail =
+    sidecarUiRunning && stackStatusIdentityLabel
       ? t('connectionPanel.reticulumStackRunningAs', { name: stackStatusIdentityLabel })
-      : t('connectionPanel.reticulumStackRunning');
-  } else if (connecting) {
-    stackStatusText = t('connectionPanel.connecting');
-  }
+      : undefined;
 
   return (
     <div className="space-y-4">
+      <ConnectionStatusTiles
+        link={{
+          label: t('connectionPanel.tiles.stack'),
+          icon: <Network aria-hidden className={ICON_LG} size={20} />,
+          status: stackStatusText,
+          variant: stackVariant,
+          detail: stackStatusDetail,
+        }}
+        tak={tak}
+      />
       <ReticulumSetupGuide
         running={sidecarUiRunning}
         apiReady={sidecarApiReady}
@@ -294,32 +315,64 @@ export function ReticulumStackPanel({
           interfaceControlsRef.current?.focus({ preventScroll: true });
         }}
       />
-      <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
-        <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
-          <h2 className="font-medium text-gray-200">{t('connectionPanel.reticulumStackTitle')}</h2>
-          <span
-            className={`inline-flex items-center gap-1 text-xs font-medium ${stackStatusClass}`}
-          >
-            <span aria-hidden className={connecting ? 'inline-block animate-pulse' : undefined}>
-              ●
-            </span>{' '}
-            <span>{stackStatusText}</span>
-          </span>
-        </div>
-        <div className="space-y-3 p-4">
+      <Panel
+        title={t('connectionPanel.reticulumStackTitle')}
+        actions={
+          sidecarUiRunning ? (
+            <Button
+              variant="danger"
+              size="sm"
+              icon={<Square aria-hidden className={ICON_MD} size={16} />}
+              aria-label={t('connectionPanel.reticulumStopStack')}
+              disabled={connecting}
+              onClick={() => {
+                notifyManualStackStop();
+                void (async () => {
+                  await onStopStack();
+                  await refreshSidecarStatus();
+                })().catch((e: unknown) => {
+                  console.warn(
+                    '[ReticulumStackPanel] stop stack failed ' +
+                      (e instanceof Error ? e.message : String(e)),
+                  );
+                });
+              }}
+            >
+              {t('connectionPanel.reticulumStopStack')}
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Play aria-hidden className={ICON_MD} size={16} />}
+              aria-label={t('connectionPanel.reticulumStartStack')}
+              disabled={connecting}
+              onClick={() => {
+                notifyManualStackStart();
+                void onStartStack();
+              }}
+            >
+              {connecting
+                ? t('connectionPanel.connecting')
+                : t('connectionPanel.reticulumStartStack')}
+            </Button>
+          )
+        }
+      >
+        <div className="space-y-4">
           <p className="text-muted text-xs">{t('connectionPanel.reticulumStackHint')}</p>
           {stackError ? (
-            <p className="text-sm text-red-400" role="alert">
+            <p className={NOTICE_CLASS.error} role="alert">
               {stackError}
             </p>
           ) : null}
           {restartError ? (
-            <p className="text-sm text-red-400" role="alert">
+            <p className={NOTICE_CLASS.error} role="alert">
               {restartError}
             </p>
           ) : null}
           {sidecarUiRunning && sidecarStatus.port > 0 ? (
-            <p className="text-muted text-xs" role="status">
+            <p className="text-muted font-mono text-xs" role="status">
               127.0.0.1:{sidecarStatus.port}
             </p>
           ) : null}
@@ -379,68 +432,35 @@ export function ReticulumStackPanel({
               </div>
             </>
           ) : null}
-          {sidecarUiRunning ? (
-            <button
-              type="button"
-              aria-label={t('connectionPanel.reticulumStopStack')}
-              disabled={connecting}
-              onClick={() => {
-                notifyManualStackStop();
-                void (async () => {
-                  await onStopStack();
-                  await refreshSidecarStatus();
-                })().catch((e: unknown) => {
-                  console.warn(
-                    '[ReticulumStackPanel] stop stack failed ' +
-                      (e instanceof Error ? e.message : String(e)),
-                  );
-                });
-              }}
-              className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-40"
-            >
-              {t('connectionPanel.reticulumStopStack')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              aria-label={t('connectionPanel.reticulumStartStack')}
-              disabled={connecting}
-              onClick={() => {
-                notifyManualStackStart();
-                void onStartStack();
-              }}
-              className="w-full rounded-lg bg-amber-700 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-40"
-            >
-              {connecting
-                ? t('connectionPanel.connecting')
-                : t('connectionPanel.reticulumStartStack')}
-            </button>
-          )}
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={autoStart}
-              onChange={(e) => {
-                handleAutoStartChange(e.target.checked);
-              }}
-              aria-label={t('connectionPanel.reticulumAutostart')}
-            />
-            {t('connectionPanel.reticulumAutostart')}
-          </label>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={autoResendOnAnnounce}
-              onChange={(e) => {
-                setAutoResendOnAnnounce(e.target.checked);
-                setReticulumAutoResendOnAnnounceEnabled(e.target.checked);
-              }}
-              aria-label={t('connectionPanel.reticulumAutoResendOnAnnounce')}
-            />
-            {t('connectionPanel.reticulumAutoResendOnAnnounce')}
-          </label>
+          <div className="space-y-2.5 border-t border-slate-800 pt-4">
+            <label className="flex cursor-pointer items-center gap-2 text-[13px] text-slate-200">
+              <input
+                type="checkbox"
+                className={CHECKBOX_CLASS}
+                checked={autoStart}
+                onChange={(e) => {
+                  handleAutoStartChange(e.target.checked);
+                }}
+                aria-label={t('connectionPanel.reticulumAutostart')}
+              />
+              {t('connectionPanel.reticulumAutostart')}
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 text-[13px] text-slate-200">
+              <input
+                type="checkbox"
+                className={CHECKBOX_CLASS}
+                checked={autoResendOnAnnounce}
+                onChange={(e) => {
+                  setAutoResendOnAnnounce(e.target.checked);
+                  setReticulumAutoResendOnAnnounceEnabled(e.target.checked);
+                }}
+                aria-label={t('connectionPanel.reticulumAutoResendOnAnnounce')}
+              />
+              {t('connectionPanel.reticulumAutoResendOnAnnounce')}
+            </label>
+          </div>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

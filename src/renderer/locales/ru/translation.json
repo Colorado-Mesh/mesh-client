@@ -950,7 +950,6 @@
     "disconnectRadio": "Отключить",
     "manualContactApproval": "Утверждение контакта вручную",
     "manualContactApprovalDesc": "Требовать одобрения вручную, прежде чем появятся новые контакты",
-    "disconnected": "● отключено",
     "bluetoothDevice": "Bluetooth-устройство",
     "serialDevice": "Серийное устройство",
     "wifiDevice": "Wi-Fi-устройство",
@@ -979,10 +978,6 @@
     "stageLinuxUnpaired": "Сохраненное устройство не подключено к Linux Bluetooth — выберите его ниже, чтобы ввести PIN-код и подключиться.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Соединять",
-    "mqttStatusConnected": "подключен",
-    "mqttStatusConnecting": "подключение",
-    "mqttStatusError": "ошибка",
-    "mqttStatusDisconnected": "отключен",
     "stageSelectDevice": "Выберите свое устройство ниже",
     "stageSelectSerial": "Выберите последовательный порт ниже",
     "stageConnectingLast": "Подключение к последнему устройству Bluetooth…",
@@ -1069,7 +1064,6 @@
     "reticulumSidecarStartFailed": "Не удалось запустить стек Reticulum: {{message}}",
     "reticulumStopStack": "Остановить стек",
     "reticulumAutostart": "Автоматический запуск стека при открытии соединения",
-    "reticulumStackRunning": "Стек работает",
     "reticulumIdentity": {
       "title": "Идентичность Reticulum",
       "startStackFirst": "Запустите стек Reticulum для настройки идентичности.",
@@ -1603,7 +1597,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Состояние соединений",
+      "radioLink": "Радиосвязь",
+      "stack": "Стек",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Ошибка",
+      "running": "Работает",
+      "stopped": "Остановлен",
+      "clientLost": "Клиент потерян",
+      "takPort": "Порт {{port}}",
+      "openTak": "Открыть TAK"
+    },
+    "disconnectAll": "Отключить радио и MQTT",
+    "disconnectRadioGroup": "Отключить радио",
+    "moreDisconnectOptions": "Другие варианты отключения",
+    "disconnectOptions": "Варианты отключения",
+    "disconnectAndQuitHelp": "Отключает все соединения и закрывает Mesh Client.",
+    "quitHelp": "Закрывает Mesh Client.",
+    "lastConnectionLabel": "Последнее подключение"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -6364,6 +6378,12 @@
       "panelCount_few": "{{count}} панели",
       "panelCount_many": "{{count}} панелей",
       "panelCount_other": "{{count}} панели"
+    }
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Уменьшить: {{label}}",
+      "increase": "Увеличить: {{label}}"
     }
   }
 }

@@ -917,10 +917,6 @@
     "submit": "Submit",
     "rePairDevice": "Remove & Re-pair Device",
     "mqttConnection": "MQTT Connection",
-    "mqttStatusConnected": "connected",
-    "mqttStatusConnecting": "connecting",
-    "mqttStatusError": "error",
-    "mqttStatusDisconnected": "disconnected",
     "server": "Server",
     "from": "From",
     "topic": "Topic",
@@ -977,7 +973,6 @@
     "reticulumStopStack": "Stop stack",
     "reticulumAutoResendOnAnnounce": "Retry failed messages when a peer announces",
     "reticulumAutostart": "Auto-start stack when opening Connection",
-    "reticulumStackRunning": "Stack running",
     "reticulumStackRunningAs": "Running — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum stack unresponsive — restarting…",
     "reticulumLocalInterfaces": {
@@ -1408,7 +1403,6 @@
     "disconnectRadio": "Disconnect",
     "manualContactApproval": "Manual Contact Approval",
     "manualContactApprovalDesc": "Require manual approval before new contacts appear",
-    "disconnected": "● disconnected",
     "bluetoothDevice": "Bluetooth device",
     "serialDevice": "Serial device",
     "wifiDevice": "WiFi device",
@@ -1565,7 +1559,27 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Link status",
+      "radioLink": "Radio link",
+      "stack": "Stack",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Error",
+      "running": "Running",
+      "stopped": "Stopped",
+      "clientLost": "Client lost",
+      "takPort": "Port {{port}}",
+      "openTak": "Open TAK"
+    },
+    "disconnectAll": "Disconnect radio and MQTT",
+    "disconnectRadioGroup": "Disconnect radio",
+    "moreDisconnectOptions": "More disconnect options",
+    "disconnectOptions": "Disconnect options",
+    "disconnectAndQuitHelp": "Disconnects every link, then closes Mesh Client.",
+    "quitHelp": "Closes Mesh Client.",
+    "lastConnectionLabel": "Last connection"
   },
   "contactGroupsModal": {
     "title": "Contact Groups",
@@ -6267,5 +6281,11 @@
     "rollCall": "Roll call",
     "rollCallAria": "Broadcast roll call and tally OK replies",
     "rollCallTally": "{{responded}}/{{expected}} responded"
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Decrease {{label}}",
+      "increase": "Increase {{label}}"
+    }
   }
 }
