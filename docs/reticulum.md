@@ -52,7 +52,9 @@ After changing interfaces on a live network, **restart the stack** so RNS picks 
 
 ---
 
-## Sidebar tabs
+## Panels
+
+In the v6 shell ([issue #1062](https://github.com/Colorado-Mesh/mesh-client/issues/1062)) Reticulum panels sit under rail sections: **Chat** (Chat, RRC, Games), **Network** (Peers, Topology, Nomad Network, Remote), **Map**, **Monitor** (Diagnostics, Stats, Sniffer), **Device** (Connection, Network, Admin, TAK), then **Incident** and **App**. Grouping lives in `src/renderer/lib/navSections.ts`; every panel is also in the Ctrl/Cmd+K launcher.
 
 | Tab             | Role                                                                                                                                                                                                                                                                                                |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

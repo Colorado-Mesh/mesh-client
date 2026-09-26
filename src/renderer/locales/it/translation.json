@@ -32,12 +32,9 @@
       "stale": "Rafferma",
       "reconnecting": "La riconnessione"
     },
-    "nodeLabel": "Nodo: {{name}}",
     "takClientLost": "Cliente TAK PERSO",
     "title": "Cliente mesh",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Spegni il segnale Colorado Mesh",
-    "meshTubeSignOn": "Attiva il segnale Colorado Mesh",
     "queueBadge": "D: {{used}}/{{max}}",
     "telemetryDisabled": "La telemetria è disabilitata su questo dispositivo. L'abilitazione delle metriche del dispositivo aiuta il mesh e questa app (diagnostica, batteria, segnale). Abilitalo nella scheda Radio.",
     "scrollToTop": "↑ In alto",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Protocollo predefinito",
     "nodeSilenceAlertMinutesHint": "Lasciare vuoto per utilizzare la soglia obsoleta di ciascun protocollo. L'escalation spara a 2× questo valore.",
     "nodeBatteryLowThreshold": "Soglia batteria bassa (%)",
-    "notifyOnLinkDown": "Notifica in caso di link-down radio imprevisto"
+    "notifyOnLinkDown": "Notifica in caso di link-down radio imprevisto",
+    "aboutSection": "Informazioni"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
-    "expandSidebar": "Espandi la barra laterale",
-    "collapseSidebar": "Contrai barra laterale",
     "languageSelector": "Seleziona lingua",
     "applicationPanels": "Pannelli di applicazione",
     "applicationLog": "Log applicazione",
@@ -6242,5 +6238,34 @@
     "rollCall": "Appello",
     "rollCallAria": "Trasmetti l'appello e conta le risposte OK",
     "rollCallTally": "{{responded}}/{{expected}} hanno risposto"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Dispositivo"
+    },
+    "sectionPanelsAria": "Pannelli di {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Vai a un pannello ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, nodo {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Tutti i pannelli",
+      "searchLabel": "Cerca pannelli",
+      "placeholder": "Vai a un pannello",
+      "noResults": "Nessun pannello corrisponde alla ricerca",
+      "otherGroup": "Altro",
+      "pin": "Fissa {{label}}",
+      "unpin": "Non fissare più {{label}}",
+      "pinLimit": "Puoi fissare fino a {{max}} pannelli. Rimuovine prima uno.",
+      "hintMove": "naviga",
+      "hintOpen": "apri",
+      "hintPin": "fissa",
+      "panelCount_one": "{{count}} pannello",
+      "panelCount_other": "{{count}} pannelli"
+    }
   }
 }

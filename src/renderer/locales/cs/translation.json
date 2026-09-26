@@ -32,12 +32,9 @@
       "stale": "Zatuchlý",
       "reconnecting": "Opětovné připojení"
     },
-    "nodeLabel": "Uzel: {{name}}",
     "takClientLost": "Ztráta klienta TAK",
     "title": "Síťový klient",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Vypněte ceduli Colorado Mesh",
-    "meshTubeSignOn": "Zapněte ceduli Colorado Mesh",
     "queueBadge": "Otázka: {{used}}/{{max}}",
     "telemetryDisabled": "Telemetrie je na tomto zařízení zakázána. Povolení metrik zařízení pomáhá síti a této aplikaci (diagnostika, baterie, signál). Povolte jej na kartě Rádio.",
     "scrollToTop": "↑ Nahoru",
@@ -429,12 +426,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Výchozí nastavení protokolu",
     "nodeSilenceAlertMinutesHint": "Ponechte prázdné pro použití zastaralého prahu každého protokolu. Eskalace se spustí při 2násobku této hodnoty.",
     "nodeBatteryLowThreshold": "Prahová hodnota nízkého stavu baterie (%)",
-    "notifyOnLinkDown": "Upozornit na nečekané rádiové spojení"
+    "notifyOnLinkDown": "Upozornit na nečekané rádiové spojení",
+    "aboutSection": "O aplikaci"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
-    "expandSidebar": "Rozbalte postranní panel",
-    "collapseSidebar": "Sbalit postranní panel",
     "languageSelector": "Vyberte jazyk",
     "applicationPanels": "Aplikační panely",
     "applicationLog": "Protokol aplikace",
@@ -6291,5 +6287,35 @@
     "rollCall": "jmenovitě",
     "rollCallAria": "Vysílání jmenovitého volání a sčítání odpovědí OK",
     "rollCallTally": "{{responded}}/{{expected}} odpověděl/a"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Zařízení"
+    },
+    "sectionPanelsAria": "Panely sekce {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Přejít na panel ({{shortcut}})",
+    "status": {
+      "radio": "Rádio: {{status}}",
+      "radioWithNode": "Rádio: {{status}}, uzel {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Všechny panely",
+      "searchLabel": "Hledat panely",
+      "placeholder": "Přejít na panel",
+      "noResults": "Hledání neodpovídá žádný panel",
+      "otherGroup": "Ostatní",
+      "pin": "Připnout {{label}}",
+      "unpin": "Odepnout {{label}}",
+      "pinLimit": "Maximální počet připnutých panelů: {{max}}. Nejprve jeden odepněte.",
+      "hintMove": "procházet",
+      "hintOpen": "otevřít",
+      "hintPin": "připnout",
+      "panelCount_one": "{{count}} panel",
+      "panelCount_few": "{{count}} panely",
+      "panelCount_other": "{{count}} panelů"
+    }
   }
 }

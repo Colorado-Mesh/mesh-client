@@ -32,12 +32,9 @@
       "stale": "Несвежий",
       "reconnecting": "Повторное подключение"
     },
-    "nodeLabel": "Узел: {{name}}",
     "takClientLost": "TAK клиент потерян",
     "title": "Сетчатый клиент",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Выключить знак Colorado Mesh",
-    "meshTubeSignOn": "Включите знак Colorado Mesh",
     "queueBadge": "Вопрос: {{used}}/{{max}}",
     "telemetryDisabled": "Телеметрия отключена на этом устройстве. Включение метрик устройства помогает сетке и этому приложению (диагностика, батарея, сигнал). Включите его во вкладке Радио.",
     "scrollToTop": "↑ Вверх",
@@ -437,12 +434,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Протокол по умолчанию:",
     "nodeSilenceAlertMinutesHint": "Оставьте пустым, чтобы использовать устаревшее пороговое значение каждого протокола. Эскалация срабатывает в 2раза больше этого значения.",
     "nodeBatteryLowThreshold": "Порог низкого заряда батареи (%)",
-    "notifyOnLinkDown": "Уведомлять о неожиданном отключении радиосвязи"
+    "notifyOnLinkDown": "Уведомлять о неожиданном отключении радиосвязи",
+    "aboutSection": "О программе"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
-    "expandSidebar": "Развернуть боковую панель",
-    "collapseSidebar": "Свернуть боковую панель",
     "languageSelector": "Выберите язык",
     "applicationPanels": "Панели приложений",
     "applicationLog": "Журнал приложений",
@@ -6338,5 +6334,36 @@
     "rollCall": "На первый-второй рассчитайсь",
     "rollCallAria": "Трансляция переклички и подсчет ответов OK",
     "rollCallTally": "{{responded}}/{{expected}} ответили"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Мониторинг",
+      "device": "Устройство"
+    },
+    "sectionPanelsAria": "Панели раздела {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Перейти к панели ({{shortcut}})",
+    "status": {
+      "radio": "Радио: {{status}}",
+      "radioWithNode": "Радио: {{status}}, узел {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Все панели",
+      "searchLabel": "Поиск панелей",
+      "placeholder": "Перейти к панели",
+      "noResults": "Нет панелей, подходящих под поиск",
+      "otherGroup": "Прочее",
+      "pin": "Закрепить {{label}}",
+      "unpin": "Открепить {{label}}",
+      "pinLimit": "Максимум закреплённых панелей: {{max}}. Сначала открепите одну.",
+      "hintMove": "навигация",
+      "hintOpen": "открыть",
+      "hintPin": "закрепить",
+      "panelCount_one": "{{count}} панель",
+      "panelCount_few": "{{count}} панели",
+      "panelCount_many": "{{count}} панелей",
+      "panelCount_other": "{{count}} панели"
+    }
   }
 }

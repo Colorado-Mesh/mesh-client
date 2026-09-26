@@ -30,6 +30,7 @@ nav:
       - Development Guide: development-environment.md
       - Contributing: contributing.md
       - Accessibility: accessibility-checklist.md
+      - UI Style Guide: style-guide.md
       - CI/CD: ci-cd.md
       - Release Process: release-process.md
       - Localization: localization.md

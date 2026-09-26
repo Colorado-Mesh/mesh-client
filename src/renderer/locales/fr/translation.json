@@ -32,12 +32,9 @@
       "stale": "goût de vieux",
       "reconnecting": "Reconnexion"
     },
-    "nodeLabel": "Nœud : {{name}}",
     "takClientLost": "TAK client perdu",
     "title": "Client maillé",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Éteignez le panneau Colorado Mesh",
-    "meshTubeSignOn": "Allumez le panneau Colorado Mesh",
     "queueBadge": "Q : {{used}}/{{max}}",
     "telemetryDisabled": "La télémétrie est désactivée sur cet appareil. L'activation des métriques de l'appareil aide le maillage et cette application (diagnostics, batterie, signal). Activez-le dans l'onglet Radio.",
     "scrollToTop": "↑ Haut",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Protocole par défaut",
     "nodeSilenceAlertMinutesHint": "Laissez vide pour utiliser le seuil périmé de chaque protocole. L'escalade se déclenche à 2× cette valeur.",
     "nodeBatteryLowThreshold": "Seuil bas de la batterie (%)",
-    "notifyOnLinkDown": "Notifier en cas de coupure inattendue de la liaison radio"
+    "notifyOnLinkDown": "Notifier en cas de coupure inattendue de la liaison radio",
+    "aboutSection": "À propos"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
-    "expandSidebar": "Développer la barre latérale",
-    "collapseSidebar": "Réduire la barre latérale",
     "languageSelector": "Sélectionnez la langue",
     "applicationPanels": "Panneaux d'application",
     "applicationLog": "Journal des applications",
@@ -6242,5 +6238,34 @@
     "rollCall": "Appel",
     "rollCallAria": "Diffuser les réponses à l'appel nominal et au décompte OK",
     "rollCallTally": "{{responded}}/{{expected}} a répondu"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Suivi",
+      "device": "Appareil"
+    },
+    "sectionPanelsAria": "Panneaux de la section {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Aller à un panneau ({{shortcut}})",
+    "status": {
+      "radio": "Radio : {{status}}",
+      "radioWithNode": "Radio : {{status}}, nœud {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Tous les panneaux",
+      "searchLabel": "Rechercher un panneau",
+      "placeholder": "Aller à un panneau",
+      "noResults": "Aucun panneau ne correspond à la recherche",
+      "otherGroup": "Autres",
+      "pin": "Épingler {{label}}",
+      "unpin": "Désépingler {{label}}",
+      "pinLimit": "Vous pouvez épingler jusqu'à {{max}} panneaux. Désépinglez-en un d'abord.",
+      "hintMove": "naviguer",
+      "hintOpen": "ouvrir",
+      "hintPin": "épingler",
+      "panelCount_one": "{{count}} panneau",
+      "panelCount_other": "{{count}} panneaux"
+    }
   }
 }

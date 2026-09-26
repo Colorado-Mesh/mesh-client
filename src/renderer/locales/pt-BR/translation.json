@@ -32,12 +32,9 @@
       "stale": "Rançoso",
       "reconnecting": "A restabelecer ligação"
     },
-    "nodeLabel": "Nó: {{name}}",
     "takClientLost": "Cliente TAK PERDIDO",
     "title": "Cliente de malha",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Desligue o sinal Colorado Mesh",
-    "meshTubeSignOn": "Ative o sinal Colorado Mesh",
     "queueBadge": "P: {{used}}/{{max}}",
     "telemetryDisabled": "A telemetria está desativada neste dispositivo. A ativação de métricas do dispositivo ajuda a malha e este aplicativo (diagnóstico, bateria, sinal). Habilite-o na guia Rádio.",
     "scrollToTop": "↑ Início",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Padrão do protocolo",
     "nodeSilenceAlertMinutesHint": "Deixe em branco para usar o limite obsoleto de cada protocolo. O escalonamento dispara a 2vezes esse valor.",
     "nodeBatteryLowThreshold": "Limite de bateria baixa (%)",
-    "notifyOnLinkDown": "Notificar no link de rádio inesperado"
+    "notifyOnLinkDown": "Notificar no link de rádio inesperado",
+    "aboutSection": "Sobre"
   },
   "aria": {
     "closeDialog": "Fechar janela",
-    "expandSidebar": "Expandir menu lateral",
-    "collapseSidebar": "Contrair menu",
     "languageSelector": "Seleccionar idioma",
     "applicationPanels": "Painéis de aplicação",
     "applicationLog": "Log de aplicativos",
@@ -6242,5 +6238,34 @@
     "rollCall": "Lista de chamada.",
     "rollCallAria": "Transmita a chamada e marque as respostas OK",
     "rollCallTally": "{{responded}}/{{expected}} respondeu"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Aparelho"
+    },
+    "sectionPanelsAria": "Painéis de {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Ir para um painel ({{shortcut}})",
+    "status": {
+      "radio": "Rádio: {{status}}",
+      "radioWithNode": "Rádio: {{status}}, nó {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Todos os painéis",
+      "searchLabel": "Buscar painéis",
+      "placeholder": "Ir para um painel",
+      "noResults": "Nenhum painel corresponde à busca",
+      "otherGroup": "Outros",
+      "pin": "Fixar {{label}}",
+      "unpin": "Desafixar {{label}}",
+      "pinLimit": "É possível fixar até {{max}} painéis. Desafixe um primeiro.",
+      "hintMove": "navegar",
+      "hintOpen": "abrir",
+      "hintPin": "fixar",
+      "panelCount_one": "{{count}} painel",
+      "panelCount_other": "{{count}} painéis"
+    }
   }
 }

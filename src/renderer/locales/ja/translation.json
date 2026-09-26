@@ -32,12 +32,9 @@
       "stale": "古い",
       "reconnecting": "再接続中"
     },
-    "nodeLabel": "ノード: {{name}}",
     "takClientLost": "TAKクライアントを失いました",
     "title": "メッシュクライアント",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Turn off Colorado Mesh sign",
-    "meshTubeSignOn": "Turn on Colorado Mesh sign",
     "queueBadge": "Q: {{used}}/{{max}}",
     "telemetryDisabled": "このデバイスではテレメトリが無効になっています。デバイス メトリクスを有効にすると、メッシュとこのアプリ (診断、バッテリー、信号) が向上します。 [ラジオ] タブで有効にします。",
     "scrollToTop": "↑トップへ",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "プロトコルのデフォルト",
     "nodeSilenceAlertMinutesHint": "各プロトコルの古いしきい値を使用するには、空白のままにします。エスカレーションはこの値の2倍で発生します。",
     "nodeBatteryLowThreshold": "バッテリー低閾値(%)",
-    "notifyOnLinkDown": "予期しない無線リンクダウン時に通知する"
+    "notifyOnLinkDown": "予期しない無線リンクダウン時に通知する",
+    "aboutSection": "このアプリについて"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
-    "expandSidebar": "サイドバーを展開する",
-    "collapseSidebar": "サイドバーを折りたたむ",
     "languageSelector": "言語を選択してください",
     "applicationPanels": "アプリケーションパネル",
     "applicationLog": "アプリケーションログ",
@@ -6242,5 +6238,34 @@
     "rollCall": "点呼",
     "rollCallAria": "ブロードキャストロールコールとOK返信の集計",
     "rollCallTally": "{{responded}}/{{expected}}からの返答"
+  },
+  "shell": {
+    "section": {
+      "monitor": "モニター",
+      "device": "デバイス"
+    },
+    "sectionPanelsAria": "{{section}}のパネル",
+    "navBadgeDetail": "{{label}}、{{detail}}",
+    "openLauncher": "パネルに移動（{{shortcut}}）",
+    "status": {
+      "radio": "無線機：{{status}}",
+      "radioWithNode": "無線機：{{status}}、ノード {{node}}",
+      "radioNode": "{{node}}、{{detail}}"
+    },
+    "launcher": {
+      "title": "すべてのパネル",
+      "searchLabel": "パネルを検索",
+      "placeholder": "パネルに移動",
+      "noResults": "一致するパネルはありません",
+      "otherGroup": "その他",
+      "pin": "{{label}}をピン留め",
+      "unpin": "{{label}}のピン留めを解除",
+      "pinLimit": "ピン留めできるパネルは最大 {{max}} 個です。先に 1 つ解除してください。",
+      "hintMove": "移動",
+      "hintOpen": "開く",
+      "hintPin": "ピン留め",
+      "panelCount_one": "{{count}} 個のパネル",
+      "panelCount_other": "{{count}} 個のパネル"
+    }
   }
 }

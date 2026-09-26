@@ -32,12 +32,9 @@
       "stale": "(Rancio)",
       "reconnecting": "Reconectando"
     },
-    "nodeLabel": "Nodo: {{name}}",
     "takClientLost": "Cliente TAK PERDIDO",
     "title": "Cliente de malla",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Apague el letrero Colorado Mesh",
-    "meshTubeSignOn": "Encienda el letrero Colorado Mesh",
     "queueBadge": "P: {{used}}/{{max}}",
     "telemetryDisabled": "La telemetría está deshabilitada en este dispositivo. Habilitar las métricas del dispositivo ayuda a la malla y a esta aplicación (diagnóstico, batería, señal). Habilítelo en la pestaña Radio.",
     "scrollToTop": "↑ Arriba",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Protocolo predeterminado",
     "nodeSilenceAlertMinutesHint": "Déjelo en blanco para usar el umbral obsoleto de cada protocolo. La escalada se dispara a 2× este valor.",
     "nodeBatteryLowThreshold": "Umbral bajo de la batería (%)",
-    "notifyOnLinkDown": "Notificar sobre un enlace de radio inesperado"
+    "notifyOnLinkDown": "Notificar sobre un enlace de radio inesperado",
+    "aboutSection": "Acerca de"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
-    "expandSidebar": "Ampliar la barra lateral",
-    "collapseSidebar": "Contraer la barra lateral",
     "languageSelector": "Seleccionar idioma",
     "applicationPanels": "Paneles de aplicación",
     "applicationLog": "Registro de la aplicación",
@@ -6242,5 +6238,34 @@
     "rollCall": "Votación nominal",
     "rollCallAria": "Transmitir llamadas nominales y contar las respuestas correctas",
     "rollCallTally": "{{responded}}/{{expected}} respondió"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Dispositivo"
+    },
+    "sectionPanelsAria": "Paneles de {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Ir a un panel ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, nodo {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Todos los paneles",
+      "searchLabel": "Buscar paneles",
+      "placeholder": "Ir a un panel",
+      "noResults": "Ningún panel coincide con la búsqueda",
+      "otherGroup": "Otros",
+      "pin": "Fijar {{label}}",
+      "unpin": "Dejar de fijar {{label}}",
+      "pinLimit": "Se pueden fijar hasta {{max}} paneles. Quita uno primero.",
+      "hintMove": "navegar",
+      "hintOpen": "abrir",
+      "hintPin": "fijar",
+      "panelCount_one": "{{count}} panel",
+      "panelCount_other": "{{count}} paneles"
+    }
   }
 }

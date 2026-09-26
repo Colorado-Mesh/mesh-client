@@ -32,12 +32,9 @@
       "stale": "a",
       "reconnecting": "Ankommen"
     },
-    "nodeLabel": "Knoten: {{name}}",
     "takClientLost": "TAK-CLIENT VERLOREN",
     "title": "Mesh-Client",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Schalten Sie das Colorado Mesh-Schild aus",
-    "meshTubeSignOn": "Schalten Sie das Colorado Mesh-Schild ein",
     "queueBadge": "F: {{used}}/{{max}}",
     "telemetryDisabled": "Telemetrie ist auf diesem Gerät deaktiviert. Die Aktivierung von Gerätemetriken hilft dem Mesh und dieser App (Diagnose, Akku, Signal). Aktivieren Sie es auf der Registerkarte „Radio“.",
     "scrollToTop": "↑ Oben",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Protokollstandard",
     "nodeSilenceAlertMinutesHint": "Leer lassen, um den veralteten Schwellenwert jedes Protokolls zu verwenden. Eskalationsfeuer bei 2x diesem Wert.",
     "nodeBatteryLowThreshold": "Batterieleistungsschwelle (%)",
-    "notifyOnLinkDown": "Benachrichtigung bei unerwarteter Funkverbindung"
+    "notifyOnLinkDown": "Benachrichtigung bei unerwarteter Funkverbindung",
+    "aboutSection": "Über"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
-    "expandSidebar": "Seitenleiste erweitern",
-    "collapseSidebar": "Sidebar ausblenden",
     "languageSelector": "Sprache auswählen",
     "applicationPanels": "Anwendungspanels",
     "applicationLog": "Anwendungsprotokoll",
@@ -6242,5 +6238,34 @@
     "rollCall": "Funktionsanruf",
     "rollCallAria": "Broadcast-Notruf und Zählung OK-Antworten",
     "rollCallTally": "{{responded}}/{{expected}} hat geantwortet"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Gerät"
+    },
+    "sectionPanelsAria": "Panels in {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Zu einem Panel wechseln ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, Knoten {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Alle Panels",
+      "searchLabel": "Panels durchsuchen",
+      "placeholder": "Zu einem Panel wechseln",
+      "noResults": "Keine Panels gefunden",
+      "otherGroup": "Weitere",
+      "pin": "{{label}} anheften",
+      "unpin": "{{label}} lösen",
+      "pinLimit": "Maximal {{max}} Panels können angeheftet werden. Zuerst eines lösen.",
+      "hintMove": "navigieren",
+      "hintOpen": "öffnen",
+      "hintPin": "anheften",
+      "panelCount_one": "{{count}} Panel",
+      "panelCount_other": "{{count}} Panels"
+    }
   }
 }

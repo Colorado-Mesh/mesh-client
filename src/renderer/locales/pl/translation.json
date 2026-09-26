@@ -32,12 +32,9 @@
       "stale": "Nadpsute",
       "reconnecting": "Ponowne podłączenie"
     },
-    "nodeLabel": "Węzeł: {{name}}",
     "takClientLost": "Klient TAK UTRACONY",
     "title": "Klient siatki",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Wyłącz znak Colorado Mesh",
-    "meshTubeSignOn": "Włącz znak Colorado Mesh",
     "queueBadge": "P: {{used}}/{{max}}",
     "telemetryDisabled": "Telemetria jest wyłączona na tym urządzeniu. Włączenie metryk urządzenia pomaga sieci i tej aplikacji (diagnostyka, bateria, sygnał). Włącz ją w zakładce Radio.",
     "scrollToTop": "↑ Góra",
@@ -437,12 +434,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Domyślny protokół",
     "nodeSilenceAlertMinutesHint": "Pozostaw puste, aby użyć nieaktualnego progu każdego protokołu. Eskalacja uruchamia się przy 2-krotności tej wartości.",
     "nodeBatteryLowThreshold": "Próg niskiego poziomu naładowania akumulatora (%)",
-    "notifyOnLinkDown": "Powiadom o nieoczekiwanym wyłączeniu łącza radiowego"
+    "notifyOnLinkDown": "Powiadom o nieoczekiwanym wyłączeniu łącza radiowego",
+    "aboutSection": "O aplikacji"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
-    "expandSidebar": "Panel Boczny",
-    "collapseSidebar": "Zwiń pasek boczny",
     "languageSelector": "Wybierz język",
     "applicationPanels": "Panele aplikacyjne",
     "applicationLog": "Dziennik aplikacji",
@@ -6338,5 +6334,36 @@
     "rollCall": "Wezwanie imienne",
     "rollCallAria": "Rozgłaszanie apelu i odpowiedzi prawidłowe",
     "rollCallTally": "{{responded}}/{{expected}} odpowiedział (a)"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Urządzenie"
+    },
+    "sectionPanelsAria": "Panele sekcji {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Przejdź do panelu ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, węzeł {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Wszystkie panele",
+      "searchLabel": "Szukaj paneli",
+      "placeholder": "Przejdź do panelu",
+      "noResults": "Żaden panel nie pasuje do wyszukiwania",
+      "otherGroup": "Inne",
+      "pin": "Przypnij {{label}}",
+      "unpin": "Odepnij {{label}}",
+      "pinLimit": "Maksymalna liczba przypiętych paneli: {{max}}. Najpierw odepnij jeden.",
+      "hintMove": "nawiguj",
+      "hintOpen": "otwórz",
+      "hintPin": "przypnij",
+      "panelCount_one": "{{count}} panel",
+      "panelCount_few": "{{count}} panele",
+      "panelCount_many": "{{count}} paneli",
+      "panelCount_other": "{{count}} panelu"
+    }
   }
 }

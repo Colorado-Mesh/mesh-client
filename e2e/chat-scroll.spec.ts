@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import type { ElectronAPI } from '../src/shared/electron-api.types';
-import { launchApp, type LaunchedApp, teardownApp } from './electronApp';
+import { launchApp, type LaunchedApp, openPanel, teardownApp } from './electronApp';
 
 test.describe('chat scroll to latest', () => {
   let launched: LaunchedApp;
@@ -32,10 +32,7 @@ test.describe('chat scroll to latest', () => {
       }
     });
     await page.reload();
-    await page
-      .getByRole('tablist', { name: 'Application panels' })
-      .getByRole('tab', { name: 'Chat' })
-      .click();
+    await openPanel(page, 'Chat');
     const stream = page
       .locator('div.overflow-y-auto')
       .filter({ has: page.locator('[data-chat-message-key]') });

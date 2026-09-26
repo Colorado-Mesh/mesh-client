@@ -36,13 +36,10 @@
       "stale": "Stale",
       "reconnecting": "Reconnecting"
     },
-    "nodeLabel": "Node: {{name}}",
     "footerSlogan": "For everyone, everywhere. Join us:",
     "footerStats": "{{nodeCount}} {{nodeLabel}} | {{messageCount}} messages",
     "title": "Mesh Client",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Turn off Colorado Mesh sign",
-    "meshTubeSignOn": "Turn on Colorado Mesh sign",
     "queueBadge": "Q: {{used}}/{{max}}",
     "telemetryDisabled": "Telemetry is disabled on this device. Enabling device metrics helps the mesh and this app (diagnostics, battery, signal). Enable it in the Radio tab.",
     "scrollToTop": "↑ Top",
@@ -162,6 +159,7 @@
     "dataManagementDesc": "Export your local database (messages & nodes) as a .db file, or import/merge another user's database into yours.",
     "supportSection": "Support / Bug reports",
     "supportSectionDesc": "One-click exports replace collecting the debug snapshot, log file, and database separately when reporting issues.",
+    "aboutSection": "About",
     "exportForGitHub": "Export support bundle for GitHub",
     "exportForGitHubButton": "Export for GitHub",
     "exportForGitHubDesc": "Includes debug snapshot and log files in one zip. Safe to attach to public GitHub issues.",
@@ -425,8 +423,6 @@
   },
   "aria": {
     "closeDialog": "Close dialog",
-    "expandSidebar": "Expand sidebar",
-    "collapseSidebar": "Collapse sidebar",
     "languageSelector": "Select language",
     "languageSelectorHint": "Click to select language",
     "applicationPanels": "Application panels",
@@ -5827,6 +5823,35 @@
     "importPrivateKeyButton": "Import Private Key",
     "importingPrivateKey": "Importing...",
     "regenerateKeysConfirm": "Regenerating keys will replace your current DM public and private keys. Any existing encrypted messages will no longer be decryptable. Are you sure?"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Device"
+    },
+    "sectionPanelsAria": "{{section}} panels",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Go to a panel ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, node {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "All panels",
+      "searchLabel": "Search panels",
+      "placeholder": "Go to a panel",
+      "noResults": "No panels match your search",
+      "otherGroup": "Other",
+      "pin": "Pin {{label}}",
+      "unpin": "Unpin {{label}}",
+      "pinLimit": "Up to {{max}} panels can be pinned. Unpin one first.",
+      "hintMove": "move",
+      "hintOpen": "open",
+      "hintPin": "pin",
+      "panelCount_one": "{{count}} panel",
+      "panelCount_other": "{{count}} panels"
+    }
   },
   "sidebar": {
     "disabledTabTooltip": "Not available in this mode"

@@ -32,12 +32,9 @@
       "stale": "탁한",
       "reconnecting": "다시 연결하는 중"
     },
-    "nodeLabel": "노드: {{name}}",
     "takClientLost": "TAK 클라이언트 연결 끊김",
     "title": "메시 클라이언트",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Turn off Colorado Mesh sign",
-    "meshTubeSignOn": "Turn on Colorado Mesh sign",
     "queueBadge": "질문: {{used}}/{{max}}",
     "telemetryDisabled": "이 기기에서는 원격 측정이 비활성화되어 있습니다. 장치 측정항목을 활성화하면 메시와 이 앱(진단, 배터리, 신호)에 도움이 됩니다. 라디오 탭에서 활성화하세요.",
     "scrollToTop": "↑ 맨 위로",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "프로토콜 기본값",
     "nodeSilenceAlertMinutesHint": "각 프로토콜의 유효하지 않은 임계값을 사용하려면 비워 두십시오. 에스컬레이션은 이 값의 2배에 해당합니다.",
     "nodeBatteryLowThreshold": "배터리 부족 임계값 (%)",
-    "notifyOnLinkDown": "예기치 않은 라디오 링크 다운 알림"
+    "notifyOnLinkDown": "예기치 않은 라디오 링크 다운 알림",
+    "aboutSection": "정보"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
-    "expandSidebar": "사이드바 확장",
-    "collapseSidebar": "사이드바 접기",
     "languageSelector": "언어 선택",
     "applicationPanels": "응용 패널",
     "applicationLog": "애플리케이션 로그",
@@ -6242,5 +6238,34 @@
     "rollCall": "롤콜",
     "rollCallAria": "브로드캐스트 롤 콜 및 집계 확인 응답",
     "rollCallTally": "{{responded}}/{{expected}} 님이 응답했습니다"
+  },
+  "shell": {
+    "section": {
+      "monitor": "모니터링",
+      "device": "장치"
+    },
+    "sectionPanelsAria": "{{section}} 패널",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "패널로 이동 ({{shortcut}})",
+    "status": {
+      "radio": "무선: {{status}}",
+      "radioWithNode": "무선: {{status}}, 노드 {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "모든 패널",
+      "searchLabel": "패널 검색",
+      "placeholder": "패널로 이동",
+      "noResults": "일치하는 패널이 없습니다",
+      "otherGroup": "기타",
+      "pin": "{{label}} 고정",
+      "unpin": "{{label}} 고정 해제",
+      "pinLimit": "패널은 최대 {{max}}개까지 고정할 수 있습니다. 먼저 하나를 고정 해제하세요.",
+      "hintMove": "이동",
+      "hintOpen": "열기",
+      "hintPin": "고정",
+      "panelCount_one": "패널 {{count}}개",
+      "panelCount_other": "패널 {{count}}개"
+    }
   }
 }

@@ -23,7 +23,7 @@ This file holds the always-on hard rules (workflow, security, style, testing, CI
 
 Electron: `src/main/` (Node, SQLite, BLE, MQTT), `src/preload/` (bridge), `src/renderer/` (React 19, Vite, Zustand). **Multi-protocol:** Meshtastic, MeshCore, and Reticulum; gate UI with `ProtocolCapabilities` and `useRadioProvider(protocol)` (do not compare `protocol === 'meshcore'`). Routing/diagnostics changes must stay compatible with the Diagnostics panel (Hop Goblins, Hidden Terminals, etc. for LoRa; Reticulum uses `ReticulumDiagnosticEngine.ts`). **pnpm** only for package commands. **Never** add cryptocurrency tech or dependencies.
 
-**Colors:** Use Tailwind CSS utility classes (e.g., `text-green-400`, `bg-slate-700`). Custom theme colors via CSS custom properties in `styles.css` (`--color-brand-green`, etc.). Avoid inline hex colors in JSX. **App → Appearance → Colors** lets users customize theme tokens including chat/RRC **message action** bar/button colors (`themeColors.ts`); **Show background** / **Always show message actions** control action-bar visibility.
+**Colors:** Use Tailwind CSS utility classes (e.g., `text-green-400`, `bg-slate-700`). Custom theme colors via CSS custom properties in `styles.css` (`--color-brand-green`, etc.). Avoid inline hex colors in JSX. **App → Appearance → Colors** lets users customize theme tokens including chat/RRC **message action** bar/button colors (`themeColors.ts`); **Show background** / **Always show message actions** control action-bar visibility. Shell layout, navigation, tokens, controls and UI copy rules: [`docs/style-guide.md`](docs/style-guide.md).
 
 **Code style and testing:** [Code style & standards](CONTRIBUTING.md#code-style--standards) and [Testing protocols](CONTRIBUTING.md#testing-protocols) in [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -107,7 +107,7 @@ Adding a cross-boundary feature:
 - **When to add tests:** New or changed UI with custom foreground/background pairs (badges, pills, buttons)—especially `text-[10px]` / `text-xs` on saturated fills.
 - **Theme tokens:** `readable-green` is for white-on-green fills; the default must pass **4.5:1** contrast with white (enforced in `src/renderer/lib/themeColors.test.ts`).
 - **`animate-pulse`:** Never on the same element as small text with strict contrast fills. Use a separate `aria-hidden` decorative pulse layer; the text-bearing element stays fully opaque (see `ProtocolUnreadBadge.tsx`). Connection-status header pulses remain the documented exception.
-- **Badge patterns:** Sidebar/Chat unread badges use `bg-red-600 text-white`; protocol-switcher badges use brand colors (`bg-readable-green`, `bg-cyan-600`)—add axe coverage when touching either.
+- **Badge patterns:** Rail, section-tab and launcher unread badges use `bg-red-600 text-white` (pending rncp offers `bg-amber-800`, see `navBadges.ts`); protocol-switcher badges use brand colors (`bg-readable-green`, `bg-cyan-800`, `bg-amber-800`)—add axe coverage when touching either.
 - **Manual:** See [`docs/accessibility-checklist.md`](docs/accessibility-checklist.md).
 
 ## 6. Commands & CI Checks
@@ -159,6 +159,7 @@ Deep, file-level subsystem detail now lives in [`docs/agents/`](docs/agents/READ
 | MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/agents/mecp.md`](docs/agents/mecp.md)                             |
 | EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/agents/emcomm.md`](docs/agents/emcomm.md)                         |
 | Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/agents/offline-maps.md`](docs/agents/offline-maps.md)             |
+| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                             |
 | Symptom → where-to-check index                                                                | [`docs/agents/common-issues.md`](docs/agents/common-issues.md)           |
 
 **Always-remember invariants** (details in the linked files):

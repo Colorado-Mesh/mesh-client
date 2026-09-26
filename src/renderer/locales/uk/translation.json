@@ -32,12 +32,9 @@
       "stale": "Несвіжий",
       "reconnecting": "Повторне під’єднання"
     },
-    "nodeLabel": "Вузол: {{name}}",
     "takClientLost": "Клієнт TAK втрачений",
     "title": "Меш-клієнт",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Вимкніть знак Colorado Mesh",
-    "meshTubeSignOn": "Увімкніть знак Colorado Mesh",
     "queueBadge": "З: {{used}}/{{max}}",
     "telemetryDisabled": "Телеметрію на цьому пристрої вимкнено. Увімкнення показників пристрою допомагає сітці та цьому додатку (діагностика, акумулятор, сигнал). Увімкніть його на вкладці Радіо.",
     "scrollToTop": "↑ Вгору",
@@ -437,12 +434,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Протокол за замовчуванням",
     "nodeSilenceAlertMinutesHint": "Залиште порожнім, щоб використовувати застарілий поріг кожного протоколу. Ескалація стріляє в 2рази більше цього значення.",
     "nodeBatteryLowThreshold": "Пороговий рівень заряду акумулятора (%)",
-    "notifyOnLinkDown": "Сповіщати про несподіване вимкнення радіо"
+    "notifyOnLinkDown": "Сповіщати про несподіване вимкнення радіо",
+    "aboutSection": "Про програму"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
-    "expandSidebar": "Розгорнути сайдбар",
-    "collapseSidebar": "Згорнути бічну панель",
     "languageSelector": "Вибрати мову",
     "applicationPanels": "Панелі додатків",
     "applicationLog": "Журнал заявок",
@@ -6338,5 +6334,36 @@
     "rollCall": "Перевірка присутності",
     "rollCallAria": "Трансляція переклички та підрахунок відповіді OK",
     "rollCallTally": "{{responded}}/{{expected}} відповів"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Моніторинг",
+      "device": "Пристрій"
+    },
+    "sectionPanelsAria": "Панелі розділу {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Перейти до панелі ({{shortcut}})",
+    "status": {
+      "radio": "Радіо: {{status}}",
+      "radioWithNode": "Радіо: {{status}}, вузол {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Усі панелі",
+      "searchLabel": "Пошук панелей",
+      "placeholder": "Перейти до панелі",
+      "noResults": "Жодна панель не відповідає пошуку",
+      "otherGroup": "Інше",
+      "pin": "Закріпити {{label}}",
+      "unpin": "Відкріпити {{label}}",
+      "pinLimit": "Максимум закріплених панелей: {{max}}. Спершу відкріпіть одну.",
+      "hintMove": "навігація",
+      "hintOpen": "відкрити",
+      "hintPin": "закріпити",
+      "panelCount_one": "{{count}} панель",
+      "panelCount_few": "{{count}} панелі",
+      "panelCount_many": "{{count}} панелей",
+      "panelCount_other": "{{count}} панелі"
+    }
   }
 }

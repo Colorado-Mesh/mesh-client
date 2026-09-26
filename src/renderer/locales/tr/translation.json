@@ -32,12 +32,9 @@
       "stale": "Bayat",
       "reconnecting": "Yeniden bağlanılıyor"
     },
-    "nodeLabel": "Düğüm: {{name}}",
     "takClientLost": "TAK müşterisi kaybetti",
     "title": "Örgü İstemcisi",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Colorado Mesh tabelasını kapat",
-    "meshTubeSignOn": "Colorado Mesh işaretini açın",
     "queueBadge": "S: {{used}}/{{max}}",
     "telemetryDisabled": "Bu cihazda telemetri devre dışı. Cihaz ölçümlerinin etkinleştirilmesi ağa ve bu uygulamaya (tanılama, pil, sinyal) yardımcı olur. Radyo sekmesinde etkinleştirin.",
     "scrollToTop": "↑ Üst",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Protokol varsayılanı",
     "nodeSilenceAlertMinutesHint": "Her protokolün eski eşiğini kullanmak için boş bırakın. Bu değerin 2 katında eskalasyon yangınları.",
     "nodeBatteryLowThreshold": "Pil alt eşiği (%)",
-    "notifyOnLinkDown": "Beklenmedik radyo bağlantısı kesildiğinde bildir"
+    "notifyOnLinkDown": "Beklenmedik radyo bağlantısı kesildiğinde bildir",
+    "aboutSection": "Hakkında"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
-    "expandSidebar": "Kenar çubuğunu genişlet",
-    "collapseSidebar": "Kenar çubuğunu daralt",
     "languageSelector": "Dil seçin",
     "applicationPanels": "Uygulama panelleri",
     "applicationLog": "Uygulama günlüğü",
@@ -6242,5 +6238,34 @@
     "rollCall": "Yoklama",
     "rollCallAria": "Yoklama ve sayım tamam yanıtlarını yayınlayın",
     "rollCallTally": "{{responded}}/{{expected}} yanıtladı"
+  },
+  "shell": {
+    "section": {
+      "monitor": "İzleme",
+      "device": "Cihaz"
+    },
+    "sectionPanelsAria": "{{section}} panelleri",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Bir panele git ({{shortcut}})",
+    "status": {
+      "radio": "Radyo: {{status}}",
+      "radioWithNode": "Radyo: {{status}}, düğüm {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Tüm paneller",
+      "searchLabel": "Panel ara",
+      "placeholder": "Bir panele git",
+      "noResults": "Aramayla eşleşen panel yok",
+      "otherGroup": "Diğer",
+      "pin": "{{label}} sabitle",
+      "unpin": "{{label}} sabitlemesini kaldır",
+      "pinLimit": "En fazla {{max}} panel sabitlenebilir. Önce birinin sabitlemesini kaldırın.",
+      "hintMove": "gezin",
+      "hintOpen": "aç",
+      "hintPin": "sabitle",
+      "panelCount_one": "{{count}} panel",
+      "panelCount_other": "{{count}} panel"
+    }
   }
 }

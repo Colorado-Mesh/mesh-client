@@ -32,12 +32,9 @@
       "stale": "Muf",
       "reconnecting": "Opnieuw verbinding maken"
     },
-    "nodeLabel": "Knooppunt: {{name}}",
     "takClientLost": "TAK client verloren",
     "title": "Mesh-client",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Schakel het Colorado Mesh-bord uit",
-    "meshTubeSignOn": "Schakel het Colorado Mesh-bord in",
     "queueBadge": "Vraag: {{used}}/{{max}}",
     "telemetryDisabled": "Telemetrie is uitgeschakeld op dit apparaat. Het inschakelen van apparaatstatistieken helpt de mesh en deze app (diagnostiek, batterij, signaal). Schakel het in op het tabblad Radio.",
     "scrollToTop": "↑ Bovenkant",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Protocolstandaard",
     "nodeSilenceAlertMinutesHint": "Laat leeg om de verouderde drempelwaarde van elk protocol te gebruiken. Escalatie vuurt op 2× deze waarde.",
     "nodeBatteryLowThreshold": "Batterij-lage drempel (%)",
-    "notifyOnLinkDown": "Melding bij onverwachte radio link-down"
+    "notifyOnLinkDown": "Melding bij onverwachte radio link-down",
+    "aboutSection": "Over"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
-    "expandSidebar": "Vouw zijbalk uit",
-    "collapseSidebar": "Zijbalk samenvouwen",
     "languageSelector": "Selecteer taal",
     "applicationPanels": "Applicatiepanelen",
     "applicationLog": "Applicatielogboek",
@@ -6242,5 +6238,34 @@
     "rollCall": "Appel",
     "rollCallAria": "Roloproep uitzenden en OK-antwoorden tellen",
     "rollCallTally": "{{responded}}/{{expected}} heeft gereageerd"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Apparaat"
+    },
+    "sectionPanelsAria": "Panelen van {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Ga naar een paneel ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, knooppunt {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Alle panelen",
+      "searchLabel": "Panelen zoeken",
+      "placeholder": "Ga naar een paneel",
+      "noResults": "Geen panelen gevonden",
+      "otherGroup": "Overig",
+      "pin": "{{label}} vastzetten",
+      "unpin": "{{label}} losmaken",
+      "pinLimit": "Je kunt maximaal {{max}} panelen vastzetten. Maak er eerst een los.",
+      "hintMove": "navigeren",
+      "hintOpen": "openen",
+      "hintPin": "vastzetten",
+      "panelCount_one": "{{count}} paneel",
+      "panelCount_other": "{{count}} panelen"
+    }
   }
 }

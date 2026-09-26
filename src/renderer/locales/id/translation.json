@@ -32,12 +32,9 @@
       "stale": "Basi",
       "reconnecting": "Menghubungkan kembali"
     },
-    "nodeLabel": "Simpul: {{name}}",
     "takClientLost": "Klien TAK HILANG",
     "title": "Klien Jaring",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Matikan tanda Colorado Mesh",
-    "meshTubeSignOn": "Nyalakan tanda Colorado Mesh",
     "queueBadge": "T: {{used}}/{{max}}",
     "telemetryDisabled": "Telemetri dinonaktifkan pada perangkat ini. Mengaktifkan metrik perangkat membantu mesh dan aplikasi ini (diagnostik, baterai, sinyal). Aktifkan di tab Radio.",
     "scrollToTop": "^ Atas",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "Protokol default",
     "nodeSilenceAlertMinutesHint": "Biarkan kosong untuk menggunakan ambang batas basi setiap protokol. Eskalasi terjadi pada 2× nilai ini.",
     "nodeBatteryLowThreshold": "Ambang batas rendah baterai (%)",
-    "notifyOnLinkDown": "Beri tahu tentang tautan radio yang tidak terduga"
+    "notifyOnLinkDown": "Beri tahu tentang tautan radio yang tidak terduga",
+    "aboutSection": "Tentang"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
-    "expandSidebar": "Luaskan bilah sisi",
-    "collapseSidebar": "Ciutkan bilah sisi",
     "languageSelector": "Pilih bahasa",
     "applicationPanels": "Panel aplikasi",
     "applicationLog": "Catatan aplikasi",
@@ -6242,5 +6238,34 @@
     "rollCall": "Panggilan gulung",
     "rollCallAria": "Panggilan roll siaran dan penghitungan balasan OK",
     "rollCallTally": "{{responded}}/{{expected}} menanggapi"
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Perangkat"
+    },
+    "sectionPanelsAria": "Panel {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Buka panel ({{shortcut}})",
+    "status": {
+      "radio": "Radio: {{status}}",
+      "radioWithNode": "Radio: {{status}}, simpul {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Semua panel",
+      "searchLabel": "Cari panel",
+      "placeholder": "Buka panel",
+      "noResults": "Tidak ada panel yang cocok",
+      "otherGroup": "Lainnya",
+      "pin": "Sematkan {{label}}",
+      "unpin": "Lepas sematan {{label}}",
+      "pinLimit": "Maksimal {{max}} panel dapat disematkan. Lepas satu terlebih dahulu.",
+      "hintMove": "navigasi",
+      "hintOpen": "buka",
+      "hintPin": "sematkan",
+      "panelCount_one": "{{count}} panel",
+      "panelCount_other": "{{count}} panel"
+    }
   }
 }

@@ -2,13 +2,16 @@
 export function ProtocolUnreadBadge({
   count,
   fillClass,
+  positionClass = 'relative ml-1.5',
 }: {
   count: number | string;
   fillClass: string;
+  /** Placement of the badge root; must establish a containing block (relative or absolute). */
+  positionClass?: string;
 }) {
   const label = typeof count === 'number' && count > 99 ? '99+' : count;
   return (
-    <span className="relative ml-1.5 inline-flex h-4 min-w-[1.1rem] items-center justify-center">
+    <span className={`${positionClass} inline-flex h-4 min-w-[1.1rem] items-center justify-center`}>
       <span
         className={`absolute inset-0 animate-pulse rounded-full ${fillClass}`}
         aria-hidden="true"

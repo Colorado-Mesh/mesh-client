@@ -94,8 +94,10 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(readSrc('renderer/App.tsx')).toMatch(/<IncidentPanel/);
   });
 
-  it('S9: Sidebar badges open sev 0/1 incidents', () => {
-    expect(readSrc('renderer/components/Sidebar.tsx')).toMatch(/slotId === 'Incident'/);
+  it('S9: rail and launcher badge open sev 0/1 incidents', () => {
+    expect(readSrc('renderer/lib/navBadges.ts')).toMatch(/Incident: 'incident'/);
+    expect(readSrc('renderer/App.tsx')).toMatch(/Incident: incidentBadgeCount/);
+    expect(readSrc('renderer/App.tsx')).toMatch(/useIncidentStore\(openMaydayUrgentCount\)/);
     expect(readSrc('renderer/stores/incidentStore.ts')).toMatch(/openMaydayUrgentCount/);
   });
 

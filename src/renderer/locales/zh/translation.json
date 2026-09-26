@@ -32,12 +32,9 @@
       "stale": "陈旧",
       "reconnecting": "重新连接"
     },
-    "nodeLabel": "节点： {{name}}",
     "takClientLost": "TAK客户丢失",
     "title": "网状客户端",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Turn off Colorado Mesh sign",
-    "meshTubeSignOn": "Turn on Colorado Mesh sign",
     "queueBadge": "问：{{used}}/{{max}}",
     "telemetryDisabled": "此设备上禁用遥测。启用设备指标有助于网格和此应用程序（诊断、电池、信号）。在“无线电”选项卡中启用它。",
     "scrollToTop": "↑ 顶部",
@@ -421,12 +418,11 @@
     "nodeSilenceAlertMinutesPlaceholder": "使用通訊協定預設值(U)",
     "nodeSilenceAlertMinutesHint": "留空以使用每个方案的过时阈值。升级以此值的2倍触发。",
     "nodeBatteryLowThreshold": "电池低阈值(%)",
-    "notifyOnLinkDown": "无线电链路意外中断时通知"
+    "notifyOnLinkDown": "无线电链路意外中断时通知",
+    "aboutSection": "关于"
   },
   "aria": {
     "closeDialog": "关闭对话框",
-    "expandSidebar": "展开侧边栏",
-    "collapseSidebar": "收起侧边栏",
     "languageSelector": "选择语言",
     "applicationPanels": "应用面板",
     "applicationLog": "应用日志",
@@ -6242,5 +6238,34 @@
     "rollCall": "点名",
     "rollCallAria": "广播点名和记录OK回复",
     "rollCallTally": "{{responded}}/{{expected}}已回复"
+  },
+  "shell": {
+    "section": {
+      "monitor": "监控",
+      "device": "设备"
+    },
+    "sectionPanelsAria": "{{section}}面板",
+    "navBadgeDetail": "{{label}}，{{detail}}",
+    "openLauncher": "转到面板（{{shortcut}}）",
+    "status": {
+      "radio": "无线电：{{status}}",
+      "radioWithNode": "无线电：{{status}}，节点 {{node}}",
+      "radioNode": "{{node}}，{{detail}}"
+    },
+    "launcher": {
+      "title": "全部面板",
+      "searchLabel": "搜索面板",
+      "placeholder": "转到面板",
+      "noResults": "没有匹配的面板",
+      "otherGroup": "其他",
+      "pin": "固定{{label}}",
+      "unpin": "取消固定{{label}}",
+      "pinLimit": "最多可固定 {{max}} 个面板。请先取消固定一个。",
+      "hintMove": "移动",
+      "hintOpen": "打开",
+      "hintPin": "固定",
+      "panelCount_one": "{{count}} 个面板",
+      "panelCount_other": "{{count}} 个面板"
+    }
   }
 }
