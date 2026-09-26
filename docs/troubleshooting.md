@@ -59,7 +59,7 @@ Works on macOS, Windows, Linux (.deb / .rpm / AppImage), and Flatpak. Local data
 | `activeTab.liveSession`                                                 | `true`                    | Active protocol tab is connected                                                                           |
 | `warnings`                                                              | `[]`                      | No stuck-chat signatures detected                                                                          |
 | `mainLiveness` (top-level)                                              | object                    | `mainUptimeSec`, `lastRendererHeartbeatAgeMs`, `rendererUnresponsiveSeen`, `rss`, `heapUsed` — hang triage |
-| `meshcore.roomsUnreadEstimate`                                          | number                    | Computed Rooms sidebar badge (known room servers only)                                                     |
+| `meshcore.roomsUnreadEstimate`                                          | number                    | Computed Rooms tab badge (known room servers only)                                                         |
 | `meshcore.orphanRoomMessageCount`                                       | number                    | Room posts whose `room_server_id` is not in current contacts                                               |
 | `meshcore.roomNodeCount` / `roomMessageCount` / `roomsLastReadKeyCount` | numbers                   | Rooms triage counts                                                                                        |
 
@@ -1018,7 +1018,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 **Room unread badges**:
 
-- New room BBS posts increment the **Rooms** sidebar badge and per-room counts on the room list. They do **not** increment the **Chat** tab badge (by design). Stay logged in to receive firmware-pushed posts after login.
+- New room BBS posts increment the **Rooms** tab badge and per-room counts on the room list. They do **not** increment the **Chat** tab badge (by design). Stay logged in to receive firmware-pushed posts after login.
 - The Rooms badge only counts posts for room servers still in your contact list (`knownRoomServerIds`). Orphan BBS rows (deleted room server) no longer inflate the badge; deleting a room contact also cascades those messages from SQLite.
 - Clearing **Chat** channels does not clear Room messages — use App → Danger Zone → clear **Room messages** (or all MeshCore messages) if a badge remains after rooms are gone.
 
@@ -1066,7 +1066,7 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 2. Open **Rooms** → try **blank** Login for read-only (or **Continue read-only**). For posting, try **`hello`** (default read/write guest password) or the room’s guest password.
 3. Post as admin; confirm the post appears in the **official Android app** on the same room (SignedPlain BBS path).
 4. Confirm room posts appear in **Rooms** with unread badges (not Chat channel pills).
-5. On **Connection** tab, receive a **channel** message on a channel you are not viewing → sidebar **Chat** badge and red pill on that channel when you open Chat.
+5. On **Connection** tab, receive a **channel** message on a channel you are not viewing → rail **Chat** badge and red pill on that channel when you open Chat.
 6. Export logs (**Log → Export**) if login still fails; include `[meshcoreRoomLoginRpc]` and `[useMeshcoreRuntime] sendRoomPost` lines.
 
 ### MeshCore: Trace Route or Ping trace times out
@@ -1792,7 +1792,7 @@ Meshtastic node numbers are frequently the lower 32 bits of the BLE MAC. With bo
 **Symptoms**
 
 - Sidebar **Chat** badge or channel pills show unread counts on MeshCore channels you did not configure (zero PSK / not on the radio).
-- Badge counts disagree between the sidebar and Chat channel pills after upgrade or protocol switch.
+- Badge counts disagree between the rail and Chat channel pills after upgrade or protocol switch.
 - **Copy Debug Snapshot** shows messages on `ch:1` (or higher) while the radio only has channel 0 configured.
 
 **Cause**
@@ -1803,7 +1803,7 @@ Stale `mesh-client:lastRead:<protocol>` watermarks (including legacy merged keys
 
 1. Open **Chat**, visit each configured channel once (marks last-read), or use **App → Data Management → Copy Debug Snapshot** to confirm channel indices vs runtime channels.
 2. If counts persist after visiting channels, clear last-read for the protocol in browser devtools (`localStorage.removeItem('mesh-client:lastRead:meshcore')` or `meshtastic`) and reload — you will lose per-channel read state.
-3. For stuck sidebar totals with live traffic in logs, see [Chat stuck](#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) and attach a debug snapshot when filing an issue.
+3. For stuck rail totals with live traffic in logs, see [Chat stuck](#chat-stuck-new-traffic-in-logsdb-but-messages-do-not-appear) and attach a debug snapshot when filing an issue.
 
 ### Chat stuck: new traffic in logs/DB but messages do not appear
 
@@ -1830,7 +1830,7 @@ This is **not** SQLite corruption when messages persist in the DB during the stu
 
 **Symptoms**
 
-- While on **Connection**, **Nodes**, or **Log**, sidebar unread badges update for new traffic.
+- While on **Connection**, **Nodes**, or **Log**, rail unread badges update for new traffic.
 - Opening **Chat** shows several missed messages at once ("flood in"), even though RF/MQTT delivery was fine on another radio.
 
 **Cause (5.20.x and earlier)**
@@ -1969,7 +1969,7 @@ With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if poss
 
 1. Confirm the app **window loads** and core tabs work; connect via **USB serial** or **BLE** to a local radio if you need RF features.
 2. Open the **Map** tab: expect **blank basemap** where tiles were never cached; **markers and trails** may still appear when position data exists. Pre-downloaded regions should still show tiles.
-3. The footer shows a muted **Updates paused (offline)** state (not amber **Update error**) when WAN is missing; update checks do not retry in a loop. If an update was already downloaded (**ready** / install prompt), that ready state is kept when going offline.
+3. The footer shows a muted **Updates paused (offline)** state (not orange **Update error**) when WAN is missing; update checks do not retry in a loop. If an update was already downloaded (**ready** / install prompt), that ready state is kept when going offline.
 
 ## App, updates, and localization
 

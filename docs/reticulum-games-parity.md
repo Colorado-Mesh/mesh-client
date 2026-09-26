@@ -30,7 +30,7 @@ Status: `done` | `partial` | `wontfix` | `todo`
 | ----------------------------------- | --------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
 | Games tab                           | Left-rail Games (`Gamepad2`)            | done   | Reticulum-only via `hasLrgpGames`                                                                             |
 | Session list filters                | GamesPanel filters                      | done   |                                                                                                               |
-| Unread badge                        | session unread + Games tab badge        | done   | sidebar red pill via `gamesUnread`                                                                            |
+| Unread badge                        | session unread + Games tab badge        | done   | tab and rail red pill via `gamesUnread`                                                                       |
 | TTT board                           | `TicTacToeBoard`                        | done   |                                                                                                               |
 | Chess board                         | `ChessBoard`                            | done   |                                                                                                               |
 | Challenge from contacts             | Peers / Chat DM Challenge               | done   |                                                                                                               |

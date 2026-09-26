@@ -58,7 +58,7 @@ Room servers (`hw_model === 'Room'`, contact type 3) are BBS nodes on the mesh. 
 
 **Sync:** After login, the room server pushes posts newer than the companion `sync_since` watermark (ring buffer, typically ~32). mesh-client resets that watermark when the device has no local last-post time yet, then drains waiting messages. **Auto-sync** re-logs in on a timer while the radio stays connected (minimum 60 minutes per room, [`meshcoreRoomSyncScheduler.ts`](../src/renderer/lib/meshcoreRoomSyncScheduler.ts)). Saved passwords: SQLite `app_settings` (same pattern as Meshtastic remote admin keys). Session clears on disconnect.
 
-**Unread:** Room BBS traffic increments the **Rooms** sidebar badge ([`meshcoreRoomsUnread.ts`](../src/renderer/lib/meshcoreRoomsUnread.ts)) and system-tray unread when backgrounded; it does not increment the **Chat** tab badge.
+**Unread:** Room BBS traffic increments the **Rooms** tab badge ([`meshcoreRoomsUnread.ts`](../src/renderer/lib/meshcoreRoomsUnread.ts)) and system-tray unread when backgrounded; it does not increment the **Chat** tab badge.
 
 **Dedup:** [`meshcoreStoreDedup.ts`](../src/renderer/lib/meshcoreStoreDedup.ts) merges duplicate RF/MQTT and tapback echoes for chat and rooms (cross-transport and channel RF **5 min**; room/tapback **60 s**).
 

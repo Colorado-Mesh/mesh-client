@@ -316,6 +316,7 @@ Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-comm
 ## Open items
 
 - Exact token values from the designer's file: the scales here are the Tailwind palettes the guide matches (emerald, cyan, yellow, green, orange, red, indigo, zinc) and the elevation values are approximations.
+- Token hexes (`#6ee7b7`, `#047857`, `#a1a1aa`, and so on) are Tailwind v3 values set in `styles.css` and `themeColors.ts`, while utilities such as `text-emerald-300` and `bg-emerald-700` render Tailwind v4's oklch values (about `#5ee9b5` and `#007a55`). They are visually close; aligning the tokens to v4 is a one-line change per token.
 - The dark end of the Reticulum scale (yellow-700 and 900) leans toward orange; worth a look so it never reads as a dark warning.
 - A light theme.
 - Per-protocol automatic theming (today the protocol accents are opt-in presets).
