@@ -38,7 +38,7 @@ export function chatRfHopLabelPresentation(
     };
   }
   return {
-    className: 'text-2xs text-amber-400/80 transition-colors duration-500',
+    className: 'text-2xs text-orange-400/80 transition-colors duration-500',
     refined: true,
   };
 }

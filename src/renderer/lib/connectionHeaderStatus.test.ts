@@ -77,14 +77,14 @@ describe('connectionHeaderStatus', () => {
 
     it('mqtt connecting uses yellow text without pulse (dot pulses)', () => {
       expect(mqttHeaderVariant('connecting', false)).toBe('warn');
-      expect(headerTextClass('warn')).toContain('text-yellow-400');
+      expect(headerTextClass('warn')).toContain('text-orange-400');
       expect(headerTextClass('warn')).not.toContain('animate-pulse');
       expect(headerDotClass('warn')).toContain('animate-pulse');
     });
 
     it('device connecting uses yellow text without pulse (dot pulses)', () => {
       expect(deviceHeaderVariant('connecting', false)).toBe('warn');
-      expect(headerTextClass('warn')).toContain('text-yellow-400');
+      expect(headerTextClass('warn')).toContain('text-orange-400');
       expect(headerTextClass('warn')).not.toContain('animate-pulse');
     });
 

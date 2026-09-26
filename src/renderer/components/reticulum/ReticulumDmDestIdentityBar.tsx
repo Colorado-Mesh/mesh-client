@@ -105,7 +105,7 @@ export function ReticulumDmDestIdentityBar({
       </div>
       {showBanner && alternatePrefix && staleHint.status === 'stale_alternate' ? (
         <div
-          className="text-label flex min-w-0 items-start gap-2 rounded-lg border border-amber-600/40 bg-amber-950/40 px-2.5 py-1.5 text-amber-100"
+          className="text-label flex min-w-0 items-start gap-2 rounded-lg border border-orange-600/40 bg-orange-950/40 px-2.5 py-1.5 text-orange-100"
           role="status"
           aria-label={t('chatPanel.reticulumDmStaleAlternateAria')}
         >
@@ -123,7 +123,7 @@ export function ReticulumDmDestIdentityBar({
           </p>
           <button
             type="button"
-            className="shrink-0 rounded p-0.5 text-amber-200/80 hover:bg-amber-900/50 hover:text-amber-50"
+            className="shrink-0 rounded p-0.5 text-orange-200/80 hover:bg-orange-900/50 hover:text-orange-50"
             aria-label={t('chatPanel.reticulumDmStaleAlternateDismissAria')}
             onClick={() => {
               dismissReticulumStaleAlternate(staleHint.openHash, staleHint.alternateHash);

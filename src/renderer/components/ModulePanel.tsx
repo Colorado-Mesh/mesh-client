@@ -285,7 +285,7 @@ function ModuleSection({
       </summary>
       <div className="space-y-4 px-4 pb-4">
         {showSliceWaiting && !sliceReady && (
-          <p className="text-xs text-yellow-300/90">
+          <p className="text-xs text-orange-300/90">
             {t('radioPanel.waitingForConfigSection', { section: title })}
           </p>
         )}
@@ -939,7 +939,7 @@ export default function ModulePanel({
       <h2 className="text-xl font-semibold text-zinc-200">{t('modulePanel.title')}</h2>
 
       {!isConnected && (
-        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
+        <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
           {t('modulePanel.connectToDevice')}
         </div>
       )}

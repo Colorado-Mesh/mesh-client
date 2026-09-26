@@ -206,7 +206,7 @@ function WatchToggleButton({ nodeId }: { nodeId: number }) {
       type="button"
       aria-label={isWatched ? t('nodeDetailModal.unwatchNode') : t('nodeDetailModal.watchNode')}
       aria-pressed={isWatched}
-      className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isWatched ? 'text-blue-400' : 'text-muted hover:text-blue-400'}`}
+      className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isWatched ? 'text-indigo-400' : 'text-muted hover:text-indigo-400'}`}
       onClick={() => {
         toggleWatch(nodeId);
       }}
@@ -1015,13 +1015,13 @@ export default function NodeDetailModal({
               {displayName}
             </h3>
             {mqttIgnoredNodes.has(node.node_id) && (
-              <span className="text-2xs shrink-0 rounded border border-yellow-500/30 bg-yellow-500/20 px-1.5 py-0.5 font-medium text-yellow-300">
+              <span className="text-2xs shrink-0 rounded border border-orange-500/30 bg-orange-500/20 px-1.5 py-0.5 font-medium text-orange-300">
                 {t('nodeDetailModal.mqttIgnoredBadge')}
               </span>
             )}
             {awaitingNodeInfo && (
               <span
-                className="text-2xs shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-300"
+                className="text-2xs shrink-0 rounded border border-indigo-500/30 bg-indigo-500/20 px-1.5 py-0.5 font-medium text-indigo-300"
                 title={t('nodeDetailModal.nodeIncomplete')}
               >
                 {t('nodeDetailModal.loadingBadge')}
@@ -1069,7 +1069,7 @@ export default function NodeDetailModal({
               node.node_id >= MESHCORE_CHAT_STUB_ID_MIN &&
               node.node_id <= MESHCORE_CHAT_STUB_ID_MAX && (
                 <span
-                  className="text-2xs shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-300"
+                  className="text-2xs shrink-0 rounded border border-indigo-500/30 bg-indigo-500/20 px-1.5 py-0.5 font-medium text-indigo-300"
                   title={t('nodeDetailModal.chatOnlyNode')}
                 >
                   {t('nodeDetailModal.chatBadge')}
@@ -1093,7 +1093,7 @@ export default function NodeDetailModal({
             )}
             {protocol === 'meshcore' && contactOnRadio === true && !contactPubkey && (
               <span
-                className="text-2xs shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-300"
+                className="text-2xs shrink-0 rounded border border-indigo-500/30 bg-indigo-500/20 px-1.5 py-0.5 font-medium text-indigo-300"
                 title={t('nodeDetailModal.radioOnlyContact')}
               >
                 {t('nodeDetailModal.onRadioBadge')}
@@ -2082,13 +2082,15 @@ export default function NodeDetailModal({
             )}
 
           {protocol === 'meshtastic' && onSaveRemoteAdminKey && !isOurNode && (
-            <div className="mt-4 space-y-2 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-sm text-blue-100">
-              <p className="text-xs font-medium text-blue-300">
+            <div className="mt-4 space-y-2 rounded-lg border border-indigo-700/40 bg-indigo-900/20 px-3 py-2 text-sm text-indigo-100">
+              <p className="text-xs font-medium text-indigo-300">
                 {t('nodeDetailModal.remoteAdminKeyTitle')}
               </p>
               <p className="text-muted text-xs">{t('nodeDetailModal.remoteAdminKeyHint')}</p>
               {node.public_key_hex?.length !== 64 && (
-                <p className="text-xs text-amber-300">{t('nodeDetailModal.remoteAdminNoPkiKey')}</p>
+                <p className="text-xs text-orange-300">
+                  {t('nodeDetailModal.remoteAdminNoPkiKey')}
+                </p>
               )}
               <label htmlFor="node-detail-admin-key" className="text-muted text-xs">
                 {t('nodeDetailModal.remoteAdminKeyLabel')}
@@ -2112,7 +2114,7 @@ export default function NodeDetailModal({
                   type="button"
                   disabled={!isConnected}
                   aria-label={t('nodeDetailModal.saveRemoteAdminKey')}
-                  className="bg-secondary-dark rounded-lg px-3 py-1.5 text-xs font-medium text-blue-200 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="bg-secondary-dark rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-200 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
                   onClick={() => {
                     void (async () => {
                       const trimmed = adminKeyDraft.trim();

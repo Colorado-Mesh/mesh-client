@@ -56,7 +56,7 @@ export function chipClass(active: boolean, size: 'sm' | 'md' = 'md'): string {
 /** Inline notices inside a panel. */
 export const NOTICE_CLASS: Record<'info' | 'warn' | 'error' | 'success', string> = {
   info: 'rounded-lg border border-zinc-800 bg-app-bg px-3 py-2 text-xs text-zinc-300',
-  warn: 'rounded-lg border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200',
+  warn: 'rounded-lg border border-orange-700/50 bg-orange-950/40 px-3 py-2 text-xs text-orange-200',
   error: 'rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-200',
   success: 'rounded-lg border border-green-500/35 bg-green-500/10 px-3 py-2 text-xs text-green-300',
 };

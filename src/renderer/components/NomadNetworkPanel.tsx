@@ -737,7 +737,7 @@ export default function NomadNetworkPanel({
         <h2 className="text-lg font-medium text-zinc-100">{t('nomadNetwork.title')}</h2>
         <button
           type="button"
-          className="text-xs text-amber-400 hover:underline"
+          className="text-xs text-yellow-400 hover:underline"
           onClick={() => {
             void refreshFromSidecar();
           }}
@@ -747,13 +747,13 @@ export default function NomadNetworkPanel({
       </div>
 
       {showStartStackBanner ? (
-        <p className="mb-3 rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
+        <p className="mb-3 rounded-lg border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </p>
       ) : null}
 
       {sidecarRunning && !nomadApiAvailable ? (
-        <p className="mb-3 rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
+        <p className="mb-3 rounded-lg border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
           {t('nomadNetwork.unavailable')}
         </p>
       ) : null}
@@ -1193,7 +1193,7 @@ export default function NomadNetworkPanel({
                         {t('nomadNetwork.pageFailed', { error: pageError })}
                       </p>
                       {selectedNode && isNomadLastSeenStale(selectedNode.last_seen) ? (
-                        <p className="text-xs text-amber-200/90">
+                        <p className="text-xs text-orange-200/90">
                           {t('nomadNetwork.staleLastSeenHint', {
                             time: formatRelativeOrIsoDate((selectedNode.last_seen ?? 0) * 1000, t),
                           })}

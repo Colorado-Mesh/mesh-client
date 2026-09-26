@@ -31,7 +31,7 @@ function PathSegmentChip({
     : t('rawPacketLog.pathSegmentTooltip', { hex: segment.hex });
   return (
     <span
-      className="text-2xs rounded bg-blue-950/70 px-1 py-0.5 font-mono text-blue-200"
+      className="text-2xs rounded bg-indigo-950/70 px-1 py-0.5 font-mono text-indigo-200"
       title={title}
     >
       {segment.hex}

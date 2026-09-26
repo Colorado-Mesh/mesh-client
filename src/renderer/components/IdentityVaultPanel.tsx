@@ -117,7 +117,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
             status.unlocked
               ? 'text-xs text-green-400'
               : status.configured
-                ? 'text-xs text-amber-300'
+                ? 'text-xs text-orange-300'
                 : 'text-xs text-zinc-400'
           }
         >

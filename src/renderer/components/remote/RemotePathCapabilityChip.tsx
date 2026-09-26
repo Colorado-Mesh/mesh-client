@@ -5,8 +5,8 @@ import { resolveRemoteReasonI18nKey } from '@/shared/remote-types';
 
 const SPEED_CLASSES: Record<PathCapability['speed'], string> = {
   high: 'border-green-700 bg-green-900/30 text-green-300',
-  constrained: 'border-amber-700 bg-amber-900/30 text-amber-300',
-  mixed: 'border-amber-700 bg-amber-900/30 text-amber-300',
+  constrained: 'border-orange-700 bg-orange-900/30 text-orange-300',
+  mixed: 'border-orange-700 bg-orange-900/30 text-orange-300',
   unknown: 'border-zinc-600 bg-zinc-800/50 text-zinc-400',
 };
 

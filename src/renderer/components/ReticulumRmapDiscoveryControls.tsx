@@ -370,7 +370,7 @@ export function ReticulumRmapDiscoveryControls({
               href="https://rmap.world/info.html"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200"
+              className="inline-flex items-center gap-1 text-xs text-orange-300 hover:text-orange-200"
             >
               {t('reticulumRmapDiscovery.helpLink')}
               <ExternalLink className="h-3 w-3" aria-hidden />
@@ -379,7 +379,7 @@ export function ReticulumRmapDiscoveryControls({
         </div>
         <p className="text-muted text-xs">{t('reticulumRmapDiscovery.hint')}</p>
         {!shareMyLocationLive && (
-          <p className="text-xs text-amber-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
+          <p className="text-xs text-orange-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
         )}
         {coords ? (
           <p className="text-xs text-zinc-300" role="status">
@@ -389,7 +389,7 @@ export function ReticulumRmapDiscoveryControls({
             })}
           </p>
         ) : (
-          <p className="text-xs text-amber-300" role="status">
+          <p className="text-xs text-orange-300" role="status">
             {t('reticulumRmapDiscovery.gpsMissingWarning')}
           </p>
         )}

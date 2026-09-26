@@ -323,7 +323,7 @@ export default function NomadPageServerPanel({
                 void refresh();
               }}
               aria-label={t('nomadNetwork.serving.reloadFromDiskAria')}
-              className="rounded border border-amber-600 px-3 py-1.5 text-xs text-amber-300 hover:bg-amber-900/30 disabled:opacity-40"
+              className="rounded border border-orange-600 px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-900/30 disabled:opacity-40"
             >
               {t('nomadNetwork.serving.reloadFromDisk')}
             </button>

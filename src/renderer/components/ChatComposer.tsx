@@ -101,16 +101,16 @@ function ComposerAmberCallout({
     <div
       role={role}
       aria-live="polite"
-      className={`flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ${wrapperClassName}`}
+      className={`flex gap-2 rounded-lg border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-xs text-orange-200 ${wrapperClassName}`}
     >
-      <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0 text-amber-400" />
+      <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0 text-orange-400" />
       {children}
       {onDismiss && (
         <button
           type="button"
           onClick={onDismiss}
           aria-label={dismissLabel}
-          className="shrink-0 rounded px-1 text-amber-300 hover:text-amber-100"
+          className="shrink-0 rounded px-1 text-orange-300 hover:text-orange-100"
         >
           ×
         </button>
@@ -1273,7 +1273,7 @@ export function ChatComposer({
                 }}
                 disabled={gifPreviewId == null || sending}
                 aria-label={t('chatPanel.meshcoreGifSend')}
-                className="flex-1 rounded-lg bg-yellow-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-yellow-500 disabled:opacity-40"
+                className="flex-1 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-orange-500 disabled:opacity-40"
               >
                 {t('chatPanel.meshcoreGifSend')}
               </button>
@@ -1294,7 +1294,7 @@ export function ChatComposer({
         <div className="bg-deep-black mb-1 flex items-center gap-2 rounded-lg border border-zinc-800 px-3 py-1.5 text-xs">
           <CornerUpLeft
             aria-hidden
-            className="h-3 w-3 shrink-0 text-blue-400"
+            className="h-3 w-3 shrink-0 text-indigo-400"
             trigger={iconTrigger}
             size={12}
           />
@@ -1725,7 +1725,7 @@ export function ChatComposer({
               limitStatus.phase === 'overMax'
                 ? 'text-red-400'
                 : limitStatus.phase === 'split' || counterAtLimit
-                  ? 'text-amber-400'
+                  ? 'text-orange-400'
                   : 'text-muted'
             }
           >
@@ -1759,7 +1759,7 @@ export function ChatComposer({
       {singlePacketProtocol && limitStatus.phase === 'overMax' && (
         <ComposerAmberCallout role="note" wrapperClassName="mt-2">
           <span className="min-w-0">
-            <span className="block font-semibold text-amber-300">
+            <span className="block font-semibold text-orange-300">
               {t('chatPanel.composeLimit.meshcoreSingleNotice.title')}
             </span>
             <span className="mt-0.5 block leading-snug">

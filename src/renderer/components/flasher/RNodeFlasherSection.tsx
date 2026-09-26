@@ -419,7 +419,7 @@ export function RNodeFlasherSection({
     <>
       <div className="space-y-4">
         {portBlocked ? (
-          <p className="rounded border border-amber-600/40 bg-amber-950/20 p-2 text-xs text-amber-200">
+          <p className="rounded border border-orange-600/40 bg-orange-950/20 p-2 text-xs text-orange-200">
             {t('flasher.portContentionWarning')}
           </p>
         ) : null}

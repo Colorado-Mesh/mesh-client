@@ -68,15 +68,15 @@ const ROUTE_LABEL: Record<string, string> = {
 const RAW_PACKET_NAME_COL = 'min-w-0 flex-1 max-w-[min(28rem,50vw)]';
 
 const MESHCORE_ROUTE_BAR: Record<string, string> = {
-  FLOOD: 'border-l-blue-500',
-  TRANSPORT_FLOOD: 'border-l-blue-400',
+  FLOOD: 'border-l-indigo-500',
+  TRANSPORT_FLOOD: 'border-l-indigo-400',
   DIRECT: 'border-l-green-500',
   TRANSPORT_DIRECT: 'border-l-green-400',
 };
 
 const MESHCORE_PAYLOAD_BADGE: Record<string, string> = {
   ADVERT: 'bg-green-900/60 text-green-300',
-  TXT_MSG: 'bg-amber-900/50 text-amber-200',
+  TXT_MSG: 'bg-orange-900/50 text-orange-200',
   GRP_TXT: 'bg-yellow-900/50 text-yellow-200',
   REQ_RESP: 'bg-purple-900/50 text-purple-200',
   TRACE: 'bg-cyan-900/50 text-cyan-200',
@@ -103,7 +103,7 @@ function meshcorePayloadBadgeClass(payload: string | null): string {
 }
 
 function meshtasticPortBadgeClass(portLabel: string): string {
-  if (portLabel.includes('TEXT')) return 'bg-amber-900/50 text-amber-200';
+  if (portLabel.includes('TEXT')) return 'bg-orange-900/50 text-orange-200';
   if (portLabel.includes('TELEMETRY')) return 'bg-cyan-900/50 text-cyan-200';
   if (portLabel.includes('POSITION')) return 'bg-green-900/50 text-green-300';
   return 'bg-zinc-700 text-zinc-200';
@@ -401,7 +401,10 @@ function MeshcoreExpandedDetails({
             </span>
           )}
           {regionMatchDisplay === false && (
-            <span className="ml-1 text-amber-400" title={t('rawPacketLog.transportRegionMismatch')}>
+            <span
+              className="ml-1 text-orange-400"
+              title={t('rawPacketLog.transportRegionMismatch')}
+            >
               ≠
             </span>
           )}
@@ -590,7 +593,7 @@ function ReticulumRow({
       <span
         className={`text-2xs w-9 shrink-0 rounded px-1 text-center ${
           p.direction === 'tx'
-            ? 'bg-blue-900/60 text-blue-200'
+            ? 'bg-indigo-900/60 text-indigo-200'
             : 'bg-emerald-900/60 text-emerald-200'
         }`}
         title={directionTooltip}
@@ -1064,7 +1067,7 @@ export default function RawPacketLogPanel(props: Props) {
         />
         <span className="text-muted text-2xs shrink-0">{filtered.length}</span>
         {isPaused && pendingWhilePaused > 0 ? (
-          <span className="text-2xs shrink-0 text-amber-300/90">
+          <span className="text-2xs shrink-0 text-orange-300/90">
             {t('rawPacketLog.pausedPending', { count: pendingWhilePaused })}
           </span>
         ) : null}
@@ -1076,7 +1079,7 @@ export default function RawPacketLogPanel(props: Props) {
           aria-label={isPaused ? t('rawPacketLog.resumeCapture') : t('rawPacketLog.pauseCapture')}
           className={`shrink-0 rounded border px-2 py-1 text-xs ${
             isPaused
-              ? 'border-amber-600/70 bg-amber-950/50 text-amber-200 hover:bg-amber-900/50'
+              ? 'border-orange-600/70 bg-orange-950/50 text-orange-200 hover:bg-orange-900/50'
               : 'border-zinc-600 bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
           } disabled:opacity-40`}
         >
@@ -1277,7 +1280,7 @@ export default function RawPacketLogPanel(props: Props) {
                         (filtered as RxPacketEntry[])[vi.index]?.fromNodeId != null ? (
                           <button
                             type="button"
-                            className="rounded p-0.5 text-blue-300/80 hover:bg-zinc-700 hover:text-blue-200"
+                            className="rounded p-0.5 text-indigo-300/80 hover:bg-zinc-700 hover:text-indigo-200"
                             aria-label={t('rawPacketLog.pingTraceNode', {
                               name: meshcoreRawPacketSenderColumnText(
                                 (filtered as RxPacketEntry[])[vi.index].fromNodeId!,
@@ -1491,7 +1494,7 @@ function MeshcoreRow({
       <span
         className={`text-2xs hidden w-13 shrink-0 rounded px-1 font-semibold sm:inline ${
           p.routeTypeString === 'FLOOD' || p.routeTypeString === 'TRANSPORT_FLOOD'
-            ? 'bg-blue-900/50 text-blue-300'
+            ? 'bg-indigo-900/50 text-indigo-300'
             : p.routeTypeString === 'DIRECT' || p.routeTypeString === 'TRANSPORT_DIRECT'
               ? 'bg-green-900/50 text-green-300'
               : 'bg-zinc-700 text-zinc-400'
@@ -1589,7 +1592,7 @@ function MeshtasticRow({
       <span
         className={`text-2xs w-13 shrink-0 rounded px-1 text-center font-semibold ${
           p.isLocal
-            ? 'bg-blue-900/50 text-blue-300'
+            ? 'bg-indigo-900/50 text-indigo-300'
             : p.viaMqtt
               ? 'bg-purple-900/50 text-purple-200'
               : 'bg-zinc-700 text-zinc-200'

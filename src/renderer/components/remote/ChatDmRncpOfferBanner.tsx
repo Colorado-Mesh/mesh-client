@@ -79,11 +79,11 @@ export function ChatDmRncpOfferBanner({ lxmfPeerHash }: Readonly<ChatDmRncpOffer
 
   return (
     <div
-      className="mb-2 rounded-lg border border-amber-700/50 bg-amber-900/25 px-3 py-2"
+      className="mb-2 rounded-lg border border-orange-700/50 bg-orange-900/25 px-3 py-2"
       role="region"
       aria-label={t('chatPanel.rncp.offerBannerTitleAria')}
     >
-      <p className="mb-1.5 text-xs font-medium text-amber-200">
+      <p className="mb-1.5 text-xs font-medium text-orange-200">
         {t('chatPanel.rncp.offerBannerTitle')}
       </p>
       <ul className="space-y-1.5">
@@ -92,7 +92,7 @@ export function ChatDmRncpOfferBanner({ lxmfPeerHash }: Readonly<ChatDmRncpOffer
           return (
             <li
               key={offer.transfer_id}
-              className="flex flex-wrap items-center gap-2 text-xs text-amber-100"
+              className="flex flex-wrap items-center gap-2 text-xs text-orange-100"
             >
               <span className="min-w-0 flex-1 truncate font-medium">{offer.file_name}</span>
               <button

@@ -120,7 +120,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       ) : null}
 
       {!sidecarUiRunning && !capabilities.hasRNodeFlasher ? (
-        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
+        <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </div>
       ) : null}

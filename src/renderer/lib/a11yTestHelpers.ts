@@ -15,8 +15,8 @@ const AXE_BG_CLASS_TO_CSS: Record<string, string> = {
   'bg-cyan-700': '#0e7490',
   'bg-emerald-700': '#047857',
   'bg-yellow-700': '#a16207',
-  'bg-amber-700': '#bb4d00',
-  'bg-amber-800': '#92400e',
+  'bg-orange-700': '#c2410c',
+  'bg-orange-800': '#9a3412',
 };
 
 const AXE_TEXT_CLASS_TO_CSS: Record<string, string> = {

@@ -83,14 +83,14 @@ function statusColorClass(
   error?: string,
 ): string {
   if (isReticulumTooLargeForPropagationError(error)) {
-    return 'text-amber-400';
+    return 'text-orange-400';
   }
   if (deliveryMethod === 'stored_locally' && status !== 'failed') {
-    return 'text-amber-400';
+    return 'text-orange-400';
   }
   // Stored at a remote PN is progress, not delivery — amber, never the delivered green.
   if (deliveryMethod === 'propagated' && status === 'acked') {
-    return 'text-amber-400';
+    return 'text-orange-400';
   }
   switch (status) {
     case 'sending':

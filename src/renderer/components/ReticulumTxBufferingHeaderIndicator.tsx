@@ -29,7 +29,7 @@ export function ReticulumTxBufferingHeaderIndicator({
         className="inline-flex items-center"
       >
         <span
-          className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-amber-400 border-t-transparent"
+          className="inline-block h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-orange-400 border-t-transparent"
           aria-hidden
         />
       </span>

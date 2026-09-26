@@ -57,13 +57,13 @@ export default function UpdateStatusIndicator({
       {phase === 'available' && (
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <span className="relative flex h-3.5 w-3.5 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-50" />
-            <IconUpdateAvailable className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-50" />
+            <IconUpdateAvailable className="h-3.5 w-3.5 shrink-0 text-orange-400" />
           </span>
           {version != null ? (
-            <span className="text-amber-300 tabular-nums">v{version}</span>
+            <span className="text-orange-300 tabular-nums">v{version}</span>
           ) : (
-            <span className="text-amber-300">{t('updateStatus.update')}</span>
+            <span className="text-orange-300">{t('updateStatus.update')}</span>
           )}
           <button
             type="button"
@@ -71,7 +71,7 @@ export default function UpdateStatusIndicator({
             title={
               useReleasePage ? t('updateStatus.viewReleaseTitle') : t('updateStatus.downloadTitle')
             }
-            className="text-2xs rounded border border-amber-600 bg-amber-900/60 px-1.5 py-0.5 font-medium text-amber-200 transition-colors hover:border-amber-500 hover:text-amber-100"
+            className="text-2xs rounded border border-orange-600 bg-orange-900/60 px-1.5 py-0.5 font-medium text-orange-200 transition-colors hover:border-orange-500 hover:text-orange-100"
           >
             {useReleasePage ? t('updateStatus.viewRelease') : t('updateStatus.download')}
           </button>
@@ -110,8 +110,8 @@ export default function UpdateStatusIndicator({
           className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-zinc-300 transition-colors hover:text-zinc-100"
           title={errorMessage?.trim() ? errorMessage : t('updateStatus.retryCheck')}
         >
-          <IconWarning className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-          <span className="text-amber-500/90">{t('updateStatus.updateError')}</span>
+          <IconWarning className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+          <span className="text-orange-500/90">{t('updateStatus.updateError')}</span>
         </button>
       )}
 

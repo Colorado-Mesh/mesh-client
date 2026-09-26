@@ -185,7 +185,7 @@ export default function MicronPageEditor({
           </h3>
           <code className="truncate font-mono text-xs text-zinc-300">{path}</code>
           {dirty ? (
-            <span className="text-2xs rounded bg-amber-700 px-2 py-0.5 font-medium text-white">
+            <span className="text-2xs rounded bg-orange-700 px-2 py-0.5 font-medium text-white">
               {t('nomadNetwork.serving.unsaved')}
             </span>
           ) : null}
@@ -304,10 +304,10 @@ export default function MicronPageEditor({
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
         {confirmingClose ? (
-          <p className="text-sm text-amber-300">{t('nomadNetwork.serving.discardConfirm')}</p>
+          <p className="text-sm text-orange-300">{t('nomadNetwork.serving.discardConfirm')}</p>
         ) : null}
         {confirmingDelete ? (
-          <p className="text-sm text-amber-300">{t('nomadNetwork.serving.deleteConfirm')}</p>
+          <p className="text-sm text-orange-300">{t('nomadNetwork.serving.deleteConfirm')}</p>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
@@ -371,7 +371,7 @@ export default function MicronPageEditor({
               type="button"
               onClick={onClose}
               aria-label={t('nomadNetwork.serving.discardConfirmAria')}
-              className="rounded border border-amber-600 px-3 py-1.5 text-xs text-amber-300 hover:bg-amber-900/30"
+              className="rounded border border-orange-600 px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-900/30"
             >
               {t('nomadNetwork.serving.discard')}
             </button>

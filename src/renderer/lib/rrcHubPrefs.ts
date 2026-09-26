@@ -55,7 +55,7 @@ export function resolveRrcHubSidebarMarker(opts: {
     return { kind: 'connected', glyph: '●', colorClass: 'text-brand-green' };
   }
   if (status === 'connecting' || status === 'awaiting_welcome') {
-    return { kind: 'connecting', glyph: '◌', colorClass: 'text-amber-300' };
+    return { kind: 'connecting', glyph: '◌', colorClass: 'text-orange-300' };
   }
   if (opts.autoJoin) {
     return { kind: 'autoJoinNotConnected', glyph: '◐', colorClass: 'text-sky-400' };

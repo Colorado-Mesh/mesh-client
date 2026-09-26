@@ -131,7 +131,7 @@ export function ReticulumInterfaceDevicePickerModal({
             {isSerial ? (
               <button
                 type="button"
-                className="text-xs text-amber-300 hover:text-amber-200"
+                className="text-xs text-orange-300 hover:text-orange-200"
                 aria-label={t('connectionPanel.reticulumInterfaces.refreshPorts')}
                 onClick={onRefreshSerial}
               >
@@ -140,7 +140,7 @@ export function ReticulumInterfaceDevicePickerModal({
             ) : (
               <button
                 type="button"
-                className="text-xs text-amber-300 hover:text-amber-200"
+                className="text-xs text-orange-300 hover:text-orange-200"
                 aria-label={t('connectionPanel.reticulumInterfaces.rescanBle')}
                 disabled={scanning}
                 onClick={onRescanBle}
@@ -160,7 +160,7 @@ export function ReticulumInterfaceDevicePickerModal({
         </div>
 
         {scanError ? (
-          <p className="border-b border-zinc-700 px-4 py-2 text-xs text-amber-300" role="alert">
+          <p className="border-b border-zinc-700 px-4 py-2 text-xs text-orange-300" role="alert">
             {(() => {
               const { key, params } = reticulumPickerScanErrorI18nKey(scanError);
               return t(key, params);
@@ -186,7 +186,7 @@ export function ReticulumInterfaceDevicePickerModal({
                 {manualPath.trim() ? (
                   <button
                     type="button"
-                    className="mt-3 rounded bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-600"
+                    className="mt-3 rounded bg-orange-700 px-3 py-1.5 text-sm text-white hover:bg-orange-600"
                     aria-label={t('connectionPanel.reticulumInterfaces.useManualPort')}
                     onClick={() => {
                       onSelect({ value: manualPath.trim(), deviceName: manualPath.trim() });

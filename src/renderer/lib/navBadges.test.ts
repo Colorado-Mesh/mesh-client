@@ -98,7 +98,7 @@ describe('NAV_BADGE_FILL_CLASS', () => {
   it('keeps white badge text at 4.5:1 or better', () => {
     // red-600 and amber-800 from the Tailwind palette.
     expect(NAV_BADGE_FILL_CLASS.unread).toBe('bg-red-600');
-    expect(NAV_BADGE_FILL_CLASS.pending).toBe('bg-amber-800');
+    expect(NAV_BADGE_FILL_CLASS.pending).toBe('bg-orange-800');
     expect(contrastRatio('#ffffff', '#dc2626')).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio('#ffffff', '#92400e')).toBeGreaterThanOrEqual(4.5);
   });

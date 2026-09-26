@@ -55,7 +55,7 @@ export function ReticulumPropagationSyncProgress({
     <>
       {sync.active ? (
         <div className="mt-2 space-y-1" role="status" aria-live="polite">
-          <p className="text-xs text-amber-300">
+          <p className="text-xs text-orange-300">
             {targetName
               ? t('reticulumPropagation.syncStatusWithTarget', { status, name: targetName })
               : status}
@@ -96,7 +96,7 @@ export function ReticulumPropagationSyncProgress({
 export function ReticulumPropagationRefreshButton({
   refreshing,
   onRefresh,
-  className = 'inline-flex items-center gap-1 text-xs text-amber-400 hover:underline disabled:opacity-40',
+  className = 'inline-flex items-center gap-1 text-xs text-yellow-400 hover:underline disabled:opacity-40',
 }: {
   refreshing: boolean;
   onRefresh: () => void;

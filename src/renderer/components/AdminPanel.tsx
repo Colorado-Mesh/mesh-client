@@ -85,7 +85,7 @@ export default function AdminPanel({
       <h2 className="text-xl font-semibold text-red-400">{t('tabs.admin')}</h2>
 
       {!isConnected && (
-        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
+        <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
           {t('radioPanel.connectToConfigure')}
         </div>
       )}

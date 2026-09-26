@@ -5610,17 +5610,17 @@ function ConnectionBanner({
       <div
         role="region"
         aria-label={t('connectionBanner.statusRegion')}
-        className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2"
+        className="flex items-center justify-between border-b border-orange-700 bg-orange-900/80 px-4 py-2"
       >
         <div className="flex items-center gap-2">
-          <TriangleAlert aria-hidden className="h-4 w-4 shrink-0 text-yellow-400" />
-          <span className="text-sm text-yellow-200">{t('connectionBanner.staleLoss')}</span>
+          <TriangleAlert aria-hidden className="h-4 w-4 shrink-0 text-orange-400" />
+          <span className="text-sm text-orange-200">{t('connectionBanner.staleLoss')}</span>
         </div>
         <button
           type="button"
           onClick={onReconnect}
           aria-label={t('connectionBanner.reconnect')}
-          className="text-sm font-medium text-yellow-300 underline hover:text-yellow-100"
+          className="text-sm font-medium text-orange-300 underline hover:text-orange-100"
         >
           {t('connectionBanner.reconnect')}
         </button>

@@ -343,7 +343,7 @@ function ContactCountBadge({
             aria-live="polite"
             aria-label={t('radioPanel.offloading')}
           >
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border border-yellow-300 border-t-transparent" />
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border border-orange-300 border-t-transparent" />
             <span>
               {offloadProgress?.phase === 'removing' && offloadProgress.total > 0
                 ? t('radioPanel.offloadingProgress', {
@@ -356,7 +356,7 @@ function ContactCountBadge({
               type="button"
               onClick={cancelOffload}
               aria-label={t('common.cancel')}
-              className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+              className="rounded border border-orange-700 bg-orange-900/30 px-2 py-0.5 text-xs font-medium text-orange-300 transition-colors hover:bg-orange-800/50"
             >
               {t('common.cancel')}
             </button>
@@ -367,7 +367,7 @@ function ContactCountBadge({
             onClick={() => {
               void handleOffload();
             }}
-            className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+            className="rounded border border-orange-700 bg-orange-900/30 px-2 py-0.5 text-xs font-medium text-orange-300 transition-colors hover:bg-orange-800/50"
             title={t('radioPanel.removeAllContactsTitle')}
           >
             {t('radioPanel.offloadContacts')}
@@ -1549,7 +1549,7 @@ export default function RadioPanel({
       )}
 
       {!isConnected && (
-        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
+        <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
           {t('radioPanel.connectToConfigure')}
         </div>
       )}
@@ -2206,7 +2206,7 @@ export default function RadioPanel({
           disabled={deviceApplyDisabled}
         >
           {!deviceConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', {
                 section: t('radioPanel.sectionDeviceRole'),
               })}
@@ -2316,7 +2316,7 @@ export default function RadioPanel({
         disabled={positionApplyDisabled}
       >
         {capabilities?.hasFullPositionConfig !== false && !positionConfigReady && isConnected && (
-          <p className="text-xs text-yellow-300/90">
+          <p className="text-xs text-orange-300/90">
             {t('radioPanel.waitingForConfigSection', {
               section: t('radioPanel.sectionPositionGps'),
             })}
@@ -2562,7 +2562,7 @@ export default function RadioPanel({
           disabled={powerApplyDisabled}
         >
           {!powerConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionPower') })}
             </p>
           )}
@@ -2668,7 +2668,7 @@ export default function RadioPanel({
           disabled={networkApplyDisabled}
         >
           {!networkConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionWifi') })}
             </p>
           )}
@@ -2752,7 +2752,7 @@ export default function RadioPanel({
           disabled={displayApplyDisabled}
         >
           {!displayConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionDisplay') })}
             </p>
           )}
@@ -2858,7 +2858,7 @@ export default function RadioPanel({
           disabled={bluetoothApplyDisabled}
         >
           {!bluetoothConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', {
                 section: t('radioPanel.sectionBluetooth'),
               })}
@@ -2937,7 +2937,7 @@ export default function RadioPanel({
                 className={buttonClassName('secondary', 'sm')}
               >
                 {syncClockLoading ? (
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-indigo-400 border-t-transparent" />
                 ) : (
                   t('radioPanel.syncClockButton')
                 )}
@@ -2959,7 +2959,7 @@ export default function RadioPanel({
             <h3 className="text-muted text-sm font-medium">
               {t('appPanel.meshcoreOpenWireExperimentalTitle')}
             </h3>
-            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
+            <div className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3">
               <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -2979,12 +2979,12 @@ export default function RadioPanel({
                 />
                 <label
                   htmlFor="meshcoreOpenWireCompat"
-                  className="flex-1 cursor-pointer text-sm text-yellow-100"
+                  className="flex-1 cursor-pointer text-sm text-orange-100"
                 >
                   {t('appPanel.meshcoreOpenWireCompatLabel')}
                 </label>
               </div>
-              <p className="text-xs leading-relaxed text-yellow-300/90">
+              <p className="text-xs leading-relaxed text-orange-300/90">
                 {t('appPanel.meshcoreOpenWireCompatHint')}
               </p>
             </div>
@@ -2993,8 +2993,8 @@ export default function RadioPanel({
             <h3 className="text-muted text-sm font-medium">
               {t('appPanel.meshcorePathHashExperimentalTitle')}
             </h3>
-            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
-              <label htmlFor="meshcore-path-hash-mode" className="text-sm text-yellow-100">
+            <div className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3">
+              <label htmlFor="meshcore-path-hash-mode" className="text-sm text-orange-100">
                 {t('appPanel.meshcorePathHashModeLabel')}
               </label>
               <select
@@ -3025,7 +3025,7 @@ export default function RadioPanel({
                 <option value={2}>{t('appPanel.meshcorePathHashMode3Byte')}</option>
               </select>
               {deviceReportedPathHashMode != null && isConnected ? (
-                <p className="text-xs text-yellow-200/90">
+                <p className="text-xs text-orange-200/90">
                   {t('appPanel.meshcorePathHashDeviceReported', {
                     mode:
                       deviceReportedPathHashMode === 0
@@ -3036,7 +3036,7 @@ export default function RadioPanel({
                   })}
                 </p>
               ) : null}
-              <p className="text-xs leading-relaxed text-yellow-300/90">
+              <p className="text-xs leading-relaxed text-orange-300/90">
                 {t('appPanel.meshcorePathHashModeHint')}
               </p>
             </div>
@@ -3084,7 +3084,7 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
         ? t('radioPanel.securityOpenLocationTooltip')
         : t('radioPanel.securityNoEncryptionTooltip');
   return (
-    <span title={tooltip} className="flex items-center gap-0.5 text-yellow-500">
+    <span title={tooltip} className="flex items-center gap-0.5 text-orange-500">
       <LockOpen
         {...iconProps}
         className={`h-3.5 w-3.5 ${level !== 'open' ? 'text-red-400' : ''}`}
@@ -3260,7 +3260,7 @@ function ChannelUrlImportExport({
           {t('radioPanel.channelUrl.includeSecondary')}
         </label>
         {!meshtasticLoraConfig && (
-          <p className="text-xs text-yellow-500/90">
+          <p className="text-xs text-orange-500/90">
             {t('radioPanel.channelUrl.loraMissingWarning')}
           </p>
         )}
@@ -3355,8 +3355,8 @@ function ChannelUrlImportExport({
             <span
               className={`inline-block rounded px-2 py-0.5 font-medium ${
                 parsed.mode === 'add'
-                  ? 'bg-blue-900/50 text-blue-300'
-                  : 'bg-yellow-900/40 text-yellow-300'
+                  ? 'bg-indigo-900/50 text-indigo-300'
+                  : 'bg-orange-900/40 text-orange-300'
               }`}
             >
               {parsed.mode === 'add'
@@ -3412,7 +3412,7 @@ function ChannelUrlImportExport({
               </label>
             )}
             {!onApplyChannelSet ? (
-              <p className="text-yellow-500/90">{t('radioPanel.channelUrl.connectToImport')}</p>
+              <p className="text-orange-500/90">{t('radioPanel.channelUrl.connectToImport')}</p>
             ) : (
               <button
                 type="button"
@@ -3859,7 +3859,7 @@ function ChannelSection({
                   {/* Index badge */}
                   <span
                     className={`rounded px-1.5 py-0.5 font-mono text-xs font-bold ${
-                      i === 0 ? 'bg-blue-900/60 text-blue-300' : 'bg-zinc-700 text-zinc-400'
+                      i === 0 ? 'bg-indigo-900/60 text-indigo-300' : 'bg-zinc-700 text-zinc-400'
                     }`}
                   >
                     {i}
@@ -3868,7 +3868,7 @@ function ChannelSection({
                   <span
                     className={`flex-1 text-sm ${
                       isFailed
-                        ? 'text-amber-400 italic'
+                        ? 'text-orange-400 italic'
                         : isPendingTail
                           ? 'text-muted italic'
                           : role !== 0
@@ -3882,13 +3882,13 @@ function ChannelSection({
                   <span
                     className={`rounded px-1.5 py-0.5 text-xs ${
                       isFailed
-                        ? 'bg-amber-900/40 text-amber-300'
+                        ? 'bg-orange-900/40 text-orange-300'
                         : isPendingTail
                           ? 'text-muted bg-zinc-800'
                           : role === 1
                             ? 'bg-brand-green/10 text-bright-green'
                             : role === 2
-                              ? 'bg-blue-900/50 text-blue-400'
+                              ? 'bg-indigo-900/50 text-indigo-400'
                               : 'text-muted bg-zinc-800'
                     }`}
                   >
@@ -4176,7 +4176,7 @@ function MeshcoreChannelSection({
             <button
               type="button"
               onClick={generateKey}
-              className="text-xs text-blue-400 hover:text-blue-300"
+              className="text-xs text-indigo-400 hover:text-indigo-300"
             >
               {t('radioPanel.meshcoreGenerateRandomKey')}
             </button>
@@ -4285,7 +4285,7 @@ function MeshcoreChannelSection({
                       openEdit(ch);
                     }}
                     disabled={disabled}
-                    className="px-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                    className="px-1 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
                   >
                     {t('common.edit')}
                   </button>
@@ -4300,7 +4300,7 @@ function MeshcoreChannelSection({
                       aria-label={t('radioPanel.meshcoreChannel.shareQrAria', {
                         name: channelName,
                       })}
-                      className="px-1 text-xs text-amber-400 hover:text-amber-300"
+                      className="px-1 text-xs text-orange-400 hover:text-orange-300"
                     >
                       {t('radioPanel.meshcoreChannel.shareQr')}
                     </button>

@@ -137,7 +137,7 @@ describe('ReticulumStackPanel', () => {
     const statusText = within(tiles).getByText('app.deviceStatus.connecting');
     expect(statusText).not.toHaveClass('animate-pulse');
     expect(statusText.parentElement).not.toHaveClass('animate-pulse');
-    expect(statusText.previousElementSibling).toHaveClass('bg-yellow-500', 'animate-pulse');
+    expect(statusText.previousElementSibling).toHaveClass('bg-orange-500', 'animate-pulse');
   });
 
   it('shows local interface alert when serial port is stale', async () => {

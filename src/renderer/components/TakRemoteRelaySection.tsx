@@ -22,7 +22,7 @@ const DEFAULT_REMOTE_SETTINGS: TAKRemoteSettings = {
 
 const STATUS_DOT: Record<TAKRemoteStatus['state'], string> = {
   connected: 'bg-green-500',
-  connecting: 'bg-yellow-500',
+  connecting: 'bg-orange-500',
   disconnected: 'bg-zinc-500',
 };
 
@@ -199,7 +199,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             </label>
           </div>
         ) : (
-          <p className="text-xs text-amber-300">
+          <p className="text-xs text-orange-300">
             {t('takServerPanel.remoteVerifyOffWarning')}{' '}
             {t('takServerPanel.remoteAutoConnectNeedsVerify')}
           </p>

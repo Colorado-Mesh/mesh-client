@@ -30,7 +30,7 @@ const ROLE_INFO: Record<number, RoleInfo> = {
   0: { labelKey: 'roleInfo.roles.client', colorClass: 'text-zinc-400', isBadge: false },
   1: { labelKey: 'roleInfo.roles.clientMute', colorClass: 'text-muted', isBadge: false },
   2: { labelKey: 'roleInfo.roles.router', colorClass: 'text-zinc-400', isBadge: false },
-  3: { labelKey: 'roleInfo.roles.routerClient', colorClass: 'text-blue-400', isBadge: false },
+  3: { labelKey: 'roleInfo.roles.routerClient', colorClass: 'text-indigo-400', isBadge: false },
   4: {
     labelKey: 'roleInfo.roles.repeater',
     colorClass: 'text-orange-400',

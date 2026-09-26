@@ -41,7 +41,7 @@ export interface ChatDmRncpControlProps {
 }
 
 const TRANSFER_STATUS_BADGE_CLASS: Record<RncpTransferUiStatus, string> = {
-  active: 'bg-blue-800/60 text-blue-200',
+  active: 'bg-indigo-800/60 text-indigo-200',
   completed: 'bg-green-800/60 text-green-200',
   failed: 'bg-red-900/60 text-red-200',
   cancelled: 'bg-zinc-700/60 text-zinc-300',
@@ -345,7 +345,7 @@ export function ChatDmRncpControl({
         {(relevantOffers.length > 0 || activeTransferCount > 0) && (
           <span
             className={`text-2xs ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-semibold text-white ${
-              relevantOffers.length > 0 ? 'bg-amber-600' : 'bg-blue-600'
+              relevantOffers.length > 0 ? 'bg-orange-600' : 'bg-indigo-600'
             }`}
             aria-label={
               relevantOffers.length > 0
@@ -366,13 +366,13 @@ export function ChatDmRncpControl({
         <div className="bg-secondary-dark absolute top-full right-0 z-20 mt-1 w-80 space-y-2 rounded-lg border border-zinc-600/50 p-3 shadow-xl">
           {relevantOffers.length > 0 && (
             <div className="space-y-1 border-b border-zinc-700/60 pb-2">
-              <p className="text-label font-medium text-amber-300">
+              <p className="text-label font-medium text-orange-300">
                 {t('reticulumRemote.transfer.pendingOffersTitle')}
               </p>
               {relevantOffers.map((offer) => (
                 <div
                   key={offer.transfer_id}
-                  className="text-label flex items-center gap-1 text-amber-100"
+                  className="text-label flex items-center gap-1 text-orange-100"
                 >
                   <span className="min-w-0 flex-1 truncate">{offer.file_name}</span>
                   <button
@@ -442,7 +442,7 @@ export function ChatDmRncpControl({
                       })}
                     >
                       <div
-                        className="h-full bg-blue-500 transition-[width] duration-200"
+                        className="h-full bg-indigo-500 transition-[width] duration-200"
                         style={{ width: `${Math.max(2, transfer.progress)}%` }}
                       />
                     </div>
@@ -462,7 +462,7 @@ export function ChatDmRncpControl({
           </label>
           <p className="text-2xs text-muted leading-snug">{t('chatPanel.rncp.destinationHelp')}</p>
           {otherSavedLabels.length > 0 && (
-            <p className="text-2xs leading-snug text-amber-200/90">
+            <p className="text-2xs leading-snug text-orange-200/90">
               {t('chatPanel.rncp.savedForOtherPeers', { peers: otherSavedLabels.join(', ') })}
             </p>
           )}
@@ -484,7 +484,7 @@ export function ChatDmRncpControl({
             <RemotePathCapabilityChip capability={capability} loading={capabilityLoading} />
           </div>
           {pathConstrained && capability && (
-            <p className="text-2xs leading-snug text-amber-200/90">
+            <p className="text-2xs leading-snug text-orange-200/90">
               {t('reticulumRemote.transfer.notAllowedHint', {
                 reason: capability.reason_key
                   ? t(

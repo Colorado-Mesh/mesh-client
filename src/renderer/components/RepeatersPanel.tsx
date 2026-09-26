@@ -1198,7 +1198,7 @@ export default function RepeatersPanel({
                                 onClick={() => {
                                   onToggleFavorite(node.node_id, !node.favorited);
                                 }}
-                                className="text-brand-yellow/70 hover:text-brand-yellow leading-none"
+                                className="leading-none text-yellow-400/70 hover:text-yellow-400"
                                 aria-label={
                                   node.favorited
                                     ? t('repeatersPanel.unfavorite')
@@ -1267,7 +1267,7 @@ export default function RepeatersPanel({
                               onClick={() => {
                                 togglePath(node.node_id);
                               }}
-                              className="text-left text-blue-400 underline decoration-dotted hover:text-blue-300"
+                              className="text-left text-indigo-400 underline decoration-dotted hover:text-indigo-300"
                               title={t('repeatersPanel.hopCountTooltip')}
                               aria-label={t('repeatersPanel.hopCountTooltip')}
                             >
@@ -1518,7 +1518,7 @@ export default function RepeatersPanel({
                                     <span key={i} className="flex items-center gap-1">
                                       <span className="text-zinc-600">→</span>
                                       <span
-                                        className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300"
+                                        className="rounded bg-indigo-900/40 px-1.5 py-0.5 font-mono text-indigo-300"
                                         title={meshcoreHopSegmentTooltip(t, hop)}
                                       >
                                         {hop.label ||
@@ -1637,14 +1637,14 @@ export default function RepeatersPanel({
                             ) : telemetryData ? (
                               <div className="flex flex-wrap items-center gap-4 text-xs">
                                 {telemetryData.voltage != null && (
-                                  <span className="text-amber-300">
+                                  <span className="text-orange-300">
                                     {t('repeatersPanel.telemetryBattery', {
                                       voltage: telemetryData.voltage.toFixed(2),
                                     })}
                                   </span>
                                 )}
                                 {telemetryData.temperature != null && (
-                                  <span className="text-blue-300">
+                                  <span className="text-indigo-300">
                                     {t('repeatersPanel.telemetryTemp', {
                                       temp: telemetryData.temperature.toFixed(1),
                                     })}
@@ -1821,7 +1821,7 @@ export default function RepeatersPanel({
                                 />
                               ) : null}
                               {showCliMultiHopHint ? (
-                                <p className="text-xs text-amber-400/90">
+                                <p className="text-xs text-orange-400/90">
                                   {t('repeatersPanel.cliMultiHopHint')}
                                 </p>
                               ) : null}

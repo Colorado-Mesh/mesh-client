@@ -61,23 +61,25 @@ export function BluetoothConfig({
             disabled={disabled || pairingPending}
             aria-label={t('flasher.clearPairedDevices')}
             onClick={onClearPairedDevices}
-            className="rounded border border-amber-700/60 px-2 py-1 text-xs text-amber-100 hover:bg-amber-950/40 disabled:opacity-40"
+            className="rounded border border-orange-700/60 px-2 py-1 text-xs text-orange-100 hover:bg-orange-950/40 disabled:opacity-40"
           >
             {t('flasher.clearPairedDevices')}
           </button>
         ) : null}
       </div>
       {pairingPending && pairingPin === null ? (
-        <output className="block text-xs text-amber-200/90">{t('flasher.pairingWaiting')}</output>
+        <output className="block text-xs text-orange-200/90">{t('flasher.pairingWaiting')}</output>
       ) : null}
       {pinLabel !== null ? (
         <output
-          className="block rounded border border-amber-500/40 bg-amber-950/40 px-3 py-2"
+          className="block rounded border border-orange-500/40 bg-orange-950/40 px-3 py-2"
           aria-label={t('flasher.pairingPin', { pin: pinLabel })}
         >
-          <p className="text-label font-medium text-amber-200/80">{t('flasher.pairingPinLabel')}</p>
-          <p className="mt-1 font-mono text-2xl tracking-widest text-amber-300">{pinLabel}</p>
-          <p className="text-label mt-1 text-amber-100/70">{t('flasher.pairingPinEnterHint')}</p>
+          <p className="text-label font-medium text-orange-200/80">
+            {t('flasher.pairingPinLabel')}
+          </p>
+          <p className="mt-1 font-mono text-2xl tracking-widest text-orange-300">{pinLabel}</p>
+          <p className="text-label mt-1 text-orange-100/70">{t('flasher.pairingPinEnterHint')}</p>
         </output>
       ) : null}
     </div>

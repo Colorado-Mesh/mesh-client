@@ -234,9 +234,9 @@ function chatToolbarButtonClass(state: 'idle' | 'active' | 'starred' | 'warn' = 
     case 'active':
       return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-bright-green`;
     case 'starred':
-      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-amber-400`;
+      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-orange-400`;
     case 'warn':
-      return `${CHAT_TOOLBAR_BUTTON_BASE} text-amber-400 hover:bg-sidebar-active-bg hover:text-amber-300`;
+      return `${CHAT_TOOLBAR_BUTTON_BASE} text-orange-400 hover:bg-sidebar-active-bg hover:text-orange-300`;
     default:
       return `${CHAT_TOOLBAR_BUTTON_BASE} text-muted hover:bg-sidebar-active-bg hover:text-zinc-200`;
   }
@@ -349,7 +349,7 @@ function OutboxBubble({
       : row.status === 'sending'
         ? 'text-muted'
         : row.status === 'blocked'
-          ? 'text-amber-400'
+          ? 'text-orange-400'
           : 'text-red-400';
   const displayError = row.error ? translateChatSendError(t, row.error) : null;
   const isEmergency = isEmergencyOutboxPriority(row);
@@ -501,7 +501,7 @@ function StoreForwardBadge() {
   const label = t('chatPanel.receivedViaStoreForward');
   return (
     <span role="img" title={label} aria-label={label}>
-      <Archive aria-hidden className="h-3 w-3 text-amber-400" trigger={trigger} size={12} />
+      <Archive aria-hidden className="h-3 w-3 text-orange-400" trigger={trigger} size={12} />
     </span>
   );
 }
@@ -2529,7 +2529,7 @@ function ChatPanel({
                   }
                   className={`flex h-5 w-5 items-center justify-center rounded transition-colors ${
                     dmMuted
-                      ? 'text-amber-400 hover:text-amber-300'
+                      ? 'text-orange-400 hover:text-orange-300'
                       : 'text-muted hover:text-zinc-100'
                   }`}
                   title={
@@ -2877,7 +2877,7 @@ function ChatPanel({
 
       {/* Sender filter banner */}
       {filterSender != null && (
-        <div className="mb-2 flex items-center justify-between rounded-lg border border-blue-600/40 bg-blue-900/20 px-3 py-1.5 text-xs text-blue-300">
+        <div className="mb-2 flex items-center justify-between rounded-lg border border-indigo-600/40 bg-indigo-900/20 px-3 py-1.5 text-xs text-indigo-300">
           <span>
             {t('chatPanel.filteringBySender', {
               name: nodes.get(filterSender)
@@ -3092,7 +3092,7 @@ function ChatPanel({
                             }
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}
-                          className="text-2xs rounded p-1 text-zinc-400 hover:text-blue-400"
+                          className="text-2xs rounded p-1 text-zinc-400 hover:text-indigo-400"
                           title={t('chatPanel.goToMessage')}
                           aria-label={t('chatPanel.goToMessage')}
                         >
@@ -3109,7 +3109,7 @@ function ChatPanel({
                             setStarred((prev) => prev.filter((x) => x.starId !== s.starId));
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}
-                          className="text-2xs rounded p-1 text-amber-500 hover:text-amber-300"
+                          className="text-2xs rounded p-1 text-orange-500 hover:text-orange-300"
                           title={t('chatPanel.unstarMessage')}
                           aria-label={t('chatPanel.unstarMessage')}
                         >
@@ -3949,7 +3949,7 @@ function ChatPanel({
       {protocol === 'reticulum' && isDmMode && reticulumDmMissingLxmf ? (
         <div
           role="status"
-          className="mt-1 rounded border border-amber-700/50 bg-amber-950/40 px-2 py-1.5 text-xs text-amber-200"
+          className="mt-1 rounded border border-orange-700/50 bg-orange-950/40 px-2 py-1.5 text-xs text-orange-200"
         >
           {t('chatPanel.reticulumChatNeedsLxmfDelivery')}
         </div>

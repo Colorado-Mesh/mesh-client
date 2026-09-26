@@ -290,7 +290,7 @@ export default function QrIngestControl({
         <video ref={videoRef} className="hidden" muted playsInline tabIndex={-1} aria-hidden />
       )}
       {status ? (
-        <p className="text-xs text-amber-400" role="status">
+        <p className="text-xs text-orange-400" role="status">
           {status}
         </p>
       ) : null}

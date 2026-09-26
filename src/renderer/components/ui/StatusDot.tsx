@@ -9,9 +9,9 @@ const DOT_CLASS: Record<StatusDotTone, string> = {
   // Hollow ring: stale / stopped.
   idle: 'border-[1.5px] border-zinc-400 bg-transparent',
   off: 'bg-zinc-600',
-  warn: 'bg-yellow-500',
+  warn: 'bg-orange-500',
   error: 'bg-red-500',
-  info: 'bg-blue-500',
+  info: 'bg-indigo-500',
 };
 
 export function StatusDot({

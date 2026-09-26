@@ -132,7 +132,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={adding}
-                    className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-300 disabled:opacity-40"
+                    className="rounded border border-orange-600 px-2 py-0.5 text-xs text-orange-300 disabled:opacity-40"
                     aria-label={t('reticulumPropagation.discoveredAddAria', { name: label })}
                     onClick={() => {
                       onAdd(row.destination_hash);
@@ -143,7 +143,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={adding}
-                    className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200 disabled:opacity-40"
+                    className="rounded border border-orange-500 bg-orange-900/30 px-2 py-0.5 text-xs text-orange-200 disabled:opacity-40"
                     aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
                       name: label,
                     })}
@@ -532,7 +532,7 @@ export default function ReticulumPropagationSection({
                     />
                     <button
                       type="button"
-                      className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                      className="text-xs text-yellow-400 hover:underline disabled:opacity-40"
                       disabled={!renameDraft.trim()}
                       aria-label={t('reticulumPropagation.renameSaveAria')}
                       onClick={() => {
@@ -590,7 +590,7 @@ export default function ReticulumPropagationSection({
               <span className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                  className="text-xs text-yellow-400 hover:underline disabled:opacity-40"
                   onClick={() => {
                     void setPreferredOnSidecar(node.id)
                       .then((ok) => {
@@ -611,7 +611,7 @@ export default function ReticulumPropagationSection({
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                  className="text-xs text-yellow-400 hover:underline disabled:opacity-40"
                   // Local inbox cannot settle until its messagestore finishes loading.
                   disabled={sync.active || syncStarting || mode === 'off' || isLoading}
                   onClick={() => {
@@ -625,7 +625,7 @@ export default function ReticulumPropagationSection({
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline"
+                  className="text-xs text-yellow-400 hover:underline"
                   onClick={() => {
                     if (isLocal && !node.enabled) {
                       setPendingEnableLocal(true);
@@ -689,7 +689,7 @@ export default function ReticulumPropagationSection({
                   <>
                     <button
                       type="button"
-                      className="text-xs text-amber-400 hover:underline"
+                      className="text-xs text-yellow-400 hover:underline"
                       onClick={() => {
                         setRenamingId(node.id);
                         setRenameDraft(node.name);
@@ -791,7 +791,7 @@ export default function ReticulumPropagationSection({
         <button
           type="button"
           disabled={bottomSyncDisabled}
-          className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
+          className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-300 disabled:opacity-40"
           aria-label={t('reticulumPropagation.syncNowPreferredAria')}
           aria-busy={syncStarting}
           onClick={() => {
@@ -851,7 +851,7 @@ export default function ReticulumPropagationSection({
         <button
           type="button"
           disabled={!addHash.trim() || adding}
-          className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
+          className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-300 disabled:opacity-40"
           onClick={() => {
             if (adding) return;
             setAdding(true);

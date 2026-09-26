@@ -69,7 +69,7 @@ export function ReticulumPropagationNotice({
   return (
     <div
       role="alert"
-      className="mb-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs text-amber-100"
+      className="mb-2 rounded-lg border border-orange-700/50 bg-orange-900/20 px-3 py-2 text-xs text-orange-100"
     >
       <p>
         {discoveryCount > 0
@@ -80,7 +80,7 @@ export function ReticulumPropagationNotice({
         {closestHash ? (
           <button
             type="button"
-            className="font-medium text-amber-200 underline hover:text-amber-100"
+            className="font-medium text-orange-200 underline hover:text-orange-100"
             aria-label={t('reticulumPropagation.notice.addClosestAria')}
             onClick={() => {
               void addFromDiscovered(closestHash, { prefer: true })
@@ -104,7 +104,7 @@ export function ReticulumPropagationNotice({
         {onOpenPropagationSettings ? (
           <button
             type="button"
-            className="font-medium text-amber-200 underline hover:text-amber-100"
+            className="font-medium text-orange-200 underline hover:text-orange-100"
             aria-label={t('reticulumPropagation.notice.openSettingsAria')}
             onClick={onOpenPropagationSettings}
           >
@@ -113,7 +113,7 @@ export function ReticulumPropagationNotice({
         ) : null}
         <button
           type="button"
-          className="font-medium text-amber-200 underline hover:text-amber-100"
+          className="font-medium text-orange-200 underline hover:text-orange-100"
           aria-label={t('reticulumPropagation.notice.dismissAria')}
           onClick={() => {
             setChatNoticeDismissed(true);

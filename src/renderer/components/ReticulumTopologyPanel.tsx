@@ -522,7 +522,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         <span className="font-medium text-zinc-300">{t('reticulumTopology.title')}</span>
         <button
           type="button"
-          className="text-amber-400 hover:underline"
+          className="text-yellow-400 hover:underline"
           onClick={() => {
             void refresh();
           }}
@@ -767,7 +767,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           {t('reticulumTopology.legendInterfaceOffline')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-blue-600" />
+          <span className="inline-block h-2 w-2 rounded-full bg-indigo-600" />
           {t('reticulumTopology.legendPeerUser')}
         </span>
         <span className="flex items-center gap-1">

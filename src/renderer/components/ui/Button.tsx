@@ -91,7 +91,7 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 
 const ICON_BUTTON_ACTIVE: Record<'brand' | 'warn', string> = {
   brand: 'border-transparent bg-sidebar-active-bg text-bright-green',
-  warn: 'border-transparent bg-transparent text-amber-400 hover:bg-sidebar-active-bg',
+  warn: 'border-transparent bg-transparent text-orange-400 hover:bg-sidebar-active-bg',
 };
 
 const ICON_BUTTON_SIZE: Record<ButtonSize, string> = { sm: 'h-7.5 w-7.5', md: 'h-8 w-8' };

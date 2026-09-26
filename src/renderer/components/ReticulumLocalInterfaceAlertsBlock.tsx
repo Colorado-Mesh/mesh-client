@@ -53,12 +53,12 @@ export function ReticulumLocalInterfaceAlertsBlock({
   return (
     <div
       role="alert"
-      className="rounded-lg border border-amber-600/50 bg-amber-950/30 px-3 py-2.5 text-sm text-amber-100"
+      className="rounded-lg border border-orange-600/50 bg-orange-950/30 px-3 py-2.5 text-sm text-orange-100"
     >
-      <p className="font-medium text-amber-200">
+      <p className="font-medium text-orange-200">
         {t('connectionPanel.reticulumLocalInterfaces.needsAttention', { count: alerts.length })}
       </p>
-      <ul className="mt-2 space-y-2 text-xs text-amber-100/90">
+      <ul className="mt-2 space-y-2 text-xs text-orange-100/90">
         {alerts.map((alert) => (
           <li key={alert.iface.id}>
             <p>
@@ -126,7 +126,7 @@ export function ReticulumLocalInterfaceAlertsBlock({
               onClick={() => {
                 void onRestartStack?.();
               }}
-              className="rounded bg-amber-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600"
+              className="rounded bg-orange-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-orange-600"
               aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
             >
               {t('connectionPanel.reticulumLocalInterfaces.restartStack')}
@@ -138,7 +138,7 @@ export function ReticulumLocalInterfaceAlertsBlock({
               onClick={() => {
                 onRefreshPorts?.();
               }}
-              className="rounded border border-amber-600/60 px-2.5 py-1 text-xs text-amber-100 hover:bg-amber-900/40"
+              className="rounded border border-orange-600/60 px-2.5 py-1 text-xs text-orange-100 hover:bg-orange-900/40"
               aria-label={t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}
             >
               {t('connectionPanel.reticulumLocalInterfaces.refreshPorts')}

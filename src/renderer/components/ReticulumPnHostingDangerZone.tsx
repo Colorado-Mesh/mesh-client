@@ -29,7 +29,7 @@ function NumberField({
   disabled?: boolean;
 }>) {
   return (
-    <label htmlFor={id} className="text-xs text-yellow-200/90">
+    <label htmlFor={id} className="text-xs text-orange-200/90">
       {label}
       <input
         id={id}
@@ -43,7 +43,7 @@ function NumberField({
           if (!Number.isFinite(n)) return;
           onChange(n);
         }}
-        className="text-body bg-app-bg mt-1 block h-8 w-full max-w-[10rem] rounded-lg border border-yellow-700/60 px-2.5 text-yellow-100 focus:border-yellow-500 focus:outline-none pointer-coarse:h-10"
+        className="text-body bg-app-bg mt-1 block h-8 w-full max-w-[10rem] rounded-lg border border-orange-700/60 px-2.5 text-orange-100 focus:border-orange-500 focus:outline-none pointer-coarse:h-10"
         aria-label={label}
       />
     </label>
@@ -87,11 +87,11 @@ export default function ReticulumPnHostingDangerZone({
 
   return (
     <>
-      <details className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-3 py-2 text-yellow-300">
-        <summary className="cursor-pointer text-sm font-medium text-yellow-200">
+      <details className="rounded-lg border border-orange-700 bg-orange-900/30 px-3 py-2 text-orange-300">
+        <summary className="cursor-pointer text-sm font-medium text-orange-200">
           {t('networkPanel.reticulumPnHosting.title')}
         </summary>
-        <p className="mt-2 text-xs text-yellow-200/80">
+        <p className="mt-2 text-xs text-orange-200/80">
           {t('networkPanel.reticulumPnHosting.warning')}
         </p>
         <div className="mt-3 flex flex-wrap gap-3">
@@ -217,7 +217,7 @@ export default function ReticulumPnHostingDangerZone({
             }}
           />
         </div>
-        <div className="mt-3 flex flex-wrap gap-4 text-xs text-yellow-100">
+        <div className="mt-3 flex flex-wrap gap-4 text-xs text-orange-100">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -267,10 +267,10 @@ export default function ReticulumPnHostingDangerZone({
             {t('networkPanel.reticulumPnHosting.authRequired')}
           </label>
         </div>
-        <p className="mt-2 text-xs text-yellow-200">
+        <p className="mt-2 text-xs text-orange-200">
           {t('networkPanel.reticulumPnHosting.enforceUnavailableTip')}
         </p>
-        <label htmlFor="pn-node-name" className="mt-3 block text-xs text-yellow-200/90">
+        <label htmlFor="pn-node-name" className="mt-3 block text-xs text-orange-200/90">
           {t('networkPanel.reticulumPnHosting.nodeName')}
           <input
             id="pn-node-name"
@@ -280,11 +280,11 @@ export default function ReticulumPnHostingDangerZone({
             onChange={(e) => {
               patch('node_name', e.target.value.trim() ? e.target.value : null);
             }}
-            className="text-body bg-app-bg mt-1 block h-8 w-full max-w-md rounded-lg border border-yellow-700/60 px-2.5 text-yellow-100 focus:border-yellow-500 focus:outline-none pointer-coarse:h-10"
+            className="text-body bg-app-bg mt-1 block h-8 w-full max-w-md rounded-lg border border-orange-700/60 px-2.5 text-orange-100 focus:border-orange-500 focus:outline-none pointer-coarse:h-10"
             aria-label={t('networkPanel.reticulumPnHosting.nodeName')}
           />
         </label>
-        <label htmlFor="pn-static-peers" className="mt-3 block text-xs text-yellow-200/90">
+        <label htmlFor="pn-static-peers" className="mt-3 block text-xs text-orange-200/90">
           {t('networkPanel.reticulumPnHosting.staticPeers')}
           <textarea
             id="pn-static-peers"
@@ -300,7 +300,7 @@ export default function ReticulumPnHostingDangerZone({
                   .filter(Boolean),
               );
             }}
-            className="bg-app-bg mt-1 block w-full max-w-xl rounded-lg border border-yellow-700/60 px-2 py-1.5 font-mono text-xs text-yellow-100 focus:border-yellow-500 focus:outline-none"
+            className="bg-app-bg mt-1 block w-full max-w-xl rounded-lg border border-orange-700/60 px-2 py-1.5 font-mono text-xs text-orange-100 focus:border-orange-500 focus:outline-none"
             aria-label={t('networkPanel.reticulumPnHosting.staticPeers')}
             placeholder={t('networkPanel.reticulumPnHosting.staticPeersPlaceholder')}
           />
@@ -308,7 +308,7 @@ export default function ReticulumPnHostingDangerZone({
         <button
           type="button"
           disabled={disabled || saving}
-          className="mt-3 rounded border border-yellow-600 bg-yellow-900/50 px-3 py-1.5 text-sm text-yellow-100 hover:bg-yellow-800/50 disabled:opacity-40"
+          className="mt-3 rounded border border-orange-600 bg-orange-900/50 px-3 py-1.5 text-sm text-orange-100 hover:bg-orange-800/50 disabled:opacity-40"
           aria-label={t('networkPanel.reticulumPnHosting.saveAria')}
           onClick={() => {
             setPendingSave(true);

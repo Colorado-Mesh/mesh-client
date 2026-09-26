@@ -718,7 +718,7 @@ export default function ReticulumPeerListPanel({
       <>
         <button
           type="button"
-          className="text-amber-400 hover:underline disabled:opacity-40"
+          className="text-yellow-400 hover:underline disabled:opacity-40"
           disabled={busy || chatBlocked}
           title={chatBlocked ? t('peerListPanel.chatNeedsLxmfDelivery') : undefined}
           onClick={(e) => {
@@ -764,7 +764,7 @@ export default function ReticulumPeerListPanel({
         ) : null}
         <button
           type="button"
-          className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
+          className="ml-2 text-yellow-400 hover:underline disabled:opacity-40"
           disabled={busy}
           onClick={(e) => {
             e.stopPropagation();
@@ -775,7 +775,7 @@ export default function ReticulumPeerListPanel({
         </button>
         <button
           type="button"
-          className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
+          className="ml-2 text-yellow-400 hover:underline disabled:opacity-40"
           disabled={busy}
           onClick={(e) => {
             e.stopPropagation();
@@ -786,7 +786,7 @@ export default function ReticulumPeerListPanel({
         </button>
         <button
           type="button"
-          className="ml-2 text-amber-400 hover:underline disabled:opacity-40"
+          className="ml-2 text-yellow-400 hover:underline disabled:opacity-40"
           disabled={busy}
           aria-label={t('peerListPanel.pathsAria', { hash: peer.destination_hash })}
           aria-expanded={pathsDetailHash === peer.destination_hash}

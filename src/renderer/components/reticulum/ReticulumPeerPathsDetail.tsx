@@ -138,7 +138,7 @@ export function ReticulumPeerPathsDetail({
         </h3>
         <button
           type="button"
-          className="text-xs text-amber-400 hover:underline"
+          className="text-xs text-yellow-400 hover:underline"
           onClick={onClose}
           aria-label={t('peerListPanel.pathsCloseAria')}
         >
@@ -209,7 +209,7 @@ export function ReticulumPeerPathsDetail({
                       : '—'}
                 </span>
                 {slot.expired ? (
-                  <span className="text-amber-400">{t('peerListPanel.pathsExpired')}</span>
+                  <span className="text-orange-400">{t('peerListPanel.pathsExpired')}</span>
                 ) : null}
               </div>
             </li>

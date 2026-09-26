@@ -15,7 +15,7 @@ export function FlashProgress({ active, progress, syncing = false }: FlashProgre
 
   return (
     <div className="space-y-1">
-      <p className="text-xs text-amber-300">{label}</p>
+      <p className="text-xs text-orange-300">{label}</p>
       <div
         className="h-2 overflow-hidden rounded bg-zinc-800"
         role="progressbar"
@@ -26,7 +26,7 @@ export function FlashProgress({ active, progress, syncing = false }: FlashProgre
         aria-busy={syncing}
       >
         <div
-          className="h-full bg-amber-600 transition-all"
+          className="h-full bg-orange-600 transition-all"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>

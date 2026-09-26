@@ -158,7 +158,7 @@ export function ReticulumSidecarIssueAlertsBlock({
             {onOpenAdminBluetooth ? (
               <button
                 type="button"
-                className="text-label rounded border border-amber-600/50 bg-amber-950/40 px-2 py-1 text-amber-100 hover:bg-amber-900/40"
+                className="text-label rounded border border-orange-600/50 bg-orange-950/40 px-2 py-1 text-orange-100 hover:bg-orange-900/40"
                 aria-label={t('connectionPanel.reticulumSidecarIssues.bleBondRemovedOpenAdmin')}
                 onClick={() => {
                   onOpenAdminBluetooth();

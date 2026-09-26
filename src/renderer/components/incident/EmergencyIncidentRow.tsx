@@ -42,7 +42,7 @@ export function EmergencyIncidentRow({
           <span className="text-xs text-zinc-300">{t('incidentPanel.drill')}</span>
         ) : null}
         {incident.beaconActive ? (
-          <span className="text-xs text-amber-300">{t('incidentPanel.beaconActive')}</span>
+          <span className="text-xs text-orange-300">{t('incidentPanel.beaconActive')}</span>
         ) : null}
         {pendingAckRows.length > 0 ? (
           <span className="text-xs text-sky-300">{t('incidentPanel.ackQueuedBadge')}</span>

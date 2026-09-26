@@ -260,10 +260,10 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
         </div>
       )}
       {drawOfferedByOpponent && isActive && (
-        <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferedBanner')}</div>
+        <div className="text-xs text-orange-300">{t('gamesPanel.drawOfferedBanner')}</div>
       )}
       {drawOfferedBySelf && isActive && (
-        <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferWaitingBanner')}</div>
+        <div className="text-xs text-orange-300">{t('gamesPanel.drawOfferWaitingBanner')}</div>
       )}
     </div>
   );

@@ -188,7 +188,7 @@ export function ReticulumAnnounceControls({
           type="button"
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.clearAnnounces')}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-amber-300 transition-colors hover:bg-zinc-800 disabled:opacity-40"
+          className="rounded border border-zinc-600 px-2 py-1 text-xs text-orange-300 transition-colors hover:bg-zinc-800 disabled:opacity-40"
           onClick={() => {
             void clearAnnounces();
           }}

@@ -116,14 +116,14 @@ export default function LogAnalyzeModal({
 
   const severityColor = (sev: 'error' | 'warning' | 'info') => {
     if (sev === 'error') return 'text-red-400';
-    if (sev === 'warning') return 'text-yellow-400';
-    return 'text-blue-400';
+    if (sev === 'warning') return 'text-orange-400';
+    return 'text-indigo-400';
   };
 
   const severityBadge = (sev: 'error' | 'warning' | 'info') => {
     if (sev === 'error') return 'bg-red-400/20 text-red-400';
-    if (sev === 'warning') return 'bg-yellow-400/20 text-yellow-400';
-    return 'bg-blue-400/20 text-blue-400';
+    if (sev === 'warning') return 'bg-orange-400/20 text-orange-400';
+    return 'bg-indigo-400/20 text-indigo-400';
   };
 
   const severityLabel = (sev: 'error' | 'warning' | 'info') => {

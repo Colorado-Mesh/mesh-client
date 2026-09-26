@@ -30,7 +30,7 @@ interface ConfirmedFingerprint {
 /** Session tab status dot color; closed/error fall back to red. */
 const SESSION_STATUS_DOT_CLASS: Partial<Record<string, string>> = {
   active: 'bg-green-500',
-  connecting: 'bg-amber-400',
+  connecting: 'bg-orange-400',
 };
 
 export interface RemoteShellSectionProps {
@@ -280,7 +280,7 @@ export function RemoteShellSection({
               key={session.session_id}
               className={`flex items-center gap-1 rounded-t-lg border border-b-0 px-2 py-1 text-xs ${
                 session.session_id === focusedSessionId
-                  ? 'border-blue-600/60 bg-blue-900/30 text-blue-200'
+                  ? 'border-indigo-600/60 bg-indigo-900/30 text-indigo-200'
                   : 'border-zinc-700/60 bg-zinc-800/40 text-zinc-400'
               }`}
             >
@@ -356,7 +356,7 @@ export function RemoteShellSection({
               {!session.disconnectIntent &&
                 (session.status === 'closed' || session.status === 'error') &&
                 settings.autoReconnectShell && (
-                  <div className="text-label rounded border border-amber-700/60 bg-amber-900/30 px-2 py-1 text-amber-200">
+                  <div className="text-label rounded border border-orange-700/60 bg-orange-900/30 px-2 py-1 text-orange-200">
                     {session.reconnectAttempts >= settings.maxReconnectAttempts
                       ? t('reticulumRemote.shell.reconnectExhausted')
                       : t('reticulumRemote.shell.reconnectingBanner', {

@@ -1505,7 +1505,7 @@ export default function RoomsPanel({
             aria-label={room.favorited ? t('roomsPanel.unfavorite') : t('roomsPanel.favorite')}
             title={room.favorited ? t('roomsPanel.unfavorite') : t('roomsPanel.favorite')}
             className={`flex w-10 shrink-0 items-center justify-center transition-colors ${
-              room.favorited ? 'text-brand-yellow' : 'text-muted hover:text-zinc-200'
+              room.favorited ? 'text-yellow-400' : 'text-muted hover:text-zinc-200'
             }`}
           >
             <Star
@@ -1698,7 +1698,7 @@ export default function RoomsPanel({
                 {t('roomsPanel.statusLoggedInSession')}
               </span>
               {sessionRole === 'readonly' && (
-                <span className="text-label rounded-md border border-amber-700/50 bg-amber-950/40 px-1.5 text-amber-200">
+                <span className="text-label rounded-md border border-orange-700/50 bg-orange-950/40 px-1.5 text-orange-200">
                   {t('roomsPanel.readOnlyBadge')}
                 </span>
               )}
@@ -1821,7 +1821,7 @@ export default function RoomsPanel({
           {t('roomsPanel.rememberPassword')}
         </label>
         {guestFieldEmpty && (
-          <p className="text-xs text-amber-200">{t('roomsPanel.emptyGuestLoginHint')}</p>
+          <p className="text-xs text-orange-200">{t('roomsPanel.emptyGuestLoginHint')}</p>
         )}
         {showLoginSavedSecretsControls && selectedRoomSecretsSummary && (
           <div className={`${NOTICE_CLASS.info} space-y-2`}>
@@ -2050,7 +2050,7 @@ export default function RoomsPanel({
                         <span className="text-label block font-mono break-all text-zinc-300">
                           {entry.pubkeyHex}
                         </span>
-                        <span className="text-xs text-amber-200">
+                        <span className="text-xs text-orange-200">
                           {meshcoreRoomAclLevelLabel(entry.permissionLevel, t)}
                         </span>
                       </li>
@@ -2084,7 +2084,7 @@ export default function RoomsPanel({
       )}
 
       {selectedRoomId != null && !loggedIn && otherRoomLoginInProgress && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+        <div className="flex flex-wrap items-center gap-2 border-b border-orange-700/50 bg-orange-950/40 px-3 py-2 text-xs text-orange-200">
           <p className="min-w-0 flex-1">
             {loginQueueCount > 1
               ? t('roomsPanel.loggingInQueue', {
@@ -2344,7 +2344,7 @@ export default function RoomsPanel({
                                   );
                                 }}
                                 className={`font-medium hover:underline ${
-                                  filterSender === m.sender_id ? 'text-blue-300' : 'text-zinc-300'
+                                  filterSender === m.sender_id ? 'text-indigo-300' : 'text-zinc-300'
                                 }`}
                                 aria-pressed={filterSender === m.sender_id}
                               >
@@ -2514,7 +2514,7 @@ export default function RoomsPanel({
           >
             {!canPost ? (
               <div className="space-y-2">
-                <p className="text-xs text-amber-200">{t('roomsPanel.readOnlyHint')}</p>
+                <p className="text-xs text-orange-200">{t('roomsPanel.readOnlyHint')}</p>
                 <p className="text-xs font-medium text-zinc-300">{t('roomsPanel.upgradeAccess')}</p>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
@@ -2555,7 +2555,7 @@ export default function RoomsPanel({
                   {t('roomsPanel.rememberPassword')}
                 </label>
                 {guestFieldEmpty && (
-                  <p className="text-xs text-amber-200">{t('roomsPanel.emptyGuestLoginHint')}</p>
+                  <p className="text-xs text-orange-200">{t('roomsPanel.emptyGuestLoginHint')}</p>
                 )}
                 {loginError && <p className="text-sm text-red-400">{loginError}</p>}
               </div>

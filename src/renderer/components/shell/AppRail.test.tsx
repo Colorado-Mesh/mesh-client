@@ -130,7 +130,7 @@ describe('AppRail', () => {
     const network = screen.getByRole('button', {
       name: /^Network, 3 pending inbound file offers$/,
     });
-    expect(network.querySelector('.bg-amber-800')).not.toBeNull();
+    expect(network.querySelector('.bg-orange-800')).not.toBeNull();
   });
 
   it('caps section badges at 99+', () => {

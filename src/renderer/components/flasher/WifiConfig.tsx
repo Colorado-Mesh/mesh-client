@@ -175,7 +175,7 @@ export function WifiConfig({
         </button>
       </div>
       {configSummary ? (
-        <pre className="text-label overflow-x-auto rounded bg-zinc-950/60 p-2 whitespace-pre-wrap text-amber-100/90">
+        <pre className="text-label overflow-x-auto rounded bg-zinc-950/60 p-2 whitespace-pre-wrap text-orange-100/90">
           {configSummary}
         </pre>
       ) : null}

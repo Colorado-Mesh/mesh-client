@@ -20,7 +20,7 @@ export function IconWarning({ className }: { className?: string }) {
   return (
     <TriangleAlert
       aria-hidden
-      className={className ?? `${ICON_SM} text-yellow-400`}
+      className={className ?? `${ICON_SM} text-orange-400`}
       trigger={trigger}
       size={12}
     />

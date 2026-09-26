@@ -34,7 +34,7 @@ export function MessageStatusBadge({
   if (status === 'blocked') {
     return (
       <HelpTooltip text={displayError ?? t('messageStatusBadge.blockedDefault')}>
-        <span className="text-2xs text-amber-400">
+        <span className="text-2xs text-orange-400">
           {'\uD83D\uDD12'} {t('messageStatusBadge.blockedLabel')}
         </span>
       </HelpTooltip>
@@ -57,7 +57,7 @@ export function MessageStatusBadge({
         ? 'text-bright-green'
         : context === 'room' || transport !== 'device'
           ? 'text-red-400'
-          : 'text-yellow-400';
+          : 'text-orange-400';
   const label =
     transport === 'mqtt'
       ? t('messageStatusBadge.transportMqtt')

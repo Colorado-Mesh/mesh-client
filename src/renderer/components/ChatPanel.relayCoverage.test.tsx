@@ -147,7 +147,7 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       broadcastHeard: false,
     });
     render(<RelayCoverageLine protocol="meshtastic" messageId={MSG} isOwn identityId={IDENTITY} />);
-    expect(screen.getByText('Not heard (timeout)')).toHaveClass('text-amber-400');
+    expect(screen.getByText('Not heard (timeout)')).toHaveClass('text-orange-400');
   });
 
   it('hides Meshtastic line while pending (null)', () => {

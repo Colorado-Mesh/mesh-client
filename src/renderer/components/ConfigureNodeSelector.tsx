@@ -194,7 +194,7 @@ export default function ConfigureNodeSelector({
 
       {configTarget.mode === 'remote' && selectedRemote && (
         <div
-          className="rounded-lg border border-blue-700/50 bg-blue-900/20 px-3 py-2 text-sm text-blue-100"
+          className="rounded-lg border border-indigo-700/50 bg-indigo-900/20 px-3 py-2 text-sm text-indigo-100"
           role="status"
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -208,7 +208,7 @@ export default function ConfigureNodeSelector({
               {onRefresh && (
                 <button
                   type="button"
-                  className="text-xs text-blue-300 hover:text-blue-200"
+                  className="text-xs text-indigo-300 hover:text-indigo-200"
                   aria-label={t('configureNode.refresh')}
                   disabled={configTarget.isLoading}
                   onClick={() => {
@@ -220,7 +220,7 @@ export default function ConfigureNodeSelector({
               )}
               <button
                 type="button"
-                className="text-xs text-blue-300 hover:text-blue-200"
+                className="text-xs text-indigo-300 hover:text-indigo-200"
                 aria-label={t('configureNode.switchToLocal')}
                 onClick={() => {
                   onConfigureTargetChange(null);
@@ -240,7 +240,7 @@ export default function ConfigureNodeSelector({
           {!configTarget.isLoading && remoteAdminSessionStatus !== 'none' && (
             <p
               className={`mt-1 text-xs ${
-                remoteAdminSessionStatus === 'active' ? 'text-green-300' : 'text-amber-300'
+                remoteAdminSessionStatus === 'active' ? 'text-green-300' : 'text-orange-300'
               }`}
               role="status"
             >

@@ -508,7 +508,7 @@ export default function ReticulumPeerDetailModal({
               </h2>
               <button
                 type="button"
-                className="text-xs text-amber-400 hover:underline"
+                className="text-xs text-yellow-400 hover:underline"
                 onClick={() => {
                   setNameDraft(peer?.custom_display_name ?? peer?.display_name ?? '');
                   setEditingName(true);
@@ -578,7 +578,7 @@ export default function ReticulumPeerDetailModal({
                     </span>
                     <button
                       type="button"
-                      className="shrink-0 text-amber-400 hover:text-amber-300"
+                      className="shrink-0 text-orange-400 hover:text-orange-300"
                       aria-label={t('peerDetailModal.copyAnnouncedHashAria', {
                         aspect: aspectLabel,
                         hash: row.destination_hash,
@@ -775,7 +775,7 @@ export default function ReticulumPeerDetailModal({
         <button
           type="button"
           disabled={busy}
-          className="rounded border border-amber-600 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-950/40 disabled:opacity-40"
+          className="rounded border border-orange-600 px-3 py-1.5 text-sm text-orange-300 hover:bg-orange-950/40 disabled:opacity-40"
           onClick={() => {
             void requestPath();
           }}
@@ -785,7 +785,7 @@ export default function ReticulumPeerDetailModal({
         <button
           type="button"
           disabled={busy}
-          className="rounded border border-amber-600 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-950/40 disabled:opacity-40"
+          className="rounded border border-orange-600 px-3 py-1.5 text-sm text-orange-300 hover:bg-orange-950/40 disabled:opacity-40"
           onClick={() => {
             void probePeer();
           }}

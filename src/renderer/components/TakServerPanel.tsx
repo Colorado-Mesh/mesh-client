@@ -122,7 +122,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
 
   const statusColor = status.running
     ? status.error
-      ? 'bg-yellow-500'
+      ? 'bg-orange-500'
       : 'bg-green-500'
     : 'bg-red-500';
   const statusLabel = status.running ? t('takServerPanel.running') : t('takServerPanel.stopped');

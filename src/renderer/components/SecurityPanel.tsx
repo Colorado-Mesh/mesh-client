@@ -544,7 +544,7 @@ export default function SecurityPanel({
                 setPendingRegenerate(true);
               }}
               disabled={disabled || applyingRegen || !securityConfig}
-              className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
+              className="w-full rounded-lg border border-orange-700/60 bg-orange-700/40 px-4 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-700/60 disabled:opacity-50"
             >
               {applyingRegen
                 ? t('securityPanel.regeneratingKeys')
@@ -757,7 +757,7 @@ export default function SecurityPanel({
                   <div className="bg-secondary-dark rounded border border-zinc-600 p-2 font-mono text-xs break-all text-zinc-200">
                     {exportedPrivateKey}
                   </div>
-                  <p className="text-xs text-yellow-400">{t('securityPanel.exportKeyWarning')}</p>
+                  <p className="text-xs text-orange-400">{t('securityPanel.exportKeyWarning')}</p>
                 </div>
               )}
             </div>

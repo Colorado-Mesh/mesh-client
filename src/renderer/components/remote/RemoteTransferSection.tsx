@@ -44,7 +44,7 @@ const TRANSFER_STATUS_BADGE_CLASS: Record<RncpTransferUiStatus, string> = {
   completed: 'bg-green-900/40 text-green-300',
   failed: 'bg-red-900/40 text-red-300',
   cancelled: 'bg-zinc-700/60 text-zinc-300',
-  active: 'bg-blue-900/40 text-blue-300',
+  active: 'bg-indigo-900/40 text-indigo-300',
 };
 
 function formatBytes(bytes: number | null): string {
@@ -436,7 +436,7 @@ export function RemoteTransferSection({
         <button
           type="button"
           aria-label={t('reticulumRemote.transfer.copyIdentityAria')}
-          className="text-xs text-blue-400 hover:text-blue-300"
+          className="text-xs text-indigo-400 hover:text-indigo-300"
           onClick={() => {
             copy(identity?.identity_hash);
           }}
@@ -449,7 +449,7 @@ export function RemoteTransferSection({
         <button
           type="button"
           aria-label={t('reticulumRemote.transfer.copyReceiveDestAria')}
-          className="text-xs text-blue-400 hover:text-blue-300"
+          className="text-xs text-indigo-400 hover:text-indigo-300"
           onClick={() => {
             copy(identity?.rncp_receive_hash);
           }}
@@ -461,13 +461,13 @@ export function RemoteTransferSection({
 
       {offerList.length > 0 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-amber-300">
+          <h3 className="text-sm font-medium text-orange-300">
             {t('reticulumRemote.transfer.pendingOffersTitle')}
           </h3>
           {offerList.map((offer) => (
             <div
               key={offer.transfer_id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs text-amber-100"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-orange-700/50 bg-orange-900/20 px-3 py-2 text-xs text-orange-100"
             >
               <span className="min-w-0 flex-1 truncate">
                 {t('reticulumRemote.transfer.offerLabel', {
@@ -581,7 +581,7 @@ export function RemoteTransferSection({
           </button>
         </div>
         {capability && !transferAllowed && (
-          <p className="text-xs text-amber-300">
+          <p className="text-xs text-orange-300">
             {t('reticulumRemote.transfer.notAllowedHint', {
               reason: capability.reason_key
                 ? t(

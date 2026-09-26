@@ -99,7 +99,7 @@ export function ReticulumInterfaceProfilesSection({
               disabled={disabled || activeId != null}
               className={`rounded px-2 py-1 ${
                 activeId == null
-                  ? 'bg-amber-900/40 text-amber-200'
+                  ? 'bg-orange-900/40 text-orange-200'
                   : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
               }`}
               onClick={() => {
@@ -149,7 +149,7 @@ export function ReticulumInterfaceProfilesSection({
                     disabled={disabled}
                     className={`rounded px-2 py-1 ${
                       activeId === p.id
-                        ? 'bg-amber-900/40 text-amber-200'
+                        ? 'bg-orange-900/40 text-orange-200'
                         : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                     }`}
                     onClick={() => {

@@ -58,7 +58,7 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
     <div className="bg-deep-black space-y-3 rounded-xl border border-zinc-800 p-4">
       <h3 className="flex items-center gap-2 text-sm font-medium text-zinc-300">
         {locked ? (
-          <Lock className="h-4 w-4 text-amber-400" aria-hidden="true" />
+          <Lock className="h-4 w-4 text-orange-400" aria-hidden="true" />
         ) : (
           <LockOpen className="h-4 w-4 text-green-400" aria-hidden="true" />
         )}
@@ -96,7 +96,7 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
         {status?.backoffSeconds !== undefined && (
           <>
             <dt className="text-muted">{t('radioPanel.lockdown.backoffLabel')}</dt>
-            <dd className="text-amber-300">
+            <dd className="text-orange-300">
               {t('radioPanel.lockdown.backoffValue', { seconds: status.backoffSeconds })}
             </dd>
           </>

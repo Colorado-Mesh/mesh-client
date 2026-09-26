@@ -984,7 +984,7 @@ export default function NodeListPanel({
                   aria-live="polite"
                   aria-label={t('radioPanel.offloading')}
                 >
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-yellow-300 border-t-transparent" />
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-orange-300 border-t-transparent" />
                   <span>
                     {offloadProgress?.phase === 'removing' && offloadProgress.total > 0
                       ? t('radioPanel.offloadingProgress', {
@@ -1388,7 +1388,7 @@ export default function NodeListPanel({
                               healthTier === 'good'
                                 ? 'bg-green-900/60 text-green-400'
                                 : healthTier === 'warn'
-                                  ? 'bg-yellow-900/60 text-yellow-400'
+                                  ? 'bg-orange-900/60 text-orange-400'
                                   : 'bg-red-900/60 text-red-400'
                             }`}
                             title={t('nodeListPanel.healthTooltip', {
@@ -1501,7 +1501,7 @@ export default function NodeListPanel({
                                         routingRow.severity === 'error'
                                           ? 'text-red-400'
                                           : routingRow.severity === 'info'
-                                            ? 'text-blue-400'
+                                            ? 'text-indigo-400'
                                             : 'text-orange-400'
                                       }`}
                                       trigger={iconTrigger}
@@ -1688,7 +1688,7 @@ export default function NodeListPanel({
                                   node.battery > 50
                                     ? 'bg-brand-green'
                                     : node.battery > 20
-                                      ? 'bg-yellow-500'
+                                      ? 'bg-orange-500'
                                       : 'bg-red-500'
                                 }`}
                                 style={{
@@ -1702,7 +1702,7 @@ export default function NodeListPanel({
                               node.battery > 50
                                 ? 'text-bright-green'
                                 : node.battery > 20
-                                  ? 'text-yellow-400'
+                                  ? 'text-orange-400'
                                   : node.battery > 0
                                     ? 'text-red-400'
                                     : 'text-muted'

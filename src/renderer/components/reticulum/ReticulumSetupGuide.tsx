@@ -63,7 +63,7 @@ const ROUTES = [
   },
 ] as const;
 const PRIMARY =
-  'rounded-lg bg-amber-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50';
+  'rounded-lg bg-orange-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-orange-800 disabled:opacity-50';
 const SECONDARY =
   'rounded-lg border border-zinc-600 px-3 py-2 text-sm text-zinc-200 hover:bg-zinc-700 disabled:opacity-50';
 const SETUP_ERROR_KEYS = {
@@ -209,11 +209,11 @@ export function ReticulumSetupGuide({
   return (
     <section
       aria-labelledby={`${id}-title`}
-      className="bg-deep-black overflow-hidden rounded-xl border border-amber-700/60"
+      className="bg-deep-black overflow-hidden rounded-xl border border-orange-700/60"
     >
       <div className="bg-secondary-dark flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div>
-          <p className="text-xs font-medium text-amber-300">{t('reticulumSetup.eyebrow')}</p>
+          <p className="text-xs font-medium text-orange-300">{t('reticulumSetup.eyebrow')}</p>
           <h2 id={`${id}-title`} className="mt-1 text-lg font-semibold text-zinc-100">
             {t('reticulumSetup.title')}
           </h2>
@@ -259,7 +259,7 @@ export function ReticulumSetupGuide({
               <li
                 key={key}
                 aria-current={step === index ? 'step' : undefined}
-                className={`border-t-2 pt-2 text-xs ${step === index ? 'border-amber-400 text-amber-300' : 'border-zinc-700 text-zinc-400'}`}
+                className={`border-t-2 pt-2 text-xs ${step === index ? 'border-orange-400 text-orange-300' : 'border-zinc-700 text-zinc-400'}`}
               >
                 <span className="mr-2 font-mono">{index + 1}</span>
                 {t(key)}
@@ -341,8 +341,8 @@ export function ReticulumSetupGuide({
                 </button>
               )}
               {mnemonic && (
-                <div className="space-y-3 rounded-lg border border-amber-700 p-4">
-                  <h4 className="font-semibold text-amber-300">
+                <div className="space-y-3 rounded-lg border border-orange-700 p-4">
+                  <h4 className="font-semibold text-orange-300">
                     {t('reticulumSetup.backupTitle')}
                   </h4>
                   <p>{t('reticulumSetup.backupBody')}</p>
@@ -398,7 +398,7 @@ export function ReticulumSetupGuide({
                 {ROUTES.map(({ id: choice, title, body }) => (
                   <label
                     key={choice}
-                    className={`cursor-pointer rounded-lg border p-3 ${route === choice ? 'bg-secondary-dark border-amber-500' : 'border-zinc-600'}`}
+                    className={`cursor-pointer rounded-lg border p-3 ${route === choice ? 'bg-secondary-dark border-orange-500' : 'border-zinc-600'}`}
                   >
                     <input
                       type="radio"
@@ -553,14 +553,14 @@ export function ReticulumSetupGuide({
             <div className="space-y-5 text-sm text-zinc-300">
               <p>{t('reticulumSetup.exploreBody')}</p>
               {!ready && (
-                <p role="status" className="text-amber-300">
+                <p role="status" className="text-orange-300">
                   {t('reticulumSetup.connectionLost')}
                 </p>
               )}
               <div className="bg-deep-black space-y-3 rounded-xl border border-zinc-800 p-4">
                 <h4 className="font-semibold text-zinc-100">{t('reticulumSetup.addressTitle')}</h4>
                 <p>{t('reticulumSetup.addressBody')}</p>
-                <code className="block break-all text-amber-300">{identity?.lxmf_hash}</code>
+                <code className="block break-all text-orange-300">{identity?.lxmf_hash}</code>
                 <button
                   type="button"
                   className={SECONDARY}
@@ -632,7 +632,7 @@ export function ReticulumSetupGuide({
           )}
 
           {!apiReady && step > 0 && (
-            <div role="status" className="space-y-2 text-sm text-amber-300">
+            <div role="status" className="space-y-2 text-sm text-orange-300">
               <p>{t('reticulumSetup.stopped')}</p>
               <button
                 type="button"

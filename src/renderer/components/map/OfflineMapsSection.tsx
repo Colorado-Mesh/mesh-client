@@ -325,7 +325,7 @@ export function OfflineMapsSection() {
           <button
             type="button"
             aria-label={t('mapPanel.offlineMaps.cancelAria')}
-            className="w-full rounded border border-amber-700 px-1 py-0.5 text-amber-200"
+            className="w-full rounded border border-orange-700 px-1 py-0.5 text-orange-200"
             onClick={() => {
               void cancelJob();
             }}

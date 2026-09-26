@@ -128,7 +128,7 @@ export default function DiagnosticsPingPanel() {
           <button
             type="button"
             disabled={!hash.trim()}
-            className="rounded border border-amber-600 px-3 py-1.5 text-sm text-amber-300 disabled:opacity-40"
+            className="rounded border border-orange-600 px-3 py-1.5 text-sm text-orange-300 disabled:opacity-40"
             onClick={start}
           >
             {t('diagnosticsPing.start')}

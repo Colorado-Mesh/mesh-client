@@ -124,17 +124,17 @@ export function ReticulumPropagationEstablishRecoveryCallout({
 
   return (
     <output
-      className="mt-2 block rounded border border-amber-700/60 bg-amber-950/30 px-2 py-2 text-xs text-amber-200"
+      className="mt-2 block rounded border border-orange-700/60 bg-orange-950/30 px-2 py-2 text-xs text-orange-200"
       aria-live="polite"
       data-testid="propagation-establish-recovery"
     >
-      <p className="font-medium text-amber-100">
+      <p className="font-medium text-orange-100">
         {t('reticulumPropagation.establishRecoveryTitle')}
       </p>
-      <p className="mt-1 text-amber-200/90">{t('reticulumPropagation.establishRecoveryBody')}</p>
-      <p className="mt-1 text-amber-200/80">{t(lastSyncError)}</p>
+      <p className="mt-1 text-orange-200/90">{t('reticulumPropagation.establishRecoveryBody')}</p>
+      <p className="mt-1 text-orange-200/80">{t(lastSyncError)}</p>
       {showDualTip ? (
-        <p className="mt-1 text-amber-200/90">
+        <p className="mt-1 text-orange-200/90">
           {t('reticulumPropagation.establishRecoveryDualTcpTip')}
         </p>
       ) : null}
@@ -142,7 +142,7 @@ export function ReticulumPropagationEstablishRecoveryCallout({
         <button
           type="button"
           disabled={announceBusy || syncBusy}
-          className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-100 disabled:opacity-40"
+          className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-100 disabled:opacity-40"
           aria-label={t('reticulumPropagation.establishRecoveryAnnounceAria')}
           onClick={() => {
             void announceNow();
@@ -153,7 +153,7 @@ export function ReticulumPropagationEstablishRecoveryCallout({
         <button
           type="button"
           disabled={retryDisabled}
-          className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-100 disabled:opacity-40"
+          className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-100 disabled:opacity-40"
           aria-label={t('reticulumPropagation.establishRecoveryRetryAria')}
           onClick={() => {
             if (!retryTargetId || retryDisabled) return;
@@ -169,7 +169,7 @@ export function ReticulumPropagationEstablishRecoveryCallout({
         {showDualTip && onOpenInterfaces ? (
           <button
             type="button"
-            className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-100"
+            className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-100"
             aria-label={t('reticulumPropagation.establishRecoveryOpenInterfacesAria')}
             onClick={() => {
               onOpenInterfaces();

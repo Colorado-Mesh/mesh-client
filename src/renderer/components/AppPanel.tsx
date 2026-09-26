@@ -1052,7 +1052,7 @@ export default function AppPanel({
                 homeNodeFromStore.longitude != null &&
                 homeNodeFromStore.longitude !== 0;
               return !homeHasLocation ? (
-                <p className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-1.5 text-xs text-yellow-300">
+                <p className="rounded border border-orange-700 bg-orange-900/30 px-2 py-1.5 text-xs text-orange-300">
                   {t('appPanel.noGpsFix')}
                 </p>
               ) : null;
@@ -1814,7 +1814,7 @@ export default function AppPanel({
                 ? t('common.loading')
                 : t('appPanel.exportForDeveloperButton')}
             </button>
-            <p className="text-xs text-amber-300">{t('appPanel.exportForDeveloperWarning')}</p>
+            <p className="text-xs text-orange-300">{t('appPanel.exportForDeveloperWarning')}</p>
           </div>
         </div>
       </div>

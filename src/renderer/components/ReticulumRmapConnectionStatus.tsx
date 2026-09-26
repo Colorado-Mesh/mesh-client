@@ -29,7 +29,7 @@ export function ReticulumRmapConnectionStatus({
   }
 
   const statusClass =
-    tone === 'full' ? 'text-green-400' : tone === 'partial' ? 'text-amber-300' : 'text-zinc-400';
+    tone === 'full' ? 'text-green-400' : tone === 'partial' ? 'text-orange-300' : 'text-zinc-400';
 
   return (
     <div className="rounded border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs" role="status">
@@ -45,7 +45,7 @@ export function ReticulumRmapConnectionStatus({
         {onOpenRmapSettings ? (
           <button
             type="button"
-            className="text-amber-300 hover:text-amber-200 hover:underline"
+            className="text-yellow-300 hover:text-yellow-200 hover:underline"
             aria-label={t('connectionPanel.reticulumRmap.openSettingsAria')}
             onClick={onOpenRmapSettings}
           >

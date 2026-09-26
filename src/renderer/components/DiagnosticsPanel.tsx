@@ -129,7 +129,7 @@ function meshcoreHeardDisplay(
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
-  Configuration: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  Configuration: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
   Physical: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
   Hardware: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
   Software: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
@@ -397,8 +397,8 @@ export default function DiagnosticsPanel({
       return {
         status: 'attention' as const,
         label: t('diagnosticsPanel.meshHealthAttention'),
-        textColor: 'text-yellow-400',
-        bg: 'bg-yellow-500/10 border-yellow-500/30',
+        textColor: 'text-orange-400',
+        bg: 'bg-orange-500/10 border-orange-500/30',
       };
     }
     return {
@@ -434,8 +434,8 @@ export default function DiagnosticsPanel({
     if (errors > 0 || warnings > 0) {
       return {
         label: t('diagnosticsPanel.meshHealthAttention'),
-        textColor: 'text-yellow-400',
-        bg: 'bg-yellow-500/10 border-yellow-500/20',
+        textColor: 'text-orange-400',
+        bg: 'bg-orange-500/10 border-orange-500/20',
         errors,
         warnings,
         infos,
@@ -576,7 +576,7 @@ export default function DiagnosticsPanel({
             ? 'bg-red-950/40 text-red-400'
             : sev === 'warning'
               ? 'bg-orange-950/20 text-orange-400'
-              : 'bg-blue-950/20 text-blue-400';
+              : 'bg-indigo-950/20 text-indigo-400';
         rows.push(
           <tr key={`hdr-${sev}-${row.nodeId}-${row.id}`} className={rowClass}>
             <td colSpan={6} className="px-4 py-2 text-xs font-semibold">
@@ -592,7 +592,7 @@ export default function DiagnosticsPanel({
           foreignLoraRow && rf.foreignSenderId != null ? rf.foreignSenderId : rf.nodeId;
         const node = nodes.get(linkNodeId);
         const isInfo = rf.severity === 'info';
-        const colorClass = isInfo ? 'text-blue-400' : 'text-orange-400';
+        const colorClass = isInfo ? 'text-indigo-400' : 'text-orange-400';
         const hexId =
           foreignLoraRow && rf.foreignSenderId != null
             ? formatMeshtasticNodeId(rf.foreignSenderId)
@@ -630,7 +630,7 @@ export default function DiagnosticsPanel({
               <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
                 {translateRfConditionLabel(t, rf.condition)}
                 {rf.isLastHop && (
-                  <span className="text-2xs ml-1 rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-blue-300">
+                  <span className="text-2xs ml-1 rounded border border-indigo-500/30 bg-indigo-500/20 px-1 py-0 text-indigo-300">
                     {t('diagnosticsPanel.lastHopBadge')}
                   </span>
                 )}
@@ -665,7 +665,7 @@ export default function DiagnosticsPanel({
       const node = nodes.get(anomaly.nodeId);
       const isError = anomaly.severity === 'error';
       const isInfo = anomaly.severity === 'info';
-      const colorClass = isError ? 'text-red-400' : isInfo ? 'text-blue-400' : 'text-orange-400';
+      const colorClass = isError ? 'text-red-400' : isInfo ? 'text-indigo-400' : 'text-orange-400';
       const hexId = formatMeshtasticNodeId(anomaly.nodeId);
       const displayName = node?.long_name || node?.short_name || hexId;
       const isPending = tracePendingNodes.has(anomaly.nodeId);
@@ -715,7 +715,7 @@ export default function DiagnosticsPanel({
               anomaly.type === 'hop_goblin' &&
               node?.heard_via_mqtt === true &&
               !node?.heard_via_mqtt_only && (
-                <div className="mt-1 text-xs text-yellow-400/70">
+                <div className="mt-1 text-xs text-orange-400/70">
                   {t('diagnosticsPanel.hybridNodeMqttWarning')}
                 </div>
               )}
@@ -725,7 +725,7 @@ export default function DiagnosticsPanel({
           </td>
           <td className="text-muted px-4 py-2.5 text-right text-xs">
             {isPending ? (
-              <span className="inline-flex items-center justify-end gap-1 text-blue-400">
+              <span className="inline-flex items-center justify-end gap-1 text-indigo-400">
                 <span aria-hidden className="inline-block animate-pulse">
                   ●
                 </span>
@@ -758,8 +758,8 @@ export default function DiagnosticsPanel({
           >
             <div className="flex flex-col items-end gap-1.5">
               {isPending ? (
-                <span className="flex items-center justify-end gap-1.5 text-xs text-blue-400">
-                  <SpinnerIcon className="h-3.5 w-3.5 text-blue-400" />
+                <span className="flex items-center justify-end gap-1.5 text-xs text-indigo-400">
+                  <SpinnerIcon className="h-3.5 w-3.5 text-indigo-400" />
                   {t('diagnosticsPanel.tracing')}
                 </span>
               ) : traceHops ? (
@@ -812,7 +812,7 @@ export default function DiagnosticsPanel({
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, false);
                     }}
-                    className="text-2xs inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 whitespace-nowrap text-yellow-300 transition-colors hover:bg-yellow-500/30"
+                    className="text-2xs inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/20 px-2 py-0.5 whitespace-nowrap text-orange-300 transition-colors hover:bg-orange-500/30"
                     title={t('diagnosticsPanel.stopIgnoringMqtt')}
                   >
                     {t('diagnosticsPanel.mqttIgnoredToggle')}
@@ -888,7 +888,7 @@ export default function DiagnosticsPanel({
       {diagnosticRowsRestoredAt != null &&
         showLoRaMeshDiagnostics &&
         visibleDiagnosticRows.length > 0 && (
-          <div className="flex items-start justify-between gap-3 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-200">
             <span>
               {t('diagnosticsPanel.restoredSessionBanner', {
                 time: formatIsoDateTime(diagnosticRowsRestoredAt),
@@ -899,7 +899,7 @@ export default function DiagnosticsPanel({
               onClick={() => {
                 clearDiagnosticRowsSnapshot();
               }}
-              className="shrink-0 rounded bg-blue-900/50 px-2 py-1 text-xs text-blue-100 hover:bg-blue-800/50"
+              className="shrink-0 rounded bg-indigo-900/50 px-2 py-1 text-xs text-indigo-100 hover:bg-indigo-800/50"
             >
               {t('diagnosticsPanel.stopRestoringOnLaunch')}
             </button>
@@ -1038,14 +1038,14 @@ export default function DiagnosticsPanel({
 
       {/* MeshCore nodes heard by Meshtastic radio (per transmitter) */}
       {showForeignLoraTables && meshcoreHeardList.length > 0 && (
-        <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-          <h3 className="flex items-center gap-1.5 text-sm font-medium text-amber-400">
+        <div className="space-y-3 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
+          <h3 className="flex items-center gap-1.5 text-sm font-medium text-orange-400">
             <AlertTriangleIcon className="h-4 w-4 shrink-0" />
             {t('diagnosticsPanel.meshcoreHeardByMeshtasticHeading', {
               count: meshcoreHeardList.length,
             })}
           </h3>
-          <p className="text-xs text-amber-200/80">
+          <p className="text-xs text-orange-200/80">
             {t('diagnosticsPanel.meshcoreHeardByMeshtasticDescription')}
           </p>
           {meshcoreRepeaterConflict && (
@@ -1368,7 +1368,7 @@ export default function DiagnosticsPanel({
                   return (
                     <span
                       key={nodeId}
-                      className="inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300"
+                      className="inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/20 px-2 py-0.5 text-xs text-orange-300"
                     >
                       {label}
                       <button
@@ -1377,7 +1377,7 @@ export default function DiagnosticsPanel({
                           setNodeMqttIgnored(nodeId, false);
                         }}
                         aria-label={t('diagnosticsPanel.dismissRow')}
-                        className="ml-0.5 rounded-sm leading-none hover:text-yellow-100"
+                        className="ml-0.5 rounded-sm leading-none hover:text-orange-100"
                         title={t('diagnosticsPanel.removeMqttFilter')}
                       >
                         <X aria-hidden className="h-3 w-3" />
@@ -1412,8 +1412,8 @@ export default function DiagnosticsPanel({
 
       {/* IP Geolocation Accuracy Warning */}
       {ourPosition?.source === 'ip' && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300">
-          <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" />
+        <div className="flex items-start gap-2.5 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-300">
+          <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
           <span>{t('diagnosticsPanel.ipGeolocationBanner')}</span>
         </div>
       )}
@@ -1482,7 +1482,7 @@ export default function DiagnosticsPanel({
                       count: otherCrossProtocolRows.length,
                     })}
                   </h4>
-                  <div className="overflow-auto rounded-lg border border-amber-500/20 border-zinc-700">
+                  <div className="overflow-auto rounded-lg border border-orange-500/20 border-zinc-700">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-deep-black text-muted sticky top-0 text-left">

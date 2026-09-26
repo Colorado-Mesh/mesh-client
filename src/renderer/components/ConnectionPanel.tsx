@@ -1637,7 +1637,7 @@ export default function ConnectionPanel({
             <p
               className={
                 connectionStage === STAGE_LINUX_UNPAIRED
-                  ? 'rounded-lg border border-amber-500/45 bg-amber-950/40 px-4 py-3 text-sm text-amber-200'
+                  ? 'rounded-lg border border-orange-500/45 bg-orange-950/40 px-4 py-3 text-sm text-orange-200'
                   : 'text-muted text-sm'
               }
             >
@@ -1654,7 +1654,7 @@ export default function ConnectionPanel({
               return isWeakBleRssi(targetRssi) ? (
                 <BleWeakSignalBanner
                   rssi={targetRssi}
-                  className="mt-2 rounded-lg border border-amber-800/60 bg-amber-900/40 px-3 py-2 text-xs text-amber-200"
+                  className="mt-2 rounded-lg border border-orange-800/60 bg-orange-900/40 px-3 py-2 text-xs text-orange-200"
                 />
               ) : null;
             })()}
@@ -1759,7 +1759,7 @@ export default function ConnectionPanel({
               </p>
             )}
             {protocol === 'meshcore' && (
-              <p className="border-t border-zinc-800 px-4 py-2 text-xs text-yellow-400">
+              <p className="border-t border-zinc-800 px-4 py-2 text-xs text-orange-400">
                 <Trans
                   i18nKey="connectionPanel.meshcoreBlePairingHint"
                   components={{ strong: <strong /> }}
@@ -1985,7 +1985,7 @@ export default function ConnectionPanel({
                 }}
               />
               {meshtasticPreset === 'liam' && (
-                <p className="text-xs text-amber-400">{t('connectionPanel.liamServerNote')}</p>
+                <p className="text-xs text-orange-400">{t('connectionPanel.liamServerNote')}</p>
               )}
             </div>
           )}
@@ -2042,7 +2042,7 @@ export default function ConnectionPanel({
                 }}
               />
               {meshcorePreset === 'coloradomesh' && (
-                <p className="text-xs text-amber-400">{t('connectionPanel.coloradoServerNote')}</p>
+                <p className="text-xs text-orange-400">{t('connectionPanel.coloradoServerNote')}</p>
               )}
               {meshcorePreset === 'meshcoreca' && (
                 <div
@@ -2202,7 +2202,7 @@ export default function ConnectionPanel({
                 }}
                 className={CHECKBOX_CLASS}
               />
-              <label htmlFor="mqtt-tls-insecure" className="cursor-pointer text-xs text-amber-200">
+              <label htmlFor="mqtt-tls-insecure" className="cursor-pointer text-xs text-orange-200">
                 {t('connectionPanel.mqttTlsInsecure')}
               </label>
             </div>
@@ -2360,12 +2360,12 @@ export default function ConnectionPanel({
             {protocol === 'meshcore' &&
             isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings) &&
             !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok ? (
-              <p className="text-xs text-amber-400" role="alert">
+              <p className="text-xs text-orange-400" role="alert">
                 {t('connectionPanel.topicPrefixInvalidIata')}
               </p>
             ) : null}
             {radioMqttRootDiverges ? (
-              <p className="text-xs text-amber-400" role="status">
+              <p className="text-xs text-orange-400" role="status">
                 {t('connectionPanel.radioMqttRootDivergesWarning', {
                   radioRoot: radioMqttRoot,
                   appPrefix: normalizeMeshtasticMqttTopicPrefix(activeMqttSettings.topicPrefix),
@@ -2414,12 +2414,12 @@ export default function ConnectionPanel({
                 spellCheck={false}
               />
               {channelPskWarn && (
-                <p className="text-xs text-amber-300/90" role="status">
+                <p className="text-xs text-orange-300/90" role="status">
                   {channelPskWarn}
                 </p>
               )}
               {showMqttOnlyChannelPskIndexHint && (
-                <p className="text-xs text-amber-300/90" role="status">
+                <p className="text-xs text-orange-300/90" role="status">
                   {t('connectionPanel.channelPsksMqttOnlyIndexHint')}
                 </p>
               )}
@@ -2957,7 +2957,7 @@ export default function ConnectionPanel({
                 />
                 <p className="text-muted text-xs">{t('connectionPanel.deviceAddressHint')}</p>
                 {navigator.userAgent.toLowerCase().includes('windows') && (
-                  <p className="text-xs text-yellow-400">{t('connectionPanel.windowsMdnsNote')}</p>
+                  <p className="text-xs text-orange-400">{t('connectionPanel.windowsMdnsNote')}</p>
                 )}
               </div>
             )}

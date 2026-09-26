@@ -235,10 +235,10 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
       return { label: t('gamesPanel.delivery.sending'), color: 'text-cyan-300' };
     }
     if (state === 'propagating') {
-      return { label: t('gamesPanel.delivery.propagating'), color: 'text-amber-300' };
+      return { label: t('gamesPanel.delivery.propagating'), color: 'text-orange-300' };
     }
     if (state === 'propagated') {
-      return { label: t('gamesPanel.delivery.propagated'), color: 'text-amber-200/70' };
+      return { label: t('gamesPanel.delivery.propagated'), color: 'text-orange-200/70' };
     }
     if (state === 'failed') {
       return { label: t('gamesPanel.delivery.failed'), color: 'text-red-300' };

@@ -1042,7 +1042,7 @@ describe('ConnectionPanel status i18n and pulse', () => {
     const statusText = within(tiles).getByText('Connecting');
     expect(statusText).not.toHaveClass('animate-pulse');
     expect(statusText.parentElement).not.toHaveClass('animate-pulse');
-    expect(statusText.previousElementSibling).toHaveClass('bg-yellow-500', 'animate-pulse');
+    expect(statusText.previousElementSibling).toHaveClass('bg-orange-500', 'animate-pulse');
   });
 
   it('translates last-connection transport type', () => {

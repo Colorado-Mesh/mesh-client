@@ -155,7 +155,7 @@ export function ConfirmModal({
             onClick={onConfirm}
             disabled={confirmDisabled}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
+              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-orange-600 hover:bg-orange-500'
             }`}
           >
             {confirmLabel}

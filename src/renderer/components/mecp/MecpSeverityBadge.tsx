@@ -8,7 +8,7 @@ export const MECP_SEVERITY_BADGE_CLASSES: Record<Severity, string> = {
   0: 'bg-red-700 text-white',
   1: 'bg-red-700 text-white',
   2: 'bg-yellow-600 text-black',
-  3: 'bg-blue-700 text-white',
+  3: 'bg-indigo-700 text-white',
 };
 
 /** Chat bubble border/fill for parsed MECP payloads (own solid vs received dashed). */
@@ -24,8 +24,8 @@ export function mecpChatBubbleToneClasses(severity: Severity, isOwn: boolean): s
       : 'border border-dashed border-yellow-500 bg-yellow-950/40 font-semibold';
   }
   return isOwn
-    ? 'border border-blue-400/70 bg-blue-900/30 font-semibold'
-    : 'border border-dashed border-blue-500 bg-blue-950/40 font-semibold';
+    ? 'border border-indigo-400/70 bg-indigo-900/30 font-semibold'
+    : 'border border-dashed border-indigo-500 bg-indigo-950/40 font-semibold';
 }
 
 export function MecpSeverityBadge({

@@ -46,7 +46,7 @@ export function MeshcoreRouteChain({
           <span key={`${seg.hex}-${i}`} className="inline-flex items-center gap-1">
             <span className="text-zinc-600">→</span>
             <span
-              className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300"
+              className="rounded bg-indigo-900/40 px-1.5 py-0.5 font-mono text-indigo-300"
               title={title}
             >
               {label}

@@ -239,7 +239,7 @@ export function KeyBackupRestoreSection({
   );
 
   if (safeStorageAvailable === false) {
-    return <p className="text-xs text-yellow-400">{t('securityPanel.keyBackupUnavailable')}</p>;
+    return <p className="text-xs text-orange-400">{t('securityPanel.keyBackupUnavailable')}</p>;
   }
 
   if (safeStorageAvailable === null) {

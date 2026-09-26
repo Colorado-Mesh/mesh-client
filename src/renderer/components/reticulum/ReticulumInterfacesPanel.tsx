@@ -987,7 +987,7 @@ export function ReticulumInterfacesPanel({
         </p>
       ) : null}
       {restartStackHint ? (
-        <p className="text-xs text-amber-300" role="status">
+        <p className="text-xs text-orange-300" role="status">
           {t('connectionPanel.reticulumInterfaces.restartStackHint')}
         </p>
       ) : null}
@@ -1488,7 +1488,7 @@ function ReticulumEffectiveModeBadge({
   return (
     <span
       id={testId}
-      className="rounded bg-amber-900/50 px-1.5 py-0.5 text-xs font-medium text-amber-200"
+      className="rounded bg-orange-900/50 px-1.5 py-0.5 text-xs font-medium text-orange-200"
       title={tip}
       aria-label={t('connectionPanel.reticulumInterfaces.effectiveModeAria', {
         mode: modeLabel,
@@ -1701,8 +1701,8 @@ function InterfaceEditPanel({
   const canSaveEdit = Boolean(name.trim()) && (!editRequiresCallsign || callsign.trim().length > 0);
 
   return (
-    <div className="mt-3 rounded border border-amber-700/50 bg-amber-950/10 p-3">
-      <h4 className="text-sm font-medium text-amber-200">
+    <div className="mt-3 rounded border border-orange-700/50 bg-orange-950/10 p-3">
+      <h4 className="text-sm font-medium text-orange-200">
         {t('connectionPanel.reticulumInterfaces.editTitle')}: {iface.name}
       </h4>
       <div className="mt-2 flex flex-wrap items-end gap-2">
@@ -1821,7 +1821,7 @@ function InterfaceEditPanel({
               </label>
             )}
             {serialPortStale ? (
-              <p className="text-xs text-amber-300" role="alert">
+              <p className="text-xs text-orange-300" role="alert">
                 {t('connectionPanel.reticulumLocalInterfaces.stalePortHint')}
               </p>
             ) : null}
@@ -1932,7 +1932,7 @@ function InterfaceEditPanel({
                 }
               });
             }}
-            className="rounded border border-amber-600 px-2 py-1.5 text-xs text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
+            className="rounded border border-orange-600 px-2 py-1.5 text-xs text-orange-200 hover:bg-orange-950/40 disabled:opacity-40"
             aria-label={t('connectionPanel.reticulumInterfaces.pickDevice')}
           >
             {t('connectionPanel.reticulumInterfaces.pickDevice')}
@@ -1967,7 +1967,7 @@ function InterfaceEditPanel({
       </div>
       <ReticulumInterfaceModeDescription mode={mode} />
       <details className="group mt-3 rounded border border-zinc-700 bg-zinc-950/40 p-2">
-        <summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-amber-200/90">
+        <summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-orange-200/90">
           <DetailsChevron className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
           {t('connectionPanel.reticulumInterfaces.advanced')}
         </summary>
@@ -2040,7 +2040,7 @@ function InterfaceEditPanel({
             }
             onSave(patch);
           }}
-          className="rounded bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-600 disabled:opacity-40"
+          className="rounded bg-orange-700 px-3 py-1.5 text-sm text-white hover:bg-orange-600 disabled:opacity-40"
         >
           {t('connectionPanel.reticulumInterfaces.saveEdit')}
         </button>
@@ -2286,14 +2286,14 @@ function InterfacesSection({
           <p id="reticulum-default-hubs" className="text-muted text-xs">
             {t('connectionPanel.reticulumInterfaces.defaultHubsLabel')}
           </p>
-          <p className="text-sm font-medium text-amber-200" role="status">
-            <strong className="font-semibold text-amber-50">
+          <p className="text-sm font-medium text-orange-200" role="status">
+            <strong className="font-semibold text-orange-50">
               {t('connectionPanel.reticulumInterfaces.backboneEnableGuidanceLead')}
             </strong>
             {t('connectionPanel.reticulumInterfaces.backboneEnableGuidanceBody')}
           </p>
           {enabledDefaultBackboneCount > 3 ? (
-            <p className="text-xs text-amber-300" role="status">
+            <p className="text-xs text-orange-300" role="status">
               {t('connectionPanel.reticulumInterfaces.backboneEnableTooMany', {
                 count: enabledDefaultBackboneCount,
               })}
@@ -2312,7 +2312,7 @@ function InterfacesSection({
             </a>
           </p>
           {!identityConfigured ? (
-            <p className="text-xs text-amber-300" role="status">
+            <p className="text-xs text-orange-300" role="status">
               {t('connectionPanel.reticulumInterfaces.identityRequiredHint')}
             </p>
           ) : null}
@@ -2320,7 +2320,7 @@ function InterfacesSection({
             type="button"
             disabled={defaultHubsDisabled}
             onClick={onAddDefaultHubs}
-            className="rounded border border-amber-600/70 bg-amber-950/20 px-3 py-1.5 text-xs font-medium text-amber-200 transition-colors hover:bg-amber-950/40 disabled:opacity-40"
+            className="rounded border border-orange-600/70 bg-orange-950/20 px-3 py-1.5 text-xs font-medium text-orange-200 transition-colors hover:bg-orange-950/40 disabled:opacity-40"
             aria-label={t('connectionPanel.reticulumInterfaces.addDefaultHubsAria')}
           >
             {addingDefaultHubs
@@ -2422,7 +2422,7 @@ function InterfacesSection({
           ) : null}
           {ifaceType === 'rnode' && rnodeTransport === 'wifi' ? (
             <details className="w-full text-xs text-zinc-400">
-              <summary className="cursor-pointer text-amber-200/90">
+              <summary className="cursor-pointer text-orange-200/90">
                 {t('connectionPanel.reticulumInterfaces.rnodeWifiSetupTitle')}
               </summary>
               <p className="text-label mt-2 leading-relaxed whitespace-pre-line text-zinc-400">
@@ -2593,7 +2593,7 @@ function InterfacesSection({
                   onRnodeDeviceNameChange(selection.deviceName?.trim() || selection.value);
                 });
               }}
-              className="rounded border border-amber-600 px-2 py-1.5 text-xs text-amber-200 hover:bg-amber-950/40 disabled:opacity-40"
+              className="rounded border border-orange-600 px-2 py-1.5 text-xs text-orange-200 hover:bg-orange-950/40 disabled:opacity-40"
               aria-label={t('connectionPanel.reticulumInterfaces.pickDevice')}
             >
               {t('connectionPanel.reticulumInterfaces.pickDevice')}
@@ -2745,7 +2745,7 @@ function InterfacesSection({
                         rowReason != null || primaryAudit?.severity === 'error'
                           ? 'border-red-800/60'
                           : primaryAudit?.severity === 'warning'
-                            ? 'border-amber-700/50'
+                            ? 'border-orange-700/50'
                             : 'border-zinc-700/60';
                       const repairKind = primaryAudit?.repair_kind as
                         ReticulumConfigRepairKind | undefined;
@@ -2891,8 +2891,8 @@ function InterfacesSection({
                                     primaryAudit.severity === 'error'
                                       ? 'text-red-300/90'
                                       : primaryAudit.severity === 'warning'
-                                        ? 'text-amber-300/90'
-                                        : 'text-blue-300/80'
+                                        ? 'text-orange-300/90'
+                                        : 'text-indigo-300/80'
                                   }`}
                                 >
                                   {t(`diagnosticsPanel.reticulum.audit.${primaryAudit.kind}`, {
@@ -2946,7 +2946,7 @@ function InterfacesSection({
                                 onClick={() => {
                                   void onAuditDisable(iface.id);
                                 }}
-                                className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                                className="text-xs text-yellow-400 hover:underline disabled:opacity-40"
                               >
                                 {t('connectionPanel.reticulumInterfaces.auditDisable')}
                               </button>
@@ -3004,7 +3004,7 @@ function InterfacesSection({
                                   onToggle(iface.id, !iface.enabled, iface.type);
                                 }}
                                 className={`text-xs hover:underline disabled:opacity-40 ${
-                                  iface.enabled ? 'text-amber-400' : 'text-green-400'
+                                  iface.enabled ? 'text-orange-400' : 'text-green-400'
                                 }`}
                                 aria-label={
                                   iface.enabled

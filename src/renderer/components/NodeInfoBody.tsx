@@ -57,7 +57,7 @@ import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
 
 export const CATEGORY_STYLES: Record<string, string> = {
-  Configuration: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  Configuration: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
   Physical: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
   Hardware: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
   Software: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
@@ -185,7 +185,7 @@ export interface NodeInfoBodyProps {
 const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
   error: 'text-red-400',
   warning: 'text-orange-400',
-  info: 'text-blue-400',
+  info: 'text-indigo-400',
 };
 
 const SEVERITY_ICON: Record<RFDiagnosis['severity'], typeof Info> = {
@@ -254,7 +254,7 @@ export default function NodeInfoBody({
     node.battery > 50
       ? 'text-bright-green'
       : node.battery > 20
-        ? 'text-yellow-400'
+        ? 'text-orange-400'
         : node.battery > 0
           ? 'text-red-400'
           : 'text-muted';
@@ -272,7 +272,7 @@ export default function NodeInfoBody({
     node.snr > 5
       ? 'text-bright-green'
       : node.snr > 0
-        ? 'text-yellow-400'
+        ? 'text-orange-400'
         : node.snr !== 0
           ? 'text-red-400'
           : 'text-muted';
@@ -300,7 +300,7 @@ export default function NodeInfoBody({
     stabilityKey === 'stable'
       ? 'text-brand-green'
       : stabilityKey === 'moderate'
-        ? 'text-yellow-400'
+        ? 'text-orange-400'
         : stabilityKey === 'unknown'
           ? 'text-muted'
           : 'text-red-400';
@@ -392,7 +392,7 @@ export default function NodeInfoBody({
                       node.battery > 50
                         ? 'bg-brand-green'
                         : node.battery > 20
-                          ? 'bg-yellow-500'
+                          ? 'bg-orange-500'
                           : 'bg-red-500'
                     }`}
                     style={{ width: `${Math.min(node.battery, 100)}%` }}
@@ -414,7 +414,7 @@ export default function NodeInfoBody({
                     node.battery > 50
                       ? 'bg-brand-green'
                       : node.battery > 20
-                        ? 'bg-yellow-500'
+                        ? 'bg-orange-500'
                         : 'bg-red-500'
                   }`}
                   style={{ width: `${Math.min(node.battery, 100)}%` }}
@@ -437,7 +437,7 @@ export default function NodeInfoBody({
                     node.battery > 50
                       ? 'bg-brand-green'
                       : node.battery > 20
-                        ? 'bg-yellow-500'
+                        ? 'bg-orange-500'
                         : 'bg-red-500'
                   }`}
                   style={{ width: `${Math.min(node.battery, 100)}%` }}
@@ -471,7 +471,7 @@ export default function NodeInfoBody({
                 <span>
                   RX:{' '}
                   <span
-                    className={node.channel_utilization > 50 ? 'text-yellow-400' : 'text-zinc-200'}
+                    className={node.channel_utilization > 50 ? 'text-orange-400' : 'text-zinc-200'}
                   >
                     {node.channel_utilization.toFixed(1)}%
                   </span>
@@ -483,7 +483,7 @@ export default function NodeInfoBody({
               {node.air_util_tx != null && (
                 <span>
                   TX:{' '}
-                  <span className={node.air_util_tx > 50 ? 'text-yellow-400' : 'text-zinc-200'}>
+                  <span className={node.air_util_tx > 50 ? 'text-orange-400' : 'text-zinc-200'}>
                     {node.air_util_tx.toFixed(1)}%
                   </span>
                 </span>
@@ -543,7 +543,7 @@ export default function NodeInfoBody({
 
       {/* GPS warning */}
       {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
-        <div className="mt-1 flex items-start gap-1.5 rounded border border-yellow-500/30 bg-yellow-500/10 px-2 py-1.5 text-xs text-yellow-400">
+        <div className="mt-1 flex items-start gap-1.5 rounded border border-orange-500/30 bg-orange-500/10 px-2 py-1.5 text-xs text-orange-400">
           <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>
             {t('nodeInfoBody.gpsWarningPrefix')}
@@ -579,7 +579,7 @@ export default function NodeInfoBody({
               anomaly.severity === 'error'
                 ? 'text-red-400'
                 : anomaly.severity === 'info'
-                  ? 'text-blue-400'
+                  ? 'text-indigo-400'
                   : 'text-orange-400'
             }`}
           >
@@ -665,7 +665,7 @@ export default function NodeInfoBody({
                   nodeRedundancy.score >= 67
                     ? 'text-lime-400'
                     : nodeRedundancy.score >= 33
-                      ? 'text-yellow-400'
+                      ? 'text-orange-400'
                       : 'text-muted'
                 }`}
               >
@@ -716,7 +716,9 @@ export default function NodeInfoBody({
                               :{' '}
                               <span
                                 className={
-                                  p.transport === 'rf' ? 'text-brand-green/80' : 'text-blue-400/80'
+                                  p.transport === 'rf'
+                                    ? 'text-brand-green/80'
+                                    : 'text-indigo-400/80'
                                 }
                               >
                                 {p.transport.toUpperCase()}
@@ -1010,7 +1012,7 @@ function RFDiagnosticsSection({
                       {translateRfConditionLabel(t, f.condition)}
                     </span>
                     {f.isLastHop && (
-                      <span className="text-2xs rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-blue-300">
+                      <span className="text-2xs rounded border border-indigo-500/30 bg-indigo-500/20 px-1 py-0 text-indigo-300">
                         {t('nodeInfoBody.lastHopSnrBadge')}
                       </span>
                     )}
