@@ -291,7 +291,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const user = userEvent.setup();
     const { container } = renderMeshcoreModal();
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
 
     expect(screen.getByText('Admin password')).toBeInTheDocument();
     const authOverlay = screen.getByText('Admin password').closest('.fixed');
@@ -305,7 +305,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   it('disables MeshCore RPC buttons when isConnected is false', () => {
     renderMeshcoreModal({ isConnected: false });
 
-    expect(screen.getByRole('button', { name: '📊 Request Status' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Request Status' })).toBeDisabled();
   });
 
   it('renders the full public key with a copy button and copies it on click', async () => {
@@ -387,7 +387,7 @@ describe('NodeDetailModal MeshCore actions', () => {
 
     renderMeshcoreModal({ node: chatNode });
 
-    expect(await screen.findByRole('button', { name: '💬 Message' })).not.toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Message' })).not.toBeDisabled();
   });
 
   it('shows success status when shareContact resolves true', async () => {
@@ -396,7 +396,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onShareContact = vi.fn().mockResolvedValue(true);
     renderMeshcoreModal({ onShareContact });
 
-    await user.click(screen.getByRole('button', { name: '📨 Share Contact' }));
+    await user.click(screen.getByRole('button', { name: 'Share Contact' }));
 
     expect(onShareContact).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
     expect(await screen.findByText('Contact share sent over the radio.')).toBeInTheDocument();
@@ -407,7 +407,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const user = userEvent.setup();
     renderMeshcoreModal({ onShareContact: vi.fn().mockResolvedValue(false) });
 
-    await user.click(screen.getByRole('button', { name: '📨 Share Contact' }));
+    await user.click(screen.getByRole('button', { name: 'Share Contact' }));
 
     expect(await screen.findByText('Share failed')).toBeInTheDocument();
   });
@@ -417,7 +417,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const user = userEvent.setup();
     renderMeshcoreModal({ onExportContact: vi.fn().mockResolvedValue(null) });
 
-    await user.click(screen.getByRole('button', { name: '📤 Export Contact' }));
+    await user.click(screen.getByRole('button', { name: 'Export Contact' }));
 
     expect(await screen.findByText('No public key available')).toBeInTheDocument();
   });
@@ -427,7 +427,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onTraceRoute = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onTraceRoute });
 
-    await user.click(screen.getByRole('button', { name: '🛤 Trace Route' }));
+    await user.click(screen.getByRole('button', { name: 'Trace Route' }));
 
     expect(onTraceRoute).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
   });
@@ -437,7 +437,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onMessageNode = vi.fn();
     renderMeshcoreModal({ onMessageNode });
 
-    expect(screen.queryByRole('button', { name: '💬 Message' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Message' })).not.toBeInTheDocument();
     expect(onMessageNode).not.toHaveBeenCalled();
   });
 
@@ -446,7 +446,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.click(screen.getByRole('button', { name: 'No password' }));
 
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
@@ -457,7 +457,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -469,7 +469,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.click(screen.getByRole('checkbox'));
     await user.type(screen.getByLabelText('Admin password (optional)'), 'session-only');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -483,7 +483,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -506,7 +506,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestNeighbors = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestNeighbors });
 
-    await user.click(screen.getByRole('button', { name: '🔗 Get Neighbors' }));
+    await user.click(screen.getByRole('button', { name: 'Get Neighbors' }));
     await user.click(screen.getByRole('button', { name: 'No password' }));
 
     expect(onRequestNeighbors).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
