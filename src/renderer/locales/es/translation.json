@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Error al eliminar de la radio",
     "mqttIgnoreHeading": "MQTT Ignorar",
     "mqttIgnoreDescription": "Excluir los datos MQTT de este nodo de los diagnósticos",
-    "stopIgnoringMqttTitle": "Dejar de ignorar MQTT para este nodo",
-    "ignoreMqttTitle": "Ignorar MQTT para este nodo",
     "deleteNode": "Eliminar nodo",
     "deleteNodeConfirm": "¿Eliminar este nodo de la base de datos local? Reaparecerá cuando emita de nuevo.",
     "cancel": "Cancelar",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA firmado",
     "xeddsaSignedHint": "La radio ha verificado una firma XEdDSA de este nodo, por lo que su clave pública está certificada criptográficamente.",
     "keyManuallyVerified": "Clave API verificada",
-    "keyManuallyVerifiedHint": "La clave pública de este nodo fue confirmada manualmente por un operador."
+    "keyManuallyVerifiedHint": "La clave pública de este nodo fue confirmada manualmente por un operador.",
+    "keyBadge": "Clave",
+    "closePane": "Cerrar detalles"
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "El filtro de distancia está habilitado, pero su dispositivo no tiene una solución GPS; se muestran todos los nodos.",
     "distanceFilterActiveBanner_one": "Filtro de distancia activo: {{count}} nodo oculto más allá de {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Filtro de distancia activo: {{count}} nodos ocultos más allá de {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} EN línea",
-    "summaryOnline_other": "{{count}} EN línea",
-    "summaryStale_one": "{{count}} obsoleto",
-    "summaryStale_other": "{{count}} obsoleto",
-    "summaryOffline_one": "{{count}} sin conexión",
-    "summaryOffline_other": "{{count}} sin conexión",
     "tableCaptionMeshNodes": "Nodos de malla conectados",
     "columnFavorite": "Favorito",
     "columnId": "ID",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Desconocido",
     "columnHealth": "Salud del nodo",
     "hasPublicKeyTitle": "Clave Pública",
-    "buttonExportCsv": "Exportar CSV"
+    "buttonExportCsv": "Exportar CSV",
+    "listViewAria": "Vista de lista",
+    "statusFilterAria": "Filtrar por estado",
+    "statusFilterAll": "Todos",
+    "buttonExport": "Exportar",
+    "exportMenuLabel": "Formatos de exportación",
+    "youBadge": "Tú"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

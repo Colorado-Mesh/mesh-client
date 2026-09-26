@@ -3186,8 +3186,6 @@
     "removeFromRadioFailed": "Удалить с радио не удалось",
     "mqttIgnoreHeading": "MQTT игнорировать",
     "mqttIgnoreDescription": "Исключить данные MQTT этого узла из диагностики.",
-    "stopIgnoringMqttTitle": "Перестаньте игнорировать MQTT для этого узла.",
-    "ignoreMqttTitle": "Игнорировать MQTT для этого узла",
     "deleteNode": "Удалить узел",
     "deleteNodeConfirm": "Удалить этот узел из локальной базы данных? Он появится снова, когда снова выйдет в эфир.",
     "cancel": "Отмена",
@@ -3272,7 +3270,9 @@
     "xeddsaSigned": "Подписано XEdDSA",
     "xeddsaSignedHint": "Радио проверило подпись XEdDSA от этого узла, поэтому его открытый ключ криптографически заверен.",
     "keyManuallyVerified": "Ключ проверен",
-    "keyManuallyVerifiedHint": "Открытый ключ этого узла был вручную подтвержден оператором."
+    "keyManuallyVerifiedHint": "Открытый ключ этого узла был вручную подтвержден оператором.",
+    "keyBadge": "Ключ",
+    "closePane": "Закрыть подробности"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3391,12 +3391,6 @@
     "distanceFilterNoGpsBanner": "Фильтр расстояний включен, но на вашем устройстве нет GPS-привязки — показаны все узлы.",
     "distanceFilterActiveBanner_one": "Фильтр расстояний активен — узел {{count}} скрыт за пределами {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Фильтр расстояний активен — узлы {{count}} скрыты за пределами {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} онлайн",
-    "summaryOnline_other": "{{count}} онлайн",
-    "summaryStale_one": "{{count}} устаревший",
-    "summaryStale_other": "{{count}} устаревший",
-    "summaryOffline_one": "{{count}} оффлайн",
-    "summaryOffline_other": "{{count}} оффлайн",
     "tableCaptionMeshNodes": "Связанные узлы сетки",
     "columnFavorite": "Любимый",
     "columnId": "ИДЕНТИФИКАТОР",
@@ -3454,13 +3448,13 @@
     "importResultSuccess_many": "Импортировано {{count}} контактов.",
     "importResultSuccessWithSkipped_few": "Импортировано {{count}} контакта, пропущено {{skipped}}.",
     "importResultSuccessWithSkipped_many": "Импортировано {{count}} контактов, пропущено {{skipped}}.",
-    "summaryOffline_few": "{{count}} оффлайн",
-    "summaryOffline_many": "{{count}} оффлайн",
-    "summaryOnline_few": "{{count}} онлайн",
-    "summaryOnline_many": "{{count}} онлайн",
-    "summaryStale_few": "{{count}} устаревших",
-    "summaryStale_many": "{{count}} устаревших",
-    "buttonExportCsv": "Экспорт CSV"
+    "buttonExportCsv": "Экспорт CSV",
+    "listViewAria": "Вид списка",
+    "statusFilterAria": "Фильтр по состоянию",
+    "statusFilterAll": "Все",
+    "buttonExport": "Экспорт",
+    "exportMenuLabel": "Форматы экспорта",
+    "youBadge": "Вы"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

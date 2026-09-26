@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Entfernen aus dem Radio fehlgeschlagen",
     "mqttIgnoreHeading": "MQTT Ignorieren",
     "mqttIgnoreDescription": "Die MQTT-Daten dieses Knotens von der Diagnose ausschließen",
-    "stopIgnoringMqttTitle": "Hören Sie auf, MQTT für diesen Knoten zu ignorieren",
-    "ignoreMqttTitle": "MQTT für diesen Knoten ignorieren",
     "deleteNode": "Knoten löschen",
     "deleteNodeConfirm": "Diesen Knoten aus der lokalen Datenbank entfernen? Es wird wieder angezeigt, wenn es erneut gesendet wird.",
     "cancel": "Abbrechen",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA signiert",
     "xeddsaSignedHint": "Das Funkgerät hat eine XEdDSA-Signatur von diesem Knoten verifiziert, sodass sein öffentlicher Schlüssel kryptografisch bestätigt wird.",
     "keyManuallyVerified": "Schlüssel verifiziert",
-    "keyManuallyVerifiedHint": "Der öffentliche Schlüssel dieses Knotens wurde manuell von einem Bediener bestätigt."
+    "keyManuallyVerifiedHint": "Der öffentliche Schlüssel dieses Knotens wurde manuell von einem Bediener bestätigt.",
+    "keyBadge": "Schlüssel",
+    "closePane": "Details schließen"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "Der Entfernungsfilter ist aktiviert, aber Ihr Gerät hat keinen GPS-Fix — alle Knoten werden angezeigt.",
     "distanceFilterActiveBanner_one": "Entfernungsfilter aktiv - {{count}} Knoten versteckt jenseits von {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Entfernungsfilter aktiv - {{count}} Knoten, die über {{maxDistance}} {{unit}} hinaus versteckt sind.",
-    "summaryOnline_one": "{{count}} online",
-    "summaryOnline_other": "{{count}} online",
-    "summaryStale_one": "{{count}} Stale",
-    "summaryStale_other": "{{count}} Stale",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Verbundene Mesh-Knoten",
     "columnFavorite": "Favorit",
     "columnId": "ID",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Unbekannt",
     "columnHealth": "Knotengesundheit",
     "hasPublicKeyTitle": "Öffentlicher Schlüssel:",
-    "buttonExportCsv": "CSV exportieren"
+    "buttonExportCsv": "CSV exportieren",
+    "listViewAria": "Listenansicht",
+    "statusFilterAria": "Nach Status filtern",
+    "statusFilterAll": "Alle",
+    "buttonExport": "Exportieren",
+    "exportMenuLabel": "Exportformate",
+    "youBadge": "Du"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

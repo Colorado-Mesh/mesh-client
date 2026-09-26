@@ -3314,8 +3314,6 @@
     "removeFromRadioFailed": "Remove from radio failed",
     "mqttIgnoreHeading": "MQTT Ignore",
     "mqttIgnoreDescription": "Exclude this node's MQTT data from diagnostics",
-    "stopIgnoringMqttTitle": "Stop ignoring MQTT for this node",
-    "ignoreMqttTitle": "Ignore MQTT for this node",
     "notesLabel": "Notes",
     "notesPlaceholder": "Private notes about this node (not transmitted)…",
     "watchNode": "Watch",
@@ -3360,7 +3358,9 @@
     "xeddsaSigned": "XEdDSA signed",
     "xeddsaSignedHint": "The radio has verified an XEdDSA signature from this node, so its public key is cryptographically attested.",
     "keyManuallyVerified": "Key verified",
-    "keyManuallyVerifiedHint": "This node's public key was manually confirmed by an operator."
+    "keyManuallyVerifiedHint": "This node's public key was manually confirmed by an operator.",
+    "keyBadge": "Key",
+    "closePane": "Close details"
   },
   "nodeInfoBody": {
     "longName": "Long Name",
@@ -3482,12 +3482,6 @@
     "distanceFilterNoGpsBanner": "Distance filter is enabled but your device has no GPS fix — all nodes are shown.",
     "distanceFilterActiveBanner_one": "Distance filter active — {{count}} node hidden beyond {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Distance filter active — {{count}} nodes hidden beyond {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} online",
-    "summaryOnline_other": "{{count}} online",
-    "summaryStale_one": "{{count}} stale",
-    "summaryStale_other": "{{count}} stale",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Connected mesh nodes",
     "columnHealth": "Node health",
     "columnFavorite": "Favorite",
@@ -3532,7 +3526,13 @@
     "addToFavorites": "Add to favorites",
     "healthTooltip": "Health score: {{total}}/100 (signal {{signal}}, recency {{recency}}, load {{load}}, battery {{battery}})",
     "healthAriaLabel": "Node health score {{total}} out of 100",
-    "echoesConnectionHealthTooltip": "{{score}}% connection health"
+    "echoesConnectionHealthTooltip": "{{score}}% connection health",
+    "listViewAria": "List view",
+    "statusFilterAria": "Filter by status",
+    "statusFilterAll": "All",
+    "buttonExport": "Export",
+    "exportMenuLabel": "Export formats",
+    "youBadge": "You"
   },
   "nodeStatusNotifier": {
     "onlineTitle": "{{name}} is online",

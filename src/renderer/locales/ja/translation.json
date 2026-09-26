@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "ラジオからの削除に失敗しました",
     "mqttIgnoreHeading": "MQTT 無視",
     "mqttIgnoreDescription": "このノードの MQTT データを診断から除外します",
-    "stopIgnoringMqttTitle": "このノードの MQTT 無視をやめる",
-    "ignoreMqttTitle": "このノードの MQTT を無視します",
     "deleteNode": "ノードの削除",
     "deleteNodeConfirm": "このノードをローカル データベースから削除しますか?再放送時にはまた登場します。",
     "cancel": "キャンセル",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA署名済み",
     "xeddsaSignedHint": "無線はこのノードからのXEdDSA署名を検証しているため、その公開鍵は暗号化されています。",
     "keyManuallyVerified": "キーが確認されました",
-    "keyManuallyVerifiedHint": "このノードの公開鍵は、オペレータによって手動で確認されました。"
+    "keyManuallyVerifiedHint": "このノードの公開鍵は、オペレータによって手動で確認されました。",
+    "keyBadge": "鍵",
+    "closePane": "詳細を閉じる"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "距離フィルターは有効ですが、デバイスには GPS 修正がありません。すべてのノードが表示されます。",
     "distanceFilterActiveBanner_one": "距離フィルターがアクティブです — {{count}} ノードが {{maxDistance}} {{unit}} の向こう側に隠れています。",
     "distanceFilterActiveBanner_other": "距離フィルターがアクティブ — {{count}} ノードが {{maxDistance}} {{unit}} の向こう側に隠れています。",
-    "summaryOnline_one": "{{count}} オンライン",
-    "summaryOnline_other": "{{count}} オンライン",
-    "summaryStale_one": "{{count}} は古いです",
-    "summaryStale_other": "{{count}} は古いです",
-    "summaryOffline_one": "{{count}} オフライン",
-    "summaryOffline_other": "{{count}} オフライン",
     "tableCaptionMeshNodes": "接続されたメッシュノード",
     "columnFavorite": "お気に入り",
     "columnId": "ID",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "不明",
     "columnHealth": "ノード健全性",
     "hasPublicKeyTitle": "公開鍵",
-    "buttonExportCsv": "CSV をエクスポート"
+    "buttonExportCsv": "CSV をエクスポート",
+    "listViewAria": "リスト表示",
+    "statusFilterAria": "状態で絞り込む",
+    "statusFilterAll": "すべて",
+    "buttonExport": "エクスポート",
+    "exportMenuLabel": "エクスポート形式",
+    "youBadge": "自分"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

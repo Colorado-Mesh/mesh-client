@@ -154,6 +154,7 @@ import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
 import type { useMeshcorePanelActions } from './hooks/useMeshcorePanelActions';
@@ -405,6 +406,8 @@ export interface UpdateState {
   errorMessage?: string;
 }
 
+/** Wide enough for the Nodes/Contacts list plus a 340-400px detail pane beside it. */
+const NODE_DETAIL_PANE_MEDIA_QUERY = '(min-width: 1280px)';
 const LOG_PANEL_VISIBLE_KEY = 'mesh-client:logPanelVisible';
 /** Legacy key (pre–footer indicator): `checkOnStartup` / `dismissedVersion` — removed on launch so updates always check on startup. */
 const LEGACY_UPDATE_SETTINGS_KEY = 'mesh-client:updateSettings';
@@ -546,8 +549,25 @@ function AppContent() {
   /** Last panel shown per `${protocol}:${section}` so a rail click reopens it. */
   const lastPanelBySectionRef = useRef(new Map<string, number>());
 
-  const [selectedNodeId, setSelectedNodeId] = useState<number | null>(null);
-  const [selectedPeerHash, setSelectedPeerHash] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeIdState] = useState<number | null>(null);
+  /**
+   * Set when the node was picked from a protocol's Nodes/Contacts list while the window had room
+   * for the detail pane (Option B); null means the modal. Every other entry point (map, chat,
+   * diagnostics) opens the modal.
+   */
+  const [nodeDetailPaneProtocol, setNodeDetailPaneProtocol] = useState<MeshProtocol | null>(null);
+  const setSelectedNodeId = useCallback((nodeId: number | null) => {
+    setNodeDetailPaneProtocol(null);
+    setSelectedNodeIdState(nodeId);
+  }, []);
+  const nodeDetailPaneFits = useMediaQuery(NODE_DETAIL_PANE_MEDIA_QUERY);
+  const [selectedPeerHash, setSelectedPeerHashState] = useState<string | null>(null);
+  /** Same rule as nodes: picked from the Peers list on a wide window shows in a side pane. */
+  const [peerDetailInPane, setPeerDetailInPane] = useState(false);
+  const setSelectedPeerHash = useCallback((hash: string | null) => {
+    setPeerDetailInPane(false);
+    setSelectedPeerHashState(hash);
+  }, []);
   // Stable array ref from Map.get — safe for React 19 useSyncExternalStore (not latestPositionHistoryPoint).
   const selectedNodeHistoryPoints = usePositionHistoryStore(
     useCallback(
@@ -1988,7 +2008,7 @@ function AppContent() {
         setActiveTab(mapTabIndex);
       }
     },
-    [protocol, tabsByProtocol],
+    [protocol, setSelectedNodeId, tabsByProtocol],
   );
 
   const handleNavigateToReticulumConnection = useCallback(() => {
@@ -3143,7 +3163,7 @@ function AppContent() {
       }
       setSelectedNodeId(null);
     },
-    [detailModalProtocol, meshcorePanelActions, meshtasticPanelActions],
+    [detailModalProtocol, meshcorePanelActions, meshtasticPanelActions, setSelectedNodeId],
   );
 
   const handleOpenReticulumDmByHash = useCallback(
@@ -3323,6 +3343,215 @@ function AppContent() {
   const launcherButtonLabel = t('shell.openLauncher', {
     shortcut: formatShortcut('K', platform),
   });
+
+  const onNodesPanelOfPaneProtocol =
+    activePanelIndex === NODES_PANEL_INDEX && nodeDetailPaneProtocol === protocol;
+  const nodeDetailPaneOpen =
+    selectedNodeId !== null &&
+    nodeDetailPaneFits &&
+    onNodesPanelOfPaneProtocol &&
+    !capabilities.hasReticulumPeersList;
+  // A pane selection stays hidden on other panels and protocols and comes back on that Nodes list;
+  // it only falls back to the modal when the window gets too narrow while the list is open.
+  const nodeDetailModalOpen =
+    selectedNodeId !== null &&
+    (nodeDetailPaneProtocol === null || (!nodeDetailPaneFits && onNodesPanelOfPaneProtocol));
+
+  const onPeersList = activePanelIndex === NODES_PANEL_INDEX && capabilities.hasReticulumPeersList;
+  const peerDetailPaneOpen =
+    selectedPeerHash !== null && peerDetailInPane && nodeDetailPaneFits && onPeersList;
+  const peerDetailModalOpen =
+    capabilities.hasReticulumPeerDetailModal &&
+    selectedPeerHash !== null &&
+    (!peerDetailInPane || (!nodeDetailPaneFits && onPeersList));
+
+  const renderPeerDetail = (variant: 'modal' | 'pane') =>
+    selectedPeerHash === null ? null : (
+      <ReticulumPeerDetailErrorBoundary
+        peerHash={selectedPeerHash}
+        onClose={() => {
+          setSelectedPeerHash(null);
+        }}
+        suspenseFallback={<DialogLazyFallback />}
+      >
+        <ReticulumPeerDetailModal
+          variant={variant}
+          peerHash={selectedPeerHash}
+          onClose={() => {
+            setSelectedPeerHash(null);
+          }}
+          onSendMessage={handleMessageNode}
+        />
+      </ReticulumPeerDetailErrorBoundary>
+    );
+
+  const renderNodeDetail = (variant: 'modal' | 'pane') => (
+    <Suspense fallback={<DialogLazyFallback />}>
+      <NodeDetailModal
+        variant={variant}
+        nodes={detailModalNodes}
+        node={selectedNode}
+        onClose={() => {
+          setSelectedNodeId(null);
+        }}
+        onRequestPosition={
+          detailModalCapabilities.hasTraceRoute
+            ? detailModalProtocol === 'meshcore'
+              ? meshcorePanelActions.requestPosition
+              : meshtasticPanelActions.requestPosition
+            : undefined
+        }
+        onTraceRoute={
+          detailModalCapabilities.hasTraceRoute
+            ? detailModalProtocol === 'meshcore'
+              ? meshcorePanelActions.traceRoute
+              : async (nodeNum: number) => {
+                  await meshtasticPanelActions.traceRoute(nodeNum);
+                  return undefined;
+                }
+            : undefined
+        }
+        traceRouteHops={traceRouteHops}
+        onDeleteNode={
+          detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
+            ? handleDeleteNode
+            : undefined
+        }
+        onMessageNode={
+          selectedNode?.node_id !== detailMyNodeNum &&
+          !(
+            detailModalProtocol === 'meshcore' &&
+            isMeshcoreDmExcludedHwModel(selectedNode?.hw_model)
+          )
+            ? handleMessageNode
+            : undefined
+        }
+        onOpenRoom={
+          detailModalProtocol === 'meshcore' &&
+          selectedNode?.hw_model === 'Room' &&
+          selectedNode.node_id !== detailMyNodeNum
+            ? handleOpenRoom
+            : undefined
+        }
+        onToggleFavorite={detailModalPanelActions.setNodeFavorited}
+        remoteAdminKey={
+          detailModalProtocol === 'meshtastic' && selectedNode != null
+            ? meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id)
+            : undefined
+        }
+        onSaveRemoteAdminKey={
+          detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
+            ? meshtasticRuntime.setRemoteAdminKeyForNode
+            : undefined
+        }
+        hasRemoteAdminKey={
+          detailModalProtocol === 'meshtastic' && selectedNode != null
+            ? Boolean(meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id))
+            : false
+        }
+        onConfigureRemotely={
+          detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
+            ? (nodeNum) => {
+                meshtasticPanelActions.setConfigureTargetNodeNum(nodeNum);
+                setSelectedNodeId(null);
+                const radioTabIndex = findFilteredTabIndexForPanel(
+                  tabsByProtocol.meshtastic,
+                  RADIO_TAB_PANEL_INDEX,
+                );
+                if (radioTabIndex >= 0) {
+                  setActiveTab(radioTabIndex);
+                }
+              }
+            : undefined
+        }
+        isConnected={detailIsOperational}
+        mqttConnected={detailConnectionView.mqttStatus === 'connected'}
+        radioConnected={detailIsConnectedOrOperational}
+        homeNode={detailHomeNode}
+        neighborInfo={activeNeighborInfo}
+        useFahrenheit={useFahrenheit}
+        protocol={detailModalProtocol}
+        meshcoreTraceResult={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcoreTraceResults.get(selectedNode.node_id)
+            : undefined
+        }
+        meshcorePingError={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcorePingErrors.get(selectedNode.node_id)
+            : undefined
+        }
+        meshcoreRepeaterStatus={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcoreNodeStatus.get(selectedNode.node_id)
+            : undefined
+        }
+        meshcoreStatusError={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcoreStatusErrors.get(selectedNode.node_id)
+            : undefined
+        }
+        onRequestRepeaterStatus={
+          detailModalProtocol === 'meshcore'
+            ? meshcorePanelActions.requestRepeaterStatus
+            : undefined
+        }
+        meshcoreNodeTelemetry={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcoreNodeTelemetry.get(selectedNode.node_id)
+            : undefined
+        }
+        meshcoreTelemetryError={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcoreTelemetryErrors.get(selectedNode.node_id)
+            : undefined
+        }
+        onRequestTelemetry={
+          detailModalProtocol === 'meshcore' ? meshcorePanelActions.requestTelemetry : undefined
+        }
+        meshcoreNeighbors={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcoreNeighbors.get(selectedNode.node_id)
+            : undefined
+        }
+        onRequestNeighbors={
+          detailModalProtocol === 'meshcore' ? meshcorePanelActions.requestNeighbors : undefined
+        }
+        meshcoreNeighborError={
+          detailModalProtocol === 'meshcore' && selectedNode
+            ? meshcoreRuntime.meshcoreNeighborErrors.get(selectedNode.node_id)
+            : undefined
+        }
+        paxCounterData={
+          detailModalProtocol === 'meshtastic' ? meshtasticRuntime.paxCounterData : undefined
+        }
+        detectionSensorEvents={
+          detailModalProtocol === 'meshtastic' ? meshtasticRuntime.detectionSensorEvents : undefined
+        }
+        rangeTestPackets={
+          detailModalProtocol === 'meshtastic' ? meshtasticRuntime.rangeTestPackets : undefined
+        }
+        mapReports={detailModalProtocol === 'meshtastic' ? meshtasticRuntime.mapReports : undefined}
+        onExportContact={
+          detailModalProtocol === 'meshcore' ? meshcoreRuntime.exportContact : undefined
+        }
+        onShareContact={
+          detailModalProtocol === 'meshcore' ? meshcoreRuntime.shareContact : undefined
+        }
+        meshcoreLocalStats={
+          detailModalProtocol === 'meshcore' &&
+          selectedNode?.node_id === meshcoreRuntime.state.myNodeNum
+            ? meshcoreRuntime.meshcoreLocalStats
+            : null
+        }
+        meshcoreManufacturerModel={
+          detailModalProtocol === 'meshcore' ? meshcoreRuntime.state.manufacturerModel : undefined
+        }
+        positionHistory={selectedNodeHistory}
+        onShowOnMap={handleShowOnMap}
+      />
+    </Suspense>
+  );
 
   return (
     <>
@@ -3887,91 +4116,129 @@ function AppContent() {
                               hidden={activePanelIndex !== NODES_PANEL_INDEX}
                             >
                               {capabilities.hasReticulumPeersList ? (
-                                <ReticulumPeerListPanel
-                                  isConnected={isConnectedOrOperational}
-                                  contactNodes={reticulumUiNodes}
-                                  onPeerClick={setSelectedPeerHash}
-                                  onSendMessage={handleMessageNode}
-                                  onRefresh={reticulumPanelActions.requestRefresh}
-                                  onSoftRefresh={reticulumPanelActions.requestSoftRefresh}
-                                  onToggleFavorite={reticulumPanelActions.setNodeFavorited}
-                                  groups={contactGroups.groups}
-                                  selectedGroupId={contactGroups.selectedGroupId}
-                                  onGroupChange={contactGroups.setSelectedGroupId}
-                                  onManageGroups={
-                                    capabilities.hasUserManagedContactGroups
-                                      ? () => {
-                                          setShowGroupsModal(true);
-                                        }
-                                      : undefined
+                                <div
+                                  className={
+                                    peerDetailPaneOpen
+                                      ? 'grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(340px,400px)] gap-4'
+                                      : 'h-full min-h-0 min-w-0'
                                   }
-                                  groupMemberIds={contactGroups.groupMemberIds}
-                                  contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
-                                  hasLxstVoice={capabilities.hasLxstVoice}
-                                  hasLrgpGames={capabilities.hasLrgpGames}
-                                />
+                                >
+                                  <div className="h-full min-h-0 min-w-0">
+                                    <ReticulumPeerListPanel
+                                      isConnected={isConnectedOrOperational}
+                                      contactNodes={reticulumUiNodes}
+                                      onPeerClick={(hash) => {
+                                        setPeerDetailInPane(nodeDetailPaneFits);
+                                        setSelectedPeerHashState(hash);
+                                      }}
+                                      selectedPeerHash={
+                                        peerDetailPaneOpen ? selectedPeerHash : null
+                                      }
+                                      onSendMessage={handleMessageNode}
+                                      onRefresh={reticulumPanelActions.requestRefresh}
+                                      onSoftRefresh={reticulumPanelActions.requestSoftRefresh}
+                                      onToggleFavorite={reticulumPanelActions.setNodeFavorited}
+                                      groups={contactGroups.groups}
+                                      selectedGroupId={contactGroups.selectedGroupId}
+                                      onGroupChange={contactGroups.setSelectedGroupId}
+                                      onManageGroups={
+                                        capabilities.hasUserManagedContactGroups
+                                          ? () => {
+                                              setShowGroupsModal(true);
+                                            }
+                                          : undefined
+                                      }
+                                      groupMemberIds={contactGroups.groupMemberIds}
+                                      contactGroupsEnabled={
+                                        capabilities.hasUserManagedContactGroups
+                                      }
+                                      hasLxstVoice={capabilities.hasLxstVoice}
+                                      hasLrgpGames={capabilities.hasLrgpGames}
+                                    />
+                                  </div>
+                                  {peerDetailPaneOpen && renderPeerDetail('pane')}
+                                </div>
                               ) : (
-                                <NodeListPanel
-                                  nodes={nodesForUi}
-                                  myNodeNum={activeSelfNodeNum}
-                                  onNodeClick={(node) => {
-                                    setSelectedNodeId(node.node_id);
-                                  }}
-                                  mqttConnected={activeConnectionView.mqttStatus === 'connected'}
-                                  radioConnected={isConnectedOrOperational}
-                                  locationFilter={locationFilter}
-                                  onToggleFavorite={panelActions.setNodeFavorited}
-                                  mode={protocol}
-                                  groups={contactGroups.groups}
-                                  selectedGroupId={contactGroups.selectedGroupId}
-                                  onGroupChange={contactGroups.setSelectedGroupId}
-                                  onManageGroups={
-                                    capabilities.hasUserManagedContactGroups
-                                      ? () => {
-                                          setShowGroupsModal(true);
-                                        }
-                                      : undefined
+                                <div
+                                  className={
+                                    nodeDetailPaneOpen
+                                      ? 'grid h-full min-h-0 grid-cols-[minmax(0,1fr)_minmax(340px,400px)] gap-4'
+                                      : 'h-full min-h-0 min-w-0'
                                   }
-                                  groupMemberIds={contactGroups.groupMemberIds}
-                                  contactGroupsEnabled={capabilities.hasUserManagedContactGroups}
-                                  onImportContacts={
-                                    capabilities.hasContactImportExport
-                                      ? meshcorePanelActions.importContacts
-                                      : undefined
-                                  }
-                                  meshcoreShowRefreshControl={
-                                    capabilities.hasContactImportExport
-                                      ? meshcoreContactsShowRefreshControl
-                                      : false
-                                  }
-                                  onRefreshContacts={
-                                    capabilities.hasContactImportExport
-                                      ? meshcorePanelActions.refreshContacts
-                                      : undefined
-                                  }
-                                  meshcoreShowPublicKeys={
-                                    capabilities.hasContactImportExport
-                                      ? meshcoreContactsShowPublicKeys
-                                      : false
-                                  }
-                                  meshcorePublicKeyHexByNodeId={
-                                    capabilities.hasContactImportExport
-                                      ? meshcorePublicKeyHexByNodeId
-                                      : undefined
-                                  }
-                                  onSendAdvert={
-                                    capabilities.hasContactImportExport
-                                      ? meshcorePanelActions.sendAdvert
-                                      : undefined
-                                  }
-                                  onOffloadContactsFromRadio={
-                                    capabilities.hasContactImportExport
-                                      ? meshcorePanelActions.offloadContactsFromRadio
-                                      : undefined
-                                  }
-                                  meshcoreRadioOperational={isOperational}
-                                  onShowOnMap={handleShowOnMap}
-                                />
+                                >
+                                  <div className="h-full min-h-0 min-w-0">
+                                    <NodeListPanel
+                                      nodes={nodesForUi}
+                                      myNodeNum={activeSelfNodeNum}
+                                      onNodeClick={(node) => {
+                                        setNodeDetailPaneProtocol(
+                                          nodeDetailPaneFits ? protocol : null,
+                                        );
+                                        setSelectedNodeIdState(node.node_id);
+                                      }}
+                                      selectedNodeId={nodeDetailPaneOpen ? selectedNodeId : null}
+                                      mqttConnected={
+                                        activeConnectionView.mqttStatus === 'connected'
+                                      }
+                                      radioConnected={isConnectedOrOperational}
+                                      locationFilter={locationFilter}
+                                      onToggleFavorite={panelActions.setNodeFavorited}
+                                      mode={protocol}
+                                      groups={contactGroups.groups}
+                                      selectedGroupId={contactGroups.selectedGroupId}
+                                      onGroupChange={contactGroups.setSelectedGroupId}
+                                      onManageGroups={
+                                        capabilities.hasUserManagedContactGroups
+                                          ? () => {
+                                              setShowGroupsModal(true);
+                                            }
+                                          : undefined
+                                      }
+                                      groupMemberIds={contactGroups.groupMemberIds}
+                                      contactGroupsEnabled={
+                                        capabilities.hasUserManagedContactGroups
+                                      }
+                                      onImportContacts={
+                                        capabilities.hasContactImportExport
+                                          ? meshcorePanelActions.importContacts
+                                          : undefined
+                                      }
+                                      meshcoreShowRefreshControl={
+                                        capabilities.hasContactImportExport
+                                          ? meshcoreContactsShowRefreshControl
+                                          : false
+                                      }
+                                      onRefreshContacts={
+                                        capabilities.hasContactImportExport
+                                          ? meshcorePanelActions.refreshContacts
+                                          : undefined
+                                      }
+                                      meshcoreShowPublicKeys={
+                                        capabilities.hasContactImportExport
+                                          ? meshcoreContactsShowPublicKeys
+                                          : false
+                                      }
+                                      meshcorePublicKeyHexByNodeId={
+                                        capabilities.hasContactImportExport
+                                          ? meshcorePublicKeyHexByNodeId
+                                          : undefined
+                                      }
+                                      onSendAdvert={
+                                        capabilities.hasContactImportExport
+                                          ? meshcorePanelActions.sendAdvert
+                                          : undefined
+                                      }
+                                      onOffloadContactsFromRadio={
+                                        capabilities.hasContactImportExport
+                                          ? meshcorePanelActions.offloadContactsFromRadio
+                                          : undefined
+                                      }
+                                      meshcoreRadioOperational={isOperational}
+                                      onShowOnMap={handleShowOnMap}
+                                    />
+                                  </div>
+                                  {nodeDetailPaneOpen && renderNodeDetail('pane')}
+                                </div>
                               )}
                             </div>
                           </Suspense>
@@ -5117,196 +5384,9 @@ function AppContent() {
       )}
 
       {/* Node Detail Modal — rendered outside main for proper z-indexing */}
-      {selectedNodeId !== null && (
-        <Suspense fallback={<DialogLazyFallback />}>
-          <NodeDetailModal
-            nodes={detailModalNodes}
-            node={selectedNode}
-            onClose={() => {
-              setSelectedNodeId(null);
-            }}
-            onRequestPosition={
-              detailModalCapabilities.hasTraceRoute
-                ? detailModalProtocol === 'meshcore'
-                  ? meshcorePanelActions.requestPosition
-                  : meshtasticPanelActions.requestPosition
-                : undefined
-            }
-            onTraceRoute={
-              detailModalCapabilities.hasTraceRoute
-                ? detailModalProtocol === 'meshcore'
-                  ? meshcorePanelActions.traceRoute
-                  : async (nodeNum: number) => {
-                      await meshtasticPanelActions.traceRoute(nodeNum);
-                      return undefined;
-                    }
-                : undefined
-            }
-            traceRouteHops={traceRouteHops}
-            onDeleteNode={
-              detailModalProtocol === 'meshcore' || detailModalProtocol === 'meshtastic'
-                ? handleDeleteNode
-                : undefined
-            }
-            onMessageNode={
-              selectedNode?.node_id !== detailMyNodeNum &&
-              !(
-                detailModalProtocol === 'meshcore' &&
-                isMeshcoreDmExcludedHwModel(selectedNode?.hw_model)
-              )
-                ? handleMessageNode
-                : undefined
-            }
-            onOpenRoom={
-              detailModalProtocol === 'meshcore' &&
-              selectedNode?.hw_model === 'Room' &&
-              selectedNode.node_id !== detailMyNodeNum
-                ? handleOpenRoom
-                : undefined
-            }
-            onToggleFavorite={detailModalPanelActions.setNodeFavorited}
-            remoteAdminKey={
-              detailModalProtocol === 'meshtastic' && selectedNode != null
-                ? meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id)
-                : undefined
-            }
-            onSaveRemoteAdminKey={
-              detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
-                ? meshtasticRuntime.setRemoteAdminKeyForNode
-                : undefined
-            }
-            hasRemoteAdminKey={
-              detailModalProtocol === 'meshtastic' && selectedNode != null
-                ? Boolean(meshtasticRuntime.getRemoteAdminKeyForNode(selectedNode.node_id))
-                : false
-            }
-            onConfigureRemotely={
-              detailModalProtocol === 'meshtastic' && hasLocalMeshtasticRadio
-                ? (nodeNum) => {
-                    meshtasticPanelActions.setConfigureTargetNodeNum(nodeNum);
-                    setSelectedNodeId(null);
-                    const radioTabIndex = findFilteredTabIndexForPanel(
-                      tabsByProtocol.meshtastic,
-                      RADIO_TAB_PANEL_INDEX,
-                    );
-                    if (radioTabIndex >= 0) {
-                      setActiveTab(radioTabIndex);
-                    }
-                  }
-                : undefined
-            }
-            isConnected={detailIsOperational}
-            mqttConnected={detailConnectionView.mqttStatus === 'connected'}
-            radioConnected={detailIsConnectedOrOperational}
-            homeNode={detailHomeNode}
-            neighborInfo={activeNeighborInfo}
-            useFahrenheit={useFahrenheit}
-            protocol={detailModalProtocol}
-            meshcoreTraceResult={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcoreTraceResults.get(selectedNode.node_id)
-                : undefined
-            }
-            meshcorePingError={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcorePingErrors.get(selectedNode.node_id)
-                : undefined
-            }
-            meshcoreRepeaterStatus={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcoreNodeStatus.get(selectedNode.node_id)
-                : undefined
-            }
-            meshcoreStatusError={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcoreStatusErrors.get(selectedNode.node_id)
-                : undefined
-            }
-            onRequestRepeaterStatus={
-              detailModalProtocol === 'meshcore'
-                ? meshcorePanelActions.requestRepeaterStatus
-                : undefined
-            }
-            meshcoreNodeTelemetry={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcoreNodeTelemetry.get(selectedNode.node_id)
-                : undefined
-            }
-            meshcoreTelemetryError={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcoreTelemetryErrors.get(selectedNode.node_id)
-                : undefined
-            }
-            onRequestTelemetry={
-              detailModalProtocol === 'meshcore' ? meshcorePanelActions.requestTelemetry : undefined
-            }
-            meshcoreNeighbors={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcoreNeighbors.get(selectedNode.node_id)
-                : undefined
-            }
-            onRequestNeighbors={
-              detailModalProtocol === 'meshcore' ? meshcorePanelActions.requestNeighbors : undefined
-            }
-            meshcoreNeighborError={
-              detailModalProtocol === 'meshcore' && selectedNode
-                ? meshcoreRuntime.meshcoreNeighborErrors.get(selectedNode.node_id)
-                : undefined
-            }
-            paxCounterData={
-              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.paxCounterData : undefined
-            }
-            detectionSensorEvents={
-              detailModalProtocol === 'meshtastic'
-                ? meshtasticRuntime.detectionSensorEvents
-                : undefined
-            }
-            rangeTestPackets={
-              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.rangeTestPackets : undefined
-            }
-            mapReports={
-              detailModalProtocol === 'meshtastic' ? meshtasticRuntime.mapReports : undefined
-            }
-            onExportContact={
-              detailModalProtocol === 'meshcore' ? meshcoreRuntime.exportContact : undefined
-            }
-            onShareContact={
-              detailModalProtocol === 'meshcore' ? meshcoreRuntime.shareContact : undefined
-            }
-            meshcoreLocalStats={
-              detailModalProtocol === 'meshcore' &&
-              selectedNode?.node_id === meshcoreRuntime.state.myNodeNum
-                ? meshcoreRuntime.meshcoreLocalStats
-                : null
-            }
-            meshcoreManufacturerModel={
-              detailModalProtocol === 'meshcore'
-                ? meshcoreRuntime.state.manufacturerModel
-                : undefined
-            }
-            positionHistory={selectedNodeHistory}
-            onShowOnMap={handleShowOnMap}
-          />
-        </Suspense>
-      )}
+      {nodeDetailModalOpen && renderNodeDetail('modal')}
 
-      {capabilities.hasReticulumPeerDetailModal && selectedPeerHash !== null && (
-        <ReticulumPeerDetailErrorBoundary
-          peerHash={selectedPeerHash}
-          onClose={() => {
-            setSelectedPeerHash(null);
-          }}
-          suspenseFallback={<DialogLazyFallback />}
-        >
-          <ReticulumPeerDetailModal
-            peerHash={selectedPeerHash}
-            onClose={() => {
-              setSelectedPeerHash(null);
-            }}
-            onSendMessage={handleMessageNode}
-          />
-        </ReticulumPeerDetailErrorBoundary>
-      )}
+      {peerDetailModalOpen && renderPeerDetail('modal')}
     </>
   );
 }

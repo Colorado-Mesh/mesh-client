@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Falha ao remover do rádio",
     "mqttIgnoreHeading": "Ignorar MQTT",
     "mqttIgnoreDescription": "Excluir os dados MQTT deste nó do diagnóstico",
-    "stopIgnoringMqttTitle": "Pare de ignorar o MQTT para este nó",
-    "ignoreMqttTitle": "Ignorar MQTT para este nó",
     "deleteNode": "Excluir nó",
     "deleteNodeConfirm": "Remover este nó do banco de dados local? Ele reaparecerá quando for transmitido novamente.",
     "cancel": "Cancelar",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA assinado",
     "xeddsaSignedHint": "O rádio verificou uma assinatura XEdDSA deste nó, então sua chave pública é criptograficamente atestada.",
     "keyManuallyVerified": "Chave verificada",
-    "keyManuallyVerifiedHint": "A chave pública deste nó foi confirmada manualmente por um operador."
+    "keyManuallyVerifiedHint": "A chave pública deste nó foi confirmada manualmente por um operador.",
+    "keyBadge": "Chave",
+    "closePane": "Fechar detalhes"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "O filtro de distância está ativado, mas seu dispositivo não tem correção de GPS — todos os nós são mostrados.",
     "distanceFilterActiveBanner_one": "Filtro de distância ativo — {{count}} nó oculto além de {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Filtro de distância ativo — {{count}} nós ocultos além de {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} online",
-    "summaryOnline_other": "{{count}} online",
-    "summaryStale_one": "{{count}} obsoleto",
-    "summaryStale_other": "{{count}} obsoleto",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Nós de malha conectados",
     "columnFavorite": "Favorito",
     "columnId": "ID",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Desconhecida",
     "columnHealth": "Saúde do nó",
     "hasPublicKeyTitle": "Chave pública",
-    "buttonExportCsv": "Exportar CSV"
+    "buttonExportCsv": "Exportar CSV",
+    "listViewAria": "Visualização da lista",
+    "statusFilterAria": "Filtrar por status",
+    "statusFilterAll": "Todos",
+    "buttonExport": "Exportar",
+    "exportMenuLabel": "Formatos de exportação",
+    "youBadge": "Você"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

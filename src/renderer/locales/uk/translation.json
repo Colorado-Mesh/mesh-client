@@ -3186,8 +3186,6 @@
     "removeFromRadioFailed": "Не вдалося видалити з радіо",
     "mqttIgnoreHeading": "MQTT Ігнорувати",
     "mqttIgnoreDescription": "Виключити дані MQTT цього вузла з діагностики",
-    "stopIgnoringMqttTitle": "Припинити ігнорувати MQTT для цього вузла",
-    "ignoreMqttTitle": "Ігнорувати MQTT для цього вузла",
     "deleteNode": "Видалити вузловий пункт",
     "deleteNodeConfirm": "Видалити цей вузол з локальної бази даних? Він знову з'явиться, коли знову транслюватиметься.",
     "cancel": "Скасувати",
@@ -3272,7 +3270,9 @@
     "xeddsaSigned": "Підписано XEdDSA",
     "xeddsaSignedHint": "Радіо перевірило підпис XEdDSA з цього вузла, тому його відкритий ключ криптографічно засвідчений.",
     "keyManuallyVerified": "Ключ підтверджено",
-    "keyManuallyVerifiedHint": "Відкритий ключ цього вузла було підтверджено вручну оператором."
+    "keyManuallyVerifiedHint": "Відкритий ключ цього вузла було підтверджено вручну оператором.",
+    "keyBadge": "Ключ",
+    "closePane": "Закрити подробиці"
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",
@@ -3391,12 +3391,6 @@
     "distanceFilterNoGpsBanner": "Фільтр відстані ввімкнено, але ваш пристрій не має виправлення GPS — відображаються всі вузли.",
     "distanceFilterActiveBanner_one": "Дистанційний фільтр активний — вузол {{count}} приховано за межами {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Дистанційний фільтр активний — {{count}} вузли приховані за {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} онлайн",
-    "summaryOnline_other": "{{count}} онлайн",
-    "summaryStale_one": "{{count}} застарілий",
-    "summaryStale_other": "{{count}} застарілий",
-    "summaryOffline_one": "{{count}} в автономному режимі",
-    "summaryOffline_other": "{{count}} в автономному режимі",
     "tableCaptionMeshNodes": "З'єднані вузли сіті",
     "columnFavorite": "Обране",
     "columnId": "ID",
@@ -3454,13 +3448,13 @@
     "importResultSuccess_many": "Імпортовано {{count}} контактів.",
     "importResultSuccessWithSkipped_few": "Імпортовано {{count}} контакти, пропущено {{skipped}}.",
     "importResultSuccessWithSkipped_many": "Імпортовано {{count}} контактів, пропущено {{skipped}}.",
-    "summaryOffline_few": "{{count}} в автономному режимі",
-    "summaryOffline_many": "{{count}} в автономному режимі",
-    "summaryOnline_few": "{{count}} онлайн",
-    "summaryOnline_many": "{{count}} онлайн",
-    "summaryStale_few": "{{count}} застарілі",
-    "summaryStale_many": "{{count}} застарілих",
-    "buttonExportCsv": "Експорт у CSV"
+    "buttonExportCsv": "Експорт у CSV",
+    "listViewAria": "Вигляд списку",
+    "statusFilterAria": "Фільтр за станом",
+    "statusFilterAll": "Усі",
+    "buttonExport": "Експорт",
+    "exportMenuLabel": "Формати експорту",
+    "youBadge": "Ви"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

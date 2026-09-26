@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Gagal menghapus dari radio",
     "mqttIgnoreHeading": "MQTT Abaikan",
     "mqttIgnoreDescription": "Kecualikan data MQTT simpul ini dari diagnostik",
-    "stopIgnoringMqttTitle": "Berhenti mengabaikan MQTT untuk node ini",
-    "ignoreMqttTitle": "Abaikan MQTT untuk node ini",
     "deleteNode": "Hapus Node",
     "deleteNodeConfirm": "Hapus node ini dari database lokal? Itu akan muncul kembali ketika disiarkan lagi.",
     "cancel": "Membatalkan",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA ditandatangani",
     "xeddsaSignedHint": "Radio telah memverifikasi tanda tangan XEdDSA dari simpul ini, sehingga kunci publiknya dibuktikan secara kriptografi.",
     "keyManuallyVerified": "Kunci terverifikasi",
-    "keyManuallyVerifiedHint": "Kunci publik simpul ini dikonfirmasi secara manual oleh operator."
+    "keyManuallyVerifiedHint": "Kunci publik simpul ini dikonfirmasi secara manual oleh operator.",
+    "keyBadge": "Kunci",
+    "closePane": "Tutup detail"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "Filter jarak diaktifkan tetapi perangkat Anda tidak memiliki GPS tetap — semua node ditampilkan.",
     "distanceFilterActiveBanner_one": "Filter jarak aktif — {{count}} node tersembunyi di luar {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Filter jarak aktif — {{count}} node tersembunyi di luar {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} daring",
-    "summaryOnline_other": "{{count}} daring",
-    "summaryStale_one": "{{count}} basi",
-    "summaryStale_other": "{{count}} basi",
-    "summaryOffline_one": "{{count}} luring",
-    "summaryOffline_other": "{{count}} luring",
     "tableCaptionMeshNodes": "Node mesh yang terhubung",
     "columnFavorite": "Favorit",
     "columnId": "PENGENAL",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Tidak Diketahui",
     "columnHealth": "Kesehatan node",
     "hasPublicKeyTitle": "Kunci Publik",
-    "buttonExportCsv": "Ekspor CSV"
+    "buttonExportCsv": "Ekspor CSV",
+    "listViewAria": "Tampilan daftar",
+    "statusFilterAria": "Filter menurut status",
+    "statusFilterAll": "Semua",
+    "buttonExport": "Ekspor",
+    "exportMenuLabel": "Format ekspor",
+    "youBadge": "Anda"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

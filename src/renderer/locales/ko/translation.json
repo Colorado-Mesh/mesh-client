@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "라디오에서 삭제하지 못했습니다.",
     "mqttIgnoreHeading": "MQTT 무시",
     "mqttIgnoreDescription": "진단에서 이 노드의 MQTT 데이터를 제외합니다.",
-    "stopIgnoringMqttTitle": "이 노드에 대한 MQTT 무시 중지",
-    "ignoreMqttTitle": "이 노드에 대한 MQTT 무시",
     "deleteNode": "노드 삭제",
     "deleteNodeConfirm": "로컬 데이터베이스에서 이 노드를 제거하시겠습니까? 다시 방송하면 또 나오겠죠.",
     "cancel": "취소",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA 서명됨",
     "xeddsaSignedHint": "라디오가 이 노드에서 XEdDSA 서명을 확인했으므로 공개 키가 암호로 증명됩니다.",
     "keyManuallyVerified": "키 확인됨",
-    "keyManuallyVerifiedHint": "이 노드의 공개 키는 운영자가 수동으로 확인했습니다."
+    "keyManuallyVerifiedHint": "이 노드의 공개 키는 운영자가 수동으로 확인했습니다.",
+    "keyBadge": "키",
+    "closePane": "세부 정보 닫기"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "거리 필터가 활성화되었지만 장치에 GPS 수정 사항이 없습니다. 모든 노드가 표시됩니다.",
     "distanceFilterActiveBanner_one": "거리 필터 활성 — {{maxDistance}} {{unit}} 너머에 숨겨진 {{count}} 노드.",
     "distanceFilterActiveBanner_other": "거리 필터 활성 — {{maxDistance}} {{unit}} 너머에 숨겨진 {{count}} 노드.",
-    "summaryOnline_one": "{{count}} 온라인",
-    "summaryOnline_other": "{{count}} 온라인",
-    "summaryStale_one": "{{count}} 오래됨",
-    "summaryStale_other": "{{count}} 오래됨",
-    "summaryOffline_one": "{{count}} 오프라인",
-    "summaryOffline_other": "{{count}} 오프라인",
     "tableCaptionMeshNodes": "연결된 메시 노드",
     "columnFavorite": "가장 좋아하는",
     "columnId": "ID",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "미상",
     "columnHealth": "노드 상태",
     "hasPublicKeyTitle": "공개 키",
-    "buttonExportCsv": "CSV(엑셀)로 내보내기"
+    "buttonExportCsv": "CSV(엑셀)로 내보내기",
+    "listViewAria": "목록 보기",
+    "statusFilterAria": "상태별 필터",
+    "statusFilterAll": "전체",
+    "buttonExport": "내보내기",
+    "exportMenuLabel": "내보내기 형식",
+    "youBadge": "나"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

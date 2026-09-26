@@ -344,7 +344,7 @@ describe('NodeDetailModal MeshCore actions', () => {
       });
 
       const badge = await screen.findByTitle('Has public key - can send DMs');
-      expect(badge).toHaveTextContent('🔑 DM');
+      expect(badge).toHaveTextContent('DM');
       expect(screen.queryByTitle('Has public key (no direct messages)')).not.toBeInTheDocument();
       hydrateAxeThemeColors(container);
       expect(await axe(container)).toHaveNoViolations();
@@ -363,7 +363,7 @@ describe('NodeDetailModal MeshCore actions', () => {
       });
 
       const badge = await screen.findByTitle('Has public key (no direct messages)');
-      expect(badge).toHaveTextContent('🔑');
+      expect(badge).toHaveTextContent('Key');
       expect(badge).not.toHaveTextContent('DM');
       expect(screen.queryByTitle('Has public key - can send DMs')).not.toBeInTheDocument();
       hydrateAxeThemeColors(container);
@@ -793,5 +793,50 @@ describe('NodeDetailModal verification badges', () => {
     const results = await axe(container);
 
     expect(results).toHaveNoViolations();
+  });
+});
+
+describe('NodeDetailModal pane variant', () => {
+  function renderPane(onClose = vi.fn()) {
+    return render(
+      <NodeDetailModal
+        variant="pane"
+        node={mockNode}
+        onClose={onClose}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+  }
+
+  it('renders inline as a labelled region, not a modal dialog', async () => {
+    const { container } = renderPane();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'TEST' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close dialog' })).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('leaves focus and Escape to the list, and closes from its own button', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const before = document.createElement('button');
+    document.body.appendChild(before);
+    before.focus();
+    try {
+      renderPane(onClose);
+      expect(before).toHaveFocus();
+      await user.keyboard('{Escape}');
+      expect(onClose).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: 'Close details' }));
+      expect(onClose).toHaveBeenCalledOnce();
+    } finally {
+      before.remove();
+    }
   });
 });

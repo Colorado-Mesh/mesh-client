@@ -3186,8 +3186,6 @@
     "removeFromRadioFailed": "Nie udało się usunąć z radia",
     "mqttIgnoreHeading": "Ignoruj ​​MQTT",
     "mqttIgnoreDescription": "Wyklucz dane MQTT tego węzła z diagnostyki",
-    "stopIgnoringMqttTitle": "Przestań ignorować MQTT dla tego węzła",
-    "ignoreMqttTitle": "Zignoruj ​​MQTT dla tego węzła",
     "deleteNode": "Usuń węzeł",
     "deleteNodeConfirm": "Usunąć ten węzeł z lokalnej bazy danych? Pojawi się ponownie, gdy będzie ponownie nadawany.",
     "cancel": "Anulować",
@@ -3272,7 +3270,9 @@
     "xeddsaSigned": "XEdDSA podpisany",
     "xeddsaSignedHint": "Radio zweryfikowało podpis XEdDSA z tego węzła, więc jego klucz publiczny jest potwierdzony kryptograficznie.",
     "keyManuallyVerified": "Klucz zweryfikowany",
-    "keyManuallyVerifiedHint": "Klucz publiczny tego węzła został ręcznie potwierdzony przez operatora."
+    "keyManuallyVerifiedHint": "Klucz publiczny tego węzła został ręcznie potwierdzony przez operatora.",
+    "keyBadge": "Klucz",
+    "closePane": "Zamknij szczegóły"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",
@@ -3391,12 +3391,6 @@
     "distanceFilterNoGpsBanner": "Filtr odległości jest włączony, ale Twoje urządzenie nie ma sygnału GPS — pokazane są wszystkie węzły.",
     "distanceFilterActiveBanner_one": "Aktywny filtr odległości — węzeł {{count}} ukryty za {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Aktywny filtr odległości — {{count}} węzły ukryte poza {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} w Internecie",
-    "summaryOnline_other": "{{count}} w Internecie",
-    "summaryStale_one": "{{count}} nieaktualne",
-    "summaryStale_other": "{{count}} nieaktualne",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Połączone węzły siatki",
     "columnFavorite": "Ulubiony",
     "columnId": "ID",
@@ -3454,13 +3448,13 @@
     "importResultSuccess_many": "Zaimportowano {{count}} kontaktów.",
     "importResultSuccessWithSkipped_few": "Zaimportowano {{count}} kontakty, pominięto {{skipped}}.",
     "importResultSuccessWithSkipped_many": "Zaimportowano {{count}} kontaktów, pominięto {{skipped}}.",
-    "summaryOffline_few": "{{count}} offline",
-    "summaryOffline_many": "{{count}} offline",
-    "summaryOnline_few": "{{count}} w Internecie",
-    "summaryOnline_many": "{{count}} w Internecie",
-    "summaryStale_few": "{{count}} nieaktualne",
-    "summaryStale_many": "{{count}} nieaktualnych",
-    "buttonExportCsv": "Eksportuj do CSV"
+    "buttonExportCsv": "Eksportuj do CSV",
+    "listViewAria": "Widok listy",
+    "statusFilterAria": "Filtruj według stanu",
+    "statusFilterAll": "Wszystkie",
+    "buttonExport": "Eksportuj",
+    "exportMenuLabel": "Formaty eksportu",
+    "youBadge": "Ty"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

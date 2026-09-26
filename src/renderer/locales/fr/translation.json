@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Échec du retrait de la radio",
     "mqttIgnoreHeading": "MQTT Ignorer",
     "mqttIgnoreDescription": "Exclure les données MQTT de ce nœud des diagnostics",
-    "stopIgnoringMqttTitle": "Arrêtez d'ignorer MQTT pour ce nœud",
-    "ignoreMqttTitle": "Ignorer MQTT pour ce nœud",
     "deleteNode": "Nouveau texteVertical alignment",
     "deleteNodeConfirm": "Supprimer ce nœud de la base de données locale ? Il réapparaîtra lorsqu'il sera à nouveau diffusé.",
     "cancel": "Annuler",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA signé",
     "xeddsaSignedHint": "La radio a vérifié une signature XEdDSA à partir de ce nœud, de sorte que sa clé publique est attestée cryptographiquement.",
     "keyManuallyVerified": "Clé vérifiée",
-    "keyManuallyVerifiedHint": "La clé publique de ce nœud a été confirmée manuellement par un opérateur."
+    "keyManuallyVerifiedHint": "La clé publique de ce nœud a été confirmée manuellement par un opérateur.",
+    "keyBadge": "Clé",
+    "closePane": "Fermer les détails"
   },
   "nodeInfoBody": {
     "longName": "Nom long",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "Le filtre de distance est activé mais votre appareil n'a pas de solution GPS — tous les nœuds sont affichés.",
     "distanceFilterActiveBanner_one": "Filtre de distance actif — nœud {{count}} caché au-delà de {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Filtre de distance actif — {{count}} nœuds cachés au-delà de {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} EN ligne",
-    "summaryOnline_other": "{{count}} EN ligne",
-    "summaryStale_one": "{{count}} périmé",
-    "summaryStale_other": "{{count}} périmé",
-    "summaryOffline_one": "{{count}} hors ligne",
-    "summaryOffline_other": "{{count}} hors ligne",
     "tableCaptionMeshNodes": "Nœuds maillés connectés",
     "columnFavorite": "Favori",
     "columnId": "ID",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Inconnu",
     "columnHealth": "Santé du nœud",
     "hasPublicKeyTitle": "Clé publique",
-    "buttonExportCsv": "Export CSV"
+    "buttonExportCsv": "Export CSV",
+    "listViewAria": "Vue de la liste",
+    "statusFilterAria": "Filtrer par état",
+    "statusFilterAll": "Tous",
+    "buttonExport": "Exporter",
+    "exportMenuLabel": "Formats d'exportation",
+    "youBadge": "Vous"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

@@ -217,6 +217,36 @@ describe('ReticulumPeerListPanel', () => {
     expect(screen.getByText('TCP')).toBeTruthy();
   });
 
+  it('opens a peer from its name button and marks the one shown in the pane', async () => {
+    const user = userEvent.setup();
+    const onPeerClick = vi.fn();
+    const { rerender } = render(
+      <ReticulumPeerListPanel
+        isConnected={false}
+        onPeerClick={onPeerClick}
+        onSendMessage={vi.fn()}
+      />,
+    );
+    const name = screen.getByRole('button', { name: 'Alpha Peer' });
+    name.focus();
+    await user.keyboard('{Enter}');
+    expect(onPeerClick).toHaveBeenCalledExactlyOnceWith('abc');
+    expect(name).not.toHaveAttribute('aria-current');
+
+    rerender(
+      <ReticulumPeerListPanel
+        isConnected={false}
+        onPeerClick={onPeerClick}
+        onSendMessage={vi.fn()}
+        selectedPeerHash="abc"
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Alpha Peer' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+  });
+
   it('omits the medium badge when the peer has no hop count', () => {
     useReticulumPeerStore.setState({
       peers: new Map([
@@ -279,7 +309,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.colLastHeard')).toBeInTheDocument();
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
     expect(screen.queryByText('History Peer')).not.toBeInTheDocument();
@@ -306,7 +336,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabFavorites' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabFavorites' }));
     expect(screen.getByText('History Favorite')).toBeInTheDocument();
   });
 
@@ -315,7 +345,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabHistory' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabHistory' }));
     expect(screen.getByRole('button', { name: 'peerListPanel.colLastHeard' })).toBeInTheDocument();
     expect(screen.getByText('History Peer')).toBeInTheDocument();
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
@@ -327,7 +357,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabHistory' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabHistory' }));
     expect(screen.getByText('peerListPanel.emptyHistory')).toBeInTheDocument();
   });
 
@@ -337,7 +367,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.emptyContacts')).toBeInTheDocument();
   });
 
@@ -371,7 +401,7 @@ describe('ReticulumPeerListPanel', () => {
         contactNodes={contactNodes}
       />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.emptyContacts')).toBeInTheDocument();
     expect(screen.queryByText('Path Table Peer')).not.toBeInTheDocument();
   });

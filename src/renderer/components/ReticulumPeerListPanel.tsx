@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Check, MessageCircle, RefreshCw, Star } from 'lucide-react-motion';
+import { Check, MessageCircle, RefreshCw, Search, Star } from 'lucide-react-motion';
 import {
   memo,
   type ReactNode,
@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
+import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
 import { normalizeLastHeardMs } from '@/renderer/lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
@@ -78,6 +79,9 @@ import { ReticulumPeerPathsDetail } from './reticulum/ReticulumPeerPathsDetail';
 import { ReticulumVoiceCallButton } from './reticulum/ReticulumVoiceCallButton';
 import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
+import { Button } from './ui/Button';
+import { INPUT_CLASS, SELECT_CLASS } from './ui/formClasses';
+import { SegmentedControl } from './ui/SegmentedControl';
 
 type PeerListTab = 'peers' | 'history' | 'contacts' | 'favorites';
 type SortKey = ReticulumPeerSortKey;
@@ -86,6 +90,8 @@ type SortDir = ReticulumPeerSortDir;
 export interface ReticulumPeerListPanelProps {
   isConnected: boolean;
   onPeerClick: (hash: string) => void;
+  /** Peer shown in the detail pane; its row is highlighted. */
+  selectedPeerHash?: string | null;
   onSendMessage: (nodeNum: number) => void;
   /** Forced live path-table dump (`?refresh=1`). Used by the Refresh button. */
   onRefresh?: () => Promise<void>;
@@ -152,6 +158,8 @@ interface PeerTableRowProps {
   iconName?: string | null;
   iconColor?: string | null;
   displayLabel: string;
+  /** Shown in the detail pane beside the list. */
+  selected: boolean;
   formatPeerActivity: (peer: ReticulumPeer) => string;
   onPeerClick: (hash: string) => void;
   onToggleFavorite: (peer: ReticulumPeer) => void;
@@ -168,6 +176,7 @@ const PeerTableRow = memo(function PeerTableRow({
   iconName,
   iconColor,
   displayLabel,
+  selected,
   formatPeerActivity,
   onPeerClick,
   onToggleFavorite,
@@ -177,7 +186,10 @@ const PeerTableRow = memo(function PeerTableRow({
   const peer = prepared.peer;
   return (
     <tr
-      className="cursor-pointer border-b border-gray-800 hover:bg-gray-900/60"
+      data-selected={selected ? 'true' : undefined}
+      className={`cursor-pointer border-b border-slate-800 ${
+        selected ? 'bg-sidebar-active-bg' : 'hover:bg-sidebar-active-bg/60'
+      }`}
       onClick={() => {
         onPeerClick(peer.destination_hash);
       }}
@@ -190,7 +202,17 @@ const PeerTableRow = memo(function PeerTableRow({
             size={14}
             destinationHash={peer.destination_hash}
           />
-          <span className="truncate">{displayLabel}</span>
+          <button
+            type="button"
+            className="focus-visible:outline-brand-green truncate rounded text-left hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
+            aria-current={selected ? 'true' : undefined}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPeerClick(peer.destination_hash);
+            }}
+          >
+            {displayLabel}
+          </button>
           {isReticulumPeerHeardViaTcpHub(peer.interface) ? (
             <span
               className="shrink-0 rounded bg-sky-900/50 px-1 py-0.5 text-[10px] font-medium text-sky-300"
@@ -297,6 +319,7 @@ function buildSourcePeerRows(
 export default function ReticulumPeerListPanel({
   isConnected,
   onPeerClick,
+  selectedPeerHash = null,
   onSendMessage,
   onRefresh,
   onSoftRefresh,
@@ -782,69 +805,132 @@ export default function ReticulumPeerListPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="grid grid-cols-1 items-center gap-3 min-[480px]:grid-cols-[1fr_auto_1fr]">
-        <h2 className="text-bright-green text-lg font-semibold min-[480px]:justify-self-start">
-          {t('peerListPanel.heading')} ({sortedRows.length})
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h2 className="text-base font-semibold text-slate-200">
+          {t('peerListPanel.heading')}{' '}
+          <span className="text-muted font-mono text-sm">({sortedRows.length})</span>
         </h2>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
+        <SegmentedControl
+          aria-label={t('peerListPanel.heading')}
+          value={activeTab}
+          onChange={(tab) => {
+            setActiveTab(tab);
+            if (tab === 'history') {
+              setSortKey('lastSeen');
+              setSortDir('desc');
+            }
           }}
-          placeholder={t('peerListPanel.searchPlaceholder')}
-          aria-label={t('peerListPanel.searchAria')}
-          className="bg-deep-black w-full min-w-0 rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-100 min-[480px]:w-64 min-[480px]:justify-self-center"
+          options={[
+            { value: 'peers', label: t('peerListPanel.tabPeers') },
+            { value: 'history', label: t('peerListPanel.tabHistory') },
+            { value: 'contacts', label: t('peerListPanel.tabContacts') },
+            { value: 'favorites', label: t('peerListPanel.tabFavorites') },
+          ]}
         />
-        <button
-          type="button"
-          disabled={!isConnected || refreshing}
-          onClick={() => {
-            void runForcedRefresh();
-          }}
-          className="flex items-center justify-center gap-1 rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40 min-[480px]:justify-self-end"
-          aria-label={t('common.refresh')}
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden />
-          {t('common.refresh')}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button
+            size="sm"
+            disabled={!isConnected || refreshing}
+            onClick={() => {
+              void runForcedRefresh();
+            }}
+            aria-label={t('common.refresh')}
+            icon={
+              <RefreshCw
+                className={`${ICON_SM_PLUS} ${refreshing ? 'animate-spin' : ''}`}
+                aria-hidden
+                size={14}
+              />
+            }
+          >
+            {t('common.refresh')}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-[18rem] min-w-[10rem] flex-1">
+          <Search
+            aria-hidden
+            className={`${ICON_MD} text-muted pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2`}
+            size={16}
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+            }}
+            placeholder={t('peerListPanel.searchPlaceholder')}
+            aria-label={t('peerListPanel.searchAria')}
+            className={`${INPUT_CLASS} pl-8`}
+          />
+        </div>
+        {contactGroupsEnabled && activeTab === 'contacts' && onGroupChange ? (
+          <>
+            <div className="w-48">
+              <select
+                value={selectedGroupId ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  onGroupChange(v ? Number(v) : null);
+                }}
+                className={SELECT_CLASS}
+                aria-label={t('peerListPanel.groupFilterAria')}
+              >
+                <option value="">{t('peerListPanel.allGroups')}</option>
+                {groups.map((g) => (
+                  <option key={g.group_id} value={g.group_id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {onManageGroups ? (
+              <Button variant="ghost" size="sm" onClick={onManageGroups}>
+                {t('peerListPanel.manageGroups')}
+              </Button>
+            ) : null}
+          </>
+        ) : null}
       </div>
 
       {activeTab === 'peers' ? (
         <div className="flex min-w-0 flex-col gap-1.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <input
-              type="text"
-              value={lookupInput}
-              onChange={(e) => {
-                setLookupInput(e.target.value);
-                if (lookupError) setLookupError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  void lookupByHash();
-                }
-              }}
-              placeholder={t('peerListPanel.lookupPlaceholder')}
-              aria-label={t('peerListPanel.lookupAria')}
-              aria-invalid={lookupError != null}
-              disabled={!isConnected || lookupBusy}
-              className="bg-deep-black min-w-0 flex-1 rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-100 disabled:opacity-40"
-            />
-            <button
-              type="button"
+          <div className="flex max-w-3xl min-w-0 flex-wrap items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <input
+                type="text"
+                value={lookupInput}
+                onChange={(e) => {
+                  setLookupInput(e.target.value);
+                  if (lookupError) setLookupError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void lookupByHash();
+                  }
+                }}
+                placeholder={t('peerListPanel.lookupPlaceholder')}
+                aria-label={t('peerListPanel.lookupAria')}
+                aria-invalid={lookupError != null}
+                disabled={!isConnected || lookupBusy}
+                className={`${INPUT_CLASS} font-mono`}
+              />
+            </div>
+            <Button
+              size="sm"
               disabled={!isConnected || lookupBusy || !lookupInput.trim()}
               onClick={() => {
                 void lookupByHash();
               }}
-              className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40"
               aria-label={t('peerListPanel.lookupSubmitAria')}
             >
               {t('peerListPanel.lookupSubmit')}
-            </button>
+            </Button>
           </div>
-          <p className="text-muted text-[11px]">{t('peerListPanel.lookupHint')}</p>
+          <p className="text-muted text-xs">{t('peerListPanel.lookupHint')}</p>
           {lookupError ? (
             <p className="text-xs text-red-400" role="alert">
               {lookupError}
@@ -854,94 +940,12 @@ export default function ReticulumPeerListPanel({
       ) : null}
 
       <div
-        className="flex flex-wrap items-center gap-2"
-        role="tablist"
-        aria-label={t('peerListPanel.heading')}
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'peers'}
-          className={`rounded px-3 py-1 text-sm ${activeTab === 'peers' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
-          onClick={() => {
-            setActiveTab('peers');
-          }}
-        >
-          {t('peerListPanel.tabPeers')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'history'}
-          className={`rounded px-3 py-1 text-sm ${activeTab === 'history' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
-          onClick={() => {
-            setActiveTab('history');
-            setSortKey('lastSeen');
-            setSortDir('desc');
-          }}
-        >
-          {t('peerListPanel.tabHistory')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'contacts'}
-          className={`rounded px-3 py-1 text-sm ${activeTab === 'contacts' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
-          onClick={() => {
-            setActiveTab('contacts');
-          }}
-        >
-          {t('peerListPanel.tabContacts')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'favorites'}
-          className={`rounded px-3 py-1 text-sm ${activeTab === 'favorites' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
-          onClick={() => {
-            setActiveTab('favorites');
-          }}
-        >
-          {t('peerListPanel.tabFavorites')}
-        </button>
-        {contactGroupsEnabled && activeTab === 'contacts' && onGroupChange ? (
-          <>
-            <select
-              value={selectedGroupId ?? ''}
-              onChange={(e) => {
-                const v = e.target.value;
-                onGroupChange(v ? Number(v) : null);
-              }}
-              className="bg-deep-black rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
-              aria-label={t('peerListPanel.groupFilterAria')}
-            >
-              <option value="">{t('peerListPanel.allGroups')}</option>
-              {groups.map((g) => (
-                <option key={g.group_id} value={g.group_id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-            {onManageGroups ? (
-              <button
-                type="button"
-                className="text-sm text-amber-400 hover:underline"
-                onClick={onManageGroups}
-              >
-                {t('peerListPanel.manageGroups')}
-              </button>
-            ) : null}
-          </>
-        ) : null}
-      </div>
-
-      <div
         ref={tableScrollRef}
-        className="min-h-0 flex-1 overflow-auto rounded border border-gray-700"
+        className="bg-deep-black min-h-0 flex-1 overflow-auto rounded-xl border border-slate-800"
       >
         <table className="w-full min-w-[640px] text-left text-xs">
           <thead className="bg-deep-black sticky top-0 z-10">
-            <tr className="text-muted border-b border-gray-700">
+            <tr className="text-muted border-b border-slate-800">
               <th className="py-2 pr-2 pl-2" aria-sort={ariaSortValue('name')}>
                 <button
                   type="button"
@@ -1091,6 +1095,7 @@ export default function ReticulumPeerListPanel({
                     iconName={iconMeta?.icon_name}
                     iconColor={iconMeta?.icon_color}
                     displayLabel={displayLabel}
+                    selected={peer.destination_hash === selectedPeerHash}
                     formatPeerActivity={formatPeerActivity}
                     onPeerClick={onPeerClick}
                     onToggleFavorite={(p) => {

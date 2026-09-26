@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Verwijderen van radio mislukt",
     "mqttIgnoreHeading": "MQTT negeren",
     "mqttIgnoreDescription": "Sluit de MQTT-gegevens van dit knooppunt uit van diagnostische gegevens",
-    "stopIgnoringMqttTitle": "Stop met het negeren van MQTT voor dit knooppunt",
-    "ignoreMqttTitle": "Negeer MQTT voor dit knooppunt",
     "deleteNode": "Knooppunt verwijderen",
     "deleteNodeConfirm": "Dit knooppunt uit de lokale database verwijderen? Het zal opnieuw verschijnen wanneer het opnieuw wordt uitgezonden.",
     "cancel": "Annuleren",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA ondertekend",
     "xeddsaSignedHint": "De radio heeft een XEdDSA-handtekening van dit knooppunt geverifieerd, dus de openbare sleutel is cryptografisch geattesteerd.",
     "keyManuallyVerified": "Sleutel geverifieerd",
-    "keyManuallyVerifiedHint": "De openbare sleutel van dit knooppunt werd handmatig bevestigd door een operator."
+    "keyManuallyVerifiedHint": "De openbare sleutel van dit knooppunt werd handmatig bevestigd door een operator.",
+    "keyBadge": "Sleutel",
+    "closePane": "Details sluiten"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "Het afstandsfilter is ingeschakeld, maar uw apparaat heeft geen GPS-fix: alle knooppunten worden weergegeven.",
     "distanceFilterActiveBanner_one": "Afstandsfilter actief — {{count}} knooppunt verborgen voorbij {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Afstandsfilter actief — {{count}} knooppunten verborgen voorbij {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} online",
-    "summaryOnline_other": "{{count}} online",
-    "summaryStale_one": "{{count}} oud",
-    "summaryStale_other": "{{count}} oud",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Verbonden mesh-knooppunten",
     "columnFavorite": "Favoriet",
     "columnId": "Identiteitskaart",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Onbekend",
     "columnHealth": "Knooppuntgezondheid",
     "hasPublicKeyTitle": "Openbare sleutel",
-    "buttonExportCsv": "CSV exporteren"
+    "buttonExportCsv": "CSV exporteren",
+    "listViewAria": "Lijstweergave",
+    "statusFilterAria": "Filteren op status",
+    "statusFilterAll": "Alle",
+    "buttonExport": "Exporteren",
+    "exportMenuLabel": "Exportformaten",
+    "youBadge": "Jij"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

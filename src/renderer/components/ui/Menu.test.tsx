@@ -5,7 +5,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
-import { MenuButton, type MenuEntry, SplitButton } from './Menu';
+import { LabeledMenuButton, MenuButton, type MenuEntry, SplitButton } from './Menu';
 
 function entries(onRadio = vi.fn(), onQuit = vi.fn()): MenuEntry[] {
   return [
@@ -161,5 +161,34 @@ describe('MenuButton', () => {
     await user.click(screen.getByRole('button', { name: 'More actions for Ridge Fox' }));
     await user.click(screen.getByRole('menuitem', { name: 'Ping' }));
     expect(onPing).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('LabeledMenuButton', () => {
+  it('opens its menu from a labelled trigger and runs the chosen item', async () => {
+    const user = userEvent.setup();
+    const onCsv = vi.fn();
+    const { container } = render(
+      <LabeledMenuButton
+        label="Export"
+        menuLabel="Export formats"
+        entries={[
+          { id: 'json', label: 'Export JSON', onSelect: vi.fn() },
+          { id: 'csv', label: 'Export CSV', onSelect: onCsv },
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: 'Export' });
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await user.click(screen.getByRole('menuitem', { name: 'Export CSV' }));
+    expect(onCsv).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 });

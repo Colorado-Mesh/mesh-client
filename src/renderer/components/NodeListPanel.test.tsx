@@ -885,7 +885,8 @@ describe('NodeListPanel JSON export', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Export JSON' }));
     expect(downloadBlob).toHaveBeenCalledTimes(1);
     const [blob] = vi.mocked(downloadBlob).mock.calls[0];
     const text = await blob.text();
@@ -913,7 +914,8 @@ describe('NodeListPanel JSON export', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Export JSON' }));
     const [blob] = vi.mocked(downloadBlob).mock.calls[0];
     const text = await blob.text();
     const parsed = JSON.parse(text) as {
@@ -939,7 +941,8 @@ describe('NodeListPanel JSON export', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Export JSON' }));
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Export JSON' }));
     const [jsonBlob] = vi.mocked(downloadBlob).mock.calls[0];
     const parsed = JSON.parse(await jsonBlob.text()) as {
       format: string;
@@ -950,7 +953,8 @@ describe('NodeListPanel JSON export', () => {
     expect(typeof parsed.nodes[0]?.health_score).toBe('number');
     expect(parsed.nodes[0]?.protocol).toBe('meshtastic');
 
-    await user.click(screen.getByRole('button', { name: 'Export CSV' }));
+    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Export CSV' }));
     const [csvBlob, csvName] = vi.mocked(downloadBlob).mock.calls[1];
     expect(csvName).toMatch(/\.csv$/);
     const header = (await csvBlob.text()).split('\r\n')[0];
@@ -1041,9 +1045,9 @@ describe('NodeListPanel History tab', () => {
     );
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
-    expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
-    await user.click(screen.getByRole('button', { name: 'History' }));
-    expect(screen.getByRole('button', { name: 'History' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('radio', { name: 'All' })).toHaveAttribute('aria-checked', 'true');
+    await user.click(screen.getByRole('radio', { name: 'History' }));
+    expect(screen.getByRole('radio', { name: 'History' })).toHaveAttribute('aria-checked', 'true');
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
@@ -1061,7 +1065,7 @@ describe('NodeListPanel History tab', () => {
       />,
     );
     expect(screen.getByText('OnlyNode')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     expect(
       screen.getByText('No direct messages yet — send or receive a DM to see peers here.'),
     ).toBeInTheDocument();
@@ -1096,7 +1100,7 @@ describe('NodeListPanel History tab', () => {
       />,
     );
     expect(screen.getByText('NeverMessaged')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeInTheDocument();
     });
@@ -1122,7 +1126,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('FromDb')).toBeInTheDocument();
     });
@@ -1149,7 +1153,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshcore"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('DmPeer')).toBeInTheDocument();
     });
@@ -1177,7 +1181,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshcore"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('DmPeer')).toBeInTheDocument();
     });
@@ -1199,7 +1203,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       // Stub uses hex id as both Node ID cell and display name.
       expect(screen.getAllByText('!00000009').length).toBeGreaterThanOrEqual(1);
@@ -1229,7 +1233,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('Newest')).toBeInTheDocument();
     });
@@ -1283,7 +1287,7 @@ describe('NodeListPanel History tab', () => {
         mode="meshtastic"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('Alice')).toBeInTheDocument();
     });
@@ -1292,7 +1296,7 @@ describe('NodeListPanel History tab', () => {
     expect(screen.queryByText('Alice')).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Search nodes'), { target: { value: '' } });
-    await user.click(screen.getByRole('button', { name: 'All' }));
+    await user.click(screen.getByRole('radio', { name: 'All' }));
     expect(screen.getByText('NeverMessaged')).toBeInTheDocument();
     expect(screen.getByText('Alice')).toBeInTheDocument();
   });
@@ -1358,10 +1362,68 @@ describe('NodeListPanel History tab', () => {
     expect(screen.queryByText('FarPeer')).not.toBeInTheDocument();
     expect(screen.getByText('NearNoDm')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'History' }));
+    await user.click(screen.getByRole('radio', { name: 'History' }));
     await waitFor(() => {
       expect(screen.getByText('FarPeer')).toBeInTheDocument();
     });
     expect(screen.queryByText('NearNoDm')).not.toBeInTheDocument();
+  });
+});
+
+describe('NodeListPanel status filter and detail selection', () => {
+  const HOUR_MS = 60 * 60 * 1000;
+  function renderList(onNodeClick = vi.fn(), selectedNodeId: number | null = null) {
+    const now = Date.now();
+    const nodes = new Map<number, MeshNode>([
+      [1, makeNode({ node_id: 1, long_name: 'Fresh', last_heard: now })],
+      [2, makeNode({ node_id: 2, long_name: 'Gone', last_heard: now - 30 * 24 * HOUR_MS })],
+    ]);
+    return render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={onNodeClick}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+        selectedNodeId={selectedNodeId}
+      />,
+    );
+  }
+
+  it('filters rows by status with counted segments', async () => {
+    const user = userEvent.setup();
+    renderList();
+    const filter = screen.getByRole('radiogroup', { name: 'Filter by status' });
+    expect(screen.getByRole('radio', { name: 'All 2' })).toHaveAttribute('aria-checked', 'true');
+    expect(filter).toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Online 1' }));
+    expect(screen.getByText('Fresh')).toBeInTheDocument();
+    expect(screen.queryByText('Gone')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Offline 1' }));
+    expect(screen.queryByText('Fresh')).not.toBeInTheDocument();
+    expect(screen.getByText('Gone')).toBeInTheDocument();
+  });
+
+  it('opens a node from the keyboard through its name button', async () => {
+    const user = userEvent.setup();
+    const onNodeClick = vi.fn();
+    renderList(onNodeClick);
+    const name = screen.getByRole('button', { name: 'Fresh' });
+    name.focus();
+    await user.keyboard('{Enter}');
+    expect(onNodeClick).toHaveBeenCalledOnce();
+    expect(onNodeClick.mock.calls[0]?.[0]).toMatchObject({ node_id: 1 });
+  });
+
+  it('marks the node shown in the detail pane', async () => {
+    const { container } = renderList(vi.fn(), 1);
+    expect(screen.getByRole('button', { name: 'Fresh' })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: 'Gone' })).not.toHaveAttribute('aria-current');
+    expect(container.querySelector('tr[data-selected="true"]')).toHaveTextContent('Fresh');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Rimozione dalla radio non riuscita",
     "mqttIgnoreHeading": "MQTT Ignora",
     "mqttIgnoreDescription": "Escludi i dati MQTT di questo nodo dalla diagnostica",
-    "stopIgnoringMqttTitle": "Smetti di ignorare MQTT per questo nodo",
-    "ignoreMqttTitle": "Ignora MQTT per questo nodo",
     "deleteNode": "Elimina nodo",
     "deleteNodeConfirm": "Rimuovere questo nodo dal database locale? Riapparirà quando verrà trasmesso di nuovo.",
     "cancel": "Cancellare",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA firmato",
     "xeddsaSignedHint": "La radio ha verificato una firma XEdDSA da questo nodo, quindi la sua chiave pubblica è certificata crittograficamente.",
     "keyManuallyVerified": "Chiave verificata",
-    "keyManuallyVerifiedHint": "La chiave pubblica di questo nodo è stata confermata manualmente da un operatore."
+    "keyManuallyVerifiedHint": "La chiave pubblica di questo nodo è stata confermata manualmente da un operatore.",
+    "keyBadge": "Chiave",
+    "closePane": "Chiudi dettagli"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "Il filtro della distanza è abilitato ma il tuo dispositivo non ha una correzione GPS: vengono mostrati tutti i nodi.",
     "distanceFilterActiveBanner_one": "Filtro a distanza attivo — {{count}} nodo nascosto oltre {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Filtro a distanza attivo — {{count}} nodi nascosti oltre {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} online",
-    "summaryOnline_other": "{{count}} online",
-    "summaryStale_one": "{{count}} stantio",
-    "summaryStale_other": "{{count}} stantio",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Nodi mesh connessi",
     "columnFavorite": "Preferito",
     "columnId": "ID",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Sconosciuto",
     "columnHealth": "SALUTE CERCHIO",
     "hasPublicKeyTitle": "Public key",
-    "buttonExportCsv": "Esporta CSV"
+    "buttonExportCsv": "Esporta CSV",
+    "listViewAria": "Vista elenco",
+    "statusFilterAria": "Filtra per stato",
+    "statusFilterAll": "Tutti",
+    "buttonExport": "Esporta",
+    "exportMenuLabel": "Formati di esportazione",
+    "youBadge": "Tu"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

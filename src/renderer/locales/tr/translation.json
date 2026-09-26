@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "Radyodan kaldırılamadı",
     "mqttIgnoreHeading": "MQTT Yoksay",
     "mqttIgnoreDescription": "Bu düğümün MQTT verilerini tanılamanın dışında tutun",
-    "stopIgnoringMqttTitle": "Bu düğüm için MQTT'yi yoksaymayı bırakın",
-    "ignoreMqttTitle": "Bu düğüm için MQTT'yi yoksay",
     "deleteNode": "Düğümü Sil",
     "deleteNodeConfirm": "Bu düğüm yerel veritabanından kaldırılsın mı? Tekrar yayınlandığında tekrar ortaya çıkacaktır.",
     "cancel": "İptal etmek",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA imzalandı",
     "xeddsaSignedHint": "Radyo, bu düğümden bir XEdDSA imzasını doğruladı, bu nedenle genel anahtarı kriptografik olarak onaylandı.",
     "keyManuallyVerified": "Anahtar doğrulandı",
-    "keyManuallyVerifiedHint": "Bu düğümün genel anahtarı bir operatör tarafından manuel olarak onaylandı."
+    "keyManuallyVerifiedHint": "Bu düğümün genel anahtarı bir operatör tarafından manuel olarak onaylandı.",
+    "keyBadge": "Anahtar",
+    "closePane": "Ayrıntıları kapat"
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "Mesafe filtresi etkin ancak cihazınızda GPS sabitlemesi yok; tüm düğümler gösteriliyor.",
     "distanceFilterActiveBanner_one": "Mesafe filtresi etkin — {{count}} düğümü, {{maxDistance}} {{unit}} ötesinde gizli.",
     "distanceFilterActiveBanner_other": "Mesafe filtresi etkin — {{count}} düğümleri {{maxDistance}} {{unit}} ötesinde gizli.",
-    "summaryOnline_one": "{{count}} çevrimiçi",
-    "summaryOnline_other": "{{count}} çevrimiçi",
-    "summaryStale_one": "{{count}} eski",
-    "summaryStale_other": "{{count}} eski",
-    "summaryOffline_one": "{{count}} çevrimdışı",
-    "summaryOffline_other": "{{count}} çevrimdışı",
     "tableCaptionMeshNodes": "Bağlı ağ düğümleri",
     "columnFavorite": "Favori",
     "columnId": "İD",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "Bilinmiyor",
     "columnHealth": "Düğüm sağlığı",
     "hasPublicKeyTitle": "Genel anahtar",
-    "buttonExportCsv": "CSV olarak dışa aktar"
+    "buttonExportCsv": "CSV olarak dışa aktar",
+    "listViewAria": "Liste görünümü",
+    "statusFilterAria": "Duruma göre filtrele",
+    "statusFilterAll": "Tümü",
+    "buttonExport": "Dışa aktar",
+    "exportMenuLabel": "Dışa aktarma biçimleri",
+    "youBadge": "Siz"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

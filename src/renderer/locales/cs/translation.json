@@ -3158,8 +3158,6 @@
     "removeFromRadioFailed": "Odebrání z rádia se nezdařilo",
     "mqttIgnoreHeading": "MQTT Ignorovat",
     "mqttIgnoreDescription": "Vyloučit data MQTT tohoto uzlu z diagnostiky",
-    "stopIgnoringMqttTitle": "Přestaňte ignorovat MQTT pro tento uzel",
-    "ignoreMqttTitle": "Ignorujte MQTT pro tento uzel",
     "deleteNode": "Odstranit uzel",
     "deleteNodeConfirm": "Odebrat tento uzel z místní databáze? Znovu se objeví, až bude znovu vysílat.",
     "cancel": "Zrušit",
@@ -3243,7 +3241,9 @@
     "xeddsaSigned": "XEdDSA podepsáno",
     "xeddsaSignedHint": "Rádio ověřilo podpis XEdDSA z tohoto uzlu, takže jeho veřejný klíč je kryptograficky ověřen.",
     "keyManuallyVerified": "Klíč ověřen",
-    "keyManuallyVerifiedHint": "Veřejný klíč tohoto uzlu byl ručně potvrzen operátorem."
+    "keyManuallyVerifiedHint": "Veřejný klíč tohoto uzlu byl ručně potvrzen operátorem.",
+    "keyBadge": "Klíč",
+    "closePane": "Zavřít podrobnosti"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",
@@ -3360,12 +3360,6 @@
     "distanceFilterNoGpsBanner": "Filtr vzdálenosti je povolen, ale vaše zařízení nemá žádné spojení GPS – zobrazí se všechny uzly.",
     "distanceFilterActiveBanner_one": "Filtr vzdálenosti je aktivní – uzel {{count}} je skrytý za {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Aktivní filtr vzdálenosti – {{count}} uzlů skrytých za {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} online",
-    "summaryOnline_other": "{{count}} online",
-    "summaryStale_one": "{{count}} zastaralé",
-    "summaryStale_other": "{{count}} zastaralé",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Propojené uzly sítě",
     "columnFavorite": "Oblíbený",
     "columnId": "ID",
@@ -3420,10 +3414,13 @@
     "distanceFilterActiveBanner_few": "Filtr vzdálenosti je aktivní – {{count}} uzly jsou skryté za {{maxDistance}} {{unit}}.",
     "importResultSuccess_few": "Importovány {{count}} kontakty.",
     "importResultSuccessWithSkipped_few": "Importovány {{count}} kontakty, přeskočeno {{skipped}}.",
-    "summaryOffline_few": "{{count}} offline",
-    "summaryOnline_few": "{{count}} online",
-    "summaryStale_few": "{{count}} zastaralé",
-    "buttonExportCsv": "Export CSV"
+    "buttonExportCsv": "Export CSV",
+    "listViewAria": "Zobrazení seznamu",
+    "statusFilterAria": "Filtrovat podle stavu",
+    "statusFilterAll": "Vše",
+    "buttonExport": "Exportovat",
+    "exportMenuLabel": "Formáty exportu",
+    "youBadge": "Vy"
   },
   "nomadNetwork": {
     "title": "Nomad Network",

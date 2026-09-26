@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { Z_POPOVER_MENU } from '@/renderer/lib/modalZIndex';
 
-import { type ButtonVariant, IconButton } from './Button';
+import { Button, type ButtonVariant, IconButton } from './Button';
 
 export interface MenuItem {
   id: string;
@@ -254,6 +254,61 @@ export function MenuButton({
         onClick={toggle}
         {...menuTriggerAria(open, menuId)}
       />
+      <Menu
+        id={menuId}
+        open={open}
+        onClose={close}
+        anchorRef={triggerRef}
+        entries={entries}
+        aria-label={menuLabel}
+        align={align}
+        width={width}
+      />
+    </>
+  );
+}
+
+export interface LabeledMenuButtonProps {
+  /** Visible label; the chevron marks it as a menu ("Export"). */
+  label: string;
+  icon?: ReactNode;
+  entries: readonly MenuEntry[];
+  menuLabel: string;
+  variant?: Extract<ButtonVariant, 'secondary' | 'ghost'>;
+  size?: 'sm' | 'md';
+  disabled?: boolean;
+  align?: 'start' | 'end';
+  width?: number;
+}
+
+/** Text button that opens a menu, for a group of equal choices with no default (Export formats). */
+export function LabeledMenuButton({
+  label,
+  icon,
+  entries,
+  menuLabel,
+  variant = 'secondary',
+  size = 'md',
+  disabled,
+  align = 'end',
+  width,
+}: LabeledMenuButtonProps) {
+  const { open, close, toggle, menuId } = useMenuState();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <Button
+        ref={triggerRef}
+        variant={variant}
+        size={size}
+        icon={icon}
+        disabled={disabled}
+        onClick={toggle}
+        {...menuTriggerAria(open, menuId)}
+      >
+        {label}
+        <ChevronDown aria-hidden className={`${ICON_MD} text-muted`} size={16} />
+      </Button>
       <Menu
         id={menuId}
         open={open}

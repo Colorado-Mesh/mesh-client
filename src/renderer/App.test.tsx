@@ -78,6 +78,7 @@ const {
   lastChatPanelProps,
   lastConnectionPanelProps,
   lastNodeDetailModalProps,
+  lastNodeListPanelProps,
   reticulumRefreshMessagesFromDb,
   reticulumRefreshNodesFromDb,
   tryAutoLaunchMqttMock,
@@ -262,6 +263,7 @@ const {
   lastChatPanelProps: { current: null as null | Record<string, unknown> },
   lastConnectionPanelProps: { current: null as null | Record<string, unknown> },
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
+  lastNodeListPanelProps: { current: null as null | Record<string, unknown> },
   reticulumRefreshMessagesFromDb: vi.fn().mockResolvedValue(undefined),
   reticulumRefreshNodesFromDb: vi.fn().mockResolvedValue(undefined),
   tryAutoLaunchMqttMock: vi.fn().mockResolvedValue(undefined),
@@ -280,6 +282,7 @@ beforeEach(() => {
   lastChatPanelProps.current = null;
   lastConnectionPanelProps.current = null;
   lastNodeDetailModalProps.current = null;
+  lastNodeListPanelProps.current = null;
   reticulumRefreshNodesFromDb.mockClear();
   reticulumRefreshMessagesFromDb.mockClear();
   tryAutoLaunchMqttMock.mockClear();
@@ -419,7 +422,10 @@ vi.mock('./lazyAppPanels', () => ({
     );
   },
   LogPanel: () => null,
-  NodeListPanel: () => null,
+  NodeListPanel: (props: Record<string, unknown>) => {
+    lastNodeListPanelProps.current = props;
+    return null;
+  },
 }));
 
 vi.mock('./lib/mqttAutoLaunch', async (importOriginal) => {
@@ -2017,4 +2023,83 @@ describe('App ConnectionPanel facade wiring', () => {
       }
     },
   );
+});
+
+describe('App node detail pane (Option B Contacts)', () => {
+  function stubWideWindow(matches: boolean) {
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        media: query,
+        matches,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    onTestFinished(() => {
+      if (original) Object.defineProperty(window, 'matchMedia', original);
+      else Reflect.deleteProperty(window, 'matchMedia');
+    });
+  }
+
+  function clickListNode(nodeId: number) {
+    const onNodeClick = lastNodeListPanelProps.current?.onNodeClick as
+      ((node: { node_id: number }) => void) | undefined;
+    expect(onNodeClick).toBeTruthy();
+    act(() => {
+      onNodeClick?.({ node_id: nodeId });
+    });
+  }
+
+  it('shows list selections in a pane beside the list on wide windows', async () => {
+    stubWideWindow(true);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Network/, /^Nodes/);
+    await waitFor(() => {
+      expect(lastNodeListPanelProps.current).not.toBeNull();
+    });
+
+    clickListNode(0x23456789);
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('pane');
+    });
+    expect(lastNodeListPanelProps.current?.selectedNodeId).toBe(0x23456789);
+
+    // Leaving Nodes hides the pane instead of turning it into a modal over another panel.
+    lastNodeDetailModalProps.current = null;
+    openPanel(/^Chat/);
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+    expect(lastNodeDetailModalProps.current).toBeNull();
+
+    // Opening a node from elsewhere still uses the modal.
+    const onChatNodeClick = lastChatPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | undefined;
+    act(() => {
+      onChatNodeClick?.(0x23456789);
+    });
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('modal');
+    });
+  });
+
+  it('keeps the modal for list selections on narrow windows', async () => {
+    stubWideWindow(false);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Network/, /^Nodes/);
+    await waitFor(() => {
+      expect(lastNodeListPanelProps.current).not.toBeNull();
+    });
+
+    clickListNode(0x23456789);
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('modal');
+    });
+    expect(lastNodeListPanelProps.current?.selectedNodeId).toBeNull();
+  });
 });

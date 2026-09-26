@@ -101,6 +101,25 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
     });
   });
 
+  it('renders as an inline pane without dialog semantics or Escape handling', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    render(
+      <ReticulumPeerDetailModal
+        variant="pane"
+        peerHash={PEER_HASH}
+        onClose={onClose}
+        onSendMessage={vi.fn()}
+      />,
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(await screen.findByRole('complementary', { name: /Test Peer/ })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'nodeDetailModal.closePane' }));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
   it('writes destination hash to clipboard via electronAPI', async () => {
     const user = userEvent.setup();
     const writeText = vi.mocked(window.electronAPI.clipboard.writeText);

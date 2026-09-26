@@ -3128,8 +3128,6 @@
     "removeFromRadioFailed": "从收音机中删除失败",
     "mqttIgnoreHeading": "MQTT忽略",
     "mqttIgnoreDescription": "从诊断中排除此节点的MQTT数据",
-    "stopIgnoringMqttTitle": "停止忽略此节点的MQTT",
-    "ignoreMqttTitle": "忽略此节点的MQTT",
     "deleteNode": "删除节点",
     "deleteNodeConfirm": "从本地数据库中删除此节点？它将在再次广播时重新出现。",
     "cancel": "取消",
@@ -3212,7 +3210,9 @@
     "xeddsaSigned": "XEdDSA已签名",
     "xeddsaSignedHint": "无线电已验证来自此节点的XEdDSA签名，因此其公钥经过加密证明。",
     "keyManuallyVerified": "密钥已验证",
-    "keyManuallyVerifiedHint": "此节点的公钥已由操作员手动确认。"
+    "keyManuallyVerifiedHint": "此节点的公钥已由操作员手动确认。",
+    "keyBadge": "密钥",
+    "closePane": "关闭详情"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -3327,12 +3327,6 @@
     "distanceFilterNoGpsBanner": "距离过滤器已启用，但您的设备没有GPS修复—显示所有节点。",
     "distanceFilterActiveBanner_one": "距离过滤器已激活— {{count}}节点隐藏在{{maxDistance}} {{unit}}之外。",
     "distanceFilterActiveBanner_other": "距离过滤器已激活— {{count}}节点隐藏在{{maxDistance}} {{unit}}之外。",
-    "summaryOnline_one": "{{count}}在线",
-    "summaryOnline_other": "{{count}}在线",
-    "summaryStale_one": "{{count}}陈旧",
-    "summaryStale_other": "{{count}}陈旧",
-    "summaryOffline_one": "{{count}}离线",
-    "summaryOffline_other": "{{count}}离线",
     "tableCaptionMeshNodes": "已连接的网格节点",
     "columnFavorite": "我的最愛",
     "columnId": "CN",
@@ -3384,7 +3378,13 @@
     "meshcoreTypeUnknown": "未知",
     "columnHealth": "节点健康状况",
     "hasPublicKeyTitle": "公钥",
-    "buttonExportCsv": "导出 CSV"
+    "buttonExportCsv": "导出 CSV",
+    "listViewAria": "列表视图",
+    "statusFilterAria": "按状态筛选",
+    "statusFilterAll": "全部",
+    "buttonExport": "导出",
+    "exportMenuLabel": "导出格式",
+    "youBadge": "你"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
