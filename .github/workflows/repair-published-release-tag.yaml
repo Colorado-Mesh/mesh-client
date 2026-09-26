@@ -1,0 +1,50 @@
+# Safety net: when a release is published with tag_name still `untagged-*`
+# (or rebinds after verify), reattach it to vX.Y.Z and delete the orphan ref.
+#
+# Complements finalize verify in release.yaml — publish is manual and outside that gate.
+
+name: Repair published release tag
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    name: Repair published release tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Resolve vX.Y.Z tag and repair if needed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          EVENT_NAME: ${{ github.event.release.name }}
+        run: |
+          set -euo pipefail
+          TAG="${EVENT_TAG}"
+          if [[ "${TAG}" == untagged-* ]]; then
+            NAME="${EVENT_NAME}"
+            if [[ "${NAME}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              TAG="v${NAME}"
+              echo "Published release is on ${EVENT_TAG}; repairing to ${TAG}"
+            else
+              echo "::error::Published release has untagged tag_name and non-semver name=${NAME}"
+              exit 1
+            fi
+          fi
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skipping non-semver release tag ${TAG}"
+            exit 0
+          fi
+          export RELEASE_TAG="${TAG}"
+          node scripts/repair-published-release-tag.mjs

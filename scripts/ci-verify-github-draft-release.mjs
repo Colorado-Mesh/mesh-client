@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Fail CI when a draft release still has `untagged-*` tag_name after consolidation.
+ * Fail CI when a draft release still has `untagged-*` tag_name after consolidation,
+ * or when any matching release for the version is still on an untagged placeholder.
  *
  * Env: RELEASE_TAG, optional RELEASE_ID, GH_TOKEN
  */
@@ -44,6 +45,32 @@ export function verifyDraftReleaseTag(release, expectedTag) {
 }
 
 /**
+ * Fail when any release matching the version still has an `untagged-*` tag_name.
+ * @param {Array<{ id?: unknown, tag_name?: unknown }>} releases
+ * @param {string} expectedTag
+ */
+export function verifyNoUntaggedMatchingReleases(releases, expectedTag) {
+  const untagged = (releases ?? []).filter((release) =>
+    isUntaggedPlaceholderTag(release?.tag_name),
+  );
+  if (untagged.length === 0) {
+    return {
+      ok: true,
+      message: `No untagged-* releases match ${expectedTag}`,
+    };
+  }
+  const detail = untagged
+    .map((release) => `id=${release.id} tag_name=${JSON.stringify(release.tag_name)}`)
+    .join('; ');
+  return {
+    ok: false,
+    message:
+      `Found ${untagged.length} matching release(s) still on untagged-* (${detail}). ` +
+      `Do NOT publish until consolidate/repair leaves only ${expectedTag}.`,
+  };
+}
+
+/**
  * @param {string | undefined} githubOutput
  * @param {boolean} ok
  */
@@ -82,13 +109,22 @@ async function main() {
     typeof releaseIdRaw === 'string' && releaseIdRaw ? trustedGithubReleaseId(releaseIdRaw) : null;
   const release = await resolveDraftReleaseForVerify(tag, token, releaseId);
   const result = verifyDraftReleaseTag(release, tag);
-  writeVerifyOutput(process.env.GITHUB_OUTPUT, result.ok);
-
   if (!result.ok) {
+    writeVerifyOutput(process.env.GITHUB_OUTPUT, false);
     console.error(`::error::${result.message}`);
     fail(result.message);
   }
+
+  const matches = await listReleasesForTag(tag, token);
+  const inventory = verifyNoUntaggedMatchingReleases(matches, tag);
+  writeVerifyOutput(process.env.GITHUB_OUTPUT, inventory.ok);
+  if (!inventory.ok) {
+    console.error(`::error::${inventory.message}`);
+    fail(inventory.message);
+  }
+
   console.debug(`[ci-verify-github-draft-release] ${result.message}`);
+  console.debug(`[ci-verify-github-draft-release] ${inventory.message}`);
 }
 
 const entry = process.argv[1] ? pathToFileURL(process.argv[1]).href : '';

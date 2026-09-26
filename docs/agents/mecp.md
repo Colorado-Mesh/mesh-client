@@ -9,7 +9,7 @@ MECP/<severity>/<codes> [freetext]
 ```
 
 - Severity: `0` MAYDAY, `1` URGENT, `2` SAFETY, `3` ROUTINE
-- Codes: letter + two digits (`M01`, …); drill `D01`/`D02` set `isDrill` (suppresses alerts)
+- Codes: letter + two digits (`M01`, `M16` medical supply drop, …); drill `D01`/`D02` set `isDrill` (suppresses alerts). Labels come from vendored language packs under `languages/`
 - Max **200** UTF-8 bytes (`MAX_MESSAGE_BYTES`)
 - Vendored engine: [`src/renderer/lib/mecp/engine/`](../../src/renderer/lib/mecp/engine/) from [xiang-dev-1/MECP](https://github.com/xiang-dev-1/MECP) (GPLv3)
 - Language packs: [`src/renderer/lib/mecp/languages/`](../../src/renderer/lib/mecp/languages/) (CC BY 4.0)

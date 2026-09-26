@@ -7,7 +7,11 @@ import { execFileSync } from 'node:child_process';
 import { statSync } from 'node:fs';
 import path from 'node:path';
 
-import { releaseMatchesTag, versionFromTrustedTag } from './github-release-version.mjs';
+import {
+  isUntaggedPlaceholderTag,
+  releaseMatchesTag,
+  versionFromTrustedTag,
+} from './github-release-version.mjs';
 
 export const OWNER = 'Colorado-Mesh';
 export const REPO = 'mesh-client';
@@ -15,6 +19,12 @@ export const API_ROOT = `https://api.github.com/repos/${OWNER}/${REPO}`;
 
 /** Release tags must be vX.Y.Z — validated before any GitHub API call (CodeQL file-access-to-http). */
 export const SAFE_RELEASE_TAG_RE = /^v\d+\.\d+\.\d+$/;
+
+/**
+ * GitHub placeholder tags left when a release loses its v* tag.
+ * Hex-only suffix — validated before DELETE /git/refs/tags/… (CodeQL).
+ */
+export const SAFE_UNTAGGED_PLACEHOLDER_TAG_RE = /^untagged-[0-9a-f]+$/i;
 
 /** Positive GitHub release ids as decimal digits (validated before Number conversion). */
 export const SAFE_GITHUB_RELEASE_ID_RE = /^([1-9]\d{0,18})$/;
@@ -247,19 +257,197 @@ export function resolveTargetCommitish(env) {
   return undefined;
 }
 
+/**
+ * Target commitish for POST /releases.
+ * On `refs/tags/vX.Y.Z` the annotated tag already exists — omit `target_commitish`
+ * so GitHub binds that tag (passing the peeled SHA can detach drafts to `untagged-*`).
+ * For workflow_dispatch / branch runs, fall back to GITHUB_SHA when present.
+ * @param {NodeJS.ProcessEnv} env
+ * @returns {string | undefined}
+ */
+export function resolveCreateTargetCommitish(env) {
+  const ref = env.GITHUB_REF ?? '';
+  if (ref.startsWith('refs/tags/')) {
+    const tag = ref.slice('refs/tags/'.length);
+    if (SAFE_RELEASE_TAG_RE.test(tag)) {
+      return undefined;
+    }
+  }
+  return resolveTargetCommitish(env);
+}
+
+/**
+ * @param {unknown} tag
+ * @returns {string}
+ */
+export function assertSafeUntaggedPlaceholderTag(tag) {
+  if (typeof tag !== 'string' || !SAFE_UNTAGGED_PLACEHOLDER_TAG_RE.test(tag)) {
+    fail(`Unsafe untagged placeholder tag: ${JSON.stringify(tag)}`);
+    return /** @type {never} */ ('');
+  }
+  return tag;
+}
+
+/**
+ * True when any release row still uses `tagName` as its live `tag_name`.
+ * @param {string} tagName
+ * @param {string} token
+ */
+export async function isReleaseTagNameInUse(tagName, token) {
+  for (let page = 1; page <= 5; page += 1) {
+    const { response, json } = await githubRequest(`/releases?per_page=100&page=${page}`, {
+      token,
+    });
+    if (!response.ok) {
+      fail(
+        `List releases for tag-in-use check failed (${response.status}): ${json?.message ?? response.statusText}`,
+      );
+    }
+    if (!Array.isArray(json) || json.length === 0) {
+      break;
+    }
+    for (const release of json) {
+      if (release?.tag_name === tagName) {
+        return true;
+      }
+    }
+    if (json.length < 100) {
+      break;
+    }
+  }
+  return false;
+}
+
+/**
+ * Delete a leftover `refs/tags/untagged-*` after a successful tag repair.
+ * Never deletes a ref that is still any release's live `tag_name` (e.g. published 5.27.0).
+ *
+ * @param {unknown} previousTagName
+ * @param {string} token
+ * @param {{
+ *   fallbackToken?: string,
+ *   log?: (...args: unknown[]) => void,
+ *   isTagNameInUse?: (tagName: string) => Promise<boolean>,
+ * }} [opts]
+ * @returns {Promise<boolean>} true when a DELETE was attempted and succeeded (or 404)
+ */
+export async function deleteOrphanUntaggedRef(
+  previousTagName,
+  token,
+  { fallbackToken, log = console.debug, isTagNameInUse } = {},
+) {
+  if (!isUntaggedPlaceholderTag(previousTagName)) {
+    return false;
+  }
+  if (
+    typeof previousTagName !== 'string' ||
+    !SAFE_UNTAGGED_PLACEHOLDER_TAG_RE.test(previousTagName)
+  ) {
+    log(
+      `[github-release] Skipping orphan delete for unexpected placeholder ${JSON.stringify(previousTagName)}`,
+    );
+    return false;
+  }
+  const safe = assertSafeUntaggedPlaceholderTag(previousTagName);
+
+  const inUse =
+    typeof isTagNameInUse === 'function'
+      ? await isTagNameInUse(safe)
+      : await isReleaseTagNameInUse(safe, token);
+  if (inUse) {
+    log(`[github-release] Not deleting ${safe}: still a live release tag_name`);
+    return false;
+  }
+
+  const attempt = async (tok) =>
+    githubRequest(`/git/refs/tags/${encodeURIComponent(safe)}`, {
+      token: tok,
+      method: 'DELETE',
+    });
+
+  let { response, json } = await attempt(token);
+  if (
+    !response.ok &&
+    response.status === 403 &&
+    typeof fallbackToken === 'string' &&
+    fallbackToken &&
+    fallbackToken !== token
+  ) {
+    log(`[github-release] orphan ref DELETE 403 for ${safe}; retrying with fallback token`);
+    ({ response, json } = await attempt(fallbackToken));
+  }
+
+  if (response.status === 404) {
+    log(`[github-release] Orphan ref tags/${safe} already absent`);
+    return true;
+  }
+  if (!response.ok) {
+    fail(
+      `DELETE orphan ref tags/${safe} failed (${response.status}): ${json?.message ?? response.statusText}`,
+    );
+  }
+  log(`[github-release] Deleted orphan ref tags/${safe}`);
+  return true;
+}
+
+/**
+ * PATCH `tag_name` to the expected v* tag when needed, then delete leftover untagged refs.
+ *
+ * @param {{ id: number | string, tag_name?: unknown }} release
+ * @param {string} tag trusted vX.Y.Z
+ * @param {string} token
+ * @param {{
+ *   fallbackToken?: string,
+ *   draft?: boolean,
+ *   log?: (...args: unknown[]) => void,
+ * }} [opts]
+ */
+export async function repairReleaseTagAndCleanupOrphan(
+  release,
+  tag,
+  token,
+  { fallbackToken, draft, log = console.debug } = {},
+) {
+  assertSafeReleaseTag(tag);
+  const previousTagName = release?.tag_name;
+  if (previousTagName === tag) {
+    return release;
+  }
+
+  const updated = await patchReleaseTagMetadataRequired(release.id, tag, token, {
+    fallbackToken,
+    draft,
+    log,
+  });
+  if (updated.tag_name !== tag) {
+    fail(
+      `After tag repair, release ${trustedGithubReleaseId(release.id)} still has ` +
+        `tag_name=${JSON.stringify(updated.tag_name)} (expected ${tag})`,
+    );
+  }
+  await deleteOrphanUntaggedRef(previousTagName, token, { fallbackToken, log });
+  return updated;
+}
+
 export async function createDraftRelease(tag, token, targetCommitish) {
   const version = versionFromTag(tag);
+  /** @type {Record<string, unknown>} */
+  const body = {
+    tag_name: tag,
+    name: version,
+    draft: true,
+    generate_release_notes: false,
+    body: `Draft release for ${tag}. CI is uploading platform artifacts.`,
+  };
+  // Omit target_commitish when unset so an existing annotated v* tag is bound as-is.
+  if (typeof targetCommitish === 'string' && targetCommitish) {
+    body.target_commitish = targetCommitish;
+  }
+
   const { response, json } = await githubRequest('/releases', {
     token,
     method: 'POST',
-    body: {
-      tag_name: tag,
-      target_commitish: targetCommitish ?? tag,
-      name: version,
-      draft: true,
-      generate_release_notes: false,
-      body: `Draft release for ${tag}. CI is uploading platform artifacts.`,
-    },
+    body,
   });
 
   if (response.status === 422) {
@@ -630,15 +818,28 @@ export async function consolidateReleases({ tag, token, fallbackToken, log = con
   }
   if (releases.length === 1) {
     log(`[github-release] Single release ${releases[0].id} — nothing to merge`);
-    return releases[0];
+    return repairReleaseTagAndCleanupOrphan(releases[0], tag, token, {
+      fallbackToken,
+      draft: true,
+      log,
+    });
   }
 
   const keeper = pickCanonicalRelease(releases);
+  const previousKeeperTag = keeper.tag_name;
   const updated = await patchReleaseTagMetadataRequired(keeper.id, tag, token, {
     fallbackToken,
     draft: true,
     log,
   });
+  if (updated.tag_name !== tag) {
+    fail(
+      `After tag repair, release ${keeper.id} still has tag_name=${JSON.stringify(updated.tag_name)}`,
+    );
+  }
+  if (previousKeeperTag !== tag) {
+    await deleteOrphanUntaggedRef(previousKeeperTag, token, { fallbackToken, log });
+  }
 
   const keeperAssetNames = new Set(
     (updated.assets ?? keeper.assets ?? []).map((asset) => asset.name),
@@ -677,8 +878,10 @@ export async function consolidateReleases({ tag, token, fallbackToken, log = con
       moved += 1;
     }
 
+    const dupTag = release.tag_name;
     await deleteRelease(release.id, token);
     log(`[github-release] Deleted duplicate release ${release.id} for ${tag}`);
+    await deleteOrphanUntaggedRef(dupTag, token, { fallbackToken, log });
   }
 
   const bodyPatch =
@@ -725,7 +928,7 @@ export async function normalizeDraftReleasesForTag(
     return release;
   }
 
-  const updated = await patchReleaseTagMetadataRequired(release.id, tag, token, {
+  const updated = await repairReleaseTagAndCleanupOrphan(release, tag, token, {
     fallbackToken,
     draft: true,
     log,
@@ -757,7 +960,10 @@ export async function ensureGithubDraftRelease({
   // Only reuse an existing *draft*. A published release for the same tag must not be
   // treated as the CI upload target (schema-note patches and artifact uploads are draft-only).
   if (keeper?.draft === true) {
-    log(`[ci-ensure-github-draft-release] Using release ${keeper.id} for ${tag}`);
+    log(
+      `[ci-ensure-github-draft-release] Using release ${keeper.id} for ${tag} ` +
+        `(tag_name=${JSON.stringify(keeper.tag_name)})`,
+    );
     return keeper;
   }
 
@@ -770,7 +976,21 @@ export async function ensureGithubDraftRelease({
   }
 
   keeper = await createDraftRelease(tag, token, targetCommitish);
-  log(`[ci-ensure-github-draft-release] Created draft release ${keeper.id} for ${tag}`);
+  log(
+    `[ci-ensure-github-draft-release] Created draft release ${keeper.id} for ${tag} ` +
+      `(tag_name=${JSON.stringify(keeper.tag_name)})`,
+  );
+  keeper = await repairReleaseTagAndCleanupOrphan(keeper, tag, token, {
+    fallbackToken,
+    draft: true,
+    log,
+  });
+  if (keeper.tag_name !== tag) {
+    fail(
+      `Draft release ${trustedGithubReleaseId(keeper.id)} still has ` +
+        `tag_name=${JSON.stringify(keeper.tag_name)} after create repair (expected ${tag})`,
+    );
+  }
   return keeper;
 }
 

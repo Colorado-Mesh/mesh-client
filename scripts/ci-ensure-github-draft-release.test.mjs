@@ -3,11 +3,15 @@ import {
   assertSafeReleaseAssetName,
   assertSafeReleaseTag,
   consolidateReleases,
+  createDraftRelease,
+  deleteOrphanUntaggedRef,
   ensureGithubDraftRelease,
   listReleasesForTag,
   normalizeDraftReleasesForTag,
   pickCanonicalRelease,
+  resolveCreateTargetCommitish,
   resolveTag,
+  resolveTargetCommitish,
   trustedGithubReleaseId,
   uploadOrReplaceReleaseAsset,
   uploadReleaseAssetFromFile,
@@ -359,32 +363,36 @@ describe('ensureGithubDraftRelease', () => {
 
 describe('normalizeDraftReleasesForTag', () => {
   it('merges duplicate releases that still hold assets', async () => {
+    let release2Deleted = false;
     const fetchMock = vi.fn(async (url, init) => {
       const method = init?.method ?? 'GET';
       const href = String(url);
       if (method === 'GET' && href.includes('/releases?')) {
-        return new Response(
-          JSON.stringify([
-            {
-              id: 1,
-              tag_name: TAG,
-              name: '5.21.0',
-              draft: true,
-              assets: [
-                { id: 101, name: 'a' },
-                { id: 103, name: 'c' },
-              ],
-            },
-            {
-              id: 2,
-              tag_name: 'untagged-deadbeef',
-              name: '5.21.0',
-              draft: true,
-              assets: [{ id: 102, name: 'b' }],
-            },
-          ]),
-          { status: 200 },
-        );
+        const keeperOnly = [
+          {
+            id: 1,
+            tag_name: TAG,
+            name: '5.21.0',
+            draft: true,
+            assets: [
+              { id: 101, name: 'a' },
+              { id: 103, name: 'c' },
+            ],
+          },
+        ];
+        const both = [
+          ...keeperOnly,
+          {
+            id: 2,
+            tag_name: 'untagged-deadbeef',
+            name: '5.21.0',
+            draft: true,
+            assets: [{ id: 102, name: 'b' }],
+          },
+        ];
+        return new Response(JSON.stringify(release2Deleted ? keeperOnly : both), {
+          status: 200,
+        });
       }
       if (method === 'GET' && href.endsWith('/releases/assets/102')) {
         return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
@@ -392,10 +400,14 @@ describe('normalizeDraftReleasesForTag', () => {
       if (method === 'POST' && href.includes('/releases/1/assets')) {
         return new Response(JSON.stringify({ id: 999, name: 'b' }), { status: 201 });
       }
-      if (
-        method === 'DELETE' &&
-        (href.endsWith('/releases/assets/102') || href.endsWith('/releases/2'))
-      ) {
+      if (method === 'DELETE' && href.endsWith('/releases/assets/102')) {
+        return new Response('', { status: 200 });
+      }
+      if (method === 'DELETE' && href.endsWith('/releases/2')) {
+        release2Deleted = true;
+        return new Response('', { status: 200 });
+      }
+      if (method === 'DELETE' && href.includes('/git/refs/tags/untagged-deadbeef')) {
         return new Response('', { status: 200 });
       }
       if (method === 'PATCH' && href.endsWith('/releases/1')) {
@@ -422,23 +434,37 @@ describe('normalizeDraftReleasesForTag', () => {
         ([url, init]) => init?.method === 'DELETE' && String(url).endsWith('/releases/2'),
       ),
     ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) =>
+          init?.method === 'DELETE' && String(url).includes('/git/refs/tags/untagged-deadbeef'),
+      ),
+    ).toBe(true);
   });
 
   it('repairs untagged draft metadata when only one release exists', async () => {
+    let releaseListCalls = 0;
     const fetchMock = vi.fn(async (url, init) => {
       const method = init?.method ?? 'GET';
       const href = String(url);
       if (method === 'GET' && href.includes('/releases?')) {
+        releaseListCalls += 1;
+        if (releaseListCalls === 1) {
+          return new Response(
+            JSON.stringify([
+              {
+                id: 3,
+                tag_name: 'untagged-deadbeef',
+                name: '5.21.0',
+                draft: true,
+                assets: [],
+              },
+            ]),
+            { status: 200 },
+          );
+        }
         return new Response(
-          JSON.stringify([
-            {
-              id: 3,
-              tag_name: 'untagged-deadbeef',
-              name: '5.21.0',
-              draft: true,
-              assets: [],
-            },
-          ]),
+          JSON.stringify([{ id: 3, tag_name: TAG, name: '5.21.0', draft: true, assets: [] }]),
           { status: 200 },
         );
       }
@@ -448,12 +474,21 @@ describe('normalizeDraftReleasesForTag', () => {
           { status: 200 },
         );
       }
+      if (method === 'DELETE' && href.includes('/git/refs/tags/untagged-deadbeef')) {
+        return new Response('', { status: 200 });
+      }
       throw new Error(`Unexpected fetch ${method} ${href}`);
     });
     vi.stubGlobal('fetch', fetchMock);
 
     const release = await normalizeDraftReleasesForTag(TAG, 'token', { log: () => {} });
     expect(release.tag_name).toBe(TAG);
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) =>
+          init?.method === 'DELETE' && String(url).includes('/git/refs/tags/untagged-deadbeef'),
+      ),
+    ).toBe(true);
   });
 });
 
@@ -729,5 +764,136 @@ describe('consolidateReleases', () => {
     await consolidateReleases({ tag: TAG, token: 'token', log: () => {} });
     expect(exitSpy).toHaveBeenCalledWith(1);
     exitSpy.mockRestore();
+  });
+});
+
+describe('resolveCreateTargetCommitish', () => {
+  it('omits commitish on refs/tags/vX.Y.Z so the annotated tag is bound', () => {
+    expect(
+      resolveCreateTargetCommitish({
+        GITHUB_REF: 'refs/tags/v5.21.0',
+        GITHUB_SHA: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      }),
+    ).toBeUndefined();
+  });
+
+  it('falls back to GITHUB_SHA on branch / workflow_dispatch refs', () => {
+    expect(
+      resolveCreateTargetCommitish({
+        GITHUB_REF: 'refs/heads/main',
+        GITHUB_SHA: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      }),
+    ).toBe('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    expect(resolveTargetCommitish({ GITHUB_SHA: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' })).toBe(
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    );
+  });
+});
+
+describe('createDraftRelease', () => {
+  it('omits target_commitish when unset', async () => {
+    const fetchMock = vi.fn(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      const href = String(url);
+      if (method === 'POST' && href.endsWith('/releases')) {
+        const body = JSON.parse(String(init?.body ?? '{}'));
+        expect(body.target_commitish).toBeUndefined();
+        expect(body.tag_name).toBe(TAG);
+        return new Response(JSON.stringify({ id: 1, tag_name: TAG, draft: true, assets: [] }), {
+          status: 201,
+        });
+      }
+      throw new Error(`Unexpected fetch ${method} ${href}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createDraftRelease(TAG, 'token', undefined);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ensureGithubDraftRelease create repair', () => {
+  it('repairs wrong tag_name after create and deletes the orphan ref', async () => {
+    let releaseListCalls = 0;
+    const fetchMock = vi.fn(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      const href = String(url);
+      if (method === 'GET' && href.includes('/releases?')) {
+        releaseListCalls += 1;
+        if (releaseListCalls === 1) {
+          return new Response(JSON.stringify([]), { status: 200 });
+        }
+        // After PATCH, orphan check: no release still owns untagged-deadbeef
+        return new Response(
+          JSON.stringify([{ id: 99, tag_name: TAG, name: '5.21.0', draft: true, assets: [] }]),
+          { status: 200 },
+        );
+      }
+      if (method === 'POST' && href.endsWith('/releases')) {
+        return new Response(
+          JSON.stringify({
+            id: 99,
+            tag_name: 'untagged-deadbeef',
+            name: '5.21.0',
+            draft: true,
+            assets: [],
+          }),
+          { status: 201 },
+        );
+      }
+      if (method === 'PATCH' && href.endsWith('/releases/99')) {
+        return new Response(
+          JSON.stringify({ id: 99, tag_name: TAG, name: '5.21.0', draft: true, assets: [] }),
+          { status: 200 },
+        );
+      }
+      if (method === 'DELETE' && href.includes('/git/refs/tags/untagged-deadbeef')) {
+        return new Response('', { status: 200 });
+      }
+      throw new Error(`Unexpected fetch ${method} ${href}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const release = await ensureGithubDraftRelease({
+      tag: TAG,
+      token: 'test-token',
+      allowCreate: true,
+      log: () => {},
+    });
+
+    expect(release.tag_name).toBe(TAG);
+    expect(
+      fetchMock.mock.calls.some(
+        ([url, init]) =>
+          init?.method === 'DELETE' && String(url).includes('/git/refs/tags/untagged-deadbeef'),
+      ),
+    ).toBe(true);
+  });
+});
+
+describe('deleteOrphanUntaggedRef', () => {
+  it('does not delete when the placeholder is still a live release tag_name', async () => {
+    const deleted = await deleteOrphanUntaggedRef('untagged-deadbeef', 'token', {
+      log: () => {},
+      isTagNameInUse: async () => true,
+    });
+    expect(deleted).toBe(false);
+  });
+
+  it('deletes when the placeholder is no longer in use', async () => {
+    const fetchMock = vi.fn(async (url, init) => {
+      if ((init?.method ?? 'GET') === 'DELETE' && String(url).includes('/git/refs/tags/')) {
+        return new Response('', { status: 200 });
+      }
+      throw new Error(`Unexpected fetch ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const deleted = await deleteOrphanUntaggedRef('untagged-deadbeef', 'token', {
+      log: () => {},
+      isTagNameInUse: async () => false,
+    });
+    expect(deleted).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

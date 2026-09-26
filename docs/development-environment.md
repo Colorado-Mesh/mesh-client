@@ -269,7 +269,7 @@ Complete reference of all pnpm scripts in [`package.json`](../package.json), org
 | `dist:win`           | Build Windows .exe installer (hoisted install workaround) + verify packaging                                      |
 | `dist:win:publish`   | Build Windows and upload to release server                                                                        |
 
-`dist:mac`, `dist:linux`, and `predist` run `dedupe:dist` (`scripts/dedupe-dist.mjs`) before packaging; that helper retries on transient `@jsr/_tmp_*` rename races. `dist:win` uses `scripts/dist-win-hoisted-install.mjs` and restores `node_modules` afterward.
+`dist:mac`, `dist:linux`, and `predist` run `dedupe:dist` (`scripts/dedupe-dist.mjs`) before packaging; that helper retries on transient `@jsr/_tmp_*` rename races. `dist:win` uses `scripts/dist-win-hoisted-install.mjs` and restores `node_modules` afterward. CI `packaging-smoke` also runs a headless **Linux AppImage launch** check (`scripts/test-linux-appimage-launch.mjs`) — see [CI/CD — Packaging smoke builds](ci-cd.md#packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml).
 
 #### Building a Flatpak (Linux)
 
