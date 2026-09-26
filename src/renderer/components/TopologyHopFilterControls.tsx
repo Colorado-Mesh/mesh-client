@@ -35,7 +35,7 @@ export function TopologyHopFilterControls({
 }: TopologyHopFilterControlsProps) {
   return (
     <>
-      <label className="flex items-center gap-1.5 text-slate-400">
+      <label className="flex items-center gap-1.5 text-zinc-400">
         <input
           type="checkbox"
           checked={includeDistantPeers}
@@ -47,7 +47,7 @@ export function TopologyHopFilterControls({
         />
         {showDistantPeersLabel}
       </label>
-      <label className="flex items-center gap-1.5 text-slate-400">
+      <label className="flex items-center gap-1.5 text-zinc-400">
         <span>{maxHopsFilterLabel}</span>
         <select
           value={maxHops ?? 'all'}

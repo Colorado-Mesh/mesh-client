@@ -336,7 +336,12 @@
       "purple400": "紫色400",
       "pink400": "粉色400",
       "orange400": "橙子400",
-      "yellow400": "黄400"
+      "yellow400": "黄400",
+      "zinc950": "锌950",
+      "zinc900": "锌900",
+      "zinc800": "锌800",
+      "zinc700": "锌700",
+      "zinc400": "锌400"
     },
     "autoPruneNodesOlderThanAria": "启动时自动修剪节点，早于 {{days}} 天",
     "autoPrunePositionHistoryDaysAria": "启动时自动修剪仓位历史记录，早于 {{days}} 天",
@@ -436,7 +441,8 @@
       "highContrast": "高对比度",
       "midnight": "午夜",
       "teal": "青绿色强调",
-      "amber": "琥珀色强调"
+      "amber": "琥珀色强调",
+      "classicSlate": "经典板岩"
     },
     "pruneNoFixNodesTitle": "修剪无定位/零岛节点"
   },

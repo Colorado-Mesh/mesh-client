@@ -57,7 +57,7 @@ export function AppRail({
         className={`relative flex h-14 w-15 shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] transition-colors [@media(max-height:720px)]:h-12 ${
           isActive
             ? 'bg-sidebar-active-bg text-bright-green'
-            : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-slate-200'
+            : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-zinc-200'
         }`}
       >
         <NavSectionIcon id={section.id} />
@@ -80,7 +80,7 @@ export function AppRail({
   return (
     <nav
       aria-label={t('aria.applicationPanels')}
-      className="bg-deep-black flex h-full w-18 shrink-0 flex-col items-center border-r border-slate-800 py-3.5 [@media(max-height:720px)]:py-2.5"
+      className="bg-deep-black flex h-full w-18 shrink-0 flex-col items-center border-r border-zinc-800 py-3.5 [@media(max-height:720px)]:py-2.5"
     >
       <div
         data-rail-scroll=""
@@ -88,14 +88,14 @@ export function AppRail({
       >
         {header}
         {header != null && (
-          <div aria-hidden="true" className="my-2 h-px w-8 shrink-0 bg-slate-800" />
+          <div aria-hidden="true" className="my-2 h-px w-8 shrink-0 bg-zinc-800" />
         )}
         {primary.map(renderSection)}
       </div>
       {footer.length > 0 && (
         <div
           data-rail-footer=""
-          className="flex w-full shrink-0 flex-col items-center gap-1.5 border-t border-slate-800 pt-1.5"
+          className="flex w-full shrink-0 flex-col items-center gap-1.5 border-t border-zinc-800 pt-1.5"
         >
           {footer.map(renderSection)}
         </div>

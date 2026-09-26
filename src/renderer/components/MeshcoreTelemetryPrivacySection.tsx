@@ -59,8 +59,8 @@ function TriStateRow({
   ];
 
   return (
-    <fieldset className="space-y-2 rounded-lg border border-gray-600/80 p-3" disabled={disabled}>
-      <legend className="px-1 text-sm font-medium text-gray-200">{title}</legend>
+    <fieldset className="space-y-2 rounded-lg border border-zinc-600/80 p-3" disabled={disabled}>
+      <legend className="px-1 text-sm font-medium text-zinc-200">{title}</legend>
       <div className="space-y-3">
         {options.map((opt) => {
           const inputId = `${groupName}-${opt.id}`;
@@ -85,7 +85,7 @@ function TriStateRow({
                 htmlFor={inputId}
                 className={`flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 ${disabled ? 'cursor-not-allowed' : ''}`}
               >
-                <span className="text-sm text-gray-200">{opt.label}</span>
+                <span className="text-sm text-zinc-200">{opt.label}</span>
                 <span className="text-muted text-xs">{opt.sub}</span>
               </label>
             </div>
@@ -143,8 +143,8 @@ export default function MeshcoreTelemetryPrivacySection({
   const no = t('common.no');
 
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details className="group bg-deep-black/50 rounded-lg border border-zinc-700">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
         <span>{t('meshcoreTelemetryPrivacy.summary')}</span>
         <DetailsChevron />
       </summary>

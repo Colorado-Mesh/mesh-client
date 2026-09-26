@@ -66,13 +66,13 @@ export function ReticulumDmDestIdentityBar({
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <div
-        className={`${RETICULUM_DM_HEADER_STATUS_CLASS} flex min-w-0 flex-wrap items-center gap-1.5 text-gray-400`}
+        className={`${RETICULUM_DM_HEADER_STATUS_CLASS} flex min-w-0 flex-wrap items-center gap-1.5 text-zinc-400`}
         role="status"
         aria-label={t('chatPanel.reticulumDmDestHashesAria')}
       >
         <button
           type="button"
-          className="hover:text-bright-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-gray-300 hover:bg-slate-700/60"
+          className="hover:text-bright-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-zinc-300 hover:bg-zinc-700/60"
           aria-label={t('chatPanel.reticulumDmCopyLxmfAria', { prefix: lxmfPrefix })}
           title={lxmfHash}
           onClick={() => {
@@ -88,7 +88,7 @@ export function ReticulumDmDestIdentityBar({
         {identityHash && identityPrefix ? (
           <button
             type="button"
-            className="hover:text-bright-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-gray-300 hover:bg-slate-700/60"
+            className="hover:text-bright-green text-label inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-zinc-300 hover:bg-zinc-700/60"
             aria-label={t('chatPanel.reticulumDmCopyIdentityAria', { prefix: identityPrefix })}
             title={identityHash}
             onClick={() => {

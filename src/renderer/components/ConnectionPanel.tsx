@@ -1553,7 +1553,7 @@ export default function ConnectionPanel({
       ? 'connectionPanel.disconnectAndQuit'
       : 'connectionPanel.quit';
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-4">
         <p className="text-muted text-xs">
           {t(
             useDisconnectAndQuit
@@ -1579,7 +1579,7 @@ export default function ConnectionPanel({
   /** Linux BLE / MeshCore pairing PIN entry, shared by the connecting and disconnected views. */
   const renderPinForm = (onSubmit: () => void) => (
     <>
-      <p className="mb-2 text-sm text-slate-200">{t('connectionPanel.enterPin')}</p>
+      <p className="mb-2 text-sm text-zinc-200">{t('connectionPanel.enterPin')}</p>
       <div className="flex flex-wrap gap-2">
         <div className="w-40">
           <input
@@ -1622,7 +1622,7 @@ export default function ConnectionPanel({
         {renderAutoReconnectBanner()}
         <SpinnerIconLg className="text-bright-green" />
         <div className="space-y-2 text-center">
-          <h2 className="text-lg font-semibold text-slate-200">
+          <h2 className="text-lg font-semibold text-zinc-200">
             {showPinPrompt
               ? t('connectionPanel.pairWithDevice')
               : showBlePicker
@@ -1666,14 +1666,14 @@ export default function ConnectionPanel({
           <div
             role="region"
             aria-labelledby="ble-device-picker-heading"
-            className="bg-deep-black w-full overflow-hidden rounded-xl border border-slate-800"
+            className="bg-deep-black w-full overflow-hidden rounded-xl border border-zinc-800"
           >
-            <div className="flex min-h-12 items-center justify-between gap-2 border-b border-slate-800 px-4 py-2">
-              <span id="ble-device-picker-heading" className="text-sm font-semibold text-slate-200">
+            <div className="flex min-h-12 items-center justify-between gap-2 border-b border-zinc-800 px-4 py-2">
+              <span id="ble-device-picker-heading" className="text-sm font-semibold text-zinc-200">
                 {t('connectionPanel.selectBluetoothDevice')}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-300" aria-live="polite">
+                <span className="text-xs text-zinc-300" aria-live="polite">
                   {t('connectionPanel.devicesFound', { count: bleDevices.length })}
                 </span>
                 {bleDevices.length > 0 ? (
@@ -1724,9 +1724,9 @@ export default function ConnectionPanel({
                       onClick={() => {
                         handleSelectBleDevice(device.deviceId);
                       }}
-                      className="hover:bg-sidebar-active-bg w-full border-b border-slate-800 px-4 py-3 text-left transition-colors last:border-b-0"
+                      className="hover:bg-sidebar-active-bg w-full border-b border-zinc-800 px-4 py-3 text-left transition-colors last:border-b-0"
                     >
-                      <div className="flex items-center gap-2 text-sm text-gray-200">
+                      <div className="flex items-center gap-2 text-sm text-zinc-200">
                         <ConnectionIcon type="ble" trigger={parentIconTrigger} />
                         <span className="min-w-0 flex-1 truncate">{displayName}</span>
                         {hasRssi ? (
@@ -1754,12 +1754,12 @@ export default function ConnectionPanel({
               return <BleWeakSignalBanner rssi={weakest} />;
             })()}
             {bleDevices.some((d) => d.deviceName === 'AdaDFU') && (
-              <p className="text-muted border-t border-slate-800 px-4 py-2 text-xs">
+              <p className="text-muted border-t border-zinc-800 px-4 py-2 text-xs">
                 {t('connectionPanel.hintAdaDfuBle')}
               </p>
             )}
             {protocol === 'meshcore' && (
-              <p className="border-t border-slate-800 px-4 py-2 text-xs text-yellow-400">
+              <p className="border-t border-zinc-800 px-4 py-2 text-xs text-yellow-400">
                 <Trans
                   i18nKey="connectionPanel.meshcoreBlePairingHint"
                   components={{ strong: <strong /> }}
@@ -1774,17 +1774,14 @@ export default function ConnectionPanel({
           <div
             role="region"
             aria-labelledby="serial-port-picker-heading"
-            className="bg-deep-black w-full overflow-hidden rounded-xl border border-slate-800"
+            className="bg-deep-black w-full overflow-hidden rounded-xl border border-zinc-800"
           >
-            <div className="flex min-h-12 items-center justify-between gap-2 border-b border-slate-800 px-4 py-2">
-              <span
-                id="serial-port-picker-heading"
-                className="text-sm font-semibold text-slate-200"
-              >
+            <div className="flex min-h-12 items-center justify-between gap-2 border-b border-zinc-800 px-4 py-2">
+              <span id="serial-port-picker-heading" className="text-sm font-semibold text-zinc-200">
                 {t('connectionPanel.selectSerialPort')}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-300" aria-live="polite">
+                <span className="text-xs text-zinc-300" aria-live="polite">
                   {t('connectionPanel.devicesFound', { count: serialPorts.length })}
                 </span>
                 {serialPorts.length > 0 ? (
@@ -1818,9 +1815,9 @@ export default function ConnectionPanel({
                       onClick={() => {
                         handleSelectSerialPort(port.portId);
                       }}
-                      className="hover:bg-sidebar-active-bg w-full border-b border-slate-800 px-4 py-3 text-left transition-colors last:border-b-0"
+                      className="hover:bg-sidebar-active-bg w-full border-b border-zinc-800 px-4 py-3 text-left transition-colors last:border-b-0"
                     >
-                      <div className="flex items-center gap-2 text-sm text-gray-200">
+                      <div className="flex items-center gap-2 text-sm text-zinc-200">
                         <ConnectionIcon type="serial" trigger={parentIconTrigger} />
                         {cachedNodeName ?? port.displayName}
                       </div>
@@ -2190,7 +2187,7 @@ export default function ConnectionPanel({
               }}
               className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqtt-tls-enabled" className="text-body cursor-pointer text-slate-200">
+            <label htmlFor="mqtt-tls-enabled" className="text-body cursor-pointer text-zinc-200">
               {t('connectionPanel.mqttTlsEnabled')}
             </label>
           </div>
@@ -2220,7 +2217,7 @@ export default function ConnectionPanel({
               }}
               className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqtt-websocket" className="text-body cursor-pointer text-slate-200">
+            <label htmlFor="mqtt-websocket" className="text-body cursor-pointer text-zinc-200">
               {t('connectionPanel.useWebSocket')}{' '}
               <span className="text-muted">{t('connectionPanel.wsRequired')}</span>
             </label>
@@ -2312,7 +2309,7 @@ export default function ConnectionPanel({
                       ? t('connectionPanel.hidePassword')
                       : t('connectionPanel.showPassword')
                   }
-                  className="text-muted absolute top-1/2 right-2.5 -translate-y-1/2 text-xs hover:text-slate-200"
+                  className="text-muted absolute top-1/2 right-2.5 -translate-y-1/2 text-xs hover:text-zinc-200"
                 >
                   {showMqttPassword
                     ? t('connectionPanel.hidePassword')
@@ -2441,7 +2438,7 @@ export default function ConnectionPanel({
               }}
               className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqttAutoLaunch" className="text-body cursor-pointer text-slate-200">
+            <label htmlFor="mqttAutoLaunch" className="text-body cursor-pointer text-zinc-200">
               {t('connectionPanel.autoConnect')}
             </label>
           </div>
@@ -2819,7 +2816,7 @@ export default function ConnectionPanel({
                 />
               )}
               {onToggleManualContacts !== undefined && (
-                <div className="border-t border-slate-800 pt-4">
+                <div className="border-t border-zinc-800 pt-4">
                   <Switch
                     checked={manualAddContacts ?? false}
                     onChange={(next) => {
@@ -2864,13 +2861,13 @@ export default function ConnectionPanel({
 
       {/* Last Connection — one-click reconnect card */}
       {showLastConnection && (
-        <div className="bg-deep-black flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 px-4.5 py-4">
-          <span className="bg-sidebar-active-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-slate-300">
+        <div className="bg-deep-black flex flex-wrap items-center gap-3 rounded-xl border border-zinc-800 px-4.5 py-4">
+          <span className="bg-sidebar-active-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-zinc-300">
             <ConnectionIcon type={lastConnection.type} />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-muted text-xs">{t('connectionPanel.lastConnectionLabel')}</p>
-            <p className="truncate text-sm font-semibold text-slate-200">
+            <p className="truncate text-sm font-semibold text-zinc-200">
               {lastConnection.type === 'ble'
                 ? (lastConnection.bleDeviceName ?? t('connectionPanel.bluetoothDevice'))
                 : lastConnection.type === 'serial'

@@ -67,7 +67,7 @@ export function ReticulumInterfaceFieldSet({
 
     if (field.kind === 'bool') {
       return (
-        <label key={field.key} className="flex items-center gap-2 text-xs text-gray-400">
+        <label key={field.key} className="flex items-center gap-2 text-xs text-zinc-400">
           <input
             id={id}
             type="checkbox"
@@ -77,7 +77,7 @@ export function ReticulumInterfaceFieldSet({
               onChange(field.key, e.target.checked ? 'true' : 'false');
             }}
             aria-label={label}
-            className="h-4 w-4 rounded border-gray-600 bg-slate-900 disabled:opacity-50"
+            className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 disabled:opacity-50"
           />
           {label}
         </label>
@@ -86,7 +86,7 @@ export function ReticulumInterfaceFieldSet({
 
     if (field.kind === 'select') {
       return (
-        <label key={field.key} className="text-xs text-gray-400" htmlFor={id}>
+        <label key={field.key} className="text-xs text-zinc-400" htmlFor={id}>
           {label}
           <select
             id={id}
@@ -112,7 +112,7 @@ export function ReticulumInterfaceFieldSet({
 
     if (field.kind === 'serialPort') {
       return (
-        <label key={field.key} className="text-xs text-gray-400" htmlFor={id}>
+        <label key={field.key} className="text-xs text-zinc-400" htmlFor={id}>
           {label}
           {serialPorts.length > 0 ? (
             <select
@@ -149,7 +149,7 @@ export function ReticulumInterfaceFieldSet({
     }
 
     return (
-      <label key={field.key} className="text-xs text-gray-400" htmlFor={id}>
+      <label key={field.key} className="text-xs text-zinc-400" htmlFor={id}>
         {label}
         <input
           id={id}
@@ -178,8 +178,8 @@ export function ReticulumInterfaceFieldSet({
     <>
       {basic.map(renderField)}
       {advanced.length > 0 ? (
-        <details className="w-full text-xs text-gray-400">
-          <summary className="cursor-pointer text-gray-300">
+        <details className="w-full text-xs text-zinc-400">
+          <summary className="cursor-pointer text-zinc-300">
             {t('connectionPanel.reticulumInterfaces.advancedFields')}
           </summary>
           <div className="mt-2 flex flex-wrap items-end gap-2">{advanced.map(renderField)}</div>

@@ -177,13 +177,13 @@ export default function MicronPageEditor({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="bg-deep-black relative mx-4 flex h-[85vh] w-full max-w-5xl flex-col gap-3 rounded-xl border border-gray-600 p-4 shadow-2xl"
+        className="bg-deep-black relative mx-4 flex h-[85vh] w-full max-w-5xl flex-col gap-3 rounded-xl border border-zinc-600 p-4 shadow-2xl"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <h3 id={titleId} className="text-sm font-medium text-gray-100">
+          <h3 id={titleId} className="text-sm font-medium text-zinc-100">
             {t('nomadNetwork.serving.editorTitle')}
           </h3>
-          <code className="truncate font-mono text-xs text-gray-300">{path}</code>
+          <code className="truncate font-mono text-xs text-zinc-300">{path}</code>
           {dirty ? (
             <span className="text-2xs rounded bg-amber-700 px-2 py-0.5 font-medium text-white">
               {t('nomadNetwork.serving.unsaved')}
@@ -205,7 +205,7 @@ export default function MicronPageEditor({
                 applyEdit(applyMicronWrap(editState(), action));
               }}
               aria-label={t(labelKey)}
-              className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+              className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
             >
               {t(labelKey)}
             </button>
@@ -219,7 +219,7 @@ export default function MicronPageEditor({
                 applyEdit(applyMicronLinePrefix(editState(), action));
               }}
               aria-label={t(labelKey)}
-              className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+              className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
             >
               {t(labelKey)}
             </button>
@@ -231,7 +231,7 @@ export default function MicronPageEditor({
               applyEdit(applyMicronDivider(editState()));
             }}
             aria-label={t('nomadNetwork.serving.toolbar.divider')}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+            className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
           >
             {t('nomadNetwork.serving.toolbar.divider')}
           </button>
@@ -246,7 +246,7 @@ export default function MicronPageEditor({
               applyEdit(applyMicronLink(editState(), trimmed));
             }}
             aria-label={t('nomadNetwork.serving.toolbar.link')}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+            className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
           >
             {t('nomadNetwork.serving.toolbar.link')}
           </button>
@@ -267,7 +267,7 @@ export default function MicronPageEditor({
             className={`ml-auto rounded border px-2 py-1 text-xs ${
               fitWidth
                 ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                : 'border-gray-600 text-gray-200 hover:bg-slate-800'
+                : 'border-zinc-600 text-zinc-200 hover:bg-zinc-800'
             }`}
           >
             {fitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')}
@@ -286,7 +286,7 @@ export default function MicronPageEditor({
             className={`${FIELD_SURFACE_CLASS} min-h-0 resize-none p-3 font-mono text-xs`}
           />
           {/* Mirrors the browser's nomad-page-scroll shell: both axes, so wide art is reachable. */}
-          <div className="min-h-0 min-w-0 overflow-auto rounded border border-gray-600 bg-slate-900 p-3">
+          <div className="min-h-0 min-w-0 overflow-auto rounded border border-zinc-600 bg-zinc-900 p-3">
             <p className="text-muted text-2xs mb-2 uppercase">
               {t('nomadNetwork.serving.editorPreview')}
             </p>
@@ -344,7 +344,7 @@ export default function MicronPageEditor({
                     setConfirmingDelete(false);
                   }}
                   aria-label={t('common.cancel')}
-                  className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                  className="rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
                 >
                   {t('common.cancel')}
                 </button>
@@ -380,7 +380,7 @@ export default function MicronPageEditor({
             type="button"
             onClick={requestClose}
             aria-label={t('nomadNetwork.serving.close')}
-            className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800"
+            className="rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800"
           >
             {t('nomadNetwork.serving.close')}
           </button>

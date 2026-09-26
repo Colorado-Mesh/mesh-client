@@ -74,7 +74,7 @@ function isValidBase64Key(b64: string): boolean {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="border-b border-gray-700 pb-2 text-sm font-semibold text-gray-200">{title}</h3>
+    <h3 className="border-b border-zinc-700 pb-2 text-sm font-semibold text-zinc-200">{title}</h3>
   );
 }
 
@@ -94,7 +94,7 @@ function ConfigToggle({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-300">{label}</span>
+        <span className="text-sm text-zinc-300">{label}</span>
         <button
           type="button"
           role="switch"
@@ -104,7 +104,7 @@ function ConfigToggle({
           }}
           disabled={disabled}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-            checked ? 'bg-brand-green' : 'bg-gray-600'
+            checked ? 'bg-brand-green' : 'bg-zinc-600'
           }`}
         >
           <span
@@ -490,7 +490,7 @@ export default function SecurityPanel({
               type="button"
               disabled={disabled || !publicKeyB64}
               aria-label={t('securityPanel.copyPublicKey')}
-              className="text-muted shrink-0 rounded-lg border border-gray-600 px-3 py-2 text-xs hover:text-gray-200 disabled:opacity-50"
+              className="text-muted shrink-0 rounded-lg border border-zinc-600 px-3 py-2 text-xs hover:text-zinc-200 disabled:opacity-50"
               onClick={() => {
                 void writeClipboardText(publicKeyB64)
                   .then(() => {
@@ -531,7 +531,7 @@ export default function SecurityPanel({
                     setShowPrivateKey((s) => !s);
                   }}
                   disabled={disabled}
-                  className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
+                  className="text-muted px-3 py-2 text-xs hover:text-zinc-300 disabled:opacity-50"
                 >
                   {showPrivateKey ? t('common.hide') : t('common.show')}
                 </button>
@@ -610,7 +610,7 @@ export default function SecurityPanel({
                   setAdminKeyErrors([...adminKeyErrors, null]);
                 }}
                 disabled={disabled}
-                className="text-muted w-full rounded-lg border border-dashed border-gray-600 px-4 py-2 text-sm transition-colors hover:border-gray-500 hover:text-gray-300 disabled:opacity-50"
+                className="text-muted w-full rounded-lg border border-dashed border-zinc-600 px-4 py-2 text-sm transition-colors hover:border-zinc-500 hover:text-zinc-300 disabled:opacity-50"
               >
                 {t('securityPanel.addAdminKey')}
               </button>
@@ -717,7 +717,7 @@ export default function SecurityPanel({
                   void handleSignData();
                 }}
                 disabled={disabled || signInProgress || !signDataInput.trim()}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                className="bg-secondary-dark w-full rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700 disabled:opacity-50"
               >
                 {signInProgress ? t('securityPanel.signing') : t('securityPanel.signDataButton')}
               </button>
@@ -726,7 +726,7 @@ export default function SecurityPanel({
                   <span className="text-muted text-xs">
                     {t('securityPanel.signatureBase64Label')}
                   </span>
-                  <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
+                  <div className="bg-secondary-dark rounded border border-zinc-600 p-2 font-mono text-xs break-all text-zinc-200">
                     {signDataResult}
                   </div>
                 </div>
@@ -743,7 +743,7 @@ export default function SecurityPanel({
                   void handleExportPrivateKey();
                 }}
                 disabled={disabled || exportInProgress}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                className="bg-secondary-dark w-full rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700 disabled:opacity-50"
               >
                 {exportInProgress
                   ? t('securityPanel.exportingPrivateKey')
@@ -754,7 +754,7 @@ export default function SecurityPanel({
                   <span className="text-muted text-xs">
                     {t('securityPanel.privateKeyBase64Label')}
                   </span>
-                  <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
+                  <div className="bg-secondary-dark rounded border border-zinc-600 p-2 font-mono text-xs break-all text-zinc-200">
                     {exportedPrivateKey}
                   </div>
                   <p className="text-xs text-yellow-400">{t('securityPanel.exportKeyWarning')}</p>
@@ -786,7 +786,7 @@ export default function SecurityPanel({
                   void handleImportPrivateKey();
                 }}
                 disabled={disabled || importInProgress || !importKeyInput.trim()}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                className="bg-secondary-dark w-full rounded-lg border border-zinc-600 px-4 py-2 text-sm text-zinc-200 transition-colors hover:bg-zinc-700 disabled:opacity-50"
               >
                 {importInProgress
                   ? t('securityPanel.importingPrivateKey')

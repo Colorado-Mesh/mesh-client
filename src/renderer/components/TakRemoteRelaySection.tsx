@@ -23,14 +23,14 @@ const DEFAULT_REMOTE_SETTINGS: TAKRemoteSettings = {
 const STATUS_DOT: Record<TAKRemoteStatus['state'], string> = {
   connected: 'bg-green-500',
   connecting: 'bg-yellow-500',
-  disconnected: 'bg-gray-500',
+  disconnected: 'bg-zinc-500',
 };
 
 function CredentialSummary({ credentials }: { credentials: TAKRemoteCredentialSummary | null }) {
   const { t } = useTranslation();
   if (!credentials) return null;
   return (
-    <ul className="space-y-1 text-xs text-gray-400">
+    <ul className="space-y-1 text-xs text-zinc-400">
       <li>
         {credentials.caSubjects.length > 0
           ? t('takServerPanel.remoteCaSummary', { names: credentials.caSubjects.join(', ') })
@@ -103,9 +103,9 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
       <div className="flex items-center gap-3">
         <span className={`h-3 w-3 shrink-0 rounded-full ${STATUS_DOT[status.state]}`} />
         <div className="min-w-0">
-          <p className="text-sm font-medium text-gray-200">{statusLabel}</p>
+          <p className="text-sm font-medium text-zinc-200">{statusLabel}</p>
           {status.error && (
-            <p className="text-xs break-words text-gray-400">
+            <p className="text-xs break-words text-zinc-400">
               {t('takServerPanel.remoteLastError', { error: status.error })}
             </p>
           )}
@@ -120,7 +120,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
 
       <div className="flex flex-wrap gap-3">
         <div className="min-w-0 flex-1 basis-56">
-          <label htmlFor={`${id}-host`} className="mb-1 block text-xs text-gray-400">
+          <label htmlFor={`${id}-host`} className="mb-1 block text-xs text-zinc-400">
             {t('takServerPanel.remoteHostLabel')}
           </label>
           <input
@@ -142,7 +142,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           )}
         </div>
         <div>
-          <label htmlFor={`${id}-port`} className="mb-1 block text-xs text-gray-400">
+          <label htmlFor={`${id}-port`} className="mb-1 block text-xs text-zinc-400">
             {t('takServerPanel.remotePortLabel')}
           </label>
           <input
@@ -177,7 +177,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             disabled={active || isBusy}
             className="accent-brand-green disabled:opacity-50"
           />
-          <label htmlFor={`${id}-verify`} className="cursor-pointer text-sm text-gray-300">
+          <label htmlFor={`${id}-verify`} className="cursor-pointer text-sm text-zinc-300">
             {t('takServerPanel.remoteVerifyServer')}
           </label>
         </div>
@@ -194,7 +194,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
               disabled={active || isBusy || !hasCa}
               className="accent-brand-green disabled:opacity-50"
             />
-            <label htmlFor={`${id}-name-mismatch`} className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor={`${id}-name-mismatch`} className="cursor-pointer text-sm text-zinc-300">
               {t('takServerPanel.remoteAllowNameMismatch')}
             </label>
           </div>
@@ -205,7 +205,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           </p>
         )}
         {verifyServer && !hasCa && (
-          <p className="pl-6 text-xs text-gray-400">
+          <p className="pl-6 text-xs text-zinc-400">
             {t('takServerPanel.remoteNameMismatchNeedsCa')}
           </p>
         )}
@@ -221,21 +221,21 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             disabled={active || isBusy || !verifyServer}
             className="accent-brand-green disabled:opacity-50"
           />
-          <label htmlFor={`${id}-autoconnect`} className="cursor-pointer text-sm text-gray-300">
+          <label htmlFor={`${id}-autoconnect`} className="cursor-pointer text-sm text-zinc-300">
             {t('takServerPanel.remoteAutoConnect')}
           </label>
         </div>
       </div>
 
-      <div className="space-y-3 border-t border-gray-700 pt-4">
-        <h4 className="text-xs font-medium text-gray-300">
+      <div className="space-y-3 border-t border-zinc-700 pt-4">
+        <h4 className="text-xs font-medium text-zinc-300">
           {t('takServerPanel.remoteCertificates')}
         </h4>
         <CredentialSummary credentials={credentials} />
-        <p className="text-xs text-gray-400">{t('takServerPanel.remoteImportHint')}</p>
+        <p className="text-xs text-zinc-400">{t('takServerPanel.remoteImportHint')}</p>
         <div className="flex flex-wrap items-end gap-2">
           <div>
-            <label htmlFor={`${id}-password`} className="mb-1 block text-xs text-gray-400">
+            <label htmlFor={`${id}-password`} className="mb-1 block text-xs text-zinc-400">
               {t('takServerPanel.remotePasswordLabel')}
             </label>
             <input
@@ -256,7 +256,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             onClick={handleImport}
             aria-label={t('takServerPanel.remoteImport')}
             disabled={active || isBusy}
-            className="bg-secondary-dark rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 disabled:opacity-50"
+            className="bg-secondary-dark rounded-lg border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 disabled:opacity-50"
           >
             {t('takServerPanel.remoteImport')}
           </button>
@@ -266,7 +266,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
               onClick={relay.clearCredentials}
               aria-label={t('takServerPanel.remoteClear')}
               disabled={active || isBusy}
-              className="bg-secondary-dark rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-red-800 hover:text-red-300 disabled:opacity-50"
+              className="bg-secondary-dark rounded-lg border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-red-800 hover:text-red-300 disabled:opacity-50"
             >
               {t('takServerPanel.remoteClear')}
             </button>
@@ -306,9 +306,9 @@ export default function TakRemoteRelaySection() {
   const { t } = useTranslation();
   const relay = useTakRemoteRelay();
   return (
-    <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
-      <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.remoteTitle')}</h3>
-      <p className="text-xs text-gray-400">{t('takServerPanel.remoteDescription')}</p>
+    <div className="bg-deep-black space-y-3 rounded-xl border border-zinc-800 p-4">
+      <h3 className="text-sm font-medium text-zinc-300">{t('takServerPanel.remoteTitle')}</h3>
+      <p className="text-xs text-zinc-400">{t('takServerPanel.remoteDescription')}</p>
       {/* The form seeds its fields from saved settings, so mount it once they have loaded. */}
       {relay.savedSettings !== undefined && (
         <RemoteRelayForm initial={relay.savedSettings ?? DEFAULT_REMOTE_SETTINGS} relay={relay} />

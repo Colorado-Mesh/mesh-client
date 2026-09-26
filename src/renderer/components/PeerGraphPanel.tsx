@@ -204,7 +204,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
 
   if (totalNodes === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-slate-400">
+      <div className="flex h-full items-center justify-center text-zinc-400">
         {t('peerGraph.noNodes')}
       </div>
     );
@@ -223,8 +223,8 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-xs text-slate-400">
-        <span className="font-medium text-slate-300">{t('peerGraph.title')}</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 text-xs text-zinc-400">
+        <span className="font-medium text-zinc-300">{t('peerGraph.title')}</span>
         <TopologyHopFilterControls
           includeDistantPeers={includeDistantPeers}
           onIncludeDistantPeersChange={setIncludeDistantPeers}
@@ -242,7 +242,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
         />
         <button
           type="button"
-          className="text-slate-400 hover:text-slate-200"
+          className="text-zinc-400 hover:text-zinc-200"
           onClick={resetView}
           aria-label={t('peerGraph.resetView')}
         >
@@ -294,7 +294,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
           >
             <defs>
               <pattern id="peer-graph-bg" width="40" height="40" patternUnits="userSpaceOnUse">
-                <circle cx="20" cy="20" r="0.5" fill="#334155" />
+                <circle cx="20" cy="20" r="0.5" fill="#3f3f46" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#peer-graph-bg)" />
@@ -305,7 +305,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                 const b = nodeById.get(edge.target);
                 if (!a || !b) return null;
                 const isDirectSpoke = a.kind === 'self' && b.kind === 'relay';
-                const stroke = isDirectSpoke ? relaySpokeColor(b.online) : '#94a3b8';
+                const stroke = isDirectSpoke ? relaySpokeColor(b.online) : '#a1a1aa';
                 const strokeWidth = isDirectSpoke ? 3 : 1;
                 return (
                   <line
@@ -363,7 +363,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                       <text
                         y={sizes.centerR + 14}
                         textAnchor="middle"
-                        fill="#e2e8f0"
+                        fill="#e4e4e7"
                         fontSize={10}
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                       >
@@ -401,7 +401,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                       <text
                         y={r + 12}
                         textAnchor="middle"
-                        fill="#d1d5db"
+                        fill="#d4d4d8"
                         fontSize={10}
                         style={{ pointerEvents: 'none', userSelect: 'none' }}
                       >
@@ -412,7 +412,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                 }
 
                 const r = sizes.peerR;
-                const fill = node.online ? TIER_FILL[node.tier] : '#475569';
+                const fill = node.online ? TIER_FILL[node.tier] : '#52525b';
                 return (
                   <g
                     key={node.id}
@@ -431,11 +431,11 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
                       strokeWidth={1.5}
                       strokeOpacity={node.online ? 0.9 : 0.5}
                     />
-                    <circle r={r} fill={fill} fillOpacity={0.92} stroke="#1e293b" strokeWidth={1} />
+                    <circle r={r} fill={fill} fillOpacity={0.92} stroke="#27272a" strokeWidth={1} />
                     <text
                       y={r + 12}
                       textAnchor="middle"
-                      fill="#d1d5db"
+                      fill="#d4d4d8"
                       fontSize={10}
                       style={{ pointerEvents: 'none', userSelect: 'none' }}
                     >
@@ -493,7 +493,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
               y1="4"
               x2="24"
               y2="4"
-              stroke="#94a3b8"
+              stroke="#a1a1aa"
               strokeWidth="1"
               strokeDasharray="4 4"
             />

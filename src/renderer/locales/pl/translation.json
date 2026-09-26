@@ -336,7 +336,12 @@
       "purple400": "Fioletowy 400",
       "pink400": "Różowy 400",
       "orange400": "Pomarańczowy 400",
-      "yellow400": "Żółty 400"
+      "yellow400": "Żółty 400",
+      "zinc950": "Cynk 950",
+      "zinc900": "Cynk 900",
+      "zinc800": "Cynk 800",
+      "zinc700": "Cynk 700",
+      "zinc400": "Cynk 400"
     },
     "autoPruneNodesOlderThanAria": "Automatycznie oczyszczaj węzły przy uruchomieniu, starsze niż {{days}} dni",
     "autoPrunePositionHistoryDaysAria": "Automatyczne czyszczenie historii pozycji przy uruchomieniu, starszej niż {{days}} dni",
@@ -452,7 +457,8 @@
       "highContrast": "Wysoki kontrast",
       "midnight": "Północ",
       "teal": "Akcent morski",
-      "amber": "Akcent bursztynowy"
+      "amber": "Akcent bursztynowy",
+      "classicSlate": "Klasyczny łupek"
     },
     "pruneNoFixNodesTitle": "Przytnij węzły bez pozycji / Zero Island"
   },

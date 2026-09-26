@@ -127,13 +127,13 @@ export function ReticulumPeerPathsDetail({
 
   return (
     <section
-      className="rounded-lg border border-gray-700 bg-slate-950/80 p-3 text-sm text-gray-200"
+      className="rounded-lg border border-zinc-700 bg-zinc-950/80 p-3 text-sm text-zinc-200"
       aria-label={t('peerListPanel.pathsDetailAria', {
         hash: destinationHash.slice(0, 12),
       })}
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-mono text-xs text-gray-300">
+        <h3 className="font-mono text-xs text-zinc-300">
           {t('peerListPanel.pathsHeading', { hash: destinationHash.slice(0, 12) })}
         </h3>
         <button
@@ -146,7 +146,7 @@ export function ReticulumPeerPathsDetail({
         </button>
       </div>
 
-      <label className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+      <label className="mb-3 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
         <span>{t('peerListPanel.pathsPreferLabel')}</span>
         <select
           value={pinChoice}
@@ -185,11 +185,11 @@ export function ReticulumPeerPathsDetail({
               className={
                 slot.active
                   ? 'border-brand-green/35 bg-brand-green/10 rounded border px-2 py-1.5'
-                  : 'rounded border border-gray-800 px-2 py-1.5'
+                  : 'rounded border border-zinc-800 px-2 py-1.5'
               }
             >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                <span className="font-medium text-gray-100">
+                <span className="font-medium text-zinc-100">
                   {slot.active
                     ? t('peerListPanel.pathsActiveBadge')
                     : t('peerListPanel.pathsBackupBadge')}

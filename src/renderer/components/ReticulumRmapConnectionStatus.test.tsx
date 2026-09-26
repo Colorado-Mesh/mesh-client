@@ -39,7 +39,7 @@ describe('ReticulumRmapConnectionStatus', () => {
     );
     const status = screen.getByText('connectionPanel.reticulumRmap.notPublishing:{}');
     expect(status).toBeInTheDocument();
-    expect(status).toHaveClass('text-gray-400');
+    expect(status).toHaveClass('text-zinc-400');
     expect(status).not.toHaveClass('text-amber-300');
     await user.click(
       screen.getByRole('button', { name: 'connectionPanel.reticulumRmap.openSettingsAria:{}' }),

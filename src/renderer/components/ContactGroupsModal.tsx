@@ -213,10 +213,10 @@ export default function ContactGroupsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="groups-modal-title"
-        className="bg-deep-black relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-gray-700 shadow-2xl"
+        className="bg-deep-black relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-zinc-700 shadow-2xl"
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-700 px-5 py-4">
           {managingGroup ? (
             <div className="flex min-w-0 items-center gap-2">
               <button
@@ -226,7 +226,7 @@ export default function ContactGroupsModal({
                 }}
                 aria-label={t('contactGroupsModal.backToGroups')}
                 {...{ [PARENT_HOVER_ATTR]: '' }}
-                className="hover:bg-secondary-dark text-muted shrink-0 rounded p-1 transition-colors hover:text-gray-200"
+                className="hover:bg-secondary-dark text-muted shrink-0 rounded p-1 transition-colors hover:text-zinc-200"
               >
                 <ChevronLeft
                   aria-hidden
@@ -235,12 +235,12 @@ export default function ContactGroupsModal({
                   size={16}
                 />
               </button>
-              <h2 id="groups-modal-title" className="truncate text-lg font-semibold text-gray-100">
+              <h2 id="groups-modal-title" className="truncate text-lg font-semibold text-zinc-100">
                 {managingGroup.name}
               </h2>
             </div>
           ) : (
-            <h2 id="groups-modal-title" className="text-lg font-semibold text-gray-100">
+            <h2 id="groups-modal-title" className="text-lg font-semibold text-zinc-100">
               {t('contactGroupsModal.title')}
             </h2>
           )}
@@ -249,7 +249,7 @@ export default function ContactGroupsModal({
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
             {...{ [PARENT_HOVER_ATTR]: '' }}
-            className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
+            className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-zinc-200"
           >
             <X aria-hidden className="h-5 w-5" trigger={parentIconTrigger} size={20} />
           </button>
@@ -279,7 +279,7 @@ export default function ContactGroupsModal({
                           disabled={busy}
                           className="accent-brand-green"
                         />
-                        <span className="truncate text-sm text-gray-200">
+                        <span className="truncate text-sm text-zinc-200">
                           {contact.long_name || t('common.unknown')}
                         </span>
                       </label>
@@ -346,7 +346,7 @@ export default function ContactGroupsModal({
                           className={`${INPUT_BOX_CLASS} flex-1`}
                         />
                       ) : (
-                        <span className="flex-1 truncate text-sm text-gray-200">
+                        <span className="flex-1 truncate text-sm text-zinc-200">
                           {group.name}
                           <span className="text-muted ml-1.5 text-xs">({group.member_count})</span>
                         </span>
@@ -376,7 +376,7 @@ export default function ContactGroupsModal({
                             }}
                             aria-label={t('contactGroupsModal.cancelRename')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
-                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-zinc-200"
                           >
                             <X
                               aria-hidden
@@ -396,7 +396,7 @@ export default function ContactGroupsModal({
                             })}
                             title={t('contactGroupsModal.manageMembers')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
-                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-zinc-200"
                           >
                             <Users
                               aria-hidden
@@ -416,7 +416,7 @@ export default function ContactGroupsModal({
                             })}
                             title={t('contactGroupsModal.rename')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
-                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-zinc-200"
                           >
                             <Pencil
                               aria-hidden
@@ -443,7 +443,7 @@ export default function ContactGroupsModal({
                                 }}
                                 aria-label={t('contactGroupsModal.cancelDelete')}
                                 {...{ [PARENT_HOVER_ATTR]: '' }}
-                                className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                                className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-zinc-200"
                               >
                                 <X
                                   aria-hidden

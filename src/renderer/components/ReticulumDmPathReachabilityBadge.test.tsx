@@ -31,7 +31,7 @@ describe('ReticulumDmPathReachabilityBadge', () => {
   it('uses slate status chip tokens for reachable state', () => {
     render(<ReticulumDmPathReachabilityBadge status="reachable" hops={2} />);
     const badge = screen.getByRole('status', { name: 'Destination path is reachable' });
-    expect(badge.className).toContain('bg-slate-800/60');
+    expect(badge.className).toContain('bg-zinc-800/60');
     expect(badge.className).toContain('rounded-lg');
   });
 });
@@ -59,8 +59,8 @@ describe('ReticulumDmPathActions', () => {
     expect(path.className).toBe(RETICULUM_DM_HEADER_ACTION_CLASS);
     expect(probe.className).toContain('border-cyan-500/35');
     expect(probe.className).toMatch(/text-cyan-/);
-    expect(probe.className).not.toMatch(/border-gray-600/);
-    expect(path.className).not.toMatch(/border-gray-600/);
+    expect(probe.className).not.toMatch(/border-zinc-600/);
+    expect(path.className).not.toMatch(/border-zinc-600/);
   });
 
   it('keeps Probe before Path when unreachable', () => {

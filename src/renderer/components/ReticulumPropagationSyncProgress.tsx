@@ -60,7 +60,7 @@ export function ReticulumPropagationSyncProgress({
               ? t('reticulumPropagation.syncStatusWithTarget', { status, name: targetName })
               : status}
           </p>
-          <div className="h-2 overflow-hidden rounded bg-gray-800">
+          <div className="h-2 overflow-hidden rounded bg-zinc-800">
             <div
               className="bg-brand-green h-full transition-all"
               style={{ width: `${Math.min(100, sync.progress)}%` }}

@@ -336,7 +336,12 @@
       "purple400": "Fialová 400",
       "pink400": "Růžová 400",
       "orange400": "Oranžová 400",
-      "yellow400": "Žlutá 400"
+      "yellow400": "Žlutá 400",
+      "zinc950": "Zinek 950",
+      "zinc900": "Zinek 900",
+      "zinc800": "Zinek 800",
+      "zinc700": "Zinek 700",
+      "zinc400": "Zinek 400"
     },
     "autoPruneNodesOlderThanAria": "Automaticky ořezávat uzly při spuštění, starší než {{days}} dnů",
     "autoPrunePositionHistoryDaysAria": "Automatické prořezávání historie pozic při spuštění, starší než {{days}} dnů",
@@ -444,7 +449,8 @@
       "highContrast": "Vysoký kontrast",
       "midnight": "Půlnoc",
       "teal": "Tyrkysový akcent",
-      "amber": "Jantarový akcent"
+      "amber": "Jantarový akcent",
+      "classicSlate": "Klasická břidlice"
     },
     "pruneNoFixNodesTitle": "Prořezávat uzly bez polohy / Zero Island"
   },

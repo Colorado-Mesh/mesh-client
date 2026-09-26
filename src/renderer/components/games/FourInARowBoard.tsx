@@ -69,15 +69,15 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="text-sm text-gray-100">{statusText}</div>
+      <div className="text-sm text-zinc-100">{statusText}</div>
       {myMarker && (
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-zinc-400">
           {t('gamesPanel.fourInARow.yourMarker', { marker: myMarker })}
           {moveCount > 0 ? ` · ${t('gamesPanel.fourInARow.moveCount', { count: moveCount })}` : ''}
         </div>
       )}
       <div
-        className="flex gap-1 rounded bg-slate-900/60 p-1"
+        className="flex gap-1 rounded bg-zinc-900/60 p-1"
         role="group"
         aria-label={t('gamesPanel.fourInARow.boardAria')}
       >
@@ -99,7 +99,7 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
             <button
               key={column}
               type="button"
-              className="flex flex-col gap-1 rounded p-1 enabled:hover:bg-slate-700/70 disabled:cursor-default"
+              className="flex flex-col gap-1 rounded p-1 enabled:hover:bg-zinc-700/70 disabled:cursor-default"
               aria-label={
                 columnFull
                   ? t('gamesPanel.fourInARow.columnFullAria', { column: column + 1, contents })
@@ -115,13 +115,13 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
                 const marker = cells[index] ?? EMPTY_CELL;
                 const isEmpty = marker === EMPTY_CELL;
                 const fill = isEmpty
-                  ? 'bg-slate-800 text-transparent'
-                  : (MARKER_CLASS[marker] ?? 'bg-gray-500 text-white');
+                  ? 'bg-zinc-800 text-transparent'
+                  : (MARKER_CLASS[marker] ?? 'bg-zinc-500 text-white');
                 return (
                   <span
                     key={row}
                     aria-hidden="true"
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border border-slate-600 text-sm font-bold ${fill} ${
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border border-zinc-600 text-sm font-bold ${fill} ${
                       winSet.has(index) ? 'ring-2 ring-yellow-300' : ''
                     }`}
                   >

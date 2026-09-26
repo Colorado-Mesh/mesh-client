@@ -17,7 +17,7 @@ describe('flasherStepButtonClass', () => {
   });
 
   it('uses outline style when disabled', () => {
-    expect(flasherStepButtonClass('disabled')).toContain('border-gray-600');
+    expect(flasherStepButtonClass('disabled')).toContain('border-zinc-600');
     expect(flasherStepButtonClass('disabled')).not.toContain('bg-brand-green');
   });
 });

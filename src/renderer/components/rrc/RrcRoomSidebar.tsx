@@ -162,7 +162,7 @@ export function RrcRoomSidebar({
             <>
               <button
                 type="button"
-                className={`shrink-0 rounded p-1 ${isFav ? 'text-bright-green' : 'text-muted hover:text-slate-200'}`}
+                className={`shrink-0 rounded p-1 ${isFav ? 'text-bright-green' : 'text-muted hover:text-zinc-200'}`}
                 aria-label={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
                 title={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
                 onClick={() => {
@@ -214,7 +214,7 @@ export function RrcRoomSidebar({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="space-y-2 border-b border-slate-800 p-3">
+      <div className="space-y-2 border-b border-zinc-800 p-3">
         <div className="relative">
           <Search
             aria-hidden
@@ -309,7 +309,7 @@ export function RrcRoomSidebar({
           <li className="text-muted px-2 py-2 text-xs">{t('rrc.noRoomsJoined')}</li>
         )}
       </ul>
-      <div className="text-muted space-y-1 border-t border-slate-800 px-3 py-2 text-xs leading-snug">
+      <div className="text-muted space-y-1 border-t border-zinc-800 px-3 py-2 text-xs leading-snug">
         <p>{t('rrc.roomLegend')}</p>
         <p>{t('rrc.listHint')}</p>
       </div>

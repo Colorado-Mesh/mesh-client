@@ -39,7 +39,7 @@ export function LabelValue({
     <div className={`min-w-0 ${span ? 'sm:col-span-2' : ''}`}>
       <dt className="text-muted text-xs">{label}</dt>
       <dd
-        className={`mt-1.5 min-w-0 break-words text-slate-200 ${mono ? 'text-body-lg font-mono' : 'text-sm'}`}
+        className={`mt-1.5 min-w-0 break-words text-zinc-200 ${mono ? 'text-body-lg font-mono' : 'text-sm'}`}
       >
         {children}
       </dd>

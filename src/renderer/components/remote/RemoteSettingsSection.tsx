@@ -388,8 +388,8 @@ export function RemoteSettingsSection({
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto p-3">
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="space-y-2 rounded-lg border border-zinc-700/60 p-3">
+        <h3 className="text-sm font-medium text-zinc-300">
           {t('reticulumRemote.settings.inboundTitle')}
         </h3>
         <div className="flex gap-2">
@@ -413,7 +413,7 @@ export function RemoteSettingsSection({
             type="button"
             aria-label={t('reticulumRemote.settings.chooseSaveDirAria')}
             onClick={() => void handlePickSaveDir()}
-            className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+            className="rounded bg-zinc-700/60 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
           >
             {t('reticulumRemote.settings.chooseSaveDir')}
           </button>
@@ -422,7 +422,7 @@ export function RemoteSettingsSection({
           </span>
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="flex items-center gap-2 text-xs text-zinc-300">
           <input
             type="checkbox"
             checked={allowFetch}
@@ -442,7 +442,7 @@ export function RemoteSettingsSection({
               onClick={() => {
                 handlePickFetchJail();
               }}
-              className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+              className="rounded bg-zinc-700/60 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
             >
               {t('reticulumRemote.settings.chooseFetchJail')}
             </button>
@@ -451,7 +451,7 @@ export function RemoteSettingsSection({
             </span>
           </div>
         )}
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="flex items-center gap-2 text-xs text-zinc-300">
           <input
             type="checkbox"
             checked={overwrite}
@@ -468,8 +468,8 @@ export function RemoteSettingsSection({
         </p>
       </section>
 
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="space-y-2 rounded-lg border border-zinc-700/60 p-3">
+        <h3 className="text-sm font-medium text-zinc-300">
           {t('reticulumRemote.settings.allowBlockListTitle')}
         </h3>
         {policyList.length === 0 ? (
@@ -478,7 +478,7 @@ export function RemoteSettingsSection({
           policyList.map((p) => (
             <div
               key={p.identity_hash}
-              className="flex flex-wrap items-center gap-2 rounded border border-gray-700/60 bg-gray-800/30 px-2 py-1.5 text-xs text-gray-200"
+              className="flex flex-wrap items-center gap-2 rounded border border-zinc-700/60 bg-zinc-800/30 px-2 py-1.5 text-xs text-zinc-200"
             >
               <span
                 className={`rounded px-1.5 py-0.5 ${
@@ -496,7 +496,7 @@ export function RemoteSettingsSection({
                   label: p.label ?? p.identity_hash,
                 })}
                 onClick={() => void handleRemovePolicy(p.identity_hash)}
-                className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600"
               >
                 {t('common.delete')}
               </button>
@@ -505,11 +505,11 @@ export function RemoteSettingsSection({
         )}
       </section>
 
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="space-y-2 rounded-lg border border-zinc-700/60 p-3">
+        <h3 className="text-sm font-medium text-zinc-300">
           {t('reticulumRemote.settings.reliabilityTitle')}
         </h3>
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="flex items-center gap-2 text-xs text-zinc-300">
           <input
             type="checkbox"
             checked={settings.autoReconnectShell}
@@ -521,7 +521,7 @@ export function RemoteSettingsSection({
           />
           {t('reticulumRemote.settings.autoReconnectShell')}
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="flex items-center gap-2 text-xs text-zinc-300">
           <input
             type="checkbox"
             checked={settings.autoRetryTransfer}
@@ -535,11 +535,11 @@ export function RemoteSettingsSection({
         </label>
       </section>
 
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="space-y-2 rounded-lg border border-zinc-700/60 p-3">
+        <h3 className="text-sm font-medium text-zinc-300">
           {t('reticulumRemote.settings.identityTitle')}
         </h3>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-300">
           <span>{t('reticulumRemote.settings.myIdentity')}</span>
           <code className="min-w-0 flex-1 truncate">{identity?.identity_hash ?? '—'}</code>
           <button
@@ -549,12 +549,12 @@ export function RemoteSettingsSection({
             onClick={() => {
               copy(identity?.identity_hash);
             }}
-            className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+            className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600 disabled:opacity-40"
           >
             {t('common.copy')}
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-300">
           <span>{t('reticulumRemote.transfer.myReceiveDest')}</span>
           <code className="min-w-0 flex-1 truncate">{identity?.rncp_receive_hash ?? '—'}</code>
           <button
@@ -564,7 +564,7 @@ export function RemoteSettingsSection({
             onClick={() => {
               copy(identity?.rncp_receive_hash);
             }}
-            className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+            className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600 disabled:opacity-40"
           >
             {t('common.copy')}
           </button>
@@ -576,7 +576,7 @@ export function RemoteSettingsSection({
           onClick={() => {
             void announceReceiveDest();
           }}
-          className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+          className="rounded bg-zinc-700/60 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600 disabled:opacity-40"
         >
           {t('reticulumRemote.settings.announceReceiveDest')}
         </button>

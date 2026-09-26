@@ -238,7 +238,7 @@ export function RemoteShellSection({
             className={`${INPUT_BOX_CLASS} w-full`}
           />
           {showTypeahead && typeaheadMatches.length > 0 && (
-            <ul className="bg-secondary-dark absolute z-10 mt-1 w-full rounded-lg border border-gray-600/50 shadow-lg">
+            <ul className="bg-secondary-dark absolute z-10 mt-1 w-full rounded-lg border border-zinc-600/50 shadow-lg">
               {typeaheadMatches.map((addr) => (
                 <li key={addr.id}>
                   <button
@@ -246,7 +246,7 @@ export function RemoteShellSection({
                     aria-label={t('reticulumRemote.shell.selectSavedAddress', {
                       label: addr.label,
                     })}
-                    className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700/60"
+                    className="w-full px-3 py-1.5 text-left text-sm text-zinc-200 hover:bg-zinc-700/60"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       setAddressInput(addr.destination_hash);
@@ -274,14 +274,14 @@ export function RemoteShellSection({
       </div>
 
       {sessionList.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 border-b border-gray-700/60 pb-1">
+        <div className="flex flex-wrap items-center gap-1 border-b border-zinc-700/60 pb-1">
           {sessionList.map((session) => (
             <div
               key={session.session_id}
               className={`flex items-center gap-1 rounded-t-lg border border-b-0 px-2 py-1 text-xs ${
                 session.session_id === focusedSessionId
                   ? 'border-blue-600/60 bg-blue-900/30 text-blue-200'
-                  : 'border-gray-700/60 bg-gray-800/40 text-gray-400'
+                  : 'border-zinc-700/60 bg-zinc-800/40 text-zinc-400'
               }`}
             >
               <button
@@ -306,7 +306,7 @@ export function RemoteShellSection({
                   address: session.destination_hash.slice(0, 8),
                 })}
                 onClick={() => void handleDisconnect(session.session_id)}
-                className="text-muted ml-1 hover:text-gray-200"
+                className="text-muted ml-1 hover:text-zinc-200"
               >
                 ×
               </button>
@@ -327,7 +327,7 @@ export function RemoteShellSection({
               hidden={session.session_id !== focusedSessionId}
               className="flex h-full min-h-0 flex-col gap-2"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
                 <span>{t(`reticulumRemote.shell.status.${session.status}`)}</span>
                 <div className="flex gap-2">
                   {session.status !== 'active' && session.status !== 'connecting' && (
@@ -338,7 +338,7 @@ export function RemoteShellSection({
                         // eslint-disable-next-line react-hooks/refs -- event handler, not render; reconnect reads the confirmed-fingerprint ref to skip re-prompting
                         void handleReconnect(session.session_id, session.destination_hash);
                       }}
-                      className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                      className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600"
                     >
                       {t('reticulumRemote.shell.reconnect')}
                     </button>

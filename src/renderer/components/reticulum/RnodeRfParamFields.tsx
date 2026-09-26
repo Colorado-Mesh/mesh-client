@@ -50,7 +50,7 @@ export function RnodeRfParamFields({
   const { t } = useTranslation();
   return (
     <>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-frequency`}>
+      <label className="text-xs text-zinc-400" htmlFor={`${idPrefix}-frequency`}>
         {t('connectionPanel.reticulumInterfaces.rfFrequencyMhz')}
         <input
           id={`${idPrefix}-frequency`}
@@ -65,7 +65,7 @@ export function RnodeRfParamFields({
           className={`${INPUT_BOX_CLASS} mt-1 block w-28`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-bandwidth`}>
+      <label className="text-xs text-zinc-400" htmlFor={`${idPrefix}-bandwidth`}>
         {t('connectionPanel.reticulumInterfaces.rfBandwidthKhz')}
         <input
           id={`${idPrefix}-bandwidth`}
@@ -80,7 +80,7 @@ export function RnodeRfParamFields({
           className={`${INPUT_BOX_CLASS} mt-1 block w-24`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-sf`}>
+      <label className="text-xs text-zinc-400" htmlFor={`${idPrefix}-sf`}>
         {t('connectionPanel.reticulumInterfaces.rfSpreadingFactor')}
         <input
           id={`${idPrefix}-sf`}
@@ -96,7 +96,7 @@ export function RnodeRfParamFields({
           className={`${INPUT_BOX_CLASS} mt-1 block w-16`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-cr`}>
+      <label className="text-xs text-zinc-400" htmlFor={`${idPrefix}-cr`}>
         {t('connectionPanel.reticulumInterfaces.rfCodingRate')}
         <input
           id={`${idPrefix}-cr`}
@@ -112,7 +112,7 @@ export function RnodeRfParamFields({
           className={`${INPUT_BOX_CLASS} mt-1 block w-16`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-txpower`}>
+      <label className="text-xs text-zinc-400" htmlFor={`${idPrefix}-txpower`}>
         {t('connectionPanel.reticulumInterfaces.rfTxPower')}
         <input
           id={`${idPrefix}-txpower`}

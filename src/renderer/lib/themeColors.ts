@@ -47,20 +47,20 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
 
 /** Default hex values — must match src/renderer/styles.css @theme block. */
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
-  appBg: '#020617',
-  sidebarActiveBg: '#1e293b',
+  appBg: '#09090b',
+  sidebarActiveBg: '#27272a',
   brandGreen: '#86efac',
   brightGreen: '#86efac',
   readableGreen: '#15803d',
-  deepBlack: '#0f172a',
-  secondaryDark: '#334155',
-  muted: '#94a3b8',
-  chatIncomingBg: '#1e293b',
-  chatIncomingBorder: '#1e293b',
+  deepBlack: '#18181b',
+  secondaryDark: '#3f3f46',
+  muted: '#a1a1aa',
+  chatIncomingBg: '#27272a',
+  chatIncomingBorder: '#27272a',
   chatOutgoingBg: '#15803d',
   chatOutgoingBorder: '#86efac',
-  messageActionsBarBg: '#0f172a',
-  messageActionButtonHover: '#94a3b8',
+  messageActionsBarBg: '#18181b',
+  messageActionButtonHover: '#a1a1aa',
 };
 
 export interface ThemeTokenMeta {
@@ -72,6 +72,11 @@ export interface ThemeTokenMeta {
 /** Preset hex values — Tailwind palette only. */
 export const THEME_COLOR_PRESETS: { labelKey: string; hex: string }[] = [
   { labelKey: 'appPanel.themePreset.green300', hex: '#86efac' },
+  { labelKey: 'appPanel.themePreset.zinc950', hex: '#09090b' },
+  { labelKey: 'appPanel.themePreset.zinc900', hex: '#18181b' },
+  { labelKey: 'appPanel.themePreset.zinc800', hex: '#27272a' },
+  { labelKey: 'appPanel.themePreset.zinc700', hex: '#3f3f46' },
+  { labelKey: 'appPanel.themePreset.zinc400', hex: '#a1a1aa' },
   { labelKey: 'appPanel.themePreset.slate950', hex: '#020617' },
   { labelKey: 'appPanel.themePreset.slate900', hex: '#0f172a' },
   { labelKey: 'appPanel.themePreset.slate800', hex: '#1e293b' },

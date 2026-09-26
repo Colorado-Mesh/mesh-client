@@ -139,7 +139,7 @@ function PeerHopsCell({
       <span>{peer.hops ?? '—'}</span>
       {via != null && peer.hops != null ? (
         <span
-          className="text-muted text-2xs rounded bg-slate-700/60 px-1 py-0.5 font-medium"
+          className="text-muted text-2xs rounded bg-zinc-700/60 px-1 py-0.5 font-medium"
           title={t('peerListPanel.pathMediumTitle', { medium: formatReticulumViaBadgeLabel(via) })}
         >
           {formatReticulumViaBadgeLabel(via)}
@@ -187,7 +187,7 @@ const PeerTableRow = memo(function PeerTableRow({
   return (
     <tr
       data-selected={selected ? 'true' : undefined}
-      className={`cursor-pointer border-b border-slate-800 ${
+      className={`cursor-pointer border-b border-zinc-800 ${
         selected ? 'bg-sidebar-active-bg' : 'hover:bg-sidebar-active-bg/60'
       }`}
       onClick={() => {
@@ -806,7 +806,7 @@ export default function ReticulumPeerListPanel({
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="text-base font-semibold text-slate-200">
+        <h2 className="text-base font-semibold text-zinc-200">
           {t('peerListPanel.heading')}{' '}
           <span className="text-muted font-mono text-sm">({sortedRows.length})</span>
         </h2>
@@ -941,15 +941,15 @@ export default function ReticulumPeerListPanel({
 
       <div
         ref={tableScrollRef}
-        className="bg-deep-black min-h-0 flex-1 overflow-auto rounded-xl border border-slate-800"
+        className="bg-deep-black min-h-0 flex-1 overflow-auto rounded-xl border border-zinc-800"
       >
         <table className="w-full min-w-160 text-left text-xs">
           <thead className="bg-deep-black sticky top-0 z-10">
-            <tr className="text-muted border-b border-slate-800">
+            <tr className="text-muted border-b border-zinc-800">
               <th className="py-2 pr-2 pl-2" aria-sort={ariaSortValue('name')}>
                 <button
                   type="button"
-                  className="hover:text-gray-200"
+                  className="hover:text-zinc-200"
                   aria-label={t('peerListPanel.colName')}
                   onClick={() => {
                     toggleSort('name');
@@ -965,7 +965,7 @@ export default function ReticulumPeerListPanel({
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('hops')}>
                     <button
                       type="button"
-                      className="hover:text-gray-200"
+                      className="hover:text-zinc-200"
                       aria-label={t('connectionPanel.reticulumPeers.hops')}
                       onClick={() => {
                         toggleSort('hops');
@@ -978,7 +978,7 @@ export default function ReticulumPeerListPanel({
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('lastSeen')}>
                     <button
                       type="button"
-                      className="hover:text-gray-200"
+                      className="hover:text-zinc-200"
                       aria-label={t('peerListPanel.colLastSeen')}
                       onClick={() => {
                         toggleSort('lastSeen');
@@ -994,7 +994,7 @@ export default function ReticulumPeerListPanel({
                   >
                     <button
                       type="button"
-                      className="hover:text-gray-200"
+                      className="hover:text-zinc-200"
                       aria-label={t('peerListPanel.colInterface')}
                       onClick={() => {
                         toggleSort('interface');
@@ -1010,7 +1010,7 @@ export default function ReticulumPeerListPanel({
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('lastSeen')}>
                     <button
                       type="button"
-                      className="hover:text-gray-200"
+                      className="hover:text-zinc-200"
                       aria-label={t('peerListPanel.colLastHeard')}
                       onClick={() => {
                         toggleSort('lastSeen');
@@ -1023,7 +1023,7 @@ export default function ReticulumPeerListPanel({
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('hops')}>
                     <button
                       type="button"
-                      className="hover:text-gray-200"
+                      className="hover:text-zinc-200"
                       aria-label={t('connectionPanel.reticulumPeers.hops')}
                       onClick={() => {
                         toggleSort('hops');
@@ -1036,7 +1036,7 @@ export default function ReticulumPeerListPanel({
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('favorite')}>
                     <button
                       type="button"
-                      className="hover:text-gray-200"
+                      className="hover:text-zinc-200"
                       onClick={() => {
                         toggleSort('favorite');
                       }}

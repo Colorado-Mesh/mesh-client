@@ -110,12 +110,12 @@ export function ReticulumInterfaceDevicePickerModal({
         role="dialog"
         aria-modal="true"
         aria-label={t(titleKey(mode))}
-        className="bg-deep-black relative w-full max-w-lg overflow-hidden rounded-lg border border-gray-600 shadow-xl"
+        className="bg-deep-black relative w-full max-w-lg overflow-hidden rounded-lg border border-zinc-600 shadow-xl"
       >
-        <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
-          <span className="text-sm font-medium text-gray-200">{t(titleKey(mode))}</span>
+        <div className="bg-secondary-dark flex items-center justify-between border-b border-zinc-600 px-4 py-2.5">
+          <span className="text-sm font-medium text-zinc-200">{t(titleKey(mode))}</span>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <span className="text-xs text-gray-300" aria-live="polite">
+            <span className="text-xs text-zinc-300" aria-live="polite">
               {t('connectionPanel.devicesFound', { count })}
             </span>
             {count > 0 ? (
@@ -150,7 +150,7 @@ export function ReticulumInterfaceDevicePickerModal({
             )}
             <button
               type="button"
-              className="text-xs text-gray-400 hover:text-gray-200"
+              className="text-xs text-zinc-400 hover:text-zinc-200"
               aria-label={t('common.cancel')}
               onClick={onCancel}
             >
@@ -160,7 +160,7 @@ export function ReticulumInterfaceDevicePickerModal({
         </div>
 
         {scanError ? (
-          <p className="border-b border-gray-700 px-4 py-2 text-xs text-amber-300" role="alert">
+          <p className="border-b border-zinc-700 px-4 py-2 text-xs text-amber-300" role="alert">
             {(() => {
               const { key, params } = reticulumPickerScanErrorI18nKey(scanError);
               return t(key, params);
@@ -173,7 +173,7 @@ export function ReticulumInterfaceDevicePickerModal({
             serialPorts.length === 0 ? (
               <div className="text-muted px-4 py-4 text-sm">
                 <p>{t('connectionPanel.reticulumInterfaces.pickerSerialEmpty')}</p>
-                <label className="mt-3 block text-xs text-gray-400">
+                <label className="mt-3 block text-xs text-zinc-400">
                   {t('connectionPanel.reticulumInterfaces.serialPort')}
                   <input
                     value={manualPath}
@@ -208,9 +208,9 @@ export function ReticulumInterfaceDevicePickerModal({
                       deviceName: port.label?.trim() || port.path,
                     });
                   }}
-                  className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
+                  className="hover:bg-secondary-dark w-full border-b border-zinc-700 px-4 py-3 text-left transition-colors last:border-b-0"
                 >
-                  <div className="flex items-center gap-2 text-sm text-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-zinc-200">
                     <ConnectionIcon type="serial" />
                     {port.label ?? port.path}
                   </div>
@@ -257,9 +257,9 @@ export function ReticulumInterfaceDevicePickerModal({
                   onClick={() => {
                     onSelect({ value, deviceName: displayName });
                   }}
-                  className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
+                  className="hover:bg-secondary-dark w-full border-b border-zinc-700 px-4 py-3 text-left transition-colors last:border-b-0"
                 >
-                  <div className="flex items-center gap-2 text-sm text-gray-200">
+                  <div className="flex items-center gap-2 text-sm text-zinc-200">
                     <ConnectionIcon type="ble" />
                     <span className="min-w-0 flex-1 truncate">{displayName}</span>
                     {hasRssi ? (

@@ -8,7 +8,7 @@
  * no size: use the `*_CLASS` / `*_BOX_CLASS` constants below, which add height, padding and text.
  */
 export const FIELD_SURFACE_CLASS =
-  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green aria-invalid:border-red-500 rounded-lg border text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green aria-invalid:border-red-500 rounded-lg border text-zinc-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
 /** Text, number and search input without a width, for inputs sized by their row (`w-24`, `flex-1`). 32px, 40px on touch. */
 export const INPUT_BOX_CLASS = `${FIELD_SURFACE_CLASS} h-8 px-2.5 text-body pointer-coarse:h-10`;
@@ -49,13 +49,13 @@ export function chipClass(active: boolean, size: 'sm' | 'md' = 'md'): string {
   return `${box} rounded-lg border font-medium transition-colors ${
     active
       ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
-      : 'border-slate-800 bg-deep-black text-slate-300 hover:border-secondary-dark hover:text-slate-100'
+      : 'border-zinc-800 bg-deep-black text-zinc-300 hover:border-secondary-dark hover:text-zinc-100'
   }`;
 }
 
 /** Inline notices inside a panel. */
 export const NOTICE_CLASS: Record<'info' | 'warn' | 'error' | 'success', string> = {
-  info: 'rounded-lg border border-slate-800 bg-app-bg px-3 py-2 text-xs text-slate-300',
+  info: 'rounded-lg border border-zinc-800 bg-app-bg px-3 py-2 text-xs text-zinc-300',
   warn: 'rounded-lg border border-amber-700/50 bg-amber-950/40 px-3 py-2 text-xs text-amber-200',
   error: 'rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-200',
   success:

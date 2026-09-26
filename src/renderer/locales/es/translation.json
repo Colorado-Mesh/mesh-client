@@ -336,7 +336,12 @@
       "purple400": "Púrpura 400",
       "pink400": "rosa 400",
       "orange400": "naranja 400",
-      "yellow400": "Amarillo 400"
+      "yellow400": "Amarillo 400",
+      "zinc950": "Zinc 950",
+      "zinc900": "Zinc 900",
+      "zinc800": "Zinc 800",
+      "zinc700": "Zinc 700",
+      "zinc400": "Zinc 400"
     },
     "autoPruneNodesOlderThanAria": "Nodos de poda automática al inicio, con más de {{days}} días",
     "autoPrunePositionHistoryDaysAria": "Historial de posición de poda automática al inicio, anterior a {{days}} días",
@@ -436,7 +441,8 @@
       "highContrast": "Alto contraste",
       "midnight": "Medianoche",
       "teal": "Acento verde azulado",
-      "amber": "Acento ámbar"
+      "amber": "Acento ámbar",
+      "classicSlate": "Pizarra clásica"
     },
     "pruneNoFixNodesTitle": "Podar nodos sin posición / Zero Island"
   },

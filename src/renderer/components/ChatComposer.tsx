@@ -1175,7 +1175,7 @@ export function ChatComposer({
 
   // One composer look for channels, DMs and rooms (Option B); the placeholder says where it goes.
   const textareaClass =
-    'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-secondary-dark bg-app-bg px-3.5 py-2.5 text-sm text-slate-200 placeholder:text-muted transition-colors focus:outline-none focus:border-brand-green';
+    'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-secondary-dark bg-app-bg px-3.5 py-2.5 text-sm text-zinc-200 placeholder:text-muted transition-colors focus:outline-none focus:border-brand-green';
 
   const floodScopeOverrideActive = floodScopeOverride !== '';
   const floodScopeOverrideIndicator =
@@ -1185,7 +1185,7 @@ export function ChatComposer({
 
   const sendButtonToneClass = `text-sm font-medium transition-colors disabled:bg-secondary-dark disabled:text-muted ${
     showQueueButton
-      ? 'bg-slate-600 text-white hover:bg-slate-500'
+      ? 'bg-zinc-600 text-white hover:bg-zinc-500'
       : 'bg-brand-green hover:bg-brand-green/90 text-app-bg'
   }`;
 
@@ -1205,7 +1205,7 @@ export function ChatComposer({
   const emojiButtonClass = `flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
     showComposePicker
       ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
-      : 'border-secondary-dark bg-sidebar-active-bg text-muted hover:text-slate-200'
+      : 'border-secondary-dark bg-sidebar-active-bg text-muted hover:text-zinc-200'
   }`;
 
   const showMeshcoreGifButton =
@@ -1226,8 +1226,8 @@ export function ChatComposer({
               setGifPreviewFailed(false);
             }}
           />
-          <div className="bg-deep-black relative mx-4 w-full max-w-md space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl">
-            <h3 className="text-lg font-semibold text-gray-200">
+          <div className="bg-deep-black relative mx-4 w-full max-w-md space-y-4 rounded-xl border border-zinc-600 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-zinc-200">
               {t('chatPanel.meshcoreGifTitle')}
             </h3>
             <p className="text-muted text-sm leading-relaxed">{t('chatPanel.meshcoreGifHint')}</p>
@@ -1262,7 +1262,7 @@ export function ChatComposer({
                   setGifPreviewFailed(false);
                 }}
                 aria-label={t('common.cancel')}
-                className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+                className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-600"
               >
                 {t('common.cancel')}
               </button>
@@ -1291,16 +1291,16 @@ export function ChatComposer({
       )}
 
       {replyTo && onReplyClear && (
-        <div className="bg-deep-black mb-1 flex items-center gap-2 rounded-lg border border-slate-800 px-3 py-1.5 text-xs">
+        <div className="bg-deep-black mb-1 flex items-center gap-2 rounded-lg border border-zinc-800 px-3 py-1.5 text-xs">
           <CornerUpLeft
             aria-hidden
             className="h-3 w-3 shrink-0 text-blue-400"
             trigger={iconTrigger}
             size={12}
           />
-          <span className="text-gray-400">
+          <span className="text-zinc-400">
             {t('chatPanel.replyingTo')}{' '}
-            <span className="font-medium text-gray-200">
+            <span className="font-medium text-zinc-200">
               {nodeDisplayName(nodes.get(replyTo.sender_id), protocol) || replyTo.sender_name}
             </span>
             :
@@ -1311,7 +1311,7 @@ export function ChatComposer({
           <button
             type="button"
             onClick={onReplyClear}
-            className="text-muted ml-1 leading-none hover:text-gray-200"
+            className="text-muted ml-1 leading-none hover:text-zinc-200"
             title={t('chatPanel.cancelReply')}
             aria-label={t('chatPanel.cancelReply')}
           >
@@ -1549,7 +1549,7 @@ export function ChatComposer({
                       bottom: floodScopeMenuPos.bottom,
                       right: floodScopeMenuPos.right,
                     }}
-                    className="bg-deep-black z-50 max-h-72 min-w-[12rem] overflow-y-auto rounded-lg border border-gray-700 py-1 shadow-xl"
+                    className="bg-deep-black z-50 max-h-72 min-w-[12rem] overflow-y-auto rounded-lg border border-zinc-700 py-1 shadow-xl"
                   >
                     {floodScopeCustomEditing ? (
                       <div className="space-y-2 px-2 py-1.5">
@@ -1598,7 +1598,7 @@ export function ChatComposer({
                               setFloodScopeCustomDraft('');
                               setFloodScopeCustomError(null);
                             }}
-                            className="text-muted text-2xs rounded px-2 py-1 hover:text-gray-200"
+                            className="text-muted text-2xs rounded px-2 py-1 hover:text-zinc-200"
                           >
                             {t('common.cancel')}
                           </button>
@@ -1647,8 +1647,8 @@ export function ChatComposer({
                                 }}
                                 className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
                                   selected
-                                    ? 'text-brand-green bg-gray-800'
-                                    : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
+                                    ? 'text-brand-green bg-zinc-800'
+                                    : 'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100'
                                 }`}
                               >
                                 {option.label}
@@ -1656,7 +1656,7 @@ export function ChatComposer({
                             </li>
                           );
                         })}
-                        <li role="presentation" className="mt-1 border-t border-gray-700 pt-1">
+                        <li role="presentation" className="mt-1 border-t border-zinc-700 pt-1">
                           <button
                             type="button"
                             onClick={() => {
@@ -1670,7 +1670,7 @@ export function ChatComposer({
                               );
                               setFloodScopeCustomError(null);
                             }}
-                            className="w-full px-3 py-1.5 text-left text-xs text-cyan-300 transition-colors hover:bg-gray-800 hover:text-cyan-200"
+                            className="w-full px-3 py-1.5 text-left text-xs text-cyan-300 transition-colors hover:bg-zinc-800 hover:text-cyan-200"
                           >
                             {t('chatPanel.floodScopeOverrideCustom')}
                           </button>

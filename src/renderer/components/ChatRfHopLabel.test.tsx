@@ -24,9 +24,9 @@ function prepareHopLabelForAxe(container: HTMLElement, label: HTMLElement, color
 
 describe('chatRfHopLabelPresentation', () => {
   it('uses amber accent only when corrected and motion is allowed', () => {
-    expect(chatRfHopLabelPresentation(false, false).className).toContain('text-gray-400');
+    expect(chatRfHopLabelPresentation(false, false).className).toContain('text-zinc-400');
     expect(chatRfHopLabelPresentation(true, false).className).toContain('text-amber-400');
-    expect(chatRfHopLabelPresentation(true, true).className).toContain('text-gray-400');
+    expect(chatRfHopLabelPresentation(true, true).className).toContain('text-zinc-400');
     expect(chatRfHopLabelPresentation(true, true).refined).toBe(true);
     expect(chatRfHopLabelPresentation(false, false).refined).toBe(false);
   });
@@ -48,7 +48,7 @@ describe('ChatRfHopLabel', () => {
     const label = screen.getByText('3 hops');
     expect(label).toBeInTheDocument();
     expect(label).toHaveAttribute('title', expect.stringMatching(/hop|routing/i));
-    expect(label.className).toContain('text-gray-400');
+    expect(label.className).toContain('text-zinc-400');
     prepareHopLabelForAxe(container, label, HOP_LABEL_GRAY_400);
     expect(await axe(container)).toHaveNoViolations();
   });

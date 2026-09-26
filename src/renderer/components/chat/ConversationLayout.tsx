@@ -79,13 +79,13 @@ export function ConversationLayout({
 
   return (
     <div
-      className="bg-deep-black relative flex h-full min-h-0 w-full min-w-0 overflow-hidden rounded-xl border border-slate-800"
+      className="bg-deep-black relative flex h-full min-h-0 w-full min-w-0 overflow-hidden rounded-xl border border-zinc-800"
       data-layout={compact ? 'compact' : sideOverlay ? 'medium' : 'wide'}
     >
       {showList && (
         <aside
           aria-label={listLabel}
-          className={`flex min-h-0 flex-col border-slate-800 ${
+          className={`flex min-h-0 flex-col border-zinc-800 ${
             compact ? 'w-full' : 'w-72 shrink-0 border-r'
           }`}
         >
@@ -107,7 +107,7 @@ export function ConversationLayout({
             />
             <aside
               aria-label={sideLabel}
-              className="bg-deep-black absolute inset-y-0 right-0 z-20 flex min-h-0 w-[min(18rem,85%)] flex-col border-l border-slate-800 shadow-2xl"
+              className="bg-deep-black absolute inset-y-0 right-0 z-20 flex min-h-0 w-[min(18rem,85%)] flex-col border-l border-zinc-800 shadow-2xl"
             >
               {side}
             </aside>
@@ -115,7 +115,7 @@ export function ConversationLayout({
         ) : (
           <aside
             aria-label={sideLabel}
-            className={`flex min-h-0 shrink-0 flex-col border-l border-slate-800 ${
+            className={`flex min-h-0 shrink-0 flex-col border-l border-zinc-800 ${
               sideWidth === 'wide' ? 'w-72' : 'w-56'
             }`}
           >

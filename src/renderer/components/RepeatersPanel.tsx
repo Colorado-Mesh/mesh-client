@@ -267,7 +267,7 @@ function RepeaterSortIcon({
   const trigger = useIconTrigger();
   const p = { 'aria-hidden': true as const, trigger, size: 12 };
   if (sortKey !== field) {
-    return <ArrowUpDown {...p} className="ml-1 inline h-3 w-3 text-gray-600" />;
+    return <ArrowUpDown {...p} className="ml-1 inline h-3 w-3 text-zinc-600" />;
   }
   return sortDir === 'asc' ? (
     <ChevronUp {...p} className="text-bright-green ml-1 inline h-3 w-3" />
@@ -326,7 +326,7 @@ function RepeaterSortHeader({
     <th className="py-2 pr-4 font-medium" aria-sort={ariaSort} title={title}>
       <button
         type="button"
-        className="hover:text-gray-200"
+        className="hover:text-zinc-200"
         aria-label={ariaLabel}
         onClick={() => {
           onSort(columnKey);
@@ -868,7 +868,7 @@ export default function RepeatersPanel({
     <>
       <div className="flex h-full min-h-0 flex-col gap-4">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h2 className="text-base font-semibold text-slate-200">{t('repeatersPanel.title')}</h2>
+          <h2 className="text-base font-semibold text-zinc-200">{t('repeatersPanel.title')}</h2>
           <SegmentedControl
             aria-label={t('repeatersPanel.typeFilterAria')}
             value={typeFilter}
@@ -900,13 +900,13 @@ export default function RepeatersPanel({
         <p className="text-muted max-w-2xl text-xs">{t('repeatersPanel.columnsDataHint')}</p>
 
         {savedCredentialEntries.length > 0 && (
-          <div className="bg-deep-black rounded-xl border border-slate-800">
+          <div className="bg-deep-black rounded-xl border border-zinc-800">
             <button
               type="button"
               onClick={() => {
                 setSavedPasswordsOpen((open) => !open);
               }}
-              className="hover:bg-sidebar-active-bg/60 flex w-full items-center gap-1.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-300"
+              className="hover:bg-sidebar-active-bg/60 flex w-full items-center gap-1.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-zinc-300"
               aria-expanded={savedPasswordsOpen}
             >
               {savedPasswordsOpen ? (
@@ -917,13 +917,13 @@ export default function RepeatersPanel({
               {t('repeatersPanel.savedPasswordsCount', { count: savedCredentialEntries.length })}
             </button>
             {savedPasswordsOpen && (
-              <ul className="max-h-40 overflow-y-auto border-t border-slate-800 pb-1">
+              <ul className="max-h-40 overflow-y-auto border-t border-zinc-800 pb-1">
                 {savedCredentialEntries.map(({ nodeId, kind }) => (
                   <li
                     key={`${kind}:${nodeId}`}
-                    className="flex items-center justify-between gap-2 border-b border-slate-800 px-3 py-1.5 last:border-b-0"
+                    className="flex items-center justify-between gap-2 border-b border-zinc-800 px-3 py-1.5 last:border-b-0"
                   >
-                    <span className="flex min-w-0 items-center gap-2 truncate text-xs text-slate-200">
+                    <span className="flex min-w-0 items-center gap-2 truncate text-xs text-zinc-200">
                       <span
                         className={`text-2xs shrink-0 rounded px-1 py-0.5 font-medium ${
                           kind === 'Room'
@@ -977,11 +977,11 @@ export default function RepeatersPanel({
         ) : (
           <div
             ref={repeaterTableScrollRef}
-            className="bg-deep-black min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-slate-800"
+            className="bg-deep-black min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-zinc-800"
           >
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-deep-black text-muted sticky top-0 z-10 border-b border-slate-800 text-left text-xs">
+                <tr className="bg-deep-black text-muted sticky top-0 z-10 border-b border-zinc-800 text-left text-xs">
                   {(
                     [
                       ['status', 'repeatersPanel.columnStatus'],
@@ -1014,7 +1014,7 @@ export default function RepeatersPanel({
                   <th className="py-2 pr-3 font-medium">{t('repeatersPanel.columnActions')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody className="divide-y divide-zinc-800">
                 {shouldVirtualizeRepeaterRows &&
                   virtualRepeaterRows.length > 0 &&
                   virtualRepeaterRows[0].start > 0 && (
@@ -1154,7 +1154,7 @@ export default function RepeatersPanel({
                   return (
                     <Fragment key={node.node_id}>
                       <tr
-                        className="hover:bg-sidebar-active-bg/60 border-b border-slate-800 text-slate-300"
+                        className="hover:bg-sidebar-active-bg/60 border-b border-zinc-800 text-zinc-300"
                         data-index={shouldVirtualizeRepeaterRows ? virtualRow.index : undefined}
                         ref={
                           shouldVirtualizeRepeaterRows
@@ -1170,7 +1170,7 @@ export default function RepeatersPanel({
                                   ? 'bg-green-500'
                                   : repeaterStatus === 'stale'
                                     ? 'bg-violet-900'
-                                    : 'bg-slate-700'
+                                    : 'bg-zinc-700'
                               }`}
                             />
                             <span
@@ -1179,7 +1179,7 @@ export default function RepeatersPanel({
                                   ? 'text-xs text-green-400'
                                   : repeaterStatus === 'stale'
                                     ? 'text-xs text-violet-400'
-                                    : 'text-xs text-slate-400'
+                                    : 'text-xs text-zinc-400'
                               }
                             >
                               {repeaterStatus === 'online'
@@ -1237,7 +1237,7 @@ export default function RepeatersPanel({
                             ) : null}
                           </span>
                         </td>
-                        <td className="py-2 pr-4 text-xs text-gray-400">
+                        <td className="py-2 pr-4 text-xs text-zinc-400">
                           {formatRelativeTime(t, node.last_heard)}
                         </td>
                         <td
@@ -1276,7 +1276,7 @@ export default function RepeatersPanel({
                                 : (currentRoute?.hopCount ?? node.hops_away ?? '—')}
                             </button>
                           ) : node.hops_away != null ? (
-                            <span className="text-gray-300">{node.hops_away}</span>
+                            <span className="text-zinc-300">{node.hops_away}</span>
                           ) : (
                             <span className="text-muted">—</span>
                           )}
@@ -1503,12 +1503,12 @@ export default function RepeatersPanel({
 
                       {/* Path / current-route detail row */}
                       {isPathExpanded && canExpandPath && (
-                        <tr className="bg-app-bg/60 border-b border-slate-800">
+                        <tr className="bg-app-bg/60 border-b border-zinc-800">
                           <td colSpan={10} className="px-4 py-2">
                             <div className="flex flex-col gap-2">
                               {traceResult ? (
                                 <div className="flex flex-wrap items-center gap-1 text-xs">
-                                  <span className="mr-1 text-gray-400">
+                                  <span className="mr-1 text-zinc-400">
                                     {t('repeatersPanel.pathLabel')}
                                   </span>
                                   <span className="text-brand-green">
@@ -1516,7 +1516,7 @@ export default function RepeatersPanel({
                                   </span>
                                   {traceHopRows.map((hop, i) => (
                                     <span key={i} className="flex items-center gap-1">
-                                      <span className="text-gray-600">→</span>
+                                      <span className="text-zinc-600">→</span>
                                       <span
                                         className="rounded bg-blue-900/40 px-1.5 py-0.5 font-mono text-blue-300"
                                         title={meshcoreHopSegmentTooltip(t, hop)}
@@ -1530,7 +1530,7 @@ export default function RepeatersPanel({
                                       </span>
                                     </span>
                                   ))}
-                                  <span className="text-gray-600">→</span>
+                                  <span className="text-zinc-600">→</span>
                                   <span className="bg-brand-green/20 text-brand-green rounded px-1.5 py-0.5 font-mono">
                                     {traceResult.lastSnr > 0 ? '+' : ''}
                                     {traceResult.lastSnr.toFixed(2)} dB
@@ -1540,7 +1540,7 @@ export default function RepeatersPanel({
                               ) : null}
                               {currentRoute && !traceMatchesCurrentRoute ? (
                                 <div className="flex flex-wrap items-center gap-1 text-xs">
-                                  <span className="mr-1 text-gray-400">
+                                  <span className="mr-1 text-zinc-400">
                                     {t('repeatersPanel.currentRouteLabel')}
                                   </span>
                                   <MeshcoreRouteChain
@@ -1556,15 +1556,15 @@ export default function RepeatersPanel({
 
                       {/* Neighbors detail row */}
                       {isNeighborsExpanded && neighborData && (
-                        <tr className="bg-app-bg/60 border-b border-slate-800">
+                        <tr className="bg-app-bg/60 border-b border-zinc-800">
                           <td colSpan={10} className="px-4 py-2">
-                            <p className="mb-1 text-xs text-gray-400">
+                            <p className="mb-1 text-xs text-zinc-400">
                               {t('repeatersPanel.neighborsHeading', {
                                 count: neighborData.totalNeighboursCount,
                               })}
                             </p>
                             {neighborData.neighbours.length === 0 ? (
-                              <p className="text-xs text-gray-600">
+                              <p className="text-xs text-zinc-600">
                                 {t('repeatersPanel.noNeighborsReported')}
                               </p>
                             ) : (
@@ -1576,7 +1576,7 @@ export default function RepeatersPanel({
                                   return (
                                     <div key={i} className="flex items-center gap-3 text-xs">
                                       <span className="text-muted font-mono">{nb.prefixHex}</span>
-                                      <span className="text-gray-300">[{name}]</span>
+                                      <span className="text-zinc-300">[{name}]</span>
                                       <SnrIndicator snr={nb.snr} />
                                       <span className="text-muted">
                                         {t('repeatersPanel.heardPrefix')}
@@ -1628,7 +1628,7 @@ export default function RepeatersPanel({
 
                       {/* Telemetry detail row */}
                       {isTelemetryExpanded && (
-                        <tr className="bg-app-bg/60 border-b border-slate-800">
+                        <tr className="bg-app-bg/60 border-b border-zinc-800">
                           <td colSpan={10} className="px-4 py-2">
                             {isTelemetryLoading ? (
                               <p className="text-muted text-xs">
@@ -1658,7 +1658,7 @@ export default function RepeatersPanel({
                                   </span>
                                 )}
                                 {telemetryData.barometricPressure != null && (
-                                  <span className="text-gray-300">
+                                  <span className="text-zinc-300">
                                     {t('repeatersPanel.telemetryPressure', {
                                       pressure: telemetryData.barometricPressure.toFixed(1),
                                     })}
@@ -1719,7 +1719,7 @@ export default function RepeatersPanel({
 
                       {/* CLI detail row */}
                       {isCliExpanded && onSendCliCommand && (
-                        <tr className="bg-app-bg/60 border-b border-slate-800">
+                        <tr className="bg-app-bg/60 border-b border-zinc-800">
                           <td colSpan={10} className="px-4 py-2">
                             <div className="flex flex-col gap-2">
                               <div className="flex items-center gap-2">
@@ -1739,7 +1739,7 @@ export default function RepeatersPanel({
                                   placeholder={t('repeatersPanel.enterCommand')}
                                   maxLength={REPEATER_CLI_MAX_COMMAND_LENGTH}
                                   disabled={!isConnected || isCliLoading}
-                                  className="bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green text-body h-8 min-w-50 flex-1 rounded-lg border px-2.5 font-mono text-slate-200 focus:outline-none disabled:opacity-40"
+                                  className="bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green text-body h-8 min-w-50 flex-1 rounded-lg border px-2.5 font-mono text-zinc-200 focus:outline-none disabled:opacity-40"
                                   aria-label={t('repeatersPanel.cliInput')}
                                 />
                                 <button
@@ -1802,7 +1802,7 @@ export default function RepeatersPanel({
                                       disabled={!isConnected || isCliLoading}
                                       title={ariaLabel}
                                       aria-label={ariaLabel}
-                                      className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark text-meta h-6 rounded-md border px-2 font-mono text-slate-300 disabled:opacity-40"
+                                      className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark text-meta h-6 rounded-md border px-2 font-mono text-zinc-300 disabled:opacity-40"
                                     >
                                       {shortLabel}
                                     </button>
@@ -1834,12 +1834,12 @@ export default function RepeatersPanel({
                                   onClick={() => {
                                     handleCliClear(node.node_id);
                                   }}
-                                  className="text-muted text-xs underline hover:text-gray-300"
+                                  className="text-muted text-xs underline hover:text-zinc-300"
                                 >
                                   {t('repeatersPanel.cliClearHistory')}
                                 </button>
                               </div>
-                              <div className="max-h-40 overflow-y-auto rounded border border-gray-700 bg-gray-950/50">
+                              <div className="max-h-40 overflow-y-auto rounded border border-zinc-700 bg-zinc-950/50">
                                 {cliHistory.length === 0 ? (
                                   <div className="text-muted px-2 py-1 text-xs italic">
                                     {t('repeatersPanel.cliNoCommandsYet')}
@@ -1849,7 +1849,7 @@ export default function RepeatersPanel({
                                     <div
                                       key={`${entry.timestamp}-${idx}`}
                                       className={`px-2 py-0.5 font-mono text-xs ${
-                                        entry.type === 'sent' ? 'text-cyan-300' : 'text-gray-300'
+                                        entry.type === 'sent' ? 'text-cyan-300' : 'text-zinc-300'
                                       }`}
                                     >
                                       {entry.type === 'sent' ? '>' : '<'}{' '}

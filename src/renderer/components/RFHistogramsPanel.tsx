@@ -68,27 +68,27 @@ function HistogramChart({
   return (
     <ResponsiveContainer width="100%" height={180}>
       <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 20 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
         <XAxis
           dataKey="label"
-          tick={{ fill: '#94a3b8', fontSize: 11 }}
+          tick={{ fill: '#a1a1aa', fontSize: 11 }}
           label={{
             value: xlabel,
             position: 'insideBottom',
             offset: -12,
-            fill: '#94a3b8',
+            fill: '#a1a1aa',
             fontSize: 11,
           }}
         />
-        <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} allowDecimals={false} width={32} />
+        <YAxis tick={{ fill: '#a1a1aa', fontSize: 11 }} allowDecimals={false} width={32} />
         <Tooltip
           contentStyle={{
-            backgroundColor: '#1e293b',
-            border: '1px solid #334155',
+            backgroundColor: '#27272a',
+            border: '1px solid #3f3f46',
             borderRadius: 6,
           }}
-          labelStyle={{ color: '#e2e8f0' }}
-          itemStyle={{ color: '#94a3b8' }}
+          labelStyle={{ color: '#e4e4e7' }}
+          itemStyle={{ color: '#a1a1aa' }}
           formatter={(value) => [value as number, 'Nodes']}
         />
         <Bar dataKey="count" fill={color} radius={[3, 3, 0, 0]} />
@@ -121,7 +121,7 @@ export default function RFHistogramsPanel({ nodes }: RFHistogramsPanelProps) {
 
   if (nodeCount === 0) {
     return (
-      <div className="flex h-full items-center justify-center text-slate-400">
+      <div className="flex h-full items-center justify-center text-zinc-400">
         {t('rfHistograms.noNodes')}
       </div>
     );
@@ -130,22 +130,22 @@ export default function RFHistogramsPanel({ nodes }: RFHistogramsPanelProps) {
   return (
     <div className="flex flex-col gap-6 p-4">
       <div>
-        <h2 className="text-base font-semibold text-slate-200">{t('rfHistograms.title')}</h2>
-        <p className="text-xs text-slate-400">{t('rfHistograms.subtitle', { count: nodeCount })}</p>
+        <h2 className="text-base font-semibold text-zinc-200">{t('rfHistograms.title')}</h2>
+        <p className="text-xs text-zinc-400">{t('rfHistograms.subtitle', { count: nodeCount })}</p>
       </div>
 
       <section>
-        <h3 className="mb-1 text-sm font-medium text-slate-300">{t('rfHistograms.snrTitle')}</h3>
+        <h3 className="mb-1 text-sm font-medium text-zinc-300">{t('rfHistograms.snrTitle')}</h3>
         <HistogramChart data={snrData} xlabel={t('rfHistograms.snrAxis')} color="#22c55e" />
       </section>
 
       <section>
-        <h3 className="mb-1 text-sm font-medium text-slate-300">{t('rfHistograms.rssiTitle')}</h3>
+        <h3 className="mb-1 text-sm font-medium text-zinc-300">{t('rfHistograms.rssiTitle')}</h3>
         <HistogramChart data={rssiData} xlabel={t('rfHistograms.rssiAxis')} color="#3b82f6" />
       </section>
 
       <section>
-        <h3 className="mb-1 text-sm font-medium text-slate-300">{t('rfHistograms.hopTitle')}</h3>
+        <h3 className="mb-1 text-sm font-medium text-zinc-300">{t('rfHistograms.hopTitle')}</h3>
         <HistogramChart data={hopData} xlabel={t('rfHistograms.hopAxis')} color="#f59e0b" />
       </section>
     </div>

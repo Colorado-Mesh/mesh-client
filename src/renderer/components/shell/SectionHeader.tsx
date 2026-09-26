@@ -53,12 +53,12 @@ export function SectionHeader({
   };
 
   return (
-    <header className="bg-app-bg flex h-13 shrink-0 items-center gap-4 border-b border-slate-800 pr-4 pl-6">
+    <header className="bg-app-bg flex h-13 shrink-0 items-center gap-4 border-b border-zinc-800 pr-4 pl-6">
       <h1 className="sr-only">{t('app.title')}</h1>
       {/* A single-panel section has no tablist; the title labels its panel instead. */}
       <h2
         id={singleTab ? `tab-${singleTab.tabIndex}` : undefined}
-        className="shrink-0 text-base font-semibold text-slate-200"
+        className="shrink-0 text-base font-semibold text-zinc-200"
       >
         {sectionLabel}
       </h2>
@@ -67,7 +67,7 @@ export function SectionHeader({
           ref={tablistRef}
           role="tablist"
           aria-label={t('shell.sectionPanelsAria', { section: sectionLabel })}
-          className="bg-deep-black flex min-w-0 [scrollbar-width:none] gap-0.5 overflow-x-auto rounded-lg border border-slate-800 p-0.75"
+          className="bg-deep-black flex min-w-0 [scrollbar-width:none] gap-0.5 overflow-x-auto rounded-lg border border-zinc-800 p-0.75"
         >
           {tabs.map((tab, position) => {
             const isSelected = tab.tabIndex === activeTabIndex;
@@ -90,8 +90,8 @@ export function SectionHeader({
                 }}
                 className={`text-body flex h-6.5 shrink-0 items-center gap-1.5 rounded-md px-3 font-medium whitespace-nowrap transition-colors ${
                   isSelected
-                    ? 'bg-sidebar-active-bg text-slate-200'
-                    : 'text-muted hover:text-slate-200'
+                    ? 'bg-sidebar-active-bg text-zinc-200'
+                    : 'text-muted hover:text-zinc-200'
                 }`}
               >
                 {tab.label}

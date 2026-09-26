@@ -72,9 +72,9 @@ export function ensureLoRaMapPanelStyles(): void {
       opacity: 0.75 !important;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-content-wrapper {
-      background: #0f172a;
-      border: 1px solid #334155;
-      color: #e5e7eb;
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      color: #e4e4e7;
       border-radius: 0.75rem;
       padding: 0;
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
@@ -91,13 +91,13 @@ export function ensureLoRaMapPanelStyles(): void {
       overflow-y: auto;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-tip {
-      background: #0f172a;
+      background: #18181b;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-close-button {
-      color: #9ca3af !important;
+      color: #a1a1aa !important;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-close-button:hover {
-      color: #e5e7eb !important;
+      color: #e4e4e7 !important;
     }
   `;
   document.head.appendChild(style);
@@ -209,7 +209,7 @@ export function MapBasemapControl() {
       {layersPanelOpen ? (
         <div className={MAP_OVERLAY_PANEL_CLASS}>
           <div className="space-y-1">
-            <div className="text-2xs font-medium text-gray-400">{t('mapPanel.basemapHeading')}</div>
+            <div className="text-2xs font-medium text-zinc-400">{t('mapPanel.basemapHeading')}</div>
             <select
               aria-label={t('mapPanel.basemapSelectAria')}
               className={`${SELECT_BOX_SM_CLASS} w-full`}
@@ -225,7 +225,7 @@ export function MapBasemapControl() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <div className="text-2xs font-medium text-gray-400">{t('mapPanel.layersHeading')}</div>
+            <div className="text-2xs font-medium text-zinc-400">{t('mapPanel.layersHeading')}</div>
             <label className="text-muted flex cursor-pointer items-center gap-2 text-xs">
               <input
                 type="checkbox"

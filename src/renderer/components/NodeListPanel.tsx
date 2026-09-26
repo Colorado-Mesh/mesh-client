@@ -190,7 +190,7 @@ function SortIcon({
   const p = { 'aria-hidden': true as const, trigger, size: 12 };
 
   if (sortField !== field) {
-    return <ArrowUpDown {...p} className="ml-1 inline h-3 w-3 text-gray-600" />;
+    return <ArrowUpDown {...p} className="ml-1 inline h-3 w-3 text-zinc-600" />;
   }
   return sortAsc ? (
     <ChevronUp {...p} className="text-bright-green ml-1 inline h-3 w-3" />
@@ -783,7 +783,7 @@ export default function NodeListPanel({
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="text-base font-semibold text-slate-200">
+        <h2 className="text-base font-semibold text-zinc-200">
           {listHeading} <span className="text-muted font-mono text-sm">({headerCountLabel})</span>
         </h2>
         <SegmentedControl
@@ -1034,7 +1034,7 @@ export default function NodeListPanel({
 
       <div
         ref={nodeTableScrollRef}
-        className="bg-deep-black min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-slate-800"
+        className="bg-deep-black min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-zinc-800"
       >
         <table
           style={{ minWidth: mode === 'meshcore' ? '1000px' : '1600px' }}
@@ -1042,7 +1042,7 @@ export default function NodeListPanel({
         >
           <caption className="sr-only">{t('nodeListPanel.tableCaptionMeshNodes')}</caption>
           <thead>
-            <tr className="bg-deep-black text-muted sticky top-0 z-10 border-b border-slate-800 text-left text-xs whitespace-nowrap">
+            <tr className="bg-deep-black text-muted sticky top-0 z-10 border-b border-zinc-800 text-left text-xs whitespace-nowrap">
               <th scope="col" className="w-16 px-3 py-2">
                 {t('nodeListPanel.columnHealth')}
               </th>
@@ -1055,7 +1055,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'node_id' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-zinc-200"
                   onClick={() => {
                     handleSort('node_id');
                   }}
@@ -1069,7 +1069,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'long_name' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-zinc-200"
                 onClick={() => {
                   handleSort('long_name');
                 }}
@@ -1083,7 +1083,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'short_name' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-zinc-200"
                   onClick={() => {
                     handleSort('short_name');
                   }}
@@ -1097,7 +1097,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'last_heard' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-zinc-200"
                 onClick={() => {
                   handleSort('last_heard');
                 }}
@@ -1111,7 +1111,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'hw_model' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-zinc-200"
                   onClick={() => {
                     handleSort('hw_model');
                   }}
@@ -1124,7 +1124,7 @@ export default function NodeListPanel({
                 <th
                   scope="col"
                   aria-sort={sortField === 'role' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-zinc-200"
                   onClick={() => {
                     handleSort('role');
                   }}
@@ -1138,7 +1138,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'hops_away' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                 onClick={() => {
                   handleSort('hops_away');
                 }}
@@ -1152,7 +1152,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'via_mqtt' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 text-center transition-colors select-none hover:text-gray-200"
+                  className="cursor-pointer px-3 py-2 text-center transition-colors select-none hover:text-zinc-200"
                   onClick={() => {
                     handleSort('via_mqtt');
                   }}
@@ -1166,7 +1166,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'latitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                 onClick={() => {
                   handleSort('latitude');
                 }}
@@ -1182,7 +1182,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'longitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                   onClick={() => {
                     handleSort('longitude');
                   }}
@@ -1194,7 +1194,7 @@ export default function NodeListPanel({
               <th
                 scope="col"
                 aria-sort={sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                 onClick={() => {
                   handleSort('rssi');
                 }}
@@ -1205,7 +1205,7 @@ export default function NodeListPanel({
               <th
                 scope="col"
                 aria-sort={sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                 onClick={() => {
                   handleSort('snr');
                 }}
@@ -1219,7 +1219,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'battery' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                 onClick={() => {
                   handleSort('battery');
                 }}
@@ -1234,7 +1234,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'voltage' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                     onClick={() => {
                       handleSort('voltage');
                     }}
@@ -1251,7 +1251,7 @@ export default function NodeListPanel({
                           : 'descending'
                         : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                     onClick={() => {
                       handleSort('channel_utilization');
                     }}
@@ -1264,7 +1264,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'air_util_tx' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                     onClick={() => {
                       handleSort('air_util_tx');
                     }}
@@ -1277,7 +1277,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'altitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                     onClick={() => {
                       handleSort('altitude');
                     }}
@@ -1290,7 +1290,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'redundancy' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-zinc-200"
                     onClick={() => {
                       handleSort('redundancy');
                     }}
@@ -1303,7 +1303,7 @@ export default function NodeListPanel({
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-zinc-800">
             {nodeList.length === 0 ? (
               <tr>
                 <td colSpan={nodeTableColSpan} className="text-muted py-8 text-center">
@@ -1447,7 +1447,7 @@ export default function NodeListPanel({
                         </td>
                       )}
                       <td
-                        className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-gray-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
+                        className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-zinc-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                       >
                         <div className="flex min-w-0 flex-col gap-0.5">
                           <span className="inline-flex min-w-0 items-center gap-1">
@@ -1522,7 +1522,7 @@ export default function NodeListPanel({
                       </td>
                       {mode !== 'meshcore' && (
                         <td
-                          className={`px-3 py-2 text-gray-300 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
+                          className={`px-3 py-2 text-zinc-300 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                         >
                           {node.short_name || '-'}
                         </td>
@@ -1531,14 +1531,14 @@ export default function NodeListPanel({
                       <td className="px-3 py-2 text-xs">
                         {mode === 'meshcore' ? (
                           node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
-                            <span className="inline-flex items-center gap-1 text-gray-300">
+                            <span className="inline-flex items-center gap-1 text-zinc-300">
                               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
                               </svg>
                               {meshcoreContactTypeLabel(t, node.hw_model)}
                             </span>
                           ) : node.hw_model === 'Chat' ? (
-                            <span className="inline-flex items-center gap-1 text-gray-300">
+                            <span className="inline-flex items-center gap-1 text-zinc-300">
                               <User
                                 aria-hidden
                                 className="h-3.5 w-3.5"
@@ -1548,12 +1548,12 @@ export default function NodeListPanel({
                               {meshcoreContactTypeLabel(t, node.hw_model)}
                             </span>
                           ) : (
-                            <span className="text-gray-300">
+                            <span className="text-zinc-300">
                               {meshcoreContactTypeLabel(t, node.hw_model)}
                             </span>
                           )
                         ) : node.hw_model === 'Chat' ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                          <span className="inline-flex items-center gap-1 text-xs text-zinc-400">
                             <User
                               aria-hidden
                               className="h-3.5 w-3.5"
@@ -1567,7 +1567,7 @@ export default function NodeListPanel({
                         )}
                       </td>
                       <td
-                        className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
+                        className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-zinc-300'}`}
                       >
                         {node.heard_via_mqtt_only ? (
                           <span className="text-muted">—</span>
@@ -1576,7 +1576,7 @@ export default function NodeListPanel({
                         )}
                       </td>
                       {mode !== 'meshcore' && (
-                        <td className="px-3 py-2 text-xs text-gray-300">
+                        <td className="px-3 py-2 text-xs text-zinc-300">
                           <div className="flex justify-center">
                             {(() => {
                               const pathBadge = resolveMeshtasticPathBadge({
@@ -1714,18 +1714,18 @@ export default function NodeListPanel({
                       </td>
                       {mode !== 'meshcore' && (
                         <>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="px-3 py-2 text-right text-xs text-zinc-300">
                             {node.voltage != null ? `${node.voltage.toFixed(2)} V` : '-'}
                           </td>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="px-3 py-2 text-right text-xs text-zinc-300">
                             {node.channel_utilization != null
                               ? `${node.channel_utilization.toFixed(1)}%`
                               : '-'}
                           </td>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="px-3 py-2 text-right text-xs text-zinc-300">
                             {node.air_util_tx != null ? `${node.air_util_tx.toFixed(1)}%` : '-'}
                           </td>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="px-3 py-2 text-right text-xs text-zinc-300">
                             {node.altitude != null && node.altitude !== 0
                               ? `${node.altitude} m`
                               : '-'}
@@ -1739,7 +1739,7 @@ export default function NodeListPanel({
                                   echoes >= 3
                                     ? 'text-lime-400'
                                     : echoes > 0
-                                      ? 'text-gray-300'
+                                      ? 'text-zinc-300'
                                       : 'text-muted'
                                 }`}
                                 title={

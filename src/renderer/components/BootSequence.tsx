@@ -330,7 +330,7 @@ export default function BootSequence({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
 
-      ctx.fillStyle = '#020617';
+      ctx.fillStyle = '#09090b';
       ctx.fillRect(0, 0, w, h);
 
       ctx.font = layout.font;
@@ -425,7 +425,7 @@ export default function BootSequence({
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = '#020617';
+      ctx.fillStyle = '#09090b';
       ctx.fillRect(0, 0, w, h);
 
       const fontPx = Math.max(16, Math.round(Math.min(w, h) * 0.04));

@@ -63,7 +63,7 @@ export function RemoteSavedSection() {
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto p-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700/60 p-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700/60 p-3">
         <input
           type="text"
           value={label}
@@ -108,7 +108,7 @@ export function RemoteSavedSection() {
             type="button"
             aria-label={t('common.cancel')}
             onClick={resetForm}
-            className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+            className="rounded bg-zinc-700/60 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
           >
             {t('common.cancel')}
           </button>
@@ -122,9 +122,9 @@ export function RemoteSavedSection() {
           list.map((addr) => (
             <div
               key={addr.id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-800/30 px-3 py-2 text-xs text-gray-200"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700/60 bg-zinc-800/30 px-3 py-2 text-xs text-zinc-200"
             >
-              <span className="text-2xs rounded bg-gray-700/60 px-1.5 py-0.5 text-gray-300 uppercase">
+              <span className="text-2xs rounded bg-zinc-700/60 px-1.5 py-0.5 text-zinc-300 uppercase">
                 {addr.service}
               </span>
               <span className="font-medium">{addr.label}</span>
@@ -138,7 +138,7 @@ export function RemoteSavedSection() {
                   setHash(addr.destination_hash);
                   setService(addr.service);
                 }}
-                className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600"
               >
                 {t('common.edit')}
               </button>

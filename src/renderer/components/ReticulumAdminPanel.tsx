@@ -127,7 +127,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
 
       {capabilities.hasRNodeFlasher ? (
         <details ref={flasherDetailsRef} className="group rounded-lg border border-orange-900">
-          <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors hover:bg-gray-800">
+          <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors hover:bg-zinc-800">
             <span>{t('flasher.title')}</span>
             <DetailsChevron />
           </summary>

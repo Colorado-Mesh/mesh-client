@@ -121,7 +121,7 @@ export default function LanguageSelector() {
               top: menuPos.top,
               right: menuPos.right,
             }}
-            className="bg-deep-black z-50 max-h-72 w-44 overflow-y-auto rounded-lg border border-gray-700 py-1 shadow-xl"
+            className="bg-deep-black z-50 max-h-72 w-44 overflow-y-auto rounded-lg border border-zinc-700 py-1 shadow-xl"
           >
             {SUPPORTED_LANGUAGES.map(({ code, label }) => (
               <li key={code} role="option" aria-selected={i18n.language === code}>
@@ -132,8 +132,8 @@ export default function LanguageSelector() {
                   }}
                   className={`w-full px-3 py-1.5 text-left text-xs transition-colors ${
                     i18n.language === code
-                      ? 'text-brand-green bg-gray-800'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-gray-100'
+                      ? 'text-brand-green bg-zinc-800'
+                      : 'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100'
                   }`}
                 >
                   {label}
@@ -166,8 +166,8 @@ export default function LanguageSelector() {
         }}
         className={`flex items-center gap-1 rounded-lg p-1.5 text-xs transition-all ${
           isOpen
-            ? 'bg-secondary-dark text-gray-100 ring-1 ring-cyan-400/50'
-            : 'text-muted hover:bg-secondary-dark hover:text-gray-200'
+            ? 'bg-secondary-dark text-zinc-100 ring-1 ring-cyan-400/50'
+            : 'text-muted hover:bg-secondary-dark hover:text-zinc-200'
         }`}
         title={isOpen ? undefined : t('aria.languageSelectorHint')}
         {...(isOpen ? { 'data-no-instant-tooltip': '' } : {})}

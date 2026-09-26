@@ -19,7 +19,7 @@ import { MAP_CONTROL_CLASS } from './mapControlClasses';
 const MGRS_LABEL_MAX_SQUARES = 60;
 const KM_TO_MI = 0.621371;
 
-const MGRS_LINE_COLOR = '#94a3b8';
+const MGRS_LINE_COLOR = '#a1a1aa';
 const MEASURE_LINE_COLOR = '#facc15';
 const INCIDENT_SEVERITY_COLORS: Record<number, string> = {
   0: '#dc2626',
@@ -162,7 +162,7 @@ export function MeasureControl() {
           {active ? (
             <div
               role="status"
-              className="bg-deep-black/90 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs text-slate-100"
+              className="bg-deep-black/90 rounded-lg border border-zinc-700 px-2.5 py-1.5 text-xs text-zinc-100"
             >
               {points.length < 2
                 ? t('mapPanel.measureHint')

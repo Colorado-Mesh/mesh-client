@@ -445,8 +445,8 @@ export function RNodeFlasherSection({
           </p>
         ) : null}
 
-        <div className="space-y-4 rounded border border-gray-700 bg-slate-900/40 p-3">
-          <h4 className="text-sm font-medium text-gray-200">{t('flasher.flashSectionTitle')}</h4>
+        <div className="space-y-4 rounded border border-zinc-700 bg-zinc-900/40 p-3">
+          <h4 className="text-sm font-medium text-zinc-200">{t('flasher.flashSectionTitle')}</h4>
 
           <DeviceSelector
             selectedProduct={selectedProduct}
@@ -464,7 +464,7 @@ export function RNodeFlasherSection({
 
           <FirmwareDownloadLinks recommendedFilename={recommendedFirmwareFilename} />
 
-          {isEsp32 ? <p className="text-xs text-gray-400">{t('flasher.esp32BootHint')}</p> : null}
+          {isEsp32 ? <p className="text-xs text-zinc-400">{t('flasher.esp32BootHint')}</p> : null}
 
           {isNrf52 ? (
             <DfuModeTrigger disabled={actionsDisabled} busy={busy} onEnterDfu={handleEnterDfu} />

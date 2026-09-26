@@ -336,7 +336,12 @@
       "purple400": "Mor 400",
       "pink400": "Pembe 400",
       "orange400": "Turuncu 400",
-      "yellow400": "Sarı 400"
+      "yellow400": "Sarı 400",
+      "zinc950": "Çinko 950",
+      "zinc900": "Çinko 900",
+      "zinc800": "Çinko 800",
+      "zinc700": "Çinko 700",
+      "zinc400": "Çinko 400"
     },
     "autoPruneNodesOlderThanAria": "Başlangıçta {{days}} günden eski düğümleri otomatik olarak buda",
     "autoPrunePositionHistoryDaysAria": "Başlangıçta konum geçmişini otomatik olarak buda, {{days}} günden eski",
@@ -436,7 +441,8 @@
       "highContrast": "Yüksek kontrast",
       "midnight": "Gece yarısı",
       "teal": "Camgöbeği vurgu",
-      "amber": "Kehribar vurgu"
+      "amber": "Kehribar vurgu",
+      "classicSlate": "Klasik arduvaz"
     },
     "pruneNoFixNodesTitle": "Konumsuz / Sıfır Ada Düğümlerini Budama"
   },

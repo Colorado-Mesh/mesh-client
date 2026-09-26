@@ -425,7 +425,12 @@
       "purple400": "Purple 400",
       "pink400": "Pink 400",
       "orange400": "Orange 400",
-      "yellow400": "Yellow 400"
+      "yellow400": "Yellow 400",
+      "zinc950": "Zinc 950",
+      "zinc900": "Zinc 900",
+      "zinc800": "Zinc 800",
+      "zinc700": "Zinc 700",
+      "zinc400": "Zinc 400"
     },
     "aboutSection": "About",
     "themePresets": {
@@ -436,7 +441,8 @@
       "highContrast": "High contrast",
       "midnight": "Midnight",
       "teal": "Teal accent",
-      "amber": "Amber accent"
+      "amber": "Amber accent",
+      "classicSlate": "Classic slate"
     },
     "pruneNoFixNodesTitle": "Prune No-Fix / Zero Island Nodes"
   },

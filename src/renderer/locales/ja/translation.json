@@ -336,7 +336,12 @@
       "purple400": "パープル400",
       "pink400": "ピンク400",
       "orange400": "オレンジ400",
-      "yellow400": "イエロー400"
+      "yellow400": "イエロー400",
+      "zinc950": "ジンク950",
+      "zinc900": "ジンク900",
+      "zinc800": "ジンク800",
+      "zinc700": "ジンク700",
+      "zinc400": "ジンク400"
     },
     "autoPruneNodesOlderThanAria": "起動時に{{days}}日より古いノードを自動プルーニングします",
     "autoPrunePositionHistoryDaysAria": "{{days}} 日より古い、起動時のポジション履歴の自動プルーニング",
@@ -436,7 +441,8 @@
       "highContrast": "ハイコントラスト",
       "midnight": "ミッドナイト",
       "teal": "ティールのアクセント",
-      "amber": "アンバーのアクセント"
+      "amber": "アンバーのアクセント",
+      "classicSlate": "クラシック スレート"
     },
     "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去"
   },

@@ -35,7 +35,7 @@ describe('RNodeFlasherSection', () => {
     render(<RNodeFlasherSection portBlocked={false} />);
     const provision = screen.getByRole('button', { name: /provision/i });
     expect(provision).toBeDisabled();
-    expect(provision.className).toContain('border-gray-600');
+    expect(provision.className).toContain('border-zinc-600');
     expect(provision.className).not.toContain('bg-brand-green');
   });
 
@@ -43,7 +43,7 @@ describe('RNodeFlasherSection', () => {
     render(<RNodeFlasherSection portBlocked={false} />);
     const hashButton = screen.getByRole('button', { name: /set firmware hash/i });
     expect(hashButton).toBeDisabled();
-    expect(hashButton.className).toContain('border-gray-600');
+    expect(hashButton.className).toContain('border-zinc-600');
   });
 
   it('wraps flash controls in a bordered section', () => {

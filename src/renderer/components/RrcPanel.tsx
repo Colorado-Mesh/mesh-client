@@ -1258,7 +1258,7 @@ export default function RrcPanel({
 
   const listColumn = (
     <>
-      <div className="flex min-h-14 shrink-0 items-center gap-1.5 border-b border-slate-800 pr-2 pl-3">
+      <div className="flex min-h-14 shrink-0 items-center gap-1.5 border-b border-zinc-800 pr-2 pl-3">
         <SegmentedControl
           aria-label={t('rrc.listViewAria')}
           value={effectiveListView}
@@ -1389,7 +1389,7 @@ export default function RrcPanel({
 
   const conversation = (
     <>
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-slate-800 px-3 py-2">
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-zinc-800 px-3 py-2">
         {layoutMode.compact ? (
           <IconButton
             aria-label={t('rrc.backToList')}
@@ -1406,7 +1406,7 @@ export default function RrcPanel({
           />
         ) : null}
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-semibold text-slate-100">{headerTitle}</h2>
+          <h2 className="truncate text-sm font-semibold text-zinc-100">{headerTitle}</h2>
           <p className="text-muted flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
             <span className="inline-flex items-center gap-1.5">
               <StatusDot tone={statusDotTone} pulse={statusDotTone === 'warn'} />
@@ -1492,11 +1492,11 @@ export default function RrcPanel({
         )}
       </header>
       {bannerText && (
-        <div className="bg-sidebar-active-bg/60 flex items-start gap-2 border-b border-slate-800 px-3 py-1.5 text-xs text-slate-200">
+        <div className="bg-sidebar-active-bg/60 flex items-start gap-2 border-b border-zinc-800 px-3 py-1.5 text-xs text-zinc-200">
           <span className="min-w-0 flex-1">{bannerText}</span>
           <button
             type="button"
-            className="text-muted shrink-0 rounded p-0.5 hover:text-slate-100"
+            className="text-muted shrink-0 rounded p-0.5 hover:text-zinc-100"
             aria-label={t('rrc.dismissBanner')}
             onClick={() => {
               setModerationBanner(null);
@@ -1553,7 +1553,7 @@ export default function RrcPanel({
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 text-slate-100">
+    <div className="flex h-full min-h-0 w-full min-w-0 text-zinc-100">
       <ConversationLayout
         mode={layoutMode}
         list={listColumn}

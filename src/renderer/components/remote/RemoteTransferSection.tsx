@@ -43,7 +43,7 @@ export interface RemoteTransferSectionProps {
 const TRANSFER_STATUS_BADGE_CLASS: Record<RncpTransferUiStatus, string> = {
   completed: 'bg-green-900/40 text-green-300',
   failed: 'bg-red-900/40 text-red-300',
-  cancelled: 'bg-gray-700/60 text-gray-300',
+  cancelled: 'bg-zinc-700/60 text-zinc-300',
   active: 'bg-blue-900/40 text-blue-300',
 };
 
@@ -430,9 +430,9 @@ export function RemoteTransferSection({
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto p-3">
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-gray-700/60 bg-gray-800/30 p-3">
-        <span className="text-xs text-gray-400">{t('reticulumRemote.transfer.myIdentity')}</span>
-        <code className="text-xs text-gray-200">{identity?.identity_hash ?? '—'}</code>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-zinc-700/60 bg-zinc-800/30 p-3">
+        <span className="text-xs text-zinc-400">{t('reticulumRemote.transfer.myIdentity')}</span>
+        <code className="text-xs text-zinc-200">{identity?.identity_hash ?? '—'}</code>
         <button
           type="button"
           aria-label={t('reticulumRemote.transfer.copyIdentityAria')}
@@ -444,8 +444,8 @@ export function RemoteTransferSection({
         >
           {t('common.copy')}
         </button>
-        <span className="text-xs text-gray-400">{t('reticulumRemote.transfer.myReceiveDest')}</span>
-        <code className="text-xs text-gray-200">{identity?.rncp_receive_hash ?? '—'}</code>
+        <span className="text-xs text-zinc-400">{t('reticulumRemote.transfer.myReceiveDest')}</span>
+        <code className="text-xs text-zinc-200">{identity?.rncp_receive_hash ?? '—'}</code>
         <button
           type="button"
           aria-label={t('reticulumRemote.transfer.copyReceiveDestAria')}
@@ -498,7 +498,7 @@ export function RemoteTransferSection({
                 })}
                 onClick={() => void handleAlwaysDecision(offer.identity_hash, 'allow')}
                 disabled={!offer.identity_hash}
-                className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+                className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600 disabled:opacity-40"
               >
                 {t('reticulumRemote.transfer.alwaysAllow')}
               </button>
@@ -509,7 +509,7 @@ export function RemoteTransferSection({
                 })}
                 onClick={() => void handleAlwaysDecision(offer.identity_hash, 'block')}
                 disabled={!offer.identity_hash}
-                className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+                className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600 disabled:opacity-40"
               >
                 {t('reticulumRemote.transfer.alwaysBlock')}
               </button>
@@ -518,7 +518,7 @@ export function RemoteTransferSection({
         </div>
       )}
 
-      <div className="space-y-2 rounded-lg border border-gray-700/60 p-3">
+      <div className="space-y-2 rounded-lg border border-zinc-700/60 p-3">
         <div className="flex gap-2">
           <button
             type="button"
@@ -567,7 +567,7 @@ export function RemoteTransferSection({
             aria-label={t('reticulumRemote.transfer.requestEnableAria')}
             disabled={!parsedHash || !sidecarRunning}
             onClick={() => void handleRequestEnable()}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800 disabled:opacity-40"
+            className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
           >
             {t('reticulumRemote.transfer.requestEnable')}
           </button>
@@ -575,7 +575,7 @@ export function RemoteTransferSection({
             type="button"
             aria-label={t('reticulumRemote.transfer.copyInstructionsAria')}
             onClick={handleCopyInstructions}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-gray-800"
+            className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
           >
             {t('reticulumRemote.transfer.copyInstructions')}
           </button>
@@ -599,7 +599,7 @@ export function RemoteTransferSection({
               type="button"
               aria-label={t('reticulumRemote.transfer.chooseFileAria')}
               onClick={() => void handlePickFile()}
-              className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+              className="rounded bg-zinc-700/60 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
             >
               {t('reticulumRemote.transfer.chooseFile')}
             </button>
@@ -637,7 +637,7 @@ export function RemoteTransferSection({
               type="button"
               aria-label={t('reticulumRemote.transfer.chooseSaveDirAria')}
               onClick={() => void handlePickSaveDir()}
-              className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+              className="rounded bg-zinc-700/60 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
             >
               {t('reticulumRemote.transfer.chooseSaveDir')}
             </button>
@@ -667,7 +667,7 @@ export function RemoteTransferSection({
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-gray-300">
+        <h3 className="text-sm font-medium text-zinc-300">
           {t('reticulumRemote.transfer.listTitle')}
         </h3>
         {transferList.length === 0 ? (
@@ -676,7 +676,7 @@ export function RemoteTransferSection({
           transferList.map((transfer) => (
             <div
               key={transfer.transfer_id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-800/30 px-3 py-2 text-xs text-gray-200"
+              className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700/60 bg-zinc-800/30 px-3 py-2 text-xs text-zinc-200"
             >
               <span className="min-w-0 flex-1 truncate">
                 {t(`reticulumRemote.transfer.kind.${transfer.kind}`)} · {transfer.file_name ?? '—'}
@@ -710,7 +710,7 @@ export function RemoteTransferSection({
                       file: transfer.file_name ?? '',
                     })}
                     onClick={() => void handleRetry(transfer.transfer_id)}
-                    className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                    className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600"
                   >
                     {t('reticulumRemote.transfer.retry')}
                   </button>
@@ -722,7 +722,7 @@ export function RemoteTransferSection({
                     file: transfer.file_name ?? '',
                   })}
                   onClick={() => void handleReveal(transfer.path!)}
-                  className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                  className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600"
                 >
                   {t('reticulumRemote.transfer.reveal')}
                 </button>

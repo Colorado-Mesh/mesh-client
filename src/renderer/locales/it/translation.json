@@ -336,7 +336,12 @@
       "purple400": "Viola 400",
       "pink400": "Rosa 400",
       "orange400": "Arancione 400",
-      "yellow400": "Giallo 400"
+      "yellow400": "Giallo 400",
+      "zinc950": "Zinco 950",
+      "zinc900": "Zinco 900",
+      "zinc800": "Zinco 800",
+      "zinc700": "Zinco 700",
+      "zinc400": "Zinco 400"
     },
     "autoPruneNodesOlderThanAria": "Elimina automaticamente i nodi all'avvio, più vecchi di {{days}} giorni",
     "autoPrunePositionHistoryDaysAria": "Elimina automaticamente la cronologia delle posizioni all'avvio, più vecchia di {{days}} giorni",
@@ -436,7 +441,8 @@
       "highContrast": "Contrasto elevato",
       "midnight": "Mezzanotte",
       "teal": "Accento verde acqua",
-      "amber": "Accento ambra"
+      "amber": "Accento ambra",
+      "classicSlate": "Ardesia classica"
     },
     "pruneNoFixNodesTitle": "Eliminare i nodi senza posizione / Zero Island"
   },

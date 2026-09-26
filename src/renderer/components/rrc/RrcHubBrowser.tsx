@@ -113,7 +113,7 @@ function HubRow({
         >
           <div className="flex items-center justify-between gap-1">
             <div
-              className={`truncate font-medium ${selected ? 'text-bright-green' : 'text-slate-100'}`}
+              className={`truncate font-medium ${selected ? 'text-bright-green' : 'text-zinc-100'}`}
             >
               {label}
             </div>
@@ -146,7 +146,7 @@ function HubRow({
         </button>
         <button
           type="button"
-          className={`shrink-0 rounded p-1 ${hub.favorited ? 'text-bright-green' : 'text-muted hover:text-slate-200'}`}
+          className={`shrink-0 rounded p-1 ${hub.favorited ? 'text-bright-green' : 'text-muted hover:text-zinc-200'}`}
           aria-label={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
           title={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
           onClick={() => {
@@ -291,7 +291,7 @@ export function RrcHubBrowser({
         </p>
       )}
       <p className="text-muted px-1 text-xs leading-snug">{t('rrc.hubLegend')}</p>
-      <div className="mt-auto space-y-3 border-t border-slate-800 pt-3">
+      <div className="mt-auto space-y-3 border-t border-zinc-800 pt-3">
         <label className={`block ${FIELD_LABEL_CLASS}`}>
           {t('rrc.nickname')}
           <input

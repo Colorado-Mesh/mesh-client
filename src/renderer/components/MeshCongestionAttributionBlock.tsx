@@ -78,11 +78,11 @@ export default function MeshCongestionAttributionBlock({
               const role = getRoleInfo(n?.role);
               return (
                 <li key={o.nodeId} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-gray-300">{name}</span>
+                  <span className="text-zinc-300">{name}</span>
                   <span className="text-muted">
                     ({t(role.labelKey, role.labelParams ?? undefined)})
                   </span>
-                  <span className="text-gray-600">
+                  <span className="text-zinc-600">
                     +{o.echoScore}{' '}
                     {o.echoScore === 1
                       ? t('meshCongestion.extraRfReception')

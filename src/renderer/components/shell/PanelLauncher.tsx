@@ -241,7 +241,7 @@ export function PanelLauncher({
   };
 
   const destinationRowClass =
-    'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body flex h-9 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-slate-200 outline-none';
+    'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body flex h-9 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-zinc-200 outline-none';
   const renderDestinationGroup = (
     key: string,
     label: string,
@@ -289,7 +289,7 @@ export function PanelLauncher({
         <h2 id={titleId} className="sr-only">
           {t('shell.launcher.title')}
         </h2>
-        <div className="flex h-12 shrink-0 items-center gap-2.5 border-b border-slate-800 px-4">
+        <div className="flex h-12 shrink-0 items-center gap-2.5 border-b border-zinc-800 px-4">
           <Search aria-hidden className={`${ICON_MD} text-muted`} size={16} />
           <input
             ref={inputRef}
@@ -303,12 +303,12 @@ export function PanelLauncher({
             placeholder={t('shell.launcher.placeholder')}
             spellCheck={false}
             autoComplete="off"
-            className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-sm text-slate-200 outline-none"
+            className="placeholder:text-muted min-w-0 flex-1 bg-transparent text-sm text-zinc-200 outline-none"
           />
           <Kbd>Esc</Kbd>
         </div>
         {header && (
-          <div className="flex shrink-0 items-center justify-center border-b border-slate-800 px-4 py-3">
+          <div className="flex shrink-0 items-center justify-center border-b border-zinc-800 px-4 py-3">
             {header}
           </div>
         )}
@@ -354,7 +354,7 @@ export function PanelLauncher({
                               onKeyDown={(e) => {
                                 handleEntryKeyDown(e, entry);
                               }}
-                              className={`hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-left text-slate-200 outline-none ${
+                              className={`hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-left text-zinc-200 outline-none ${
                                 isFirstMatch ? 'bg-sidebar-active-bg' : ''
                               }`}
                             >
@@ -392,7 +392,7 @@ export function PanelLauncher({
                                 onTogglePin(entry.slot);
                               }}
                               className={`hover:bg-sidebar-active-bg flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                                isPinned ? 'text-bright-green' : 'text-muted hover:text-slate-200'
+                                isPinned ? 'text-bright-green' : 'text-muted hover:text-zinc-200'
                               }`}
                             >
                               <Pin
@@ -463,7 +463,7 @@ export function PanelLauncher({
             )}
         </div>
 
-        <div className="text-muted flex h-10 shrink-0 items-center gap-4 border-t border-slate-800 px-4 text-xs">
+        <div className="text-muted flex h-10 shrink-0 items-center gap-4 border-t border-zinc-800 px-4 text-xs">
           <span className="flex items-center gap-1.5 pointer-coarse:hidden">
             <Kbd>{'↑↓'}</Kbd>
             {t('shell.launcher.hintMove')}

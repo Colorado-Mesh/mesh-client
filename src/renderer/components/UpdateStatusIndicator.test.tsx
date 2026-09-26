@@ -147,7 +147,7 @@ describe('UpdateStatusIndicator', () => {
       />,
     );
     const btn = screen.getByRole('button', { name: 'Updates paused (offline)' });
-    expect(btn).toHaveClass('text-gray-400');
+    expect(btn).toHaveClass('text-zinc-400');
     expect(container.querySelector('.text-amber-500')).toBeNull();
     await user.click(btn);
     expect(onCheck).toHaveBeenCalledTimes(1);

@@ -336,7 +336,12 @@
       "purple400": "Violet 400",
       "pink400": "Rose 400",
       "orange400": "Orange 400",
-      "yellow400": "Jaune 400"
+      "yellow400": "Jaune 400",
+      "zinc950": "Zinc 950",
+      "zinc900": "Zinc 900",
+      "zinc800": "Zinc 800",
+      "zinc700": "Zinc 700",
+      "zinc400": "Zinc 400"
     },
     "autoPruneNodesOlderThanAria": "Élaguer automatiquement les nœuds au démarrage, datant de plus de {{days}} jours",
     "autoPrunePositionHistoryDaysAria": "Élaguer automatiquement l'historique des positions au démarrage, datant de plus de {{days}} jours",
@@ -436,7 +441,8 @@
       "highContrast": "Contraste élevé",
       "midnight": "Minuit",
       "teal": "Accent sarcelle",
-      "amber": "Accent ambre"
+      "amber": "Accent ambre",
+      "classicSlate": "Ardoise classique"
     },
     "pruneNoFixNodesTitle": "Élaguer les nœuds sans position / Zero Island"
   },

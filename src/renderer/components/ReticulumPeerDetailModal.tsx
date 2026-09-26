@@ -484,7 +484,7 @@ export default function ReticulumPeerDetailModal({
               </button>
               <button
                 type="button"
-                className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300"
+                className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300"
                 onClick={() => {
                   setEditingName(false);
                 }}
@@ -502,7 +502,7 @@ export default function ReticulumPeerDetailModal({
               />
               <h2
                 id="reticulum-peer-detail-title"
-                className="truncate text-lg font-semibold text-slate-100"
+                className="truncate text-lg font-semibold text-zinc-100"
               >
                 {displayLabel}
               </h2>
@@ -528,7 +528,7 @@ export default function ReticulumPeerDetailModal({
               </button>
             </div>
           )}
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
             <span
               className={
                 isContact
@@ -549,7 +549,7 @@ export default function ReticulumPeerDetailModal({
               </span>
             ) : null}
           </div>
-          <div className="mt-2 space-y-1.5 rounded border border-gray-700/60 p-2">
+          <div className="mt-2 space-y-1.5 rounded border border-zinc-700/60 p-2">
             <div className="text-muted text-2xs">{t('peerDetailModal.announcedDestinations')}</div>
             <ul className="space-y-1.5" aria-label={t('peerDetailModal.announcedDestinations')}>
               {announcedDestinations.map((row) => {
@@ -562,7 +562,7 @@ export default function ReticulumPeerDetailModal({
                       row.isOpened ? 'bg-cyan-950/40 ring-1 ring-cyan-700/40' : ''
                     }`}
                   >
-                    <span className="text-2xs rounded bg-slate-700/80 px-1.5 py-0.5 font-sans font-medium text-gray-200">
+                    <span className="text-2xs rounded bg-zinc-700/80 px-1.5 py-0.5 font-sans font-medium text-zinc-200">
                       {aspectLabel}
                     </span>
                     {row.isOpened ? (
@@ -571,7 +571,7 @@ export default function ReticulumPeerDetailModal({
                       </span>
                     ) : null}
                     <span
-                      className="min-w-0 flex-1 truncate font-mono text-xs text-gray-300"
+                      className="min-w-0 flex-1 truncate font-mono text-xs text-zinc-300"
                       title={row.destination_hash}
                     >
                       {trunc}
@@ -594,9 +594,9 @@ export default function ReticulumPeerDetailModal({
               })}
             </ul>
           </div>
-          <div className="mt-2 space-y-1 rounded border border-gray-700/60 p-2">
+          <div className="mt-2 space-y-1 rounded border border-zinc-700/60 p-2">
             <div className="text-muted text-2xs">{t('peerDetailModal.verifyFingerprint')}</div>
-            <div className="font-mono text-xs break-all text-gray-200">{fingerprint}</div>
+            <div className="font-mono text-xs break-all text-zinc-200">{fingerprint}</div>
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 type="button"
@@ -627,7 +627,7 @@ export default function ReticulumPeerDetailModal({
               </button>
               <button
                 type="button"
-                className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
+                className="rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-600"
                 disabled={!verified || busy}
                 onClick={() => {
                   void (async () => {
@@ -655,7 +655,7 @@ export default function ReticulumPeerDetailModal({
               {contactQrUri ? (
                 <button
                   type="button"
-                  className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
+                  className="rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-600"
                   aria-label={t('peerDetailModal.shareContactQrAria')}
                   onClick={() => {
                     setShowContactQr((v) => !v);
@@ -676,7 +676,7 @@ export default function ReticulumPeerDetailModal({
             ) : null}
           </div>
           <div className="mt-2 flex flex-wrap gap-3">
-            <label className="block text-xs text-gray-400" htmlFor="peer-icon-name">
+            <label className="block text-xs text-zinc-400" htmlFor="peer-icon-name">
               {t('reticulumProfileIcon.iconName')}
               <select
                 id="peer-icon-name"
@@ -699,7 +699,7 @@ export default function ReticulumPeerDetailModal({
                 <option value="user">{t('reticulumProfileIcon.iconUser')}</option>
               </select>
             </label>
-            <label className="block text-xs text-gray-400" htmlFor="peer-icon-color">
+            <label className="block text-xs text-zinc-400" htmlFor="peer-icon-color">
               {t('peerDetailModal.iconColor')}
               <select
                 id="peer-icon-color"
@@ -721,7 +721,7 @@ export default function ReticulumPeerDetailModal({
         </div>
         <button
           type="button"
-          className="text-muted hover:bg-sidebar-active-bg rounded-lg p-1.5 hover:text-slate-200"
+          className="text-muted hover:bg-sidebar-active-bg rounded-lg p-1.5 hover:text-zinc-200"
           aria-label={closeLabel}
           title={closeLabel}
           onClick={onClose}
@@ -730,8 +730,8 @@ export default function ReticulumPeerDetailModal({
         </button>
       </div>
 
-      <section className="mb-4 rounded-xl border border-slate-800 p-4">
-        <h3 className="text-sm font-medium text-gray-200">{t('peerDetailModal.networkSection')}</h3>
+      <section className="mb-4 rounded-xl border border-zinc-800 p-4">
+        <h3 className="text-sm font-medium text-zinc-200">{t('peerDetailModal.networkSection')}</h3>
         <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
           <dt className="text-muted">{t('peerListPanel.colInterface')}</dt>
           <dd>{peer?.interface ?? '—'}</dd>
@@ -750,9 +750,9 @@ export default function ReticulumPeerDetailModal({
                 {backupPathSlots.map((slot, index) => (
                   <li
                     key={`${slot.interface_id ?? 'x'}-${slot.via_hash ?? index}-${slot.hops ?? 'h'}`}
-                    className="text-gray-300"
+                    className="text-zinc-300"
                   >
-                    <span className="text-gray-400">{t('peerListPanel.pathsBackupBadge')}</span>
+                    <span className="text-zinc-400">{t('peerListPanel.pathsBackupBadge')}</span>
                     {' · '}
                     {t('connectionPanel.reticulumPeers.hops')}: {slot.hops ?? '—'}
                     {' · '}
@@ -804,7 +804,7 @@ export default function ReticulumPeerDetailModal({
           <button
             type="button"
             disabled={busy}
-            className="rounded border border-slate-500 px-3 py-1.5 text-sm text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+            className="rounded border border-zinc-500 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
             onClick={() => {
               void saveAsContact();
             }}
@@ -828,7 +828,7 @@ export default function ReticulumPeerDetailModal({
             <button
               type="button"
               disabled={busy}
-              className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40"
+              className="rounded border border-zinc-600 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
               onClick={() => {
                 void unblockContact('reticulum', identityId, peerHash);
               }}
@@ -850,8 +850,8 @@ export default function ReticulumPeerDetailModal({
         ) : null}
       </section>
 
-      {pathStatus ? <p className="mb-2 text-xs text-gray-300">{pathStatus}</p> : null}
-      {probeStatus ? <p className="mb-2 text-xs text-gray-300">{probeStatus}</p> : null}
+      {pathStatus ? <p className="mb-2 text-xs text-zinc-300">{pathStatus}</p> : null}
+      {probeStatus ? <p className="mb-2 text-xs text-zinc-300">{probeStatus}</p> : null}
     </>
   );
   const removeConfirm = showRemoveConfirm ? (
@@ -876,7 +876,7 @@ export default function ReticulumPeerDetailModal({
       <>
         <aside
           aria-labelledby="reticulum-peer-detail-title"
-          className="bg-deep-black h-full min-h-0 overflow-y-auto rounded-xl border border-slate-800 p-4"
+          className="bg-deep-black h-full min-h-0 overflow-y-auto rounded-xl border border-zinc-800 p-4"
         >
           {detailBody}
         </aside>
@@ -900,7 +900,7 @@ export default function ReticulumPeerDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="reticulum-peer-detail-title"
-        className="bg-deep-black relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-800 p-4 shadow-xl"
+        className="bg-deep-black relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-zinc-800 p-4 shadow-xl"
       >
         {detailBody}
       </div>

@@ -11,7 +11,7 @@ interface SpinnerIconProps {
 /** Loading spinner — always animates on mount when active (essential feedback). */
 export function SpinnerIcon({ className, active = true }: SpinnerIconProps) {
   if (!active) return null;
-  const cls = className ?? `${ICON_SM} text-gray-400`;
+  const cls = className ?? `${ICON_SM} text-zinc-400`;
   return (
     <Loader
       aria-hidden

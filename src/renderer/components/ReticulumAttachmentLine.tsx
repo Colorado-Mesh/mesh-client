@@ -123,7 +123,7 @@ export function ReticulumAttachmentLine({
   };
 
   return (
-    <div className="mt-1 flex flex-col gap-2 rounded border border-gray-700/80 bg-slate-900/60 px-2 py-1.5 text-xs text-gray-300">
+    <div className="mt-1 flex flex-col gap-2 rounded border border-zinc-700/80 bg-zinc-900/60 px-2 py-1.5 text-xs text-zinc-300">
       {showImage && imageDataUrl ? (
         <ChatInlineImage
           src={imageDataUrl}

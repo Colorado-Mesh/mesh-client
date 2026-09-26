@@ -27,7 +27,7 @@ export default function ConnectionBatteryGauge({ percent, charging }: Props) {
         {[0, 1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="h-3 w-2 shrink-0 overflow-hidden rounded-sm border border-gray-600/90 bg-gray-800/50"
+            className="h-3 w-2 shrink-0 overflow-hidden rounded-sm border border-zinc-600/90 bg-zinc-800/50"
           >
             {i < filled ? <div className={`h-full w-full ${fillClass}`} /> : null}
           </div>

@@ -144,7 +144,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     success: 'bg-brand-green/15 border-brand-green text-bright-green',
     error: 'bg-red-900/90 border-red-600 text-red-200',
     warning: 'bg-yellow-900/90 border-yellow-600 text-yellow-200',
-    info: 'bg-deep-black/90 border-gray-600 text-gray-200',
+    info: 'bg-deep-black/90 border-zinc-600 text-zinc-200',
     emergency: 'bg-red-900/95 border-red-500 text-red-100',
   }[toast.type];
 
@@ -173,7 +173,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         type="button"
         onClick={dismiss}
         aria-label={t('common.dismiss')}
-        className="text-muted ml-2 shrink-0 text-xs font-medium hover:text-gray-200"
+        className="text-muted ml-2 shrink-0 text-xs font-medium hover:text-zinc-200"
       >
         {t('common.dismiss')}
       </button>

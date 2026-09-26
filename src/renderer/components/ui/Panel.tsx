@@ -19,7 +19,7 @@ export interface PanelProps {
   bodyClassName?: string;
 }
 
-/** Card with a 56px header (style guide: panels are `bg-deep-black`, `border-slate-800`, radius 12). */
+/** Card with a 56px header (style guide: panels are `bg-deep-black`, `border-zinc-800`, radius 12). */
 export function Panel({
   title,
   icon,
@@ -36,15 +36,15 @@ export function Panel({
   return (
     <section
       aria-labelledby={titleId}
-      className={`bg-deep-black flex min-w-0 flex-col rounded-xl border border-slate-800 ${className ?? ''}`}
+      className={`bg-deep-black flex min-w-0 flex-col rounded-xl border border-zinc-800 ${className ?? ''}`}
     >
-      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-slate-800 py-2 pr-3 pl-4.5">
-        {icon && <span className="flex shrink-0 text-slate-300">{icon}</span>}
-        <Heading id={titleId} className="text-sm font-semibold text-slate-200">
+      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-zinc-800 py-2 pr-3 pl-4.5">
+        {icon && <span className="flex shrink-0 text-zinc-300">{icon}</span>}
+        <Heading id={titleId} className="text-sm font-semibold text-zinc-200">
           {title}
         </Heading>
         {status && (
-          <span className="text-control ml-1 flex items-center gap-1.5 text-slate-300">
+          <span className="text-control ml-1 flex items-center gap-1.5 text-zinc-300">
             {status}
           </span>
         )}

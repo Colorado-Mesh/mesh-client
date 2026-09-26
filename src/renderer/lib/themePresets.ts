@@ -1,6 +1,7 @@
 import { DEFAULT_THEME_COLORS, type ThemeColorKey } from './themeColors';
 
-export type ThemePresetId = 'default' | 'highContrast' | 'midnight' | 'teal' | 'amber';
+export type ThemePresetId =
+  'default' | 'highContrast' | 'midnight' | 'teal' | 'amber' | 'classicSlate';
 
 export interface ThemePreset {
   id: ThemePresetId;
@@ -26,15 +27,15 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   preset('default', 'appPanel.themePresets.default', {}),
   // Brighter muted text, stronger borders and a lighter green for low vision.
   preset('highContrast', 'appPanel.themePresets.highContrast', {
-    sidebarActiveBg: '#334155',
-    secondaryDark: '#64748b',
-    muted: '#cbd5e1',
+    sidebarActiveBg: '#3f3f46',
+    secondaryDark: '#71717a',
+    muted: '#d4d4d8',
     brandGreen: '#bbf7d0',
     brightGreen: '#bbf7d0',
-    chatIncomingBg: '#334155',
-    chatIncomingBorder: '#64748b',
+    chatIncomingBg: '#3f3f46',
+    chatIncomingBorder: '#71717a',
     chatOutgoingBorder: '#bbf7d0',
-    messageActionButtonHover: '#e2e8f0',
+    messageActionButtonHover: '#e4e4e7',
   }),
   // Neutral gray surfaces with a sky accent.
   preset('midnight', 'appPanel.themePresets.midnight', {
@@ -63,6 +64,23 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     brightGreen: '#fcd34d',
     chatOutgoingBg: '#b45309',
     chatOutgoingBorder: '#fcd34d',
+  }),
+  // The look before the Zinc style guide: slate surfaces with the green-300 accent.
+  preset('classicSlate', 'appPanel.themePresets.classicSlate', {
+    appBg: '#020617',
+    sidebarActiveBg: '#1e293b',
+    brandGreen: '#86efac',
+    brightGreen: '#86efac',
+    readableGreen: '#15803d',
+    deepBlack: '#0f172a',
+    secondaryDark: '#334155',
+    muted: '#94a3b8',
+    chatIncomingBg: '#1e293b',
+    chatIncomingBorder: '#1e293b',
+    chatOutgoingBg: '#15803d',
+    chatOutgoingBorder: '#86efac',
+    messageActionsBarBg: '#0f172a',
+    messageActionButtonHover: '#94a3b8',
   }),
 ];
 

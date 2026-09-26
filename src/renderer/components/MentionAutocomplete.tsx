@@ -30,7 +30,7 @@ export default function MentionAutocomplete({
   return (
     <div
       id={listboxId}
-      className="absolute bottom-full left-0 z-50 mb-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-gray-600 bg-slate-800 shadow-lg"
+      className="absolute bottom-full left-0 z-50 mb-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-zinc-600 bg-zinc-800 shadow-lg"
       role="listbox"
       aria-label={t('chatPanel.mentionSuggestionsAria')}
     >
@@ -48,7 +48,7 @@ export default function MentionAutocomplete({
             onSelect(c.name);
           }}
           className={`w-full px-3 py-1.5 text-left text-sm ${
-            i === selectedIdx ? 'bg-slate-700 text-white' : 'text-gray-300 hover:bg-slate-700'
+            i === selectedIdx ? 'bg-zinc-700 text-white' : 'text-zinc-300 hover:bg-zinc-700'
           }`}
         >
           @{c.name}

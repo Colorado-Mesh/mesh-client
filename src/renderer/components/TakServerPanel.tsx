@@ -129,16 +129,16 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
 
   return (
     <div className="w-full space-y-6 p-4">
-      <h2 className="text-xl font-semibold text-gray-200">{t('takServerPanel.title')}</h2>
-      <p className="text-sm text-gray-400">{t('takServerPanel.description')}</p>
+      <h2 className="text-xl font-semibold text-zinc-200">{t('takServerPanel.title')}</h2>
+      <p className="text-sm text-zinc-400">{t('takServerPanel.description')}</p>
 
       {/* Status */}
-      <div className="bg-deep-black flex items-center gap-4 rounded-xl border border-slate-800 p-4">
+      <div className="bg-deep-black flex items-center gap-4 rounded-xl border border-zinc-800 p-4">
         <span className={`h-3 w-3 shrink-0 rounded-full ${statusColor}`} />
         <div className="flex-1">
-          <span className="text-sm font-medium text-gray-200">{statusLabel}</span>
+          <span className="text-sm font-medium text-zinc-200">{statusLabel}</span>
           {status.running && (
-            <span className="ml-2 text-xs text-gray-400">
+            <span className="ml-2 text-xs text-zinc-400">
               {status.clientCount === 1
                 ? t('takServerPanel.portClientsInfo', {
                     port: status.port,
@@ -160,12 +160,12 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       )}
 
       {/* Settings form */}
-      <div className="bg-deep-black space-y-4 rounded-xl border border-slate-800 p-4">
-        <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.serverSettings')}</h3>
+      <div className="bg-deep-black space-y-4 rounded-xl border border-zinc-800 p-4">
+        <h3 className="text-sm font-medium text-zinc-300">{t('takServerPanel.serverSettings')}</h3>
 
         <div className="space-y-3">
           <div>
-            <label htmlFor={`${id}-port`} className="mb-1 block text-xs text-gray-400">
+            <label htmlFor={`${id}-port`} className="mb-1 block text-xs text-zinc-400">
               {t('takServerPanel.portLabel')}
             </label>
             <input
@@ -186,7 +186,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
           </div>
 
           <div>
-            <label htmlFor={`${id}-name`} className="mb-1 block text-xs text-gray-400">
+            <label htmlFor={`${id}-name`} className="mb-1 block text-xs text-zinc-400">
               {t('takServerPanel.serverNameLabel')}
             </label>
             <input
@@ -211,9 +211,9 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
                 setLocalRequireCert(e.target.checked);
               }}
               disabled={status.running || isLoading}
-              className="rounded border-gray-600 disabled:opacity-50"
+              className="rounded border-zinc-600 disabled:opacity-50"
             />
-            <label htmlFor={`${id}-cert`} className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor={`${id}-cert`} className="cursor-pointer text-sm text-zinc-300">
               {t('takServerPanel.requireCert')}
             </label>
           </div>
@@ -228,7 +228,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
               }}
               className="accent-brand-green"
             />
-            <label htmlFor={`${id}-autostart`} className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor={`${id}-autostart`} className="cursor-pointer text-sm text-zinc-300">
               {t('takServerPanel.autoStart')}
             </label>
           </div>
@@ -259,8 +259,8 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
 
       {/* Connected clients */}
       {status.running && (
-        <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
-          <h3 className="text-sm font-medium text-gray-300">
+        <div className="bg-deep-black space-y-3 rounded-xl border border-zinc-800 p-4">
+          <h3 className="text-sm font-medium text-zinc-300">
             {t('takServerPanel.connectedClients', { count: clients.length })}
           </h3>
           {clients.length === 0 ? (
@@ -268,7 +268,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
           ) : (
             <ul className="space-y-1.5">
               {clients.map((c) => (
-                <li key={c.id} className="flex items-center gap-2 text-xs text-gray-300">
+                <li key={c.id} className="flex items-center gap-2 text-xs text-zinc-300">
                   <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
                   <span className="font-mono">{c.callsign ?? c.address}</span>
                   <span className="text-muted">
@@ -285,8 +285,8 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
 
       {/* ATAK Plugin Messages from Mesh */}
       {capabilities?.hasAtakPlugin && (
-        <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
-          <h3 className="text-sm font-medium text-gray-300">
+        <div className="bg-deep-black space-y-3 rounded-xl border border-zinc-800 p-4">
+          <h3 className="text-sm font-medium text-zinc-300">
             {t('takServerPanel.atakPluginMessages')}
             {atakMessages && atakMessages.size > 0 && (
               <span className="text-muted ml-2">
@@ -294,13 +294,13 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
               </span>
             )}
           </h3>
-          <p className="text-xs text-gray-400">{t('takServerPanel.atakPluginDesc')}</p>
+          <p className="text-xs text-zinc-400">{t('takServerPanel.atakPluginDesc')}</p>
           {atakMessages && atakMessages.size > 0 ? (
             <ul className="space-y-1.5">
               {Array.from(atakMessages.entries()).map(([nodeId, messages]) => {
                 const summary = latestTakSummaries.get(nodeId) ?? null;
                 return (
-                  <li key={nodeId} className="flex flex-col gap-0.5 text-xs text-gray-300">
+                  <li key={nodeId} className="flex flex-col gap-0.5 text-xs text-zinc-300">
                     <div className="flex items-center gap-2">
                       <span className="font-mono">{formatMeshtasticNodeId(nodeId)}</span>
                       <span className="text-muted">
@@ -309,7 +309,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
                         {formatTimeAgo(messages[messages.length - 1]?.timestamp ?? 0, t)}
                       </span>
                     </div>
-                    <span className="text-gray-400">
+                    <span className="text-zinc-400">
                       {summary ? formatTakSummary(summary, t) : t('takServerPanel.atakUndecodable')}
                     </span>
                   </li>
@@ -323,15 +323,15 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       )}
 
       {/* Data package */}
-      <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
-        <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.atakDataPackage')}</h3>
-        <p className="text-xs text-gray-400">{t('takServerPanel.atakDataPackageDesc')}</p>
+      <div className="bg-deep-black space-y-3 rounded-xl border border-zinc-800 p-4">
+        <h3 className="text-sm font-medium text-zinc-300">{t('takServerPanel.atakDataPackage')}</h3>
+        <p className="text-xs text-zinc-400">{t('takServerPanel.atakDataPackageDesc')}</p>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleGeneratePackage}
             disabled={isLoading || !status.running}
-            className="bg-secondary-dark rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 disabled:opacity-50"
+            className="bg-secondary-dark rounded-lg border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 disabled:opacity-50"
           >
             {isLoading ? t('takServerPanel.generating') : t('takServerPanel.generateReveal')}
           </button>
@@ -345,14 +345,14 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       </div>
 
       {/* Certificate management */}
-      <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
-        <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.certificates')}</h3>
-        <p className="text-xs text-gray-400">{t('takServerPanel.certificatesDesc')}</p>
+      <div className="bg-deep-black space-y-3 rounded-xl border border-zinc-800 p-4">
+        <h3 className="text-sm font-medium text-zinc-300">{t('takServerPanel.certificates')}</h3>
+        <p className="text-xs text-zinc-400">{t('takServerPanel.certificatesDesc')}</p>
         <button
           type="button"
           onClick={handleRegenerateCerts}
           disabled={isLoading}
-          className="bg-secondary-dark rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:border-red-800 hover:text-red-300 disabled:opacity-50"
+          className="bg-secondary-dark rounded-lg border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-red-800 hover:text-red-300 disabled:opacity-50"
         >
           {t('takServerPanel.regenerateCerts')}
         </button>

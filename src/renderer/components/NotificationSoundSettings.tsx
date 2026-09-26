@@ -38,7 +38,7 @@ const PRESET_LABELS = {
   alert: 'notificationSounds.alert',
 } as const;
 const buttonClass =
-  'rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-gray-700 disabled:opacity-40';
+  'rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-700 disabled:opacity-40';
 
 export default function NotificationSoundSettings() {
   const { t } = useTranslation();
@@ -131,21 +131,21 @@ export default function NotificationSoundSettings() {
   }
 
   return (
-    <details className="rounded-lg border border-gray-700 p-3">
-      <summary className="cursor-pointer text-sm text-gray-300">
+    <details className="rounded-lg border border-zinc-700 p-3">
+      <summary className="cursor-pointer text-sm text-zinc-300">
         {t('notificationSounds.title')}
       </summary>
       <p className="text-muted mt-3 text-xs leading-relaxed">{t('notificationSounds.hint')}</p>
       <p className="text-muted mt-2 text-xs leading-relaxed">
         {t('notificationSounds.emergencyHint')}
       </p>
-      <div className="mt-3 divide-y divide-gray-700">
+      <div className="mt-3 divide-y divide-zinc-700">
         {NOTIFICATION_SOUND_EVENTS.map((event) => {
           const setting = settings[event];
           const label = t(EVENT_LABELS[event]);
           return (
             <fieldset key={event} aria-busy={busy} className="py-3">
-              <legend className="text-sm font-medium text-gray-300">{label}</legend>
+              <legend className="text-sm font-medium text-zinc-300">{label}</legend>
               <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={typeof setting.sound === 'string' ? setting.sound : 'custom'}

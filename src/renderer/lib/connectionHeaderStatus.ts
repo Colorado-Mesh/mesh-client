@@ -10,8 +10,8 @@ export function reconnectBannerMaxAttempts(connectionType: string | null | undef
 export const CONNECTION_HEADER_PULSE_RED_TEXT = 'text-red-400';
 export const CONNECTION_HEADER_PULSE_RED_ICON = 'animate-pulse motion-status text-red-400';
 export const CONNECTION_HEADER_PULSE_RED_DOT = 'bg-red-500 animate-pulse motion-status';
-export const CONNECTION_HEADER_IDLE_TEXT = 'text-gray-400';
-export const CONNECTION_HEADER_IDLE_DOT = 'bg-gray-500';
+export const CONNECTION_HEADER_IDLE_TEXT = 'text-zinc-400';
+export const CONNECTION_HEADER_IDLE_DOT = 'bg-zinc-500';
 export const CONNECTION_HEADER_WARN_TEXT = 'text-yellow-400';
 export const CONNECTION_HEADER_WARN_ICON = 'animate-pulse motion-status text-yellow-400';
 export const CONNECTION_HEADER_WARN_DOT = 'bg-yellow-500 animate-pulse motion-status';

@@ -111,16 +111,16 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={messageId}
-        className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl"
+        className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-zinc-600 p-6 shadow-2xl"
       >
-        <h3 id={titleId} className="text-lg font-semibold text-gray-200">
+        <h3 id={titleId} className="text-lg font-semibold text-zinc-200">
           {title}
         </h3>
         <p id={messageId} className="text-muted text-sm leading-relaxed">
           {message}
         </p>
         {onPreserveFavoritesChange != null && (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
             <input
               type="checkbox"
               checked={preserveFavorites ?? false}
@@ -137,7 +137,7 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onCancel}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-600"
           >
             {resolvedCancelLabel}
           </button>

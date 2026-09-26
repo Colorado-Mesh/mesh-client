@@ -119,7 +119,7 @@ export default function MeshcoreChatChannelManager({
         disabled={disabled}
         aria-label={t('radioPanel.meshcoreChannel.addButton')}
         title={t('radioPanel.meshcoreChannel.addButton')}
-        className="text-muted hover:border-brand-green hover:text-bright-green inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-dashed border-gray-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        className="text-muted hover:border-brand-green hover:text-bright-green inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-600 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Plus aria-hidden className="h-4 w-4" size={16} />
       </button>
@@ -130,7 +130,7 @@ export default function MeshcoreChatChannelManager({
             role="dialog"
             aria-modal="true"
             aria-labelledby="meshcore-chat-channel-title"
-            className="bg-secondary-dark w-full max-w-md space-y-4 rounded-xl border border-gray-600 p-4 shadow-2xl"
+            className="bg-secondary-dark w-full max-w-md space-y-4 rounded-xl border border-zinc-600 p-4 shadow-2xl"
           >
             <div className="flex items-center justify-between gap-3">
               <h2 id="meshcore-chat-channel-title" className="text-base font-semibold text-white">
@@ -143,7 +143,7 @@ export default function MeshcoreChatChannelManager({
                 }}
                 disabled={saving}
                 aria-label={t('common.close')}
-                className="text-muted rounded p-1 hover:bg-gray-700 hover:text-white"
+                className="text-muted rounded p-1 hover:bg-zinc-700 hover:text-white"
               >
                 <X aria-hidden className="h-4 w-4" size={16} />
               </button>
@@ -161,7 +161,7 @@ export default function MeshcoreChatChannelManager({
                       onSelectChannel(channel.index);
                       closeDialog();
                     }}
-                    className="bg-deep-black text-muted hover:border-brand-green rounded-full border border-gray-700 px-2.5 py-1 text-xs hover:text-gray-100"
+                    className="bg-deep-black text-muted hover:border-brand-green rounded-full border border-zinc-700 px-2.5 py-1 text-xs hover:text-zinc-100"
                   >
                     {channel.name}
                   </button>
@@ -218,7 +218,7 @@ export default function MeshcoreChatChannelManager({
                   type="submit"
                   disabled={!valid || saving || disabled}
                   aria-label={saving ? t('common.saving') : t('common.save')}
-                  className="bg-brand-green hover:bg-brand-green/90 text-app-bg rounded px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:bg-gray-600 disabled:text-gray-400"
+                  className="bg-brand-green hover:bg-brand-green/90 text-app-bg rounded px-3 py-2 text-xs font-medium disabled:cursor-not-allowed disabled:bg-zinc-600 disabled:text-zinc-400"
                 >
                   {saving ? t('common.saving') : t('common.save')}
                 </button>

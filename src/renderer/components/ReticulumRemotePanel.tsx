@@ -88,7 +88,7 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
   return (
     <div className="flex h-full min-w-0 flex-col">
       <nav
-        className="bg-deep-black mb-3 flex w-fit max-w-full flex-wrap gap-0.5 rounded-lg border border-slate-800 p-0.75"
+        className="bg-deep-black mb-3 flex w-fit max-w-full flex-wrap gap-0.5 rounded-lg border border-zinc-800 p-0.75"
         aria-label={t('reticulumRemote.navAria')}
       >
         {SECTIONS.map((s) => (
@@ -102,8 +102,8 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
             }}
             className={`text-body relative flex h-7.5 items-center rounded-md px-2.5 font-medium transition-colors ${
               section === s
-                ? 'bg-sidebar-active-bg text-slate-200'
-                : 'text-slate-300 hover:text-slate-100'
+                ? 'bg-sidebar-active-bg text-zinc-200'
+                : 'text-zinc-300 hover:text-zinc-100'
             }`}
           >
             {t(`reticulumRemote.sections.${s}`)}

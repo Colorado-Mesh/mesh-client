@@ -115,7 +115,7 @@ describe('ReticulumStackPanel', () => {
       name: 'connectionPanel.reticulumStartStack',
     });
 
-    expect(status.previousElementSibling).toHaveClass('bg-slate-600');
+    expect(status.previousElementSibling).toHaveClass('bg-zinc-600');
     expect(startButton).toHaveClass('bg-brand-green', 'text-app-bg');
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();

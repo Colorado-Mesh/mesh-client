@@ -236,7 +236,7 @@ export default function QrIngestControl({
         <button
           type="button"
           disabled={disabled}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
           aria-label={t('qrIngest.chooseImageAria')}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -245,7 +245,7 @@ export default function QrIngestControl({
         <button
           type="button"
           disabled={disabled || scanning || starting}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
           aria-label={t('qrIngest.scanCameraAria')}
           onClick={() => {
             void startCamera();
@@ -256,7 +256,7 @@ export default function QrIngestControl({
         {scanning ? (
           <button
             type="button"
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800"
+            className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
             aria-label={t('qrIngest.stopCameraAria')}
             onClick={stopCamera}
           >
@@ -281,7 +281,7 @@ export default function QrIngestControl({
       {scanning ? (
         <video
           ref={videoRef}
-          className="max-h-48 w-full rounded border border-gray-700 bg-black object-contain"
+          className="max-h-48 w-full rounded border border-zinc-700 bg-black object-contain"
           muted
           playsInline
           aria-label={t('qrIngest.cameraPreviewAria')}

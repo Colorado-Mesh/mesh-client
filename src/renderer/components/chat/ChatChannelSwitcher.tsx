@@ -185,10 +185,10 @@ export function ChatChannelSwitcher({
           if (open) close(false);
           else setOpen(true);
         }}
-        className="border-secondary-dark bg-sidebar-active-bg hover:bg-secondary-dark text-control inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 font-medium text-slate-200 transition-colors"
+        className="border-secondary-dark bg-sidebar-active-bg hover:bg-secondary-dark text-control inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 font-medium text-zinc-200 transition-colors"
       >
         <TriggerIcon aria-hidden className={`${ICON_SM_PLUS} text-muted`} size={14} />
-        <span className="text-meta font-mono text-slate-300 tabular-nums">{channels.length}</span>
+        <span className="text-meta font-mono text-zinc-300 tabular-nums">{channels.length}</span>
         {unreadElsewhere > 0 && (
           <span
             aria-hidden="true"
@@ -203,7 +203,7 @@ export function ChatChannelSwitcher({
         createPortal(
           <div
             ref={popoverRef}
-            className="bg-deep-black fixed flex max-h-[min(420px,70vh)] flex-col overflow-hidden rounded-xl border border-slate-800 shadow-2xl"
+            className="bg-deep-black fixed flex max-h-[min(420px,70vh)] flex-col overflow-hidden rounded-xl border border-zinc-800 shadow-2xl"
             style={{
               zIndex: Z_POPOVER_MENU,
               width: `${POPOVER_WIDTH / 16}rem`,
@@ -212,7 +212,7 @@ export function ChatChannelSwitcher({
               left: position?.left ?? -9999,
             }}
           >
-            <div className="border-b border-slate-800 p-2">
+            <div className="border-b border-zinc-800 p-2">
               <input
                 ref={inputRef}
                 type="text"
@@ -269,7 +269,7 @@ export function ChatChannelSwitcher({
                         }
                       }}
                       className={`text-body flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2.5 ${
-                        highlighted ? 'bg-sidebar-active-bg text-slate-100' : 'text-slate-300'
+                        highlighted ? 'bg-sidebar-active-bg text-zinc-100' : 'text-zinc-300'
                       }`}
                     >
                       {!isDms && (

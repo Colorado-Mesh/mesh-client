@@ -35,7 +35,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
   return (
     <form className="mb-2 flex flex-wrap items-end gap-2" onSubmit={(e) => void handleSubmit(e)}>
       <label className="min-w-[12rem] flex-1 space-y-1">
-        <span className="text-xs text-gray-400">{t('roomsPanel.aclPubkeyLabel')}</span>
+        <span className="text-xs text-zinc-400">{t('roomsPanel.aclPubkeyLabel')}</span>
         <input
           type="text"
           value={aclPubkey}
@@ -49,7 +49,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
         />
       </label>
       <label className="space-y-1">
-        <span className="text-xs text-gray-400">{t('roomsPanel.aclLevelLabel')}</span>
+        <span className="text-xs text-zinc-400">{t('roomsPanel.aclLevelLabel')}</span>
         <select
           value={aclLevel}
           onChange={(e) => {
@@ -68,7 +68,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
       <button
         type="submit"
         disabled={disabled || pending || !/^[0-9a-f]{64}$/i.test(aclPubkey.trim())}
-        className="rounded border border-gray-600 bg-gray-700 px-3 py-1 text-xs text-gray-200 disabled:opacity-40"
+        className="rounded border border-zinc-600 bg-zinc-700 px-3 py-1 text-xs text-zinc-200 disabled:opacity-40"
       >
         {t('roomsPanel.aclApply')}
       </button>

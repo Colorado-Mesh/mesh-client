@@ -68,9 +68,18 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     id: 'renderer-no-low-contrast-gray-text',
     include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
     exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],
-    forbid: /(?<![\w-])text-(?:gray|slate)-500(?![\w/-])/,
+    forbid: /(?<![\w-])text-(?:zinc|gray|slate)-500(?![\w/-])/,
     message:
-      'gray-500 / slate-500 text is under 4.5:1 on the dark surfaces; use text-muted (themeable, passes 4.5:1)',
+      'zinc-500 text is under 4.5:1 on the dark surfaces; use text-muted (themeable, passes 4.5:1)',
+  },
+  {
+    id: 'renderer-zinc-neutrals',
+    include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],
+    forbid:
+      /\b(?:bg|text|border|border-[trblxyse]|ring|ring-offset|divide|outline|fill|stroke|placeholder|accent|decoration|shadow|from|via|to|caret)-(?:slate|gray)-\d{2,3}\b/,
+    message:
+      'Style guide: neutrals use the Zinc palette (zinc-50 to zinc-950) or the theme tokens (app-bg, deep-black, secondary-dark, muted); slate and gray have a blue undertone',
   },
   {
     id: 'renderer-no-uppercase-micro-labels',

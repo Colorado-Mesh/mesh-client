@@ -177,12 +177,12 @@ export default function SearchModal({
         className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0"
         onClick={onClose}
       />
-      <div className="relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
+      <div className="relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl">
         {/* Input */}
-        <div className="flex items-center gap-2 border-b border-gray-700 px-4 py-3">
+        <div className="flex items-center gap-2 border-b border-zinc-700 px-4 py-3">
           <Search
             aria-hidden
-            className="h-4 w-4 shrink-0 text-gray-400"
+            className="h-4 w-4 shrink-0 text-zinc-400"
             trigger={searchTrigger}
             size={16}
           />
@@ -195,15 +195,15 @@ export default function SearchModal({
             }}
             placeholder={t('searchModal.placeholder')}
             spellCheck={false}
-            className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-500 focus:outline-none"
+            className="flex-1 bg-transparent text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none"
           />
           {loading && (
-            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border border-gray-400 border-t-transparent" />
+            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border border-zinc-400 border-t-transparent" />
           )}
           <button
             type="button"
             onClick={onClose}
-            className="text-muted text-lg leading-none hover:text-gray-300"
+            className="text-muted text-lg leading-none hover:text-zinc-300"
           >
             ×
           </button>
@@ -215,7 +215,7 @@ export default function SearchModal({
             <p className="text-muted py-8 text-center text-sm">{t('searchModal.noResults')}</p>
           )}
           {results.length === 0 && !query.trim() && (
-            <p className="py-8 text-center text-sm text-gray-600">{t('searchModal.hint')}</p>
+            <p className="py-8 text-center text-sm text-zinc-600">{t('searchModal.hint')}</p>
           )}
           {results.map((r) => (
             <button
@@ -224,16 +224,16 @@ export default function SearchModal({
               onClick={() => {
                 handleResultClick(r);
               }}
-              className="w-full border-b border-gray-800 px-4 py-3 text-left transition-colors hover:bg-gray-800/60"
+              className="w-full border-b border-zinc-800 px-4 py-3 text-left transition-colors hover:bg-zinc-800/60"
             >
               <div className="mb-0.5 flex items-center gap-2">
                 <span className="bg-brand-green/20 text-brand-green rounded px-1.5 py-0.5 font-mono text-xs">
                   {getChannelName(r.channel)}
                 </span>
-                <span className="text-xs text-gray-400">{getSenderName(r)}</span>
-                <span className="ml-auto text-xs text-gray-600">{formatTs(r.timestamp)}</span>
+                <span className="text-xs text-zinc-400">{getSenderName(r)}</span>
+                <span className="ml-auto text-xs text-zinc-600">{formatTs(r.timestamp)}</span>
               </div>
-              <p className="truncate text-sm text-gray-300">
+              <p className="truncate text-sm text-zinc-300">
                 {r.payload.length > 120 ? r.payload.slice(0, 120) + '…' : r.payload}
               </p>
             </button>
@@ -241,7 +241,7 @@ export default function SearchModal({
         </div>
 
         {results.length > 0 && (
-          <div className="border-t border-gray-800 px-4 py-2 text-xs text-gray-600">
+          <div className="border-t border-zinc-800 px-4 py-2 text-xs text-zinc-600">
             {t('searchModal.resultCount', { count: results.length })}
           </div>
         )}

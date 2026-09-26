@@ -4,14 +4,14 @@
 @source not './**/*.test.{ts,tsx}';
 
 @theme {
-  --color-app-bg: #020617;
-  --color-sidebar-active-bg: #1e293b;
+  --color-app-bg: #09090b;
+  --color-sidebar-active-bg: #27272a;
   --color-brand-green: #86efac;
   --color-bright-green: var(--color-brand-green);
   --color-readable-green: #15803d;
-  --color-deep-black: #0f172a;
-  --color-secondary-dark: #334155;
-  --color-muted: #94a3b8;
+  --color-deep-black: #18181b;
+  --color-secondary-dark: #3f3f46;
+  --color-muted: #a1a1aa;
 
   /*
    * UI text sizes between Tailwind's text-xs (12px) and text-sm (14px), in rem so App > Appearance
@@ -35,16 +35,16 @@
     monospace;
   /* Chat incoming (channel): opaque border + rgba fill so the edge never
      color-mixes to a light/white ring on Chromium/Electron. */
-  --color-chat-incoming-bg: rgb(30 41 59 / 0.38);
-  --color-chat-incoming-border: #1e293b;
+  --color-chat-incoming-bg: rgb(39 39 42 / 0.38);
+  --color-chat-incoming-border: #27272a;
   /* Own messages (Option B): readable green fill at 22%, brand green border at 25%. */
   --color-chat-outgoing-bg: rgb(21 128 61 / 0.22);
   --color-chat-outgoing-border: rgb(134 239 172 / 0.25);
   /* Message actions bar background — hidden by default (opacity 0); toggled to
      fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
-  --color-message-actions-bar-bg: rgb(15 23 42 / 0);
+  --color-message-actions-bar-bg: rgb(24 24 27 / 0);
   /* Message action button hover color */
-  --color-message-action-button-hover: #94a3b8;
+  --color-message-action-button-hover: #a1a1aa;
 }
 
 /*
@@ -75,7 +75,7 @@ html[data-reduce-motion='true'] *::after {
 /* Leaflet zoom, locate and attribution follow the dark map controls (MAP_CONTROL_CLASS). Leaflet's
    own CSS loads later with the map chunk, so every rule carries an extra class to win on specificity. */
 .leaflet-container .leaflet-control.leaflet-bar {
-  border: 1px solid var(--color-slate-700, #334155);
+  border: 1px solid var(--color-zinc-700, #3f3f46);
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
   overflow: hidden;
@@ -83,22 +83,22 @@ html[data-reduce-motion='true'] *::after {
 .leaflet-container .leaflet-bar a,
 .leaflet-container .leaflet-bar .leaflet-bar-part {
   background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
-  border-bottom-color: var(--color-slate-700, #334155);
-  color: var(--color-slate-200, #e2e8f0);
+  border-bottom-color: var(--color-zinc-700, #3f3f46);
+  color: var(--color-zinc-200, #e4e4e7);
 }
 .leaflet-container .leaflet-bar a:hover,
 .leaflet-container .leaflet-bar a:focus-visible,
 .leaflet-container .leaflet-bar .leaflet-bar-part:hover {
-  background-color: var(--color-slate-800, #1e293b);
+  background-color: var(--color-zinc-800, #27272a);
   color: #fff;
 }
 .leaflet-container .leaflet-bar a.leaflet-disabled {
   background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
-  color: var(--color-slate-500, #64748b);
+  color: var(--color-zinc-500, #71717a);
 }
 .leaflet-container .leaflet-control.leaflet-control-attribution {
   background-color: color-mix(in srgb, var(--color-deep-black) 80%, transparent);
-  color: var(--color-slate-300, #cbd5e1);
+  color: var(--color-zinc-300, #d4d4d8);
 }
 .leaflet-container .leaflet-control-attribution a {
   color: var(--color-bright-green);
@@ -113,11 +113,11 @@ html[data-reduce-motion='true'] *::after {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-secondary-dark, #2d3748);
+  background: var(--color-secondary-dark, #3f3f46);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #52525b;
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
@@ -148,10 +148,10 @@ html[data-reduce-motion='true'] *::after {
   scrollbar-gutter: stable;
 }
 .nomad-page-scroll::-webkit-scrollbar-thumb {
-  background: #64748b;
+  background: #71717a;
 }
 .nomad-page-scroll::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #a1a1aa;
 }
 
 /* IBM Plex Sans (400, 500, 600) and Mono (400, 500): latin, latin-ext and cyrillic subsets,

@@ -33,13 +33,13 @@ export function EmergencyIncidentRow({
 }) {
   const { t } = useTranslation();
   return (
-    <li className="flex flex-col gap-1 rounded border border-slate-700 bg-slate-800 p-2">
+    <li className="flex flex-col gap-1 rounded border border-zinc-700 bg-zinc-800 p-2">
       <div className="flex flex-wrap items-center gap-2">
         <MecpSeverityBadge severity={incident.severity} />
-        <span className="text-sm font-semibold text-gray-100">{incident.senderName}</span>
-        <span className="font-mono text-xs text-gray-300">{incident.codes.join(' ')}</span>
+        <span className="text-sm font-semibold text-zinc-100">{incident.senderName}</span>
+        <span className="font-mono text-xs text-zinc-300">{incident.codes.join(' ')}</span>
         {incident.isDrill ? (
-          <span className="text-xs text-gray-300">{t('incidentPanel.drill')}</span>
+          <span className="text-xs text-zinc-300">{t('incidentPanel.drill')}</span>
         ) : null}
         {incident.beaconActive ? (
           <span className="text-xs text-amber-300">{t('incidentPanel.beaconActive')}</span>
@@ -48,20 +48,20 @@ export function EmergencyIncidentRow({
           <span className="text-xs text-sky-300">{t('incidentPanel.ackQueuedBadge')}</span>
         ) : null}
       </div>
-      {incident.freetext ? <p className="text-xs text-gray-200">{incident.freetext}</p> : null}
+      {incident.freetext ? <p className="text-xs text-zinc-200">{incident.freetext}</p> : null}
       {pendingAckRows.length > 0 ? (
         <ul className="flex flex-col gap-1" aria-label={t('incidentPanel.pendingAckListAria')}>
           {pendingAckRows.map((row) => (
             <li
               key={row.id}
-              className="flex flex-wrap items-center gap-2 rounded border border-slate-600 bg-slate-900/60 px-2 py-1 text-xs text-gray-300"
+              className="flex flex-wrap items-center gap-2 rounded border border-zinc-600 bg-zinc-900/60 px-2 py-1 text-xs text-zinc-300"
             >
               <span className="truncate font-mono">{row.payload}</span>
-              <span className="text-gray-400">{row.status}</span>
+              <span className="text-zinc-400">{row.status}</span>
               {onCancelPendingAck ? (
                 <button
                   type="button"
-                  className="ml-auto rounded border border-slate-500 px-1.5 py-0.5 text-gray-200 hover:bg-slate-700"
+                  className="ml-auto rounded border border-zinc-500 px-1.5 py-0.5 text-zinc-200 hover:bg-zinc-700"
                   aria-label={t('incidentPanel.cancelPendingAckAria', {
                     sender: incident.senderName,
                   })}
@@ -76,7 +76,7 @@ export function EmergencyIncidentRow({
           ))}
         </ul>
       ) : null}
-      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-300">
         <span>{t('incidentPanel.ackCount', { count: incident.ackCount })}</span>
         <span>
           {t('incidentPanel.protocolsSeen', { protocols: incident.protocolsSeen.join(', ') })}

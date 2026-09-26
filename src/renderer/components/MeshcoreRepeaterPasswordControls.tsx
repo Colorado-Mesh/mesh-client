@@ -32,9 +32,9 @@ export function MeshcoreRepeaterPasswordControls({
   const summary = getMeshcoreRepeaterSavedSecretsSummary(nodeId);
 
   return (
-    <div className="mt-3 space-y-2 rounded-lg border border-gray-700 bg-gray-950/40 p-3 text-xs">
+    <div className="mt-3 space-y-2 rounded-lg border border-zinc-700 bg-zinc-950/40 p-3 text-xs">
       {summary.hasCredential ? (
-        <p className="flex items-center gap-1.5 text-gray-400">
+        <p className="flex items-center gap-1.5 text-zinc-400">
           <span className="text-sky-400" aria-hidden>
             🔑
           </span>
@@ -58,7 +58,7 @@ export function MeshcoreRepeaterPasswordControls({
                 );
               });
           }}
-          className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-200 hover:bg-gray-700"
+          className="rounded border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-700"
           aria-label={
             summary.hasCredential
               ? t('repeatersPanel.changePassword')

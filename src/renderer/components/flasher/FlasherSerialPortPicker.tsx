@@ -39,10 +39,10 @@ export function FlasherSerialPortPicker({
     <div
       role="region"
       aria-labelledby="flasher-serial-picker-heading"
-      className="bg-deep-black w-full overflow-hidden rounded-lg border border-gray-600"
+      className="bg-deep-black w-full overflow-hidden rounded-lg border border-zinc-600"
     >
-      <div className="bg-secondary-dark flex items-center justify-between gap-2 border-b border-gray-600 px-4 py-2.5">
-        <span id="flasher-serial-picker-heading" className="text-sm font-medium text-gray-200">
+      <div className="bg-secondary-dark flex items-center justify-between gap-2 border-b border-zinc-600 px-4 py-2.5">
+        <span id="flasher-serial-picker-heading" className="text-sm font-medium text-zinc-200">
           {t('flasher.selectSerialPort')}
         </span>
         <div className="flex items-center gap-2">
@@ -58,7 +58,7 @@ export function FlasherSerialPortPicker({
           ) : null}
           <button
             type="button"
-            className="text-xs text-gray-400 hover:text-gray-200"
+            className="text-xs text-zinc-400 hover:text-zinc-200"
             aria-label={t('common.cancel')}
             onClick={onCancel}
           >
@@ -86,9 +86,9 @@ export function FlasherSerialPortPicker({
                 onClick={() => {
                   onSelect(port.portId);
                 }}
-                className={`hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0 ${isLastUsed ? 'bg-sidebar-active-bg' : ''}`}
+                className={`hover:bg-secondary-dark w-full border-b border-zinc-700 px-4 py-3 text-left transition-colors last:border-b-0 ${isLastUsed ? 'bg-sidebar-active-bg' : ''}`}
               >
-                <div className="flex items-center gap-2 text-sm text-gray-200">
+                <div className="flex items-center gap-2 text-sm text-zinc-200">
                   <span>{title}</span>
                   {isLastUsed ? (
                     <span className="bg-brand-green/12 text-bright-green text-2xs rounded px-1.5 py-0.5 font-medium">

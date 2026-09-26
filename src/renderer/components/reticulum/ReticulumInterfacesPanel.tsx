@@ -1397,7 +1397,7 @@ function ReticulumIfacFields({
   const { t } = useTranslation();
   return (
     <>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-network-name`}>
+      <label className="text-xs text-zinc-400" htmlFor={`${idPrefix}-network-name`}>
         {t('connectionPanel.reticulumInterfaces.networkName')}
         <input
           id={`${idPrefix}-network-name`}
@@ -1412,7 +1412,7 @@ function ReticulumIfacFields({
           autoComplete="off"
         />
       </label>
-      <div className="text-xs text-gray-400">
+      <div className="text-xs text-zinc-400">
         <label className="block" htmlFor={`${idPrefix}-passphrase`}>
           {t('connectionPanel.reticulumInterfaces.passphrase')}
         </label>
@@ -1434,7 +1434,7 @@ function ReticulumIfacFields({
             type="button"
             disabled={disabled}
             onClick={onToggleShowPassphrase}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+            className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-40"
             aria-label={
               showPassphrase
                 ? t('connectionPanel.reticulumInterfaces.hidePassphrase')
@@ -1531,7 +1531,7 @@ function ReticulumInterfaceModeSelect({
   const selectTitle = selectedDescription ?? t('connectionPanel.reticulumInterfaces.modeHint');
   return (
     <div className="min-w-0">
-      <label className="block text-xs text-gray-400" htmlFor={id}>
+      <label className="block text-xs text-zinc-400" htmlFor={id}>
         {t('connectionPanel.reticulumInterfaces.mode')}
       </label>
       <select
@@ -1706,7 +1706,7 @@ function InterfaceEditPanel({
         {t('connectionPanel.reticulumInterfaces.editTitle')}: {iface.name}
       </h4>
       <div className="mt-2 flex flex-wrap items-end gap-2">
-        <label className="text-xs text-gray-400">
+        <label className="text-xs text-zinc-400">
           {t('connectionPanel.reticulumInterfaces.name')}
           <input
             value={name}
@@ -1733,7 +1733,7 @@ function InterfaceEditPanel({
         />
         {uiType === 'tcp' || uiType === 'udp' ? (
           <>
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.host')}
               <input
                 value={host}
@@ -1743,7 +1743,7 @@ function InterfaceEditPanel({
                 className={`${INPUT_BOX_CLASS} mt-1 block`}
               />
             </label>
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.port')}
               <input
                 value={port}
@@ -1758,7 +1758,7 @@ function InterfaceEditPanel({
         {uiType === 'rnode' || uiType === 'rnode_multi' || uiType === 'kiss' ? (
           <>
             {editUsesBleRnode ? (
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
                 <input
                   value={serialPort}
@@ -1768,7 +1768,7 @@ function InterfaceEditPanel({
               </label>
             ) : editUsesWifiRnode ? (
               <>
-                <label className="text-xs text-gray-400">
+                <label className="text-xs text-zinc-400">
                   {t('connectionPanel.reticulumInterfaces.rnodeWifiHost')}
                   <input
                     value={wifiHost}
@@ -1779,7 +1779,7 @@ function InterfaceEditPanel({
                     aria-label={t('connectionPanel.reticulumInterfaces.rnodeWifiHost')}
                   />
                 </label>
-                <label className="text-xs text-gray-400">
+                <label className="text-xs text-zinc-400">
                   {t('connectionPanel.reticulumInterfaces.rnodeWifiPort')}
                   <input
                     value={wifiPort}
@@ -1792,7 +1792,7 @@ function InterfaceEditPanel({
                 </label>
               </>
             ) : (
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.serialPort')}
                 {serialPorts.length > 0 ? (
                   <select
@@ -1825,7 +1825,7 @@ function InterfaceEditPanel({
                 {t('connectionPanel.reticulumLocalInterfaces.stalePortHint')}
               </p>
             ) : null}
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.preset')}
               <RnodePresetSelect
                 value={preset}
@@ -1843,7 +1843,7 @@ function InterfaceEditPanel({
                   });
                 }}
                 presets={presets}
-                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                className="mt-1 block rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm"
                 ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
               />
             </label>
@@ -1854,7 +1854,7 @@ function InterfaceEditPanel({
                 setRfFields((prev) => ({ ...prev, ...patch }));
               }}
             />
-            <label className="flex items-center gap-2 text-xs text-gray-400">
+            <label className="flex items-center gap-2 text-xs text-zinc-400">
               <input
                 type="checkbox"
                 checked={flowControl}
@@ -1874,7 +1874,7 @@ function InterfaceEditPanel({
           </>
         ) : null}
         {editRequiresCallsign ? (
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-zinc-400">
             {t('connectionPanel.reticulumInterfaces.callsign')}
             <input
               value={callsign}
@@ -1889,7 +1889,7 @@ function InterfaceEditPanel({
           </label>
         ) : null}
         {uiType === 'ble_peer' ? (
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-zinc-400">
             {t('connectionPanel.reticulumInterfaces.seedAddresses')}
             <input
               value={seedAddresses}
@@ -1949,7 +1949,7 @@ function InterfaceEditPanel({
             setShowPassphrase((prev) => !prev);
           }}
         />
-        <label className="flex items-center gap-2 text-xs text-gray-400">
+        <label className="flex items-center gap-2 text-xs text-zinc-400">
           <input
             type="checkbox"
             checked={bootstrapOnly}
@@ -1966,7 +1966,7 @@ function InterfaceEditPanel({
         </p>
       </div>
       <ReticulumInterfaceModeDescription mode={mode} />
-      <details className="group mt-3 rounded border border-gray-700 bg-slate-950/40 p-2">
+      <details className="group mt-3 rounded border border-zinc-700 bg-zinc-950/40 p-2">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-xs text-amber-200/90">
           <DetailsChevron className="h-3.5 w-3.5 shrink-0 transition-transform group-open:rotate-180" />
           {t('connectionPanel.reticulumInterfaces.advanced')}
@@ -1974,7 +1974,7 @@ function InterfaceEditPanel({
         <p className="text-muted mt-2 text-xs">
           {t('connectionPanel.reticulumInterfaces.advancedHint')}
         </p>
-        <label className="mt-2 block text-xs text-gray-400" htmlFor={`edit-advanced-${iface.id}`}>
+        <label className="mt-2 block text-xs text-zinc-400" htmlFor={`edit-advanced-${iface.id}`}>
           <span className="sr-only">{t('connectionPanel.reticulumInterfaces.advancedAria')}</span>
           <textarea
             id={`edit-advanced-${iface.id}`}
@@ -2047,7 +2047,7 @@ function InterfaceEditPanel({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-300 hover:bg-slate-800"
+          className="rounded border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800"
         >
           {t('connectionPanel.reticulumInterfaces.cancelEdit')}
         </button>
@@ -2276,8 +2276,8 @@ function InterfacesSection({
   };
 
   return (
-    <details className="group bg-deep-black/40 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details className="group bg-deep-black/40 rounded-lg border border-zinc-700">
+      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
         <span>{t('connectionPanel.reticulumInterfaces.title')}</span>
         <DetailsChevron />
       </summary>
@@ -2305,7 +2305,7 @@ function InterfacesSection({
               href={RETICULUM_BACKBONE_DIRECTORY_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-brand-green text-gray-300 underline transition-colors"
+              className="hover:text-brand-green text-zinc-300 underline transition-colors"
               aria-label={t('connectionPanel.reticulumInterfaces.backboneDirectoryLinkAria')}
             >
               {t('connectionPanel.reticulumInterfaces.backboneDirectoryLink')}
@@ -2329,7 +2329,7 @@ function InterfacesSection({
           </button>
         </div>
         <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs text-gray-400">
+          <label className="text-xs text-zinc-400">
             {t('connectionPanel.reticulumInterfaces.type')}
             <select
               value={ifaceType}
@@ -2361,7 +2361,7 @@ function InterfacesSection({
             showDescription={false}
           />
           {ifaceType === 'rnode' ? (
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.rnodeTransport')}
               <select
                 value={rnodeTransport}
@@ -2393,7 +2393,7 @@ function InterfacesSection({
           ) : null}
           {showRnodeWifi ? (
             <>
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.rnodeWifiHost')}
                 <input
                   value={rnodeWifiHost}
@@ -2406,7 +2406,7 @@ function InterfacesSection({
                   aria-label={t('connectionPanel.reticulumInterfaces.rnodeWifiHost')}
                 />
               </label>
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.rnodeWifiPort')}
                 <input
                   value={rnodeWifiPort}
@@ -2421,18 +2421,18 @@ function InterfacesSection({
             </>
           ) : null}
           {ifaceType === 'rnode' && rnodeTransport === 'wifi' ? (
-            <details className="w-full text-xs text-gray-400">
+            <details className="w-full text-xs text-zinc-400">
               <summary className="cursor-pointer text-amber-200/90">
                 {t('connectionPanel.reticulumInterfaces.rnodeWifiSetupTitle')}
               </summary>
-              <p className="text-label mt-2 leading-relaxed whitespace-pre-line text-gray-400">
+              <p className="text-label mt-2 leading-relaxed whitespace-pre-line text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.rnodeWifiSetupHint')}
               </p>
             </details>
           ) : null}
           {showRnodePreset ? (
             <>
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.callsign')}
                 <input
                   value={ifaceCallsign}
@@ -2446,14 +2446,14 @@ function InterfacesSection({
                   required
                 />
               </label>
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.preset')}
                 <RnodePresetSelect
                   value={selectedPreset}
                   onChange={onSelectedPresetChange}
                   presets={presets}
                   disabled={actionsDisabled}
-                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  className="mt-1 block rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-sm disabled:opacity-50"
                   ariaLabel={t('connectionPanel.reticulumInterfaces.preset')}
                 />
               </label>
@@ -2461,7 +2461,7 @@ function InterfacesSection({
           ) : null}
           {showHostPort ? (
             <>
-              <label className="text-xs text-gray-400">
+              <label className="text-xs text-zinc-400">
                 {t('connectionPanel.reticulumInterfaces.host')}
                 <input
                   value={ifaceHost}
@@ -2473,7 +2473,7 @@ function InterfacesSection({
                 />
               </label>
               {ifaceType !== 'i2p' ? (
-                <label className="text-xs text-gray-400">
+                <label className="text-xs text-zinc-400">
                   {t('connectionPanel.reticulumInterfaces.port')}
                   <input
                     value={ifacePort}
@@ -2488,7 +2488,7 @@ function InterfacesSection({
             </>
           ) : null}
           {ifaceType === 'pipe' ? (
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.pipeCommand')}
               <input
                 value={pipeCommand}
@@ -2502,7 +2502,7 @@ function InterfacesSection({
           ) : null}
           {showSerial &&
           !(ifaceType === 'rnode' && (rnodeTransport === 'ble' || rnodeTransport === 'wifi')) ? (
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.serialPort')}
               {serialPorts.length > 0 ? (
                 <select
@@ -2538,7 +2538,7 @@ function InterfacesSection({
             </label>
           ) : null}
           {showBlePeer ? (
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.seedAddresses')}
               <input
                 value={seedAddresses}
@@ -2553,7 +2553,7 @@ function InterfacesSection({
             </label>
           ) : null}
           {showRnodeBle ? (
-            <label className="text-xs text-gray-400">
+            <label className="text-xs text-zinc-400">
               {t('connectionPanel.reticulumInterfaces.rnodeTransportBle')}
               <input
                 value={serialPort}
@@ -2601,7 +2601,7 @@ function InterfacesSection({
           ) : null}
           {showSerial ? (
             <>
-              <label className="flex items-center gap-2 text-xs text-gray-400">
+              <label className="flex items-center gap-2 text-xs text-zinc-400">
                 <input
                   type="checkbox"
                   checked={addFlowControl}
@@ -2631,7 +2631,7 @@ function InterfacesSection({
             onPassphraseChange={onIfacePassphraseChange}
             onToggleShowPassphrase={onToggleShowAddPassphrase}
           />
-          <label className="flex items-center gap-2 text-xs text-gray-400">
+          <label className="flex items-center gap-2 text-xs text-zinc-400">
             <input
               type="checkbox"
               checked={addBootstrapOnly}
@@ -2654,7 +2654,7 @@ function InterfacesSection({
             type="button"
             disabled={actionsDisabled}
             onClick={onAdd}
-            className="rounded bg-slate-700 px-3 py-1.5 text-sm text-white hover:bg-slate-600 disabled:opacity-40"
+            className="rounded bg-zinc-700 px-3 py-1.5 text-sm text-white hover:bg-zinc-600 disabled:opacity-40"
           >
             {t('connectionPanel.reticulumInterfaces.add')}
           </button>
@@ -2746,7 +2746,7 @@ function InterfacesSection({
                           ? 'border-red-800/60'
                           : primaryAudit?.severity === 'warning'
                             ? 'border-amber-700/50'
-                            : 'border-gray-700/60';
+                            : 'border-zinc-700/60';
                       const repairKind = primaryAudit?.repair_kind as
                         ReticulumConfigRepairKind | undefined;
                       const isLocalSerialRow =
@@ -2860,7 +2860,7 @@ function InterfacesSection({
                                   ariaLabel={t('connectionPanel.reticulumInterfaces.purposeAria', {
                                     name: iface.name,
                                   })}
-                                  className="text-muted hover:text-gray-200"
+                                  className="text-muted hover:text-zinc-200"
                                 >
                                   <Info
                                     aria-hidden
@@ -2953,7 +2953,7 @@ function InterfacesSection({
                             ) : null}
                             {isReticulumRmapDiscoveryCapable(iface) && !help.isSystemManaged ? (
                               <label
-                                className="flex cursor-pointer items-center gap-1 text-xs text-gray-300"
+                                className="flex cursor-pointer items-center gap-1 text-xs text-zinc-300"
                                 title={
                                   reticulumInterfaceModesDiverge(iface.mode, iface.runtime_mode)
                                     ? t('connectionPanel.reticulumInterfaces.rmapFullModeHint')

@@ -7,7 +7,7 @@ const SPEED_CLASSES: Record<PathCapability['speed'], string> = {
   high: 'border-green-700 bg-green-900/30 text-green-300',
   constrained: 'border-amber-700 bg-amber-900/30 text-amber-300',
   mixed: 'border-amber-700 bg-amber-900/30 text-amber-300',
-  unknown: 'border-gray-600 bg-gray-800/50 text-gray-400',
+  unknown: 'border-zinc-600 bg-zinc-800/50 text-zinc-400',
 };
 
 export interface RemotePathCapabilityChipProps {
@@ -24,7 +24,7 @@ export function RemotePathCapabilityChip({
 
   if (loading) {
     return (
-      <span className="text-label rounded-full border border-gray-600 bg-gray-800/50 px-2 py-0.5 text-gray-400">
+      <span className="text-label rounded-full border border-zinc-600 bg-zinc-800/50 px-2 py-0.5 text-zinc-400">
         {t('reticulumRemote.pathCapability.checking')}
       </span>
     );

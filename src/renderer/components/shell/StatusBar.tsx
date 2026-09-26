@@ -16,7 +16,7 @@ export function StatusBarButton({
   children,
   ariaLabel,
   onClick,
-  textClass = 'text-slate-300',
+  textClass = 'text-zinc-300',
 }: StatusBarButtonProps) {
   return (
     <button
@@ -50,7 +50,7 @@ export interface StatusBarProps {
  */
 export function StatusBar({ children, stats, update, liveStatus }: StatusBarProps) {
   return (
-    <footer className="bg-deep-black text-muted text-meta flex h-7 shrink-0 items-center gap-0.5 overflow-hidden border-t border-slate-800 px-2 font-mono tabular-nums">
+    <footer className="bg-deep-black text-muted text-meta flex h-7 shrink-0 items-center gap-0.5 overflow-hidden border-t border-zinc-800 px-2 font-mono tabular-nums">
       <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {liveStatus}
       </span>

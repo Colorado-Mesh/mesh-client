@@ -27,9 +27,9 @@ interface RoleInfo {
 }
 
 const ROLE_INFO: Record<number, RoleInfo> = {
-  0: { labelKey: 'roleInfo.roles.client', colorClass: 'text-gray-400', isBadge: false },
+  0: { labelKey: 'roleInfo.roles.client', colorClass: 'text-zinc-400', isBadge: false },
   1: { labelKey: 'roleInfo.roles.clientMute', colorClass: 'text-muted', isBadge: false },
-  2: { labelKey: 'roleInfo.roles.router', colorClass: 'text-gray-400', isBadge: false },
+  2: { labelKey: 'roleInfo.roles.router', colorClass: 'text-zinc-400', isBadge: false },
   3: { labelKey: 'roleInfo.roles.routerClient', colorClass: 'text-blue-400', isBadge: false },
   4: {
     labelKey: 'roleInfo.roles.repeater',
@@ -58,8 +58,8 @@ const ROLE_INFO: Record<number, RoleInfo> = {
     isBadge: true,
     badgeClass: 'bg-red-950/70 text-red-200 border border-red-800/50',
   },
-  11: { labelKey: 'roleInfo.roles.routerLate', colorClass: 'text-gray-400', isBadge: false },
-  12: { labelKey: 'roleInfo.roles.clientBase', colorClass: 'text-gray-400', isBadge: false },
+  11: { labelKey: 'roleInfo.roles.routerLate', colorClass: 'text-zinc-400', isBadge: false },
+  12: { labelKey: 'roleInfo.roles.clientBase', colorClass: 'text-zinc-400', isBadge: false },
 };
 
 export function getRoleInfo(role: number | undefined): RoleInfo {
@@ -111,7 +111,7 @@ export function RoleIcon({ role }: { role: number | undefined }) {
 export function RoleDisplay({ role }: { role: number | undefined }) {
   const { t } = useTranslation();
   if (role === undefined) {
-    return <span className="text-xs text-gray-600">{t('roleInfo.placeholderDash')}</span>;
+    return <span className="text-xs text-zinc-600">{t('roleInfo.placeholderDash')}</span>;
   }
   const info = getRoleInfo(role);
   if (info.isBadge && info.badgeClass) {

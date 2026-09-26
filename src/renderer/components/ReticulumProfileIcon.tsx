@@ -68,7 +68,7 @@ export function ReticulumProfileIconUnset({
   }
   return (
     <span
-      className={`inline-block shrink-0 rounded-full border border-dashed border-gray-500 ${className}`}
+      className={`inline-block shrink-0 rounded-full border border-dashed border-zinc-500 ${className}`}
       style={{ width: size, height: size }}
       aria-hidden
     />
