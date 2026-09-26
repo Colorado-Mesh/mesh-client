@@ -22,11 +22,11 @@ test.describe('startup', () => {
     await expect(page).toHaveTitle('Mesh Client');
     await expect(page.locator('#root')).toBeVisible();
 
-    const switcher = page.getByRole('group', { name: 'Protocol switcher' });
+    const switcher = page.getByRole('radiogroup', { name: 'Protocol switcher' });
     await expect(switcher).toBeVisible();
-    await expect(switcher.getByRole('button', { name: 'Switch to Meshtastic' })).toBeVisible();
-    await expect(switcher.getByRole('button', { name: 'Switch to MeshCore' })).toBeVisible();
-    await expect(switcher.getByRole('button', { name: 'Switch to Reticulum' })).toBeVisible();
+    await expect(switcher.getByRole('radio', { name: 'Switch to Meshtastic' })).toBeVisible();
+    await expect(switcher.getByRole('radio', { name: 'Switch to MeshCore' })).toBeVisible();
+    await expect(switcher.getByRole('radio', { name: 'Switch to Reticulum' })).toBeVisible();
 
     expect(launched.crashed).toBe(false);
     expect(launched.didFailLoad).toBe(false);

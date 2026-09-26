@@ -14,8 +14,8 @@ test.describe('chat scroll to latest', () => {
     launched = await launchApp();
     const { page } = launched;
     await page
-      .getByRole('group', { name: 'Protocol switcher' })
-      .getByRole('button', { name: 'Switch to MeshCore' })
+      .getByRole('radiogroup', { name: 'Protocol switcher' })
+      .getByRole('radio', { name: 'Switch to MeshCore' })
       .click();
     await page.evaluate(async () => {
       const api = (window as unknown as { electronAPI: ElectronAPI }).electronAPI;

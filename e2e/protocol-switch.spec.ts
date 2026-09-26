@@ -12,14 +12,14 @@ test.describe('protocol switch', () => {
   test('switches protocols and updates the rail sections and sub-tabs', async () => {
     launched = await launchApp();
     const { page } = launched;
-    const switcher = page.getByRole('group', { name: 'Protocol switcher' });
+    const switcher = page.getByRole('radiogroup', { name: 'Protocol switcher' });
     const rail = page.getByRole('navigation', { name: 'Application panels' });
     const header = page.getByRole('banner');
     const openSection = (name: string) => rail.getByRole('button', { name: navName(name) }).click();
 
-    await switcher.getByRole('button', { name: 'Switch to MeshCore' }).click();
-    await expect(switcher.getByRole('button', { name: 'Switch to MeshCore' })).toHaveAttribute(
-      'aria-pressed',
+    await switcher.getByRole('radio', { name: 'Switch to MeshCore' }).click();
+    await expect(switcher.getByRole('radio', { name: 'Switch to MeshCore' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
     await openSection('Chat');
@@ -27,9 +27,9 @@ test.describe('protocol switch', () => {
     await expect(header.getByRole('tab', { name: navName('Rooms') })).toBeVisible();
     await expect(header.getByRole('tab', { name: navName('RRC') })).toHaveCount(0);
 
-    await switcher.getByRole('button', { name: 'Switch to Reticulum' }).click();
-    await expect(switcher.getByRole('button', { name: 'Switch to Reticulum' })).toHaveAttribute(
-      'aria-pressed',
+    await switcher.getByRole('radio', { name: 'Switch to Reticulum' }).click();
+    await expect(switcher.getByRole('radio', { name: 'Switch to Reticulum' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
     await openSection('Chat');
@@ -38,9 +38,9 @@ test.describe('protocol switch', () => {
     await openSection('Network');
     await expect(header.getByRole('tab', { name: 'Nomad Network' })).toBeVisible();
 
-    await switcher.getByRole('button', { name: 'Switch to Meshtastic' }).click();
-    await expect(switcher.getByRole('button', { name: 'Switch to Meshtastic' })).toHaveAttribute(
-      'aria-pressed',
+    await switcher.getByRole('radio', { name: 'Switch to Meshtastic' }).click();
+    await expect(switcher.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
     await openSection('Monitor');

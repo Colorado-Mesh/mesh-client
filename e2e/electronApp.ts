@@ -171,7 +171,7 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
 
     await page.waitForSelector('#root', { state: 'visible', timeout: 45_000 });
     await page
-      .getByRole('group', { name: 'Protocol switcher' })
+      .getByRole('radiogroup', { name: 'Protocol switcher' })
       .waitFor({ state: 'visible', timeout: 45_000 });
 
     return launched;

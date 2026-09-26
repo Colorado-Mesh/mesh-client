@@ -25,7 +25,7 @@ test.describe('phone layout', () => {
     const nav = page.getByRole('navigation', { name: 'Application panels' });
     await expect(nav.getByRole('button', { name: /^More/ })).toBeVisible();
     await expect(nav.getByRole('button', { name: /^Incident/ })).toBeVisible();
-    await expect(page.getByRole('group', { name: 'Protocol switcher' })).toHaveCount(0);
+    await expect(page.getByRole('radiogroup', { name: 'Protocol switcher' })).toHaveCount(0);
 
     await nav.getByRole('button', { name: /^Chat/ }).click();
     await expect(nav.getByRole('button', { name: /^Chat/ })).toHaveAttribute(
@@ -36,9 +36,9 @@ test.describe('phone layout', () => {
     await nav.getByRole('button', { name: /^More/ }).click();
     const sheet = page.getByRole('dialog', { name: 'All panels' });
     await expect(sheet).toBeVisible();
-    await sheet.getByRole('button', { name: 'Switch to MeshCore' }).click();
-    await expect(sheet.getByRole('button', { name: 'Switch to MeshCore' })).toHaveAttribute(
-      'aria-pressed',
+    await sheet.getByRole('radio', { name: 'Switch to MeshCore' }).click();
+    await expect(sheet.getByRole('radio', { name: 'Switch to MeshCore' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
     await page.keyboard.press('Escape');

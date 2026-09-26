@@ -626,12 +626,14 @@ describe('App shell layout', () => {
   it('puts the protocol switcher and sections in the rail, status in the bottom bar', () => {
     renderApp();
     const rail = appRail();
-    const protocolGroup = within(rail).getByRole('group', { name: 'Protocol switcher' });
+    const protocolGroup = within(rail).getByRole('radiogroup', { name: 'Protocol switcher' });
     // The switcher leads the scrolling part of the rail; Incident and App are pinned below it.
-    expect(rail.querySelector('[data-rail-scroll]')?.firstElementChild).toBe(protocolGroup);
+    expect(rail.querySelector('[data-rail-scroll]')?.firstElementChild).toContainElement(
+      protocolGroup,
+    );
     expect(
       within(protocolGroup)
-        .getAllByRole('button')
+        .getAllByRole('radio')
         .map((b) => b.textContent),
     ).toEqual(['MT', 'MC', 'RN']);
     // Connection is the first tab, so the Device section opens on launch.
@@ -744,7 +746,7 @@ describe('App accessibility', () => {
     });
     getStoredMeshProtocolMock.mockReturnValue('meshtastic');
     renderApp();
-    const meshcoreSwitcher = screen.getByRole('button', { name: /Switch to MeshCore/ });
+    const meshcoreSwitcher = screen.getByRole('radio', { name: /Switch to MeshCore/ });
     const badgeWrapper = await waitFor(() => {
       const label = meshcoreSwitcher.querySelector('[data-protocol-unread-label]');
       if (!label?.textContent) throw new Error('badge not ready');
@@ -782,7 +784,7 @@ describe('App accessibility', () => {
     });
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     renderApp();
-    const meshtasticSwitcher = screen.getByRole('button', { name: /Switch to Meshtastic/ });
+    const meshtasticSwitcher = screen.getByRole('radio', { name: /Switch to Meshtastic/ });
     const badgeWrapper = await waitFor(() => {
       const label = meshtasticSwitcher.querySelector('[data-protocol-unread-label]');
       if (label?.textContent !== '86') throw new Error('badge not ready');
@@ -809,7 +811,9 @@ describe('App accessibility', () => {
 
     expect(results).toHaveNoViolations();
     expect(screen.getAllByRole('main')).toHaveLength(1);
-    expect(appRail()).toContainElement(screen.getByRole('group', { name: 'Protocol switcher' }));
+    expect(appRail()).toContainElement(
+      screen.getByRole('radiogroup', { name: 'Protocol switcher' }),
+    );
     expect(screen.getByRole('banner')).toContainElement(
       screen.getByRole('tablist', { name: 'Device panels' }),
     );
@@ -1231,7 +1235,7 @@ describe('App accessibility', () => {
       expect(lastNodeDetailModalProps.current?.protocol).toBe('meshcore');
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to Meshtastic' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to Meshtastic' }));
 
     await waitFor(() => {
       expect(lastNodeDetailModalProps.current).not.toBeNull();
@@ -1650,7 +1654,7 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
     });
     expect(screen.queryByRole('tab', { name: /^Games/ })).not.toBeInTheDocument();
 
@@ -1872,21 +1876,21 @@ describe('App ConnectionPanel facade wiring', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
     });
     expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
 
-    fireEvent.click(screen.getByRole('button', { name: /Switch to Reticulum/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Switch to Reticulum/ }));
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Switch to Reticulum/ })).toHaveAttribute(
-        'aria-pressed',
+      expect(screen.getByRole('radio', { name: /Switch to Reticulum/ })).toHaveAttribute(
+        'aria-checked',
         'true',
       );
     });
     expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
 
     tryAutoLaunchMqttMock.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /Switch to Meshtastic/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Switch to Meshtastic/ }));
 
     await waitFor(() => {
       expect(tryAutoLaunchMqttMock).toHaveBeenCalledWith('meshtastic');
@@ -2057,7 +2061,7 @@ describe('App phone layout (bottom bar)', () => {
     expect(items).toContain('incident');
     expect(items.at(-1)).toBe('more');
     expect(items).not.toContain('device');
-    expect(within(nav).queryByRole('group', { name: 'Protocol switcher' })).toBeNull();
+    expect(within(nav).queryByRole('radiogroup', { name: 'Protocol switcher' })).toBeNull();
     // Device (Connection) opens on launch, so More shows as the active item.
     expect(within(nav).getByRole('button', { name: 'More' }).className).toContain(
       'text-bright-green',
@@ -2073,7 +2077,9 @@ describe('App phone layout (bottom bar)', () => {
     fireEvent.click(more);
     const sheet = screen.getByRole('dialog', { name: 'All panels' });
     expect(more).toHaveAttribute('aria-expanded', 'true');
-    expect(within(sheet).getByRole('group', { name: 'Protocol switcher' })).toBeInTheDocument();
+    expect(
+      within(sheet).getByRole('radiogroup', { name: 'Protocol switcher' }),
+    ).toBeInTheDocument();
     // Focus stays off the search field so the on-screen keyboard does not open.
     expect(document.activeElement).toBe(sheet);
     fireEvent.click(within(sheet).getByRole('button', { name: /^Map/ }));

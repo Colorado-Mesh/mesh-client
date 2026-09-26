@@ -9,6 +9,8 @@ export interface ProtocolTheme {
   ariaSwitchWithUnreadKey: string;
   /** Active rail button: protocol tint, text and inset ring. */
   railActiveClass: string;
+  /** Protocol tint for the active protocol's name under the rail switcher. */
+  nameTextClass: string;
   unreadBadgeFillClass: string;
 }
 
@@ -22,6 +24,7 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     ariaSwitchKey: 'aria.switchToMeshtastic',
     ariaSwitchWithUnreadKey: 'aria.switchToMeshtasticWithUnread',
     railActiveClass: 'bg-brand-green/15 text-brand-green ring-[1.5px] ring-inset ring-brand-green',
+    nameTextClass: 'text-bright-green',
     unreadBadgeFillClass: 'bg-readable-green',
   },
   meshcore: {
@@ -30,6 +33,7 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     ariaSwitchKey: 'aria.switchToMeshCore',
     ariaSwitchWithUnreadKey: 'aria.switchToMeshCoreWithUnread',
     railActiveClass: 'bg-cyan-400/15 text-cyan-400 ring-[1.5px] ring-inset ring-cyan-400',
+    nameTextClass: 'text-cyan-400',
     unreadBadgeFillClass: 'bg-cyan-800 text-white',
   },
   reticulum: {
@@ -38,6 +42,7 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     ariaSwitchKey: 'aria.switchToReticulum',
     ariaSwitchWithUnreadKey: 'aria.switchToReticulumWithUnread',
     railActiveClass: 'bg-amber-400/15 text-amber-400 ring-[1.5px] ring-inset ring-amber-400',
+    nameTextClass: 'text-amber-400',
     unreadBadgeFillClass: 'bg-amber-800 text-white',
   },
 };
