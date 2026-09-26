@@ -453,7 +453,8 @@
       "midnight": "Полночь",
       "teal": "Бирюзовый акцент",
       "amber": "Янтарный акцент"
-    }
+    },
+    "pruneNoFixNodesTitle": "Удалить узлы без позиции / Zero Island"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",

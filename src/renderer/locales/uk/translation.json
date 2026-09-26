@@ -453,7 +453,8 @@
       "midnight": "Північ",
       "teal": "Бірюзовий акцент",
       "amber": "Бурштиновий акцент"
-    }
+    },
+    "pruneNoFixNodesTitle": "Обрізати вузли без позиції / Zero Island"
   },
   "aria": {
     "closeDialog": "Закрити діалог",

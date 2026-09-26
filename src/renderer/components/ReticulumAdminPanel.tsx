@@ -16,6 +16,7 @@ import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSid
 import { ConfirmModal } from './ConfirmModal';
 import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
 
 interface ReticulumInterfaceRow {
   id: string;
@@ -151,7 +152,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
             onClick={() => {
               setShowFactoryResetConfirm(true);
             }}
-            className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:opacity-50"
+            className={buttonClassName('danger', 'md')}
           >
             {t('adminPanel.reticulumFactoryReset.button')}
           </button>

@@ -437,7 +437,8 @@
       "midnight": "Middernacht",
       "teal": "Petrol accent",
       "amber": "Amber accent"
-    }
+    },
+    "pruneNoFixNodesTitle": "Snoei knooppunten zonder positie / Zero Island"
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

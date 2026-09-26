@@ -437,7 +437,8 @@
       "midnight": "Meia-noite",
       "teal": "Destaque verde-azulado",
       "amber": "Destaque âmbar"
-    }
+    },
+    "pruneNoFixNodesTitle": "Podar nós sem posição / Zero Island"
   },
   "aria": {
     "closeDialog": "Fechar janela",

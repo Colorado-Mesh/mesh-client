@@ -437,7 +437,8 @@
       "midnight": "Medianoche",
       "teal": "Acento verde azulado",
       "amber": "Acento ámbar"
-    }
+    },
+    "pruneNoFixNodesTitle": "Podar nodos sin posición / Zero Island"
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

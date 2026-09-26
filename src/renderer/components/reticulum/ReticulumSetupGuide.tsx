@@ -478,7 +478,7 @@ export function ReticulumSetupGuide({
               )}
               {route === 'existing' && <p>{t('reticulumSetup.existingHint')}</p>}
               <div
-                className="bg-secondary-dark space-y-2 rounded-lg p-4"
+                className="bg-deep-black space-y-2 rounded-xl border border-slate-800 p-4"
                 role="status"
                 aria-live="polite"
               >
@@ -557,7 +557,7 @@ export function ReticulumSetupGuide({
                   {t('reticulumSetup.connectionLost')}
                 </p>
               )}
-              <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+              <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
                 <h4 className="font-semibold text-gray-100">{t('reticulumSetup.addressTitle')}</h4>
                 <p>{t('reticulumSetup.addressBody')}</p>
                 <code className="block break-all text-amber-300">{identity?.lxmf_hash}</code>

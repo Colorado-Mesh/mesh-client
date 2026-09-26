@@ -445,7 +445,8 @@
       "midnight": "Půlnoc",
       "teal": "Tyrkysový akcent",
       "amber": "Jantarový akcent"
-    }
+    },
+    "pruneNoFixNodesTitle": "Prořezávat uzly bez polohy / Zero Island"
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

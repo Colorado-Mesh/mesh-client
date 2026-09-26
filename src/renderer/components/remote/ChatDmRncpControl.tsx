@@ -28,6 +28,7 @@ import {
 } from '@/renderer/stores/rncpTransferStore';
 import { resolveRemoteReasonI18nKey } from '@/shared/remote-types';
 
+import { buttonClassName } from '../ui/Button';
 import { INPUT_BOX_SM_CLASS } from '../ui/formClasses';
 
 export interface ChatDmRncpControlProps {
@@ -513,7 +514,7 @@ export function ChatDmRncpControl({
               type="button"
               aria-label={t('chatPanel.rncp.forgetAddressAria')}
               onClick={() => void handleForgetSaved()}
-              className="w-full rounded border border-red-900/50 px-3 py-1.5 text-xs text-red-300 hover:bg-red-950/40"
+              className={buttonClassName('danger', 'sm', 'w-full')}
             >
               {t('chatPanel.rncp.forgetAddress')}
             </button>
@@ -524,7 +525,7 @@ export function ChatDmRncpControl({
             aria-label={t('reticulumRemote.transfer.sendAria')}
             aria-busy={sending}
             onClick={() => void handleSend()}
-            className="w-full rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
+            className={buttonClassName('primary', 'sm', 'w-full')}
           >
             {sending
               ? t('reticulumRemote.transfer.checkingReachability')

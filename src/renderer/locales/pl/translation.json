@@ -453,7 +453,8 @@
       "midnight": "Północ",
       "teal": "Akcent morski",
       "amber": "Akcent bursztynowy"
-    }
+    },
+    "pruneNoFixNodesTitle": "Przytnij węzły bez pozycji / Zero Island"
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

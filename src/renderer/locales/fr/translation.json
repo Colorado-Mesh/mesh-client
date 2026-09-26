@@ -437,7 +437,8 @@
       "midnight": "Minuit",
       "teal": "Accent sarcelle",
       "amber": "Accent ambre"
-    }
+    },
+    "pruneNoFixNodesTitle": "Élaguer les nœuds sans position / Zero Island"
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

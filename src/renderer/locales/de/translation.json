@@ -437,7 +437,8 @@
       "midnight": "Mitternacht",
       "teal": "Petrol-Akzent",
       "amber": "Bernstein-Akzent"
-    }
+    },
+    "pruneNoFixNodesTitle": "Knoten ohne Fix / Zero Island entfernen"
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

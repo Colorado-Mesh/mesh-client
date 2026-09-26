@@ -437,7 +437,8 @@
       "midnight": "Midnight",
       "teal": "Teal accent",
       "amber": "Amber accent"
-    }
+    },
+    "pruneNoFixNodesTitle": "Prune No-Fix / Zero Island Nodes"
   },
   "aria": {
     "closeDialog": "Close dialog",

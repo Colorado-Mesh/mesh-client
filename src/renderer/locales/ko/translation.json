@@ -437,7 +437,8 @@
       "midnight": "미드나이트",
       "teal": "청록색 강조",
       "amber": "호박색 강조"
-    }
+    },
+    "pruneNoFixNodesTitle": "위치 없음/제로 섬 노드 정리"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

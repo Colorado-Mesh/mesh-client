@@ -1200,7 +1200,7 @@ export default function DiagnosticsPanel({
       {/* Settings */}
       {showLoRaMeshDiagnostics && (
         <>
-          <div className="bg-secondary-dark rounded-lg p-4">
+          <div className="bg-deep-black rounded-xl border border-slate-800 p-4">
             <h3 className="text-muted mb-3 text-sm font-medium">
               {t('diagnosticsPanel.displaySettings')}
             </h3>
@@ -1357,7 +1357,7 @@ export default function DiagnosticsPanel({
 
           {/* Per-Node MQTT Filters */}
           {showMqttControls && mqttIgnoredNodes.size > 0 && (
-            <div className="bg-secondary-dark rounded-lg p-3">
+            <div className="bg-deep-black rounded-xl border border-slate-800 p-3">
               <h3 className="text-muted mb-2 text-xs font-medium">
                 {t('diagnosticsPanel.perNodeMqttFilters')}
               </h3>
@@ -1438,7 +1438,7 @@ export default function DiagnosticsPanel({
           </div>
 
           {anomalyList.length === 0 ? (
-            <div className="bg-secondary-dark text-muted rounded-lg p-8 text-center text-sm">
+            <div className="bg-deep-black text-muted rounded-xl border border-slate-800 p-8 text-center text-sm">
               {visibleDiagnosticRows.length === 0
                 ? t('diagnosticsPanel.noDiagnosticsHealthy')
                 : t('diagnosticsPanel.noAnomaliesMatchSearch')}

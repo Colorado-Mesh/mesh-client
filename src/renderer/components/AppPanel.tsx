@@ -73,6 +73,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import NotificationSoundSettings from './NotificationSoundSettings';
 import { useToast } from './Toast';
+import { buttonClassName, DANGER_ROW_CLASS } from './ui/Button';
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
@@ -753,7 +754,7 @@ export default function AppPanel({
       {onLogPanelVisibleChange && (
         <div className="space-y-2">
           <h3 className="text-muted text-sm font-medium">{t('appPanel.logPanelSection')}</h3>
-          <div className="bg-secondary-dark rounded-lg p-4">
+          <div className="bg-deep-black rounded-xl border border-slate-800 p-4">
             <div className="flex items-center gap-2">
               <input
                 id="log-panel-visible-checkbox"
@@ -781,7 +782,7 @@ export default function AppPanel({
       {protocol === 'meshcore' && (
         <div className="space-y-2">
           <h3 className="text-muted text-sm font-medium">{t('appPanel.floodAdvertSection')}</h3>
-          <div className="bg-secondary-dark space-y-2 rounded-lg p-4">
+          <div className="bg-deep-black space-y-2 rounded-xl border border-slate-800 p-4">
             <label htmlFor="flood-advert-interval" className="text-sm text-gray-300">
               {t('appPanel.floodAdvertScheduleLabel')}
             </label>
@@ -823,7 +824,7 @@ export default function AppPanel({
       {/* GPS / Location */}
       <div className="space-y-3">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.gpsSection')}</h3>
-        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+        <div className="bg-deep-black space-y-4 rounded-xl border border-slate-800 p-4">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -912,7 +913,7 @@ export default function AppPanel({
                 type="button"
                 onClick={saveStaticPosition}
                 aria-label={t('appPanel.saveStaticPosition')}
-                className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 border-brand-green/40 flex-1 rounded border px-3 py-1.5 text-sm font-medium transition-colors"
+                className={buttonClassName('secondary', 'md')}
               >
                 {t('appPanel.saveStaticPosition')}
               </button>
@@ -988,7 +989,7 @@ export default function AppPanel({
       {/* Map & Node Filtering */}
       <div className="space-y-3">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.mapFilterSection')}</h3>
-        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+        <div className="bg-deep-black space-y-4 rounded-xl border border-slate-800 p-4">
           <p className="text-muted text-xs leading-relaxed">{t('appPanel.mapFilterDesc')}</p>
           <div className="flex items-center gap-2">
             <input
@@ -1116,7 +1117,7 @@ export default function AppPanel({
 
         {/* Meshtastic node retention */}
         {protocol === 'meshtastic' && (
-          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+          <div className="bg-deep-black space-y-4 rounded-xl border border-slate-800 p-4">
             {/* Auto-prune nodes on startup */}
             <div className="flex items-center gap-2">
               <input
@@ -1256,7 +1257,7 @@ export default function AppPanel({
 
         {/* MeshCore contact retention */}
         {protocol === 'meshcore' && (
-          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+          <div className="bg-deep-black space-y-4 rounded-xl border border-slate-800 p-4">
             {/* Delete contacts that never advertised */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -1367,7 +1368,7 @@ export default function AppPanel({
 
         {/* Reticulum destination retention (SQLite contacts/meta + in-memory peer cap) */}
         {protocol === 'reticulum' && (
-          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+          <div className="bg-deep-black space-y-4 rounded-xl border border-slate-800 p-4">
             <p className="text-muted text-xs leading-relaxed">
               {t('appPanel.reticulumDestinationRetentionHint')}
             </p>
@@ -1456,7 +1457,7 @@ export default function AppPanel({
         )}
 
         {/* Messages: load limit (localStorage) + DB retention cap — single card (issue #387). */}
-        <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+        <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
           <p className="text-muted text-xs leading-relaxed">
             {t('appPanel.messagesLoadLimitIntro')}
           </p>
@@ -1793,7 +1794,7 @@ export default function AppPanel({
               aria-label={t('appPanel.exportForGitHub')}
               disabled={supportBundleExporting !== null}
               onClick={() => void handleExportSupportBundle('github')}
-              className="bg-brand-green hover:bg-brand-green/90 text-app-bg w-full rounded-lg px-4 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              className={buttonClassName('primary', 'md')}
             >
               {supportBundleExporting === 'github'
                 ? t('common.loading')
@@ -1912,7 +1913,7 @@ export default function AppPanel({
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
       <div className="space-y-2">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.appearanceSection')}</h3>
-        <div className="bg-secondary-dark flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-3">
+        <div className="bg-deep-black flex items-center gap-2 rounded-xl border border-slate-800 px-4 py-3">
           <input
             type="checkbox"
             id="reduceMotion"
@@ -1928,7 +1929,7 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.reduceMotionDesc')} />
         </div>
-        <div className="bg-secondary-dark flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-3">
+        <div className="bg-deep-black flex items-center gap-2 rounded-xl border border-slate-800 px-4 py-3">
           <input
             type="checkbox"
             id="use24HourTime"
@@ -1945,7 +1946,7 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.use24HourTimeDesc')} />
         </div>
-        <div className="bg-secondary-dark flex flex-col gap-2 rounded-lg border border-gray-700 px-4 py-3">
+        <div className="bg-deep-black flex flex-col gap-2 rounded-xl border border-slate-800 px-4 py-3">
           <div className="flex items-center gap-2">
             <label htmlFor="fontScale" className="cursor-pointer text-sm text-gray-300">
               {t('appPanel.fontSize')}
@@ -2403,7 +2404,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.resetDiagnostics')}
               </button>
@@ -2431,7 +2432,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearGpsData')}
               </button>
@@ -2460,7 +2461,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearPositionHistory')}
               </button>
@@ -2505,7 +2506,7 @@ export default function AppPanel({
                       },
                     });
                   }}
-                  className="rounded border border-red-800 bg-red-900/50 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-red-300 transition-colors hover:bg-red-900/70"
+                  className={buttonClassName('danger', 'md')}
                 >
                   {t('appPanel.deleteOldNodes')}
                 </button>
@@ -2525,7 +2526,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 {t('appPanel.pruneMqttOnlyNodes')}
               </button>
@@ -2544,7 +2545,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 {t('appPanel.pruneUnnamedNodes')}
               </button>
@@ -2561,7 +2562,7 @@ export default function AppPanel({
                   }
                   executeWithConfirmation({
                     actionId: 'pruneNoFixNodes',
-                    title: t('appPanel.pruneNoFixNodes'),
+                    title: t('appPanel.pruneNoFixNodesTitle'),
                     message: t('appPanel.pruneNoFixNodesConfirm', {
                       count: zeroIslandNodes.length,
                     }),
@@ -2576,10 +2577,10 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
-                <div className="font-medium">{t('appPanel.pruneNoFixNodes')}</div>
-                <div className="mt-0.5 text-xs text-red-400/70">
+                <div className="font-medium">{t('appPanel.pruneNoFixNodesTitle')}</div>
+                <div className="text-muted text-xs font-normal">
                   {t('appPanel.pruneNoFixSubtitle')}
                 </div>
               </button>
@@ -2630,10 +2631,10 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 <div className="font-medium">{t('appPanel.pruneDistantNodesTitle')}</div>
-                <div className="mt-0.5 text-xs text-red-400/70">
+                <div className="text-muted text-xs font-normal">
                   {t('appPanel.pruneDistantSubtitle')}
                 </div>
               </button>
@@ -2672,10 +2673,10 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 <div className="font-medium">{t('appPanel.pruneOfflineNodesTitle')}</div>
-                <div className="mt-0.5 text-xs text-red-400/70">
+                <div className="text-muted text-xs font-normal">
                   {t('appPanel.pruneOfflineSubtitle', {
                     days: Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000)),
                   })}
@@ -2696,7 +2697,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 {t('appPanel.clearAllNodesButton', { count: nodeCount })}
               </button>
@@ -2726,10 +2727,10 @@ export default function AppPanel({
                       },
                     });
                   }}
-                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                  className={DANGER_ROW_CLASS}
                 >
                   <div className="font-medium">{t('appPanel.deleteContactsNoPubkeysTitle')}</div>
-                  <div className="mt-0.5 text-xs text-red-400/70">
+                  <div className="text-muted text-xs font-normal">
                     {t('appPanel.deleteContactsWithoutPubkeysSubtitle')}
                   </div>
                 </button>
@@ -2767,7 +2768,7 @@ export default function AppPanel({
                       },
                     });
                   }}
-                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:cursor-not-allowed disabled:opacity-40"
+                  className={DANGER_ROW_CLASS}
                 >
                   <div className="font-medium">
                     {t('appPanel.clearReticulumContactsButton', {
@@ -2876,7 +2877,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearMessagesCount', { count: messageCount })}
               </button>
@@ -2901,7 +2902,7 @@ export default function AppPanel({
                       action: onClearMeshcoreRepeaters,
                     });
                   }}
-                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                  className={buttonClassName('danger', 'md')}
                 >
                   {t('appPanel.clearAllRepeaters')}
                 </button>
@@ -2940,7 +2941,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearAllLocalData')}
               </button>

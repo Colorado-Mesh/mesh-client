@@ -437,7 +437,8 @@
       "midnight": "Mezzanotte",
       "teal": "Accento verde acqua",
       "amber": "Accento ambra"
-    }
+    },
+    "pruneNoFixNodesTitle": "Eliminare i nodi senza posizione / Zero Island"
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

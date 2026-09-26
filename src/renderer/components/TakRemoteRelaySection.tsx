@@ -306,7 +306,7 @@ export default function TakRemoteRelaySection() {
   const { t } = useTranslation();
   const relay = useTakRemoteRelay();
   return (
-    <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+    <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
       <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.remoteTitle')}</h3>
       <p className="text-xs text-gray-400">{t('takServerPanel.remoteDescription')}</p>
       {/* The form seeds its fields from saved settings, so mount it once they have loaded. */}

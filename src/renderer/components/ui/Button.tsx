@@ -25,6 +25,13 @@ export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
   md: 'h-8 gap-1.5 px-3.5 text-body',
 };
 
+/**
+ * Full-width danger row for a stacked list of destructive actions whose label carries a second
+ * line (App > Danger zone). Outline like `danger`, left-aligned, wraps instead of truncating.
+ */
+export const DANGER_ROW_CLASS =
+  'flex w-full flex-col items-start gap-0.5 rounded-lg border border-red-400/45 bg-transparent px-3.5 py-2 text-left text-body font-medium text-red-400 transition-colors hover:bg-red-400/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-green disabled:cursor-not-allowed disabled:opacity-50';
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;

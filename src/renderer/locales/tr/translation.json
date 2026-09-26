@@ -437,7 +437,8 @@
       "midnight": "Gece yarısı",
       "teal": "Camgöbeği vurgu",
       "amber": "Kehribar vurgu"
-    }
+    },
+    "pruneNoFixNodesTitle": "Konumsuz / Sıfır Ada Düğümlerini Budama"
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

@@ -120,6 +120,7 @@ import QrCodeImage from './QrCodeImage';
 import QrIngestControl from './QrIngestControl';
 import { RadioXmodemSection } from './RadioXmodemSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 interface ChannelConfig {
@@ -609,7 +610,7 @@ function ConfigSection({
             type="button"
             onClick={onApply}
             disabled={disabled || applying}
-            className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:bg-gray-600"
+            className={buttonClassName('primary', 'md')}
           >
             {applying
               ? t('modulePanel.applyingButton')
@@ -2534,7 +2535,7 @@ export default function RadioPanel({
               title={
                 !locationSendAllowed ? t('radioPanel.sendPositionDisabledShareOff') : undefined
               }
-              className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:bg-gray-600"
+              className={buttonClassName('primary', 'md')}
             >
               {t('radioPanel.sendPositionToDevice')}
             </button>

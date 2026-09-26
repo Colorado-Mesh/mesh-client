@@ -6,6 +6,7 @@ import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
 
 interface PendingAction {
   name: string;
@@ -217,7 +218,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={!isConnected || !onFactoryResetConfig}
-                className="w-full rounded-lg border border-red-800/60 bg-red-900/40 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/60 disabled:opacity-50"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('radioPanel.factoryResetConfigButton')}
               </button>
@@ -235,7 +236,7 @@ export default function AdminPanel({
                 });
               }}
               disabled={!isConnected}
-              className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:opacity-50"
+              className={buttonClassName('danger', 'md')}
             >
               {t('radioPanel.factoryResetButton')}
             </button>

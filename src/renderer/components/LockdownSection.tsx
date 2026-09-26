@@ -55,7 +55,7 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
   const controlsDisabled = !isConnected || busy;
 
   return (
-    <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+    <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
       <h3 className="flex items-center gap-2 text-sm font-medium text-gray-300">
         {locked ? (
           <Lock className="h-4 w-4 text-amber-400" aria-hidden="true" />

@@ -437,7 +437,8 @@
       "midnight": "午夜",
       "teal": "青绿色强调",
       "amber": "琥珀色强调"
-    }
+    },
+    "pruneNoFixNodesTitle": "修剪无定位/零岛节点"
   },
   "aria": {
     "closeDialog": "关闭对话框",

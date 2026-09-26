@@ -437,7 +437,8 @@
       "midnight": "ミッドナイト",
       "teal": "ティールのアクセント",
       "amber": "アンバーのアクセント"
-    }
+    },
+    "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

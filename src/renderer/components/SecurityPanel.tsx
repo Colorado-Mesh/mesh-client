@@ -17,6 +17,7 @@ import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { KeyBackupRestoreSection } from './KeyBackupRestoreSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 
 interface SecurityConfig {
@@ -135,7 +136,7 @@ function ApplyButton({
       type="button"
       onClick={onClick}
       disabled={disabled || applying}
-      className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg w-full rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:bg-gray-600"
+      className={buttonClassName('primary', 'md')}
     >
       {applying ? t('securityPanel.applying') : label}
     </button>

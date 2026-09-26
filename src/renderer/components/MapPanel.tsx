@@ -54,6 +54,7 @@ import {
 } from './map/leafletMapControls';
 import { OfflineMapsSection } from './map/OfflineMapsSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
 import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
@@ -1157,7 +1158,7 @@ export default function MapPanel({
                     <button
                       type="button"
                       onClick={() => onDeleteWaypoint(wp.id)}
-                      className="mt-1 w-full rounded border border-red-800/50 bg-red-900/40 px-2 py-1 text-xs text-red-300 transition-colors hover:bg-red-900/60"
+                      className={buttonClassName('danger', 'sm', 'mt-1')}
                     >
                       {t('mapPanel.waypointDelete')}
                     </button>

@@ -133,7 +133,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       <p className="text-sm text-gray-400">{t('takServerPanel.description')}</p>
 
       {/* Status */}
-      <div className="bg-secondary-dark flex items-center gap-4 rounded-lg p-4">
+      <div className="bg-deep-black flex items-center gap-4 rounded-xl border border-slate-800 p-4">
         <span className={`h-3 w-3 shrink-0 rounded-full ${statusColor}`} />
         <div className="flex-1">
           <span className="text-sm font-medium text-gray-200">{statusLabel}</span>
@@ -160,7 +160,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       )}
 
       {/* Settings form */}
-      <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+      <div className="bg-deep-black space-y-4 rounded-xl border border-slate-800 p-4">
         <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.serverSettings')}</h3>
 
         <div className="space-y-3">
@@ -259,7 +259,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
 
       {/* Connected clients */}
       {status.running && (
-        <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+        <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
           <h3 className="text-sm font-medium text-gray-300">
             {t('takServerPanel.connectedClients', { count: clients.length })}
           </h3>
@@ -285,7 +285,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
 
       {/* ATAK Plugin Messages from Mesh */}
       {capabilities?.hasAtakPlugin && (
-        <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+        <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
           <h3 className="text-sm font-medium text-gray-300">
             {t('takServerPanel.atakPluginMessages')}
             {atakMessages && atakMessages.size > 0 && (
@@ -323,7 +323,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       )}
 
       {/* Data package */}
-      <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+      <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
         <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.atakDataPackage')}</h3>
         <p className="text-xs text-gray-400">{t('takServerPanel.atakDataPackageDesc')}</p>
         <div className="flex items-center gap-3">
@@ -345,7 +345,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       </div>
 
       {/* Certificate management */}
-      <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+      <div className="bg-deep-black space-y-3 rounded-xl border border-slate-800 p-4">
         <h3 className="text-sm font-medium text-gray-300">{t('takServerPanel.certificates')}</h3>
         <p className="text-xs text-gray-400">{t('takServerPanel.certificatesDesc')}</p>
         <button

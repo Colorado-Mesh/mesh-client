@@ -437,7 +437,8 @@
       "midnight": "Tengah malam",
       "teal": "Aksen teal",
       "amber": "Aksen amber"
-    }
+    },
+    "pruneNoFixNodesTitle": "Pangkas Node Tanpa Posisi / Zero Island"
   },
   "aria": {
     "closeDialog": "Tutup dialog",
