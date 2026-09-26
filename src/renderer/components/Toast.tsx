@@ -1,3 +1,4 @@
+import { CircleCheck, CircleX, Info, Siren, TriangleAlert } from 'lucide-react-motion';
 import {
   createContext,
   useCallback,
@@ -10,6 +11,14 @@ import {
 import { useTranslation } from 'react-i18next';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info' | 'emergency';
+
+const TOAST_ICON: Record<ToastType, typeof Info> = {
+  success: CircleCheck,
+  error: CircleX,
+  warning: TriangleAlert,
+  info: Info,
+  emergency: Siren,
+};
 
 export interface ToastAction {
   label: string;
@@ -129,13 +138,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     };
   }, [toast, dismiss]);
 
-  const icon = {
-    success: '✓',
-    error: '✗',
-    warning: '⚠',
-    info: 'ℹ',
-    emergency: '!',
-  }[toast.type];
+  const Icon = TOAST_ICON[toast.type];
 
   const colors = {
     success: 'bg-brand-green/15 border-brand-green text-bright-green',
@@ -151,7 +154,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
       }`}
     >
-      <span className="shrink-0 text-base">{icon}</span>
+      <Icon aria-hidden className="h-4 w-4 shrink-0" />
       <span className="flex-1">{toast.message}</span>
       {toast.action ? (
         <button

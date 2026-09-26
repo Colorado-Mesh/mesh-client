@@ -8,6 +8,7 @@ import {
   ChevronUp,
   Ellipsis,
   Search,
+  Star,
   Trash2,
 } from 'lucide-react-motion';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -1197,14 +1198,19 @@ export default function RepeatersPanel({
                                 onClick={() => {
                                   onToggleFavorite(node.node_id, !node.favorited);
                                 }}
-                                className="text-brand-yellow/70 hover:text-brand-yellow text-base leading-none"
+                                className="text-brand-yellow/70 hover:text-brand-yellow leading-none"
                                 aria-label={
                                   node.favorited
                                     ? t('repeatersPanel.unfavorite')
                                     : t('repeatersPanel.favorite')
                                 }
+                                aria-pressed={node.favorited}
                               >
-                                {node.favorited ? '★' : '☆'}
+                                <Star
+                                  aria-hidden
+                                  className="h-4 w-4"
+                                  fill={node.favorited ? 'currentColor' : 'none'}
+                                />
                               </button>
                             ) : null}
                             <span

@@ -1042,7 +1042,8 @@ export default function ReticulumPeerListPanel({
                       }}
                       aria-label={t('peerListPanel.colFavorite')}
                     >
-                      ★{sortIndicator('favorite')}
+                      <Star aria-hidden className="inline h-3.5 w-3.5 align-[-2px]" />
+                      {sortIndicator('favorite')}
                     </button>
                   </th>
                 </>

@@ -1,3 +1,4 @@
+import { MapPin } from 'lucide-react-motion';
 import type { ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -226,8 +227,9 @@ function LocationCard({
           }}
         />
       )}
-      <div className="text-xs text-cyan-100/90">
-        📍 {highlightCaseInsensitive(coordLabel, query)}
+      <div className="flex items-center gap-1 text-xs text-cyan-100/90">
+        <MapPin aria-hidden className="h-3.5 w-3.5 shrink-0" />
+        <span>{highlightCaseInsensitive(coordLabel, query)}</span>
       </div>
       <a
         href={mapUrl}

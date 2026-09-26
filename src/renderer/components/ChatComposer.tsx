@@ -10,6 +10,7 @@ import {
   Mic,
   Send,
   Smile,
+  TriangleAlert,
 } from 'lucide-react-motion';
 import {
   type ReactNode,
@@ -102,9 +103,7 @@ function ComposerAmberCallout({
       aria-live="polite"
       className={`flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-200 ${wrapperClassName}`}
     >
-      <span aria-hidden="true" className="mt-0.5 shrink-0 text-amber-400">
-        ⚠
-      </span>
+      <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0 text-amber-400" />
       {children}
       {onDismiss && (
         <button

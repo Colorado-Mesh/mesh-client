@@ -1528,7 +1528,7 @@ export default function NodeDetailModal({
               return (
                 <div className="mt-3 space-y-2">
                   <h4 className="flex items-center gap-1.5 text-xs font-medium text-orange-400">
-                    <span aria-hidden="true">⚠</span>
+                    <TriangleAlert aria-hidden className="h-3.5 w-3.5 shrink-0" />
                     {t('diagnosticsPanel.foreignLoraHeading')}
                   </h4>
                   {list.map((detection, i) => {

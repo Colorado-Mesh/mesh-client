@@ -6,6 +6,7 @@ import {
   ChevronUp,
   Download,
   KeyRound,
+  MapPin,
   Radio,
   RefreshCw,
   Search,
@@ -1640,7 +1641,7 @@ export default function NodeListPanel({
                                       }
                                     }}
                                   >
-                                    📍
+                                    <MapPin aria-hidden className="h-3.5 w-3.5" />
                                   </button>
                                 )}
                               </span>

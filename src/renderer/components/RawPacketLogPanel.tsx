@@ -4,7 +4,7 @@
  */
 /* eslint-disable react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, ArrowUp, Play } from 'lucide-react-motion';
+import { ArrowDown, ArrowUp, Check, Play } from 'lucide-react-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -392,8 +392,12 @@ function MeshcoreExpandedDetails({
             {`return=${p.transportReturnCode}`}
           </span>
           {regionMatchDisplay === true && (
-            <span className="text-brand-green ml-1" title={t('rawPacketLog.transportRegionMatch')}>
-              ✓
+            <span
+              className="text-brand-green ml-1 inline-flex align-[-2px]"
+              title={t('rawPacketLog.transportRegionMatch')}
+            >
+              <Check aria-hidden className="h-3.5 w-3.5" />
+              <span className="sr-only">{t('rawPacketLog.transportRegionMatch')}</span>
             </span>
           )}
           {regionMatchDisplay === false && (

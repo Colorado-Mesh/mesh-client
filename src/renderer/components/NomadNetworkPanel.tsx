@@ -1,4 +1,17 @@
-import { ChevronLeft, ChevronRight, PARENT_HOVER_ATTR } from 'lucide-react-motion';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Code,
+  Eraser,
+  House,
+  MoveHorizontal,
+  PARENT_HOVER_ATTR,
+  RotateCw,
+  Star,
+  X,
+} from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -166,9 +179,11 @@ function NomadCollapsedNodeItem({
         >
           {nomadCollapsedLabel(node.display_name, node.destination_hash)}
         </span>
-        <span className={node.favorited ? 'text-yellow-400' : 'text-muted'} aria-hidden>
-          ★
-        </span>
+        <Star
+          aria-hidden
+          className={`h-3 w-3 ${node.favorited ? 'text-yellow-400' : 'text-muted'}`}
+          fill={node.favorited ? 'currentColor' : 'none'}
+        />
       </div>
     </div>
   );
@@ -225,11 +240,12 @@ function NomadExpandedNodeItem({
           type="button"
           className={node.favorited ? 'text-yellow-400' : 'text-muted'}
           aria-label={toggleFavoriteLabel}
+          aria-pressed={node.favorited}
           onClick={() => {
             onToggleFavorite(node.destination_hash, !node.favorited);
           }}
         >
-          ★
+          <Star aria-hidden className="h-4 w-4" fill={node.favorited ? 'currentColor' : 'none'} />
         </button>
       </div>
     </div>
@@ -958,45 +974,45 @@ export default function NomadNetworkPanel({
                   <button
                     type="button"
                     disabled={!canGoBack}
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
                     aria-label={t('nomadNetwork.back')}
                     title={t('nomadNetwork.back')}
                     onClick={() => {
                       navigateHistory(-1);
                     }}
                   >
-                    ←
+                    <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
                     disabled={!canGoForward}
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800 disabled:opacity-40"
                     aria-label={t('nomadNetwork.forward')}
                     title={t('nomadNetwork.forward')}
                     onClick={() => {
                       navigateHistory(1);
                     }}
                   >
-                    →
+                    <ArrowRight aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.homePage')}
                     title={t('nomadNetwork.homePage')}
                     onClick={() => {
                       void loadNodePage(selectedHash, DEFAULT_NOMAD_NODE_PAGE_PATH);
                     }}
                   >
-                    ⌂
+                    <House aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   {isNomadMicronPage(pageContentType, pagePath) && pageContent != null ? (
                     <button
                       type="button"
-                      className={`rounded border px-2 py-1 text-xs ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
                         showPageSource
                           ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                          : 'border-gray-600 text-gray-200 hover:bg-slate-800'
+                          : 'border-slate-700 text-slate-200 hover:bg-slate-800'
                       }`}
                       aria-label={
                         showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
@@ -1009,16 +1025,16 @@ export default function NomadNetworkPanel({
                         setShowPageSource((prev) => !prev);
                       }}
                     >
-                      {'</>'}
+                      <Code aria-hidden className="h-3.5 w-3.5" />
                     </button>
                   ) : null}
                   {pageContent != null ? (
                     <button
                       type="button"
-                      className={`rounded border px-2 py-1 text-xs ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
                         pageFitWidth
                           ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                          : 'border-gray-600 text-gray-200 hover:bg-slate-800'
+                          : 'border-slate-700 text-slate-200 hover:bg-slate-800'
                       }`}
                       aria-label={
                         pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
@@ -1035,12 +1051,12 @@ export default function NomadNetworkPanel({
                         });
                       }}
                     >
-                      ⇔
+                      <MoveHorizontal aria-hidden className="h-3.5 w-3.5" />
                     </button>
                   ) : null}
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.reloadPage')}
                     title={t('nomadNetwork.reloadPage')}
                     onClick={() => {
@@ -1054,25 +1070,25 @@ export default function NomadNetworkPanel({
                       });
                     }}
                   >
-                    ↻
+                    <RotateCw aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.clearBrowserCaches')}
                     title={t('nomadNetwork.clearBrowserCachesHint')}
                     onClick={clearBrowserCaches}
                   >
-                    ⌀
+                    <Eraser aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 text-slate-200 hover:bg-slate-800"
                     aria-label={t('nomadNetwork.closeViewer')}
                     title={t('nomadNetwork.closeViewer')}
                     onClick={closeViewer}
                   >
-                    ✕
+                    <X aria-hidden className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>

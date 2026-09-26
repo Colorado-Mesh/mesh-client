@@ -79,4 +79,12 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     forbid: /uppercase[^'"`\n]*tracking-wide|tracking-wide[^'"`\n]*uppercase/,
     message: 'Style guide: sentence case labels, no uppercase letter-spaced micro labels',
   },
+  {
+    id: 'renderer-icons-not-glyphs',
+    include: ['src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.tsx'],
+    forbid: /^\s*(?:⚠|✕|✓|✗|★|☆|📍|↻|⌂|⌀|ℹ)\s*$/mu,
+    message:
+      'Use a lucide-react-motion icon (TriangleAlert, X, Check, Star, MapPin, ...) instead of a text glyph; glyphs render differently per OS',
+  },
 ];

@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/purity */
 import type { TFunction } from 'i18next';
-import { Info, TriangleAlert } from 'lucide-react-motion';
+import { CircleX, Info, TriangleAlert } from 'lucide-react-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -188,10 +188,10 @@ const SEVERITY_STYLES: Record<RFDiagnosis['severity'], string> = {
   info: 'text-blue-400',
 };
 
-const SEVERITY_ICON: Record<RFDiagnosis['severity'], string> = {
-  error: '✕',
-  warning: '⚠',
-  info: 'ℹ',
+const SEVERITY_ICON: Record<RFDiagnosis['severity'], typeof Info> = {
+  error: CircleX,
+  warning: TriangleAlert,
+  info: Info,
 };
 
 export default function NodeInfoBody({
@@ -544,7 +544,7 @@ export default function NodeInfoBody({
       {/* GPS warning */}
       {node.lastPositionWarning && node.latitude === 0 && node.longitude === 0 && (
         <div className="mt-1 flex items-start gap-1.5 rounded border border-yellow-500/30 bg-yellow-500/10 px-2 py-1.5 text-xs text-yellow-400">
-          <span>⚠</span>
+          <TriangleAlert aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />
           <span>
             {t('nodeInfoBody.gpsWarningPrefix')}
             {node.lastPositionWarning}
@@ -1000,7 +1000,10 @@ function RFDiagnosticsSection({
                 key={i}
                 className={`flex items-start gap-1.5 text-xs ${SEVERITY_STYLES[f.severity]}`}
               >
-                <span className="mt-0.5 shrink-0">{SEVERITY_ICON[f.severity]}</span>
+                {(() => {
+                  const SeverityIcon = SEVERITY_ICON[f.severity];
+                  return <SeverityIcon aria-hidden className="mt-px h-3.5 w-3.5 shrink-0" />;
+                })()}
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1">
                     <span className="font-semibold">

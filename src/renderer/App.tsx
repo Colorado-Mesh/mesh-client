@@ -5,7 +5,7 @@
  * 3. Unread + tray badge sync (`useAppTrayUnreadSync`)
  * 4. Power recovery (`usePowerRecovery` in AppShell)
  */
-import { Crosshair, Search } from 'lucide-react-motion';
+import { Crosshair, Search, TriangleAlert } from 'lucide-react-motion';
 import {
   Suspense,
   useCallback,
@@ -5567,7 +5567,7 @@ function ConnectionBanner({
         className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2"
       >
         <div className="flex items-center gap-2">
-          <span className="text-red-400">⚠</span>
+          <TriangleAlert aria-hidden className="h-4 w-4 shrink-0 text-red-400" />
           <span className="text-sm text-red-200">{t('connectionBanner.serialReselect')}</span>
         </div>
         <button
@@ -5590,7 +5590,7 @@ function ConnectionBanner({
         className="flex items-center justify-between border-b border-red-700 bg-red-900/80 px-4 py-2"
       >
         <div className="flex items-center gap-2">
-          <span className="text-red-400">⚠</span>
+          <TriangleAlert aria-hidden className="h-4 w-4 shrink-0 text-red-400" />
           <span className="text-sm text-red-200">{t('connectionBanner.disconnectedLoss')}</span>
         </div>
         <button
@@ -5613,7 +5613,7 @@ function ConnectionBanner({
         className="flex items-center justify-between border-b border-yellow-700 bg-yellow-900/80 px-4 py-2"
       >
         <div className="flex items-center gap-2">
-          <span className="text-yellow-400">⚠</span>
+          <TriangleAlert aria-hidden className="h-4 w-4 shrink-0 text-yellow-400" />
           <span className="text-sm text-yellow-200">{t('connectionBanner.staleLoss')}</span>
         </div>
         <button

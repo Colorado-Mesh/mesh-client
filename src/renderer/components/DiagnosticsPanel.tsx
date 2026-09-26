@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
-import { Info, TriangleAlert } from 'lucide-react-motion';
+import { Info, TriangleAlert, X } from 'lucide-react-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -1377,10 +1377,10 @@ export default function DiagnosticsPanel({
                           setNodeMqttIgnored(nodeId, false);
                         }}
                         aria-label={t('diagnosticsPanel.dismissRow')}
-                        className="ml-0.5 leading-none hover:text-yellow-100"
+                        className="ml-0.5 rounded-sm leading-none hover:text-yellow-100"
                         title={t('diagnosticsPanel.removeMqttFilter')}
                       >
-                        ✕
+                        <X aria-hidden className="h-3 w-3" />
                       </button>
                     </span>
                   );
