@@ -116,6 +116,7 @@ describe('MECP language pack contract', () => {
     const english = getCachedMecpLanguage('en');
     expect(english.categories.M.name).toBe('Medical');
     expect(english.codes.M01).toBe('Injury');
+    expect(english.codes.M16).toBe('Medical supply drop needed');
 
     for (const key of loaderKeys) {
       const loaded = await loadMecpLanguage(key);
@@ -123,6 +124,7 @@ describe('MECP language pack contract', () => {
       expect(Object.keys(loaded.categories).length).toBeGreaterThan(0);
       expect(Object.keys(loaded.codes).length).toBeGreaterThan(0);
       expect(loaded.codes.M01.length).toBeGreaterThan(0);
+      expect(loaded.codes.M16.length).toBeGreaterThan(0);
     }
   });
 });
