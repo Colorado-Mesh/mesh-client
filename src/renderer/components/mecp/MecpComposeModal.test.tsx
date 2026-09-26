@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
-import { withMockedConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 import { bumpMecpPaxFreetext, MecpComposeModal } from './MecpComposeModal';
 import {
@@ -51,59 +50,6 @@ describe('MecpComposeModal', () => {
     expect(onSend).toHaveBeenCalled();
     expect(String(onSend.mock.calls[0]?.[0])).toMatch(/^MECP\/3\//);
     expect(String(onSend.mock.calls[0]?.[0])).toMatch(/M01/);
-  });
-
-  it('prefills MAYDAY severity and auto-attaches GPS exactly once across parent re-renders', async () => {
-    const resolveGps = vi.fn().mockResolvedValue({ lat: 39.7392, lon: -104.9903 });
-    const { rerender } = render(
-      <MecpComposeModal
-        open
-        onClose={() => {}}
-        onSend={() => {}}
-        initialSeverity={0}
-        autoAttachGps
-        resolveGps={resolveGps}
-      />,
-    );
-    expect(screen.getByRole('button', { name: 'MAYDAY' })).toHaveAttribute('aria-pressed', 'true');
-    const freetext = screen.getByRole('textbox', { name: /free text/i });
-    await vi.waitFor(() => {
-      expect(freetext).toHaveValue('#39.73920,-104.99030');
-    });
-
-    // Parent re-renders hand a fresh resolver identity; the prefill must not re-run.
-    const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: 'URGENT' }));
-    rerender(
-      <MecpComposeModal
-        open
-        onClose={() => {}}
-        onSend={() => {}}
-        initialSeverity={0}
-        autoAttachGps
-        resolveGps={() => Promise.resolve({ lat: 1, lon: 2 })}
-      />,
-    );
-    await Promise.resolve();
-    expect(resolveGps).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('button', { name: 'URGENT' })).toHaveAttribute('aria-pressed', 'true');
-    expect(freetext).toHaveValue('#39.73920,-104.99030');
-  });
-
-  it('shows the GPS error when MAYDAY auto-attach cannot get a fix', async () => {
-    await withMockedConsoleWarn(async () => {
-      render(
-        <MecpComposeModal
-          open
-          onClose={() => {}}
-          onSend={() => {}}
-          initialSeverity={0}
-          autoAttachGps
-          resolveGps={() => Promise.reject(new Error('no fix'))}
-        />,
-      );
-      expect(await screen.findByRole('alert')).toHaveTextContent('Could not get a GPS fix');
-    });
   });
 
   it('has no axe violations', async () => {

@@ -6127,9 +6127,7 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Kon geen GPS-fix krijgen",
-      "sendFailed": "Kan MECP-rapport niet verzenden",
-      "maydayButton": "may-day",
-      "maydayAria": "Stel MAYDAY met één tik samen met GPS"
+      "sendFailed": "Kan MECP-rapport niet verzenden"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6152,11 +6150,7 @@
       "learnMore": "Hoe MECP werkt",
       "protocolSource": "Protocolbron op GitHub",
       "showComposeButton": "Toon de MECP-knop in de chat",
-      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden.",
-      "showMaydayButton": "Toon de MAYDAY-KNOP in de chat",
-      "showMaydayButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een Mayday-knop met één tik die compose opent met ernst 0 met GPS aangesloten. Onafhankelijk van de MECP COMPOSE-knop.",
-      "showQuickStatusBar": "Snelle statusbalk weergeven in chat",
-      "showQuickStatusBarHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont de chat OK / Hulp nodig/ In positie / Verloren communicatie / Terugkeren /Roloproep boven de componist."
+      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden."
     },
     "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek"
   },
@@ -6221,7 +6215,6 @@
     "ackQueued": "Bevestiging aan {{sender}} in de wachtrij; deze wordt verzonden wanneer de radio beschikbaar is",
     "ackFailed": "Kon de bevestiging niet verzenden of in de wachtrij plaatsen",
     "intro": "Gemeenschappelijk operationeel beeld voor MECP-noodsituaties gehoord op elk protocol. Open de badge voor MAYDAY en DRINGENDE rijen op dit tabblad; oefeningen worden vermeld, maar worden nooit geteld. Gebruik Bevestigen (of Bevestig voor een actief baken) om op het netwerk te reageren en vervolgens Oplossen wanneer het incident lokaal wordt gesloten.",
-    "emptyHint": "Inkomende MECP-rapporten verschijnen hier automatisch. Om er een te verzenden, schakelt u → de App MECP → Show MECP-knop in in Chat en gebruikt u vervolgens MECP of MAYDAY in Chat. → Kaartlagen kunnen open incidenten weergeven met coördinaten.",
     "ackQueuedBadge": "ACK in de wachtrij",
     "pendingAckListAria": "Bevestigingen in de wachtrij voor dit incident",
     "cancelPendingAck": "Annuleren",
@@ -6230,17 +6223,7 @@
     "resolveBeaconAria": "Annuleer je noodbaken en vertel het netwerk dat je in orde bent ({{sender}})",
     "beaconCancelSent": "Baken annuleren verzonden. Andere stations wissen je noodbaken wanneer ze het horen.",
     "beaconCancelQueued": "Beacon annuleert in de wachtrij. Het wordt verzonden wanneer de radio beschikbaar is.",
-    "beaconCancelFailed": "Kon het baken niet verzenden of in de wachtrij plaatsen annuleren. Het incident is nog steeds open."
-  },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "Hulp nodig?",
-    "inPosition": "In positie",
-    "lostComms": "Verloren communicatie",
-    "returning": "In retour",
-    "barAria": "Snelle statusvoorinstellingen",
-    "rollCall": "Appel",
-    "rollCallAria": "Roloproep uitzenden en OK-antwoorden tellen",
-    "rollCallTally": "{{responded}}/{{expected}} heeft gereageerd"
+    "beaconCancelFailed": "Kon het baken niet verzenden of in de wachtrij plaatsen annuleren. Het incident is nog steeds open.",
+    "emptyHint": "Inkomende MECP-rapporten verschijnen hier automatisch. Om er een te verzenden, schakelt u de → App → MECP Show MECP-knop in de chat in en gebruikt u vervolgens MECP in de chat. → Kaartlagen kunnen open incidenten weergeven met coördinaten."
   }
 }

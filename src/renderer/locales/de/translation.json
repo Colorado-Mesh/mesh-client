@@ -6127,9 +6127,7 @@
       "byteBudget": "{{used}} / {{max}} Bytes",
       "send": "MECP senden",
       "gpsFailed": "Konnte keine GPS-Fixierung erhalten",
-      "sendFailed": "Senden des Berichts fehlgeschlagen",
-      "maydayButton": "Mayday",
-      "maydayAria": "Komponieren Sie MAYDAY mit einem Fingertipp mit GPS"
+      "sendFailed": "Senden des Berichts fehlgeschlagen"
     },
     "rebroadcast": {
       "title": "MECP RF Rebroadcast",
@@ -6152,11 +6150,7 @@
       "learnMore": "So funktioniert MECP",
       "protocolSource": "Protokollquelle auf GitHub",
       "showComposeButton": "MECP-Schaltfläche im Chat anzeigen",
-      "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an.",
-      "showMaydayButton": "Mayday-Schaltfläche im Chat anzeigen",
-      "showMaydayButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt der Chat eine Mayday-Schaltfläche mit einem Fingertipp an, die das Verfassen mit Schweregrad 0 mit angeschlossenem GPS öffnet. Unabhängig von der MECP-Kompositionstaste.",
-      "showQuickStatusBar": "Schnellstatusleiste im Chat anzeigen",
-      "showQuickStatusBarHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat OK /Hilfe benötigen/ In Position / Verlorene Kommunikation / Wiederkehrender / Roll-Aufruf über dem Komponisten an."
+      "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an."
     },
     "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll"
   },
@@ -6221,7 +6215,6 @@
     "ackQueued": "Bestätigung an {{sender}} in der Warteschlange; es wird gesendet, wenn das Radio verfügbar ist",
     "ackFailed": "Bestätigung konnte nicht gesendet oder in die Warteschlange gestellt werden",
     "intro": "Gemeinsames Betriebsbild für MECP-Notfälle, die auf jedem Protokoll zu hören sind. Offene MAYDAY- und DRINGENDE Zeilen kennzeichnen diese Registerkarte; Bohrer werden aufgelistet, aber nie gezählt. Verwenden Sie Acknowledge (oder Confirm for an active beacon), um auf dem Netz zu antworten, und dann Resolve, wenn der Vorfall lokal geschlossen wird.",
-    "emptyHint": "Eingehende MECP-Berichte werden hier automatisch angezeigt. Um eine zu senden, aktivieren Sie die Schaltfläche App → MECP MECP → anzeigen im Chat und verwenden Sie dann MECP oder MAYDAY im Chat. → Kartenebenen können offene Vorfälle mit Koordinaten anzeigen.",
     "ackQueuedBadge": "ACK in Warteschlange gestellt",
     "pendingAckListAria": "Bestätigungen für diesen Vorfall in der Warteschlange",
     "cancelPendingAck": "Abbrechen",
@@ -6230,17 +6223,7 @@
     "resolveBeaconAria": "Lösche dein Notsignal und teile dem Netz mit, dass du in Ordnung bist ({{sender}})",
     "beaconCancelSent": "Signalabbruch gesendet. Andere Sender löschen dein Notsignal, wenn sie es hören.",
     "beaconCancelQueued": "Beacon-Abbruch in der Warteschlange. Wird gesendet, wenn das Radio verfügbar ist.",
-    "beaconCancelFailed": "Das Beacon konnte nicht gesendet oder in die Warteschlange gestellt werden. Der Vorfall ist noch offen."
-  },
-  "quickStatus": {
-    "ok": "i.O.",
-    "needHelp": "Hilfe benötigt",
-    "inPosition": "In Position",
-    "lostComms": "Verlorene Kommunikationen",
-    "returning": "Wird zurückgegeben",
-    "barAria": "Schnelle Statusvoreinstellungen",
-    "rollCall": "Funktionsanruf",
-    "rollCallAria": "Broadcast-Notruf und Zählung OK-Antworten",
-    "rollCallTally": "{{responded}}/{{expected}} hat geantwortet"
+    "beaconCancelFailed": "Das Beacon konnte nicht gesendet oder in die Warteschlange gestellt werden. Der Vorfall ist noch offen.",
+    "emptyHint": "Eingehende MECP-Berichte werden hier automatisch angezeigt. Um eine zu senden, aktivieren Sie die Schaltfläche App → MECP MECP → anzeigen im Chat und verwenden Sie dann MECP im Chat. → Kartenebenen können offene Vorfälle mit Koordinaten anzeigen."
   }
 }

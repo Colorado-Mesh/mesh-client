@@ -6175,9 +6175,7 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Nepodařilo se získat opravu GPS",
-      "sendFailed": "Nepodařilo se odeslat zprávu MECP",
-      "maydayButton": "MEJ DEJ",
-      "maydayAria": "Sestavte MAYDAY jedním klepnutím s GPS"
+      "sendFailed": "Nepodařilo se odeslat zprávu MECP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6200,11 +6198,7 @@
       "learnMore": "Jak MECP funguje",
       "protocolSource": "Zdroj protokolu na GitHub",
       "showComposeButton": "Zobrazit tlačítko MECP v chatu",
-      "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv.",
-      "showMaydayButton": "Zobrazit tlačítko MAYDAY v chatu",
-      "showMaydayButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazí tlačítko MAYDAY jedním klepnutím, které se otevře při závažnosti 0 s připojeným GPS. Nezávisle na tlačítku MECP Compose.",
-      "showQuickStatusBar": "Zobrazit rychlý stavový řádek v chatu",
-      "showQuickStatusBarHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazí OK / Potřebujete pomoc / V poloze / Ztracená komunikace / Vracející se /Uskutečněný hovor nad skladatelem."
+      "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv."
     },
     "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP"
   },
@@ -6270,7 +6264,6 @@
     "ackFailed": "Potvrzení nelze odeslat nebo zařadit do fronty",
     "ackCount_few": "{{count}} poděkování",
     "intro": "Společný provozní obraz pro nouzové situace MECP slyšený na jakémkoli protokolu. Otevřené MAYDAY a URGENTNÍ řádky označují tuto kartu; cvičení jsou uvedena, ale nikdy se nezapočítávají. Pomocí Potvrzení (nebo Potvrdit pro aktivní maják) odpovězte na síť a poté vyřešte, když je incident lokálně uzavřen.",
-    "emptyHint": "Příchozí zprávy MECP se zde zobrazují automaticky. Chcete-li ji odeslat, povolte tlačítko App → MECP → Show MECP v chatu a poté použijte MECP nebo MAYDAY v chatu. Mapové → vrstvy mohou zobrazit otevřené incidenty se souřadnicemi.",
     "ackQueuedBadge": "ACK ve frontě",
     "pendingAckListAria": "Poděkování za tento incident ve frontě",
     "cancelPendingAck": "Zrušit",
@@ -6279,17 +6272,7 @@
     "resolveBeaconAria": "Zrušte nouzový maják a řekněte síti, že jste v pořádku ({{sender}})",
     "beaconCancelSent": "Zrušení signálu odesláno. Ostatní stanice váš nouzový signál vyčistí, jakmile jej uslyší.",
     "beaconCancelQueued": "Beacon byl zrušen ve frontě. Bude odeslán, až bude rádio k dispozici.",
-    "beaconCancelFailed": "Nelze odeslat nebo zařadit maják do fronty na zrušení. Incident je stále otevřený."
-  },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "Potřebuješ pomoc",
-    "inPosition": "V pozici",
-    "lostComms": "Ztracená komunikace",
-    "returning": "Vracejicí se",
-    "barAria": "Předvolby rychlého stavu",
-    "rollCall": "jmenovitě",
-    "rollCallAria": "Vysílání jmenovitého volání a sčítání odpovědí OK",
-    "rollCallTally": "{{responded}}/{{expected}} odpověděl/a"
+    "beaconCancelFailed": "Nelze odeslat nebo zařadit maják do fronty na zrušení. Incident je stále otevřený.",
+    "emptyHint": "Příchozí zprávy MECP se zde zobrazují automaticky. Chcete-li odeslat, povolte tlačítko App → MECP → Show MECP v chatu a poté použijte MECP v chatu. Mapové → vrstvy mohou zobrazit otevřené incidenty se souřadnicemi."
   }
 }

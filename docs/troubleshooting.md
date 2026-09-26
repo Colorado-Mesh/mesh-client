@@ -2014,9 +2014,9 @@ Default Web Audio tones (`chatNotifications.ts` profiles; overrideable in **App 
 
 MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/agents/mecp.md`](agents/mecp.md).
 
-**MECP / MAYDAY button missing in Chat**
+**MECP button missing in Chat**
 
-App → MECP → **Show MECP button in Chat** and **Show MAYDAY button in Chat** are each off by default. Enable them separately to show MECP compose and/or one-tap MAYDAY. The **Incident** tab still receives inbound MECP without either enabled.
+App → MECP → **Show MECP button in Chat** is off by default. Enable it to show MECP compose in Chat. The **Incident** tab still receives inbound MECP without compose enabled.
 
 **What is the Incident tab?**
 

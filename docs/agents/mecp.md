@@ -40,7 +40,6 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 ## Send path
 
 - App → MECP → **Show MECP button in Chat** (default **off**) gates the Chat MECP compose control
-- App → MECP → **Show MAYDAY button in Chat** (default **off**) gates the one-tap **MAYDAY** button independently; it opens `MecpComposeModal` pre-filled with severity 0 and auto-attached GPS, then sends through the emergency outbox ([emcomm.md — WS5](emcomm.md#ws5--quick-status-roll-call-one-tap-mayday))
 - When enabled: Chat **MECP** button → `MecpComposeModal` (defaults: ROUTINE + Drill category, no codes selected) → encode → `sendEmergencyText` ([`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts)) → live `handleSendChunk` / `useSendMessage` (follows open DM/channel)
 - **Emergency outbox:** when offline / MQTT-only MeshCore, or when the live send throws, the report is queued in the chat outbox with `priority: 'emergency'` — no 24h drain cutoff, no 5-attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See [emcomm.md — WS2](emcomm.md#ws2--emergency-priority-outbox)
 - Attach GPS uses the app share-location waterfall (`resolveShareLocation`), not raw `navigator.geolocation` alone
@@ -57,7 +56,7 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 
 ## Incident Command
 
-Inbound MECP feeds the always-visible **Incident** tab (persistent `incidentStore`, cross-protocol merge, R01 ACK / B02 beacon Confirm, Resolve, map markers). Ops alerts, quick status / roll call, exports, SAR map tools, and incident track retention are also EMCOMM workstreams. See [emcomm.md](emcomm.md).
+Inbound MECP feeds the always-visible **Incident** tab (persistent `incidentStore`, cross-protocol merge, R01 ACK / B02 beacon Confirm, Resolve, map markers). Ops alerts, exports, SAR map tools, and incident track retention are also EMCOMM workstreams. See [emcomm.md](emcomm.md).
 
 ## Out of scope (follow-ups)
 
