@@ -135,4 +135,11 @@ describe('generateDataPackage', () => {
     expect(prefEntry).toBeDefined();
     expect(prefEntry![1]).toContain('9999');
   });
+
+  it('connection.pref connectString uses the LAN IP from networkInterfaces', async () => {
+    await generateDataPackage(STUB_CERTS, STUB_SETTINGS);
+    const prefEntry = fileCallArgs.find(([name]) => name === 'connection.pref');
+    expect(prefEntry).toBeDefined();
+    expect(prefEntry![1]).toContain('192.168.1.10:8089:ssl');
+  });
 });
