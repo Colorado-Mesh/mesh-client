@@ -5750,6 +5750,19 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     }
   });
 
+  it('opens a channel requested from outside (the launcher) and reports it consumed', async () => {
+    const consumed = vi.fn();
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} initialChannelTarget={1} onChannelTargetConsumed={consumed} />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Admin' })).toHaveAttribute('aria-pressed', 'true');
+    });
+    expect(consumed).toHaveBeenCalled();
+  });
+
   it('prefixes channel chips with a muted # unless the name already has one', () => {
     render(
       <ToastProvider>

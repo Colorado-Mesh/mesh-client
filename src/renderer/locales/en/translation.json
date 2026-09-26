@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "{{section}} panels",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Go to a panel ({{shortcut}})",
+    "openLauncher": "Go to a panel, contact or channel ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, node {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "All panels",
-      "searchLabel": "Search panels",
-      "placeholder": "Go to a panel",
+      "searchLabel": "Search panels, contacts and channels",
+      "placeholder": "Go to a panel, contact or channel",
       "noResults": "No panels match your search",
       "otherGroup": "Other",
       "pin": "Pin {{label}}",
@@ -6297,7 +6297,10 @@
       "hintOpen": "open",
       "hintPin": "pin",
       "panelCount_one": "{{count}} panel",
-      "panelCount_other": "{{count}} panels"
+      "panelCount_other": "{{count}} panels",
+      "channelsGroup": "Channels",
+      "contactsGroup": "Contacts",
+      "moreMatches": "More match. Keep typing to narrow the list."
     },
     "more": "More"
   },

@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "Panelen van {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Ga naar een paneel ({{shortcut}})",
+    "openLauncher": "Ga naar een paneel, contact of kanaal ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, knooppunt {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "Alle panelen",
-      "searchLabel": "Panelen zoeken",
-      "placeholder": "Ga naar een paneel",
+      "searchLabel": "Panelen, contacten en kanalen zoeken",
+      "placeholder": "Ga naar een paneel, contact of kanaal",
       "noResults": "Geen panelen gevonden",
       "otherGroup": "Overig",
       "pin": "{{label}} vastzetten",
@@ -6297,7 +6297,10 @@
       "hintOpen": "openen",
       "hintPin": "vastzetten",
       "panelCount_one": "{{count}} paneel",
-      "panelCount_other": "{{count}} panelen"
+      "panelCount_other": "{{count}} panelen",
+      "channelsGroup": "Kanalen",
+      "contactsGroup": "Contacten",
+      "moreMatches": "Er zijn meer resultaten. Typ verder om de lijst te verkleinen."
     },
     "more": "Meer"
   },

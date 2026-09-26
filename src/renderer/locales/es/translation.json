@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "Paneles de {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Ir a un panel ({{shortcut}})",
+    "openLauncher": "Ir a un panel, contacto o canal ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, nodo {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "Todos los paneles",
-      "searchLabel": "Buscar paneles",
-      "placeholder": "Ir a un panel",
+      "searchLabel": "Buscar paneles, contactos y canales",
+      "placeholder": "Ir a un panel, contacto o canal",
       "noResults": "Ningún panel coincide con la búsqueda",
       "otherGroup": "Otros",
       "pin": "Fijar {{label}}",
@@ -6297,7 +6297,10 @@
       "hintOpen": "abrir",
       "hintPin": "fijar",
       "panelCount_one": "{{count}} panel",
-      "panelCount_other": "{{count}} paneles"
+      "panelCount_other": "{{count}} paneles",
+      "channelsGroup": "Canales",
+      "contactsGroup": "Contactos",
+      "moreMatches": "Hay más coincidencias. Sigue escribiendo para acotar la lista."
     },
     "more": "Más"
   },

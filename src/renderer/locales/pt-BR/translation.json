@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "Painéis de {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Ir para um painel ({{shortcut}})",
+    "openLauncher": "Ir para um painel, contato ou canal ({{shortcut}})",
     "status": {
       "radio": "Rádio: {{status}}",
       "radioWithNode": "Rádio: {{status}}, nó {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "Todos os painéis",
-      "searchLabel": "Buscar painéis",
-      "placeholder": "Ir para um painel",
+      "searchLabel": "Pesquisar painéis, contatos e canais",
+      "placeholder": "Ir para um painel, contato ou canal",
       "noResults": "Nenhum painel corresponde à busca",
       "otherGroup": "Outros",
       "pin": "Fixar {{label}}",
@@ -6297,7 +6297,10 @@
       "hintOpen": "abrir",
       "hintPin": "fixar",
       "panelCount_one": "{{count}} painel",
-      "panelCount_other": "{{count}} painéis"
+      "panelCount_other": "{{count}} painéis",
+      "channelsGroup": "Canais",
+      "contactsGroup": "Contatos",
+      "moreMatches": "Há mais resultados. Continue digitando para filtrar a lista."
     },
     "more": "Mais"
   },

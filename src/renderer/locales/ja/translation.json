@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "{{section}}のパネル",
     "navBadgeDetail": "{{label}}、{{detail}}",
-    "openLauncher": "パネルに移動（{{shortcut}}）",
+    "openLauncher": "パネル、連絡先、チャンネルに移動（{{shortcut}}）",
     "status": {
       "radio": "無線機：{{status}}",
       "radioWithNode": "無線機：{{status}}、ノード {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "すべてのパネル",
-      "searchLabel": "パネルを検索",
-      "placeholder": "パネルに移動",
+      "searchLabel": "パネル、連絡先、チャンネルを検索",
+      "placeholder": "パネル、連絡先、チャンネルに移動",
       "noResults": "一致するパネルはありません",
       "otherGroup": "その他",
       "pin": "{{label}}をピン留め",
@@ -6297,7 +6297,10 @@
       "hintOpen": "開く",
       "hintPin": "ピン留め",
       "panelCount_one": "{{count}} 個のパネル",
-      "panelCount_other": "{{count}} 個のパネル"
+      "panelCount_other": "{{count}} 個のパネル",
+      "channelsGroup": "チャンネル",
+      "contactsGroup": "連絡先",
+      "moreMatches": "他にも一致があります。入力を続けて絞り込んでください。"
     },
     "more": "その他"
   },

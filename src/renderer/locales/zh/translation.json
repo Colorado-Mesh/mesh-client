@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "{{section}}面板",
     "navBadgeDetail": "{{label}}，{{detail}}",
-    "openLauncher": "转到面板（{{shortcut}}）",
+    "openLauncher": "转到面板、联系人或频道（{{shortcut}}）",
     "status": {
       "radio": "无线电：{{status}}",
       "radioWithNode": "无线电：{{status}}，节点 {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "全部面板",
-      "searchLabel": "搜索面板",
-      "placeholder": "转到面板",
+      "searchLabel": "搜索面板、联系人和频道",
+      "placeholder": "转到面板、联系人或频道",
       "noResults": "没有匹配的面板",
       "otherGroup": "其他",
       "pin": "固定{{label}}",
@@ -6297,7 +6297,10 @@
       "hintOpen": "打开",
       "hintPin": "固定",
       "panelCount_one": "{{count}} 个面板",
-      "panelCount_other": "{{count}} 个面板"
+      "panelCount_other": "{{count}} 个面板",
+      "channelsGroup": "频道",
+      "contactsGroup": "联系人",
+      "moreMatches": "还有更多匹配项。继续输入以缩小范围。"
     },
     "more": "更多"
   },

@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "Pannelli di {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Vai a un pannello ({{shortcut}})",
+    "openLauncher": "Vai a un pannello, contatto o canale ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, nodo {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "Tutti i pannelli",
-      "searchLabel": "Cerca pannelli",
-      "placeholder": "Vai a un pannello",
+      "searchLabel": "Cerca pannelli, contatti e canali",
+      "placeholder": "Vai a un pannello, contatto o canale",
       "noResults": "Nessun pannello corrisponde alla ricerca",
       "otherGroup": "Altro",
       "pin": "Fissa {{label}}",
@@ -6297,7 +6297,10 @@
       "hintOpen": "apri",
       "hintPin": "fissa",
       "panelCount_one": "{{count}} pannello",
-      "panelCount_other": "{{count}} pannelli"
+      "panelCount_other": "{{count}} pannelli",
+      "channelsGroup": "Canali",
+      "contactsGroup": "Contatti",
+      "moreMatches": "Ci sono altri risultati. Continua a digitare per restringere l'elenco."
     },
     "more": "Altro"
   },

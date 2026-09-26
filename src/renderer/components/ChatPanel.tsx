@@ -599,6 +599,9 @@ export interface ChatPanelProps {
   nodes: Map<number, MeshNode>;
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;
+  /** Open this channel (launcher, notifications), then call `onChannelTargetConsumed`. */
+  initialChannelTarget?: number | null;
+  onChannelTargetConsumed?: () => void;
   isActive?: boolean;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
@@ -680,6 +683,8 @@ function ChatPanel({
   nodes,
   initialDmTarget,
   onDmTargetConsumed,
+  initialChannelTarget,
+  onChannelTargetConsumed,
   isActive = true,
   protocol = 'meshtastic',
   identityId = null,
@@ -969,6 +974,7 @@ function ChatPanel({
     },
     [channelRestoreScopeKey],
   );
+
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
@@ -1279,6 +1285,14 @@ function ChatPanel({
       onDmTargetConsumed?.();
     }
   }, [initialDmTarget, onDmTargetConsumed]);
+
+  // Launcher (or another panel) asked for a specific channel.
+  useEffect(() => {
+    if (initialChannelTarget == null) return;
+    selectChannel(initialChannelTarget);
+    setViewMode('channels');
+    onChannelTargetConsumed?.();
+  }, [initialChannelTarget, onChannelTargetConsumed, selectChannel]);
 
   const displayMessages = useMemo(
     () => (protocol === 'meshcore' ? meshcoreChatMessagesForDisplay(messages) : messages),

@@ -6368,7 +6368,7 @@
     },
     "sectionPanelsAria": "Panele sekcji {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Przejdź do panelu ({{shortcut}})",
+    "openLauncher": "Przejdź do panelu, kontaktu lub kanału ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, węzeł {{node}}",
@@ -6376,8 +6376,8 @@
     },
     "launcher": {
       "title": "Wszystkie panele",
-      "searchLabel": "Szukaj paneli",
-      "placeholder": "Przejdź do panelu",
+      "searchLabel": "Szukaj paneli, kontaktów i kanałów",
+      "placeholder": "Przejdź do panelu, kontaktu lub kanału",
       "noResults": "Żaden panel nie pasuje do wyszukiwania",
       "otherGroup": "Inne",
       "pin": "Przypnij {{label}}",
@@ -6389,7 +6389,10 @@
       "panelCount_one": "{{count}} panel",
       "panelCount_few": "{{count}} panele",
       "panelCount_many": "{{count}} paneli",
-      "panelCount_other": "{{count}} panelu"
+      "panelCount_other": "{{count}} panelu",
+      "channelsGroup": "Kanały",
+      "contactsGroup": "Kontakty",
+      "moreMatches": "Jest więcej wyników. Pisz dalej, aby zawęzić listę."
     },
     "more": "Więcej"
   },

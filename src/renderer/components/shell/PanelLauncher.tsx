@@ -1,10 +1,16 @@
-import { Pin, Search } from 'lucide-react-motion';
+import { Hash, Pin, Search, User } from 'lucide-react-motion';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { TabIcon } from '@/renderer/lib/icons/tabIcons';
+import {
+  findLauncherDestinations,
+  type LauncherChannelItem,
+  type LauncherContactItem,
+  type LauncherMatches,
+} from '@/renderer/lib/launcherDestinations';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import {
   formatBadgeCount,
@@ -45,7 +51,17 @@ export interface PanelLauncherProps {
   variant?: 'dialog' | 'sheet';
   /** Shown under the search row (the phone sheet puts the protocol switcher here). */
   header?: ReactNode;
+  /** Channels of the active protocol; searched (not listed) while the user types. */
+  channels?: readonly LauncherChannelItem[];
+  /** Contacts / nodes / peers of the active protocol; searched, capped, never listed in full. */
+  contacts?: readonly LauncherContactItem[];
+  /** Heading for contact results: the Nodes, Contacts or Peers tab label. */
+  contactsLabel?: string;
+  onOpenChannel?: (index: number) => void;
+  onOpenContact?: (id: string) => void;
 }
+
+const NO_MATCHES: LauncherMatches<never> = { matches: [], more: false };
 
 interface LauncherGroup {
   key: string;
@@ -70,6 +86,11 @@ export function PanelLauncher({
   onClose,
   variant = 'dialog',
   header,
+  channels,
+  contacts,
+  contactsLabel,
+  onOpenChannel,
+  onOpenContact,
 }: PanelLauncherProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -140,6 +161,28 @@ export function PanelLauncher({
   );
   const panelCount = allGroups.reduce((sum, group) => sum + group.entries.length, 0);
   const firstMatch = groups[0]?.entries[0];
+  const channelMatches: LauncherMatches<LauncherChannelItem> = useMemo(
+    () => (channels && onOpenChannel ? findLauncherDestinations(channels, query) : NO_MATCHES),
+    [channels, onOpenChannel, query],
+  );
+  const contactMatches: LauncherMatches<LauncherContactItem> = useMemo(
+    () => (contacts && onOpenContact ? findLauncherDestinations(contacts, query) : NO_MATCHES),
+    [contacts, onOpenContact, query],
+  );
+  const hasDestinations = channelMatches.matches.length + contactMatches.matches.length > 0;
+  const openFirstDestination = (): boolean => {
+    const channel = channelMatches.matches[0];
+    if (channel && onOpenChannel) {
+      onOpenChannel(channel.index);
+      return true;
+    }
+    const contact = contactMatches.matches[0];
+    if (contact && onOpenContact) {
+      onOpenContact(contact.id);
+      return true;
+    }
+    return false;
+  };
   const pinsFull = pins.length >= MAX_LAUNCHER_PINS;
 
   const entryButtons = () =>
@@ -161,29 +204,60 @@ export function PanelLauncher({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       focusEntry(null, 1);
-    } else if (e.key === 'Enter' && firstMatch) {
-      e.preventDefault();
-      onOpenTab(firstMatch.tabIndex);
+    } else if (e.key === 'Enter') {
+      if (firstMatch) {
+        e.preventDefault();
+        onOpenTab(firstMatch.tabIndex);
+      } else if (openFirstDestination()) {
+        e.preventDefault();
+      }
     }
   };
 
-  const handleEntryKeyDown = (e: KeyboardEvent<HTMLButtonElement>, entry: NavSectionTab) => {
+  /** Arrow keys between rows; typing on a row goes back to the search field. */
+  const handleRowNavKeyDown = (e: KeyboardEvent<HTMLButtonElement>): boolean => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       focusEntry(e.currentTarget, e.key === 'ArrowDown' ? 1 : -1);
-      return;
+      return true;
     }
+    if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      setQuery((q) => q + e.key);
+      inputRef.current?.focus();
+      return true;
+    }
+    return false;
+  };
+
+  const handleEntryKeyDown = (e: KeyboardEvent<HTMLButtonElement>, entry: NavSectionTab) => {
     if (isPinToggleShortcut(e, platform)) {
       e.preventDefault();
       if (pins.includes(entry.slot) || !pinsFull) onTogglePin(entry.slot);
       return;
     }
-    // Typing on a row goes back to the search field (Space still activates the row).
-    if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
-      e.preventDefault();
-      setQuery((q) => q + e.key);
-      inputRef.current?.focus();
-    }
+    // Space still activates the row.
+    handleRowNavKeyDown(e);
+  };
+
+  const destinationRowClass =
+    'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body flex h-9 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-slate-200 outline-none';
+  const renderDestinationGroup = (
+    key: string,
+    label: string,
+    more: boolean,
+    rows: ReactNode,
+  ): ReactNode => {
+    const headingId = `${titleId}-${key}`;
+    return (
+      <section key={key} aria-labelledby={headingId} className="mb-2">
+        <h3 id={headingId} className="text-muted px-2 pt-2 pb-1 text-xs font-semibold">
+          {label}
+        </h3>
+        <ul>{rows}</ul>
+        {more && <p className="text-muted px-2 pt-1 text-xs">{t('shell.launcher.moreMatches')}</p>}
+      </section>
+    );
   };
 
   return (
@@ -240,11 +314,11 @@ export function PanelLauncher({
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {groups.length === 0 ? (
+          {groups.length === 0 && !hasDestinations ? (
             <p className="text-muted px-2 py-6 text-center text-sm">
               {t('shell.launcher.noResults')}
             </p>
-          ) : (
+          ) : groups.length === 0 ? null : (
             <div className="gap-x-4 sm:columns-2">
               {groups.map((group) => {
                 const headingId = `${titleId}-${group.key}`;
@@ -336,6 +410,57 @@ export function PanelLauncher({
               })}
             </div>
           )}
+          {channelMatches.matches.length > 0 &&
+            onOpenChannel &&
+            renderDestinationGroup(
+              'channels',
+              t('shell.launcher.channelsGroup'),
+              channelMatches.more,
+              channelMatches.matches.map((channel) => (
+                <li key={`ch-${String(channel.index)}`}>
+                  <button
+                    type="button"
+                    data-launcher-entry=""
+                    onClick={() => {
+                      onOpenChannel(channel.index);
+                    }}
+                    onKeyDown={handleRowNavKeyDown}
+                    className={destinationRowClass}
+                  >
+                    <Hash aria-hidden className={`${ICON_MD} text-muted shrink-0`} size={16} />
+                    <span className="min-w-0 flex-1 truncate">{channel.name}</span>
+                  </button>
+                </li>
+              )),
+            )}
+          {contactMatches.matches.length > 0 &&
+            onOpenContact &&
+            renderDestinationGroup(
+              'contacts',
+              contactsLabel ?? t('shell.launcher.contactsGroup'),
+              contactMatches.more,
+              contactMatches.matches.map((contact) => (
+                <li key={`c-${contact.id}`}>
+                  <button
+                    type="button"
+                    data-launcher-entry=""
+                    onClick={() => {
+                      onOpenContact(contact.id);
+                    }}
+                    onKeyDown={handleRowNavKeyDown}
+                    className={destinationRowClass}
+                  >
+                    <User aria-hidden className={`${ICON_MD} text-muted shrink-0`} size={16} />
+                    <span className="min-w-0 flex-1 truncate">{contact.name}</span>
+                    {contact.detail && (
+                      <span className="text-muted text-meta shrink-0 font-mono">
+                        {contact.detail}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              )),
+            )}
         </div>
 
         <div className="text-muted flex h-10 shrink-0 items-center gap-4 border-t border-slate-800 px-4 text-xs">

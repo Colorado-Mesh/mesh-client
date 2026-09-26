@@ -260,6 +260,7 @@ import {
 } from './lib/firmwareCheck';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
 import { loadLastConnection } from './lib/lastConnectionStorage';
+import type { LauncherChannelItem, LauncherContactItem } from './lib/launcherDestinations';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
 import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
 import {
@@ -289,7 +290,7 @@ import {
   type NavSectionId,
   resolveSectionTargetTab,
 } from './lib/navSections';
-import { nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
+import { nodeDisplayName, nodeLabelForRawPacket } from './lib/nodeLongNameOrHex';
 import { OPEN_NOMAD_PAGE_EVENT, type OpenNomadPageDetail } from './lib/nomad/openNomadPageFromLink';
 import { loadNotificationSoundSettings } from './lib/notificationSoundSettings';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
@@ -619,6 +620,7 @@ function AppContent() {
     return Boolean(s.alwaysShowMessageActions);
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
+  const [pendingChannelTarget, setPendingChannelTarget] = useState<number | null>(null);
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
   const [pendingRepeaterFocusNodeId, setPendingRepeaterFocusNodeId] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({
@@ -2569,6 +2571,58 @@ function AppContent() {
   const chatNodesForPanel = nodesForUi;
   const chatChannelsForPanel = chatChannels;
 
+  // Launcher search over channels and contacts. Built only while the launcher is open; matching is
+  // capped in findLauncherDestinations so 100,000 contacts stay cheap.
+  const launcherChannels = useMemo<LauncherChannelItem[]>(
+    () =>
+      launcherOpen
+        ? chatChannelsForPanel.map((ch) => ({
+            index: ch.index,
+            name: ch.name,
+            search: ch.name.toLowerCase(),
+          }))
+        : [],
+    [launcherOpen, chatChannelsForPanel],
+  );
+  const launcherContacts = useMemo<LauncherContactItem[]>(() => {
+    if (!launcherOpen) return [];
+    const items: LauncherContactItem[] = [];
+    if (capabilities.hasReticulumPeersList) {
+      for (const node of reticulumUiNodes.values()) {
+        const hash = node.reticulum_destination_hash;
+        if (!hash) continue;
+        const name = nodeDisplayName(node, 'reticulum') || hash.slice(0, 8);
+        items.push({
+          id: hash,
+          name,
+          detail: hash.slice(0, 8),
+          search: `${name} ${hash}`.toLowerCase(),
+        });
+      }
+      return items;
+    }
+    for (const node of nodesForUi.values()) {
+      if (node.node_id === activeSelfNodeNum) continue;
+      const name = nodeDisplayName(node, protocol);
+      const hex = (node.node_id >>> 0).toString(16).padStart(8, '0');
+      const shortName = node.short_name?.trim() ?? '';
+      items.push({
+        id: String(node.node_id),
+        name,
+        detail: shortName || hex,
+        search: `${name} ${shortName} ${hex}`.toLowerCase(),
+      });
+    }
+    return items;
+  }, [
+    launcherOpen,
+    capabilities.hasReticulumPeersList,
+    reticulumUiNodes,
+    nodesForUi,
+    protocol,
+    activeSelfNodeNum,
+  ]);
+
   useEffect(() => {
     const liveResolvedMessageCount = selectByProtocol(storeMessageCountByProtocol, protocol);
     const rfBusy = getMeshcoreCompanionRepeaterRfBusySnapshot();
@@ -2650,6 +2704,9 @@ function AppContent() {
 
   const handleDmTargetConsumed = useCallback(() => {
     setPendingDmTarget(null);
+  }, []);
+  const handleChannelTargetConsumed = useCallback(() => {
+    setPendingChannelTarget(null);
   }, []);
 
   const { refreshMessagesFromDb: refreshMeshtasticMessagesInStore } = meshtasticDbRefresh;
@@ -3863,6 +3920,8 @@ function AppContent() {
                               nodes={chatNodesForPanel}
                               initialDmTarget={pendingDmTarget}
                               onDmTargetConsumed={handleDmTargetConsumed}
+                              initialChannelTarget={pendingChannelTarget}
+                              onChannelTargetConsumed={handleChannelTargetConsumed}
                               isActive={activePanelIndex === 1}
                               protocol={protocol}
                               identityId={focusedIdentityId}
@@ -5404,6 +5463,18 @@ function AppContent() {
           onOpenTab={openTabFromLauncher}
           onClose={closeLauncher}
           variant={shellCompact ? 'sheet' : 'dialog'}
+          channels={tabSlotIds.includes('Chat') ? launcherChannels : undefined}
+          contacts={tabSlotIds.includes('Nodes') ? launcherContacts : undefined}
+          contactsLabel={displayTabLabels[tabSlotIds.indexOf('Nodes')]}
+          onOpenChannel={(index) => {
+            setPendingChannelTarget(index);
+            openTabFromLauncher(tabSlotIds.indexOf('Chat'));
+          }}
+          onOpenContact={(id) => {
+            openTabFromLauncher(tabSlotIds.indexOf('Nodes'));
+            if (capabilities.hasReticulumPeersList) selectPeerFrom('list', id);
+            else selectNodeFrom('list', Number(id));
+          }}
           header={
             shellCompact ? (
               <ProtocolSwitcher

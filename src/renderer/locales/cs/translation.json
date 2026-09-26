@@ -6324,7 +6324,7 @@
     },
     "sectionPanelsAria": "Panely sekce {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Přejít na panel ({{shortcut}})",
+    "openLauncher": "Přejít na panel, kontakt nebo kanál ({{shortcut}})",
     "status": {
       "radio": "Rádio: {{status}}",
       "radioWithNode": "Rádio: {{status}}, uzel {{node}}",
@@ -6332,8 +6332,8 @@
     },
     "launcher": {
       "title": "Všechny panely",
-      "searchLabel": "Hledat panely",
-      "placeholder": "Přejít na panel",
+      "searchLabel": "Hledat panely, kontakty a kanály",
+      "placeholder": "Přejít na panel, kontakt nebo kanál",
       "noResults": "Hledání neodpovídá žádný panel",
       "otherGroup": "Ostatní",
       "pin": "Připnout {{label}}",
@@ -6344,7 +6344,10 @@
       "hintPin": "připnout",
       "panelCount_one": "{{count}} panel",
       "panelCount_few": "{{count}} panely",
-      "panelCount_other": "{{count}} panelů"
+      "panelCount_other": "{{count}} panelů",
+      "channelsGroup": "Kanály",
+      "contactsGroup": "Kontakty",
+      "moreMatches": "Další shody. Pokračujte v psaní a seznam se zúží."
     },
     "more": "Více"
   },

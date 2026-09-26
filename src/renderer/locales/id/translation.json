@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "Panel {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Buka panel ({{shortcut}})",
+    "openLauncher": "Buka panel, kontak, atau kanal ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, simpul {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "Semua panel",
-      "searchLabel": "Cari panel",
-      "placeholder": "Buka panel",
+      "searchLabel": "Cari panel, kontak, dan kanal",
+      "placeholder": "Buka panel, kontak, atau kanal",
       "noResults": "Tidak ada panel yang cocok",
       "otherGroup": "Lainnya",
       "pin": "Sematkan {{label}}",
@@ -6297,7 +6297,10 @@
       "hintOpen": "buka",
       "hintPin": "sematkan",
       "panelCount_one": "{{count}} panel",
-      "panelCount_other": "{{count}} panel"
+      "panelCount_other": "{{count}} panel",
+      "channelsGroup": "Kanal",
+      "contactsGroup": "Kontak",
+      "moreMatches": "Masih ada hasil lain. Terus ketik untuk mempersempit daftar."
     },
     "more": "Lainnya"
   },

@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "{{section}} 패널",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "패널로 이동 ({{shortcut}})",
+    "openLauncher": "패널, 연락처 또는 채널로 이동 ({{shortcut}})",
     "status": {
       "radio": "무선: {{status}}",
       "radioWithNode": "무선: {{status}}, 노드 {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "모든 패널",
-      "searchLabel": "패널 검색",
-      "placeholder": "패널로 이동",
+      "searchLabel": "패널, 연락처, 채널 검색",
+      "placeholder": "패널, 연락처 또는 채널로 이동",
       "noResults": "일치하는 패널이 없습니다",
       "otherGroup": "기타",
       "pin": "{{label}} 고정",
@@ -6297,7 +6297,10 @@
       "hintOpen": "열기",
       "hintPin": "고정",
       "panelCount_one": "패널 {{count}}개",
-      "panelCount_other": "패널 {{count}}개"
+      "panelCount_other": "패널 {{count}}개",
+      "channelsGroup": "채널",
+      "contactsGroup": "연락처",
+      "moreMatches": "일치 항목이 더 있습니다. 계속 입력해 목록을 좁히세요."
     },
     "more": "더보기"
   },

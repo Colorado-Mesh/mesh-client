@@ -6278,7 +6278,7 @@
     },
     "sectionPanelsAria": "{{section}} panelleri",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Bir panele git ({{shortcut}})",
+    "openLauncher": "Bir panele, kişiye veya kanala git ({{shortcut}})",
     "status": {
       "radio": "Radyo: {{status}}",
       "radioWithNode": "Radyo: {{status}}, düğüm {{node}}",
@@ -6286,8 +6286,8 @@
     },
     "launcher": {
       "title": "Tüm paneller",
-      "searchLabel": "Panel ara",
-      "placeholder": "Bir panele git",
+      "searchLabel": "Panelleri, kişileri ve kanalları ara",
+      "placeholder": "Bir panele, kişiye veya kanala git",
       "noResults": "Aramayla eşleşen panel yok",
       "otherGroup": "Diğer",
       "pin": "{{label}} sabitle",
@@ -6297,7 +6297,10 @@
       "hintOpen": "aç",
       "hintPin": "sabitle",
       "panelCount_one": "{{count}} panel",
-      "panelCount_other": "{{count}} panel"
+      "panelCount_other": "{{count}} panel",
+      "channelsGroup": "Kanallar",
+      "contactsGroup": "Kişiler",
+      "moreMatches": "Daha fazla eşleşme var. Listeyi daraltmak için yazmaya devam edin."
     },
     "more": "Diğer"
   },

@@ -6368,7 +6368,7 @@
     },
     "sectionPanelsAria": "Панели раздела {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Перейти к панели ({{shortcut}})",
+    "openLauncher": "Перейти к панели, контакту или каналу ({{shortcut}})",
     "status": {
       "radio": "Радио: {{status}}",
       "radioWithNode": "Радио: {{status}}, узел {{node}}",
@@ -6376,8 +6376,8 @@
     },
     "launcher": {
       "title": "Все панели",
-      "searchLabel": "Поиск панелей",
-      "placeholder": "Перейти к панели",
+      "searchLabel": "Поиск панелей, контактов и каналов",
+      "placeholder": "Перейти к панели, контакту или каналу",
       "noResults": "Нет панелей, подходящих под поиск",
       "otherGroup": "Прочее",
       "pin": "Закрепить {{label}}",
@@ -6389,7 +6389,10 @@
       "panelCount_one": "{{count}} панель",
       "panelCount_few": "{{count}} панели",
       "panelCount_many": "{{count}} панелей",
-      "panelCount_other": "{{count}} панели"
+      "panelCount_other": "{{count}} панели",
+      "channelsGroup": "Каналы",
+      "contactsGroup": "Контакты",
+      "moreMatches": "Есть ещё совпадения. Продолжайте ввод, чтобы сузить список."
     },
     "more": "Ещё"
   },

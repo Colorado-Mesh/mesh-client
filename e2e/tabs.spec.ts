@@ -33,7 +33,9 @@ test.describe('tabs', () => {
     await page.keyboard.press(`${modifier}+KeyK`);
     const launcher = page.getByRole('dialog', { name: 'All panels' });
     await expect(launcher).toBeVisible();
-    await launcher.getByRole('textbox', { name: 'Search panels' }).fill('sniff');
+    await launcher
+      .getByRole('textbox', { name: 'Search panels, contacts and channels' })
+      .fill('sniff');
     await page.keyboard.press('Enter');
     await expect(launcher).toBeHidden();
     await expect(page.getByRole('banner').getByRole('tab', { name: 'Sniffer' })).toHaveAttribute(

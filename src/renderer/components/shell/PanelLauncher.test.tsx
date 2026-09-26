@@ -80,9 +80,55 @@ describe('PanelLauncher', () => {
     expect(sheet.className).toContain('rounded-t-xl');
   });
 
+  it('finds channels and contacts while searching and opens them', async () => {
+    const user = userEvent.setup();
+    const onOpenChannel = vi.fn();
+    const onOpenContact = vi.fn();
+    render(
+      <PanelLauncher
+        sections={sections}
+        badgeCounts={{}}
+        pins={[]}
+        platform="linux"
+        onOpenTab={vi.fn()}
+        onTogglePin={vi.fn()}
+        onClose={vi.fn()}
+        channels={[
+          { index: 0, name: 'Public', search: 'public' },
+          { index: 3, name: '#weather', search: '#weather' },
+        ]}
+        contacts={[
+          { id: '1', name: 'Trail Dave', detail: 'TD', search: 'trail dave td 00000001' },
+          { id: '2', name: 'Weather Station', detail: 'WX', search: 'weather station wx 00000002' },
+        ]}
+        contactsLabel="Contacts"
+        onOpenChannel={onOpenChannel}
+        onOpenContact={onOpenContact}
+      />,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'All panels' });
+    // Nothing is listed until the user types.
+    expect(within(dialog).queryByRole('region', { name: 'Channels' })).toBeNull();
+
+    const input = screen.getByRole('textbox', { name: 'Search panels, contacts and channels' });
+    await user.type(input, 'weather');
+    const channels = within(dialog).getByRole('region', { name: 'Channels' });
+    const contacts = within(dialog).getByRole('region', { name: 'Contacts' });
+    expect(within(channels).getByRole('button', { name: '#weather' })).toBeInTheDocument();
+    await user.click(within(contacts).getByRole('button', { name: /Weather Station/ }));
+    expect(onOpenContact).toHaveBeenCalledWith('2');
+
+    // Enter opens the first match when no panel matches.
+    await user.clear(input);
+    await user.type(input, 'public{Enter}');
+    expect(onOpenChannel).toHaveBeenCalledWith(0);
+  });
+
   it('focuses the search field as a dialog', () => {
     renderLauncher();
-    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Search panels' }));
+    expect(document.activeElement).toBe(
+      screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+    );
   });
 
   it('lists all 18 MeshCore panels grouped by section', () => {
@@ -99,13 +145,18 @@ describe('PanelLauncher', () => {
 
   it('focuses the search field on open', () => {
     renderLauncher();
-    expect(screen.getByRole('textbox', { name: 'Search panels' })).toHaveFocus();
+    expect(
+      screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+    ).toHaveFocus();
   });
 
   it('filters by label and opens the first match with Enter', async () => {
     const user = userEvent.setup();
     const { props } = renderLauncher();
-    await user.type(screen.getByRole('textbox', { name: 'Search panels' }), 'snif');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+      'snif',
+    );
     expect(screen.getAllByRole('button', { name: /^(Sniffer)$/ })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'Chat, 4 unread' })).toBeNull();
     await user.keyboard('{Enter}');
@@ -115,14 +166,20 @@ describe('PanelLauncher', () => {
   it('matches stable slot ids so "nodes" finds Contacts', async () => {
     const user = userEvent.setup();
     renderLauncher();
-    await user.type(screen.getByRole('textbox', { name: 'Search panels' }), 'nodes');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+      'nodes',
+    );
     expect(screen.getByRole('button', { name: 'Contacts' })).toBeInTheDocument();
   });
 
   it('shows an empty state when nothing matches', async () => {
     const user = userEvent.setup();
     renderLauncher();
-    await user.type(screen.getByRole('textbox', { name: 'Search panels' }), 'zzz');
+    await user.type(
+      screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+      'zzz',
+    );
     expect(screen.getByText('No panels match your search')).toBeInTheDocument();
   });
 
@@ -135,7 +192,7 @@ describe('PanelLauncher', () => {
 
   it('moves through rows with the arrow keys and back to the search field', () => {
     renderLauncher();
-    const input = screen.getByRole('textbox', { name: 'Search panels' });
+    const input = screen.getByRole('textbox', { name: 'Search panels, contacts and channels' });
     fireEvent.keyDown(input, { key: 'ArrowDown' });
     const firstRow = screen.getByRole('button', { name: 'Chat, 4 unread' });
     expect(firstRow).toHaveFocus();
@@ -148,9 +205,12 @@ describe('PanelLauncher', () => {
 
   it('sends typing on a row back to the search field', () => {
     renderLauncher();
-    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Search panels' }), { key: 'ArrowDown' });
+    fireEvent.keyDown(
+      screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+      { key: 'ArrowDown' },
+    );
     fireEvent.keyDown(document.activeElement!, { key: 'r' });
-    const input = screen.getByRole('textbox', { name: 'Search panels' });
+    const input = screen.getByRole('textbox', { name: 'Search panels, contacts and channels' });
     expect(input).toHaveFocus();
     expect(input).toHaveValue('r');
   });
@@ -216,7 +276,9 @@ describe('PanelLauncher', () => {
     const last = focusables[focusables.length - 1];
     last?.focus();
     fireEvent.keyDown(document, { key: 'Tab' });
-    expect(screen.getByRole('textbox', { name: 'Search panels' })).toHaveFocus();
+    expect(
+      screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+    ).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
     expect(last).toHaveFocus();
   });
