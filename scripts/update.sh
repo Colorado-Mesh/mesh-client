@@ -583,6 +583,13 @@ MECP_UPSTREAM_WATCH_ENTRIES=(
   'xiang-dev-1/MECP||MECP language packs (vendored in renderer)|file:languages@ee17ef3d58d372d8c5157407c036f846869ab251'
 )
 
+# Open MECP upstream PRs carried locally ahead of the languages pin.
+# Format: "github-owner/repo|pr-number|display-label|review-url"
+# When PR merges: re-vendor languages/, bump MECP_UPSTREAM_WATCH_ENTRIES file:languages@sha, drop entry.
+MECP_PR_WATCH_ENTRIES=(
+  'xiang-dev-1/MECP|5|M16 medical supply drop|https://github.com/xiang-dev-1/MECP/pull/5'
+)
+
 RATSPEAK_KNOWN_ORG_REPOS=(
   '.github'
   'C6-Reticulum-ASM'
@@ -619,6 +626,10 @@ print_ratspeak_upstream_catalog() {
   done
   echo 'MECP_UPSTREAM_WATCH_ENTRIES:'
   for entry in "${MECP_UPSTREAM_WATCH_ENTRIES[@]}"; do
+    echo "  ${entry}"
+  done
+  echo 'MECP_PR_WATCH_ENTRIES:'
+  for entry in "${MECP_PR_WATCH_ENTRIES[@]}"; do
     echo "  ${entry}"
   done
 }
@@ -674,6 +685,55 @@ check_mecp_upstream() {
 
   if [ "${has_upstream_warning}" -eq 0 ]; then
     echo '  MECP upstream watch complete (reviewed baselines current).'
+  fi
+}
+
+# Track open MECP upstream PRs whose language-pack changes are already vendored locally.
+check_mecp_prs() {
+  local entry repo pr label url state
+  local has_mecp_pr_warning=0
+
+  if [ "${#MECP_PR_WATCH_ENTRIES[@]}" -eq 0 ]; then
+    return 0
+  fi
+
+  echo ''
+  echo 'Checking MECP upstream PRs (local languages may be ahead of pin)...'
+
+  for entry in "${MECP_PR_WATCH_ENTRIES[@]}"; do
+    IFS='|' read -r repo pr label url <<< "${entry}"
+    if [ -z "${pr}" ]; then
+      echo "  ${label}: no PR number — drop stale entry from MECP_PR_WATCH_ENTRIES"
+      continue
+    fi
+    state="$(github_pr_state "${repo}" "${pr}")"
+    case "${state}" in
+      open)
+        echo "  ${label}: upstream PR still open — ${url}"
+        echo "    Local languages may diverge from MECP_UPSTREAM_WATCH_ENTRIES pin until merge."
+        ;;
+      merged)
+        warn_box "${label} (MECP upstream PR)" "local ahead of pin" "upstream MERGED" "${url}"
+        echo "  Reason tracked: ${repo}#${pr} merged — re-vendor languages/,"
+        echo "    bump MECP_UPSTREAM_WATCH_ENTRIES file:languages@sha, drop entry from MECP_PR_WATCH_ENTRIES."
+        has_mecp_pr_warning=1
+        HAS_WARNING=1
+        ;;
+      closed)
+        warn_box "${label} (MECP upstream PR)" "local M16 present" "PR closed (not merged?)" "${url}"
+        echo "  Reason tracked: ${repo}#${pr} closed without merge — keep local code or revert;"
+        echo "    then drop entry from MECP_PR_WATCH_ENTRIES."
+        has_mecp_pr_warning=1
+        HAS_WARNING=1
+        ;;
+      *)
+        echo "  ${label}: could not query ${repo}#${pr} (install gh or check network) — ${url}"
+        ;;
+    esac
+  done
+
+  if [ "${has_mecp_pr_warning}" -eq 0 ]; then
+    echo '  MECP PR watch complete.'
   fi
 }
 
@@ -910,6 +970,7 @@ check_pinned_majors
 check_ratspeak_patches
 check_ratspeak_upstream
 check_mecp_upstream
+check_mecp_prs
 
 if [ "${HAS_WARNING}" -eq 0 ]; then
   echo 'No updates to watched packages — safe to proceed.'
