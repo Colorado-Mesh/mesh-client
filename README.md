@@ -63,6 +63,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
       <img src="docs/images/connection.png" height="200" alt="Connection"/>
       <img src="docs/images/repeaters.png" height="200" alt="Repeaters"/>
       <img src="docs/images/node-detail.png" height="200" alt="Node Detail"/>
+      <img src="docs/images/MECP.png" height="200" alt="MECP emergency compose"/>
     </td>
   </tr>
   <tr>
@@ -200,7 +201,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - **Sender filter**: click any message sender to filter the view to that sender; Escape clears
 - **Jump to date**: scroll the chat to a specific calendar date
 - **Link previews**: `http`/`https` URLs fetch metadata via main-process IPC — Open Graph for pages, **YouTube oEmbed** for watch/shorts/youtu.be links, and **inline image embeds** for direct raster URLs (`.jpg`, `.png`, etc.). Localhost and private IPs are blocked.
-- **Sound notifications**: audio ping for new messages in non-active channels/DMs; global mute in the toolbar; **per-conversation mute** (bell on channel/DM tabs) stored per protocol
+- **Sound notifications**: audio ping for new messages in non-active channels/DMs; global mute in the toolbar; **per-conversation mute** (bell on channel/DM tabs) stored per protocol. **App → Notifications → Notification tones** configures presets or short imported audio for channel, DM, reply/mention, each MECP severity, and ops alerts (link lost / battery low); MAYDAY/URGENT bypass mute (with a volume floor). See [notification-sounds.md](docs/notification-sounds.md)
 - **Message starring**: star messages from the hover row; **Starred** view lists bookmarks across conversations (newest first, cap 200)
 - **Timestamp tooltip**: hover the short time label for full date and time
 - **@mention autocomplete**: type `@` to open a node-name picker; Tab or Enter to insert; arrow keys to navigate
@@ -217,6 +218,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 **EMCOMM / Incident Command**
 
+- **MECP** (Mesh Emergency Communication Protocol): structured emergency text (`MECP/<severity>/<codes> …`) on Meshtastic, MeshCore, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (`mecp-received.log`), and can optionally bridge Meshtastic↔MeshCore RF channels (**App → MECP RF rebroadcast**, default off). Chat compose is opt-in (**App → MECP → Show MECP button in Chat**, default off). Details for agents: [`docs/agents/mecp.md`](docs/agents/mecp.md).
 - **Incident** tab (always visible on all three protocols; placed just above **App** in the sidebar — rarely needed day-to-day, but the red badge counts open MAYDAY/URGENT so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress **beacon** is active. Coordinates come from the report or the sender's last known position and can appear on the Map (**Layers → Emergency incidents**) for Meshtastic, MeshCore, **and Reticulum** (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). **Acknowledge** sends R01 (or **Confirm** / B02 when a beacon is active). **Resolve** closes the row locally. If you sent the distress beacon, **Cancel beacon** also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed but never badge. Details for agents: [`docs/agents/emcomm.md`](docs/agents/emcomm.md).
 - **Emergency outbox**: MECP / MAYDAY sends that can't go out live are queued as emergency priority and keep retrying after reconnect (no 24h age cutoff or attempt limit; a soft cap blocks, never deletes)
 - **ACK honesty**: broadcast acknowledgements are **heard by the network** / best effort — not read receipts
@@ -226,6 +228,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 **Map & Position**
 
 - Interactive map with node positions and your current location (device GPS → browser geolocation → IP-based city-level fallback); default **OpenStreetMap** basemap with optional **Carto Dark** and **USGS Topo** (US only; offline-cacheable like the other basemaps)
+- **Offline maps**: basemap tiles are served through the privileged **`mesh-tiles:`** protocol and cached under app **userData** `tile-cache/` (~1 GiB LRU; viewed tiles cache automatically while online). Use **Layers → Offline maps → Download current view** to pre-fetch a region (estimate + confirm; single-job size capped so downloads are not immediately evicted). Optional **Auto-cache** and **Clear tile cache**. Uncached areas are blank offline; markers and trails still render from local/SQLite state — see [Troubleshooting — Map offline](docs/troubleshooting.md#map-tab-without-internet-offline--no-wan)
 - **Layers** control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos, open **incidents**, **MGRS grid**); basemap preference persists in SQLite and localStorage
 - **Show on map** from the node list pin or node detail; switches to the Map tab and flies to that node
 - **Position trail**: persisted path overlay (configurable 1 h – 7 days); survives restarts via SQLite; senders of open incidents keep their track through retention pruning until the incident is resolved; toggle and window size in App tab; wipe via Danger Zone
@@ -568,19 +571,19 @@ Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/
 
 ### Tech Stack
 
-| Component    | Technology                                                                                                                                                    |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop      | Electron                                                                                                                                                      |
-| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                             |
-| Styling      | Tailwind CSS v4                                                                                                                                               |
-| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                    |
-| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via reticulum-sidecar btleplug GATT (all platforms)                                        |
-| MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                                           |
-| Reticulum    | Sidecar (rsReticulum/rsLXMF/rsNomad/rsLXST/lrgp-rs): LXMF paper, LXST, LRGP Games, Nomad/RRC/Remote                                                           |
-| Maps         | Leaflet + OpenStreetMap (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
-| Charts       | Recharts                                                                                                                                                      |
-| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                          |
-| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + optional `cargo` sidecar                                                 |
+| Component    | Technology                                                                                                                                                                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop      | Electron                                                                                                                                                                                                                                  |
+| UI           | React 19 + TypeScript 6 + Zustand                                                                                                                                                                                                         |
+| Styling      | Tailwind CSS v4                                                                                                                                                                                                                           |
+| Localization | i18next + react-i18next; 16 languages; static JSON bundles                                                                                                                                                                                |
+| Meshtastic   | @meshtastic/core + transport-http, transport-web-serial (JSR); BLE via reticulum-sidecar btleplug GATT (all platforms)                                                                                                                    |
+| MeshCore     | @liamcottle/meshcore.js (BLE, Web Serial, TCP via main-process IPC)                                                                                                                                                                       |
+| Reticulum    | Sidecar (rsReticulum/rsLXMF/rsNomad/rsLXST/lrgp-rs): LXMF paper, LXST, LRGP Games, Nomad/RRC/Remote                                                                                                                                       |
+| Maps         | Leaflet + OpenStreetMap / Carto Dark / USGS Topo via privileged `mesh-tiles:` + userData tile cache (Meshtastic/MeshCore node positions; Reticulum **Map** = local RMAP v4 discovery + link to rmap.world; **Topology** = RNS path graph) |
+| Charts       | Recharts                                                                                                                                                                                                                                  |
+| Database     | SQLite (node:sqlite built-in, via db-compat.ts shim)                                                                                                                                                                                      |
+| Build        | esbuild + Vite + electron-builder + Flatpak (freedesktop 24.08, Electron2 BaseApp) + optional `cargo` sidecar                                                                                                                             |
 
 ### Architecture
 

@@ -1,6 +1,6 @@
 # Mesh-Client
 
-Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, and **16-language UI**.
+Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus EMCOMM support via **MECP** and **TAK**.
 
 This page is the docs landing view. The full repository README (badges, feature reference, usage) lives on [GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).
 
@@ -15,6 +15,8 @@ Key outcomes:
 - True message persistence with SQLite-backed history.
 - Unified interface across Meshtastic, MeshCore, and Reticulum (tri-protocol switcher: green / cyan / amber).
 - Advanced mesh visibility via diagnostics, map/topology overlays, and routing insights.
+- EMCOMM: MECP emergency reports, Incident Command, and TAK (CoT) on all three protocols.
+- Offline-ready maps (`mesh-tiles:` cache + region download) and configurable chat/MECP notification tones.
 - Multi-language support (16 languages) with offline static bundles.
 - Cross-platform desktop support for macOS, Linux, and Windows.
 
@@ -33,6 +35,7 @@ Key outcomes:
 ![Connection](images/connection.png)
 ![Repeaters](images/repeaters.png)
 ![Node Detail](images/node-detail.png)
+![MECP emergency compose](images/MECP.png)
 
 ![Peers](images/peers.png)
 ![Nomad Network](images/nomad.png)
@@ -76,12 +79,22 @@ Also useful:
   - Room login/posts — [Troubleshooting](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
 - **Reticulum**
   - [Reticulum in mesh-client](reticulum.md) (sidecar, interfaces, LXMF chat, **RRC**, **Remote** rnsh/rncp, **Nomad My Pages**, propagation)
+  - [First-time Reticulum setup](reticulum-setup-guide.md)
   - [Sidecar IPC contract](reticulum-sidecar-ipc.md)
+  - [Reticulum Games parity](reticulum-games-parity.md) — Ratspeak Games tab checklist
+  - [Nomad hosting interop](nomad-hosting-interop.md)
   - [Reticulum troubleshooting](troubleshooting.md#reticulum) (sidecar, interfaces, Nomad, Remote transfer, RNode Wi‑Fi)
   - BLE scan busy when a Reticulum BLE RNode holds the adapter — [Troubleshooting](troubleshooting.md#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble)
   - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
+- **EMCOMM & field ops**
+  - MECP compose, alerts, audit, RF bridge — [Troubleshooting — MECP](troubleshooting.md#mecp-emergency-reports) · agent ref [mecp.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/mecp.md)
+  - Incident Command, emergency outbox, ACK/beacon — agent ref [emcomm.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/emcomm.md)
+  - Offline maps (`mesh-tiles:`, region download, USGS Topo) — [Troubleshooting — Map offline](troubleshooting.md#map-tab-without-internet-offline--no-wan) · agent ref [offline-maps.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/offline-maps.md)
+  - TAK (CoT gateway) — [Troubleshooting — TAK](troubleshooting.md#tak-cot-gateway)
 - **Support**
   - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic & MeshCore tabs), Reticulum interface audit; protocol-scoped row filtering
+  - [Notification sounds](notification-sounds.md) — chat, MECP, and ops tone defaults + App → Notifications customization
+  - [Log analysis](log-analysis.md) — Log panel **Analyze** heuristics and support reports
   - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
   - [Troubleshooting](troubleshooting.md)
   - Export for GitHub / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-export-for-github-app-tab)
@@ -93,8 +106,6 @@ Also useful:
   - [Third-party licenses](third-party-licenses.md)
   - [CI/CD](ci-cd.md) — workflows, local `act` runs, packaging
   - [Release process](release-process.md)
-  - [Reticulum Games parity](reticulum-games-parity.md) — Ratspeak Games tab checklist
-  - [Nomad hosting interop](nomad-hosting-interop.md)
 
 ---
 

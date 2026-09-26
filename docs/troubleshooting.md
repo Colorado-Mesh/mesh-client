@@ -1961,6 +1961,8 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 **Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. The IP-geolocation fallback returns immediately with code `OFFLINE` when there is no WAN. See **GPS "Location unavailable" or stuck on the map** above. Positions heard over the mesh do not require internet.
 
+**USGS Topo blank offline:** **USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See [offline-maps.md](agents/offline-maps.md).
+
 ### Verifying offline behavior (manual QA)
 
 With **Wi‑Fi off** or **airplane mode** on, using a **packaged** build if possible:
@@ -2003,7 +2005,19 @@ The app functions fully offline; this is not a critical error. When there is no 
 
 **Footer shows vX.Y.Z then Update error after Cut release:** The GitHub release may have been published with an `untagged-*` tag instead of `vX.Y.Z` (draft detach / leftover placeholder ref). On GitHub → Releases, confirm the latest release tag is `vX.Y.Z`. Repair with `GH_TOKEN=YOUR_ADMIN_PAT node scripts/repair-published-release-tag.mjs --tag vX.Y.Z`, or edit the release in the GitHub UI. CI prepare/finalize repair `tag_name` and delete orphan `untagged-*` refs; verify fails if any matching release is still untagged; a **Repair published release tag** workflow also runs on Publish.
 
-### Language and Translations
+### Language and translations
+
+**How do I change the language?**
+
+Click the **globe icon** in the header to select from the 16 supported languages. Your preference is saved across restarts.
+
+**A translation is incorrect or missing.**
+
+Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a [Translation Error issue](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) on GitHub with the correct text.
+
+**Why are some strings still in English?**
+
+The app falls back to English for any key that hasn't been translated into your selected language yet. Translations are bundled statically at build time; new translations will appear in the next app update.
 
 ## MECP (emergency reports)
 
@@ -2057,21 +2071,3 @@ Incidents persist across restarts in local storage (`mesh-client:incidents`), an
 **Watched node silence / battery / link-down alerts**
 
 Ops alerts use App settings (`nodeSilenceAlertMinutes`, `nodeBatteryLowThreshold`, `notifyOnLinkDown`) and **watched** nodes only — watch a node from node detail first. Silence escalation fires at **2×** the silence threshold (the first offline notice comes from the normal watch notifier); with no silence minutes set, escalation is off. Battery low needs battery telemetry (ignored when the node reports 0 or >100 % / charging) and re-arms after recovering 5 points above the threshold. Link-down waits ~5 s, never fires on manual disconnect or while RF reconnect is in progress, and fires once reconnect gives up. Reticulum has no battery telemetry or link-down alert.
-
-**USGS Topo blank offline**
-
-**USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See [offline-maps.md](agents/offline-maps.md).
-
-## Language / i18n
-
-**How do I change the language?**
-
-Click the **globe icon** in the header to select from the 16 supported languages. Your preference is saved across restarts.
-
-**A translation is incorrect or missing.**
-
-Translations are machine-generated using MyMemory and may contain errors. If you find a mistake, please open a [Translation Error issue](https://github.com/Colorado-Mesh/mesh-client/issues/new?assignees=&labels=translation&template=translation-error.md&title=Translation+Error) on GitHub with the correct text.
-
-**Why are some strings still in English?**
-
-The app falls back to English for any key that hasn't been translated into your selected language yet. Translations are bundled statically at build time; new translations will appear in the next app update.
