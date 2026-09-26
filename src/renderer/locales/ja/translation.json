@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "メッセージアクションボタンのホバー色",
         "description": "すべてのメッセージアクションボタン（コピー、返信、反応、ダイレクトメッセージ、スター、スター付き）のホバーカラー。"
+      },
+      "chatOutgoingBg": {
+        "label": "送信メッセージの塗りつぶし",
+        "description": "自分のメッセージの背景塗りつぶし (22% の不透明度で適用)。"
+      },
+      "chatOutgoingBorder": {
+        "label": "送信メッセージの境界線",
+        "description": "自分のメッセージの境界線の色 (25% の不透明度で適用)。"
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "チャンネルを検索",
       "listLabel": "チャンネル",
       "empty": "一致するチャンネルはありません"
-    }
+    },
+    "toolbarLabel": "会話ツール",
+    "composeHint": "Enter で送信、Shift+Enter で改行"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

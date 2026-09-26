@@ -1,7 +1,16 @@
 /* eslint-disable react-hooks/refs */
 import 'emoji-picker-element';
 
-import { ChevronDown, ChevronUp, CornerUpLeft, MapPin, Mic, Smile } from 'lucide-react-motion';
+import {
+  ChevronDown,
+  ChevronUp,
+  CornerUpLeft,
+  Info,
+  MapPin,
+  Mic,
+  Send,
+  Smile,
+} from 'lucide-react-motion';
 import {
   type ReactNode,
   type RefObject,
@@ -1163,14 +1172,9 @@ export function ChatComposer({
   const counterLiveText =
     limitStatus.phase === 'split' || limitStatus.phase === 'overMax' ? counterMainText : undefined;
 
+  // One composer look for channels, DMs and rooms (Option B); the placeholder says where it goes.
   const textareaClass =
-    variant === 'room'
-      ? 'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-secondary-dark bg-app-bg px-3 py-2 text-sm text-slate-200 placeholder:text-muted transition-colors focus:outline-none focus:border-brand-green'
-      : `max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border px-3.5 py-2.5 text-sm text-slate-200 placeholder:text-muted transition-colors focus:outline-none ${
-          isDmMode
-            ? 'border-purple-500/50 bg-purple-950/30 focus:border-purple-400'
-            : 'bg-app-bg border-secondary-dark focus:border-brand-green'
-        }`;
+    'max-h-32 min-h-[2.625rem] w-full resize-none overflow-y-auto rounded-lg border border-secondary-dark bg-app-bg px-3.5 py-2.5 text-sm text-slate-200 placeholder:text-muted transition-colors focus:outline-none focus:border-brand-green';
 
   const floodScopeOverrideActive = floodScopeOverride !== '';
   const floodScopeOverrideIndicator =
@@ -1178,47 +1182,30 @@ export function ChatComposer({
       ? t('chatPanel.floodScopeOverrideUnscoped')
       : floodScopeOverride || null;
 
-  const sendButtonToneClass =
-    variant === 'room'
-      ? 'bg-brand-green/20 text-brand-green border-brand-green/40 hover:bg-brand-green/30 border text-sm font-medium disabled:opacity-40'
-      : `text-sm font-medium transition-colors disabled:bg-secondary-dark disabled:text-muted ${
-          showQueueButton
-            ? 'bg-slate-600 text-white hover:bg-slate-500'
-            : isDmMode
-              ? 'bg-purple-600 text-white hover:bg-purple-500'
-              : 'bg-readable-green hover:bg-readable-green/90 text-white'
-        }`;
+  const sendButtonToneClass = `text-sm font-medium transition-colors disabled:bg-secondary-dark disabled:text-muted ${
+    showQueueButton
+      ? 'bg-slate-600 text-white hover:bg-slate-500'
+      : 'bg-readable-green hover:bg-readable-green/90 text-white'
+  }`;
 
-  const sendButtonClass =
-    variant === 'room'
-      ? `${sendButtonToneClass} rounded px-4 py-2`
-      : `${sendButtonToneClass} h-[2.625rem] rounded-lg px-4`;
+  const sendButtonClass = `${sendButtonToneClass} inline-flex h-[2.625rem] items-center gap-1.5 rounded-lg px-4`;
 
-  const sendButtonSplitMainClass =
-    variant === 'room'
-      ? `${sendButtonToneClass} rounded-l border-r-0 px-4 py-2`
-      : `${sendButtonToneClass} h-[2.625rem] rounded-l-lg px-4`;
+  const sendButtonSplitMainClass = `${sendButtonToneClass} inline-flex h-[2.625rem] items-center gap-1.5 rounded-l-lg px-4`;
 
-  const sendButtonSplitChevronClass =
-    variant === 'room'
-      ? `${sendButtonToneClass} rounded-r border-l border-l-black/20 px-1.5 py-2`
-      : `${sendButtonToneClass} h-[2.625rem] rounded-r-lg border-l border-l-black/20 px-1.5`;
+  const sendButtonSplitChevronClass = `${sendButtonToneClass} h-[2.625rem] rounded-r-lg border-l border-l-black/20 px-1.5`;
+
+  const sendButtonIcon = showQueueButton ? null : (
+    <Send aria-hidden className="h-4 w-4 shrink-0" trigger={iconTrigger} size={16} />
+  );
 
   // Suppress the hover tooltip while the scope menu is open so it cannot cover the options.
   const floodScopeChevronTooltipProps = floodScopeMenuOpen ? { 'data-no-instant-tooltip': '' } : {};
 
-  const emojiButtonClass =
-    variant === 'room'
-      ? `rounded-lg px-2.5 py-2 transition-colors disabled:opacity-50 ${
-          showComposePicker
-            ? 'bg-brand-green/20 text-brand-green'
-            : 'border-secondary-dark bg-sidebar-active-bg text-muted border hover:text-slate-200'
-        }`
-      : `flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
-          showComposePicker
-            ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
-            : 'border-secondary-dark bg-sidebar-active-bg text-muted hover:text-slate-200'
-        }`;
+  const emojiButtonClass = `flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+    showComposePicker
+      ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
+      : 'border-secondary-dark bg-sidebar-active-bg text-muted hover:text-slate-200'
+  }`;
 
   const showMeshcoreGifButton =
     protocol === 'meshcore' && meshcoreOpenWireCompat && variant === 'chat';
@@ -1493,6 +1480,7 @@ export function ChatComposer({
               aria-label={sendLabel}
               className={sendButtonSplitMainClass}
             >
+              {sendButtonIcon}
               {sendLabel}
             </button>
             <button
@@ -1715,12 +1703,19 @@ export function ChatComposer({
               aria-label={sendLabel}
               className={sendButtonClass}
             >
+              {sendButtonIcon}
               {sendLabel}
             </button>
           </div>
         )}
       </div>
 
+      {!showCounter && (
+        // Keyboard hint (Option B). Touch keyboards send with their own key, so it is hidden there.
+        <p className="text-label text-muted mt-1 pointer-coarse:hidden">
+          {t('chatPanel.composeHint')}
+        </p>
+      )}
       {showCounter && (
         <div className="mt-1 flex items-center justify-end gap-1 text-right text-xs">
           <span
@@ -1737,20 +1732,22 @@ export function ChatComposer({
           {limitStatus.phase === 'split' && (
             <HelpTooltip text={t('chatPanel.composeLimit.splitHint')}>
               <span
-                className="text-muted cursor-help select-none"
+                role="img"
+                className="text-muted inline-flex cursor-help select-none"
                 aria-label={t('chatPanel.composeLimit.splitHint')}
               >
-                ⓘ
+                <Info aria-hidden className="h-3.5 w-3.5" size={14} />
               </span>
             </HelpTooltip>
           )}
           {singlePacketProtocol && limitStatus.phase === 'warn' && (
             <HelpTooltip text={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}>
               <span
-                className="text-muted cursor-help select-none"
+                role="img"
+                className="text-muted inline-flex cursor-help select-none"
                 aria-label={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}
               >
-                ⓘ
+                <Info aria-hidden className="h-3.5 w-3.5" size={14} />
               </span>
             </HelpTooltip>
           )}

@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Hover-Farbe der Schaltfläche „Nachrichtenaktion“",
         "description": "Hover-Farbe für alle Schaltflächen für Nachrichtenaktionen (Kopieren, Antworten, Reagieren, Direktnachricht, Sternchen und wenn Sternchen markiert sind)."
+      },
+      "chatOutgoingBg": {
+        "label": "Füllung ausgehender Nachrichten",
+        "description": "Hintergrundfüllung für Ihre eigenen Nachrichten (angewendet bei 22 % Deckkraft)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Rahmen für ausgehende Nachrichten",
+        "description": "Rahmenfarbe für Ihre eigenen Nachrichten (angewendet bei 25 % Deckkraft)."
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "Kanal suchen",
       "listLabel": "Kanäle",
       "empty": "Keine passenden Kanäle"
-    }
+    },
+    "toolbarLabel": "Unterhaltungswerkzeuge",
+    "composeHint": "Eingabetaste zum Senden, Umschalt+Eingabetaste für eine neue Zeile"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

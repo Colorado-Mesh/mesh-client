@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Barva tlačítka akce zprávy při najetí myší",
         "description": "U všech tlačítek akce zprávy (kopírovat, odpovídat, reagovat, přímá zpráva, hvězdička a při označení hvězdičkou najeďte myší)."
+      },
+      "chatOutgoingBg": {
+        "label": "Vyplnění odchozí zprávy",
+        "description": "Vyplnění pozadí pro vaše vlastní zprávy (použito při 22% neprůhlednosti)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Ohraničení odchozí zprávy",
+        "description": "Barva ohraničení pro vaše vlastní zprávy (použito při 25% neprůhlednosti)."
       }
     },
     "themePreset": {
@@ -810,7 +818,9 @@
       "search": "Najít kanál",
       "listLabel": "Kanály",
       "empty": "Žádný kanál neodpovídá"
-    }
+    },
+    "toolbarLabel": "Nástroje konverzace",
+    "composeHint": "Enter pro odeslání, Shift+Enter pro nový řádek"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

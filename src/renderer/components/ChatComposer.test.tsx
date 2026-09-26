@@ -151,6 +151,47 @@ describe('ChatComposer', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('shows the Enter hint until the length counter takes its place, and the send icon with its label', () => {
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    const hint = screen.getByText('chatPanel.composeHint');
+    // Touch keyboards send with their own key; the hint is for hardware keyboards only.
+    expect(hint.className).toContain('pointer-coarse:hidden');
+    const send = screen.getByRole('button', { name: 'Send' });
+    expect(send).toHaveTextContent('Send');
+    expect(send.querySelector('svg')).not.toBeNull();
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'a'.repeat(140) } });
+    expect(screen.queryByText('chatPanel.composeHint')).not.toBeInTheDocument();
+  });
+
+  it('uses the same composer tones for DMs as for channels (no purple)', () => {
+    render(
+      <ChatComposer
+        protocol="meshtastic"
+        viewKey="dm:2"
+        isConnected
+        isDmMode
+        allowOutbox={false}
+        onSendChunk={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'hi' } });
+    expect(screen.getByRole('textbox').className).not.toMatch(/purple/);
+    const send = screen
+      .getAllByRole('button')
+      .find((b) => b.className.includes('bg-readable-green'));
+    expect(send).toBeDefined();
+    expect(send?.className).not.toMatch(/purple/);
+  });
+
   it('clears input after successful send', async () => {
     const onSendChunk = vi.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();

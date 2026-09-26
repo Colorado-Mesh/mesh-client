@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Couleur du bouton d'action du message au survol",
         "description": "Survolez la couleur pour tous les boutons d'action de message (copier, répondre, réagir, message direct, étoile et lorsqu'il est marqué d'une étoile)."
+      },
+      "chatOutgoingBg": {
+        "label": "Remplissage des messages sortants",
+        "description": "Remplissage d'arrière-plan pour vos propres messages (appliqué avec une opacité de 22 %)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Bordure du message sortant",
+        "description": "Couleur de bordure pour vos propres messages (appliquée avec une opacité de 25 %)."
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "Rechercher un canal",
       "listLabel": "Canaux",
       "empty": "Aucun canal ne correspond"
-    }
+    },
+    "toolbarLabel": "Outils de conversation",
+    "composeHint": "Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

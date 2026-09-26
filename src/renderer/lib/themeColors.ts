@@ -22,6 +22,8 @@ export type ThemeColorKey =
   | 'muted'
   | 'chatIncomingBg'
   | 'chatIncomingBorder'
+  | 'chatOutgoingBg'
+  | 'chatOutgoingBorder'
   | 'messageActionsBarBg'
   | 'messageActionButtonHover';
 
@@ -37,6 +39,8 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
   muted: '--color-muted',
   chatIncomingBg: '--color-chat-incoming-bg',
   chatIncomingBorder: '--color-chat-incoming-border',
+  chatOutgoingBg: '--color-chat-outgoing-bg',
+  chatOutgoingBorder: '--color-chat-outgoing-border',
   messageActionsBarBg: '--color-message-actions-bar-bg',
   messageActionButtonHover: '--color-message-action-button-hover',
 };
@@ -53,6 +57,8 @@ export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   muted: '#94a3b8',
   chatIncomingBg: '#1e293b',
   chatIncomingBorder: '#1e293b',
+  chatOutgoingBg: '#15803d',
+  chatOutgoingBorder: '#86efac',
   messageActionsBarBg: '#0f172a',
   messageActionButtonHover: '#94a3b8',
 };
@@ -138,6 +144,16 @@ export const THEME_TOKEN_META: ThemeTokenMeta[] = [
     descriptionKey: 'appPanel.theme.chatIncomingBorder.description',
   },
   {
+    key: 'chatOutgoingBg',
+    labelKey: 'appPanel.theme.chatOutgoingBg.label',
+    descriptionKey: 'appPanel.theme.chatOutgoingBg.description',
+  },
+  {
+    key: 'chatOutgoingBorder',
+    labelKey: 'appPanel.theme.chatOutgoingBorder.label',
+    descriptionKey: 'appPanel.theme.chatOutgoingBorder.description',
+  },
+  {
     key: 'messageActionsBarBg',
     labelKey: 'appPanel.theme.messageActionsBarBg.label',
     descriptionKey: 'appPanel.theme.messageActionsBarBg.description',
@@ -148,6 +164,16 @@ export const THEME_TOKEN_META: ThemeTokenMeta[] = [
     descriptionKey: 'appPanel.theme.messageActionButtonHover.description',
   },
 ];
+
+/**
+ * Tokens the user picks as a solid color but that render translucent over the chat background
+ * (the alpha is part of the design, not the setting). Must match styles.css.
+ */
+const THEME_TOKEN_ALPHA: Partial<Record<ThemeColorKey, number>> = {
+  chatIncomingBg: 0.38,
+  chatOutgoingBg: 0.22,
+  chatOutgoingBorder: 0.25,
+};
 
 const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const BARE_HEX3 = /^[0-9a-fA-F]{3}$/;
@@ -237,11 +263,12 @@ export function applyThemeColors(
   const root = document.documentElement;
   for (const key of Object.keys(THEME_CSS_VARS) as ThemeColorKey[]) {
     const hex = resolved[key];
-    if (key === 'chatIncomingBg') {
+    const alpha = THEME_TOKEN_ALPHA[key];
+    if (alpha !== undefined) {
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
       const b = parseInt(hex.slice(5, 7), 16);
-      root.style.setProperty(THEME_CSS_VARS[key], `rgb(${r} ${g} ${b} / 0.38)`);
+      root.style.setProperty(THEME_CSS_VARS[key], `rgb(${r} ${g} ${b} / ${String(alpha)})`);
     } else if (key === 'messageActionsBarBg') {
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);

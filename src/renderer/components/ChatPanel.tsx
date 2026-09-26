@@ -2582,6 +2582,11 @@ function ChatPanel({
                       }}
                       className={`${chipClass(isActiveChannel)} inline-flex shrink-0 items-center gap-1.5`}
                     >
+                      {!ch.name.startsWith('#') && (
+                        <span aria-hidden="true" className="text-muted -mr-1 font-mono">
+                          #
+                        </span>
+                      )}
                       {ch.name}
                       {unread > 0 && <ChipUnreadBadge count={unread} />}
                     </button>
@@ -2603,7 +2608,11 @@ function ChatPanel({
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-0.5">
+        <div
+          role="group"
+          aria-label={t('chatPanel.toolbarLabel')}
+          className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 rounded-lg border p-0.5"
+        >
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.jumpToDate')}
             aria-pressed={showDatePicker}
@@ -3200,34 +3209,28 @@ function ChatPanel({
                       >
                         {/* Bubble row */}
                         <div
-                          className={`group/msg flex max-w-[80%] items-end gap-1 ${
+                          className={`group/msg flex max-w-[min(80%,40rem)] items-end gap-1 ${
                             isOwn ? 'flex-row-reverse' : 'flex-row'
                           }`}
                         >
                           {/* Message bubble */}
                           <div
-                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
+                            className={`min-w-0 rounded-xl border px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
                               const mecp = tryParseMecp(msg.payload);
                               if (mecp?.severity != null) {
                                 return mecpChatBubbleToneClasses(mecp.severity, isOwn);
                               }
-                              return compactMerged
-                                ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
-                                    isDm
-                                      ? isOwn
-                                        ? 'border border-purple-500/30 bg-purple-600/20'
-                                        : 'border border-purple-600/30 bg-purple-700/20'
-                                      : isOwn
-                                        ? 'border border-blue-500/30 bg-blue-600/20'
-                                        : 'border-chat-incoming-border bg-chat-incoming-bg border'
-                                  }`
-                                : isDm
-                                  ? isOwn
-                                    ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-purple-500/30 bg-purple-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
-                                  : isOwn
-                                    ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`;
+                              // Option B: incoming and outgoing tones are theme tokens (App >
+                              // Appearance > Colors); DMs use the same tones as channels.
+                              const tone = isOwn
+                                ? 'border-chat-outgoing-border bg-chat-outgoing-bg'
+                                : 'border-chat-incoming-border bg-chat-incoming-bg';
+                              // The small corner points at the sender (top-left in, top-right out).
+                              const tail = isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm';
+                              if (!compactMerged) return `${tone} ${tail}`;
+                              return `${tone} ${compactStackTop ? 'rounded-t-none border-t-0' : tail} ${
+                                compactStackBottom ? 'rounded-b-none border-b-0' : ''
+                              }`;
                             })()}`}
                           >
                             {/* Header: sender name (clickable) + DM indicator + time */}
@@ -3269,13 +3272,11 @@ function ChatPanel({
                                         onNodeClick(msg.sender_id);
                                       }}
                                       className={`cursor-pointer text-xs font-semibold hover:underline ${
-                                        isDm
-                                          ? 'text-purple-400'
-                                          : isOwn
-                                            ? 'text-blue-400'
-                                            : filterSender === msg.sender_id
-                                              ? 'text-blue-300 underline'
-                                              : 'text-bright-green'
+                                        isOwn
+                                          ? 'text-slate-200'
+                                          : filterSender === msg.sender_id
+                                            ? 'text-bright-green underline'
+                                            : 'text-bright-green'
                                       }`}
                                       title={t('chatPanel.filterBySender')}
                                     >
@@ -3294,8 +3295,8 @@ function ChatPanel({
                                         {...{ [PARENT_HOVER_ATTR]: '' }}
                                         className={`text-3xs shrink-0 rounded px-1 py-0.5 transition-colors ${
                                           filterSender === msg.sender_id
-                                            ? 'bg-blue-700/40 text-blue-300'
-                                            : 'text-slate-500 hover:text-blue-400'
+                                            ? 'bg-brand-green/12 text-bright-green'
+                                            : 'text-muted hover:text-slate-200'
                                         }`}
                                         title={t('chatPanel.filterBySender')}
                                       >
@@ -3308,12 +3309,10 @@ function ChatPanel({
                                       </button>
                                     )}
                                     {isDm && (
-                                      <span className="text-2xs font-medium text-purple-400/70">
-                                        DM
-                                      </span>
+                                      <span className="text-muted text-2xs font-medium">DM</span>
                                     )}
                                     <span
-                                      className="text-muted text-2xs"
+                                      className="text-muted text-2xs font-mono tabular-nums"
                                       title={formatFullTimestamp(msg.timestamp)}
                                     >
                                       {formatTime(msg.timestamp)}
@@ -3389,16 +3388,20 @@ function ChatPanel({
                                   !!orig && (reticulumReplyHash != null || msg.replyId != null);
                                 if (!quoteSnippet && !quotedLabel) return null;
                                 const quoteClassName =
-                                  'bg-app-bg/60 mb-1.5 flex w-full gap-1.5 rounded-lg border border-slate-800 px-2 py-1.5 text-left';
+                                  'bg-app-bg mb-1.5 flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left';
                                 const quoteBody = (
                                   <>
-                                    <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
+                                    <CornerUpLeft
+                                      aria-hidden
+                                      className="text-muted mt-0.5 h-3.5 w-3.5 shrink-0"
+                                      size={14}
+                                    />
                                     <div className="min-w-0 flex-1">
-                                      <span className="text-2xs block font-semibold text-gray-400">
+                                      <span className="text-2xs block font-semibold text-slate-300">
                                         {quotedLabel}
                                       </span>
                                       {quoteSnippet ? (
-                                        <span className="text-label line-clamp-2 block break-words text-slate-400">
+                                        <span className="text-label text-muted line-clamp-2 block break-words">
                                           {quoteSnippet}
                                         </span>
                                       ) : null}

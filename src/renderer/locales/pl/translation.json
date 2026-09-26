@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Kolor przycisku akcji wiadomości po najechaniu kursorem",
         "description": "Najedź kursorem na kolor wszystkich przycisków akcji wiadomości (kopiuj, odpowiedz, zareaguj, wiadomość bezpośrednia, gwiazdka i po oznaczeniu gwiazdką)."
+      },
+      "chatOutgoingBg": {
+        "label": "Wypełnienie wiadomości wychodzącej",
+        "description": "Wypełnienie tła dla Twoich wiadomości (stosowane przy kryciu 22%)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Ramka wiadomości wychodzącej",
+        "description": "Kolor obramowania Twoich wiadomości (stosowany przy kryciu 25%)."
       }
     },
     "themePreset": {
@@ -828,7 +836,9 @@
       "search": "Znajdź kanał",
       "listLabel": "Kanały",
       "empty": "Brak pasujących kanałów"
-    }
+    },
+    "toolbarLabel": "Narzędzia rozmowy",
+    "composeHint": "Enter, aby wysłać; Shift+Enter, aby dodać nowy wiersz"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

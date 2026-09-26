@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Bericht actieknop hover kleur",
         "description": "Hover kleur voor alle actieknoppen van het bericht (kopiëren, beantwoorden, reageren, direct bericht, ster en wanneer met ster)."
+      },
+      "chatOutgoingBg": {
+        "label": "Vulling uitgaand bericht",
+        "description": "Achtergrondvulling voor je eigen berichten (toegepast bij een dekking van 22%)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Rand voor uitgaand bericht",
+        "description": "Randkleur voor je eigen berichten (toegepast bij een dekking van 25%)."
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "Kanaal zoeken",
       "listLabel": "Kanalen",
       "empty": "Geen kanalen gevonden"
-    }
+    },
+    "toolbarLabel": "Gesprekshulpmiddelen",
+    "composeHint": "Enter om te verzenden, Shift+Enter voor een nieuwe regel"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

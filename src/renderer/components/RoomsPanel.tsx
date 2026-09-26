@@ -2323,8 +2323,8 @@ export default function RoomsPanel({
                               compactMode ? 'py-1' : 'py-2'
                             } ${
                               isOwn
-                                ? 'bg-purple-900/30 text-purple-100'
-                                : 'bg-gray-800/60 text-gray-200'
+                                ? 'border-chat-outgoing-border bg-chat-outgoing-bg border text-slate-100'
+                                : 'border-chat-incoming-border bg-chat-incoming-bg border text-slate-200'
                             } ${
                               compactMerged
                                 ? compactStackTop

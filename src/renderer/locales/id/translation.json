@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Tombol tindakan pesan hover color",
         "description": "Arahkan kursor ke warna untuk semua tombol tindakan pesan (salin, balas, bereaksi, pesan langsung, bintang, dan saat dibintangi)."
+      },
+      "chatOutgoingBg": {
+        "label": "Isi pesan keluar",
+        "description": "Pengisian latar belakang untuk pesan Anda sendiri (diterapkan pada opacity 22%)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Batas pesan keluar",
+        "description": "Warna batas untuk pesan Anda sendiri (diterapkan pada opacity 25%)."
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "Cari kanal",
       "listLabel": "Kanal",
       "empty": "Tidak ada kanal yang cocok"
-    }
+    },
+    "toolbarLabel": "Alat percakapan",
+    "composeHint": "Enter untuk mengirim, Shift+Enter untuk baris baru"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

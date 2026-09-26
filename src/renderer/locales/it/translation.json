@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Colore del pulsante di azione del messaggio al passaggio del mouse",
         "description": "Colore del passaggio del mouse per tutti i pulsanti di azione del messaggio (copia, risposta, reazione, messaggio diretto, stella e quando è selezionato)."
+      },
+      "chatOutgoingBg": {
+        "label": "Riempimento dei messaggi in uscita",
+        "description": "Riempimento dello sfondo per i tuoi messaggi (applicato con un'opacità del 22%)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Bordo del messaggio in uscita",
+        "description": "Colore del bordo per i tuoi messaggi (applicato con un'opacità del 25%)."
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "Trova un canale",
       "listLabel": "Canali",
       "empty": "Nessun canale corrispondente"
-    }
+    },
+    "toolbarLabel": "Strumenti della conversazione",
+    "composeHint": "Invio per inviare, Maiusc+Invio per andare a capo"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Cor do botão de ação da mensagem ao passar o mouse",
         "description": "Cor do cursor para todos os botões de ação da mensagem (copiar, responder, reagir, mensagem direta, estrela e quando marcado com estrela)."
+      },
+      "chatOutgoingBg": {
+        "label": "Preenchimento de mensagem enviada",
+        "description": "Preenchimento de plano de fundo para suas próprias mensagens (aplicado com 22% de opacidade)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Borda de mensagem enviada",
+        "description": "Cor da borda para suas próprias mensagens (aplicada com 25% de opacidade)."
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "Encontrar um canal",
       "listLabel": "Canais",
       "empty": "Nenhum canal corresponde"
-    }
+    },
+    "toolbarLabel": "Ferramentas da conversa",
+    "composeHint": "Enter para enviar, Shift+Enter para nova linha"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -114,6 +114,17 @@ describe('themeColors', () => {
       vi.restoreAllMocks();
     });
 
+    it('sets the outgoing bubble fill and border as translucent rgb()', () => {
+      const setProp = vi.fn();
+      vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);
+      applyThemeColors({ ...DEFAULT_THEME_COLORS });
+      const fill = setProp.mock.calls.find(([prop]) => prop === '--color-chat-outgoing-bg');
+      const border = setProp.mock.calls.find(([prop]) => prop === '--color-chat-outgoing-border');
+      expect(fill?.[1]).toBe('rgb(21 128 61 / 0.22)');
+      expect(border?.[1]).toBe('rgb(134 239 172 / 0.25)');
+      vi.restoreAllMocks();
+    });
+
     it('sets appBg as bare hex', () => {
       const setProp = vi.fn();
       vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);

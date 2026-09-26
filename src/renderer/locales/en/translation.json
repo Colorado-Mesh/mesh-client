@@ -395,6 +395,14 @@
       "messageActionButtonHover": {
         "label": "Message action button hover color",
         "description": "Hover color for all message action buttons (copy, reply, react, direct message, star, and when starred)."
+      },
+      "chatOutgoingBg": {
+        "label": "Outgoing message fill",
+        "description": "Background fill for your own messages (applied at 22% opacity)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Outgoing message border",
+        "description": "Border color for your own messages (applied at 25% opacity)."
       }
     },
     "messageActionsBarBgVisible": "Show background",
@@ -790,7 +798,9 @@
       "search": "Find a channel",
       "listLabel": "Channels",
       "empty": "No channels match"
-    }
+    },
+    "toolbarLabel": "Conversation tools",
+    "composeHint": "Enter to send, Shift+Enter for a new line"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

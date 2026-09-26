@@ -307,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "消息操作按钮悬停颜色",
         "description": "所有消息操作按钮（复制、回复、反应、直接消息、星标和加星标时）的悬停颜色。"
+      },
+      "chatOutgoingBg": {
+        "label": "发出消息填充",
+        "description": "你自己发送的消息的背景填充（以 22% 不透明度应用）。"
+      },
+      "chatOutgoingBorder": {
+        "label": "发出消息边框",
+        "description": "你自己发送的消息的边框颜色（以 25% 不透明度应用）。"
       }
     },
     "themePreset": {
@@ -790,7 +798,9 @@
       "search": "查找频道",
       "listLabel": "频道",
       "empty": "没有匹配的频道"
-    }
+    },
+    "toolbarLabel": "会话工具",
+    "composeHint": "按 Enter 发送，Shift+Enter 换行"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

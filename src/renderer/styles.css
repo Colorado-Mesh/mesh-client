@@ -37,6 +37,9 @@
      color-mixes to a light/white ring on Chromium/Electron. */
   --color-chat-incoming-bg: rgb(30 41 59 / 0.38);
   --color-chat-incoming-border: #1e293b;
+  /* Own messages (Option B): readable green fill at 22%, brand green border at 25%. */
+  --color-chat-outgoing-bg: rgb(21 128 61 / 0.22);
+  --color-chat-outgoing-border: rgb(134 239 172 / 0.25);
   /* Message actions bar background — hidden by default (opacity 0); toggled to
      fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
   --color-message-actions-bar-bg: rgb(15 23 42 / 0);

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -5647,5 +5647,77 @@ describe('ChatPanel reticulum dm-only chat', () => {
     await user.click(screen.getByRole('button', { name: 'Unknown Peer' }));
     expect(onPeerClick).not.toHaveBeenCalled();
     expect(onNodeClick).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatPanel — Option B bubbles and toolbar', () => {
+  it('draws own messages with the outgoing tokens and others with the incoming tokens', async () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, payload: 'from alice', timestamp: now }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'from me', timestamp: now + 1 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const incoming = (await screen.findByText('from alice')).closest('.rounded-xl');
+    const outgoing = screen.getByText('from me').closest('.rounded-xl');
+    expect(incoming?.className).toContain('bg-chat-incoming-bg');
+    expect(incoming?.className).toContain('rounded-tl-sm');
+    expect(outgoing?.className).toContain('bg-chat-outgoing-bg');
+    expect(outgoing?.className).toContain('border-chat-outgoing-border');
+    expect(outgoing?.className).toContain('rounded-tr-sm');
+    for (const bubble of [incoming, outgoing]) {
+      expect(bubble?.className).not.toMatch(/purple|blue-/);
+    }
+  });
+
+  it('keeps MECP severity tones ahead of the outgoing tone', async () => {
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'MECP/0/B01 M01' })]}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(container.querySelector('.rounded-xl.bg-red-900\\/30')).not.toBeNull();
+    });
+    expect(container.querySelector('.bg-chat-outgoing-bg')).toBeNull();
+  });
+
+  it('groups the conversation tools in one labeled toolbar group', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg({ payload: 'hello' })]} />
+      </ToastProvider>,
+    );
+    const group = await screen.findByRole('group', { name: 'Conversation tools' });
+    for (const name of ['Jump to date', 'Search messages', 'Starred messages']) {
+      expect(within(group).getByRole('button', { name })).toBeInTheDocument();
+    }
+  });
+
+  it('prefixes channel chips with a muted # unless the name already has one', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: '#weather' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const general = screen.getByRole('button', { name: 'General' });
+    const weather = screen.getByRole('button', { name: '#weather' });
+    expect(general.querySelector('[aria-hidden="true"]')?.textContent).toBe('#');
+    expect(weather.textContent?.startsWith('##')).toBe(false);
   });
 });
