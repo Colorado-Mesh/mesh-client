@@ -413,9 +413,7 @@ export default function LogPanel({
       </h2>
       <div className="flex flex-col gap-2 border-b border-gray-700 px-2 py-2">
         <div className="space-y-1">
-          <span className="text-muted text-2xs tracking-wide uppercase">
-            {t('logPanel.showLevels')}
-          </span>
+          <span className="text-muted text-2xs">{t('logPanel.showLevels')}</span>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <input
@@ -466,9 +464,7 @@ export default function LogPanel({
           <p className="text-muted text-2xs leading-snug">{t('logPanel.writtenToFile')}</p>
         </div>
         <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
-          <span className="text-muted text-2xs tracking-wide uppercase">
-            {t('logPanel.source')}
-          </span>
+          <span className="text-muted text-2xs">{t('logPanel.source')}</span>
           <div className="ml-auto flex gap-1">
             <button
               type="button"

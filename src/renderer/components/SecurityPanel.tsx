@@ -72,9 +72,7 @@ function isValidBase64Key(b64: string): boolean {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="border-b border-gray-700 pb-2 text-sm font-semibold tracking-wide text-gray-200 uppercase">
-      {title}
-    </h3>
+    <h3 className="border-b border-gray-700 pb-2 text-sm font-semibold text-gray-200">{title}</h3>
   );
 }
 

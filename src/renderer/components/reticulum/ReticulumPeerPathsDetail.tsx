@@ -160,7 +160,7 @@ export function ReticulumPeerPathsDetail({
           <option value="network">{t('peerListPanel.pathsPreferNetwork')}</option>
         </select>
         {preferenceLabelKey ? (
-          <span className="text-label text-gray-500">
+          <span className="text-label text-muted">
             {t('peerListPanel.pathsGlobalPreference', {
               preference: t(preferenceLabelKey),
             })}
@@ -169,10 +169,10 @@ export function ReticulumPeerPathsDetail({
       </label>
 
       {error ? <p className="mb-2 text-xs text-red-400">{error}</p> : null}
-      {busy && !result ? <p className="text-xs text-gray-500">{t('common.loading')}</p> : null}
+      {busy && !result ? <p className="text-muted text-xs">{t('common.loading')}</p> : null}
 
       {result?.ok && result.paths.length === 0 ? (
-        <p className="text-xs text-gray-500">{t('peerListPanel.pathsEmpty')}</p>
+        <p className="text-muted text-xs">{t('peerListPanel.pathsEmpty')}</p>
       ) : null}
 
       {result?.ok && result.paths.length > 0 ? (

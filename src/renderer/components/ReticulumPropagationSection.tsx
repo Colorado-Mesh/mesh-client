@@ -171,7 +171,7 @@ function DiscoveredPropagationList({
       )}
       {ignoredFromDiscovered.length > 0 || ignoredOrphanHashes.length > 0 ? (
         <div className="mt-3">
-          <h5 className="text-muted text-label font-medium tracking-wide uppercase">
+          <h5 className="text-muted text-label font-medium">
             {t('reticulumPropagation.ignoredForAutoTitle')}
           </h5>
           <p className="text-muted text-label mt-0.5">

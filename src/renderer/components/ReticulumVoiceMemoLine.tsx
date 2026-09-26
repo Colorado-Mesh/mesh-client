@@ -263,7 +263,7 @@ export function ReticulumVoiceMemoLine({
 
       <span className="min-w-[3rem] shrink-0 text-right text-xs text-gray-400 tabular-nums">
         {formatDuration(displaySec)}
-        {modeLabel ? <span className="text-2xs ml-1 text-gray-500">{modeLabel}</span> : null}
+        {modeLabel ? <span className="text-2xs text-muted ml-1">{modeLabel}</span> : null}
       </span>
     </div>
   );

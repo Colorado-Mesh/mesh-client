@@ -81,10 +81,10 @@ export function ReticulumInterfaceProfilesSection({
       aria-label={t('connectionPanel.reticulumInterfaces.profilesTitle')}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold tracking-wide text-gray-300 uppercase">
+        <h3 className="text-xs font-semibold text-gray-300">
           {t('connectionPanel.reticulumInterfaces.profilesTitle')}
         </h3>
-        <p className="text-2xs text-gray-500">
+        <p className="text-2xs text-muted">
           {t('connectionPanel.reticulumInterfaces.profilesHint')}
         </p>
       </div>
@@ -110,7 +110,7 @@ export function ReticulumInterfaceProfilesSection({
           </li>
         ) : null}
         {state.profiles.length === 0 ? (
-          <li className="text-label text-gray-500">
+          <li className="text-label text-muted">
             {t('connectionPanel.reticulumInterfaces.profilesEmpty')}
           </li>
         ) : (

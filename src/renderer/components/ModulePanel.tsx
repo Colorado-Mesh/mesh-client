@@ -360,7 +360,7 @@ function ModuleStatus({
   if (!packets || packets.size === 0) {
     return (
       <div className="rounded bg-gray-800/50 px-3 py-2 text-xs">
-        <span className="text-gray-500">{t('modulePanel.statusNoPackets', { label })}</span>
+        <span className="text-muted">{t('modulePanel.statusNoPackets', { label })}</span>
       </div>
     );
   }

@@ -249,16 +249,16 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
           {t('peerGraph.resetView')}
         </button>
         {hasGraph && relayCount > 0 ? (
-          <span className="text-slate-500">{t('peerGraph.relayCount', { count: relayCount })}</span>
+          <span className="text-muted">{t('peerGraph.relayCount', { count: relayCount })}</span>
         ) : null}
         {hasGraph && demotedDirectCount > 0 ? (
-          <span className="text-slate-500">
+          <span className="text-muted">
             {t('peerGraph.compactLeafCount', { count: demotedDirectCount })}
           </span>
         ) : null}
         <span className="ml-auto flex items-center gap-2">
           {hiddenCount > 0 && (
-            <span className="text-slate-500">
+            <span className="text-muted">
               {t('peerGraph.hiddenCountLimit', {
                 shown: renderNodes.length,
                 total: totalNodeCount,
@@ -459,7 +459,7 @@ export default function PeerGraphPanel({ nodes, myNodeId, onNodeClick }: PeerGra
           </svg>
         </div>
       )}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 text-xs text-slate-500">
+      <div className="text-muted flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 text-xs">
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-violet-500" />
           {t('peerGraph.me')}

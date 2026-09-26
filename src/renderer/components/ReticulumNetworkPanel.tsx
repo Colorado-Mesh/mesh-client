@@ -797,7 +797,7 @@ export function ReticulumNetworkPanel({
               </option>
               <option value="rf">{t('networkPanel.reticulumStackSettings.pathMediumRf')}</option>
             </select>
-            <span className="text-label mt-1 block text-gray-500">
+            <span className="text-label text-muted mt-1 block">
               {t('networkPanel.reticulumStackSettings.pathMediumPreferenceHint')}
             </span>
           </label>
@@ -805,7 +805,7 @@ export function ReticulumNetworkPanel({
             <p className="text-xs font-medium text-gray-300">
               {t('networkPanel.reticulumStackSettings.discoveryConsumeTitle')}
             </p>
-            <p className="text-label mt-1 text-gray-500">
+            <p className="text-label text-muted mt-1">
               {t('networkPanel.reticulumStackSettings.discoveryConsumeHint')}
             </p>
             <label className="mt-2 block text-xs text-gray-400">
@@ -827,7 +827,7 @@ export function ReticulumNetworkPanel({
                 className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
                 aria-label={t('networkPanel.reticulumStackSettings.autoconnectDiscoveredAria')}
               />
-              <span className="text-label mt-1 block text-gray-500">
+              <span className="text-label text-muted mt-1 block">
                 {t('networkPanel.reticulumStackSettings.autoconnectDiscoveredHint')}
               </span>
             </label>
@@ -872,7 +872,7 @@ export function ReticulumNetworkPanel({
                   {t('networkPanel.reticulumStackSettings.discoverySourcesInvalid')}
                 </span>
               ) : (
-                <span className="text-label mt-1 block text-gray-500">
+                <span className="text-label text-muted mt-1 block">
                   {t('networkPanel.reticulumStackSettings.discoverySourcesHint')}
                 </span>
               )}
@@ -890,7 +890,7 @@ export function ReticulumNetworkPanel({
                 aria-label={t('networkPanel.reticulumStackSettings.networkIdentityAria')}
                 placeholder={t('networkPanel.reticulumStackSettings.networkIdentityPlaceholder')}
               />
-              <span className="text-label mt-1 block text-gray-500">
+              <span className="text-label text-muted mt-1 block">
                 {t('networkPanel.reticulumStackSettings.networkIdentityHint')}
               </span>
             </label>

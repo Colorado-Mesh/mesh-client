@@ -457,9 +457,7 @@ export function ChatDmRncpControl({
           <label className="text-label block text-gray-400" htmlFor="chat-dm-rncp-dest">
             {t('chatPanel.rncp.destinationLabel')}
           </label>
-          <p className="text-2xs leading-snug text-gray-500">
-            {t('chatPanel.rncp.destinationHelp')}
-          </p>
+          <p className="text-2xs text-muted leading-snug">{t('chatPanel.rncp.destinationHelp')}</p>
           {otherSavedLabels.length > 0 && (
             <p className="text-2xs leading-snug text-amber-200/90">
               {t('chatPanel.rncp.savedForOtherPeers', { peers: otherSavedLabels.join(', ') })}

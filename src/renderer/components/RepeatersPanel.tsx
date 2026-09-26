@@ -1272,7 +1272,7 @@ export default function RepeatersPanel({
                           ) : node.hops_away != null ? (
                             <span className="text-gray-300">{node.hops_away}</span>
                           ) : (
-                            <span className="text-gray-500">—</span>
+                            <span className="text-muted">—</span>
                           )}
                         </td>
                         <td className="py-2 pr-4">{formatUptime(t, status?.totalUpTimeSecs)}</td>
@@ -1518,7 +1518,7 @@ export default function RepeatersPanel({
                                         {hop.label ||
                                           `${hop.snr > 0 ? '+' : ''}${hop.snr.toFixed(2)} dB`}
                                       </span>
-                                      <span className="text-gray-500">
+                                      <span className="text-muted">
                                         {hop.snr > 0 ? '+' : ''}
                                         {hop.snr.toFixed(2)} dB
                                       </span>
@@ -1569,12 +1569,10 @@ export default function RepeatersPanel({
                                     : nb.prefixHex;
                                   return (
                                     <div key={i} className="flex items-center gap-3 text-xs">
-                                      <span className="font-mono text-gray-500">
-                                        {nb.prefixHex}
-                                      </span>
+                                      <span className="text-muted font-mono">{nb.prefixHex}</span>
                                       <span className="text-gray-300">[{name}]</span>
                                       <SnrIndicator snr={nb.snr} />
-                                      <span className="text-gray-500">
+                                      <span className="text-muted">
                                         {t('repeatersPanel.heardPrefix')}
                                         {formatSecondsAgo(nb.heardSecondsAgo, t)}
                                       </span>
@@ -1627,7 +1625,7 @@ export default function RepeatersPanel({
                         <tr className="bg-app-bg/60 border-b border-slate-800">
                           <td colSpan={10} className="px-4 py-2">
                             {isTelemetryLoading ? (
-                              <p className="text-xs text-gray-500">
+                              <p className="text-muted text-xs">
                                 {t('repeatersPanel.fetchingTelemetry')}
                               </p>
                             ) : telemetryData ? (
@@ -1681,7 +1679,7 @@ export default function RepeatersPanel({
                                   telemetryData.relativeHumidity == null &&
                                   telemetryData.barometricPressure == null &&
                                   !telemetryData.gps && (
-                                    <div className="flex flex-col gap-1 text-gray-500">
+                                    <div className="text-muted flex flex-col gap-1">
                                       <span>{t('repeatersPanel.noLppData')}</span>
                                       {node.latitude != null && node.longitude != null ? (
                                         <span>{t('repeatersPanel.mapPositionFromAdvert')}</span>
@@ -1830,14 +1828,14 @@ export default function RepeatersPanel({
                                   onClick={() => {
                                     handleCliClear(node.node_id);
                                   }}
-                                  className="text-xs text-gray-500 underline hover:text-gray-300"
+                                  className="text-muted text-xs underline hover:text-gray-300"
                                 >
                                   {t('repeatersPanel.cliClearHistory')}
                                 </button>
                               </div>
                               <div className="max-h-40 overflow-y-auto rounded border border-gray-700 bg-gray-950/50">
                                 {cliHistory.length === 0 ? (
-                                  <div className="px-2 py-1 text-xs text-gray-500 italic">
+                                  <div className="text-muted px-2 py-1 text-xs italic">
                                     {t('repeatersPanel.cliNoCommandsYet')}
                                   </div>
                                 ) : (

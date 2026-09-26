@@ -341,7 +341,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
 
         <p className="mb-1 font-mono text-xs break-all text-gray-300">{encoded.message || '—'}</p>
         <p
-          className={`mb-3 text-xs ${encoded.overLimit ? 'text-red-400' : 'text-gray-500'}`}
+          className={`mb-3 text-xs ${encoded.overLimit ? 'text-red-400' : 'text-muted'}`}
           role="status"
         >
           {t('mecp.compose.byteBudget', { used: byteLen, max: MAX_MESSAGE_BYTES })}

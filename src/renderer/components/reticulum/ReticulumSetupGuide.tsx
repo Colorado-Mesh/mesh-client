@@ -211,9 +211,7 @@ export function ReticulumSetupGuide({
     >
       <div className="bg-secondary-dark flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div>
-          <p className="text-xs font-medium tracking-widest text-amber-300 uppercase">
-            {t('reticulumSetup.eyebrow')}
-          </p>
+          <p className="text-xs font-medium text-amber-300">{t('reticulumSetup.eyebrow')}</p>
           <h2 id={`${id}-title`} className="mt-1 text-lg font-semibold text-gray-100">
             {t('reticulumSetup.title')}
           </h2>

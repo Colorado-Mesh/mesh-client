@@ -2188,9 +2188,7 @@ export default function AppPanel({
         </div>
         <NotificationSoundSettings />
         <div className="space-y-2 border-t border-slate-700/60 pt-2">
-          <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-            {t('appPanel.opsAlertsHeading')}
-          </h4>
+          <h4 className="text-muted text-xs font-medium">{t('appPanel.opsAlertsHeading')}</h4>
           <div className="flex flex-col gap-1">
             <label htmlFor="nodeSilenceAlertMinutes" className="text-sm text-gray-300">
               {t('appPanel.nodeSilenceAlertMinutes')}
@@ -2382,7 +2380,7 @@ export default function AppPanel({
 
             {/* Diagnostics (in-memory reset) */}
             <div className="space-y-2">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZoneDiagnosticsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
@@ -2411,7 +2409,7 @@ export default function AppPanel({
             </div>
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZoneGpsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
@@ -2439,7 +2437,7 @@ export default function AppPanel({
             </div>
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZonePositionHistoryHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
@@ -2469,7 +2467,7 @@ export default function AppPanel({
 
             {/* Nodes */}
             <div className="space-y-3 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZoneNodesHeading')}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -2740,7 +2738,7 @@ export default function AppPanel({
             {/* Reticulum contacts */}
             {protocol === 'reticulum' && (
               <div className="space-y-2 border-t border-red-900/50 pt-4">
-                <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                <div className="text-xs font-medium text-red-400/90">
                   {t('appPanel.dangerZoneReticulumHeading')}
                 </div>
                 <p className="text-muted text-xs leading-relaxed">
@@ -2781,7 +2779,7 @@ export default function AppPanel({
 
             {/* Messages */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.messagesSection')}
               </div>
               {isReticulumDmOnly ? (
@@ -2886,7 +2884,7 @@ export default function AppPanel({
             {/* MeshCore */}
             {onClearMeshcoreRepeaters && (
               <div className="space-y-2 border-t border-red-900/50 pt-4">
-                <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
+                <div className="text-xs font-medium text-red-400">
                   {t('appPanel.dangerZoneMeshcoreHeading')}
                 </div>
                 <button
@@ -2911,7 +2909,7 @@ export default function AppPanel({
 
             {/* Everything */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
+              <div className="text-xs font-medium text-red-400">
                 {t('appPanel.dangerZoneEverythingHeading')}
               </div>
               <button

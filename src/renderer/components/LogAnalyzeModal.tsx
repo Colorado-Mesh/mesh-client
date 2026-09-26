@@ -215,7 +215,7 @@ export default function LogAnalyzeModal({
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           {result.categories.length === 0 ? (
-            <p className="py-8 text-center text-gray-500">{t('logAnalyzeModal.emptyState')}</p>
+            <p className="text-muted py-8 text-center">{t('logAnalyzeModal.emptyState')}</p>
           ) : (
             <div className="space-y-2">
               {result.categories.map((cat) => (
@@ -290,7 +290,7 @@ export default function LogAnalyzeModal({
 
           {result.categories.length > 0 && (
             <div className="mt-4 border-t border-gray-700 pt-4">
-              <h3 className="text-muted mb-2 text-xs tracking-wide uppercase">
+              <h3 className="text-muted mb-2 text-xs">
                 {t('logAnalyzeModal.recommendationsHeading')}
               </h3>
               <ul className="space-y-1.5">

@@ -704,7 +704,7 @@ export default function DiagnosticsPanel({
             </div>
           </td>
           <td className="px-4 py-2.5">
-            <div className={`text-xs font-medium tracking-wide uppercase ${colorClass} mb-0.5`}>
+            <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
               {translateRoutingAnomalyType(t, anomaly.type)}
             </div>
             <div className="max-w-xs text-xs text-gray-400">
@@ -1446,7 +1446,7 @@ export default function DiagnosticsPanel({
             <div className="space-y-6">
               {selfRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  <h4 className="mb-2 text-xs font-semibold text-gray-400">
                     {t('diagnosticsPanel.connectedNodeYouHeading', { count: selfRows.length })}
                   </h4>
                   <div className="border-brand-green/20 overflow-auto rounded-lg border border-gray-700">
@@ -1476,7 +1476,7 @@ export default function DiagnosticsPanel({
               )}
               {otherCrossProtocolRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  <h4 className="mb-2 text-xs font-semibold text-gray-400">
                     {t('diagnosticsPanel.otherCrossProtocolHeading', {
                       count: otherCrossProtocolRows.length,
                     })}
@@ -1508,7 +1508,7 @@ export default function DiagnosticsPanel({
               )}
               {meshRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  <h4 className="mb-2 text-xs font-semibold text-gray-400">
                     {t('diagnosticsPanel.meshDiagnosticsHeading', { count: meshRows.length })}
                   </h4>
                   <div className="overflow-auto rounded-lg border border-gray-700">

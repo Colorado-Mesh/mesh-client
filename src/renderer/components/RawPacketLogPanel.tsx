@@ -1107,7 +1107,7 @@ export default function RawPacketLogPanel(props: Props) {
       </div>
 
       {packets.length > 0 && filtered.length > 0 ? (
-        <div className="text-muted text-2xs flex shrink-0 items-center gap-2 border-b border-gray-700/80 px-3 py-1 font-medium tracking-wide uppercase">
+        <div className="text-muted text-2xs flex shrink-0 items-center gap-2 border-b border-gray-700/80 px-3 py-1 font-medium">
           <span className="w-14 shrink-0" title={t('rawPacketLog.colActionsTooltip')} aria-hidden />
           <SortableColumnHeader
             label={t('rawPacketLog.colTime')}

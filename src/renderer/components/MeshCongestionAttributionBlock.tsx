@@ -79,7 +79,7 @@ export default function MeshCongestionAttributionBlock({
               return (
                 <li key={o.nodeId} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="text-gray-300">{name}</span>
-                  <span className="text-gray-500">
+                  <span className="text-muted">
                     ({t(role.labelKey, role.labelParams ?? undefined)})
                   </span>
                   <span className="text-gray-600">

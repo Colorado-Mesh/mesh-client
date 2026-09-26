@@ -28,7 +28,7 @@ export function FirmwarePicker({ disabled, file, onFileChange }: FirmwarePickerP
           }}
         />
       </label>
-      {file ? <p className="truncate text-xs text-gray-500">{file.name}</p> : null}
+      {file ? <p className="text-muted truncate text-xs">{file.name}</p> : null}
     </div>
   );
 }

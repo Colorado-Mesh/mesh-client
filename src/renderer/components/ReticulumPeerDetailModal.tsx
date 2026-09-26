@@ -517,7 +517,7 @@ export default function ReticulumPeerDetailModal({
               </button>
               <button
                 type="button"
-                className={peer?.favorited ? 'text-yellow-400' : 'text-gray-500'}
+                className={peer?.favorited ? 'text-yellow-400' : 'text-muted'}
                 aria-label={t('peerListPanel.toggleFavorite')}
                 onClick={() => {
                   void toggleFavorite(peerHash, !peer?.favorited);
@@ -549,9 +549,7 @@ export default function ReticulumPeerDetailModal({
             ) : null}
           </div>
           <div className="mt-2 space-y-1.5 rounded border border-gray-700/60 p-2">
-            <div className="text-muted text-2xs tracking-wide uppercase">
-              {t('peerDetailModal.announcedDestinations')}
-            </div>
+            <div className="text-muted text-2xs">{t('peerDetailModal.announcedDestinations')}</div>
             <ul className="space-y-1.5" aria-label={t('peerDetailModal.announcedDestinations')}>
               {announcedDestinations.map((row) => {
                 const aspectLabel = reticulumAnnounceAspectLabel(row.aspect, t);
@@ -596,9 +594,7 @@ export default function ReticulumPeerDetailModal({
             </ul>
           </div>
           <div className="mt-2 space-y-1 rounded border border-gray-700/60 p-2">
-            <div className="text-muted text-2xs tracking-wide uppercase">
-              {t('peerDetailModal.verifyFingerprint')}
-            </div>
+            <div className="text-muted text-2xs">{t('peerDetailModal.verifyFingerprint')}</div>
             <div className="font-mono text-xs break-all text-gray-200">{fingerprint}</div>
             <div className="flex flex-wrap gap-2 pt-1">
               <button

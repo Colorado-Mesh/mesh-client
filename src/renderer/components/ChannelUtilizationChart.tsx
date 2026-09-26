@@ -29,7 +29,7 @@ export default function ChannelUtilizationChart({ nodes }: ChannelUtilizationCha
     return (
       <div className="mt-6 rounded border border-slate-700 bg-slate-800/50 p-4">
         <h3 className="mb-1 text-sm font-medium text-slate-300">{t('channelUtilization.title')}</h3>
-        <p className="text-xs text-slate-500">{t('channelUtilization.noData')}</p>
+        <p className="text-muted text-xs">{t('channelUtilization.noData')}</p>
       </div>
     );
   }

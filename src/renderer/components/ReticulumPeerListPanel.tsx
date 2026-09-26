@@ -265,7 +265,7 @@ const PeerTableRow = memo(function PeerTableRow({
           <td className="py-2 pr-2">
             <button
               type="button"
-              className={peer.favorited ? 'text-yellow-400' : 'text-gray-500'}
+              className={peer.favorited ? 'text-yellow-400' : 'text-muted'}
               aria-label={t('peerListPanel.toggleFavorite')}
               onClick={(e) => {
                 e.stopPropagation();
@@ -743,7 +743,7 @@ export default function ReticulumPeerListPanel({
         </button>
         {telephonyOnly ? (
           <span
-            className="text-2xs ml-1 font-semibold tracking-wide text-cyan-400/90 uppercase"
+            className="text-2xs ml-1 font-semibold text-cyan-400/90"
             title={t('peerListPanel.voiceAspectTitle')}
           >
             {t('peerListPanel.voiceAspectBadge')}

@@ -64,4 +64,19 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message:
       'Use a rem text token (text-2xs, text-label, text-meta, text-control, text-body, text-title) so App > Appearance > Text size scales it; px font sizes do not scale',
   },
+  {
+    id: 'renderer-no-low-contrast-gray-text',
+    include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],
+    forbid: /(?<![\w-])text-(?:gray|slate)-500(?![\w/-])/,
+    message:
+      'gray-500 / slate-500 text is under 4.5:1 on the dark surfaces; use text-muted (themeable, passes 4.5:1)',
+  },
+  {
+    id: 'renderer-no-uppercase-micro-labels',
+    include: ['src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.tsx'],
+    forbid: /uppercase[^'"`\n]*tracking-wide|tracking-wide[^'"`\n]*uppercase/,
+    message: 'Style guide: sentence case labels, no uppercase letter-spaced micro labels',
+  },
 ];

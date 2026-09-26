@@ -298,7 +298,7 @@ export default function MeshcoreContactSettingsSection({
         </div>
 
         <div className="space-y-3 border-t border-gray-600/80 pt-4">
-          <p className="text-xs font-medium tracking-wide text-gray-400 uppercase">
+          <p className="text-xs font-medium text-gray-400">
             {t('meshcoreContactSettings.contactsListAppHeading')}
           </p>
           <div className="flex items-center justify-between gap-3">

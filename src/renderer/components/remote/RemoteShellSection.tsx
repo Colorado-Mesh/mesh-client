@@ -303,7 +303,7 @@ export function RemoteShellSection({
                   address: session.destination_hash.slice(0, 8),
                 })}
                 onClick={() => void handleDisconnect(session.session_id)}
-                className="ml-1 text-gray-500 hover:text-gray-200"
+                className="text-muted ml-1 hover:text-gray-200"
               >
                 ×
               </button>

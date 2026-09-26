@@ -17,7 +17,7 @@ export function ProvisionStep({ state, onProvision }: ProvisionStepProps) {
       <h4 className="text-sm font-medium text-gray-200">{t('flasher.provisionTitle')}</h4>
       <p className="text-xs text-gray-400">{t('flasher.provisionHint')}</p>
       {state === 'disabled' ? (
-        <p className="text-xs text-gray-500">{t('flasher.provisionRequiresFlash')}</p>
+        <p className="text-muted text-xs">{t('flasher.provisionRequiresFlash')}</p>
       ) : null}
       <button
         type="button"

@@ -728,37 +728,37 @@ export default function TelemetryPanel({
               <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-cyan-400">{meshcorePacketStats.sent}</div>
-                  <div className="text-xs text-gray-500">{t('telemetryPanel.statSent')}</div>
+                  <div className="text-muted text-xs">{t('telemetryPanel.statSent')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-400">
                     {meshcorePacketStats.recv}
                   </div>
-                  <div className="text-xs text-gray-500">{t('telemetryPanel.statReceived')}</div>
+                  <div className="text-muted text-xs">{t('telemetryPanel.statReceived')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-cyan-600">
                     {meshcorePacketStats.nSentFlood}
                   </div>
-                  <div className="text-xs text-gray-500">{t('telemetryPanel.statFlood')}</div>
+                  <div className="text-muted text-xs">{t('telemetryPanel.statFlood')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-cyan-600">
                     {meshcorePacketStats.nSentDirect}
                   </div>
-                  <div className="text-xs text-gray-500">{t('telemetryPanel.statDirect')}</div>
+                  <div className="text-muted text-xs">{t('telemetryPanel.statDirect')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-purple-600">
                     {meshcorePacketStats.nRecvFlood}
                   </div>
-                  <div className="text-xs text-gray-500">{t('telemetryPanel.statFlood')}</div>
+                  <div className="text-muted text-xs">{t('telemetryPanel.statFlood')}</div>
                 </div>
                 <div className="text-center">
                   <div className="text-lg font-semibold text-purple-600">
                     {meshcorePacketStats.nRecvDirect}
                   </div>
-                  <div className="text-xs text-gray-500">{t('telemetryPanel.statDirect')}</div>
+                  <div className="text-muted text-xs">{t('telemetryPanel.statDirect')}</div>
                 </div>
               </div>
             </div>

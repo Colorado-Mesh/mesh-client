@@ -44,7 +44,7 @@ export default function SignalMeter({ rssi, snr, className }: SignalMeterProps) 
         {hasSnr ? (
           <SnrIndicator snr={snr} />
         ) : (
-          <span className="font-mono text-gray-500">{t('signalMeter.noData')}</span>
+          <span className="text-muted font-mono">{t('signalMeter.noData')}</span>
         )}
       </div>
     </div>

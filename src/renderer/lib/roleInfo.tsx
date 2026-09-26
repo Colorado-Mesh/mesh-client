@@ -28,7 +28,7 @@ interface RoleInfo {
 
 const ROLE_INFO: Record<number, RoleInfo> = {
   0: { labelKey: 'roleInfo.roles.client', colorClass: 'text-gray-400', isBadge: false },
-  1: { labelKey: 'roleInfo.roles.clientMute', colorClass: 'text-gray-500', isBadge: false },
+  1: { labelKey: 'roleInfo.roles.clientMute', colorClass: 'text-muted', isBadge: false },
   2: { labelKey: 'roleInfo.roles.router', colorClass: 'text-gray-400', isBadge: false },
   3: { labelKey: 'roleInfo.roles.routerClient', colorClass: 'text-blue-400', isBadge: false },
   4: {
@@ -67,7 +67,7 @@ export function getRoleInfo(role: number | undefined): RoleInfo {
   return {
     labelKey: role !== undefined ? 'roleInfo.unknownRole' : 'roleInfo.placeholderDash',
     labelParams: role !== undefined ? { role } : undefined,
-    colorClass: 'text-gray-500',
+    colorClass: 'text-muted',
     isBadge: false,
   };
 }

@@ -182,7 +182,7 @@ function NodeBlockButton({
   return (
     <button
       type="button"
-      className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isBlocked ? 'text-red-400' : 'text-gray-500 hover:text-red-400'}`}
+      className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isBlocked ? 'text-red-400' : 'text-muted hover:text-red-400'}`}
       aria-label={
         isBlocked ? t('nodeDetailModal.unblockContact') : t('nodeDetailModal.blockContact')
       }
@@ -206,7 +206,7 @@ function WatchToggleButton({ nodeId }: { nodeId: number }) {
       type="button"
       aria-label={isWatched ? t('nodeDetailModal.unwatchNode') : t('nodeDetailModal.watchNode')}
       aria-pressed={isWatched}
-      className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isWatched ? 'text-blue-400' : 'text-gray-500 hover:text-blue-400'}`}
+      className={`hover:bg-secondary-dark shrink-0 rounded-lg px-2 py-1 text-xs font-medium transition-colors ${isWatched ? 'text-blue-400' : 'text-muted hover:text-blue-400'}`}
       onClick={() => {
         toggleWatch(nodeId);
       }}
@@ -1527,7 +1527,7 @@ export default function NodeDetailModal({
               if (list.length === 0) return null;
               return (
                 <div className="mt-3 space-y-2">
-                  <h4 className="flex items-center gap-1.5 text-xs font-medium tracking-wide text-orange-400 uppercase">
+                  <h4 className="flex items-center gap-1.5 text-xs font-medium text-orange-400">
                     <span aria-hidden="true">⚠</span>
                     {t('diagnosticsPanel.foreignLoraHeading')}
                   </h4>
@@ -1694,7 +1694,7 @@ export default function NodeDetailModal({
                           className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
                         >
                           <span className="text-gray-300">{label}</span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-muted text-xs">
                             {formatSecondsAgo(
                               Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
                               t,
@@ -1956,9 +1956,7 @@ export default function NodeDetailModal({
                 const mapReport = mapReports.get(node.node_id);
                 if (!mapReport) {
                   return (
-                    <p className="text-xs text-gray-500">
-                      {t('nodeDetailModal.noMapReportReceived')}
-                    </p>
+                    <p className="text-muted text-xs">{t('nodeDetailModal.noMapReportReceived')}</p>
                   );
                 }
                 return (
@@ -1992,7 +1990,7 @@ export default function NodeDetailModal({
                 const points = positionHistory.get(node.node_id);
                 if (!points || points.length === 0) {
                   return (
-                    <p className="text-xs text-gray-500">
+                    <p className="text-muted text-xs">
                       {t('nodeDetailModal.noPositionHistoryRecorded')}
                     </p>
                   );
@@ -2027,7 +2025,7 @@ export default function NodeDetailModal({
                       <div className="font-mono text-gray-200">{formatIsoDateTime(last.t)}</div>
                     </div>
                     {sorted.length > 1 && (
-                      <div className="text-2xs text-gray-500">
+                      <div className="text-2xs text-muted">
                         {t('nodeDetailModal.positionHistoryMostRecent', {
                           lat: last.lat.toFixed(5),
                           lon: last.lon.toFixed(5),
@@ -2035,7 +2033,7 @@ export default function NodeDetailModal({
                       </div>
                     )}
                     {sorted.length > POSITION_HISTORY_MAX_ROWS && (
-                      <div className="text-2xs text-gray-500">
+                      <div className="text-2xs text-muted">
                         {t('nodeDetailModal.positionHistoryTruncated', {
                           shown: POSITION_HISTORY_MAX_ROWS,
                           total: sorted.length,
@@ -2048,7 +2046,7 @@ export default function NodeDetailModal({
                           key={`${point.t}-${point.lat}-${point.lon}-${idx}`}
                           className="text-2xs grid grid-cols-[auto_1fr] gap-x-2"
                         >
-                          <span className="text-gray-500">{formatIsoDateTime(point.t)}</span>
+                          <span className="text-muted">{formatIsoDateTime(point.t)}</span>
                           <span className="font-mono whitespace-nowrap text-gray-200">
                             {formatCoordPair(point.lat, point.lon, coordinateFormat)}
                           </span>
@@ -2085,7 +2083,7 @@ export default function NodeDetailModal({
 
           {protocol === 'meshtastic' && onSaveRemoteAdminKey && !isOurNode && (
             <div className="mt-4 space-y-2 rounded-lg border border-blue-700/40 bg-blue-900/20 px-3 py-2 text-sm text-blue-100">
-              <p className="text-xs font-medium tracking-wide text-blue-300 uppercase">
+              <p className="text-xs font-medium text-blue-300">
                 {t('nodeDetailModal.remoteAdminKeyTitle')}
               </p>
               <p className="text-muted text-xs">{t('nodeDetailModal.remoteAdminKeyHint')}</p>

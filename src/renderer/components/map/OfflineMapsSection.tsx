@@ -252,9 +252,7 @@ export function OfflineMapsSection() {
 
   return (
     <div className="space-y-1.5 border-t border-gray-700 pt-2">
-      <div className="text-2xs font-medium tracking-wide text-gray-400 uppercase">
-        {t('mapPanel.offlineMaps.heading')}
-      </div>
+      <div className="text-2xs font-medium text-gray-400">{t('mapPanel.offlineMaps.heading')}</div>
       <label className="text-2xs flex items-center gap-1.5 text-gray-400">
         <input
           type="checkbox"
@@ -337,7 +335,7 @@ export function OfflineMapsSection() {
         </div>
       ) : null}
       {stats ? (
-        <p className="text-2xs text-gray-500">
+        <p className="text-2xs text-muted">
           {t('mapPanel.offlineMaps.cacheStats', {
             count: stats.tileCount,
             size: formatBytes(stats.diskBytes),

@@ -557,7 +557,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           })}
         />
         {hasGraph && (
-          <span className="text-slate-500">
+          <span className="text-muted">
             {t('reticulumTopology.interfaceStatus', {
               online: onlineInterfaceCount,
               offline: offlineInterfaceCount,
@@ -566,7 +566,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         )}
         <span className="ml-auto flex items-center gap-2">
           {hiddenCount > 0 && (
-            <span className="text-slate-500">
+            <span className="text-muted">
               {t('reticulumTopology.hiddenCountLimit', {
                 shown: nodes.length,
                 total: totalNodeCount,
@@ -753,7 +753,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           })}
         </svg>
       )}
-      <div className="flex flex-wrap gap-4 px-4 py-2 text-xs text-slate-500">
+      <div className="text-muted flex flex-wrap gap-4 px-4 py-2 text-xs">
         <span className="flex items-center gap-1">
           <span className="inline-block h-2 w-2 rounded-full bg-slate-100" />
           {t('reticulumTopology.legendSelf')}

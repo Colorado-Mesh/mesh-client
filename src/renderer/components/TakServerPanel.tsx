@@ -263,14 +263,14 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
             {t('takServerPanel.connectedClients', { count: clients.length })}
           </h3>
           {clients.length === 0 ? (
-            <p className="text-xs text-gray-500">{t('takServerPanel.noClientsConnected')}</p>
+            <p className="text-muted text-xs">{t('takServerPanel.noClientsConnected')}</p>
           ) : (
             <ul className="space-y-1.5">
               {clients.map((c) => (
                 <li key={c.id} className="flex items-center gap-2 text-xs text-gray-300">
                   <span className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
                   <span className="font-mono">{c.callsign ?? c.address}</span>
-                  <span className="text-gray-500">
+                  <span className="text-muted">
                     {c.callsign ? `(${c.address})` : ''} · {formatDuration(c.connectedAt, t)}
                   </span>
                 </li>
@@ -288,7 +288,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
           <h3 className="text-sm font-medium text-gray-300">
             {t('takServerPanel.atakPluginMessages')}
             {atakMessages && atakMessages.size > 0 && (
-              <span className="ml-2 text-gray-500">
+              <span className="text-muted ml-2">
                 ({Array.from(atakMessages.values()).reduce((sum, arr) => sum + arr.length, 0)})
               </span>
             )}
@@ -302,7 +302,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
                   <li key={nodeId} className="flex flex-col gap-0.5 text-xs text-gray-300">
                     <div className="flex items-center gap-2">
                       <span className="font-mono">{formatMeshtasticNodeId(nodeId)}</span>
-                      <span className="text-gray-500">
+                      <span className="text-muted">
                         {t('takServerPanel.packets', { count: messages.length })} ·{' '}
                         {t('takServerPanel.lastText')}{' '}
                         {formatTimeAgo(messages[messages.length - 1]?.timestamp ?? 0, t)}
@@ -316,7 +316,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
               })}
             </ul>
           ) : (
-            <p className="text-xs text-gray-500">{t('takServerPanel.noAtakMessages')}</p>
+            <p className="text-muted text-xs">{t('takServerPanel.noAtakMessages')}</p>
           )}
         </div>
       )}
@@ -338,7 +338,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
             <span className="text-xs text-green-400">{t('takServerPanel.packageSaved')}</span>
           )}
           {!status.running && (
-            <span className="text-xs text-gray-500">{t('takServerPanel.startServerFirst')}</span>
+            <span className="text-muted text-xs">{t('takServerPanel.startServerFirst')}</span>
           )}
         </div>
       </div>
@@ -355,7 +355,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
         >
           {t('takServerPanel.regenerateCerts')}
         </button>
-        <p className="text-xs text-gray-500">{t('takServerPanel.regenerateWarning')}</p>
+        <p className="text-muted text-xs">{t('takServerPanel.regenerateWarning')}</p>
       </div>
     </div>
   );

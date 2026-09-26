@@ -17,7 +17,7 @@ export function FirmwareHashStep({ state, onSetHash }: FirmwareHashStepProps) {
       <h4 className="text-sm font-medium text-gray-200">{t('flasher.firmwareHashTitle')}</h4>
       <p className="text-xs text-gray-400">{t('flasher.firmwareHashHint')}</p>
       {state === 'disabled' ? (
-        <p className="text-xs text-gray-500">{t('flasher.firmwareHashRequiresProvision')}</p>
+        <p className="text-muted text-xs">{t('flasher.firmwareHashRequiresProvision')}</p>
       ) : null}
       <button
         type="button"

@@ -505,9 +505,7 @@ function MapLayerControl({
       {layersPanelOpen && (
         <div className="bg-deep-black/90 w-52 space-y-3 rounded-lg border border-gray-700 p-3 text-gray-200 shadow-lg backdrop-blur-sm">
           <div className="space-y-1">
-            <div className="text-2xs font-medium tracking-wide text-gray-400 uppercase">
-              {t('mapPanel.basemapHeading')}
-            </div>
+            <div className="text-2xs font-medium text-gray-400">{t('mapPanel.basemapHeading')}</div>
             <select
               aria-label={t('mapPanel.basemapSelectAria')}
               className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200"
@@ -523,9 +521,7 @@ function MapLayerControl({
             </select>
           </div>
           <div className="space-y-1.5">
-            <div className="text-2xs font-medium tracking-wide text-gray-400 uppercase">
-              {t('mapPanel.layersHeading')}
-            </div>
+            <div className="text-2xs font-medium text-gray-400">{t('mapPanel.layersHeading')}</div>
             {layerRow('nodes', t('mapPanel.layerNodes'), showNodes, setShowNodes)}
             {layerRow('paths', t('mapPanel.layerPaths'), showPaths, setShowPaths)}
             {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
@@ -1153,7 +1149,7 @@ export default function MapPanel({
                     {wp.name || t('mapPanel.waypointDefaultName')}
                   </div>
                   {wp.description && <div className="text-xs text-gray-400">{wp.description}</div>}
-                  <div className="font-mono text-xs text-gray-500">
+                  <div className="text-muted font-mono text-xs">
                     {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
                   </div>
                   {onDeleteWaypoint && (

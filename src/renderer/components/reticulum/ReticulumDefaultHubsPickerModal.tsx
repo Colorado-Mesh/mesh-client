@@ -267,7 +267,7 @@ function RegionSection({
             <li key={preset.id}>
               <label
                 className={`flex items-start gap-2 text-sm ${
-                  present ? 'cursor-default text-gray-500' : 'cursor-pointer text-gray-300'
+                  present ? 'text-muted cursor-default' : 'cursor-pointer text-gray-300'
                 }`}
               >
                 <input

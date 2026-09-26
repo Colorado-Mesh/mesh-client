@@ -165,7 +165,7 @@ function NomadCollapsedNodeItem({
         >
           {nomadCollapsedLabel(node.display_name, node.destination_hash)}
         </span>
-        <span className={node.favorited ? 'text-yellow-400' : 'text-gray-500'} aria-hidden>
+        <span className={node.favorited ? 'text-yellow-400' : 'text-muted'} aria-hidden>
           ★
         </span>
       </div>
@@ -222,7 +222,7 @@ function NomadExpandedNodeItem({
         </button>
         <button
           type="button"
-          className={node.favorited ? 'text-yellow-400' : 'text-gray-500'}
+          className={node.favorited ? 'text-yellow-400' : 'text-muted'}
           aria-label={toggleFavoriteLabel}
           onClick={() => {
             onToggleFavorite(node.destination_hash, !node.favorited);
@@ -750,7 +750,7 @@ export default function NomadNetworkPanel({
           {!nodeListCollapsed && (
             <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
               <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
-                {activeTabLabel} <span className="text-gray-500">({activeTabCount})</span>
+                {activeTabLabel} <span className="text-muted">({activeTabCount})</span>
               </span>
             </div>
           )}

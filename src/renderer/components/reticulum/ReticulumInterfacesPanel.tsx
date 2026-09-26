@@ -1461,7 +1461,7 @@ function ReticulumInterfaceModeDescription({
   const normalized = normalizeReticulumInterfaceMode(mode);
   if (!normalized) return null;
   return (
-    <p className="text-2xs mt-1 leading-snug text-gray-500">
+    <p className="text-2xs text-muted mt-1 leading-snug">
       {t(`connectionPanel.reticulumInterfaces.modeDescriptions.${normalized}`)}
     </p>
   );
@@ -1553,9 +1553,7 @@ function ReticulumInterfaceModeSelect({
         ))}
       </select>
       {showDescription && selectedDescription ? (
-        <p className="text-2xs mt-1 max-w-[16rem] leading-snug text-gray-500">
-          {selectedDescription}
-        </p>
+        <p className="text-2xs text-muted mt-1 max-w-[16rem] leading-snug">{selectedDescription}</p>
       ) : null}
     </div>
   );
@@ -1868,7 +1866,7 @@ function InterfaceEditPanel({
               {t('connectionPanel.reticulumInterfaces.flowControl')}
             </label>
             {isReticulumBleRnodeSerialPort(serialPort) ? (
-              <p className="text-2xs leading-snug text-gray-500">
+              <p className="text-2xs text-muted leading-snug">
                 {t('connectionPanel.reticulumInterfaces.flowControlBleHint')}
               </p>
             ) : null}
@@ -1962,7 +1960,7 @@ function InterfaceEditPanel({
           />
           {t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
         </label>
-        <p className="text-2xs leading-snug text-gray-500">
+        <p className="text-2xs text-muted leading-snug">
           {t('connectionPanel.reticulumInterfaces.bootstrapOnlyHint')}
         </p>
       </div>
@@ -2616,7 +2614,7 @@ function InterfacesSection({
                 {t('connectionPanel.reticulumInterfaces.flowControl')}
               </label>
               {showRnodeBle ? (
-                <p className="text-2xs leading-snug text-gray-500">
+                <p className="text-2xs text-muted leading-snug">
                   {t('connectionPanel.reticulumInterfaces.flowControlBleHint')}
                 </p>
               ) : null}
@@ -2645,7 +2643,7 @@ function InterfacesSection({
             />
             {t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
           </label>
-          <p className="text-2xs leading-snug text-gray-500">
+          <p className="text-2xs text-muted leading-snug">
             {t('connectionPanel.reticulumInterfaces.bootstrapOnlyHint')}
           </p>
         </div>
@@ -2731,7 +2729,7 @@ function InterfacesSection({
                 >
                   <h4
                     id={`reticulum-iface-group-${group.id}`}
-                    className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase"
+                    className="text-muted mb-2 text-xs font-semibold"
                   >
                     {interfaceListGroupLabel(t, group.id)}
                   </h4>
@@ -2793,10 +2791,11 @@ function InterfacesSection({
                             <span className="min-w-0 flex-1">
                               <span className="inline-flex flex-wrap items-center gap-1.5">
                                 <span
+                                  data-interface-disabled={iface.enabled ? undefined : ''}
                                   className={
                                     iface.enabled
                                       ? reticulumLocalInterfaceTextClass(iface, osSerialPortPaths)
-                                      : 'text-gray-500'
+                                      : 'text-muted'
                                   }
                                 >
                                   {formatReticulumInterfaceRowSummary(t, iface)}
@@ -2870,12 +2869,12 @@ function InterfacesSection({
                                   />
                                 </HelpTooltip>
                                 {help.isRuntimeOnly ? (
-                                  <span className="text-muted text-2xs tracking-wide uppercase">
+                                  <span className="text-muted text-2xs">
                                     {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
                                   </span>
                                 ) : null}
                                 {isPrimaryRow ? (
-                                  <span className="text-bright-green text-2xs tracking-wide uppercase">
+                                  <span className="text-bright-green text-2xs">
                                     {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
                                   </span>
                                 ) : null}

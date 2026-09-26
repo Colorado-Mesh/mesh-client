@@ -93,7 +93,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           >
             {i18n.t('errorBoundary.tryAgain')}
           </button>
-          <p className="text-xs text-gray-500">{i18n.t('errorBoundary.persistHint')}</p>
+          <p className="text-muted text-xs">{i18n.t('errorBoundary.persistHint')}</p>
         </div>
       );
     }

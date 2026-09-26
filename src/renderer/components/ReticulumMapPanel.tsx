@@ -393,7 +393,7 @@ export default function ReticulumMapPanel({
             {t(`reticulumMap.filter.${value}`)}
           </button>
         ))}
-        <span className="text-xs text-slate-500">
+        <span className="text-muted text-xs">
           {t('reticulumMap.countSummary', {
             markers: filteredMarkers.length,
             list: filteredListOnly.length,
@@ -526,12 +526,12 @@ export default function ReticulumMapPanel({
           {emptyReason ? (
             <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-slate-950/40 p-6">
               <div className="pointer-events-auto max-w-md rounded-lg border border-dashed border-slate-700 bg-slate-900/90 p-6 text-center">
-                <MapPin className="mx-auto h-8 w-8 text-slate-500" aria-hidden />
+                <MapPin className="text-muted mx-auto h-8 w-8" aria-hidden />
                 <p className="mt-2 text-sm text-slate-300">
                   {t(`reticulumMap.empty.${emptyReason}`)}
                 </p>
                 {emptyReason === 'noDiscoveries' ? (
-                  <p className="mt-2 text-xs text-slate-500">{t('reticulumMap.empty.hint')}</p>
+                  <p className="text-muted mt-2 text-xs">{t('reticulumMap.empty.hint')}</p>
                 ) : null}
                 {emptyReason === 'stackOff' && onOpenRmapSettings ? (
                   <button
@@ -557,7 +557,7 @@ export default function ReticulumMapPanel({
         </div>
 
         <aside className="relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-900/50">
-          <h3 className="text-2xs shrink-0 border-b border-slate-700 px-2 py-1.5 font-semibold tracking-wide text-slate-400 uppercase">
+          <h3 className="text-2xs shrink-0 border-b border-slate-700 px-2 py-1.5 font-semibold text-slate-400">
             {t('reticulumMap.listTitle')}
           </h3>
           <ul
@@ -566,9 +566,7 @@ export default function ReticulumMapPanel({
             className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
           >
             {listRows.length === 0 ? (
-              <li className="text-label px-2 py-3 text-slate-500">
-                {t('reticulumMap.empty.hint')}
-              </li>
+              <li className="text-label text-muted px-2 py-3">{t('reticulumMap.empty.hint')}</li>
             ) : (
               listRows.map((row) => {
                 const hasCoords =
@@ -604,7 +602,7 @@ export default function ReticulumMapPanel({
                           {row.discovery_name}
                         </span>
                       </div>
-                      <div className="text-2xs truncate pl-3 leading-tight text-slate-500">
+                      <div className="text-2xs text-muted truncate pl-3 leading-tight">
                         {row.interface_type}
                         {!hasCoords ? ` · ${t('reticulumMap.noCoords')}` : ''}
                       </div>
@@ -613,7 +611,7 @@ export default function ReticulumMapPanel({
                           {formatRmapDiscoveredEndpoint(row)}
                         </div>
                       ) : null}
-                      <div className="text-2xs truncate pl-3 leading-tight text-slate-500">
+                      <div className="text-2xs text-muted truncate pl-3 leading-tight">
                         {t('reticulumMap.stampStatus', {
                           stamp: row.stamp_value,
                           status: row.status,

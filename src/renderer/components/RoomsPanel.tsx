@@ -2365,7 +2365,7 @@ export default function RoomsPanel({
                                       onMessageNode?.(m.sender_id);
                                     }}
                                     {...{ [PARENT_HOVER_ATTR]: '' }}
-                                    className="message-action rounded p-0.5 text-gray-500"
+                                    className="message-action text-muted rounded p-0.5"
                                     aria-label={t('nodeDetailModal.messageButton')}
                                     title={t('nodeDetailModal.messageButton')}
                                   >
@@ -2384,7 +2384,7 @@ export default function RoomsPanel({
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
                                   className={`message-action-star rounded p-0.5 ${
-                                    isStarred ? 'starred' : 'text-gray-500'
+                                    isStarred ? 'starred' : 'text-muted'
                                   }`}
                                   aria-label={
                                     isStarred
@@ -2414,7 +2414,7 @@ export default function RoomsPanel({
                                     });
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="message-action rounded p-0.5 text-gray-500"
+                                  className="message-action text-muted rounded p-0.5"
                                   aria-label={t('chatPanel.copyMessage')}
                                   title={t('chatPanel.copyMessage')}
                                 >
@@ -2445,7 +2445,7 @@ export default function RoomsPanel({
                                     onClick={() => {
                                       void onSendRoomPost(selectedRoomId, m.payload);
                                     }}
-                                    className="text-gray-500 transition-colors hover:text-gray-300"
+                                    className="text-muted transition-colors hover:text-gray-300"
                                     title={t('chatPanel.resendMessage')}
                                     aria-label={t('chatPanel.resendMessage')}
                                   >

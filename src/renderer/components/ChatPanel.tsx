@@ -522,7 +522,7 @@ function UnreadDivider() {
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 border-t border-red-500/50" />
-      <span className="text-2xs shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 font-semibold tracking-wider text-red-400 uppercase">
+      <span className="text-2xs shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 font-semibold text-red-400">
         {t('chatPanel.newMessagesDivider')}
       </span>
       <div className="flex-1 border-t border-red-500/50" />
@@ -3680,7 +3680,7 @@ function ChatPanel({
                                 });
                               }}
                               {...{ [PARENT_HOVER_ATTR]: '' }}
-                              className="message-action rounded p-1 text-xs text-slate-500"
+                              className="message-action text-muted rounded p-1 text-xs"
                               aria-label={t('chatPanel.copyMessage')}
                               title={t('chatPanel.copyMessage')}
                             >
@@ -3700,7 +3700,7 @@ function ChatPanel({
                                     composerInputRef.current?.focus();
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="message-action rounded p-1 text-xs text-slate-500"
+                                  className="message-action text-muted rounded p-1 text-xs"
                                   aria-label={t('chatPanel.replyToMessage')}
                                   title={t('chatPanel.replyButton')}
                                 >
@@ -3764,7 +3764,7 @@ function ChatPanel({
                                         }
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="message-action rounded p-1 text-xs text-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                      className="message-action text-muted rounded p-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                                       aria-label={reactLabel}
                                       title={reactTitle}
                                     >
@@ -3789,7 +3789,7 @@ function ChatPanel({
                                         openDmTo(msg.sender_id);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="message-action rounded p-1 text-xs text-slate-500"
+                                      className="message-action text-muted rounded p-1 text-xs"
                                       aria-label={t('chatPanel.directMessage', {
                                         name: msg.sender_name,
                                       })}
@@ -3817,7 +3817,7 @@ function ChatPanel({
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
                                       className={`message-action-star rounded p-1 text-xs ${
-                                        isStarred ? 'starred' : 'text-slate-500'
+                                        isStarred ? 'starred' : 'text-muted'
                                       }`}
                                       aria-label={
                                         isStarred

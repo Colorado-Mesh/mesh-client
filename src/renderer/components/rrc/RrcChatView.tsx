@@ -664,7 +664,7 @@ export function RrcChatView({
                       </div>
                       <button
                         type="button"
-                        className={`message-action shrink-0 rounded p-0.5 text-xs text-slate-500 ${
+                        className={`message-action text-muted shrink-0 rounded p-0.5 text-xs ${
                           alwaysShowMessageActions
                             ? 'opacity-100'
                             : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'

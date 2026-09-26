@@ -65,7 +65,7 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
       <p className="text-xs text-gray-400">{t('radioPanel.lockdown.description')}</p>
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-        <dt className="text-gray-500">{t('radioPanel.lockdown.stateLabel')}</dt>
+        <dt className="text-muted">{t('radioPanel.lockdown.stateLabel')}</dt>
         <dd className="text-gray-200">
           {state === null
             ? t('radioPanel.lockdown.stateNotReported')
@@ -73,19 +73,19 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
         </dd>
         {status?.lockReason !== undefined && (
           <>
-            <dt className="text-gray-500">{t('radioPanel.lockdown.reasonLabel')}</dt>
+            <dt className="text-muted">{t('radioPanel.lockdown.reasonLabel')}</dt>
             <dd className="text-gray-200">{status.lockReason}</dd>
           </>
         )}
         {status?.bootsRemaining !== undefined && (
           <>
-            <dt className="text-gray-500">{t('radioPanel.lockdown.bootsRemainingLabel')}</dt>
+            <dt className="text-muted">{t('radioPanel.lockdown.bootsRemainingLabel')}</dt>
             <dd className="text-gray-200">{status.bootsRemaining}</dd>
           </>
         )}
         {status?.validUntilEpoch !== undefined && (
           <>
-            <dt className="text-gray-500">{t('radioPanel.lockdown.validUntilLabel')}</dt>
+            <dt className="text-muted">{t('radioPanel.lockdown.validUntilLabel')}</dt>
             <dd className="text-gray-200">
               {new Date(status.validUntilEpoch * 1000).toLocaleString()}
             </dd>
@@ -93,7 +93,7 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
         )}
         {status?.backoffSeconds !== undefined && (
           <>
-            <dt className="text-gray-500">{t('radioPanel.lockdown.backoffLabel')}</dt>
+            <dt className="text-muted">{t('radioPanel.lockdown.backoffLabel')}</dt>
             <dd className="text-amber-300">
               {t('radioPanel.lockdown.backoffValue', { seconds: status.backoffSeconds })}
             </dd>

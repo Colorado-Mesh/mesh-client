@@ -60,7 +60,7 @@ export function resolveRrcHubSidebarMarker(opts: {
   if (opts.autoJoin) {
     return { kind: 'autoJoinNotConnected', glyph: '◐', colorClass: 'text-sky-400' };
   }
-  return { kind: 'idle', glyph: '○', colorClass: 'text-gray-500' };
+  return { kind: 'idle', glyph: '○', colorClass: 'text-muted' };
 }
 
 // Re-export for callers that need raw helpers in tests.

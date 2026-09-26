@@ -195,7 +195,7 @@ export function ReticulumAnnounceControls({
           {t('reticulumIdentity.clearAnnounces')}
         </button>
       </div>
-      <p className="text-xs text-gray-500">{t('reticulumIdentity.announceIntervalHint')}</p>
+      <p className="text-muted text-xs">{t('reticulumIdentity.announceIntervalHint')}</p>
       {statusMessage ? (
         <p className="mt-2 text-xs text-gray-300" role="status">
           {statusMessage}

@@ -203,7 +203,7 @@ export default function SearchModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-lg leading-none text-gray-500 hover:text-gray-300"
+            className="text-muted text-lg leading-none hover:text-gray-300"
           >
             ×
           </button>
@@ -212,7 +212,7 @@ export default function SearchModal({
         {/* Results */}
         <div className="overflow-y-auto">
           {results.length === 0 && !loading && query.trim() && (
-            <p className="py-8 text-center text-sm text-gray-500">{t('searchModal.noResults')}</p>
+            <p className="text-muted py-8 text-center text-sm">{t('searchModal.noResults')}</p>
           )}
           {results.length === 0 && !query.trim() && (
             <p className="py-8 text-center text-sm text-gray-600">{t('searchModal.hint')}</p>
