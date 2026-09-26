@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { mergeAppSetting } from '@/renderer/lib/appSettingsStorage';
 import {
   mergeRoomLastReadWatermark,
@@ -199,7 +201,8 @@ describe('RoomsPanel', () => {
     const onOpenRepeaterOps = vi.fn();
     renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onOpenRepeaterOps });
 
-    fireEvent.click(screen.getByText('roomsPanel.manageRoom'));
+    fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.moreActions' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'roomsPanel.manageRoom' }));
 
     expect(onOpenRepeaterOps).toHaveBeenCalledWith(room.node_id);
     expect(screen.queryByPlaceholderText('roomsPanel.cliPlaceholder')).not.toBeInTheDocument();
@@ -530,7 +533,8 @@ describe('RoomsPanel', () => {
         onOpenRepeaterOps={onOpenRepeaterOps}
       />,
     );
-    fireEvent.click(screen.getByText('roomsPanel.manageRoom'));
+    fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.moreActions' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'roomsPanel.manageRoom' }));
     expect(onOpenRepeaterOps).toHaveBeenCalledWith(room.node_id);
     expect(screen.queryByText('roomsPanel.manageHeading')).not.toBeInTheDocument();
     expect(screen.queryByPlaceholderText('roomsPanel.cliPlaceholder')).not.toBeInTheDocument();
@@ -923,9 +927,9 @@ describe('RoomsPanel', () => {
 
     renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
 
-    const checkbox = screen.getByRole('checkbox', { name: 'roomsPanel.autoLoginOnConnect' });
-    expect(checkbox).not.toBeChecked();
-    await userEvent.click(checkbox);
+    const toggle = screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' });
+    expect(toggle).not.toBeChecked();
+    await userEvent.click(toggle);
 
     await waitFor(() => {
       expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(true);
@@ -1446,19 +1450,25 @@ describe('RoomsPanel', () => {
     expect(lastRoomsVirtualizerOptions?.count).toBe(2);
   });
 
-  it('collapses room list and persists preference', async () => {
+  it('hides the room list, persists the preference, and shows it again from the header', async () => {
     meshcoreClearAllRoomSessions();
     localStorage.removeItem('mesh-client:roomsListCollapsed');
     const user = userEvent.setup();
     const room = makeRoom(0x1031, 'Collapse Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
-    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id, onLoginAllSaved: vi.fn() });
+    expect(screen.getByRole('complementary', { name: 'roomsPanel.title' })).toBeInTheDocument();
     await user.click(screen.getByLabelText('roomsPanel.collapseRoomList'));
     expect(localStorage.getItem('mesh-client:roomsListCollapsed')).toBe('true');
-    expect(screen.getByLabelText('roomsPanel.expandRoomList')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('complementary', { name: 'roomsPanel.title' }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText('roomsPanel.loginAllSavedAria')).not.toBeInTheDocument();
-    expect(screen.getByText('CR')).toBeInTheDocument();
-    expect(screen.getByLabelText('Collapse Room')).toBeInTheDocument();
+    // The open room keeps its header; the list comes back from there.
+    expect(screen.getByRole('heading', { name: 'Collapse Room' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText('roomsPanel.expandRoomList'));
+    expect(localStorage.getItem('mesh-client:roomsListCollapsed')).toBe('false');
+    expect(screen.getByRole('complementary', { name: 'roomsPanel.title' })).toBeInTheDocument();
   });
 
   it('holds room unread while visible but unfocused, then advances watermark on refocus', async () => {
@@ -1553,5 +1563,147 @@ describe('RoomsPanel', () => {
       distSpy.mockRestore();
       hasFocusSpy.mockRestore();
     }
+  });
+});
+
+describe('RoomsPanel layout', () => {
+  const originalMatchMedia = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+
+  function stubMatchMedia(matching: string[]) {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: (query: string) => ({
+        media: query,
+        matches: matching.includes(query),
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }),
+    });
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    meshcoreClearAllRoomSessions();
+    clearAllMeshcoreRoomAutoLoginFailures();
+  });
+
+  afterEach(() => {
+    if (originalMatchMedia) Object.defineProperty(window, 'matchMedia', originalMatchMedia);
+    else Reflect.deleteProperty(window, 'matchMedia');
+  });
+
+  it('docks room details with sync settings and members, and remembers hiding them', async () => {
+    const room = makeRoom(0x1040, 'Details Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+
+    const details = screen.getByRole('complementary', { name: 'roomsPanel.details' });
+    expect(details).toHaveTextContent('roomsPanel.loginAndSyncHeading');
+    expect(details).toHaveTextContent('roomsPanel.membersHeading');
+    expect(screen.getByRole('switch', { name: 'roomsPanel.autoSync' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'roomsPanel.hideDetails' }));
+    expect(
+      screen.queryByRole('complementary', { name: 'roomsPanel.details' }),
+    ).not.toBeInTheDocument();
+    expect(localStorage.getItem('mesh-client:rooms:detailsCollapsed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'roomsPanel.details' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('shows one pane at a time on phones: list, then the room with a back button', async () => {
+    stubMatchMedia(['(max-width: 767px)', '(max-width: 1279px)']);
+    const roomA = makeRoom(0x1041, 'Phone Room A');
+    const roomB = makeRoom(0x1042, 'Phone Room B');
+    const nodes = new Map<number, MeshNode>([
+      [roomA.node_id, roomA],
+      [roomB.node_id, roomB],
+    ]);
+    renderRoomsPanel(nodes);
+
+    expect(screen.getByRole('complementary', { name: 'roomsPanel.title' })).toBeInTheDocument();
+    expect(screen.queryByText('roomsPanel.selectRoom')).not.toBeInTheDocument();
+    // No hide-list control on phones: the list is a full pane.
+    expect(screen.queryByLabelText('roomsPanel.collapseRoomList')).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /Phone Room B/ }));
+    expect(
+      screen.queryByRole('complementary', { name: 'roomsPanel.title' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Phone Room B' })).toBeInTheDocument();
+    expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'roomsPanel.backToList' }));
+    expect(screen.getByRole('complementary', { name: 'roomsPanel.title' })).toBeInTheDocument();
+  });
+
+  it('opens room details as a sheet below 1280px and closes it with Escape', async () => {
+    stubMatchMedia(['(max-width: 1279px)']);
+    const room = makeRoom(0x1043, 'Sheet Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+
+    expect(
+      screen.queryByRole('complementary', { name: 'roomsPanel.details' }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
+    expect(screen.getByRole('complementary', { name: 'roomsPanel.details' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(
+      screen.queryByRole('complementary', { name: 'roomsPanel.details' }),
+    ).not.toBeInTheDocument();
+    // Closing the sheet is not a saved preference.
+    expect(localStorage.getItem('mesh-client:rooms:detailsCollapsed')).toBeNull();
+  });
+
+  it('has no axe violations with a room open, details docked and a saved password', async () => {
+    hydrateAxeThemeColors(document.documentElement);
+    const room = makeRoom(0x1044, 'Axe Room');
+    const other = makeRoom(0x1045, 'Other Room');
+    const nodes = new Map<number, MeshNode>([
+      [room.node_id, room],
+      [other.node_id, other],
+    ]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(other.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test axe',
+    );
+    meshcoreApplyRoomSession(room.node_id, {
+      guestPassword: 'hello',
+      adminPassword: 'admin',
+      role: 'admin',
+    });
+    const { container } = render(
+      <RoomsPanel
+        nodes={nodes}
+        messages={[]}
+        myNodeNum={1}
+        isConnected
+        initialRoomTarget={room.node_id}
+        onLoginRoom={vi.fn().mockResolvedValue(undefined)}
+        onLoginAllSaved={vi.fn().mockResolvedValue(undefined)}
+        onCancelRoomLogin={vi.fn()}
+        onLeaveRoom={vi.fn().mockResolvedValue(undefined)}
+        onSendRoomPost={vi.fn()}
+        onSendRoomAdminCli={vi.fn()}
+        onToggleFavorite={vi.fn()}
+      />,
+    );
+    await userEvent.click(screen.getByText('roomsPanel.savedPasswordsCount'));
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

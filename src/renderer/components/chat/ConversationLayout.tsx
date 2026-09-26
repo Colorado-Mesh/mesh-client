@@ -34,6 +34,8 @@ export interface ConversationLayoutProps {
   side?: ReactNode;
   sideLabel?: string;
   sideOpen?: boolean;
+  /** Docked width: `narrow` (224px) for member lists, `wide` (288px) for settings and details. */
+  sideWidth?: 'narrow' | 'wide';
   /** Closes the side sheet (backdrop click or Escape) in overlay mode. */
   onCloseSide?: () => void;
   closeSideLabel?: string;
@@ -54,6 +56,7 @@ export function ConversationLayout({
   side,
   sideLabel,
   sideOpen = false,
+  sideWidth = 'narrow',
   onCloseSide,
   closeSideLabel,
 }: ConversationLayoutProps) {
@@ -112,7 +115,9 @@ export function ConversationLayout({
         ) : (
           <aside
             aria-label={sideLabel}
-            className="flex min-h-0 w-56 shrink-0 flex-col border-l border-slate-800"
+            className={`flex min-h-0 shrink-0 flex-col border-l border-slate-800 ${
+              sideWidth === 'wide' ? 'w-72' : 'w-56'
+            }`}
           >
             {side}
           </aside>
