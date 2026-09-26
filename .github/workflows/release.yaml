@@ -80,6 +80,7 @@ jobs:
         id: ensure
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_PUSH_TOKEN: ${{ secrets.RELEASE_PUSH_TOKEN }}
           GITHUB_SHA: ${{ github.sha }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
           MESH_CLIENT_ALLOW_DRAFT_CREATE: '1'

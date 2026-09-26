@@ -1,6 +1,6 @@
 # Mesh-Client
 
-> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus a Ratspeak-compatible Reticulum sidecar (**Games**, **encrypted paper**, **LXST voice**, Nomad, RRC, Remote).
+> Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** — **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus a Ratspeak-compatible Reticulum sidecar (**Games**, **encrypted paper**, **LXST voice**, Nomad, RRC, Remote). EMCOMM support via MECP & TAK.
 
 ![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)
