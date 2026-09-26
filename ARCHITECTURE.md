@@ -6,11 +6,11 @@ Project layout, data flow, and code placement for human reference. For AI coding
 
 Path alias `@/*` maps to `src/*` (see `tsconfig.json`).
 
-| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                                                                         |
-| -------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`gatt-sidecar-proxy.ts` + coexistence), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, Reticulum DB, Reticulum identity, RRC DB, TAK, GPS), window, GPS, updater |
-| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                                                                           |
-| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                                                                                                                  |
+| Boundary | Path            | Role                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Main     | `src/main/`     | SQLite (`database.ts`, `db-compat.ts`), BLE (`gatt-sidecar-proxy.ts` + coexistence), MQTT (`mqtt-manager.ts`, `meshcore-mqtt-adapter.ts`), logging (`log-service.ts`, `sanitize-log-message.ts`, `mecp-received-log.ts`), offline maps (`offline-maps/` + `ipc/offline-maps-handlers.ts`), IPC handlers (`index.ts` plus namespaced modules in `src/main/ipc/` — Reticulum, Reticulum DB, Reticulum identity, RRC DB, TAK, GPS), window, GPS, updater |
+| Preload  | `src/preload/`  | `contextBridge` exposing namespaced `electronAPI` only; never expose `ipcRenderer`                                                                                                                                                                                                                                                                                                                                                                    |
+| Renderer | `src/renderer/` | React 19 + Vite + Zustand: `components/`, `hooks/`, `runtime/` (protocol runtimes, single mount), `stores/`, `lib/`, `locales/`, `workers/`                                                                                                                                                                                                                                                                                                           |
 
 | Shared | `src/shared/` | IPC contracts (`electron-api.types.ts`), protocol-neutral helpers |
 
@@ -118,6 +118,15 @@ Sanitize user-controlled strings before logs and IPC per [AGENTS.md](AGENTS.md).
 ### UI
 
 - Panels: `src/renderer/components/`. New tabs: `lazyTabPanels.ts` / `lazyAppPanels.ts` + capability requirements in `src/renderer/lib/appTabMappings.ts` (`TAB_CAPABILITY_REQUIREMENTS`, `computeTabMappings()`). **Administration:** `AdminPanel.tsx` (device commands / Danger Zone; Meshtastic OTA/DFU). **Config apply feedback:** `ConfigApplyNotice.tsx`. Stores: module defaults; persist vs SQLite IPC as elsewhere.
+
+### EMCOMM (MECP + Incident Command)
+
+- **MECP wire / alerts / audit / RF bridge:** `src/renderer/lib/mecp/` + `hooks/useMecpAlertWatcher.ts`; durable audit `mecp-received.log` via main `mecp-received-log.ts`. User toggle for Chat compose under App → MECP. See [docs/agents/mecp.md](docs/agents/mecp.md).
+- **Incident Command:** always-visible **Incident** tab (`components/incident/`, `incidentStore`); emergency-priority outbox; R01/B02/B03 ACK/beacon; map markers + SAR overlays. See [docs/agents/emcomm.md](docs/agents/emcomm.md).
+
+### Offline maps
+
+- Privileged `mesh-tiles:` protocol + disk LRU under userData `tile-cache/` (`src/main/offline-maps/`); region download IPC; renderer **Layers → Offline maps**. Basemap allowlist includes OSM, Carto Dark, USGS Topo. See [docs/agents/offline-maps.md](docs/agents/offline-maps.md).
 
 ### Common issues
 

@@ -38,11 +38,15 @@ nav:
       - Nomad Hosting Interop: nomad-hosting-interop.md
       - Meshtastic & MeshCore Parity: meshcore-meshtastic-parity.md
       - Reticulum: reticulum.md
+      - Reticulum Setup Guide: reticulum-setup-guide.md
       - Reticulum Sidecar IPC: reticulum-sidecar-ipc.md
+      - Reticulum Games Parity: reticulum-games-parity.md
       - LetsMesh MQTT Auth: letsmesh-mqtt-auth.md
   - Support:
       - Diagnostics: diagnostics.md
       - Troubleshooting: troubleshooting.md
+      - Notification Sounds: notification-sounds.md
+      - Log Analysis: log-analysis.md
       - Community:
           - Discord: https://discord.com/invite/McChKR5NpS
           - Website: https://coloradomesh.org/
