@@ -11,6 +11,21 @@ import type { MeshNode } from '../lib/types';
 import { computePathHash, usePathHistoryStore } from '../stores/pathHistoryStore';
 import RepeatersPanel from './RepeatersPanel';
 
+/** Row actions other than Ping (and Open room) live in the row's overflow menu (Option B). */
+async function chooseRowAction(
+  user: { click: (element: Element) => Promise<void> },
+  name: string | RegExp,
+): Promise<void> {
+  await openRowMenu(user);
+  await user.click(screen.getByRole('menuitem', { name }));
+}
+
+async function openRowMenu(user: { click: (element: Element) => Promise<void> }): Promise<void> {
+  const [trigger] = screen.getAllByRole('button', { name: /^More actions for / });
+  if (!trigger) throw new Error('row actions menu not found');
+  await user.click(trigger);
+}
+
 const mockAddToast = vi.fn();
 const VIRTUALIZER_VISIBLE_CAP = 3;
 
@@ -104,22 +119,46 @@ describe('RepeatersPanel', () => {
   afterEach(() => {
     warnSpy.mockClear();
   });
-  it('shows CLI interface button when onSendCliCommand is provided and connected', async () => {
+  it('offers the CLI interface in the row menu when onSendCliCommand is provided', async () => {
     const { container } = render(
       <RepeatersPanel {...makeBaseProps()} onSendCliCommand={vi.fn().mockResolvedValue('ok')} />,
     );
-    expect(screen.getByRole('button', { name: 'CLI interface' })).toBeInTheDocument();
     hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+    await openRowMenu(userEvent);
+    expect(screen.getByRole('menuitem', { name: 'CLI interface' })).toBeInTheDocument();
+    expect(await axe(screen.getByRole('menu'))).toHaveNoViolations();
   });
 
-  it('hides CLI interface button when onSendCliCommand is omitted', async () => {
+  it('leaves the CLI interface out of the row menu when onSendCliCommand is omitted', async () => {
     const { container } = render(<RepeatersPanel {...makeBaseProps()} />);
-    expect(screen.queryByRole('button', { name: 'CLI interface' })).not.toBeInTheDocument();
     hydrateAxeThemeColors(container);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+    await openRowMenu(userEvent);
+    expect(screen.queryByRole('menuitem', { name: 'CLI interface' })).not.toBeInTheDocument();
+  });
+
+  it('keeps Ping visible and moves the other row actions into one menu', async () => {
+    render(
+      <RepeatersPanel
+        {...makeBaseProps()}
+        onSendCliCommand={vi.fn().mockResolvedValue('ok')}
+        onRequestNeighbors={vi.fn()}
+        onRequestTelemetry={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Ping trace' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Request status' })).not.toBeInTheDocument();
+    await openRowMenu(userEvent);
+    expect(screen.getAllByRole('menuitem').map((item) => item.getAttribute('aria-label'))).toEqual([
+      'Request status',
+      'Neighbors',
+      'Sensor telemetry LPP',
+      'CLI interface',
+      'Remove',
+    ]);
   });
 
   it('fills leftover height with the table scroller instead of a 70vh cap', async () => {
@@ -138,7 +177,7 @@ describe('RepeatersPanel', () => {
     props.onRequestRepeaterStatus = vi.fn().mockRejectedValue(new Error('radio timeout'));
 
     render(<RepeatersPanel {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Request status' }));
+    await chooseRowAction(userEvent, 'Request status');
 
     expect(warnSpy).toHaveBeenCalled();
     expect(mockAddToast).toHaveBeenCalledWith(expect.stringContaining('radio timeout'), 'error');
@@ -149,7 +188,7 @@ describe('RepeatersPanel', () => {
     props.onRequestNeighbors = vi.fn().mockRejectedValue(new Error('neighbors timeout'));
 
     render(<RepeatersPanel {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
+    await chooseRowAction(userEvent, 'Neighbors');
 
     expect(warnSpy).toHaveBeenCalled();
     expect(mockAddToast).toHaveBeenCalledWith(
@@ -185,7 +224,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
+    await chooseRowAction(userEvent, 'Neighbors');
     expect(onRequestNeighbors).toHaveBeenCalledWith(repeater.node_id);
 
     const loadMore = await screen.findByRole('button', {
@@ -222,7 +261,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
+    await chooseRowAction(userEvent, 'Neighbors');
     expect(screen.queryByRole('button', { name: /Load more neighbors/i })).not.toBeInTheDocument();
   });
 
@@ -256,7 +295,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
+    await chooseRowAction(userEvent, 'Neighbors');
     const loadMore = await screen.findByRole('button', {
       name: 'Load more neighbors (50 of 60 loaded)',
     });
@@ -295,7 +334,7 @@ describe('RepeatersPanel', () => {
 
     const { rerender } = render(<RepeatersPanel {...base} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
+    await chooseRowAction(userEvent, 'Neighbors');
     expect(
       await screen.findByRole('button', {
         name: 'Load more neighbors (50 of 60 loaded)',
@@ -341,7 +380,7 @@ describe('RepeatersPanel', () => {
 
     const { rerender } = render(<RepeatersPanel {...base} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Neighbors' }));
+    await chooseRowAction(userEvent, 'Neighbors');
     const loadMore = await screen.findByRole('button', {
       name: 'Load more neighbors (50 of 60 loaded)',
     });
@@ -369,7 +408,7 @@ describe('RepeatersPanel', () => {
     expect(mockAddToast).toHaveBeenCalledWith(expect.stringContaining('ping timeout'), 'error');
   });
 
-  it('renders translated meshcore action errors instead of raw i18n keys', () => {
+  it('renders translated meshcore action errors instead of raw i18n keys', async () => {
     const props = makeBaseProps();
     props.meshcoreStatusErrors = new Map([
       [
@@ -387,11 +426,12 @@ describe('RepeatersPanel', () => {
     render(<RepeatersPanel {...props} />);
 
     expect(
-      screen.getByRole('button', { name: /Status error:.*Request timed out/i }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole('button', { name: /Ping error:.*No route from radio yet/i }),
     ).toBeInTheDocument();
+    await openRowMenu(userEvent);
+    expect(screen.getByRole('menuitem', { name: 'Request status' })).toHaveAccessibleDescription(
+      /Status error:.*Request timed out/i,
+    );
     expect(screen.queryByText('meshcore.errors.pingNoRoute')).not.toBeInTheDocument();
     expect(screen.queryByText(/MC_I18N:/)).not.toBeInTheDocument();
   });
@@ -420,11 +460,11 @@ describe('RepeatersPanel', () => {
     const props = makeBaseProps();
     render(<RepeatersPanel {...props} />);
 
-    const deleteBtn = screen.getByRole('button', { name: /Remove/i });
-    // First click shows confirmation
-    await userEvent.click(deleteBtn);
+    // Choosing Remove from the row menu shows a focused confirmation button
+    await chooseRowAction(userEvent, 'Remove');
     expect(props.onDeleteRepeater).not.toHaveBeenCalled();
     expect(screen.getByText('Confirm?')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Confirm removing / })).toHaveFocus();
 
     // Second click executes the delete
     await userEvent.click(screen.getByText('Confirm?'));
@@ -436,7 +476,7 @@ describe('RepeatersPanel', () => {
     const onRequestTelemetry = vi.fn().mockRejectedValue(new Error('telemetry fail'));
 
     render(<RepeatersPanel {...props} onRequestTelemetry={onRequestTelemetry} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Sensor telemetry LPP' }));
+    await chooseRowAction(userEvent, 'Sensor telemetry LPP');
 
     expect(warnSpy).toHaveBeenCalled();
     expect(screen.queryByText(/Sensor telemetry/i)).not.toBeInTheDocument();
@@ -449,7 +489,7 @@ describe('RepeatersPanel', () => {
     const onRequestTelemetry = vi.fn().mockResolvedValue(telemetryData);
 
     render(<RepeatersPanel {...props} onRequestTelemetry={onRequestTelemetry} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Sensor telemetry LPP' }));
+    await chooseRowAction(userEvent, 'Sensor telemetry LPP');
 
     expect(onRequestTelemetry).toHaveBeenCalledWith(repeater.node_id);
   });
@@ -459,7 +499,7 @@ describe('RepeatersPanel', () => {
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
 
     // Open CLI interface
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     const input = screen.getByRole('textbox', { name: 'CLI command input' });
     await userEvent.type(input, '  name  ');
     await userEvent.click(screen.getByRole('button', { name: /Send/i }));
@@ -478,9 +518,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(
-      screen.getByRole('button', { name: /CLI: Node not found \(no encryption key\)/i }),
-    );
+    await chooseRowAction(userEvent, 'CLI interface');
     expect(screen.getByText('Node not found (no encryption key)')).toBeInTheDocument();
   });
 
@@ -489,7 +527,7 @@ describe('RepeatersPanel', () => {
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
 
     // Open CLI interface
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, 'name', undefined);
@@ -499,7 +537,7 @@ describe('RepeatersPanel', () => {
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'Set path hash mode 2-byte' }));
 
     expect(onSendCliCommand).toHaveBeenCalledWith(
@@ -513,7 +551,7 @@ describe('RepeatersPanel', () => {
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     expect(screen.getByRole('button', { name: 'clock sync' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'clear stats' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'advert' })).toBeInTheDocument();
@@ -528,7 +566,7 @@ describe('RepeatersPanel', () => {
     const onSendCliCommand = vi.fn().mockResolvedValue('02|ERR: clock cannot go backwards');
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'clock sync' }));
 
     await waitFor(() => {
@@ -543,7 +581,7 @@ describe('RepeatersPanel', () => {
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     const input = screen.getByRole('textbox', { name: 'CLI command input' });
     await userEvent.type(input, 'reboot');
     await userEvent.click(screen.getByRole('button', { name: /Send/i }));
@@ -570,7 +608,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     await waitFor(() => {
@@ -590,7 +628,7 @@ describe('RepeatersPanel', () => {
       <RepeatersPanel {...makeBaseProps()} onPing={onPing} onSendCliCommand={onSendCliCommand} />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     await waitFor(() => {
@@ -630,7 +668,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     await waitFor(() => {
@@ -656,7 +694,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     await waitFor(() => {
@@ -682,7 +720,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
     await userEvent.click(screen.getByRole('button', { name: 'name' }));
 
     await waitFor(() => {
@@ -706,7 +744,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(userEvent, 'CLI interface');
 
     expect(
       screen.getByText(/Multi-hop CLI is more reliable after a successful Ping trace/i),
@@ -928,7 +966,7 @@ describe('RepeatersPanel', () => {
     expect(screen.getByText(/▣\s*Dest Node/)).toBeInTheDocument();
   });
 
-  it('disables neighbors for repeaters at or beyond hop threshold', () => {
+  it('disables neighbors for repeaters at or beyond hop threshold', async () => {
     const far = { ...repeater, hops_away: 10 };
     render(
       <RepeatersPanel
@@ -937,7 +975,10 @@ describe('RepeatersPanel', () => {
         onRequestNeighbors={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Neighbors' })).toBeDisabled();
+    await openRowMenu(userEvent);
+    const neighbors = screen.getByRole('menuitem', { name: 'Neighbors' });
+    expect(neighbors).toBeDisabled();
+    expect(neighbors).toHaveAccessibleDescription(/unavailable for nodes \d+\+ hops away/);
   });
 
   function mockRoomNode(id: number): MeshNode {
@@ -987,13 +1028,13 @@ describe('RepeatersPanel', () => {
         }
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Repeaters' }));
+    await user.click(screen.getByRole('radio', { name: 'Repeaters' }));
     expect(screen.getByText('Test Repeater')).toBeInTheDocument();
     expect(screen.queryByText('Test Room')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Rooms' }));
+    await user.click(screen.getByRole('radio', { name: 'Rooms' }));
     expect(screen.queryByText('Test Repeater')).not.toBeInTheDocument();
     expect(screen.getByText('Test Room')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'All' }));
+    await user.click(screen.getByRole('radio', { name: 'All' }));
     expect(screen.getByText('Test Repeater')).toBeInTheDocument();
     expect(screen.getByText('Test Room')).toBeInTheDocument();
   });
@@ -1026,7 +1067,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(user, 'CLI interface');
     expect(screen.getByRole('button', { name: 'get acl' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'allow.read.only on' })).toBeInTheDocument();
     expect(screen.getByLabelText('Public key (64 hex)')).toBeInTheDocument();
@@ -1046,7 +1087,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(user, 'CLI interface');
     await user.click(screen.getByRole('button', { name: 'get acl' }));
     expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, 'get acl', undefined);
   });
@@ -1062,7 +1103,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(user, 'CLI interface');
     expect(screen.getByLabelText('Public key (64 hex)')).toBeInTheDocument();
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
@@ -1081,7 +1122,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(user, 'CLI interface');
     await user.type(screen.getByLabelText('Public key (64 hex)'), hex.toUpperCase());
     await user.click(screen.getByRole('button', { name: 'Apply ACL' }));
     expect(onSendCliCommand).toHaveBeenCalledWith(room.node_id, `setperm ${hex} 1`, undefined);
@@ -1099,7 +1140,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(user, 'CLI interface');
     await user.type(screen.getByLabelText('Public key (64 hex)'), 'not-a-key');
     expect(screen.getByRole('button', { name: 'Apply ACL' })).toBeDisabled();
     expect(onSendCliCommand).not.toHaveBeenCalled();
@@ -1114,7 +1155,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(user, 'CLI interface');
     expect(screen.queryByRole('button', { name: 'get acl' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Public key (64 hex)')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'advert.zerohop' })).toBeInTheDocument();
@@ -1132,7 +1173,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'CLI interface' }));
+    await chooseRowAction(user, 'CLI interface');
     const input = screen.getByRole('textbox', { name: 'CLI command input' });
     await user.type(input, 'shutdown');
     await user.click(screen.getByRole('button', { name: /Send/i }));
@@ -1285,7 +1326,7 @@ describe('RepeatersPanel', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Rooms' }));
+    await user.click(screen.getByRole('radio', { name: 'Rooms' }));
     await user.click(screen.getByRole('button', { name: 'Sort by Name, A to Z' }));
     const names = screen
       .getAllByRole('button')

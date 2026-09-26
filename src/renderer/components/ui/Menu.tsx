@@ -72,6 +72,8 @@ export function Menu({
   align = 'end',
   width = 248,
 }: MenuProps) {
+  const fallbackId = useId();
+  const menuDomId = id ?? fallbackId;
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<MenuPosition | null>(null);
 
@@ -167,6 +169,8 @@ export function Menu({
             key={entry.id}
             type="button"
             role="menuitem"
+            aria-label={entry.label}
+            aria-describedby={entry.description ? `${menuDomId}-${entry.id}-desc` : undefined}
             disabled={entry.disabled}
             onClick={() => {
               closeAndRefocus();
@@ -182,7 +186,9 @@ export function Menu({
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="font-medium">{entry.label}</span>
               {entry.description && (
-                <span className="text-[11.5px] text-slate-300">{entry.description}</span>
+                <span id={`${menuDomId}-${entry.id}-desc`} className="text-[11.5px] text-slate-300">
+                  {entry.description}
+                </span>
               )}
             </span>
           </button>

@@ -15,6 +15,21 @@ import {
 import type { MeshNode } from '../lib/types';
 import RepeatersPanel from './RepeatersPanel';
 
+/** Row actions other than Ping (and Open room) live in the row's overflow menu (Option B). */
+async function chooseRowAction(
+  user: { click: (element: Element) => Promise<void> },
+  name: string | RegExp,
+): Promise<void> {
+  await openRowMenu(user);
+  await user.click(screen.getByRole('menuitem', { name }));
+}
+
+async function openRowMenu(user: { click: (element: Element) => Promise<void> }): Promise<void> {
+  const [trigger] = screen.getAllByRole('button', { name: /^More actions for / });
+  if (!trigger) throw new Error('row actions menu not found');
+  await user.click(trigger);
+}
+
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: (opts: { count: number; enabled?: boolean }) => {
     const total = opts.count;
@@ -92,7 +107,7 @@ describe('RepeatersPanel repeater auth', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     render(<RepeatersPanel {...makeProps({ onRequestRepeaterStatus })} />);
 
-    await user.click(screen.getByRole('button', { name: 'Request status' }));
+    await chooseRowAction(user, 'Request status');
     await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -105,7 +120,7 @@ describe('RepeatersPanel repeater auth', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     render(<RepeatersPanel {...makeProps({ onRequestRepeaterStatus })} />);
 
-    await user.click(screen.getByRole('button', { name: 'Request status' }));
+    await chooseRowAction(user, 'Request status');
     await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -124,7 +139,7 @@ describe('RepeatersPanel repeater auth', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Request status' }));
+    await chooseRowAction(user, 'Request status');
     await user.type(screen.getByLabelText('Admin password (optional)'), 'room-admin');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -152,7 +167,7 @@ describe('RepeatersPanel repeater auth', () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole('button', { name: 'Request status' }));
+    await chooseRowAction(userEvent, 'Request status');
     expect(screen.queryByLabelText('Admin password (optional)')).not.toBeInTheDocument();
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(room.node_id);
   });

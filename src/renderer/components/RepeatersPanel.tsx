@@ -1,11 +1,20 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
-import { ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react-motion';
+import {
+  ArrowUpDown,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Ellipsis,
+  Search,
+  Trash2,
+} from 'lucide-react-motion';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -71,6 +80,10 @@ import { MeshcoreRouteChain } from './MeshcoreRouteChain';
 import { formatSecondsAgo } from './NodeInfoBody';
 import SnrIndicator from './SnrIndicator';
 import { useToast } from './Toast';
+import { Button, buttonClassName } from './ui/Button';
+import { INPUT_CLASS } from './ui/formClasses';
+import { MenuButton } from './ui/Menu';
+import { SegmentedControl } from './ui/SegmentedControl';
 
 type TypeFilter = 'all' | 'repeater' | 'room';
 
@@ -354,6 +367,17 @@ export default function RepeatersPanel({
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
+  /** Small spinner inside row buttons and the row busy indicator. */
+  const rowSpinner = (
+    <span
+      aria-hidden
+      className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
+    />
+  );
+  /** "Confirm?" appears after Remove is chosen from the row menu; focus it so blur cancels. */
+  const focusOnMount = useCallback((el: HTMLButtonElement | null) => {
+    el?.focus();
+  }, []);
   const { ensureRepeaterAuth, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
   const [savedAdminEntries, setSavedAdminEntries] = useState<MeshcoreInfraAdminPasswordEntry[]>(
     () => listSavedAdminPasswords(),
@@ -842,38 +866,24 @@ export default function RepeatersPanel({
   return (
     <>
       <div className="flex h-full min-h-0 flex-col gap-4">
-        <div className="flex flex-col flex-wrap items-stretch justify-between gap-3 min-[480px]:flex-row min-[480px]:items-center">
-          <h2 className="text-bright-green text-lg font-semibold">{t('repeatersPanel.title')}</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <div
-              className="flex rounded-lg border border-gray-600/50 p-0.5"
-              role="group"
-              aria-label={t('repeatersPanel.typeFilterAria')}
-            >
-              {(
-                [
-                  ['all', 'repeatersPanel.filterAll'],
-                  ['repeater', 'repeatersPanel.filterRepeaters'],
-                  ['room', 'repeatersPanel.filterRooms'],
-                ] as const
-              ).map(([id, labelKey]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => {
-                    setTypeFilter(id);
-                  }}
-                  aria-pressed={typeFilter === id}
-                  className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
-                    typeFilter === id
-                      ? 'bg-brand-green/20 text-brand-green'
-                      : 'text-gray-400 hover:text-gray-200'
-                  }`}
-                >
-                  {t(labelKey)}
-                </button>
-              ))}
-            </div>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h2 className="text-base font-semibold text-slate-200">{t('repeatersPanel.title')}</h2>
+          <SegmentedControl
+            aria-label={t('repeatersPanel.typeFilterAria')}
+            value={typeFilter}
+            onChange={setTypeFilter}
+            options={[
+              { value: 'all', label: t('repeatersPanel.filterAll') },
+              { value: 'repeater', label: t('repeatersPanel.filterRepeaters') },
+              { value: 'room', label: t('repeatersPanel.filterRooms') },
+            ]}
+          />
+          <div className="relative w-full max-w-[18rem] min-w-[10rem] flex-1">
+            <Search
+              aria-hidden
+              className={`${ICON_MD} text-muted pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2`}
+              size={16}
+            />
             <input
               type="search"
               value={searchQuery}
@@ -882,35 +892,37 @@ export default function RepeatersPanel({
               }}
               placeholder={t('repeatersPanel.searchRepeatersPlaceholder')}
               aria-label={t('repeatersPanel.searchRepeaters')}
-              className="bg-secondary-dark/80 focus:border-brand-green/50 max-w-[20rem] min-w-[8rem] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+              className={`${INPUT_CLASS} pl-8`}
             />
           </div>
         </div>
-        <p className="max-w-2xl text-xs text-gray-500">{t('repeatersPanel.columnsDataHint')}</p>
+        <p className="text-muted max-w-2xl text-xs">{t('repeatersPanel.columnsDataHint')}</p>
 
         {savedCredentialEntries.length > 0 && (
-          <div className="rounded-lg border border-gray-700/80 bg-gray-900/40">
+          <div className="bg-deep-black rounded-xl border border-slate-800">
             <button
               type="button"
               onClick={() => {
                 setSavedPasswordsOpen((open) => !open);
               }}
-              className="flex w-full items-center gap-1 px-3 py-2 text-left text-xs font-medium text-gray-300 hover:bg-gray-800/50"
+              className="hover:bg-sidebar-active-bg/60 flex w-full items-center gap-1.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-300"
               aria-expanded={savedPasswordsOpen}
             >
-              <span className="text-gray-500" aria-hidden>
-                {savedPasswordsOpen ? '▾' : '▸'}
-              </span>
+              {savedPasswordsOpen ? (
+                <ChevronDown aria-hidden className={`${ICON_SM_PLUS} text-muted`} size={14} />
+              ) : (
+                <ChevronRight aria-hidden className={`${ICON_SM_PLUS} text-muted`} size={14} />
+              )}
               {t('repeatersPanel.savedPasswordsCount', { count: savedCredentialEntries.length })}
             </button>
             {savedPasswordsOpen && (
-              <ul className="max-h-40 overflow-y-auto border-t border-gray-800/80 pb-1">
+              <ul className="max-h-40 overflow-y-auto border-t border-slate-800 pb-1">
                 {savedCredentialEntries.map(({ nodeId, kind }) => (
                   <li
                     key={`${kind}:${nodeId}`}
-                    className="flex items-center justify-between gap-2 border-b border-gray-800/60 px-3 py-1.5 last:border-b-0"
+                    className="flex items-center justify-between gap-2 border-b border-slate-800 px-3 py-1.5 last:border-b-0"
                   >
-                    <span className="flex min-w-0 items-center gap-2 truncate text-xs text-gray-200">
+                    <span className="flex min-w-0 items-center gap-2 truncate text-xs text-slate-200">
                       <span
                         className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
                           kind === 'Room'
@@ -932,7 +944,7 @@ export default function RepeatersPanel({
                       onBlur={() => {
                         if (forgetConfirmKey === `${kind}:${nodeId}`) setForgetConfirmKey(null);
                       }}
-                      className="shrink-0 rounded border border-red-900/50 bg-red-950/40 px-1.5 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30"
+                      className={buttonClassName('danger', 'sm')}
                       aria-label={t('repeatersPanel.forgetPasswordAria')}
                     >
                       {forgetConfirmKey === `${kind}:${nodeId}`
@@ -947,9 +959,9 @@ export default function RepeatersPanel({
         )}
 
         {infraNodes.length === 0 ? (
-          <div className="mt-8 text-center text-sm text-gray-400">
+          <div className="text-muted mt-8 text-center text-sm">
             <p>{t('repeatersPanel.noRepeatersYet')}</p>
-            <p className="mt-1 text-gray-500">
+            <p className="mt-1">
               {t('repeatersPanel.noRepeatersHintPre')}
               <strong>{t('repeatersPanel.importContacts')}</strong>
               {t('repeatersPanel.noRepeatersHintMid')}
@@ -958,14 +970,17 @@ export default function RepeatersPanel({
             </p>
           </div>
         ) : repeatersFiltered.length === 0 ? (
-          <div className="mt-4 text-center text-sm text-gray-400">
+          <div className="text-muted mt-4 text-center text-sm">
             {t('repeatersPanel.noRepeatersMatch')}
           </div>
         ) : (
-          <div ref={repeaterTableScrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto">
+          <div
+            ref={repeaterTableScrollRef}
+            className="bg-deep-black min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border border-slate-800"
+          >
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-app-bg sticky top-0 z-10 border-b border-gray-700 text-left text-gray-400">
+                <tr className="bg-deep-black text-muted sticky top-0 z-10 border-b border-slate-800 text-left text-xs">
                   {(
                     [
                       ['status', 'repeatersPanel.columnStatus'],
@@ -995,7 +1010,7 @@ export default function RepeatersPanel({
                       onSort={toggleRepeaterSort}
                     />
                   ))}
-                  <th className="py-2 font-medium">{t('repeatersPanel.columnActions')}</th>
+                  <th className="py-2 pr-3 font-medium">{t('repeatersPanel.columnActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
@@ -1131,10 +1146,14 @@ export default function RepeatersPanel({
                     meshcoreRepeaterRpcPending &&
                     [...meshcoreRepeaterRpcPending.values()].some((kinds) => kinds.has('ping'));
                   const neighborHopBlocked = isMeshcoreNeighborsHopBlocked(node);
+                  const rowDisplayName = resolveNodeDisplayName(
+                    node.node_id,
+                    node.hw_model === 'Room' ? 'Room' : 'Repeater',
+                  );
                   return (
                     <Fragment key={node.node_id}>
                       <tr
-                        className="text-gray-300 hover:bg-gray-800/30"
+                        className="hover:bg-sidebar-active-bg/60 border-b border-slate-800 text-slate-300"
                         data-index={shouldVirtualizeRepeaterRows ? virtualRow.index : undefined}
                         ref={
                           shouldVirtualizeRepeaterRows
@@ -1261,8 +1280,8 @@ export default function RepeatersPanel({
                           {airPct != null ? `${airPct.toFixed(1)}%` : '—'}
                         </td>
                         <td className="py-2 pr-4">{reliabilityText}</td>
-                        <td className="py-2">
-                          <div className="flex flex-wrap gap-1">
+                        <td className="py-2 pr-3">
+                          <div className="flex items-center gap-1.5">
                             {pingErrorText ? (
                               <HelpTooltip
                                 text={t('repeatersPanel.pingLastFailedTooltip', {
@@ -1270,278 +1289,215 @@ export default function RepeatersPanel({
                                 })}
                               >
                                 <span className="inline-flex">
-                                  <button
-                                    type="button"
+                                  <Button
+                                    variant="danger"
+                                    size="sm"
                                     onClick={() => void handlePing(node.node_id)}
                                     disabled={!isConnected || isPingLoading}
                                     aria-label={t('repeatersPanel.pingError', {
                                       error: pingErrorText,
                                     })}
-                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
                                   >
-                                    {isPingLoading ? (
-                                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
-                                    ) : (
-                                      t('repeatersPanel.buttonErrorShort')
-                                    )}
-                                  </button>
+                                    {isPingLoading
+                                      ? rowSpinner
+                                      : t('repeatersPanel.buttonErrorShort')}
+                                  </Button>
                                 </span>
                               </HelpTooltip>
                             ) : pingHardDisabled && pingBlockReason ? (
                               <HelpTooltip text={pingBlockReason}>
                                 <span className="inline-flex">
-                                  <button
-                                    type="button"
+                                  <Button
+                                    size="sm"
                                     onClick={() => void handlePing(node.node_id)}
                                     disabled
-                                    aria-label={
-                                      pingErrorText
-                                        ? t('repeatersPanel.pingError', { error: pingErrorText })
-                                        : t('repeatersPanel.pingTrace')
-                                    }
-                                    className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                      pingErrorText
-                                        ? 'border border-red-700 bg-red-900/60 text-red-300'
-                                        : 'border border-blue-700 bg-blue-900/60 text-blue-300 hover:bg-blue-800/60'
-                                    }`}
+                                    aria-label={t('repeatersPanel.pingTrace')}
                                   >
-                                    {isPingLoading ? (
-                                      <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
-                                    ) : pingErrorText ? (
-                                      t('repeatersPanel.buttonErrorShort')
-                                    ) : (
-                                      t('repeatersPanel.buttonPing')
-                                    )}
-                                  </button>
+                                    {isPingLoading ? rowSpinner : t('repeatersPanel.buttonPing')}
+                                  </Button>
                                 </span>
                               </HelpTooltip>
                             ) : (
-                              <button
-                                type="button"
+                              <Button
+                                size="sm"
                                 onClick={() => void handlePing(node.node_id)}
                                 aria-label={t('repeatersPanel.pingTrace')}
-                                className="rounded border border-blue-700 bg-blue-900/60 px-2 py-0.5 text-xs font-medium text-blue-300 transition-colors hover:bg-blue-800/60"
                               >
-                                {isPingLoading ? (
-                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
-                                ) : (
-                                  t('repeatersPanel.buttonPing')
-                                )}
-                              </button>
+                                {t('repeatersPanel.buttonPing')}
+                              </Button>
                             )}
-                            {pingErrorText ? (
-                              <span className="basis-full text-[10px] leading-snug text-red-400">
-                                {pingErrorText}
-                              </span>
-                            ) : null}
-                            {statusErrorText && !isStatusLoading ? (
-                              <HelpTooltip
-                                text={t('repeatersPanel.statusLastFailedTooltip', {
-                                  error: statusErrorText,
-                                })}
-                              >
-                                <span className="inline-flex">
-                                  <button
-                                    type="button"
-                                    onClick={() => void handleStatus(node.node_id)}
-                                    disabled={!isConnected}
-                                    aria-label={t('repeatersPanel.statusError', {
-                                      error: statusErrorText,
-                                    })}
-                                    className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
-                                  >
-                                    {t('repeatersPanel.buttonErrorShort')}
-                                  </button>
-                                </span>
-                              </HelpTooltip>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => void handleStatus(node.node_id)}
-                                disabled={!isConnected || isStatusLoading}
-                                title={
-                                  isStatusLoading && anyPingPending
-                                    ? t('repeatersPanel.waitForPingBeforeStatus')
-                                    : undefined
-                                }
-                                aria-label={t('repeatersPanel.requestStatus')}
-                                className="rounded border border-gray-600 bg-gray-800 px-2 py-0.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-700 disabled:opacity-40"
-                              >
-                                {isStatusLoading ? (
-                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-                                ) : (
-                                  t('repeatersPanel.buttonStatus')
-                                )}
-                              </button>
-                            )}
-                            {onRequestNeighbors &&
-                              (neighborErrorText && !isNeighborsExpanded && !isNeighborsLoading ? (
-                                <HelpTooltip
-                                  text={t('repeatersPanel.neighborsLastFailedTooltip', {
-                                    error: neighborErrorText,
-                                  })}
-                                >
-                                  <span className="inline-flex">
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleNeighbors(node.node_id)}
-                                      disabled={!isConnected || neighborHopBlocked}
-                                      aria-label={t('repeatersPanel.neighborsError', {
-                                        error: neighborErrorText,
-                                      })}
-                                      className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
-                                    >
-                                      {t('repeatersPanel.buttonErrorShort')}
-                                    </button>
-                                  </span>
-                                </HelpTooltip>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleNeighbors(node.node_id)}
-                                  disabled={
-                                    !isConnected || isNeighborsLoading || neighborHopBlocked
-                                  }
-                                  title={
-                                    neighborHopBlocked
-                                      ? t('repeatersPanel.neighborsHopTooFar', {
-                                          hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
-                                        })
-                                      : undefined
-                                  }
-                                  aria-label={t('repeatersPanel.repeaterNeighbors')}
-                                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                    isNeighborsExpanded
-                                      ? 'border border-purple-700 bg-purple-900/60 text-purple-300'
-                                      : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                  }`}
-                                >
-                                  {isNeighborsLoading ? (
-                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-                                  ) : (
-                                    t('repeatersPanel.buttonNeighbors')
-                                  )}
-                                </button>
-                              ))}
-                            {onRequestTelemetry &&
-                              (telemetryErrorText && !isTelemetryLoading && !isTelemetryExpanded ? (
-                                <HelpTooltip
-                                  text={t('repeatersPanel.telemetryLastFailedTooltip', {
-                                    error: telemetryErrorText,
-                                  })}
-                                >
-                                  <span className="inline-flex">
-                                    <button
-                                      type="button"
-                                      onClick={() => void handleTelemetry(node.node_id)}
-                                      disabled={!isConnected}
-                                      aria-label={t('repeatersPanel.telemetryError', {
-                                        error: telemetryErrorText,
-                                      })}
-                                      className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
-                                    >
-                                      {t('repeatersPanel.buttonErrorShort')}
-                                    </button>
-                                  </span>
-                                </HelpTooltip>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => void handleTelemetry(node.node_id)}
-                                  disabled={!isConnected || isTelemetryLoading}
-                                  title={t('repeatersPanel.cayenneLppTooltip')}
-                                  aria-label={t('repeatersPanel.sensorTelemetryLpp')}
-                                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                    isTelemetryExpanded
-                                      ? 'border border-amber-700 bg-amber-900/60 text-amber-300'
-                                      : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                  }`}
-                                >
-                                  {isTelemetryLoading ? (
-                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-400 border-t-transparent" />
-                                  ) : (
-                                    t('repeatersPanel.sensorLppButton')
-                                  )}
-                                </button>
-                              ))}
-                            {onSendCliCommand &&
-                              (cliErrorText && !isCliExpanded ? (
-                                <HelpTooltip
-                                  text={t('repeatersPanel.cliLastFailedTooltip', {
-                                    error: cliErrorText,
-                                  })}
-                                >
-                                  <span className="inline-flex">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        toggleCli(node.node_id);
-                                      }}
-                                      disabled={!isConnected}
-                                      aria-label={t('repeatersPanel.actionErrorCli', {
-                                        error: cliErrorText,
-                                      })}
-                                      className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
-                                    >
-                                      {t('repeatersPanel.buttonErrorShort')}
-                                    </button>
-                                  </span>
-                                </HelpTooltip>
-                              ) : (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    toggleCli(node.node_id);
-                                  }}
-                                  disabled={!isConnected}
-                                  title={t('repeatersPanel.openCliInterface')}
-                                  aria-label={t('repeatersPanel.cliInterface')}
-                                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors disabled:opacity-40 ${
-                                    isCliExpanded
-                                      ? 'border border-cyan-700 bg-cyan-900/60 text-cyan-300'
-                                      : 'border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700'
-                                  }`}
-                                >
-                                  {t('repeatersPanel.buttonCli')}
-                                </button>
-                              ))}
                             {onOpenRoom && node.hw_model === 'Room' ? (
-                              <button
-                                type="button"
+                              <Button
+                                size="sm"
                                 onClick={() => {
                                   onOpenRoom(node.node_id);
                                 }}
                                 disabled={!isConnected}
-                                className="rounded border border-purple-700 bg-purple-900/50 px-2 py-0.5 text-xs font-medium text-purple-300 transition-colors hover:bg-purple-800/60 disabled:opacity-40"
                                 aria-label={t('repeatersPanel.openRoom')}
                               >
                                 {t('repeatersPanel.openRoom')}
-                              </button>
+                              </Button>
                             ) : null}
-                            <button
-                              type="button"
-                              onClick={() => void handleDelete(node.node_id)}
-                              disabled={isDeleteLoading}
-                              onBlur={() => {
-                                if (isDeleteConfirm) setDeleteConfirmId(null);
-                              }}
-                              className="rounded border border-red-700 bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300 transition-colors hover:bg-red-800/60 disabled:opacity-40"
-                            >
-                              {isDeleteLoading ? (
-                                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
-                              ) : isDeleteConfirm ? (
-                                t('repeatersPanel.buttonConfirmRemove')
-                              ) : (
-                                t('repeatersPanel.buttonRemove')
-                              )}
-                            </button>
+                            {isDeleteConfirm ? (
+                              <Button
+                                ref={focusOnMount}
+                                variant="danger"
+                                size="sm"
+                                onClick={() => void handleDelete(node.node_id)}
+                                disabled={isDeleteLoading}
+                                onBlur={() => {
+                                  setDeleteConfirmId(null);
+                                }}
+                                aria-label={t('repeatersPanel.confirmRemoveAria', {
+                                  name: rowDisplayName,
+                                })}
+                              >
+                                {isDeleteLoading
+                                  ? rowSpinner
+                                  : t('repeatersPanel.buttonConfirmRemove')}
+                              </Button>
+                            ) : null}
+                            {isStatusLoading ||
+                            isNeighborsLoading ||
+                            isTelemetryLoading ||
+                            isCliLoading ||
+                            isDeleteLoading ? (
+                              <span
+                                role="status"
+                                aria-label={t('repeatersPanel.rowBusy', { name: rowDisplayName })}
+                                className="text-muted inline-flex"
+                              >
+                                {rowSpinner}
+                              </span>
+                            ) : null}
+                            <MenuButton
+                              size="sm"
+                              aria-label={t('repeatersPanel.moreActionsFor', {
+                                name: rowDisplayName,
+                              })}
+                              menuLabel={t('repeatersPanel.rowActionsMenu', {
+                                name: rowDisplayName,
+                              })}
+                              icon={<Ellipsis aria-hidden className={ICON_MD} size={16} />}
+                              entries={[
+                                {
+                                  id: 'status',
+                                  label: t('repeatersPanel.requestStatus'),
+                                  description:
+                                    isStatusLoading && anyPingPending
+                                      ? t('repeatersPanel.waitForPingBeforeStatus')
+                                      : statusErrorText && !isStatusLoading
+                                        ? t('repeatersPanel.statusError', {
+                                            error: statusErrorText,
+                                          })
+                                        : undefined,
+                                  tone: statusErrorText && !isStatusLoading ? 'danger' : undefined,
+                                  disabled: !isConnected || isStatusLoading,
+                                  onSelect: () => void handleStatus(node.node_id),
+                                },
+                                ...(onRequestNeighbors
+                                  ? [
+                                      {
+                                        id: 'neighbors',
+                                        label: t('repeatersPanel.repeaterNeighbors'),
+                                        description: neighborHopBlocked
+                                          ? t('repeatersPanel.neighborsHopTooFar', {
+                                              hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                                            })
+                                          : neighborErrorText &&
+                                              !isNeighborsExpanded &&
+                                              !isNeighborsLoading
+                                            ? t('repeatersPanel.neighborsError', {
+                                                error: neighborErrorText,
+                                              })
+                                            : isNeighborsExpanded
+                                              ? t('repeatersPanel.menuShownBelow')
+                                              : undefined,
+                                        tone:
+                                          neighborErrorText &&
+                                          !isNeighborsExpanded &&
+                                          !isNeighborsLoading
+                                            ? ('danger' as const)
+                                            : undefined,
+                                        disabled:
+                                          !isConnected || isNeighborsLoading || neighborHopBlocked,
+                                        onSelect: () => void handleNeighbors(node.node_id),
+                                      },
+                                    ]
+                                  : []),
+                                ...(onRequestTelemetry
+                                  ? [
+                                      {
+                                        id: 'telemetry',
+                                        label: t('repeatersPanel.sensorTelemetryLpp'),
+                                        description:
+                                          telemetryErrorText &&
+                                          !isTelemetryLoading &&
+                                          !isTelemetryExpanded
+                                            ? t('repeatersPanel.telemetryError', {
+                                                error: telemetryErrorText,
+                                              })
+                                            : isTelemetryExpanded
+                                              ? t('repeatersPanel.menuShownBelow')
+                                              : t('repeatersPanel.cayenneLppTooltip'),
+                                        tone:
+                                          telemetryErrorText &&
+                                          !isTelemetryLoading &&
+                                          !isTelemetryExpanded
+                                            ? ('danger' as const)
+                                            : undefined,
+                                        disabled: !isConnected || isTelemetryLoading,
+                                        onSelect: () => void handleTelemetry(node.node_id),
+                                      },
+                                    ]
+                                  : []),
+                                ...(onSendCliCommand
+                                  ? [
+                                      {
+                                        id: 'cli',
+                                        label: t('repeatersPanel.cliInterface'),
+                                        description:
+                                          cliErrorText && !isCliExpanded
+                                            ? t('repeatersPanel.actionErrorCli', {
+                                                error: cliErrorText,
+                                              })
+                                            : isCliExpanded
+                                              ? t('repeatersPanel.menuShownBelow')
+                                              : undefined,
+                                        tone:
+                                          cliErrorText && !isCliExpanded
+                                            ? ('danger' as const)
+                                            : undefined,
+                                        disabled: !isConnected,
+                                        onSelect: () => {
+                                          toggleCli(node.node_id);
+                                        },
+                                      },
+                                    ]
+                                  : []),
+                                'separator' as const,
+                                {
+                                  id: 'remove',
+                                  label: t('repeatersPanel.buttonRemove'),
+                                  icon: <Trash2 aria-hidden className={ICON_MD} size={16} />,
+                                  tone: 'danger' as const,
+                                  disabled: isDeleteLoading,
+                                  onSelect: () => void handleDelete(node.node_id),
+                                },
+                              ]}
+                            />
                           </div>
+                          {pingErrorText ? (
+                            <p className="mt-1 max-w-[18rem] text-xs leading-snug text-red-400">
+                              {pingErrorText}
+                            </p>
+                          ) : null}
                         </td>
                       </tr>
 
                       {/* Path / current-route detail row */}
                       {isPathExpanded && canExpandPath && (
-                        <tr className="bg-gray-900/60">
+                        <tr className="bg-app-bg/60 border-b border-slate-800">
                           <td colSpan={10} className="px-4 py-2">
                             <div className="flex flex-col gap-2">
                               {traceResult ? (
@@ -1594,7 +1550,7 @@ export default function RepeatersPanel({
 
                       {/* Neighbors detail row */}
                       {isNeighborsExpanded && neighborData && (
-                        <tr className="bg-gray-900/60">
+                        <tr className="bg-app-bg/60 border-b border-slate-800">
                           <td colSpan={10} className="px-4 py-2">
                             <p className="mb-1 text-xs text-gray-400">
                               {t('repeatersPanel.neighborsHeading', {
@@ -1668,7 +1624,7 @@ export default function RepeatersPanel({
 
                       {/* Telemetry detail row */}
                       {isTelemetryExpanded && (
-                        <tr className="bg-gray-900/60">
+                        <tr className="bg-app-bg/60 border-b border-slate-800">
                           <td colSpan={10} className="px-4 py-2">
                             {isTelemetryLoading ? (
                               <p className="text-xs text-gray-500">
@@ -1742,12 +1698,12 @@ export default function RepeatersPanel({
                                     })}
                                   </p>
                                 ) : (
-                                  <p className="text-gray-500">
+                                  <p className="text-muted">
                                     {t('repeatersPanel.noTelemetryResponse')}
                                   </p>
                                 )}
                                 {node.latitude != null && node.longitude != null ? (
-                                  <p className="text-gray-500">
+                                  <p className="text-muted">
                                     {t('repeatersPanel.mapPositionFromTelemetry')}
                                   </p>
                                 ) : null}
@@ -1759,7 +1715,7 @@ export default function RepeatersPanel({
 
                       {/* CLI detail row */}
                       {isCliExpanded && onSendCliCommand && (
-                        <tr className="bg-gray-900/60">
+                        <tr className="bg-app-bg/60 border-b border-slate-800">
                           <td colSpan={10} className="px-4 py-2">
                             <div className="flex flex-col gap-2">
                               <div className="flex items-center gap-2">
@@ -1779,7 +1735,7 @@ export default function RepeatersPanel({
                                   placeholder={t('repeatersPanel.enterCommand')}
                                   maxLength={REPEATER_CLI_MAX_COMMAND_LENGTH}
                                   disabled={!isConnected || isCliLoading}
-                                  className="min-w-[200px] flex-1 rounded border border-gray-600 bg-gray-800 px-2 py-1 text-sm text-gray-200 focus:border-cyan-500 focus:outline-none disabled:opacity-40"
+                                  className="bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green h-8 min-w-[200px] flex-1 rounded-lg border px-2.5 font-mono text-[13px] text-slate-200 focus:outline-none disabled:opacity-40"
                                   aria-label={t('repeatersPanel.cliInput')}
                                 />
                                 <button
@@ -1800,17 +1756,13 @@ export default function RepeatersPanel({
                                     isCliLoading ||
                                     !cliInputValues.get(node.node_id)?.trim()
                                   }
-                                  className="rounded border border-cyan-700 bg-cyan-900/60 px-3 py-1 text-xs font-medium text-cyan-300 transition-colors hover:bg-cyan-800/60 disabled:opacity-40"
+                                  className={buttonClassName('primary', 'sm')}
                                 >
-                                  {isCliLoading ? (
-                                    <span className="inline-block h-3 w-3 animate-spin rounded-full border border-cyan-400 border-t-transparent" />
-                                  ) : (
-                                    t('repeatersPanel.cliSend')
-                                  )}
+                                  {isCliLoading ? rowSpinner : t('repeatersPanel.cliSend')}
                                 </button>
                               </div>
                               <div className="flex flex-wrap gap-1">
-                                <span className="mr-1 text-xs text-gray-500">
+                                <span className="text-muted mr-1 text-xs">
                                   {t('repeatersPanel.cliQuick')}
                                 </span>
                                 {[
@@ -1846,7 +1798,7 @@ export default function RepeatersPanel({
                                       disabled={!isConnected || isCliLoading}
                                       title={ariaLabel}
                                       aria-label={ariaLabel}
-                                      className="rounded bg-gray-700 px-1.5 py-0.5 text-xs text-gray-300 hover:bg-gray-600 disabled:opacity-40"
+                                      className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark h-6 rounded-md border px-2 font-mono text-[11.5px] text-slate-300 disabled:opacity-40"
                                     >
                                       {shortLabel}
                                     </button>
