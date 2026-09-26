@@ -12,6 +12,7 @@ import {
   readLauncherPins,
   sanitizeLauncherPins,
   toggleLauncherPin,
+  usesCommandModifier,
   writeLauncherPins,
 } from './panelLauncher';
 
@@ -159,6 +160,18 @@ describe('launcher shortcuts', () => {
     expect(formatShortcut('K', 'darwin')).toBe('⌘K');
     expect(formatShortcut('K', 'linux')).toBe('Ctrl+K');
     expect(formatShortcut('1', 'win32')).toBe('Ctrl+1');
+  });
+
+  it('uses Cmd on Apple platforms (macOS, and iOS for a future mobile build) and Ctrl elsewhere', () => {
+    expect(usesCommandModifier('darwin')).toBe(true);
+    expect(usesCommandModifier('ios')).toBe(true);
+    expect(usesCommandModifier('android')).toBe(false);
+    expect(isLauncherShortcut(key({ key: 'k', code: 'KeyK', metaKey: true }), 'ios')).toBe(true);
+    expect(isLauncherShortcut(key({ key: 'k', code: 'KeyK', ctrlKey: true }), 'android')).toBe(
+      true,
+    );
+    expect(formatShortcut('K', 'ios')).toBe('⌘K');
+    expect(formatShortcut('K', 'android')).toBe('Ctrl+K');
   });
 });
 

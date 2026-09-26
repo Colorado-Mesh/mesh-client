@@ -54,8 +54,16 @@ export function toggleLauncherPin(pins: readonly TabSlotId[], slot: TabSlotId): 
   return [...pins, slot];
 }
 
-/** `process.platform` value from `electronAPI.getPlatform()`; only `darwin` changes behavior. */
+/**
+ * `process.platform` value from `electronAPI.getPlatform()`. Apple platforms (`darwin`, and `ios`
+ * for a future mobile build with a hardware keyboard) use Cmd; everything else uses Ctrl.
+ */
 type ShortcutPlatform = string;
+
+/** True where the platform shortcut modifier is Cmd rather than Ctrl. */
+export function usesCommandModifier(platform: ShortcutPlatform): boolean {
+  return platform === 'darwin' || platform === 'ios';
+}
 
 type ShortcutKeyEvent = Pick<
   KeyboardEvent,
@@ -65,7 +73,7 @@ type ShortcutKeyEvent = Pick<
 /** Cmd on macOS, Ctrl on Linux and Windows, with no other modifier held. */
 function hasPlatformModifierOnly(e: ShortcutKeyEvent, platform: ShortcutPlatform): boolean {
   if (e.altKey || e.shiftKey) return false;
-  return platform === 'darwin' ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
+  return usesCommandModifier(platform) ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
 }
 
 export function isLauncherShortcut(e: ShortcutKeyEvent, platform: ShortcutPlatform): boolean {
@@ -91,7 +99,7 @@ export function pinnedShortcutPosition(
 
 /** Keyboard hint text for the platform modifier, e.g. "⌘K" or "Ctrl+K". */
 export function formatShortcut(key: string, platform: ShortcutPlatform): string {
-  return platform === 'darwin' ? `⌘${key}` : `Ctrl+${key}`;
+  return usesCommandModifier(platform) ? `⌘${key}` : `Ctrl+${key}`;
 }
 
 export interface LauncherPanelEntry {
