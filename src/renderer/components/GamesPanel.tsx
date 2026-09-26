@@ -40,7 +40,9 @@ import {
   isGamesDeliveryInFlight,
 } from '@/shared/games-types';
 
+import { buttonClassName } from './ui/Button';
 import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
+import { SegmentedControl } from './ui/SegmentedControl';
 
 export interface GamesPanelProps {
   isActive: boolean;
@@ -246,28 +248,17 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
 
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 text-gray-100">
-      <aside className="bg-secondary-dark flex w-72 shrink-0 flex-col border-r border-gray-700">
-        <div className="border-b border-gray-700 p-3">
+      <aside className="bg-deep-black flex w-72 shrink-0 flex-col border-r border-slate-800">
+        <div className="border-b border-slate-800 p-3">
           <h2 className="text-sm font-semibold text-gray-100">{t('gamesPanel.title')}</h2>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {GAMES_FILTERS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={`rounded px-2 py-1 text-xs ${
-                  filter === f
-                    ? 'bg-brand-green text-app-bg'
-                    : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
-                }`}
-                aria-label={t(`gamesPanel.filters.${f}`)}
-                onClick={() => {
-                  setFilter(f);
-                }}
-              >
-                {t(`gamesPanel.filters.${f}`)}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            className="mt-2"
+            size="sm"
+            aria-label={t('gamesPanel.title')}
+            value={filter}
+            onChange={setFilter}
+            options={GAMES_FILTERS.map((f) => ({ value: f, label: t(`gamesPanel.filters.${f}`) }))}
+          />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {filteredSessions.length === 0 ? (
@@ -351,7 +342,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             </select>
             <button
               type="button"
-              className="bg-brand-green text-app-bg flex-1 rounded px-2 py-1 text-xs font-medium hover:opacity-90 disabled:opacity-50"
+              className={buttonClassName('primary', 'sm', 'flex-1')}
               aria-label={t('gamesPanel.sendChallengeAria')}
               disabled={actionBusy || !challengeHash.trim()}
               onClick={() => void handleSendChallenge()}
@@ -455,7 +446,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                     <>
                       <button
                         type="button"
-                        className="bg-brand-green text-app-bg rounded px-3 py-1 text-xs font-medium disabled:opacity-50"
+                        className={buttonClassName('primary', 'sm')}
                         aria-label={t('gamesPanel.acceptDrawAria')}
                         disabled={actionBusy}
                         onClick={() => {

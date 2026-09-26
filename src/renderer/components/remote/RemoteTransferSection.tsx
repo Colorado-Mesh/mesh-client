@@ -32,7 +32,8 @@ import {
 import { resolveRemoteReasonI18nKey } from '@/shared/remote-types';
 import { buildRncpRequestEnableMessageBody } from '@/shared/rncpRequestEnable';
 
-import { INPUT_BOX_CLASS } from '../ui/formClasses';
+import { buttonClassName } from '../ui/Button';
+import { chipClass, INPUT_BOX_CLASS } from '../ui/formClasses';
 
 export interface RemoteTransferSectionProps {
   sidecarRunning: boolean;
@@ -526,9 +527,7 @@ export function RemoteTransferSection({
             onClick={() => {
               setMode('send');
             }}
-            className={`rounded px-3 py-1 text-xs ${
-              mode === 'send' ? 'bg-blue-700 text-white' : 'bg-gray-800 text-gray-400'
-            }`}
+            className={chipClass(mode === 'send')}
           >
             {t('reticulumRemote.transfer.modeSend')}
           </button>
@@ -539,9 +538,7 @@ export function RemoteTransferSection({
             onClick={() => {
               setMode('fetch');
             }}
-            className={`rounded px-3 py-1 text-xs ${
-              mode === 'fetch' ? 'bg-blue-700 text-white' : 'bg-gray-800 text-gray-400'
-            }`}
+            className={chipClass(mode === 'fetch')}
           >
             {t('reticulumRemote.transfer.modeFetch')}
           </button>
@@ -617,7 +614,7 @@ export function RemoteTransferSection({
               aria-label={t('reticulumRemote.transfer.sendAria')}
               aria-busy={transferBusy}
               onClick={() => void handleSend()}
-              className="rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
+              className={buttonClassName('primary', 'sm')}
             >
               {transferBusy
                 ? t('reticulumRemote.transfer.checkingReachability')
@@ -659,7 +656,7 @@ export function RemoteTransferSection({
               aria-label={t('reticulumRemote.transfer.fetchAria')}
               aria-busy={transferBusy}
               onClick={() => void handleFetch()}
-              className="rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600 disabled:opacity-50"
+              className={buttonClassName('primary', 'sm')}
             >
               {transferBusy
                 ? t('reticulumRemote.transfer.checkingReachability')

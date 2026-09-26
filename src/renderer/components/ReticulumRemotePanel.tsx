@@ -17,6 +17,8 @@ import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInbou
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 
+import { NOTICE_CLASS } from './ui/formClasses';
+
 type RemoteSection = 'shell' | 'transfer' | 'saved' | 'settings';
 
 const SECTIONS: RemoteSection[] = ['shell', 'transfer', 'saved', 'settings'];
@@ -86,7 +88,7 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
   return (
     <div className="flex h-full min-w-0 flex-col">
       <nav
-        className="flex flex-wrap gap-1 border-b border-gray-700/60 px-2 pt-2"
+        className="bg-deep-black mb-3 flex w-fit max-w-full flex-wrap gap-0.5 rounded-lg border border-slate-800 p-0.75"
         aria-label={t('reticulumRemote.navAria')}
       >
         {SECTIONS.map((s) => (
@@ -98,10 +100,10 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
             onClick={() => {
               setSection(s);
             }}
-            className={`relative rounded-t-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`text-body relative flex h-7.5 items-center rounded-md px-2.5 font-medium transition-colors ${
               section === s
-                ? 'border border-b-0 border-gray-700/60 bg-gray-800/60 text-gray-100'
-                : 'text-gray-400 hover:text-gray-200'
+                ? 'bg-sidebar-active-bg text-slate-200'
+                : 'text-slate-300 hover:text-slate-100'
             }`}
           >
             {t(`reticulumRemote.sections.${s}`)}
@@ -120,9 +122,7 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
       </nav>
 
       {!sidecarRunning && (
-        <div className="border-b border-amber-700/50 bg-amber-900/20 px-3 py-1.5 text-xs text-amber-200">
-          {t('reticulumRemote.sidecarNotRunning')}
-        </div>
+        <div className={`${NOTICE_CLASS.warn} mb-3`}>{t('reticulumRemote.sidecarNotRunning')}</div>
       )}
 
       <div className="min-h-0 flex-1">

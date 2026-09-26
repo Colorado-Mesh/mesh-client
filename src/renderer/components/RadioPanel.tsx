@@ -2934,7 +2934,7 @@ export default function RadioPanel({
                 type="button"
                 onClick={() => void handleSyncClock()}
                 disabled={!isConnected || syncClockLoading}
-                className="rounded border border-blue-700 bg-blue-900/50 px-3 py-1 text-xs font-medium text-blue-300 transition-colors hover:bg-blue-800/60 disabled:opacity-40"
+                className={buttonClassName('secondary', 'sm')}
               >
                 {syncClockLoading ? (
                   <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />

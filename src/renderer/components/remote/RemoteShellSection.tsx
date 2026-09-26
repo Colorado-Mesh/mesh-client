@@ -12,6 +12,7 @@ import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticul
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { MAX_RNSH_SESSIONS, useRnshSessionStore } from '@/renderer/stores/rnshSessionStore';
 
+import { buttonClassName } from '../ui/Button';
 import { INPUT_BOX_CLASS } from '../ui/formClasses';
 
 interface PendingFingerprint {
@@ -266,7 +267,7 @@ export function RemoteShellSection({
           disabled={!sidecarRunning || !parsedHash || connecting}
           aria-label={t('reticulumRemote.shell.connectAria')}
           onClick={handleConnectClick}
-          className="rounded-lg bg-blue-700/80 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+          className={buttonClassName('primary', 'md')}
         >
           {connecting ? t('reticulumRemote.shell.connecting') : t('reticulumRemote.shell.connect')}
         </button>

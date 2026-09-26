@@ -14,6 +14,8 @@ import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInbou
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 import { isRemoteOkFailure, type RncpInboundMode } from '@/shared/remote-types';
 
+import { chipClass } from '../ui/formClasses';
+
 /** Sidecar outbound + inbound hard cap (see `MAX_RNCP_FILE_BYTES` in rncp_transfer.rs). */
 export const RNCP_MAX_FILE_SIZE_LABEL = '25 MiB';
 
@@ -399,11 +401,7 @@ export function RemoteSettingsSection({
               aria-label={t(`reticulumRemote.settings.inboundMode.${mode}`)}
               disabled={!sidecarRunning}
               onClick={() => void applyListener(mode)}
-              className={`rounded px-3 py-1 text-xs disabled:opacity-50 ${
-                listener?.inbound_mode === mode
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-gray-800 text-gray-400'
-              }`}
+              className={`${chipClass(listener?.inbound_mode === mode)} disabled:opacity-50`}
             >
               {t(`reticulumRemote.settings.inboundMode.${mode}`)}
             </button>

@@ -6,6 +6,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import type { RemoteAddressService } from '@/shared/remote-types';
 
+import { buttonClassName } from '../ui/Button';
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
 
 /** Reticulum Remote → Saved: manage the rnsh/rncp address book (`reticulum_remote_addresses`). */
@@ -98,7 +99,7 @@ export function RemoteSavedSection() {
           type="button"
           aria-label={t('reticulumRemote.saved.saveAria')}
           onClick={() => void handleSave()}
-          className="rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600"
+          className={buttonClassName('primary', 'sm')}
         >
           {editingId ? t('common.save') : t('reticulumRemote.saved.add')}
         </button>
