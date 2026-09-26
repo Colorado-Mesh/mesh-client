@@ -1,13 +1,31 @@
-import { Bell, BellOff, Clock, LogOut, Trash2, X } from 'lucide-react-motion';
+import {
+  Bell,
+  BellOff,
+  ChevronLeft,
+  Clock,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+  RefreshCw,
+  Trash2,
+  Users,
+  X,
+} from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  ConversationLayout,
+  useConversationLayoutMode,
+} from '@/renderer/components/chat/ConversationLayout';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RrcChatView } from '@/renderer/components/rrc/RrcChatView';
 import { RrcHubBrowser } from '@/renderer/components/rrc/RrcHubBrowser';
 import { RrcNickList } from '@/renderer/components/rrc/RrcNickList';
 import { RrcRoomSidebar } from '@/renderer/components/rrc/RrcRoomSidebar';
-import { RrcTopicBar } from '@/renderer/components/rrc/RrcTopicBar';
+import { Button, IconButton } from '@/renderer/components/ui/Button';
+import { SegmentedControl } from '@/renderer/components/ui/SegmentedControl';
+import { StatusDot, type StatusDotTone } from '@/renderer/components/ui/StatusDot';
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -85,6 +103,19 @@ import { touch } from '@/shared/touch';
 const COLLAPSED_KEY = 'mesh-client:rrcHubListCollapsed';
 const ROOM_LIST_COLLAPSED_KEY = 'mesh-client:rrc:roomListCollapsed';
 const NICK_LIST_COLLAPSED_KEY = 'mesh-client:rrc:nickListCollapsed';
+/** v6: which list the single left column shows ('rooms' | 'hubs'). */
+const LIST_VIEW_KEY = 'mesh-client:rrc:listView';
+
+type RrcListView = 'rooms' | 'hubs';
+
+function readListView(): RrcListView {
+  try {
+    return localStorage.getItem(LIST_VIEW_KEY) === 'hubs' ? 'hubs' : 'rooms';
+  } catch {
+    // catch-no-log-ok localStorage may be unavailable
+    return 'rooms';
+  }
+}
 const NICK_KEY = RRC_NICKNAME_STORAGE_KEY;
 
 function hubMatchesSearch(hub: RrcHubInfo, q: string): boolean {
@@ -172,13 +203,16 @@ export default function RrcPanel({
   const clearHubSession = useRrcSessionStore((s) => s.clearHubSession);
 
   const [sidecarRunning, setSidecarRunning] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => readCollapsed(COLLAPSED_KEY));
-  const [roomListCollapsed, setRoomListCollapsed] = useState(() =>
-    readCollapsed(ROOM_LIST_COLLAPSED_KEY),
+  const layoutMode = useConversationLayoutMode();
+  // v6 layout: one list column (Rooms | Hubs) replaces the hub and room sidebars. It is hidden
+  // only when both legacy collapse keys were set, so saved layouts carry over.
+  const [listOpen, setListOpen] = useState(
+    () => !(readCollapsed(COLLAPSED_KEY) && readCollapsed(ROOM_LIST_COLLAPSED_KEY)),
   );
-  const [nickListCollapsed, setNickListCollapsed] = useState(() =>
-    readCollapsed(NICK_LIST_COLLAPSED_KEY),
-  );
+  const [listView, setListView] = useState<RrcListView>(readListView);
+  const [compactPane, setCompactPane] = useState<'list' | 'conversation'>('list');
+  const [membersPinned, setMembersPinned] = useState(() => !readCollapsed(NICK_LIST_COLLAPSED_KEY));
+  const [membersSheetOpen, setMembersSheetOpen] = useState(false);
   const [hubTab, setHubTab] = useState<'connected' | 'favourites' | 'discovered'>('connected');
   const [hubSearch, setHubSearch] = useState('');
   const [roomSearch, setRoomSearch] = useState('');
@@ -1185,67 +1219,130 @@ export default function RrcPanel({
       : moderationBanner
     : null;
 
-  return (
-    <div className="flex h-full min-h-0 w-full min-w-0 text-gray-100">
-      <RrcHubBrowser
-        collapsed={collapsed}
-        onToggleCollapsed={() => {
-          setCollapsed((c) => {
-            const next = !c;
-            persistCollapsed(COLLAPSED_KEY, next);
-            return next;
-          });
-        }}
-        sidecarRunning={sidecarRunning}
-        hubSearch={hubSearch}
-        onHubSearchChange={setHubSearch}
-        nickname={nickname}
-        onNicknameChange={(v) => {
-          setNickname(v);
-          try {
-            localStorage.setItem(NICK_KEY, v);
-          } catch {
-            // catch-no-log-ok
-          }
-        }}
-        maxNickBytes={limits.max_nick_bytes}
-        connected={hubList.connected}
-        favourites={hubList.favourites}
-        discovered={hubList.discovered}
-        hubDestHash={hubDestHash}
-        unreadForHub={unreadForHub}
-        statusForHub={(hash) => {
-          const key = hash.trim().toLowerCase();
-          return sessionsByHub.get(key)?.status ?? null;
-        }}
-        isHubAutoJoin={(hash) => {
-          touch(hubAutoJoinEpoch);
-          return isRrcHubAutoJoin(hash);
-        }}
-        manualHash={manualHash}
-        onManualHashChange={setManualHash}
-        hubTab={hubTab}
-        onHubTabChange={setHubTab}
-        onRefresh={() => void refreshFromSidecar()}
-        onConnect={(hash) => void handleConnect(hash)}
-        onToggleFavorite={(hash, favorited) => void toggleFavorite(hash, favorited)}
-        onToggleAutoJoin={(hash) => {
-          toggleRrcHubAutoJoin(hash);
-          setHubAutoJoinEpoch((n) => n + 1);
-        }}
-        onManualConnect={() => void handleManualConnect()}
-      />
+  const effectiveListView: RrcListView = connected ? listView : 'hubs';
+  const membersOpen = layoutMode.sideOverlay ? membersSheetOpen : membersPinned;
+  const setMembersOpen = (open: boolean) => {
+    if (layoutMode.sideOverlay) {
+      setMembersSheetOpen(open);
+      return;
+    }
+    setMembersPinned(open);
+    persistCollapsed(NICK_LIST_COLLAPSED_KEY, !open);
+  };
+  const toggleListOpen = () => {
+    const next = !listOpen;
+    setListOpen(next);
+    persistCollapsed(COLLAPSED_KEY, !next);
+    persistCollapsed(ROOM_LIST_COLLAPSED_KEY, !next);
+  };
+  const chooseListView = (view: RrcListView) => {
+    setListView(view);
+    try {
+      localStorage.setItem(LIST_VIEW_KEY, view);
+    } catch {
+      // catch-no-log-ok localStorage may be unavailable
+    }
+  };
+  const namedRoomOpen =
+    Boolean(activeRoom) && !activeRoom?.startsWith('[') && !isRrcDmRoom(activeRoom);
+  const memberCount = activeRoomInfo?.members?.length ?? activeRoomInfo?.member_count;
+  const headerTitle =
+    activeRoomHeaderLabel ?? hubName ?? hubDestHash?.slice(0, 8) ?? t('rrc.selectHubPrompt');
+  const headerHub = activeRoomHeaderLabel ? (hubName ?? hubDestHash?.slice(0, 8)) : null;
+  const statusDotTone: StatusDotTone =
+    status === 'active'
+      ? 'ok'
+      : status === 'connecting' || status === 'awaiting_welcome' || status === 'reconnecting'
+        ? 'warn'
+        : 'off';
 
-      {connected && (
-        <RrcRoomSidebar
-          collapsed={roomListCollapsed}
-          onToggleCollapsed={() => {
-            setRoomListCollapsed((c) => {
-              const next = !c;
-              persistCollapsed(ROOM_LIST_COLLAPSED_KEY, next);
-              return next;
-            });
+  const listColumn = (
+    <>
+      <div className="flex min-h-14 shrink-0 items-center gap-1.5 border-b border-slate-800 pr-2 pl-3">
+        <SegmentedControl
+          aria-label={t('rrc.listViewAria')}
+          value={effectiveListView}
+          onChange={chooseListView}
+          options={[
+            { value: 'rooms', label: t('rrc.rooms'), disabled: !connected },
+            { value: 'hubs', label: t('rrc.hubsShort') },
+          ]}
+        />
+        <span className="flex-1" />
+        {effectiveListView === 'hubs' ? (
+          <IconButton
+            size="sm"
+            aria-label={t('rrc.refreshHubs')}
+            disabled={!sidecarRunning}
+            onClick={() => void refreshFromSidecar()}
+            icon={<RefreshCw aria-hidden className="h-3.5 w-3.5" size={14} />}
+          />
+        ) : (
+          <IconButton
+            size="sm"
+            aria-label={t('rrc.refreshRoomList')}
+            disabled={actionBusy}
+            onClick={() => void sendHubCommand('/list')}
+            icon={<RefreshCw aria-hidden className="h-3.5 w-3.5" size={14} />}
+          />
+        )}
+        {!layoutMode.compact && (
+          <IconButton
+            size="sm"
+            aria-label={t('rrc.hideList')}
+            onClick={toggleListOpen}
+            icon={<PanelLeftClose aria-hidden className="h-4 w-4" size={16} />}
+          />
+        )}
+      </div>
+      {effectiveListView === 'hubs' ? (
+        <RrcHubBrowser
+          sidecarRunning={sidecarRunning}
+          hubSearch={hubSearch}
+          onHubSearchChange={setHubSearch}
+          nickname={nickname}
+          onNicknameChange={(v) => {
+            setNickname(v);
+            try {
+              localStorage.setItem(NICK_KEY, v);
+            } catch {
+              // catch-no-log-ok
+            }
           }}
+          maxNickBytes={limits.max_nick_bytes}
+          connected={hubList.connected}
+          favourites={hubList.favourites}
+          discovered={hubList.discovered}
+          hubDestHash={hubDestHash}
+          unreadForHub={unreadForHub}
+          statusForHub={(hash) => {
+            const key = hash.trim().toLowerCase();
+            return sessionsByHub.get(key)?.status ?? null;
+          }}
+          isHubAutoJoin={(hash) => {
+            touch(hubAutoJoinEpoch);
+            return isRrcHubAutoJoin(hash);
+          }}
+          manualHash={manualHash}
+          onManualHashChange={setManualHash}
+          hubTab={hubTab}
+          onHubTabChange={setHubTab}
+          onConnect={(hash) => {
+            setCompactPane('conversation');
+            void handleConnect(hash);
+          }}
+          onToggleFavorite={(hash, favorited) => void toggleFavorite(hash, favorited)}
+          onToggleAutoJoin={(hash) => {
+            toggleRrcHubAutoJoin(hash);
+            setHubAutoJoinEpoch((n) => n + 1);
+          }}
+          onManualConnect={() => {
+            setCompactPane('conversation');
+            void handleManualConnect();
+          }}
+        />
+      ) : (
+        <RrcRoomSidebar
           roomSearch={roomSearch}
           onRoomSearchChange={setRoomSearch}
           joinRoomName={joinRoomName}
@@ -1254,8 +1351,10 @@ export default function RrcPanel({
           onJoinRoomKeyChange={setJoinRoomKey}
           maxRoomNameBytes={limits.max_room_name_bytes}
           busy={actionBusy}
-          onJoin={() => void joinRoom(joinRoomName, joinRoomKey)}
-          onRefreshList={() => void sendHubCommand('/list')}
+          onJoin={() => {
+            setCompactPane('conversation');
+            void joinRoom(joinRoomName, joinRoomKey);
+          }}
           joined={roomList}
           listed={listedRooms}
           favourites={roomFavourites}
@@ -1263,6 +1362,7 @@ export default function RrcPanel({
           activeRoom={activeRoom}
           unreadByRoom={unreadByRoom}
           onSelectRoom={(name, opts) => {
+            setCompactPane('conversation');
             if (opts?.join) {
               void joinRoom(name);
               return;
@@ -1284,155 +1384,186 @@ export default function RrcPanel({
           dmRoomLabels={dmRoomLabels}
         />
       )}
+    </>
+  );
 
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex flex-wrap items-center gap-2 border-b border-gray-700 px-3 py-2">
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold text-gray-100">
-              {hubName ?? hubDestHash ?? t('rrc.selectHubPrompt')}
-            </div>
-            <div className="text-xs text-gray-400">
-              {t(`rrc.status.${status}`)}
-              {activeRoomHeaderLabel ? ` · ${activeRoomHeaderLabel}` : ''}
-              {capabilities.direct_notice ? ` · ${t('rrc.capDirectNotice')}` : ''}
-            </div>
-          </div>
-          {connected && (
-            <>
-              <button
-                type="button"
-                className={`rounded p-1.5 hover:bg-gray-800/60 ${showTimestamps ? 'text-bright-green' : 'text-gray-400'}`}
-                aria-label={t('rrc.toggleTimestamps')}
-                title={t('rrc.toggleTimestamps')}
-                onClick={() => {
-                  setShowTimestamps(!showTimestamps);
-                }}
-              >
-                <Clock size={16} />
-              </button>
-              <button
-                type="button"
-                className={`rounded p-1.5 hover:bg-gray-800/60 ${isMuted ? 'text-bright-green' : 'text-gray-400'}`}
-                aria-label={isMuted ? t('rrc.unmuteRoom') : t('rrc.muteRoom')}
-                title={isMuted ? t('rrc.unmuteRoom') : t('rrc.muteRoom')}
-                disabled={!muteKey}
-                onClick={toggleMute}
-              >
-                {isMuted ? <BellOff size={16} /> : <Bell size={16} />}
-              </button>
-              {activeRoom && (
-                <button
-                  type="button"
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800/60"
-                  aria-label={t('rrc.clearHistory')}
-                  title={t('rrc.clearHistory')}
-                  disabled={actionBusy}
-                  onClick={() => {
-                    setConfirmClearHistory(true);
-                  }}
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-              {activeRoom && (!activeRoom.startsWith('[') || isRrcDmRoom(activeRoom)) && (
-                <button
-                  type="button"
-                  className="rounded p-1.5 text-gray-400 hover:bg-gray-800/60"
-                  aria-label={t('rrc.leaveRoom')}
-                  title={t('rrc.leaveRoom')}
-                  disabled={actionBusy}
-                  onClick={() => void handlePart()}
-                >
-                  <LogOut size={16} />
-                </button>
-              )}
-            </>
-          )}
-          {canCancelSession && (
-            <button
-              type="button"
-              className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-gray-800/60"
-              aria-label={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
-              title={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
-              disabled={actionBusy}
-              onClick={() => void handleDisconnect()}
-            >
-              {cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
-            </button>
-          )}
-        </header>
-        {bannerText && (
-          <div className="flex items-start gap-2 border-b border-gray-700 bg-slate-800/80 px-3 py-1.5 text-xs text-gray-200">
-            <span className="min-w-0 flex-1">{bannerText}</span>
-            <button
-              type="button"
-              className="shrink-0 p-0.5 text-gray-400 hover:text-gray-100"
-              aria-label={t('rrc.dismissBanner')}
-              onClick={() => {
-                setModerationBanner(null);
-              }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-        {displayError && (
-          <div className="flex items-start gap-2 border-b border-red-800/50 bg-red-900/30 px-3 py-1.5 text-xs text-red-200">
-            <span className="min-w-0 flex-1">{displayError}</span>
-            <button
-              type="button"
-              className="shrink-0 p-0.5 text-red-200/70 hover:text-red-50"
-              aria-label={t('rrc.dismissBanner')}
-              onClick={() => {
-                setError(null);
-              }}
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
-        <RrcTopicBar
-          room={activeRoom}
-          topic={activeRoomInfo?.topic}
-          memberCount={activeRoomInfo?.members?.length ?? activeRoomInfo?.member_count}
-        />
-        <div className="flex min-h-0 flex-1">
-          <RrcChatView
-            connected={connected}
-            hubDestHash={hubDestHash}
-            activeRoom={activeRoom}
-            messages={activeMessages}
-            showTimestamps={showTimestamps}
-            canSend={status === 'active'}
-            isMuted={isMuted}
-            maxMsgBodyBytes={limits.max_msg_body_bytes}
-            nickname={nickname}
-            members={chatCompleteMembers}
-            alwaysShowMessageActions={alwaysShowMessageActions}
-            placeholder={whisperComposerPlaceholder}
-            isActive={isActive}
-            onCaughtUp={handleCaughtUp}
-            onOpenDm={onOpenDm}
-            composeSeed={composeSeed}
-            onSendChunk={async (chunk) => {
-              await handleSend(chunk);
+  const conversation = (
+    <>
+      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-slate-800 px-3 py-2">
+        {layoutMode.compact ? (
+          <IconButton
+            aria-label={t('rrc.backToList')}
+            onClick={() => {
+              setCompactPane('list');
             }}
-            onInterceptSend={async (fullText) => {
-              if (!rrcComposerBypassesSplit(fullText)) return false;
-              await handleSend(fullText);
-              return true;
-            }}
+            icon={<ChevronLeft aria-hidden className="h-4 w-4" size={16} />}
           />
-          {showNicklist && (
-            <RrcNickList
-              collapsed={nickListCollapsed}
-              onToggleCollapsed={() => {
-                setNickListCollapsed((c) => {
-                  const next = !c;
-                  persistCollapsed(NICK_LIST_COLLAPSED_KEY, next);
-                  return next;
-                });
+        ) : !listOpen ? (
+          <IconButton
+            aria-label={t('rrc.showList')}
+            onClick={toggleListOpen}
+            icon={<PanelLeftOpen aria-hidden className="h-4 w-4" size={16} />}
+          />
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-sm font-semibold text-slate-100">{headerTitle}</h2>
+          <p className="text-muted flex min-w-0 flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+            <span className="inline-flex items-center gap-1.5">
+              <StatusDot tone={statusDotTone} pulse={statusDotTone === 'warn'} />
+              {t(`rrc.status.${status}`)}
+            </span>
+            {headerHub ? <span className="truncate">{headerHub}</span> : null}
+            {namedRoomOpen ? (
+              <span className="min-w-0 truncate">
+                {activeRoomInfo?.topic?.trim() ? activeRoomInfo.topic : t('rrc.noTopic')}
+              </span>
+            ) : null}
+            {namedRoomOpen && memberCount != null && memberCount > 0 ? (
+              <span>{t('rrc.memberCount', { count: memberCount })}</span>
+            ) : null}
+            {capabilities.direct_notice ? <span>{t('rrc.capDirectNotice')}</span> : null}
+          </p>
+        </div>
+        {connected && (
+          <div className="flex items-center gap-0.5">
+            <IconButton
+              aria-label={t('rrc.toggleTimestamps')}
+              aria-pressed={showTimestamps}
+              active={showTimestamps ? 'brand' : false}
+              onClick={() => {
+                setShowTimestamps(!showTimestamps);
               }}
+              icon={<Clock aria-hidden className="h-4 w-4" size={16} />}
+            />
+            <IconButton
+              aria-label={isMuted ? t('rrc.unmuteRoom') : t('rrc.muteRoom')}
+              aria-pressed={isMuted}
+              active={isMuted ? 'warn' : false}
+              disabled={!muteKey}
+              onClick={toggleMute}
+              icon={
+                isMuted ? (
+                  <BellOff aria-hidden className="h-4 w-4" size={16} />
+                ) : (
+                  <Bell aria-hidden className="h-4 w-4" size={16} />
+                )
+              }
+            />
+            {activeRoom && (
+              <IconButton
+                aria-label={t('rrc.clearHistory')}
+                disabled={actionBusy}
+                onClick={() => {
+                  setConfirmClearHistory(true);
+                }}
+                icon={<Trash2 aria-hidden className="h-4 w-4" size={16} />}
+              />
+            )}
+            {activeRoom && (!activeRoom.startsWith('[') || isRrcDmRoom(activeRoom)) && (
+              <IconButton
+                aria-label={t('rrc.leaveRoom')}
+                disabled={actionBusy}
+                onClick={() => void handlePart()}
+                icon={<LogOut aria-hidden className="h-4 w-4" size={16} />}
+              />
+            )}
+            {showNicklist && (
+              <IconButton
+                aria-label={t('rrc.members')}
+                aria-pressed={membersOpen}
+                active={membersOpen ? 'brand' : false}
+                onClick={() => {
+                  setMembersOpen(!membersOpen);
+                }}
+                icon={<Users aria-hidden className="h-4 w-4" size={16} />}
+              />
+            )}
+          </div>
+        )}
+        {canCancelSession && (
+          <Button
+            size="sm"
+            aria-label={cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
+            disabled={actionBusy}
+            onClick={() => void handleDisconnect()}
+          >
+            {cancelSessionLabel ? t('rrc.cancelConnect') : t('rrc.disconnect')}
+          </Button>
+        )}
+      </header>
+      {bannerText && (
+        <div className="bg-sidebar-active-bg/60 flex items-start gap-2 border-b border-slate-800 px-3 py-1.5 text-xs text-slate-200">
+          <span className="min-w-0 flex-1">{bannerText}</span>
+          <button
+            type="button"
+            className="text-muted shrink-0 rounded p-0.5 hover:text-slate-100"
+            aria-label={t('rrc.dismissBanner')}
+            onClick={() => {
+              setModerationBanner(null);
+            }}
+          >
+            <X aria-hidden size={14} />
+          </button>
+        </div>
+      )}
+      {displayError && (
+        <div className="flex items-start gap-2 border-b border-red-800/60 bg-red-950/40 px-3 py-1.5 text-xs text-red-200">
+          <span className="min-w-0 flex-1">{displayError}</span>
+          <button
+            type="button"
+            className="shrink-0 rounded p-0.5 text-red-200 hover:text-red-50"
+            aria-label={t('rrc.dismissBanner')}
+            onClick={() => {
+              setError(null);
+            }}
+          >
+            <X aria-hidden size={14} />
+          </button>
+        </div>
+      )}
+      <div className="flex min-h-0 flex-1">
+        <RrcChatView
+          connected={connected}
+          hubDestHash={hubDestHash}
+          activeRoom={activeRoom}
+          messages={activeMessages}
+          showTimestamps={showTimestamps}
+          canSend={status === 'active'}
+          isMuted={isMuted}
+          maxMsgBodyBytes={limits.max_msg_body_bytes}
+          nickname={nickname}
+          members={chatCompleteMembers}
+          alwaysShowMessageActions={alwaysShowMessageActions}
+          placeholder={whisperComposerPlaceholder}
+          isActive={isActive}
+          onCaughtUp={handleCaughtUp}
+          onOpenDm={onOpenDm}
+          composeSeed={composeSeed}
+          onSendChunk={async (chunk) => {
+            await handleSend(chunk);
+          }}
+          onInterceptSend={async (fullText) => {
+            if (!rrcComposerBypassesSplit(fullText)) return false;
+            await handleSend(fullText);
+            return true;
+          }}
+        />
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex h-full min-h-0 w-full min-w-0 text-slate-100">
+      <ConversationLayout
+        mode={layoutMode}
+        list={listColumn}
+        listLabel={t('rrc.listColumnAria')}
+        listOpen={listOpen}
+        compactPane={compactPane}
+        conversation={conversation}
+        side={
+          showNicklist ? (
+            <RrcNickList
               members={nicklistMembers}
               busy={actionBusy}
               onRefreshWho={() => {
@@ -1444,10 +1575,19 @@ export default function RrcPanel({
                 const label = member.nickname || member.identity_hash.slice(0, 8);
                 setComposeSeed({ text: `/msg ${label} `, token: Date.now() });
               }}
+              onClose={() => {
+                setMembersOpen(false);
+              }}
             />
-          )}
-        </div>
-      </main>
+          ) : undefined
+        }
+        sideLabel={t('rrc.members')}
+        sideOpen={membersOpen}
+        onCloseSide={() => {
+          setMembersOpen(false);
+        }}
+        closeSideLabel={t('rrc.hideMembers')}
+      />
       {confirmClearHistory && hubDestHash && activeRoom && (
         <ConfirmModal
           title={t('rrc.clearHistoryTitle')}

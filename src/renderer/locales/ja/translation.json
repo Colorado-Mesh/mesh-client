@@ -5414,8 +5414,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "ハッシュに接続",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5452,8 +5450,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "ルームを展開",
-    "collapseRooms": "ルームを折りたたむ",
     "joinedRooms": "結合",
     "recentRooms": "最近",
     "roomKeyOptional": "ルームキー（任意）",
@@ -5509,8 +5505,6 @@
       "welcomeTimeout": "接続されていますが、ハブが時間内にウェルカムを送信しませんでした。もう一度やり直してください。",
       "proxyRateLimit": "現在リクエストが多すぎます（プロキシレート制限に達しました）。しばらくしてからもう一度お試しください。"
     },
-    "expandMembers": "メンバーリストを展開",
-    "collapseMembers": "メンバーリストを折りたたむ",
     "cancelConnect": "取り消す",
     "maxHubsConnected": "最大8つのRRCハブに接続できます。最初に1つを切断します。",
     "enableHubAutoJoin": "ハブの自動結合を有効にする",
@@ -5557,7 +5551,15 @@
     "roomNameLimit": {
       "overMax": "ルーム名が長すぎます—ハブの制限は{{limit}}バイトです"
     },
-    "noConnectedHubs": "RRCハブが接続されていません。お気に入り、発見済み、またはハッシュで接続します。"
+    "noConnectedHubs": "RRCハブが接続されていません。お気に入り、発見済み、またはハッシュで接続します。",
+    "autoJoinChip": "自動",
+    "listViewAria": "ルームまたはハブを表示",
+    "hubsShort": "ハブ",
+    "hideList": "ルームとハブを隠す",
+    "showList": "ルームとハブを表示",
+    "backToList": "ルームとハブに戻る",
+    "hideMembers": "メンバーを隠す",
+    "listColumnAria": "ルームとハブ"
   },
   "signalMeter": {
     "rssi": "RSSI",

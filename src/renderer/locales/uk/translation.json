@@ -5492,8 +5492,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Підключитися до хешу",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5530,8 +5528,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Розгорнути список кімнат",
-    "collapseRooms": "Згорнути список кімнат",
     "joinedRooms": "Приєднався",
     "recentRooms": "Останні",
     "roomKeyOptional": "Ключ від номера (необов'язково)",
@@ -5587,8 +5583,6 @@
       "welcomeTimeout": "Підключено, але концентратор не надіслав ВІТАННЯ вчасно. Спробуйте ще раз.",
       "proxyRateLimit": "Зараз надто багато запитів (досягнуто обмеження швидкості проксі-сервера). Зачекайте кілька хвилин і повторіть спробу."
     },
-    "expandMembers": "Розгорнути список учасників",
-    "collapseMembers": "Згорнути список учасників",
     "cancelConnect": "Скасувати",
     "maxHubsConnected": "Ви можете залишатися на зв'язку не більше ніж з 8 концентраторами RRC. Спочатку від'єднайте один.",
     "enableHubAutoJoin": "Увімкнути автоматичне приєднання концентратора",
@@ -5641,7 +5635,15 @@
     "roomNameLimit": {
       "overMax": "Назва кімнати задовга — ліміт концентратора становить {{limit}} байт"
     },
-    "noConnectedHubs": "Немає підключених концентраторів RRC. З'єднуйтеся з вибраного, виявленого або за хешем."
+    "noConnectedHubs": "Немає підключених концентраторів RRC. З'єднуйтеся з вибраного, виявленого або за хешем.",
+    "autoJoinChip": "Авто",
+    "listViewAria": "Показати кімнати або хаби",
+    "hubsShort": "Хаби",
+    "hideList": "Приховати кімнати й хаби",
+    "showList": "Показати кімнати й хаби",
+    "backToList": "Назад до кімнат і хабів",
+    "hideMembers": "Приховати учасників",
+    "listColumnAria": "Кімнати й хаби"
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

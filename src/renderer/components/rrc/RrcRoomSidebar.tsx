@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, LogIn, Star } from 'lucide-react-motion';
+import { LogIn, Search, Star } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -9,11 +9,8 @@ import { isRrcWhisperRoom } from '@/renderer/lib/rrcMention';
 import { rrcRoomMatchKey, rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import type { RrcListedRoom, RrcRoomInfo } from '@/shared/rrc-types';
 
-function roomCollapsedLabel(name: string): string {
-  const cleaned = name.replace(/^#/, '').trim();
-  if (!cleaned) return '??';
-  return cleaned.slice(0, 2).toUpperCase();
-}
+import { IconButton } from '../ui/Button';
+import { chipClass, INPUT_CLASS } from '../ui/formClasses';
 
 /** Prefer hub/joined spelling; collapse `#foo` / `foo` duplicates. */
 function dedupeByMatchKey(names: string[]): string[] {
@@ -45,9 +42,8 @@ function dedupeJoinedRooms(joined: RrcRoomInfo[]): RrcRoomInfo[] {
   return [...byKey.values()];
 }
 
+/** Room list body for the RRC list column (Refresh room list lives in the column header). */
 export interface RrcRoomSidebarProps {
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
   roomSearch: string;
   onRoomSearchChange: (v: string) => void;
   joinRoomName: string;
@@ -58,7 +54,6 @@ export interface RrcRoomSidebarProps {
   maxRoomNameBytes?: number | null;
   busy: boolean;
   onJoin: () => void;
-  onRefreshList: () => void;
   joined: RrcRoomInfo[];
   listed: RrcListedRoom[];
   favourites: string[];
@@ -74,8 +69,6 @@ export interface RrcRoomSidebarProps {
 }
 
 export function RrcRoomSidebar({
-  collapsed,
-  onToggleCollapsed,
   roomSearch,
   onRoomSearchChange,
   joinRoomName,
@@ -85,7 +78,6 @@ export function RrcRoomSidebar({
   maxRoomNameBytes = null,
   busy,
   onJoin,
-  onRefreshList,
   joined,
   listed,
   favourites,
@@ -140,44 +132,16 @@ export function RrcRoomSidebar({
     const isFav = favourites.some((f) => rrcRoomsMatch(f, name));
     const isAuto = autoJoin.some((a) => rrcRoomsMatch(a, name));
 
-    if (collapsed) {
-      return (
-        <li key={key}>
-          <button
-            type="button"
-            className={`relative flex w-full flex-col items-center gap-0.5 rounded px-1 py-1.5 ${
-              selected
-                ? 'border-bright-green bg-sidebar-active-bg border-l-2'
-                : 'hover:bg-gray-800/60'
-            }`}
-            title={label}
-            aria-label={t('rrc.selectRoom', { name: label })}
-            onClick={() => {
-              onSelectRoom(name, { join: opts?.joined === false });
-            }}
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-800/80 text-[10px] font-semibold text-gray-100">
-              {roomCollapsedLabel(label)}
-            </span>
-            {unread > 0 && !selected && (
-              <span className="absolute top-0.5 right-0.5 h-2 w-2 rounded-full bg-red-600" />
-            )}
-          </button>
-        </li>
-      );
-    }
-
     return (
       <li key={key}>
         <div
-          className={`flex items-center gap-0.5 rounded ${
-            selected
-              ? 'border-bright-green bg-sidebar-active-bg border-l-2 text-gray-100'
-              : 'hover:bg-gray-800/60'
+          className={`flex items-center gap-1 rounded-lg pr-1 ${
+            selected ? 'bg-sidebar-active-bg text-bright-green' : 'hover:bg-sidebar-active-bg/60'
           }`}
         >
           <button
             type="button"
+            aria-current={selected ? 'true' : undefined}
             className="min-w-0 flex-1 px-2 py-1.5 text-left text-sm"
             aria-label={t('rrc.selectRoom', { name: label })}
             onClick={() => {
@@ -187,20 +151,18 @@ export function RrcRoomSidebar({
             <div className="flex items-center justify-between gap-1">
               <span className="truncate">{label}</span>
               {unread > 0 && !selected && (
-                <span className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] text-white">
+                <span className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}
             </div>
-            {opts?.topic ? (
-              <div className="text-muted truncate text-[10px]">{opts.topic}</div>
-            ) : null}
+            {opts?.topic ? <div className="text-muted truncate text-xs">{opts.topic}</div> : null}
           </button>
           {!isWhisper && (
             <>
               <button
                 type="button"
-                className={`shrink-0 p-1 ${isFav ? 'text-bright-green' : 'text-gray-500'}`}
+                className={`shrink-0 rounded p-1 ${isFav ? 'text-bright-green' : 'text-muted hover:text-slate-200'}`}
                 aria-label={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
                 title={isFav ? t('rrc.unfavoriteRoom') : t('rrc.favoriteRoom')}
                 onClick={() => {
@@ -211,11 +173,7 @@ export function RrcRoomSidebar({
               </button>
               <button
                 type="button"
-                className={
-                  isAuto
-                    ? 'border-bright-green bg-readable-green shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-bold text-white'
-                    : 'text-muted shrink-0 rounded border border-dashed border-gray-600 px-1.5 py-0.5 text-[9px] font-semibold hover:border-gray-500 hover:text-gray-300'
-                }
+                className={`${chipClass(isAuto, 'sm')} shrink-0`}
                 aria-label={isAuto ? t('rrc.disableAutoJoin') : t('rrc.enableAutoJoin')}
                 aria-pressed={isAuto}
                 title={isAuto ? t('rrc.roomAutoJoinOnHint') : t('rrc.roomAutoJoinOffHint')}
@@ -223,7 +181,7 @@ export function RrcRoomSidebar({
                   onToggleAutoJoin(name);
                 }}
               >
-                A
+                {t('rrc.autoJoinChip')}
               </button>
             </>
           )}
@@ -255,30 +213,14 @@ export function RrcRoomSidebar({
   );
 
   return (
-    <aside
-      className={`bg-secondary-dark/80 flex shrink-0 flex-col border-r border-gray-700 ${
-        collapsed ? 'w-16' : 'w-52'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-1 border-b border-gray-700 p-2">
-        {!collapsed && (
-          <span className="text-xs font-semibold tracking-wide text-gray-200 uppercase">
-            {t('rrc.rooms')}
-          </span>
-        )}
-        <button
-          type="button"
-          className="rounded p-1 text-gray-400 hover:bg-gray-800/60"
-          aria-label={collapsed ? t('rrc.expandRooms') : t('rrc.collapseRooms')}
-          title={collapsed ? t('rrc.expandRooms') : t('rrc.collapseRooms')}
-          aria-expanded={!collapsed}
-          onClick={onToggleCollapsed}
-        >
-          {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
-      </div>
-      {!collapsed && (
-        <div className="space-y-2 p-2">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="space-y-2 border-b border-slate-800 p-3">
+        <div className="relative">
+          <Search
+            aria-hidden
+            className="text-muted pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2"
+            size={16}
+          />
           <input
             type="search"
             value={roomSearch}
@@ -287,61 +229,47 @@ export function RrcRoomSidebar({
             }}
             placeholder={t('rrc.searchRooms')}
             aria-label={t('rrc.searchRooms')}
-            className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+            className={`${INPUT_CLASS} pl-8`}
           />
-          <p className="text-muted px-1 text-[10px] leading-snug">{t('rrc.roomLegend')}</p>
-          <div className="flex flex-col gap-0.5">
-            <div className="flex gap-1">
-              <input
-                type="text"
-                value={joinRoomName}
-                onChange={(e) => {
-                  onJoinRoomNameChange(e.target.value);
-                }}
-                aria-label={t('rrc.joinRoom')}
-                className="bg-deep-black min-w-0 flex-1 rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
-              />
-              <button
-                type="button"
-                className="bg-readable-green rounded px-2 py-1 text-xs text-white hover:opacity-90 disabled:opacity-50"
-                aria-label={t('rrc.join')}
-                disabled={busy || isRrcByteLimitOverMax(joinRoomName, maxRoomNameBytes)}
-                onClick={onJoin}
-              >
-                <LogIn size={14} />
-              </button>
-            </div>
-            <RrcByteLimitHint
-              text={joinRoomName}
-              limit={maxRoomNameBytes}
-              overMaxKey="rrc.roomNameLimit.overMax"
-            />
-          </div>
-          <input
-            type="password"
-            value={joinRoomKey}
-            onChange={(e) => {
-              onJoinRoomKeyChange(e.target.value);
-            }}
-            placeholder={t('rrc.roomKeyOptional')}
-            aria-label={t('rrc.roomKeyOptional')}
-            className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
-          />
-          <button
-            type="button"
-            className="w-full rounded border border-gray-600 px-2 py-1 text-[10px] text-gray-400 hover:bg-gray-800/60"
-            aria-label={t('rrc.refreshRoomList')}
-            disabled={busy}
-            onClick={onRefreshList}
-          >
-            {t('rrc.refreshRoomList')}
-          </button>
-          <p className="text-muted text-[10px] leading-snug">{t('rrc.listHint')}</p>
         </div>
-      )}
-      <ul className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
-        {!collapsed && joinedDeduped.some((r) => filterName(r.name)) && (
-          <li className="text-muted px-2 py-1 text-[10px] tracking-wide uppercase">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={joinRoomName}
+            onChange={(e) => {
+              onJoinRoomNameChange(e.target.value);
+            }}
+            placeholder={t('rrc.joinRoom')}
+            aria-label={t('rrc.joinRoom')}
+            className={INPUT_CLASS}
+          />
+          <IconButton
+            variant="secondary"
+            aria-label={t('rrc.join')}
+            disabled={busy || isRrcByteLimitOverMax(joinRoomName, maxRoomNameBytes)}
+            onClick={onJoin}
+            icon={<LogIn aria-hidden className="h-4 w-4" size={16} />}
+          />
+        </div>
+        <RrcByteLimitHint
+          text={joinRoomName}
+          limit={maxRoomNameBytes}
+          overMaxKey="rrc.roomNameLimit.overMax"
+        />
+        <input
+          type="password"
+          value={joinRoomKey}
+          onChange={(e) => {
+            onJoinRoomKeyChange(e.target.value);
+          }}
+          placeholder={t('rrc.roomKeyOptional')}
+          aria-label={t('rrc.roomKeyOptional')}
+          className={INPUT_CLASS}
+        />
+      </div>
+      <ul className="min-h-0 flex-1 overflow-y-auto p-2">
+        {joinedDeduped.some((r) => filterName(r.name)) && (
+          <li className="text-muted px-2 pt-3 pb-1 text-xs font-semibold">
             {t('rrc.joinedRooms')}
           </li>
         )}
@@ -354,36 +282,37 @@ export function RrcRoomSidebar({
               topic: room.topic ?? undefined,
             }),
           )}
-        {!collapsed && (listedNotJoined.length > 0 || favNotJoined.length > 0) && (
-          <li className="text-muted mt-2 px-2 py-1 text-[10px] tracking-wide uppercase">
+        {(listedNotJoined.length > 0 || favNotJoined.length > 0) && (
+          <li className="text-muted px-2 pt-3 pb-1 text-xs font-semibold">
             {t('rrc.listedRooms')}
           </li>
         )}
-        {!collapsed &&
-          listedNotJoined.map((r) =>
-            renderRoomButton(r.name, {
-              unread: unreadFor(r.name),
-              joined: false,
-              topic: r.topic,
-            }),
-          )}
-        {!collapsed &&
-          favNotJoined.map((name) =>
-            renderRoomButton(name, { unread: unreadFor(name), joined: false }),
-          )}
-        {!collapsed && recentVisible.length > 0 && (
-          <li className="text-muted mt-2 px-2 py-1 text-[10px] tracking-wide uppercase">
+        {listedNotJoined.map((r) =>
+          renderRoomButton(r.name, {
+            unread: unreadFor(r.name),
+            joined: false,
+            topic: r.topic,
+          }),
+        )}
+        {favNotJoined.map((name) =>
+          renderRoomButton(name, { unread: unreadFor(name), joined: false }),
+        )}
+        {recentVisible.length > 0 && (
+          <li className="text-muted px-2 pt-3 pb-1 text-xs font-semibold">
             {t('rrc.recentRooms')}
           </li>
         )}
-        {!collapsed &&
-          recentVisible.map((name) =>
-            renderRoomButton(name, { unread: unreadFor(name), joined: false }),
-          )}
-        {joinedDeduped.length === 0 && !collapsed && (
-          <li className="text-muted px-2 text-xs">{t('rrc.noRoomsJoined')}</li>
+        {recentVisible.map((name) =>
+          renderRoomButton(name, { unread: unreadFor(name), joined: false }),
+        )}
+        {joinedDeduped.length === 0 && (
+          <li className="text-muted px-2 py-2 text-xs">{t('rrc.noRoomsJoined')}</li>
         )}
       </ul>
-    </aside>
+      <div className="text-muted space-y-1 border-t border-slate-800 px-3 py-2 text-xs leading-snug">
+        <p>{t('rrc.roomLegend')}</p>
+        <p>{t('rrc.listHint')}</p>
+      </div>
+    </div>
   );
 }

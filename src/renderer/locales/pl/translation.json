@@ -5492,8 +5492,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Połącz z hashem",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5530,8 +5528,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Rozwiń listę pokoi",
-    "collapseRooms": "Zwiń listę pokoi",
     "joinedRooms": "Dołączono",
     "recentRooms": "Ostatnie",
     "roomKeyOptional": "Klucz do pokoju (opcjonalnie)",
@@ -5587,8 +5583,6 @@
       "welcomeTimeout": "Połączono, ale centrum nie wysłało POWITANIA na czas. Spróbuj ponownie.",
       "proxyRateLimit": "Zbyt wiele żądań w tej chwili (osiągnięto limit szybkości serwera proxy). Poczekaj chwilę i spróbuj ponownie."
     },
-    "expandMembers": "Rozwiń listę członków",
-    "collapseMembers": "Zwiń listę członków",
     "cancelConnect": "Anuluj",
     "maxHubsConnected": "Możesz pozostać w kontakcie z co najwyżej 8 koncentratorami RRC. Najpierw odłącz jeden.",
     "enableHubAutoJoin": "Włącz automatyczne dołączanie do piasty",
@@ -5641,7 +5635,15 @@
     "roomNameLimit": {
       "overMax": "Nazwa pokoju jest zbyt długa — limit koncentratora wynosi {{limit}} bajtów"
     },
-    "noConnectedHubs": "Brak podłączonych koncentratorów RRC. Połącz z Ulubionymi, Odkrytymi lub za pomocą skrótu."
+    "noConnectedHubs": "Brak podłączonych koncentratorów RRC. Połącz z Ulubionymi, Odkrytymi lub za pomocą skrótu.",
+    "autoJoinChip": "Auto",
+    "listViewAria": "Pokaż pokoje lub huby",
+    "hubsShort": "Huby",
+    "hideList": "Ukryj pokoje i huby",
+    "showList": "Pokaż pokoje i huby",
+    "backToList": "Wróć do pokojów i hubów",
+    "hideMembers": "Ukryj członków",
+    "listColumnAria": "Pokoje i huby"
   },
   "signalMeter": {
     "rssi": "RSSI",

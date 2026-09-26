@@ -5492,8 +5492,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Подключиться к хешу",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5530,8 +5528,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Развернуть список комнат",
-    "collapseRooms": "Свернуть список комнат",
     "joinedRooms": "Присоединение выполнено",
     "recentRooms": "Недавние",
     "roomKeyOptional": "Ключ от комнаты (необязательно)",
@@ -5587,8 +5583,6 @@
       "welcomeTimeout": "Подключен, но концентратор не отправил ПРИВЕТСТВИЕ вовремя. Попробуйте еще раз.",
       "proxyRateLimit": "Сейчас слишком много запросов (достигнут лимит скорости прокси-сервера). Подождите несколько минут и повторите попытку."
     },
-    "expandMembers": "Развернуть список участников",
-    "collapseMembers": "Свернуть список участников",
     "cancelConnect": "Отмена",
     "maxHubsConnected": "Вы можете оставаться на связи не более чем с 8 концентраторами RRC. Сначала отсоедините один.",
     "enableHubAutoJoin": "Включить автоматическое присоединение концентратора",
@@ -5641,7 +5635,15 @@
     "roomNameLimit": {
       "overMax": "Слишком длинное название комнаты — ограничение концентратора составляет {{limit}} байт"
     },
-    "noConnectedHubs": "Нет подключенных концентраторов RRC. Подключайтесь к Избранному, Обнаруженному или по хэшу."
+    "noConnectedHubs": "Нет подключенных концентраторов RRC. Подключайтесь к Избранному, Обнаруженному или по хэшу.",
+    "autoJoinChip": "Авто",
+    "listViewAria": "Показать комнаты или хабы",
+    "hubsShort": "Хабы",
+    "hideList": "Скрыть комнаты и хабы",
+    "showList": "Показать комнаты и хабы",
+    "backToList": "Назад к комнатам и хабам",
+    "hideMembers": "Скрыть участников",
+    "listColumnAria": "Комнаты и хабы"
   },
   "signalMeter": {
     "rssi": "РССИ",

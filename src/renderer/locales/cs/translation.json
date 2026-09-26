@@ -5454,8 +5454,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Připojit k hashi",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5492,8 +5490,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Rozbalit seznam místností",
-    "collapseRooms": "Sbalit seznam místností",
     "joinedRooms": "Připojen",
     "recentRooms": "Nedávné",
     "roomKeyOptional": "Klíč od pokoje (volitelné)",
@@ -5549,8 +5545,6 @@
       "welcomeTimeout": "Připojeno, ale centrum neposlalo UVÍTÁNÍ včas. Zkuste to znovu.",
       "proxyRateLimit": "Příliš mnoho požadavků (dosažen limit frekvence proxy). Chvíli počkejte a zkuste to znovu."
     },
-    "expandMembers": "Rozbalit seznam členů",
-    "collapseMembers": "Sbalit seznam členů",
     "cancelConnect": "Zrušit",
     "maxHubsConnected": "Můžete zůstat ve spojení maximálně s 8 rozbočovači RRC. Nejprve jeden odpojte.",
     "enableHubAutoJoin": "Povolit automatické členství",
@@ -5600,7 +5594,15 @@
     "roomNameLimit": {
       "overMax": "Název místnosti je příliš dlouhý — limit rozbočovače je {{limit}} bajtů"
     },
-    "noConnectedHubs": "Nejsou připojeny žádné rozbočovače RRC. Připojte se z oblíbených, objevených nebo pomocí hash."
+    "noConnectedHubs": "Nejsou připojeny žádné rozbočovače RRC. Připojte se z oblíbených, objevených nebo pomocí hash.",
+    "autoJoinChip": "Auto",
+    "listViewAria": "Zobrazit místnosti nebo huby",
+    "hubsShort": "Huby",
+    "hideList": "Skrýt místnosti a huby",
+    "showList": "Zobrazit místnosti a huby",
+    "backToList": "Zpět na místnosti a huby",
+    "hideMembers": "Skrýt členy",
+    "listColumnAria": "Místnosti a huby"
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

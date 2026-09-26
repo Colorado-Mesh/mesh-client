@@ -5414,8 +5414,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Conectar al hash",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5452,8 +5450,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Expandir salas",
-    "collapseRooms": "Contraer salas",
     "joinedRooms": "Se unió",
     "recentRooms": "Reciente",
     "roomKeyOptional": "Clave de sala (opcional)",
@@ -5509,8 +5505,6 @@
       "welcomeTimeout": "Conectado pero el hub no ha enviado la BIENVENIDA A tiempo. Inténtalo de nuevo.",
       "proxyRateLimit": "Demasiadas solicitudes en este momento (límite de tasa de proxy alcanzado). Espera unos momentos e inténtalo de nuevo."
     },
-    "expandMembers": "Expandir la lista de miembros",
-    "collapseMembers": "Contraer lista de miembros",
     "cancelConnect": "Cancelar",
     "maxHubsConnected": "Puedes mantenerte conectado a un máximo de 8 centros de RRC. Desconecta uno primero.",
     "enableHubAutoJoin": "Habilitar la unión automática del hub",
@@ -5557,7 +5551,15 @@
     "roomNameLimit": {
       "overMax": "El nombre de la sala es demasiado largo: el límite del hub es de {{limit}} bytes"
     },
-    "noConnectedHubs": "No hay hubs RRC conectados. Conéctate desde Favoritos, Descubiertos o por hash."
+    "noConnectedHubs": "No hay hubs RRC conectados. Conéctate desde Favoritos, Descubiertos o por hash.",
+    "autoJoinChip": "Auto",
+    "listViewAria": "Mostrar salas o hubs",
+    "hubsShort": "Hubs",
+    "hideList": "Ocultar salas y hubs",
+    "showList": "Mostrar salas y hubs",
+    "backToList": "Volver a salas y hubs",
+    "hideMembers": "Ocultar miembros",
+    "listColumnAria": "Salas y hubs"
   },
   "signalMeter": {
     "rssi": "RSSI",

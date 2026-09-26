@@ -656,7 +656,7 @@ export function RrcChatView({
                             {msg.kind === 'notice' && nick ? (
                               <span className={rrcNickColorClass(nick)}>-{nick}- </span>
                             ) : (
-                              <span className="text-gray-500">* </span>
+                              <span className="text-muted">* </span>
                             )}
                             {body}
                           </>
@@ -664,7 +664,7 @@ export function RrcChatView({
                       </div>
                       <button
                         type="button"
-                        className={`message-action shrink-0 rounded p-0.5 text-xs text-gray-600 ${
+                        className={`message-action shrink-0 rounded p-0.5 text-xs text-slate-500 ${
                           alwaysShowMessageActions
                             ? 'opacity-100'
                             : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
@@ -693,7 +693,7 @@ export function RrcChatView({
             onClick={() => {
               scrollToBottom('smooth');
             }}
-            className="bg-deep-black/95 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-100 shadow-lg transition-all hover:bg-gray-800"
+            className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-slate-200 shadow-lg transition-all"
             aria-label={t('rrc.jumpToLatest')}
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
@@ -701,7 +701,7 @@ export function RrcChatView({
           </button>
         )}
       </div>
-      <div className="border-t border-gray-700 p-2 font-sans">
+      <div className="border-t border-slate-800 p-2 font-sans">
         <ChatComposer
           protocol="reticulum"
           viewKey={composerViewKey}

@@ -21,9 +21,10 @@ export const FIELD_LABEL_CLASS = 'text-muted text-xs';
 /** Checkbox: brand accent, 16px. */
 export const CHECKBOX_CLASS = 'accent-brand-green h-4 w-4 shrink-0';
 
-/** Small toggle chip (`aria-pressed`) for presets and regions. */
-export function chipClass(active: boolean): string {
-  return `h-7 rounded-lg border px-2.5 text-[12.5px] font-medium transition-colors ${
+/** Small toggle chip (`aria-pressed`) for presets and regions; `sm` fits inside list rows. */
+export function chipClass(active: boolean, size: 'sm' | 'md' = 'md'): string {
+  const box = size === 'sm' ? 'h-6 px-2 text-[11px]' : 'h-7 px-2.5 text-[12.5px]';
+  return `${box} rounded-lg border font-medium transition-colors ${
     active
       ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
       : 'border-slate-800 bg-deep-black text-slate-300 hover:border-secondary-dark hover:text-slate-100'

@@ -5610,12 +5610,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
-    "expandRooms": "Expand room list",
-    "collapseRooms": "Collapse room list",
-    "expandMembers": "Expand members list",
-    "collapseMembers": "Collapse members list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Connect to hash",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5744,7 +5738,15 @@
       "awaiting_welcome": "Waiting for hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
-    }
+    },
+    "autoJoinChip": "Auto",
+    "listViewAria": "Show rooms or hubs",
+    "hubsShort": "Hubs",
+    "hideList": "Hide rooms and hubs",
+    "showList": "Show rooms and hubs",
+    "backToList": "Back to rooms and hubs",
+    "hideMembers": "Hide members",
+    "listColumnAria": "Rooms and hubs"
   },
   "searchModal": {
     "closeSearch": "Close search",

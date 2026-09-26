@@ -5414,8 +5414,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "连接到哈希",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5452,8 +5450,6 @@
       "active": "已连接",
       "reconnecting": "正在重新连接…"
     },
-    "expandRooms": "展开房间列表",
-    "collapseRooms": "折叠房间列表",
     "joinedRooms": "已加入",
     "recentRooms": "最近",
     "roomKeyOptional": "房间钥匙（选填）",
@@ -5509,8 +5505,6 @@
       "welcomeTimeout": "已连接，但集线器未及时发送欢迎。请重试。",
       "proxyRateLimit": "当前请求过多（已达到代理速率限制）。请稍等片刻，然后重试。"
     },
-    "expandMembers": "扩大成员",
-    "collapseMembers": "折叠成员列表",
     "cancelConnect": "取消推荐",
     "maxHubsConnected": "您最多可以连接8个RRC集线器。先断开一个。",
     "enableHubAutoJoin": "启用集线器自动连接",
@@ -5557,7 +5551,15 @@
     "roomNameLimit": {
       "overMax": "房间名称太长—集线器限制为{{limit}}字节"
     },
-    "noConnectedHubs": "未连接RRC集线器。从收藏夹、发现或通过哈希连接。"
+    "noConnectedHubs": "未连接RRC集线器。从收藏夹、发现或通过哈希连接。",
+    "autoJoinChip": "自动",
+    "listViewAria": "显示房间或中心",
+    "hubsShort": "中心",
+    "hideList": "隐藏房间和中心",
+    "showList": "显示房间和中心",
+    "backToList": "返回房间和中心",
+    "hideMembers": "隐藏成员",
+    "listColumnAria": "房间和中心"
   },
   "signalMeter": {
     "rssi": "RSSI",

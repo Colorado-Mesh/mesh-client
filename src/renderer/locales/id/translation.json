@@ -5414,8 +5414,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Hubungkan ke hash",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5452,8 +5450,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Perluas daftar ruangan",
-    "collapseRooms": "Ciutkan daftar ruangan",
     "joinedRooms": "Sudah bergabung",
     "recentRooms": "Terkini",
     "roomKeyOptional": "Kunci ruangan (opsional)",
@@ -5509,8 +5505,6 @@
       "welcomeTimeout": "Terhubung tetapi hub tidak mengirim SAMBUTAN tepat waktu. Coba lagi.",
       "proxyRateLimit": "Terlalu banyak permintaan saat ini (batas tingkat proxy tercapai). Harap tunggu beberapa saat dan coba lagi."
     },
-    "expandMembers": "Perluas daftar anggota",
-    "collapseMembers": "Ciutkan daftar anggota",
     "cancelConnect": "Batal",
     "maxHubsConnected": "Anda dapat tetap terhubung ke paling banyak 8 hub RRC. Putuskan sambungan terlebih dahulu.",
     "enableHubAutoJoin": "Aktifkan hub auto - join",
@@ -5557,7 +5551,15 @@
     "roomNameLimit": {
       "overMax": "Nama ruangan terlalu panjang — batas hub {{limit}} byte"
     },
-    "noConnectedHubs": "Tidak ada hub RRC yang terhubung. Terhubung dari Favorit, Ditemukan, atau dengan hash."
+    "noConnectedHubs": "Tidak ada hub RRC yang terhubung. Terhubung dari Favorit, Ditemukan, atau dengan hash.",
+    "autoJoinChip": "Oto",
+    "listViewAria": "Tampilkan ruang atau hub",
+    "hubsShort": "Hub",
+    "hideList": "Sembunyikan ruang dan hub",
+    "showList": "Tampilkan ruang dan hub",
+    "backToList": "Kembali ke ruang dan hub",
+    "hideMembers": "Sembunyikan anggota",
+    "listColumnAria": "Ruang dan hub"
   },
   "signalMeter": {
     "rssi": "RSSI",

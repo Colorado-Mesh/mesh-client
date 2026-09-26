@@ -1,17 +1,28 @@
-import { ChevronLeft, ChevronRight, RefreshCw, Star } from 'lucide-react-motion';
+import { Search, Star } from 'lucide-react-motion';
 import { useTranslation } from 'react-i18next';
 
 import { RrcByteLimitHint } from '@/renderer/components/rrc/RrcByteLimitHint';
 import { resolveRrcHubSidebarMarker, type RrcHubSidebarMarker } from '@/renderer/lib/rrcHubPrefs';
 import type { RrcHubInfo } from '@/shared/rrc-types';
 
+import { Button } from '../ui/Button';
+import { chipClass, FIELD_LABEL_CLASS, INPUT_CLASS, NOTICE_CLASS } from '../ui/formClasses';
+import { SegmentedControl } from '../ui/SegmentedControl';
+import { StatusDot, type StatusDotTone } from '../ui/StatusDot';
+
+const MARKER_DOT: Record<RrcHubSidebarMarker['kind'], { tone: StatusDotTone; pulse: boolean }> = {
+  connected: { tone: 'ok', pulse: false },
+  connecting: { tone: 'warn', pulse: true },
+  autoJoinNotConnected: { tone: 'idle', pulse: false },
+  idle: { tone: 'off', pulse: false },
+};
+
 function formatHash(hash: string): string {
   return hash.slice(0, 8);
 }
 
+/** Hub list body for the RRC list column (the column header and its Refresh live in RrcPanel). */
 export interface RrcHubBrowserProps {
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
   sidecarRunning: boolean;
   hubSearch: string;
   onHubSearchChange: (v: string) => void;
@@ -33,7 +44,6 @@ export interface RrcHubBrowserProps {
   onManualHashChange: (v: string) => void;
   hubTab: 'connected' | 'favourites' | 'discovered';
   onHubTabChange: (tab: 'connected' | 'favourites' | 'discovered') => void;
-  onRefresh: () => void;
   onConnect: (hash: string) => void;
   onToggleFavorite: (hash: string, favorited: boolean) => void;
   onToggleAutoJoin: (hash: string) => void;
@@ -76,12 +86,12 @@ function HubRow({
   return (
     <li>
       <div
-        className={`flex items-center gap-1 rounded px-2 py-1.5 text-sm ${
-          selected ? 'border-bright-green bg-sidebar-active-bg border-l-2' : 'hover:bg-gray-800/60'
+        className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm ${
+          selected ? 'bg-sidebar-active-bg' : 'hover:bg-sidebar-active-bg/60'
         }`}
       >
-        <span className={`shrink-0 text-xs ${marker.colorClass}`} title={markerTitle} aria-hidden>
-          {marker.glyph}
+        <span className="inline-flex shrink-0" title={markerTitle} aria-hidden>
+          <StatusDot tone={MARKER_DOT[marker.kind].tone} pulse={MARKER_DOT[marker.kind].pulse} />
         </span>
         <button
           type="button"
@@ -102,29 +112,29 @@ function HubRow({
           disabled={!sidecarRunning && marker.kind !== 'connected' && marker.kind !== 'connecting'}
         >
           <div className="flex items-center justify-between gap-1">
-            <div className="truncate font-medium text-gray-100">{label}</div>
+            <div
+              className={`truncate font-medium ${selected ? 'text-bright-green' : 'text-slate-100'}`}
+            >
+              {label}
+            </div>
             {unread > 0 && (
-              <span className="shrink-0 rounded-full bg-red-600 px-1.5 text-[10px] text-white">
+              <span className="shrink-0 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
                 {unread > 99 ? '99+' : unread}
               </span>
             )}
           </div>
-          <div className="truncate text-xs text-gray-400">
+          <div className="text-muted truncate font-mono text-[11.5px]">
             {secondary ?? formatHash(hub.destination_hash)}
             {hub.hops != null ? ` · ${t('rrc.hopsAway', { count: hub.hops })}` : ''}
             {hub.user_count != null ? ` · ${t('rrc.userCount', { count: hub.user_count })}` : ''}
           </div>
           {hub.description ? (
-            <div className="text-muted truncate text-[10px]">{hub.description}</div>
+            <div className="text-muted truncate text-xs">{hub.description}</div>
           ) : null}
         </button>
         <button
           type="button"
-          className={
-            autoJoin
-              ? 'border-bright-green bg-readable-green shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold text-white'
-              : 'text-muted shrink-0 rounded border border-dashed border-gray-600 px-1.5 py-0.5 text-[10px] font-semibold hover:border-gray-500 hover:text-gray-300'
-          }
+          className={`${chipClass(autoJoin, 'sm')} shrink-0`}
           aria-label={autoJoin ? t('rrc.disableHubAutoJoin') : t('rrc.enableHubAutoJoin')}
           aria-pressed={autoJoin}
           title={autoJoin ? t('rrc.hubAutoJoinOnHint') : t('rrc.hubAutoJoinOffHint')}
@@ -132,11 +142,11 @@ function HubRow({
             onToggleAutoJoin(hub.destination_hash);
           }}
         >
-          A
+          {t('rrc.autoJoinChip')}
         </button>
         <button
           type="button"
-          className={`shrink-0 p-1 ${hub.favorited ? 'text-bright-green' : 'text-gray-500'}`}
+          className={`shrink-0 rounded p-1 ${hub.favorited ? 'text-bright-green' : 'text-muted hover:text-slate-200'}`}
           aria-label={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
           title={hub.favorited ? t('rrc.unfavoriteHub') : t('rrc.favoriteHub')}
           onClick={() => {
@@ -199,8 +209,6 @@ function HubList({
 }
 
 export function RrcHubBrowser({
-  collapsed,
-  onToggleCollapsed,
   sidecarRunning,
   hubSearch,
   onHubSearchChange,
@@ -218,7 +226,6 @@ export function RrcHubBrowser({
   onManualHashChange,
   hubTab,
   onHubTabChange,
-  onRefresh,
   onConnect,
   onToggleFavorite,
   onToggleAutoJoin,
@@ -229,162 +236,101 @@ export function RrcHubBrowser({
     hubTab === 'connected' ? connected : hubTab === 'favourites' ? favourites : discovered;
 
   return (
-    <aside
-      className={`bg-secondary-dark flex shrink-0 flex-col border-r border-gray-700 ${
-        collapsed ? 'w-16' : 'w-64'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-1 border-b border-gray-700 p-2">
-        {!collapsed && (
-          <span className="text-xs font-semibold tracking-wide text-gray-200 uppercase">
-            {t('rrc.hubsTitle')}
-          </span>
-        )}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            className="rounded p-1 text-gray-400 hover:bg-gray-800/60"
-            aria-label={t('rrc.refreshHubs')}
-            title={t('rrc.refreshHubs')}
-            disabled={!sidecarRunning}
-            onClick={onRefresh}
-          >
-            <RefreshCw size={14} />
-          </button>
-          <button
-            type="button"
-            className="rounded p-1 text-gray-400 hover:bg-gray-800/60"
-            aria-label={collapsed ? t('rrc.expandSidebar') : t('rrc.collapseSidebar')}
-            title={collapsed ? t('rrc.expandSidebar') : t('rrc.collapseSidebar')}
-            onClick={onToggleCollapsed}
-          >
-            {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-          </button>
-        </div>
-      </div>
-      {!collapsed && (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-2">
-          {!sidecarRunning && (
-            <div className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-2 text-xs text-amber-200">
-              {t('connectionPanel.reticulumIdentity.startStackFirst')}
-            </div>
-          )}
-          <p className="text-muted px-1 text-[10px] leading-snug">{t('rrc.hubLegend')}</p>
-          <div className="flex gap-1 rounded border border-gray-700 p-0.5 text-[10px]">
-            <button
-              type="button"
-              className={`flex-1 rounded px-1 py-1 ${
-                hubTab === 'connected'
-                  ? 'bg-readable-green text-white'
-                  : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
-              }`}
-              aria-label={t('rrc.hubs.connected')}
-              onClick={() => {
-                onHubTabChange('connected');
-              }}
-            >
-              {t('rrc.hubs.connected')}
-            </button>
-            <button
-              type="button"
-              className={`flex-1 rounded px-1 py-1 ${
-                hubTab === 'favourites'
-                  ? 'bg-readable-green text-white'
-                  : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
-              }`}
-              aria-label={t('rrc.hubs.favourites')}
-              onClick={() => {
-                onHubTabChange('favourites');
-              }}
-            >
-              {t('rrc.hubs.favourites')}
-            </button>
-            <button
-              type="button"
-              className={`flex-1 rounded px-1 py-1 ${
-                hubTab === 'discovered'
-                  ? 'bg-readable-green text-white'
-                  : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
-              }`}
-              aria-label={t('rrc.hubs.discovered')}
-              onClick={() => {
-                onHubTabChange('discovered');
-              }}
-            >
-              {t('rrc.hubs.discovered')}
-            </button>
-          </div>
-          <input
-            type="search"
-            value={hubSearch}
-            onChange={(e) => {
-              onHubSearchChange(e.target.value);
-            }}
-            placeholder={t('rrc.searchHubs')}
-            aria-label={t('rrc.searchHubs')}
-            className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
-          />
-          <label className="block text-xs text-gray-400">
-            {t('rrc.nickname')}
-            <input
-              type="text"
-              value={nickname}
-              onChange={(e) => {
-                onNicknameChange(e.target.value);
-              }}
-              aria-label={t('rrc.nickname')}
-              className="bg-deep-black mt-0.5 w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
-            />
-            <RrcByteLimitHint
-              text={nickname}
-              limit={maxNickBytes}
-              overMaxKey="rrc.nickLimit.overMax"
-            />
-          </label>
-          {rows.length > 0 ? (
-            <HubList
-              rows={rows}
-              hubDestHash={hubDestHash}
-              sidecarRunning={sidecarRunning}
-              unreadForHub={unreadForHub}
-              statusForHub={statusForHub}
-              isHubAutoJoin={isHubAutoJoin}
-              onConnect={onConnect}
-              onToggleFavorite={onToggleFavorite}
-              onToggleAutoJoin={onToggleAutoJoin}
-            />
-          ) : (
-            <p className="text-muted px-2 text-xs">
-              {hubTab === 'connected'
-                ? t('rrc.noConnectedHubs')
-                : hubTab === 'favourites'
-                  ? t('rrc.noFavouriteHubs')
-                  : t('rrc.noDiscoveredHubs')}
-            </p>
-          )}
-          <div className="mt-auto space-y-1 border-t border-gray-700 pt-2">
-            <input
-              type="text"
-              value={manualHash}
-              onChange={(e) => {
-                onManualHashChange(e.target.value);
-              }}
-              placeholder={t('rrc.manualHashPlaceholder')}
-              aria-label={t('rrc.manualHashPlaceholder')}
-              className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 font-mono text-xs text-gray-100"
-            />
-            <button
-              type="button"
-              className="bg-readable-green w-full rounded px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
-              aria-label={t('rrc.connectManual')}
-              disabled={!sidecarRunning || !manualHash.trim()}
-              onClick={onManualConnect}
-            >
-              {t('rrc.connectManual')}
-            </button>
-          </div>
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+      {!sidecarRunning && (
+        <div className={NOTICE_CLASS.warn}>
+          {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </div>
       )}
-    </aside>
+      <SegmentedControl
+        aria-label={t('rrc.hubsTitle')}
+        value={hubTab}
+        onChange={onHubTabChange}
+        options={[
+          { value: 'connected', label: t('rrc.hubs.connected') },
+          { value: 'favourites', label: t('rrc.hubs.favourites') },
+          { value: 'discovered', label: t('rrc.hubs.discovered') },
+        ]}
+      />
+      <div className="relative">
+        <Search
+          aria-hidden
+          className="text-muted pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2"
+          size={16}
+        />
+        <input
+          type="search"
+          value={hubSearch}
+          onChange={(e) => {
+            onHubSearchChange(e.target.value);
+          }}
+          placeholder={t('rrc.searchHubs')}
+          aria-label={t('rrc.searchHubs')}
+          className={`${INPUT_CLASS} pl-8`}
+        />
+      </div>
+      {rows.length > 0 ? (
+        <HubList
+          rows={rows}
+          hubDestHash={hubDestHash}
+          sidecarRunning={sidecarRunning}
+          unreadForHub={unreadForHub}
+          statusForHub={statusForHub}
+          isHubAutoJoin={isHubAutoJoin}
+          onConnect={onConnect}
+          onToggleFavorite={onToggleFavorite}
+          onToggleAutoJoin={onToggleAutoJoin}
+        />
+      ) : (
+        <p className="text-muted px-1 text-xs">
+          {hubTab === 'connected'
+            ? t('rrc.noConnectedHubs')
+            : hubTab === 'favourites'
+              ? t('rrc.noFavouriteHubs')
+              : t('rrc.noDiscoveredHubs')}
+        </p>
+      )}
+      <p className="text-muted px-1 text-xs leading-snug">{t('rrc.hubLegend')}</p>
+      <div className="mt-auto space-y-3 border-t border-slate-800 pt-3">
+        <label className={`block ${FIELD_LABEL_CLASS}`}>
+          {t('rrc.nickname')}
+          <input
+            type="text"
+            value={nickname}
+            onChange={(e) => {
+              onNicknameChange(e.target.value);
+            }}
+            aria-label={t('rrc.nickname')}
+            className={`${INPUT_CLASS} mt-1`}
+          />
+          <RrcByteLimitHint
+            text={nickname}
+            limit={maxNickBytes}
+            overMaxKey="rrc.nickLimit.overMax"
+          />
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={manualHash}
+            onChange={(e) => {
+              onManualHashChange(e.target.value);
+            }}
+            placeholder={t('rrc.manualHashPlaceholder')}
+            aria-label={t('rrc.manualHashPlaceholder')}
+            className={`${INPUT_CLASS} font-mono`}
+          />
+          <Button
+            variant="primary"
+            size="sm"
+            aria-label={t('rrc.connectManual')}
+            disabled={!sidecarRunning || !manualHash.trim()}
+            onClick={onManualConnect}
+          >
+            {t('rrc.connectManual')}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

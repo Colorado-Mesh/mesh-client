@@ -74,8 +74,18 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   /** `ghost` (default) is borderless; `secondary` matches toolbar buttons. */
   variant?: 'ghost' | 'secondary' | 'danger';
   size?: ButtonSize;
+  /**
+   * Toggled-on look for toolbar toggles (pair with `aria-pressed`): `brand` for an active view,
+   * `warn` for a state worth noticing (muted). Replaces the variant colors.
+   */
+  active?: 'brand' | 'warn' | false;
   ref?: Ref<HTMLButtonElement>;
 }
+
+const ICON_BUTTON_ACTIVE: Record<'brand' | 'warn', string> = {
+  brand: 'border-transparent bg-sidebar-active-bg text-bright-green',
+  warn: 'border-transparent bg-transparent text-amber-400 hover:bg-sidebar-active-bg',
+};
 
 const ICON_BUTTON_SIZE: Record<ButtonSize, string> = { sm: 'h-[30px] w-[30px]', md: 'h-8 w-8' };
 
@@ -91,6 +101,7 @@ export function IconButton({
   icon,
   variant = 'ghost',
   size = 'md',
+  active = false,
   className,
   title,
   type = 'button',
@@ -106,7 +117,7 @@ export function IconButton({
       className={[
         'focus-visible:outline-brand-green inline-flex shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         ICON_BUTTON_SIZE[size],
-        ICON_BUTTON_VARIANT[variant],
+        active ? ICON_BUTTON_ACTIVE[active] : ICON_BUTTON_VARIANT[variant],
         className,
       ]
         .filter(Boolean)
