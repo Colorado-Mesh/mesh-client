@@ -341,7 +341,9 @@
       "zinc900": "Zinek 900",
       "zinc800": "Zinek 800",
       "zinc700": "Zinek 700",
-      "zinc400": "Zinek 400"
+      "zinc400": "Zinek 400",
+      "emerald300": "Emerald 300",
+      "emerald700": "Emerald 700"
     },
     "autoPruneNodesOlderThanAria": "Automaticky ořezávat uzly při spuštění, starší než {{days}} dnů",
     "autoPrunePositionHistoryDaysAria": "Automatické prořezávání historie pozic při spuštění, starší než {{days}} dnů",
@@ -445,12 +447,12 @@
       "heading": "Motiv",
       "hint": "Vyberte výchozí paletu a níže upravte jednotlivé barvy.",
       "custom": "Vlastní barvy. Vyberte motiv a začněte znovu od předvolby.",
-      "default": "Výchozí",
       "highContrast": "Vysoký kontrast",
       "midnight": "Půlnoc",
-      "teal": "Tyrkysový akcent",
-      "amber": "Jantarový akcent",
-      "classicSlate": "Klasická břidlice"
+      "classicSlate": "Klasická břidlice",
+      "meshtastic": "Meshtastic (výchozí)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Prořezávat uzly bez polohy / Zero Island"
   },

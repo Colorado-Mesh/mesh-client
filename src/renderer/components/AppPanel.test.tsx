@@ -156,7 +156,7 @@ describe('AppPanel: theme presets', () => {
         <AppPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const standard = await screen.findByRole('button', { name: 'Default' });
+    const standard = await screen.findByRole('button', { name: 'Meshtastic (default)' });
     expect(standard).toHaveAttribute('aria-pressed', 'true');
 
     fireEvent.click(screen.getByRole('button', { name: 'High contrast' }));

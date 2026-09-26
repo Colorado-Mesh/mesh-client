@@ -6,9 +6,9 @@
 @theme {
   --color-app-bg: #09090b;
   --color-sidebar-active-bg: #27272a;
-  --color-brand-green: #86efac;
+  --color-brand-green: #6ee7b7;
   --color-bright-green: var(--color-brand-green);
-  --color-readable-green: #15803d;
+  --color-readable-green: #047857;
   --color-deep-black: #18181b;
   --color-secondary-dark: #3f3f46;
   --color-muted: #a1a1aa;
@@ -37,9 +37,9 @@
      color-mixes to a light/white ring on Chromium/Electron. */
   --color-chat-incoming-bg: rgb(39 39 42 / 0.38);
   --color-chat-incoming-border: #27272a;
-  /* Own messages (Option B): readable green fill at 22%, brand green border at 25%. */
-  --color-chat-outgoing-bg: rgb(21 128 61 / 0.22);
-  --color-chat-outgoing-border: rgb(134 239 172 / 0.25);
+  /* Own messages: readable (emerald-700) fill at 22%, accent (emerald-300) border at 25%. */
+  --color-chat-outgoing-bg: rgb(4 120 87 / 0.22);
+  --color-chat-outgoing-border: rgb(110 231 183 / 0.25);
   /* Message actions bar background — hidden by default (opacity 0); toggled to
      fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
   --color-message-actions-bar-bg: rgb(24 24 27 / 0);
@@ -136,11 +136,11 @@ html[data-reduce-motion='true'] *::after {
 }
 
 .cm-brand-mark-stroke {
-  stroke: var(--color-bright-green, #86efac);
+  stroke: var(--color-bright-green, #6ee7b7);
 }
 
 .cm-brand-mark-sun {
-  fill: var(--color-bright-green, #86efac);
+  fill: var(--color-bright-green, #6ee7b7);
 }
 
 /* Nomad page viewer: lighter thumbs so bars read on deep-black / secondary-dark. */
@@ -389,9 +389,9 @@ html[data-reduce-motion='true'] *::after {
 }
 
 .message-action-star.starred {
-  color: #fbbf24;
+  color: #facc15;
 }
 
 .message-action-star.starred:hover {
-  color: #fde68a;
+  color: #fef08a;
 }

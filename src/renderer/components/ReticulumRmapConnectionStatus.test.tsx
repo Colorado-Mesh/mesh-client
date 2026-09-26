@@ -86,7 +86,7 @@ describe('ReticulumRmapConnectionStatus', () => {
     const status = screen.getByRole('status');
     expect(
       screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":2,"total":2}'),
-    ).toHaveClass('text-brand-green');
+    ).toHaveClass('text-green-400');
     expect(
       screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":2,"total":2}'),
     ).not.toHaveClass('text-amber-300');

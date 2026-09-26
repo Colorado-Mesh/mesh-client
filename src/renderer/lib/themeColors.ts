@@ -49,16 +49,16 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   appBg: '#09090b',
   sidebarActiveBg: '#27272a',
-  brandGreen: '#86efac',
-  brightGreen: '#86efac',
-  readableGreen: '#15803d',
+  brandGreen: '#6ee7b7',
+  brightGreen: '#6ee7b7',
+  readableGreen: '#047857',
   deepBlack: '#18181b',
   secondaryDark: '#3f3f46',
   muted: '#a1a1aa',
   chatIncomingBg: '#27272a',
   chatIncomingBorder: '#27272a',
-  chatOutgoingBg: '#15803d',
-  chatOutgoingBorder: '#86efac',
+  chatOutgoingBg: '#047857',
+  chatOutgoingBorder: '#6ee7b7',
   messageActionsBarBg: '#18181b',
   messageActionButtonHover: '#a1a1aa',
 };
@@ -71,6 +71,8 @@ export interface ThemeTokenMeta {
 
 /** Preset hex values — Tailwind palette only. */
 export const THEME_COLOR_PRESETS: { labelKey: string; hex: string }[] = [
+  { labelKey: 'appPanel.themePreset.emerald300', hex: '#6ee7b7' },
+  { labelKey: 'appPanel.themePreset.emerald700', hex: '#047857' },
   { labelKey: 'appPanel.themePreset.green300', hex: '#86efac' },
   { labelKey: 'appPanel.themePreset.zinc950', hex: '#09090b' },
   { labelKey: 'appPanel.themePreset.zinc900', hex: '#18181b' },

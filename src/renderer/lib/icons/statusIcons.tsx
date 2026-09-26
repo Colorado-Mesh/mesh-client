@@ -8,7 +8,7 @@ export function IconUpToDate({ className }: { className?: string }) {
   return (
     <Check
       aria-hidden
-      className={className ?? `${ICON_SM} text-bright-green`}
+      className={className ?? `${ICON_SM} text-green-400`}
       trigger={trigger}
       size={12}
     />
@@ -32,7 +32,7 @@ export function IconUpdateAvailable({ className }: { className?: string }) {
   return (
     <Download
       aria-hidden
-      className={className ?? `${ICON_SM_PLUS} text-brand-green`}
+      className={className ?? `${ICON_SM_PLUS} text-green-400`}
       trigger={trigger}
       size={14}
     />

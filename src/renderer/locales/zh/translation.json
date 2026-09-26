@@ -341,7 +341,9 @@
       "zinc900": "锌900",
       "zinc800": "锌800",
       "zinc700": "锌700",
-      "zinc400": "锌400"
+      "zinc400": "锌400",
+      "emerald300": "翡翠 300",
+      "emerald700": "翡翠 700"
     },
     "autoPruneNodesOlderThanAria": "启动时自动修剪节点，早于 {{days}} 天",
     "autoPrunePositionHistoryDaysAria": "启动时自动修剪仓位历史记录，早于 {{days}} 天",
@@ -437,12 +439,12 @@
       "heading": "主题",
       "hint": "选择一个起始配色，然后在下方调整单个颜色。",
       "custom": "自定义颜色。选择一个主题可从预设重新开始。",
-      "default": "默认",
       "highContrast": "高对比度",
       "midnight": "午夜",
-      "teal": "青绿色强调",
-      "amber": "琥珀色强调",
-      "classicSlate": "经典板岩"
+      "classicSlate": "经典板岩",
+      "meshtastic": "Meshtastic（默认）",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "修剪无定位/零岛节点"
   },

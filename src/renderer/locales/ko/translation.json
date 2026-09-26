@@ -341,7 +341,9 @@
       "zinc900": "징크 900",
       "zinc800": "징크 800",
       "zinc700": "징크 700",
-      "zinc400": "징크 400"
+      "zinc400": "징크 400",
+      "emerald300": "에메랄드 300",
+      "emerald700": "에메랄드 700"
     },
     "autoPruneNodesOlderThanAria": "{{days}}일보다 오래된 시작 시 노드 자동 정리",
     "autoPrunePositionHistoryDaysAria": "시작 시 위치 기록 자동 정리({{days}}일 이상)",
@@ -437,12 +439,12 @@
       "heading": "테마",
       "hint": "기본 팔레트를 고른 뒤 아래에서 개별 색상을 조정하세요.",
       "custom": "사용자 지정 색상입니다. 테마를 고르면 프리셋에서 다시 시작합니다.",
-      "default": "기본값",
       "highContrast": "고대비",
       "midnight": "미드나이트",
-      "teal": "청록색 강조",
-      "amber": "호박색 강조",
-      "classicSlate": "클래식 슬레이트"
+      "classicSlate": "클래식 슬레이트",
+      "meshtastic": "Meshtastic (기본값)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "위치 없음/제로 섬 노드 정리"
   },

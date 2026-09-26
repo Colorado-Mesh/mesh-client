@@ -341,7 +341,9 @@
       "zinc900": "Cynk 900",
       "zinc800": "Cynk 800",
       "zinc700": "Cynk 700",
-      "zinc400": "Cynk 400"
+      "zinc400": "Cynk 400",
+      "emerald300": "Szmaragd 300",
+      "emerald700": "Szmaragd 700"
     },
     "autoPruneNodesOlderThanAria": "Automatycznie oczyszczaj węzły przy uruchomieniu, starsze niż {{days}} dni",
     "autoPrunePositionHistoryDaysAria": "Automatyczne czyszczenie historii pozycji przy uruchomieniu, starszej niż {{days}} dni",
@@ -453,12 +455,12 @@
       "heading": "Motyw",
       "hint": "Wybierz paletę startową, a potem dostosuj pojedyncze kolory poniżej.",
       "custom": "Własne kolory. Wybierz motyw, aby zacząć od gotowego zestawu.",
-      "default": "Domyślny",
       "highContrast": "Wysoki kontrast",
       "midnight": "Północ",
-      "teal": "Akcent morski",
-      "amber": "Akcent bursztynowy",
-      "classicSlate": "Klasyczny łupek"
+      "classicSlate": "Klasyczny łupek",
+      "meshtastic": "Meshtastic (domyślny)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Przytnij węzły bez pozycji / Zero Island"
   },

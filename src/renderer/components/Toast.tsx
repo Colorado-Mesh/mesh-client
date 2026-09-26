@@ -141,7 +141,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
   const Icon = TOAST_ICON[toast.type];
 
   const colors = {
-    success: 'bg-brand-green/15 border-brand-green text-bright-green',
+    success: 'bg-green-950/90 border-green-500 text-green-200',
     error: 'bg-red-900/90 border-red-600 text-red-200',
     warning: 'bg-yellow-900/90 border-yellow-600 text-yellow-200',
     info: 'bg-deep-black/90 border-zinc-600 text-zinc-200',

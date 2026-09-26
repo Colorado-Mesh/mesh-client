@@ -341,7 +341,9 @@
       "zinc900": "Seng 900",
       "zinc800": "Seng 800",
       "zinc700": "Seng 700",
-      "zinc400": "Seng 400"
+      "zinc400": "Seng 400",
+      "emerald300": "Zamrud 300",
+      "emerald700": "Zamrud 700"
     },
     "autoPruneNodesOlderThanAria": "Pangkas otomatis node saat startup, lebih lama dari {{days}} hari",
     "autoPrunePositionHistoryDaysAria": "Pangkas riwayat posisi secara otomatis saat startup, lebih lama dari {{days}} hari",
@@ -437,12 +439,12 @@
       "heading": "Tema",
       "hint": "Pilih palet awal, lalu sesuaikan warna satu per satu di bawah.",
       "custom": "Warna kustom. Pilih tema untuk mulai lagi dari preset.",
-      "default": "Bawaan",
       "highContrast": "Kontras tinggi",
       "midnight": "Tengah malam",
-      "teal": "Aksen teal",
-      "amber": "Aksen amber",
-      "classicSlate": "Batu tulis klasik"
+      "classicSlate": "Batu tulis klasik",
+      "meshtastic": "Meshtastic (bawaan)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Pangkas Node Tanpa Posisi / Zero Island"
   },

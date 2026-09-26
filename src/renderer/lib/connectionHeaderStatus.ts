@@ -15,11 +15,11 @@ export const CONNECTION_HEADER_IDLE_DOT = 'bg-zinc-500';
 export const CONNECTION_HEADER_WARN_TEXT = 'text-yellow-400';
 export const CONNECTION_HEADER_WARN_ICON = 'animate-pulse motion-status text-yellow-400';
 export const CONNECTION_HEADER_WARN_DOT = 'bg-yellow-500 animate-pulse motion-status';
-export const CONNECTION_HEADER_OK_TEXT = 'text-brand-green';
+export const CONNECTION_HEADER_OK_TEXT = 'text-green-400';
 export const CONNECTION_HEADER_OK_DOT = 'bg-green-500';
 /** Small pulsing dot for in-progress room login (matches header connecting style, green). */
 export const ROOM_LOGIN_PROGRESS_DOT =
-  'inline-block h-2 w-2 shrink-0 rounded-full bg-brand-green animate-pulse motion-status';
+  'inline-block h-2 w-2 shrink-0 rounded-full bg-green-500 animate-pulse motion-status';
 export const CONNECTION_HEADER_CONNECTED_DOT = 'bg-blue-500';
 export const CONNECTION_HEADER_MUTED_TEXT = 'text-muted';
 

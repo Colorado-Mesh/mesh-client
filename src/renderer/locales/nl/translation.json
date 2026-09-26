@@ -341,7 +341,9 @@
       "zinc900": "Zink 900",
       "zinc800": "Zink 800",
       "zinc700": "Zink 700",
-      "zinc400": "Zink 400"
+      "zinc400": "Zink 400",
+      "emerald300": "Smaragd 300",
+      "emerald700": "Smaragd 700"
     },
     "autoPruneNodesOlderThanAria": "Knooppunten automatisch opschonen bij opstarten, ouder dan {{days}} dagen",
     "autoPrunePositionHistoryDaysAria": "Positiegeschiedenis automatisch opschonen bij opstarten, ouder dan {{days}} dagen",
@@ -437,12 +439,12 @@
       "heading": "Thema",
       "hint": "Kies een startpalet en pas daaronder losse kleuren aan.",
       "custom": "Eigen kleuren. Kies een thema om opnieuw te beginnen vanaf een voorinstelling.",
-      "default": "Standaard",
       "highContrast": "Hoog contrast",
       "midnight": "Middernacht",
-      "teal": "Petrol accent",
-      "amber": "Amber accent",
-      "classicSlate": "Klassiek leisteen"
+      "classicSlate": "Klassiek leisteen",
+      "meshtastic": "Meshtastic (standaard)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Snoei knooppunten zonder positie / Zero Island"
   },

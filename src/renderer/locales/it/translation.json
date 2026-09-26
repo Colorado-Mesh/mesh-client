@@ -341,7 +341,9 @@
       "zinc900": "Zinco 900",
       "zinc800": "Zinco 800",
       "zinc700": "Zinco 700",
-      "zinc400": "Zinco 400"
+      "zinc400": "Zinco 400",
+      "emerald300": "Smeraldo 300",
+      "emerald700": "Smeraldo 700"
     },
     "autoPruneNodesOlderThanAria": "Elimina automaticamente i nodi all'avvio, più vecchi di {{days}} giorni",
     "autoPrunePositionHistoryDaysAria": "Elimina automaticamente la cronologia delle posizioni all'avvio, più vecchia di {{days}} giorni",
@@ -437,12 +439,12 @@
       "heading": "Tema",
       "hint": "Scegli una tavolozza di partenza, poi regola i singoli colori qui sotto.",
       "custom": "Colori personalizzati. Scegli un tema per ripartire da una preimpostazione.",
-      "default": "Predefinito",
       "highContrast": "Contrasto elevato",
       "midnight": "Mezzanotte",
-      "teal": "Accento verde acqua",
-      "amber": "Accento ambra",
-      "classicSlate": "Ardesia classica"
+      "classicSlate": "Ardesia classica",
+      "meshtastic": "Meshtastic (predefinito)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Eliminare i nodi senza posizione / Zero Island"
   },

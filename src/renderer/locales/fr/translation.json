@@ -341,7 +341,9 @@
       "zinc900": "Zinc 900",
       "zinc800": "Zinc 800",
       "zinc700": "Zinc 700",
-      "zinc400": "Zinc 400"
+      "zinc400": "Zinc 400",
+      "emerald300": "Émeraude 300",
+      "emerald700": "Émeraude 700"
     },
     "autoPruneNodesOlderThanAria": "Élaguer automatiquement les nœuds au démarrage, datant de plus de {{days}} jours",
     "autoPrunePositionHistoryDaysAria": "Élaguer automatiquement l'historique des positions au démarrage, datant de plus de {{days}} jours",
@@ -437,12 +439,12 @@
       "heading": "Thème",
       "hint": "Choisissez une palette de départ, puis ajustez les couleurs une à une ci-dessous.",
       "custom": "Couleurs personnalisées. Choisissez un thème pour repartir d'un préréglage.",
-      "default": "Par défaut",
       "highContrast": "Contraste élevé",
       "midnight": "Minuit",
-      "teal": "Accent sarcelle",
-      "amber": "Accent ambre",
-      "classicSlate": "Ardoise classique"
+      "classicSlate": "Ardoise classique",
+      "meshtastic": "Meshtastic (par défaut)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Élaguer les nœuds sans position / Zero Island"
   },

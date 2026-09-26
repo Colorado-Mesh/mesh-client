@@ -341,7 +341,9 @@
       "zinc900": "Zinc 900",
       "zinc800": "Zinc 800",
       "zinc700": "Zinc 700",
-      "zinc400": "Zinc 400"
+      "zinc400": "Zinc 400",
+      "emerald300": "Esmeralda 300",
+      "emerald700": "Esmeralda 700"
     },
     "autoPruneNodesOlderThanAria": "Nodos de poda automática al inicio, con más de {{days}} días",
     "autoPrunePositionHistoryDaysAria": "Historial de posición de poda automática al inicio, anterior a {{days}} días",
@@ -437,12 +439,12 @@
       "heading": "Tema",
       "hint": "Elige una paleta de partida y ajusta colores sueltos abajo.",
       "custom": "Colores personalizados. Elige un tema para volver a empezar desde un ajuste predefinido.",
-      "default": "Predeterminado",
       "highContrast": "Alto contraste",
       "midnight": "Medianoche",
-      "teal": "Acento verde azulado",
-      "amber": "Acento ámbar",
-      "classicSlate": "Pizarra clásica"
+      "classicSlate": "Pizarra clásica",
+      "meshtastic": "Meshtastic (predeterminado)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Podar nodos sin posición / Zero Island"
   },

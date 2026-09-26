@@ -1044,7 +1044,7 @@ export default function MapPanel({
       <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
         <div className={MAP_CHIP_CLASS}>
           <span className="flex items-center gap-1">
-            <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
             {statusCounts.online}
           </span>
           <span className="flex items-center gap-1">

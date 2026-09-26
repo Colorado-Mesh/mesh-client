@@ -341,7 +341,9 @@
       "zinc900": "ジンク900",
       "zinc800": "ジンク800",
       "zinc700": "ジンク700",
-      "zinc400": "ジンク400"
+      "zinc400": "ジンク400",
+      "emerald300": "エメラルド300",
+      "emerald700": "エメラルド700"
     },
     "autoPruneNodesOlderThanAria": "起動時に{{days}}日より古いノードを自動プルーニングします",
     "autoPrunePositionHistoryDaysAria": "{{days}} 日より古い、起動時のポジション履歴の自動プルーニング",
@@ -437,12 +439,12 @@
       "heading": "テーマ",
       "hint": "基本のパレットを選び、下で個別の色を調整します。",
       "custom": "カスタムカラーです。テーマを選ぶとプリセットからやり直せます。",
-      "default": "デフォルト",
       "highContrast": "ハイコントラスト",
       "midnight": "ミッドナイト",
-      "teal": "ティールのアクセント",
-      "amber": "アンバーのアクセント",
-      "classicSlate": "クラシック スレート"
+      "classicSlate": "クラシック スレート",
+      "meshtastic": "Meshtastic（デフォルト）",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去"
   },

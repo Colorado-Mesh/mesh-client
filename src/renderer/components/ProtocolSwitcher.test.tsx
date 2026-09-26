@@ -70,7 +70,7 @@ describe('ProtocolSwitcher', () => {
         onProtocolChange={() => {}}
       />,
     );
-    const label = container.querySelector('span[aria-hidden="true"].text-amber-400');
+    const label = container.querySelector('span[aria-hidden="true"].text-yellow-400');
     expect(label).toHaveTextContent('Reticulum');
     rerender(
       <ProtocolSwitcher

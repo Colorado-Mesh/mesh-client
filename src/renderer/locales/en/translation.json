@@ -430,19 +430,21 @@
       "zinc900": "Zinc 900",
       "zinc800": "Zinc 800",
       "zinc700": "Zinc 700",
-      "zinc400": "Zinc 400"
+      "zinc400": "Zinc 400",
+      "emerald300": "Emerald 300",
+      "emerald700": "Emerald 700"
     },
     "aboutSection": "About",
     "themePresets": {
       "heading": "Theme",
       "hint": "Pick a starting palette, then adjust single colors below.",
       "custom": "Custom colors. Pick a theme to start over from a preset.",
-      "default": "Default",
       "highContrast": "High contrast",
       "midnight": "Midnight",
-      "teal": "Teal accent",
-      "amber": "Amber accent",
-      "classicSlate": "Classic slate"
+      "classicSlate": "Classic slate",
+      "meshtastic": "Meshtastic (default)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Prune No-Fix / Zero Island Nodes"
   },

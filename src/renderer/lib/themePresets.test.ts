@@ -33,10 +33,10 @@ describe('THEME_PRESETS', () => {
 
 describe('matchThemePreset', () => {
   it('names the preset a palette came from, case-insensitively', () => {
-    const teal = THEME_PRESETS.find((p) => p.id === 'teal');
-    expect(teal).toBeDefined();
-    if (!teal) return;
-    expect(matchThemePreset({ ...teal.colors, brandGreen: '#5EEAD4' })).toBe('teal');
+    const meshcore = THEME_PRESETS.find((p) => p.id === 'meshcore');
+    expect(meshcore).toBeDefined();
+    if (!meshcore) return;
+    expect(matchThemePreset({ ...meshcore.colors, brandGreen: '#22D3EE' })).toBe('meshcore');
     expect(matchThemePreset({ ...DEFAULT_THEME_COLORS })).toBe('default');
   });
 

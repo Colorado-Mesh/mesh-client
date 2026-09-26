@@ -12,6 +12,9 @@ const AXE_BG_CLASS_TO_CSS: Record<string, string> = {
   'bg-brand-green': '--color-brand-green',
   'bg-secondary-dark': '--color-secondary-dark',
   'bg-cyan-800': '#155e75',
+  'bg-cyan-700': '#0e7490',
+  'bg-emerald-700': '#047857',
+  'bg-yellow-700': '#a16207',
   'bg-amber-700': '#bb4d00',
   'bg-amber-800': '#92400e',
 };

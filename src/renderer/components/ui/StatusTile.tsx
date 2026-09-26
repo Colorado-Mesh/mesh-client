@@ -25,7 +25,7 @@ export function StatusTile({ icon, label, status, tone, pulse, detail, action }:
       <span
         aria-hidden="true"
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${
-          active ? 'bg-brand-green/12 text-bright-green' : 'bg-sidebar-active-bg text-muted'
+          active ? 'bg-green-500/12 text-green-400' : 'bg-sidebar-active-bg text-muted'
         }`}
       >
         {icon}

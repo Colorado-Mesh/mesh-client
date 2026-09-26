@@ -41,7 +41,7 @@ export function reticulumMeshHealthBand(
   }
   return {
     labelKey: 'diagnosticsPanel.meshHealthHealthy',
-    bg: 'bg-brand-green/10 border-brand-green/30',
-    textColor: 'text-brand-green',
+    bg: 'bg-green-500/10 border-green-500/30',
+    textColor: 'text-green-400',
   };
 }

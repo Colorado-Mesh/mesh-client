@@ -110,7 +110,7 @@ describe('connectionHeaderStatus', () => {
 
     it('tak running ok is green', () => {
       expect(takHeaderVariant(true, false, false)).toBe('ok');
-      expect(headerTextClass('ok')).toContain('text-brand-green');
+      expect(headerTextClass('ok')).toContain('text-green-400');
     });
   });
 

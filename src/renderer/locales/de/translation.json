@@ -341,7 +341,9 @@
       "zinc900": "Zink 900",
       "zinc800": "Zink 800",
       "zinc700": "Zink 700",
-      "zinc400": "Zink 400"
+      "zinc400": "Zink 400",
+      "emerald300": "Smaragd 300",
+      "emerald700": "Smaragd 700"
     },
     "autoPruneNodesOlderThanAria": "Knoten beim Start automatisch bereinigen, die älter als {{days}} Tage sind",
     "autoPrunePositionHistoryDaysAria": "Positionsverlauf beim Start automatisch bereinigen, älter als {{days}} Tage",
@@ -437,12 +439,12 @@
       "heading": "Design",
       "hint": "Wählen Sie eine Ausgangspalette und passen Sie unten einzelne Farben an.",
       "custom": "Eigene Farben. Wählen Sie ein Design, um von einer Vorlage neu zu beginnen.",
-      "default": "Standard",
       "highContrast": "Hoher Kontrast",
       "midnight": "Mitternacht",
-      "teal": "Petrol-Akzent",
-      "amber": "Bernstein-Akzent",
-      "classicSlate": "Klassisch Schiefer"
+      "classicSlate": "Klassisch Schiefer",
+      "meshtastic": "Meshtastic (Standard)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Knoten ohne Fix / Zero Island entfernen"
   },

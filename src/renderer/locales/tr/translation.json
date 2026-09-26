@@ -341,7 +341,9 @@
       "zinc900": "Çinko 900",
       "zinc800": "Çinko 800",
       "zinc700": "Çinko 700",
-      "zinc400": "Çinko 400"
+      "zinc400": "Çinko 400",
+      "emerald300": "Zümrüt 300",
+      "emerald700": "Zümrüt 700"
     },
     "autoPruneNodesOlderThanAria": "Başlangıçta {{days}} günden eski düğümleri otomatik olarak buda",
     "autoPrunePositionHistoryDaysAria": "Başlangıçta konum geçmişini otomatik olarak buda, {{days}} günden eski",
@@ -437,12 +439,12 @@
       "heading": "Tema",
       "hint": "Bir başlangıç paleti seçin, ardından aşağıda tek tek renkleri ayarlayın.",
       "custom": "Özel renkler. Hazır ayardan yeniden başlamak için bir tema seçin.",
-      "default": "Varsayılan",
       "highContrast": "Yüksek kontrast",
       "midnight": "Gece yarısı",
-      "teal": "Camgöbeği vurgu",
-      "amber": "Kehribar vurgu",
-      "classicSlate": "Klasik arduvaz"
+      "classicSlate": "Klasik arduvaz",
+      "meshtastic": "Meshtastic (varsayılan)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Konumsuz / Sıfır Ada Düğümlerini Budama"
   },

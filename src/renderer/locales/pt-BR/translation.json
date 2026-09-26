@@ -341,7 +341,9 @@
       "zinc900": "Zinco 900",
       "zinc800": "Zinco 800",
       "zinc700": "Zinco 700",
-      "zinc400": "Zinco 400"
+      "zinc400": "Zinco 400",
+      "emerald300": "Esmeralda 300",
+      "emerald700": "Esmeralda 700"
     },
     "autoPruneNodesOlderThanAria": "Remover nós automaticamente na inicialização, com mais de {{days}} dias",
     "autoPrunePositionHistoryDaysAria": "Remoção automática do histórico de posições na inicialização, com mais de {{days}} dias",
@@ -437,12 +439,12 @@
       "heading": "Tema",
       "hint": "Escolha uma paleta inicial e ajuste cores individuais abaixo.",
       "custom": "Cores personalizadas. Escolha um tema para recomeçar a partir de uma predefinição.",
-      "default": "Padrão",
       "highContrast": "Alto contraste",
       "midnight": "Meia-noite",
-      "teal": "Destaque verde-azulado",
-      "amber": "Destaque âmbar",
-      "classicSlate": "Ardósia clássica"
+      "classicSlate": "Ardósia clássica",
+      "meshtastic": "Meshtastic (padrão)",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
     },
     "pruneNoFixNodesTitle": "Podar nós sem posição / Zero Island"
   },
