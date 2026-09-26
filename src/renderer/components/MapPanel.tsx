@@ -4,6 +4,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import L from 'leaflet';
+import { Download, Layers } from 'lucide-react-motion';
 import {
   Fragment,
   memo,
@@ -52,6 +53,11 @@ import {
   MapResizeInvalidator,
   MapViewportSaver,
 } from './map/leafletMapControls';
+import {
+  MAP_CHIP_CLASS,
+  MAP_CONTROL_CLASS,
+  MAP_OVERLAY_PANEL_CLASS,
+} from './map/mapControlClasses';
 import { OfflineMapsSection } from './map/OfflineMapsSection';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
@@ -492,20 +498,21 @@ function MapLayerControl({
   );
 
   return (
-    <div className="flex w-52 flex-col items-stretch gap-2">
+    <div className="flex flex-col items-end gap-2">
       <button
         type="button"
         aria-label={t('mapPanel.layerControlsAria')}
         aria-expanded={layersPanelOpen}
-        className="bg-deep-black/80 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm transition-colors hover:border-gray-500"
+        className={MAP_CONTROL_CLASS}
         onClick={() => {
           setLayersPanelOpen(!layersPanelOpen);
         }}
       >
+        <Layers aria-hidden className="h-3.5 w-3.5" />
         {t('mapPanel.layerControls')}
       </button>
       {layersPanelOpen && (
-        <div className="bg-deep-black/90 w-52 space-y-3 rounded-lg border border-gray-700 p-3 text-gray-200 shadow-lg backdrop-blur-sm">
+        <div className={MAP_OVERLAY_PANEL_CLASS}>
           <div className="space-y-1">
             <div className="text-2xs font-medium text-gray-400">{t('mapPanel.basemapHeading')}</div>
             <select
@@ -1035,7 +1042,7 @@ export default function MapPanel({
     >
       {/* Status legend + layer controls — top right, below Leaflet zoom (+/-) on the left */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
-        <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
+        <div className={MAP_CHIP_CLASS}>
           <span className="flex items-center gap-1">
             <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
             {statusCounts.online}
@@ -1062,8 +1069,9 @@ export default function MapPanel({
           onClick={() => void handleExportGpx()}
           disabled={gpxExporting}
           aria-label={t('gpxExport.buttonAria')}
-          className="bg-deep-black/80 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm hover:bg-slate-800 disabled:opacity-50"
+          className={MAP_CONTROL_CLASS}
         >
+          <Download aria-hidden className="h-3.5 w-3.5" />
           {t('gpxExport.button')}
         </button>
       </div>

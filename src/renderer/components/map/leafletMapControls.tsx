@@ -1,5 +1,5 @@
 import L from 'leaflet';
-import { Crosshair, PARENT_HOVER_ATTR } from 'lucide-react-motion';
+import { Crosshair, Layers, PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleMarker, useMap } from 'react-leaflet';
@@ -12,6 +12,7 @@ import { useMapViewportStore } from '@/renderer/stores/mapViewportStore';
 
 import { useToast } from '../Toast';
 import { SELECT_BOX_SM_CLASS } from '../ui/formClasses';
+import { MAP_CONTROL_CLASS, MAP_OVERLAY_PANEL_CLASS } from './mapControlClasses';
 import { OfflineMapsSection } from './OfflineMapsSection';
 
 const MAP_STYLE_ID = 'map-styles';
@@ -161,17 +162,12 @@ export function LocateMeControl({
             aria-label={t('mapPanel.showMyLocation')}
             aria-busy={loading}
             {...{ [PARENT_HOVER_ATTR]: '' }}
-            className={`leaflet-bar-part cursor-pointer border-0 bg-white p-0 ${loading ? 'locating' : ''}`}
+            className={`leaflet-bar-part flex h-7.5 w-7.5 cursor-pointer items-center justify-center border-0 p-0 ${loading ? 'locating' : ''}`}
             onClick={() => {
               void handleLocate();
             }}
           >
-            <Crosshair
-              aria-hidden
-              className="h-4 w-4 text-gray-700"
-              trigger={locateTrigger}
-              size={16}
-            />
+            <Crosshair aria-hidden className="h-4 w-4" trigger={locateTrigger} size={16} />
           </button>
         </div>
       </div>
@@ -197,20 +193,21 @@ export function MapBasemapControl() {
   const setShowIncidents = useMapLayerStore((s) => s.setShowIncidents);
 
   return (
-    <div className="flex w-52 flex-col items-stretch gap-2">
+    <div className="flex flex-col items-end gap-2">
       <button
         type="button"
         aria-label={t('mapPanel.layerControlsAria')}
         aria-expanded={layersPanelOpen}
-        className="bg-deep-black/80 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm transition-colors hover:border-gray-500"
+        className={MAP_CONTROL_CLASS}
         onClick={() => {
           setLayersPanelOpen(!layersPanelOpen);
         }}
       >
+        <Layers aria-hidden className="h-3.5 w-3.5" />
         {t('mapPanel.layerControls')}
       </button>
       {layersPanelOpen ? (
-        <div className="bg-deep-black/90 w-52 space-y-3 rounded-lg border border-gray-700 p-3 text-gray-200 shadow-lg backdrop-blur-sm">
+        <div className={MAP_OVERLAY_PANEL_CLASS}>
           <div className="space-y-1">
             <div className="text-2xs font-medium text-gray-400">{t('mapPanel.basemapHeading')}</div>
             <select

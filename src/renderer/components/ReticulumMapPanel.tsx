@@ -19,6 +19,7 @@ import {
   MapResizeInvalidator,
   MapViewportSaver,
 } from '@/renderer/components/map/leafletMapControls';
+import { MAP_CHIP_CLASS } from '@/renderer/components/map/mapControlClasses';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
@@ -413,7 +414,7 @@ export default function ReticulumMapPanel({
           aria-label={t('reticulumMap.title')}
         >
           <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
-            <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
+            <div className={MAP_CHIP_CLASS}>
               <span
                 className="flex items-center gap-1 text-slate-200"
                 title={t('reticulumMap.reachable')}

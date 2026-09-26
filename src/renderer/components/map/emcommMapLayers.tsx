@@ -1,4 +1,5 @@
 import type { LeafletMouseEvent } from 'leaflet';
+import { Ruler } from 'lucide-react-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleMarker, Polyline, Rectangle, Tooltip, useMap } from 'react-leaflet';
@@ -11,6 +12,8 @@ import {
 } from '@/renderer/lib/map/mgrsGrid';
 import type { EmergencyIncident } from '@/renderer/lib/mecp/incidentTypes';
 import { useIncidentStore } from '@/renderer/stores/incidentStore';
+
+import { MAP_CONTROL_CLASS } from './mapControlClasses';
 
 /** Labels stay readable only when few squares are on screen. */
 const MGRS_LABEL_MAX_SQUARES = 60;
@@ -147,22 +150,19 @@ export function MeasureControl() {
             aria-pressed={active}
             aria-label={t(active ? 'mapPanel.measureStopAria' : 'mapPanel.measureStartAria')}
             title={t(active ? 'mapPanel.measureStopAria' : 'mapPanel.measureStartAria')}
-            className={`rounded border px-2 py-1 text-xs ${
-              active
-                ? 'border-yellow-500 bg-yellow-400 text-slate-900'
-                : 'border-gray-400 bg-white text-gray-800 hover:bg-gray-100'
-            }`}
+            className={MAP_CONTROL_CLASS}
             onClick={() => {
               setActive((a) => !a);
               setPoints([]);
             }}
           >
+            <Ruler aria-hidden className="h-3.5 w-3.5" />
             {t('mapPanel.measure')}
           </button>
           {active ? (
             <div
               role="status"
-              className="bg-deep-black/90 rounded border border-gray-700 px-2 py-1 text-xs text-gray-100"
+              className="bg-deep-black/90 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs text-slate-100"
             >
               {points.length < 2
                 ? t('mapPanel.measureHint')
