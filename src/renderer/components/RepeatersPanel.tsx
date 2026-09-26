@@ -924,7 +924,7 @@ export default function RepeatersPanel({
                   >
                     <span className="flex min-w-0 items-center gap-2 truncate text-xs text-slate-200">
                       <span
-                        className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
+                        className={`text-2xs shrink-0 rounded px-1 py-0.5 font-medium ${
                           kind === 'Room'
                             ? 'bg-purple-900/50 text-purple-300'
                             : 'bg-cyan-900/50 text-cyan-300'
@@ -1208,7 +1208,7 @@ export default function RepeatersPanel({
                               </button>
                             ) : null}
                             <span
-                              className={`shrink-0 rounded px-1 py-0.5 text-[10px] font-medium ${
+                              className={`text-2xs shrink-0 rounded px-1 py-0.5 font-medium ${
                                 node.hw_model === 'Room'
                                   ? 'bg-purple-900/50 text-purple-300'
                                   : 'bg-cyan-900/50 text-cyan-300'
@@ -1735,7 +1735,7 @@ export default function RepeatersPanel({
                                   placeholder={t('repeatersPanel.enterCommand')}
                                   maxLength={REPEATER_CLI_MAX_COMMAND_LENGTH}
                                   disabled={!isConnected || isCliLoading}
-                                  className="bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green h-8 min-w-[200px] flex-1 rounded-lg border px-2.5 font-mono text-[13px] text-slate-200 focus:outline-none disabled:opacity-40"
+                                  className="bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green text-body h-8 min-w-50 flex-1 rounded-lg border px-2.5 font-mono text-slate-200 focus:outline-none disabled:opacity-40"
                                   aria-label={t('repeatersPanel.cliInput')}
                                 />
                                 <button
@@ -1798,7 +1798,7 @@ export default function RepeatersPanel({
                                       disabled={!isConnected || isCliLoading}
                                       title={ariaLabel}
                                       aria-label={ariaLabel}
-                                      className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark h-6 rounded-md border px-2 font-mono text-[11.5px] text-slate-300 disabled:opacity-40"
+                                      className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark text-meta h-6 rounded-md border px-2 font-mono text-slate-300 disabled:opacity-40"
                                     >
                                       {shortLabel}
                                     </button>

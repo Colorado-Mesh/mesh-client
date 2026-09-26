@@ -1530,7 +1530,7 @@ export function ChatComposer({
               className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] items-center gap-0.5`}
             >
               {floodScopeOverrideActive && floodScopeOverrideIndicator ? (
-                <span className="truncate text-[10px] leading-none font-normal">
+                <span className="text-2xs truncate leading-none font-normal">
                   {floodScopeOverrideIndicator}
                 </span>
               ) : null}
@@ -1564,7 +1564,7 @@ export function ChatComposer({
                     {floodScopeCustomEditing ? (
                       <div className="space-y-2 px-2 py-1.5">
                         <label
-                          className="text-muted block text-[10px]"
+                          className="text-muted text-2xs block"
                           htmlFor={floodScopeCustomInputId}
                         >
                           {t('chatPanel.floodScopeOverrideCustomLabel')}
@@ -1596,7 +1596,7 @@ export function ChatComposer({
                           className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 focus:outline-none"
                         />
                         {floodScopeCustomError ? (
-                          <p role="alert" className="text-[10px] text-red-400">
+                          <p role="alert" className="text-2xs text-red-400">
                             {floodScopeCustomError}
                           </p>
                         ) : null}
@@ -1608,7 +1608,7 @@ export function ChatComposer({
                               setFloodScopeCustomDraft('');
                               setFloodScopeCustomError(null);
                             }}
-                            className="text-muted rounded px-2 py-1 text-[10px] hover:text-gray-200"
+                            className="text-muted text-2xs rounded px-2 py-1 hover:text-gray-200"
                           >
                             {t('common.cancel')}
                           </button>
@@ -1617,7 +1617,7 @@ export function ChatComposer({
                             onClick={() => {
                               commitCustomFloodScopeDraft();
                             }}
-                            className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 rounded px-2 py-1 text-[10px] font-medium"
+                            className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 text-2xs rounded px-2 py-1 font-medium"
                           >
                             {t('chatPanel.floodScopeOverrideCustomApply')}
                           </button>

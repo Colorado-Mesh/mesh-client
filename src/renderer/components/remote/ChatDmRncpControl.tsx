@@ -341,7 +341,7 @@ export function ChatDmRncpControl({
         <span>{t('chatPanel.rncp.sendFile')}</span>
         {(relevantOffers.length > 0 || activeTransferCount > 0) && (
           <span
-            className={`ml-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold text-white ${
+            className={`text-2xs ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-semibold text-white ${
               relevantOffers.length > 0 ? 'bg-amber-600' : 'bg-blue-600'
             }`}
             aria-label={
@@ -363,13 +363,13 @@ export function ChatDmRncpControl({
         <div className="bg-secondary-dark absolute top-full right-0 z-20 mt-1 w-80 space-y-2 rounded-lg border border-gray-600/50 p-3 shadow-xl">
           {relevantOffers.length > 0 && (
             <div className="space-y-1 border-b border-gray-700/60 pb-2">
-              <p className="text-[11px] font-medium text-amber-300">
+              <p className="text-label font-medium text-amber-300">
                 {t('reticulumRemote.transfer.pendingOffersTitle')}
               </p>
               {relevantOffers.map((offer) => (
                 <div
                   key={offer.transfer_id}
-                  className="flex items-center gap-1 text-[11px] text-amber-100"
+                  className="text-label flex items-center gap-1 text-amber-100"
                 >
                   <span className="min-w-0 flex-1 truncate">{offer.file_name}</span>
                   <button
@@ -399,11 +399,11 @@ export function ChatDmRncpControl({
 
           {peerTransfers.length > 0 && (
             <div className="space-y-1 border-b border-gray-700/60 pb-2">
-              <p className="text-[11px] font-medium text-gray-300">
+              <p className="text-label font-medium text-gray-300">
                 {t('chatPanel.rncp.transfersTitle')}
               </p>
               {peerTransfers.map((transfer) => (
-                <div key={transfer.transfer_id} className="space-y-1 text-[11px] text-gray-200">
+                <div key={transfer.transfer_id} className="text-label space-y-1 text-gray-200">
                   <div className="flex flex-wrap items-center gap-1">
                     <span className="min-w-0 flex-1 truncate">{transfer.file_name ?? '—'}</span>
                     <span
@@ -445,7 +445,7 @@ export function ChatDmRncpControl({
                     </div>
                   )}
                   {transfer.status === 'failed' && transfer.error && (
-                    <span className="block truncate text-[10px] text-red-300/90">
+                    <span className="text-2xs block truncate text-red-300/90">
                       {transfer.error}
                     </span>
                   )}
@@ -454,14 +454,14 @@ export function ChatDmRncpControl({
             </div>
           )}
 
-          <label className="block text-[11px] text-gray-400" htmlFor="chat-dm-rncp-dest">
+          <label className="text-label block text-gray-400" htmlFor="chat-dm-rncp-dest">
             {t('chatPanel.rncp.destinationLabel')}
           </label>
-          <p className="text-[10px] leading-snug text-gray-500">
+          <p className="text-2xs leading-snug text-gray-500">
             {t('chatPanel.rncp.destinationHelp')}
           </p>
           {otherSavedLabels.length > 0 && (
-            <p className="text-[10px] leading-snug text-amber-200/90">
+            <p className="text-2xs leading-snug text-amber-200/90">
               {t('chatPanel.rncp.savedForOtherPeers', { peers: otherSavedLabels.join(', ') })}
             </p>
           )}
@@ -483,7 +483,7 @@ export function ChatDmRncpControl({
             <RemotePathCapabilityChip capability={capability} loading={capabilityLoading} />
           </div>
           {pathConstrained && capability && (
-            <p className="text-[10px] leading-snug text-amber-200/90">
+            <p className="text-2xs leading-snug text-amber-200/90">
               {t('reticulumRemote.transfer.notAllowedHint', {
                 reason: capability.reason_key
                   ? t(
@@ -495,7 +495,7 @@ export function ChatDmRncpControl({
             </p>
           )}
           {!savedAddress && (
-            <label className="flex items-center gap-2 text-[11px] text-gray-400">
+            <label className="text-label flex items-center gap-2 text-gray-400">
               <input
                 type="checkbox"
                 checked={rememberAddress}

@@ -17,7 +17,7 @@ export function Switch({ checked, onChange, label, description, disabled }: Swit
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span id={labelId} className="text-[13px] text-slate-200">
+        <span id={labelId} className="text-body text-slate-200">
           {label}
         </span>
         {description && (
@@ -43,7 +43,7 @@ export function Switch({ checked, onChange, label, description, disabled }: Swit
         <span
           aria-hidden="true"
           className={`absolute top-0.5 h-4 w-4 rounded-full transition-[left] ${
-            checked ? 'left-[18px] bg-white' : 'left-0.5 bg-slate-300'
+            checked ? 'left-4.5 bg-white' : 'left-0.5 bg-slate-300'
           }`}
         />
       </button>

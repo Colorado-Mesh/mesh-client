@@ -2019,7 +2019,7 @@ export default function AppPanel({
                     className="max-w-[9rem] min-w-[6.5rem] shrink-0"
                   >
                     <div className="text-sm font-medium text-gray-200">{t(meta.labelKey)}</div>
-                    <div className="text-muted mt-0.5 text-[10px] leading-tight">
+                    <div className="text-muted text-2xs mt-0.5 leading-tight">
                       {t(meta.descriptionKey)}
                     </div>
                   </div>
@@ -2063,7 +2063,7 @@ export default function AppPanel({
                           className="h-4 w-4"
                           aria-label={t('appPanel.messageActionsBarBgVisible')}
                         />
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-2xs text-gray-400">
                           {t('appPanel.messageActionsBarBgVisible')}
                         </span>
                       </label>

@@ -158,7 +158,7 @@ function NomadCollapsedNodeItem({
     >
       <div className="relative flex flex-col items-center gap-0.5">
         <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] leading-none font-semibold ${
+          className={`text-2xs flex h-7 w-7 shrink-0 items-center justify-center rounded-md leading-none font-semibold ${
             isSelected ? 'text-bright-green bg-gray-800' : 'bg-gray-800/80 text-gray-200'
           }`}
           aria-hidden

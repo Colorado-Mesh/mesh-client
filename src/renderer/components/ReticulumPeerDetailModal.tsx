@@ -531,25 +531,25 @@ export default function ReticulumPeerDetailModal({
             <span
               className={
                 isContact
-                  ? 'bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 font-sans text-[10px] font-medium'
-                  : 'text-muted rounded px-1.5 py-0.5 font-sans text-[10px]'
+                  ? 'bg-readable-green/20 text-readable-green text-2xs rounded px-1.5 py-0.5 font-sans font-medium'
+                  : 'text-muted text-2xs rounded px-1.5 py-0.5 font-sans'
               }
             >
               {isContact ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
             </span>
             {verified && !verificationMismatch ? (
-              <span className="rounded bg-cyan-600/30 px-1.5 py-0.5 font-sans text-[10px] font-medium text-cyan-200">
+              <span className="text-2xs rounded bg-cyan-600/30 px-1.5 py-0.5 font-sans font-medium text-cyan-200">
                 {t('peerDetailModal.verifiedBadge')}
               </span>
             ) : null}
             {verificationMismatch ? (
-              <span className="rounded bg-red-900/50 px-1.5 py-0.5 font-sans text-[10px] font-medium text-red-300">
+              <span className="text-2xs rounded bg-red-900/50 px-1.5 py-0.5 font-sans font-medium text-red-300">
                 {t('peerDetailModal.verifyMismatch')}
               </span>
             ) : null}
           </div>
           <div className="mt-2 space-y-1.5 rounded border border-gray-700/60 p-2">
-            <div className="text-muted text-[10px] tracking-wide uppercase">
+            <div className="text-muted text-2xs tracking-wide uppercase">
               {t('peerDetailModal.announcedDestinations')}
             </div>
             <ul className="space-y-1.5" aria-label={t('peerDetailModal.announcedDestinations')}>
@@ -563,11 +563,11 @@ export default function ReticulumPeerDetailModal({
                       row.isOpened ? 'bg-cyan-950/40 ring-1 ring-cyan-700/40' : ''
                     }`}
                   >
-                    <span className="rounded bg-slate-700/80 px-1.5 py-0.5 font-sans text-[10px] font-medium text-gray-200">
+                    <span className="text-2xs rounded bg-slate-700/80 px-1.5 py-0.5 font-sans font-medium text-gray-200">
                       {aspectLabel}
                     </span>
                     {row.isOpened ? (
-                      <span className="rounded bg-cyan-800/50 px-1.5 py-0.5 font-sans text-[10px] font-medium text-cyan-100">
+                      <span className="text-2xs rounded bg-cyan-800/50 px-1.5 py-0.5 font-sans font-medium text-cyan-100">
                         {t('peerDetailModal.openedDestinationBadge')}
                       </span>
                     ) : null}
@@ -596,7 +596,7 @@ export default function ReticulumPeerDetailModal({
             </ul>
           </div>
           <div className="mt-2 space-y-1 rounded border border-gray-700/60 p-2">
-            <div className="text-muted text-[10px] tracking-wide uppercase">
+            <div className="text-muted text-2xs tracking-wide uppercase">
               {t('peerDetailModal.verifyFingerprint')}
             </div>
             <div className="font-mono text-xs break-all text-gray-200">{fingerprint}</div>

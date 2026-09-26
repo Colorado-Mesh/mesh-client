@@ -49,12 +49,6 @@ export interface ConnectionStatusTilesProps {
   tak?: ConnectionTakSummary;
 }
 
-const GRID_COLUMNS: Record<number, string> = {
-  1: '',
-  2: 'md:grid-cols-2',
-  3: 'md:grid-cols-3',
-};
-
 /**
  * Link tiles at the top of Connection (Option B): radio or stack, MQTT, TAK. The cards below carry
  * details and actions and do not repeat these states.
@@ -62,12 +56,11 @@ const GRID_COLUMNS: Record<number, string> = {
 export function ConnectionStatusTiles({ link, mqtt, tak }: ConnectionStatusTilesProps) {
   const { t } = useTranslation();
   const linkDot = headerVariantDot(link.variant);
-  const count = 1 + (mqtt ? 1 : 0) + (tak ? 1 : 0);
   return (
     <div
       role="group"
       aria-label={t('connectionPanel.tiles.groupLabel')}
-      className={`grid grid-cols-1 gap-3 ${GRID_COLUMNS[count] ?? ''}`}
+      className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,15rem),1fr))] gap-3"
     >
       <StatusTile
         icon={link.icon}

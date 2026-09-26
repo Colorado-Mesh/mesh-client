@@ -139,7 +139,7 @@ function PeerHopsCell({
       <span>{peer.hops ?? '—'}</span>
       {via != null && peer.hops != null ? (
         <span
-          className="text-muted rounded bg-slate-700/60 px-1 py-0.5 text-[10px] font-medium"
+          className="text-muted text-2xs rounded bg-slate-700/60 px-1 py-0.5 font-medium"
           title={t('peerListPanel.pathMediumTitle', { medium: formatReticulumViaBadgeLabel(via) })}
         >
           {formatReticulumViaBadgeLabel(via)}
@@ -215,7 +215,7 @@ const PeerTableRow = memo(function PeerTableRow({
           </button>
           {isReticulumPeerHeardViaTcpHub(peer.interface) ? (
             <span
-              className="shrink-0 rounded bg-sky-900/50 px-1 py-0.5 text-[10px] font-medium text-sky-300"
+              className="text-2xs shrink-0 rounded bg-sky-900/50 px-1 py-0.5 font-medium text-sky-300"
               title={t('peerListPanel.heardViaTcpHubTitle', {
                 interface: peer.interface?.trim() || '—',
               })}
@@ -237,8 +237,8 @@ const PeerTableRow = memo(function PeerTableRow({
             <span
               className={
                 contacted
-                  ? 'bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 text-[10px] font-medium'
-                  : 'text-muted text-[10px]'
+                  ? 'bg-readable-green/20 text-readable-green text-2xs rounded px-1.5 py-0.5 font-medium'
+                  : 'text-muted text-2xs'
               }
             >
               {contacted ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
@@ -743,7 +743,7 @@ export default function ReticulumPeerListPanel({
         </button>
         {telephonyOnly ? (
           <span
-            className="ml-1 text-[10px] font-semibold tracking-wide text-cyan-400/90 uppercase"
+            className="text-2xs ml-1 font-semibold tracking-wide text-cyan-400/90 uppercase"
             title={t('peerListPanel.voiceAspectTitle')}
           >
             {t('peerListPanel.voiceAspectBadge')}
@@ -943,7 +943,7 @@ export default function ReticulumPeerListPanel({
         ref={tableScrollRef}
         className="bg-deep-black min-h-0 flex-1 overflow-auto rounded-xl border border-slate-800"
       >
-        <table className="w-full min-w-[640px] text-left text-xs">
+        <table className="w-full min-w-160 text-left text-xs">
           <thead className="bg-deep-black sticky top-0 z-10">
             <tr className="text-muted border-b border-slate-800">
               <th className="py-2 pr-2 pl-2" aria-sort={ariaSortValue('name')}>

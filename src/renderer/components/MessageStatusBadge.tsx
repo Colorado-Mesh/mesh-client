@@ -25,7 +25,7 @@ export function MessageStatusBadge({
   if (status === 'queued') {
     return (
       <HelpTooltip text={t('messageStatusBadge.queuedTooltip')}>
-        <span className="text-muted text-[10px]">
+        <span className="text-muted text-2xs">
           {'\u23F3'} {t('messageStatusBadge.queuedLabel')}
         </span>
       </HelpTooltip>
@@ -34,7 +34,7 @@ export function MessageStatusBadge({
   if (status === 'blocked') {
     return (
       <HelpTooltip text={displayError ?? t('messageStatusBadge.blockedDefault')}>
-        <span className="text-[10px] text-amber-400">
+        <span className="text-2xs text-amber-400">
           {'\uD83D\uDD12'} {t('messageStatusBadge.blockedLabel')}
         </span>
       </HelpTooltip>

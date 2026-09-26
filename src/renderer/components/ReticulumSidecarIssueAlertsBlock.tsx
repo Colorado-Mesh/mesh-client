@@ -73,7 +73,7 @@ export function ReticulumSidecarIssueAlertsBlock({
         {alert.tcpConnectFailed.map((name) => (
           <li key={`tcp-${name}`}>
             <p>{t('connectionPanel.reticulumSidecarIssues.tcpConnectFailed', { name })}</p>
-            <p className="text-muted mt-0.5 text-[11px]">
+            <p className="text-muted text-label mt-0.5">
               {t('connectionPanel.reticulumSidecarIssues.tcpConnectFailedHint')}
             </p>
           </li>
@@ -81,7 +81,7 @@ export function ReticulumSidecarIssueAlertsBlock({
         {tcpResetByPeer.map((name) => (
           <li key={`tcp-rst-${name}`}>
             <p>{t('connectionPanel.reticulumSidecarIssues.tcpResetByPeer', { name })}</p>
-            <p className="text-muted mt-0.5 text-[11px]">
+            <p className="text-muted text-label mt-0.5">
               {t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')}
             </p>
           </li>
@@ -89,7 +89,7 @@ export function ReticulumSidecarIssueAlertsBlock({
         {tcpReadEof.map((name) => (
           <li key={`tcp-eof-${name}`}>
             <p>{t('connectionPanel.reticulumSidecarIssues.tcpReadEof', { name })}</p>
-            <p className="text-muted mt-0.5 text-[11px]">
+            <p className="text-muted text-label mt-0.5">
               {t('connectionPanel.reticulumLocalInterfaces.tcpUnreachableHint')}
             </p>
           </li>
@@ -124,14 +124,14 @@ export function ReticulumSidecarIssueAlertsBlock({
                   count: dropCount,
                 })}
               </p>
-              <p className="text-muted mt-0.5 text-[11px]">{hintText}</p>
+              <p className="text-muted text-label mt-0.5">{hintText}</p>
             </li>
           );
         })}
         {bleBondRemoved.map((name) => (
           <li key={`ble-bond-${name}`}>
             <p>{t('connectionPanel.reticulumSidecarIssues.bleBondRemoved', { name })}</p>
-            <p className="text-muted mt-0.5 text-[11px]">
+            <p className="text-muted text-label mt-0.5">
               {t('connectionPanel.reticulumSidecarIssues.bleBondRemovedHint')}
             </p>
           </li>
@@ -141,7 +141,7 @@ export function ReticulumSidecarIssueAlertsBlock({
             {onStopStack ? (
               <button
                 type="button"
-                className="rounded border border-red-500/50 bg-red-950/50 px-2 py-1 text-[11px] text-red-100 hover:bg-red-900/40"
+                className="text-label rounded border border-red-500/50 bg-red-950/50 px-2 py-1 text-red-100 hover:bg-red-900/40"
                 aria-label={t('connectionPanel.reticulumSidecarIssues.bleBondRemovedStopStack')}
                 onClick={() => {
                   void Promise.resolve(onStopStack()).catch((e: unknown) => {
@@ -158,7 +158,7 @@ export function ReticulumSidecarIssueAlertsBlock({
             {onOpenAdminBluetooth ? (
               <button
                 type="button"
-                className="rounded border border-amber-600/50 bg-amber-950/40 px-2 py-1 text-[11px] text-amber-100 hover:bg-amber-900/40"
+                className="text-label rounded border border-amber-600/50 bg-amber-950/40 px-2 py-1 text-amber-100 hover:bg-amber-900/40"
                 aria-label={t('connectionPanel.reticulumSidecarIssues.bleBondRemovedOpenAdmin')}
                 onClick={() => {
                   onOpenAdminBluetooth();
@@ -172,7 +172,7 @@ export function ReticulumSidecarIssueAlertsBlock({
         {blePairingTimedOut.map((name) => (
           <li key={`ble-pair-timeout-${name}`}>
             <p>{t('connectionPanel.reticulumSidecarIssues.blePairingTimedOut', { name })}</p>
-            <p className="text-muted mt-0.5 text-[11px]">
+            <p className="text-muted text-label mt-0.5">
               {t('connectionPanel.reticulumSidecarIssues.blePairingTimedOutHint')}
             </p>
           </li>
@@ -184,7 +184,7 @@ export function ReticulumSidecarIssueAlertsBlock({
                 count: alert.transportSaturatedCount,
               })}
             </p>
-            <p className="text-muted mt-0.5 text-[11px]">
+            <p className="text-muted text-label mt-0.5">
               {t('connectionPanel.reticulumSidecarIssues.transportSaturatedHint')}
             </p>
           </li>
@@ -196,21 +196,21 @@ export function ReticulumSidecarIssueAlertsBlock({
                 count: alert.slowTransportQueryCount,
               })}
             </p>
-            <p className="text-muted mt-0.5 text-[11px]">
+            <p className="text-muted text-label mt-0.5">
               {t('connectionPanel.reticulumSidecarIssues.slowTransportQueryHint')}
             </p>
           </li>
         ) : null}
         {showShareInstanceHint ? (
           <li>
-            <p className="text-muted text-[11px]">
+            <p className="text-muted text-label">
               {t('connectionPanel.reticulumSidecarIssues.shareInstanceHint')}
             </p>
           </li>
         ) : null}
         {(alert.suppressedCount ?? 0) > 0 ? (
           <li>
-            <p className="text-muted text-[11px]">
+            <p className="text-muted text-label">
               {t('connectionPanel.reticulumSidecarIssues.suppressed', {
                 count: alert.suppressedCount,
               })}

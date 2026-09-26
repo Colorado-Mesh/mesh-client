@@ -216,7 +216,7 @@ export function RemoteShellSection({
   return (
     <div className="flex h-full min-w-0 flex-col gap-3 p-3">
       <div className="relative flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[260px] flex-1">
+        <div className="relative min-w-65 flex-1">
           <input
             type="text"
             value={addressInput}
@@ -353,7 +353,7 @@ export function RemoteShellSection({
               {!session.disconnectIntent &&
                 (session.status === 'closed' || session.status === 'error') &&
                 settings.autoReconnectShell && (
-                  <div className="rounded border border-amber-700/60 bg-amber-900/30 px-2 py-1 text-[11px] text-amber-200">
+                  <div className="text-label rounded border border-amber-700/60 bg-amber-900/30 px-2 py-1 text-amber-200">
                     {session.reconnectAttempts >= settings.maxReconnectAttempts
                       ? t('reticulumRemote.shell.reconnectExhausted')
                       : t('reticulumRemote.shell.reconnectingBanner', {

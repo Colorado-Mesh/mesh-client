@@ -71,7 +71,7 @@ export default function UpdateStatusIndicator({
             title={
               useReleasePage ? t('updateStatus.viewReleaseTitle') : t('updateStatus.downloadTitle')
             }
-            className="rounded border border-amber-600 bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-200 transition-colors hover:border-amber-500 hover:text-amber-100"
+            className="text-2xs rounded border border-amber-600 bg-amber-900/60 px-1.5 py-0.5 font-medium text-amber-200 transition-colors hover:border-amber-500 hover:text-amber-100"
           >
             {useReleasePage ? t('updateStatus.viewRelease') : t('updateStatus.download')}
           </button>
@@ -79,9 +79,9 @@ export default function UpdateStatusIndicator({
       )}
 
       {phase === 'downloading' && (
-        <span className="inline-flex max-w-[140px] min-w-0 items-center gap-1.5">
+        <span className="inline-flex max-w-35 min-w-0 items-center gap-1.5">
           <SpinnerIcon className="text-brand-green h-3.5 w-3.5 shrink-0" />
-          <span className="h-1 min-w-[48px] flex-1 overflow-hidden rounded-full bg-gray-700">
+          <span className="h-1 min-w-12 flex-1 overflow-hidden rounded-full bg-gray-700">
             <span
               className="bg-brand-green block h-full transition-all duration-300"
               style={{ width: `${percent ?? 0}%` }}

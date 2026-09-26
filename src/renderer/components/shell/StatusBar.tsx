@@ -25,7 +25,7 @@ export function StatusBarButton({
       title={ariaLabel}
       onClick={onClick}
       {...{ [PARENT_HOVER_ATTR]: '' }}
-      className="hover:bg-sidebar-active-bg/60 flex h-[26px] max-w-[18rem] min-w-0 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap transition-colors"
+      className="hover:bg-sidebar-active-bg/60 flex h-6.5 max-w-[18rem] min-w-0 shrink-0 items-center gap-1.5 rounded-md px-2.5 whitespace-nowrap transition-colors"
     >
       {icon}
       <span className={`truncate ${textClass}`}>{children}</span>
@@ -50,7 +50,7 @@ export interface StatusBarProps {
  */
 export function StatusBar({ children, stats, update, liveStatus }: StatusBarProps) {
   return (
-    <footer className="bg-deep-black text-muted flex h-7 shrink-0 items-center gap-0.5 overflow-hidden border-t border-slate-800 px-2 font-mono text-[11.5px] tabular-nums">
+    <footer className="bg-deep-black text-muted text-meta flex h-7 shrink-0 items-center gap-0.5 overflow-hidden border-t border-slate-800 px-2 font-mono tabular-nums">
       <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {liveStatus}
       </span>

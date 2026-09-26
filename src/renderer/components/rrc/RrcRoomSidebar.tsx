@@ -151,7 +151,7 @@ export function RrcRoomSidebar({
             <div className="flex items-center justify-between gap-1">
               <span className="truncate">{label}</span>
               {unread > 0 && !selected && (
-                <span className="ml-1 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
+                <span className="text-2xs ml-1 rounded-full bg-red-600 px-1.5 font-bold text-white">
                   {unread > 99 ? '99+' : unread}
                 </span>
               )}

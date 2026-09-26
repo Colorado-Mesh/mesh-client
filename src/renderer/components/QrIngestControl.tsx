@@ -264,7 +264,7 @@ export default function QrIngestControl({
           </button>
         ) : null}
       </div>
-      <p className="text-muted text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+      <p className="text-muted text-label">{t('qrIngest.pasteImageHint')}</p>
       <input
         ref={fileInputRef}
         type="file"

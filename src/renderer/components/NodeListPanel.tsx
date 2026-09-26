@@ -1383,7 +1383,7 @@ export default function NodeListPanel({
                             />
                           </span>
                           <span
-                            className={`rounded px-1 text-[9px] leading-tight font-semibold ${
+                            className={`text-3xs rounded px-1 leading-tight font-semibold ${
                               healthTier === 'good'
                                 ? 'bg-green-900/60 text-green-400'
                                 : healthTier === 'warn'
@@ -1467,7 +1467,7 @@ export default function NodeListPanel({
                             </button>
                             {isSelf && (
                               <span
-                                className="bg-brand-green/12 text-bright-green shrink-0 rounded px-1.5 py-px text-[11px] font-medium"
+                                className="bg-brand-green/12 text-bright-green text-label shrink-0 rounded px-1.5 py-px font-medium"
                                 title={t('nodeListPanel.yourNodeTooltip')}
                               >
                                 {t('nodeListPanel.youBadge')}
@@ -1513,7 +1513,7 @@ export default function NodeListPanel({
                           {mode === 'meshcore' &&
                             meshcoreShowPublicKeys &&
                             meshcorePublicKeyHexByNodeId?.get(node.node_id) && (
-                              <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
+                              <span className="text-muted text-2xs font-mono break-all whitespace-normal">
                                 {meshcorePublicKeyHexByNodeId.get(node.node_id)}
                               </span>
                             )}

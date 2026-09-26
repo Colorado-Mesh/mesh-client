@@ -5301,7 +5301,7 @@ function AppContent() {
                   used: queueUsed,
                   max: activeQueue.maxlen,
                 })}
-                className={`flex h-5 shrink-0 items-center rounded px-1.5 text-[11px] font-medium ${queueColorClass}`}
+                className={`text-label flex h-5 shrink-0 items-center rounded px-1.5 font-medium ${queueColorClass}`}
               >
                 {t('app.queueBadge', { used: queueUsed, max: activeQueue.maxlen })}
               </div>

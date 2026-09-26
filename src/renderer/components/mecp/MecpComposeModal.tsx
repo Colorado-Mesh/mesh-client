@@ -256,7 +256,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 clearError();
                 setCategory(letter);
               }}
-              className={`rounded px-1 py-1 text-[10px] ${
+              className={`text-2xs rounded px-1 py-1 ${
                 category === letter ? 'bg-red-900/80 text-red-100' : 'bg-slate-800 text-gray-300'
               }`}
             >
@@ -275,7 +275,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
               onClick={() => {
                 toggleCode(code);
               }}
-              className={`rounded px-1.5 py-0.5 text-[10px] ${
+              className={`text-2xs rounded px-1.5 py-0.5 ${
                 codes.includes(code) ? 'bg-red-700 text-white' : 'bg-slate-800 text-gray-300'
               }`}
             >
@@ -293,7 +293,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 onClick={() => {
                   toggleCode(code);
                 }}
-                className="rounded-full bg-red-900/60 px-2 py-0.5 text-[10px] text-red-100"
+                className="text-2xs rounded-full bg-red-900/60 px-2 py-0.5 text-red-100"
               >
                 {code} ×
               </button>

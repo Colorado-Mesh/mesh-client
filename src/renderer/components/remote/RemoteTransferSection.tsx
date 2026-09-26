@@ -555,7 +555,7 @@ export function RemoteTransferSection({
             placeholder={t('reticulumRemote.transfer.destinationPlaceholder')}
             aria-label={t('reticulumRemote.transfer.destinationAria')}
             list="reticulum-remote-rncp-addresses"
-            className="bg-secondary-dark/80 min-w-[240px] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+            className="bg-secondary-dark/80 min-w-60 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
           />
           <datalist id="reticulum-remote-rncp-addresses">
             {rncpAddresses.map((addr) => (
@@ -632,7 +632,7 @@ export function RemoteTransferSection({
               }}
               placeholder={t('reticulumRemote.transfer.remotePathPlaceholder')}
               aria-label={t('reticulumRemote.transfer.remotePathAria')}
-              className="bg-secondary-dark/80 min-w-[200px] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+              className="bg-secondary-dark/80 min-w-50 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
             />
             <button
               type="button"

@@ -413,7 +413,7 @@ export default function LogPanel({
       </h2>
       <div className="flex flex-col gap-2 border-b border-gray-700 px-2 py-2">
         <div className="space-y-1">
-          <span className="text-muted text-[10px] tracking-wide uppercase">
+          <span className="text-muted text-2xs tracking-wide uppercase">
             {t('logPanel.showLevels')}
           </span>
           <div className="flex flex-col gap-1">
@@ -463,10 +463,10 @@ export default function LogPanel({
               </label>
             </div>
           </div>
-          <p className="text-muted text-[10px] leading-snug">{t('logPanel.writtenToFile')}</p>
+          <p className="text-muted text-2xs leading-snug">{t('logPanel.writtenToFile')}</p>
         </div>
         <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
-          <span className="text-muted text-[10px] tracking-wide uppercase">
+          <span className="text-muted text-2xs tracking-wide uppercase">
             {t('logPanel.source')}
           </span>
           <div className="ml-auto flex gap-1">
@@ -476,7 +476,7 @@ export default function LogPanel({
                 setLogSource('app');
               }}
               aria-label={t('logPanel.appSource', { count: appEntries.length })}
-              className={`rounded px-2 py-0.5 text-[10px] ${logSource === 'app' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
+              className={`text-2xs rounded px-2 py-0.5 ${logSource === 'app' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
             >
               {t('logPanel.appSource', { count: appEntries.length })}
             </button>
@@ -486,7 +486,7 @@ export default function LogPanel({
                 setLogSource('device');
               }}
               aria-label={t('logPanel.deviceSource', { count: allDeviceLogs.length })}
-              className={`rounded px-2 py-0.5 text-[10px] ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
+              className={`text-2xs rounded px-2 py-0.5 ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
             >
               {t('logPanel.deviceSource', { count: allDeviceLogs.length })}
             </button>
@@ -510,7 +510,7 @@ export default function LogPanel({
             >
               +
             </button>
-            <span className="text-muted flex-1 text-right text-[10px]">{panelWidth}px</span>
+            <span className="text-muted text-2xs flex-1 text-right">{panelWidth}px</span>
           </div>
         )}
         <div className="flex flex-col gap-1">
@@ -543,7 +543,7 @@ export default function LogPanel({
             </button>
           </div>
           {logClearError && (
-            <div role="alert" className="text-[10px] text-red-400">
+            <div role="alert" className="text-2xs text-red-400">
               {logClearError}
             </div>
           )}
@@ -552,7 +552,7 @@ export default function LogPanel({
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="min-h-0 flex-1 overflow-auto p-2 font-mono text-[10px] leading-tight text-gray-400"
+        className="text-2xs min-h-0 flex-1 overflow-auto p-2 font-mono leading-tight text-gray-400"
         role="log"
         aria-live="polite"
         aria-relevant="additions"

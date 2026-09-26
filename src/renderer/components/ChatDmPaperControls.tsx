@@ -229,7 +229,7 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
     <div className="mb-1">
       <button
         type="button"
-        className="text-muted inline-flex items-center gap-1 text-[11px] hover:text-gray-200"
+        className="text-muted text-label inline-flex items-center gap-1 hover:text-gray-200"
         aria-label={t('chatPanel.scanPaperAria')}
         aria-expanded={expanded}
         disabled={!sidecarRunning}
@@ -242,7 +242,7 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
       </button>
       {expanded ? (
         <div className="mt-1 rounded border border-gray-700/80 bg-slate-900/40 p-2">
-          <p className="text-muted mb-1 text-[11px]">{t('chatPanel.scanPaperHint')}</p>
+          <p className="text-muted text-label mb-1">{t('chatPanel.scanPaperHint')}</p>
           <QrIngestControl
             disabled={!sidecarRunning}
             onDecoded={(decoded) => {

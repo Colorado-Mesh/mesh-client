@@ -118,12 +118,12 @@ function HubRow({
               {label}
             </div>
             {unread > 0 && (
-              <span className="shrink-0 rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
+              <span className="text-2xs shrink-0 rounded-full bg-red-600 px-1.5 font-bold text-white">
                 {unread > 99 ? '99+' : unread}
               </span>
             )}
           </div>
-          <div className="text-muted truncate font-mono text-[11.5px]">
+          <div className="text-muted text-meta truncate font-mono">
             {secondary ?? formatHash(hub.destination_hash)}
             {hub.hops != null ? ` · ${t('rrc.hopsAway', { count: hub.hops })}` : ''}
             {hub.user_count != null ? ` · ${t('rrc.userCount', { count: hub.user_count })}` : ''}

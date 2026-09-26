@@ -56,4 +56,12 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     require: /mecpComposeEnabled:\s*false/,
     message: 'mecpComposeEnabled must default false (EMCOMM safety S14)',
   },
+  {
+    id: 'renderer-font-size-in-rem',
+    include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],
+    forbid: /(?<![\w-])text-\[[\d.]+px\]/,
+    message:
+      'Use a rem text token (text-2xs, text-label, text-meta, text-control, text-body, text-title) so App > Appearance > Text size scales it; px font sizes do not scale',
+  },
 ];

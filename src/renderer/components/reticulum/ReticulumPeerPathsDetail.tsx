@@ -160,7 +160,7 @@ export function ReticulumPeerPathsDetail({
           <option value="network">{t('peerListPanel.pathsPreferNetwork')}</option>
         </select>
         {preferenceLabelKey ? (
-          <span className="text-[11px] text-gray-500">
+          <span className="text-label text-gray-500">
             {t('peerListPanel.pathsGlobalPreference', {
               preference: t(preferenceLabelKey),
             })}

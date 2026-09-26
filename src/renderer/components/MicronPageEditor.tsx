@@ -184,7 +184,7 @@ export default function MicronPageEditor({
           </h3>
           <code className="truncate font-mono text-xs text-gray-300">{path}</code>
           {dirty ? (
-            <span className="rounded bg-amber-700 px-2 py-0.5 text-[10px] font-medium text-white">
+            <span className="text-2xs rounded bg-amber-700 px-2 py-0.5 font-medium text-white">
               {t('nomadNetwork.serving.unsaved')}
             </span>
           ) : null}
@@ -286,7 +286,7 @@ export default function MicronPageEditor({
           />
           {/* Mirrors the browser's nomad-page-scroll shell: both axes, so wide art is reachable. */}
           <div className="min-h-0 min-w-0 overflow-auto rounded border border-gray-600 bg-slate-900 p-3">
-            <p className="text-muted mb-2 text-[10px] uppercase">
+            <p className="text-muted text-2xs mb-2 uppercase">
               {t('nomadNetwork.serving.editorPreview')}
             </p>
             <NomadMicronPageView

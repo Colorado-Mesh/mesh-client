@@ -108,7 +108,7 @@ function DiscoveredPropagationList({
               >
                 <div className="min-w-0">
                   <div className="truncate text-gray-200">{label}</div>
-                  <div className="text-muted flex flex-wrap gap-x-2 text-[11px]">
+                  <div className="text-muted text-label flex flex-wrap gap-x-2">
                     <span className="font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: row.destination_hash.slice(0, 12),
@@ -171,10 +171,10 @@ function DiscoveredPropagationList({
       )}
       {ignoredFromDiscovered.length > 0 || ignoredOrphanHashes.length > 0 ? (
         <div className="mt-3">
-          <h5 className="text-muted text-[11px] font-medium tracking-wide uppercase">
+          <h5 className="text-muted text-label font-medium tracking-wide uppercase">
             {t('reticulumPropagation.ignoredForAutoTitle')}
           </h5>
-          <p className="text-muted mt-0.5 text-[11px]">
+          <p className="text-muted text-label mt-0.5">
             {t('reticulumPropagation.ignoredForAutoHint')}
           </p>
           <ul className="mt-2 space-y-2 text-sm">
@@ -187,7 +187,7 @@ function DiscoveredPropagationList({
                 >
                   <div className="min-w-0">
                     <div className="truncate text-gray-400">{label}</div>
-                    <div className="text-muted font-mono text-[11px]">
+                    <div className="text-muted text-label font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: row.destination_hash.slice(0, 12),
                       })}
@@ -216,7 +216,7 @@ function DiscoveredPropagationList({
                 >
                   <div className="min-w-0">
                     <div className="truncate text-gray-400">{label}</div>
-                    <div className="text-muted font-mono text-[11px]">
+                    <div className="text-muted text-label font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: hash.slice(0, 12),
                       })}

@@ -670,13 +670,13 @@ export default function NodeDetailModal({
               {displayName}
             </h3>
             {mqttIgnoredNodes.has(node.node_id) && (
-              <span className="shrink-0 rounded border border-yellow-500/30 bg-yellow-500/20 px-1.5 py-0.5 text-[10px] font-medium text-yellow-300">
+              <span className="text-2xs shrink-0 rounded border border-yellow-500/30 bg-yellow-500/20 px-1.5 py-0.5 font-medium text-yellow-300">
                 {t('nodeDetailModal.mqttIgnoredBadge')}
               </span>
             )}
             {awaitingNodeInfo && (
               <span
-                className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
+                className="text-2xs shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-300"
                 title={t('nodeDetailModal.nodeIncomplete')}
               >
                 {t('nodeDetailModal.loadingBadge')}
@@ -705,7 +705,7 @@ export default function NodeDetailModal({
             {/* MeshCore contact status badges */}
             {protocol === 'meshcore' && contactPubkey && (
               <span
-                className="shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300"
+                className="text-2xs shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 font-medium text-green-300"
                 title={
                   isMeshcoreDmExcludedHwModel(node.hw_model)
                     ? t('nodeDetailModal.hasPublicKeyNoDm')
@@ -724,7 +724,7 @@ export default function NodeDetailModal({
               node.node_id >= MESHCORE_CHAT_STUB_ID_MIN &&
               node.node_id <= MESHCORE_CHAT_STUB_ID_MAX && (
                 <span
-                  className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
+                  className="text-2xs shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-300"
                   title={t('nodeDetailModal.chatOnlyNode')}
                 >
                   {t('nodeDetailModal.chatBadge')}
@@ -732,7 +732,7 @@ export default function NodeDetailModal({
               )}
             {protocol === 'meshcore' && contactOnRadio === false && contactPubkey && (
               <span
-                className="shrink-0 rounded border border-orange-500/30 bg-orange-500/20 px-1.5 py-0.5 text-[10px] font-medium text-orange-300"
+                className="text-2xs shrink-0 rounded border border-orange-500/30 bg-orange-500/20 px-1.5 py-0.5 font-medium text-orange-300"
                 title={t('nodeDetailModal.dbOnlyContact')}
               >
                 {t('nodeDetailModal.onlyInDbBadge')}
@@ -740,7 +740,7 @@ export default function NodeDetailModal({
             )}
             {protocol === 'meshcore' && contactOnRadio === true && contactPubkey && (
               <span
-                className="shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 text-[10px] font-medium text-green-300"
+                className="text-2xs shrink-0 rounded border border-green-500/30 bg-green-500/20 px-1.5 py-0.5 font-medium text-green-300"
                 title={t('nodeDetailModal.syncedContact')}
               >
                 {t('nodeDetailModal.syncedBadge')}
@@ -748,7 +748,7 @@ export default function NodeDetailModal({
             )}
             {protocol === 'meshcore' && contactOnRadio === true && !contactPubkey && (
               <span
-                className="shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300"
+                className="text-2xs shrink-0 rounded border border-blue-500/30 bg-blue-500/20 px-1.5 py-0.5 font-medium text-blue-300"
                 title={t('nodeDetailModal.radioOnlyContact')}
               >
                 {t('nodeDetailModal.onRadioBadge')}
@@ -759,7 +759,7 @@ export default function NodeDetailModal({
               typeof MESHCORE_CONTACTS_CRITICAL_THRESHOLD === 'number' &&
               radioContactCount >= MESHCORE_CONTACTS_CRITICAL_THRESHOLD && (
                 <span
-                  className="shrink-0 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 text-[10px] font-medium text-red-300"
+                  className="text-2xs shrink-0 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 font-medium text-red-300"
                   title={t('nodeDetailModal.radioCapacityTitle', {
                     current: radioContactCount,
                     max: MESHCORE_MAX_CONTACTS ?? 'unknown',
@@ -774,7 +774,7 @@ export default function NodeDetailModal({
           </div>
           {protocol === 'meshcore' && contactPubkey && (
             <div className="mt-1 flex w-full items-start gap-2">
-              <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
+              <span className="text-muted text-2xs font-mono break-all whitespace-normal">
                 {contactPubkey}
               </span>
               <button
@@ -841,7 +841,7 @@ export default function NodeDetailModal({
             </button>
           </div>
           <span
-            className={`flex items-center gap-1 text-[11px] font-medium ${nodeStatusUi.textClass}`}
+            className={`text-label flex items-center gap-1 font-medium ${nodeStatusUi.textClass}`}
             title={t('nodeDetailModal.currentNodeStatus')}
           >
             <span className={`inline-block h-2 w-2 rounded-full ${nodeStatusUi.dotClass}`} />
@@ -1508,7 +1508,7 @@ export default function NodeDetailModal({
                         key={`${ev.timestamp}-${ev.data.length}`}
                         className="border-border/40 border-b pb-1 last:border-0"
                       >
-                        <div className="text-muted font-mono text-[10px]">
+                        <div className="text-muted text-2xs font-mono">
                           {formatIsoDateTime(ev.timestamp)}
                         </div>
                         <div className="font-mono break-all text-gray-200">
@@ -1584,7 +1584,7 @@ export default function NodeDetailModal({
                           key={`${ev.timestamp}-${ev.data.length}`}
                           className="border-border/40 border-b pb-1 last:border-0"
                         >
-                          <div className="text-muted font-mono text-[10px]">
+                          <div className="text-muted text-2xs font-mono">
                             {formatIsoDateTime(ev.timestamp)}
                           </div>
                           <div className="font-mono break-all text-gray-200">
@@ -1679,7 +1679,7 @@ export default function NodeDetailModal({
                       <div className="font-mono text-gray-200">{formatIsoDateTime(last.t)}</div>
                     </div>
                     {sorted.length > 1 && (
-                      <div className="text-[10px] text-gray-500">
+                      <div className="text-2xs text-gray-500">
                         {t('nodeDetailModal.positionHistoryMostRecent', {
                           lat: last.lat.toFixed(5),
                           lon: last.lon.toFixed(5),
@@ -1687,7 +1687,7 @@ export default function NodeDetailModal({
                       </div>
                     )}
                     {sorted.length > POSITION_HISTORY_MAX_ROWS && (
-                      <div className="text-[10px] text-gray-500">
+                      <div className="text-2xs text-gray-500">
                         {t('nodeDetailModal.positionHistoryTruncated', {
                           shown: POSITION_HISTORY_MAX_ROWS,
                           total: sorted.length,
@@ -1698,7 +1698,7 @@ export default function NodeDetailModal({
                       {recentPoints.map((point, idx) => (
                         <div
                           key={`${point.t}-${point.lat}-${point.lon}-${idx}`}
-                          className="grid grid-cols-[auto_1fr] gap-x-2 text-[10px]"
+                          className="text-2xs grid grid-cols-[auto_1fr] gap-x-2"
                         >
                           <span className="text-gray-500">{formatIsoDateTime(point.t)}</span>
                           <span className="font-mono whitespace-nowrap text-gray-200">

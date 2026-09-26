@@ -49,7 +49,7 @@ export function RrcNickList({
           icon={<X aria-hidden className="h-4 w-4" size={16} />}
         />
       </div>
-      <ul className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2 text-[13px]">
+      <ul className="text-body min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2">
         {members.map((m) => {
           const label = m.nickname || formatHash(m.identity_hash);
           return (

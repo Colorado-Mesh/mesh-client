@@ -84,7 +84,7 @@ export function ReticulumLocalInterfaceAlertsBlock({
                       })}
             </p>
             {!compact ? (
-              <p className="text-muted mt-0.5 text-[11px]">
+              <p className="text-muted text-label mt-0.5">
                 {alert.reason === 'stale_port'
                   ? t('connectionPanel.reticulumLocalInterfaces.stalePortHint')
                   : alert.reason === 'tcp_fast_flap'
@@ -112,7 +112,7 @@ export function ReticulumLocalInterfaceAlertsBlock({
         ))}
       </ul>
       {showSerialPortContext && availablePorts.length > 0 ? (
-        <p className="text-muted mt-2 text-[11px]">
+        <p className="text-muted text-label mt-2">
           {t('connectionPanel.reticulumLocalInterfaces.availablePorts', {
             ports: availablePorts.join(', '),
           })}

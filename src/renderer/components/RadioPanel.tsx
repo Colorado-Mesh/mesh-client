@@ -4358,7 +4358,7 @@ function MeshcoreChannelSection({
         </div>
 
         <div className="pt-1">
-          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+          <p className="text-muted text-label mb-1">{t('qrIngest.pasteImageHint')}</p>
           <QrIngestControl
             disabled={disabled}
             onDecoded={(text) => {

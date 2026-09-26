@@ -159,7 +159,7 @@ function EndpointEditors({
   const { t } = useTranslation();
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-1 text-[10px] text-gray-500">{label}</legend>
+      <legend className="text-2xs mb-1 text-gray-500">{label}</legend>
       <select
         className="mb-1 w-full rounded border border-gray-700 bg-slate-950 px-1 py-0.5"
         value={protocol}

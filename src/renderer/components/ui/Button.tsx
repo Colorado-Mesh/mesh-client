@@ -21,8 +21,8 @@ export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
 };
 
 export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
-  sm: 'h-[30px] gap-1.5 px-3 text-[12.5px]',
-  md: 'h-8 gap-1.5 px-3.5 text-[13px]',
+  sm: 'h-7.5 gap-1.5 px-3 text-control',
+  md: 'h-8 gap-1.5 px-3.5 text-body',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -87,7 +87,7 @@ const ICON_BUTTON_ACTIVE: Record<'brand' | 'warn', string> = {
   warn: 'border-transparent bg-transparent text-amber-400 hover:bg-sidebar-active-bg',
 };
 
-const ICON_BUTTON_SIZE: Record<ButtonSize, string> = { sm: 'h-[30px] w-[30px]', md: 'h-8 w-8' };
+const ICON_BUTTON_SIZE: Record<ButtonSize, string> = { sm: 'h-7.5 w-7.5', md: 'h-8 w-8' };
 
 const ICON_BUTTON_VARIANT: Record<NonNullable<IconButtonProps['variant']>, string> = {
   ghost:

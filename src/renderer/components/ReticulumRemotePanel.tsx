@@ -107,7 +107,7 @@ export default function ReticulumRemotePanel({ isActive }: Readonly<ReticulumRem
             {t(`reticulumRemote.sections.${s}`)}
             {s === 'transfer' && pendingOfferCount > 0 && (
               <span
-                className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-600 px-1 text-[10px] font-semibold text-white"
+                className="text-2xs absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-600 px-1 font-semibold text-white"
                 aria-label={t('reticulumRemote.transfer.pendingOffersBadgeAria', {
                   count: pendingOfferCount,
                 })}

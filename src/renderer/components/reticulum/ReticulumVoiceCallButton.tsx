@@ -51,9 +51,7 @@ export function ReticulumVoiceCallButton({
       <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>{t('reticulumVoice.call')}</span>
       <span
-        className={
-          capability === 'heard' ? 'text-[10px] text-cyan-300' : 'text-[10px] text-gray-500'
-        }
+        className={capability === 'heard' ? 'text-2xs text-cyan-300' : 'text-2xs text-gray-500'}
       >
         {capability === 'heard'
           ? t('reticulumVoice.capabilityHeardShort')

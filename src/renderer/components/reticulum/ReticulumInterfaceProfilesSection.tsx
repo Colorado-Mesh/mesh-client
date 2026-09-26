@@ -84,7 +84,7 @@ export function ReticulumInterfaceProfilesSection({
         <h3 className="text-xs font-semibold tracking-wide text-gray-300 uppercase">
           {t('connectionPanel.reticulumInterfaces.profilesTitle')}
         </h3>
-        <p className="text-[10px] text-gray-500">
+        <p className="text-2xs text-gray-500">
           {t('connectionPanel.reticulumInterfaces.profilesHint')}
         </p>
       </div>
@@ -110,7 +110,7 @@ export function ReticulumInterfaceProfilesSection({
           </li>
         ) : null}
         {state.profiles.length === 0 ? (
-          <li className="text-[11px] text-gray-500">
+          <li className="text-label text-gray-500">
             {t('connectionPanel.reticulumInterfaces.profilesEmpty')}
           </li>
         ) : (

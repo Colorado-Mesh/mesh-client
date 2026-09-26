@@ -25,7 +25,7 @@ export function RrcByteLimitHint({
         : 'text-muted';
 
   return (
-    <div className={`mt-0.5 text-right text-[10px] ${color}`} role="status">
+    <div className={`text-2xs mt-0.5 text-right ${color}`} role="status">
       {status.phase === 'overMax'
         ? t(overMaxKey, { limit: status.limit })
         : t('rrc.byteLimit.approaching', { count: status.byteCount, limit: status.limit })}

@@ -47,7 +47,7 @@ export function MecpSeverityBadge({
         />
       ) : null}
       <span
-        className={`relative rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${MECP_SEVERITY_BADGE_CLASSES[severity]}`}
+        className={`text-2xs relative rounded px-1.5 py-0.5 font-semibold tracking-wide ${MECP_SEVERITY_BADGE_CLASSES[severity]}`}
       >
         {label}
       </span>

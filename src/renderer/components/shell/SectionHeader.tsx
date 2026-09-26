@@ -53,7 +53,7 @@ export function SectionHeader({
   };
 
   return (
-    <header className="bg-app-bg flex h-[52px] shrink-0 items-center gap-4 border-b border-slate-800 pr-4 pl-6">
+    <header className="bg-app-bg flex h-13 shrink-0 items-center gap-4 border-b border-slate-800 pr-4 pl-6">
       <h1 className="sr-only">{t('app.title')}</h1>
       {/* A single-panel section has no tablist; the title labels its panel instead. */}
       <h2
@@ -67,7 +67,7 @@ export function SectionHeader({
           ref={tablistRef}
           role="tablist"
           aria-label={t('shell.sectionPanelsAria', { section: sectionLabel })}
-          className="bg-deep-black flex min-w-0 [scrollbar-width:none] gap-0.5 overflow-x-auto rounded-lg border border-slate-800 p-[3px]"
+          className="bg-deep-black flex min-w-0 [scrollbar-width:none] gap-0.5 overflow-x-auto rounded-lg border border-slate-800 p-0.75"
         >
           {tabs.map((tab, position) => {
             const isSelected = tab.tabIndex === activeTabIndex;
@@ -88,7 +88,7 @@ export function SectionHeader({
                 onKeyDown={(e) => {
                   handleTabKeyDown(e, position);
                 }}
-                className={`flex h-[26px] shrink-0 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium whitespace-nowrap transition-colors ${
+                className={`text-body flex h-6.5 shrink-0 items-center gap-1.5 rounded-md px-3 font-medium whitespace-nowrap transition-colors ${
                   isSelected
                     ? 'bg-sidebar-active-bg text-slate-200'
                     : 'text-muted hover:text-slate-200'
@@ -97,7 +97,7 @@ export function SectionHeader({
                 {tab.label}
                 {badge && (
                   <span
-                    className={`flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[5px] font-mono text-[11px] leading-none text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
+                    className={`text-label flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1.25 font-mono leading-none text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
                   >
                     {formatBadgeCount(badge.count)}
                   </span>

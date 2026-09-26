@@ -61,7 +61,7 @@ export function SegmentedControl<T extends string>({
       ref={groupRef}
       role="radiogroup"
       aria-label={ariaLabel}
-      className={`bg-deep-black flex w-fit max-w-full shrink-0 [scrollbar-width:none] gap-0.5 overflow-x-auto rounded-lg border border-slate-800 p-[3px] ${className ?? ''}`}
+      className={`bg-deep-black flex w-fit max-w-full shrink-0 [scrollbar-width:none] gap-0.5 overflow-x-auto rounded-lg border border-slate-800 p-0.75 ${className ?? ''}`}
     >
       {options.map((option) => {
         const checked = option.value === value;
@@ -82,7 +82,7 @@ export function SegmentedControl<T extends string>({
               handleKeyDown(e, option.value);
             }}
             className={`flex shrink-0 items-center gap-1.5 rounded-md px-2.5 font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-              size === 'md' ? 'h-[30px] text-[13px]' : 'h-6 text-[12.5px]'
+              size === 'md' ? 'text-body h-7.5' : 'text-control h-6'
             } ${
               checked
                 ? 'bg-sidebar-active-bg text-slate-200'
@@ -94,7 +94,7 @@ export function SegmentedControl<T extends string>({
             {option.label}
             {option.count !== undefined && (
               <span
-                className={`font-mono text-[11.5px] tabular-nums ${checked ? 'text-slate-300' : 'text-muted'}`}
+                className={`text-meta font-mono tabular-nums ${checked ? 'text-slate-300' : 'text-muted'}`}
               >
                 {option.count}
               </span>

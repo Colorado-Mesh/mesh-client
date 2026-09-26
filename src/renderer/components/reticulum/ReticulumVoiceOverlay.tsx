@@ -153,12 +153,12 @@ export function ReticulumVoiceOverlay() {
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-200">{t(phaseLabelKey(active.status))}</span>
         <span
-          className="font-mono text-[10px] text-gray-400"
+          className="text-2xs font-mono text-gray-400"
           aria-label={t('reticulumVoice.elapsedAria', { time: elapsedLabel })}
         >
           {elapsedLabel}
         </span>
-        <span className="max-w-[8rem] truncate text-[10px] text-gray-300" title={remoteHash}>
+        <span className="text-2xs max-w-[8rem] truncate text-gray-300" title={remoteHash}>
           {remoteLabel}
         </span>
         <button
@@ -182,7 +182,7 @@ export function ReticulumVoiceOverlay() {
           <PhoneOff className="h-4 w-4" aria-hidden />
         </button>
       </div>
-      <div className="flex gap-3 font-mono text-[10px] text-gray-400">
+      <div className="text-2xs flex gap-3 font-mono text-gray-400">
         <span aria-label={t('reticulumVoice.txAria', { count: stats.txFrames })}>
           {t('reticulumVoice.txFrames', { count: stats.txFrames })}
           {stats.txPackets > 0

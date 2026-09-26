@@ -797,7 +797,7 @@ export function ReticulumNetworkPanel({
               </option>
               <option value="rf">{t('networkPanel.reticulumStackSettings.pathMediumRf')}</option>
             </select>
-            <span className="mt-1 block text-[11px] text-gray-500">
+            <span className="text-label mt-1 block text-gray-500">
               {t('networkPanel.reticulumStackSettings.pathMediumPreferenceHint')}
             </span>
           </label>
@@ -805,7 +805,7 @@ export function ReticulumNetworkPanel({
             <p className="text-xs font-medium text-gray-300">
               {t('networkPanel.reticulumStackSettings.discoveryConsumeTitle')}
             </p>
-            <p className="mt-1 text-[11px] text-gray-500">
+            <p className="text-label mt-1 text-gray-500">
               {t('networkPanel.reticulumStackSettings.discoveryConsumeHint')}
             </p>
             <label className="mt-2 block text-xs text-gray-400">
@@ -827,7 +827,7 @@ export function ReticulumNetworkPanel({
                 className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
                 aria-label={t('networkPanel.reticulumStackSettings.autoconnectDiscoveredAria')}
               />
-              <span className="mt-1 block text-[11px] text-gray-500">
+              <span className="text-label mt-1 block text-gray-500">
                 {t('networkPanel.reticulumStackSettings.autoconnectDiscoveredHint')}
               </span>
             </label>
@@ -868,11 +868,11 @@ export function ReticulumNetworkPanel({
                 placeholder={t('networkPanel.reticulumStackSettings.discoverySourcesPlaceholder')}
               />
               {discoverySourcesError ? (
-                <span className="mt-1 block text-[11px] text-red-400">
+                <span className="text-label mt-1 block text-red-400">
                   {t('networkPanel.reticulumStackSettings.discoverySourcesInvalid')}
                 </span>
               ) : (
-                <span className="mt-1 block text-[11px] text-gray-500">
+                <span className="text-label mt-1 block text-gray-500">
                   {t('networkPanel.reticulumStackSettings.discoverySourcesHint')}
                 </span>
               )}
@@ -890,7 +890,7 @@ export function ReticulumNetworkPanel({
                 aria-label={t('networkPanel.reticulumStackSettings.networkIdentityAria')}
                 placeholder={t('networkPanel.reticulumStackSettings.networkIdentityPlaceholder')}
               />
-              <span className="mt-1 block text-[11px] text-gray-500">
+              <span className="text-label mt-1 block text-gray-500">
                 {t('networkPanel.reticulumStackSettings.networkIdentityHint')}
               </span>
             </label>
@@ -911,7 +911,7 @@ export function ReticulumNetworkPanel({
       <ReticulumCollapsibleSection title={t('networkPanel.reticulumScanImport.title')}>
         <p className="text-muted text-xs">{t('networkPanel.reticulumScanImport.hint')}</p>
         <div className="mt-2">
-          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+          <p className="text-muted text-label mb-1">{t('qrIngest.pasteImageHint')}</p>
           <QrIngestControl
             disabled={!sidecarApiReady}
             onDecoded={(text) => {
@@ -1266,7 +1266,7 @@ function IdentityImportExtras({
       ) : null}
       <label className="block text-xs text-gray-400">
         {t('connectionPanel.reticulumIdentity.importBackupLabel')}
-        <p className="text-muted mt-1 text-[11px]">
+        <p className="text-muted text-label mt-1">
           {t('connectionPanel.reticulumIdentity.importBackupHint')}
         </p>
         <textarea
@@ -1316,7 +1316,7 @@ function IdentityImportExtras({
       </div>
       <label className="block text-xs text-gray-400">
         {t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
-        <p className="text-muted mt-1 text-[11px]">
+        <p className="text-muted text-label mt-1">
           {t('connectionPanel.reticulumIdentity.importPrivateKeyHint')}
         </p>
         <textarea
@@ -1455,7 +1455,7 @@ function IdentitySlotsSection({
           <p className="text-xs font-medium text-gray-300">
             {t('connectionPanel.reticulumIdentity.slotsTitle')}
           </p>
-          <p className="text-muted text-[11px]">
+          <p className="text-muted text-label">
             {t('connectionPanel.reticulumIdentity.slotsHint')}
           </p>
         </div>
@@ -1485,18 +1485,18 @@ function IdentitySlotsSection({
               <div className="min-w-0">
                 <span className="font-medium text-gray-200">{label}</span>
                 {slot.active ? (
-                  <span className="text-readable-green ml-2 text-[10px]">
+                  <span className="text-readable-green text-2xs ml-2">
                     {t('connectionPanel.reticulumIdentity.slotActive')}
                   </span>
                 ) : null}
-                <p className="text-muted truncate font-mono text-[10px]">{slot.id}</p>
+                <p className="text-muted text-2xs truncate font-mono">{slot.id}</p>
               </div>
               <div className="flex gap-1">
                 {!slot.active && slot.configured ? (
                   <button
                     type="button"
                     disabled={disabled || busy}
-                    className="rounded border border-gray-600 px-2 py-0.5 text-[11px] text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+                    className="text-label rounded border border-gray-600 px-2 py-0.5 text-gray-300 hover:bg-slate-800 disabled:opacity-40"
                     aria-label={t('connectionPanel.reticulumIdentity.slotSwitchAria', {
                       id: slot.id,
                     })}
@@ -1511,7 +1511,7 @@ function IdentitySlotsSection({
                   <button
                     type="button"
                     disabled={disabled || busy}
-                    className="rounded border border-red-900/60 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-950/40 disabled:opacity-40"
+                    className="text-label rounded border border-red-900/60 px-2 py-0.5 text-red-300 hover:bg-red-950/40 disabled:opacity-40"
                     aria-label={t('connectionPanel.reticulumIdentity.slotDeleteAria', {
                       id: slot.id,
                     })}
@@ -1528,7 +1528,7 @@ function IdentitySlotsSection({
         })}
       </ul>
       {notice ? (
-        <p className="text-readable-green text-[11px]" role="status">
+        <p className="text-readable-green text-label" role="status">
           {notice}
         </p>
       ) : null}

@@ -141,7 +141,7 @@ function RoomUnreadDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 border-t border-red-500/50" />
-      <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-red-300">
+      <span className="text-label shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 font-semibold text-red-300">
         {label}
       </span>
       <div className="flex-1 border-t border-red-500/50" />
@@ -1448,7 +1448,7 @@ export default function RoomsPanel({
           }}
           className="flex min-w-0 flex-1 flex-col gap-0.5 py-2 pl-3 text-left"
         >
-          <span className="flex min-w-0 items-center gap-2 text-[13px] text-slate-200">
+          <span className="text-body flex min-w-0 items-center gap-2 text-slate-200">
             {isLoggingIn ? (
               <span
                 role="img"
@@ -1480,12 +1480,12 @@ export default function RoomsPanel({
               {room.long_name}
             </span>
             {unread > 0 && (
-              <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] leading-none font-bold text-white">
+              <span className="text-2xs flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-bold text-white">
                 {unreadLabel}
               </span>
             )}
           </span>
-          <span className="text-muted pl-[22px] text-xs">
+          <span className="text-muted pl-5.5 text-xs">
             {t('roomsPanel.postCount', { count })}
             {unread > 0 && (
               <>
@@ -1605,19 +1605,19 @@ export default function RoomsPanel({
                       onClick={() => {
                         handleSelectRoom(nodeId);
                       }}
-                      className="hover:text-bright-green w-full truncate text-left text-[13px] text-slate-200"
+                      className="hover:text-bright-green text-body w-full truncate text-left text-slate-200"
                     >
                       {resolveRoomDisplayName(nodeId)}
                     </button>
                     {(summary.autoLoginOnConnect || summary.syncEnabled) && (
                       <div className="flex flex-wrap items-center gap-1">
                         {summary.autoLoginOnConnect && (
-                          <span className="bg-secondary-dark rounded-md px-1.5 py-0.5 text-[11px] text-slate-300">
+                          <span className="bg-secondary-dark text-label rounded-md px-1.5 py-0.5 text-slate-300">
                             {t('roomsPanel.badgeAutoLogin')}
                           </span>
                         )}
                         {summary.syncEnabled && (
-                          <span className="bg-secondary-dark rounded-md px-1.5 py-0.5 text-[11px] text-slate-300">
+                          <span className="bg-secondary-dark text-label rounded-md px-1.5 py-0.5 text-slate-300">
                             {t('roomsPanel.badgeAutoSync')}
                           </span>
                         )}
@@ -1698,7 +1698,7 @@ export default function RoomsPanel({
                 {t('roomsPanel.statusLoggedInSession')}
               </span>
               {sessionRole === 'readonly' && (
-                <span className="rounded-md border border-amber-700/50 bg-amber-950/40 px-1.5 text-[11px] text-amber-200">
+                <span className="text-label rounded-md border border-amber-700/50 bg-amber-950/40 px-1.5 text-amber-200">
                   {t('roomsPanel.readOnlyBadge')}
                 </span>
               )}
@@ -1991,10 +1991,10 @@ export default function RoomsPanel({
                       key={p.senderId}
                       className="hover:bg-secondary-dark/40 flex min-h-8 items-center gap-2 rounded-lg px-2"
                     >
-                      <span className="min-w-0 flex-1 truncate text-[13px] text-slate-200">
+                      <span className="text-body min-w-0 flex-1 truncate text-slate-200">
                         {p.senderName}
                       </span>
-                      <span className="text-muted shrink-0 font-mono text-[11px] tabular-nums">
+                      <span className="text-muted text-label shrink-0 font-mono tabular-nums">
                         {formatTimestamp(p.lastPostAt)}
                       </span>
                       {onMessageNode && canDmMeshcorePoster(p.senderId, myNodeNum, nodes) && (
@@ -2047,7 +2047,7 @@ export default function RoomsPanel({
                         key={`${entry.pubkeyHex}:${entry.permissionLevel}`}
                         className="bg-app-bg space-y-1 rounded-lg border border-slate-800 px-2 py-1.5"
                       >
-                        <span className="block font-mono text-[11px] break-all text-slate-300">
+                        <span className="text-label block font-mono break-all text-slate-300">
                           {entry.pubkeyHex}
                         </span>
                         <span className="text-xs text-amber-200">
@@ -2228,7 +2228,7 @@ export default function RoomsPanel({
                         <div className="mb-1 flex items-baseline gap-2 text-xs text-gray-400">
                           <span className="font-medium text-gray-300">{s.sender_name}</span>
                           <span>{formatTimestamp(s.timestamp)}</span>
-                          <span className="bg-secondary-dark rounded-md px-1.5 text-[11px] text-slate-300">
+                          <span className="bg-secondary-dark text-label rounded-md px-1.5 text-slate-300">
                             {roomLabel}
                           </span>
                         </div>

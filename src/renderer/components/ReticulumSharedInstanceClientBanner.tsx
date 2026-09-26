@@ -94,7 +94,7 @@ export function ReticulumSharedInstanceClientBanner({
       <p className="text-muted mt-1 text-xs text-amber-100/90">
         {t('connectionPanel.reticulumSharedInstance.body')}
       </p>
-      <p className="text-muted mt-1 text-[11px]">
+      <p className="text-muted text-label mt-1">
         {t('connectionPanel.reticulumSharedInstance.networkHint')}
       </p>
       {actionError ? (

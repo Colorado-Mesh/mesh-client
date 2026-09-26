@@ -39,6 +39,29 @@ describe('AppRail', () => {
     expect(names).toEqual(['Chat', 'Network', 'Map', 'Monitor', 'Device', 'Incident', 'App']);
   });
 
+  it('keeps Incident and App outside the scrolling part of the rail (EMCOMM S9)', () => {
+    render(
+      <AppRail
+        header={<div>switcher</div>}
+        sections={meshcoreSections}
+        activeSectionId="chat"
+        badgeCounts={{ Incident: 1 }}
+        onSectionSelect={vi.fn()}
+      />,
+    );
+    const nav = screen.getByRole('navigation', { name: 'Application panels' });
+    const scroll = nav.querySelector('[data-rail-scroll]');
+    const footer = nav.querySelector('[data-rail-footer]');
+    expect(scroll?.className).toContain('overflow-y-auto');
+    expect(footer?.className).toContain('shrink-0');
+    expect(footer?.className).not.toContain('overflow');
+    const footerTitles = Array.from(footer?.querySelectorAll('button') ?? []).map((b) =>
+      b.getAttribute('title'),
+    );
+    expect(footerTitles).toEqual(['Incident', 'App']);
+    expect(scroll?.querySelector('[data-nav-section="incident"]')).toBeNull();
+  });
+
   it('marks the active section with aria-current', () => {
     render(
       <AppRail
@@ -133,7 +156,8 @@ describe('AppRail', () => {
       />,
     );
     const nav = screen.getByRole('navigation', { name: 'Application panels' });
-    expect(nav.firstElementChild).toBe(screen.getByTestId('rail-header'));
+    const scroll = nav.querySelector('[data-rail-scroll]');
+    expect(scroll?.firstElementChild).toBe(screen.getByTestId('rail-header'));
   });
 
   it('has no axe violations with badges', async () => {

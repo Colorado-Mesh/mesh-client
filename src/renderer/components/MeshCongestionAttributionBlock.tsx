@@ -56,9 +56,9 @@ export default function MeshCongestionAttributionBlock({
       <div className="mb-2 text-xs font-medium text-orange-300">
         {t('meshCongestion.blockTitle')}
       </div>
-      {scopeSubtitle && <div className="text-muted mb-2 text-[10px]">{scopeSubtitle}</div>}
+      {scopeSubtitle && <div className="text-muted text-2xs mb-2">{scopeSubtitle}</div>}
       {lines.length > 0 && (
-        <div className="text-muted flex flex-col gap-2 text-[10px]">
+        <div className="text-muted text-2xs flex flex-col gap-2">
           {lines.map((line, j) => (
             <p key={j} className="leading-relaxed">
               {renderCongestionLine(line, t)}
@@ -68,7 +68,7 @@ export default function MeshCongestionAttributionBlock({
       )}
       {originators.length > 0 && (
         <div className={lines.length > 0 ? 'mt-3 border-t border-orange-500/20 pt-2' : ''}>
-          <div className="mb-1.5 text-[10px] font-medium text-orange-200/90">
+          <div className="text-2xs mb-1.5 font-medium text-orange-200/90">
             {t('meshCongestion.mostDuplicateProneTitle')}
           </div>
           <ul className="space-y-1">

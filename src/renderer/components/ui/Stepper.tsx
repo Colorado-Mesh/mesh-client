@@ -50,7 +50,7 @@ export function Stepper({
   };
 
   const buttonClass =
-    'flex h-[30px] w-8 items-center justify-center bg-sidebar-active-bg text-slate-300 transition-colors hover:bg-secondary-dark hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40';
+    'flex h-7.5 w-8 items-center justify-center bg-sidebar-active-bg text-slate-300 transition-colors hover:bg-secondary-dark hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40';
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -92,7 +92,7 @@ export function Stepper({
               commit(value - step);
             }
           }}
-          className="border-secondary-dark h-[30px] w-11 border-x bg-transparent text-center font-mono text-[13.5px] text-slate-200 tabular-nums outline-none disabled:opacity-50"
+          className="border-secondary-dark text-body-lg h-7.5 w-11 border-x bg-transparent text-center font-mono text-slate-200 tabular-nums outline-none disabled:opacity-50"
         />
         <button
           type="button"

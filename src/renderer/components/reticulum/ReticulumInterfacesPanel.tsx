@@ -1461,7 +1461,7 @@ function ReticulumInterfaceModeDescription({
   const normalized = normalizeReticulumInterfaceMode(mode);
   if (!normalized) return null;
   return (
-    <p className="mt-1 text-[10px] leading-snug text-gray-500">
+    <p className="text-2xs mt-1 leading-snug text-gray-500">
       {t(`connectionPanel.reticulumInterfaces.modeDescriptions.${normalized}`)}
     </p>
   );
@@ -1553,7 +1553,7 @@ function ReticulumInterfaceModeSelect({
         ))}
       </select>
       {showDescription && selectedDescription ? (
-        <p className="mt-1 max-w-[16rem] text-[10px] leading-snug text-gray-500">
+        <p className="text-2xs mt-1 max-w-[16rem] leading-snug text-gray-500">
           {selectedDescription}
         </p>
       ) : null}
@@ -1868,7 +1868,7 @@ function InterfaceEditPanel({
               {t('connectionPanel.reticulumInterfaces.flowControl')}
             </label>
             {isReticulumBleRnodeSerialPort(serialPort) ? (
-              <p className="text-[10px] leading-snug text-gray-500">
+              <p className="text-2xs leading-snug text-gray-500">
                 {t('connectionPanel.reticulumInterfaces.flowControlBleHint')}
               </p>
             ) : null}
@@ -1962,7 +1962,7 @@ function InterfaceEditPanel({
           />
           {t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
         </label>
-        <p className="text-[10px] leading-snug text-gray-500">
+        <p className="text-2xs leading-snug text-gray-500">
           {t('connectionPanel.reticulumInterfaces.bootstrapOnlyHint')}
         </p>
       </div>
@@ -2386,7 +2386,7 @@ function InterfacesSection({
                 </option>
               </select>
               {rnodeTransport === 'ble' ? (
-                <p className="text-muted mt-1 text-[11px]">
+                <p className="text-muted text-label mt-1">
                   {t('connectionPanel.reticulumInterfaces.rnodeTransportBleHint')}
                 </p>
               ) : null}
@@ -2426,7 +2426,7 @@ function InterfacesSection({
               <summary className="cursor-pointer text-amber-200/90">
                 {t('connectionPanel.reticulumInterfaces.rnodeWifiSetupTitle')}
               </summary>
-              <p className="mt-2 text-[11px] leading-relaxed whitespace-pre-line text-gray-400">
+              <p className="text-label mt-2 leading-relaxed whitespace-pre-line text-gray-400">
                 {t('connectionPanel.reticulumInterfaces.rnodeWifiSetupHint')}
               </p>
             </details>
@@ -2616,7 +2616,7 @@ function InterfacesSection({
                 {t('connectionPanel.reticulumInterfaces.flowControl')}
               </label>
               {showRnodeBle ? (
-                <p className="text-[10px] leading-snug text-gray-500">
+                <p className="text-2xs leading-snug text-gray-500">
                   {t('connectionPanel.reticulumInterfaces.flowControlBleHint')}
                 </p>
               ) : null}
@@ -2645,7 +2645,7 @@ function InterfacesSection({
             />
             {t('connectionPanel.reticulumInterfaces.bootstrapOnly')}
           </label>
-          <p className="text-[10px] leading-snug text-gray-500">
+          <p className="text-2xs leading-snug text-gray-500">
             {t('connectionPanel.reticulumInterfaces.bootstrapOnlyHint')}
           </p>
         </div>
@@ -2870,12 +2870,12 @@ function InterfacesSection({
                                   />
                                 </HelpTooltip>
                                 {help.isRuntimeOnly ? (
-                                  <span className="text-muted text-[10px] tracking-wide uppercase">
+                                  <span className="text-muted text-2xs tracking-wide uppercase">
                                     {t('connectionPanel.reticulumInterfaces.runtimeBadge')}
                                   </span>
                                 ) : null}
                                 {isPrimaryRow ? (
-                                  <span className="text-readable-green text-[10px] tracking-wide uppercase">
+                                  <span className="text-readable-green text-2xs tracking-wide uppercase">
                                     {t('connectionPanel.reticulumInterfaces.primaryLocalBadge')}
                                   </span>
                                 ) : null}

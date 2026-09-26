@@ -350,7 +350,7 @@ export default function NodeInfoBody({
             <div className="flex items-center gap-2">
               <RoleDisplay role={node.role} />
               {awaitingNodeInfo && (
-                <span className="text-[10px] text-gray-500" title={t('nodeInfoBody.pendingTitle')}>
+                <span className="text-2xs text-gray-500" title={t('nodeInfoBody.pendingTitle')}>
                   {t('nodeInfoBody.pending')}
                 </span>
               )}
@@ -609,7 +609,7 @@ export default function NodeInfoBody({
 
         {/* Stability metric */}
         <div className="mt-2 flex items-center justify-between border-t border-gray-700/50 pt-2">
-          <span className="text-[10px] text-gray-500">{t('nodeInfoBody.routeStability')}</span>
+          <span className="text-2xs text-gray-500">{t('nodeInfoBody.routeStability')}</span>
           <span className={`text-xs font-medium ${stabilityColor}`}>
             {stabilityLabel}
             {recentHour.length >= 2 && hopChanges > 0 && (
@@ -637,9 +637,7 @@ export default function NodeInfoBody({
               .join(' ');
             return (
               <div className="mt-2">
-                <div className="mb-0.5 text-[10px] text-gray-500">
-                  {t('nodeInfoBody.hopCount24h')}
-                </div>
+                <div className="text-2xs mb-0.5 text-gray-500">{t('nodeInfoBody.hopCount24h')}</div>
                 <svg viewBox="0 0 200 40" className="text-brand-green/60 h-8 w-full">
                   <polyline
                     points={points}
@@ -661,9 +659,7 @@ export default function NodeInfoBody({
             title={t('nodeInfoBody.connectionHealthTooltip')}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-gray-500">
-                {t('nodeInfoBody.connectionHealth')}
-              </span>
+              <span className="text-2xs text-gray-500">{t('nodeInfoBody.connectionHealth')}</span>
               <span
                 className={`text-xs font-medium ${
                   nodeRedundancy.score >= 67
@@ -675,7 +671,7 @@ export default function NodeInfoBody({
               >
                 {nodeRedundancy.score}%
                 {nodeRedundancy.maxPaths >= 3 && (
-                  <span className="ml-1 text-[10px] text-lime-400/80">
+                  <span className="text-2xs ml-1 text-lime-400/80">
                     {t('nodeInfoBody.highlyRedundant')}
                   </span>
                 )}
@@ -697,7 +693,7 @@ export default function NodeInfoBody({
                     onClick={() => {
                       setPathHistoryOpen((o) => !o);
                     }}
-                    className="flex items-center gap-1 text-[10px] text-gray-500 transition-colors hover:text-gray-300"
+                    className="text-2xs flex items-center gap-1 text-gray-500 transition-colors hover:text-gray-300"
                   >
                     <span>{pathHistoryOpen ? '▾' : '▸'}</span>
                     {t('nodeInfoBody.pathHistory')} (
@@ -707,10 +703,7 @@ export default function NodeInfoBody({
                   {pathHistoryOpen && (
                     <div className="mt-1.5 flex max-h-48 flex-col gap-1.5 overflow-y-auto pr-1">
                       {echoPackets.map((rec) => (
-                        <div
-                          key={rec.packetId}
-                          className="bg-deep-black/50 rounded p-1.5 text-[10px]"
-                        >
+                        <div key={rec.packetId} className="bg-deep-black/50 text-2xs rounded p-1.5">
                           <div className="mb-0.5 font-mono text-gray-400">
                             #{rec.packetId.toString(16).toUpperCase()} —{' '}
                             {t('nodeInfoBody.paths', { count: rec.paths.length })}
@@ -750,7 +743,7 @@ export default function NodeInfoBody({
         {/* MeshCore trace history from database */}
         {protocol === 'meshcore' && (meshcoreHopHistory || meshcoreTraceHistory) && (
           <div className="mt-2 border-t border-gray-700/50 pt-2">
-            <div className="mb-1 text-[10px] tracking-wide text-gray-500 uppercase">
+            <div className="text-2xs mb-1 tracking-wide text-gray-500 uppercase">
               {t('nodeInfoBody.meshcorePathHistory')}
             </div>
             {meshcoreHopHistory && (
@@ -766,7 +759,7 @@ export default function NodeInfoBody({
                 {meshcoreHopHistory.rssi != null && (
                   <span className="ml-2 text-gray-500">{meshcoreHopHistory.rssi} dBm</span>
                 )}
-                <span className="ml-2 text-[10px] text-gray-600">
+                <span className="text-2xs ml-2 text-gray-600">
                   {formatDisplayTime(meshcoreHopHistory.timestamp, { use24Hour: use24HourTime })}
                 </span>
               </div>
@@ -775,7 +768,7 @@ export default function NodeInfoBody({
               meshcoreTraceHistory.length > 0 &&
               showMeshcoreTraceHistoryBlock &&
               meshcoreTraceFirst != null && (
-                <div className="bg-deep-black/50 rounded p-1.5 text-[10px]">
+                <div className="bg-deep-black/50 text-2xs rounded p-1.5">
                   <div className="mb-0.5 text-gray-400">
                     {meshcoreTraceFirst.pathLen != null && (
                       <>
@@ -801,13 +794,13 @@ export default function NodeInfoBody({
                       <span className="w-8 text-gray-500">
                         {t('nodeInfoBody.hopN', { n: i + 1 })}
                       </span>
-                      <SnrIndicator snr={snr} className="text-[10px]" />
+                      <SnrIndicator snr={snr} className="text-2xs" />
                     </div>
                   ))}
                   {meshcoreTraceFirst.lastSnr != null && (
                     <div className="mt-0.5 flex items-center gap-2 border-t border-gray-700/30 pt-0.5 pl-1.5">
                       <span className="w-8 text-gray-500">{t('nodeInfoBody.dest')}</span>
-                      <SnrIndicator snr={meshcoreTraceFirst.lastSnr} className="text-[10px]" />
+                      <SnrIndicator snr={meshcoreTraceFirst.lastSnr} className="text-2xs" />
                     </div>
                   )}
                 </div>
@@ -989,7 +982,7 @@ function RFDiagnosticsSection({
           <div className="text-sm font-medium text-gray-400">{t('nodeInfoBody.rfDiagnostics')}</div>
           {!noTelemetry && totalChecks !== null && (
             <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+              className={`text-2xs rounded px-1.5 py-0.5 font-medium ${
                 flagged === 0
                   ? 'bg-green-900/40 text-green-400'
                   : 'bg-orange-900/40 text-orange-400'
@@ -1018,7 +1011,7 @@ function RFDiagnosticsSection({
                       {translateRfConditionLabel(t, f.condition)}
                     </span>
                     {f.isLastHop && (
-                      <span className="rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-[10px] text-blue-300">
+                      <span className="text-2xs rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-blue-300">
                         {t('nodeInfoBody.lastHopSnrBadge')}
                       </span>
                     )}
@@ -1027,7 +1020,7 @@ function RFDiagnosticsSection({
                     — {translateRFDiagnosisCause(t, f.cause, f.causeI18n)}
                   </div>
                   {(f.hints?.length ?? 0) > 0 && (
-                    <ul className="text-muted mt-1.5 list-disc space-y-0.5 pl-3 text-[10px]">
+                    <ul className="text-muted text-2xs mt-1.5 list-disc space-y-0.5 pl-3">
                       {f.hints!.map((h, j) => (
                         <li key={j}>{h}</li>
                       ))}
@@ -1036,7 +1029,7 @@ function RFDiagnosticsSection({
                   {f.condition === 'LoRa Collision or Corruption' &&
                     isOurNode &&
                     !hasForeignLora && (
-                      <p className="text-muted mt-1.5 text-[10px]">
+                      <p className="text-muted text-2xs mt-1.5">
                         {t('nodeInfoBody.loraCollisionNote')}
                       </p>
                     )}

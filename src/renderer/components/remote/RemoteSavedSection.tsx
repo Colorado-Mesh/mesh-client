@@ -69,7 +69,7 @@ export function RemoteSavedSection() {
           }}
           placeholder={t('reticulumRemote.saved.labelPlaceholder')}
           aria-label={t('reticulumRemote.saved.labelAria')}
-          className="bg-secondary-dark/80 min-w-[140px] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+          className="bg-secondary-dark/80 min-w-35 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
         />
         <input
           type="text"
@@ -79,7 +79,7 @@ export function RemoteSavedSection() {
           }}
           placeholder={t('reticulumRemote.saved.hashPlaceholder')}
           aria-label={t('reticulumRemote.saved.hashAria')}
-          className="bg-secondary-dark/80 min-w-[220px] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+          className="bg-secondary-dark/80 min-w-55 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
         />
         <select
           value={service}
@@ -121,7 +121,7 @@ export function RemoteSavedSection() {
               key={addr.id}
               className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-800/30 px-3 py-2 text-xs text-gray-200"
             >
-              <span className="rounded bg-gray-700/60 px-1.5 py-0.5 text-[10px] text-gray-300 uppercase">
+              <span className="text-2xs rounded bg-gray-700/60 px-1.5 py-0.5 text-gray-300 uppercase">
                 {addr.service}
               </span>
               <span className="font-medium">{addr.label}</span>

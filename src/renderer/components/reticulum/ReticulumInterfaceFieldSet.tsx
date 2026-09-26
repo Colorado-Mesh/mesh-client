@@ -167,7 +167,7 @@ export function ReticulumInterfaceFieldSet({
           className={`${INPUT_CLASS} ${field.kind === 'number' ? 'w-24' : 'min-w-[8rem]'}`}
         />
         {showError ? (
-          <span id={`${id}-error`} role="alert" className="mt-1 block text-[11px] text-red-300">
+          <span id={`${id}-error`} role="alert" className="text-label mt-1 block text-red-300">
             {t(errorKey)}
           </span>
         ) : null}

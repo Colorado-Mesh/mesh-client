@@ -18,7 +18,7 @@ export function ProtocolUnreadBadge({
       />
       <span
         data-protocol-unread-label
-        className={`relative z-[1] inline-flex h-4 min-w-[1.1rem] items-center justify-center rounded-full px-0.5 text-[10px] font-bold text-white ${fillClass}`}
+        className={`text-2xs relative z-[1] inline-flex h-4 min-w-[1.1rem] items-center justify-center rounded-full px-0.5 font-bold text-white ${fillClass}`}
       >
         {label}
       </span>

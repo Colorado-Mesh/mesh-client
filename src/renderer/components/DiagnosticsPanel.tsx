@@ -629,7 +629,7 @@ export default function DiagnosticsPanel({
               <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
                 {translateRfConditionLabel(t, rf.condition)}
                 {rf.isLastHop && (
-                  <span className="ml-1 rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-[10px] text-blue-300">
+                  <span className="text-2xs ml-1 rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-blue-300">
                     {t('diagnosticsPanel.lastHopBadge')}
                   </span>
                 )}
@@ -644,7 +644,7 @@ export default function DiagnosticsPanel({
               {remedy ? (
                 <span
                   title={translateRemedyDescription(t, remedy)}
-                  className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
+                  className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
                 >
                   {translateRemedyTitle(t, remedy)}
                 </span>
@@ -742,7 +742,7 @@ export default function DiagnosticsPanel({
               return (
                 <span
                   title={translateRemedyDescription(t, remedy)}
-                  className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
+                  className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
                 >
                   {translateRemedyTitle(t, remedy)}
                 </span>
@@ -763,7 +763,7 @@ export default function DiagnosticsPanel({
                 </span>
               ) : traceHops ? (
                 <div className="text-right">
-                  <div className="text-muted mb-0.5 text-[10px]">
+                  <div className="text-muted text-2xs mb-0.5">
                     {t('diagnosticsPanel.routeColumn')}
                   </div>
                   <div className="flex flex-wrap justify-end gap-0.5 font-mono text-xs text-gray-300">
@@ -784,7 +784,7 @@ export default function DiagnosticsPanel({
                     type="button"
                     onClick={() => handleTraceRoute(anomaly.nodeId)}
                     disabled={!isConnected}
-                    className="bg-secondary-dark mt-1 rounded px-2 py-0.5 text-[10px] text-gray-400 hover:bg-gray-600 disabled:opacity-40"
+                    className="bg-secondary-dark text-2xs mt-1 rounded px-2 py-0.5 text-gray-400 hover:bg-gray-600 disabled:opacity-40"
                   >
                     {t('diagnosticsPanel.reTrace')}
                   </button>
@@ -811,7 +811,7 @@ export default function DiagnosticsPanel({
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, false);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 text-[10px] whitespace-nowrap text-yellow-300 transition-colors hover:bg-yellow-500/30"
+                    className="text-2xs inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 whitespace-nowrap text-yellow-300 transition-colors hover:bg-yellow-500/30"
                     title={t('diagnosticsPanel.stopIgnoringMqtt')}
                   >
                     {t('diagnosticsPanel.mqttIgnoredToggle')}
@@ -822,7 +822,7 @@ export default function DiagnosticsPanel({
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, true);
                     }}
-                    className="bg-secondary-dark text-muted rounded px-2 py-0.5 text-[10px] whitespace-nowrap transition-colors hover:bg-gray-600 hover:text-gray-300"
+                    className="bg-secondary-dark text-muted text-2xs rounded px-2 py-0.5 whitespace-nowrap transition-colors hover:bg-gray-600 hover:text-gray-300"
                     title={t('diagnosticsPanel.excludeMqttData')}
                   >
                     {t('diagnosticsPanel.ignoreMqttButton')}

@@ -2180,7 +2180,7 @@ export default function ConnectionPanel({
               }}
               className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqtt-tls-enabled" className="cursor-pointer text-[13px] text-slate-200">
+            <label htmlFor="mqtt-tls-enabled" className="text-body cursor-pointer text-slate-200">
               {t('connectionPanel.mqttTlsEnabled')}
             </label>
           </div>
@@ -2210,7 +2210,7 @@ export default function ConnectionPanel({
               }}
               className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqtt-websocket" className="cursor-pointer text-[13px] text-slate-200">
+            <label htmlFor="mqtt-websocket" className="text-body cursor-pointer text-slate-200">
               {t('connectionPanel.useWebSocket')}{' '}
               <span className="text-muted">{t('connectionPanel.wsRequired')}</span>
             </label>
@@ -2416,7 +2416,7 @@ export default function ConnectionPanel({
               }}
               className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqttAutoLaunch" className="cursor-pointer text-[13px] text-slate-200">
+            <label htmlFor="mqttAutoLaunch" className="text-body cursor-pointer text-slate-200">
               {t('connectionPanel.autoConnect')}
             </label>
           </div>
@@ -2766,7 +2766,7 @@ export default function ConnectionPanel({
               {state.firmwareVersion && (
                 <LabelValue label={t('connectionPanel.firmware')}>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="font-mono text-[13.5px]">{state.firmwareVersion}</span>
+                    <span className="text-body-lg font-mono">{state.firmwareVersion}</span>
                     {firmwareCheckState && onOpenFirmwareReleases && (
                       <FirmwareStatusIndicator
                         phase={firmwareCheckState.phase}
@@ -2836,7 +2836,7 @@ export default function ConnectionPanel({
 
       {/* Last Connection — one-click reconnect card */}
       {showLastConnection && (
-        <div className="bg-deep-black flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 px-[18px] py-4">
+        <div className="bg-deep-black flex flex-wrap items-center gap-3 rounded-xl border border-slate-800 px-4.5 py-4">
           <span className="bg-sidebar-active-bg flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-slate-300">
             <ConnectionIcon type={lastConnection.type} />
           </span>

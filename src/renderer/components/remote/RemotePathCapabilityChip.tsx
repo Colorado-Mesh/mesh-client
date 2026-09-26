@@ -24,7 +24,7 @@ export function RemotePathCapabilityChip({
 
   if (loading) {
     return (
-      <span className="rounded-full border border-gray-600 bg-gray-800/50 px-2 py-0.5 text-[11px] text-gray-400">
+      <span className="text-label rounded-full border border-gray-600 bg-gray-800/50 px-2 py-0.5 text-gray-400">
         {t('reticulumRemote.pathCapability.checking')}
       </span>
     );
@@ -36,18 +36,16 @@ export function RemotePathCapabilityChip({
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${SPEED_CLASSES[capability.speed]}`}
+      className={`text-label inline-flex items-center gap-1 rounded-full border px-2 py-0.5 ${SPEED_CLASSES[capability.speed]}`}
       title={reasonI18nKey ? t(reasonI18nKey) : undefined}
     >
       {t(`reticulumRemote.pathCapability.speed.${capability.speed}`)}
       {capability.hops != null && (
-        <span className="text-[10px] opacity-80">
+        <span className="text-2xs opacity-80">
           {t('reticulumRemote.pathCapability.hops', { count: capability.hops })}
         </span>
       )}
-      {warn && reasonI18nKey && (
-        <span className="text-[10px] opacity-90">· {t(reasonI18nKey)}</span>
-      )}
+      {warn && reasonI18nKey && <span className="text-2xs opacity-90">· {t(reasonI18nKey)}</span>}
     </span>
   );
 }

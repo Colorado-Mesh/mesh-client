@@ -54,7 +54,7 @@ export interface MenuProps {
   entries: readonly MenuEntry[];
   'aria-label': string;
   align?: 'start' | 'end';
-  /** Menu width in px (default 248, as in the Option B mockups). */
+  /** Menu width in px at the default text size (248, as in the Option B mockups); scales with it. */
   width?: number;
 }
 
@@ -151,7 +151,8 @@ export function Menu({
       onKeyDown={handleKeyDown}
       style={{
         zIndex: Z_POPOVER_MENU,
-        width,
+        width: `${width / 16}rem`,
+        maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
         top: position?.top ?? -9999,
         left: position?.left ?? -9999,
       }}
@@ -176,7 +177,7 @@ export function Menu({
               closeAndRefocus();
               entry.onSelect();
             }}
-            className={`flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`text-body flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
               entry.tone === 'danger'
                 ? 'text-red-400 hover:bg-red-400/10 focus-visible:bg-red-400/10'
                 : 'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-slate-200'
@@ -186,7 +187,7 @@ export function Menu({
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="font-medium">{entry.label}</span>
               {entry.description && (
-                <span id={`${menuDomId}-${entry.id}-desc`} className="text-[11.5px] text-slate-300">
+                <span id={`${menuDomId}-${entry.id}-desc`} className="text-meta text-slate-300">
                   {entry.description}
                 </span>
               )}
@@ -382,7 +383,7 @@ export function SplitButton({
         type="button"
         onClick={onClick}
         disabled={disabled}
-        className={`flex h-[30px] items-center gap-1.5 px-3 text-[13px] font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${SPLIT_MAIN[variant]}`}
+        className={`text-body flex h-7.5 items-center gap-1.5 px-3 font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${SPLIT_MAIN[variant]}`}
       >
         {icon}
         {label}
@@ -395,7 +396,7 @@ export function SplitButton({
         disabled={disabled}
         onClick={toggle}
         {...menuTriggerAria(open, menuId)}
-        className={`flex h-[30px] w-[30px] items-center justify-center border-l transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${SPLIT_CHEVRON[variant]}`}
+        className={`flex h-7.5 w-7.5 items-center justify-center border-l transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${SPLIT_CHEVRON[variant]}`}
       >
         <ChevronDown aria-hidden className={ICON_MD} size={16} />
       </button>

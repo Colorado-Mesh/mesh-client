@@ -285,7 +285,7 @@ export default function NomadPageServerPanel({
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="text-sm font-medium text-gray-100">{t('nomadNetwork.serving.title')}</h3>
         {serving ? (
-          <span className="bg-readable-green rounded px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="bg-readable-green text-2xs rounded px-2 py-0.5 font-medium text-white">
             {t('nomadNetwork.serving.servingChip')}
           </span>
         ) : null}
@@ -433,7 +433,7 @@ export default function NomadPageServerPanel({
             pages.map((page) => (
               <li key={page.path} className="flex items-center gap-2 text-sm">
                 <span className="truncate text-gray-200">{page.path}</span>
-                <span className="text-muted shrink-0 text-[10px]">{page.size} B</span>
+                <span className="text-muted text-2xs shrink-0">{page.size} B</span>
                 <button
                   type="button"
                   disabled={busy || !sidecarRunning || !hasContentSource}
@@ -441,7 +441,7 @@ export default function NomadPageServerPanel({
                     void editPage(page);
                   }}
                   aria-label={t('nomadNetwork.serving.editPage', { path: page.path })}
-                  className="ml-auto shrink-0 rounded border border-gray-600 px-2 py-0.5 text-[10px] text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                  className="text-2xs ml-auto shrink-0 rounded border border-gray-600 px-2 py-0.5 text-gray-200 hover:bg-slate-800 disabled:opacity-40"
                 >
                   {t('nomadNetwork.serving.edit')}
                 </button>
@@ -454,7 +454,7 @@ export default function NomadPageServerPanel({
                         void removePage(page.path);
                       }}
                       aria-label={t('nomadNetwork.serving.deleteConfirmAria')}
-                      className="shrink-0 rounded border border-red-600 px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30 disabled:opacity-40"
+                      className="text-2xs shrink-0 rounded border border-red-600 px-2 py-0.5 text-red-300 hover:bg-red-900/30 disabled:opacity-40"
                     >
                       {t('common.confirm')}
                     </button>
@@ -465,7 +465,7 @@ export default function NomadPageServerPanel({
                         setPendingDelete(null);
                       }}
                       aria-label={t('common.cancel')}
-                      className="shrink-0 rounded border border-gray-600 px-2 py-0.5 text-[10px] text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                      className="text-2xs shrink-0 rounded border border-gray-600 px-2 py-0.5 text-gray-200 hover:bg-slate-800 disabled:opacity-40"
                     >
                       {t('common.cancel')}
                     </button>
@@ -478,7 +478,7 @@ export default function NomadPageServerPanel({
                       setPendingDelete(page.path);
                     }}
                     aria-label={t('nomadNetwork.serving.deletePage', { path: page.path })}
-                    className="shrink-0 rounded border border-red-600 px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30 disabled:opacity-40"
+                    className="text-2xs shrink-0 rounded border border-red-600 px-2 py-0.5 text-red-300 hover:bg-red-900/30 disabled:opacity-40"
                   >
                     {t('nomadNetwork.serving.delete')}
                   </button>

@@ -21,7 +21,7 @@ export interface StatusTileProps {
 export function StatusTile({ icon, label, status, tone, pulse, detail, action }: StatusTileProps) {
   const active = tone === 'ok';
   return (
-    <div className="bg-deep-black flex min-w-0 items-center gap-3.5 rounded-xl border border-slate-800 px-[18px] py-4">
+    <div className="bg-deep-black flex min-w-0 flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border border-slate-800 px-4.5 py-4">
       <span
         aria-hidden="true"
         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] ${
@@ -30,13 +30,13 @@ export function StatusTile({ icon, label, status, tone, pulse, detail, action }:
       >
         {icon}
       </span>
-      <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-muted text-xs">{label}</span>
-        <span className="flex items-center gap-[7px] text-[15px] font-semibold text-slate-200">
+        <span className="text-title flex items-center gap-1.75 font-semibold text-slate-200">
           <StatusDot tone={tone} pulse={pulse} size="md" />
-          <span>{status}</span>
+          <span className="min-w-0 truncate">{status}</span>
         </span>
-        {detail && <span className="truncate text-[12.5px] text-slate-300">{detail}</span>}
+        {detail && <span className="text-control truncate text-slate-300">{detail}</span>}
       </div>
       {action && <div className="ml-auto shrink-0">{action}</div>}
     </div>

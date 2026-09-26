@@ -26,7 +26,7 @@ export function StatusDot({
   /** When set the dot is announced (`role="img"`); otherwise it is decorative. */
   label?: string;
 }) {
-  const dimension = size === 'md' ? 'h-2 w-2' : 'h-[7px] w-[7px]';
+  const dimension = size === 'md' ? 'h-2 w-2' : 'h-1.75 w-1.75';
   const className = `inline-block shrink-0 rounded-full ${dimension} ${DOT_CLASS[tone]} ${pulse ? 'animate-pulse' : ''}`;
   if (label) {
     return <span role="img" aria-label={label} className={className} />;

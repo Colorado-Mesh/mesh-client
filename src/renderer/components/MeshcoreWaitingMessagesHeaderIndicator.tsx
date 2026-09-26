@@ -35,7 +35,7 @@ function WaitingMessagesDeferredIcon() {
 function WaitingMessagesQueuedPill({ count }: { count: number }) {
   return (
     <span
-      className="flex shrink-0 items-center rounded border border-amber-700 bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-200"
+      className="text-2xs flex shrink-0 items-center rounded border border-amber-700 bg-amber-900/60 px-1.5 py-0.5 font-medium text-amber-200"
       aria-hidden
     >
       {count}

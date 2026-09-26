@@ -35,7 +35,7 @@ export default function FirmwareStatusIndicator({ phase, latestVersion, onOpenRe
     <button
       type="button"
       onClick={onOpenReleases}
-      className="font-inherit inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[11px] text-amber-400 transition-colors hover:text-amber-300"
+      className="font-inherit text-label inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-amber-400 transition-colors hover:text-amber-300"
       aria-label={
         latestVersion
           ? t('firmwareStatus.updateAvailableVersion', { version: latestVersion })

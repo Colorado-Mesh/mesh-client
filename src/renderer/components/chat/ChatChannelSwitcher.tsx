@@ -22,6 +22,7 @@ export interface ChatChannelSwitcherProps {
   onSelect: (index: number) => void;
 }
 
+/** Popover width in px at the default text size; rendered in rem so it grows with Text size. */
 const POPOVER_WIDTH = 280;
 const VIEWPORT_MARGIN = 8;
 
@@ -88,9 +89,10 @@ export function ChatChannelSwitcher({
     const anchor = triggerRef.current;
     if (!anchor) return;
     const rect = anchor.getBoundingClientRect();
+    const width = popoverRef.current?.offsetWidth || POPOVER_WIDTH;
     const left = Math.max(
       VIEWPORT_MARGIN,
-      Math.min(rect.left, window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN),
+      Math.min(rect.left, window.innerWidth - width - VIEWPORT_MARGIN),
     );
     setPosition({ top: rect.bottom + 4, left });
     inputRef.current?.focus();
@@ -166,16 +168,14 @@ export function ChatChannelSwitcher({
           if (open) close(false);
           else setOpen(true);
         }}
-        className="border-secondary-dark bg-sidebar-active-bg hover:bg-secondary-dark inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-[12.5px] font-medium text-slate-200 transition-colors"
+        className="border-secondary-dark bg-sidebar-active-bg hover:bg-secondary-dark text-control inline-flex h-7 shrink-0 items-center gap-1.5 rounded-lg border px-2 font-medium text-slate-200 transition-colors"
       >
         <Hash aria-hidden className={`${ICON_SM_PLUS} text-muted`} size={14} />
-        <span className="font-mono text-[11.5px] text-slate-300 tabular-nums">
-          {channels.length}
-        </span>
+        <span className="text-meta font-mono text-slate-300 tabular-nums">{channels.length}</span>
         {unreadElsewhere > 0 && (
           <span
             aria-hidden="true"
-            className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] leading-none font-bold text-white"
+            className="text-2xs flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-bold text-white"
           >
             {formatUnread(unreadElsewhere)}
           </span>
@@ -189,7 +189,8 @@ export function ChatChannelSwitcher({
             className="bg-deep-black fixed flex max-h-[min(420px,70vh)] flex-col overflow-hidden rounded-xl border border-slate-800 shadow-2xl"
             style={{
               zIndex: Z_POPOVER_MENU,
-              width: POPOVER_WIDTH,
+              width: `${POPOVER_WIDTH / 16}rem`,
+              maxWidth: `calc(100vw - ${VIEWPORT_MARGIN * 2}px)`,
               top: position?.top ?? -9999,
               left: position?.left ?? -9999,
             }}
@@ -252,11 +253,11 @@ export function ChatChannelSwitcher({
                           choose(ch.index);
                         }
                       }}
-                      className={`flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2.5 text-[13px] ${
+                      className={`text-body flex h-8 cursor-pointer items-center gap-2 rounded-lg px-2.5 ${
                         highlighted ? 'bg-sidebar-active-bg text-slate-100' : 'text-slate-300'
                       }`}
                     >
-                      <span className="text-muted w-6 shrink-0 font-mono text-[11px] tabular-nums">
+                      <span className="text-muted text-label w-6 shrink-0 font-mono tabular-nums">
                         {ch.index}
                       </span>
                       <span
@@ -265,7 +266,7 @@ export function ChatChannelSwitcher({
                         {ch.name}
                       </span>
                       {unread > 0 && (
-                        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] leading-none font-bold text-white">
+                        <span className="text-2xs flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-bold text-white">
                           {formatUnread(unread)}
                         </span>
                       )}

@@ -306,7 +306,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                     </span>
                     {session.unread > 0 && (
                       <span
-                        className="rounded-full bg-red-600 px-1.5 text-[10px] text-white"
+                        className="text-2xs rounded-full bg-red-600 px-1.5 text-white"
                         aria-label={t('gamesPanel.unreadBadgeAria', { count: session.unread })}
                       >
                         {session.unread}
@@ -357,7 +357,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
               {t('gamesPanel.sendChallenge')}
             </button>
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-gray-400">
+          <p className="text-label mt-2 leading-snug text-gray-400">
             {t('gamesPanel.idleExpiryNotice')}
           </p>
         </div>

@@ -504,7 +504,7 @@ function MapLayerControl({
       {layersPanelOpen && (
         <div className="bg-deep-black/90 w-52 space-y-3 rounded-lg border border-gray-700 p-3 text-gray-200 shadow-lg backdrop-blur-sm">
           <div className="space-y-1">
-            <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
+            <div className="text-2xs font-medium tracking-wide text-gray-400 uppercase">
               {t('mapPanel.basemapHeading')}
             </div>
             <select
@@ -522,7 +522,7 @@ function MapLayerControl({
             </select>
           </div>
           <div className="space-y-1.5">
-            <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
+            <div className="text-2xs font-medium tracking-wide text-gray-400 uppercase">
               {t('mapPanel.layersHeading')}
             </div>
             {layerRow('nodes', t('mapPanel.layerNodes'), showNodes, setShowNodes)}

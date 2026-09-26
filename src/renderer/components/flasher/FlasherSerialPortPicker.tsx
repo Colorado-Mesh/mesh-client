@@ -91,7 +91,7 @@ export function FlasherSerialPortPicker({
                 <div className="flex items-center gap-2 text-sm text-gray-200">
                   <span>{title}</span>
                   {isLastUsed ? (
-                    <span className="bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 text-[10px] font-medium">
+                    <span className="bg-readable-green/20 text-readable-green text-2xs rounded px-1.5 py-0.5 font-medium">
                       {t('flasher.lastUsedPort')}
                     </span>
                   ) : null}

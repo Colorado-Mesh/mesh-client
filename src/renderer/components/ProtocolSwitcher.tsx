@@ -45,7 +45,7 @@ export function ProtocolSwitcher({
             onClick={() => {
               onProtocolChange(proto);
             }}
-            className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] font-mono text-[13px] font-medium transition-colors ${
+            className={`text-body relative flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] font-mono font-medium transition-colors ${
               isActive ? theme.railActiveClass : RAIL_PROTOCOL_INACTIVE_CLASS
             }`}
           >

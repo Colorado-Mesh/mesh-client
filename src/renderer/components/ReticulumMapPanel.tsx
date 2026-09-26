@@ -557,7 +557,7 @@ export default function ReticulumMapPanel({
         </div>
 
         <aside className="relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-slate-700 bg-slate-900/50">
-          <h3 className="shrink-0 border-b border-slate-700 px-2 py-1.5 text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+          <h3 className="text-2xs shrink-0 border-b border-slate-700 px-2 py-1.5 font-semibold tracking-wide text-slate-400 uppercase">
             {t('reticulumMap.listTitle')}
           </h3>
           <ul
@@ -566,7 +566,7 @@ export default function ReticulumMapPanel({
             className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
           >
             {listRows.length === 0 ? (
-              <li className="px-2 py-3 text-[11px] text-slate-500">
+              <li className="text-label px-2 py-3 text-slate-500">
                 {t('reticulumMap.empty.hint')}
               </li>
             ) : (
@@ -604,16 +604,16 @@ export default function ReticulumMapPanel({
                           {row.discovery_name}
                         </span>
                       </div>
-                      <div className="truncate pl-3 text-[10px] leading-tight text-slate-500">
+                      <div className="text-2xs truncate pl-3 leading-tight text-slate-500">
                         {row.interface_type}
                         {!hasCoords ? ` · ${t('reticulumMap.noCoords')}` : ''}
                       </div>
                       {formatRmapDiscoveredEndpoint(row) ? (
-                        <div className="truncate pl-3 font-mono text-[10px] leading-tight text-slate-400">
+                        <div className="text-2xs truncate pl-3 font-mono leading-tight text-slate-400">
                           {formatRmapDiscoveredEndpoint(row)}
                         </div>
                       ) : null}
-                      <div className="truncate pl-3 text-[10px] leading-tight text-slate-500">
+                      <div className="text-2xs truncate pl-3 leading-tight text-slate-500">
                         {t('reticulumMap.stampStatus', {
                           stamp: row.stamp_value,
                           status: row.status,
@@ -629,7 +629,7 @@ export default function ReticulumMapPanel({
                             addBusyHash === row.discovery_hash ||
                             addedDiscoveryHashes.has(row.discovery_hash)
                           }
-                          className="rounded border border-cyan-700/60 px-1.5 py-0.5 text-[10px] text-cyan-300 hover:bg-cyan-950/40 disabled:opacity-50"
+                          className="text-2xs rounded border border-cyan-700/60 px-1.5 py-0.5 text-cyan-300 hover:bg-cyan-950/40 disabled:opacity-50"
                           aria-label={
                             addedDiscoveryHashes.has(row.discovery_hash)
                               ? t('reticulumMap.addAsInterfaceAddedAria', {
@@ -661,7 +661,7 @@ export default function ReticulumMapPanel({
             <button
               type="button"
               onClick={scrollListToTop}
-              className="bg-secondary-dark absolute top-9 right-2 z-10 rounded-full border border-gray-600 px-2.5 py-1 text-[10px] font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+              className="bg-secondary-dark text-2xs absolute top-9 right-2 z-10 rounded-full border border-gray-600 px-2.5 py-1 font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
               aria-label={t('aria.backToTop')}
             >
               {t('app.scrollToTop')}

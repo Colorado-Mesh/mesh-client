@@ -5,15 +5,15 @@
 
 /** Text, number and search inputs: 32px, app background, strong border, green focus ring. */
 export const INPUT_CLASS =
-  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green h-8 w-full rounded-lg border px-2.5 text-[13px] text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green h-8 w-full rounded-lg border px-2.5 text-body text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
 /** Native `<select>`: same box as inputs. */
 export const SELECT_CLASS =
-  'bg-app-bg border-secondary-dark focus:border-brand-green h-8 w-full rounded-lg border px-2 text-[13px] text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+  'bg-app-bg border-secondary-dark focus:border-brand-green h-8 w-full rounded-lg border px-2 text-body text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
 /** Multi-line text. */
 export const TEXTAREA_CLASS =
-  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green w-full rounded-lg border px-2.5 py-2 text-[13px] text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green w-full rounded-lg border px-2.5 py-2 text-body text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
 /** Field label above a control. */
 export const FIELD_LABEL_CLASS = 'text-muted text-xs';
@@ -23,7 +23,7 @@ export const CHECKBOX_CLASS = 'accent-brand-green h-4 w-4 shrink-0';
 
 /** Small toggle chip (`aria-pressed`) for presets and regions; `sm` fits inside list rows. */
 export function chipClass(active: boolean, size: 'sm' | 'md' = 'md'): string {
-  const box = size === 'sm' ? 'h-6 px-2 text-[11px]' : 'h-7 px-2.5 text-[12.5px]';
+  const box = size === 'sm' ? 'h-6 px-2 text-label' : 'h-7 px-2.5 text-control';
   return `${box} rounded-lg border font-medium transition-colors ${
     active
       ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'

@@ -16,7 +16,7 @@ export function DeliveryStatusBadgeFrame({
 }: DeliveryStatusBadgeFrameProps) {
   return (
     <HelpTooltip text={tooltip} ariaLabel={tooltip}>
-      <span className={`text-[10px] ${colorClass}`}>
+      <span className={`text-2xs ${colorClass}`}>
         {label} {icon}
       </span>
     </HelpTooltip>

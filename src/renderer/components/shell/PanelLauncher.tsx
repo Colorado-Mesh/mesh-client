@@ -193,7 +193,7 @@ export function PanelLauncher({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="border-secondary-dark bg-deep-black relative flex max-h-[76vh] w-full max-w-[680px] flex-col overflow-hidden rounded-xl border shadow-2xl"
+        className="border-secondary-dark bg-deep-black relative flex max-h-[76vh] w-full max-w-170 flex-col overflow-hidden rounded-xl border shadow-2xl"
       >
         <h2 id={titleId} className="sr-only">
           {t('shell.launcher.title')}
@@ -258,7 +258,7 @@ export function PanelLauncher({
                               onKeyDown={(e) => {
                                 handleEntryKeyDown(e, entry);
                               }}
-                              className={`hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-left text-[13px] text-slate-200 outline-none ${
+                              className={`hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-left text-slate-200 outline-none ${
                                 isFirstMatch ? 'bg-sidebar-active-bg' : ''
                               }`}
                             >
@@ -268,7 +268,7 @@ export function PanelLauncher({
                               <span className="min-w-0 flex-1 truncate">{entry.label}</span>
                               {badge && (
                                 <span
-                                  className={`flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full px-[5px] font-mono text-[11px] leading-none text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
+                                  className={`text-label flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full px-1.25 font-mono leading-none text-white ${NAV_BADGE_FILL_CLASS[badge.tone]}`}
                                 >
                                   {formatBadgeCount(badge.count)}
                                 </span>

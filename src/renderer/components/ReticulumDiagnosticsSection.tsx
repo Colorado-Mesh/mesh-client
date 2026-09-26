@@ -261,7 +261,7 @@ export function ReticulumDiagnosticsSection({
                           <div className="max-w-md">
                             {row.causeI18n ? translateReticulumDiagnosticCause(t, row) : row.cause}
                             {row.condition === 'reticulum/announce-bus-pressure' ? (
-                              <ul className="text-muted mt-1.5 list-disc space-y-0.5 pl-4 text-[11px] font-normal text-gray-400">
+                              <ul className="text-muted text-label mt-1.5 list-disc space-y-0.5 pl-4 font-normal text-gray-400">
                                 {typeof row.causeI18n?.params?.hotInterface === 'string' ? (
                                   <li>
                                     {t(
@@ -295,7 +295,7 @@ export function ReticulumDiagnosticsSection({
                         </td>
                         <td className="px-4 py-2.5">
                           <span
-                            className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${DIAGNOSTICS_CATEGORY_STYLES[category]}`}
+                            className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${DIAGNOSTICS_CATEGORY_STYLES[category]}`}
                           >
                             {t(`diagnosticsPanel.reticulum.remedy.${category.toLowerCase()}`)}
                           </span>

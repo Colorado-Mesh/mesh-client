@@ -627,7 +627,8 @@ describe('App shell layout', () => {
     renderApp();
     const rail = appRail();
     const protocolGroup = within(rail).getByRole('group', { name: 'Protocol switcher' });
-    expect(rail.firstElementChild).toBe(protocolGroup);
+    // The switcher leads the scrolling part of the rail; Incident and App are pinned below it.
+    expect(rail.querySelector('[data-rail-scroll]')?.firstElementChild).toBe(protocolGroup);
     expect(
       within(protocolGroup)
         .getAllByRole('button')

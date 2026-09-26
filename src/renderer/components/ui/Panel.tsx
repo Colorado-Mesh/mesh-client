@@ -38,20 +38,20 @@ export function Panel({
       aria-labelledby={titleId}
       className={`bg-deep-black flex min-w-0 flex-col rounded-xl border border-slate-800 ${className ?? ''}`}
     >
-      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-slate-800 py-2 pr-3 pl-[18px]">
+      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-slate-800 py-2 pr-3 pl-4.5">
         {icon && <span className="flex shrink-0 text-slate-300">{icon}</span>}
         <Heading id={titleId} className="text-sm font-semibold text-slate-200">
           {title}
         </Heading>
         {status && (
-          <span className="ml-1 flex items-center gap-1.5 text-[12.5px] text-slate-300">
+          <span className="text-control ml-1 flex items-center gap-1.5 text-slate-300">
             {status}
           </span>
         )}
         {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
       {children !== undefined && (
-        <div className={`${padding === 'none' ? '' : 'px-[18px] py-5'} ${bodyClassName ?? ''}`}>
+        <div className={`${padding === 'none' ? '' : 'px-4.5 py-5'} ${bodyClassName ?? ''}`}>
           {children}
         </div>
       )}

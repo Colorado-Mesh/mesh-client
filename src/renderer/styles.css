@@ -12,6 +12,19 @@
   --color-deep-black: #0f172a;
   --color-secondary-dark: #334155;
   --color-muted: #94a3b8;
+
+  /*
+   * UI text sizes between Tailwind's text-xs (12px) and text-sm (14px), in rem so App > Appearance
+   * > Text size scales them with everything else. Never use px font sizes (text-[13px]).
+   */
+  --text-3xs: 0.5625rem; /* 9px */
+  --text-2xs: 0.625rem; /* 10px: badges */
+  --text-label: 0.6875rem; /* 11px: rail labels, captions */
+  --text-meta: 0.71875rem; /* 11.5px: mono metadata */
+  --text-control: 0.78125rem; /* 12.5px: small buttons, chips */
+  --text-body: 0.8125rem; /* 13px: rows, inputs, menu items */
+  --text-body-lg: 0.84375rem; /* 13.5px */
+  --text-title: 0.9375rem; /* 15px: pane titles */
   /* Bundled IBM Plex (OFL-1.1, assets/fonts/plex) so the UI renders the same offline on every OS;
      system stacks cover scripts outside the bundled latin, latin-ext and cyrillic subsets (CJK). */
   --font-sans:
