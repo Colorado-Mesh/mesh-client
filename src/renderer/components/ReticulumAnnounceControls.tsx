@@ -11,6 +11,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumStackSettings';
 
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 export interface ReticulumAnnounceControlsProps {
   disabled?: boolean;
@@ -155,7 +156,7 @@ export function ReticulumAnnounceControls({
           value={announceInterval}
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.announceIntervalSec')}
-          className="bg-deep-black w-24 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+          className={`${INPUT_BOX_CLASS} w-24`}
           onChange={(e) => {
             setAnnounceInterval(clampAnnounceIntervalSec(Number(e.target.value)));
             setStatusMessage(null);

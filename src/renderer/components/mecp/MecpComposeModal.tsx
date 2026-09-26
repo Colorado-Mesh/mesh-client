@@ -14,6 +14,7 @@ import {
   severityLabelKey,
 } from '@/renderer/lib/mecp/mecpMessages';
 
+import { TEXTAREA_BOX_CLASS } from '../ui/formClasses';
 import { MECP_SEVERITY_BADGE_CLASSES } from './MecpSeverityBadge';
 
 const SEVERITY_ORDER: Severity[] = [0, 1, 2, 3];
@@ -312,7 +313,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
             setFreetext(e.target.value);
           }}
           rows={2}
-          className="mb-2 w-full rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+          className={`${TEXTAREA_BOX_CLASS} mb-2 w-full`}
           aria-label={t('mecp.compose.freetext')}
         />
         <div className="mb-3 flex flex-wrap gap-2">

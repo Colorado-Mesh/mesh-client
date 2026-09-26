@@ -5,6 +5,7 @@ import { isValidXmodemRemoteFilename } from '@/renderer/lib/meshtastic/xmodemFil
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 interface Props {
   configTarget?: ConfigTargetContext;
@@ -44,7 +45,7 @@ export function RadioXmodemSection({
           }}
           disabled={localOnlyDisabled || xmodemBusy}
           placeholder={t('radioPanel.xmodemFilenamePlaceholder')}
-          className="bg-secondary-dark focus:border-brand-green w-full max-w-md rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-full max-w-md`}
         />
       </div>
       <div className="flex flex-wrap gap-2">

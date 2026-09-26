@@ -63,6 +63,7 @@ import { routingRowToNodeAnomaly } from '../lib/types';
 import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 function foreignLoraListFromBySender(
   bySender: Map<string, ForeignLoraDetection> | undefined,
@@ -1317,7 +1318,7 @@ export default function DiagnosticsPanel({
                     if (Number.isFinite(v)) setDistanceOffsetKm(v);
                   }}
                   aria-label={t('diagnosticsPanel.distanceOffsetKm')}
-                  className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
+                  className={`${INPUT_BOX_CLASS} w-20 text-right`}
                 />
                 <span className="text-sm text-gray-400">{t('diagnosticsPanel.km')}</span>
                 <span className="text-muted text-xs">
@@ -1345,7 +1346,7 @@ export default function DiagnosticsPanel({
                     aria-label={t('diagnosticsPanel.dropRoutingRows', {
                       hours: diagnosticRowsMaxAgeHours,
                     })}
-                    className="bg-deep-black focus:border-brand-green w-16 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
+                    className={`${INPUT_BOX_CLASS} w-16 text-right`}
                   />
                   <span className="text-sm text-gray-400">{t('diagnosticsPanel.hoursRange')}</span>
                 </div>
@@ -1432,7 +1433,7 @@ export default function DiagnosticsPanel({
               }}
               placeholder={t('diagnosticsPanel.searchAnomalies')}
               aria-label={t('diagnosticsPanel.searchAnomalies')}
-              className="bg-secondary-dark/80 focus:border-brand-green/50 w-48 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+              className={`${INPUT_BOX_CLASS} w-48`}
             />
           </div>
 

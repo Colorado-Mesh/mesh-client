@@ -18,6 +18,7 @@ import { isMeshcoreContactEligibleForUserGroup } from '../lib/meshcoreUtils';
 import { isMeshtasticContactEligibleForUserGroup } from '../lib/meshtasticContactGroupUtils';
 import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 interface ContactGroupsModalProps {
   groups: ContactGroup[];
@@ -304,7 +305,7 @@ export default function ContactGroupsModal({
                   placeholder={t('contactGroupsModal.newGroupNamePlaceholder')}
                   maxLength={100}
                   disabled={busy}
-                  className="bg-secondary-dark/80 focus:border-brand-green/50 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} flex-1`}
                 />
                 <button
                   type="button"
@@ -342,7 +343,7 @@ export default function ContactGroupsModal({
                           // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
                           disabled={busy}
-                          className="bg-secondary-dark border-brand-green/50 flex-1 rounded border px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                          className={`${INPUT_BOX_CLASS} flex-1`}
                         />
                       ) : (
                         <span className="flex-1 truncate text-sm text-gray-200">

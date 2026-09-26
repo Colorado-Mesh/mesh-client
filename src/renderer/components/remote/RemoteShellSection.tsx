@@ -12,6 +12,8 @@ import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticul
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { MAX_RNSH_SESSIONS, useRnshSessionStore } from '@/renderer/stores/rnshSessionStore';
 
+import { INPUT_BOX_CLASS } from '../ui/formClasses';
+
 interface PendingFingerprint {
   sessionId: string;
   destinationHash: string;
@@ -232,7 +234,7 @@ export function RemoteShellSection({
             }}
             placeholder={t('reticulumRemote.shell.addressPlaceholder')}
             aria-label={t('reticulumRemote.shell.addressAria')}
-            className="bg-secondary-dark/80 w-full rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+            className={`${INPUT_BOX_CLASS} w-full`}
           />
           {showTypeahead && typeaheadMatches.length > 0 && (
             <ul className="bg-secondary-dark absolute z-10 mt-1 w-full rounded-lg border border-gray-600/50 shadow-lg">

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { INPUT_BOX_CLASS } from '../ui/formClasses';
+
 export type RNodeWifiMode = 'off' | 'ap' | 'station';
 
 export interface WifiConfigProps {
@@ -46,7 +48,7 @@ export function WifiConfig({
           onChange={(e) => {
             setSsid(e.target.value);
           }}
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-40"
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           aria-label={t('flasher.wifiSsidLabel')}
         />
       </label>
@@ -59,7 +61,7 @@ export function WifiConfig({
           onChange={(e) => {
             setPsk(e.target.value);
           }}
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-40"
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           aria-label={t('flasher.wifiPskLabel')}
         />
       </label>
@@ -73,7 +75,7 @@ export function WifiConfig({
               onChange={(e) => {
                 setChannel(e.target.value);
               }}
-              className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-40"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-20`}
               aria-label={t('flasher.wifiChannelLabel')}
             />
           </label>
@@ -86,7 +88,7 @@ export function WifiConfig({
                 setStaticIp(e.target.value);
               }}
               placeholder={t('flasher.wifiDhcpPlaceholder')}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-40"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
               aria-label={t('flasher.wifiStaticIpLabel')}
             />
           </label>
@@ -99,7 +101,7 @@ export function WifiConfig({
                 setStaticNetmask(e.target.value);
               }}
               placeholder={t('flasher.wifiNetmaskPlaceholder')}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-40"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
               aria-label={t('flasher.wifiStaticNetmaskLabel')}
             />
           </label>

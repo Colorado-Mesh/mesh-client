@@ -8,6 +8,8 @@ import {
   subscribeMeshtasticLockdownStatus,
 } from '@/renderer/lib/meshtastic/meshtasticLockdown';
 
+import { INPUT_BOX_CLASS } from './ui/formClasses';
+
 interface Props {
   isConnected: boolean;
   onSendLockdownAuth: (auth: MeshtasticLockdownAuthRequest) => Promise<void>;
@@ -115,7 +117,7 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
           }}
           disabled={controlsDisabled}
           aria-label={t('radioPanel.lockdown.passphraseLabel')}
-          className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-full`}
         />
       </div>
 

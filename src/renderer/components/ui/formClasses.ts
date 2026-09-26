@@ -3,17 +3,39 @@
  * one-off input/select/checkbox styling so every form reads the same.
  */
 
-/** Text, number and search inputs: 32px, app background, strong border, green focus ring. */
-export const INPUT_CLASS =
-  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green h-8 w-full rounded-lg border px-2.5 text-body text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+/**
+ * Background, border, focus, invalid and disabled treatment shared by every text control. It sets
+ * no size: use the `*_CLASS` / `*_BOX_CLASS` constants below, which add height, padding and text.
+ */
+export const FIELD_SURFACE_CLASS =
+  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green aria-invalid:border-red-500 rounded-lg border text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
 
-/** Native `<select>`: same box as inputs. */
-export const SELECT_CLASS =
-  'bg-app-bg border-secondary-dark focus:border-brand-green h-8 w-full rounded-lg border px-2 text-body text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+/** Text, number and search input without a width, for inputs sized by their row (`w-24`, `flex-1`). 32px, 40px on touch. */
+export const INPUT_BOX_CLASS = `${FIELD_SURFACE_CLASS} h-8 px-2.5 text-body pointer-coarse:h-10`;
 
-/** Multi-line text. */
-export const TEXTAREA_CLASS =
-  'bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green w-full rounded-lg border px-2.5 py-2 text-body text-slate-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50';
+/** Compact input for dense rows and tables (28px, 12px text). */
+export const INPUT_BOX_SM_CLASS = `${FIELD_SURFACE_CLASS} h-7 px-2 text-xs pointer-coarse:h-9`;
+
+/** Full-width text, number and search input. */
+export const INPUT_CLASS = `${INPUT_BOX_CLASS} w-full`;
+
+/** Native `<select>` without a width: same box as inputs. */
+export const SELECT_BOX_CLASS = `${FIELD_SURFACE_CLASS} h-8 px-2 text-body pointer-coarse:h-10`;
+
+/** Compact native `<select>`. */
+export const SELECT_BOX_SM_CLASS = `${FIELD_SURFACE_CLASS} h-7 px-1.5 text-xs pointer-coarse:h-9`;
+
+/** Full-width native `<select>`. */
+export const SELECT_CLASS = `${SELECT_BOX_CLASS} w-full`;
+
+/** Multi-line text without a width. */
+export const TEXTAREA_BOX_CLASS = `${FIELD_SURFACE_CLASS} px-2.5 py-2 text-body`;
+
+/** Compact multi-line text (keys, logs, config blobs). */
+export const TEXTAREA_BOX_SM_CLASS = `${FIELD_SURFACE_CLASS} px-2 py-1.5 text-xs`;
+
+/** Full-width multi-line text. */
+export const TEXTAREA_CLASS = `${TEXTAREA_BOX_CLASS} w-full`;
 
 /** Field label above a control. */
 export const FIELD_LABEL_CLASS = 'text-muted text-xs';

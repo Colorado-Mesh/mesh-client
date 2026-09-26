@@ -19,6 +19,7 @@ import {
 import { deleteServingPage, putServingPage } from '@/renderer/lib/nomad/nomadServingApi';
 
 import NomadMicronPageView from './NomadMicronPageView';
+import { FIELD_SURFACE_CLASS } from './ui/formClasses';
 
 /** Preview re-render debounce; keeps typing responsive on large pages. */
 const PREVIEW_DEBOUNCE_MS = 200;
@@ -282,7 +283,7 @@ export default function MicronPageEditor({
               setContent(e.target.value);
             }}
             aria-label={t('nomadNetwork.serving.editorAria')}
-            className="min-h-0 resize-none rounded border border-gray-600 bg-slate-900 p-3 font-mono text-xs text-gray-200"
+            className={`${FIELD_SURFACE_CLASS} min-h-0 resize-none p-3 font-mono text-xs`}
           />
           {/* Mirrors the browser's nomad-page-scroll shell: both axes, so wide art is reachable. */}
           <div className="min-h-0 min-w-0 overflow-auto rounded border border-gray-600 bg-slate-900 p-3">

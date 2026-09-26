@@ -76,6 +76,7 @@ import MentionAutocomplete, {
   type MentionCandidate,
 } from './MentionAutocomplete';
 import { useToast } from './Toast';
+import { INPUT_BOX_SM_CLASS, INPUT_CLASS } from './ui/formClasses';
 
 /**
  * Shared amber advisory pill used by the MeshCore composer (non-blocking "sending too fast"
@@ -1241,7 +1242,7 @@ export function ChatComposer({
               }}
               placeholder={t('chatPanel.meshcoreGifPlaceholder')}
               aria-label={t('chatPanel.meshcoreGifPlaceholder')}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              className={INPUT_CLASS}
             />
             {gifPreviewId != null && !gifPreviewFailed && (
               <img
@@ -1583,7 +1584,7 @@ export function ChatComposer({
                           ref={floodScopeCustomInputRef}
                           placeholder={t('chatPanel.floodScopeOverrideCustomPlaceholder')}
                           aria-label={t('chatPanel.floodScopeOverrideCustomLabel')}
-                          className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 focus:outline-none"
+                          className={`${INPUT_BOX_SM_CLASS} w-full`}
                         />
                         {floodScopeCustomError ? (
                           <p role="alert" className="text-2xs text-red-400">

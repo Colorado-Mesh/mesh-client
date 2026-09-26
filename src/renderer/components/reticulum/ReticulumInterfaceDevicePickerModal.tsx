@@ -21,6 +21,7 @@ import { isWeakBleRssi, weakestBleRssi } from '@/renderer/lib/signal';
 import { BleWeakSignalBanner } from '../BleWeakSignalBanner';
 import { PickerSortControls } from '../PickerSortControls';
 import SignalBars from '../SignalBars';
+import { INPUT_BOX_CLASS } from '../ui/formClasses';
 
 export interface ReticulumInterfaceDevicePickerModalProps {
   open: boolean;
@@ -179,7 +180,7 @@ export function ReticulumInterfaceDevicePickerModal({
                     onChange={(e) => {
                       onManualPathChange(e.target.value);
                     }}
-                    className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                    className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
                   />
                 </label>
                 {manualPath.trim() ? (

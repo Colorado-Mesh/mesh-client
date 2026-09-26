@@ -73,6 +73,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import NotificationSoundSettings from './NotificationSoundSettings';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
 const CLEAR_ALL_CHANNELS_VALUE = -999_999;
@@ -792,7 +793,7 @@ export default function AppPanel({
                 setSettings((prev) => ({ ...prev, autoFloodAdvertIntervalHours: hours }));
                 onAutoFloodAdvertIntervalChange?.(hours);
               }}
-              className="bg-deep-black focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              className={`${SELECT_BOX_CLASS} w-full`}
             >
               <option value={0}>{t('common.disabled')}</option>
               <option value={12}>{t('appPanel.floodAdvertEvery12h')}</option>
@@ -810,7 +811,7 @@ export default function AppPanel({
                 setSettings((prev) => ({ ...prev, autoFloodAdvertType: type }));
                 onAutoFloodAdvertTypeChange?.(type);
               }}
-              className="bg-deep-black focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              className={`${SELECT_BOX_CLASS} w-full`}
             >
               <option value="flood">{t('appPanel.floodAdvertTypeFlood')}</option>
               <option value="zeroHop">{t('appPanel.floodAdvertTypeZeroHop')}</option>
@@ -886,7 +887,7 @@ export default function AppPanel({
                 }}
                 placeholder={t('appPanel.latPlaceholderExample')}
                 aria-label={`${t('appPanel.latLabel')} ${staticLatInput || t('appPanel.latPlaceholderExample')}`}
-                className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+                className={`${INPUT_BOX_CLASS} flex-1`}
               />
               <label htmlFor="apppanel-static-lon" className="w-8 text-sm text-gray-300">
                 {t('appPanel.lonLabel')}
@@ -903,7 +904,7 @@ export default function AppPanel({
                 }}
                 placeholder={t('appPanel.lonPlaceholderExample')}
                 aria-label={`${t('appPanel.lonLabel')} ${staticLonInput || t('appPanel.lonPlaceholderExample')}`}
-                className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+                className={`${INPUT_BOX_CLASS} flex-1`}
               />
             </div>
             <div className="flex gap-2">
@@ -940,7 +941,7 @@ export default function AppPanel({
               }}
               disabled={hasStaticPosition || !settings.shareMyLocation}
               aria-label={`${t('appPanel.autoRefreshInterval')} ${gpsIntervalLabel(t, gpsRefreshInterval)}`}
-              className={`bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none ${hasStaticPosition || !settings.shareMyLocation ? 'cursor-not-allowed opacity-40' : ''}`}
+              className={`${SELECT_BOX_CLASS} ${hasStaticPosition || !settings.shareMyLocation ? 'cursor-not-allowed opacity-40' : ''}`}
             >
               <option value={0}>{t('appPanel.gpsIntervalManual')}</option>
               <option value={900}>{t('appPanel.gpsInterval15min')}</option>
@@ -965,7 +966,7 @@ export default function AppPanel({
                 useCoordFormatStore.getState().setCoordinateFormat(fmt);
               }}
               aria-label={`${t('appPanel.coordinateFormat')} ${settings.coordinateFormat === 'mgrs' ? t('appPanel.coordFormatMgrs') : t('appPanel.coordFormatDecimal')}`}
-              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+              className={SELECT_BOX_CLASS}
             >
               <option value="decimal">{t('appPanel.coordFormatDecimal')}</option>
               <option value="mgrs">{t('appPanel.coordFormatMgrs')}</option>
@@ -1018,7 +1019,7 @@ export default function AppPanel({
               }}
               disabled={!settings.distanceFilterEnabled}
               aria-label={t('appPanel.maxDistanceAria', { value: settings.distanceFilterMax })}
-              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              className={`${INPUT_BOX_CLASS} w-24 text-right`}
             />
             <label htmlFor="apppanel-distance-unit" className="text-sm text-gray-300">
               {t('appPanel.unitLabel')}
@@ -1036,7 +1037,7 @@ export default function AppPanel({
                     ? t('appPanel.distanceUnitKm')
                     : t('appPanel.distanceUnitMiles'),
               })}
-              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              className={SELECT_BOX_CLASS}
             >
               <option value="miles">{t('appPanel.distanceUnitMiles')}</option>
               <option value="km">{t('appPanel.distanceUnitKm')}</option>
@@ -1097,7 +1098,7 @@ export default function AppPanel({
                 setHistoryWindow(Number(e.target.value));
               }}
               aria-label={`${t('appPanel.positionHistoryWindowLabel')} ${historyWindowOptionLabels[historyWindowHours] ?? historyWindowHours}`}
-              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+              className={SELECT_BOX_CLASS}
             >
               <option value={1}>{t('appPanel.historyWindow1h')}</option>
               <option value={4}>{t('appPanel.historyWindow4h')}</option>
@@ -1148,7 +1149,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.autoPruneNodesOlderThanAria', {
                   days: settings.autoPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
@@ -1206,7 +1207,7 @@ export default function AppPanel({
                 disabled={!settings.nodeCapEnabled}
                 aria-labelledby="apppanel-node-cap-label"
                 aria-label={t('appPanel.capTotalNodesCountAria', { count: settings.nodeCapCount })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.nodes')}</span>
             </div>
@@ -1246,7 +1247,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.autoPrunePositionHistoryDaysAria', {
                   days: settings.positionHistoryPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
@@ -1316,7 +1317,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.autoPruneUnheardContactsDaysAria', {
                   days: settings.meshcoreAutoPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
@@ -1357,7 +1358,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.capTotalContactsCountAria', {
                   count: settings.meshcoreContactCapCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.contacts')}</span>
             </div>
@@ -1404,7 +1405,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.reticulumAutoPruneDestinationsDaysAria', {
                   days: settings.reticulumAutoPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.days')}</span>
             </div>
@@ -1443,7 +1444,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.reticulumCapDestinationsCountAria', {
                   count: settings.reticulumDestinationCapCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
               <span className="text-sm text-gray-300">
                 {t('appPanel.reticulumDestinationsUnit', {
@@ -1494,7 +1495,7 @@ export default function AppPanel({
               aria-label={t('appPanel.limitMessagesLoadedCountAria', {
                 count: settings.messageLimitCount,
               })}
-              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              className={`${INPUT_BOX_CLASS} w-24 text-right`}
             />
             <span className="text-sm text-gray-300">{t('common.messages')}</span>
           </div>
@@ -1534,7 +1535,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.capStoredMessagesCountAria', {
                   count: retention.meshcoreCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
@@ -1575,7 +1576,7 @@ export default function AppPanel({
                   aria-label={t('appPanel.capStoredMessagesCountAria', {
                     count: retention.reticulumCount,
                   })}
-                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
                 />
                 <span className="text-sm text-gray-300">{t('common.messages')}</span>
               </div>
@@ -1614,7 +1615,7 @@ export default function AppPanel({
                   aria-label={t('appPanel.capStoredRrcMessagesCountAria', {
                     count: retention.rrcCount,
                   })}
-                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
                 />
                 <span className="text-sm text-gray-300">{t('common.messages')}</span>
               </div>
@@ -1655,7 +1656,7 @@ export default function AppPanel({
                 aria-label={t('appPanel.capStoredMessagesCountAria', {
                   count: retention.meshtasticCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
               <span className="text-sm text-gray-300">{t('common.messages')}</span>
             </div>
@@ -1745,7 +1746,7 @@ export default function AppPanel({
                         });
                     }}
                     aria-label={t('appPanel.storeForwardHistoryProfileAria')}
-                    className="bg-secondary-dark rounded border border-slate-600 px-2 py-1 text-sm text-gray-200"
+                    className={SELECT_BOX_CLASS}
                   >
                     <option value="conservative">
                       {t('appPanel.storeForwardHistoryProfileConservative')}
@@ -2208,7 +2209,7 @@ export default function AppPanel({
                   raw === '' ? null : Math.max(1, parseInt(raw, 10) || 1),
                 );
               }}
-              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} w-40`}
             />
             <p className="text-muted text-xs">{t('appPanel.nodeSilenceAlertMinutesHint')}</p>
           </div>
@@ -2229,7 +2230,7 @@ export default function AppPanel({
                   Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 10)),
                 );
               }}
-              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} w-40`}
             />
           </div>
           <div className="flex items-center gap-3">
@@ -2483,7 +2484,7 @@ export default function AppPanel({
                     setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
                   }}
                   aria-label={t('appPanel.deleteNodesOlderThanAria', { days: deleteAgeDays })}
-                  className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                  className="bg-app-bg text-body h-8 w-20 rounded-lg border border-red-800/60 px-2.5 text-right text-slate-200 focus:border-red-500 focus:outline-none pointer-coarse:h-10"
                 />
                 <span className="text-sm text-gray-300">{t('common.days')}</span>
                 <button
@@ -2801,7 +2802,7 @@ export default function AppPanel({
                       setClearChannelTarget(parseInt(e.target.value, 10));
                     }}
                     aria-label={t('common.channel')}
-                    className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                    className="bg-app-bg text-body h-8 flex-1 rounded-lg border border-red-800/60 px-2 text-slate-200 focus:border-red-500 focus:outline-none pointer-coarse:h-10"
                   >
                     <option value={CLEAR_ALL_CHANNELS_VALUE}>
                       {t('appPanel.allChannelsOption')}

@@ -10,6 +10,7 @@ import type {
 import { TCP_PORT_MAX, TCP_PORT_MIN } from '@/shared/tcpPort';
 
 import { useTakRemoteRelay } from '../hooks/useTakRemoteRelay';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 const DEFAULT_REMOTE_SETTINGS: TAKRemoteSettings = {
   host: '',
@@ -24,9 +25,6 @@ const STATUS_DOT: Record<TAKRemoteStatus['state'], string> = {
   connecting: 'bg-yellow-500',
   disconnected: 'bg-gray-500',
 };
-
-const INPUT_CLASS =
-  'bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50';
 
 function CredentialSummary({ credentials }: { credentials: TAKRemoteCredentialSummary | null }) {
   const { t } = useTranslation();
@@ -137,7 +135,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
               setHost(e.target.value);
             }}
             disabled={active || isBusy}
-            className={`${INPUT_CLASS} w-full`}
+            className={`${INPUT_BOX_CLASS} w-full`}
           />
           {host !== '' && !hostValid && (
             <p className="mt-1 text-xs text-red-400">{t('takServerPanel.remoteHostError')}</p>
@@ -158,7 +156,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
               setPort(e.target.value);
             }}
             disabled={active || isBusy}
-            className={`${INPUT_CLASS} w-28`}
+            className={`${INPUT_BOX_CLASS} w-28`}
           />
           {port !== '' && !portValid && (
             <p className="mt-1 text-xs text-red-400">{t('takServerPanel.remotePortError')}</p>
@@ -250,7 +248,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
                 setPassword(e.target.value);
               }}
               disabled={active || isBusy}
-              className={`${INPUT_CLASS} w-48`}
+              className={`${INPUT_BOX_CLASS} w-48`}
             />
           </div>
           <button

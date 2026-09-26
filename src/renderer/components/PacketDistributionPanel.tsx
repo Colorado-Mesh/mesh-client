@@ -9,6 +9,7 @@ import type {
   ReticulumRawPacketEntry,
 } from '../lib/rawPacketLogConstants';
 import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
+import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -376,7 +377,7 @@ export default function PacketDistributionPanel({
             onChange={(e) => {
               setSourceFilter(e.target.value as SourceFilter);
             }}
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-300 focus:outline-none"
+            className={SELECT_BOX_SM_CLASS}
           >
             <option value="all">{t('packetDistribution.allSources')}</option>
             <option value="rf">{t('packetDistribution.rfOnly')}</option>
@@ -420,7 +421,7 @@ export default function PacketDistributionPanel({
             onChange={(e) => {
               setSelectedType(e.target.value);
             }}
-            className="rounded border border-gray-700 bg-gray-800 px-2 py-1.5 text-xs text-gray-300 focus:outline-none"
+            className={SELECT_BOX_SM_CLASS}
           >
             {typeOptions.length === 0 ? (
               <option value="">{t('packetDistribution.noData')}</option>

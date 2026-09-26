@@ -17,6 +17,7 @@ import {
   type NotificationSoundSetting,
   saveNotificationSoundSetting,
 } from '../lib/notificationSoundSettings';
+import { SELECT_BOX_CLASS } from './ui/formClasses';
 
 const EVENT_LABELS = {
   channel: 'notificationSounds.channel',
@@ -157,7 +158,7 @@ export default function NotificationSoundSettings() {
                   }}
                   aria-label={t('notificationSounds.toneFor', { event: label })}
                   aria-disabled={busy}
-                  className="bg-deep-black min-w-0 flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-300"
+                  className={`${SELECT_BOX_CLASS} min-w-0 flex-1`}
                 >
                   {BUILTIN_NOTIFICATION_SOUNDS.map((preset) => (
                     <option key={preset} value={preset}>

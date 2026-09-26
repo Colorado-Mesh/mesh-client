@@ -9,6 +9,8 @@ import {
   parseMecpRebroadcastRules,
 } from '@/renderer/lib/mecp/mecpRebroadcast';
 
+import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from '../ui/formClasses';
+
 function newRuleId(): string {
   return `mecp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -161,7 +163,7 @@ function EndpointEditors({
     <fieldset className="min-w-0">
       <legend className="text-2xs text-muted mb-1">{label}</legend>
       <select
-        className="mb-1 w-full rounded border border-gray-700 bg-slate-950 px-1 py-0.5"
+        className={`${SELECT_BOX_SM_CLASS} mb-1 w-full`}
         value={protocol}
         onChange={(e) => {
           onProtocol(e.target.value as 'meshtastic' | 'meshcore');
@@ -175,7 +177,7 @@ function EndpointEditors({
         type="number"
         min={0}
         max={7}
-        className="w-full rounded border border-gray-700 bg-slate-950 px-1 py-0.5"
+        className={`${INPUT_BOX_SM_CLASS} w-full`}
         value={channelIndex}
         onChange={(e) => {
           onChannel(Math.min(7, Math.max(0, Math.trunc(Number(e.target.value) || 0))));

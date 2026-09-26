@@ -54,6 +54,13 @@ import ReticulumPnHostingDangerZone from './ReticulumPnHostingDangerZone';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
 import { useToast } from './Toast';
+import {
+  INPUT_BOX_CLASS,
+  INPUT_BOX_SM_CLASS,
+  SELECT_BOX_CLASS,
+  TEXTAREA_BOX_CLASS,
+  TEXTAREA_BOX_SM_CLASS,
+} from './ui/formClasses';
 
 type IdentityReplaceAction = 'generate' | 'importPhrase' | 'importBackup' | 'importPrivate';
 
@@ -769,7 +776,7 @@ export function ReticulumNetworkPanel({
               onChange={(e) => {
                 setStackSettings((s) => ({ ...s, loglevel: Number(e.target.value) }));
               }}
-              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              className={`${SELECT_BOX_CLASS} mt-1 block`}
             >
               {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
                 <option key={n} value={n}>
@@ -787,7 +794,7 @@ export function ReticulumNetworkPanel({
               onChange={(e) => {
                 void savePathMediumPreference(e.target.value as PathMediumPreference);
               }}
-              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+              className={`${SELECT_BOX_CLASS} mt-1 block`}
             >
               <option value="lowest">
                 {t('networkPanel.reticulumStackSettings.pathMediumLowest')}
@@ -824,7 +831,7 @@ export function ReticulumNetworkPanel({
                     ),
                   }));
                 }}
-                className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+                className={`${INPUT_BOX_CLASS} mt-1 block w-24`}
                 aria-label={t('networkPanel.reticulumStackSettings.autoconnectDiscoveredAria')}
               />
               <span className="text-label text-muted mt-1 block">
@@ -845,7 +852,7 @@ export function ReticulumNetworkPanel({
                     required_discovery_value: clampRequiredDiscoveryValue(Number(e.target.value)),
                   }));
                 }}
-                className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+                className={`${INPUT_BOX_CLASS} mt-1 block w-24`}
                 aria-label={t('networkPanel.reticulumStackSettings.requiredDiscoveryValueAria')}
               />
             </label>
@@ -862,7 +869,7 @@ export function ReticulumNetworkPanel({
                   }));
                   setDiscoverySourcesError(validateInterfaceDiscoverySources(e.target.value));
                 }}
-                className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-100"
+                className={`${TEXTAREA_BOX_SM_CLASS} mt-1 block w-full font-mono`}
                 aria-label={t('networkPanel.reticulumStackSettings.discoverySourcesAria')}
                 aria-invalid={discoverySourcesError != null}
                 placeholder={t('networkPanel.reticulumStackSettings.discoverySourcesPlaceholder')}
@@ -886,7 +893,7 @@ export function ReticulumNetworkPanel({
                 onChange={(e) => {
                   setStackSettings((s) => ({ ...s, network_identity: e.target.value }));
                 }}
-                className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-100"
+                className={`${INPUT_BOX_SM_CLASS} mt-1 block w-full font-mono`}
                 aria-label={t('networkPanel.reticulumStackSettings.networkIdentityAria')}
                 placeholder={t('networkPanel.reticulumStackSettings.networkIdentityPlaceholder')}
               />
@@ -1056,7 +1063,7 @@ export function ReticulumNetworkPanel({
                 setConfigPaste(e.target.value);
               }}
               rows={4}
-              className="mt-2 w-full rounded border border-gray-600 bg-slate-900 p-2 font-mono text-xs text-gray-200"
+              className={`${TEXTAREA_BOX_SM_CLASS} mt-2 w-full font-mono`}
               aria-label={t('networkPanel.reticulumConfigImport.pasteLabel')}
             />
             <div className="mt-2 flex flex-wrap gap-2">
@@ -1276,7 +1283,7 @@ function IdentityImportExtras({
           }}
           disabled={disabled}
           rows={3}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs disabled:opacity-50"
+          className={`${TEXTAREA_BOX_SM_CLASS} mt-1 w-full font-mono`}
           aria-label={t('connectionPanel.reticulumIdentity.importBackupLabel')}
         />
       </label>
@@ -1290,7 +1297,7 @@ function IdentityImportExtras({
           }}
           disabled={disabled}
           autoComplete="off"
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} mt-1 w-full`}
           aria-label={t('connectionPanel.reticulumIdentity.importBackupPin')}
         />
       </label>
@@ -1326,7 +1333,7 @@ function IdentityImportExtras({
           }}
           disabled={disabled}
           rows={2}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs disabled:opacity-50"
+          className={`${TEXTAREA_BOX_SM_CLASS} mt-1 w-full font-mono`}
           aria-label={t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
         />
       </label>
@@ -1727,7 +1734,7 @@ function IdentityConfiguredView({
             setSaveNotice(null);
           }}
           aria-label={t('connectionPanel.reticulumIdentity.displayName')}
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200 disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
         />
       </label>
       <button
@@ -1756,9 +1763,7 @@ function IdentityConfiguredView({
           autoComplete="new-password"
           aria-invalid={exportPinError != null}
           aria-describedby={exportPinError ? exportPinErrorId : undefined}
-          className={`mt-1 block w-full rounded border bg-slate-900 px-2 py-1.5 text-sm text-gray-200 ${
-            exportPinError ? 'border-red-500' : 'border-gray-600'
-          }`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           aria-label={t('connectionPanel.reticulumIdentity.exportPassphrase')}
         />
       </label>
@@ -1773,9 +1778,7 @@ function IdentityConfiguredView({
           autoComplete="new-password"
           aria-invalid={exportPinError != null}
           aria-describedby={exportPinError ? exportPinErrorId : undefined}
-          className={`mt-1 block w-full rounded border bg-slate-900 px-2 py-1.5 text-sm text-gray-200 ${
-            exportPinError ? 'border-red-500' : 'border-gray-600'
-          }`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           aria-label={t('connectionPanel.reticulumIdentity.exportPassphraseConfirm')}
         />
       </label>
@@ -1843,7 +1846,7 @@ function IdentitySetupView({
             onDisplayNameChange(e.target.value);
           }}
           disabled={disabled}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} mt-1 w-full`}
         />
       </label>
       <button
@@ -1879,7 +1882,7 @@ function IdentitySetupView({
           }}
           disabled={disabled}
           rows={2}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm disabled:opacity-50"
+          className={`${TEXTAREA_BOX_CLASS} mt-1 w-full`}
         />
       </label>
       <button

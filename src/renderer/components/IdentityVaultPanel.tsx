@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { IdentityVaultStatus } from '@/shared/electron-api.types';
 
+import { INPUT_BOX_CLASS } from './ui/formClasses';
+
 export interface IdentityVaultPanelProps {
   disabled?: boolean;
   /** Optional identity backup JSON to encrypt when enabling the vault. */
@@ -136,7 +138,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
               }}
               autoComplete="new-password"
               disabled={disabled || busy}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
             />
           </label>
           <label className="block text-xs text-gray-400">
@@ -149,7 +151,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
               }}
               autoComplete="new-password"
               disabled={disabled || busy}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
             />
           </label>
           <button
@@ -187,7 +189,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
               }}
               autoComplete="current-password"
               disabled={disabled || busy}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
             />
           </label>
           <button

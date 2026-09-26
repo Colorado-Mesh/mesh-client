@@ -6,6 +6,8 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import type { RemoteAddressService } from '@/shared/remote-types';
 
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
+
 /** Reticulum Remote → Saved: manage the rnsh/rncp address book (`reticulum_remote_addresses`). */
 export function RemoteSavedSection() {
   const { t } = useTranslation();
@@ -69,7 +71,7 @@ export function RemoteSavedSection() {
           }}
           placeholder={t('reticulumRemote.saved.labelPlaceholder')}
           aria-label={t('reticulumRemote.saved.labelAria')}
-          className="bg-secondary-dark/80 min-w-35 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+          className={`${INPUT_BOX_CLASS} min-w-35 flex-1`}
         />
         <input
           type="text"
@@ -79,7 +81,7 @@ export function RemoteSavedSection() {
           }}
           placeholder={t('reticulumRemote.saved.hashPlaceholder')}
           aria-label={t('reticulumRemote.saved.hashAria')}
-          className="bg-secondary-dark/80 min-w-55 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+          className={`${INPUT_BOX_CLASS} min-w-55 flex-1`}
         />
         <select
           value={service}
@@ -87,7 +89,7 @@ export function RemoteSavedSection() {
             setService(e.target.value as RemoteAddressService);
           }}
           aria-label={t('reticulumRemote.saved.serviceAria')}
-          className="bg-secondary-dark/80 rounded-lg border border-gray-600/50 px-2 py-1.5 text-sm text-gray-200"
+          className={SELECT_BOX_CLASS}
         >
           <option value="rnsh">{t('reticulumRemote.saved.serviceRnsh')}</option>
           <option value="rncp">{t('reticulumRemote.saved.serviceRncp')}</option>

@@ -120,6 +120,7 @@ import QrCodeImage from './QrCodeImage';
 import QrIngestControl from './QrIngestControl';
 import { RadioXmodemSection } from './RadioXmodemSection';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 interface ChannelConfig {
   index: number;
@@ -407,7 +408,7 @@ function ConfigSelect({
           onChange(n);
         }}
         disabled={disabled}
-        className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+        className={`${SELECT_BOX_CLASS} w-full`}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -500,7 +501,7 @@ export function ConfigNumber({
           min={min}
           max={max}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-28`}
         />
         {unit && <span className="text-muted text-sm">{unit}</span>}
       </div>
@@ -540,7 +541,7 @@ export function ConfigBluetoothPin({
             onChange(sanitizeMeshtasticBluetoothPinInput(e.target.value));
           }}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 font-mono text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-28 font-mono`}
         />
       </div>
       {description && <p className="text-muted text-xs">{description}</p>}
@@ -692,7 +693,7 @@ function WifiPasswordField({
           disabled={disabled}
           placeholder={t('radioPanel.wifiPasswordPlaceholder')}
           maxLength={64}
-          className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} flex-1`}
         />
         <button
           type="button"
@@ -1619,7 +1620,7 @@ export default function RadioPanel({
             maxLength={capabilities?.hasCompanionContactManagementConfig ? undefined : 39}
             disabled={disabled}
             placeholder={t('radioPanel.yourNamePlaceholder')}
-            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-full`}
           />
           <p className="text-muted text-xs">
             {capabilities?.hasCompanionContactManagementConfig
@@ -1644,7 +1645,7 @@ export default function RadioPanel({
                 placeholder={t('radioPanel.namePlaceholder')}
                 aria-invalid={shortNameValidationIssue != null}
                 aria-describedby={shortNameValidationIssue ? 'radio-short-name-error' : undefined}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-full`}
               />
               <p className="text-muted text-xs">{t('radioPanel.shortNameHint')}</p>
               {shortNameValidationIssue ? (
@@ -1724,7 +1725,7 @@ export default function RadioPanel({
                 min={150}
                 max={960}
                 disabled={disabled || applyingSection !== null}
-                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-36`}
               />
               <p className="text-muted text-xs">{t('radioPanel.frequencyHint')}</p>
             </div>
@@ -2284,7 +2285,7 @@ export default function RadioPanel({
               }}
               disabled={disabled || applyingSection !== null}
               placeholder={t('radioPanel.tzdefPlaceholder')}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-full`}
             />
             <p className="text-muted text-xs">{t('radioPanel.tzdefDesc')}</p>
           </div>
@@ -2454,7 +2455,7 @@ export default function RadioPanel({
                 }}
                 disabled={disabled || applyingSection !== null}
                 placeholder="0.000000"
-                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-36`}
               />
             </div>
             <div className="space-y-1">
@@ -2472,7 +2473,7 @@ export default function RadioPanel({
                 }}
                 disabled={disabled || applyingSection !== null}
                 placeholder="0.000000"
-                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-36`}
               />
             </div>
             {capabilities?.hasFullPositionConfig !== false && (
@@ -2490,7 +2491,7 @@ export default function RadioPanel({
                   }}
                   disabled={disabled || applyingSection !== null}
                   placeholder="0"
-                  className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} w-36`}
                 />
               </div>
             )}
@@ -2691,7 +2692,7 @@ export default function RadioPanel({
               disabled={disabled || !wifiEnabled || applyingSection !== null}
               placeholder={t('radioPanel.networkNamePlaceholder')}
               maxLength={33}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-full`}
             />
           </div>
           <WifiPasswordField
@@ -2712,7 +2713,7 @@ export default function RadioPanel({
               }}
               disabled={disabled || applyingSection !== null}
               placeholder="0.pool.ntp.org"
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-full`}
             />
             <p className="text-muted text-xs">{t('radioPanel.ntpHint')}</p>
           </div>
@@ -3016,7 +3017,7 @@ export default function RadioPanel({
                   }
                 }}
                 aria-label={t('appPanel.meshcorePathHashModeLabel')}
-                className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+                className={`${SELECT_BOX_CLASS} w-full max-w-md`}
               >
                 <option value={0}>{t('appPanel.meshcorePathHashMode1Byte')}</option>
                 <option value={1}>{t('appPanel.meshcorePathHashMode2Byte')}</option>
@@ -3280,7 +3281,7 @@ function ChannelUrlImportExport({
               <input
                 readOnly
                 value={httpsUrl}
-                className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1 font-mono text-xs text-gray-300"
+                className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
                 aria-label={t('radioPanel.channelUrl.httpsUrlLabel')}
               />
               <button
@@ -3301,7 +3302,7 @@ function ChannelUrlImportExport({
               <input
                 readOnly
                 value={meshtasticUrl}
-                className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1 font-mono text-xs text-gray-300"
+                className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
                 aria-label={t('radioPanel.channelUrl.meshtasticUrlLabel')}
               />
               <button
@@ -3344,7 +3345,7 @@ function ChannelUrlImportExport({
           }}
           placeholder={t('radioPanel.channelUrl.pasteUrlPlaceholder')}
           disabled={disabled || applying}
-          className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1.5 text-sm text-gray-200"
+          className={`${INPUT_BOX_CLASS} w-full`}
           aria-label={t('radioPanel.channelUrl.pasteUrlLabel')}
         />
         {parseError && <p className="text-xs text-red-400">{parseError}</p>}
@@ -3659,7 +3660,7 @@ function ChannelSection({
                 ? t('radioPanel.channelNamePrimary')
                 : t('radioPanel.channelNameSecondary')
             }
-            className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-full`}
           />
         </div>
 
@@ -3676,7 +3677,7 @@ function ChannelSection({
                 setEditRole(Number(e.target.value));
               }}
               disabled={disabled}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${SELECT_BOX_CLASS} w-full`}
             >
               <option value={0}>{t('radioPanel.channelRoleDisabled')}</option>
               <option value={2}>{t('radioPanel.channelRoleSecondary')}</option>
@@ -3699,7 +3700,7 @@ function ChannelSection({
               handleKeySizeChange(e.target.value as KeySize);
             }}
             disabled={disabled}
-            className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${SELECT_BOX_CLASS} w-full`}
           >
             <option value="none">{t('radioPanel.encryptionNone')}</option>
             <option value="simple">{t('radioPanel.encryptionSimple')}</option>
@@ -3728,7 +3729,7 @@ function ChannelSection({
               disabled={disabled || !isAesKey}
               readOnly={!isAesKey}
               placeholder={t('radioPanel.pskBase64Placeholder')}
-              className="bg-secondary-dark focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1.5 font-mono text-xs text-gray-200 read-only:opacity-60 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono read-only:opacity-60`}
             />
             {isAesKey && (
               <button
@@ -3780,7 +3781,7 @@ function ChannelSection({
             min={0}
             max={32}
             disabled={disabled}
-            className="bg-secondary-dark focus:border-brand-green w-28 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-28`}
           />
         </div>
 
@@ -4125,7 +4126,7 @@ function MeshcoreChannelSection({
             min={0}
             max={MESHCORE_CHANNEL_INDEX_MAX}
             disabled={disabled}
-            className="bg-secondary-dark focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-20`}
           />
         </div>
       )}
@@ -4148,7 +4149,7 @@ function MeshcoreChannelSection({
           }}
           maxLength={MESHCORE_CHANNEL_NAME_MAX_LEN}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-full`}
         />
       </div>
 
@@ -4190,11 +4191,8 @@ function MeshcoreChannelSection({
           maxLength={32}
           placeholder={t('radioPanel.meshcorePskHexPlaceholder')}
           disabled={disabled}
-          className={`bg-secondary-dark w-full rounded border px-2 py-1.5 font-mono text-sm focus:outline-none disabled:opacity-50 ${
-            editKeyHex.length > 0 && !isValidHex
-              ? 'border-red-500 text-red-400'
-              : 'focus:border-brand-green border-gray-600 text-gray-200'
-          }`}
+          aria-invalid={editKeyHex.length > 0 && !isValidHex}
+          className={`${INPUT_BOX_CLASS} w-full font-mono aria-invalid:text-red-400`}
         />
         {editKeyHex.length > 0 && !isValidHex && (
           <p className="text-xs text-red-400">{t('radioPanel.meshcoreChannel.invalidHex')}</p>

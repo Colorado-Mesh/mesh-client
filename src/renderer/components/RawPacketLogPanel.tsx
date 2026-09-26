@@ -55,6 +55,7 @@ import {
 import { registerReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 import { RawPacketPathChain } from './RawPacketPathChain';
+import { INPUT_BOX_SM_CLASS } from './ui/formClasses';
 
 const ROUTE_LABEL: Record<string, string> = {
   FLOOD: 'FLOOD',
@@ -1055,7 +1056,7 @@ export default function RawPacketLogPanel(props: Props) {
             setExpandedRowKey(null);
           }}
           aria-label={t('rawPacketLog.filterPackets')}
-          className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+          className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
         />
         <span className="text-muted text-2xs shrink-0">{filtered.length}</span>
         {isPaused && pendingWhilePaused > 0 ? (

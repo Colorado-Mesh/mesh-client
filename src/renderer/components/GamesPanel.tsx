@@ -40,6 +40,8 @@ import {
   isGamesDeliveryInFlight,
 } from '@/shared/games-types';
 
+import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
+
 export interface GamesPanelProps {
   isActive: boolean;
 }
@@ -324,7 +326,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
           </h3>
           <input
             type="text"
-            className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+            className={`${INPUT_BOX_SM_CLASS} w-full`}
             placeholder={t('gamesPanel.peerHashPlaceholder')}
             aria-label={t('gamesPanel.peerHashAria')}
             value={challengeHash}
@@ -334,7 +336,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
           />
           <div className="mt-2 flex items-center gap-2">
             <select
-              className="bg-deep-black rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+              className={SELECT_BOX_SM_CLASS}
               aria-label={t('gamesPanel.selectAppAria')}
               value={challengeApp}
               onChange={(e) => {

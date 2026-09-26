@@ -35,6 +35,7 @@ import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulu
 
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 export interface ReticulumRmapDiscoveryControlsProps {
   disabled?: boolean;
@@ -402,7 +403,7 @@ export function ReticulumRmapDiscoveryControls({
               value={announceIntervalMin}
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.announceIntervalMin')}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setAnnounceIntervalMin(clampRmapAnnounceIntervalMin(Number(e.target.value)));
               }}
@@ -416,7 +417,7 @@ export function ReticulumRmapDiscoveryControls({
               value={heightMeters}
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.heightMeters')}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setHeightMeters(e.target.value);
               }}
@@ -437,7 +438,7 @@ export function ReticulumRmapDiscoveryControls({
                 : t('reticulumRmapDiscovery.reachableOn')
             }
             aria-invalid={reachableOnError != null}
-            className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+            className={`${INPUT_BOX_CLASS} mt-1 w-full`}
             onChange={(e) => {
               setReachableOn(e.target.value);
               setReachableOnError(null);
@@ -456,7 +457,7 @@ export function ReticulumRmapDiscoveryControls({
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.discoveryLxmfAddress')}
               aria-invalid={lxmfAddressError != null}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setDiscoveryLxmfAddress(e.target.value);
                 setLxmfAddressError(null);
@@ -475,7 +476,7 @@ export function ReticulumRmapDiscoveryControls({
               value={discoveryStampValue}
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.discoveryStampValue')}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setDiscoveryStampValue(clampRmapDiscoveryStampValue(Number(e.target.value)));
               }}

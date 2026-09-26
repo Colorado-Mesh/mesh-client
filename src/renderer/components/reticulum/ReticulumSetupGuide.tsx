@@ -20,6 +20,8 @@ import type { ReticulumIdentityStatus } from '@/renderer/stores/reticulumIdentit
 import { useReticulumSetupGuideStore } from '@/renderer/stores/reticulumSetupGuideStore';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
+
 export type ReticulumSetupDestination = 'Nodes' | 'RRC' | 'Radio';
 
 interface Props {
@@ -313,7 +315,7 @@ export function ReticulumSetupGuide({
                 onChange={(event) => {
                   setName(event.target.value);
                 }}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-100"
+                className={`${INPUT_BOX_CLASS} w-full`}
               />
               <p className="text-xs text-gray-400">{t('reticulumSetup.nameHint')}</p>
               {!mnemonic && (
@@ -429,7 +431,7 @@ export function ReticulumSetupGuide({
                       setHubId(event.target.value);
                       setNotice(null);
                     }}
-                    className="bg-secondary-dark w-full min-w-0 rounded-lg border border-gray-600 px-3 py-2 text-gray-100"
+                    className={`${SELECT_BOX_CLASS} w-full min-w-0`}
                   >
                     {HUBS.map((hub) => (
                       <option key={hub.id} value={hub.id}>

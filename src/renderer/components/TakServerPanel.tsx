@@ -10,6 +10,7 @@ import type { TAKSettings } from '@/shared/tak-types';
 
 import { useTakServer } from '../hooks/useTakServer';
 import TakRemoteRelaySection from './TakRemoteRelaySection';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 interface AtakMessage {
   from: number;
@@ -177,7 +178,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
                 setLocalPort(e.target.value);
               }}
               disabled={status.running || isLoading}
-              className="bg-deep-black focus:border-brand-green w-32 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-32`}
             />
             {localPort !== '' && !portValid && (
               <p className="mt-1 text-xs text-red-400">{t('takServerPanel.portError')}</p>
@@ -197,7 +198,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
                 setLocalServerName(e.target.value);
               }}
               disabled={status.running || isLoading}
-              className="bg-deep-black focus:border-brand-green w-full max-w-xs rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-full max-w-xs`}
             />
           </div>
 

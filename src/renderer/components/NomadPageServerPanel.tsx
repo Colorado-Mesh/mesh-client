@@ -19,6 +19,7 @@ import {
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
 
 import MicronPageEditor from './MicronPageEditor';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 /** Starter body for a brand-new page so the preview is not blank. */
 const NEW_PAGE_TEMPLATE = '>New page\n\nEdit this text.\n';
@@ -341,7 +342,7 @@ export default function NomadPageServerPanel({
             setDisplayName(e.target.value);
           }}
           aria-label={t('nomadNetwork.serving.displayName')}
-          className="rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm"
+          className={INPUT_BOX_CLASS}
         />
       </label>
 

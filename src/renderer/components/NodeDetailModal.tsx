@@ -78,7 +78,7 @@ import NodeInfoBody, { formatSecondsAgo } from './NodeInfoBody';
 import QrCodeImage from './QrCodeImage';
 import SnrIndicator from './SnrIndicator';
 import { Button, buttonClassName } from './ui/Button';
-import { NOTICE_CLASS } from './ui/formClasses';
+import { INPUT_BOX_SM_CLASS, NOTICE_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 import { Switch } from './ui/Switch';
 
 const TRACE_ROUTE_UI_TIMEOUT_MS = 120_000;
@@ -2104,7 +2104,7 @@ export default function NodeDetailModal({
                 }}
                 placeholder={t('nodeDetailModal.remoteAdminKeyPlaceholder')}
                 aria-label={t('nodeDetailModal.remoteAdminKeyLabel')}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200"
+                className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
               />
               {adminKeyError && <p className="text-xs text-red-400">{adminKeyError}</p>}
               <div className="flex flex-wrap gap-2">
@@ -2233,7 +2233,7 @@ export default function NodeDetailModal({
           </label>
           <textarea
             aria-label={t('nodeDetailModal.notesLabel')}
-            className="w-full resize-y rounded border border-gray-700 bg-gray-800/60 px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:border-gray-500 focus:outline-none"
+            className={`${TEXTAREA_BOX_SM_CLASS} w-full resize-y`}
             maxLength={4000}
             placeholder={t('nodeDetailModal.notesPlaceholder')}
             rows={3}

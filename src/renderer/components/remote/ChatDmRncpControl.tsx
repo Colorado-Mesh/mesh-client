@@ -28,6 +28,8 @@ import {
 } from '@/renderer/stores/rncpTransferStore';
 import { resolveRemoteReasonI18nKey } from '@/shared/remote-types';
 
+import { INPUT_BOX_SM_CLASS } from '../ui/formClasses';
+
 export interface ChatDmRncpControlProps {
   /** LXMF peer destination hash for the open DM (32 hex chars). */
   lxmfPeerHash: string;
@@ -476,7 +478,7 @@ export function ChatDmRncpControl({
                 if (parsed) setDestinationInput(parsed);
               }}
               aria-label={t('reticulumRemote.transfer.destinationAria')}
-              className="bg-secondary-dark/80 min-w-0 flex-1 rounded border border-gray-600/50 px-2 py-1 text-xs text-gray-200 focus:border-blue-500/50 focus:outline-none"
+              className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1`}
             />
             <RemotePathCapabilityChip capability={capability} loading={capabilityLoading} />
           </div>

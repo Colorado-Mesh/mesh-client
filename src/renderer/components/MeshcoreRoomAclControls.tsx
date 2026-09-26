@@ -1,6 +1,8 @@
 import { type SyntheticEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
+
 interface Props {
   disabled?: boolean;
   onApply: (pubkeyHex: string, level: number) => Promise<void>;
@@ -42,7 +44,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
           }}
           placeholder={t('roomsPanel.aclPubkeyPlaceholder')}
           disabled={disabled || pending}
-          className="w-full rounded border border-gray-600 bg-gray-800 px-2 py-1 font-mono text-xs text-gray-200 disabled:opacity-40"
+          className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
           aria-label={t('roomsPanel.aclPubkeyLabel')}
         />
       </label>
@@ -54,7 +56,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
             setAclLevel(Number.parseInt(e.target.value, 10));
           }}
           disabled={disabled || pending}
-          className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-200 disabled:opacity-40"
+          className={SELECT_BOX_SM_CLASS}
           aria-label={t('roomsPanel.aclLevelLabel')}
         >
           <option value={0}>{t('roomsPanel.aclLevelRemove')}</option>

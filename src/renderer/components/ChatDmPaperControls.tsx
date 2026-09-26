@@ -14,6 +14,8 @@ import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticul
 import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
+import { TEXTAREA_BOX_CLASS } from './ui/formClasses';
+
 export interface ChatDmPaperShareControlProps {
   lxmfPeerHash: string;
   viewKey: string;
@@ -145,7 +147,7 @@ export function ChatDmPaperShareControl({
               <label className="mt-3 block">
                 <span className="sr-only">{t('chatPanel.shareAsPaperMessageLabel')}</span>
                 <textarea
-                  className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-100"
+                  className={`${TEXTAREA_BOX_CLASS} mt-1 w-full`}
                   rows={4}
                   value={text}
                   onChange={(e) => {

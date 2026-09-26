@@ -12,6 +12,7 @@ import {
   splitAutoaddConfigByte,
 } from '../lib/meshcoreContactAutoAdd';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 function parseMaxHopsInput(raw: string): { wire: number; invalid: boolean } {
   const trimmed = raw.trim();
@@ -286,7 +287,7 @@ export default function MeshcoreContactSettingsSection({
               }
             }}
             disabled={disabled || applying}
-            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-full`}
             aria-invalid={Boolean(hopsError)}
             aria-describedby={hopsError ? 'meshcore-autoadd-hops-err' : undefined}
           />

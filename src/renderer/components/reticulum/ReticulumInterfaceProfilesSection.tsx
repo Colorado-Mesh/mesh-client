@@ -16,6 +16,8 @@ import {
 } from '@/renderer/lib/reticulum/interfaceProfiles';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 
+import { INPUT_BOX_SM_CLASS } from '../ui/formClasses';
+
 export interface ReticulumInterfaceProfilesSectionProps {
   interfaces: ReticulumInterfaceRow[];
   actionsDisabled: boolean;
@@ -119,7 +121,7 @@ export function ReticulumInterfaceProfilesSection({
               {renameId === p.id ? (
                 <>
                   <input
-                    className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-1 py-0.5 text-gray-200"
+                    className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1`}
                     value={renameValue}
                     onChange={(e) => {
                       setRenameValue(e.target.value);
@@ -187,7 +189,7 @@ export function ReticulumInterfaceProfilesSection({
 
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className="min-w-[8rem] flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-xs text-gray-200"
+          className={`${INPUT_BOX_SM_CLASS} min-w-[8rem] flex-1`}
           value={draftName}
           placeholder={t('connectionPanel.reticulumInterfaces.profilesNamePlaceholder')}
           onChange={(e) => {

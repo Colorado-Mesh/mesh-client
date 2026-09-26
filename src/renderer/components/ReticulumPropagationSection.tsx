@@ -35,6 +35,7 @@ import {
   ReticulumPropagationSyncProgress,
 } from './ReticulumPropagationSyncProgress';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 const PROPAGATION_NODE_STATUS_KEYS = new Set([
   'active',
@@ -526,7 +527,7 @@ export default function ReticulumPropagationSection({
                       onChange={(e) => {
                         setRenameDraft(e.target.value);
                       }}
-                      className="min-w-[10rem] flex-1 rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
+                      className={`${INPUT_BOX_CLASS} min-w-[10rem] flex-1`}
                       aria-label={t('reticulumPropagation.renameLabel')}
                     />
                     <button
@@ -725,7 +726,7 @@ export default function ReticulumPropagationSection({
           onChange={(e) => {
             handleModeChange(e.target.value as ReticulumPropagationMode);
           }}
-          className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+          className={`${SELECT_BOX_CLASS} w-full max-w-md`}
           aria-label={t('reticulumPropagation.modeAria')}
           aria-describedby="reticulum-propagation-mode-help"
         >
@@ -769,7 +770,7 @@ export default function ReticulumPropagationSection({
                 );
               });
           }}
-          className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+          className={`${SELECT_BOX_CLASS} w-full max-w-md`}
           aria-label={t('reticulumPropagation.autoSyncIntervalAria')}
         >
           {RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC.map((sec) => (
@@ -842,7 +843,7 @@ export default function ReticulumPropagationSection({
               setAddHash(e.target.value);
             }}
             placeholder={t('reticulumPropagation.addNodePlaceholder')}
-            className="rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
+            className={INPUT_BOX_CLASS}
             aria-label={t('reticulumPropagation.addNodeLabel')}
             disabled={adding}
           />

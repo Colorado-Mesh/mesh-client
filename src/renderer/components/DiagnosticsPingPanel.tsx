@@ -9,6 +9,8 @@ import {
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
+import { INPUT_BOX_CLASS } from './ui/formClasses';
+
 const DEFAULT_INTERVAL_SEC = 5;
 const MAX_RESULTS = 50;
 
@@ -95,7 +97,7 @@ export default function DiagnosticsPingPanel() {
             }}
             placeholder={t('diagnosticsPing.hashPlaceholder')}
             aria-label={t('diagnosticsPing.hashAria')}
-            className="bg-deep-black mt-1 block w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           />
         </label>
         <label className="text-xs text-gray-400">
@@ -111,7 +113,7 @@ export default function DiagnosticsPingPanel() {
               if (Number.isFinite(n)) setIntervalSec(Math.min(120, Math.max(1, n)));
             }}
             aria-label={t('diagnosticsPing.intervalAria')}
-            className="bg-deep-black mt-1 block w-20 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} mt-1 block w-20`}
           />
         </label>
         {running ? (

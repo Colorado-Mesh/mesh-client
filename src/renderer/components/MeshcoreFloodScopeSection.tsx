@@ -12,6 +12,8 @@ import {
   removeMeshcoreFloodScopePreset,
 } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
+
 export interface MeshcoreFloodScopeHandle {
   apply: () => Promise<void>;
 }
@@ -185,7 +187,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
                       setSelectedSaved(e.target.value);
                     }}
                     disabled={disabled || applying}
-                    className="bg-deep-black focus:border-brand-green w-full max-w-xs rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                    className={`${SELECT_BOX_CLASS} w-full max-w-xs`}
                     aria-label={t('radioPanel.floodScopeSavedSelect')}
                   >
                     {savedPresets.map((tag) => (
@@ -234,7 +236,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
               }}
               placeholder={t('radioPanel.floodScopeCustomPlaceholder')}
               disabled={disabled || applying}
-              className="bg-deep-black focus:border-brand-green ml-6 w-full max-w-xs rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} ml-6 w-full max-w-xs`}
               aria-label={t('radioPanel.floodScopeCustom')}
             />
           )}

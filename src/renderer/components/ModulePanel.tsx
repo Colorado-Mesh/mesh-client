@@ -27,6 +27,7 @@ import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 
 interface PacketMessage {
   from: number;
@@ -102,7 +103,7 @@ function ConfigSelect({
           onChange(n);
         }}
         disabled={disabled}
-        className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+        className={`${SELECT_BOX_CLASS} w-full`}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -195,7 +196,7 @@ function ConfigNumber({
           min={min}
           max={max}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-28`}
         />
         {unit && <span className="text-muted text-sm">{unit}</span>}
       </div>
@@ -232,7 +233,7 @@ function ConfigText({
             onChange(e.target.value);
           }}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} flex-1`}
         />
         {password && (
           <button
@@ -1712,7 +1713,7 @@ export default function ModulePanel({
             rows={6}
             placeholder={t('modulePanel.fields.cannedMessagesPlaceholder')}
             spellCheck={false}
-            className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${TEXTAREA_BOX_SM_CLASS} w-full resize-y font-mono`}
           />
           <p className="text-muted text-xs">{t('modulePanel.fields.cannedMessagesHint')}</p>
         </div>
@@ -2231,7 +2232,7 @@ export default function ModulePanel({
             <select
               id="module-rtttl-preset"
               disabled={disabled}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${SELECT_BOX_CLASS} w-full`}
               value=""
               onChange={(e) => {
                 if (e.target.value) setRingtoneText(e.target.value);
@@ -2259,7 +2260,7 @@ export default function ModulePanel({
               rows={4}
               placeholder={t('modulePanel.fields.rtttlPlaceholder')}
               spellCheck={false}
-              className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${TEXTAREA_BOX_SM_CLASS} w-full resize-y font-mono`}
             />
             <div className="text-muted flex justify-between text-xs">
               <span>

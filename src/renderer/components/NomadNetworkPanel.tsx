@@ -60,6 +60,7 @@ import {
 import NomadMicronPageView from './NomadMicronPageView';
 import NomadPageServerPanel from './NomadPageServerPanel';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS } from './ui/formClasses';
 
 interface NomadHistoryEntry {
   hash: string;
@@ -815,7 +816,7 @@ export default function NomadNetworkPanel({
                     }}
                     placeholder={searchPlaceholder}
                     aria-label={searchPlaceholder}
-                    className="mb-2 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
+                    className={`${INPUT_BOX_CLASS} mb-2 w-full`}
                   />
                   <div
                     role="toolbar"
@@ -905,7 +906,7 @@ export default function NomadNetworkPanel({
                   }}
                   aria-label={t('nomadNetwork.urlBarAria')}
                   placeholder={t('nomadNetwork.enterUrlPlaceholder')}
-                  className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs text-gray-200"
+                  className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
                 />
                 <button
                   type="submit"
@@ -1091,7 +1092,7 @@ export default function NomadNetworkPanel({
                   }}
                   aria-label={t('nomadNetwork.urlBarAria')}
                   placeholder={t('nomadNetwork.pagePath')}
-                  className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-200"
+                  className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
                 />
               </form>
 

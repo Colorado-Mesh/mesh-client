@@ -17,6 +17,7 @@ import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { KeyBackupRestoreSection } from './KeyBackupRestoreSection';
 import { useToast } from './Toast';
+import { INPUT_BOX_SM_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 
 interface SecurityConfig {
   publicKey: Uint8Array;
@@ -482,7 +483,7 @@ export default function SecurityPanel({
               type="text"
               value={publicKeyB64}
               readOnly
-              className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
+              className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono`}
             />
             <button
               type="button"
@@ -521,7 +522,7 @@ export default function SecurityPanel({
                   type={showPrivateKey ? 'text' : 'password'}
                   value={privateKeyB64}
                   readOnly
-                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
+                  className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono`}
                 />
                 <button
                   type="button"
@@ -580,7 +581,7 @@ export default function SecurityPanel({
                       }}
                       disabled={disabled}
                       placeholder={t('securityPanel.adminKeyPlaceholder')}
-                      className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
+                      className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono`}
                       aria-label={t('securityPanel.adminKeyLabel', { number: i + 1 })}
                     />
                     <button
@@ -706,7 +707,7 @@ export default function SecurityPanel({
                 }}
                 placeholder={t('securityPanel.signTextPlaceholder')}
                 disabled={disabled || signInProgress}
-                className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
+                className={`${TEXTAREA_BOX_SM_CLASS} w-full font-mono`}
                 rows={2}
               />
               <button
@@ -775,7 +776,7 @@ export default function SecurityPanel({
                 }}
                 placeholder={t('securityPanel.importKeyPlaceholder')}
                 disabled={disabled || importInProgress}
-                className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
+                className={`${TEXTAREA_BOX_SM_CLASS} w-full font-mono`}
                 rows={2}
               />
               <button

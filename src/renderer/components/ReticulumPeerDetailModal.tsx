@@ -50,6 +50,7 @@ import { ConfirmModal } from './ConfirmModal';
 import QrCodeImage from './QrCodeImage';
 import { type ReticulumProfileIconName, ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 export interface ReticulumPeerDetailModalProps {
   peerHash: string;
@@ -469,7 +470,7 @@ export default function ReticulumPeerDetailModal({
                 onChange={(e) => {
                   setNameDraft(e.target.value);
                 }}
-                className="flex-1 rounded border border-gray-600 bg-black px-2 py-1 text-sm text-gray-100"
+                className={`${INPUT_BOX_CLASS} flex-1`}
                 aria-label={t('peerDetailModal.editNameAria')}
               />
               <button
@@ -680,7 +681,7 @@ export default function ReticulumPeerDetailModal({
               <select
                 id="peer-icon-name"
                 value={iconName}
-                className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+                className={`${SELECT_BOX_CLASS} mt-1 block`}
                 aria-label={t('reticulumProfileIcon.iconNameAria')}
                 onChange={(e) => {
                   const name = e.target.value as ReticulumProfileIconName;
@@ -703,7 +704,7 @@ export default function ReticulumPeerDetailModal({
               <select
                 id="peer-icon-color"
                 value={iconColor}
-                className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+                className={`${SELECT_BOX_CLASS} mt-1 block`}
                 aria-label={t('peerDetailModal.iconColorAria')}
                 onChange={(e) => {
                   void saveIconAppearance({ icon_color: e.target.value });

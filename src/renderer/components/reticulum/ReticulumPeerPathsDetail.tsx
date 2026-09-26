@@ -11,6 +11,8 @@ import {
   setReticulumPeerMediumPin,
 } from '@/renderer/lib/reticulum/reticulumPathMedium';
 
+import { SELECT_BOX_CLASS } from '../ui/formClasses';
+
 /** Map wire preference tokens to Network-tab path-medium labels (avoid raw API enums in UI). */
 export function pathMediumPreferenceLabelKey(
   preference: string,
@@ -153,7 +155,7 @@ export function ReticulumPeerPathsDetail({
             void onPinChange(e.target.value as PeerMediumPinChoice);
           }}
           aria-label={t('peerListPanel.pathsPreferAria')}
-          className="rounded border border-gray-600 bg-slate-900 px-2 py-1 text-gray-100"
+          className={SELECT_BOX_CLASS}
         >
           <option value="auto">{t('peerListPanel.pathsPreferAuto')}</option>
           <option value="rf">{t('peerListPanel.pathsPreferRf')}</option>

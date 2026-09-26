@@ -54,6 +54,7 @@ import {
 } from './map/leafletMapControls';
 import { OfflineMapsSection } from './map/OfflineMapsSection';
 import { useToast } from './Toast';
+import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
   className: '',
@@ -508,7 +509,7 @@ function MapLayerControl({
             <div className="text-2xs font-medium text-gray-400">{t('mapPanel.basemapHeading')}</div>
             <select
               aria-label={t('mapPanel.basemapSelectAria')}
-              className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200"
+              className={`${SELECT_BOX_SM_CLASS} w-full`}
               value={basemapId}
               onChange={(e) => {
                 const v = e.target.value;

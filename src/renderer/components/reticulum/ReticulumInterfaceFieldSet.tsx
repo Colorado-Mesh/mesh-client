@@ -9,6 +9,8 @@ import {
   validateReticulumCatalogField,
 } from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
 
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
+
 export interface ReticulumSerialPortChoice {
   path: string;
   label?: string | null;
@@ -23,9 +25,6 @@ export interface ReticulumInterfaceFieldSetProps {
   disabled?: boolean;
   serialPorts?: readonly ReticulumSerialPortChoice[];
 }
-
-const INPUT_CLASS =
-  'mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50';
 
 function fieldValue(
   field: ReticulumCatalogField,
@@ -97,7 +96,7 @@ export function ReticulumInterfaceFieldSet({
               onChange(field.key, e.target.value);
             }}
             aria-label={label}
-            className={INPUT_CLASS}
+            className={`${SELECT_BOX_CLASS} mt-1 block`}
           >
             {(field.options ?? []).map((option) => (
               <option key={option} value={option}>
@@ -124,7 +123,7 @@ export function ReticulumInterfaceFieldSet({
                 onChange(field.key, e.target.value);
               }}
               aria-label={label}
-              className={INPUT_CLASS}
+              className={`${SELECT_BOX_CLASS} mt-1 block`}
             >
               <option value="">{t('common.emDash')}</option>
               {serialPorts.map((port) => (
@@ -142,7 +141,7 @@ export function ReticulumInterfaceFieldSet({
                 onChange(field.key, e.target.value);
               }}
               aria-label={label}
-              className={INPUT_CLASS}
+              className={`${INPUT_BOX_CLASS} mt-1 block`}
             />
           )}
         </label>
@@ -164,7 +163,7 @@ export function ReticulumInterfaceFieldSet({
           aria-label={label}
           aria-invalid={showError || undefined}
           aria-describedby={showError ? `${id}-error` : undefined}
-          className={`${INPUT_CLASS} ${field.kind === 'number' ? 'w-24' : 'min-w-[8rem]'}`}
+          className={`${INPUT_BOX_CLASS} mt-1 block ${field.kind === 'number' ? 'w-24' : 'min-w-[8rem]'}`}
         />
         {showError ? (
           <span id={`${id}-error`} role="alert" className="text-label mt-1 block text-red-300">

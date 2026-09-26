@@ -122,6 +122,7 @@ import { clampTcpPort } from '@/shared/tcpPort';
 import { ConfirmModal } from '../ConfirmModal';
 import { HelpTooltip } from '../HelpTooltip';
 import SignalBars from '../SignalBars';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS, TEXTAREA_BOX_SM_CLASS } from '../ui/formClasses';
 import { ReticulumInterfaceDevicePickerModal } from './ReticulumInterfaceDevicePickerModal';
 import {
   hzToKhzFieldValue,
@@ -1407,7 +1408,7 @@ function ReticulumIfacFields({
           }}
           placeholder={t('connectionPanel.reticulumInterfaces.networkNamePlaceholder')}
           aria-label={t('connectionPanel.reticulumInterfaces.networkNameAria')}
-          className="mt-1 block min-w-[10rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} mt-1 block min-w-[10rem]`}
           autoComplete="off"
         />
       </label>
@@ -1426,7 +1427,7 @@ function ReticulumIfacFields({
             }}
             placeholder={t('connectionPanel.reticulumInterfaces.passphrasePlaceholder')}
             aria-label={t('connectionPanel.reticulumInterfaces.passphraseAria')}
-            className="block min-w-[10rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} block min-w-[10rem]`}
             autoComplete="new-password"
           />
           <button
@@ -1540,7 +1541,7 @@ function ReticulumInterfaceModeSelect({
         onChange={(e) => {
           onChange(e.target.value);
         }}
-        className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+        className={`${SELECT_BOX_CLASS} mt-1 block`}
         aria-label={t('connectionPanel.reticulumInterfaces.modeAria')}
         title={selectTitle}
       >
@@ -1712,7 +1713,7 @@ function InterfaceEditPanel({
             onChange={(e) => {
               setName(e.target.value);
             }}
-            className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+            className={`${INPUT_BOX_CLASS} mt-1 block`}
           />
         </label>
         <ReticulumInterfaceModeSelect
@@ -1739,7 +1740,7 @@ function InterfaceEditPanel({
                 onChange={(e) => {
                   setHost(e.target.value);
                 }}
-                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                className={`${INPUT_BOX_CLASS} mt-1 block`}
               />
             </label>
             <label className="text-xs text-gray-400">
@@ -1749,7 +1750,7 @@ function InterfaceEditPanel({
                 onChange={(e) => {
                   setPort(e.target.value);
                 }}
-                className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                className={`${INPUT_BOX_CLASS} mt-1 block w-20`}
               />
             </label>
           </>
@@ -1762,7 +1763,7 @@ function InterfaceEditPanel({
                 <input
                   value={serialPort}
                   readOnly
-                  className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                  className={`${INPUT_BOX_CLASS} mt-1 block min-w-[12rem]`}
                 />
               </label>
             ) : editUsesWifiRnode ? (
@@ -1774,7 +1775,7 @@ function InterfaceEditPanel({
                     onChange={(e) => {
                       setWifiHost(e.target.value);
                     }}
-                    className="mt-1 block min-w-[10rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                    className={`${INPUT_BOX_CLASS} mt-1 block min-w-[10rem]`}
                     aria-label={t('connectionPanel.reticulumInterfaces.rnodeWifiHost')}
                   />
                 </label>
@@ -1785,7 +1786,7 @@ function InterfaceEditPanel({
                     onChange={(e) => {
                       setWifiPort(e.target.value);
                     }}
-                    className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                    className={`${INPUT_BOX_CLASS} mt-1 block w-20`}
                     aria-label={t('connectionPanel.reticulumInterfaces.rnodeWifiPort')}
                   />
                 </label>
@@ -1799,7 +1800,7 @@ function InterfaceEditPanel({
                     onChange={(e) => {
                       setSerialPort(e.target.value);
                     }}
-                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                    className={`${SELECT_BOX_CLASS} mt-1 block`}
                   >
                     <option value="">{t('common.emDash')}</option>
                     {serialPorts.map((p) => (
@@ -1814,7 +1815,7 @@ function InterfaceEditPanel({
                     onChange={(e) => {
                       setSerialPort(e.target.value);
                     }}
-                    className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                    className={`${INPUT_BOX_CLASS} mt-1 block`}
                   />
                 )}
               </label>
@@ -1881,7 +1882,7 @@ function InterfaceEditPanel({
                 setCallsign(e.target.value);
               }}
               placeholder={t('connectionPanel.reticulumInterfaces.callsignPlaceholder')}
-              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              className={`${INPUT_BOX_CLASS} mt-1 block`}
               aria-label={t('connectionPanel.reticulumInterfaces.callsign')}
               required
             />
@@ -1897,7 +1898,7 @@ function InterfaceEditPanel({
               }}
               placeholder={t('connectionPanel.reticulumInterfaces.seedAddressesPlaceholder')}
               aria-label={t('connectionPanel.reticulumInterfaces.seedAddresses')}
-              className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              className={`${INPUT_BOX_CLASS} mt-1 block min-w-[12rem]`}
             />
           </label>
         ) : null}
@@ -1984,7 +1985,7 @@ function InterfaceEditPanel({
             rows={5}
             spellCheck={false}
             aria-label={t('connectionPanel.reticulumInterfaces.advancedAria')}
-            className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-200"
+            className={`${TEXTAREA_BOX_SM_CLASS} mt-1 w-full font-mono`}
           />
         </label>
       </details>
@@ -2336,7 +2337,7 @@ function InterfacesSection({
               onChange={(e) => {
                 onIfaceTypeChange(e.target.value as ReticulumIfaceUiType);
               }}
-              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+              className={`${SELECT_BOX_CLASS} mt-1 block`}
               aria-label={t('connectionPanel.reticulumInterfaces.type')}
             >
               {RETICULUM_IFACE_UI_TYPES.filter(
@@ -2368,7 +2369,7 @@ function InterfacesSection({
                 onChange={(e) => {
                   onRnodeTransportChange(e.target.value as ReticulumRnodeTransport);
                 }}
-                className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                className={`${SELECT_BOX_CLASS} mt-1 block`}
                 aria-label={t('connectionPanel.reticulumInterfaces.rnodeTransport')}
               >
                 <option value="serial">
@@ -2401,7 +2402,7 @@ function InterfacesSection({
                     onRnodeWifiHostChange(e.target.value);
                   }}
                   placeholder={t('connectionPanel.reticulumInterfaces.rnodeWifiHostPlaceholder')}
-                  className="mt-1 block min-w-[10rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} mt-1 block min-w-[10rem]`}
                   aria-label={t('connectionPanel.reticulumInterfaces.rnodeWifiHost')}
                 />
               </label>
@@ -2413,7 +2414,7 @@ function InterfacesSection({
                   onChange={(e) => {
                     onRnodeWifiPortChange(e.target.value);
                   }}
-                  className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} mt-1 block w-20`}
                   aria-label={t('connectionPanel.reticulumInterfaces.rnodeWifiPort')}
                 />
               </label>
@@ -2440,7 +2441,7 @@ function InterfacesSection({
                     onIfaceCallsignChange(e.target.value);
                   }}
                   placeholder={t('connectionPanel.reticulumInterfaces.callsignPlaceholder')}
-                  className="mt-1 block w-28 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} mt-1 block w-28`}
                   aria-label={t('connectionPanel.reticulumInterfaces.callsign')}
                   required
                 />
@@ -2468,7 +2469,7 @@ function InterfacesSection({
                   onChange={(e) => {
                     onIfaceHostChange(e.target.value);
                   }}
-                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} mt-1 block`}
                 />
               </label>
               {ifaceType !== 'i2p' ? (
@@ -2480,7 +2481,7 @@ function InterfacesSection({
                     onChange={(e) => {
                       onIfacePortChange(e.target.value);
                     }}
-                    className="mt-1 block w-20 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                    className={`${INPUT_BOX_CLASS} mt-1 block w-20`}
                   />
                 </label>
               ) : null}
@@ -2495,7 +2496,7 @@ function InterfacesSection({
                 onChange={(e) => {
                   onPipeCommandChange(e.target.value);
                 }}
-                className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} mt-1 block min-w-[12rem]`}
               />
             </label>
           ) : null}
@@ -2513,7 +2514,7 @@ function InterfacesSection({
                     const port = serialPorts.find((p) => p.path === path);
                     onRnodeDeviceNameChange(port?.label?.trim() || path);
                   }}
-                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  className={`${SELECT_BOX_CLASS} mt-1 block`}
                 >
                   <option value="">{t('common.emDash')}</option>
                   {serialPorts.map((p) => (
@@ -2531,7 +2532,7 @@ function InterfacesSection({
                     onSerialPortChange(path);
                     onRnodeDeviceNameChange(path);
                   }}
-                  className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} mt-1 block`}
                 />
               )}
             </label>
@@ -2547,7 +2548,7 @@ function InterfacesSection({
                 }}
                 placeholder={t('connectionPanel.reticulumInterfaces.seedAddressesPlaceholder')}
                 aria-label={t('connectionPanel.reticulumInterfaces.seedAddresses')}
-                className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} mt-1 block min-w-[12rem]`}
               />
             </label>
           ) : null}
@@ -2557,7 +2558,7 @@ function InterfacesSection({
               <input
                 value={serialPort}
                 readOnly
-                className="mt-1 block min-w-[12rem] rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                className={`${INPUT_BOX_CLASS} mt-1 block min-w-[12rem]`}
               />
             </label>
           ) : null}

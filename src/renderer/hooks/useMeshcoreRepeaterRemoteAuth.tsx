@@ -10,6 +10,7 @@ import { getMeshcoreRoomCredential } from '@/renderer/lib/meshcoreRoomCredential
 import { Z_NESTED_AUTH_OVERLAY } from '@/renderer/lib/modalZIndex';
 
 import { useToast } from '../components/Toast';
+import { INPUT_BOX_CLASS } from '../components/ui/formClasses';
 
 /** Firmware/admin passwords are short; cap input to avoid accidental paste floods. */
 const MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH = 128;
@@ -64,7 +65,7 @@ function InfraRemoteAuthFields({
           disabled={disabled}
           maxLength={MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH}
           placeholder={t('repeatersPanel.remoteAuthPlaceholder')}
-          className="bg-secondary-dark focus:border-brand-green/50 w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-full`}
         />
       </div>
     </div>

@@ -16,6 +16,7 @@ import {
 import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
 
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 interface Props {
   channels: readonly { index: number; name: string; secret?: Uint8Array }[];
@@ -211,7 +212,7 @@ export default function MeshcoreChatChannelManager({
                   placeholder={privateChannel ? undefined : '#channel'}
                   aria-label={t('radioPanel.meshcoreChannelNameLabel')}
                   disabled={saving || disabled}
-                  className="bg-deep-black focus:border-brand-green min-w-0 flex-1 rounded border border-gray-600 px-3 py-2 text-sm text-white outline-none disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} min-w-0 flex-1`}
                 />
                 <button
                   type="submit"
@@ -240,7 +241,7 @@ export default function MeshcoreChatChannelManager({
                     aria-label={t('radioPanel.meshcoreChannelKeyLabel')}
                     aria-describedby="meshcore-chat-channel-key-hint"
                     aria-invalid={keyHex.length > 0 && !validKey}
-                    className="bg-deep-black focus:border-brand-green w-full rounded border border-gray-600 px-3 py-2 font-mono text-sm text-white outline-none disabled:opacity-50"
+                    className={`${INPUT_BOX_CLASS} w-full font-mono`}
                   />
                   <p id="meshcore-chat-channel-key-hint" className="text-muted text-xs">
                     {t('radioPanel.meshcoreChannel.privateKeyHint')}

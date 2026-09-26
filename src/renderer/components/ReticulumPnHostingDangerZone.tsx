@@ -43,7 +43,7 @@ function NumberField({
           if (!Number.isFinite(n)) return;
           onChange(n);
         }}
-        className="mt-1 block w-full max-w-[10rem] rounded border border-yellow-700/60 bg-slate-950/60 px-2 py-1 text-sm text-yellow-100"
+        className="text-body bg-app-bg mt-1 block h-8 w-full max-w-[10rem] rounded-lg border border-yellow-700/60 px-2.5 text-yellow-100 focus:border-yellow-500 focus:outline-none pointer-coarse:h-10"
         aria-label={label}
       />
     </label>
@@ -280,7 +280,7 @@ export default function ReticulumPnHostingDangerZone({
             onChange={(e) => {
               patch('node_name', e.target.value.trim() ? e.target.value : null);
             }}
-            className="mt-1 block w-full max-w-md rounded border border-yellow-700/60 bg-slate-950/60 px-2 py-1 text-sm text-yellow-100"
+            className="text-body bg-app-bg mt-1 block h-8 w-full max-w-md rounded-lg border border-yellow-700/60 px-2.5 text-yellow-100 focus:border-yellow-500 focus:outline-none pointer-coarse:h-10"
             aria-label={t('networkPanel.reticulumPnHosting.nodeName')}
           />
         </label>
@@ -300,7 +300,7 @@ export default function ReticulumPnHostingDangerZone({
                   .filter(Boolean),
               );
             }}
-            className="mt-1 block w-full max-w-xl rounded border border-yellow-700/60 bg-slate-950/60 px-2 py-1 font-mono text-xs text-yellow-100"
+            className="bg-app-bg mt-1 block w-full max-w-xl rounded-lg border border-yellow-700/60 px-2 py-1.5 font-mono text-xs text-yellow-100 focus:border-yellow-500 focus:outline-none"
             aria-label={t('networkPanel.reticulumPnHosting.staticPeers')}
             placeholder={t('networkPanel.reticulumPnHosting.staticPeersPlaceholder')}
           />
