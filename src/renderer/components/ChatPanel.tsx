@@ -85,6 +85,7 @@ import {
   RETICULUM_DM_HEADER_ACTION_CLASS,
   RETICULUM_DM_HEADER_STATUS_CLASS,
 } from '@/renderer/lib/reticulumDmHeaderActions';
+import { senderInitials } from '@/renderer/lib/senderInitials';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -3160,6 +3161,36 @@ function ChatPanel({
                   protocol === 'meshcore' && rawSenderName === 'Unknown'
                     ? t('common.unknown')
                     : rawSenderName;
+                // Reticulum peers have an LXMF face; it sits in the avatar gutter (incoming) or the
+                // header (own messages). Other protocols use initials in the gutter.
+                const senderFaceHash =
+                  protocol === 'reticulum'
+                    ? resolveReticulumDmFaceHash(
+                        msg.sender_id,
+                        msg.reticulum_sender_hash ??
+                          nodes.get(msg.sender_id)?.reticulum_destination_hash,
+                      )
+                    : null;
+                const senderAppearance = senderFaceHash
+                  ? peerAppearanceByHash.get(senderFaceHash)
+                  : undefined;
+                // Incoming transport + RF hops ("2 hops", RF / MQTT). Shown on the header line
+                // so each bubble is one line shorter; compact continuations have no header and
+                // keep it as a footer.
+                const showRfHops =
+                  msg.rxHops != null && (msg.receivedVia === 'rf' || msg.receivedVia === 'both');
+                const incomingMeta =
+                  !isOwn && (msg.receivedVia || msg.viaStoreForward || showRfHops) ? (
+                    <>
+                      {showRfHops && msg.rxHops != null && (
+                        <ChatRfHopLabel rxHops={msg.rxHops} msg={msg} />
+                      )}
+                      {msg.viaStoreForward && <StoreForwardBadge />}
+                      {msg.receivedVia && (
+                        <TransportBadge via={msg.receivedVia} protocol={protocol} />
+                      )}
+                    </>
+                  ) : null;
 
                 // Day separator
                 const daySeparator = daySeparatorIndices.has(i) ? (
@@ -3201,7 +3232,7 @@ function ChatPanel({
                     key={vi.key}
                     data-index={vi.index}
                     ref={messageVirtualizer.measureElement}
-                    className={`absolute top-0 left-0 w-full ${compactMode ? 'pb-0.5' : 'pb-1.5'}`}
+                    className={`absolute top-0 left-0 w-full ${compactMode ? 'pb-0.5' : 'pb-1'}`}
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
                     <div className={isContinuation ? '!mt-0' : undefined}>
@@ -3218,13 +3249,36 @@ function ChatPanel({
                       >
                         {/* Bubble row */}
                         <div
-                          className={`group/msg flex max-w-[min(80%,40rem)] items-end gap-1 ${
+                          className={`group/msg flex max-w-[min(94%,40rem)] items-end gap-1 sm:max-w-[min(80%,40rem)] ${
                             isOwn ? 'flex-row-reverse' : 'flex-row'
                           }`}
                         >
+                          {/* Sender avatar (Option A): initials or the Reticulum face, once per
+                              run of messages; continuations keep the gutter so text lines up. */}
+                          {!isOwn && (
+                            <div
+                              aria-hidden="true"
+                              data-chat-avatar={isContinuation ? 'spacer' : 'sender'}
+                              className="mr-1 flex w-6 shrink-0 justify-center self-start"
+                            >
+                              {isContinuation ? null : senderFaceHash ? (
+                                <ReticulumProfileIconSlot
+                                  iconName={senderAppearance?.icon_name}
+                                  iconColor={senderAppearance?.icon_color}
+                                  destinationHash={senderFaceHash}
+                                  size={24}
+                                  className="shrink-0"
+                                />
+                              ) : (
+                                <span className="bg-sidebar-active-bg text-label flex h-6 w-6 items-center justify-center rounded-full font-semibold text-slate-300">
+                                  {senderInitials(displaySenderName, msg.sender_id)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {/* Message bubble */}
                           <div
-                            className={`min-w-0 rounded-xl border px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
+                            className={`min-w-0 rounded-xl border px-3 ${compactMode ? 'py-1' : 'py-1.5'} ${(() => {
                               const mecp = tryParseMecp(msg.payload);
                               if (mecp?.severity != null) {
                                 return mecpChatBubbleToneClasses(mecp.severity, isOwn);
@@ -3245,20 +3299,9 @@ function ChatPanel({
                             {/* Header: sender name (clickable) + DM indicator + time */}
                             {!isContinuation &&
                               (() => {
-                                const senderFaceHash =
-                                  protocol === 'reticulum'
-                                    ? resolveReticulumDmFaceHash(
-                                        msg.sender_id,
-                                        msg.reticulum_sender_hash ??
-                                          nodes.get(msg.sender_id)?.reticulum_destination_hash,
-                                      )
-                                    : null;
-                                const senderAppearance = senderFaceHash
-                                  ? peerAppearanceByHash.get(senderFaceHash)
-                                  : undefined;
                                 return (
                                   <div className="mb-0.5 flex items-center gap-2">
-                                    {senderFaceHash ? (
+                                    {isOwn && senderFaceHash ? (
                                       <ReticulumProfileIconSlot
                                         iconName={senderAppearance?.icon_name}
                                         iconColor={senderAppearance?.icon_color}
@@ -3280,7 +3323,7 @@ function ChatPanel({
                                         }
                                         onNodeClick(msg.sender_id);
                                       }}
-                                      className={`cursor-pointer text-xs font-semibold hover:underline ${
+                                      className={`min-w-0 cursor-pointer truncate text-xs font-semibold hover:underline ${
                                         isOwn
                                           ? 'text-slate-200'
                                           : filterSender === msg.sender_id
@@ -3321,7 +3364,7 @@ function ChatPanel({
                                       <span className="text-muted text-2xs font-medium">DM</span>
                                     )}
                                     <span
-                                      className="text-muted text-2xs font-mono tabular-nums"
+                                      className="text-muted text-2xs shrink-0 font-mono whitespace-nowrap tabular-nums"
                                       title={formatFullTimestamp(msg.timestamp)}
                                     >
                                       {formatTime(msg.timestamp)}
@@ -3329,6 +3372,11 @@ function ChatPanel({
                                     {channels.length > 1 && !isDm && (
                                       <span className="text-muted text-2xs font-mono">
                                         ch{msg.channel}
+                                      </span>
+                                    )}
+                                    {incomingMeta && (
+                                      <span className="ml-auto flex shrink-0 items-center gap-2 pl-2">
+                                        {incomingMeta}
                                       </span>
                                     )}
                                   </div>
@@ -3505,23 +3553,12 @@ function ChatPanel({
                               })()}
                             </div>
 
-                            {/* Transport + RF hop count (incoming) */}
-                            {!isOwn &&
-                              (msg.receivedVia ||
-                                msg.viaStoreForward ||
-                                (msg.rxHops != null &&
-                                  (msg.receivedVia === 'rf' || msg.receivedVia === 'both'))) && (
-                                <div className="mt-0.5 flex items-center justify-end gap-2">
-                                  {msg.rxHops != null &&
-                                    (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
-                                      <ChatRfHopLabel rxHops={msg.rxHops} msg={msg} />
-                                    )}
-                                  {msg.viaStoreForward && <StoreForwardBadge />}
-                                  {msg.receivedVia && (
-                                    <TransportBadge via={msg.receivedVia} protocol={protocol} />
-                                  )}
-                                </div>
-                              )}
+                            {/* Transport + RF hop count on continuations (no header line) */}
+                            {isContinuation && incomingMeta && (
+                              <div className="mt-0.5 flex items-center justify-end gap-2">
+                                {incomingMeta}
+                              </div>
+                            )}
 
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (

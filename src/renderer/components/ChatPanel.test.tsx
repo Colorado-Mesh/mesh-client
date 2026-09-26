@@ -5676,6 +5676,53 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     }
   });
 
+  it('shows sender initials beside incoming messages only, once per run in compact mode', async () => {
+    const now = Date.now();
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          compactMode
+          messages={[
+            makeMsg({ sender_id: 2, sender_name: 'Trail Dave', payload: 'first', timestamp: now }),
+            makeMsg({
+              sender_id: 2,
+              sender_name: 'Trail Dave',
+              payload: 'second',
+              timestamp: now + 1_000,
+            }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'mine', timestamp: now + 2_000 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('second');
+    const avatars = Array.from(container.querySelectorAll('[data-chat-avatar]'));
+    expect(avatars.map((el) => el.getAttribute('data-chat-avatar'))).toEqual(['sender', 'spacer']);
+    expect(avatars[0]).toHaveTextContent('TD');
+    expect(avatars[0]).toHaveAttribute('aria-hidden', 'true');
+    const own = screen.getByText('mine').closest('[data-chat-message-key]');
+    expect(own?.querySelector('[data-chat-avatar]')).toBeNull();
+  });
+
+  it('has no axe violations with incoming, own and reply bubbles', async () => {
+    const now = Date.now();
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, sender_name: 'Ridge Fox', payload: 'hello', timestamp: now }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'hi back', timestamp: now + 1 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('hi back');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('keeps MECP severity tones ahead of the outgoing tone', async () => {
     const { container } = render(
       <ToastProvider>
