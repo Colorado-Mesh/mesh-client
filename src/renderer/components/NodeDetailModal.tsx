@@ -660,6 +660,351 @@ export default function NodeDetailModal({
   const traceBlockReason = !isConnected ? t('nodeDetailModal.connectRadioFirst') : null;
 
   const closeLabel = variant === 'pane' ? t('nodeDetailModal.closePane') : t('aria.closeDialog');
+  // Omitted for the directly connected node (no position / trace / message to self).
+  const actionsRow = isOurNode ? null : (
+    <div
+      className={`flex flex-wrap items-center gap-2 border-slate-800 px-5 py-3 ${
+        variant === 'pane' ? 'border-b' : 'border-t'
+      }`}
+    >
+      {protocol !== 'meshcore' && (
+        <button
+          type="button"
+          onClick={handleRequestPosition}
+          disabled={!isConnected || positionRequestedAt !== null}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {t('nodeDetailModal.requestPosition')}
+        </button>
+      )}
+      {traceHardDisabled && traceBlockReason ? (
+        <HelpTooltip text={traceBlockReason}>
+          <span className="inline-flex min-w-[8rem] flex-1">
+            <button
+              type="button"
+              onClick={handleTraceRoute}
+              disabled
+              className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
+            >
+              {traceRoutePending
+                ? t('nodeDetailModal.tracingEllipsis')
+                : t('nodeDetailModal.traceRoute')}
+            </button>
+          </span>
+        </HelpTooltip>
+      ) : (
+        <button
+          type="button"
+          onClick={handleTraceRoute}
+          disabled={false}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {traceRoutePending
+            ? t('nodeDetailModal.tracingEllipsis')
+            : t('nodeDetailModal.traceRoute')}
+        </button>
+      )}
+      {protocol === 'meshcore' && onRequestRepeaterStatus && (
+        <button
+          type="button"
+          onClick={async () => {
+            if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
+            setRepeaterStatusPending(true);
+            setActionStatus(t('nodeDetailModal.requestingStatus'));
+            try {
+              await onRequestRepeaterStatus(node.node_id);
+              setActionStatus(null);
+            } catch (e) {
+              console.warn(
+                '[NodeDetailModal] requestRepeaterStatus failed ' + errLikeToLogString(e),
+              );
+              setActionStatus(
+                e instanceof Error ? e.message : t('nodeDetailModal.statusRequestFailed'),
+              );
+            } finally {
+              setRepeaterStatusPending(false);
+            }
+          }}
+          disabled={!isConnected || repeaterStatusPending}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {repeaterStatusPending
+            ? t('nodeDetailModal.requestingEllipsis')
+            : t('nodeDetailModal.requestStatus')}
+        </button>
+      )}
+      {protocol === 'meshcore' && onRequestTelemetry && (
+        <button
+          type="button"
+          title={t('nodeDetailModal.cayenneLppTitle')}
+          aria-label={t('nodeDetailModal.sensorTelemetryLpp')}
+          onClick={async () => {
+            if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
+            setTelemetryPending(true);
+            setActionStatus(t('nodeDetailModal.requestingSensorTelemetry'));
+            try {
+              await onRequestTelemetry(node.node_id);
+              setActionStatus(null);
+            } catch (e) {
+              console.warn('[NodeDetailModal] requestTelemetry failed ' + errLikeToLogString(e));
+              setActionStatus(
+                e instanceof Error
+                  ? e.message
+                  : t('nodeDetailModal.telemetryFailed', { message: String(e) }),
+              );
+            } finally {
+              setTelemetryPending(false);
+            }
+          }}
+          disabled={!isConnected || telemetryPending}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {telemetryPending
+            ? t('nodeDetailModal.requestingEllipsis')
+            : t('nodeDetailModal.sensorTelemetryButton')}
+        </button>
+      )}
+      {protocol === 'meshcore' &&
+        onRequestNeighbors &&
+        (node.hw_model === 'Repeater' || node.hw_model === 'Room') && (
+          <button
+            type="button"
+            onClick={async () => {
+              if (
+                node.hops_away != null &&
+                node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
+              ) {
+                return;
+              }
+              if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
+              setNeighborsPending(true);
+              setActionStatus(t('nodeDetailModal.requestingNeighbors'));
+              try {
+                await onRequestNeighbors(node.node_id);
+                setActionStatus(null);
+              } catch (e) {
+                console.warn('[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e));
+                setActionStatus(
+                  e instanceof Error
+                    ? e.message
+                    : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
+                );
+              } finally {
+                setNeighborsPending(false);
+              }
+            }}
+            disabled={
+              !isConnected ||
+              neighborsPending ||
+              (node.hops_away != null && node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
+            }
+            title={
+              node.hops_away != null && node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
+                ? t('nodeDetailModal.neighborsHopTooFar', {
+                    hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
+                  })
+                : undefined
+            }
+            className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+          >
+            {neighborsPending
+              ? t('nodeDetailModal.requestingEllipsis')
+              : t('nodeDetailModal.getNeighbors')}
+          </button>
+        )}
+      {onOpenRoom && protocol === 'meshcore' && node.hw_model === 'Room' && (
+        <button
+          type="button"
+          onClick={() => {
+            onOpenRoom(node.node_id);
+            onClose();
+          }}
+          disabled={!isConnected || !contactPubkey}
+          title={!contactPubkey ? t('nodeDetailModal.messageNoKeyTitle') : undefined}
+          className={buttonClassName(
+            'primary',
+            'md',
+            // Pane: the primary action leads, full width, above the secondary ones.
+            variant === 'pane' ? 'order-first basis-full' : 'min-w-[8rem] flex-1',
+          )}
+        >
+          {t('nodeDetailModal.openRoomButton')}
+        </button>
+      )}
+      {onMessageNode &&
+        !(protocol === 'meshcore' && isMeshcoreDmExcludedHwModel(node.hw_model)) && (
+          <button
+            type="button"
+            onClick={() => {
+              onMessageNode(node.node_id);
+              onClose();
+            }}
+            disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
+            title={
+              protocol === 'meshcore' && !contactPubkey
+                ? t('nodeDetailModal.messageNoKeyTitle')
+                : undefined
+            }
+            className={buttonClassName(
+              'primary',
+              'md',
+              // Pane: the primary action leads, full width, above the secondary ones.
+              variant === 'pane' ? 'order-first basis-full' : 'min-w-[8rem] flex-1',
+            )}
+          >
+            {t('nodeDetailModal.messageButton')}
+          </button>
+        )}
+      {protocol === 'meshcore' && onExportContact && (
+        <button
+          type="button"
+          onClick={async () => {
+            if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
+            setExportContactPending(true);
+            setActionStatus(t('nodeDetailModal.exportingContact'));
+            try {
+              const advert = await onExportContact(node.node_id);
+              if (advert) {
+                const blob = new Blob([advert.buffer as ArrayBuffer], {
+                  type: 'application/octet-stream',
+                });
+                downloadBlob(blob, `contact-${node.node_id.toString(16)}.bin`);
+                setActionStatus(null);
+              } else {
+                setActionStatus(t('nodeDetailModal.noPublicKeyAvailable'));
+              }
+            } catch (e) {
+              console.warn('[NodeDetailModal] exportContact failed ' + errLikeToLogString(e));
+              setActionStatus(e instanceof Error ? e.message : t('nodeDetailModal.exportFailed'));
+            } finally {
+              setExportContactPending(false);
+            }
+          }}
+          disabled={!isConnected || exportContactPending}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {exportContactPending
+            ? t('nodeDetailModal.exportingEllipsis')
+            : t('nodeDetailModal.exportContact')}
+        </button>
+      )}
+      {protocol === 'meshcore' && onShareContact && (
+        <button
+          type="button"
+          onClick={async () => {
+            if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
+            setShareContactPending(true);
+            setActionStatus(t('nodeDetailModal.sharingContact'));
+            try {
+              const success = await onShareContact(node.node_id);
+              setActionStatus(
+                success ? t('nodeDetailModal.shareContactSent') : t('nodeDetailModal.shareFailed'),
+              );
+            } catch (e) {
+              console.warn('[NodeDetailModal] shareContact failed ' + errLikeToLogString(e));
+              setActionStatus(e instanceof Error ? e.message : t('nodeDetailModal.shareFailed'));
+            } finally {
+              setShareContactPending(false);
+            }
+          }}
+          disabled={!isConnected || shareContactPending}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {shareContactPending
+            ? t('nodeDetailModal.sharingEllipsis')
+            : t('nodeDetailModal.shareContact')}
+        </button>
+      )}
+      {isMeshcoreProtocol && meshcoreContactQrUri ? (
+        <button
+          type="button"
+          onClick={() => {
+            setShowMeshcoreContactQr((v) => !v);
+          }}
+          aria-label={t('nodeDetailModal.shareContactQrAria')}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {t('nodeDetailModal.shareContactQr')}
+        </button>
+      ) : null}
+      {isMeshcoreProtocol && showMeshcoreContactQr && meshcoreContactQrUri ? (
+        <div className="w-full pt-2">
+          <QrCodeImage
+            value={meshcoreContactQrUri}
+            size={160}
+            ariaLabel={t('nodeDetailModal.shareContactQrAria')}
+          />
+        </div>
+      ) : null}
+      {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
+        <button
+          type="button"
+          onClick={async () => {
+            setAddRemoveLoading(true);
+            setActionStatus(t('nodeDetailModal.addingToRadio'));
+            try {
+              await window.electronAPI.db.saveMeshcoreContact({
+                node_id: node.node_id,
+                public_key: contactPubkey,
+                on_radio: 1,
+                last_synced_from_radio: new Date().toISOString(),
+              });
+              setContactOnRadio(true);
+              // Refresh count
+              const count = await window.electronAPI.db.getMeshcoreContactCount();
+              setRadioContactCount(count);
+              setActionStatus(null);
+            } catch (e) {
+              console.warn('[NodeDetailModal] addToRadio failed ' + errLikeToLogString(e));
+              setActionStatus(
+                e instanceof Error ? e.message : t('nodeDetailModal.addToRadioFailed'),
+              );
+            } finally {
+              setAddRemoveLoading(false);
+            }
+          }}
+          disabled={!isConnected || addRemoveLoading}
+          className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {addRemoveLoading ? t('nodeDetailModal.addingEllipsis') : t('nodeDetailModal.addToRadio')}
+        </button>
+      )}
+      {protocol === 'meshcore' && contactPubkey && contactOnRadio === true && (
+        <button
+          type="button"
+          onClick={async () => {
+            setAddRemoveLoading(true);
+            setActionStatus(t('nodeDetailModal.removingFromRadio'));
+            try {
+              await window.electronAPI.db.saveMeshcoreContact({
+                node_id: node.node_id,
+                public_key: contactPubkey,
+                on_radio: 0,
+              });
+              setContactOnRadio(false);
+              // Refresh count
+              const count = await window.electronAPI.db.getMeshcoreContactCount();
+              setRadioContactCount(count);
+              setActionStatus(null);
+            } catch (e) {
+              console.warn('[NodeDetailModal] removeFromRadio failed ' + errLikeToLogString(e));
+              setActionStatus(
+                e instanceof Error ? e.message : t('nodeDetailModal.removeFromRadioFailed'),
+              );
+            } finally {
+              setAddRemoveLoading(false);
+            }
+          }}
+          disabled={!isConnected || addRemoveLoading}
+          className={buttonClassName('danger', 'md', 'min-w-[8rem] flex-1')}
+        >
+          {addRemoveLoading
+            ? t('nodeDetailModal.removingEllipsis')
+            : t('nodeDetailModal.removeFromRadio')}
+        </button>
+      )}
+    </div>
+  );
   const detailContent = (
     <>
       {/* Header */}
@@ -849,6 +1194,9 @@ export default function NodeDetailModal({
           </span>
         </div>
       </div>
+
+      {/* Pane: actions right under the header, where Message and Trace are expected (Option B). */}
+      {variant === 'pane' && actionsRow}
 
       {/* Body + footer actions — single scroll region so remote admin and controls stay reachable */}
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -1852,354 +2200,8 @@ export default function NodeDetailModal({
           )}
         </div>
 
-        {/* Footer actions — omitted for directly connected node (no position/trace/message to self) */}
-        {!isOurNode && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-gray-700 px-5 py-3">
-            {protocol !== 'meshcore' && (
-              <button
-                type="button"
-                onClick={handleRequestPosition}
-                disabled={!isConnected || positionRequestedAt !== null}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {t('nodeDetailModal.requestPosition')}
-              </button>
-            )}
-            {traceHardDisabled && traceBlockReason ? (
-              <HelpTooltip text={traceBlockReason}>
-                <span className="inline-flex min-w-[8rem] flex-1">
-                  <button
-                    type="button"
-                    onClick={handleTraceRoute}
-                    disabled
-                    className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-gray-200 opacity-40"
-                  >
-                    {traceRoutePending
-                      ? t('nodeDetailModal.tracingEllipsis')
-                      : t('nodeDetailModal.traceRoute')}
-                  </button>
-                </span>
-              </HelpTooltip>
-            ) : (
-              <button
-                type="button"
-                onClick={handleTraceRoute}
-                disabled={false}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {traceRoutePending
-                  ? t('nodeDetailModal.tracingEllipsis')
-                  : t('nodeDetailModal.traceRoute')}
-              </button>
-            )}
-            {protocol === 'meshcore' && onRequestRepeaterStatus && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
-                  setRepeaterStatusPending(true);
-                  setActionStatus(t('nodeDetailModal.requestingStatus'));
-                  try {
-                    await onRequestRepeaterStatus(node.node_id);
-                    setActionStatus(null);
-                  } catch (e) {
-                    console.warn(
-                      '[NodeDetailModal] requestRepeaterStatus failed ' + errLikeToLogString(e),
-                    );
-                    setActionStatus(
-                      e instanceof Error ? e.message : t('nodeDetailModal.statusRequestFailed'),
-                    );
-                  } finally {
-                    setRepeaterStatusPending(false);
-                  }
-                }}
-                disabled={!isConnected || repeaterStatusPending}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {repeaterStatusPending
-                  ? t('nodeDetailModal.requestingEllipsis')
-                  : t('nodeDetailModal.requestStatus')}
-              </button>
-            )}
-            {protocol === 'meshcore' && onRequestTelemetry && (
-              <button
-                type="button"
-                title={t('nodeDetailModal.cayenneLppTitle')}
-                aria-label={t('nodeDetailModal.sensorTelemetryLpp')}
-                onClick={async () => {
-                  if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
-                  setTelemetryPending(true);
-                  setActionStatus(t('nodeDetailModal.requestingSensorTelemetry'));
-                  try {
-                    await onRequestTelemetry(node.node_id);
-                    setActionStatus(null);
-                  } catch (e) {
-                    console.warn(
-                      '[NodeDetailModal] requestTelemetry failed ' + errLikeToLogString(e),
-                    );
-                    setActionStatus(
-                      e instanceof Error
-                        ? e.message
-                        : t('nodeDetailModal.telemetryFailed', { message: String(e) }),
-                    );
-                  } finally {
-                    setTelemetryPending(false);
-                  }
-                }}
-                disabled={!isConnected || telemetryPending}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {telemetryPending
-                  ? t('nodeDetailModal.requestingEllipsis')
-                  : t('nodeDetailModal.sensorTelemetryButton')}
-              </button>
-            )}
-            {protocol === 'meshcore' &&
-              onRequestNeighbors &&
-              (node.hw_model === 'Repeater' || node.hw_model === 'Room') && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (
-                      node.hops_away != null &&
-                      node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
-                    ) {
-                      return;
-                    }
-                    if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin')))
-                      return;
-                    setNeighborsPending(true);
-                    setActionStatus(t('nodeDetailModal.requestingNeighbors'));
-                    try {
-                      await onRequestNeighbors(node.node_id);
-                      setActionStatus(null);
-                    } catch (e) {
-                      console.warn(
-                        '[NodeDetailModal] requestNeighbors failed ' + errLikeToLogString(e),
-                      );
-                      setActionStatus(
-                        e instanceof Error
-                          ? e.message
-                          : t('nodeDetailModal.neighborsFailed', { message: String(e) }),
-                      );
-                    } finally {
-                      setNeighborsPending(false);
-                    }
-                  }}
-                  disabled={
-                    !isConnected ||
-                    neighborsPending ||
-                    (node.hops_away != null &&
-                      node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS)
-                  }
-                  title={
-                    node.hops_away != null &&
-                    node.hops_away >= MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS
-                      ? t('nodeDetailModal.neighborsHopTooFar', {
-                          hops: MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS,
-                        })
-                      : undefined
-                  }
-                  className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-                >
-                  {neighborsPending
-                    ? t('nodeDetailModal.requestingEllipsis')
-                    : t('nodeDetailModal.getNeighbors')}
-                </button>
-              )}
-            {onOpenRoom && protocol === 'meshcore' && node.hw_model === 'Room' && (
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenRoom(node.node_id);
-                  onClose();
-                }}
-                disabled={!isConnected || !contactPubkey}
-                title={!contactPubkey ? t('nodeDetailModal.messageNoKeyTitle') : undefined}
-                className={buttonClassName('primary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {t('nodeDetailModal.openRoomButton')}
-              </button>
-            )}
-            {onMessageNode &&
-              !(protocol === 'meshcore' && isMeshcoreDmExcludedHwModel(node.hw_model)) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onMessageNode(node.node_id);
-                    onClose();
-                  }}
-                  disabled={!isConnected || (protocol === 'meshcore' && !contactPubkey)}
-                  title={
-                    protocol === 'meshcore' && !contactPubkey
-                      ? t('nodeDetailModal.messageNoKeyTitle')
-                      : undefined
-                  }
-                  className={buttonClassName('primary', 'md', 'min-w-[8rem] flex-1')}
-                >
-                  {t('nodeDetailModal.messageButton')}
-                </button>
-              )}
-            {protocol === 'meshcore' && onExportContact && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
-                  setExportContactPending(true);
-                  setActionStatus(t('nodeDetailModal.exportingContact'));
-                  try {
-                    const advert = await onExportContact(node.node_id);
-                    if (advert) {
-                      const blob = new Blob([advert.buffer as ArrayBuffer], {
-                        type: 'application/octet-stream',
-                      });
-                      downloadBlob(blob, `contact-${node.node_id.toString(16)}.bin`);
-                      setActionStatus(null);
-                    } else {
-                      setActionStatus(t('nodeDetailModal.noPublicKeyAvailable'));
-                    }
-                  } catch (e) {
-                    console.warn('[NodeDetailModal] exportContact failed ' + errLikeToLogString(e));
-                    setActionStatus(
-                      e instanceof Error ? e.message : t('nodeDetailModal.exportFailed'),
-                    );
-                  } finally {
-                    setExportContactPending(false);
-                  }
-                }}
-                disabled={!isConnected || exportContactPending}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {exportContactPending
-                  ? t('nodeDetailModal.exportingEllipsis')
-                  : t('nodeDetailModal.exportContact')}
-              </button>
-            )}
-            {protocol === 'meshcore' && onShareContact && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!(await ensureRemoteRpcAccess(node.node_id, node.hw_model, 'admin'))) return;
-                  setShareContactPending(true);
-                  setActionStatus(t('nodeDetailModal.sharingContact'));
-                  try {
-                    const success = await onShareContact(node.node_id);
-                    setActionStatus(
-                      success
-                        ? t('nodeDetailModal.shareContactSent')
-                        : t('nodeDetailModal.shareFailed'),
-                    );
-                  } catch (e) {
-                    console.warn('[NodeDetailModal] shareContact failed ' + errLikeToLogString(e));
-                    setActionStatus(
-                      e instanceof Error ? e.message : t('nodeDetailModal.shareFailed'),
-                    );
-                  } finally {
-                    setShareContactPending(false);
-                  }
-                }}
-                disabled={!isConnected || shareContactPending}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {shareContactPending
-                  ? t('nodeDetailModal.sharingEllipsis')
-                  : t('nodeDetailModal.shareContact')}
-              </button>
-            )}
-            {isMeshcoreProtocol && meshcoreContactQrUri ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMeshcoreContactQr((v) => !v);
-                }}
-                aria-label={t('nodeDetailModal.shareContactQrAria')}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {t('nodeDetailModal.shareContactQr')}
-              </button>
-            ) : null}
-            {isMeshcoreProtocol && showMeshcoreContactQr && meshcoreContactQrUri ? (
-              <div className="w-full pt-2">
-                <QrCodeImage
-                  value={meshcoreContactQrUri}
-                  size={160}
-                  ariaLabel={t('nodeDetailModal.shareContactQrAria')}
-                />
-              </div>
-            ) : null}
-            {protocol === 'meshcore' && contactPubkey && contactOnRadio === false && (
-              <button
-                type="button"
-                onClick={async () => {
-                  setAddRemoveLoading(true);
-                  setActionStatus(t('nodeDetailModal.addingToRadio'));
-                  try {
-                    await window.electronAPI.db.saveMeshcoreContact({
-                      node_id: node.node_id,
-                      public_key: contactPubkey,
-                      on_radio: 1,
-                      last_synced_from_radio: new Date().toISOString(),
-                    });
-                    setContactOnRadio(true);
-                    // Refresh count
-                    const count = await window.electronAPI.db.getMeshcoreContactCount();
-                    setRadioContactCount(count);
-                    setActionStatus(null);
-                  } catch (e) {
-                    console.warn('[NodeDetailModal] addToRadio failed ' + errLikeToLogString(e));
-                    setActionStatus(
-                      e instanceof Error ? e.message : t('nodeDetailModal.addToRadioFailed'),
-                    );
-                  } finally {
-                    setAddRemoveLoading(false);
-                  }
-                }}
-                disabled={!isConnected || addRemoveLoading}
-                className={buttonClassName('secondary', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {addRemoveLoading
-                  ? t('nodeDetailModal.addingEllipsis')
-                  : t('nodeDetailModal.addToRadio')}
-              </button>
-            )}
-            {protocol === 'meshcore' && contactPubkey && contactOnRadio === true && (
-              <button
-                type="button"
-                onClick={async () => {
-                  setAddRemoveLoading(true);
-                  setActionStatus(t('nodeDetailModal.removingFromRadio'));
-                  try {
-                    await window.electronAPI.db.saveMeshcoreContact({
-                      node_id: node.node_id,
-                      public_key: contactPubkey,
-                      on_radio: 0,
-                    });
-                    setContactOnRadio(false);
-                    // Refresh count
-                    const count = await window.electronAPI.db.getMeshcoreContactCount();
-                    setRadioContactCount(count);
-                    setActionStatus(null);
-                  } catch (e) {
-                    console.warn(
-                      '[NodeDetailModal] removeFromRadio failed ' + errLikeToLogString(e),
-                    );
-                    setActionStatus(
-                      e instanceof Error ? e.message : t('nodeDetailModal.removeFromRadioFailed'),
-                    );
-                  } finally {
-                    setAddRemoveLoading(false);
-                  }
-                }}
-                disabled={!isConnected || addRemoveLoading}
-                className={buttonClassName('danger', 'md', 'min-w-[8rem] flex-1')}
-              >
-                {addRemoveLoading
-                  ? t('nodeDetailModal.removingEllipsis')
-                  : t('nodeDetailModal.removeFromRadio')}
-              </button>
-            )}
-          </div>
-        )}
+        {/* Footer actions (modal). The pane shows them under the header instead (Option B). */}
+        {variant !== 'pane' && actionsRow}
 
         {/* MQTT Ignore toggle */}
         <div className="shrink-0 border-t border-slate-800 px-5 py-3">

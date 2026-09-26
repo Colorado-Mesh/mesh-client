@@ -822,6 +822,38 @@ describe('NodeDetailModal pane variant', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('leads the pane actions with Message, full width', () => {
+    render(
+      <NodeDetailModal
+        variant="pane"
+        node={mockNode}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        onMessageNode={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Message' }).className).toContain(
+      'order-first basis-full',
+    );
+  });
+
+  it('puts the actions right under the header, before the node details', () => {
+    renderPane();
+    const trace = screen.getByRole('button', { name: 'Trace Route' });
+    const scroll = document.querySelector('.overflow-y-auto');
+    expect(scroll).not.toBeNull();
+    // Actions sit above (outside) the scrolling details, so they never scroll out of reach.
+    expect(scroll?.contains(trace)).toBe(false);
+    expect(
+      trace.compareDocumentPosition(scroll as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('leaves focus and Escape to the list, and closes from its own button', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
