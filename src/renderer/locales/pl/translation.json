@@ -1508,7 +1508,9 @@
       "noPrivateKey": "Brak pełnej tożsamości — zaimportuj konfigurację MeshCore do panelu Radio (klucze publiczne i prywatne) lub wklej ręcznie nazwę użytkownika (v1_<klucz publiczny>) i token. Lista odbiorców JWT w tokenie musi być zgodna z nazwą hosta serwera.",
       "publicKeyMissing": "Brak klucza publicznego w tożsamości. Zaimportuj JSON konfiguracji MeshCore do panelu Radio (musi zawierać klucze publiczne i prywatne) lub wklej token brokera w polu hasła.",
       "noIdentity": "Nie znaleziono tożsamości urządzenia. Zaimportuj JSON konfiguracji MeshCore do panelu Radio lub wklej ręcznie nazwę użytkownika i token.",
-      "usernameBuildFailed": "Nie można zbudować nazwy użytkownika MeshCore MQTT. Zaimportuj MeshCore config JSON do panelu radia lub wklej nazwę użytkownika (v1_<public key>) i token ręcznie."
+      "usernameBuildFailed": "Nie można zbudować nazwy użytkownika MeshCore MQTT. Zaimportuj MeshCore config JSON do panelu radia lub wklej nazwę użytkownika (v1_<public key>) i token ręcznie.",
+      "clientKey": "Klucz klienta",
+      "copyClientKey": "Kopiuj klucz klienta"
     },
     "meshcorePacketLogger": {
       "label": "Rejestrator pakietów — po podłączeniu do radia i MQTT przesyłaj podsumowania pakietów RX do {{topic}} w tym samym kształcie JSON co meshcoretomqtt. Domyślnie wyłączone; włącz tylko wtedy, gdy zamierzasz udostępniać odsłuchiwany ruch lotniczy analizatorowi pakietów."

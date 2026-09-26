@@ -1471,7 +1471,9 @@
       "noPrivateKey": "Geen volledige identiteit: importeer uw MeshCore-configuratie in het Radio-paneel (openbare en privésleutels), of plak de gebruikersnaam (v1_<openbare sleutel>) en token handmatig. JWT-doelgroep in het token moet overeenkomen met de hostnaam van de server.",
       "publicKeyMissing": "Openbare sleutel ontbreekt in identiteit. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel (moet openbare en privésleutels bevatten) of plak een makelaartoken in het wachtwoordveld.",
       "noIdentity": "Geen apparaatidentiteit gevonden. Importeer uw MeshCore-configuratie-JSON in het Radio-paneel, of plak de gebruikersnaam en het token handmatig.",
-      "usernameBuildFailed": "Kon de MeshCore MQTT-gebruikersnaam niet aanmaken. Importeer uw MeshCore config JSON in het radiopaneel of plak gebruikersnaam (v1_<public key>) en token handmatig."
+      "usernameBuildFailed": "Kon de MeshCore MQTT-gebruikersnaam niet aanmaken. Importeer uw MeshCore config JSON in het radiopaneel of plak gebruikersnaam (v1_<public key>) en token handmatig.",
+      "clientKey": "Clientsleutel",
+      "copyClientKey": "Clientsleutel kopiëren"
     },
     "meshcorePacketLogger": {
       "label": "Pakketlogger: wanneer verbonden met uw radio en MQTT, stuurt u RX-pakketsamenvattingen door naar {{topic}} in dezelfde JSON-vorm als meshcoretomqtt. Standaard uitgeschakeld; alleen inschakelen als u van plan bent om gehoord luchtverkeer te delen met een pakketanalysator."

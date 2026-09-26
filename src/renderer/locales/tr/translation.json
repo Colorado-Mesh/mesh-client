@@ -1472,7 +1472,9 @@
       "noPrivateKey": "Tam kimlik yok — MeshCore yapılandırmanızı Radyo paneline (genel ve özel anahtarlar) içe aktarın veya kullanıcı adını (v1_<genel anahtar>) ve belirteci manuel olarak yapıştırın. Belirteçteki JWT hedef kitlesi, Sunucu ana bilgisayar adıyla eşleşmelidir.",
       "publicKeyMissing": "Kimlikte genel anahtar eksik. MeshCore config JSON'unuzu Radyo paneline içe aktarın (genel ve özel anahtarlar içermelidir) veya şifre alanına bir aracı belirteci yapıştırın.",
       "noIdentity": "Cihaz kimliği bulunamadı. MeshCore config JSON'unuzu Radyo paneline içe aktarın veya kullanıcı adını ve belirteci manuel olarak yapıştırın.",
-      "usernameBuildFailed": "MeshCore MQTT kullanıcı adı oluşturulamadı. MeshCore yapılandırma JSON'unuzu Radyo panelinden içe aktarın veya kullanıcı adını (v1_<public key>) ve belirteci manuel olarak yapıştırın."
+      "usernameBuildFailed": "MeshCore MQTT kullanıcı adı oluşturulamadı. MeshCore yapılandırma JSON'unuzu Radyo panelinden içe aktarın veya kullanıcı adını (v1_<public key>) ve belirteci manuel olarak yapıştırın.",
+      "clientKey": "İstemci anahtarı",
+      "copyClientKey": "İstemci anahtarını kopyala"
     },
     "meshcorePacketLogger": {
       "label": "Paket kaydedici — radyonuza ve MQTT'nize bağlandığında, RX paket özetlerini meshcoretomqtt ile aynı JSON biçiminde {{topic}}'ye iletin. Varsayılan olarak kapalı; yalnızca duyulan hava trafiğini bir paket analizörüyle paylaşmak istiyorsanız etkinleştirin."

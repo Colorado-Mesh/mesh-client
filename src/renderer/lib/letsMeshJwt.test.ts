@@ -16,6 +16,7 @@ import {
   MESHCORE_ENC_PK_KEY,
   MESHCORE_IDENTITY_STORAGE_KEY,
   MESHCORE_PUBLIC_KEY_LENGTH,
+  meshcoreClientKeyHexFromIdentity,
   meshcoreIdentityHasPrivateKey,
   MESHMAPPER_HOST,
   MESHMAPPER_HOST_LEGACY_CC,
@@ -45,6 +46,21 @@ describe('letsMeshJwt', () => {
         public_key: sampleKeyPair.publicKey,
       }),
     ).toBe(`v1_${sampleKeyPair.publicKey.toUpperCase()}`);
+  });
+
+  it('meshcoreClientKeyHexFromIdentity gives the uppercase public key or null', () => {
+    expect(meshcoreClientKeyHexFromIdentity({ public_key: sampleKeyPair.publicKey })).toBe(
+      sampleKeyPair.publicKey.toUpperCase(),
+    );
+    const bytes = Array.from({ length: 32 }, (_, i) => i);
+    expect(meshcoreClientKeyHexFromIdentity({ public_key: bytes })).toBe(
+      bytes
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .toUpperCase(),
+    );
+    expect(meshcoreClientKeyHexFromIdentity({ public_key: 'not a key' })).toBeNull();
+    expect(meshcoreClientKeyHexFromIdentity(null)).toBeNull();
   });
 
   it('isLetsMeshSettings matches US and EU hosts', () => {

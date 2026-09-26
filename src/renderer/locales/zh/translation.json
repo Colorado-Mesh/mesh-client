@@ -1472,7 +1472,9 @@
       "noPrivateKey": "没有完整的身份 - 在无线电面板中导入您的 MeshCore 配置（公钥和私钥），或手动粘贴用户名 (v1_<公钥>) 和令牌。令牌中的 JWT 受众必须与服务器主机名匹配。",
       "publicKeyMissing": "身份中缺少公钥。在无线电面板中导入 MeshCore 配置 JSON（必须包括公钥和私钥），或将代理令牌粘贴到密码字段中。",
       "noIdentity": "未找到设备标识。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名和令牌。",
-      "usernameBuildFailed": "无法构建MeshCore MQTT用户名。在Radio面板中导入您的MeshCore配置JSON ，或<public key>手动粘贴用户名(v1_)和令牌。"
+      "usernameBuildFailed": "无法构建MeshCore MQTT用户名。在Radio面板中导入您的MeshCore配置JSON ，或<public key>手动粘贴用户名(v1_)和令牌。",
+      "clientKey": "客户端密钥",
+      "copyClientKey": "复制客户端密钥"
     },
     "meshcorePacketLogger": {
       "label": "数据包记录器 — 当连接到无线电和 MQTT 时，将 RX 数据包摘要转发到 {{topic}}，其 JSON 形状与 meshcoretomqtt 相同。默认关闭；仅当您打算与数据包分析器共享听到的空中交通时才启用。"

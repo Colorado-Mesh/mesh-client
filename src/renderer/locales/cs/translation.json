@@ -1491,7 +1491,9 @@
       "noPrivateKey": "Žádná úplná identita – importujte svou konfiguraci MeshCore do panelu Rádio (veřejné a soukromé klíče) nebo vložte uživatelské jméno (v1_<veřejný klíč>) a token ručně. Publikum JWT v tokenu musí odpovídat názvu hostitele serveru.",
       "publicKeyMissing": "V identitě chybí veřejný klíč. Importujte svůj JSON konfigurace MeshCore na panelu Rádio (musí obsahovat veřejný a soukromý klíč) nebo vložte token zprostředkovatele do pole hesla.",
       "noIdentity": "Nebyla nalezena žádná identita zařízení. Importujte svůj JSON konfigurace MeshCore na panelu Rádio nebo vložte uživatelské jméno a token ručně.",
-      "usernameBuildFailed": "Nelze vytvořit uživatelské jméno MeshCore MQTT. Importujte konfiguraci MeshCore JSON na panelu Rádio nebo vložte uživatelské jméno (v1_<public key>) a token ručně."
+      "usernameBuildFailed": "Nelze vytvořit uživatelské jméno MeshCore MQTT. Importujte konfiguraci MeshCore JSON na panelu Rádio nebo vložte uživatelské jméno (v1_<public key>) a token ručně.",
+      "clientKey": "Klíč klienta",
+      "copyClientKey": "Kopírovat klíč klienta"
     },
     "meshcorePacketLogger": {
       "label": "Záznamník paketů – po připojení k rádiu a MQTT přepošle souhrny paketů RX do {{topic}} ve stejném tvaru JSON jako meshcoretomqtt. Ve výchozím nastavení vypnuto; povolit pouze v případě, že máte v úmyslu sdílet slyšený letový provoz s analyzátorem paketů."

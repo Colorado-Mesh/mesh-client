@@ -1472,7 +1472,9 @@
       "noPrivateKey": "Tidak ada identitas lengkap — impor konfigurasi MeshCore Anda di panel Radio (kunci publik dan pribadi), atau tempelkan nama pengguna (v1_<kunci publik>) dan beri token secara manual. Audiens JWT dalam token harus cocok dengan nama host Server.",
       "publicKeyMissing": "Kunci publik hilang dari identitas. Impor JSON konfigurasi MeshCore Anda di panel Radio (harus menyertakan kunci publik dan pribadi), atau tempelkan token broker di bidang kata sandi.",
       "noIdentity": "Tidak ada identitas perangkat yang ditemukan. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempelkan nama pengguna dan token secara manual.",
-      "usernameBuildFailed": "Tidak dapat membuat nama pengguna MQTT MeshCore. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempel nama pengguna (v1_<public key>) dan token secara manual."
+      "usernameBuildFailed": "Tidak dapat membuat nama pengguna MQTT MeshCore. Impor JSON konfigurasi MeshCore Anda di panel Radio, atau tempel nama pengguna (v1_<public key>) dan token secara manual.",
+      "clientKey": "Kunci klien",
+      "copyClientKey": "Salin kunci klien"
     },
     "meshcorePacketLogger": {
       "label": "Pencatat paket — saat terhubung ke radio dan MQTT Anda, teruskan ringkasan paket RX ke {{topic}} dalam bentuk JSON yang sama dengan meshcoretomqtt. Mati secara default; hanya aktifkan jika Anda ingin berbagi lalu lintas udara yang didengar dengan penganalisis paket."

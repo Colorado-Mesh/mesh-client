@@ -1487,7 +1487,9 @@
       "noPrivateKey": "No full identity — import your MeshCore config in the Radio panel (public and private keys), or paste username (v1_<public key>) and token manually. JWT audience in the token must match the Server hostname.",
       "publicKeyMissing": "Public key missing from identity. Import your MeshCore config JSON in the Radio panel (must include public and private keys), or paste a broker token in the password field.",
       "usernameBuildFailed": "Could not build the MeshCore MQTT username. Import your MeshCore config JSON in the Radio panel, or paste username (v1_<public key>) and token manually.",
-      "noIdentity": "No device identity found. Import your MeshCore config JSON in the Radio panel, or paste username and token manually."
+      "noIdentity": "No device identity found. Import your MeshCore config JSON in the Radio panel, or paste username and token manually.",
+      "clientKey": "Client key",
+      "copyClientKey": "Copy client key"
     },
     "meshcorePacketLogger": {
       "label": "Packet logger — when connected to your radio and MQTT, forward RX packet summaries to {{topic}} in the same JSON shape as meshcoretomqtt. Off by default; only enable if you intend to share heard air traffic with a packet analyzer."

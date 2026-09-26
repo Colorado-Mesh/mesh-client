@@ -1472,7 +1472,9 @@
       "noPrivateKey": "完全な ID なし — MeshCore 設定を Radio パネル (公開キーと秘密キー) にインポートするか、ユーザー名 (v1_<公開キー>) とトークンを手動で貼り付けます。トークン内の JWT オーディエンスはサーバーのホスト名と一致する必要があります。",
       "publicKeyMissing": "ID に公開キーがありません。 [Radio] パネルに MeshCore 構成 JSON をインポートするか (公開キーと秘密キーを含める必要があります)、パスワード フィールドにブローカー トークンを貼り付けます。",
       "noIdentity": "デバイス ID が見つかりません。 MeshCore 構成 JSON を Radio パネルにインポートするか、ユーザー名とトークンを手動で貼り付けます。",
-      "usernameBuildFailed": "MeshCore MQTTユーザー名を作成できませんでした。Radioパネルで MeshCore 設定JSONをインポートするか、ユーザー名（v1_<public key>）とトークンを手動で貼り付けてください。"
+      "usernameBuildFailed": "MeshCore MQTTユーザー名を作成できませんでした。Radioパネルで MeshCore 設定JSONをインポートするか、ユーザー名（v1_<public key>）とトークンを手動で貼り付けてください。",
+      "clientKey": "クライアントキー",
+      "copyClientKey": "クライアントキーをコピー"
     },
     "meshcorePacketLogger": {
       "label": "パケット ロガー — 無線および MQTT に接続すると、RX パケットの概要を Meshcoretomqtt と同じ JSON 形式で {{topic}} に転送します。デフォルトではオフです。聞いた航空交通量をパケット アナライザーと共有する場合にのみ有効にします。"

@@ -1862,6 +1862,24 @@ describe('ConnectionPanel LetsMesh username sync', () => {
     );
   }
 
+  it('shows the MQTT client key with a copy button once the identity has a key pair', async () => {
+    localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
+    localStorage.setItem(
+      MESHCORE_IDENTITY_STORAGE_KEY,
+      JSON.stringify({ public_key: PUB_HEX, private_key: 'a'.repeat(128) }),
+    );
+    try {
+      renderMeshcoreLetsMesh();
+      const copy = await screen.findByRole('button', { name: 'Copy client key' });
+      const field = copy.parentElement;
+      expect(field).toHaveTextContent(PUB_HEX.toUpperCase().slice(0, 16));
+      expect(field).toHaveTextContent(PUB_HEX.toUpperCase().slice(-20));
+    } finally {
+      localStorage.removeItem('mesh-client:mqttPreset:meshcore');
+      localStorage.removeItem(MESHCORE_IDENTITY_STORAGE_KEY);
+    }
+  });
+
   it('populates username from identity on mount and after debounced identity updates', async () => {
     localStorage.setItem('mesh-client:mqttPreset:meshcore', 'letsmesh');
     localStorage.setItem(MESHCORE_IDENTITY_STORAGE_KEY, JSON.stringify({ public_key: PUB_HEX }));
