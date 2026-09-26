@@ -1,35 +1,35 @@
 # Agent reference: EMCOMM (emergency communications)
 
-Deep subsystem reference for AI assistants. Open when a task touches Incident Command, the emergency outbox, MECP send reliability, ACK/beacon, ops alerts, quick status / roll call, EMCOMM exports, SAR map tools, or track retention. MECP wire format, siren alerts, audit log, and RF rebroadcast live in [mecp.md](mecp.md). Hard rules live in [`AGENTS.md`](../../AGENTS.md).
+Deep subsystem reference for AI assistants. Open when a task touches Incident Command, the emergency outbox, MECP send reliability, ACK/beacon, ops alerts, EMCOMM exports, SAR map tools, or track retention. MECP wire format, siren alerts, audit log, and RF rebroadcast live in [mecp.md](mecp.md). Hard rules live in [`AGENTS.md`](../../AGENTS.md).
 
 ## Safety invariants (S1–S16)
 
 Keep this list in sync with the header comment in [`emcommSafety.contract.test.ts`](../../src/renderer/lib/mecp/emcommSafety.contract.test.ts). Every invariant has a source contract and/or behavioral test today; do not weaken one without updating both the test and this table.
 
-| ID  | Invariant                                                                                                        | Status / coverage                                                                                                                                                 |
-| --- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1  | MECP compose send path uses the emergency outbox (not bare `handleSendChunk` only)                               | **Enforced** — contract + `emergencySend.test.ts`                                                                                                                 |
-| S2  | Emergency rows ignore the 24h age / 5-attempt stop; the soft row cap blocks (never deletes) active distress rows | **Enforced** — contract + `useChatOutbox.test.ts`                                                                                                                 |
-| S3  | Offline / send-fail MAYDAY still enqueues and drains on reconnect                                                | **Enforced** — `emergencySend.test.ts` (enqueue paths) + `useChatOutbox.test.ts` (emergency drain)                                                                |
-| S4  | Watcher hydration seeds without alert/audit                                                                      | **Enforced** — `useMecpAlertWatcher.test.tsx` (hydrate seed + incident upsert without alert/audit)                                                                |
-| S5  | Sev 0/1 bypass mute; drills never alert                                                                          | **Enforced** — `mecpAlert.test.ts`                                                                                                                                |
-| S6  | Cross-protocol rebroadcast does not duplicate incidents                                                          | **Enforced** — contract (fingerprint omits protocol) + `incidentStore.test.ts`                                                                                    |
-| S7  | B02/B03 do not open new incidents; B02 is not the general ACK compose                                            | **Enforced** — contract + `incidentStore.test.ts`, `mecpAck.test.ts`, `useMecpAlertWatcher.test.tsx`                                                              |
-| S8  | Incident tab lazy export is mounted in App                                                                       | **Enforced** — contract                                                                                                                                           |
-| S9  | Tab badge counts open sev 0/1 only                                                                               | **Enforced** — contract + `incidentStore.test.ts` (drills excluded) + `Sidebar.test.tsx`                                                                          |
-| S10 | Manual disconnect does not fire link-down / does not cancel emergency outbox retries                             | **Enforced** — `useOperationalAlerts.test.ts`, `operationalAlerts.test.ts`                                                                                        |
-| S11 | Link-down suppressed while RF reconnect is in progress                                                           | **Enforced** — `useOperationalAlerts.test.ts`, `operationalAlerts.test.ts`                                                                                        |
-| S12 | Incident-open nodes exempt from `position_history` prune                                                         | **Enforced** — `position-history-prune.test.ts` + `useAppStartupDbPrune.test.ts`                                                                                  |
-| S13 | USGS/topo tiles only via allowlisted hosts; no user URL template                                                 | **Enforced** — contract + `basemapRegistry.test.ts`                                                                                                               |
-| S14 | `mecpComposeEnabled`, `mecpMaydayButtonEnabled`, and `quickStatusBarEnabled` default remain `false`              | **Enforced** — contract + source-policy rules `emcomm-mecp-compose-default-off` / `emcomm-mecp-mayday-button-default-off` / `emcomm-quick-status-bar-default-off` |
-| S15 | Incident ACKs queue as normal priority; `recordAck` only on live `'sent'` (drain tags `ackIncident:` viewKey)    | **Enforced** — contract + App `handleIncidentAck` + `applyIncidentAckAfterOutboxSend`                                                                             |
-| S16 | App mounts emergency+ACK outbox drain once for all protocols                                                     | **Enforced** — contract + `useEmergencyOutboxDrain.test.ts`                                                                                                       |
+| ID  | Invariant                                                                                                        | Status / coverage                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| S1  | MECP compose send path uses the emergency outbox (not bare `handleSendChunk` only)                               | **Enforced** — contract + `emergencySend.test.ts`                                                    |
+| S2  | Emergency rows ignore the 24h age / 5-attempt stop; the soft row cap blocks (never deletes) active distress rows | **Enforced** — contract + `useChatOutbox.test.ts`                                                    |
+| S3  | Offline / send-fail MAYDAY still enqueues and drains on reconnect                                                | **Enforced** — `emergencySend.test.ts` (enqueue paths) + `useChatOutbox.test.ts` (emergency drain)   |
+| S4  | Watcher hydration seeds without alert/audit                                                                      | **Enforced** — `useMecpAlertWatcher.test.tsx` (hydrate seed + incident upsert without alert/audit)   |
+| S5  | Sev 0/1 bypass mute; drills never alert                                                                          | **Enforced** — `mecpAlert.test.ts`                                                                   |
+| S6  | Cross-protocol rebroadcast does not duplicate incidents                                                          | **Enforced** — contract (fingerprint omits protocol) + `incidentStore.test.ts`                       |
+| S7  | B02/B03 do not open new incidents; B02 is not the general ACK compose                                            | **Enforced** — contract + `incidentStore.test.ts`, `mecpAck.test.ts`, `useMecpAlertWatcher.test.tsx` |
+| S8  | Incident tab lazy export is mounted in App                                                                       | **Enforced** — contract                                                                              |
+| S9  | Tab badge counts open sev 0/1 only                                                                               | **Enforced** — contract + `incidentStore.test.ts` (drills excluded) + `Sidebar.test.tsx`             |
+| S10 | Manual disconnect does not fire link-down / does not cancel emergency outbox retries                             | **Enforced** — `useOperationalAlerts.test.ts`, `operationalAlerts.test.ts`                           |
+| S11 | Link-down suppressed while RF reconnect is in progress                                                           | **Enforced** — `useOperationalAlerts.test.ts`, `operationalAlerts.test.ts`                           |
+| S12 | Incident-open nodes exempt from `position_history` prune                                                         | **Enforced** — `position-history-prune.test.ts` + `useAppStartupDbPrune.test.ts`                     |
+| S13 | USGS/topo tiles only via allowlisted hosts; no user URL template                                                 | **Enforced** — contract + `basemapRegistry.test.ts`                                                  |
+| S14 | `mecpComposeEnabled` default remains `false`                                                                     | **Enforced** — contract + source-policy rule `emcomm-mecp-compose-default-off`                       |
+| S15 | Incident ACKs queue as normal priority; `recordAck` only on live `'sent'` (drain tags `ackIncident:` viewKey)    | **Enforced** — contract + App `handleIncidentAck` + `applyIncidentAckAfterOutboxSend`                |
+| S16 | App mounts emergency+ACK outbox drain once for all protocols                                                     | **Enforced** — contract + `useEmergencyOutboxDrain.test.ts`                                          |
 
 ## WS1 — Incident tab, store, watcher hydrate upsert
 
 - **Types:** [`incidentTypes.ts`](../../src/renderer/lib/mecp/incidentTypes.ts) — `EmergencyIncident` (`status: 'open' | 'acked' | 'resolved'`, `protocolsSeen`, `ackPeerIds`/`ackCount`, `beaconActive`/`beaconAcked`, `lat`/`lon` + `coordsSource: 'message' | 'lastKnown' | null`, `isDrill`).
 - **Store:** [`incidentStore.ts`](../../src/renderer/stores/incidentStore.ts) (Zustand `persist`, localStorage key `mesh-client:incidents`, cap `MAX_INCIDENTS = 200`).
-- Fingerprint strips GPS from freetext so a GPS update does not fork a row. Bridged copies from a **different** sender id merge within `CROSS_PROTOCOL_MERGE_WINDOW_MS` (10 min) only when the relay arrives on a **new** protocol, stripped text is **non-empty**, and the full payload (including coords) matches; original `senderId` is kept and relays go in `relaySenderIds`. GPS-only one-tap MAYDAYs from two victims never merge. Relays never overwrite victim coords / `lastKnown`.
+- Fingerprint strips GPS from freetext so a GPS update does not fork a row. Bridged copies from a **different** sender id merge within `CROSS_PROTOCOL_MERGE_WINDOW_MS` (10 min) only when the relay arrives on a **new** protocol, stripped text is **non-empty**, and the full payload (including coords) matches; original `senderId` is kept and relays go in `relaySenderIds`. GPS-only MAYDAYs from two victims never merge. Relays never overwrite victim coords / `lastKnown`.
 - Resolve / prune tombstones both the sender fingerprint and `incidentPayloadMatchKey` (when stripped freetext is **non-empty**) so seed cannot reopen via a relay or escalated copy. GPS-only MAYDAYs skip payload tombs so different victims do not collide.
   - Cap eviction: resolved → drills → higher severity number → oldest; **never** evict open non-drill sev 0/1 (temporary over-cap allowed).
   - `resolvedTombstones` survive incident prune/`clearAll` of live rows so hydration cannot reopen resolved MAYDAYs. Live path may reopen after `INCIDENT_REOPEN_GRACE_MS`.
@@ -68,13 +68,6 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
 - **Settings UI:** App → Notifications → ops alerts subsection in `AppPanel.tsx`.
 - **Settings** ([`appSettingsStorage.ts`](../../src/renderer/lib/appSettingsStorage.ts) `getOperationalAlertSettings`, defaults in `defaultAppSettings.ts`): `nodeSilenceAlertMinutes` (`null` = off / capability default), `nodeBatteryLowThreshold` (10), `notifyOnLinkDown` (true). Changes broadcast via the `mesh-client:appSettings` window event. Sounds: `batteryLow`, `connectionLost` (`notificationSounds.ts`).
 
-## WS5 — Quick status, roll call, one-tap MAYDAY
-
-- **Presets** ([`quickStatusMessages.ts`](../../src/renderer/lib/quickStatusMessages.ts)): OK (`L15`), Need help (`C01`), In position (`P05`), Lost comms (plain), Returning (`L14`). Labels are i18n (`quickStatus.*`); wire text stays English for interop. `formatQuickStatusPayload` returns plain text (optionally `lat,lon`) or, with `asMecp`, an encoded MECP line when the preset has codes.
-- **Roll call** ([`rollCall.ts`](../../src/renderer/lib/rollCall.ts)): `ROLL_CALL_COMMAND_TEXT = 'Roll call: reply OK'`; `createRollCall`, `noteRollCallReply` / `tallyRollCallReplies` (own node ignored, seconds or ms timestamps, MECP-prefixed `OK` counts), `rollCallMissing`, `isRollCallExpired` (`rollCallWindowMinutes` default). Tally is best-effort heard replies.
-- **UI:** [`QuickStatusBar.tsx`](../../src/renderer/components/chat/QuickStatusBar.tsx) above the Chat composer when App → MECP → **Show quick status bar in Chat** is on (`quickStatusBarEnabled`, default off, S14). Disabled with the composer for DM-only chat with no peer / Reticulum peer without LXMF. `ChatPanel` sends presets and the roll-call command through `sendTextWithOutboxFallback(text, deps, 'normal')` in `emergencySend.ts` (live send, or a normal-priority outbox row when offline / on send failure). Roll call keeps `RollCallState` in ChatPanel: expected peers are watched nodes, else currently-online nodes (own node excluded); the tally is derived from the current view's messages via `tallyRollCallReplies` and shown as `rollCallSummary` until the window expires.
-- **One-tap MAYDAY:** when App → MECP → **Show MAYDAY button in Chat** is on (default off, S14), Chat shows **MAYDAY**. It opens `MecpComposeModal` with `initialSeverity={0}` and `autoAttachGps` (prefill applied once per open; remount via `key={mecpComposeSession}`), then sends through `sendEmergencyText` (WS2). The MECP compose button is a separate opt-in (`mecpComposeEnabled`).
-
 ## WS6 — Exports
 
 - **UI:** NodeListPanel **Export JSON** (topology envelope over `nodesToExportRows`) / **Export CSV**; DiagnosticsPanel **Export JSON** (visible rows for the active protocol); MECP audit log via App → MECP.
@@ -97,19 +90,17 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
 
 ## File map
 
-| Area                      | Path                                                                                                                         |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Incident store / types    | `src/renderer/stores/incidentStore.ts`, `src/renderer/lib/mecp/incidentTypes.ts`                                             |
-| Incident UI               | `src/renderer/components/incident/`                                                                                          |
-| Watcher (hydrate + live)  | `src/renderer/hooks/useMecpAlertWatcher.ts`                                                                                  |
-| ACK / beacon              | `src/renderer/lib/mecp/mecpAck.ts`, `src/renderer/lib/mecp/incidentAck.ts`, `src/renderer/lib/mecp/beaconCancel.ts`          |
-| Outbox hook / policy      | `src/renderer/hooks/useChatOutbox.ts`                                                                                        |
-| Emergency send helper     | `src/renderer/lib/emergencySend.ts`                                                                                          |
-| Outbox IPC / schema       | `src/main/index.ts` (`chat:outbox:*`), `src/main/db-schema-sync.ts` (`chat_outbox`)                                          |
-| Ops alerts                | `src/renderer/lib/operationalAlerts.ts`, `src/renderer/hooks/useOperationalAlerts.ts`                                        |
-| Quick status / roll call  | `src/renderer/lib/quickStatusMessages.ts`, `src/renderer/lib/rollCall.ts`                                                    |
-| Quick status bar / MAYDAY | `src/renderer/components/chat/QuickStatusBar.tsx`, `src/renderer/components/ChatPanel.tsx`                                   |
-| Exports                   | `src/renderer/lib/exportFormats.ts`                                                                                          |
-| SAR map                   | `src/renderer/lib/map/mgrsGrid.ts`, `src/renderer/lib/map/measureMath.ts`, `src/renderer/components/map/emcommMapLayers.tsx` |
-| Topo / track retention    | `src/shared/offlineMaps/basemapRegistry.ts`, `src/renderer/lib/incidentTrackExemption.ts`, `src/main/database.ts`            |
-| Safety contract           | `src/renderer/lib/mecp/emcommSafety.contract.test.ts`                                                                        |
+| Area                     | Path                                                                                                                         |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Incident store / types   | `src/renderer/stores/incidentStore.ts`, `src/renderer/lib/mecp/incidentTypes.ts`                                             |
+| Incident UI              | `src/renderer/components/incident/`                                                                                          |
+| Watcher (hydrate + live) | `src/renderer/hooks/useMecpAlertWatcher.ts`                                                                                  |
+| ACK / beacon             | `src/renderer/lib/mecp/mecpAck.ts`, `src/renderer/lib/mecp/incidentAck.ts`, `src/renderer/lib/mecp/beaconCancel.ts`          |
+| Outbox hook / policy     | `src/renderer/hooks/useChatOutbox.ts`                                                                                        |
+| Emergency send helper    | `src/renderer/lib/emergencySend.ts`                                                                                          |
+| Outbox IPC / schema      | `src/main/index.ts` (`chat:outbox:*`), `src/main/db-schema-sync.ts` (`chat_outbox`)                                          |
+| Ops alerts               | `src/renderer/lib/operationalAlerts.ts`, `src/renderer/hooks/useOperationalAlerts.ts`                                        |
+| Exports                  | `src/renderer/lib/exportFormats.ts`                                                                                          |
+| SAR map                  | `src/renderer/lib/map/mgrsGrid.ts`, `src/renderer/lib/map/measureMath.ts`, `src/renderer/components/map/emcommMapLayers.tsx` |
+| Topo / track retention   | `src/shared/offlineMaps/basemapRegistry.ts`, `src/renderer/lib/incidentTrackExemption.ts`, `src/main/database.ts`            |
+| Safety contract          | `src/renderer/lib/mecp/emcommSafety.contract.test.ts`                                                                        |

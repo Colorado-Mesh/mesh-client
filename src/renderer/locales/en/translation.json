@@ -6115,7 +6115,7 @@
     "title": "Emergency incidents",
     "intro": "Common operating picture for MECP emergencies heard on any protocol. Open MAYDAY and URGENT rows badge this tab; drills are listed but never counted. Use Acknowledge (or Confirm for an active beacon) to reply on the mesh, then Resolve when the incident is closed locally. If you sent the distress beacon, Cancel beacon also transmits B03 so other stations clear it.",
     "empty": "No open emergency incidents.",
-    "emptyHint": "Inbound MECP reports appear here automatically. To send one, enable App → MECP → Show MECP button in Chat and/or Show MAYDAY button in Chat, then use those controls in Chat. Map → Layers can show open incidents with coordinates.",
+    "emptyHint": "Inbound MECP reports appear here automatically. To send one, enable App → MECP → Show MECP button in Chat, then use MECP in Chat. Map → Layers can show open incidents with coordinates.",
     "listAria": "Open emergency incidents",
     "resolve": "Resolve",
     "resolveAria": "Resolve incident from {{sender}}",
@@ -6161,18 +6161,12 @@
       "learnMore": "How MECP works (site & video)",
       "protocolSource": "Protocol source on GitHub",
       "showComposeButton": "Show MECP button in Chat",
-      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports.",
-      "showMaydayButton": "Show MAYDAY button in Chat",
-      "showMaydayButtonHint": "Off by default. When enabled, Chat shows a one-tap MAYDAY button that opens compose at severity 0 with GPS attached. Independent of the MECP compose button.",
-      "showQuickStatusBar": "Show quick status bar in Chat",
-      "showQuickStatusBarHint": "Off by default. When enabled, Chat shows OK / Need help / In position / Lost comms / Returning / Roll call above the composer."
+      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports."
     },
     "compose": {
       "title": "Compose MECP report",
       "button": "MECP",
       "open": "Open MECP compose",
-      "maydayButton": "MAYDAY",
-      "maydayAria": "Compose one-tap MAYDAY with GPS",
       "severity": "Severity",
       "category": "Category",
       "codes": "Codes",
@@ -6231,16 +6225,5 @@
     "importFailed": "Could not import this sound. Choose a supported audio file no longer than 10 seconds and no larger than 2 MiB.",
     "saveFailed": "Could not save sound settings. Your previous selection is unchanged.",
     "previewFailed": "Could not play this sound. Try another file or reset to the original tone."
-  },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "Need help",
-    "inPosition": "In position",
-    "lostComms": "Lost comms",
-    "returning": "Returning",
-    "barAria": "Quick status presets",
-    "rollCall": "Roll call",
-    "rollCallAria": "Broadcast roll call and tally OK replies",
-    "rollCallTally": "{{responded}}/{{expected}} responded"
   }
 }

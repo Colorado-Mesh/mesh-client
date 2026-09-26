@@ -6127,9 +6127,7 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Enviar MECP",
       "gpsFailed": "No se ha podido obtener una solución de GPS",
-      "sendFailed": "Error al enviar el informe",
-      "maydayButton": "MEIDEI",
-      "maydayAria": "Redacta MAYDAY con un solo toque con GPS"
+      "sendFailed": "Error al enviar el informe"
     },
     "rebroadcast": {
       "title": "Retransmisión MECP RF",
@@ -6152,11 +6150,7 @@
       "learnMore": "Cómo funciona MECP",
       "protocolSource": "Fuente del protocolo en GitHub",
       "showComposeButton": "Mostrar botón MECP en el chat",
-      "showComposeButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MECP para redactar y enviar informes de emergencia.",
-      "showMaydayButton": "Mostrar el botón MAYDAY en el chat",
-      "showMaydayButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MAYDAY de un toque que se abre en redacción con gravedad 0 con GPS conectado. Independiente del botón de redacción MECP.",
-      "showQuickStatusBar": "Mostrar barra de estado rápida en el chat",
-      "showQuickStatusBarHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra OK / Need help / In position / Lost comms / Returning / Roll call encima del compositor."
+      "showComposeButtonHint": "Desactivado de forma predeterminada. Cuando está habilitado, el chat muestra un botón MECP para redactar y enviar informes de emergencia."
     },
     "exportLogEmpty": "Aún no hay mensajes MECP en el registro recibido"
   },
@@ -6221,7 +6215,6 @@
     "ackQueued": "Acuse de recibo a {{sender}} en cola; se enviará cuando la radio esté disponible",
     "ackFailed": "No se ha podido enviar o poner en cola el acuse de recibo",
     "intro": "Cuadro operativo común para emergencias MECP escuchado en cualquier protocolo. Abra MAYDAY y las filas URGENTES en esta pestaña; los ejercicios se enumeran pero nunca se cuentan. Utilice Reconocer (o Confirmar para una baliza activa) para responder en la malla y, a continuación, Resolver cuando el incidente se cierre localmente.",
-    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP o MAYDAY en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas.",
     "ackQueuedBadge": "ACK en cola",
     "pendingAckListAria": "Reconocimientos en cola por este incidente",
     "cancelPendingAck": "Cancelar",
@@ -6230,17 +6223,7 @@
     "resolveBeaconAria": "Cancela tu baliza de socorro y dile a la malla que estás bien ({{sender}})",
     "beaconCancelSent": "Cancelación de baliza enviada. Otras estaciones borran tu baliza de socorro cuando la escuchan.",
     "beaconCancelQueued": "Baliza de cancelación en cola. Se enviará cuando la radio esté disponible.",
-    "beaconCancelFailed": "No se ha podido enviar ni poner en cola la cancelación de la baliza. El incidente sigue abierto."
-  },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "Necesita ayuda",
-    "inPosition": "En posición",
-    "lostComms": "Comunicaciones perdidas",
-    "returning": "Volviendo",
-    "barAria": "Preajustes rápidos de estado",
-    "rollCall": "Votación nominal",
-    "rollCallAria": "Transmitir llamadas nominales y contar las respuestas correctas",
-    "rollCallTally": "{{responded}}/{{expected}} respondió"
+    "beaconCancelFailed": "No se ha podido enviar ni poner en cola la cancelación de la baliza. El incidente sigue abierto.",
+    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas."
   }
 }

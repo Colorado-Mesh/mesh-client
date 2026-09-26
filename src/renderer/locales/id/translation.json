@@ -6127,9 +6127,7 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Tidak bisa mendapatkan perbaikan GPS",
-      "sendFailed": "Gagal mengirim laporan MECP",
-      "maydayButton": "MAYDAY",
-      "maydayAria": "Susun MAYDAY sekali ketuk dengan GPS"
+      "sendFailed": "Gagal mengirim laporan MECP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6152,11 +6150,7 @@
       "learnMore": "Cara kerja MECP",
       "protocolSource": "Sumber protokol di GitHub",
       "showComposeButton": "Tampilkan tombol MECP di Obrolan",
-      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat.",
-      "showMaydayButton": "Tampilkan tombol MAYDAY di Obrolan",
-      "showMaydayButtonHint": "Tidak aktif secara default. Saat diaktifkan, Obrolan menampilkan tombol MAYDAY sekali ketuk yang membuka compose pada tingkat keparahan 0 dengan GPS terpasang. Independen dari tombol compose MECP.",
-      "showQuickStatusBar": "Tampilkan bilah status cepat di Obrolan",
-      "showQuickStatusBarHint": "Mati secara default. Saat diaktifkan, Obrolan menunjukkan OK / Perlu bantuan / Dalam posisi /Komunikasi yang hilang/ Pengembalian /Panggilan gulung di atas komposer."
+      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat."
     },
     "exportLogEmpty": "Belum ada pesan MECP di log yang diterima"
   },
@@ -6221,7 +6215,6 @@
     "ackQueued": "Ucapan terima kasih kepada {{sender}} antri; akan dikirimkan saat radio tersedia",
     "ackFailed": "Tidak dapat mengirim atau mengantre pengakuan",
     "intro": "Gambaran operasi umum untuk keadaan darurat MECP terdengar pada protokol apa pun. Buka MAYDAY dan lencana baris MENDESAK tab ini; latihan terdaftar tetapi tidak pernah dihitung. Gunakan Acknowledge (atau Confirm untuk suar aktif) untuk membalas di mesh, lalu Resolve ketika insiden ditutup secara lokal.",
-    "emptyHint": "Laporan MECP masuk muncul di sini secara otomatis. Untuk mengirimkannya, aktifkan App → MECP → Tampilkan tombol MECP di Obrolan, lalu gunakan MECP atau MAYDAY di Obrolan. → Lapisan Peta dapat menunjukkan insiden terbuka dengan koordinat.",
     "ackQueuedBadge": "ACK antri",
     "pendingAckListAria": "Pengakuan antrian atas insiden ini",
     "cancelPendingAck": "Batal",
@@ -6230,17 +6223,7 @@
     "resolveBeaconAria": "Batalkan suar marabahaya Anda dan beri tahu mesh bahwa Anda baik - baik saja ({{sender}})",
     "beaconCancelSent": "Pembatalan suar terkirim. Stasiun lain membersihkan suar marabahaya Anda saat mereka mendengarnya.",
     "beaconCancelQueued": "Suar dibatalkan dalam antrean. Suar akan dikirim saat radio tersedia.",
-    "beaconCancelFailed": "Tidak dapat mengirim atau mengantre pembatalan suar. Insiden ini masih terbuka."
-  },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "Butuh bantuan?",
-    "inPosition": "..........................................................................\tdalam\tjabatan",
-    "lostComms": "Komunikasi yang hilang",
-    "returning": "Pengembalian",
-    "barAria": "Preset status cepat",
-    "rollCall": "Panggilan gulung",
-    "rollCallAria": "Panggilan roll siaran dan penghitungan balasan OK",
-    "rollCallTally": "{{responded}}/{{expected}} menanggapi"
+    "beaconCancelFailed": "Tidak dapat mengirim atau mengantre pembatalan suar. Insiden ini masih terbuka.",
+    "emptyHint": "Laporan MECP masuk muncul di sini secara otomatis. Untuk mengirimkannya, aktifkan App → MECP → Tampilkan tombol MECP di Obrolan, lalu gunakan MECP di Obrolan. → Lapisan Peta dapat menunjukkan insiden terbuka dengan koordinat."
   }
 }

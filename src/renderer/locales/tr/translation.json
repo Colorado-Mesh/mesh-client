@@ -6127,9 +6127,7 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "GPS düzeltmesi alınamadı",
-      "sendFailed": "MECP raporu gönderilemedi",
-      "maydayButton": "Mayday",
-      "maydayAria": "GPS ile tek dokunuşla MAYDAY OLUŞTURUN"
+      "sendFailed": "MECP raporu gönderilemedi"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6152,11 +6150,7 @@
       "learnMore": "MECP nasıl çalışır?",
       "protocolSource": "GitHub'daki protokol kaynağı",
       "showComposeButton": "Sohbette MECP düğmesini göster",
-      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir.",
-      "showMaydayButton": "Sohbette MAYDAY düğmesini göster",
-      "showMaydayButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet GPS takılıyken 0 şiddetinde açılan tek dokunuşlu bir ACİL Durum düğmesi gösterir. MECP oluşturma düğmesinden bağımsızdır.",
-      "showQuickStatusBar": "Sohbet'te hızlı durum çubuğunu göster",
-      "showQuickStatusBarHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet düzenleyicinin üzerinde Tamam / Yardıma ihtiyacım var/ Pozisyonda / Kayıp iletişim / Geri dönüş / Roll çağrısı gösterir."
+      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir."
     },
     "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok"
   },
@@ -6221,7 +6215,6 @@
     "ackQueued": "{{sender}} kuyruğuna alındı; radyo uygun olduğunda gönderilecektir",
     "ackFailed": "Onay gönderilemedi veya kuyruğa alınamadı",
     "intro": "Herhangi bir protokolde duyulan MECP acil durumları için ortak çalışma resmi. ACİL DURUM ve ACİL satırlar rozetini bu sekmede açın; tatbikatlar listelenir ancak asla sayılmaz. Ağa yanıt vermek için Onayla'yı (veya etkin bir işaretçi için Onayla'yı) kullanın, ardından olay yerel olarak kapatıldığında çözün.",
-    "emptyHint": "Gelen MECP raporları burada otomatik olarak görünür. Bir tane göndermek için, Sohbet'te Uygulama → MECP → Göster MECP düğmesini etkinleştirin, ardından Sohbet'te MECP veya MAYDAY'İ kullanın. Harita → Katmanları açık olayları koordinatlarla gösterebilir.",
     "ackQueuedBadge": "ACK kuyruğa alındı",
     "pendingAckListAria": "Bu olay için kuyruğa alınmış onaylar",
     "cancelPendingAck": "İptal",
@@ -6230,17 +6223,7 @@
     "resolveBeaconAria": "İmdat sinyalinizi iptal edin ve ağa iyi olduğunuzu söyleyin ({{sender}})",
     "beaconCancelSent": "Yol gösterici iptali gönderildi. Diğer istasyonlar, duyduklarında yardım işaretçinizi temizler.",
     "beaconCancelQueued": "Beacon iptal kuyruğa alındı. Telsiz müsait olduğunda gönderilecek.",
-    "beaconCancelFailed": "Beacon iptali gönderilemedi veya kuyruğa alınamadı. Olay hala açık."
-  },
-  "quickStatus": {
-    "ok": "Tamam",
-    "needHelp": "Yardım gerekliyse",
-    "inPosition": "in position.",
-    "lostComms": "Kayıp iletişim",
-    "returning": "Dönüş",
-    "barAria": "Hızlı durum ön ayarları",
-    "rollCall": "Yoklama",
-    "rollCallAria": "Yoklama ve sayım tamam yanıtlarını yayınlayın",
-    "rollCallTally": "{{responded}}/{{expected}} yanıtladı"
+    "beaconCancelFailed": "Beacon iptali gönderilemedi veya kuyruğa alınamadı. Olay hala açık.",
+    "emptyHint": "Gelen MECP raporları burada otomatik olarak görünür. Bir tane göndermek için, Sohbet'te App → MECP → Show MECP düğmesini etkinleştirin, ardından Sohbet'te MECP'yi kullanın. Harita → Katmanları açık olayları koordinatlarla gösterebilir."
   }
 }

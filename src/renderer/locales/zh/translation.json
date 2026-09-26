@@ -6127,9 +6127,7 @@
       "byteBudget": "{{used}}/{{max}}字节",
       "send": "发送MECP",
       "gpsFailed": "无法获取GPS修复",
-      "sendFailed": "无法发送报告文件",
-      "maydayButton": "飞机陷落",
-      "maydayAria": "使用GPS轻触一键撰写MAYDAY"
+      "sendFailed": "无法发送报告文件"
     },
     "rebroadcast": {
       "title": "MECP射频重播",
@@ -6152,11 +6150,7 @@
       "learnMore": "MECP的工作原理",
       "protocolSource": "GitHub上的协议源",
       "showComposeButton": "在聊天中显示MECP按钮",
-      "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。",
-      "showMaydayButton": "在聊天中显示“五月天”按钮",
-      "showMaydayButtonHint": "默认情况下关闭。启用后，聊天显示一个一键式MAYDAY按钮，该按钮在连接GPS的情况下以严重程度0打开撰写。独立于MECP撰写按钮。",
-      "showQuickStatusBar": "在聊天中显示快速状态栏",
-      "showQuickStatusBarHint": "默认情况下关闭。启用后，聊天显示撰写器上方的确定/需要帮助/就位/失去通信/返回/点名。"
+      "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。"
     },
     "exportLogEmpty": "收到的日志中还没有MECP消息"
   },
@@ -6221,7 +6215,6 @@
     "ackQueued": "确认{{sender}}已排队；当收音机可用时，它将发送",
     "ackFailed": "无法发送或排队确认",
     "intro": "在任何方案中都能听到MECP紧急情况的常见操作画面。打开MAYDAY和紧急行标记此选项卡；列出了钻孔，但从未计数。使用确认（或确认活动信标）在网格上回复，然后在本地关闭事件时解决。",
-    "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP或MAYDAY。地图→层可以用坐标显示未决事件。",
     "ackQueuedBadge": "ACK已排队",
     "pendingAckListAria": "已排队确认此事件",
     "cancelPendingAck": "取消",
@@ -6230,17 +6223,7 @@
     "resolveBeaconAria": "取消遇险信标，并告诉网格您没事（ {{sender}} ）",
     "beaconCancelSent": "信标取消已发送。其他电台听到它时会清除您的遇险信标。",
     "beaconCancelQueued": "信标取消已排队。当无线电可用时，它将发送。",
-    "beaconCancelFailed": "无法发送或排队信标取消。事件仍未解决。"
-  },
-  "quickStatus": {
-    "ok": "确认",
-    "needHelp": "需要帮助",
-    "inPosition": "未招聘",
-    "lostComms": "通讯中断",
-    "returning": "返回中",
-    "barAria": "快速状态预设",
-    "rollCall": "点名",
-    "rollCallAria": "广播点名和记录OK回复",
-    "rollCallTally": "{{responded}}/{{expected}}已回复"
+    "beaconCancelFailed": "无法发送或排队信标取消。事件仍未解决。",
+    "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP。地图→层可以用坐标显示未决事件。"
   }
 }

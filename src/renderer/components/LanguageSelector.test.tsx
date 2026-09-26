@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -58,5 +58,48 @@ describe('LanguageSelector', () => {
       expect(mergeAppSetting).toHaveBeenCalledWith('locale', 'de', 'LanguageSelector');
     });
     expect(window.electronAPI.appSettings.set).toHaveBeenCalledWith('locale', 'de');
+  });
+
+  it('stays open when scrolling the language list', async () => {
+    const user = userEvent.setup();
+    render(<LanguageSelector />);
+
+    const trigger = screen.getByLabelText(/language/i);
+    await user.click(trigger);
+
+    const listbox = screen.getByRole('listbox');
+    act(() => {
+      listbox.dispatchEvent(new Event('scroll', { bubbles: false }));
+    });
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: 'Deutsch' })).toBeVisible();
+  });
+
+  it('closes when an outside element scrolls', async () => {
+    const user = userEvent.setup();
+    const { container } = render(
+      <div>
+        <div data-testid="scroll-outside" style={{ height: 40, overflow: 'auto' }}>
+          <div style={{ height: 200 }} />
+        </div>
+        <LanguageSelector />
+      </div>,
+    );
+
+    const trigger = screen.getByLabelText(/language/i);
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    const outside = container.querySelector('[data-testid="scroll-outside"]');
+    expect(outside).toBeTruthy();
+    act(() => {
+      outside!.dispatchEvent(new Event('scroll', { bubbles: false }));
+    });
+
+    await waitFor(() => {
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    });
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
 });

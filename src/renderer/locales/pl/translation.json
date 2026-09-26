@@ -6221,9 +6221,7 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "Nie można uzyskać poprawki GPS",
-      "sendFailed": "Nie udało się wysłać raportu MECP",
-      "maydayButton": "MAYDAY",
-      "maydayAria": "Skomponuj MAYDAY jednym dotknięciem za pomocą GPS"
+      "sendFailed": "Nie udało się wysłać raportu MECP"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6246,11 +6244,7 @@
       "learnMore": "Jak działa MECP",
       "protocolSource": "Źródło protokołu na GitHub",
       "showComposeButton": "Pokaż przycisk MECP na czacie",
-      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych.",
-      "showMaydayButton": "Pokaż przycisk MAYDAY na czacie",
-      "showMaydayButtonHint": "Domyślnie wyłączone. Po włączeniu czat pokazuje przycisk MAYDAY, który otwiera się z wagą 0 z dołączonym GPS. Niezależnie od przycisku komponuj MECP.",
-      "showQuickStatusBar": "Pokaż szybki pasek stanu w czacie",
-      "showQuickStatusBarHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje OK / Potrzebna pomoc / Na pozycji / Utracona komunikacja / Powrót /Wywołanie nad edytorem."
+      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych."
     },
     "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku"
   },
@@ -6317,7 +6311,6 @@
     "ackCount_few": "Podziękowania: {{count}}",
     "ackCount_many": "Podziękowania: {{count}}",
     "intro": "Wspólny obraz operacyjny dla sytuacji awaryjnych MECP słyszany w dowolnym protokole. Otwórz kartę MAYDAY i PILNE wiersze; ćwiczenia są wymienione, ale nigdy nie są liczone. Użyj opcji Potwierdź (lub Potwierdź dla aktywnego sygnalizatora), aby odpowiedzieć na siatce, a następnie Rozwiąż, gdy incydent zostanie zamknięty lokalnie.",
-    "emptyHint": "Przychodzące raporty MECP pojawiają się tutaj automatycznie. Aby wysłać, włącz przycisk App → MECP → Show MECP w Czacie, a następnie użyj MECP lub MAYDAY w Czacie. → Warstwy mapy mogą wyświetlać otwarte incydenty ze współrzędnymi.",
     "ackQueuedBadge": "ACK W kolejce",
     "pendingAckListAria": "Kolejka podziękowań dla tego incydentu",
     "cancelPendingAck": "Anuluj",
@@ -6326,17 +6319,7 @@
     "resolveBeaconAria": "Anuluj sygnał alarmowy i powiedz siatce, że wszystko w porządku ({{sender}})",
     "beaconCancelSent": "Anulowanie sygnału nawigacyjnego wysłane. Inne stacje usuwają sygnał alarmowy, gdy go usłyszą.",
     "beaconCancelQueued": "Anulowanie Beacona w kolejce. Wyśle się, gdy radio będzie dostępne.",
-    "beaconCancelFailed": "Nie można wysłać lub ustawić w kolejce anulowania sygnału nawigacyjnego. Incydent jest nadal otwarty."
-  },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "Wymagana pomoc",
-    "inPosition": "W pozycji",
-    "lostComms": "Utracona komunikacja",
-    "returning": "Zwracanie",
-    "barAria": "Szybkie ustawienia stanu",
-    "rollCall": "Wezwanie imienne",
-    "rollCallAria": "Rozgłaszanie apelu i odpowiedzi prawidłowe",
-    "rollCallTally": "{{responded}}/{{expected}} odpowiedział (a)"
+    "beaconCancelFailed": "Nie można wysłać lub ustawić w kolejce anulowania sygnału nawigacyjnego. Incydent jest nadal otwarty.",
+    "emptyHint": "Przychodzące raporty MECP pojawiają się tutaj automatycznie. Aby wysłać, włącz przycisk App → MECP → Show MECP na czacie, a następnie użyj MECP na czacie. → Warstwy mapy mogą wyświetlać otwarte incydenty ze współrzędnymi."
   }
 }

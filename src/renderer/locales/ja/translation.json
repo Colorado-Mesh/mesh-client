@@ -6127,9 +6127,7 @@
       "byteBudget": "{{used}} / {{max}} bytes",
       "send": "Send MECP",
       "gpsFailed": "GPS修正を取得できませんでした",
-      "sendFailed": "MECPレポートの送信に失敗しました",
-      "maydayButton": "メーデー",
-      "maydayAria": "GPSでワンタップでメイデイを作成"
+      "sendFailed": "MECPレポートの送信に失敗しました"
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
@@ -6152,11 +6150,7 @@
       "learnMore": "MECPの仕組み",
       "protocolSource": "GitHub上のプロトコルソース",
       "showComposeButton": "チャットにMECPボタンを表示する",
-      "showComposeButtonHint": "デフォルトではオフになっています。有効にすると、チャットに緊急レポートを作成して送信するためのMECPボタンが表示されます。",
-      "showMaydayButton": "チャットでメイデイボタンを表示",
-      "showMaydayButtonHint": "デフォルトでオフになっています。有効にすると、チャットにワンタップメイデイボタンが表示され、GPSが接続された状態で深刻度0で作成が開きます。MECP作成ボタンとは無関係です。",
-      "showQuickStatusBar": "チャットにクイックステータスバーを表示する",
-      "showQuickStatusBarHint": "デフォルトではオフになっています。有効にすると、チャットは作曲者の上にOK/ヘルプが必要/位置にある/通信が途絶えた/リターン/ロールコールが表示されます。"
+      "showComposeButtonHint": "デフォルトではオフになっています。有効にすると、チャットに緊急レポートを作成して送信するためのMECPボタンが表示されます。"
     },
     "exportLogEmpty": "受信したログにMECPメッセージはまだありません"
   },
@@ -6221,7 +6215,6 @@
     "ackQueued": "{{sender}}への確認待ち。無線が利用可能になると送信されます",
     "ackFailed": "確認応答を送信またはキューイングできませんでした",
     "intro": "任意のプロトコルで聞かれるMECP緊急事態の一般的な操作イメージ。MAYDAYと緊急行を開くと、このタブにバッジが表示されます。ドリルはリストされていますが、カウントされません。確認（またはアクティブなビーコンの確認）を使用してメッシュに返信し、インシデントがローカルで閉じられたときに解決します。",
-    "emptyHint": "インバウンドMECPレポートはここに自動的に表示されます。送信するには、チャットでApp → MECP → Show MECPボタンを有効にし、チャットでMECPまたはMAYDAYを使用します。→マップレイヤーは、座標でオープンなインシデントを表示できます。",
     "ackQueuedBadge": "待機中のACK",
     "pendingAckListAria": "このインシデントのキューイング確認",
     "cancelPendingAck": "キャンセル",
@@ -6230,17 +6223,7 @@
     "resolveBeaconAria": "遭難ビーコンをキャンセルし、メッシュに問題がないことを伝えます（ {{sender}} ）",
     "beaconCancelSent": "ビーコンキャンセルが送信されました。他のステーションは、それを聞いたときにあなたの救難ビーコンをクリアします。",
     "beaconCancelQueued": "ビーコンキャンセルキューされました。ラジオが利用可能になると送信されます。",
-    "beaconCancelFailed": "ビーコンキャンセルを送信またはキューイングできませんでした。インシデントはまだ発生していません。"
-  },
-  "quickStatus": {
-    "ok": "OK",
-    "needHelp": "ご使用のHPE製品/サービス/ソリューションについて",
-    "inPosition": "定位置",
-    "lostComms": "通信が途絶えました",
-    "returning": "リピート",
-    "barAria": "クイックステータスプリセット",
-    "rollCall": "点呼",
-    "rollCallAria": "ブロードキャストロールコールとOK返信の集計",
-    "rollCallTally": "{{responded}}/{{expected}}からの返答"
+    "beaconCancelFailed": "ビーコンキャンセルを送信またはキューイングできませんでした。インシデントはまだ発生していません。",
+    "emptyHint": "インバウンドMECPレポートはここに自動的に表示されます。送信するには、チャットでApp → MECP → Show MECPボタンを有効にし、チャットでMECPを使用します。→マップレイヤーは、座標でオープンなインシデントを表示できます。"
   }
 }
