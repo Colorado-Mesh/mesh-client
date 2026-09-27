@@ -66,8 +66,16 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       </ToastProvider>,
     );
 
-    const input = await screen.findByLabelText(/Cap stored messages, keep newest 7500 messages/i);
-    expect(input).toHaveValue(7500);
+    // Wait on the id: findByLabelText re-scans the whole App panel every poll, which ran past the
+    // 5s test timeout on CI coverage runners. Then check the label once.
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-message-retention-meshtastic-count')).toHaveValue(
+        7500,
+      );
+    });
+    expect(screen.getByLabelText(/Cap stored messages, keep newest 7500 messages/i)).toBe(
+      document.getElementById('apppanel-message-retention-meshtastic-count'),
+    );
   });
 
   it('debounces count edits and persists via appSettings.set with the meshtastic key', async () => {
