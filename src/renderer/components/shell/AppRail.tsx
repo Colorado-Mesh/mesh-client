@@ -13,6 +13,7 @@ import {
 import {
   NAV_FOOTER_SECTIONS,
   NAV_SECTION_LABEL_KEYS,
+  NAV_SECTION_RAIL_LABEL_KEYS,
   type NavSection,
   type NavSectionId,
 } from '@/renderer/lib/navSections';
@@ -59,6 +60,8 @@ export function AppRail({
 
   const renderSection = (section: NavSection) => {
     const label = t(NAV_SECTION_LABEL_KEYS[section.id]);
+    const railLabelKey = NAV_SECTION_RAIL_LABEL_KEYS[section.id];
+    const visibleLabel = railLabelKey ? t(railLabelKey) : label;
     const isActive = section.id === activeSectionId;
     const badge = sectionBadge(section, badgeCounts);
     return (
@@ -81,7 +84,7 @@ export function AppRail({
       >
         <NavSectionIcon id={section.id} />
         <span className="text-label max-w-full truncate px-1 leading-none font-medium">
-          {label}
+          {visibleLabel}
         </span>
         {badge && (
           <span

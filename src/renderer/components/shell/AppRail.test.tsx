@@ -185,6 +185,9 @@ describe('AppRail', () => {
     const nav = screen.getByRole('navigation', { name: 'Application panels' });
     const names = Array.from(nav.querySelectorAll('button')).map((b) => b.getAttribute('title'));
     expect(names.slice(0, 5)).toEqual(['Chat', 'Network', 'Map', 'Nomad Network', 'Monitor']);
+    // The 72px rail shows "Nomad" instead of a truncated "Nomad…"; the name stays in full.
+    const nomad = screen.getByRole('button', { name: 'Nomad Network' });
+    expect(nomad).toHaveTextContent(/^Nomad$/);
   });
 
   describe('pinned panels', () => {

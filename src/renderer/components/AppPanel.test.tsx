@@ -199,7 +199,7 @@ describe('AppPanel: theme presets', () => {
         <AppPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const accentSwatches = await screen.findByRole('group', { name: /Accent green/ });
+    const accentSwatches = await screen.findByRole('group', { name: /^Accent Primary/ });
     fireEvent.click(within(accentSwatches).getByRole('button', { name: 'Slate 950 #020617' }));
     expect(await screen.findByText(/too close to the app background to read/)).toBeInTheDocument();
     expect(document.documentElement.style.getPropertyValue('--color-brand-green')).toBe('#67e8b4');

@@ -269,16 +269,16 @@
         "description": "Hintergrund der aktuell ausgewählten Registerkarte in der Seitenleistennavigation."
       },
       "brandGreen": {
-        "label": "Akzentgrün",
-        "description": "Primäre Schaltflächen und Senden (mit dunklem Text), grüner Text, aktive Elemente, Online-Anzeigen und Fortschrittsfüllungen. Bleibt auf dem App-Hintergrund lesbar."
+        "label": "Akzent",
+        "description": "Primäre Schaltflächen und Senden (mit dunklem Text), Akzenttext, aktive Elemente und Fortschrittsfüllungen. Bleibt auf dem App-Hintergrund lesbar."
       },
       "brightGreen": {
         "label": "App-Titel, Links und Knotenhervorhebung",
         "description": "App-Titel, Hervorhebungstext, Links in der Fußzeile und Hop-/Selbst-Hervorhebungen in der Knotenliste."
       },
       "readableGreen": {
-        "label": "Grün des Meshtastic-Abzeichens",
-        "description": "Vollfläche unter weißem Text auf dem Meshtastic-Protokollabzeichen."
+        "label": "Akzentfüllung",
+        "description": "Volle Akzentfüllung unter weißem Text, etwa bei Abzeichen. Hält 4,5:1 zu weißem Text."
       },
       "deepBlack": {
         "label": "Seitenleiste, Kopfzeile und modale Oberflächen",
@@ -5228,6 +5228,7 @@
     "admin": "Verwaltung",
     "peers": "Peers",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Netzwerk-Topologie",
     "network": "Netzwerk",
     "rrc": "RRC",

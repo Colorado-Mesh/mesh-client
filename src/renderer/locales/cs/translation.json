@@ -269,16 +269,16 @@
         "description": "Pozadí aktuálně vybrané karty v navigaci postranního panelu."
       },
       "brandGreen": {
-        "label": "Zvýrazňující zelená",
-        "description": "Hlavní tlačítka a Odeslat (s tmavým textem), zelený text, aktivní položky, indikátory online a výplně průběhu. Zůstává čitelná na pozadí aplikace."
+        "label": "Zvýraznění",
+        "description": "Hlavní tlačítka a Odeslat (s tmavým textem), text zvýraznění, aktivní položky a výplně průběhu. Zůstává čitelné na pozadí aplikace."
       },
       "brightGreen": {
         "label": "Název aplikace, odkazy a zvýraznění uzlu",
         "description": "Název aplikace, zdůrazněný text, odkazy v zápatí a zvýraznění skoků/samo v seznamu uzlů."
       },
       "readableGreen": {
-        "label": "Zelená odznaku Meshtastic",
-        "description": "Plná výplň pod bílým textem na odznaku protokolu Meshtastic."
+        "label": "Výplň zvýraznění",
+        "description": "Plná výplň zvýraznění pod bílým textem, například u odznaků. Drží kontrast 4,5:1 s bílým textem."
       },
       "deepBlack": {
         "label": "Postranní panel, záhlaví a modální povrchy",
@@ -5263,6 +5263,7 @@
     "admin": "Správa",
     "peers": "Vazby",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "topologie sítě",
     "network": "Síť",
     "rrc": "RRC",

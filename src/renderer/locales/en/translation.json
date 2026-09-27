@@ -359,16 +359,16 @@
         "description": "Background of the currently selected tab in the sidebar navigation."
       },
       "brandGreen": {
-        "label": "Accent green",
-        "description": "Primary buttons and Send (with dark text), green text, active items, online indicators and progress fills. Kept readable on the app background."
+        "label": "Accent",
+        "description": "Primary buttons and Send (with dark text), accent text, active items and progress fills. Kept readable on the app background."
       },
       "brightGreen": {
         "label": "App title, links & node emphasis",
         "description": "App title, emphasis text, links in footer, and hop/self highlights in node list."
       },
       "readableGreen": {
-        "label": "Meshtastic badge green",
-        "description": "Solid fill under white text on the Meshtastic protocol badge."
+        "label": "Accent fill",
+        "description": "Solid accent fill under white text, such as badges. Kept at 4.5:1 with white text."
       },
       "deepBlack": {
         "label": "Sidebar, header & modal surfaces",
@@ -5888,6 +5888,7 @@
     "rrc": "RRC",
     "remote": "Remote",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "contacts": "Contacts",
     "nodes": "Nodes",
     "peers": "Peers",

@@ -269,16 +269,16 @@
         "description": "Kenar çubuğu gezintisinde o anda seçili olan sekmenin arka planı."
       },
       "brandGreen": {
-        "label": "Vurgu yeşili",
-        "description": "Birincil düğmeler ve Gönder (koyu metinle), yeşil metin, etkin öğeler, çevrim içi göstergeleri ve ilerleme dolguları. Uygulama arka planında okunaklı kalır."
+        "label": "Vurgu",
+        "description": "Ana düğmeler ve Gönder (koyu metinle), vurgu metni, etkin öğeler ve ilerleme dolguları. Uygulama arka planında okunur kalır."
       },
       "brightGreen": {
         "label": "Uygulama başlığı, bağlantılar ve düğüm vurgusu",
         "description": "Uygulama başlığı, vurgu metni, alt bilgideki bağlantılar ve düğüm listesinde atlama/kendini vurgulama."
       },
       "readableGreen": {
-        "label": "Meshtastic rozeti yeşili",
-        "description": "Meshtastic protokol rozetinde beyaz metnin altındaki düz dolgu."
+        "label": "Vurgu dolgusu",
+        "description": "Beyaz metnin altındaki düz vurgu dolgusu, örneğin rozetler. Beyaz metinle 4,5:1 kontrastı korur."
       },
       "deepBlack": {
         "label": "Kenar çubuğu, başlık ve modal yüzeyler",
@@ -5228,6 +5228,7 @@
     "admin": "Yönetim",
     "peers": "Meslektaşlar",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Ağ topolojisi",
     "network": "Ağ",
     "rrc": "RRC",

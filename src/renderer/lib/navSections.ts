@@ -41,6 +41,14 @@ export const NAV_SECTION_LABEL_KEYS: Record<NavSectionId, string> = {
 };
 
 /**
+ * Shorter visible text for the 72px rail where the full name truncates ("Nomad…"). The rail keeps
+ * the full name as the button's accessible name and tooltip; the header shows it in full.
+ */
+export const NAV_SECTION_RAIL_LABEL_KEYS: Partial<Record<NavSectionId, string>> = {
+  nomad: 'tabs.nomadShort',
+};
+
+/**
  * Panel slots per section, in sub-tab order. `Modules` is listed in both Network (MeshCore
  * Repeaters) and Device (Meshtastic module config); `navSectionForSlot` picks one by capability.
  */

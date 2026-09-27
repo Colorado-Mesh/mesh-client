@@ -269,16 +269,16 @@
         "description": "Sfondo della scheda attualmente selezionata nella navigazione della barra laterale."
       },
       "brandGreen": {
-        "label": "Verde di accento",
-        "description": "Pulsanti principali e Invia (con testo scuro), testo verde, elementi attivi, indicatori online e riempimenti di avanzamento. Resta leggibile sullo sfondo dell'app."
+        "label": "Accento",
+        "description": "Pulsanti principali e Invia (con testo scuro), testo di accento, elementi attivi e riempimenti di avanzamento. Resta leggibile sullo sfondo dell'app."
       },
       "brightGreen": {
         "label": "Titolo dell'app, collegamenti ed enfasi sul nodo",
         "description": "Titolo dell'app, testo in enfasi, collegamenti nel piè di pagina ed evidenziazioni hop/self nell'elenco dei nodi."
       },
       "readableGreen": {
-        "label": "Verde del badge Meshtastic",
-        "description": "Riempimento pieno sotto il testo bianco sul badge del protocollo Meshtastic."
+        "label": "Riempimento accento",
+        "description": "Riempimento pieno di accento sotto il testo bianco, come nei badge. Mantiene 4,5:1 con il testo bianco."
       },
       "deepBlack": {
         "label": "Barra laterale, intestazione e superfici modali",
@@ -5228,6 +5228,7 @@
     "admin": "Amministrazione",
     "peers": "Compagni",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Topologia di rete.",
     "network": "Rete",
     "rrc": "RRC",

@@ -269,16 +269,16 @@
         "description": "Latar belakang tab yang dipilih saat ini di navigasi sidebar."
       },
       "brandGreen": {
-        "label": "Hijau aksen",
-        "description": "Tombol utama dan Kirim (dengan teks gelap), teks hijau, item aktif, indikator online, dan isian progres. Tetap mudah dibaca di latar belakang aplikasi."
+        "label": "Aksen",
+        "description": "Tombol utama dan Kirim (dengan teks gelap), teks aksen, item aktif, dan isian progres. Tetap terbaca di latar aplikasi."
       },
       "brightGreen": {
         "label": "Judul aplikasi, tautan & penekanan simpul",
         "description": "Judul aplikasi, teks penekanan, tautan di footer, dan sorotan hop/diri di daftar simpul."
       },
       "readableGreen": {
-        "label": "Hijau lencana Meshtastic",
-        "description": "Isian solid di bawah teks putih pada lencana protokol Meshtastic."
+        "label": "Isian aksen",
+        "description": "Isian aksen penuh di bawah teks putih, misalnya lencana. Menjaga kontras 4,5:1 dengan teks putih."
       },
       "deepBlack": {
         "label": "Permukaan sidebar, header & modal",
@@ -5228,6 +5228,7 @@
     "admin": "Administrasi",
     "peers": "Peer",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Topologi jaringan",
     "network": "Jaringan",
     "rrc": "RRC",

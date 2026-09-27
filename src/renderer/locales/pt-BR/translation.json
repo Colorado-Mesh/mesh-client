@@ -269,16 +269,16 @@
         "description": "Plano de fundo da guia atualmente selecionada na barra lateral de navegação."
       },
       "brandGreen": {
-        "label": "Verde de destaque",
-        "description": "Botões principais e Enviar (com texto escuro), texto verde, itens ativos, indicadores online e preenchimentos de progresso. Mantido legível sobre o fundo do app."
+        "label": "Destaque",
+        "description": "Botões principais e Enviar (com texto escuro), texto de destaque, itens ativos e preenchimentos de progresso. Continua legível sobre o fundo do app."
       },
       "brightGreen": {
         "label": "Título do aplicativo, links e ênfase do nó",
         "description": "Título do aplicativo, texto de ênfase, links no rodapé e destaques de salto/próprio na lista de nós."
       },
       "readableGreen": {
-        "label": "Verde do selo Meshtastic",
-        "description": "Preenchimento sólido sob texto branco no selo do protocolo Meshtastic."
+        "label": "Preenchimento de destaque",
+        "description": "Preenchimento sólido de destaque sob texto branco, como em selos. Mantém 4,5:1 com o texto branco."
       },
       "deepBlack": {
         "label": "Barra lateral, cabeçalho e superfícies modais",
@@ -5228,6 +5228,7 @@
     "admin": "Administração",
     "peers": "Pares",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Topologia de rede",
     "network": "Rede",
     "rrc": "RRC",

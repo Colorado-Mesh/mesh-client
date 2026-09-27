@@ -269,16 +269,16 @@
         "description": "Achtergrond van het momenteel geselecteerde tabblad in de zijbalknavigatie."
       },
       "brandGreen": {
-        "label": "Accentgroen",
-        "description": "Primaire knoppen en Verzenden (met donkere tekst), groene tekst, actieve items, online-indicatoren en voortgangsvullingen. Blijft leesbaar op de app-achtergrond."
+        "label": "Accent",
+        "description": "Primaire knoppen en Verzenden (met donkere tekst), accenttekst, actieve items en voortgangsvullingen. Blijft leesbaar op de app-achtergrond."
       },
       "brightGreen": {
         "label": "App-titel, links en nadruk op knooppunten",
         "description": "App-titel, nadruktekst, links in de voettekst en hop/self-highlights in de knooppuntenlijst."
       },
       "readableGreen": {
-        "label": "Groen van de Meshtastic-badge",
-        "description": "Volle vulling onder witte tekst op de Meshtastic-protocolbadge."
+        "label": "Accentvulling",
+        "description": "Volle accentvulling onder witte tekst, zoals badges. Houdt 4,5:1 met witte tekst."
       },
       "deepBlack": {
         "label": "Zijbalk, koptekst en modale oppervlakken",
@@ -5228,6 +5228,7 @@
     "admin": "Beheer",
     "peers": "Collega's",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Netwerktopologie",
     "network": "Netwerk",
     "rrc": "RRC",

@@ -269,16 +269,16 @@
         "description": "侧边栏导航中当前选定选项卡的背景。"
       },
       "brandGreen": {
-        "label": "强调绿色",
-        "description": "主要按钮和发送按钮（深色文字）、绿色文字、活动项、在线指示和进度填充。在应用背景上保持清晰可读。"
+        "label": "强调色",
+        "description": "主要按钮和发送（深色文字）、强调文字、活动项和进度填充。在应用背景上保持可读。"
       },
       "brightGreen": {
         "label": "应用程序标题、链接和节点重点",
         "description": "应用程序标题、强调文本、页脚中的链接以及节点列表中的跳跃/自我突出显示。"
       },
       "readableGreen": {
-        "label": "Meshtastic 徽标绿色",
-        "description": "Meshtastic 协议徽标上白色文字下方的实心填充。"
+        "label": "强调色填充",
+        "description": "白色文字下方的强调色实心填充（如徽章）。与白色文字保持 4.5:1 对比度。"
       },
       "deepBlack": {
         "label": "侧边栏、标题和模态界面",
@@ -5228,6 +5228,7 @@
     "admin": "管理",
     "peers": "Pee对端",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "网络拓扑图",
     "network": "网络",
     "rrc": "RRC",

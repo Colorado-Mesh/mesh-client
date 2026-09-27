@@ -269,16 +269,16 @@
         "description": "サイドバー ナビゲーションで現在選択されているタブの背景。"
       },
       "brandGreen": {
-        "label": "アクセントグリーン",
-        "description": "主要ボタンと送信（暗い文字）、緑の文字、アクティブな項目、オンライン表示、進捗の塗りつぶし。アプリの背景上で読みやすさを保ちます。"
+        "label": "アクセント",
+        "description": "主要ボタンと送信（暗い文字）、アクセントの文字、アクティブな項目、進捗の塗り。アプリの背景上で読みやすさを保ちます。"
       },
       "brightGreen": {
         "label": "アプリのタイトル、リンク、ノードの強調",
         "description": "アプリのタイトル、強調テキスト、フッター内のリンク、ノード リスト内のホップ/自己ハイライト。"
       },
       "readableGreen": {
-        "label": "Meshtastic バッジの緑",
-        "description": "Meshtastic プロトコルバッジの白い文字の下の塗りつぶし。"
+        "label": "アクセントの塗り",
+        "description": "白い文字の下に敷くアクセントの塗り（バッジなど）。白い文字とのコントラスト 4.5:1 を保ちます。"
       },
       "deepBlack": {
         "label": "サイドバー、ヘッダー、モーダル サーフェス",
@@ -5228,6 +5228,7 @@
     "admin": "管理",
     "peers": "ピア",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "ネットワーク・トポロジー",
     "network": "ネットワーク",
     "rrc": "RRC",

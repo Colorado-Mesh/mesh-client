@@ -269,16 +269,16 @@
         "description": "Tło aktualnie wybranej zakładki w nawigacji paska bocznego."
       },
       "brandGreen": {
-        "label": "Zielony akcent",
-        "description": "Przyciski główne i Wyślij (z ciemnym tekstem), zielony tekst, aktywne elementy, wskaźniki online i wypełnienia postępu. Pozostaje czytelny na tle aplikacji."
+        "label": "Akcent",
+        "description": "Główne przyciski i Wyślij (z ciemnym tekstem), tekst akcentu, aktywne elementy i wypełnienia postępu. Pozostaje czytelny na tle aplikacji."
       },
       "brightGreen": {
         "label": "Tytuł aplikacji, linki i podkreślenie węzła",
         "description": "Tytuł aplikacji, wyróżniony tekst, linki w stopce i przeskoki/samodzielne wyróżnienia na liście węzłów."
       },
       "readableGreen": {
-        "label": "Zieleń plakietki Meshtastic",
-        "description": "Pełne wypełnienie pod białym tekstem na plakietce protokołu Meshtastic."
+        "label": "Wypełnienie akcentu",
+        "description": "Pełne wypełnienie akcentem pod białym tekstem, np. w odznakach. Zachowuje kontrast 4,5:1 z białym tekstem."
       },
       "deepBlack": {
         "label": "Pasek boczny, nagłówek i powierzchnie modalne",
@@ -5296,6 +5296,7 @@
     "admin": "Administracja",
     "peers": "Partnerzy",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Topologia sieci",
     "network": "Sieć",
     "rrc": "RRC",

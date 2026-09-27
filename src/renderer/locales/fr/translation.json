@@ -269,16 +269,16 @@
         "description": "Arrière-plan de l'onglet actuellement sélectionné dans la barre de navigation latérale."
       },
       "brandGreen": {
-        "label": "Vert d'accent",
-        "description": "Boutons principaux et Envoyer (avec texte sombre), texte vert, éléments actifs, indicateurs en ligne et remplissages de progression. Reste lisible sur le fond de l'application."
+        "label": "Accent",
+        "description": "Boutons principaux et Envoyer (texte foncé), texte d'accent, éléments actifs et remplissages de progression. Reste lisible sur le fond de l'app."
       },
       "brightGreen": {
         "label": "Titre de l'application, liens et accentuation des nœuds",
         "description": "Titre de l'application, texte d'accentuation, liens dans le pied de page et surlignages du saut/auto dans la liste des nœuds."
       },
       "readableGreen": {
-        "label": "Vert du badge Meshtastic",
-        "description": "Remplissage plein sous le texte blanc du badge du protocole Meshtastic."
+        "label": "Remplissage d'accent",
+        "description": "Remplissage plein d'accent sous du texte blanc, par exemple les badges. Garde 4,5:1 avec le texte blanc."
       },
       "deepBlack": {
         "label": "Barre latérale, en-tête et surfaces modales",
@@ -5228,6 +5228,7 @@
     "admin": "Administration",
     "peers": "Pairs",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Topologie de réseau",
     "network": "Réseau",
     "rrc": "RRC",
