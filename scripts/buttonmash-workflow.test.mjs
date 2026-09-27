@@ -6,6 +6,16 @@ import { describe, expect, it } from 'vitest';
 const workflow = readFileSync('.github/workflows/buttonmash.yaml', 'utf8');
 const config = JSON.parse(readFileSync('buttonmash.config.json', 'utf8'));
 
+// Buttonmash compiles every ignore pattern case-insensitively.
+const isIgnored = (message) =>
+  config.detectors.ignorePatterns.some((pattern) =>
+    // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
+    new RegExp(pattern, 'i').test(message),
+  );
+
+// Buttonmash reports a failed request as `METHOD URL <em dash> errorText`.
+const DASH = String.fromCharCode(0x2014);
+
 describe('Buttonmash CI', () => {
   it('runs the Vite renderer through the browser-safe Electron API stub', () => {
     expect(workflow).toContain('pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort');
@@ -61,10 +71,17 @@ describe('Buttonmash CI', () => {
     '[useMeshtasticRuntime] Connection failed: BLE peripheral ID required',
     '[useMeshcoreRuntime] connect error BLE peripheral ID required',
   ])('keeps missing-device wiring failures visible: %s', (message) => {
-    const ignored = config.detectors.ignorePatterns.some((pattern) =>
-      // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
-      new RegExp(pattern).test(message),
+    expect(isIgnored(message)).toBe(false);
+  });
+
+  it('ignores offline map tiles only where the Electron-registered scheme is missing', () => {
+    // The main process registers `mesh-tiles:`; the plain-browser lane has no main process.
+    expect(isIgnored(`GET mesh-tiles://osm/2/1/1.png ${DASH} net::ERR_UNKNOWN_URL_SCHEME`)).toBe(
+      true,
     );
-    expect(ignored).toBe(false);
+    expect(isIgnored(`GET mesh-tiles://osm/2/1/1.png ${DASH} net::ERR_FAILED`)).toBe(false);
+    expect(
+      isIgnored(`GET https://tile.openstreetmap.org/2/1/1.png ${DASH} net::ERR_NAME_NOT_RESOLVED`),
+    ).toBe(false);
   });
 });

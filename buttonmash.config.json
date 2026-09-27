@@ -34,7 +34,8 @@
       "controls\\.start\\(\\) should only be called after a component has mounted",
       "Cannot read properties of undefined \\(reading '_leaflet_pos'\\)",
       "\\[WebBluetooth\\] navigator\\.bluetooth is UNDEFINED!",
-      "Web Bluetooth is not available"
+      "Web Bluetooth is not available",
+      "^GET mesh-tiles://[^ ]+ .*net::ERR_UNKNOWN_URL_SCHEME$"
     ]
   },
   "failOn": "high"
