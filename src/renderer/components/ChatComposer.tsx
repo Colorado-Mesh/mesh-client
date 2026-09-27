@@ -497,6 +497,23 @@ export function ChatComposer({
 
   const queueOutbox = queueOutboxProp ?? noopQueue;
 
+  // The effect below only saves on a view switch. The compact conversation layout unmounts the
+  // composer when the list is shown (Back to rooms, or narrowing the window), so save the current
+  // view's draft on unmount too.
+  useEffect(() => {
+    const latest = { viewKey: prevViewKeyRef, input: inputValueRef };
+    return () => {
+      const key = latest.viewKey.current;
+      if (key === null) return;
+      const text = latest.input.current;
+      if (text.trim()) {
+        saveDraft(protocol, key, text);
+      } else {
+        clearDraft(protocol, key);
+      }
+    };
+  }, [protocol]);
+
   // Draft + flood-scope persistence: save/restore when viewKey changes
   useEffect(() => {
     const prevKey = prevViewKeyRef.current;

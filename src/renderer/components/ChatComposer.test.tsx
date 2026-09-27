@@ -338,6 +338,25 @@ describe('ChatComposer', () => {
     expect(textarea).toHaveValue('stuck text');
   });
 
+  it('keeps the draft when the composer unmounts and comes back (compact Back to list)', () => {
+    localStorage.removeItem(draftsStorageKey('reticulum'));
+    const composer = (
+      <ChatComposer
+        protocol="reticulum"
+        viewKey="rrc:hub:#lobby"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={vi.fn()}
+      />
+    );
+    const first = render(composer);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'half a thought' } });
+    first.unmount();
+
+    render(composer);
+    expect(screen.getByRole('textbox')).toHaveValue('half a thought');
+  });
+
   it('restores draft when viewKey changes', () => {
     localStorage.setItem(
       draftsStorageKey('meshcore'),
