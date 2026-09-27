@@ -883,6 +883,46 @@ describe('RrcPanel', () => {
     expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
   });
 
+  it('counts selected-room messages as unread while the compact layout shows the room list', () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        media: query,
+        matches: query === '(max-width: 767px)' || query === '(max-width: 1279px)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('#lobby');
+      store.setActiveRoom('#lobby');
+      render(<RrcPanel isActive />);
+      // Compact windows open on the room list, so #lobby is selected but not on screen.
+      expect(useRrcSessionStore.getState().rrcPanelFocused).toBe(false);
+      act(() => {
+        store.addMessage(
+          {
+            id: 'arrived-behind-the-list',
+            room: '#lobby',
+            kind: 'msg',
+            body: 'Arrived while the room list was showing',
+            sender_hash: 'dddddddddddddddddddddddddddddddd',
+            timestamp: Date.now(),
+          },
+          { bumpUnread: true },
+        );
+      });
+      expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+    } finally {
+      if (original) Object.defineProperty(window, 'matchMedia', original);
+      else Reflect.deleteProperty(window, 'matchMedia');
+    }
+  });
+
   it('keeps selected-room messages unread while blurred and clears them on return', async () => {
     const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
     const store = useRrcSessionStore.getState();

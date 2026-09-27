@@ -313,17 +313,21 @@ export default function RrcPanel({
     };
   }, [refreshFromSidecar]);
 
+  // The selected room only counts as seen while its conversation is on screen: the compact layout
+  // shows the room list instead, and a message arriving then must still raise an unread.
+  const conversationVisible = isActive && (!layoutMode.compact || compactPane === 'conversation');
+
   useEffect(() => {
-    setRrcPanelFocused(isActive);
+    setRrcPanelFocused(conversationVisible);
     return () => {
       setRrcPanelFocused(false);
     };
-  }, [isActive, setRrcPanelFocused]);
+  }, [conversationVisible, setRrcPanelFocused]);
 
   const handleCaughtUp = useCallback(() => {
-    if (!isActive || !activeRoom || !hubDestHash) return;
+    if (!conversationVisible || !activeRoom || !hubDestHash) return;
     clearUnread(activeRoom, hubDestHash);
-  }, [isActive, activeRoom, hubDestHash, clearUnread]);
+  }, [conversationVisible, activeRoom, hubDestHash, clearUnread]);
 
   /**
    * Stock rrcd `/who` uses emit_notice → a single Packet.send (no chunk/resource),
