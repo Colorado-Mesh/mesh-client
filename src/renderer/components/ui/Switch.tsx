@@ -40,10 +40,12 @@ export function Switch({ checked, onChange, label, description, disabled }: Swit
           checked ? 'bg-brand-green' : 'bg-secondary-dark'
         }`}
       >
+        {/* On: a dark thumb on the accent, the same pair as primary buttons, which the theme guards
+            keep at 4.5:1 (a white thumb on the bright accent was about 1.5:1). */}
         <span
           aria-hidden="true"
           className={`absolute top-0.5 h-4 w-4 rounded-full transition-[left] ${
-            checked ? 'left-4.5 bg-white' : 'bg-ink-300 left-0.5'
+            checked ? 'bg-app-bg left-4.5' : 'bg-ink-300 left-0.5'
           }`}
         />
       </button>
