@@ -1395,6 +1395,20 @@ describe('RrcPanel v6 layout', () => {
     expect(screen.queryByRole('complementary', { name: 'Rooms and hubs' })).not.toBeInTheDocument();
   });
 
+  it('shows unread from other rooms and hubs on the collapsed list toggle', () => {
+    useRrcSessionStore.getState().clearSession();
+    useRrcSessionStore.setState({ unreadByHub: new Map([[hubB, 2]]) });
+    localStorage.setItem('mesh-client:rrcHubListCollapsed', '1');
+    localStorage.setItem('mesh-client:rrc:roomListCollapsed', '1');
+    try {
+      render(<RrcPanel isActive />);
+      const toggle = screen.getByRole('button', { name: 'Show rooms and hubs, 2 unread' });
+      expect(toggle.parentElement?.querySelector('[data-rrc-list-unread]')).toHaveTextContent('2');
+    } finally {
+      useRrcSessionStore.setState({ unreadByHub: new Map() });
+    }
+  });
+
   it('shows rooms once a hub is connected and toggles the members panel from the header', async () => {
     const user = userEvent.setup();
     const store = useRrcSessionStore.getState();

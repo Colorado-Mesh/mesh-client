@@ -29,6 +29,7 @@ import { StatusDot, type StatusDotTone } from '@/renderer/components/ui/StatusDo
 import { runRrcHubAutoConnectBatch } from '@/renderer/hooks/useRrcStartupAutoConnect';
 import { loadMutedViews, saveMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { formatBadgeCount, NAV_BADGE_FILL_CLASS } from '@/renderer/lib/navBadges';
 import {
   consumePendingRrcLinkJoin,
   OPEN_RRC_HUB_EVENT,
@@ -181,7 +182,16 @@ export default function RrcPanel({
   const lastError = useRrcSessionStore((s) => s.lastError);
   const moderationBanner = useRrcSessionStore((s) => s.moderationBanner);
   const unreadByRoom = useRrcSessionStore((s) => s.unreadByRoom);
+  const unreadByHub = useRrcSessionStore((s) => s.unreadByHub);
   const sessionsByHub = useRrcSessionStore((s) => s.sessionsByHub);
+  // Unread outside the open room (it is cleared while RRC is on screen). Shown on the list toggle
+  // so a collapsed room list still says that another room or hub has new messages.
+  const listUnread = useMemo(() => {
+    touch(unreadByRoom);
+    touch(unreadByHub);
+    touch(sessionsByHub);
+    return useRrcSessionStore.getState().totalUnread();
+  }, [unreadByRoom, unreadByHub, sessionsByHub]);
   const showTimestamps = useRrcSessionStore((s) => s.showTimestamps);
   const capabilities = useRrcSessionStore((s) => s.capabilities);
   const limits = useRrcSessionStore((s) => s.limits);
@@ -1387,23 +1397,44 @@ export default function RrcPanel({
     </>
   );
 
+  const listToggleLabel = (label: string) =>
+    listUnread > 0
+      ? t('aria.tabWithUnread', { label, count: formatBadgeCount(listUnread) })
+      : label;
+  const listToggleBadge =
+    listUnread > 0 ? (
+      <span
+        aria-hidden="true"
+        data-rrc-list-unread=""
+        className={`text-3xs pointer-events-none absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono leading-none font-medium text-white ${NAV_BADGE_FILL_CLASS.unread}`}
+      >
+        {formatBadgeCount(listUnread)}
+      </span>
+    ) : null;
+
   const conversation = (
     <>
       <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-zinc-800 px-3 py-2">
         {layoutMode.compact ? (
-          <IconButton
-            aria-label={t('rrc.backToList')}
-            onClick={() => {
-              setCompactPane('list');
-            }}
-            icon={<ChevronLeft aria-hidden className="h-4 w-4" size={16} />}
-          />
+          <span className="relative inline-flex">
+            <IconButton
+              aria-label={listToggleLabel(t('rrc.backToList'))}
+              onClick={() => {
+                setCompactPane('list');
+              }}
+              icon={<ChevronLeft aria-hidden className="h-4 w-4" size={16} />}
+            />
+            {listToggleBadge}
+          </span>
         ) : !listOpen ? (
-          <IconButton
-            aria-label={t('rrc.showList')}
-            onClick={toggleListOpen}
-            icon={<PanelLeftOpen aria-hidden className="h-4 w-4" size={16} />}
-          />
+          <span className="relative inline-flex">
+            <IconButton
+              aria-label={listToggleLabel(t('rrc.showList'))}
+              onClick={toggleListOpen}
+              icon={<PanelLeftOpen aria-hidden className="h-4 w-4" size={16} />}
+            />
+            {listToggleBadge}
+          </span>
         ) : null}
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold text-zinc-100">{headerTitle}</h2>
