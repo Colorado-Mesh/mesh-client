@@ -1873,9 +1873,51 @@ function AppContent() {
     setLauncherOpen(false);
   }, []);
 
+  // Launcher contact search, built once when the launcher opens: on a busy mesh the node maps
+  // change many times a second, and rebuilding on each change reshuffled results while typing.
+  // Matching is capped in findLauncherDestinations so 100,000 contacts stay cheap.
+  const [launcherContacts, setLauncherContacts] = useState<LauncherContactItem[]>([]);
+  const buildLauncherContacts = useCallback((): LauncherContactItem[] => {
+    const items: LauncherContactItem[] = [];
+    if (capabilities.hasReticulumPeersList) {
+      for (const node of reticulumUiNodes.values()) {
+        const hash = node.reticulum_destination_hash;
+        if (!hash) continue;
+        const name = nodeDisplayName(node, 'reticulum') || hash.slice(0, 8);
+        items.push({
+          id: hash,
+          name,
+          detail: hash.slice(0, 8),
+          search: `${name} ${hash}`.toLowerCase(),
+        });
+      }
+      return items;
+    }
+    for (const node of nodesForUi.values()) {
+      if (node.node_id === activeSelfNodeNum) continue;
+      const name = nodeDisplayName(node, protocol);
+      const hex = (node.node_id >>> 0).toString(16).padStart(8, '0');
+      const shortName = node.short_name?.trim() ?? '';
+      items.push({
+        id: String(node.node_id),
+        name,
+        detail: shortName || hex,
+        search: `${name} ${shortName} ${hex}`.toLowerCase(),
+      });
+    }
+    return items;
+  }, [
+    capabilities.hasReticulumPeersList,
+    reticulumUiNodes,
+    nodesForUi,
+    protocol,
+    activeSelfNodeNum,
+  ]);
+
   const toggleLauncher = useCallback(() => {
-    setLauncherOpen((open) => !open);
-  }, []);
+    if (!launcherOpen) setLauncherContacts(buildLauncherContacts());
+    setLauncherOpen(!launcherOpen);
+  }, [launcherOpen, buildLauncherContacts]);
 
   const handleToggleLauncherPin = useCallback(
     (slot: TabSlotId) => {
@@ -2593,8 +2635,7 @@ function AppContent() {
   const chatNodesForPanel = nodesForUi;
   const chatChannelsForPanel = chatChannels;
 
-  // Launcher search over channels and contacts. Built only while the launcher is open; matching is
-  // capped in findLauncherDestinations so 100,000 contacts stay cheap.
+  // Launcher channel search, built only while the launcher is open.
   const launcherChannels = useMemo<LauncherChannelItem[]>(
     () =>
       launcherOpen
@@ -2606,44 +2647,6 @@ function AppContent() {
         : [],
     [launcherOpen, chatChannelsForPanel],
   );
-  const launcherContacts = useMemo<LauncherContactItem[]>(() => {
-    if (!launcherOpen) return [];
-    const items: LauncherContactItem[] = [];
-    if (capabilities.hasReticulumPeersList) {
-      for (const node of reticulumUiNodes.values()) {
-        const hash = node.reticulum_destination_hash;
-        if (!hash) continue;
-        const name = nodeDisplayName(node, 'reticulum') || hash.slice(0, 8);
-        items.push({
-          id: hash,
-          name,
-          detail: hash.slice(0, 8),
-          search: `${name} ${hash}`.toLowerCase(),
-        });
-      }
-      return items;
-    }
-    for (const node of nodesForUi.values()) {
-      if (node.node_id === activeSelfNodeNum) continue;
-      const name = nodeDisplayName(node, protocol);
-      const hex = (node.node_id >>> 0).toString(16).padStart(8, '0');
-      const shortName = node.short_name?.trim() ?? '';
-      items.push({
-        id: String(node.node_id),
-        name,
-        detail: shortName || hex,
-        search: `${name} ${shortName} ${hex}`.toLowerCase(),
-      });
-    }
-    return items;
-  }, [
-    launcherOpen,
-    capabilities.hasReticulumPeersList,
-    reticulumUiNodes,
-    nodesForUi,
-    protocol,
-    activeSelfNodeNum,
-  ]);
 
   useEffect(() => {
     const liveResolvedMessageCount = selectByProtocol(storeMessageCountByProtocol, protocol);

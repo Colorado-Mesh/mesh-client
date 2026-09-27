@@ -10,6 +10,7 @@ import { getProtocolUnreadBadgeLabel, hydrateAxeThemeColors } from './lib/a11yTe
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
+  OFFLINE_MESHTASTIC_IDENTITY_ID,
   OFFLINE_RETICULUM_IDENTITY_ID,
 } from './lib/offlineProtocolIdentities';
 import { writeLauncherPins } from './lib/panelLauncher';
@@ -710,6 +711,38 @@ describe('App shell layout', () => {
       'aria-selected',
       'true',
     );
+  });
+
+  it('searches the contacts that were there when the launcher opened', () => {
+    // The shared setup does not reset the node store; leave it as this test found it.
+    const nodesBefore = useNodeStore.getState();
+    onTestFinished(() => {
+      useNodeStore.setState(nodesBefore, true);
+    });
+    ensureOfflineProtocolIdentities();
+    upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 0x1111, longName: 'Ridge Fox' });
+    renderApp();
+    const openLauncher = () => {
+      fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
+      const dialog = screen.getByRole('dialog', { name: 'All panels' });
+      fireEvent.change(
+        within(dialog).getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+        { target: { value: 'ridge' } },
+      );
+      return dialog;
+    };
+
+    let dialog = openLauncher();
+    expect(within(dialog).getByRole('button', { name: /Ridge Fox/ })).toBeInTheDocument();
+    // A node heard while the launcher is open does not reshuffle the list under the cursor.
+    act(() => {
+      upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 0x2222, longName: 'Ridge Owl' });
+    });
+    expect(within(dialog).queryByRole('button', { name: /Ridge Owl/ })).toBeNull();
+
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
+    dialog = openLauncher();
+    expect(within(dialog).getByRole('button', { name: /Ridge Owl/ })).toBeInTheDocument();
   });
 });
 

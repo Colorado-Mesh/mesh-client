@@ -278,6 +278,7 @@ export function PanelLauncher({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
+        data-panel-launcher=""
         aria-labelledby={titleId}
         tabIndex={-1}
         className={`border-secondary-dark bg-deep-black shadow-level-3 relative flex w-full flex-col overflow-hidden border outline-none ${

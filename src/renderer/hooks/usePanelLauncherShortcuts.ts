@@ -10,6 +10,14 @@ interface Options {
   onPinnedShortcut: (position: number) => void;
 }
 
+/**
+ * True while another app dialog (a confirm, a modal form) owns the keyboard. The launcher's own
+ * dialog does not count, so Ctrl/Cmd+K still closes it.
+ */
+function otherModalOpen(): boolean {
+  return document.querySelector('[aria-modal="true"]:not([data-panel-launcher])') !== null;
+}
+
 /** Window-level Ctrl/Cmd+K and Ctrl/Cmd+1..4 for the all-panels launcher. Mount once from App. */
 export function usePanelLauncherShortcuts({
   platform,
@@ -23,7 +31,7 @@ export function usePanelLauncherShortcuts({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.repeat) return;
+      if (e.defaultPrevented || e.repeat || otherModalOpen()) return;
       if (isLauncherShortcut(e, platform)) {
         e.preventDefault();
         handlersRef.current.onToggleLauncher();
