@@ -1867,8 +1867,14 @@ function AppContent() {
 
   // Launcher contact search, built once when the launcher opens: on a busy mesh the node maps
   // change many times a second, and rebuilding on each change reshuffled results while typing.
-  // Matching is capped in findLauncherDestinations so 100,000 contacts stay cheap.
-  const [launcherContacts, setLauncherContacts] = useState<LauncherContactItem[]>([]);
+  // Matching is capped in findLauncherDestinations so 100,000 contacts stay cheap. The snapshot
+  // carries its protocol: switching protocols in the phone More sheet keeps the launcher open,
+  // and a MeshCore node id handed to the Reticulum peer path (or the reverse) opens nothing.
+  const [launcherSnapshot, setLauncherSnapshot] = useState<{
+    protocol: MeshProtocol;
+    contacts: LauncherContactItem[];
+  }>({ protocol, contacts: [] });
+  const launcherContacts = launcherSnapshot.contacts;
   const buildLauncherContacts = useCallback((): LauncherContactItem[] => {
     const items: LauncherContactItem[] = [];
     if (capabilities.hasReticulumPeersList) {
@@ -1907,9 +1913,15 @@ function AppContent() {
   ]);
 
   const toggleLauncher = useCallback(() => {
-    if (!launcherOpen) setLauncherContacts(buildLauncherContacts());
+    if (!launcherOpen) setLauncherSnapshot({ protocol, contacts: buildLauncherContacts() });
     setLauncherOpen(!launcherOpen);
-  }, [launcherOpen, buildLauncherContacts]);
+  }, [launcherOpen, protocol, buildLauncherContacts]);
+
+  // A protocol switch while the launcher is open rebuilds the list for the new protocol, during
+  // render so the new protocol's node maps are the ones read.
+  if (launcherOpen && launcherSnapshot.protocol !== protocol) {
+    setLauncherSnapshot({ protocol, contacts: buildLauncherContacts() });
+  }
 
   const handleToggleLauncherPin = useCallback(
     (slot: TabSlotId) => {

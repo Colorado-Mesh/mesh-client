@@ -2141,6 +2141,30 @@ describe('App phone layout (bottom bar)', () => {
       'page',
     );
   });
+
+  it('rebuilds sheet contacts when the protocol changes inside it', () => {
+    const nodesBefore = useNodeStore.getState();
+    onTestFinished(() => {
+      useNodeStore.setState(nodesBefore, true);
+    });
+    stubPhoneWindow();
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    ensureOfflineProtocolIdentities();
+    upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 0x1111, longName: 'Ridge Fox' });
+    upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, { nodeId: 0x2222, longName: 'Ridge Relay' });
+    renderApp();
+    fireEvent.click(within(appRail()).getByRole('button', { name: 'More' }));
+    const sheet = screen.getByRole('dialog', { name: 'All panels' });
+    const search = () =>
+      within(sheet).getByRole('textbox', { name: 'Search panels, contacts and channels' });
+    fireEvent.change(search(), { target: { value: 'ridge' } });
+    expect(within(sheet).getByRole('button', { name: /Ridge Fox/ })).toBeInTheDocument();
+
+    fireEvent.click(within(sheet).getByRole('radio', { name: 'Switch to MeshCore' }));
+    fireEvent.change(search(), { target: { value: 'ridge' } });
+    expect(within(sheet).queryByRole('button', { name: /Ridge Fox/ })).toBeNull();
+    expect(within(sheet).getByRole('button', { name: /Ridge Relay/ })).toBeInTheDocument();
+  });
 });
 
 describe('App node detail pane (Option B Contacts)', () => {
