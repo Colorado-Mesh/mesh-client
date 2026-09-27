@@ -30,7 +30,11 @@ import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/
 import { applyRrcWhoInboundNotice } from '@/renderer/lib/rrcWhoInbound';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
-import { selectRrcActiveRoomMessages, useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
+import {
+  resetRrcRememberedRoomForTests,
+  selectRrcActiveRoomMessages,
+  useRrcSessionStore,
+} from '@/renderer/stores/rrcSessionStore';
 
 import RrcPanel from './RrcPanel';
 
@@ -59,6 +63,7 @@ describe('RrcPanel', () => {
     useRrcSessionStore.getState().clearSession();
     clearRrcActiveRoom(hubA);
     clearRrcActiveRoom(hubB);
+    resetRrcRememberedRoomForTests();
     useRrcHubStore.setState({ hubs: new Map() });
     setPendingRrcLinkJoin('', null);
     resetRrcHubDisconnectSuppressForTests();
