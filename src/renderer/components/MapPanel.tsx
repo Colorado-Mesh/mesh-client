@@ -1041,9 +1041,11 @@ export default function MapPanel({
     [overlayColors.online, basemap.isDark],
   );
 
+  // `isolate` keeps Leaflet's panes (z 400 to 1000) and the z-[1000] controls inside the map, so a
+  // dialog opened over this tab draws above them.
   return (
     <div
-      className="border-ink-700/50 relative h-full min-h-[500px] overflow-hidden rounded-lg border"
+      className="border-ink-700/50 relative isolate h-full min-h-[500px] overflow-hidden rounded-lg border"
       aria-label={t('mapPanel.networkMap')}
     >
       {/* Status legend + layer controls — top right, below Leaflet zoom (+/-) on the left */}

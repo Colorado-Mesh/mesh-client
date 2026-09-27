@@ -411,8 +411,9 @@ export default function ReticulumMapPanel({
       ) : null}
 
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_280px]">
+        {/* `isolate` keeps Leaflet's panes and the z-[1000] controls under any dialog. */}
         <div
-          className="border-ink-700/50 relative min-h-[420px] overflow-hidden rounded-lg border"
+          className="border-ink-700/50 relative isolate min-h-[420px] overflow-hidden rounded-lg border"
           aria-label={t('reticulumMap.title')}
         >
           <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">

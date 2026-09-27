@@ -107,6 +107,13 @@ describe('ReticulumMapPanel', () => {
     expect(screen.getByTestId('map-container')).toBeInTheDocument();
   });
 
+  it('keeps the map and its z-[1000] controls in their own layer, under any dialog', () => {
+    render(<ReticulumMapPanel stackConfigured={false} />);
+    const map = screen.getByTestId('map-container').parentElement;
+    expect(map).toHaveAttribute('aria-label', 'reticulumMap.title');
+    expect(map?.className).toMatch(/\bisolate\b/);
+  });
+
   it('renders MECP incident markers even when RMAP discovery is empty', () => {
     useIncidentStore.setState({
       incidents: {

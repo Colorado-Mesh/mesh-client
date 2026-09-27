@@ -361,6 +361,8 @@ describe('MapPanel accessibility', () => {
     );
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toMatch(/\bh-full\b/);
+    // Leaflet's panes and the z-[1000] controls stay inside the map, under any z-50 dialog.
+    expect(root.className).toMatch(/\bisolate\b/);
   });
 
   it('has no axe violations with empty nodes', async () => {
