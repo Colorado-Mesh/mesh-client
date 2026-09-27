@@ -338,12 +338,23 @@ function appRail(): HTMLElement {
   return screen.getByRole('navigation', { name: 'Application panels' });
 }
 
+/** Rail section buttons only; the launcher's pinned panels also sit on the rail. */
+function railSectionButtons(name: string | RegExp): HTMLElement[] {
+  return within(appRail())
+    .queryAllByRole('button', { name })
+    .filter((button) => !button.hasAttribute('data-rail-pin'));
+}
+
 function railButton(name: string | RegExp): HTMLElement {
-  return within(appRail()).getByRole('button', { name });
+  const [button, ...rest] = railSectionButtons(name);
+  if (!button || rest.length > 0) {
+    throw new Error(`expected one rail section button named ${String(name)}`);
+  }
+  return button;
 }
 
 function queryRailButton(name: string | RegExp): HTMLElement | null {
-  return within(appRail()).queryByRole('button', { name });
+  return railSectionButtons(name)[0] ?? null;
 }
 
 /** Opens a rail section, then (optionally) one of its sub-tabs. */

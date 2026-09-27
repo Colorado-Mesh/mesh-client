@@ -172,4 +172,92 @@ describe('AppRail', () => {
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it('gives Reticulum a Nomad Network entry between Map and Monitor', () => {
+    render(
+      <AppRail
+        sections={reticulumSections}
+        activeSectionId="chat"
+        badgeCounts={{}}
+        onSectionSelect={vi.fn()}
+      />,
+    );
+    const nav = screen.getByRole('navigation', { name: 'Application panels' });
+    const names = Array.from(nav.querySelectorAll('button')).map((b) => b.getAttribute('title'));
+    expect(names.slice(0, 5)).toEqual(['Chat', 'Network', 'Map', 'Nomad Network', 'Monitor']);
+  });
+
+  describe('pinned panels', () => {
+    const pins = [
+      { tabIndex: 1, iconSlot: 'Chat' as const, label: 'Chat', shortcut: 'Ctrl+1' },
+      { tabIndex: 3, iconSlot: 'Map' as const, label: 'Map', shortcut: 'Ctrl+3' },
+    ];
+
+    it('shows launcher pins after the sections with their shortcut in the tooltip', () => {
+      render(
+        <AppRail
+          sections={meshcoreSections}
+          activeSectionId="chat"
+          badgeCounts={{}}
+          onSectionSelect={vi.fn()}
+          pins={pins}
+          activeTabIndex={3}
+        />,
+      );
+      const nav = screen.getByRole('navigation', { name: 'Application panels' });
+      const scroll = nav.querySelector('[data-rail-scroll]');
+      const pinButtons = Array.from(scroll?.querySelectorAll('[data-rail-pin]') ?? []);
+      expect(pinButtons.map((b) => b.getAttribute('title'))).toEqual([
+        'Chat (Ctrl+1)',
+        'Map (Ctrl+3)',
+      ]);
+      expect(pinButtons[1]).toHaveClass('text-bright-green');
+      expect(pinButtons[0]).not.toHaveClass('text-bright-green');
+    });
+
+    it('opens the pinned panel on click', async () => {
+      const user = userEvent.setup();
+      const onPinSelect = vi.fn();
+      render(
+        <AppRail
+          sections={meshcoreSections}
+          activeSectionId="chat"
+          badgeCounts={{}}
+          onSectionSelect={vi.fn()}
+          pins={pins}
+          onPinSelect={onPinSelect}
+        />,
+      );
+      // The shortcut in the name keeps the pin distinct from the Map section button.
+      await user.click(screen.getByRole('button', { name: 'Map (Ctrl+3)' }));
+      expect(onPinSelect).toHaveBeenCalledWith(3);
+    });
+
+    it('renders nothing extra when no pin is visible', () => {
+      render(
+        <AppRail
+          sections={meshcoreSections}
+          activeSectionId="chat"
+          badgeCounts={{}}
+          onSectionSelect={vi.fn()}
+        />,
+      );
+      expect(document.querySelector('[data-rail-pin]')).toBeNull();
+    });
+
+    it('has no axe violations with pins', async () => {
+      const { container } = render(
+        <AppRail
+          sections={meshcoreSections}
+          activeSectionId="chat"
+          badgeCounts={{}}
+          onSectionSelect={vi.fn()}
+          pins={pins}
+          activeTabIndex={1}
+        />,
+      );
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
 });

@@ -1895,6 +1895,25 @@ function AppContent() {
     [launcherPins, activeTabMappings],
   );
 
+  // Pins also show on the rail, so pinning a panel in the launcher has a visible effect. The
+  // shortcut number is the pin's position, which counts pins hidden on this protocol too.
+  const railPins = useMemo(
+    () =>
+      launcherPins.flatMap((slot, position) => {
+        const tabIndex = findTabIndexForSlot(activeTabMappings, slot);
+        if (tabIndex < 0) return [];
+        return [
+          {
+            tabIndex,
+            iconSlot: activeTabMappings.tabSlotIds[tabIndex] ?? slot,
+            label: activeTabMappings.displayTabLabels[tabIndex] ?? slot,
+            shortcut: formatShortcut(String(position + 1), platform),
+          },
+        ];
+      }),
+    [launcherPins, activeTabMappings, platform],
+  );
+
   usePanelLauncherShortcuts({
     platform,
     onToggleLauncher: toggleLauncher,
@@ -3693,6 +3712,9 @@ function AppContent() {
               activeSectionId={activeNavSection?.id}
               badgeCounts={navBadgeCounts}
               onSectionSelect={handleNavSectionSelect}
+              pins={railPins}
+              activeTabIndex={activeTab}
+              onPinSelect={setActiveTab}
             />
           )}
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">

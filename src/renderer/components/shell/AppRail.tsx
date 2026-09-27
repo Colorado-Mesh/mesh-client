@@ -2,7 +2,7 @@ import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { NavSectionIcon } from '@/renderer/lib/icons/tabIcons';
+import { NavSectionIcon, TabIcon } from '@/renderer/lib/icons/tabIcons';
 import {
   formatBadgeCount,
   NAV_BADGE_FILL_CLASS,
@@ -16,6 +16,16 @@ import {
   type NavSection,
   type NavSectionId,
 } from '@/renderer/lib/navSections';
+import type { TabIconSlotId } from '@/renderer/lib/tabSlotIds';
+
+/** A panel pinned in the launcher, shown on the rail under the sections. */
+export interface AppRailPin {
+  tabIndex: number;
+  iconSlot: TabIconSlotId;
+  label: string;
+  /** Keyboard hint for the pin's Ctrl/Cmd+N shortcut, e.g. "⌘1" or "Ctrl+1". */
+  shortcut: string;
+}
 
 export interface AppRailProps {
   /** Rendered above the sections (the protocol switcher). */
@@ -24,15 +34,24 @@ export interface AppRailProps {
   activeSectionId: NavSectionId | undefined;
   badgeCounts: NavBadgeCounts;
   onSectionSelect: (id: NavSectionId) => void;
+  pins?: readonly AppRailPin[];
+  activeTabIndex?: number;
+  onPinSelect?: (tabIndex: number) => void;
 }
 
-/** 72px app rail: protocol switcher, then Chat / Network / Map / Monitor / Device, then Incident and App. */
+/**
+ * 72px app rail: protocol switcher, then the sections (Chat, Network, Map, Nomad Network on
+ * Reticulum, Monitor, Device), then the launcher's pinned panels, then Incident and App.
+ */
 export function AppRail({
   header,
   sections,
   activeSectionId,
   badgeCounts,
   onSectionSelect,
+  pins = [],
+  activeTabIndex,
+  onPinSelect,
 }: AppRailProps) {
   const { t } = useTranslation();
   const primary = sections.filter((section) => !NAV_FOOTER_SECTIONS.has(section.id));
@@ -91,6 +110,29 @@ export function AppRail({
           <div aria-hidden="true" className="my-2 h-px w-8 shrink-0 bg-zinc-800" />
         )}
         {primary.map(renderSection)}
+        {pins.length > 0 && (
+          <div aria-hidden="true" className="my-2 h-px w-8 shrink-0 bg-zinc-800" />
+        )}
+        {pins.map((pin) => (
+          <button
+            key={pin.tabIndex}
+            type="button"
+            data-rail-pin=""
+            aria-label={`${pin.label} (${pin.shortcut})`}
+            title={`${pin.label} (${pin.shortcut})`}
+            {...{ [PARENT_HOVER_ATTR]: '' }}
+            onClick={() => {
+              onPinSelect?.(pin.tabIndex);
+            }}
+            className={`rounded-modal flex h-10 w-10 shrink-0 items-center justify-center transition-colors ${
+              pin.tabIndex === activeTabIndex
+                ? 'bg-sidebar-active-bg text-bright-green'
+                : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-zinc-200'
+            }`}
+          >
+            <TabIcon name={pin.iconSlot} />
+          </button>
+        ))}
       </div>
       {footer.length > 0 && (
         <div
