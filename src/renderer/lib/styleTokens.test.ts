@@ -135,6 +135,15 @@ describe('style guide tokens (styles.css)', () => {
     expect(source('Toast.tsx')).toContain('bottom-[calc(var(--shell-bottom-chrome,0px)+0.75rem)]');
   });
 
+  it('docks the log panel on wide windows by the width the panel takes', () => {
+    const read = (file: string) => readFileSync(join(import.meta.dirname, '..', file), 'utf8');
+    // The shell gives up exactly the overlay's max-w-md (28rem), so nothing sits under the panel.
+    expect(read('App.tsx')).toContain("logPanelVisible ? 'lg:pr-[28rem]' : ''");
+    expect(read('components/LogPanel.tsx')).toMatch(
+      /fixed inset-y-0 right-0 z-\[1100\] flex min-h-0 w-full max-w-md\b/,
+    );
+  });
+
   it('hover: never lights up a disabled control', () => {
     // One override covers every hover: utility, so no control needs a disabled:hover: undo class.
     const variant = CSS.slice(CSS.indexOf('@custom-variant hover {'));

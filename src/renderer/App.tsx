@@ -3716,7 +3716,14 @@ function AppContent() {
         activeProtocol={protocol}
         onResult={handleFirmwareResult}
       />
-      <div className="bg-app-bg flex h-screen w-screen min-w-0 flex-col overflow-hidden">
+      {/* On wide windows the log panel docks: the shell gives up its width (max-w-md, 28rem), so the
+          panel never covers a control and keyboard focus never lands under it. */}
+      <div
+        data-app-shell=""
+        className={`bg-app-bg flex h-screen w-screen min-w-0 flex-col overflow-hidden ${
+          logPanelVisible ? 'lg:pr-[28rem]' : ''
+        }`}
+      >
         <div className="flex min-h-0 min-w-0 flex-1">
           {!shellCompact && (
             <AppRail
