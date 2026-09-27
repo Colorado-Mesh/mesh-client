@@ -370,6 +370,8 @@ interface Props {
   onAutoConnect: RfConnectAutomaticFn;
   onDisconnect: () => Promise<void>;
   mqttStatus: MQTTStatus;
+  /** The drop was unexpected; the MQTT tile then reads as an error, like the status bar. */
+  mqttConnectionLoss?: boolean;
   myNodeLabel?: string;
   protocol: MeshProtocol;
   manualAddContacts?: boolean;
@@ -402,6 +404,7 @@ export default function ConnectionPanel({
   onAutoConnect,
   onDisconnect,
   mqttStatus,
+  mqttConnectionLoss = false,
   myNodeLabel,
   protocol,
   manualAddContacts,
@@ -2624,6 +2627,7 @@ export default function ConnectionPanel({
         capabilities.hasMqttConnectionPanel
           ? {
               status: mqttStatus,
+              connectionLoss: mqttConnectionLoss,
               server:
                 mqttStatus === 'connected' || mqttStatus === 'connecting'
                   ? `${activeMqttSettings.server}:${activeMqttSettings.port}`

@@ -3840,6 +3840,7 @@ function AppContent() {
                               onAutoConnect={activeConnection.connectAutomatic}
                               onDisconnect={activeConnection.disconnect}
                               mqttStatus={activeConnection.mqttStatus}
+                              mqttConnectionLoss={mqttLoss}
                               myNodeLabel={
                                 activeRuntime.state.myNodeNum > 0
                                   ? activeRuntime.getPickerStyleNodeLabel(

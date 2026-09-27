@@ -1045,6 +1045,26 @@ describe('ConnectionPanel status i18n and pulse', () => {
     expect(statusText.previousElementSibling).toHaveClass('bg-status-warning', 'animate-pulse');
   });
 
+  it('shows an unexpected MQTT drop as an error, like the status bar', () => {
+    const renderWith = (mqttConnectionLoss: boolean) => (
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        mqttConnectionLoss={mqttConnectionLoss}
+        protocol="meshtastic"
+      />
+    );
+    const { rerender } = render(renderWith(true));
+    const tiles = screen.getByRole('group', { name: 'Link status' });
+    expect(within(tiles).getByText('Error')).toBeInTheDocument();
+    // A disconnect the user asked for stays neutral.
+    rerender(renderWith(false));
+    expect(within(tiles).queryByText('Error')).toBeNull();
+  });
+
   it('translates last-connection transport type', () => {
     const lastConnKey = 'mesh-client:lastConnection:meshtastic';
     localStorage.setItem(
