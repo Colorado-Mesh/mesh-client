@@ -27,6 +27,7 @@ import {
   DEFAULT_MAP_BASEMAP_ID,
   getMapOverlayColors,
   MAP_BASEMAPS,
+  MAP_MAX_ZOOM,
   meshTilesAvailable,
 } from '@/renderer/lib/mapBasemapUtils';
 import {
@@ -443,6 +444,7 @@ export default function ReticulumMapPanel({
           <MapContainer
             center={initialViewport.center}
             zoom={initialViewport.zoom}
+            maxZoom={MAP_MAX_ZOOM}
             className="absolute inset-0"
             preferCanvas
             scrollWheelZoom

@@ -143,6 +143,9 @@ describe('MapPanel accessibility', () => {
       expect(installDevElectronApiStubIfNeeded()).toBe(true);
       renderMap();
       expect(tileLayerMock).not.toHaveBeenCalled();
+      // With no tile layer to inherit it from, the map states its own max zoom; marker clustering
+      // throws without one.
+      expect(mapContainerMock.mock.lastCall?.[0]).toMatchObject({ maxZoom: 18 });
     } finally {
       vi.unstubAllEnvs();
       window.electronAPI = realApi;

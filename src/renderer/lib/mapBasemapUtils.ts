@@ -43,6 +43,13 @@ export const MAP_BASEMAPS: Record<MapBasemapId, MapBasemapConfig> = {
 export const DEFAULT_MAP_BASEMAP_ID: MapBasemapId = 'osm';
 
 /**
+ * Highest zoom for every map, set on the map itself. It equals Leaflet's TileLayer default (18),
+ * which the map used to inherit from its tile layer; with no tile layer the map would report
+ * Infinity and marker clustering throws "Map has no maxZoom specified".
+ */
+export const MAP_MAX_ZOOM = 18;
+
+/**
  * Whether `mesh-tiles:` tiles can load. The main process serves that scheme, so on the plain-browser
  * dev bridge every tile would fail; maps then draw without a basemap instead of broken images.
  */
