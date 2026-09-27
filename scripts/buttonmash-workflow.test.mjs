@@ -18,11 +18,11 @@ describe('Buttonmash CI', () => {
     expect(workflow).toContain('persist-credentials: false');
     expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(workflow).toContain("node-version: '22.23.2'");
-    expect(workflow).toContain('uses: cj-vana/buttonmash@3dfe5aa15e824accfd5f72c176ac64b2f63450db');
+    expect(workflow).toContain('uses: cj-vana/buttonmash@3afca467df4ae6ac71a1c3bcb894083e4e0ffb04');
     expect(workflow).toContain(
       'uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
     );
-    expect(workflow).toContain("version: '0.2.0'");
+    expect(workflow).toContain("version: '0.3.0'");
     expect(config.seed).toBe('ci');
     expect(config.budget).toMatchObject({
       maxActions: 350,
@@ -40,8 +40,8 @@ describe('Buttonmash CI', () => {
       forms: { enabled: false },
     });
     expect(config.guardrails.billing.mode).toBe('refuse');
-    // The UI loads its bundled IBM Plex fonts from the app's own origin. Buttonmash aborts font
-    // and media requests by default, and Chromium reports each abort as a console error.
+    // Buttonmash blocks font and media requests by default. Letting them through keeps the run
+    // drawing text in the bundled IBM Plex fonts the app serves from its own origin.
     expect(config.guardrails.blockMedia).toBe(false);
     expect(config.detectors.ignorePatterns).toContain(
       'controls\\.start\\(\\) should only be called after a component has mounted',

@@ -49,9 +49,9 @@ or `critical` findings, and uploads both the Buttonmash report and the Vite serv
 fails. The detector config ignores the browser stub's expected no-peripheral BLE rejection and two
 exact third-party teardown races from `lucide-react-motion` and Leaflet. Native BLE behavior remains
 covered outside this stubbed lane, while all other high-severity browser errors remain blocking.
-`guardrails.blockMedia` is off because the UI loads its bundled IBM Plex fonts from the app's own
-origin; Buttonmash aborts font and media requests by default, and Chromium logs each abort as a
-`net::ERR_BLOCKED_BY_CLIENT` console error. The action and time budgets live in
+`guardrails.blockMedia` is off so the run draws text in the bundled IBM Plex fonts the app serves
+from its own origin; Buttonmash blocks font and media requests by default. The action and time
+budgets live in
 [`buttonmash.config.json`](../buttonmash.config.json).
 
 ---
