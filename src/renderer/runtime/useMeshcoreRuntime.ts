@@ -14,6 +14,7 @@ import {
   readMeshcoreWebBluetoothDeviceId,
   resolveConnectedMeshcoreBleIdentity,
 } from '@/renderer/lib/connectedMeshcoreBleMac';
+import { isDeviceChooserCancel } from '@/renderer/lib/deviceChooserCancel';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
   isMeshcoreOffloadAbortError,
@@ -4169,13 +4170,18 @@ export function useMeshcoreRuntime() {
           );
         }
         const errForLog = serializeErrorLike(err) || '(no error object)';
-        console.error(
-          `[useMeshcoreRuntime] connect error ${formatStructuredLogDetail({
-            userMessage: normalizedErr.message,
-            raw: errForLog,
-            bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
-          })}`,
-        );
+        // Closing the port or device chooser is a choice, not a failure.
+        if (isDeviceChooserCancel(err)) {
+          console.debug('[useMeshcoreRuntime] connect cancelled at the device chooser');
+        } else {
+          console.error(
+            `[useMeshcoreRuntime] connect error ${formatStructuredLogDetail({
+              userMessage: normalizedErr.message,
+              raw: errForLog,
+              bleTimeoutStage: isBleConnectTimeout ? bleTimeoutStage : null,
+            })}`,
+          );
+        }
         await handleRfConnectFailure(type, opened?.driverIdentityId);
         throw normalizedErr;
       } finally {
