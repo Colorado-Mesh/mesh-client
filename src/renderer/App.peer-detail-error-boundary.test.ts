@@ -19,6 +19,13 @@ describe('App ReticulumPeerDetailModal ErrorBoundary (regression)', () => {
     );
   });
 
+  it('remounts the peer and node details per selection so edits never carry over', () => {
+    // The pane stays mounted while the list selection changes; without a key a half-typed
+    // rename for peer A was saved to peer B.
+    expect(SOURCE).toMatch(/<ReticulumPeerDetailModal[\s\S]*?key=\{selectedPeerHash\}/);
+    expect(SOURCE).toMatch(/<NodeDetailModal[\s\S]*?key=\{selectedNode\?\.node_id \?\? 'none'\}/);
+  });
+
   it('mounts the peer detail only through the boundary-wrapped helper', () => {
     expect(SOURCE.match(/<ReticulumPeerDetailModal\b/g)).toHaveLength(1);
     // Pane beside the Peers list or beside the map, modal otherwise.

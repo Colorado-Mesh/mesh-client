@@ -3509,6 +3509,9 @@ function AppContent() {
         suspenseFallback={<DialogLazyFallback />}
       >
         <ReticulumPeerDetailModal
+          // One instance per peer: the pane stays mounted while the list selection changes, and a
+          // half-typed rename (or path / probe state) must not carry over to the next peer.
+          key={selectedPeerHash}
           variant={variant}
           peerHash={selectedPeerHash}
           onClose={() => {
@@ -3522,6 +3525,9 @@ function AppContent() {
   const renderNodeDetail = (variant: 'modal' | 'pane') => (
     <Suspense fallback={<DialogLazyFallback />}>
       <NodeDetailModal
+        // One instance per node, like the peer pane: an admin key draft or an open delete confirm
+        // must not carry over to the next node selected in the list.
+        key={selectedNode?.node_id ?? 'none'}
         variant={variant}
         nodes={detailModalNodes}
         node={selectedNode}
