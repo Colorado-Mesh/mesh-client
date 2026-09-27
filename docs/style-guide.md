@@ -288,7 +288,7 @@ Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outsid
 
 - App > Appearance > Reduce motion (seeded from the OS setting) stops decorative pulses and shortens transitions app-wide (`html[data-reduce-motion='true']` in `styles.css`).
 - Status motion that carries meaning (connecting, logging in, sending, MAYDAY / URGENT) keeps moving: give it the `motion-status` class.
-- No network fonts, emoji data or images: they are bundled (`assets/fonts/plex`, `assets/emoji`).
+- No network fonts, emoji data or images: they are bundled (`assets/fonts/plex`, and the English emoji data from `emoji-picker-element-data` at build time).
 
 ## Copy
 

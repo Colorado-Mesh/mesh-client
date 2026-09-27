@@ -2,18 +2,19 @@
  * Offline emoji data for the Linux `<emoji-picker>` (emoji-picker-element).
  *
  * The picker fetches its data from cdn.jsdelivr.net on first use, so an offline Linux laptop (a
- * field responder with no internet) got an empty picker. We vendor the English data
- * (`assets/emoji/emojibase-en.json`, emoji-picker-element-data 1.8.0) and point the picker at a
- * sentinel URL that `installBundledEmojiData()` answers from that file. Nothing touches the
- * network; every other request passes straight through. The JSON is a lazy chunk, loaded the
- * first time the picker opens.
+ * field responder with no internet) got an empty picker. The build bundles the English data from
+ * the `emoji-picker-element-data` package (a dev dependency) and the picker points at a sentinel
+ * URL that `installBundledEmojiData()` answers from it. Nothing touches the network; every other
+ * request passes straight through. The JSON is a lazy chunk, loaded the first time the picker
+ * opens.
  */
+import { version as emojiDataVersion } from 'emoji-picker-element-data/package.json';
 
 /** `data-source` for every `<emoji-picker>`; never resolved over the network. */
 export const BUNDLED_EMOJI_DATA_SOURCE = 'https://emoji-data.mesh-client.invalid/en/data.json';
 
-/** Changes when the vendored file changes, so the picker's IndexedDB cache refreshes. */
-export const BUNDLED_EMOJI_DATA_ETAG = 'W/"emoji-picker-element-data@1.8.0-en"';
+/** Follows the package version, so updating the data refreshes the picker's IndexedDB cache. */
+export const BUNDLED_EMOJI_DATA_ETAG = `W/"emoji-picker-element-data@${emojiDataVersion}-en"`;
 
 let installed = false;
 
@@ -29,7 +30,7 @@ function requestMethod(input: RequestInfo | URL, init?: RequestInit): string {
 }
 
 async function loadBundledEmojiJson(): Promise<string> {
-  const mod = await import('../assets/emoji/emojibase-en.json?raw');
+  const mod = await import('emoji-picker-element-data/en/emojibase/data.json?raw');
   return mod.default;
 }
 

@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { createRequire } from 'node:module';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -10,14 +10,24 @@ import {
   resetBundledEmojiDataForTests,
 } from './bundledEmojiData';
 
-const DATA_PATH = join(import.meta.dirname, '..', 'assets', 'emoji', 'emojibase-en.json');
+const require = createRequire(import.meta.url);
+const DATA_PATH = require.resolve('emoji-picker-element-data/en/emojibase/data.json');
+const PACKAGE_VERSION = (
+  JSON.parse(readFileSync(require.resolve('emoji-picker-element-data/package.json'), 'utf8')) as {
+    version: string;
+  }
+).version;
 
 describe('bundled emoji data', () => {
   afterEach(() => {
     resetBundledEmojiDataForTests();
   });
 
-  it('vendors emoji-picker-element data the picker accepts', () => {
+  it('takes the cache tag from the installed package version', () => {
+    expect(BUNDLED_EMOJI_DATA_ETAG).toBe(`W/"emoji-picker-element-data@${PACKAGE_VERSION}-en"`);
+  });
+
+  it('bundles emoji-picker-element data the picker accepts', () => {
     const data = JSON.parse(readFileSync(DATA_PATH, 'utf8')) as {
       emoji: string;
       annotation: string;

@@ -49,7 +49,7 @@ Application source (Electron main / preload / renderer) is **GPL-3.0-or-later**;
 | --------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `MeshClientNomadMono.woff2` (JetBrains Mono Nerd Font Mono, subset)                                                         | OFL-1.1         | Nomad Micron viewer monospace + Nerd/FA PUA icons ([OFL](../src/renderer/assets/fonts/OFL-JetBrainsMonoNerdFont.txt))                                |
 | `assets/fonts/plex/*.woff2` (IBM Plex Sans and IBM Plex Mono, latin, latin-ext and cyrillic subsets, from Fontsource 5.3.0) | OFL-1.1         | App UI typeface, bundled so it works offline ([OFL](../src/renderer/assets/fonts/plex/OFL-IBMPlex.txt))                                              |
-| `assets/emoji/emojibase-en.json` (emoji-picker-element-data 1.8.0, English, built from emojibase-data 17.0.0)               | Apache-2.0, MIT | Linux emoji picker data, bundled so it works offline instead of loading from a CDN ([licenses](../src/renderer/assets/emoji/LICENSE-emoji-data.txt)) |
+| `emoji-picker-element-data` (dev dependency; its English data, built from emojibase-data 17.0.0, is bundled at build time)  | Apache-2.0, MIT | Linux emoji picker data, bundled so it works offline instead of loading from a CDN ([licenses](../src/renderer/assets/emoji/LICENSE-emoji-data.txt)) |
 
 ### Vendored
 

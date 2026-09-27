@@ -202,6 +202,7 @@
     "concurrently": "^9.2.4",
     "electron": "^44.1.1",
     "electron-builder": "^26.16.1",
+    "emoji-picker-element-data": "^1.8.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
