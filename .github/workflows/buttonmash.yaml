@@ -51,15 +51,15 @@ jobs:
           exit 1
 
       - name: Run Buttonmash
-        # Buttonmash v0.3.0
-        uses: cj-vana/buttonmash@3afca467df4ae6ac71a1c3bcb894083e4e0ffb04
+        # Buttonmash v0.3.1
+        uses: cj-vana/buttonmash@d97dee5635d1a5432af0a26d60fb5b7038f2e4eb
         with:
           target: http://127.0.0.1:4173
           args: --config buttonmash.config.json
           browser: chromium
           fail-on: high
           node-version: '22.23.2'
-          version: '0.3.0'
+          version: '0.3.1'
 
       - name: Upload renderer log
         if: failure()
