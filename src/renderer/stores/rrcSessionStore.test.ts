@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { clearRrcActiveRoom, loadRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
 import {
   migrateLegacyWhispersForHub,
   resetRrcLegacyWhispersMigrateForTests,
@@ -903,5 +904,50 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
     useRrcSessionStore.getState().markWhoReplyPending('general');
     expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(true);
+  });
+
+  describe('last opened room across restarts', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const peer = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+    beforeEach(() => {
+      clearRrcActiveRoom(hub);
+    });
+
+    /** A restart: the session is gone, the hub comes back and re-JOINs its rooms in its order. */
+    function restart(...rooms: string[]) {
+      const store = useRrcSessionStore.getState();
+      store.clearSession();
+      store.applyStatus('active', hub, 'Ratspeak');
+      for (const room of rooms) store.roomJoined(room, [], hub);
+    }
+
+    it('returns to the room the user last opened, not the first one the hub joins', () => {
+      restart('#ratspeak', '#colorado');
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#ratspeak');
+      useRrcSessionStore.getState().setActiveRoom('#colorado', hub);
+
+      restart('#ratspeak', '#colorado');
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#colorado');
+    });
+
+    it('keeps the automatic first room and the hub stream out of storage', () => {
+      restart('#ratspeak');
+      useRrcSessionStore.getState().setActiveRoom('[hub]', hub);
+      expect(loadRrcActiveRoom(hub)).toBeNull();
+    });
+
+    it('returns to a DM the user last opened', () => {
+      restart('#ratspeak');
+      useRrcSessionStore.getState().openDm({ identity_hash: peer, nickname: 'Zeva' }, hub);
+
+      restart('#ratspeak');
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#ratspeak');
+      // RrcPanel restores open DMs without focusing them; the remembered one still wins.
+      useRrcSessionStore
+        .getState()
+        .openDm({ identity_hash: peer, nickname: 'Zeva' }, hub, { focus: false, persist: false });
+      expect(useRrcSessionStore.getState().activeRoom).toBe(`@${peer}`);
+    });
   });
 });

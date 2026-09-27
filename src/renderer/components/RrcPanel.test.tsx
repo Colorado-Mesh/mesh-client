@@ -11,6 +11,7 @@ import {
   isReticulumRnsLiveReady,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { clearRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
 import {
   clearRrcHubAutoJoinBackoff,
   isRrcHubAutoJoinBlocked,
@@ -56,6 +57,8 @@ function whoSendCalls(): unknown[][] {
 describe('RrcPanel', () => {
   beforeEach(() => {
     useRrcSessionStore.getState().clearSession();
+    clearRrcActiveRoom(hubA);
+    clearRrcActiveRoom(hubB);
     useRrcHubStore.setState({ hubs: new Map() });
     setPendingRrcLinkJoin('', null);
     resetRrcHubDisconnectSuppressForTests();

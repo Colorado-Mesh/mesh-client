@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { loadRrcActiveRoom, saveRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
 import {
   isRrcWhisperPeerHash,
   parseRrcDmRoomKey,
@@ -559,8 +560,9 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   setActiveRoom: (room, hubHash) => {
-    set((s) =>
-      mutateHubSession(s, hubHash, (session) => {
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      return mutateHubSession(s, hubHash, (session) => {
         if (!room) return { ...session, activeRoom: null };
         const soft = [...session.rooms.keys()].find((k) => rrcRoomsMatch(k, room));
         const key = soft ?? normRoom(room);
@@ -568,9 +570,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         for (const [rk] of session.unreadByRoom) {
           if (rrcRoomsMatch(rk, key)) unreadByRoom.delete(rk);
         }
+        // The hub stream is a fallback for system lines, not a room to come back to.
+        if (hub && !key.startsWith('[')) saveRrcActiveRoom(hub, key);
         return { ...session, activeRoom: key, unreadByRoom };
-      }),
-    );
+      });
+    });
   },
 
   setShowTimestamps: (show) => {
@@ -799,6 +803,11 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       if (opts?.persist !== false) {
         upsertRrcOpenDm(hub, { identity_hash: hash, nickname: nick });
       }
+      // Only user actions focus a DM, so that is the choice to remember. Restores and inbound
+      // whispers pass focus: false and take focus only when this DM was the last room opened.
+      const chosen = opts?.focus !== false;
+      if (chosen) saveRrcActiveRoom(hub, room);
+      const focus = chosen || loadRrcActiveRoom(hub) === room;
       return mutateHubSession(s, hub, (session) => {
         const rooms = new Map(session.rooms);
         const existing = rooms.get(room);
@@ -810,7 +819,6 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           member_count: 1,
           topic: existing?.topic ?? null,
         });
-        const focus = opts?.focus !== false;
         return {
           ...session,
           rooms: trimRoomMap(rooms),
@@ -900,8 +908,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
 
   roomJoined: (room, members, hubHash) => {
     learnNicksFromMembers(get, hubHash, members ?? []);
-    set((s) =>
-      mutateHubSession(s, hubHash, (session) => {
+    set((s) => {
+      const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
+      const remembered = hub ? loadRrcActiveRoom(hub) : null;
+      return mutateHubSession(s, hubHash, (session) => {
         const { key, existing, rooms } = coalesceRoomAliases(session.rooms, room);
         const incoming = members ?? [];
         // rrcd defaults `include_joined_member_list=false`, so JOINED body is often empty.
@@ -950,13 +960,16 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           member_count: Math.min(nextMembers.length, MAX_MEMBERS_PER_ROOM),
           topic: existing?.topic ?? null,
         });
+        // After a restart the first JOIN fills the empty slot, then the room the user last opened
+        // takes over when it arrives.
         const activeRoom =
-          session.activeRoom && rrcRoomsMatch(session.activeRoom, key)
+          (session.activeRoom && rrcRoomsMatch(session.activeRoom, key)) ||
+          (remembered && rrcRoomsMatch(remembered, key))
             ? key
             : (session.activeRoom ?? key);
         return { ...session, rooms: trimRoomMap(rooms), activeRoom };
-      }),
-    );
+      });
+    });
   },
 
   roomParted: (room, opts, hubHash) => {
