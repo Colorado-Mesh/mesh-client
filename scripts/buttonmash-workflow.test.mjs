@@ -40,6 +40,9 @@ describe('Buttonmash CI', () => {
       forms: { enabled: false },
     });
     expect(config.guardrails.billing.mode).toBe('refuse');
+    // The UI loads its bundled IBM Plex fonts from the app's own origin. Buttonmash aborts font
+    // and media requests by default, and Chromium reports each abort as a console error.
+    expect(config.guardrails.blockMedia).toBe(false);
     expect(config.detectors.ignorePatterns).toContain(
       'controls\\.start\\(\\) should only be called after a component has mounted',
     );

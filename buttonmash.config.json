@@ -24,7 +24,8 @@
   "guardrails": {
     "billing": {
       "mode": "refuse"
-    }
+    },
+    "blockMedia": false
   },
   "detectors": {
     "ignoreHttpStatuses": [401, 403],
