@@ -1,22 +1,12 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as NodeListPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
-import {
-  ArrowUpDown,
-  ChevronDown,
-  ChevronRight,
-  ChevronUp,
-  Ellipsis,
-  Search,
-  Star,
-  Trash2,
-} from 'lucide-react-motion';
+import { ChevronDown, ChevronRight, Ellipsis, Search, Star, Trash2 } from 'lucide-react-motion';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
-import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import { MESHCORE_NEIGHBORS_MAX_RECOMMENDED_HOPS } from '../hooks/meshcore/meshcoreHookPreamble';
 import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemoteAuth';
@@ -85,6 +75,7 @@ import { Button, buttonClassName } from './ui/Button';
 import { INPUT_CLASS } from './ui/formClasses';
 import { MenuButton } from './ui/Menu';
 import { SegmentedControl } from './ui/SegmentedControl';
+import { SortIndicator } from './ui/SortIndicator';
 
 type TypeFilter = 'all' | 'repeater' | 'room';
 
@@ -264,16 +255,7 @@ function RepeaterSortIcon({
   sortKey: RepeaterSortKey;
   sortDir: RepeaterSortDir;
 }) {
-  const trigger = useIconTrigger();
-  const p = { 'aria-hidden': true as const, trigger, size: 12 };
-  if (sortKey !== field) {
-    return <ArrowUpDown {...p} className="text-ink-600 ml-1 inline h-3 w-3" />;
-  }
-  return sortDir === 'asc' ? (
-    <ChevronUp {...p} className="text-bright-green ml-1 inline h-3 w-3" />
-  ) : (
-    <ChevronDown {...p} className="text-bright-green ml-1 inline h-3 w-3" />
-  );
+  return <SortIndicator direction={sortKey === field ? sortDir : null} />;
 }
 
 function repeaterSortAriaKey(key: RepeaterSortKey, dir: RepeaterSortDir): string {

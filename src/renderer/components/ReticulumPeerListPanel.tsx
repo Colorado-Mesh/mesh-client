@@ -82,6 +82,7 @@ import { useToast } from './Toast';
 import { Button } from './ui/Button';
 import { INPUT_CLASS, SELECT_CLASS } from './ui/formClasses';
 import { SegmentedControl } from './ui/SegmentedControl';
+import { SortIndicator } from './ui/SortIndicator';
 
 type PeerListTab = 'peers' | 'history' | 'contacts' | 'favorites';
 type SortKey = ReticulumPeerSortKey;
@@ -554,8 +555,7 @@ export default function ReticulumPeerListPanel({
     }
   };
 
-  const sortIndicator = (key: SortKey) =>
-    sortKey === key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+  const sortDirection = (key: SortKey): SortDir | null => (sortKey === key ? sortDir : null);
 
   const ariaSortValue = (key: SortKey): 'ascending' | 'descending' | 'none' =>
     sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
@@ -956,7 +956,7 @@ export default function ReticulumPeerListPanel({
                   }}
                 >
                   {t('peerListPanel.colName')}
-                  {sortIndicator('name')}
+                  <SortIndicator direction={sortDirection('name')} />
                 </button>
               </th>
               {activeTab === 'peers' ? (
@@ -972,7 +972,7 @@ export default function ReticulumPeerListPanel({
                       }}
                     >
                       {t('connectionPanel.reticulumPeers.hops')}
-                      {sortIndicator('hops')}
+                      <SortIndicator direction={sortDirection('hops')} />
                     </button>
                   </th>
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('lastSeen')}>
@@ -985,7 +985,7 @@ export default function ReticulumPeerListPanel({
                       }}
                     >
                       {t('peerListPanel.colLastSeen')}
-                      {sortIndicator('lastSeen')}
+                      <SortIndicator direction={sortDirection('lastSeen')} />
                     </button>
                   </th>
                   <th
@@ -1001,7 +1001,7 @@ export default function ReticulumPeerListPanel({
                       }}
                     >
                       {t('peerListPanel.colInterface')}
-                      {sortIndicator('interface')}
+                      <SortIndicator direction={sortDirection('interface')} />
                     </button>
                   </th>
                 </>
@@ -1017,7 +1017,7 @@ export default function ReticulumPeerListPanel({
                       }}
                     >
                       {t('peerListPanel.colLastHeard')}
-                      {sortIndicator('lastSeen')}
+                      <SortIndicator direction={sortDirection('lastSeen')} />
                     </button>
                   </th>
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('hops')}>
@@ -1030,7 +1030,7 @@ export default function ReticulumPeerListPanel({
                       }}
                     >
                       {t('connectionPanel.reticulumPeers.hops')}
-                      {sortIndicator('hops')}
+                      <SortIndicator direction={sortDirection('hops')} />
                     </button>
                   </th>
                   <th className="py-2 pr-2" aria-sort={ariaSortValue('favorite')}>
@@ -1043,7 +1043,7 @@ export default function ReticulumPeerListPanel({
                       aria-label={t('peerListPanel.colFavorite')}
                     >
                       <Star aria-hidden className="inline h-3.5 w-3.5 align-[-2px]" />
-                      {sortIndicator('favorite')}
+                      <SortIndicator direction={sortDirection('favorite')} />
                     </button>
                   </th>
                 </>

@@ -1,9 +1,6 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as ChatPanel/RawPacketLogPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
-  ArrowUpDown,
-  ChevronDown,
-  ChevronUp,
   Download,
   KeyRound,
   MapPin,
@@ -100,6 +97,7 @@ import { Button, IconButton } from './ui/Button';
 import { INPUT_CLASS, NOTICE_CLASS, SELECT_CLASS } from './ui/formClasses';
 import { LabeledMenuButton } from './ui/Menu';
 import { SegmentedControl } from './ui/SegmentedControl';
+import { SortIndicator } from './ui/SortIndicator';
 import { StatusDot } from './ui/StatusDot';
 
 interface ImportContactsResult {
@@ -187,17 +185,7 @@ function SortIcon({
   sortField: SortField;
   sortAsc: boolean;
 }) {
-  const trigger = useIconTrigger();
-  const p = { 'aria-hidden': true as const, trigger, size: 12 };
-
-  if (sortField !== field) {
-    return <ArrowUpDown {...p} className="text-ink-600 ml-1 inline h-3 w-3" />;
-  }
-  return sortAsc ? (
-    <ChevronUp {...p} className="text-bright-green ml-1 inline h-3 w-3" />
-  ) : (
-    <ChevronDown {...p} className="text-bright-green ml-1 inline h-3 w-3" />
-  );
+  return <SortIndicator direction={sortField === field ? (sortAsc ? 'asc' : 'desc') : null} />;
 }
 
 type NodeStatusFilter = 'all' | 'online' | 'stale' | 'offline';

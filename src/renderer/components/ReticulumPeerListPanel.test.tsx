@@ -351,6 +351,25 @@ describe('ReticulumPeerListPanel', () => {
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
   });
 
+  it('marks every sortable column with the same sort arrows as the node tables', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    const sortState = (name: string) =>
+      screen
+        .getByRole('button', { name })
+        .querySelector('svg[data-sort]')
+        ?.getAttribute('data-sort');
+    // Name sorts ascending by default; the other sortable columns show the unsorted arrows.
+    expect(sortState('peerListPanel.colName')).toBe('asc');
+    expect(sortState('connectionPanel.reticulumPeers.hops')).toBe('none');
+    expect(sortState('peerListPanel.colLastSeen')).toBe('none');
+    expect(sortState('peerListPanel.colInterface')).toBe('none');
+    await user.click(screen.getByRole('button', { name: 'peerListPanel.colName' }));
+    expect(sortState('peerListPanel.colName')).toBe('desc');
+  });
+
   it('shows empty history state', async () => {
     useReticulumPeerStore.setState({ history: new Map() });
     const user = userEvent.setup();
