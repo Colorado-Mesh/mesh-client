@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Tema",
       "hint": "Elige una paleta de partida y ajusta colores sueltos abajo.",
-      "custom": "Colores personalizados. Elige un tema para volver a empezar desde un ajuste predefinido.",
-      "highContrast": "Alto contraste",
+      "custom": "Colores personalizados. Elige un tema para volver a empezar desde un ajuste predefinido."
+    },
+    "themeSurfaces": {
       "midnight": "Medianoche",
-      "classicSlate": "Pizarra clásica",
-      "meshtastic": "Meshtastic (predeterminado)",
+      "slate": "Pizarra",
+      "zinc": "Zinc",
+      "graphite": "Grafito",
+      "deepSea": "Mar profundo",
+      "dusk": "Anochecer",
+      "evergreen": "Perenne",
+      "highContrast": "Alto contraste",
+      "nightVision": "Visión nocturna",
+      "nightVisionHint": "Solo luz roja, para ojos adaptados a la oscuridad. Baja también el brillo de la pantalla. El estado se sigue mostrando con icono y etiqueta, no con color."
+    },
+    "themeAccents": {
+      "heading": "Acento",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Cielo",
+      "classic": "Verde clásico"
     },
     "pruneNoFixNodesTitle": "Podar nodos sin posición / Zero Island"
   },

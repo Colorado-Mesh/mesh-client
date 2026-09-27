@@ -5,6 +5,13 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
 import { parseStoredJson } from './parseStoredJson';
+import {
+  applyThemeSurface,
+  DEFAULT_THEME_SURFACE_ID,
+  loadThemeSurfaceId,
+  persistThemeSurfaceId,
+  toThemeSurfaceId,
+} from './themePresets';
 import { contrastRatio } from './wcagContrast';
 
 export const THEME_COLORS_STORAGE_KEY = 'mesh-client:themeColors';
@@ -364,6 +371,8 @@ export function resetThemeColors(): void {
   // Persist before the single applyThemeColors pass so the messageActionsBarBg
   // opacity branch reads the reset (hidden) value, not the stale one.
   persistMessageActionsBarBgVisible(false);
+  persistThemeSurfaceId(DEFAULT_THEME_SURFACE_ID);
+  applyThemeSurface(DEFAULT_THEME_SURFACE_ID);
   applyThemeColors(DEFAULT_THEME_COLORS);
 }
 
@@ -378,7 +387,11 @@ export function hasThemeSnapshot(): boolean {
 export function saveThemeSnapshot(): void {
   const current = loadThemeColors();
   const visibility = isMessageActionsBarBgVisible();
-  const snapshot = { colors: current, messageActionsBarBgVisible: visibility };
+  const snapshot = {
+    colors: current,
+    messageActionsBarBgVisible: visibility,
+    surface: loadThemeSurfaceId(),
+  };
   localStorage.setItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
 }
 
@@ -389,6 +402,7 @@ export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
   // Handle both old format (direct colors) and new format (colors + visibility)
   let colorData: StoredThemeColors | undefined;
   let savedVisibility = false;
+  let savedSurface = DEFAULT_THEME_SURFACE_ID;
 
   const parsed = parseStoredJson<Record<string, unknown>>(
     stored,
@@ -396,9 +410,10 @@ export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
   );
   if (parsed !== null && typeof parsed === 'object') {
     if ('colors' in parsed && typeof parsed.colors === 'object' && parsed.colors !== null) {
-      // New format with visibility
+      // New format with visibility (and the surface, from v6)
       colorData = parsed.colors;
       savedVisibility = parsed.messageActionsBarBgVisible === true;
+      savedSurface = toThemeSurfaceId(parsed.surface);
     } else {
       // Old format - just colors
       colorData = parsed;
@@ -418,6 +433,8 @@ export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
   // Persist visibility before the single applyThemeColors pass below so the
   // messageActionsBarBg opacity branch reads the restored value, not the stale one.
   persistMessageActionsBarBgVisible(savedVisibility);
+  persistThemeSurfaceId(savedSurface);
+  applyThemeSurface(savedSurface);
   applyThemeColors(merged);
 
   return merged;

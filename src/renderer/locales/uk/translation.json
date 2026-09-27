@@ -454,13 +454,27 @@
     "themePresets": {
       "heading": "Тема",
       "hint": "Виберіть початкову палітру, а потім налаштуйте окремі кольори нижче.",
-      "custom": "Власні кольори. Виберіть тему, щоб почати з готового набору.",
-      "highContrast": "Висока контрастність",
+      "custom": "Власні кольори. Виберіть тему, щоб почати з готового набору."
+    },
+    "themeSurfaces": {
       "midnight": "Північ",
-      "classicSlate": "Класичний шифер",
-      "meshtastic": "Meshtastic (типово)",
+      "slate": "Шифер",
+      "zinc": "Цинк",
+      "graphite": "Графіт",
+      "deepSea": "Глибина",
+      "dusk": "Сутінки",
+      "evergreen": "Хвоя",
+      "highContrast": "Висока контрастність",
+      "nightVision": "Нічний зір",
+      "nightVisionHint": "Лише червоне світло, для очей, що звикли до темряви. Зменште також яскравість екрана. Стан і далі показують значок і підпис, а не колір."
+    },
+    "themeAccents": {
+      "heading": "Акцент",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Небо",
+      "classic": "Класичний зелений"
     },
     "pruneNoFixNodesTitle": "Обрізати вузли без позиції / Zero Island"
   },

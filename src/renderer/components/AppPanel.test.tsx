@@ -156,33 +156,41 @@ describe('AppPanel: theme presets', () => {
 
   beforeEach(() => {
     localStorage.removeItem('mesh-client:themeColors');
+    localStorage.removeItem('mesh-client:themeSurface');
   });
 
-  it('applies a preset in one click and marks which one is active', async () => {
+  it('picks surfaces and an accent separately, one click each', async () => {
     render(
       <ToastProvider>
         <AppPanel {...defaultProps} />
       </ToastProvider>,
     );
-    const standard = await screen.findByRole('button', { name: 'Meshtastic (default)' });
-    expect(standard).toHaveAttribute('aria-pressed', 'true');
+    const midnight = await screen.findByRole('button', { name: 'Midnight' });
+    const meshtastic = screen.getByRole('button', { name: 'Meshtastic' });
+    expect(midnight).toHaveAttribute('aria-pressed', 'true');
+    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
 
-    fireEvent.click(screen.getByRole('button', { name: 'High contrast' }));
-    expect(screen.getByRole('button', { name: 'High contrast' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(standard).toHaveAttribute('aria-pressed', 'false');
-    const stored = JSON.parse(localStorage.getItem('mesh-client:themeColors') ?? '{}') as Record<
-      string,
-      string
-    >;
-    expect(stored.muted).toBe('#cdd4e2');
-    expect(document.documentElement.style.getPropertyValue('--color-muted')).toBe('#cdd4e2');
+    // Slate replaces the neutrals everywhere (every ink-* class) and keeps the accent.
+    fireEvent.click(screen.getByRole('button', { name: 'Slate' }));
+    expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
+    expect(midnight).toHaveAttribute('aria-pressed', 'false');
+    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
+    const root = document.documentElement;
+    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#1e293b');
+    expect(root.style.getPropertyValue('--color-app-bg')).toBe('#020617');
+    expect(localStorage.getItem('mesh-client:themeSurface')).toBe('slate');
 
-    fireEvent.click(standard);
-    expect(standard).toHaveAttribute('aria-pressed', 'true');
+    // Sky changes the accent and sent bubbles and keeps Slate.
+    fireEvent.click(screen.getByRole('button', { name: 'Sky' }));
+    expect(screen.getByRole('button', { name: 'Sky' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
+    expect(root.style.getPropertyValue('--color-brand-green')).toBe('#38bdf8');
+
+    fireEvent.click(midnight);
+    fireEvent.click(meshtastic);
     expect(localStorage.getItem('mesh-client:themeColors')).toBeNull();
+    expect(localStorage.getItem('mesh-client:themeSurface')).toBeNull();
+    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#212d40');
   });
 });
 

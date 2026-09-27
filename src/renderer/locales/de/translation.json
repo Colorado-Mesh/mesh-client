@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Design",
       "hint": "Wählen Sie eine Ausgangspalette und passen Sie unten einzelne Farben an.",
-      "custom": "Eigene Farben. Wählen Sie ein Design, um von einer Vorlage neu zu beginnen.",
-      "highContrast": "Hoher Kontrast",
+      "custom": "Eigene Farben. Wählen Sie ein Design, um von einer Vorlage neu zu beginnen."
+    },
+    "themeSurfaces": {
       "midnight": "Mitternacht",
-      "classicSlate": "Klassisch Schiefer",
-      "meshtastic": "Meshtastic (Standard)",
+      "slate": "Schiefer",
+      "zinc": "Zink",
+      "graphite": "Graphit",
+      "deepSea": "Tiefsee",
+      "dusk": "Dämmerung",
+      "evergreen": "Tannengrün",
+      "highContrast": "Hoher Kontrast",
+      "nightVision": "Nachtsicht",
+      "nightVisionHint": "Nur rotes Licht, für an die Dunkelheit gewöhnte Augen. Stellen Sie auch die Bildschirmhelligkeit herunter. Der Status bleibt an Symbol und Beschriftung erkennbar, nicht an der Farbe."
+    },
+    "themeAccents": {
+      "heading": "Akzent",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Himmel",
+      "classic": "Klassisches Grün"
     },
     "pruneNoFixNodesTitle": "Knoten ohne Fix / Zero Island entfernen"
   },

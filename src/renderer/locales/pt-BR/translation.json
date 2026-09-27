@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Tema",
       "hint": "Escolha uma paleta inicial e ajuste cores individuais abaixo.",
-      "custom": "Cores personalizadas. Escolha um tema para recomeçar a partir de uma predefinição.",
-      "highContrast": "Alto contraste",
+      "custom": "Cores personalizadas. Escolha um tema para recomeçar a partir de uma predefinição."
+    },
+    "themeSurfaces": {
       "midnight": "Meia-noite",
-      "classicSlate": "Ardósia clássica",
-      "meshtastic": "Meshtastic (padrão)",
+      "slate": "Ardósia",
+      "zinc": "Zinco",
+      "graphite": "Grafite",
+      "deepSea": "Mar profundo",
+      "dusk": "Crepúsculo",
+      "evergreen": "Sempre-verde",
+      "highContrast": "Alto contraste",
+      "nightVision": "Visão noturna",
+      "nightVisionHint": "Só luz vermelha, para olhos adaptados ao escuro. Diminua também o brilho da tela. O status continua indicado por ícone e rótulo, não pela cor."
+    },
+    "themeAccents": {
+      "heading": "Destaque",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Céu",
+      "classic": "Verde clássico"
     },
     "pruneNoFixNodesTitle": "Podar nós sem posição / Zero Island"
   },

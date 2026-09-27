@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Thème",
       "hint": "Choisissez une palette de départ, puis ajustez les couleurs une à une ci-dessous.",
-      "custom": "Couleurs personnalisées. Choisissez un thème pour repartir d'un préréglage.",
-      "highContrast": "Contraste élevé",
+      "custom": "Couleurs personnalisées. Choisissez un thème pour repartir d'un préréglage."
+    },
+    "themeSurfaces": {
       "midnight": "Minuit",
-      "classicSlate": "Ardoise classique",
-      "meshtastic": "Meshtastic (par défaut)",
+      "slate": "Ardoise",
+      "zinc": "Zinc",
+      "graphite": "Graphite",
+      "deepSea": "Abysses",
+      "dusk": "Crépuscule",
+      "evergreen": "Sapin",
+      "highContrast": "Contraste élevé",
+      "nightVision": "Vision nocturne",
+      "nightVisionHint": "Lumière rouge uniquement, pour des yeux habitués à l'obscurité. Baissez aussi la luminosité de l'écran. L'état reste indiqué par une icône et un libellé, pas par la couleur."
+    },
+    "themeAccents": {
+      "heading": "Accent",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Ciel",
+      "classic": "Vert classique"
     },
     "pruneNoFixNodesTitle": "Élaguer les nœuds sans position / Zero Island"
   },

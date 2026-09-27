@@ -171,6 +171,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/storedMeshProtocol.test.ts',
   'src/renderer/lib/systemPowerState.test.ts',
   'src/renderer/lib/themeColors.test.ts',
+  'src/renderer/lib/themePresets.test.ts',
   'src/renderer/lib/transport/TransportManager.test.ts',
   'src/renderer/lib/transportTcpIpc.test.ts',
   'src/renderer/lib/connection.tcp.test.ts',

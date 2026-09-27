@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "主题",
       "hint": "选择一个起始配色，然后在下方调整单个颜色。",
-      "custom": "自定义颜色。选择一个主题可从预设重新开始。",
-      "highContrast": "高对比度",
+      "custom": "自定义颜色。选择一个主题可从预设重新开始。"
+    },
+    "themeSurfaces": {
       "midnight": "午夜",
-      "classicSlate": "经典板岩",
-      "meshtastic": "Meshtastic（默认）",
+      "slate": "板岩",
+      "zinc": "锌",
+      "graphite": "石墨",
+      "deepSea": "深海",
+      "dusk": "黄昏",
+      "evergreen": "常青",
+      "highContrast": "高对比度",
+      "nightVision": "夜视",
+      "nightVisionHint": "仅使用红光，适合已适应黑暗的眼睛。请同时调低屏幕亮度。状态仍通过图标和标签显示，而不是颜色。"
+    },
+    "themeAccents": {
+      "heading": "强调色",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "天空",
+      "classic": "经典绿"
     },
     "pruneNoFixNodesTitle": "修剪无定位/零岛节点"
   },

@@ -46,7 +46,7 @@ Everything uses Tailwind utility classes. Theme tokens (below) are CSS variables
 
 ### Neutrals (ink)
 
-Neutrals come from the Midnight Serenity palette picked during review: Ink Black `#11151c` (950), Deep Space Blue `#212d40` (800) and Charcoal Blue `#364156` (700). The other steps are derived. 900 sits halfway between 950 and 800, and 50 to 600 keep Tailwind slate's lightness per step with the palette's hue, so text contrast stays where it was. The scale is `--color-ink-*` in `styles.css`.
+Neutrals come from the Midnight Serenity palette picked during review: Ink Black `#11151c` (950), Deep Space Blue `#212d40` (800) and Charcoal Blue `#364156` (700). The other steps are derived. 900 sits halfway between 950 and 800, and 50 to 600 keep Tailwind slate's lightness per step with the palette's hue, so text contrast stays where it was. The scale is `--color-ink-*` in `styles.css`, and a [theme](#themes) surface swaps all eleven steps at runtime.
 
 Use `ink-*` utilities or the tokens below; `slate-*`, `zinc-*` and `gray-*` are rejected by source policy. Zinc was tried first and read as brown next to the Reticulum yellow.
 
@@ -105,18 +105,14 @@ Status colors never double as the accent. The style guide gives each a Light-BG,
 
 Allowed exceptions: favourite stars are `yellow-400`; search highlights are yellow; data scales (battery, SNR, MECP severity, chart series, packet types) keep their own ramps and are labelled.
 
-### Theme presets
+### Themes
 
-App > Appearance > Colors offers one-click presets (`lib/themePresets.ts`), all dark, all passing the contrast guards:
+App > Appearance > Colors has two one-click choices (`lib/themePresets.ts`, `components/ThemePicker.tsx`). Any surface pairs with any accent, and single tokens can still be edited afterwards.
 
-- Meshtastic (default): ink with the Meshtastic accent.
-- MeshCore: ink with the MeshCore cyan accent.
-- Reticulum: ink with the Reticulum yellow accent.
-- High contrast: brighter muted text, stronger borders, lighter accent.
-- Midnight: gray surfaces with a sky accent.
-- Classic slate: the pre-v6 theme colors (Tailwind slate tokens with the old green-300 accent). Surfaces drawn with `ink-*` classes stay ink, and type and layout stay v6.
+- **Surfaces** replace the whole neutral scale (every `ink-*` class, through `--color-ink-*` on `:root`) and the neutral tokens: Midnight (default), Slate, Zinc, Graphite, Deep sea, Dusk, Evergreen, High contrast and Night vision. Deep sea, Dusk and Evergreen keep Midnight's lightness and chroma per step with another hue, so they stay tinted neutrals rather than colored backgrounds. High contrast brings body text near white and lifts field borders to 3:1 against panels (WCAG 1.4.11). Night vision draws the window through a red-only filter (`#mesh-night-vision` in `index.html`) for eyes adjusted to the dark; it cannot meet WCAG text contrast and is only useful dim, so it is a field mode, not a general theme.
+- **Accents** set the accent and the sent-message bubbles: Meshtastic (default), MeshCore, Reticulum, Sky and Classic green (the pre-v6 green). Slate with Classic green is the pre-v6 look.
 
-Single tokens can still be edited after picking a preset. A light theme needs a sweep of hard-coded dark text first.
+`themePresets.test.ts` checks every surface's text pairs and every surface and accent pair against the guards in `themeColors.ts`, so no combination is ever reset. A light theme needs a sweep of hard-coded dark text first.
 
 Never use `#000000` or `#ffffff` as a surface, gradients, glows, text shadows, or left-border accent stripes on cards and rows.
 
@@ -332,5 +328,6 @@ Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-comm
 - Status text still uses Tailwind's `-400` steps (v4 oklch values) next to the exact Main tokens used by dots.
 - The Main success green (`#34d399`) sits close to the Meshtastic base (`#67e8b4`); status dots always come with text, so "online" is never color alone.
 - The dark end of the Reticulum scale (700 and 900) leans toward orange; worth a look so it never reads as a dark warning.
+- Field borders (`border-secondary-dark` on panels) are about 1.7:1 in every surface except High contrast, under the 3:1 WCAG 1.4.11 asks of a control boundary. Raising them changes the look, so it is a design call.
 - A light theme.
 - Per-protocol automatic theming (today the protocol accents are opt-in presets).

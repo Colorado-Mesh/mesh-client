@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Tema",
       "hint": "Pilih palet awal, lalu sesuaikan warna satu per satu di bawah.",
-      "custom": "Warna kustom. Pilih tema untuk mulai lagi dari preset.",
-      "highContrast": "Kontras tinggi",
+      "custom": "Warna kustom. Pilih tema untuk mulai lagi dari preset."
+    },
+    "themeSurfaces": {
       "midnight": "Tengah malam",
-      "classicSlate": "Batu tulis klasik",
-      "meshtastic": "Meshtastic (bawaan)",
+      "slate": "Batu tulis",
+      "zinc": "Seng",
+      "graphite": "Grafit",
+      "deepSea": "Laut dalam",
+      "dusk": "Senja",
+      "evergreen": "Hijau abadi",
+      "highContrast": "Kontras tinggi",
+      "nightVision": "Penglihatan malam",
+      "nightVisionHint": "Hanya cahaya merah, untuk mata yang sudah terbiasa gelap. Turunkan juga kecerahan layar. Status tetap ditunjukkan dengan ikon dan label, bukan warna."
+    },
+    "themeAccents": {
+      "heading": "Aksen",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Langit",
+      "classic": "Hijau klasik"
     },
     "pruneNoFixNodesTitle": "Pangkas Node Tanpa Posisi / Zero Island"
   },

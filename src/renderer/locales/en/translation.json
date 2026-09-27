@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Theme",
       "hint": "Pick a starting palette, then adjust single colors below.",
-      "custom": "Custom colors. Pick a theme to start over from a preset.",
-      "highContrast": "High contrast",
+      "custom": "Custom colors. Pick a theme to start over from a preset."
+    },
+    "themeSurfaces": {
       "midnight": "Midnight",
-      "classicSlate": "Classic slate",
-      "meshtastic": "Meshtastic (default)",
+      "slate": "Slate",
+      "zinc": "Zinc",
+      "graphite": "Graphite",
+      "deepSea": "Deep sea",
+      "dusk": "Dusk",
+      "evergreen": "Evergreen",
+      "highContrast": "High contrast",
+      "nightVision": "Night vision",
+      "nightVisionHint": "Red light only, for eyes adjusted to the dark. Turn your screen brightness down as well. Status still shows by icon and label, not color."
+    },
+    "themeAccents": {
+      "heading": "Accent",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Sky",
+      "classic": "Classic green"
     },
     "pruneNoFixNodesTitle": "Prune No-Fix / Zero Island Nodes"
   },

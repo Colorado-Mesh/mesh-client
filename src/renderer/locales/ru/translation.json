@@ -454,13 +454,27 @@
     "themePresets": {
       "heading": "Тема",
       "hint": "Выберите исходную палитру, затем настройте отдельные цвета ниже.",
-      "custom": "Свои цвета. Выберите тему, чтобы начать с готового набора.",
-      "highContrast": "Высокая контрастность",
+      "custom": "Свои цвета. Выберите тему, чтобы начать с готового набора."
+    },
+    "themeSurfaces": {
       "midnight": "Полночь",
-      "classicSlate": "Классический шифер",
-      "meshtastic": "Meshtastic (по умолчанию)",
+      "slate": "Шифер",
+      "zinc": "Цинк",
+      "graphite": "Графит",
+      "deepSea": "Глубина",
+      "dusk": "Сумерки",
+      "evergreen": "Хвоя",
+      "highContrast": "Высокая контрастность",
+      "nightVision": "Ночное зрение",
+      "nightVisionHint": "Только красный свет, для глаз, привыкших к темноте. Уменьшите также яркость экрана. Состояние по-прежнему показывают значок и подпись, а не цвет."
+    },
+    "themeAccents": {
+      "heading": "Акцент",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Небо",
+      "classic": "Классический зелёный"
     },
     "pruneNoFixNodesTitle": "Удалить узлы без позиции / Zero Island"
   },

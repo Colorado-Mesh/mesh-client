@@ -454,13 +454,27 @@
     "themePresets": {
       "heading": "Motyw",
       "hint": "Wybierz paletę startową, a potem dostosuj pojedyncze kolory poniżej.",
-      "custom": "Własne kolory. Wybierz motyw, aby zacząć od gotowego zestawu.",
-      "highContrast": "Wysoki kontrast",
+      "custom": "Własne kolory. Wybierz motyw, aby zacząć od gotowego zestawu."
+    },
+    "themeSurfaces": {
       "midnight": "Północ",
-      "classicSlate": "Klasyczny łupek",
-      "meshtastic": "Meshtastic (domyślny)",
+      "slate": "Łupek",
+      "zinc": "Cynk",
+      "graphite": "Grafit",
+      "deepSea": "Głębia",
+      "dusk": "Zmierzch",
+      "evergreen": "Wiecznie zielony",
+      "highContrast": "Wysoki kontrast",
+      "nightVision": "Widzenie nocne",
+      "nightVisionHint": "Tylko czerwone światło, dla oczu przyzwyczajonych do ciemności. Zmniejsz też jasność ekranu. Stan nadal pokazuje ikona i etykieta, a nie kolor."
+    },
+    "themeAccents": {
+      "heading": "Akcent",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Niebo",
+      "classic": "Klasyczna zieleń"
     },
     "pruneNoFixNodesTitle": "Przytnij węzły bez pozycji / Zero Island"
   },

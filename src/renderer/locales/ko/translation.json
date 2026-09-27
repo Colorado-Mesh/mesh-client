@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "테마",
       "hint": "기본 팔레트를 고른 뒤 아래에서 개별 색상을 조정하세요.",
-      "custom": "사용자 지정 색상입니다. 테마를 고르면 프리셋에서 다시 시작합니다.",
-      "highContrast": "고대비",
+      "custom": "사용자 지정 색상입니다. 테마를 고르면 프리셋에서 다시 시작합니다."
+    },
+    "themeSurfaces": {
       "midnight": "미드나이트",
-      "classicSlate": "클래식 슬레이트",
-      "meshtastic": "Meshtastic (기본값)",
+      "slate": "슬레이트",
+      "zinc": "징크",
+      "graphite": "그래파이트",
+      "deepSea": "딥 시",
+      "dusk": "황혼",
+      "evergreen": "에버그린",
+      "highContrast": "고대비",
+      "nightVision": "야간 시야",
+      "nightVisionHint": "어둠에 적응한 눈을 위해 빨간 빛만 사용합니다. 화면 밝기도 낮추세요. 상태는 색이 아니라 아이콘과 라벨로 계속 표시됩니다."
+    },
+    "themeAccents": {
+      "heading": "강조색",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "하늘",
+      "classic": "클래식 그린"
     },
     "pruneNoFixNodesTitle": "위치 없음/제로 섬 노드 정리"
   },

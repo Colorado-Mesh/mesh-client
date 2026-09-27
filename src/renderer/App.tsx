@@ -333,6 +333,7 @@ import {
 } from './lib/storeRecordAdapters';
 import type { TabSlotId } from './lib/tabSlotIds';
 import { applyThemeColors, loadThemeColors } from './lib/themeColors';
+import { applyThemeSurface, loadThemeSurfaceId } from './lib/themePresets';
 import type {
   ChatMessage,
   ConfigTargetContext,
@@ -753,6 +754,7 @@ function AppContent() {
 
   // ─── Theme colors (localStorage overrides for @theme tokens) ─────
   useLayoutEffect(() => {
+    applyThemeSurface(loadThemeSurfaceId());
     applyThemeColors(loadThemeColors());
     applyFontScale(loadFontScale());
   }, []);

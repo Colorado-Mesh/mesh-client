@@ -1,100 +1,326 @@
-import { DEFAULT_THEME_COLORS, type ThemeColorKey } from './themeColors';
+import type { ThemeColorKey } from './themeColors';
 
-export type ThemePresetId =
-  'default' | 'meshcore' | 'reticulum' | 'highContrast' | 'midnight' | 'classicSlate';
+export const THEME_SURFACE_STORAGE_KEY = 'mesh-client:themeSurface';
 
-export interface ThemePreset {
-  id: ThemePresetId;
+export const INK_STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950] as const;
+export type InkStep = (typeof INK_STEPS)[number];
+export type InkScale = Record<InkStep, string>;
+
+export type ThemeSurfaceId =
+  | 'midnight'
+  | 'slate'
+  | 'zinc'
+  | 'graphite'
+  | 'deepSea'
+  | 'dusk'
+  | 'evergreen'
+  | 'highContrast'
+  | 'nightVision';
+
+export type ThemeAccentId = 'meshtastic' | 'meshcore' | 'reticulum' | 'sky' | 'classic';
+
+/** A neutral family: the values behind every `ink-*` class (`--color-ink-*`). */
+export interface ThemeSurface {
+  id: ThemeSurfaceId;
   labelKey: string;
-  /** Every token, so applying a preset replaces the whole palette. */
-  colors: Record<ThemeColorKey, string>;
+  scale: InkScale;
+  /** A whole-window filter in styles.css, keyed by `data-theme-surface` on the root element. */
+  filter?: 'nightVision';
 }
 
-function preset(
-  id: ThemePresetId,
-  labelKey: string,
-  overrides: Partial<Record<ThemeColorKey, string>>,
-): ThemePreset {
-  return { id, labelKey, colors: { ...DEFAULT_THEME_COLORS, ...overrides } };
+export interface ThemeAccent {
+  id: ThemeAccentId;
+  labelKey: string;
+  /** Accent text, icons and outlines on the dark surfaces (a protocol scale's 500 step). */
+  base: string;
+  /** Fills under white text (the 700 step). */
+  fill: string;
+}
+
+function scale(values: readonly string[]): InkScale {
+  return Object.fromEntries(INK_STEPS.map((step, i) => [step, values[i]])) as InkScale;
 }
 
 /**
- * One-click palettes for App > Appearance > Colors. Single colors can still be changed afterwards.
- * Every preset keeps text at 4.5:1 or better and passes the green guards in `themeColors.ts`
- * (`themePresets.test.ts`). Dark only: many older panels hard-code dark text colors.
+ * Surface families for App > Appearance > Colors, dark only (many older panels hard-code light
+ * text). Midnight is the default and must match the `--color-ink-*` values in styles.css. The
+ * tinted families keep Midnight's lightness and chroma per step with another hue, so every family
+ * passes the same text and border contrast pairs (`themePresets.test.ts`).
  */
-export const THEME_PRESETS: readonly ThemePreset[] = [
-  preset('default', 'appPanel.themePresets.meshtastic', {}),
-  // Protocol scales from the style guide as accent themes on the ink neutrals: the 500 step is
-  // the accent, 700 the fills (styles.css --color-meshcore-* / --color-reticulum-*). Default is
-  // Meshtastic.
-  preset('meshcore', 'appPanel.themePresets.meshcore', {
-    brandGreen: '#00d3f2',
-    brightGreen: '#00d3f2',
-    readableGreen: '#0e7490',
-    chatOutgoingBg: '#0e7490',
-    chatOutgoingBorder: '#00d3f2',
-  }),
-  preset('reticulum', 'appPanel.themePresets.reticulum', {
-    brandGreen: '#facc15',
-    brightGreen: '#facc15',
-    readableGreen: '#a16207',
-    chatOutgoingBg: '#a16207',
-    chatOutgoingBorder: '#facc15',
-  }),
-  // Brighter muted text, stronger borders (ink one step lighter) and a lighter green for low vision.
-  preset('highContrast', 'appPanel.themePresets.highContrast', {
-    sidebarActiveBg: '#364156',
-    secondaryDark: '#65738c',
-    muted: '#cdd4e2',
-    brandGreen: '#a7f3d0',
-    brightGreen: '#a7f3d0',
-    chatIncomingBg: '#364156',
-    chatIncomingBorder: '#65738c',
-    chatOutgoingBorder: '#a7f3d0',
-    messageActionButtonHover: '#e3e8f0',
-  }),
-  // Neutral gray surfaces with a sky accent.
-  preset('midnight', 'appPanel.themePresets.midnight', {
-    appBg: '#030712',
-    deepBlack: '#111827',
-    sidebarActiveBg: '#1f2937',
-    secondaryDark: '#374151',
-    muted: '#9ca3af',
-    brandGreen: '#7dd3fc',
-    brightGreen: '#7dd3fc',
-    chatIncomingBg: '#1f2937',
-    chatIncomingBorder: '#1f2937',
-    chatOutgoingBg: '#0369a1',
-    chatOutgoingBorder: '#7dd3fc',
-    messageActionsBarBg: '#111827',
-    messageActionButtonHover: '#9ca3af',
-  }),
-  // The pre-v6 theme colors: Tailwind slate tokens with the old green-300 accent. Surfaces drawn
-  // with ink-* classes keep the ink scale.
-  preset('classicSlate', 'appPanel.themePresets.classicSlate', {
-    appBg: '#020617',
-    sidebarActiveBg: '#1e293b',
-    brandGreen: '#86efac',
-    brightGreen: '#86efac',
-    readableGreen: '#15803d',
-    deepBlack: '#0f172a',
-    secondaryDark: '#334155',
-    muted: '#94a3b8',
-    chatIncomingBg: '#1e293b',
-    chatIncomingBorder: '#1e293b',
-    chatOutgoingBg: '#15803d',
-    chatOutgoingBorder: '#86efac',
-    messageActionsBarBg: '#0f172a',
-    messageActionButtonHover: '#94a3b8',
-  }),
+export const THEME_SURFACES: readonly ThemeSurface[] = [
+  {
+    id: 'midnight',
+    labelKey: 'appPanel.themeSurfaces.midnight',
+    scale: scale([
+      '#f9fafc',
+      '#f2f5f9',
+      '#e3e8f0',
+      '#cdd4e2',
+      '#93a0b7',
+      '#65738c',
+      '#48556a',
+      '#364156',
+      '#212d40',
+      '#19212d',
+      '#11151c',
+    ]),
+  },
+  {
+    id: 'slate',
+    labelKey: 'appPanel.themeSurfaces.slate',
+    scale: scale([
+      '#f8fafc',
+      '#f1f5f9',
+      '#e2e8f0',
+      '#cbd5e1',
+      '#94a3b8',
+      '#64748b',
+      '#475569',
+      '#334155',
+      '#1e293b',
+      '#0f172a',
+      '#020617',
+    ]),
+  },
+  {
+    id: 'zinc',
+    labelKey: 'appPanel.themeSurfaces.zinc',
+    scale: scale([
+      '#fafafa',
+      '#f4f4f5',
+      '#e4e4e7',
+      '#d4d4d8',
+      '#a1a1aa',
+      '#71717a',
+      '#52525b',
+      '#3f3f46',
+      '#27272a',
+      '#18181b',
+      '#09090b',
+    ]),
+  },
+  {
+    id: 'graphite',
+    labelKey: 'appPanel.themeSurfaces.graphite',
+    scale: scale([
+      '#fafafa',
+      '#f5f5f5',
+      '#e5e5e5',
+      '#d4d4d4',
+      '#a3a3a3',
+      '#737373',
+      '#525252',
+      '#404040',
+      '#262626',
+      '#171717',
+      '#0a0a0a',
+    ]),
+  },
+  {
+    id: 'deepSea',
+    labelKey: 'appPanel.themeSurfaces.deepSea',
+    scale: scale([
+      '#f8fafb',
+      '#f1f5f7',
+      '#e1e9ed',
+      '#c9d6dc',
+      '#8da4ad',
+      '#5d7782',
+      '#425861',
+      '#2f454d',
+      '#1b3038',
+      '#162328',
+      '#0f1619',
+    ]),
+  },
+  {
+    id: 'dusk',
+    labelKey: 'appPanel.themeSurfaces.dusk',
+    scale: scale([
+      '#fafafb',
+      '#f5f4f8',
+      '#e8e6ee',
+      '#d4d2de',
+      '#a09cb0',
+      '#746f85',
+      '#555164',
+      '#423e50',
+      '#2e2a3b',
+      '#211f2a',
+      '#15141a',
+    ]),
+  },
+  {
+    id: 'evergreen',
+    labelKey: 'appPanel.themeSurfaces.evergreen',
+    scale: scale([
+      '#f9fafa',
+      '#f3f6f4',
+      '#e3e9e6',
+      '#cdd7d2',
+      '#93a49c',
+      '#65786f',
+      '#495951',
+      '#36453e',
+      '#22302a',
+      '#1a231f',
+      '#111614',
+    ]),
+  },
+  {
+    // Midnight with body text near white, muted text one step brighter and lighter edges, for low vision. Backgrounds stay put
+    // so the extra contrast goes to text and edges. 700 is field borders and control fills: 3:1
+    // against panels and field backgrounds (WCAG 1.4.11) and 4.5:1 under ink-300 and ink-200 text.
+    id: 'highContrast',
+    labelKey: 'appPanel.themeSurfaces.highContrast',
+    scale: scale([
+      '#f9fafc',
+      '#f9fafc',
+      '#f9fafc',
+      '#f2f5f9',
+      '#cdd4e2',
+      '#93a0b7',
+      '#78859d',
+      '#636f86',
+      '#364156',
+      '#19212d',
+      '#11151c',
+    ]),
+  },
+  {
+    // Midnight drawn through a red-only filter (styles.css, index.html): every pixel's luminance
+    // goes to the red channel and green and blue stay off, since those are what rods are most
+    // sensitive to. Red cannot reach WCAG text contrast and is only useful when dim, so this is a
+    // field mode for dark-adapted eyes, not a general theme.
+    id: 'nightVision',
+    labelKey: 'appPanel.themeSurfaces.nightVision',
+    filter: 'nightVision',
+    scale: scale([
+      '#f9fafc',
+      '#f2f5f9',
+      '#e3e8f0',
+      '#cdd4e2',
+      '#93a0b7',
+      '#65738c',
+      '#48556a',
+      '#364156',
+      '#212d40',
+      '#19212d',
+      '#11151c',
+    ]),
+  },
 ];
 
-/** The preset whose palette matches exactly, or null (the user has custom colors). */
-export function matchThemePreset(colors: Record<ThemeColorKey, string>): ThemePresetId | null {
-  const keys = Object.keys(DEFAULT_THEME_COLORS) as ThemeColorKey[];
-  const found = THEME_PRESETS.find((p) =>
-    keys.every((key) => p.colors[key].toLowerCase() === colors[key].toLowerCase()),
+/** Accents are the protocol scales plus two extras; any accent pairs with any surface. */
+export const THEME_ACCENTS: readonly ThemeAccent[] = [
+  {
+    id: 'meshtastic',
+    labelKey: 'appPanel.themeAccents.meshtastic',
+    base: '#67e8b4',
+    fill: '#047857',
+  },
+  { id: 'meshcore', labelKey: 'appPanel.themeAccents.meshcore', base: '#00d3f2', fill: '#0e7490' },
+  {
+    id: 'reticulum',
+    labelKey: 'appPanel.themeAccents.reticulum',
+    base: '#facc15',
+    fill: '#a16207',
+  },
+  { id: 'sky', labelKey: 'appPanel.themeAccents.sky', base: '#38bdf8', fill: '#0369a1' },
+  // The pre-v6 green.
+  { id: 'classic', labelKey: 'appPanel.themeAccents.classic', base: '#86efac', fill: '#15803d' },
+];
+
+export const DEFAULT_THEME_SURFACE_ID: ThemeSurfaceId = 'midnight';
+export const DEFAULT_THEME_ACCENT_ID: ThemeAccentId = 'meshtastic';
+
+/** Which ink step each surface theme token takes. */
+const SURFACE_TOKEN_STEPS = {
+  appBg: 950,
+  deepBlack: 900,
+  sidebarActiveBg: 800,
+  secondaryDark: 700,
+  muted: 400,
+  chatIncomingBg: 800,
+  chatIncomingBorder: 800,
+  messageActionsBarBg: 900,
+  messageActionButtonHover: 400,
+} as const satisfies Partial<Record<ThemeColorKey, InkStep>>;
+
+type SurfaceTokenKey = keyof typeof SURFACE_TOKEN_STEPS;
+type AccentTokenKey = Exclude<ThemeColorKey, SurfaceTokenKey>;
+
+export function themeSurface(id: ThemeSurfaceId): ThemeSurface {
+  return THEME_SURFACES.find((s) => s.id === id) ?? THEME_SURFACES[0];
+}
+
+export function surfaceThemeColors(surface: ThemeSurface): Record<SurfaceTokenKey, string> {
+  const out = {} as Record<SurfaceTokenKey, string>;
+  for (const key of Object.keys(SURFACE_TOKEN_STEPS) as SurfaceTokenKey[]) {
+    out[key] = surface.scale[SURFACE_TOKEN_STEPS[key]];
+  }
+  return out;
+}
+
+export function accentThemeColors(accent: ThemeAccent): Record<AccentTokenKey, string> {
+  return {
+    brandGreen: accent.base,
+    brightGreen: accent.base,
+    readableGreen: accent.fill,
+    chatOutgoingBg: accent.fill,
+    chatOutgoingBorder: accent.base,
+  };
+}
+
+export function themeColorsFor(
+  surface: ThemeSurface,
+  accent: ThemeAccent,
+): Record<ThemeColorKey, string> {
+  return { ...surfaceThemeColors(surface), ...accentThemeColors(accent) };
+}
+
+function sameColors(expected: Record<string, string>, colors: Record<ThemeColorKey, string>) {
+  return Object.entries(expected).every(
+    ([key, hex]) => colors[key as ThemeColorKey].toLowerCase() === hex.toLowerCase(),
   );
-  return found?.id ?? null;
+}
+
+/** The chosen surface, or null when single surface colors were changed by hand afterwards. */
+export function matchThemeSurface(
+  colors: Record<ThemeColorKey, string>,
+  surfaceId: ThemeSurfaceId,
+): ThemeSurfaceId | null {
+  return sameColors(surfaceThemeColors(themeSurface(surfaceId)), colors) ? surfaceId : null;
+}
+
+/** The accent whose colors match exactly, or null for a custom accent. */
+export function matchThemeAccent(colors: Record<ThemeColorKey, string>): ThemeAccentId | null {
+  return THEME_ACCENTS.find((a) => sameColors(accentThemeColors(a), colors))?.id ?? null;
+}
+
+/** A stored surface id, or the default when it is missing or unknown. */
+export function toThemeSurfaceId(value: unknown): ThemeSurfaceId {
+  return THEME_SURFACES.find((s) => s.id === value)?.id ?? DEFAULT_THEME_SURFACE_ID;
+}
+
+export function loadThemeSurfaceId(): ThemeSurfaceId {
+  return toThemeSurfaceId(localStorage.getItem(THEME_SURFACE_STORAGE_KEY));
+}
+
+export function persistThemeSurfaceId(id: ThemeSurfaceId): void {
+  if (id === DEFAULT_THEME_SURFACE_ID) {
+    localStorage.removeItem(THEME_SURFACE_STORAGE_KEY);
+  } else {
+    localStorage.setItem(THEME_SURFACE_STORAGE_KEY, id);
+  }
+}
+
+/** Point every `ink-*` class at this surface's scale. */
+export function applyThemeSurface(id: ThemeSurfaceId): void {
+  const surface = themeSurface(id);
+  const root = document.documentElement;
+  for (const step of INK_STEPS) {
+    root.style.setProperty(`--color-ink-${step}`, surface.scale[step]);
+  }
+  root.dataset.themeSurface = surface.id;
 }

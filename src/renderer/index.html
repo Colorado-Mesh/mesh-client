@@ -15,7 +15,16 @@
     />
     <title>Mesh Client</title>
   </head>
-  <body class="bg-app-bg overflow-hidden text-gray-100">
+  <body class="bg-app-bg text-ink-100 overflow-hidden">
+    <!-- Night vision theme (styles.css): luminance to red at 85%, green and blue off. -->
+    <svg aria-hidden="true" class="pointer-events-none absolute h-0 w-0">
+      <filter id="mesh-night-vision" color-interpolation-filters="sRGB">
+        <feColorMatrix
+          type="matrix"
+          values="0.181 0.608 0.061 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+        />
+      </filter>
+    </svg>
     <div id="root"></div>
     <script type="module" src="./main.tsx"></script>
   </body>

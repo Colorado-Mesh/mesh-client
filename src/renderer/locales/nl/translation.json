@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Thema",
       "hint": "Kies een startpalet en pas daaronder losse kleuren aan.",
-      "custom": "Eigen kleuren. Kies een thema om opnieuw te beginnen vanaf een voorinstelling.",
-      "highContrast": "Hoog contrast",
+      "custom": "Eigen kleuren. Kies een thema om opnieuw te beginnen vanaf een voorinstelling."
+    },
+    "themeSurfaces": {
       "midnight": "Middernacht",
-      "classicSlate": "Klassiek leisteen",
-      "meshtastic": "Meshtastic (standaard)",
+      "slate": "Leisteen",
+      "zinc": "Zink",
+      "graphite": "Grafiet",
+      "deepSea": "Diepzee",
+      "dusk": "Schemering",
+      "evergreen": "Groenblijvend",
+      "highContrast": "Hoog contrast",
+      "nightVision": "Nachtzicht",
+      "nightVisionHint": "Alleen rood licht, voor ogen die aan het donker gewend zijn. Zet ook de schermhelderheid lager. De status blijft zichtbaar via pictogram en label, niet via kleur."
+    },
+    "themeAccents": {
+      "heading": "Accent",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Lucht",
+      "classic": "Klassiek groen"
     },
     "pruneNoFixNodesTitle": "Snoei knooppunten zonder positie / Zero Island"
   },

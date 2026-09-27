@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "テーマ",
       "hint": "基本のパレットを選び、下で個別の色を調整します。",
-      "custom": "カスタムカラーです。テーマを選ぶとプリセットからやり直せます。",
-      "highContrast": "ハイコントラスト",
+      "custom": "カスタムカラーです。テーマを選ぶとプリセットからやり直せます。"
+    },
+    "themeSurfaces": {
       "midnight": "ミッドナイト",
-      "classicSlate": "クラシック スレート",
-      "meshtastic": "Meshtastic（デフォルト）",
+      "slate": "スレート",
+      "zinc": "ジンク",
+      "graphite": "グラファイト",
+      "deepSea": "ディープシー",
+      "dusk": "ダスク",
+      "evergreen": "エバーグリーン",
+      "highContrast": "ハイコントラスト",
+      "nightVision": "ナイトビジョン",
+      "nightVisionHint": "赤い光だけを使い、暗さに慣れた目を守ります。画面の明るさも下げてください。状態は色ではなくアイコンとラベルで表示されます。"
+    },
+    "themeAccents": {
+      "heading": "アクセント",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "スカイ",
+      "classic": "クラシックグリーン"
     },
     "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去"
   },

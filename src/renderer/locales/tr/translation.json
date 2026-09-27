@@ -438,13 +438,27 @@
     "themePresets": {
       "heading": "Tema",
       "hint": "Bir başlangıç paleti seçin, ardından aşağıda tek tek renkleri ayarlayın.",
-      "custom": "Özel renkler. Hazır ayardan yeniden başlamak için bir tema seçin.",
-      "highContrast": "Yüksek kontrast",
+      "custom": "Özel renkler. Hazır ayardan yeniden başlamak için bir tema seçin."
+    },
+    "themeSurfaces": {
       "midnight": "Gece yarısı",
-      "classicSlate": "Klasik arduvaz",
-      "meshtastic": "Meshtastic (varsayılan)",
+      "slate": "Arduvaz",
+      "zinc": "Çinko",
+      "graphite": "Grafit",
+      "deepSea": "Derin deniz",
+      "dusk": "Alacakaranlık",
+      "evergreen": "Her dem yeşil",
+      "highContrast": "Yüksek kontrast",
+      "nightVision": "Gece görüşü",
+      "nightVisionHint": "Yalnızca kırmızı ışık, karanlığa alışmış gözler için. Ekran parlaklığını da düşürün. Durum renkle değil, simge ve etiketle gösterilmeye devam eder."
+    },
+    "themeAccents": {
+      "heading": "Vurgu",
+      "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
-      "reticulum": "Reticulum"
+      "reticulum": "Reticulum",
+      "sky": "Gökyüzü",
+      "classic": "Klasik yeşil"
     },
     "pruneNoFixNodesTitle": "Konumsuz / Sıfır Ada Düğümlerini Budama"
   },

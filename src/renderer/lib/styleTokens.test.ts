@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 
 import { DEFAULT_THEME_COLORS, THEME_CSS_VARS, type ThemeColorKey } from './themeColors';
-import { THEME_PRESETS } from './themePresets';
+import { DEFAULT_THEME_SURFACE_ID, INK_STEPS, THEME_ACCENTS, themeSurface } from './themePresets';
 import { contrastRatio } from './wcagContrast';
 
 const CSS = readFileSync(join(import.meta.dirname, '..', 'styles.css'), 'utf8');
@@ -75,11 +75,18 @@ describe('style guide tokens (styles.css)', () => {
     expect(DEFAULT_THEME_COLORS.readableGreen).toBe(token('--color-meshtastic-700'));
   });
 
-  it('the MeshCore and Reticulum presets use their own 500 accent and 700 fill', () => {
-    for (const protocol of ['meshcore', 'reticulum'] as const) {
-      const preset = THEME_PRESETS.find((p) => p.id === protocol);
-      expect(preset?.colors.brandGreen).toBe(token(`--color-${protocol}-500`));
-      expect(preset?.colors.readableGreen).toBe(token(`--color-${protocol}-700`));
+  it('each protocol accent is its own scale: 500 for the accent, 700 for fills', () => {
+    for (const protocol of REGISTERED_MESH_PROTOCOLS) {
+      const accent = THEME_ACCENTS.find((a) => a.id === protocol);
+      expect(accent?.base).toBe(token(`--color-${protocol}-500`));
+      expect(accent?.fill).toBe(token(`--color-${protocol}-700`));
+    }
+  });
+
+  it('the default surface is the ink scale styles.css ships, step for step', () => {
+    const midnight = themeSurface(DEFAULT_THEME_SURFACE_ID);
+    for (const step of INK_STEPS) {
+      expect(midnight.scale[step], `ink-${step}`).toBe(token(`--color-ink-${step}`));
     }
   });
 
