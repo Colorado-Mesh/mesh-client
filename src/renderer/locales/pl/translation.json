@@ -400,6 +400,8 @@
     "themeSaveFailed": "Nie udało się zapisać punktu kontrolnego koloru.",
     "themeRestoreFailed": "Nie udało się przywrócić punktu kontrolnego koloru.",
     "themeResetFailed": "Nie udało się zresetować kolorów.",
+    "themeAccentKept": "Ten kolor jest zbyt podobny do tła aplikacji, by był czytelny (poniżej 4,5:1), więc akcent wrócił do domyślnego.",
+    "themeFillKept": "Biały tekst na tym kolorze miałby kontrast poniżej 4,5:1, więc wypełnienie wróciło do domyślnego.",
     "messageActionsBarBgVisible": "Pokaż tło",
     "rrcUnreadAllRoomMessages": "Nieprzeczytany RRC dla wszystkich wiadomości w pokoju",
     "rrcUnreadAllRoomMessagesHint": "Gdy włączone, każdy nowy komunikat pokoju RRC oznacza nieprzeczytany i może odtwarzać dźwięk kanału. Wyłącz dla alertów w stylu IRC: tylko wiadomości bezpośrednie i @wzmianki.",

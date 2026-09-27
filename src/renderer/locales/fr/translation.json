@@ -400,6 +400,8 @@
     "themeSaveFailed": "Échec de l'enregistrement du point de contrôle de couleur.",
     "themeRestoreFailed": "Échec de la restauration du point de contrôle des couleurs.",
     "themeResetFailed": "Impossible de réinitialiser les couleurs.",
+    "themeAccentKept": "Cette couleur est trop proche du fond de l'app pour être lisible (moins de 4,5:1), l'accent est donc revenu à la valeur par défaut.",
+    "themeFillKept": "Du texte blanc sur cette couleur serait sous 4,5:1, le remplissage est donc revenu à la valeur par défaut.",
     "messageActionsBarBgVisible": "Afficher l'arrière-plan",
     "rrcUnreadAllRoomMessages": "RRC non lu pour tous les messages de la salle",
     "rrcUnreadAllRoomMessagesHint": "Lorsque cette option est activée, tout nouveau message de la salle RRC est non lu et peut lire un son de chaîne. Désactiver pour les alertes de type IRC : uniquement les messages directs et les @mentions.",

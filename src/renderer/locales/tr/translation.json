@@ -400,6 +400,8 @@
     "themeSaveFailed": "Renk kontrol noktası kaydedilemedi.",
     "themeRestoreFailed": "Renk kontrol noktası geri yüklenemedi.",
     "themeResetFailed": "Renkler sıfırlanamadı.",
+    "themeAccentKept": "Bu renk uygulama arka planına okunamayacak kadar yakın (4,5:1'in altında), bu yüzden vurgu varsayılana döndü.",
+    "themeFillKept": "Bu renk üzerindeki beyaz metin 4,5:1'in altında kalırdı, bu yüzden dolgu varsayılana döndü.",
     "messageActionsBarBgVisible": "Arka planı göster",
     "rrcUnreadAllRoomMessages": "Tüm oda mesajları için RRC okunmadı",
     "rrcUnreadAllRoomMessagesHint": "Açık olduğunda, herhangi bir yeni RRC odası mesajı okunmadı olarak işaretlenir ve bir kanal sesi çalabilir. IRC tarzı uyarılar için kapatın: yalnızca doğrudan mesajlar ve @bahsetmeler.",

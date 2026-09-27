@@ -400,6 +400,8 @@
     "themeSaveFailed": "Error al guardar el punto de verificación de color.",
     "themeRestoreFailed": "Error al restaurar el punto de verificación de color.",
     "themeResetFailed": "Error al restablecer los colores.",
+    "themeAccentKept": "Ese color está demasiado cerca del fondo de la app para leerse (menos de 4,5:1), así que el acento volvió al predeterminado.",
+    "themeFillKept": "El texto blanco sobre ese color quedaría por debajo de 4,5:1, así que el relleno volvió al predeterminado.",
     "messageActionsBarBgVisible": "Mostrar fondo",
     "rrcUnreadAllRoomMessages": "RRC no leído para todos los mensajes de la sala",
     "rrcUnreadAllRoomMessagesHint": "Cuando está activado, cualquier mensaje nuevo de la sala RRC marca como no leído y puede reproducir un sonido de canal. Desactivar para alertas estilo IRC: solo mensajes directos y @menciones.",

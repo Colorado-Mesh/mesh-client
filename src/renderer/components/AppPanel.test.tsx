@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -191,6 +191,18 @@ describe('AppPanel: theme presets', () => {
     expect(localStorage.getItem('mesh-client:themeColors')).toBeNull();
     expect(localStorage.getItem('mesh-client:themeSurface')).toBeNull();
     expect(root.style.getPropertyValue('--color-ink-800')).toBe('#212d40');
+  });
+
+  it('says so when an unreadable accent is put back to the default', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const accentSwatches = await screen.findByRole('group', { name: /Accent green/ });
+    fireEvent.click(within(accentSwatches).getByRole('button', { name: 'Slate 950 #020617' }));
+    expect(await screen.findByText(/too close to the app background to read/)).toBeInTheDocument();
+    expect(document.documentElement.style.getPropertyValue('--color-brand-green')).toBe('#67e8b4');
   });
 });
 

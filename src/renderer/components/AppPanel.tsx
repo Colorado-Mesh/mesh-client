@@ -338,18 +338,26 @@ export default function AppPanel({
     setFontScale(DEFAULT_FONT_SCALE);
   }, []);
 
-  const commitThemeColor = useCallback((key: ThemeColorKey, hex: string) => {
-    setThemeColors((prev) => {
-      if (prev[key] === hex) return prev;
-      const next = { ...prev, [key]: hex };
+  const commitThemeColor = useCallback(
+    (key: ThemeColorKey, hex: string) => {
+      if (themeColors[key] === hex) return;
+      const next = { ...themeColors, [key]: hex };
       // Prefer the clamped map applyThemeColors returns so readableGreen stays
       // contrast-safe in React state and localStorage (not only on :root).
       const applied = applyThemeColors(next);
-      if (!applied) return prev;
+      if (!applied) return;
       persistThemeColors(applied);
-      return applied;
-    });
-  }, []);
+      setThemeColors(applied);
+      // The contrast guards in themeColors.ts put the default back instead of applying an
+      // unreadable accent or fill. Say so rather than let the pick silently snap back.
+      if (applied.brandGreen !== next.brandGreen.toLowerCase()) {
+        addToast(t('appPanel.themeAccentKept'), 'warning');
+      } else if (applied.readableGreen !== next.readableGreen.toLowerCase()) {
+        addToast(t('appPanel.themeFillKept'), 'warning');
+      }
+    },
+    [addToast, t, themeColors],
+  );
 
   const applyThemePalette = useCallback((next: Record<ThemeColorKey, string>) => {
     const applied = applyThemeColors(next);

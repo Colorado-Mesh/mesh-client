@@ -400,6 +400,8 @@
     "themeSaveFailed": "Gagal menyimpan pos pemeriksaan warna.",
     "themeRestoreFailed": "Gagal memulihkan pos pemeriksaan warna.",
     "themeResetFailed": "Gagal mengatur ulang warna.",
+    "themeAccentKept": "Warna itu terlalu dekat dengan latar aplikasi untuk dibaca (di bawah 4,5:1), jadi aksen kembali ke bawaan.",
+    "themeFillKept": "Teks putih pada warna itu akan di bawah 4,5:1, jadi isian kembali ke bawaan.",
     "messageActionsBarBgVisible": "Tampilkan latar belakang",
     "rrcUnreadAllRoomMessages": "RRC belum dibaca untuk semua pesan ruangan",
     "rrcUnreadAllRoomMessagesHint": "Saat aktif, setiap pesan ruang RRC baru menandai belum dibaca dan dapat memutar suara saluran. Nonaktifkan untuk peringatan bergaya IRC: hanya pesan langsung dan @mention.",

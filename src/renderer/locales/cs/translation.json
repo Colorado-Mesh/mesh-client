@@ -400,6 +400,8 @@
     "themeSaveFailed": "Uložení kontrolního bodu barev se nezdařilo.",
     "themeRestoreFailed": "Obnovení kontrolního bodu barev se nezdařilo.",
     "themeResetFailed": "Obnovení barev se nezdařilo.",
+    "themeAccentKept": "Tato barva je příliš blízko pozadí aplikace a nedá se číst (pod 4,5:1), takže zvýraznění se vrátilo na výchozí.",
+    "themeFillKept": "Bílý text na této barvě by měl kontrast pod 4,5:1, takže výplň se vrátila na výchozí.",
     "messageActionsBarBgVisible": "Zobrazit pozadí",
     "rrcUnreadAllRoomMessages": "RRC nepřečteno pro všechny zprávy z místnosti",
     "rrcUnreadAllRoomMessagesHint": "Když je zapnuto, jakákoli nová zpráva RRC místnosti označí nepřečtené a může přehrát zvuk kanálu. Vypnout pro upozornění ve stylu IRC: pouze přímé zprávy a @zmínky.",

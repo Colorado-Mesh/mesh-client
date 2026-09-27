@@ -68,6 +68,8 @@
     "themeSaveFailed": "Failed to save color checkpoint.",
     "themeRestoreFailed": "Failed to restore color checkpoint.",
     "themeResetFailed": "Failed to reset colors.",
+    "themeAccentKept": "That color is too close to the app background to read (under 4.5:1), so the accent went back to the default.",
+    "themeFillKept": "White text on that color would be under 4.5:1, so the fill went back to the default.",
     "noNoFixNodes": "No no-fix or zero-island nodes found.",
     "noGpsPosition": "No GPS position available. Use device node coordinates or enable GPS in the app.",
     "noNodesAboveDistance": "No nodes found beyond the distance threshold.",

@@ -400,6 +400,8 @@
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
     "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
     "themeResetFailed": "色をリセットできませんでした。",
+    "themeAccentKept": "その色はアプリの背景に近すぎて読めません（4.5:1 未満）。アクセントを既定に戻しました。",
+    "themeFillKept": "その色の上の白い文字は 4.5:1 未満になるため、塗りを既定に戻しました。",
     "messageActionsBarBgVisible": "背景を表示",
     "rrcUnreadAllRoomMessages": "すべてのルームメッセージのRRC未読",
     "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。",
