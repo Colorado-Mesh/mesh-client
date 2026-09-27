@@ -9,7 +9,7 @@
    * theme tokens below as inline styles on :root at boot, so a changed default must change in
    * DEFAULT_THEME_COLORS too or this file appears to do nothing.
    */
-  --color-app-bg: #09090b;
+  --color-app-bg: #111113; /* between zinc-950 and zinc-900 */
   --color-sidebar-active-bg: #27272a;
   --color-brand-green: #67e8b4; /* meshtastic-500 */
   --color-bright-green: var(--color-brand-green);

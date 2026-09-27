@@ -47,7 +47,7 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
 
 /** Default hex values — must match src/renderer/styles.css @theme block. */
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
-  appBg: '#09090b',
+  appBg: '#111113',
   sidebarActiveBg: '#27272a',
   brandGreen: '#67e8b4',
   brightGreen: '#67e8b4',

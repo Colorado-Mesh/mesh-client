@@ -48,15 +48,15 @@ Everything uses Tailwind utility classes. Theme tokens (below) are CSS variables
 
 Zinc is a plain neutral that works under every protocol theme (Slate's blue undertone clashed with the yellow Reticulum scale). Use `zinc-*` utilities or the tokens; `slate-*` and `gray-*` are rejected by source policy.
 
-| Token / class                                 | Default (zinc)        | Use                                                   |
-| --------------------------------------------- | --------------------- | ----------------------------------------------------- |
-| `bg-app-bg`                                   | `#09090b` (950)       | App background, section header, main viewport         |
-| `bg-deep-black`                               | `#18181b` (900)       | Rail, status bar, cards, panels, menus, launcher      |
-| `bg-sidebar-active-bg`                        | `#27272a` (800)       | Active nav item, selected row, hover fill             |
-| `border-zinc-800`                             | `#27272a`             | Hairlines between shell parts and inside cards        |
-| `bg-secondary-dark` / `border-secondary-dark` | `#3f3f46` (700)       | Secondary control fill, field borders, stronger lines |
-| `text-muted`                                  | `#a1a1aa` (400)       | Secondary text, placeholders, inactive icons          |
-| `text-zinc-300` / `text-zinc-200`             | `#d4d4d8` / `#e4e4e7` | Body text / primary text                              |
+| Token / class                                 | Default (zinc)         | Use                                                   |
+| --------------------------------------------- | ---------------------- | ----------------------------------------------------- |
+| `bg-app-bg`                                   | `#111113` (950 to 900) | App background, section header, main viewport         |
+| `bg-deep-black`                               | `#18181b` (900)        | Rail, status bar, cards, panels, menus, launcher      |
+| `bg-sidebar-active-bg`                        | `#27272a` (800)        | Active nav item, selected row, hover fill             |
+| `border-zinc-800`                             | `#27272a`              | Hairlines between shell parts and inside cards        |
+| `bg-secondary-dark` / `border-secondary-dark` | `#3f3f46` (700)        | Secondary control fill, field borders, stronger lines |
+| `text-muted`                                  | `#a1a1aa` (400)        | Secondary text, placeholders, inactive icons          |
+| `text-zinc-300` / `text-zinc-200`             | `#d4d4d8` / `#e4e4e7`  | Body text / primary text                              |
 
 `zinc-500` and darker are never text on dark surfaces (under 4.5:1).
 
