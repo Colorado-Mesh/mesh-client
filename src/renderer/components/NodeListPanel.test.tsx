@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
@@ -11,6 +11,7 @@ import {
   MESHTASTIC_CONTACT_GROUP_BUILTIN_RF_MQTT,
 } from '../lib/meshtasticContactGroupUtils';
 import { OFFLINE_MESHTASTIC_IDENTITY_ID } from '../lib/offlineProtocolIdentities';
+import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
 import type { MeshNode } from '../lib/types';
 import { addMessage, useMessageStore } from '../stores/messageStore';
 import NodeListPanel from './NodeListPanel';
@@ -1405,6 +1406,43 @@ describe('NodeListPanel status filter and detail selection', () => {
     await user.click(screen.getByRole('radio', { name: 'Offline 1' }));
     expect(screen.queryByText('Fresh')).not.toBeInTheDocument();
     expect(screen.getByText('Gone')).toBeInTheDocument();
+  });
+
+  it('moves a quiet node from Online to Stale as time passes, with no new node data', () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const now = Date.now();
+    const nodes = new Map<number, MeshNode>([
+      [
+        1,
+        makeNode({
+          node_id: 1,
+          long_name: 'Quiet',
+          // 30 s short of going stale.
+          last_heard: now - MESHTASTIC_CAPABILITIES.nodeStaleThresholdMs + 30_000,
+        }),
+      ],
+    ]);
+    render(
+      <NodeListPanel
+        nodes={nodes}
+        myNodeNum={0}
+        onNodeClick={vi.fn()}
+        locationFilter={defaultFilter}
+        onToggleFavorite={vi.fn()}
+        mode="meshtastic"
+        selectedNodeId={null}
+      />,
+    );
+    expect(screen.getByRole('radio', { name: 'Online 1' })).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(screen.getByRole('radio', { name: 'Online 0' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Stale 1' })).toBeInTheDocument();
   });
 
   it('opens a node from the keyboard through its name button', async () => {

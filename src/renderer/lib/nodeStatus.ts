@@ -104,13 +104,17 @@ export function mergeMeshcoreLastHeardFromAdvert(
   return clampLastHeardSec(Math.max(device, prev), nowSec);
 }
 
+/**
+ * `nowMs` defaults to the current time. Memoized callers pass their clock (`useNowMs`) so a node
+ * ages from online to stale on a quiet mesh without waiting for new node data.
+ */
 export function getNodeStatus(
   lastHeard: number,
   staleThresholdMs?: number,
   offlineThresholdMs?: number,
+  nowMs: number = Date.now(),
 ): NodeStatus {
   if (!lastHeard || !Number.isFinite(lastHeard)) return 'offline';
-  const nowMs = Date.now();
   const effectiveMs = effectiveLastHeardMs(lastHeard, nowMs);
   if (!effectiveMs) return 'offline';
   const diff = nowMs - effectiveMs;

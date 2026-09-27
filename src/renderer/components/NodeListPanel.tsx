@@ -34,6 +34,7 @@ import {
   useMeshcoreContactCapacity,
 } from '../hooks/useMeshcoreContactCapacity';
 import { useMessages } from '../hooks/useMessages';
+import { useNowMs } from '../hooks/useNowMs';
 import {
   buildChatDmPeerIndex,
   type ChatDmPeerDbRow,
@@ -658,13 +659,20 @@ export default function NodeListPanel({
     groupMemberIds,
   ]);
 
+  // Status depends on elapsed time, so the counts and the filter follow a once-a-minute clock
+  // as well as node data; otherwise a quiet node stays "online" until something else changes.
+  const statusClockMs = useNowMs();
+  const statusNowMs = statusClockMs > 0 ? statusClockMs : undefined;
+
   const statusCounts = useMemo(() => {
     const counts = { online: 0, stale: 0, offline: 0 };
     for (const n of baseNodeList) {
-      counts[getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs)] += 1;
+      counts[
+        getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs, statusNowMs)
+      ] += 1;
     }
     return counts;
-  }, [baseNodeList, nodeStaleThresholdMs, nodeOfflineThresholdMs]);
+  }, [baseNodeList, nodeStaleThresholdMs, nodeOfflineThresholdMs, statusNowMs]);
 
   const nodeList = useMemo(
     () =>
@@ -672,10 +680,14 @@ export default function NodeListPanel({
         ? baseNodeList
         : baseNodeList.filter(
             (n) =>
-              getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
-              statusFilter,
+              getNodeStatus(
+                n.last_heard,
+                nodeStaleThresholdMs,
+                nodeOfflineThresholdMs,
+                statusNowMs,
+              ) === statusFilter,
           ),
-    [baseNodeList, statusFilter, nodeStaleThresholdMs, nodeOfflineThresholdMs],
+    [baseNodeList, statusFilter, nodeStaleThresholdMs, nodeOfflineThresholdMs, statusNowMs],
   );
 
   const nodeTableScrollRef = useRef<HTMLDivElement>(null);
