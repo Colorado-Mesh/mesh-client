@@ -310,16 +310,17 @@ Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outsid
 
 Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-commit):
 
-| Rule                                 | Rejects                                                                 |
-| ------------------------------------ | ----------------------------------------------------------------------- |
-| `renderer-font-size-in-rem`          | `text-[Npx]` font sizes                                                 |
-| `renderer-ink-neutrals`              | `slate-*`, `zinc-*` and `gray-*` palette classes                        |
-| `renderer-elevation-levels`          | stock `shadow-xs` to `shadow-2xl` classes                               |
-| `renderer-bundled-font-weights`      | `font-bold`, `font-extrabold`, `font-black` (only Plex 400 to 600 ship) |
-| `renderer-no-low-contrast-gray-text` | `text-ink-500` (and slate, zinc, gray-500) text                         |
-| `renderer-no-uppercase-micro-labels` | `uppercase` with `tracking-wide*`                                       |
-| `renderer-icons-not-glyphs`          | a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ                          |
-| `axe-tests-hydrate-theme-colors`     | axe tests that skip `hydrateAxeThemeColors()`                           |
+| Rule                                     | Rejects                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------ |
+| `renderer-font-size-in-rem`              | `text-[Npx]` font sizes                                                  |
+| `renderer-ink-neutrals`                  | `slate-*`, `zinc-*` and `gray-*` palette classes                         |
+| `renderer-elevation-levels`              | stock `shadow-xs` to `shadow-2xl` classes                                |
+| `renderer-bundled-font-weights`          | `font-bold`, `font-extrabold`, `font-black` (only Plex 400 to 600 ship)  |
+| `renderer-no-muted-text-on-control-fill` | muted text on a resting `bg-secondary-dark` (under 4.5:1 in every theme) |
+| `renderer-no-low-contrast-gray-text`     | `text-ink-500` (and slate, zinc, gray-500) text                          |
+| `renderer-no-uppercase-micro-labels`     | `uppercase` with `tracking-wide*`                                        |
+| `renderer-icons-not-glyphs`              | a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ                           |
+| `axe-tests-hydrate-theme-colors`         | axe tests that skip `hydrateAxeThemeColors()`                            |
 
 ## Open items
 

@@ -783,7 +783,7 @@ export default function DiagnosticsPanel({
                     type="button"
                     onClick={() => handleTraceRoute(anomaly.nodeId)}
                     disabled={!isConnected}
-                    className="bg-secondary-dark text-2xs text-ink-400 hover:bg-ink-600 mt-1 rounded px-2 py-0.5 disabled:opacity-40"
+                    className="bg-secondary-dark text-2xs text-ink-300 hover:bg-ink-600 mt-1 rounded px-2 py-0.5 disabled:opacity-40"
                   >
                     {t('diagnosticsPanel.reTrace')}
                   </button>
@@ -821,7 +821,7 @@ export default function DiagnosticsPanel({
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, true);
                     }}
-                    className="bg-secondary-dark text-muted text-2xs hover:bg-ink-600 hover:text-ink-300 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
+                    className="bg-secondary-dark text-ink-300 text-2xs hover:bg-ink-600 hover:text-ink-200 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
                     title={t('diagnosticsPanel.excludeMqttData')}
                   >
                     {t('diagnosticsPanel.ignoreMqttButton')}
@@ -1287,7 +1287,7 @@ export default function DiagnosticsPanel({
                       className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-ink-600/50 border-l' : ''} ${
                         envMode === mode
                           ? 'bg-brand-green/20 text-brand-green border-brand-green/50'
-                          : 'bg-secondary-dark text-ink-400 hover:text-ink-200'
+                          : 'bg-secondary-dark text-ink-300 hover:text-ink-200'
                       }`}
                     >
                       {label}

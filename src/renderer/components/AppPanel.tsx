@@ -960,7 +960,7 @@ export default function AppPanel({
                   type="button"
                   onClick={clearStaticPosition}
                   aria-label={t('common.clear')}
-                  className="bg-secondary-dark text-ink-400 hover:bg-ink-600 rounded px-3 py-1.5 text-sm font-medium transition-colors"
+                  className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded px-3 py-1.5 text-sm font-medium transition-colors"
                 >
                   {t('common.clear')}
                 </button>
@@ -2046,7 +2046,7 @@ export default function AppPanel({
           onSurfaceSelect={handleThemeSurfaceSelect}
           onAccentSelect={handleThemeAccentSelect}
         />
-        <details className="group bg-secondary-dark border-ink-700 rounded-lg border">
+        <details className="group bg-deep-black border-secondary-dark rounded-lg border">
           <summary className="text-ink-200 hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
             <span>{t('appPanel.colorScheme')}</span>
             <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
@@ -2099,7 +2099,7 @@ export default function AppPanel({
                           }}
                           className={`focus:ring-brand-green/50 h-6 w-6 shrink-0 rounded border transition-transform hover:scale-110 focus:ring-2 focus:outline-none ${
                             selected
-                              ? 'ring-brand-green ring-offset-secondary-dark ring-2 ring-offset-1'
+                              ? 'ring-brand-green ring-offset-deep-black ring-2 ring-offset-1'
                               : 'border-ink-600'
                           }`}
                           style={{ backgroundColor: p.hex }}

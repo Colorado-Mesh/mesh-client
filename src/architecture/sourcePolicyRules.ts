@@ -90,6 +90,16 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
       "Style guide: elevation uses shadow-level-1 to shadow-level-4 (styles.css); Tailwind's stock shadows are tuned for light surfaces and vanish on the dark UI",
   },
   {
+    id: 'renderer-no-muted-text-on-control-fill',
+    include: ['src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.tsx'],
+    // Resting classes only: hover:/disabled: variants are preceded by a colon and do not match.
+    forbid:
+      /(?<![\w:-])bg-secondary-dark(?![\w/-])[^'"`\n]*(?<![\w:-])text-(?:muted|ink-400|ink-500)(?![\w/-])|(?<![\w:-])text-(?:muted|ink-400|ink-500)(?![\w/-])[^'"`\n]*(?<![\w:-])bg-secondary-dark(?![\w/-])/,
+    message:
+      'Muted text on bg-secondary-dark (the control fill) is under 4.5:1 in every theme; use text-ink-300 on the fill, or put muted text on a panel surface (bg-deep-black)',
+  },
+  {
     id: 'renderer-bundled-font-weights',
     include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
     exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],

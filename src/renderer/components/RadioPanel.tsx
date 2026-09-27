@@ -3737,7 +3737,7 @@ function ChannelSection({
                   setEditPskB64(pskToBase64(generateRandomPsk(editKeySize === 'aes128' ? 16 : 32)));
                 }}
                 disabled={disabled}
-                className="bg-secondary-dark text-muted border-ink-600 hover:text-ink-200 rounded border px-2 py-1.5 text-xs whitespace-nowrap disabled:opacity-50"
+                className="bg-secondary-dark text-ink-300 border-ink-600 hover:text-ink-200 rounded border px-2 py-1.5 text-xs whitespace-nowrap disabled:opacity-50"
                 title={t('radioPanel.generateRandomKey')}
               >
                 {t('radioPanel.regeneratePsk')}
