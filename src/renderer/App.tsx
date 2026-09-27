@@ -123,7 +123,6 @@ import type { RrcChatMessage } from '@/shared/rrc-types';
 import { touch } from '@/shared/touch';
 
 import { AppAboutSection } from './components/AppAboutSection';
-import BootSequence from './components/BootSequence';
 import ConfigureNodeSelector from './components/ConfigureNodeSelector';
 import ErrorBoundary from './components/ErrorBoundary';
 import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
@@ -546,13 +545,6 @@ function AppContent() {
   const meshcoreRuntime = runtimes.meshcore;
   const reticulumRuntime = runtimes.reticulum;
   const [activeTab, setActiveTab] = useState(0);
-  const [signalPulseKey, setSignalPulseKey] = useState<number | null>(null);
-  const handleSignalPulseComplete = useCallback(() => {
-    setSignalPulseKey(null);
-  }, []);
-  const handlePlaySignalPulse = useCallback(() => {
-    setSignalPulseKey((prev) => prev ?? Date.now());
-  }, []);
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [launcherPins, setLauncherPins] = useState(readLauncherPins);
   const platform = useMemo(() => window.electronAPI.getPlatform(), []);
@@ -3694,15 +3686,6 @@ function AppContent() {
         activeProtocol={protocol}
         onResult={handleFirmwareResult}
       />
-      {signalPulseKey !== null && (
-        <BootSequence
-          key={signalPulseKey}
-          phraseSeed={signalPulseKey}
-          protocol={protocol}
-          identityId={focusedIdentityId}
-          onComplete={handleSignalPulseComplete}
-        />
-      )}
       <div className="bg-app-bg flex h-screen w-screen min-w-0 flex-col overflow-hidden">
         <div className="flex min-h-0 min-w-0 flex-1">
           {!shellCompact && (
@@ -5111,7 +5094,7 @@ function AppContent() {
                                     reticulumRuntime.state.status !== 'disconnected'
                                   }
                                 />
-                                <AppAboutSection onPlayAnimation={handlePlaySignalPulse} />
+                                <AppAboutSection />
                               </div>
                             </Suspense>
                           </ErrorBoundary>

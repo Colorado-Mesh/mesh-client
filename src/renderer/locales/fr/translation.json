@@ -469,7 +469,6 @@
     "languageSelector": "Sélectionnez la langue",
     "applicationPanels": "Panneaux d'application",
     "applicationLog": "Journal des applications",
-    "playAnimation": "Jouer l'animation d'impulsion de signal de maillage",
     "protocolSwitcher": "Sélecteur de protocole",
     "switchToMeshtastic": "Passer à Meshtastic",
     "switchToMeshCore": "Passer à MeshCore",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "Batterie {{percent}} pour cent, en charge",
     "percent": "Batterie {{percent}} pour cent"
-  },
-  "bootSequence": {
-    "booting": "Démarrage de la pile de mailles...",
-    "meshtasticLora": "LoRa : {{model}}",
-    "meshtasticScanningChannelsCount": "Numérisation des canaux... {{count}}",
-    "meshtasticScanningChannels": "Analyse des canaux configurés...",
-    "databaseNodes_one": "Base de données : {{count}} nœud synchronisé",
-    "databaseNodes_other": "Base de données : {{count}} nœuds synchronisés",
-    "syncingDatabase": "Synchronisation de la base de données maillée...",
-    "interfaceReady": "{{iface}} interface prête",
-    "freqMhz": "Fréquence : {{mhz}} MHz",
-    "freqMhzBw": "Freq : {{mhz}} MHz | BW : {{bw}} kHz",
-    "configuringRadio": "Configuration des paramètres radio...",
-    "contacts_one": "Contacts : {{count}} contact chargé",
-    "contacts_other": "Contacts : {{count}} contacts chargés",
-    "loadingContacts": "Chargement de la base de données de contacts...",
-    "routes_one": "Routes : nœud {{count}} dans le maillage",
-    "routes_other": "Itinéraires : {{count}} nœuds dans le maillage",
-    "routesEstablished": "Itinéraires établis",
-    "meshActive": "Actif sur le réseau",
-    "transportBle": "BLE",
-    "transportSerial": "Port série",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "interface radio"
   },
   "channelUtilization": {
     "title": "Utilisation des canaux",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Non disponible dans ce mode"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Restez à l'antenne",
-      "helloOperator": "Bonjour, opérateur",
-      "thanksForMeshing": "Merci pour le maillage",
-      "builtForCommunities": "Conçu pour les communautés du monde entier",
-      "stayConnected": "Restez connecté",
-      "signalsOut": "Signaux sortis",
-      "gladYouAreHere": "Heureux que tu sois là",
-      "keepTheMeshAlive": "Gardez le maillage en vie"
-    }
   },
   "tabs": {
     "connection": "Connexion",

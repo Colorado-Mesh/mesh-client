@@ -469,7 +469,6 @@
     "languageSelector": "Seleccionar idioma",
     "applicationPanels": "Painéis de aplicação",
     "applicationLog": "Log de aplicativos",
-    "playAnimation": "Reproduzir animação de pulso de sinal de malha",
     "protocolSwitcher": "Comutador de protocolo",
     "switchToMeshtastic": "Mudar para Meshtastic",
     "switchToMeshCore": "Mudar para MeshCore",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "Bateria {{percent}} por cento, carregando",
     "percent": "Bateria {{percent}} por cento"
-  },
-  "bootSequence": {
-    "booting": "Iniciando pilha de malha...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Verificando canais... {{count}}",
-    "meshtasticScanningChannels": "Verificando canais configurados...",
-    "databaseNodes_one": "Banco de dados: {{count}} nó sincronizado",
-    "databaseNodes_other": "Banco de dados: {{count}} nós sincronizados",
-    "syncingDatabase": "Sincronizando banco de dados de malha...",
-    "interfaceReady": "Interface {{iface}} pronta",
-    "freqMhz": "Freq: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Configurando parâmetros de rádio...",
-    "contacts_one": "Contatos: {{count}} contato carregado",
-    "contacts_other": "Contatos: {{count}} contatos carregados",
-    "loadingContacts": "Carregando banco de dados de contatos...",
-    "routes_one": "Rotas: nó {{count}} na malha",
-    "routes_other": "Rotas: {{count}} nós na malha",
-    "routesEstablished": "Rotas estabelecidas",
-    "meshActive": "Ativo na Rede",
-    "transportBle": "BLE",
-    "transportSerial": "Porta serial",
-    "transportHttp": "HTTP",
-    "transportRadio": "Rádio",
-    "radioInterfaceFallback": "a interface de rádio"
   },
   "channelUtilization": {
     "title": "Utilização do canal",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Não disponível neste modo"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Fique no ar",
-      "helloOperator": "Olá, operador",
-      "thanksForMeshing": "Obrigado pela malha",
-      "builtForCommunities": "Construído para comunidades em todos os lugares",
-      "stayConnected": "Fique conectado",
-      "signalsOut": "Sinais de saída",
-      "gladYouAreHere": "Que bom que você está aqui",
-      "keepTheMeshAlive": "Mantenha a malha viva"
-    }
   },
   "tabs": {
     "connection": "Conexão",

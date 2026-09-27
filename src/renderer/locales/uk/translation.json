@@ -485,7 +485,6 @@
     "languageSelector": "Вибрати мову",
     "applicationPanels": "Панелі додатків",
     "applicationLog": "Журнал заявок",
-    "playAnimation": "Відтворити імпульсну анімацію сигналу сіті",
     "protocolSwitcher": "Перемикач протоколів",
     "switchToMeshtastic": "Перейти на Meshtastic",
     "switchToMeshCore": "Перемкнутися на MeshCore",
@@ -501,37 +500,6 @@
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
     "percent": "Акумулятор {{percent}} відсотків"
-  },
-  "bootSequence": {
-    "booting": "Завантаження стека сіті...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Сканування каналів... {{count}}",
-    "meshtasticScanningChannels": "Сканування налаштованих каналів...",
-    "databaseNodes_one": "База даних: вузол {{count}} синхронізовано",
-    "databaseNodes_other": "База даних: синхронізовано {{count}} вузлів",
-    "syncingDatabase": "Синхронізація бази даних сіті...",
-    "interfaceReady": "{{iface}} інтерфейс готовий",
-    "freqMhz": "Частота: {{mhz}} МГц",
-    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
-    "configuringRadio": "Налаштування радіопараметрів...",
-    "contacts_one": "Контакти: {{count}} контакт завантажено",
-    "contacts_other": "Контакти: завантажено {{count}} контакти",
-    "loadingContacts": "Завантаження бази даних контактів...",
-    "routes_one": "Маршрути: {{count}} вузол у сітці",
-    "routes_other": "Маршрути: {{count}} вузлів у сітці",
-    "routesEstablished": "Встановлені маршрути",
-    "meshActive": "Мережева мережа активна",
-    "transportBle": "BLE",
-    "transportSerial": "Серійний",
-    "transportHttp": "HTTP",
-    "transportRadio": "Радіо",
-    "radioInterfaceFallback": "радіоінтерфейс",
-    "contacts_few": "Контакти: завантажено {{count}} контакти",
-    "contacts_many": "Контакти: завантажено {{count}} контактів",
-    "databaseNodes_few": "База даних: синхронізовано {{count}} вузли",
-    "databaseNodes_many": "База даних: синхронізовано {{count}} вузлів",
-    "routes_few": "Маршрути: {{count}} вузли у сітці",
-    "routes_many": "Маршрути: {{count}} вузлів у сітці"
   },
   "channelUtilization": {
     "title": "Використання каналів",
@@ -5307,18 +5275,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в цьому режимі"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Залишайтеся на ефірі",
-      "helloOperator": "Привіт, оператор",
-      "thanksForMeshing": "Дякую за зчеплення",
-      "builtForCommunities": "Створено для громад у всьому світі",
-      "stayConnected": "Залишайтеся на зв'язку",
-      "signalsOut": "Сигнали виходять",
-      "gladYouAreHere": "Радий, що ти тут",
-      "keepTheMeshAlive": "Тримайте сітку живою"
-    }
   },
   "tabs": {
     "connection": "Підключення",

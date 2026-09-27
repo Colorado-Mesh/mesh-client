@@ -469,7 +469,6 @@
     "languageSelector": "Sprache auswählen",
     "applicationPanels": "Anwendungspanels",
     "applicationLog": "Anwendungsprotokoll",
-    "playAnimation": "Mesh-Signal-Impulsanimation abspielen",
     "protocolSwitcher": "Protokollumschalter",
     "switchToMeshtastic": "Zu Meshtastic wechseln",
     "switchToMeshCore": "Zu MeshCore wechseln",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "Akku {{percent}} Prozent, Laden",
     "percent": "Batterie {{percent}} Prozent"
-  },
-  "bootSequence": {
-    "booting": "Mesh-Stack wird gestartet...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Kanäle werden gescannt... {{count}}",
-    "meshtasticScanningChannels": "Konfigurierte Kanäle werden gescannt...",
-    "databaseNodes_one": "Datenbank: {{count}} Knoten synchronisiert",
-    "databaseNodes_other": "Datenbank: {{count}} Knoten synchronisiert",
-    "syncingDatabase": "Mesh-Datenbank wird synchronisiert...",
-    "interfaceReady": "{{iface}} schnittstellenfertig",
-    "freqMhz": "Frequenz: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Funkparameter werden konfiguriert...",
-    "contacts_one": "Kontakte: {{count}} Kontakt geladen",
-    "contacts_other": "Kontakte: {{count}} Kontakte geladen",
-    "loadingContacts": "Kontaktdatenbank wird geladen...",
-    "routes_one": "Routen: {{count}} Knoten im Netz",
-    "routes_other": "Routen: {{count}} Knoten im Netz",
-    "routesEstablished": "Etablierte Routen",
-    "meshActive": "Netzwerk aktiv",
-    "transportBle": "BLE",
-    "transportSerial": "Seriell",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "Funkschnittstelle"
   },
   "channelUtilization": {
     "title": "Kanalauslastung",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Nicht verfügbar in diesem Modus."
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Bleiben Sie auf Sendung",
-      "helloOperator": "Hallo, Betreiber",
-      "thanksForMeshing": "Danke fürs Vernetzen",
-      "builtForCommunities": "Gebaut für Gemeinden überall",
-      "stayConnected": "Bleiben Sie in Verbindung",
-      "signalsOut": "Signale raus",
-      "gladYouAreHere": "Schön, dass Sie hier sind",
-      "keepTheMeshAlive": "Halten Sie das Netz am Leben"
-    }
   },
   "tabs": {
     "connection": "verbindung",

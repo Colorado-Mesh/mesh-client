@@ -469,7 +469,6 @@
     "languageSelector": "Pilih bahasa",
     "applicationPanels": "Panel aplikasi",
     "applicationLog": "Catatan aplikasi",
-    "playAnimation": "Mainkan animasi pulsa sinyal mesh",
     "protocolSwitcher": "Pengalih protokol",
     "switchToMeshtastic": "Beralih ke Meshtastic",
     "switchToMeshCore": "Beralih ke MeshCore",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "Baterai {{percent}} persen, sedang diisi",
     "percent": "Baterai {{percent}} persen"
-  },
-  "bootSequence": {
-    "booting": "Mem-boot tumpukan mesh...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Memindai saluran... {{count}}",
-    "meshtasticScanningChannels": "Memindai saluran yang dikonfigurasi...",
-    "databaseNodes_one": "Database: {{count}} node disinkronkan",
-    "databaseNodes_other": "Database: {{count}} node disinkronkan",
-    "syncingDatabase": "Menyinkronkan basis data mesh...",
-    "interfaceReady": "{{iface}} antarmuka siap",
-    "freqMhz": "Frekuensi: {{mhz}} MHz",
-    "freqMhzBw": "Frekuensi: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Mengkonfigurasi parameter radio...",
-    "contacts_one": "Kontak: {{count}} kontak dimuat",
-    "contacts_other": "Kontak: {{count}} kontak dimuat",
-    "loadingContacts": "Memuat basis data kontak...",
-    "routes_one": "Rute: {{count}} simpul di mesh",
-    "routes_other": "Rute: {{count}} node dalam mesh",
-    "routesEstablished": "Rute ditetapkan",
-    "meshActive": "Jaringan mesh aktif",
-    "transportBle": "BLE",
-    "transportSerial": "Port seri",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "antarmuka radio"
   },
   "channelUtilization": {
     "title": "Pemanfaatan Saluran",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Tidak tersedia dalam mode ini"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Tetap mengudara",
-      "helloOperator": "Halo, operator",
-      "thanksForMeshing": "Terima kasih telah menyatukan",
-      "builtForCommunities": "Dibangun untuk komunitas di mana pun",
-      "stayConnected": "Tetap terhubung",
-      "signalsOut": "Sinyal keluar",
-      "gladYouAreHere": "Senang Anda ada di sini",
-      "keepTheMeshAlive": "Jaga agar jaring tetap hidup"
-    }
   },
   "tabs": {
     "connection": "Koneksi",

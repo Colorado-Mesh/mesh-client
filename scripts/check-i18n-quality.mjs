@@ -652,67 +652,6 @@ export function reticulumRequiresTranslation(flatKey, leafKey, enVal) {
 /** MT mistranslates UI Disable as parallax / unrelated accessibility jargon. */
 export const RETICULUM_DISABLE_PARALLAX_RE = /parallax/i;
 
-/** Boot sequence transport labels — short connection-type names, not serial numbers or broadcast stations. */
-export const BOOT_SEQUENCE_TRANSPORT_PREFIX = 'bootSequence.transport';
-export const BOOT_SEQUENCE_RADIO_FALLBACK_KEY = 'bootSequence.radioInterfaceFallback';
-
-export const BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS = {
-  fr: [
-    {
-      re: /num[ée]ro de s[ée]rie/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
-    },
-    { re: /\bmoyeux\b/i, hint: 'network hub wording, not wheel/axle "moyeux"' },
-    {
-      re: /^Série$/i,
-      hint: 'bootSequence.transportSerial should be "Port série" (serial port), not TV series',
-    },
-  ],
-  de: [
-    {
-      re: /^Serie$/i,
-      hint: 'bootSequence.transportSerial should be "Seriell" (serial port), not TV series',
-    },
-  ],
-  'pt-BR': [
-    {
-      re: /^Série$/i,
-      hint: 'bootSequence.transportSerial should be serial port (e.g. "Porta serial"), not TV series',
-    },
-  ],
-  es: [
-    {
-      re: /n[úu]mero de serie/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
-    },
-    {
-      re: /interfaz a[ée]rea/i,
-      hint: 'bootSequence.radioInterfaceFallback is RF/radio interface, not aerial interface',
-    },
-  ],
-  ru: [
-    {
-      re: /заводск/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not factory default',
-    },
-  ],
-  zh: [
-    { re: /广播电台/, hint: 'bootSequence.transportRadio is RF transport, not broadcast station' },
-  ],
-  it: [
-    {
-      re: /Data Radio interface/i,
-      hint: 'bootSequence.radioInterfaceFallback must not mix English and Italian',
-    },
-  ],
-  nl: [
-    {
-      re: /ether-interface/i,
-      hint: 'bootSequence.radioInterfaceFallback is RF interface, not Ethernet',
-    },
-  ],
-};
-
 export const RETICULUM_DEFAULT_HUB_KEYS = [
   'connectionPanel.reticulumInterfaces.defaultHubsLabel',
   'connectionPanel.reticulumInterfaces.addDefaultHubs',
@@ -3899,31 +3838,6 @@ function checkMeshcorePathHashIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkBootSequenceTransportIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
-  const issues = [];
-  if (flatKey.startsWith(BOOT_SEQUENCE_TRANSPORT_PREFIX)) {
-    issues.push(...protectedProtocolTokenIssues(enVal, val));
-    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
-      if (re.test(val)) {
-        issues.push(hint);
-      }
-    }
-  }
-  if (flatKey === BOOT_SEQUENCE_RADIO_FALLBACK_KEY) {
-    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
-      if (re.test(val)) {
-        issues.push(hint);
-      }
-    }
-  }
-  return issues;
-}
-
-/**
- * @param {LocaleQualityCtx} ctx
- * @returns {string[]}
- */
 function checkReticulumDefaultHubKeyIssues(ctx) {
   const { flatKey, val } = ctx;
   const issues = [];
@@ -3969,9 +3883,6 @@ function checkRepeatersCliIssues(ctx) {
         issues.push(hint);
       }
     }
-  }
-  if (flatKey === 'bootSequence.transportBle' && locale === 'tr' && /BLE\s*:/i.test(val)) {
-    issues.push('bootSequence.transportBle must not include trailing colon');
   }
   return issues;
 }
@@ -4615,7 +4526,6 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,
   checkReticulumRuntimeAndRoutingPortIssues,
-  checkBootSequenceTransportIssues,
   checkReticulumDefaultHubKeyIssues,
   checkRepeatersCliIssues,
   checkReticulumMapIssues,

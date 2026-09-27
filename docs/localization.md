@@ -57,7 +57,6 @@ CI does **not** run `check:i18n` as a standalone workflow step. Quality rules ru
 
 `scripts/check-i18n-quality.mjs` enforces more than missing keys. Notable rule families:
 
-- **Boot sequence** (`bootSequence.transport*`, `bootSequence.radioInterfaceFallback`) — short transport labels must not be mistranslated as serial numbers, TV series, broadcast stations, or mixed-language RF interface text.
 - **Reticulum hub/stack** (`connectionPanel.reticulumInterfaces.*`, `reticulumStack*`, `reticulumPeers.*`) — “hub”, “stack”, “peer”, and “host” must not become unrelated words (pressure, colleague, chimney stack, etc.).
 - **TX/RX Texas** — radio `TX`/`RX` must not become the US state (Teksas, Техас, 德克萨斯) on any key.
 - **URI / token spacing** — `tcp://`, `Wi-Fi`, and `I2P` must stay contiguous (no CAT `tcp ://` / `Wi - Fi` / `I 2 P`).

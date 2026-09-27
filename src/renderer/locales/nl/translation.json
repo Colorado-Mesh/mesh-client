@@ -469,7 +469,6 @@
     "languageSelector": "Selecteer taal",
     "applicationPanels": "Applicatiepanelen",
     "applicationLog": "Applicatielogboek",
-    "playAnimation": "Speel mesh-signaalpulsanimatie",
     "protocolSwitcher": "Protocolwisselaar",
     "switchToMeshtastic": "Schakel over naar Meshtastic",
     "switchToMeshCore": "Schakel over naar MeshCore",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "Batterij {{percent}} procent, bezig met opladen",
     "percent": "Batterij {{percent}} procent"
-  },
-  "bootSequence": {
-    "booting": "Opstarten mesh stack...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Kanalen scannen... {{count}}",
-    "meshtasticScanningChannels": "Geconfigureerde kanalen scannen...",
-    "databaseNodes_one": "Database: {{count}} knooppunt gesynchroniseerd",
-    "databaseNodes_other": "Database: {{count}} knooppunten gesynchroniseerd",
-    "syncingDatabase": "Netwerkdatabase wordt gesynchroniseerd...",
-    "interfaceReady": "{{iface}} interface gereed",
-    "freqMhz": "Freq: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Radioparameters configureren...",
-    "contacts_one": "Contacten: {{count}} contact geladen",
-    "contacts_other": "Contacten: {{count}} contacten geladen",
-    "loadingContacts": "Contactendatabase wordt geladen...",
-    "routes_one": "Routes: {{count}} knooppunt in mesh",
-    "routes_other": "Routes: {{count}} knooppunten in mesh",
-    "routesEstablished": "Routes vastgesteld",
-    "meshActive": "Mesh netwerk actief",
-    "transportBle": "BLE",
-    "transportSerial": "Serieel",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "radio-interface"
   },
   "channelUtilization": {
     "title": "Kanaalgebruik",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Niet beschikbaar in deze modus"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Blijf in de lucht",
-      "helloOperator": "Hallo, exploitant",
-      "thanksForMeshing": "Bedankt voor het meshen",
-      "builtForCommunities": "Gebouwd voor gemeenschappen overal ter wereld",
-      "stayConnected": "Blijf verbonden",
-      "signalsOut": "Signalen uit",
-      "gladYouAreHere": "Fijn dat je er bent",
-      "keepTheMeshAlive": "Houd het mesh levend"
-    }
   },
   "tabs": {
     "connection": "Verbinding",

@@ -469,7 +469,6 @@
     "languageSelector": "选择语言",
     "applicationPanels": "应用面板",
     "applicationLog": "应用日志",
-    "playAnimation": "播放网格信号脉冲动画",
     "protocolSwitcher": "协议切换器",
     "switchToMeshtastic": "切换到Meshtastic",
     "switchToMeshCore": "切换到MeshCore",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
     "percent": "电池{{percent}}百分比"
-  },
-  "bootSequence": {
-    "booting": "正在引导网格堆栈...",
-    "meshtasticLora": "LoRa ： {{model}}",
-    "meshtasticScanningChannelsCount": "正在扫描通道…… {{count}}",
-    "meshtasticScanningChannels": "正在扫描已配置的频道...",
-    "databaseNodes_one": "数据库： {{count}}节点已同步",
-    "databaseNodes_other": "数据库： {{count}}节点已同步",
-    "syncingDatabase": "正在同步网格数据库...",
-    "interfaceReady": "{{iface}}接口就绪",
-    "freqMhz": "频率： {{mhz}} MHz",
-    "freqMhzBw": "频率： {{mhz}} MHz |黑白： {{bw}} kHz",
-    "configuringRadio": "正在配置无线电参数...",
-    "contacts_one": "联系人： {{count}}联系人已加载",
-    "contacts_other": "联系人： {{count}}个联系人已加载",
-    "loadingContacts": "正在加载联系人数据库...",
-    "routes_one": "路由：网格中的{{count}}节点",
-    "routes_other": "路由：网格中的{{count}}节点",
-    "routesEstablished": "已建立路线",
-    "meshActive": "网络启用",
-    "transportBle": "BLE",
-    "transportSerial": "Serial 串行",
-    "transportHttp": "HTTP",
-    "transportRadio": "射频",
-    "radioInterfaceFallback": "无线电接口"
   },
   "channelUtilization": {
     "title": "渠道利用率",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "留在空中",
-      "helloOperator": "您好，接线员",
-      "thanksForMeshing": "感谢您的网格化",
-      "builtForCommunities": "专为各地社区打造",
-      "stayConnected": "保持联系",
-      "signalsOut": "发出信号",
-      "gladYouAreHere": "很高兴你在这里",
-      "keepTheMeshAlive": "保持网格存活"
-    }
   },
   "tabs": {
     "connection": "与公司的关系",

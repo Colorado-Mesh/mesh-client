@@ -469,7 +469,6 @@
     "languageSelector": "Dil seçin",
     "applicationPanels": "Uygulama panelleri",
     "applicationLog": "Uygulama günlüğü",
-    "playAnimation": "Örgü sinyali darbe animasyonunu oynat",
     "protocolSwitcher": "Protokol değiştirici",
     "switchToMeshtastic": "Meshtastic'e geç",
     "switchToMeshCore": "MeshCore'a geç",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "Pil yüzde {{percent}}, şarj oluyor",
     "percent": "Pil yüzde {{percent}}"
-  },
-  "bootSequence": {
-    "booting": "Örgü yığını önyükleniyor...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Kanallar taranıyor... {{count}}",
-    "meshtasticScanningChannels": "Yapılandırılmış kanallar taranıyor...",
-    "databaseNodes_one": "Veritabanı: {{count}} düğüm senkronize edildi",
-    "databaseNodes_other": "Veritabanı: {{count}} düğüm senkronize edildi",
-    "syncingDatabase": "Mesh veritabanı senkronize ediliyor...",
-    "interfaceReady": "{{iface}} arayüz hazır",
-    "freqMhz": "Frekans: {{mhz}} MHz",
-    "freqMhzBw": "Frekans: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Radyo parametreleri yapılandırılıyor...",
-    "contacts_one": "İletişim: {{count}} kişi yüklendi",
-    "contacts_other": "Kişiler: {{count}} kişi yüklendi",
-    "loadingContacts": "Kişi veritabanı yükleniyor...",
-    "routes_one": "Güzergahlar: {{count}} mesh düğüm",
-    "routes_other": "Rotalar: {{count}} mesh içindeki düğümler",
-    "routesEstablished": "Belirlenen rotalar",
-    "meshActive": "Mesh ağı etkin",
-    "transportBle": "BLE",
-    "transportSerial": "Seri",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radyo",
-    "radioInterfaceFallback": "radyo arayüzü"
   },
   "channelUtilization": {
     "title": "Kanal Kullanımı",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Bu modda kullanılamaz"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Yayında kalın",
-      "helloOperator": "Merhaba operatör",
-      "thanksForMeshing": "Örgü için teşekkürler",
-      "builtForCommunities": "Her yerdeki topluluklar için tasarlandı",
-      "stayConnected": "Bağlantıda kalın",
-      "signalsOut": "Sinyal çıkışı",
-      "gladYouAreHere": "burada olmana sevindim",
-      "keepTheMeshAlive": "Ağı canlı tutun"
-    }
   },
   "tabs": {
     "connection": "Bağlantı",

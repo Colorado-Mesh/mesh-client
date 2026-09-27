@@ -485,7 +485,6 @@
     "languageSelector": "Выберите язык",
     "applicationPanels": "Панели приложений",
     "applicationLog": "Журнал приложений",
-    "playAnimation": "Воспроизвести анимацию импульсного сигнала сетки",
     "protocolSwitcher": "Переключатель протоколов",
     "switchToMeshtastic": "Переключиться на Meshtastic",
     "switchToMeshCore": "Переключиться на MeshCore",
@@ -501,37 +500,6 @@
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
     "percent": "Батарея {{percent}} процентов"
-  },
-  "bootSequence": {
-    "booting": "Загрузка стека сеток...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Сканирование каналов... {{count}}",
-    "meshtasticScanningChannels": "Сканирование настроенных каналов...",
-    "databaseNodes_one": "База данных: синхронизирован узел {{count}}",
-    "databaseNodes_other": "База данных: синхронизировано {{count}} узлов",
-    "syncingDatabase": "Синхронизация базы данных сети...",
-    "interfaceReady": "{{iface}} интерфейс готов",
-    "freqMhz": "Частота: {{mhz}} МГц",
-    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
-    "configuringRadio": "Настройка радиопараметров...",
-    "contacts_one": "Контакты: {{count}} контакт загружен",
-    "contacts_other": "Контакты: {{count}} контакты загружены",
-    "loadingContacts": "Загрузка базы данных контактов...",
-    "routes_one": "Маршруты: {{count}} узел в сетке",
-    "routes_other": "Маршруты: {{count}} узлов в сетке",
-    "routesEstablished": "Установленные маршруты",
-    "meshActive": "Сеть активна",
-    "transportBle": "BLE",
-    "transportSerial": "Serial",
-    "transportHttp": "HTTP",
-    "transportRadio": "Радиосвязь",
-    "radioInterfaceFallback": "радиоинтерфейс",
-    "contacts_few": "Контакты: загружено {{count}} контакта",
-    "contacts_many": "Контакты: загружено {{count}} контактов",
-    "databaseNodes_few": "База данных: синхронизировано {{count}} узла",
-    "databaseNodes_many": "База данных: синхронизировано {{count}} узлов",
-    "routes_few": "Маршруты: {{count}} узла в сетке",
-    "routes_many": "Маршруты: {{count}} узлов в сетке"
   },
   "channelUtilization": {
     "title": "Использование канала",
@@ -5307,18 +5275,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Недоступно в этом режиме"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Оставайтесь в эфире",
-      "helloOperator": "Здравствуйте, оператор",
-      "thanksForMeshing": "Спасибо за сетку",
-      "builtForCommunities": "Создан для сообществ во всем мире",
-      "stayConnected": "Оставайтесь на связи",
-      "signalsOut": "Выходные сигналы",
-      "gladYouAreHere": "Рад, что ты здесь",
-      "keepTheMeshAlive": "Сохраняйте сетку живой"
-    }
   },
   "tabs": {
     "connection": "Связь",

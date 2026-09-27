@@ -470,7 +470,6 @@
     "languageSelectorHint": "Click to select language",
     "applicationPanels": "Application panels",
     "applicationLog": "Application log",
-    "playAnimation": "Play mesh signal pulse animation",
     "protocolSwitcher": "Protocol switcher",
     "switchToMeshtastic": "Switch to Meshtastic",
     "switchToMeshCore": "Switch to MeshCore",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "Battery {{percent}} percent, charging",
     "percent": "Battery {{percent}} percent"
-  },
-  "bootSequence": {
-    "booting": "Booting mesh stack...",
-    "transportBle": "BLE",
-    "transportSerial": "Serial",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "radio interface",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Scanning channels... {{count}}",
-    "meshtasticScanningChannels": "Scanning configured channels...",
-    "databaseNodes_one": "Database: {{count}} node synced",
-    "databaseNodes_other": "Database: {{count}} nodes synced",
-    "syncingDatabase": "Syncing mesh database...",
-    "interfaceReady": "{{iface}} interface ready",
-    "freqMhz": "Freq: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Configuring radio parameters...",
-    "contacts_one": "Contacts: {{count}} contact loaded",
-    "contacts_other": "Contacts: {{count}} contacts loaded",
-    "loadingContacts": "Loading contact database...",
-    "routes_one": "Routes: {{count}} node in mesh",
-    "routes_other": "Routes: {{count}} nodes in mesh",
-    "routesEstablished": "Routes established",
-    "meshActive": "Mesh network active"
   },
   "channelUtilization": {
     "title": "Channel Utilization",
@@ -5907,18 +5881,6 @@
     "rssiValue": "{{value}} dBm",
     "noData": "—",
     "aria": "Signal meter: RSSI {{rssi}}, SNR {{snr}}, level {{level}}"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Stay on the air",
-      "helloOperator": "Hello, operator",
-      "thanksForMeshing": "Thanks for meshing",
-      "builtForCommunities": "Built for communities everywhere",
-      "stayConnected": "Stay connected",
-      "signalsOut": "Signals out",
-      "gladYouAreHere": "Glad you are here",
-      "keepTheMeshAlive": "Keep the mesh alive"
-    }
   },
   "tabs": {
     "connection": "Connection",

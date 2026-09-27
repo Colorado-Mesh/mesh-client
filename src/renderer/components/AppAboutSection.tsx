@@ -20,16 +20,11 @@ const COMMUNITY_LINKS = [
   },
 ] as const;
 
-interface Props {
-  /** Replays the mesh signal pulse (BootSequence) animation. */
-  onPlayAnimation: () => void;
-}
-
 /**
  * App panel "About" block. Holds the community tagline and links that used to live in the footer,
  * and the brand mark that used to live in the header (the v6 shell has neither).
  */
-export function AppAboutSection({ onPlayAnimation }: Props) {
+export function AppAboutSection() {
   const { t } = useTranslation();
   return (
     <section aria-labelledby="app-about-heading" className="mt-8 space-y-3">
@@ -37,15 +32,9 @@ export function AppAboutSection({ onPlayAnimation }: Props) {
         {t('appPanel.aboutSection')}
       </h3>
       <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={onPlayAnimation}
-          aria-label={t('aria.playAnimation')}
-          title={t('aria.playAnimation')}
-          className="hover:bg-sidebar-active-bg border-ink-800 flex shrink-0 items-center justify-center rounded-lg border p-2 transition-colors"
-        >
+        <div className="border-ink-800 flex shrink-0 items-center justify-center rounded-lg border p-2">
           <ColoradoMeshMark />
-        </button>
+        </div>
         <div className="min-w-0 space-y-1 text-sm">
           <p className="text-ink-200 font-semibold">{t('app.brandName')}</p>
           <p className="text-muted">

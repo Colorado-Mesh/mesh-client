@@ -469,7 +469,6 @@
     "languageSelector": "언어 선택",
     "applicationPanels": "응용 패널",
     "applicationLog": "애플리케이션 로그",
-    "playAnimation": "메시 신호 펄스 애니메이션 재생",
     "protocolSwitcher": "프로토콜 전환기",
     "switchToMeshtastic": "Meshtastic으로 전환",
     "switchToMeshCore": "MeshCore로 전환",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
     "percent": "배터리 {{percent}}퍼센트"
-  },
-  "bootSequence": {
-    "booting": "메시 스택 부팅 중...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "채널 스캔 중... {{count}}",
-    "meshtasticScanningChannels": "구성된 채널 스캔 중...",
-    "databaseNodes_one": "데이터베이스: {{count}} 노드 동기화됨",
-    "databaseNodes_other": "데이터베이스: {{count}} 노드 동기화됨",
-    "syncingDatabase": "메시 데이터베이스 동기화 중...",
-    "interfaceReady": "{{iface}} 인터페이스 준비 완료",
-    "freqMhz": "주파수: {{mhz}} MHz",
-    "freqMhzBw": "주파수: {{mhz}} MHz | 대역폭: {{bw}} kHz",
-    "configuringRadio": "라디오 매개 변수 구성 중...",
-    "contacts_one": "연락처: {{count}} 연락처 로드됨",
-    "contacts_other": "연락처: {{count}} 개의 연락처가 로드됨",
-    "loadingContacts": "연락처 데이터베이스 로드 중...",
-    "routes_one": "경로: {{count}} 메시의 노드",
-    "routes_other": "경로: 메시의 {{count}} 노드",
-    "routesEstablished": "설정된 노선",
-    "meshActive": "네트워크 활성",
-    "transportBle": "BLE",
-    "transportSerial": "시리얼",
-    "transportHttp": "HTTP",
-    "transportRadio": "무전",
-    "radioInterfaceFallback": "라디오 인터페이스"
   },
   "channelUtilization": {
     "title": "채널 사용률",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "방송을 계속하세요",
-      "helloOperator": "안녕하세요, 운영자님",
-      "thanksForMeshing": "메쉬해주셔서 감사합니다",
-      "builtForCommunities": "모든 지역의 커뮤니티를 위해 구축됨",
-      "stayConnected": "연결 상태 유지",
-      "signalsOut": "신호 출력",
-      "gladYouAreHere": "당신이 여기 있어서 다행이에요",
-      "keepTheMeshAlive": "메시를 살아있게 유지하세요"
-    }
   },
   "tabs": {
     "connection": "연결",

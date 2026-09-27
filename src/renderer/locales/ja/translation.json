@@ -469,7 +469,6 @@
     "languageSelector": "言語を選択してください",
     "applicationPanels": "アプリケーションパネル",
     "applicationLog": "アプリケーションログ",
-    "playAnimation": "メッシュ信号パルスのアニメーションを再生する",
     "protocolSwitcher": "プロトコルスイッチャー",
     "switchToMeshtastic": "Meshtasticに切り替える",
     "switchToMeshCore": "MeshCore に切り替える",
@@ -485,31 +484,6 @@
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
     "percent": "バッテリー {{percent}} パーセント"
-  },
-  "bootSequence": {
-    "booting": "メッシュスタックを起動しています...",
-    "meshtasticLora": "LoRa ： {{model}}",
-    "meshtasticScanningChannelsCount": "チャンネルをスキャンしています... {{count}}",
-    "meshtasticScanningChannels": "設定されたチャンネルをスキャンしています...",
-    "databaseNodes_one": "データベース： {{count}}ノードが同期されました",
-    "databaseNodes_other": "データベース： {{count}}ノードが同期されました",
-    "syncingDatabase": "メッシュデータベースを同期しています...",
-    "interfaceReady": "{{iface}}インターフェース準備完了",
-    "freqMhz": "周波数： {{mhz}} MHz",
-    "freqMhzBw": "周波数： {{mhz}} MHz | BW ： {{bw}} kHz",
-    "configuringRadio": "無線パラメータを設定しています...",
-    "contacts_one": "連絡先： {{count}}連絡先が読み込まれました",
-    "contacts_other": "Contacts: {{count}}件の連絡先が読み込まれました",
-    "loadingContacts": "連絡先データベースを読み込んでいます...",
-    "routes_one": "ルート：メッシュ内の{{count}}ノード",
-    "routes_other": "ルート：メッシュ内の{{count}}ノード",
-    "routesEstablished": "ルートが確立されました",
-    "meshActive": "サイトネットワークで有効",
-    "transportBle": "BLE",
-    "transportSerial": "シリアル",
-    "transportHttp": "HTTP",
-    "transportRadio": "通信機",
-    "radioInterfaceFallback": "無線インターフェース"
   },
   "channelUtilization": {
     "title": "チャネル使用率",
@@ -5233,18 +5207,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "放送を続けてください",
-      "helloOperator": "こんにちは、オペレーター",
-      "thanksForMeshing": "噛み合わせてくれてありがとう",
-      "builtForCommunities": "あらゆる場所のコミュニティ向けに構築",
-      "stayConnected": "つながりを保つ",
-      "signalsOut": "信号を出す",
-      "gladYouAreHere": "ここに来てくれて嬉しいです",
-      "keepTheMeshAlive": "メッシュを生きたままにしておく"
-    }
   },
   "tabs": {
     "connection": "繋がり",

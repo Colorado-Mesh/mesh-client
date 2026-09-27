@@ -477,7 +477,6 @@
     "languageSelector": "Vyberte jazyk",
     "applicationPanels": "Aplikační panely",
     "applicationLog": "Protokol aplikace",
-    "playAnimation": "Přehrajte animaci pulzního signálu sítě",
     "protocolSwitcher": "Přepínač protokolů",
     "switchToMeshtastic": "Přepněte na Meshtastic",
     "switchToMeshCore": "Přepněte na MeshCore",
@@ -493,34 +492,6 @@
   "battery": {
     "percentCharging": "Baterie {{percent}} procent, nabíjí se",
     "percent": "Baterie {{percent}} procent"
-  },
-  "bootSequence": {
-    "booting": "Zaváděcí síťový zásobník...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Skenování kanálů... {{count}}",
-    "meshtasticScanningChannels": "Skenování nakonfigurovaných kanálů...",
-    "databaseNodes_one": "Databáze: {{count}} uzel synchronizován",
-    "databaseNodes_other": "Databáze: {{count}} uzly synchronizovány",
-    "syncingDatabase": "Synchronizuje se síťová databáze...",
-    "interfaceReady": "{{iface}} rozhraní připraveno",
-    "freqMhz": "Frekvence: {{mhz}} MHz",
-    "freqMhzBw": "Frekvence: {{mhz}} MHz | ČB: {{bw}} kHz",
-    "configuringRadio": "Konfigurace parametrů rádia...",
-    "contacts_one": "Kontakty: {{count}} kontakt načten",
-    "contacts_other": "Kontakty: {{count}} načteny kontakty",
-    "loadingContacts": "Načítání databáze kontaktů...",
-    "routes_one": "Trasy: Uzel {{count}} v síti",
-    "routes_other": "Trasy: {{count}} uzly v síti",
-    "routesEstablished": "Trasy vytvořeny",
-    "meshActive": "Síť Mesh aktivní",
-    "transportBle": "BLE",
-    "transportSerial": "Sériový",
-    "transportHttp": "HTTP",
-    "transportRadio": "Rádio",
-    "radioInterfaceFallback": "rádiové rozhraní",
-    "contacts_few": "Kontakty: {{count}} kontakty načteny",
-    "databaseNodes_few": "Databáze: {{count}} uzly synchronizovány",
-    "routes_few": "Trasy: {{count}} uzly v síti"
   },
   "channelUtilization": {
     "title": "Využití kanálu",
@@ -5271,18 +5242,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Není k dispozici v tomto režimu"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Zůstaňte ve vzduchu",
-      "helloOperator": "Dobrý den, operátore",
-      "thanksForMeshing": "Díky za spojení",
-      "builtForCommunities": "Vytvořeno pro komunity kdekoli",
-      "stayConnected": "Zůstaňte ve spojení",
-      "signalsOut": "Signály ven",
-      "gladYouAreHere": "Jsem rád, že jsi tady",
-      "keepTheMeshAlive": "Udržujte síť naživu"
-    }
   },
   "tabs": {
     "connection": "Spojení",

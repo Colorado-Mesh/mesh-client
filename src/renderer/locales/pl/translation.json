@@ -485,7 +485,6 @@
     "languageSelector": "Wybierz język",
     "applicationPanels": "Panele aplikacyjne",
     "applicationLog": "Dziennik aplikacji",
-    "playAnimation": "Odtwórz animację impulsu sygnału siatki",
     "protocolSwitcher": "Przełącznik protokołu",
     "switchToMeshtastic": "Przełącz na Meshtastic",
     "switchToMeshCore": "Przełącz na MeshCore",
@@ -501,37 +500,6 @@
   "battery": {
     "percentCharging": "Bateria {{percent}} procent, ładowanie",
     "percent": "Bateria {{percent}} procent"
-  },
-  "bootSequence": {
-    "booting": "Uruchamianie stosu siatek...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Skanowanie kanałów... {{count}}",
-    "meshtasticScanningChannels": "Skanowanie skonfigurowanych kanałów...",
-    "databaseNodes_one": "Baza danych: zsynchronizowano węzeł {{count}}",
-    "databaseNodes_other": "Baza danych: węzły {{count}} zsynchronizowane",
-    "syncingDatabase": "Synchronizowanie bazy danych siatki...",
-    "interfaceReady": "Interfejs {{iface}} gotowy",
-    "freqMhz": "Częstotliwość: {{mhz}} MHz",
-    "freqMhzBw": "Częstotliwość: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Konfigurowanie parametrów radiowych...",
-    "contacts_one": "Kontakty: {{count}} kontakt załadowany",
-    "contacts_other": "Wczytano kontakty: {{count}}",
-    "loadingContacts": "Trwa ładowanie bazy danych kontaktów...",
-    "routes_one": "Trasy: węzeł {{count}} w siatce",
-    "routes_other": "Trasy: węzły {{count}} w siatce",
-    "routesEstablished": "Ustalone trasy",
-    "meshActive": "Aktywna sieć siatkowa",
-    "transportBle": "BLE",
-    "transportSerial": "Seryjny",
-    "transportHttp": "HTTP",
-    "transportRadio": "Radio",
-    "radioInterfaceFallback": "interfejs radiowy",
-    "contacts_few": "Kontakty: załadowano {{count}} kontakty",
-    "contacts_many": "Kontakty: załadowano {{count}} kontaktów",
-    "databaseNodes_few": "Baza danych: zsynchronizowano {{count}} węzły",
-    "databaseNodes_many": "Baza danych: zsynchronizowano {{count}} węzłów",
-    "routes_few": "Trasy: {{count}} węzły w siatce",
-    "routes_many": "Trasy: {{count}} węzłów w siatce"
   },
   "channelUtilization": {
     "title": "Wykorzystanie kanału",
@@ -5307,18 +5275,6 @@
   },
   "sidebar": {
     "disabledTabTooltip": "Niedostępne w tym trybie"
-  },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Pozostań na antenie",
-      "helloOperator": "Witaj, operatorze",
-      "thanksForMeshing": "Dziękuję za połączenie",
-      "builtForCommunities": "Stworzony dla społeczności na całym świecie",
-      "stayConnected": "Pozostań w kontakcie",
-      "signalsOut": "Sygnały wyszły",
-      "gladYouAreHere": "Cieszę się, że tu jesteś",
-      "keepTheMeshAlive": "Utrzymuj siatkę przy życiu"
-    }
   },
   "tabs": {
     "connection": "Więzi",

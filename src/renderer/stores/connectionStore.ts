@@ -64,7 +64,7 @@ const defaultState: ConnectionStoreState = {
  * Avoid bare `useConnectionStore()` or `useConnectionStore((s) => s)`; those subscribe to the
  * whole store and re-render whenever any identity's connection record changes.
  *
- * `getState()` / `setState()` outside React (tests, BootSequence, drivers) is fine.
+ * `getState()` / `setState()` outside React (tests, drivers) is fine.
  */
 export const useConnectionStore = create<ConnectionStoreState>()(() => defaultState);
 
