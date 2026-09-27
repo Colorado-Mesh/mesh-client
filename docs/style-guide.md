@@ -282,7 +282,7 @@ Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outsid
 
 ## Chat
 
-- Bubbles: incoming `--color-chat-incoming-*` (ink-800 at 38%), own messages `--color-chat-outgoing-*` (accent 700 at 22% with a 300 border at 25%), max width `min(94%, 40rem)` on phones and `min(80%, 40rem)` wider.
+- Bubbles: incoming `--color-chat-incoming-*` (ink-800 at 38%), own messages `--color-chat-outgoing-*` (accent 700 at 22% with a 300 border at 25%), max width 94% of the row on phones and 80% wider, with no rem cap so wide windows keep long messages on one line.
 - Sender initials (`lib/senderInitials.ts`) or the Reticulum face in a gutter on the first message of a run; the sender line carries name, time and hop or RF metadata.
 - The composer is one field with the send button inside the row; the hint about Enter and Shift+Enter hides on touch.
 - The channel and DM switchers are searchable and built for thousands of entries.

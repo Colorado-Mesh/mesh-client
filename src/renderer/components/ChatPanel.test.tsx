@@ -5705,6 +5705,29 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     expect(own?.querySelector('[data-chat-avatar]')).toBeNull();
   });
 
+  it('lets incoming and own bubbles use 80% of a wide window, with no rem cap', async () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, sender_name: 'Ridge Fox', payload: 'in', timestamp: now }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'out', timestamp: now + 1 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('out');
+    for (const text of ['in', 'out']) {
+      const row = Array.from(
+        screen.getByText(text).closest('[data-chat-message-key]')?.querySelectorAll('div') ?? [],
+      ).find((el) => el.classList.contains('group/msg'));
+      expect(row?.classList.contains('sm:max-w-[80%]')).toBe(true);
+      expect(row?.className).not.toMatch(/rem\)/);
+    }
+  });
+
   it('has no axe violations with incoming, own and reply bubbles', async () => {
     const now = Date.now();
     const { container } = render(

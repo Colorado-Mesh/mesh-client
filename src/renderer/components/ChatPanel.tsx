@@ -3264,7 +3264,7 @@ function ChatPanel({
                       >
                         {/* Bubble row */}
                         <div
-                          className={`group/msg flex max-w-[min(94%,40rem)] items-end gap-1 sm:max-w-[min(80%,40rem)] ${
+                          className={`group/msg flex max-w-[94%] items-end gap-1 sm:max-w-[80%] ${
                             isOwn ? 'flex-row-reverse' : 'flex-row'
                           }`}
                         >
