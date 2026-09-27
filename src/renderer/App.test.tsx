@@ -12,6 +12,7 @@ import {
   OFFLINE_MESHCORE_IDENTITY_ID,
   OFFLINE_RETICULUM_IDENTITY_ID,
 } from './lib/offlineProtocolIdentities';
+import { writeLauncherPins } from './lib/panelLauncher';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import {
   MESHCORE_CAPABILITIES,
@@ -691,6 +692,7 @@ describe('App shell layout', () => {
     onTestFinished(() => {
       vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
     });
+    writeLauncherPins(['Chat', 'Nodes', 'Map', 'Connection']);
     renderApp();
 
     fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ...mod });
@@ -702,7 +704,7 @@ describe('App shell layout', () => {
       'true',
     );
 
-    // Default pins: Chat, Contacts, Map, Connection.
+    // Fourth pin: Connection.
     fireEvent.keyDown(window, { key: '4', code: 'Digit4', ...mod });
     expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
       'aria-selected',

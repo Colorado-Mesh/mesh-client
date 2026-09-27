@@ -7,8 +7,11 @@ import { TAB_SLOT_IDS, type TabSlotId } from './tabSlotIds';
  */
 export const LAUNCHER_PINS_STORAGE_KEY = 'mesh-client:launcherPins';
 export const MAX_LAUNCHER_PINS = 4;
-/** Pins are panel slots, shared by all protocols; a pin hidden for a protocol is skipped there. */
-export const DEFAULT_LAUNCHER_PINS: readonly TabSlotId[] = ['Chat', 'Nodes', 'Map', 'Connection'];
+/**
+ * Pins are panel slots, shared by all protocols; a pin hidden for a protocol is skipped there. None
+ * by default: pins also show on the rail, and default pins there repeat the sections above them.
+ */
+export const DEFAULT_LAUNCHER_PINS: readonly TabSlotId[] = [];
 
 const TAB_SLOT_SET: ReadonlySet<string> = new Set(TAB_SLOT_IDS);
 

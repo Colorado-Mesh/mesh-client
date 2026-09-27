@@ -7,7 +7,6 @@ import {
   isLauncherShortcut,
   isPinToggleShortcut,
   LAUNCHER_PINS_STORAGE_KEY,
-  MAX_LAUNCHER_PINS,
   pinnedShortcutPosition,
   readLauncherPins,
   sanitizeLauncherPins,
@@ -56,9 +55,9 @@ describe('launcher pins storage', () => {
     vi.restoreAllMocks();
   });
 
-  it('defaults to Chat, Contacts, Map and Connection', () => {
-    expect(readLauncherPins()).toEqual(['Chat', 'Nodes', 'Map', 'Connection']);
-    expect(DEFAULT_LAUNCHER_PINS).toHaveLength(MAX_LAUNCHER_PINS);
+  it('starts with nothing pinned', () => {
+    expect(readLauncherPins()).toEqual([]);
+    expect(DEFAULT_LAUNCHER_PINS).toEqual([]);
   });
 
   it('round-trips through localStorage', () => {
