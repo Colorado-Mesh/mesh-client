@@ -13,6 +13,7 @@ This is a living document. Check items against VoiceOver (macOS), NVDA (Windows)
 - [x] Confirmation dialogs announced as "alert dialog" — `ConfirmModal` uses `role="alertdialog"` + `aria-describedby`
 - [ ] Form validation errors announced immediately (`role="alert"`)
 - [ ] Message send status (Sending/Sent/Failed) announced
+- [x] Incoming messages in the open conversation announced — `ChatPanel` writes "New message from …" to the polite `#app-announcer-polite` region via `lib/a11yAnnouncer.ts` (at most once per second; bursts collapse to "N new messages"). The message list is virtualized, so it does not rely on `role="log"`. Verify with each screen reader.
 - [ ] Node list sort order announced via `aria-sort`
 - [x] Unread message counts announced on channel tabs — protocol switcher button `aria-label` includes unread count (`ProtocolSwitcher` / `aria.switchTo*WithUnread`); channel-tab unread announcement still open
 - [ ] Favorite toggle state announced (pressed/not pressed)

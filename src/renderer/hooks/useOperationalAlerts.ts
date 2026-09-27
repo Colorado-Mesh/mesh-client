@@ -7,6 +7,7 @@ import {
   type OperationalAlertSettings,
 } from '../lib/appSettingsStorage';
 import { playMessageNotification } from '../lib/chatNotifications';
+import { fireNotification } from '../lib/desktopNotification';
 import i18n from '../lib/i18n';
 import { normalizeLastHeardMs } from '../lib/nodeStatus';
 import {
@@ -17,7 +18,7 @@ import {
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { ConnectionStatus, MeshNode } from '../lib/types';
 import { useWatchedNodesStore } from '../stores/watchedNodesStore';
-import { fireNotification, notificationNodeName } from './useNodeStatusNotifier';
+import { notificationNodeName } from './useNodeStatusNotifier';
 import { useNowMs } from './useNowMs';
 
 /** Battery must recover this far above the threshold before a new low-battery alert can fire. */

@@ -814,7 +814,11 @@
       "search": "查找会话",
       "listLabel": "私信",
       "empty": "没有匹配的会话"
-    }
+    },
+    "notificationRrcTitle": "{{room}}的{{sender}}",
+    "srNewMessage": "来自{{sender}}的新消息： {{text}}",
+    "srNewMessages_one": "{{count}}条新消息",
+    "srNewMessages_other": "{{count}}条新消息"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -2083,7 +2087,9 @@
       "esp32FlashStalled": "固件传输无进展已停止。请尝试其他 USB 线缆或端口，进入引导加载程序模式（按住 BOOT，点按 RESET），然后重新刷写固件。",
       "unknown": "发生意外错误。",
       "provisionWipeRequired": "EEPROM被无效标识锁定。请先擦除EEPROM，然后再次进行配置。",
-      "provisionVerifyFailed": "预配写入已完成，但设备仍报告未预配的EEPROM。请给电路板重新上电，等待启动后重试—或先擦除EEPROM。"
+      "provisionVerifyFailed": "预配写入已完成，但设备仍报告未预配的EEPROM。请给电路板重新上电，等待启动后重试—或先擦除EEPROM。",
+      "esp32ReadStalled": "读取闪光停滞，没有任何进展。尝试其他USB电缆或端口，进入引导加载程序模式（按住引导，点击重置） ，然后再次备份。",
+      "esp32ReadIncomplete": "闪存读取提前结束，因此未保存备份。重新连接电路板，然后重试。"
     },
     "selectSerialPort": "选择串行端口",
     "noSerialPorts": "未找到USB串行端口。",
@@ -2131,7 +2137,14 @@
     "clearPairedDevicesConfirmTitle": "清除RNode蓝牙绑定？",
     "clearPairedDevicesConfirmMessage": "这将通过 USB 发送 CMD_BT_UNPAIR，并清除 ESP32 RNode 上的已绑定主机（部分 nRF52 固件无操作）。重新配对前，仍须在系统设置 → 蓝牙中“忘记”该设备。",
     "clearPairedDevicesConfirm": "清除蓝牙绑定",
-    "clearPairedDevicesSuccess": "已请求清除电台蓝牙绑定表。"
+    "clearPairedDevicesSuccess": "已请求清除电台蓝牙绑定表。",
+    "backupFirmware": "备份固件",
+    "backupFirmwareHint": "在闪存之前将ESP32闪存的完整图像（固件和设备设置）保存到文件中。不适用于nRF52板。",
+    "backingUp": "正在读取闪光灯… {{progress}} %",
+    "cancelBackup": "取消备份",
+    "backupSaved": "固件备份已保存到{{path}}。",
+    "backupSaveCancelled": "固件备份已读取但未保存。",
+    "backupCancelled": "固件备份已取消。"
   },
   "identityVault": {
     "title": "身份保管库",

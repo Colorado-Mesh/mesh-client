@@ -31,9 +31,23 @@ function isSelfRrcMessage(
 export function resolveInactiveRrcNotificationType(
   args: ResolveInactiveRrcNotificationTypeArgs,
 ): ChatNotificationType | null {
+  return resolveInactiveRrcNotification(args)?.type ?? null;
+}
+
+export interface RrcNotification {
+  type: ChatNotificationType;
+  message: RrcChatMessage;
+  /** Trimmed room name, `[hub]` for hub-level lines. */
+  room: string;
+}
+
+/** Same priority as {@link resolveInactiveRrcNotificationType}, plus the triggering line. */
+export function resolveInactiveRrcNotification(
+  args: ResolveInactiveRrcNotificationTypeArgs,
+): RrcNotification | null {
   if (args.notifGloballyMuted) return null;
 
-  let best: ChatNotificationType | null = null;
+  let best: RrcNotification | null = null;
   for (const msg of args.newMessages) {
     if (isSelfRrcMessage(msg, args.localIdentityHash, args.nickname)) continue;
     const room = msg.room.trim() || '[hub]';
@@ -47,8 +61,8 @@ export function resolveInactiveRrcNotificationType(
       muted,
     });
     if (!type) continue;
-    if (type === 'dm') return 'dm';
-    best = best ?? type;
+    if (type === 'dm') return { type, message: msg, room };
+    best = best ?? { type, message: msg, room };
   }
   return best;
 }

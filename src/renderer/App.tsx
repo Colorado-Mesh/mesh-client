@@ -25,7 +25,12 @@ import {
 } from '@/renderer/hooks/useEmergencyOutboxDrain';
 import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
-import { resolveInactiveChatNotificationType } from '@/renderer/lib/chatInactiveNotifications';
+import {
+  type ChatNotificationTarget,
+  notifyInactiveChat,
+  notifyInactiveRrc,
+} from '@/renderer/lib/chatDesktopNotifications';
+import { resolveInactiveChatNotification } from '@/renderer/lib/chatInactiveNotifications';
 import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import {
   clearPersistedLastReadForProtocol,
@@ -104,7 +109,7 @@ import { requestReticulumAdminBluetoothFocus } from '@/renderer/lib/reticulum/re
 import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
 import { resolveReticulumOwnNodeIdSet } from '@/renderer/lib/reticulumOwnNodeIds';
-import { resolveInactiveRrcNotificationType } from '@/renderer/lib/rrcInactiveNotifications';
+import { resolveInactiveRrcNotification } from '@/renderer/lib/rrcInactiveNotifications';
 import { shouldPlayRrcNotification } from '@/renderer/lib/rrcNotificationGate';
 import { rrcRoomsMatch } from '@/renderer/lib/rrcRoomName';
 import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
@@ -217,6 +222,7 @@ import { getAppSettingsRaw, isRrcUnreadAllRoomMessagesEnabled } from './lib/appS
 import {
   ADMIN_PANEL_INDEX,
   APP_PANEL_INDEX,
+  CHAT_PANEL_INDEX,
   computeTabMappings,
   DIAGNOSTICS_PANEL_INDEX,
   findFilteredTabIndexForPanel,
@@ -2591,6 +2597,39 @@ function AppContent() {
     }
   }, [activePanelIndex, activeTab, protocol, reticulumCapabilities.hasRrcPanel, tabsByProtocol]);
 
+  const openChatFromNotification = useCallback(
+    (target: ChatNotificationTarget) => {
+      const targetProtocol = target.kind === 'rrc' ? 'reticulum' : target.protocol;
+      if (protocol !== targetProtocol) {
+        lastTabByProtocol.current.set(protocol, activeTab);
+        lastPanelByProtocol.current.set(protocol, activePanelIndex);
+        localStorage.setItem(MESH_PROTOCOL_STORAGE_KEY, targetProtocol);
+        setProtocol(targetProtocol);
+      }
+      const tabIndex = findFilteredTabIndexForPanel(
+        selectByProtocol(tabsByProtocol, targetProtocol),
+        target.kind === 'rrc' ? RRC_PANEL_INDEX : CHAT_PANEL_INDEX,
+      );
+      if (tabIndex >= 0) setActiveTab(tabIndex);
+      if (target.kind === 'rrc') {
+        setRrcTabVisited(true);
+        if (target.room !== '[hub]') useRrcSessionStore.getState().setActiveRoom(target.room);
+      } else if (target.dmPeer != null) {
+        setPendingDmTarget(target.dmPeer);
+      } else if (target.channel != null) {
+        setPendingChannelTarget(target.channel);
+      }
+    },
+    [activePanelIndex, activeTab, protocol, tabsByProtocol],
+  );
+  const openChatFromNotificationRef = useRef(openChatFromNotification);
+  useEffect(() => {
+    openChatFromNotificationRef.current = openChatFromNotification;
+  }, [openChatFromNotification]);
+  const onChatNotificationClick = useCallback((target: ChatNotificationTarget) => {
+    openChatFromNotificationRef.current(target);
+  }, []);
+
   useEffect(() => {
     const onOpen = () => {
       handleOpenRrcHubTab();
@@ -3031,7 +3070,7 @@ function AppContent() {
       const mutedViews: Set<string> = mutedRaw
         ? new Set(JSON.parse(mutedRaw) as string[])
         : new Set();
-      const type = resolveInactiveChatNotificationType({
+      const notification = resolveInactiveChatNotification({
         newMessages: newMsgs,
         allMessages: meshtasticMsgsRef.current,
         protocol: 'meshtastic',
@@ -3040,10 +3079,19 @@ function AppContent() {
         mutedViews,
         notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
       });
-      if (type) playMessageNotification(type);
+      if (notification) {
+        playMessageNotification(notification.type);
+        if (isAppWindowInactive()) {
+          notifyInactiveChat({
+            protocol: 'meshtastic',
+            notification,
+            onOpen: onChatNotificationClick,
+          });
+        }
+      }
     }
     prevMeshtasticMsgCountRef.current = count;
-  }, [meshtasticUiMessages.length]);
+  }, [meshtasticUiMessages.length, onChatNotificationClick]);
 
   // ─── Track MeshCore messages arriving while inactive ─────────────
   useEffect(() => {
@@ -3060,7 +3108,7 @@ function AppContent() {
       !isAppWindowInactive();
     if (count > prevMeshcoreMsgCountRef.current && !isActiveAndChatOpen) {
       const newMsgs = meshcoreMsgsRef.current.slice(prevMeshcoreMsgCountRef.current);
-      const type = resolveInactiveChatNotificationType({
+      const notification = resolveInactiveChatNotification({
         newMessages: newMsgs,
         allMessages: meshcoreMsgsRef.current,
         protocol: 'meshcore',
@@ -3070,10 +3118,19 @@ function AppContent() {
         notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
         dmOptions: meshcoreChatUnreadDmOptionsRef.current,
       });
-      if (type) playMessageNotification(type);
+      if (notification) {
+        playMessageNotification(notification.type);
+        if (isAppWindowInactive()) {
+          notifyInactiveChat({
+            protocol: 'meshcore',
+            notification,
+            onOpen: onChatNotificationClick,
+          });
+        }
+      }
     }
     prevMeshcoreMsgCountRef.current = count;
-  }, [meshcoreUiMessages.length, capabilitiesByProtocol]);
+  }, [meshcoreUiMessages.length, capabilitiesByProtocol, onChatNotificationClick]);
 
   // ─── Track Reticulum LXMF Chat messages arriving while inactive ──
   useEffect(() => {
@@ -3091,7 +3148,7 @@ function AppContent() {
       const newMsgs = reticulumMsgsRef.current.slice(prevReticulumMsgCountRef.current);
       const ownNodes = reticulumOwnNodeIdSetRef.current;
       const ownSenderId = [...ownNodes][0] ?? 0;
-      const type = resolveInactiveChatNotificationType({
+      const notification = resolveInactiveChatNotification({
         newMessages: newMsgs,
         allMessages: reticulumMsgsRef.current,
         protocol: 'reticulum',
@@ -3100,10 +3157,19 @@ function AppContent() {
         mutedViews: loadMutedViews('reticulum'),
         notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
       });
-      if (type) playMessageNotification(type);
+      if (notification) {
+        playMessageNotification(notification.type);
+        if (isAppWindowInactive()) {
+          notifyInactiveChat({
+            protocol: 'reticulum',
+            notification,
+            onOpen: onChatNotificationClick,
+          });
+        }
+      }
     }
     prevReticulumMsgCountRef.current = count;
-  }, [reticulumUiMessages.length]);
+  }, [reticulumUiMessages.length, onChatNotificationClick]);
 
   // ─── Track RRC messages arriving while inactive ──────────────────
   useEffect(() => {
@@ -3131,7 +3197,7 @@ function AppContent() {
       return activeRoom == null || !rrcRoomsMatch(activeRoom, room);
     });
 
-    const type = resolveInactiveRrcNotificationType({
+    const notification = resolveInactiveRrcNotification({
       newMessages: newMsgs,
       nickname: rrcNickname,
       hubDestHash: rrcHubDestHash,
@@ -3140,19 +3206,34 @@ function AppContent() {
       localIdentityHash: rrcLocalIdentityHash,
       notifyMode: isRrcUnreadAllRoomMessagesEnabled() ? 'all' : 'mentions',
     });
+    const windowInactive = isAppWindowInactive();
     // Watching the active room: still ping on whisper / @nick (IRC highlight); stay silent on channel.
     if (
-      type &&
+      notification &&
       shouldPlayRrcNotification({
         onRrcPanel,
-        windowInactive: isAppWindowInactive(),
+        windowInactive,
         forOtherRoom,
-        type,
+        type: notification.type,
       })
     ) {
-      playMessageNotification(type);
+      playMessageNotification(notification.type);
+      if (windowInactive) {
+        notifyInactiveRrc({
+          message: notification.message,
+          room: notification.room,
+          hubHash: rrcHubDestHash,
+          onOpen: onChatNotificationClick,
+        });
+      }
     }
-  }, [rrcMessageFlat.length, rrcNickname, rrcHubDestHash, rrcLocalIdentityHash]);
+  }, [
+    rrcMessageFlat.length,
+    rrcNickname,
+    rrcHubDestHash,
+    rrcLocalIdentityHash,
+    onChatNotificationClick,
+  ]);
 
   useAppTrayUnreadSync(
     meshtasticChatUnread,
@@ -3632,7 +3713,7 @@ function AppContent() {
             : undefined
         }
         onRequestRepeaterStatus={
-          detailModalProtocol === 'meshcore'
+          detailModalCapabilities.hasOnDemandNodeStatus
             ? meshcorePanelActions.requestRepeaterStatus
             : undefined
         }
@@ -3663,15 +3744,17 @@ function AppContent() {
             : undefined
         }
         paxCounterData={
-          detailModalProtocol === 'meshtastic' ? meshtasticRuntime.paxCounterData : undefined
+          detailModalCapabilities.hasPaxCounter ? meshtasticRuntime.paxCounterData : undefined
         }
         detectionSensorEvents={
-          detailModalProtocol === 'meshtastic' ? meshtasticRuntime.detectionSensorEvents : undefined
+          detailModalCapabilities.hasDetectionSensor
+            ? meshtasticRuntime.detectionSensorEvents
+            : undefined
         }
         rangeTestPackets={
-          detailModalProtocol === 'meshtastic' ? meshtasticRuntime.rangeTestPackets : undefined
+          detailModalCapabilities.hasRangeTest ? meshtasticRuntime.rangeTestPackets : undefined
         }
-        mapReports={detailModalProtocol === 'meshtastic' ? meshtasticRuntime.mapReports : undefined}
+        mapReports={detailModalCapabilities.hasMapReport ? meshtasticRuntime.mapReports : undefined}
         onExportContact={
           detailModalProtocol === 'meshcore' ? meshcoreRuntime.exportContact : undefined
         }
@@ -3697,8 +3780,9 @@ function AppContent() {
     <>
       <GlobalInstantTooltip />
       <MeshClientDeepLinkHost />
-      {/* Global assertive live region for critical announcements */}
+      {/* Global live regions written by lib/a11yAnnouncer (assertive: critical; polite: chat) */}
       <div aria-live="assertive" aria-atomic="true" className="sr-only" id="app-announcer" />
+      <div aria-live="polite" aria-atomic="true" className="sr-only" id="app-announcer-polite" />
       {/* Passive notifications for inactive protocol activity */}
       <InactiveProtocolNotifier
         activeProtocol={protocol}

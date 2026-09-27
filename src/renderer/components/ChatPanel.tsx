@@ -38,6 +38,11 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  type BatchedMessageAnnouncer,
+  createBatchedMessageAnnouncer,
+  truncateForAnnouncement,
+} from '@/renderer/lib/a11yAnnouncer';
 import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
@@ -87,6 +92,7 @@ import {
   RETICULUM_DM_HEADER_STATUS_CLASS,
 } from '@/renderer/lib/reticulumDmHeaderActions';
 import { senderInitials } from '@/renderer/lib/senderInitials';
+import { CHAT_SR_ANNOUNCE_WINDOW_MS } from '@/renderer/lib/timeConstants';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -1254,6 +1260,16 @@ function ChatPanel({
 
   const unreadSourceMessages = messagesForUnread ?? messages;
   const prevUnreadSourceLengthRef = useRef(unreadSourceMessages.length);
+  const messageAnnouncerRef = useRef<BatchedMessageAnnouncer | null>(null);
+  const tRef = useRef(t);
+  tRef.current = t;
+  useEffect(
+    () => () => {
+      messageAnnouncerRef.current?.dispose();
+      messageAnnouncerRef.current = null;
+    },
+    [],
+  );
 
   const getDmLabel = useCallback(
     (nodeNum: number) => {
@@ -1701,7 +1717,7 @@ function ChatPanel({
     if (!isActive || isAppWindowInactive() || newLen <= prevLen) return;
 
     const newMsgs = unreadSourceMessages.slice(prevLen);
-    const hasInboundForView = newMsgs.some((msg) => {
+    const inboundForView = newMsgs.filter((msg) => {
       if (isOwnNode(msg.sender_id)) return false;
       if (msg.isHistory) return false;
       if (msg.emoji && (msg.replyId != null || msg.reticulum_reply_to_hash)) return false;
@@ -1710,7 +1726,25 @@ function ChatPanel({
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
       return msgViewKey === viewKey;
     });
-    if (!hasInboundForView) return;
+    if (inboundForView.length === 0) return;
+
+    messageAnnouncerRef.current ??= createBatchedMessageAnnouncer({
+      windowMs: CHAT_SR_ANNOUNCE_WINDOW_MS,
+      formatOne: (m) => {
+        const t = tRef.current;
+        return t('chatPanel.srNewMessage', { sender: m.sender, text: m.text });
+      },
+      formatMany: (count) => {
+        const t = tRef.current;
+        return t('chatPanel.srNewMessages', { count });
+      },
+    });
+    messageAnnouncerRef.current.push(
+      inboundForView.map((msg) => ({
+        sender: truncateForAnnouncement(msg.sender_name || String(msg.sender_id)),
+        text: truncateForAnnouncement(msg.payload),
+      })),
+    );
 
     requestAnimationFrame(() => {
       const dist = getDistFromChatBottom(

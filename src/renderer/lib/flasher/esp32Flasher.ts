@@ -1,8 +1,10 @@
 import type { FileEntry } from '@zip.js/zip.js';
 import { BlobReader, BlobWriter, ZipReader } from '@zip.js/zip.js';
+import type { FlashSizeValues } from 'esptool-js';
 import { ESPLoader, Transport } from 'esptool-js';
 
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
+import { FIRMWARE_BACKUP_MAX_BYTES } from '@/shared/firmwareBackup';
 
 import { blobToUint8Array, parseFlashAddress, sleepMillis } from './binaryUtils';
 import { forceEsp32DownloadMode } from './esp32BootloaderEntry';
@@ -199,5 +201,113 @@ export async function flashEsp32Firmware(
     } catch {
       // catch-no-log-ok zip may already be closed after successful flash
     }
+  }
+}
+
+export interface Esp32FlashReadOptions {
+  /** Catalog flash size (e.g. `'4MB'`) used when the JEDEC size byte is unrecognized. */
+  fallbackFlashSize?: string;
+  progressCallback?: FlashProgressCallback;
+  signal?: AbortSignal;
+}
+
+export interface Esp32FlashReadResult {
+  data: Uint8Array;
+  chipName: string;
+  flashSizeBytes: number;
+}
+
+function resolveEsp32FlashSizeBytes(
+  esploader: ESPLoader,
+  flashId: number,
+  fallbackFlashSize: string | undefined,
+): number {
+  const sizeId = (flashId >> 16) & 0xff;
+  const detected = (esploader.DETECTED_FLASH_SIZES as Record<number, string | undefined>)[sizeId];
+  const label = detected ?? fallbackFlashSize ?? '4MB';
+  const bytes = esploader.flashSizeBytes(label as FlashSizeValues);
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    throw new Error('ESP32_FLASH_SIZE_UNKNOWN');
+  }
+  return Math.min(bytes, FIRMWARE_BACKUP_MAX_BYTES);
+}
+
+/**
+ * Read the entire ESP32 flash (bootloader, partitions, app, and RNode EEPROM/config sectors)
+ * as a restorable image. Cancellation closes the serial port so esptool's pending read rejects;
+ * the caller should treat `ESP32_READ_CANCELLED` as a user action, not a failure.
+ */
+export async function readEsp32Flash(
+  serialPort: SerialPort,
+  options: Esp32FlashReadOptions = {},
+): Promise<Esp32FlashReadResult> {
+  const { fallbackFlashSize, progressCallback, signal } = options;
+  if (signal?.aborted) throw new Error('ESP32_READ_CANCELLED');
+  await closeSerialPortIfOpen(serialPort);
+
+  const { esploader, transport } = await connectEsp32Bootloader(serialPort, progressCallback);
+
+  let stallInterval: ReturnType<typeof setInterval> | undefined;
+  let rejectOnAbort: (() => void) | undefined;
+  try {
+    const chipName =
+      (esploader as { chip?: { CHIP_NAME?: string } }).chip?.CHIP_NAME ??
+      (esploader as { chipName?: string }).chipName ??
+      '';
+    if (!chipName) {
+      throw new Error('ESP32_SYNC_FAILED');
+    }
+
+    const flashSizeBytes = resolveEsp32FlashSizeBytes(
+      esploader,
+      await esploader.readFlashId(),
+      fallbackFlashSize,
+    );
+
+    let lastProgressAt = Date.now();
+    const data = await Promise.race([
+      esploader.readFlash(0, flashSizeBytes, (_packet, progress, totalSize) => {
+        lastProgressAt = Date.now();
+        progressCallback?.(Math.floor((progress / totalSize) * 100));
+      }),
+      new Promise<never>((_, reject) => {
+        stallInterval = setInterval(() => {
+          if (Date.now() - lastProgressAt >= ESP32_FLASH_STALL_TIMEOUT_MS) {
+            console.warn('[esp32Flasher] readFlash stalled — closing serial port');
+            void closeSerialPortIfOpen(serialPort);
+            reject(new Error('ESP32_READ_STALLED'));
+          }
+        }, 2000);
+      }),
+      new Promise<never>((_, reject) => {
+        if (!signal) return;
+        rejectOnAbort = () => {
+          void closeSerialPortIfOpen(serialPort);
+          reject(new Error('ESP32_READ_CANCELLED'));
+        };
+        if (signal.aborted) rejectOnAbort();
+        else signal.addEventListener('abort', rejectOnAbort, { once: true });
+      }),
+    ]);
+
+    if (data.byteLength !== flashSizeBytes) {
+      throw new Error('ESP32_READ_INCOMPLETE');
+    }
+
+    await transport.setDTR(false);
+    await sleepMillis(100);
+    await transport.setDTR(true);
+    await sleepMillis(1500);
+
+    return { data, chipName, flashSizeBytes };
+  } finally {
+    if (stallInterval) clearInterval(stallInterval);
+    if (signal && rejectOnAbort) signal.removeEventListener('abort', rejectOnAbort);
+    try {
+      await transport.disconnect();
+    } catch {
+      // catch-no-log-ok port may already be closed
+    }
+    await closeSerialPortIfOpen(serialPort);
   }
 }

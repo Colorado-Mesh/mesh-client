@@ -814,7 +814,11 @@
       "search": "Encontrar uma conversa",
       "listLabel": "Mensagens diretas",
       "empty": "Nenhuma conversa corresponde"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} em {{room}}",
+    "srNewMessage": "Nova mensagem de {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} nova mensagem",
+    "srNewMessages_other": "{{count}} novas mensagens"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2083,7 +2087,9 @@
       "esp32FlashStalled": "Transferência de firmware parada sem progresso. Tente outro cabo ou porta USB, entre no modo bootloader (segure BOOT, toque RESET) e reflashe novamente.",
       "unknown": "Ocorreu um erro inesperado.",
       "provisionWipeRequired": "A EEPROM está bloqueada com uma identidade inválida. Limpe a EEPROM primeiro e, em seguida, provisione novamente.",
-      "provisionVerifyFailed": "As gravações de provisionamento foram concluídas, mas o dispositivo ainda relata uma EEPROM não provisionada. Faça o ciclo de energia da placa, aguarde a inicialização e tente novamente — ou limpe a EEPROM primeiro."
+      "provisionVerifyFailed": "As gravações de provisionamento foram concluídas, mas o dispositivo ainda relata uma EEPROM não provisionada. Faça o ciclo de energia da placa, aguarde a inicialização e tente novamente — ou limpe a EEPROM primeiro.",
+      "esp32ReadStalled": "O flash de leitura parou sem progresso. Tente outro cabo ou porta USB, entre no modo de bootloader (segure BOOT, toque em RESET) e faça o backup novamente.",
+      "esp32ReadIncomplete": "A leitura do flash terminou mais cedo, então nenhum backup foi salvo. Reconecte a placa e tente novamente."
     },
     "selectSerialPort": "Selecionar porta serial",
     "noSerialPorts": "Nenhuma porta serial USB encontrada.",
@@ -2131,7 +2137,14 @@
     "clearPairedDevicesConfirmTitle": "Limpar ligações Bluetooth RNode?",
     "clearPairedDevicesConfirmMessage": "Isso envia CMD_BT_UNPAIR via USB e limpa hosts vinculados em RNodes ESP32 (sem efeito em alguns builds nRF52). Você ainda deve Esquecer o dispositivo em Ajustes do Sistema → Bluetooth antes de emparelhar de novo.",
     "clearPairedDevicesConfirm": "Limpar vínculos Bluetooth",
-    "clearPairedDevicesSuccess": "Limpeza da tabela de vínculos Bluetooth do rádio solicitada."
+    "clearPairedDevicesSuccess": "Limpeza da tabela de vínculos Bluetooth do rádio solicitada.",
+    "backupFirmware": "Fazer backup do firmware",
+    "backupFirmwareHint": "Salva uma imagem completa do flash ESP32 (firmware e configurações do dispositivo) em um arquivo antes de piscar. Não disponível para placas nRF52.",
+    "backingUp": "A ler flash… {{progress}}%",
+    "cancelBackup": "Cancelar backup",
+    "backupSaved": "Backup de firmware salvo em {{path}}.",
+    "backupSaveCancelled": "O backup do firmware foi lido, mas não salvo.",
+    "backupCancelled": "Backup de firmware cancelado."
   },
   "identityVault": {
     "title": "Identity Vault",

@@ -667,7 +667,6 @@ export function attachMeshtasticRuntimeWireEffects(
         getMqttStatus: () => mqttStatusRef.current,
         getChannelConfigs: () => channelConfigsRef.current,
         hasRfDevice: () => !!deviceRef.current,
-        getNodeName,
         registerMqttEchoPacketId: (senderId, packetId) => {
           isDuplicate(senderId, packetId);
         },

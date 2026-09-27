@@ -814,7 +814,11 @@
       "search": "Unterhaltung suchen",
       "listLabel": "Direktnachrichten",
       "empty": "Keine passenden Unterhaltungen"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} in {{room}}",
+    "srNewMessage": "Neue Nachricht von {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} neue Nachricht",
+    "srNewMessages_other": "{{count}} neue Nachrichten"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2083,7 +2087,9 @@
       "esp32FlashStalled": "Firmware-Übertragung ohne Fortschritt blockiert. Versuchen Sie ein anderes USB-Kabel oder einen anderen Anschluss, wechseln Sie in den Bootloader-Modus (BOOT gedrückt halten, RESET antippen) und flashen Sie erneut.",
       "unknown": "Ein unerwarteter Fehler ist aufgetreten.",
       "provisionWipeRequired": "EEPROM ist mit einer ungültigen Identität gesperrt. Löschen Sie zuerst das EEPROM und führen Sie dann erneut die Bereitstellung durch.",
-      "provisionVerifyFailed": "Bereitstellungsschreibvorgänge abgeschlossen, aber das Gerät meldet weiterhin ein nicht bereitgestelltes EEPROM. Schalten Sie die Platine aus und wieder ein, warten Sie auf den Start und versuchen Sie es erneut — oder löschen Sie zuerst das EEPROM."
+      "provisionVerifyFailed": "Bereitstellungsschreibvorgänge abgeschlossen, aber das Gerät meldet weiterhin ein nicht bereitgestelltes EEPROM. Schalten Sie die Platine aus und wieder ein, warten Sie auf den Start und versuchen Sie es erneut — oder löschen Sie zuerst das EEPROM.",
+      "esp32ReadStalled": "Leseblitz blockiert ohne Fortschritt. Versuchen Sie es mit einem anderen USB-Kabel oder -Anschluss, gehen Sie in den Bootloader-Modus (BOOT anhalten, RESET antippen) und sichern Sie ihn erneut.",
+      "esp32ReadIncomplete": "Der Flash-Lesevorgang wurde vorzeitig beendet, sodass kein Backup gespeichert wurde. Schließen Sie die Platine wieder an und versuchen Sie es erneut."
     },
     "selectSerialPort": "Serielle Schnittstelle auswählen",
     "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden.",
@@ -2131,7 +2137,14 @@
     "clearPairedDevicesConfirmTitle": "RNode-Bluetooth-Bindungen löschen?",
     "clearPairedDevicesConfirmMessage": "Sendet CMD_BT_UNPAIR über USB und löscht gebundene Hosts auf ESP32-RNodes (keine Wirkung bei manchen nRF52-Builds). Sie müssen das Gerät in Systemeinstellungen → Bluetooth trotzdem noch Vergessen, bevor Sie erneut koppeln.",
     "clearPairedDevicesConfirm": "Bluetooth-Bindungen löschen",
-    "clearPairedDevicesSuccess": "Löschen der Funk-Bluetooth-Bindungstabelle angefordert."
+    "clearPairedDevicesSuccess": "Löschen der Funk-Bluetooth-Bindungstabelle angefordert.",
+    "backupFirmware": "Firmware sichern",
+    "backupFirmwareHint": "Speichert ein vollständiges Bild des ESP32-Flash (Firmware- und Geräteeinstellungen) in einer Datei, bevor Sie blinken. Nicht verfügbar für nRF52-Platinen.",
+    "backingUp": "Leseblitz… {{progress}}%",
+    "cancelBackup": "Backup beenden",
+    "backupSaved": "Firmware-Backup auf {{path}} gespeichert.",
+    "backupSaveCancelled": "Firmware-Backup wurde gelesen, aber nicht gespeichert.",
+    "backupCancelled": "Firmware-Backup abgebrochen."
   },
   "identityVault": {
     "title": "Identitätstresor",

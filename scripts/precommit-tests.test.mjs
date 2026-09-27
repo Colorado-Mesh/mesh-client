@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  appendSidecarRouteDocsTestIfNeeded,
   expandWithSiblingTests,
   isForceFullSuitePath,
   isManifestOnlyCommit,
@@ -13,6 +14,7 @@ import {
   runPrecommitTests,
   runVitestArgv,
   shouldForceFullSuite,
+  SIDECAR_ROUTE_DOCS_TEST_PATH,
 } from './precommit-tests.mjs';
 
 describe('precommit-tests force-full', () => {
@@ -125,6 +127,31 @@ describe('precommit-tests related planning', () => {
 
   it('picks main for architecture paths', () => {
     expect(pickProjects(['src/architecture/sourcePolicy.test.ts'])).toEqual(['main']);
+  });
+
+  it.each(['docs/reticulum-sidecar-ipc.md', 'reticulum-sidecar/src/api/mod.rs'])(
+    'runs the sidecar route/doc guard when only %s is staged',
+    (input) => {
+      const plan = planPrecommitTests([input]);
+      expect(plan.mode).toBe('related');
+      expect(plan.relatedPaths).toEqual([SIDECAR_ROUTE_DOCS_TEST_PATH]);
+      expect(plan.projects).toEqual(['main']);
+    },
+  );
+
+  it('does not append the sidecar route/doc guard for unrelated docs', () => {
+    expect(appendSidecarRouteDocsTestIfNeeded(['docs/reticulum.md'], ['src/main/foo.ts'])).toEqual([
+      'src/main/foo.ts',
+    ]);
+  });
+
+  it('does not duplicate the sidecar route/doc guard', () => {
+    expect(
+      appendSidecarRouteDocsTestIfNeeded(
+        ['docs/reticulum-sidecar-ipc.md'],
+        [SIDECAR_ROUTE_DOCS_TEST_PATH],
+      ),
+    ).toEqual([SIDECAR_ROUTE_DOCS_TEST_PATH]);
   });
 });
 

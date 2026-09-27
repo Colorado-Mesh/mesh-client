@@ -1907,7 +1907,7 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 - Check **App** notification mute and per-channel/DM mute in Chat.
 - Recent builds use distinct Web Audio tones (channel vs DM/reply) and resume audio when the window is hidden or minimized. Ensure the app is not globally muted (`mesh-client:notifMuted` in localStorage clears when you re-enable sounds in UI).
 
-**Meshtastic desktop notifications** remain visual-only (`silent: true`); typed sounds come from the app’s Web Audio path.
+**Chat desktop notifications** appear for Meshtastic, MeshCore, Reticulum LXMF Chat and RRC, but only while the app window is inactive. They are visual-only (`silent: true`) and follow the same mutes as the sound. Typed sounds come from the app’s Web Audio path. If none appear, check that the OS allows notifications for Mesh-Client. On macOS, an unsigned dev build may not deliver notifications at all.
 
 ## Diagnostics and map
 

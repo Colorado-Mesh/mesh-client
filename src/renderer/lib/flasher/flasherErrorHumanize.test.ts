@@ -42,6 +42,18 @@ describe('humanizeFlasherError', () => {
     expect(humanizeFlasherError(new Error('NRF52_DFU_STALLED'))).toContain('stalled');
   });
 
+  it('maps ESP32 backup read errors to dedicated keys', () => {
+    expect(humanizeFlasherError(new Error('ESP32_READ_STALLED'))).toBe(
+      'flasher.errors.esp32ReadStalled',
+    );
+    expect(humanizeFlasherError(new Error('ESP32_READ_INCOMPLETE'))).toBe(
+      'flasher.errors.esp32ReadIncomplete',
+    );
+    expect(humanizeFlasherError(new Error('ESP32_FLASH_SIZE_UNKNOWN'))).toBe(
+      'flasher.errors.esp32ReadIncomplete',
+    );
+  });
+
   it('uses unknown fallback for unrecognized errors', () => {
     expect(humanizeFlasherError(new Error('SOME_GARBAGE_WIRE_TEXT'))).toContain('Operation failed');
   });

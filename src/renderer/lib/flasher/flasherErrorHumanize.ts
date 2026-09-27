@@ -28,6 +28,12 @@ export function humanizeFlasherError(err: unknown): string {
   if (message === 'ESP32_FLASH_STALLED' || message === 'NRF52_DFU_STALLED') {
     return i18n.t('flasher.errors.esp32FlashStalled');
   }
+  if (message === 'ESP32_READ_STALLED') {
+    return i18n.t('flasher.errors.esp32ReadStalled');
+  }
+  if (message === 'ESP32_READ_INCOMPLETE' || message === 'ESP32_FLASH_SIZE_UNKNOWN') {
+    return i18n.t('flasher.errors.esp32ReadIncomplete');
+  }
   if (message === 'FLASHER_SERIAL_PORT_SELECTION_TIMEOUT') {
     return i18n.t('flasher.errors.portSelectionTimedOut');
   }

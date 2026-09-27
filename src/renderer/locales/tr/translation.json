@@ -814,7 +814,11 @@
       "search": "Sohbet bul",
       "listLabel": "Doğrudan mesajlar",
       "empty": "Eşleşen sohbet yok"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} in {{room}}",
+    "srNewMessage": "{{sender}} tarafından gönderilen yeni mesaj: {{text}}",
+    "srNewMessages_one": "{{count}} yeni mesaj",
+    "srNewMessages_other": "{{count}} yeni mesaj"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -2083,7 +2087,9 @@
       "esp32FlashStalled": "Ürün yazılımı aktarımı ilerleme olmadan durdu. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (BOOT'a basılı tutun, RESET'e dokunun) ve yeniden flash yapın.",
       "unknown": "Beklenmedik bir hata oluştu.",
       "provisionWipeRequired": "EEPROM geçersiz bir kimlikle kilitlendi. Önce EEPROM’u silin, ardından yeniden provisioning yapın.",
-      "provisionVerifyFailed": "Provisioning yazmaları tamamlandı ancak cihaz hâlâ provision edilmemiş bir EEPROM bildiriyor. Kartın gücünü kesip yeniden verin, önyüklemeyi bekleyin ve tekrar deneyin — veya önce EEPROM’u silin."
+      "provisionVerifyFailed": "Provisioning yazmaları tamamlandı ancak cihaz hâlâ provision edilmemiş bir EEPROM bildiriyor. Kartın gücünü kesip yeniden verin, önyüklemeyi bekleyin ve tekrar deneyin — veya önce EEPROM’u silin.",
+      "esp32ReadStalled": "Okuma flaşı durdu, ilerleme yok. Başka bir USB kablosu veya bağlantı noktası deneyin, önyükleyici moduna girin (ÖNYÜKLEMEYİ basılı tutun, SIFIRLA'YA dokunun) ve tekrar yedekleyin.",
+      "esp32ReadIncomplete": "Flaş okuma erken bitti, bu nedenle yedekleme kaydedilmedi. Kartı yeniden bağlayın ve tekrar deneyin."
     },
     "selectSerialPort": "COM… seri portunu seçin",
     "noSerialPorts": "USB seri bağlantı noktası bulunamadı.",
@@ -2131,7 +2137,14 @@
     "clearPairedDevicesConfirmTitle": "RNode Bluetooth bağları temizlensin mi?",
     "clearPairedDevicesConfirmMessage": "Bu, USB üzerinden CMD_BT_UNPAIR gönderir ve ESP32 RNode’lardaki bağlı ana bilgisayarları temizler (bazı nRF52 derlemelerinde etkisiz). Yeniden eşleştirmeden önce Sistem Ayarları → Bluetooth’ta cihazı hâlâ Unutmanız gerekir.",
     "clearPairedDevicesConfirm": "Bluetooth bağlarını temizle",
-    "clearPairedDevicesSuccess": "Radyo Bluetooth bağ tablosu temizleme istendi."
+    "clearPairedDevicesSuccess": "Radyo Bluetooth bağ tablosu temizleme istendi.",
+    "backupFirmware": "Aygıt yazılımını yedekleyin",
+    "backupFirmwareHint": "ESP32 flaşın tam görüntüsünü (ürün yazılımı ve cihaz ayarları) flaştan önce bir dosyaya kaydeder. nRF52 kartları için mevcut değildir.",
+    "backingUp": "Flaş okuma… {{progress}}%",
+    "cancelBackup": "Otomatik Yedekleme İptal Et",
+    "backupSaved": "Aygıt yazılımı yedeklemesi {{path}} 'a kaydedildi.",
+    "backupSaveCancelled": "Aygıt yazılımı yedeklemesi okundu ancak kaydedilmedi.",
+    "backupCancelled": "Aygıt yazılımı yedeklemesi iptal edildi."
   },
   "identityVault": {
     "title": "Kimlik kasası",

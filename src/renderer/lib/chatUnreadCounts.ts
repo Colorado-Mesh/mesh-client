@@ -328,6 +328,46 @@ export function resolveChatNotificationType(
   return 'channel';
 }
 
+export interface AudibleChatNotification {
+  type: ChatNotificationType;
+  /** Newest message at the winning priority — drives the OS notification preview and click target. */
+  message: ChatMessage;
+  /** `dm:<peer>` or `ch:<index>` (same key space as muted views). */
+  viewKey: string;
+}
+
+export function pickAudibleNotification(
+  messages: readonly ChatMessage[],
+  protocol: MeshProtocol,
+  mutedViews: ReadonlySet<string>,
+  ownNodeIds: ReadonlySet<number>,
+  dmOptions?: ChatUnreadDmOptions,
+  allMessages?: readonly ChatMessage[],
+): AudibleChatNotification | null {
+  let best: AudibleChatNotification | null = null;
+  let highestPriority = -1;
+  const lookupMessages = allMessages ?? messages;
+
+  const regular = filterRegularChatMessages(messages, protocol);
+  for (const msg of regular) {
+    if (ownNodeIds.has(msg.sender_id)) continue;
+    if (msg.isHistory) continue;
+    const viewKey = chatViewKeyForMessage(msg, protocol, ownNodeIds, dmOptions);
+    if (mutedViews.has(viewKey)) continue;
+
+    const type = resolveChatNotificationType(msg, lookupMessages, ownNodeIds, protocol, dmOptions);
+    if (type == null) continue;
+
+    const priority = NOTIFICATION_TYPE_PRIORITY[type];
+    if (priority >= highestPriority) {
+      highestPriority = priority;
+      best = { type, message: msg, viewKey };
+    }
+  }
+
+  return best;
+}
+
 export function pickAudibleNotificationType(
   messages: readonly ChatMessage[],
   protocol: MeshProtocol,
@@ -336,25 +376,8 @@ export function pickAudibleNotificationType(
   dmOptions?: ChatUnreadDmOptions,
   allMessages?: readonly ChatMessage[],
 ): ChatNotificationType | null {
-  let highest: ChatNotificationType | null = null;
-  let highestPriority = -1;
-  const lookupMessages = allMessages ?? messages;
-
-  const regular = filterRegularChatMessages(messages, protocol);
-  for (const msg of regular) {
-    if (ownNodeIds.has(msg.sender_id)) continue;
-    if (msg.isHistory) continue;
-    if (mutedViews.has(chatViewKeyForMessage(msg, protocol, ownNodeIds, dmOptions))) continue;
-
-    const type = resolveChatNotificationType(msg, lookupMessages, ownNodeIds, protocol, dmOptions);
-    if (type == null) continue;
-
-    const priority = NOTIFICATION_TYPE_PRIORITY[type];
-    if (priority > highestPriority) {
-      highestPriority = priority;
-      highest = type;
-    }
-  }
-
-  return highest;
+  return (
+    pickAudibleNotification(messages, protocol, mutedViews, ownNodeIds, dmOptions, allMessages)
+      ?.type ?? null
+  );
 }

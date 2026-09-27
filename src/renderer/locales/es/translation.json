@@ -814,7 +814,11 @@
       "search": "Buscar una conversación",
       "listLabel": "Mensajes directos",
       "empty": "Ninguna conversación coincide"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} en {{room}}",
+    "srNewMessage": "Nuevo mensaje de {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} mensaje nuevo",
+    "srNewMessages_other": "{{count}} mensajes nuevos"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -2083,7 +2087,9 @@
       "esp32FlashStalled": "La transferencia de firmware se detuvo sin progreso. Pruebe otro cable o puerto USB, entre en modo bootloader (mantenga BOOT, pulse RESET) y vuelva a flashear.",
       "unknown": "Se produjo un error",
       "provisionWipeRequired": "EEPROM está bloqueada con una identidad no válida. Limpie la EEPROM primero, luego vuelva a aprovisionar.",
-      "provisionVerifyFailed": "Las escrituras de provisión finalizaron, pero el dispositivo aún informa una EEPROM no aprovisionada. Apague y encienda la placa, espere a que arranque e inténtelo de nuevo, o limpie primero la EEPROM."
+      "provisionVerifyFailed": "Las escrituras de provisión finalizaron, pero el dispositivo aún informa una EEPROM no aprovisionada. Apague y encienda la placa, espere a que arranque e inténtelo de nuevo, o limpie primero la EEPROM.",
+      "esp32ReadStalled": "Flash de lectura estancado sin progreso. Pruebe con otro cable o puerto USB, entre en el modo de gestor de arranque (mantenga el ARRANQUE, toque REINICIAR) y vuelva a realizar una copia de seguridad.",
+      "esp32ReadIncomplete": "La lectura flash finalizó antes de tiempo, por lo que no se guardó ninguna copia de seguridad. Vuelva a conectar la placa e inténtelo de nuevo."
     },
     "selectSerialPort": "Seleccionar porto serie",
     "noSerialPorts": "No se han encontrado puertos serie USB.",
@@ -2131,7 +2137,14 @@
     "clearPairedDevicesConfirmTitle": "¿Borrar enlaces Bluetooth RNode?",
     "clearPairedDevicesConfirmMessage": "Esto envía CMD_BT_UNPAIR a través de USB y borra los hosts vinculados en los RNodes ESP32 (sin efecto en algunas compilaciones nRF52). Aun así debe olvidar el dispositivo en Configuración del sistema → Bluetooth antes de volver a emparejarlo.",
     "clearPairedDevicesConfirm": "Borrar vínculos Bluetooth",
-    "clearPairedDevicesSuccess": "Se solicitó borrar la tabla de vínculos Bluetooth de la radio."
+    "clearPairedDevicesSuccess": "Se solicitó borrar la tabla de vínculos Bluetooth de la radio.",
+    "backupFirmware": "Copia de seguridad del firmware",
+    "backupFirmwareHint": "Guarda una imagen completa del flash ESP32 (firmware y configuración del dispositivo) en un archivo antes de flashear. No disponible para placas nRF52.",
+    "backingUp": "Lectura flash… {{progress}}%",
+    "cancelBackup": "Cancelar copia de seguridad",
+    "backupSaved": "Copia de seguridad de firmware guardada en {{path}}.",
+    "backupSaveCancelled": "Se leyó la copia de seguridad del firmware, pero no se guardó.",
+    "backupCancelled": "Copia de seguridad de firmware cancelada."
   },
   "identityVault": {
     "title": "Repositorio de Identidades",

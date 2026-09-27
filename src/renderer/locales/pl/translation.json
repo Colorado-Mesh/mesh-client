@@ -846,7 +846,13 @@
       "search": "Znajdź rozmowę",
       "listLabel": "Wiadomości prywatne",
       "empty": "Brak pasujących rozmów"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} w {{room}}",
+    "srNewMessage": "Nowa wiadomość od {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} nowa wiadomość",
+    "srNewMessages_few": "{{count}} nowe wiadomości",
+    "srNewMessages_many": "{{count}} nowych wiadomości",
+    "srNewMessages_other": "{{count}} nowej wiadomości"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2129,7 +2135,9 @@
       "esp32FlashStalled": "Transfer firmware utknął bez postępu. Wypróbuj inny kabel lub port USB, przejdź do trybu bootloadera (przytrzymaj BOOT, stuknij RESET) i wgraj ponownie.",
       "unknown": "Wystąpił nieoczekiwany błąd.",
       "provisionWipeRequired": "Pamięć EEPROM jest zablokowana z nieprawidłową tożsamością. Najpierw wyczyść EEPROM, a następnie ponownie wykonaj provisioning.",
-      "provisionVerifyFailed": "Zapisywanie provisioningu zakończone, ale urządzenie nadal zgłasza nieprzygotowaną pamięć EEPROM. Wyłącz i włącz zasilanie płyty, poczekaj na uruchomienie i spróbuj ponownie — lub najpierw wyczyść EEPROM."
+      "provisionVerifyFailed": "Zapisywanie provisioningu zakończone, ale urządzenie nadal zgłasza nieprzygotowaną pamięć EEPROM. Wyłącz i włącz zasilanie płyty, poczekaj na uruchomienie i spróbuj ponownie — lub najpierw wyczyść EEPROM.",
+      "esp32ReadStalled": "Odczytywanie błysku zatrzymało się bez postępów. Wypróbuj inny kabel USB lub port, przejdź do trybu bootloadera (przytrzymaj BOOT, dotknij RESETUJ) i ponownie utwórz kopię zapasową.",
+      "esp32ReadIncomplete": "Odczyt z lampy błyskowej zakończył się wcześniej, więc nie zapisano żadnej kopii zapasowej. Podłącz ponownie płytkę i spróbuj ponownie."
     },
     "selectSerialPort": "Wybierz port szeregowy",
     "noSerialPorts": "Nie znaleziono portów szeregowych USB.",
@@ -2177,7 +2185,14 @@
     "clearPairedDevicesConfirmTitle": "Wyczyścić powiązania Bluetooth RNode?",
     "clearPairedDevicesConfirmMessage": "Wysyła CMD_BT_UNPAIR przez USB i czyści powiązane hosty na RNode ESP32 (bez efektu na niektórych buildach nRF52). Przed ponownym parowaniem nadal musisz Zapomnieć urządzenie w Ustawieniach systemowych → Bluetooth.",
     "clearPairedDevicesConfirm": "Wyczyść powiązania Bluetooth",
-    "clearPairedDevicesSuccess": "Zażądano wyczyszczenia tabeli powiązań Bluetooth radia."
+    "clearPairedDevicesSuccess": "Zażądano wyczyszczenia tabeli powiązań Bluetooth radia.",
+    "backupFirmware": "Kopia zapasowa oprogramowania sprzętowego",
+    "backupFirmwareHint": "Zapisuje pełny obraz lampy błyskowej ESP32 (ustawienia oprogramowania układowego i urządzenia) do pliku przed mignięciem. Niedostępne dla płyt nRF52.",
+    "backingUp": "Odczyt błysku… {{progress}}%",
+    "cancelBackup": "Anuluj kopię zapasową",
+    "backupSaved": "Kopia zapasowa oprogramowania układowego zapisana w {{path}}.",
+    "backupSaveCancelled": "Kopia zapasowa oprogramowania sprzętowego została odczytana, ale nie zapisana.",
+    "backupCancelled": "Kopia zapasowa oprogramowania sprzętowego anulowana."
   },
   "identityVault": {
     "title": "Skarbiec tożsamości",

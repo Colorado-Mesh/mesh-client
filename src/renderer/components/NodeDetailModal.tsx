@@ -704,7 +704,7 @@ export default function NodeDetailModal({
             : t('nodeDetailModal.traceRoute')}
         </button>
       )}
-      {protocol === 'meshcore' && onRequestRepeaterStatus && (
+      {onRequestRepeaterStatus && (
         <button
           type="button"
           onClick={async () => {

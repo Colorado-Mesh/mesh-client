@@ -672,3 +672,22 @@ describe('notification sound preferences', () => {
     expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('notificationSounds:read', event, id)");
   });
 });
+
+describe('desktop notification click focus', () => {
+  it('restores, shows and focuses only the sender window', () => {
+    const idx = INDEX_SOURCE.indexOf("ipcMain.handle('app:focusWindow'");
+    expect(idx).toBeGreaterThan(-1);
+    const body = INDEX_SOURCE.slice(idx, idx + 400);
+    expect(body).toContain('BrowserWindow.fromWebContents(event.sender)');
+    expect(body).toContain('window.restore()');
+    expect(body).toContain('window.focus()');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('app:focusWindow')");
+  });
+});
+
+describe('RNode flasher firmware backup', () => {
+  it('registers the save handler module and exposes it on the flasher namespace', () => {
+    expect(INDEX_SOURCE).toContain('registerFlasherHandlers();');
+    expect(PRELOAD_SOURCE).toContain("'flasher:saveFirmwareBackup'");
+  });
+});

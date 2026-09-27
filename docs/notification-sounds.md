@@ -30,7 +30,9 @@ Built-in profiles in `SOUND_PROFILES` (`chatNotifications.ts`); users can replac
 - **URGENT (`mecpEas`):** simultaneous 853 Hz + 960 Hz, 5 s.
 - **ROUTINE (`mecp`):** rising triple 784/988/1175 Hz, repeated twice.
 
-ChatPanel handles foreground chat views; App handles inactive panels/protocols and hidden windows. The existing gates determine whether a sound is appropriate. Hidden Meshtastic and MECP desktop notifications are silent so they do not duplicate Web Audio playback. The audio context is reused and resumed when suspended. MECP drills stay silent; MAYDAY/URGENT bypass notification mutes, while ROUTINE/SAFETY respect them.
+ChatPanel handles foreground chat views; App handles inactive panels/protocols and hidden windows. The existing gates determine whether a sound is appropriate.
+
+**Desktop notifications:** when a chat sound fires while the app window is inactive (hidden, minimized or unfocused), App also raises an OS notification. This covers all four chat surfaces: Meshtastic, MeshCore, Reticulum LXMF Chat and RRC. The notification uses the same gates as the sound, so global mute and per-channel, per-DM and per-room mutes suppress both. RRC channel lines in the watched room stay silent. The notification shows the sender and a preview; control characters are stripped and the text is truncated (`desktopNotification.ts`, `chatDesktopNotifications.ts`). Each conversation gets one tag (`<protocol>:<view>`), so a newer message replaces the older notification instead of stacking. Clicking it focuses the window (`app:focusWindow`), switches protocol if needed, and opens the Chat DM or channel, or the RRC room. Chat and MECP desktop notifications are silent so they do not duplicate Web Audio playback. The audio context is reused and resumed when suspended. MECP drills stay silent; MAYDAY/URGENT bypass notification mutes, while ROUTINE/SAFETY respect them.
 
 There is no single documented Electron API for opening each OS's alert-tone settings picker. The platform APIs differ:
 

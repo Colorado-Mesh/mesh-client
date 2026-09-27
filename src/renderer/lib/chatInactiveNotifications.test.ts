@@ -4,6 +4,7 @@ import type { ChatMessage } from '@/renderer/lib/types';
 
 import {
   CHAT_NOTIF_MUTED_STORAGE_KEY,
+  resolveInactiveChatNotification,
   resolveInactiveChatNotificationType,
 } from './chatInactiveNotifications';
 
@@ -19,6 +20,40 @@ function msg(overrides: Partial<ChatMessage> = {}): ChatMessage {
     ...overrides,
   } as ChatMessage;
 }
+
+describe('resolveInactiveChatNotification', () => {
+  it('returns the newest unmuted message with its view key', () => {
+    const older = msg({ id: 1, channel: 1, timestamp: 1 });
+    const newer = msg({ id: 2, channel: 2, timestamp: 2 });
+    const muted = msg({ id: 3, channel: 0, timestamp: 3 });
+    const result = resolveInactiveChatNotification({
+      newMessages: [older, newer, muted],
+      allMessages: [older, newer, muted],
+      protocol: 'meshtastic',
+      ownNodeIds: ownNodes,
+      ownSenderId: 1,
+      mutedViews: new Set(['ch:0']),
+      notifGloballyMuted: false,
+    });
+    expect(result?.type).toBe('channel');
+    expect(result?.message).toBe(newer);
+    expect(result?.viewKey).toBe('ch:2');
+  });
+
+  it('skips own messages', () => {
+    expect(
+      resolveInactiveChatNotification({
+        newMessages: [msg({ sender_id: 1 })],
+        allMessages: [msg({ sender_id: 1 })],
+        protocol: 'meshtastic',
+        ownNodeIds: ownNodes,
+        ownSenderId: 1,
+        mutedViews: new Set(),
+        notifGloballyMuted: false,
+      }),
+    ).toBeNull();
+  });
+});
 
 describe('resolveInactiveChatNotificationType', () => {
   it('returns null when globally muted', () => {

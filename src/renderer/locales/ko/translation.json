@@ -814,7 +814,11 @@
       "search": "대화 찾기",
       "listLabel": "개인 메시지",
       "empty": "일치하는 대화가 없습니다"
-    }
+    },
+    "notificationRrcTitle": "{{room}} 의 {{sender}}",
+    "srNewMessage": "{{sender}} 님의 새 메시지: {{text}}",
+    "srNewMessages_one": "{{count}} 새 메시지",
+    "srNewMessages_other": "{{count}} 새 메시지"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -2083,7 +2087,9 @@
       "esp32FlashStalled": "펌웨어 전송이 진행 없이 멈췄습니다. 다른 USB 케이블이나 포트를 시도하고 부트로더 모드(BOOT 길게 누르기, RESET 탭)로 들어간 후 다시 플래시하세요.",
       "unknown": "예기치 않은 오류가 발생했습니다.",
       "provisionWipeRequired": "EEPROM이 유효하지 않은 ID로 잠겨 있습니다. 먼저 EEPROM을 지운 다음 다시 프로비저닝하십시오.",
-      "provisionVerifyFailed": "프로비저닝 쓰기가 완료되었지만 장치는 여전히 프로비저닝되지 않은 EEPROM을 보고합니다. 보드의 전원을 껐다가 켜고 부팅을 기다린 다음 다시 시도하거나 EEPROM을 먼저 지우십시오."
+      "provisionVerifyFailed": "프로비저닝 쓰기가 완료되었지만 장치는 여전히 프로비저닝되지 않은 EEPROM을 보고합니다. 보드의 전원을 껐다가 켜고 부팅을 기다린 다음 다시 시도하거나 EEPROM을 먼저 지우십시오.",
+      "esp32ReadStalled": "읽기 플래시가 진행되지 않고 정지되었습니다. 다른 USB 케이블 또는 포트를 시도하고 부트로더 모드로 들어간 다음 (부팅 유지, 재설정 탭) 다시 백업하십시오.",
+      "esp32ReadIncomplete": "플래시 읽기가 일찍 종료되어 백업이 저장되지 않았습니다. 보드를 다시 연결하고 다시 시도하십시오."
     },
     "selectSerialPort": "직렬 포트 선택",
     "noSerialPorts": "USB 직렬 포트를 찾을 수 없습니다.",
@@ -2131,7 +2137,14 @@
     "clearPairedDevicesConfirmTitle": "RNode 블루투스 본드를 지우시겠습니까?",
     "clearPairedDevicesConfirmMessage": "USB로 CMD_BT_UNPAIR를 보내고 ESP32 RNode의 본딩된 호스트를 지웁니다(일부 nRF52 빌드에서는 무효). 다시 페어링하기 전에 시스템 설정 → Bluetooth에서 장치를 여전히 잊어야 합니다.",
     "clearPairedDevicesConfirm": "블루투스 본드 지우기",
-    "clearPairedDevicesSuccess": "라디오 블루투스 본드 테이블 지우기가 요청되었습니다."
+    "clearPairedDevicesSuccess": "라디오 블루투스 본드 테이블 지우기가 요청되었습니다.",
+    "backupFirmware": "펌웨어 백업",
+    "backupFirmwareHint": "플래시하기 전에 ESP32 플래시의 전체 이미지 (펌웨어 및 장치 설정) 를 파일에 저장합니다. nRF52 보드에는 사용할 수 없습니다.",
+    "backingUp": "읽기 플래시… {{progress}} %",
+    "cancelBackup": "백업 취소",
+    "backupSaved": "펌웨어 백업이 {{path}} 에 저장되었습니다.",
+    "backupSaveCancelled": "펌웨어 백업을 읽었지만 저장되지 않았습니다.",
+    "backupCancelled": "펌웨어 백업이 취소되었습니다."
   },
   "identityVault": {
     "title": "신원 정보 보관소",

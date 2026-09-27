@@ -814,7 +814,11 @@
       "search": "会話を検索",
       "listLabel": "ダイレクトメッセージ",
       "empty": "一致する会話はありません"
-    }
+    },
+    "notificationRrcTitle": "{{room}}の{{sender}}",
+    "srNewMessage": "{{sender}}からの新着メッセージ： {{text}}",
+    "srNewMessages_one": "{{count}} NEW MESSAGE",
+    "srNewMessages_other": "{{count}}件の新着メッセージ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -2083,7 +2087,9 @@
       "esp32FlashStalled": "ファームウェアの転送が進まず停止しました。別のUSBケーブルまたはポートを試し、ブートローダーモード（BOOTを長押し、RESETをタップ）に入り、再度フラッシュしてください。",
       "unknown": "予期しないエラーが発生しました",
       "provisionWipeRequired": "EEPROMは無効なIDでロックされています。まずEEPROMを消去してから、再度プロビジョニングしてください。",
-      "provisionVerifyFailed": "プロビジョニング書き込みは完了しましたが、デバイスはまだプロビジョニングされていないEEPROMを報告しています。ボードの電源を入れ直し、起動を待ち、もう一度やり直すか、まずEEPROMを消去してください。"
+      "provisionVerifyFailed": "プロビジョニング書き込みは完了しましたが、デバイスはまだプロビジョニングされていないEEPROMを報告しています。ボードの電源を入れ直し、起動を待ち、もう一度やり直すか、まずEEPROMを消去してください。",
+      "esp32ReadStalled": "読み取りフラッシュが進行せずに停止しました。別のUSBケーブルまたはポートを試し、ブートローダモードに入り（ブートを長押し、リセットをタップ）、再度バックアップします。",
+      "esp32ReadIncomplete": "フラッシュ読み取りが早期に終了したため、バックアップは保存されませんでした。ボードを再接続して、もう一度お試しください。"
     },
     "selectSerialPort": "シリアルポートを選択",
     "noSerialPorts": "USBシリアルポートが見つかりません。",
@@ -2131,7 +2137,14 @@
     "clearPairedDevicesConfirmTitle": "RNode Bluetoothボンドをクリアしますか？",
     "clearPairedDevicesConfirmMessage": "USB経由でCMD_BT_UNPAIRを送信し、ESP32 RNode上のボンディング済みホストを消去します（一部のnRF52ビルドでは無効）。再ペアリング前に、システム設定 → Bluetoothでデバイスを忘れ（Forget）る必要があります。",
     "clearPairedDevicesConfirm": "Bluetoothボンドを消去",
-    "clearPairedDevicesSuccess": "ラジオのBluetoothボンド表の消去を要求しました。"
+    "clearPairedDevicesSuccess": "ラジオのBluetoothボンド表の消去を要求しました。",
+    "backupFirmware": "ファームウェアのバックアップ",
+    "backupFirmwareHint": "フラッシュする前に、ESP 32フラッシュのフルイメージ（ファームウェアとデバイス設定）をファイルに保存します。nRF 52ボードでは使用できません。",
+    "backingUp": "フラッシュを読み取っています… {{progress}} %",
+    "cancelBackup": "バックアップをキャンセル",
+    "backupSaved": "ファームウェアのバックアップが{{path}}に保存されました。",
+    "backupSaveCancelled": "ファームウェアのバックアップは読み取られましたが、保存されませんでした。",
+    "backupCancelled": "ファームウェアのバックアップがキャンセルされました。"
   },
   "identityVault": {
     "title": "アイデンティティ保管庫",

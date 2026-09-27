@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { touch } from '@/shared/touch';
 
+const { readFlashMock, readFlashIdMock } = vi.hoisted(() => ({
+  readFlashMock: vi.fn(),
+  readFlashIdMock: vi.fn(() => Promise.resolve(0x164020)),
+}));
+
 const { writeFlashMock } = vi.hoisted(() => ({
   writeFlashMock: vi.fn(
     (opts: {
@@ -68,11 +73,20 @@ vi.mock('esptool-js', () => ({
       chip: { CHIP_NAME: 'ESP32' },
       main: () => Promise.resolve(),
       writeFlash: writeFlashMock,
+      readFlash: readFlashMock,
+      readFlashId: readFlashIdMock,
+      DETECTED_FLASH_SIZES: { 0x14: '1MB', 0x16: '4MB', 0x18: '16MB' },
+      flashSizeBytes: (size: string) => {
+        const mb = Number.parseInt(size, 10);
+        return Number.isFinite(mb) ? mb * 1024 * 1024 : -1;
+      },
     };
   }),
 }));
 
-import { flashEsp32Firmware } from './esp32Flasher';
+import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
+
+import { flashEsp32Firmware, readEsp32Flash } from './esp32Flasher';
 
 describe('esp32Flasher stall timeout contract', () => {
   it('uses a 60s stall watchdog constant', async () => {
@@ -122,5 +136,74 @@ describe('flashEsp32Firmware Uint8Array flash path', () => {
       0,
     );
     expect(totalBytes).toBe(4);
+  });
+});
+
+describe('readEsp32Flash', () => {
+  const MB = 1024 * 1024;
+  beforeEach(() => {
+    readFlashMock.mockReset();
+    readFlashIdMock.mockReset();
+    readFlashIdMock.mockResolvedValue(0x164020);
+    vi.mocked(closeSerialPortIfOpen).mockClear();
+  });
+
+  it('reads the JEDEC-detected flash size from address 0 and reports progress', async () => {
+    const progress: number[] = [];
+    readFlashMock.mockImplementation(
+      (addr: number, size: number, cb: (p: Uint8Array, n: number, t: number) => void) => {
+        expect(addr).toBe(0);
+        cb(new Uint8Array(), size / 2, size);
+        cb(new Uint8Array(), size, size);
+        return Promise.resolve(new Uint8Array(size));
+      },
+    );
+    const result = await readEsp32Flash({} as SerialPort, {
+      fallbackFlashSize: '16MB',
+      progressCallback: (p) => progress.push(p),
+    });
+    expect(readFlashMock).toHaveBeenCalledWith(0, 4 * MB, expect.any(Function));
+    expect(result).toMatchObject({ chipName: 'ESP32', flashSizeBytes: 4 * MB });
+    expect(result.data.byteLength).toBe(4 * MB);
+    expect(progress).toEqual(expect.arrayContaining([50, 100]));
+    expect(closeSerialPortIfOpen).toHaveBeenCalled();
+  });
+
+  it('falls back to the catalog flash size when the JEDEC size byte is unknown', async () => {
+    readFlashIdMock.mockResolvedValue(0x7f4020);
+    readFlashMock.mockImplementation((_a: number, size: number) =>
+      Promise.resolve(new Uint8Array(size)),
+    );
+    const result = await readEsp32Flash({} as SerialPort, { fallbackFlashSize: '1MB' });
+    expect(result.flashSizeBytes).toBe(MB);
+  });
+
+  it('rejects a short read instead of returning a truncated image', async () => {
+    readFlashMock.mockResolvedValue(new Uint8Array(16));
+    await expect(readEsp32Flash({} as SerialPort)).rejects.toThrow('ESP32_READ_INCOMPLETE');
+    expect(closeSerialPortIfOpen).toHaveBeenCalled();
+  });
+
+  it('aborts an in-flight read, closes the port, and reports cancellation', async () => {
+    const controller = new AbortController();
+    readFlashMock.mockImplementation(() => {
+      queueMicrotask(() => {
+        controller.abort();
+      });
+      return new Promise(() => {});
+    });
+    await expect(readEsp32Flash({} as SerialPort, { signal: controller.signal })).rejects.toThrow(
+      'ESP32_READ_CANCELLED',
+    );
+    expect(closeSerialPortIfOpen).toHaveBeenCalled();
+  });
+
+  it('does not touch the port when already cancelled', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(readEsp32Flash({} as SerialPort, { signal: controller.signal })).rejects.toThrow(
+      'ESP32_READ_CANCELLED',
+    );
+    expect(readFlashMock).not.toHaveBeenCalled();
   });
 });

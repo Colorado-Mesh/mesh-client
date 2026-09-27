@@ -441,6 +441,11 @@ describe('NodeDetailModal MeshCore actions', () => {
     expect(onMessageNode).not.toHaveBeenCalled();
   });
 
+  it('hides Request Status when the caller omits onRequestRepeaterStatus (capability gate)', () => {
+    renderMeshcoreModal({ onRequestRepeaterStatus: undefined });
+    expect(screen.queryByRole('button', { name: 'Request Status' })).not.toBeInTheDocument();
+  });
+
   it('invokes requestRepeaterStatus after repeater auth is skipped', async () => {
     const user = userEvent.setup();
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);

@@ -124,6 +124,7 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
@@ -3574,6 +3575,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
+registerFlasherHandlers();
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────
@@ -3815,6 +3817,16 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
     );
     throw err;
   }
+});
+
+/** Notification click → bring the sender's window forward (restores from minimize / tray). */
+ipcMain.handle('app:focusWindow', (event) => {
+  assertIpcSender(event, 'app:focusWindow');
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window || window.isDestroyed()) return;
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
 });
 
 ipcMain.handle('app:showEmojiPanel', (event) => {

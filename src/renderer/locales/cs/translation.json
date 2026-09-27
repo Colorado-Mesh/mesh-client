@@ -831,7 +831,13 @@
       "search": "Najít konverzaci",
       "listLabel": "Přímé zprávy",
       "empty": "Žádná konverzace neodpovídá"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} v {{room}}",
+    "srNewMessage": "Nová zpráva od {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} nová zpráva",
+    "srNewMessages_few": "{{count}} nové zprávy",
+    "srNewMessages_many": "{{count}} nových zpráv",
+    "srNewMessages_other": "{{count}} nových zpráv"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -2107,7 +2113,9 @@
       "esp32FlashStalled": "Přenos firmwaru se zastavil bez pokroku. Zkuste jiný USB kabel nebo port, přejděte do režimu bootloaderu (podržte BOOT, klepněte RESET) a flashujte znovu.",
       "unknown": "Nastala neočekávaná chyba.",
       "provisionWipeRequired": "EEPROM je uzamčena s neplatnou identitou. Nejprve vymažte EEPROM a poté znovu proveďte provisioning.",
-      "provisionVerifyFailed": "Zápisy provisioningu byly dokončeny, ale zařízení stále hlásí nezřízenou EEPROM. Vypněte a zapněte desku, počkejte na start a zkuste to znovu — nebo nejprve vymažte EEPROM."
+      "provisionVerifyFailed": "Zápisy provisioningu byly dokončeny, ale zařízení stále hlásí nezřízenou EEPROM. Vypněte a zapněte desku, počkejte na start a zkuste to znovu — nebo nejprve vymažte EEPROM.",
+      "esp32ReadStalled": "Blesk pro čtení se zastavil bez pokroku. Zkuste jiný kabel nebo port USB, přejděte do režimu zavaděče (podržte SPUŠTĚNÍ, klepněte na RESET) a znovu zálohujte.",
+      "esp32ReadIncomplete": "Čtení blesku skončilo předčasně, takže nebyla uložena žádná záloha. Znovu připojte desku a zkuste to znovu."
     },
     "selectSerialPort": "Výběr sériového portu",
     "noSerialPorts": "Nebyly nalezeny žádné sériové porty USB.",
@@ -2155,7 +2163,14 @@
     "clearPairedDevicesConfirmTitle": "Vymazat vazby RNode Bluetooth?",
     "clearPairedDevicesConfirmMessage": "Odešle CMD_BT_UNPAIR přes USB a vymaže spárované hostitele na ESP32 RNode (bez efektu na některých nRF52 buildech). Před opětovným párováním musíte zařízení stále Zapomenout v Nastavení systému → Bluetooth.",
     "clearPairedDevicesConfirm": "Vymazat Bluetooth vazby",
-    "clearPairedDevicesSuccess": "Požadováno vymazání tabulky Bluetooth vazeb rádia."
+    "clearPairedDevicesSuccess": "Požadováno vymazání tabulky Bluetooth vazeb rádia.",
+    "backupFirmware": "Zálohovat firmware",
+    "backupFirmwareHint": "Uloží úplný obraz blesku ESP32 (nastavení firmwaru a zařízení) do souboru před tím, než začnete blikat. Není k dispozici pro desky nRF52.",
+    "backingUp": "Načítání blesku… {{progress}}%",
+    "cancelBackup": "Zrušit zálohu",
+    "backupSaved": "Záloha firmwaru uložena do {{path}}.",
+    "backupSaveCancelled": "Záloha firmwaru byla přečtena, ale nebyla uložena.",
+    "backupCancelled": "Zálohování firmwaru zrušeno."
   },
   "identityVault": {
     "title": "Trezor identity",

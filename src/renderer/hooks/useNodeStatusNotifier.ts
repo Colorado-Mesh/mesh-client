@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
 import { MS_PER_MINUTE } from '@/shared/timeConstants';
 
+import { fireNotification } from '../lib/desktopNotification';
 import { formatDisplayTime } from '../lib/formatDisplayTime';
 import i18n from '../lib/i18n';
 import { getNodeStatus } from '../lib/nodeStatus';
@@ -69,25 +70,6 @@ function computeIsOnline(
 export interface NodeStatusNotifierOptions {
   /** User `nodeSilenceAlertMinutes`; replaces the capability stale threshold when set. */
   silenceThresholdMinutes?: number | null;
-}
-
-export function fireNotification(title: string, body: string): void {
-  try {
-    if (!('Notification' in window)) return;
-    if (Notification.permission === 'granted') {
-      new Notification(title, { body, silent: false });
-    } else if (Notification.permission !== 'denied') {
-      void Notification.requestPermission()
-        .then((perm) => {
-          if (perm === 'granted') new Notification(title, { body, silent: false });
-        })
-        .catch(() => {
-          // catch-no-log-ok: best-effort notification permission
-        });
-    }
-  } catch {
-    // catch-no-log-ok: best-effort desktop notification
-  }
 }
 
 export function useNodeStatusNotifier(
