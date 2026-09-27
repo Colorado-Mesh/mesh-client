@@ -62,6 +62,22 @@ describe('AppRail', () => {
     expect(scroll?.querySelector('[data-nav-section="incident"]')).toBeNull();
   });
 
+  it('opens its tooltips beside the rail so they never cover the next item', () => {
+    render(
+      <AppRail
+        header={<button title="Reticulum">RN</button>}
+        sections={meshcoreSections}
+        activeSectionId="chat"
+        badgeCounts={{}}
+        onSectionSelect={vi.fn()}
+      />,
+    );
+    const nav = screen.getByRole('navigation', { name: 'Application panels' });
+    expect(nav).toHaveAttribute('data-tooltip-side', 'right');
+    // The protocol switcher sits inside the rail, so its tooltips open to the right as well.
+    expect(nav).toContainElement(screen.getByRole('button', { name: 'RN' }));
+  });
+
   it('marks the active section with aria-current', () => {
     render(
       <AppRail

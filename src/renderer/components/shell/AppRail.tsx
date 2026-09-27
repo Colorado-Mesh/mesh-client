@@ -98,10 +98,12 @@ export function AppRail({
   };
 
   // Incident and App sit outside the scrolling part so they stay on screen however short the
-  // window or large the text size (EMCOMM S9: Incident is never scrolled away).
+  // window or large the text size (EMCOMM S9: Incident is never scrolled away). Tooltips open
+  // beside the rail; above or below an item they covered its neighbour.
   return (
     <nav
       aria-label={t('aria.applicationPanels')}
+      data-tooltip-side="right"
       className="bg-deep-black border-ink-800 flex h-full w-18 shrink-0 flex-col items-center border-r pt-1.5 pb-3.5 [@media(max-height:720px)]:pt-1 [@media(max-height:720px)]:pb-2.5"
     >
       {/* The scroller clips its overflow, so part of the top padding lives inside it: the protocol

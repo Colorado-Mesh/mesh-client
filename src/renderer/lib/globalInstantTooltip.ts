@@ -1,5 +1,12 @@
+import type { InstantTooltipSide } from './instantTooltipPosition';
+
 /** Stored title while the native attribute is removed to suppress OS tooltip delay. */
 export const INSTANT_TOOLTIP_STORED_ATTR = 'data-instant-tooltip-stored';
+
+/** Set `data-tooltip-side="right"` on a container to open its tooltips beside the trigger. */
+export function instantTooltipSide(host: Element): InstantTooltipSide {
+  return host.closest('[data-tooltip-side="right"]') ? 'right' : 'auto';
+}
 
 export function findInstantTooltipHost(start: EventTarget | null): HTMLElement | null {
   if (!(start instanceof Element)) return null;

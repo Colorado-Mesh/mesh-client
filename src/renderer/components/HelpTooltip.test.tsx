@@ -53,9 +53,9 @@ describe('HelpTooltip', () => {
 
   it('clamps tooltip left when trigger is near the right viewport edge', async () => {
     const user = userEvent.setup();
-    // Trigger centered at x=1008 (near right edge of 1024px viewport).
-    // Without clamping: left=1008, which would push right half off-screen.
-    // With clamping: left = min(1024-128-8, 1008) = 888.
+    // Trigger centered at x=1008 (near right edge of a 1024px viewport), bubble 200px wide.
+    // Centred, it would end at 1108; clamped, its left edge is 1024 - 8 - 200 = 816.
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200);
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
       top: 200,
       bottom: 216,
@@ -71,14 +71,15 @@ describe('HelpTooltip', () => {
     await user.hover(document.querySelector('.cursor-help')!);
     const tooltip = document.querySelector<HTMLElement>('.pointer-events-none')!;
     expect(tooltip).toBeTruthy();
-    expect(parseFloat(tooltip.style.left)).toBeLessThanOrEqual(window.innerWidth - 128 - 8);
+    expect(parseFloat(tooltip.style.left)).toBe(window.innerWidth - 8 - 200);
     vi.restoreAllMocks();
   });
 
   it('clamps tooltip left when trigger is near the left viewport edge', async () => {
     const user = userEvent.setup();
-    // Trigger centered at x=8, would push left half off-screen.
-    // With clamping: left = max(128+8, 8) = 136.
+    // Trigger centered at x=8, bubble 200px wide: centred, it would start at -92, so its left
+    // edge is held at the 8px margin.
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200);
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue({
       top: 200,
       bottom: 216,
@@ -94,7 +95,7 @@ describe('HelpTooltip', () => {
     await user.hover(document.querySelector('.cursor-help')!);
     const tooltip = document.querySelector<HTMLElement>('.pointer-events-none')!;
     expect(tooltip).toBeTruthy();
-    expect(parseFloat(tooltip.style.left)).toBeGreaterThanOrEqual(128 + 8);
+    expect(parseFloat(tooltip.style.left)).toBe(8);
     vi.restoreAllMocks();
   });
 
@@ -115,9 +116,10 @@ describe('HelpTooltip', () => {
     await user.hover(document.querySelector('.cursor-help')!);
     const tooltip = document.querySelector<HTMLElement>('.pointer-events-none')!;
     expect(tooltip).toBeTruthy();
-    // Positioned below (top = bottom + 4 = 40), not above
+    // Positioned below (top = bottom + 4 = 40), not above; left is the measured edge, so no
+    // horizontal translate.
     expect(parseFloat(tooltip.style.top)).toBe(40);
-    expect(tooltip.style.transform).toBe('translate(-50%, 0)');
+    expect(tooltip.style.transform).toBe('none');
     vi.restoreAllMocks();
   });
 
@@ -140,7 +142,7 @@ describe('HelpTooltip', () => {
     expect(tooltip).toBeTruthy();
     // Positioned above (top = r.top - 8 = 192), transform flips it up
     expect(parseFloat(tooltip.style.top)).toBe(192);
-    expect(tooltip.style.transform).toBe('translate(-50%, -100%)');
+    expect(tooltip.style.transform).toBe('translateY(-100%)');
     vi.restoreAllMocks();
   });
 });
