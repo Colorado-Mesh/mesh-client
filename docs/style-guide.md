@@ -146,7 +146,7 @@ Minimum: 12px for anything a person reads; 13px body for dense data views, 14px 
 
 ## Spacing
 
-A 4px grid (Tailwind spacing, base 1rem = 16px): `0.5` 2px (inline icon gaps), `1` 4px (tight element gaps), `1.5` 6px (dense list spacing), `2` 8px (standard gaps), `3` 12px (compact padding), `4` 16px (card padding), `5` 20px, `6` 24px (section gaps), `8` 32px (major gaps), `12` 48px, `16` 64px (page margins). Main content padding is `p-3` on phones, `p-5` on tablets, `p-8` on desktop.
+A 4px grid (Tailwind spacing, base 1rem = 16px): `0.5` 2px (inline icon gaps), `1` 4px (tight element gaps), `1.5` 6px (dense list spacing), `2` 8px (standard gaps), `3` 12px (compact padding), `4` 16px (card padding), `5` 20px, `6` 24px (section gaps), `8` 32px (major gaps), `12` 48px, `16` 64px (page margins). Main content padding is `p-1.5` on phones, `p-2.5` on tablets and `p-4` on desktop, so chat and the other panels get the space.
 
 ## Radius
 

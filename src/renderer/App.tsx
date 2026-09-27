@@ -3787,7 +3787,7 @@ function AppContent() {
                 {/* Scroll container - no padding so scrollbars pin to viewport edges */}
                 <div ref={mainViewportRef} className="bg-app-bg h-full w-full overflow-auto">
                   {/* Content wrapper - padding lives here, not on the scroll container */}
-                  <div className="h-full min-h-full min-w-0 p-3 sm:p-5 lg:p-8">
+                  <div className="h-full min-h-full min-w-0 p-1.5 sm:p-2.5 lg:p-4">
                     <ProtocolAutoConnectCoordinator
                       meshtastic={{
                         state: meshtasticConnection.state,
