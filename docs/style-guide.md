@@ -188,12 +188,12 @@ The values in `styles.css` are provisional until the Figma shadows are copied in
 
 The v6 shell (`src/renderer/components/shell/`):
 
-| Part           | Size        | Holds                                                                                                                                       |
-| -------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| App rail       | 72px wide   | Protocol switcher (one segmented choice with the protocol name), Chat, Network, Map, Monitor, Device; Incident and App pinned at the bottom |
-| Section header | 52px tall   | Section name, its panels as a segmented tablist, global actions (flood advert, launcher, language)                                          |
-| Status bar     | 28px tall   | Radio link, MQTT, TAK and queue on the left; counts and update state on the right                                                           |
-| Launcher       | 680px modal | Every visible panel plus contacts and channels, searchable, with pins                                                                       |
+| Part           | Size        | Holds                                                                                                                                              |
+| -------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| App rail       | 72px wide   | Protocol switcher (one segmented choice with the protocol name), Chat, Network, Map, Monitor, Device; Incident and App pinned at the bottom        |
+| Section header | 52px tall   | Section name, its panels as a segmented tablist, global actions (flood advert, launcher, language, then Disconnect & Quit in red at the far right) |
+| Status bar     | 28px tall   | Radio link, MQTT, TAK and queue on the left; counts and update state on the right                                                                  |
+| Launcher       | 680px modal | Every visible panel plus contacts and channels, searchable, with pins                                                                              |
 
 Phones and narrow windows (under 768px, `SHELL_COMPACT_QUERY`): the rail becomes a bottom bar with Chat, Network, Map, Incident and More; More opens the launcher as a bottom sheet. Touch targets grow with the `pointer-coarse:` variant (inputs 40px).
 

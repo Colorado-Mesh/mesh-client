@@ -144,6 +144,7 @@ import { ReticulumTxBufferingHeaderIndicator } from './components/ReticulumTxBuf
 import { AppRail } from './components/shell/AppRail';
 import { BottomNav } from './components/shell/BottomNav';
 import { PanelLauncher } from './components/shell/PanelLauncher';
+import { QuitButton } from './components/shell/QuitButton';
 import { SectionHeader } from './components/shell/SectionHeader';
 import { StatusBar, StatusBarButton } from './components/shell/StatusBar';
 import { ToastProvider, useToast } from './components/Toast';
@@ -3746,6 +3747,7 @@ function AppContent() {
                   <div className="shrink-0">
                     <LanguageSelector />
                   </div>
+                  <QuitButton />
                 </>
               }
             />

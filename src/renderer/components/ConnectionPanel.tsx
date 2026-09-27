@@ -14,8 +14,10 @@ import { meshcoreTargetsSharedMeshtasticBlePeripheral } from '@/renderer/lib/mes
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
 import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnectGate';
+import { quitMeshClient } from '@/renderer/lib/quitMeshClient';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
+import { selectAnyLinkUp, useConnectionStore } from '@/renderer/stores/connectionStore';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
   clampMqttMaxRetries,
@@ -1509,46 +1511,32 @@ export default function ConnectionPanel({
   const showAutoReconnectBanner =
     state.status === 'reconnecting' || (!radioUp && (isAutoConnecting || connecting));
 
+  // Quitting drops every protocol's links, not only this tab's, so the wording follows all of them.
+  const anyLinkUp = useConnectionStore(selectAnyLinkUp);
+
   const handleExitApp = useCallback(
     async (variant: 'connected' | 'idle' | 'connecting') => {
-      try {
-        if (variant === 'connecting') {
+      if (variant === 'connecting') {
+        try {
           handleCancelConnection();
+        } catch (err) {
+          console.warn(
+            '[ConnectionPanel] handleExitApp cancel failed:',
+            err instanceof Error ? err.message : String(err),
+          );
         }
-        // Connected quit skips onDisconnect: main owns teardown (BLE disconnectAll, TCP
-        // destroy, quit-fast sidecar stop), so a graceful stack stop here only delays exit.
-        if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
-          markMqttUserDisconnect();
-          void window.electronAPI.mqtt.disconnect().catch((err: unknown) => {
-            // catch-no-log-ok quit path — disconnect failure must not block quitApp
-            console.warn(
-              '[ConnectionPanel] mqtt.disconnect before quit failed:',
-              err instanceof Error ? err.message : String(err),
-            );
-          });
-        }
-      } catch (err) {
-        console.warn(
-          '[ConnectionPanel] handleExitApp disconnect failed:',
-          err instanceof Error ? err.message : String(err),
-        );
       }
-      try {
-        await window.electronAPI.quitApp();
-      } catch (err) {
-        console.error(
-          '[ConnectionPanel] quitApp failed:',
-          err instanceof Error ? err.message : String(err),
-        );
-      }
+      await quitMeshClient(
+        anyLinkUp || isConnected || variant === 'connecting' || mqttStatus === 'connected',
+      );
     },
-    [handleCancelConnection, isConnected, mqttStatus],
+    [anyLinkUp, handleCancelConnection, isConnected, mqttStatus],
   );
 
   /** Bottom row on every view: quitting is rare, so it sits last and is sized to its label. */
   const renderQuitRow = (variant: 'connected' | 'idle' | 'connecting') => {
     const useDisconnectAndQuit =
-      isConnected || variant === 'connecting' || mqttStatus === 'connected';
+      anyLinkUp || isConnected || variant === 'connecting' || mqttStatus === 'connected';
     const labelKey = useDisconnectAndQuit
       ? 'connectionPanel.disconnectAndQuit'
       : 'connectionPanel.quit';
