@@ -3365,6 +3365,7 @@
     "importResultError": "Importováno {{imported}}, vynecháno {{skipped}}. Chyby: {{errors}}",
     "refreshContacts": "Obnovte kontakty z rádia",
     "sendFloodAdvert": "Odeslat flood advert",
+    "sendFloodAdvertUnavailable": "Dostupné po připojení rádia MeshCore",
     "filterByContactGroup": "Filtrujte podle skupiny kontaktů",
     "manageContactGroups": "Správa skupin kontaktů",
     "manageGroups": "Spravovat skupiny",

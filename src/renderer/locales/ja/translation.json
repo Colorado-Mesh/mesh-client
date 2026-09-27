@@ -3335,6 +3335,7 @@
     "importResultError": "{{imported}} をインポートし、{{skipped}} をスキップしました。エラー: {{errors}}",
     "refreshContacts": "無線から連絡先を更新する",
     "sendFloodAdvert": "フラッドadvertを送信する",
+    "sendFloodAdvertUnavailable": "MeshCore無線機を接続すると使用できます",
     "filterByContactGroup": "連絡先グループでフィルタリングする",
     "manageContactGroups": "連絡先グループを管理する",
     "manageGroups": "グループの管理",

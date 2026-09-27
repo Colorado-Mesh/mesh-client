@@ -38,7 +38,10 @@ export function MeshcoreFloodAdvertHeaderButton({ disabled, onSend }: Props) {
       disabled={disabled || sending}
       aria-label={t('nodeListPanel.sendFloodAdvert')}
       aria-busy={sending}
-      title={t('nodeListPanel.sendFloodAdvert')}
+      // Disabled, the tooltip says why instead of naming an action that cannot run.
+      title={t(
+        disabled ? 'nodeListPanel.sendFloodAdvertUnavailable' : 'nodeListPanel.sendFloodAdvert',
+      )}
       className="text-muted hover:border-brand-green hover:text-bright-green border-ink-700 inline-flex shrink-0 items-center gap-1.5 rounded border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-40"
     >
       <RadioTower

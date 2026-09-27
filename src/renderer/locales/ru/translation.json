@@ -3393,6 +3393,7 @@
     "importResultError": "Импортирован {{imported}}, пропущен {{skipped}}. Ошибки: {{errors}}",
     "refreshContacts": "Обновить контакты с радио",
     "sendFloodAdvert": "Отправить flood advert",
+    "sendFloodAdvertUnavailable": "Доступно после подключения радио MeshCore",
     "filterByContactGroup": "Фильтровать по группе контактов",
     "manageContactGroups": "Управление группами контактов",
     "manageGroups": "Управление группами",

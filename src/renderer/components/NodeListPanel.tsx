@@ -823,6 +823,9 @@ export default function NodeListPanel({
               }}
               disabled={!meshcoreRadioOperational || advertLoading}
               aria-label={t('nodeListPanel.sendFloodAdvert')}
+              title={
+                meshcoreRadioOperational ? undefined : t('nodeListPanel.sendFloodAdvertUnavailable')
+              }
               icon={
                 advertLoading ? (
                   smallSpinner

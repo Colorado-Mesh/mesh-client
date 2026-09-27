@@ -3335,6 +3335,7 @@
     "importResultError": "Importato {{imported}}, saltato {{skipped}}. Errori: {{errors}}",
     "refreshContacts": "Aggiorna i contatti dalla radio",
     "sendFloodAdvert": "Invia flood advert",
+    "sendFloodAdvertUnavailable": "Disponibile quando è connessa una radio MeshCore",
     "filterByContactGroup": "Filtra per gruppo di contatti",
     "manageContactGroups": "Gestisci gruppi di contatti",
     "manageGroups": "Gestisci gruppi",

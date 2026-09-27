@@ -3335,6 +3335,7 @@
     "importResultError": "Mengimpor {{imported}}, melewatkan {{skipped}}. Kesalahan: {{errors}}",
     "refreshContacts": "Segarkan kontak dari radio",
     "sendFloodAdvert": "Kirim flood advert",
+    "sendFloodAdvertUnavailable": "Tersedia setelah radio MeshCore terhubung",
     "filterByContactGroup": "Filter berdasarkan grup kontak",
     "manageContactGroups": "Kelola grup kontak",
     "manageGroups": "Kelola grup",

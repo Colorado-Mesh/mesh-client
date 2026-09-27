@@ -3390,6 +3390,7 @@
     "importResultSuccessWithSkipped_other": "Zaimportowano kontakty {{count}}, pominięto {{skipped}}.",
     "importResultError": "Zaimportowano {{imported}}, pominięto {{skipped}}. Błędy: {{errors}}",
     "sendFloodAdvert": "Wyślij flood advert",
+    "sendFloodAdvertUnavailable": "Dostępne po podłączeniu radia MeshCore",
     "filterByContactGroup": "Filtruj według grupy kontaktów",
     "manageContactGroups": "Zarządzaj grupami kontaktów",
     "contactsRefreshed": "Kontakty odświeżone.",

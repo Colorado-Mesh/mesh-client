@@ -3335,6 +3335,7 @@
     "importResultError": "{{imported}} içe aktarıldı, {{skipped}} atlandı. Hatalar: {{errors}}",
     "refreshContacts": "Radyodaki kişileri yenile",
     "sendFloodAdvert": "Flood advert gönder",
+    "sendFloodAdvertUnavailable": "Bir MeshCore telsizi bağlandığında kullanılabilir",
     "filterByContactGroup": "Kişi grubuna göre filtrele",
     "manageContactGroups": "Kişi gruplarını yönet",
     "manageGroups": "Grupları yönet",

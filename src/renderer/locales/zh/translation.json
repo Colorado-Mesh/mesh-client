@@ -3335,6 +3335,7 @@
     "importResultError": "已导入{{imported}} ，已跳过{{skipped}}。错误： {{errors}}",
     "refreshContacts": "从收音机刷新联系人",
     "sendFloodAdvert": "发送泛洪通告",
+    "sendFloodAdvertUnavailable": "连接 MeshCore 电台后可用",
     "filterByContactGroup": "按联系人组筛选",
     "manageContactGroups": "管理联系人组",
     "manageGroups": "管理群组",

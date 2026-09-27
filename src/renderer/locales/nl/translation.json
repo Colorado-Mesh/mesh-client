@@ -3335,6 +3335,7 @@
     "importResultError": "{{imported}} geïmporteerd, {{skipped}} overgeslagen. Fouten: {{errors}}",
     "refreshContacts": "Vernieuw contacten van radio",
     "sendFloodAdvert": "Stuur een flood-advert",
+    "sendFloodAdvertUnavailable": "Beschikbaar zodra een MeshCore-radio is verbonden",
     "filterByContactGroup": "Filter op contactgroep",
     "manageContactGroups": "Beheer contactgroepen",
     "manageGroups": "Beheer groepen",

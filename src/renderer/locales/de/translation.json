@@ -3335,6 +3335,7 @@
     "importResultError": "{{imported}} importiert, {{skipped}} übersprungen. Fehler: {{errors}}",
     "refreshContacts": "Kontakte aus dem Radio aktualisieren",
     "sendFloodAdvert": "Flood-Advert senden",
+    "sendFloodAdvertUnavailable": "Verfügbar, sobald ein MeshCore-Funkgerät verbunden ist",
     "filterByContactGroup": "Nach Kontaktgruppe filtern",
     "manageContactGroups": "Kontaktgruppen verwalten",
     "manageGroups": "Gruppen verwalten",

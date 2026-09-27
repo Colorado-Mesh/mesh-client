@@ -35,6 +35,18 @@ describe('MeshcoreFloodAdvertHeaderButton', () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
+  it('says why it is unavailable instead of naming the action', () => {
+    renderButton(undefined, true);
+    const button = screen.getByRole('button', { name: 'Send flood advert' });
+    expect(button).toHaveAttribute('title', 'Available once a MeshCore radio is connected');
+  });
+
+  it('names the action in its tooltip when it can be used', () => {
+    renderButton();
+    const button = screen.getByRole('button', { name: 'Send flood advert' });
+    expect(button).toHaveAttribute('title', 'Send flood advert');
+  });
+
   it('prevents another send while one is in progress', async () => {
     let resolveSend: (() => void) | undefined;
     const onSend = vi.fn(

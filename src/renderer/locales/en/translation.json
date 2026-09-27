@@ -3483,6 +3483,7 @@
     "importResultError": "Imported {{imported}}, skipped {{skipped}}. Errors: {{errors}}",
     "refreshContacts": "Refresh contacts from radio",
     "sendFloodAdvert": "Send flood advert",
+    "sendFloodAdvertUnavailable": "Available once a MeshCore radio is connected",
     "filterByContactGroup": "Filter by contact group",
     "manageContactGroups": "Manage contact groups",
     "manageGroups": "Manage groups",

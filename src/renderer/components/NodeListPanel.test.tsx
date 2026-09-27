@@ -815,7 +815,10 @@ describe('NodeListPanel flood advert (MeshCore)', () => {
         meshcoreRadioOperational={false}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Send flood advert' })).toBeDisabled();
+    const advert = screen.getByRole('button', { name: 'Send flood advert' });
+    expect(advert).toBeDisabled();
+    // The tooltip says why it cannot be used.
+    expect(advert).toHaveAttribute('title', 'Available once a MeshCore radio is connected');
   });
 });
 
