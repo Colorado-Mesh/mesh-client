@@ -35,14 +35,19 @@ test.describe('protocol switch', () => {
     await openSection('Chat');
     await expect(header.getByRole('tab', { name: navName('RRC') })).toBeVisible();
     await expect(header.getByRole('tab', { name: navName('Rooms') })).toHaveCount(0);
+    // Nomad Network is its own rail section on Reticulum, not a Network tab. It holds one panel,
+    // so the header shows a heading instead of a tablist.
     await openSection('Network');
-    await expect(header.getByRole('tab', { name: 'Nomad Network' })).toBeVisible();
+    await expect(header.getByRole('tab', { name: 'Nomad Network' })).toHaveCount(0);
+    await openSection('Nomad Network');
+    await expect(header.getByRole('heading', { name: 'Nomad Network' })).toBeVisible();
 
     await switcher.getByRole('radio', { name: 'Switch to Meshtastic' }).click();
     await expect(switcher.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
       'aria-checked',
       'true',
     );
+    await expect(rail.getByRole('button', { name: navName('Nomad Network') })).toHaveCount(0);
     await openSection('Monitor');
     await expect(header.getByRole('tab', { name: 'Diagnostics' })).toBeVisible();
     await openSection('Chat');
