@@ -6289,7 +6289,11 @@
       "contactsGroup": "연락처",
       "moreMatches": "일치 항목이 더 있습니다. 계속 입력해 목록을 좁히세요."
     },
-    "more": "더보기"
+    "more": "더보기",
+    "quitConfirmTitle": "Mesh Client를 종료할까요?",
+    "quitConfirmIncidents": "열려 있는 MAYDAY 또는 URGENT 사건: {{n}}건.",
+    "quitConfirmOutbox": "전송 대기 중인 긴급 메시지: {{n}}건.",
+    "quitConfirmLinks": "모든 무선 및 MQTT 연결이 끊어집니다."
   },
   "ui": {
     "stepper": {

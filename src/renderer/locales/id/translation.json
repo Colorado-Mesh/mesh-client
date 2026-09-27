@@ -6289,7 +6289,11 @@
       "contactsGroup": "Kontak",
       "moreMatches": "Masih ada hasil lain. Terus ketik untuk mempersempit daftar."
     },
-    "more": "Lainnya"
+    "more": "Lainnya",
+    "quitConfirmTitle": "Keluar dari Mesh Client?",
+    "quitConfirmIncidents": "Insiden MAYDAY atau URGENT yang masih terbuka: {{n}}.",
+    "quitConfirmOutbox": "Pesan darurat yang masih menunggu dikirim: {{n}}.",
+    "quitConfirmLinks": "Semua tautan radio dan MQTT akan terputus."
   },
   "ui": {
     "stepper": {

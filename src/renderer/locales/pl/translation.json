@@ -6375,7 +6375,11 @@
       "contactsGroup": "Kontakty",
       "moreMatches": "Jest więcej wyników. Pisz dalej, aby zawęzić listę."
     },
-    "more": "Więcej"
+    "more": "Więcej",
+    "quitConfirmTitle": "Zamknąć Mesh Client?",
+    "quitConfirmIncidents": "Otwarte incydenty MAYDAY lub URGENT: {{n}}.",
+    "quitConfirmOutbox": "Wiadomości alarmowe oczekujące na wysłanie: {{n}}.",
+    "quitConfirmLinks": "Wszystkie połączenia radiowe i MQTT zostaną rozłączone."
   },
   "ui": {
     "stepper": {

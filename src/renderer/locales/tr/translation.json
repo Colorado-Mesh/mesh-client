@@ -6289,7 +6289,11 @@
       "contactsGroup": "Kişiler",
       "moreMatches": "Daha fazla eşleşme var. Listeyi daraltmak için yazmaya devam edin."
     },
-    "more": "Diğer"
+    "more": "Diğer",
+    "quitConfirmTitle": "Mesh Client'tan çıkılsın mı?",
+    "quitConfirmIncidents": "Açık MAYDAY veya URGENT olayları: {{n}}.",
+    "quitConfirmOutbox": "Gönderilmeyi bekleyen acil durum mesajları: {{n}}.",
+    "quitConfirmLinks": "Tüm telsiz ve MQTT bağlantıları kesilecek."
   },
   "ui": {
     "stepper": {

@@ -6289,7 +6289,11 @@
       "contactsGroup": "Kontakte",
       "moreMatches": "Weitere Treffer. Tippen Sie weiter, um die Liste einzugrenzen."
     },
-    "more": "Mehr"
+    "more": "Mehr",
+    "quitConfirmTitle": "Mesh Client beenden?",
+    "quitConfirmIncidents": "Offene MAYDAY- oder URGENT-Vorfälle: {{n}}.",
+    "quitConfirmOutbox": "Notrufnachrichten, die noch auf den Versand warten: {{n}}.",
+    "quitConfirmLinks": "Alle Funk- und MQTT-Verbindungen werden getrennt."
   },
   "ui": {
     "stepper": {

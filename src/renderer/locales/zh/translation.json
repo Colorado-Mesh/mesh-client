@@ -6289,7 +6289,11 @@
       "contactsGroup": "联系人",
       "moreMatches": "还有更多匹配项。继续输入以缩小范围。"
     },
-    "more": "更多"
+    "more": "更多",
+    "quitConfirmTitle": "退出 Mesh Client？",
+    "quitConfirmIncidents": "未关闭的 MAYDAY 或 URGENT 事件：{{n}}。",
+    "quitConfirmOutbox": "等待发送的紧急消息：{{n}}。",
+    "quitConfirmLinks": "所有无线电和 MQTT 连接都将断开。"
   },
   "ui": {
     "stepper": {

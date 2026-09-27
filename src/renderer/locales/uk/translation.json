@@ -6375,7 +6375,11 @@
       "contactsGroup": "Контакти",
       "moreMatches": "Є ще збіги. Продовжуйте вводити, щоб звузити список."
     },
-    "more": "Більше"
+    "more": "Більше",
+    "quitConfirmTitle": "Закрити Mesh Client?",
+    "quitConfirmIncidents": "Відкриті інциденти MAYDAY або URGENT: {{n}}.",
+    "quitConfirmOutbox": "Екстрені повідомлення, що очікують надсилання: {{n}}.",
+    "quitConfirmLinks": "Усі радіо- та MQTT-з’єднання буде розірвано."
   },
   "ui": {
     "stepper": {

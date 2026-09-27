@@ -6289,7 +6289,11 @@
       "contactsGroup": "Contacten",
       "moreMatches": "Er zijn meer resultaten. Typ verder om de lijst te verkleinen."
     },
-    "more": "Meer"
+    "more": "Meer",
+    "quitConfirmTitle": "Mesh Client afsluiten?",
+    "quitConfirmIncidents": "Open MAYDAY- of URGENT-incidenten: {{n}}.",
+    "quitConfirmOutbox": "Noodberichten die nog wachten op verzending: {{n}}.",
+    "quitConfirmLinks": "Alle radio- en MQTT-verbindingen worden verbroken."
   },
   "ui": {
     "stepper": {

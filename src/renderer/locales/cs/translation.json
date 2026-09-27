@@ -6333,7 +6333,11 @@
       "contactsGroup": "Kontakty",
       "moreMatches": "Další shody. Pokračujte v psaní a seznam se zúží."
     },
-    "more": "Více"
+    "more": "Více",
+    "quitConfirmTitle": "Ukončit Mesh Client?",
+    "quitConfirmIncidents": "Otevřené incidenty MAYDAY nebo URGENT: {{n}}.",
+    "quitConfirmOutbox": "Nouzové zprávy čekající na odeslání: {{n}}.",
+    "quitConfirmLinks": "Všechna rádiová a MQTT spojení se odpojí."
   },
   "ui": {
     "stepper": {
