@@ -1610,8 +1610,6 @@
     "disconnectRadioGroup": "断开无线电",
     "moreDisconnectOptions": "更多断开选项",
     "disconnectOptions": "断开选项",
-    "disconnectAndQuitHelp": "断开所有链路，然后关闭 Mesh Client。",
-    "quitHelp": "关闭 Mesh Client。",
     "lastConnectionLabel": "上次连接"
   },
   "contactGroupsModal": {

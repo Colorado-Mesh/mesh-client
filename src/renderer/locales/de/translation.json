@@ -1610,8 +1610,6 @@
     "disconnectRadioGroup": "Funkgerät trennen",
     "moreDisconnectOptions": "Weitere Trennoptionen",
     "disconnectOptions": "Trennoptionen",
-    "disconnectAndQuitHelp": "Trennt alle Verbindungen und beendet dann Mesh Client.",
-    "quitHelp": "Beendet Mesh Client.",
     "lastConnectionLabel": "Letzte Verbindung"
   },
   "contactGroupsModal": {

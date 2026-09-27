@@ -1642,8 +1642,6 @@
     "disconnectRadioGroup": "Отключить радио",
     "moreDisconnectOptions": "Другие варианты отключения",
     "disconnectOptions": "Варианты отключения",
-    "disconnectAndQuitHelp": "Отключает все соединения и закрывает Mesh Client.",
-    "quitHelp": "Закрывает Mesh Client.",
     "lastConnectionLabel": "Последнее подключение"
   },
   "contactGroupsModal": {

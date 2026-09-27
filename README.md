@@ -338,7 +338,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 
 **Stack & interfaces (Connection tab)**
 
-- **Start stack** / **Stop stack**, **Auto-start**, **Disconnect & quit**
+- **Start stack** / **Stop stack**, **Auto-start** (quitting lives in the header's red **Disconnect & Quit**, at the top right of every screen)
 - **Interfaces** CRUD: TCP client, **I2P**, Auto (discovery), RNode over USB serial, **Bluetooth** (`ble://…`), or **Wi‑Fi** (`tcp://host:7633`); **Add default backbones** regional hub picker
 - Config **audit/repair** for ghost TCP rows, unreachable hubs, and RF preset mismatches (Diagnostics + inline hints)
 

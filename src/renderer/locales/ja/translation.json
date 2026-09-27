@@ -1610,8 +1610,6 @@
     "disconnectRadioGroup": "無線機を切断",
     "moreDisconnectOptions": "その他の切断オプション",
     "disconnectOptions": "切断オプション",
-    "disconnectAndQuitHelp": "すべてのリンクを切断してから Mesh Client を終了します。",
-    "quitHelp": "Mesh Client を終了します。",
     "lastConnectionLabel": "前回の接続"
   },
   "contactGroupsModal": {

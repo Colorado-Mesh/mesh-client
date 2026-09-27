@@ -1642,8 +1642,6 @@
     "disconnectRadioGroup": "Rozłącz radio",
     "moreDisconnectOptions": "Więcej opcji rozłączania",
     "disconnectOptions": "Opcje rozłączania",
-    "disconnectAndQuitHelp": "Rozłącza wszystkie połączenia, a następnie zamyka Mesh Client.",
-    "quitHelp": "Zamyka Mesh Client.",
     "lastConnectionLabel": "Ostatnie połączenie"
   },
   "contactGroupsModal": {

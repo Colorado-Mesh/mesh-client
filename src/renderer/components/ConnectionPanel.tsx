@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
-import { LogOut, PARENT_HOVER_ATTR, Unplug } from 'lucide-react-motion';
+import { PARENT_HOVER_ATTR, Unplug } from 'lucide-react-motion';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
@@ -14,10 +14,8 @@ import { meshcoreTargetsSharedMeshtasticBlePeripheral } from '@/renderer/lib/mes
 import { markMqttUserDisconnect } from '@/renderer/lib/mqttDisconnectIntent';
 import { parseTcpAddress } from '@/renderer/lib/parseTcpAddress';
 import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnectGate';
-import { quitMeshClient } from '@/renderer/lib/quitMeshClient';
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
-import { selectAnyLinkUp, useConnectionStore } from '@/renderer/stores/connectionStore';
 import { isPairingRelatedError } from '@/shared/blePairingError';
 import {
   clampMqttMaxRetries,
@@ -1514,59 +1512,6 @@ export default function ConnectionPanel({
   const showAutoReconnectBanner =
     state.status === 'reconnecting' || (!radioUp && (isAutoConnecting || connecting));
 
-  // Quitting drops every protocol's links, not only this tab's, so the wording follows all of them.
-  const anyLinkUp = useConnectionStore(selectAnyLinkUp);
-
-  const handleExitApp = useCallback(
-    async (variant: 'connected' | 'idle' | 'connecting') => {
-      if (variant === 'connecting') {
-        try {
-          handleCancelConnection();
-        } catch (err) {
-          console.warn(
-            '[ConnectionPanel] handleExitApp cancel failed:',
-            err instanceof Error ? err.message : String(err),
-          );
-        }
-      }
-      await quitMeshClient(
-        anyLinkUp || isConnected || variant === 'connecting' || mqttStatus === 'connected',
-      );
-    },
-    [anyLinkUp, handleCancelConnection, isConnected, mqttStatus],
-  );
-
-  /** Bottom row on every view: quitting is rare, so it sits last and is sized to its label. */
-  const renderQuitRow = (variant: 'connected' | 'idle' | 'connecting') => {
-    const useDisconnectAndQuit =
-      anyLinkUp || isConnected || variant === 'connecting' || mqttStatus === 'connected';
-    const labelKey = useDisconnectAndQuit
-      ? 'connectionPanel.disconnectAndQuit'
-      : 'connectionPanel.quit';
-    return (
-      <div className="border-ink-800 flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-        <p className="text-muted text-xs">
-          {t(
-            useDisconnectAndQuit
-              ? 'connectionPanel.disconnectAndQuitHelp'
-              : 'connectionPanel.quitHelp',
-          )}
-        </p>
-        <Button
-          variant="danger"
-          size="sm"
-          icon={<LogOut aria-hidden className={ICON_MD} size={16} />}
-          onClick={() => {
-            void handleExitApp(variant);
-          }}
-          aria-label={t(labelKey)}
-        >
-          {t(labelKey)}
-        </Button>
-      </div>
-    );
-  };
-
   /** Linux BLE / MeshCore pairing PIN entry, shared by the connecting and disconnected views. */
   const renderPinForm = (onSubmit: () => void) => (
     <>
@@ -2656,18 +2601,12 @@ export default function ConnectionPanel({
         {statusTiles}
         {connectingProgressView}
         {mqttSection}
-        {renderQuitRow('connecting')}
         {coloradoRegionGateModal}
       </div>
     );
   }
 
   if (capabilities.hasReticulumInterfaceConfig) {
-    const exitVariant = isConnected
-      ? 'connected'
-      : state.status === 'connecting'
-        ? 'connecting'
-        : 'idle';
     return (
       <div className="w-full space-y-4">
         <ReticulumStackPanel
@@ -2692,7 +2631,6 @@ export default function ConnectionPanel({
             await onDisconnect();
           }}
         />
-        {renderQuitRow(exitVariant)}
       </div>
     );
   }
@@ -2829,7 +2767,6 @@ export default function ConnectionPanel({
 
           {mqttSection}
         </div>
-        {renderQuitRow('connected')}
         {coloradoRegionGateModal}
       </div>
     );
@@ -3077,7 +3014,6 @@ export default function ConnectionPanel({
 
         {mqttSection}
       </div>
-      {renderQuitRow('idle')}
       {coloradoRegionGateModal}
     </div>
   );

@@ -1610,8 +1610,6 @@
     "disconnectRadioGroup": "Putuskan radio",
     "moreDisconnectOptions": "Opsi pemutusan lainnya",
     "disconnectOptions": "Opsi pemutusan",
-    "disconnectAndQuitHelp": "Memutus semua tautan, lalu menutup Mesh Client.",
-    "quitHelp": "Menutup Mesh Client.",
     "lastConnectionLabel": "Koneksi terakhir"
   },
   "contactGroupsModal": {

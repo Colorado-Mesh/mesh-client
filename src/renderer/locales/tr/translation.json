@@ -1610,8 +1610,6 @@
     "disconnectRadioGroup": "Radyo bağlantısını kes",
     "moreDisconnectOptions": "Diğer bağlantı kesme seçenekleri",
     "disconnectOptions": "Bağlantı kesme seçenekleri",
-    "disconnectAndQuitHelp": "Tüm bağlantıları keser, ardından Mesh Client'ı kapatır.",
-    "quitHelp": "Mesh Client'ı kapatır.",
     "lastConnectionLabel": "Son bağlantı"
   },
   "contactGroupsModal": {

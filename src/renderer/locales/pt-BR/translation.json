@@ -1610,8 +1610,6 @@
     "disconnectRadioGroup": "Desconectar rádio",
     "moreDisconnectOptions": "Mais opções de desconexão",
     "disconnectOptions": "Opções de desconexão",
-    "disconnectAndQuitHelp": "Desconecta todos os links e fecha o Mesh Client.",
-    "quitHelp": "Fecha o Mesh Client.",
     "lastConnectionLabel": "Última conexão"
   },
   "contactGroupsModal": {

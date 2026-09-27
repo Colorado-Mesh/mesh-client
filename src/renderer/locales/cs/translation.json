@@ -1627,8 +1627,6 @@
     "disconnectRadioGroup": "Odpojit rádio",
     "moreDisconnectOptions": "Další možnosti odpojení",
     "disconnectOptions": "Možnosti odpojení",
-    "disconnectAndQuitHelp": "Odpojí všechna spojení a pak zavře Mesh Client.",
-    "quitHelp": "Zavře Mesh Client.",
     "lastConnectionLabel": "Poslední připojení"
   },
   "contactGroupsModal": {

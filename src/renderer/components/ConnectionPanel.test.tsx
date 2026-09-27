@@ -1189,55 +1189,7 @@ describe('ConnectionPanel MQTT cancel while connecting', () => {
   });
 });
 
-describe('ConnectionPanel exit actions', () => {
-  it('shows Quit on Meshtastic disconnected view when MQTT is off', () => {
-    render(
-      <ConnectionPanel
-        state={disconnectedState}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshtastic"
-      />,
-    );
-    expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
-  });
-
-  it('shows Quit on MeshCore disconnected view when MQTT is off', () => {
-    render(
-      <ConnectionPanel
-        state={disconnectedState}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshcore"
-      />,
-    );
-    expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
-  });
-
-  it('shows Disconnect & Quit while status is reconnecting', () => {
-    render(
-      <ConnectionPanel
-        state={{
-          ...disconnectedState,
-          status: 'reconnecting',
-          connectionType: 'ble',
-          connectionLoss: true,
-          reconnectAttempt: 2,
-        }}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshtastic"
-      />,
-    );
-    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
-  });
-
+describe('ConnectionPanel connect views', () => {
   it('shows auto-reconnect banner while status is reconnecting', () => {
     render(
       <ConnectionPanel
@@ -1258,7 +1210,7 @@ describe('ConnectionPanel exit actions', () => {
     expect(screen.getByText(/Auto-reconnect in progress/i)).toBeInTheDocument();
   });
 
-  it('shows Disconnect & Quit while RF connect is in progress', async () => {
+  it('shows the connecting view while RF connect is in progress', async () => {
     const user = userEvent.setup();
     let resolveConnect!: () => void;
     const onConnect = vi.fn(
@@ -1283,14 +1235,14 @@ describe('ConnectionPanel exit actions', () => {
     await user.click(within(radioCard as HTMLElement).getByRole('radio', { name: /tcp\/ip/i }));
     await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
-    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     resolveConnect();
     await waitFor(() => {
       expect(onConnect).toHaveBeenCalled();
     });
   });
 
-  it('shows Quit after connect failure returns to disconnected view', async () => {
+  it('returns to the disconnected view after a connect failure', async () => {
     const user = userEvent.setup();
     const onConnect = vi.fn().mockRejectedValue(new Error('Connection refused'));
     await withMockedConsoleWarn(async () => {
@@ -1315,7 +1267,11 @@ describe('ConnectionPanel exit actions', () => {
       await user.click(within(radioCard as HTMLElement).getByRole('button', { name: 'Connect' }));
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
+        expect(
+          within(
+            screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!,
+          ).getByRole('button', { name: 'Connect' }),
+        ).toBeInTheDocument();
       });
       expect(screen.getByText('Radio Connection')).toBeInTheDocument();
     });
@@ -1347,21 +1303,7 @@ describe('ConnectionPanel exit actions', () => {
     });
   });
 
-  it('shows Disconnect & Quit on disconnected view when MQTT is connected', () => {
-    render(
-      <ConnectionPanel
-        state={disconnectedState}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="connected"
-        protocol="meshtastic"
-      />,
-    );
-    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
-  });
-
-  it('shows Disconnect & Quit while serial port picker is open', async () => {
+  it('shows the serial port picker while a USB connect waits for a port', async () => {
     const user = userEvent.setup();
     let capturedCb: ((ports: SerialPort[]) => void) | undefined;
     vi.mocked(window.electronAPI.onSerialPortsDiscovered).mockImplementation((cb) => {
@@ -1398,10 +1340,9 @@ describe('ConnectionPanel exit actions', () => {
     });
 
     expect(screen.getByText('Select Serial Port')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Disconnect & Quit/i })).toBeInTheDocument();
   });
 
-  it('shows Quit after HTTP reconnect failure from last-connection card', async () => {
+  it('returns to the disconnected view after a failed reconnect from the last-connection card', async () => {
     const user = userEvent.setup();
     const lastConnKey = 'mesh-client:lastConnection:meshtastic';
     localStorage.setItem(
@@ -1426,7 +1367,11 @@ describe('ConnectionPanel exit actions', () => {
         await user.click(screen.getByRole('button', { name: /^Reconnect$/i }));
 
         await waitFor(() => {
-          expect(screen.getByRole('button', { name: /^Quit$/i })).toBeInTheDocument();
+          expect(
+            within(
+              screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!,
+            ).getByRole('button', { name: 'Connect' }),
+          ).toBeInTheDocument();
         });
         expect(onConnect).toHaveBeenCalledWith('http', '192.168.1.10');
         expect(screen.getByText('Radio Connection')).toBeInTheDocument();
@@ -1972,88 +1917,12 @@ describe('ConnectionPanel Reticulum', () => {
     }
   });
 
-  it('Cancel fire-and-forgets onDisconnect and does not stopGattScanning for reticulum', async () => {
-    // handleCancelConnection is shared by Cancel + Disconnect&Quit-while-connecting.
+  it('Cancel fire-and-forgets onDisconnect and stops a GATT scan only where one runs', () => {
+    // handleCancelConnection backs the connecting view Cancel; a hung onDisconnect must not block it.
     expect(CONNECTION_PANEL_SOURCE).toMatch(/void onDisconnect\(\)\.catch\(\(e: unknown\) => \{/);
     expect(CONNECTION_PANEL_SOURCE).toMatch(
       /if \(capabilities\.hasGattBleScanning\) \{\s*void window\.electronAPI\.stopGattScanning\(protocol\)/,
     );
-
-    const lastConnKey = 'mesh-client:lastConnection:reticulum';
-    localStorage.setItem(
-      lastConnKey,
-      JSON.stringify({ type: 'ble', bleDeviceId: 'saved-reticulum-ble' }),
-    );
-    let resolveDisconnect!: () => void;
-    const onDisconnect = vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveDisconnect = resolve;
-        }),
-    );
-    vi.mocked(window.electronAPI.stopGattScanning).mockClear();
-    vi.mocked(window.electronAPI.quitApp).mockClear();
-
-    try {
-      const user = userEvent.setup();
-      render(
-        <ConnectionPanel
-          state={{ ...disconnectedState, status: 'connecting' }}
-          onConnect={vi.fn().mockResolvedValue(undefined)}
-          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-          onDisconnect={onDisconnect}
-          mqttStatus="disconnected"
-          protocol="reticulum"
-          onStartReticulumStack={vi.fn().mockResolvedValue(undefined)}
-        />,
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Reticulum stack')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /Disconnect & Quit/i }));
-
-      await waitFor(() => {
-        expect(onDisconnect).toHaveBeenCalledTimes(1);
-      });
-      // Fire-and-forget: hung onDisconnect must not block quitApp.
-      await waitFor(() => {
-        expect(window.electronAPI.quitApp).toHaveBeenCalled();
-      });
-      expect(window.electronAPI.stopGattScanning).not.toHaveBeenCalled();
-    } finally {
-      resolveDisconnect?.();
-      localStorage.removeItem(lastConnKey);
-    }
-  });
-
-  it('connected Disconnect & Quit skips onDisconnect and quits (main owns teardown)', async () => {
-    const onDisconnect = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(window.electronAPI.quitApp).mockClear();
-    vi.mocked(window.electronAPI.mqtt.disconnect).mockClear();
-
-    const user = userEvent.setup();
-    render(
-      <ConnectionPanel
-        state={{ ...disconnectedState, status: 'configured' }}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={onDisconnect}
-        mqttStatus="disconnected"
-        protocol="reticulum"
-        onStartReticulumStack={vi.fn().mockResolvedValue(undefined)}
-      />,
-    );
-
-    await user.click(screen.getByRole('button', { name: /Disconnect & Quit/i }));
-
-    await waitFor(() => {
-      expect(window.electronAPI.quitApp).toHaveBeenCalled();
-    });
-    // Graceful sidecar stop here would add ~2s before quit; main stops it quit-fast.
-    expect(onDisconnect).not.toHaveBeenCalled();
-    expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalled();
   });
 });
 
@@ -2621,20 +2490,21 @@ describe('ConnectionPanel link tiles and disconnect actions', () => {
     expect(onDisconnect).toHaveBeenCalledOnce();
   });
 
-  it('keeps Quit at the bottom of the panel with its explanation', () => {
-    render(
-      <ConnectionPanel
-        state={disconnectedState}
-        onConnect={vi.fn().mockResolvedValue(undefined)}
-        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
-        onDisconnect={vi.fn().mockResolvedValue(undefined)}
-        mqttStatus="disconnected"
-        protocol="meshtastic"
-      />,
-    );
-    const quit = screen.getByRole('button', { name: /^Quit$/i });
-    const buttons = screen.getAllByRole('button');
-    expect(buttons[buttons.length - 1]).toBe(quit);
-    expect(screen.getByText('Closes Mesh Client.')).toBeInTheDocument();
-  });
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'has no Quit row of its own on %s: the header Disconnect & Quit covers it',
+    (protocol) => {
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+          mqttStatus="connected"
+          protocol={protocol}
+        />,
+      );
+      expect(screen.queryByRole('button', { name: /quit/i })).toBeNull();
+      expect(screen.queryByText('Closes Mesh Client.')).toBeNull();
+    },
+  );
 });
