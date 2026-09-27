@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyThemeColors,
+  consumeThemeColorResetNotice,
   DEFAULT_THEME_COLORS,
   hasThemeSnapshot,
   isMessageActionsBarBgVisible,
@@ -112,6 +113,18 @@ describe('themeColors', () => {
       localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ readableGreen: '#14532d' }));
       const colors = loadThemeColors();
       expect(colors.readableGreen).toBe('#14532d');
+    });
+
+    it('reports a saved accent it had to put back, once', () => {
+      consumeThemeColorResetNotice();
+      // A v5 custom accent under 4.5:1 on the app background.
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ brandGreen: '#1e293b' }));
+      expect(loadThemeColors().brandGreen).toBe(DEFAULT_THEME_COLORS.brandGreen);
+      expect(consumeThemeColorResetNotice()).toBe('accent');
+      expect(consumeThemeColorResetNotice()).toBeNull();
+      // Loading again finds the default already saved, so there is nothing new to report.
+      loadThemeColors();
+      expect(consumeThemeColorResetNotice()).toBeNull();
     });
   });
 

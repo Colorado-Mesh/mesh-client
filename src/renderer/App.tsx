@@ -331,7 +331,7 @@ import {
   nodeRecordToMeshNode,
 } from './lib/storeRecordAdapters';
 import type { TabSlotId } from './lib/tabSlotIds';
-import { applyThemeColors, loadThemeColors } from './lib/themeColors';
+import { applyThemeColors, consumeThemeColorResetNotice, loadThemeColors } from './lib/themeColors';
 import { applyThemeSurface, loadThemeSurfaceId } from './lib/themePresets';
 import type {
   ChatMessage,
@@ -750,6 +750,18 @@ function AppContent() {
     applyThemeColors(loadThemeColors());
     applyFontScale(loadFontScale());
   }, []);
+
+  // A saved accent or fill that failed the contrast guards was put back while loading; say so
+  // once, with the same notice the color picker shows.
+  useEffect(() => {
+    const kept = consumeThemeColorResetNotice();
+    if (kept) {
+      addToast(
+        t(kept === 'accent' ? 'appPanel.themeAccentKept' : 'appPanel.themeFillKept'),
+        'warning',
+      );
+    }
+  }, [addToast, t]);
 
   useEffect(() => {
     // Defer MeshCore path-history warm load until after first paint (idle).

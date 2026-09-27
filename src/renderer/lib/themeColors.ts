@@ -349,8 +349,21 @@ export function loadThemeColors(): Record<ThemeColorKey, string> {
   const brandReset = ensureBrandGreenContrast(merged);
   if (readableReset || brandReset) {
     persistThemeColors(merged);
+    loadResetNotice = brandReset ? 'accent' : 'fill';
   }
   return merged;
+}
+
+/**
+ * Set when loading put a saved accent or fill back to the default (a v5 custom color under 4.5:1),
+ * so App can say so once at startup instead of changing the user's colors silently.
+ */
+let loadResetNotice: 'accent' | 'fill' | null = null;
+
+export function consumeThemeColorResetNotice(): 'accent' | 'fill' | null {
+  const notice = loadResetNotice;
+  loadResetNotice = null;
+  return notice;
 }
 
 export function persistThemeColors(colors: Record<ThemeColorKey, string>): void {
