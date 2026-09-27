@@ -15,6 +15,21 @@
   }
 }
 
+/*
+ * Height of the bars along the bottom of the window: the status bar (StatusBar, h-7), plus the
+ * bottom nav below 768px (BottomNav, min-h-14 with a 1px top border and the safe area). Toasts
+ * float above it, so a toast never covers a control there.
+ */
+:root {
+  --shell-bottom-chrome: 1.75rem;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --shell-bottom-chrome: calc(1.75rem + 3.5rem + 1px + env(safe-area-inset-bottom));
+  }
+}
+
 @theme {
   /*
    * Values from the Colorado Mesh style guide (Figma, node 17:4). lib/themeColors.ts applies the

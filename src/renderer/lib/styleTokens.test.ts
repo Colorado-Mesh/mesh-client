@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 
+import { SHELL_COMPACT_QUERY } from './bottomNav';
 import { DEFAULT_THEME_COLORS, THEME_CSS_VARS, type ThemeColorKey } from './themeColors';
 import { DEFAULT_THEME_SURFACE_ID, INK_STEPS, THEME_ACCENTS, themeSurface } from './themePresets';
 import { contrastRatio } from './wcagContrast';
@@ -118,6 +119,20 @@ describe('style guide tokens (styles.css)', () => {
     for (const stock of ['xs', 'sm', 'md', 'lg', 'xl', '2xl']) {
       expect(TOKENS.has(`--shadow-${stock}`)).toBe(false);
     }
+  });
+
+  it('keeps toasts above the status bar and the phone-width bottom nav', () => {
+    const source = (file: string) =>
+      readFileSync(join(import.meta.dirname, '..', 'components', file), 'utf8');
+    // The offsets below are these two bars' heights; changing a bar means changing the offset.
+    expect(source('shell/StatusBar.tsx')).toMatch(/<footer className="[^"]*\bh-7\b/);
+    expect(source('shell/BottomNav.tsx')).toMatch(/\bmin-h-14\b/);
+    expect(CSS).toContain('--shell-bottom-chrome: 1.75rem;');
+    const compact = CSS.slice(CSS.indexOf(`@media ${SHELL_COMPACT_QUERY} {`));
+    expect(compact).toContain(
+      '--shell-bottom-chrome: calc(1.75rem + 3.5rem + 1px + env(safe-area-inset-bottom));',
+    );
+    expect(source('Toast.tsx')).toContain('bottom-[calc(var(--shell-bottom-chrome,0px)+0.75rem)]');
   });
 
   it('hover: never lights up a disabled control', () => {
