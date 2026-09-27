@@ -26,9 +26,7 @@ export function MeshcoreRouteChain({
   const { t } = useTranslation();
 
   if (segments.length === 0 || (treatSingleSegmentAsDirect && segments.length <= 1)) {
-    return (
-      <span className={`text-xs text-zinc-300 ${className}`}>{t('meshcoreRoute.direct')}</span>
-    );
+    return <span className={`text-ink-300 text-xs ${className}`}>{t('meshcoreRoute.direct')}</span>;
   }
 
   // Last segment is typically the destination hash prefix; show named dest instead.
@@ -44,7 +42,7 @@ export function MeshcoreRouteChain({
           : t('meshcoreRoute.segmentTooltip', { hex: seg.hex });
         return (
           <span key={`${seg.hex}-${i}`} className="inline-flex items-center gap-1">
-            <span className="text-zinc-600">→</span>
+            <span className="text-ink-600">→</span>
             <span
               className="rounded bg-indigo-900/40 px-1.5 py-0.5 font-mono text-indigo-300"
               title={title}
@@ -54,7 +52,7 @@ export function MeshcoreRouteChain({
           </span>
         );
       })}
-      <span className="text-zinc-600">→</span>
+      <span className="text-ink-600">→</span>
       <span className="text-white">▣ {destLabel}</span>
     </span>
   );

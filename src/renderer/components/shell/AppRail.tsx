@@ -76,7 +76,7 @@ export function AppRail({
         className={`relative flex h-14 w-15 shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] transition-colors [@media(max-height:720px)]:h-12 ${
           isActive
             ? 'bg-sidebar-active-bg text-bright-green'
-            : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-zinc-200'
+            : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-ink-200'
         }`}
       >
         <NavSectionIcon id={section.id} />
@@ -99,19 +99,17 @@ export function AppRail({
   return (
     <nav
       aria-label={t('aria.applicationPanels')}
-      className="bg-deep-black flex h-full w-18 shrink-0 flex-col items-center border-r border-zinc-800 py-3.5 [@media(max-height:720px)]:py-2.5"
+      className="bg-deep-black border-ink-800 flex h-full w-18 shrink-0 flex-col items-center border-r py-3.5 [@media(max-height:720px)]:py-2.5"
     >
       <div
         data-rail-scroll=""
         className="flex min-h-0 w-full flex-1 [scrollbar-width:none] flex-col items-center gap-1.5 overflow-x-hidden overflow-y-auto"
       >
         {header}
-        {header != null && (
-          <div aria-hidden="true" className="my-2 h-px w-8 shrink-0 bg-zinc-800" />
-        )}
+        {header != null && <div aria-hidden="true" className="bg-ink-800 my-2 h-px w-8 shrink-0" />}
         {primary.map(renderSection)}
         {pins.length > 0 && (
-          <div aria-hidden="true" className="my-2 h-px w-8 shrink-0 bg-zinc-800" />
+          <div aria-hidden="true" className="bg-ink-800 my-2 h-px w-8 shrink-0" />
         )}
         {pins.map((pin) => (
           <button
@@ -127,7 +125,7 @@ export function AppRail({
             className={`rounded-modal flex h-10 w-10 shrink-0 items-center justify-center transition-colors ${
               pin.tabIndex === activeTabIndex
                 ? 'bg-sidebar-active-bg text-bright-green'
-                : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-zinc-200'
+                : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-ink-200'
             }`}
           >
             <TabIcon name={pin.iconSlot} />
@@ -137,7 +135,7 @@ export function AppRail({
       {footer.length > 0 && (
         <div
           data-rail-footer=""
-          className="flex w-full shrink-0 flex-col items-center gap-1.5 border-t border-zinc-800 pt-1.5"
+          className="border-ink-800 flex w-full shrink-0 flex-col items-center gap-1.5 border-t pt-1.5"
         >
           {footer.map(renderSection)}
         </div>

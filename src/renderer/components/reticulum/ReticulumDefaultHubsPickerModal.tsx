@@ -159,10 +159,10 @@ export function ReticulumDefaultHubsPickerModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={hintId}
-        className="bg-deep-black rounded-modal shadow-level-3 relative mx-4 flex max-h-[min(85vh,640px)] w-full max-w-lg flex-col border border-zinc-600"
+        className="bg-deep-black rounded-modal shadow-level-3 border-ink-600 relative mx-4 flex max-h-[min(85vh,640px)] w-full max-w-lg flex-col border"
       >
-        <div className="space-y-2 border-b border-zinc-700 px-5 py-4">
-          <h3 id={titleId} className="text-lg font-semibold text-zinc-200">
+        <div className="border-ink-700 space-y-2 border-b px-5 py-4">
+          <h3 id={titleId} className="text-ink-200 text-lg font-semibold">
             {t('connectionPanel.reticulumInterfaces.defaultHubsPickerTitle')}
           </h3>
           <p id={hintId} className="text-muted text-sm leading-relaxed">
@@ -183,12 +183,12 @@ export function ReticulumDefaultHubsPickerModal({
           ))}
         </div>
 
-        <div className="flex gap-3 border-t border-zinc-700 px-5 py-4">
+        <div className="border-ink-700 flex gap-3 border-t px-5 py-4">
           <button
             type="button"
             onClick={onCancel}
             disabled={confirming}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-600 disabled:opacity-50"
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {t('common.cancel')}
           </button>
@@ -246,7 +246,7 @@ function RegionSection({
   return (
     <fieldset className="space-y-2">
       <legend className="sr-only">{t(reticulumDefaultHubRegionLabelKey(region))}</legend>
-      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-200">
+      <label className="text-ink-200 flex cursor-pointer items-center gap-2 text-sm font-medium">
         <input
           ref={regionCheckboxRef}
           type="checkbox"
@@ -267,7 +267,7 @@ function RegionSection({
             <li key={preset.id}>
               <label
                 className={`flex items-start gap-2 text-sm ${
-                  present ? 'text-muted cursor-default' : 'cursor-pointer text-zinc-300'
+                  present ? 'text-muted cursor-default' : 'text-ink-300 cursor-pointer'
                 }`}
               >
                 <input

@@ -24,16 +24,16 @@ export function chatRfHopLabelPresentation(
   corrected: boolean,
   reduceMotion: boolean,
 ): { className: string; refined: boolean } {
-  // gray-400 (#a1a1aa) on chat slate-800 (#27272a) keeps 4.5:1+ for text-2xs.
+  // ink-400 (#93a0b7) on chat ink-800 (#212d40) keeps 4.5:1+ for text-2xs.
   if (!corrected) {
     return {
-      className: 'text-2xs text-zinc-400 transition-colors duration-500',
+      className: 'text-2xs text-ink-400 transition-colors duration-500',
       refined: false,
     };
   }
   if (reduceMotion) {
     return {
-      className: 'text-2xs text-zinc-400 transition-colors duration-500',
+      className: 'text-2xs text-ink-400 transition-colors duration-500',
       refined: true,
     };
   }

@@ -61,7 +61,7 @@ export function SegmentedControl<T extends string>({
       ref={groupRef}
       role="radiogroup"
       aria-label={ariaLabel}
-      className={`bg-deep-black rounded-control flex w-fit max-w-full shrink-0 [scrollbar-width:none] gap-0.5 overflow-x-auto border border-zinc-800 p-0.75 ${className ?? ''}`}
+      className={`bg-deep-black rounded-control border-ink-800 flex w-fit max-w-full shrink-0 [scrollbar-width:none] gap-0.5 overflow-x-auto border p-0.75 ${className ?? ''}`}
     >
       {options.map((option) => {
         const checked = option.value === value;
@@ -83,16 +83,14 @@ export function SegmentedControl<T extends string>({
             }}
             className={`rounded-badge flex shrink-0 items-center gap-1.5 px-2.5 font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
               size === 'md' ? 'text-body h-7.5' : 'text-control h-6'
-            } ${
-              checked ? 'bg-sidebar-active-bg text-zinc-200' : 'text-zinc-300 hover:text-zinc-100'
-            }`}
+            } ${checked ? 'bg-sidebar-active-bg text-ink-200' : 'text-ink-300 hover:text-ink-100'}`}
           >
             {option.dot && <StatusDot tone={option.dot} />}
             {option.icon}
             {option.label}
             {option.count !== undefined && (
               <span
-                className={`text-meta font-mono tabular-nums ${checked ? 'text-zinc-300' : 'text-muted'}`}
+                className={`text-meta font-mono tabular-nums ${checked ? 'text-ink-300' : 'text-muted'}`}
               >
                 {option.count}
               </span>

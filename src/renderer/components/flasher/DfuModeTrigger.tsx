@@ -11,13 +11,13 @@ export function DfuModeTrigger({ disabled, busy, onEnterDfu }: DfuModeTriggerPro
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-zinc-400">{t('flasher.enterDfuHint')}</p>
+      <p className="text-ink-400 text-xs">{t('flasher.enterDfuHint')}</p>
       <button
         type="button"
         disabled={disabled || busy}
         aria-label={t('flasher.enterDfuMode')}
         onClick={onEnterDfu}
-        className="rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+        className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-3 py-1.5 text-xs disabled:opacity-40"
       >
         {t('flasher.enterDfuMode')}
       </button>

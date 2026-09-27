@@ -50,7 +50,7 @@ export function BottomNav({
   return (
     <nav
       aria-label={t('aria.applicationPanels')}
-      className="bg-deep-black flex shrink-0 items-stretch border-t border-zinc-800 px-1 pb-[env(safe-area-inset-bottom)]"
+      className="bg-deep-black border-ink-800 flex shrink-0 items-stretch border-t px-1 pb-[env(safe-area-inset-bottom)]"
     >
       {primary.map((section) => {
         const label = t(NAV_SECTION_LABEL_KEYS[section.id]);
@@ -121,7 +121,7 @@ function BottomNavItem({
       onClick={onClick}
       {...{ [PARENT_HOVER_ATTR]: '' }}
       className={`relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 transition-colors ${
-        active ? 'text-bright-green' : 'text-muted hover:text-zinc-200'
+        active ? 'text-bright-green' : 'text-muted hover:text-ink-200'
       }`}
     >
       <span

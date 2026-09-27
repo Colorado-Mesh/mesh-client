@@ -26,7 +26,7 @@ function AppBootSplash() {
     <main className="bg-app-bg flex h-screen w-screen items-center justify-center">
       <output className="block" aria-busy="true">
         <h1 className="sr-only">{i18n.t('app.loadingApp')}</h1>
-        <div className="h-8 w-8 animate-pulse rounded-full bg-zinc-700" aria-hidden />
+        <div className="bg-ink-700 h-8 w-8 animate-pulse rounded-full" aria-hidden />
       </output>
     </main>
   );

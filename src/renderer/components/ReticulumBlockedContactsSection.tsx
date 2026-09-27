@@ -82,7 +82,7 @@ export function ReticulumBlockedContactsSection({
           onClick={() => {
             void handleExport();
           }}
-          className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-600"
+          className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
         >
           {t('appPanel.reticulumBlocklist.exportButton')}
         </button>
@@ -92,7 +92,7 @@ export function ReticulumBlockedContactsSection({
           onClick={() => {
             void handleImport();
           }}
-          className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-600"
+          className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
         >
           {t('appPanel.reticulumBlocklist.importButton')}
         </button>
@@ -104,9 +104,9 @@ export function ReticulumBlockedContactsSection({
           {blockedEntries.map((entry) => (
             <li
               key={entry.hash}
-              className="flex items-center justify-between gap-2 rounded border border-zinc-700/70 bg-zinc-900/40 px-2 py-1"
+              className="border-ink-700/70 bg-ink-900/40 flex items-center justify-between gap-2 rounded border px-2 py-1"
             >
-              <span className="font-mono text-xs text-zinc-300">{entry.hash}</span>
+              <span className="text-ink-300 font-mono text-xs">{entry.hash}</span>
               <span className="text-muted shrink-0 text-xs">
                 {new Date(entry.createdAt).toLocaleDateString()}
               </span>
@@ -125,7 +125,7 @@ export function ReticulumBlockedContactsSection({
                     }
                   })();
                 }}
-                className="shrink-0 rounded border border-zinc-600 px-2 py-0.5 text-xs text-zinc-300 hover:bg-zinc-700"
+                className="border-ink-600 text-ink-300 hover:bg-ink-700 shrink-0 rounded border px-2 py-0.5 text-xs"
               >
                 {t('peerDetailModal.unblockContact')}
               </button>

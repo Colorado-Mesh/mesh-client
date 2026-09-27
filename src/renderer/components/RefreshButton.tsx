@@ -52,18 +52,13 @@ export default function RefreshButton({
       onClick={handleClick}
       disabled={disabled || spinning}
       title={t('common.refresh')}
-      className="rounded-full p-1.5 transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
+      className="hover:bg-ink-700 rounded-full p-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
       {...{ [PARENT_HOVER_ATTR]: '' }}
     >
       {spinning ? (
-        <SpinnerIcon className="h-5 w-5 text-zinc-400" />
+        <SpinnerIcon className="text-ink-400 h-5 w-5" />
       ) : (
-        <RotateCcw
-          aria-hidden
-          className="h-5 w-5 text-zinc-400"
-          trigger={parentTrigger}
-          size={20}
-        />
+        <RotateCcw aria-hidden className="text-ink-400 h-5 w-5" trigger={parentTrigger} size={20} />
       )}
     </button>
   );

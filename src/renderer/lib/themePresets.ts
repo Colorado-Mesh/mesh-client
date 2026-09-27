@@ -25,7 +25,7 @@ function preset(
  */
 export const THEME_PRESETS: readonly ThemePreset[] = [
   preset('default', 'appPanel.themePresets.meshtastic', {}),
-  // Protocol scales from the style guide as accent themes on the zinc neutrals: the 500 step is
+  // Protocol scales from the style guide as accent themes on the ink neutrals: the 500 step is
   // the accent, 700 the fills (styles.css --color-meshcore-* / --color-reticulum-*). Default is
   // Meshtastic.
   preset('meshcore', 'appPanel.themePresets.meshcore', {
@@ -42,17 +42,17 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     chatOutgoingBg: '#a16207',
     chatOutgoingBorder: '#facc15',
   }),
-  // Brighter muted text, stronger borders and a lighter green for low vision.
+  // Brighter muted text, stronger borders (ink one step lighter) and a lighter green for low vision.
   preset('highContrast', 'appPanel.themePresets.highContrast', {
-    sidebarActiveBg: '#3f3f46',
-    secondaryDark: '#71717a',
-    muted: '#d4d4d8',
+    sidebarActiveBg: '#364156',
+    secondaryDark: '#65738c',
+    muted: '#cdd4e2',
     brandGreen: '#a7f3d0',
     brightGreen: '#a7f3d0',
-    chatIncomingBg: '#3f3f46',
-    chatIncomingBorder: '#71717a',
+    chatIncomingBg: '#364156',
+    chatIncomingBorder: '#65738c',
     chatOutgoingBorder: '#a7f3d0',
-    messageActionButtonHover: '#e4e4e7',
+    messageActionButtonHover: '#e3e8f0',
   }),
   // Neutral gray surfaces with a sky accent.
   preset('midnight', 'appPanel.themePresets.midnight', {
@@ -70,7 +70,8 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     messageActionsBarBg: '#111827',
     messageActionButtonHover: '#9ca3af',
   }),
-  // The look before the Zinc style guide: slate surfaces with the green-300 accent.
+  // The pre-v6 theme colors: Tailwind slate tokens with the old green-300 accent. Surfaces drawn
+  // with ink-* classes keep the ink scale.
   preset('classicSlate', 'appPanel.themePresets.classicSlate', {
     appBg: '#020617',
     sidebarActiveBg: '#1e293b',

@@ -104,18 +104,18 @@ export default function MeshcoreContactSettingsSection({
   };
 
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-zinc-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('meshcoreContactSettings.contactManagement')}</span>
         <DetailsChevron />
       </summary>
       <div className="space-y-4 px-4 pb-4">
         <p className="text-muted text-xs">{t('meshcoreContactSettings.intro')}</p>
         <fieldset
-          className="space-y-3 rounded-lg border border-zinc-600/80 p-3"
+          className="border-ink-600/80 space-y-3 rounded-lg border p-3"
           disabled={disabled || applying}
         >
-          <legend className="px-1 text-sm font-medium text-zinc-200">
+          <legend className="text-ink-200 px-1 text-sm font-medium">
             {t('meshcoreContactSettings.autoAddModeLegend')}
           </legend>
           <div className="hover:bg-secondary-dark/50 flex gap-2 rounded-md p-1.5">
@@ -135,7 +135,7 @@ export default function MeshcoreContactSettingsSection({
               htmlFor={`${modeGroupId}-all`}
               className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
             >
-              <span className="text-sm text-zinc-200">
+              <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.autoAddAllTitle')}
               </span>
               <span className="text-muted text-xs">
@@ -160,7 +160,7 @@ export default function MeshcoreContactSettingsSection({
               htmlFor={`${modeGroupId}-selected`}
               className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5"
             >
-              <span className="text-sm text-zinc-200">
+              <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.autoAddSelectedTitle')}
               </span>
               <span className="text-muted text-xs">
@@ -171,10 +171,10 @@ export default function MeshcoreContactSettingsSection({
         </fieldset>
 
         <div
-          className={`space-y-2 rounded-lg border border-zinc-600/60 p-3 ${autoAddAll ? 'opacity-50' : ''}`}
+          className={`border-ink-600/60 space-y-2 rounded-lg border p-3 ${autoAddAll ? 'opacity-50' : ''}`}
           aria-disabled={autoAddAll}
         >
-          <p className="text-xs font-medium text-zinc-300">
+          <p className="text-ink-300 text-xs font-medium">
             {t('meshcoreContactSettings.autoAddTypesHeading')}
           </p>
           {[
@@ -216,7 +216,7 @@ export default function MeshcoreContactSettingsSection({
             },
           ].map((row) => (
             <div key={row.id} className="flex items-center justify-between gap-3">
-              <label htmlFor={row.id} className="text-sm text-zinc-200">
+              <label htmlFor={row.id} className="text-ink-200 text-sm">
                 {row.label}
               </label>
               <input
@@ -234,9 +234,9 @@ export default function MeshcoreContactSettingsSection({
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-zinc-600/60 p-3">
+        <div className="border-ink-600/60 flex items-center justify-between gap-3 rounded-lg border p-3">
           <div>
-            <label htmlFor="meshcore-overwrite-oldest" className="text-sm text-zinc-200">
+            <label htmlFor="meshcore-overwrite-oldest" className="text-ink-200 text-sm">
               {t('meshcoreContactSettings.overwriteOldestTitle')}
             </label>
             <p className="text-muted mt-0.5 text-xs">
@@ -259,7 +259,7 @@ export default function MeshcoreContactSettingsSection({
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="meshcore-autoadd-max-hops" className="text-sm text-zinc-200">
+          <label htmlFor="meshcore-autoadd-max-hops" className="text-ink-200 text-sm">
             {t('meshcoreContactSettings.maxHopsLabel')}
           </label>
           <p className="text-muted text-xs">
@@ -298,13 +298,13 @@ export default function MeshcoreContactSettingsSection({
           )}
         </div>
 
-        <div className="space-y-3 border-t border-zinc-600/80 pt-4">
-          <p className="text-xs font-medium text-zinc-400">
+        <div className="border-ink-600/80 space-y-3 border-t pt-4">
+          <p className="text-ink-400 text-xs font-medium">
             {t('meshcoreContactSettings.contactsListAppHeading')}
           </p>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <span className="text-sm text-zinc-200">
+              <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.autoOffloadWhenFullLabel')}
               </span>
               <p className="text-muted mt-0.5 text-xs">
@@ -324,7 +324,7 @@ export default function MeshcoreContactSettingsSection({
           </div>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <span className="text-sm text-zinc-200">
+              <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.showRefreshLabel')}
               </span>
               <p className="text-muted mt-0.5 text-xs">
@@ -344,7 +344,7 @@ export default function MeshcoreContactSettingsSection({
           </div>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <span className="text-sm text-zinc-200">
+              <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.showPublicKeysLabel')}
               </span>
               <p className="text-muted mt-0.5 text-xs">

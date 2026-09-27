@@ -28,7 +28,7 @@ Principles:
 
 ## Quick checklist
 
-- Colors come from [tokens and scales](#color). No new hex, no gradients, glows or text shadows. Neutrals are zinc.
+- Colors come from [tokens and scales](#color). No new hex, no gradients, glows or text shadows. Neutrals are ink.
 - Text sizes are rem tokens ([Type](#type)); readable text is 12px or larger. No `text-[13px]`.
 - Radius and shadow come from the tokens in [Radius](#radius) and [Elevation](#elevation).
 - Icons are Lucide (`lucide-react-motion`); never emoji or text glyphs as icons.
@@ -44,21 +44,23 @@ Everything uses Tailwind utility classes. Theme tokens (below) are CSS variables
 
 `themeColors.ts` writes the theme tokens onto `:root` as inline styles at boot, which overrides the `@theme` block in `styles.css`. A changed default must change in both `styles.css` and `DEFAULT_THEME_COLORS`; `styleTokens.test.ts` fails when they drift.
 
-### Neutrals (Zinc)
+### Neutrals (ink)
 
-Zinc is a plain neutral that works under every protocol theme (Slate's blue undertone clashed with the yellow Reticulum scale). Use `zinc-*` utilities or the tokens; `slate-*` and `gray-*` are rejected by source policy.
+Neutrals come from the Midnight Serenity palette picked during review: Ink Black `#11151c` (950), Deep Space Blue `#212d40` (800) and Charcoal Blue `#364156` (700). The other steps are derived. 900 sits halfway between 950 and 800, and 50 to 600 keep Tailwind slate's lightness per step with the palette's hue, so text contrast stays where it was. The scale is `--color-ink-*` in `styles.css`.
 
-| Token / class                                 | Default (zinc)         | Use                                                   |
-| --------------------------------------------- | ---------------------- | ----------------------------------------------------- |
-| `bg-app-bg`                                   | `#111113` (950 to 900) | App background, section header, main viewport         |
-| `bg-deep-black`                               | `#18181b` (900)        | Rail, status bar, cards, panels, menus, launcher      |
-| `bg-sidebar-active-bg`                        | `#27272a` (800)        | Active nav item, selected row, hover fill             |
-| `border-zinc-800`                             | `#27272a`              | Hairlines between shell parts and inside cards        |
-| `bg-secondary-dark` / `border-secondary-dark` | `#3f3f46` (700)        | Secondary control fill, field borders, stronger lines |
-| `text-muted`                                  | `#a1a1aa` (400)        | Secondary text, placeholders, inactive icons          |
-| `text-zinc-300` / `text-zinc-200`             | `#d4d4d8` / `#e4e4e7`  | Body text / primary text                              |
+Use `ink-*` utilities or the tokens below; `slate-*`, `zinc-*` and `gray-*` are rejected by source policy. Zinc was tried first and read as brown next to the Reticulum yellow.
 
-`zinc-500` and darker are never text on dark surfaces (under 4.5:1).
+| Token / class                                 | Default (ink)         | Use                                                   |
+| --------------------------------------------- | --------------------- | ----------------------------------------------------- |
+| `bg-app-bg`                                   | `#11151c` (950)       | App background, section header, main viewport         |
+| `bg-deep-black`                               | `#19212d` (900)       | Rail, status bar, cards, panels, menus, launcher      |
+| `bg-sidebar-active-bg`                        | `#212d40` (800)       | Active nav item, selected row, hover fill             |
+| `border-ink-800`                              | `#212d40`             | Hairlines between shell parts and inside cards        |
+| `bg-secondary-dark` / `border-secondary-dark` | `#364156` (700)       | Secondary control fill, field borders, stronger lines |
+| `text-muted`                                  | `#93a0b7` (400)       | Secondary text, placeholders, inactive icons          |
+| `text-ink-300` / `text-ink-200`               | `#cdd4e2` / `#e3e8f0` | Body text / primary text                              |
+
+`ink-500` and darker are never text on dark surfaces (under 4.5:1).
 
 ### Protocol scales
 
@@ -97,7 +99,7 @@ Status colors never double as the accent. The style guide gives each a Light-BG,
 | Info, neutral status    | `status-info` `#818cf8`    | `indigo-400`          | `indigo-900/40` or `100` | `indigo-800` |
 
 - Status dots use `StatusDot` tones (`ok`, `idle`, `off`, `warn`, `error`, `info`), which read the Main tokens. Use `bg-status-*` / `text-status-*` for any other dot or status icon.
-- Keep the `-400` steps for status text: the Main error red is under 4.5:1 on `zinc-800` rows.
+- Keep the `-400` steps for status text: the Main error red is under 4.5:1 on `ink-800` rows.
 - Red means broken; orange means caution or delay (maintainer rule). Unread badges stay `bg-red-600` with white text, like the macOS dock.
 - Inline notices use `NOTICE_CLASS` in `formClasses.ts`.
 
@@ -107,12 +109,12 @@ Allowed exceptions: favourite stars are `yellow-400`; search highlights are yell
 
 App > Appearance > Colors offers one-click presets (`lib/themePresets.ts`), all dark, all passing the contrast guards:
 
-- Meshtastic (default): zinc with the emerald accent.
-- MeshCore: zinc with the cyan accent.
-- Reticulum: zinc with the yellow accent.
+- Meshtastic (default): ink with the Meshtastic accent.
+- MeshCore: ink with the MeshCore cyan accent.
+- Reticulum: ink with the Reticulum yellow accent.
 - High contrast: brighter muted text, stronger borders, lighter accent.
 - Midnight: gray surfaces with a sky accent.
-- Classic slate: the pre-style-guide look (slate with green-300).
+- Classic slate: the pre-v6 theme colors (Tailwind slate tokens with the old green-300 accent). Surfaces drawn with `ink-*` classes stay ink, and type and layout stay v6.
 
 Single tokens can still be edited after picking a preset. A light theme needs a sweep of hard-coded dark text first.
 
@@ -254,7 +256,7 @@ Use the class strings and primitives; do not restyle native elements per panel.
 - Fields: `INPUT_CLASS` / `SELECT_CLASS` / `TEXTAREA_CLASS` (full width) or the `*_BOX_CLASS` variants sized by their row (`w-24`, `flex-1`); `*_BOX_SM_CLASS` for dense rows. 32px (28px compact), 40px on touch. Invalid state comes from `aria-invalid`. Every field has a label (visually hidden is fine).
 - On/off settings: `Switch`. Small integers: `Stepper`. Read-only values: `CopyField`.
 - Label and value pairs: `LabelValueGrid` inside their card, about 560px wide at most.
-- Cards: `Panel` (`bg-deep-black`, `border-zinc-800`, `rounded-card`, level 1). Settings sections: `bg-deep-black rounded-xl border border-zinc-800`.
+- Cards: `Panel` (`bg-deep-black`, `border-ink-800`, `rounded-card`, level 1). Settings sections: `bg-deep-black rounded-xl border border-ink-800`.
 - Notices: `NOTICE_CLASS.info|warn|error|success`.
 - Map overlays: `MAP_CONTROL_CLASS`, `MAP_CHIP_CLASS`, `MAP_OVERLAY_PANEL_CLASS` (`map/mapControlClasses.ts`); Leaflet's own controls are restyled in `styles.css`.
 - Status: `StatusDot` only where it carries state; pulses on a separate `aria-hidden` element, never on small text.
@@ -280,7 +282,7 @@ Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outsid
 
 ## Chat
 
-- Bubbles: incoming `--color-chat-incoming-*` (zinc-800 at 38%), own messages `--color-chat-outgoing-*` (accent 700 at 22% with a 300 border at 25%), max width `min(94%, 40rem)` on phones and `min(80%, 40rem)` wider.
+- Bubbles: incoming `--color-chat-incoming-*` (ink-800 at 38%), own messages `--color-chat-outgoing-*` (accent 700 at 22% with a 300 border at 25%), max width `min(94%, 40rem)` on phones and `min(80%, 40rem)` wider.
 - Sender initials (`lib/senderInitials.ts`) or the Reticulum face in a gutter on the first message of a run; the sender line carries name, time and hop or RF metadata.
 - The composer is one field with the send button inside the row; the hint about Enter and Shift+Enter hides on touch.
 - The channel and DM switchers are searchable and built for thousands of entries.
@@ -312,19 +314,20 @@ Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outsid
 
 Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-commit):
 
-| Rule                                 | Rejects                                        |
-| ------------------------------------ | ---------------------------------------------- |
-| `renderer-font-size-in-rem`          | `text-[Npx]` font sizes                        |
-| `renderer-zinc-neutrals`             | `slate-*` and `gray-*` palette classes         |
-| `renderer-elevation-levels`          | stock `shadow-xs` to `shadow-2xl` classes      |
-| `renderer-no-low-contrast-gray-text` | `text-zinc-500` (and slate/gray-500) text      |
-| `renderer-no-uppercase-micro-labels` | `uppercase` with `tracking-wide*`              |
-| `renderer-icons-not-glyphs`          | a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ |
-| `axe-tests-hydrate-theme-colors`     | axe tests that skip `hydrateAxeThemeColors()`  |
+| Rule                                 | Rejects                                          |
+| ------------------------------------ | ------------------------------------------------ |
+| `renderer-font-size-in-rem`          | `text-[Npx]` font sizes                          |
+| `renderer-ink-neutrals`              | `slate-*`, `zinc-*` and `gray-*` palette classes |
+| `renderer-elevation-levels`          | stock `shadow-xs` to `shadow-2xl` classes        |
+| `renderer-no-low-contrast-gray-text` | `text-ink-500` (and slate, zinc, gray-500) text  |
+| `renderer-no-uppercase-micro-labels` | `uppercase` with `tracking-wide*`                |
+| `renderer-icons-not-glyphs`          | a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ   |
+| `axe-tests-hydrate-theme-colors`     | axe tests that skip `hydrateAxeThemeColors()`    |
 
 ## Open items
 
-- From the designer's Figma: the status Light-BG and Dark-Text steps, and the exact Level 1 to 4 shadows. Protocol scales, status Main colors, neutrals and type are already exact.
+- From the designer's Figma: the status Light-BG and Dark-Text steps, and the exact Level 1 to 4 shadows. Protocol scales, status Main colors and type are already exact.
+- Neutrals: Midnight Serenity gives three dark steps. The light steps used for text (ink-50 to ink-600) are derived; exact values from the designer drop into `--color-ink-*`.
 - Protocol colors outside `protocolTheme.ts` (for example some Reticulum panels and data ramps) still use Tailwind's `emerald` / `cyan` / `yellow` classes; move the ones that mark a protocol to the scale tokens.
 - Status text still uses Tailwind's `-400` steps (v4 oklch values) next to the exact Main tokens used by dots.
 - The Main success green (`#34d399`) sits close to the Meshtastic base (`#67e8b4`); status dots always come with text, so "online" is never color alone.

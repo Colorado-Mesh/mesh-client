@@ -558,7 +558,7 @@ export function RrcChatView({
 
   if (!connected) {
     return (
-      <div className="flex flex-1 items-center justify-center p-6 text-sm text-zinc-400">
+      <div className="text-ink-400 flex flex-1 items-center justify-center p-6 text-sm">
         {t('rrc.selectHubPrompt')}
       </div>
     );
@@ -574,7 +574,7 @@ export function RrcChatView({
           className="h-full min-h-0 overflow-y-auto overscroll-contain px-3 py-2 [overflow-anchor:none]"
         >
           {!activeRoom && (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-sm text-zinc-400">
+            <div className="text-ink-400 flex h-full flex-col items-center justify-center gap-2 text-center text-sm">
               <p>{t('rrc.joinRoomPrompt')}</p>
               <p className="text-muted max-w-md text-xs">{t('rrc.joinRoomHelp')}</p>
             </div>
@@ -607,14 +607,14 @@ export function RrcChatView({
                     (msg.kind === 'notice' || msg.kind === 'msg') &&
                     Boolean(nick));
                 const lineClass = whisperAsRoomMsg
-                  ? 'text-zinc-100'
+                  ? 'text-ink-100'
                   : msg.kind === 'notice' || msg.kind === 'system'
-                    ? 'text-zinc-400'
+                    ? 'text-ink-400'
                     : msg.kind === 'action'
                       ? 'text-cyan-200/90 italic'
                       : msg.kind === 'error'
                         ? 'text-red-300'
-                        : 'text-zinc-100';
+                        : 'text-ink-100';
                 const rawBody = whisperEcho ? whisperEcho.text : msg.body;
                 const plainBody = highlightRrcSelfMentions(rawBody, nickname, inlineOpts);
                 const body =
@@ -693,7 +693,7 @@ export function RrcChatView({
             onClick={() => {
               scrollToBottom('smooth');
             }}
-            className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark shadow-level-3 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-zinc-200 transition-all"
+            className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark shadow-level-3 text-ink-200 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all"
             aria-label={t('rrc.jumpToLatest')}
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
@@ -701,7 +701,7 @@ export function RrcChatView({
           </button>
         )}
       </div>
-      <div className="border-t border-zinc-800 p-2 font-sans">
+      <div className="border-ink-800 border-t p-2 font-sans">
         <ChatComposer
           protocol="reticulum"
           viewKey={composerViewKey}

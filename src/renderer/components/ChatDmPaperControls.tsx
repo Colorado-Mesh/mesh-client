@@ -133,14 +133,12 @@ export function ChatDmPaperShareControl({
         />
         <div
           ref={dialogPanelRef}
-          className="bg-deep-black rounded-modal shadow-level-4 relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto border border-zinc-700 p-4"
+          className="bg-deep-black rounded-modal shadow-level-4 border-ink-700 relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto border p-4"
           role="dialog"
           aria-modal="true"
           aria-label={t('chatPanel.shareAsPaperTitle')}
         >
-          <h2 className="text-sm font-semibold text-zinc-100">
-            {t('chatPanel.shareAsPaperTitle')}
-          </h2>
+          <h2 className="text-ink-100 text-sm font-semibold">{t('chatPanel.shareAsPaperTitle')}</h2>
           <p className="text-muted mt-1 text-xs">{t('chatPanel.shareAsPaperHint')}</p>
           {uri == null ? (
             <>
@@ -169,7 +167,7 @@ export function ChatDmPaperShareControl({
                 </button>
                 <button
                   type="button"
-                  className="rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-300"
+                  className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-xs"
                   disabled={busy}
                   onClick={closeModal}
                 >
@@ -203,7 +201,7 @@ export function ChatDmPaperShareControl({
                 </button>
                 <button
                   type="button"
-                  className="rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-300"
+                  className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-xs"
                   onClick={closeModal}
                 >
                   {t('chatPanel.shareAsPaperClose')}
@@ -231,7 +229,7 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
     <div className="mb-1">
       <button
         type="button"
-        className="text-muted text-label inline-flex items-center gap-1 hover:text-zinc-200"
+        className="text-muted text-label hover:text-ink-200 inline-flex items-center gap-1"
         aria-label={t('chatPanel.scanPaperAria')}
         aria-expanded={expanded}
         disabled={!sidecarRunning}
@@ -243,7 +241,7 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
         {t('chatPanel.scanPaper')}
       </button>
       {expanded ? (
-        <div className="mt-1 rounded border border-zinc-700/80 bg-zinc-900/40 p-2">
+        <div className="border-ink-700/80 bg-ink-900/40 mt-1 rounded border p-2">
           <p className="text-muted text-label mb-1">{t('chatPanel.scanPaperHint')}</p>
           <QrIngestControl
             disabled={!sidecarRunning}

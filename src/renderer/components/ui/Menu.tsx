@@ -163,7 +163,7 @@ export function Menu({
           <div
             key={`separator-${index}`}
             role="separator"
-            className="mx-1.5 my-1 h-px bg-zinc-800"
+            className="bg-ink-800 mx-1.5 my-1 h-px"
           />
         ) : (
           <button
@@ -180,14 +180,14 @@ export function Menu({
             className={`text-body rounded-badge flex w-full items-start gap-2.5 px-2.5 py-2 text-left transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
               entry.tone === 'danger'
                 ? 'text-red-400 hover:bg-red-400/10 focus-visible:bg-red-400/10'
-                : 'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-zinc-200'
+                : 'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-ink-200'
             }`}
           >
             {entry.icon && <span className="mt-px flex shrink-0">{entry.icon}</span>}
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="font-medium">{entry.label}</span>
               {entry.description && (
-                <span id={`${menuDomId}-${entry.id}-desc`} className="text-meta text-zinc-300">
+                <span id={`${menuDomId}-${entry.id}-desc`} className="text-meta text-ink-300">
                   {entry.description}
                 </span>
               )}
@@ -350,12 +350,12 @@ const SPLIT_GROUP: Record<NonNullable<SplitButtonProps['variant']>, string> = {
 };
 
 const SPLIT_MAIN: Record<NonNullable<SplitButtonProps['variant']>, string> = {
-  secondary: 'text-zinc-200 hover:bg-secondary-dark',
+  secondary: 'text-ink-200 hover:bg-secondary-dark',
   danger: 'text-red-400 hover:bg-red-400/10',
 };
 
 const SPLIT_CHEVRON: Record<NonNullable<SplitButtonProps['variant']>, string> = {
-  secondary: 'border-secondary-dark text-zinc-300 hover:bg-secondary-dark',
+  secondary: 'border-secondary-dark text-ink-300 hover:bg-secondary-dark',
   danger: 'border-red-400/30 text-red-400 hover:bg-red-400/10',
 };
 

@@ -618,8 +618,8 @@ export default function NodeDetailModal({
           }
         : {
             label: t('nodeDetailModal.statusOffline'),
-            dotClass: 'bg-zinc-400',
-            textClass: 'text-zinc-300',
+            dotClass: 'bg-ink-400',
+            textClass: 'text-ink-300',
           };
 
   const headerHardwareSubtitle =
@@ -663,7 +663,7 @@ export default function NodeDetailModal({
   // Omitted for the directly connected node (no position / trace / message to self).
   const actionsRow = isOurNode ? null : (
     <div
-      className={`flex flex-wrap items-center gap-2 border-zinc-800 px-5 py-3 ${
+      className={`border-ink-800 flex flex-wrap items-center gap-2 px-5 py-3 ${
         variant === 'pane' ? 'border-b' : 'border-t'
       }`}
     >
@@ -684,7 +684,7 @@ export default function NodeDetailModal({
               type="button"
               onClick={handleTraceRoute}
               disabled
-              className="bg-secondary-dark min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-zinc-200 opacity-40"
+              className="bg-secondary-dark text-ink-200 min-w-[8rem] flex-1 cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium opacity-40"
             >
               {traceRoutePending
                 ? t('nodeDetailModal.tracingEllipsis')
@@ -1008,10 +1008,10 @@ export default function NodeDetailModal({
   const detailContent = (
     <>
       {/* Header */}
-      <div className="flex shrink-0 items-start justify-between border-b border-zinc-800 px-5 py-4">
+      <div className="border-ink-800 flex shrink-0 items-start justify-between border-b px-5 py-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h3 id="node-modal-title" className="truncate text-lg font-semibold text-zinc-100">
+            <h3 id="node-modal-title" className="text-ink-100 truncate text-lg font-semibold">
               {displayName}
             </h3>
             {mqttIgnoredNodes.has(node.node_id) && (
@@ -1034,7 +1034,7 @@ export default function NodeDetailModal({
             )}
             {headerHopsDisplay != null && (
               <span
-                className={`text-xs ${headerHopsDisplay === 0 ? 'text-bright-green' : 'text-zinc-400'}`}
+                className={`text-xs ${headerHopsDisplay === 0 ? 'text-bright-green' : 'text-ink-400'}`}
                 title={
                   protocol === 'meshcore' && meshcoreTraceResult != null
                     ? t('nodeDetailModal.hopsFromTraceTitle')
@@ -1135,7 +1135,7 @@ export default function NodeDetailModal({
                       console.warn('[NodeDetailModal] copy pubkey failed ' + errLikeToLogString(e));
                     });
                 }}
-                className="text-muted shrink-0 rounded p-0.5 hover:text-zinc-200"
+                className="text-muted hover:text-ink-200 shrink-0 rounded p-0.5"
               >
                 <Copy aria-hidden className="h-3.5 w-3.5" size={14} />
               </button>
@@ -1180,7 +1180,7 @@ export default function NodeDetailModal({
               aria-label={closeLabel}
               title={closeLabel}
               {...{ [PARENT_HOVER_ATTR]: '' }}
-              className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-zinc-200"
+              className="hover:bg-secondary-dark text-muted hover:text-ink-200 shrink-0 rounded-lg p-1.5 transition-colors"
             >
               <X aria-hidden className="h-5 w-5" trigger={parentIconTrigger} size={20} />
             </button>
@@ -1259,7 +1259,7 @@ export default function NodeDetailModal({
           {/* MeshCore: live outbound route (no trace required) */}
           {protocol === 'meshcore' && !isOurNode && currentRoute && !traceMatchesCurrentRoute && (
             <div className="mt-3 space-y-1">
-              <h4 className="text-xs font-semibold text-zinc-300">
+              <h4 className="text-ink-300 text-xs font-semibold">
                 {t('nodeDetailModal.currentRouteHeading')}
               </h4>
               <div className="bg-secondary-dark rounded p-2">
@@ -1271,12 +1271,12 @@ export default function NodeDetailModal({
           {/* MeshCore: trace path result */}
           {protocol === 'meshcore' && !isOurNode && meshcoreTraceResult && (
             <div className="mt-3 space-y-1">
-              <h4 className="text-xs font-semibold text-zinc-300">
+              <h4 className="text-ink-300 text-xs font-semibold">
                 {t('nodeDetailModal.pathTraceHeading')}
               </h4>
-              <div className="text-xs text-zinc-400">
+              <div className="text-ink-400 text-xs">
                 {t('nodeDetailModal.hopsLabel')}{' '}
-                <span className="font-mono text-zinc-200">
+                <span className="text-ink-200 font-mono">
                   {meshcoreTracePathLenToHops(meshcoreTraceResult.pathLen)}
                 </span>
               </div>
@@ -1294,7 +1294,7 @@ export default function NodeDetailModal({
                     <SnrIndicator snr={hop.snr} />
                   </div>
                 ))}
-                <div className="flex items-center gap-2 border-t border-zinc-700 pt-1 text-xs">
+                <div className="border-ink-700 flex items-center gap-2 border-t pt-1 text-xs">
                   <span
                     className="text-muted max-w-[10rem] min-w-10 truncate"
                     title={node.long_name}
@@ -1316,7 +1316,7 @@ export default function NodeDetailModal({
           {protocol === 'meshcore' && !isOurNode && meshcoreNodeTelemetry && showTelemetry && (
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-zinc-300">
+                <h4 className="text-ink-300 text-xs font-semibold">
                   {t('nodeDetailModal.sensorTelemetryHeading')}
                 </h4>
                 <div className="flex items-center gap-2">
@@ -1330,7 +1330,7 @@ export default function NodeDetailModal({
                     onClick={() => {
                       setShowTelemetry(false);
                     }}
-                    className="text-muted text-xs hover:text-zinc-300"
+                    className="text-muted hover:text-ink-300 text-xs"
                   >
                     {t('common.hide')}
                   </button>
@@ -1340,7 +1340,7 @@ export default function NodeDetailModal({
                 {meshcoreNodeTelemetry.temperature !== undefined && (
                   <>
                     <div className="text-muted">{t('nodeDetailModal.temperatureLabel')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {meshcoreNodeTelemetry.temperature.toFixed(1)} °C
                     </div>
                   </>
@@ -1348,7 +1348,7 @@ export default function NodeDetailModal({
                 {meshcoreNodeTelemetry.relativeHumidity !== undefined && (
                   <>
                     <div className="text-muted">{t('nodeDetailModal.humidityLabel')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {meshcoreNodeTelemetry.relativeHumidity.toFixed(1)} %
                     </div>
                   </>
@@ -1356,7 +1356,7 @@ export default function NodeDetailModal({
                 {meshcoreNodeTelemetry.barometricPressure !== undefined && (
                   <>
                     <div className="text-muted">{t('nodeDetailModal.pressureLabel')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {meshcoreNodeTelemetry.barometricPressure.toFixed(1)} hPa
                     </div>
                   </>
@@ -1364,7 +1364,7 @@ export default function NodeDetailModal({
                 {meshcoreNodeTelemetry.voltage !== undefined && (
                   <>
                     <div className="text-muted">{t('nodeDetailModal.voltageLabel')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {meshcoreNodeTelemetry.voltage.toFixed(2)} V
                     </div>
                   </>
@@ -1372,7 +1372,7 @@ export default function NodeDetailModal({
                 {meshcoreNodeTelemetry.gps && (
                   <>
                     <div className="text-muted">{t('nodeDetailModal.gpsLabel')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {formatCoordPair(
                         meshcoreNodeTelemetry.gps.latitude,
                         meshcoreNodeTelemetry.gps.longitude,
@@ -1401,7 +1401,7 @@ export default function NodeDetailModal({
           {protocol === 'meshcore' && !isOurNode && meshcoreNeighbors && showMeshcoreNeighbors && (
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-zinc-300">
+                <h4 className="text-ink-300 text-xs font-semibold">
                   {t('nodeDetailModal.neighborsHeading', {
                     count: meshcoreNeighbors.totalNeighboursCount,
                   })}
@@ -1411,7 +1411,7 @@ export default function NodeDetailModal({
                   onClick={() => {
                     setShowMeshcoreNeighbors(false);
                   }}
-                  className="text-muted text-xs hover:text-zinc-300"
+                  className="text-muted hover:text-ink-300 text-xs"
                 >
                   {t('common.hide')}
                 </button>
@@ -1429,7 +1429,7 @@ export default function NodeDetailModal({
                       className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
                     >
                       <div>
-                        <span className="text-zinc-300">{label}</span>
+                        <span className="text-ink-300">{label}</span>
                         <span className="text-muted ml-2">
                           {formatSecondsAgo(nb.heardSecondsAgo, t)}
                         </span>
@@ -1545,7 +1545,7 @@ export default function NodeDetailModal({
                         className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
                       >
                         <div className="text-muted">{t('diagnosticsPanel.foreignClassColumn')}</div>
-                        <div className="text-zinc-200">
+                        <div className="text-ink-200">
                           {detection.packetClass === 'meshcore'
                             ? t('diagnosticsPanel.foreignClassMeshcore')
                             : detection.packetClass === 'meshtastic'
@@ -1557,7 +1557,7 @@ export default function NodeDetailModal({
                         <div className="text-muted">
                           {t('diagnosticsPanel.foreignProximityColumn')}
                         </div>
-                        <div className="text-zinc-200">
+                        <div className="text-ink-200">
                           {detection.proximity === 'very-close'
                             ? t('diagnosticsPanel.proximityVeryClose')
                             : detection.proximity === 'nearby'
@@ -1571,17 +1571,17 @@ export default function NodeDetailModal({
                         <div className="text-muted">
                           {t('diagnosticsPanel.foreignLastSeenColumn')}
                         </div>
-                        <div className="text-zinc-200">
+                        <div className="text-ink-200">
                           {minutesAgo < 1
                             ? t('common.justNow')
                             : t('common.minutesAgo', { count: minutesAgo })}
                         </div>
                         <div className="text-muted">{t('diagnosticsPanel.foreignCountColumn')}</div>
-                        <div className="text-zinc-200">{detection.count}×</div>
+                        <div className="text-ink-200">{detection.count}×</div>
                         {(detection.rssi !== undefined || detection.snr !== undefined) && (
                           <>
                             <div className="text-muted">{t('nodeDetailModal.signalLabel')}</div>
-                            <div className="font-mono text-zinc-200">
+                            <div className="text-ink-200 font-mono">
                               {detection.rssi !== undefined ? `RSSI ${detection.rssi} dBm` : ''}
                               {detection.rssi !== undefined && detection.snr !== undefined
                                 ? ', '
@@ -1595,7 +1595,7 @@ export default function NodeDetailModal({
                         {detection.lastSenderId != null && (
                           <>
                             <div className="text-muted">{t('nodeDetailModal.senderLabel')}</div>
-                            <div className="font-mono text-zinc-200">
+                            <div className="text-ink-200 font-mono">
                               {formatMeshtasticNodeId(detection.lastSenderId)}
                               {senderName ? ` (${senderName})` : ''}
                             </div>
@@ -1612,7 +1612,7 @@ export default function NodeDetailModal({
           {protocol === 'meshcore' && !isOurNode && meshcoreRepeaterStatus && showRepeaterStats && (
             <div className="mt-3 space-y-1">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-zinc-300">
+                <h4 className="text-ink-300 text-xs font-semibold">
                   {t('nodeDetailModal.repeaterStatusHeading')}
                 </h4>
                 <button
@@ -1620,54 +1620,54 @@ export default function NodeDetailModal({
                   onClick={() => {
                     setShowRepeaterStats(false);
                   }}
-                  className="text-muted text-xs hover:text-zinc-300"
+                  className="text-muted hover:text-ink-300 text-xs"
                 >
                   {t('common.hide')}
                 </button>
               </div>
               <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                 <div className="text-muted">{t('nodeDetailModal.batteryLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {(meshcoreRepeaterStatus.battMilliVolts / 1000).toFixed(2)} V
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.noiseFloor} dBm
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreRepeaterStatus.lastRssi} dBm</div>
+                <div className="text-ink-200 font-mono">{meshcoreRepeaterStatus.lastRssi} dBm</div>
                 <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.lastSnr.toFixed(2)} dB
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.pktsRecvSentLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.nPacketsRecv} / {meshcoreRepeaterStatus.nPacketsSent}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.airTimeLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.totalAirTimeSecs}s
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {Math.floor(meshcoreRepeaterStatus.totalUpTimeSecs / 60)}m
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.txQueueLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.currTxQueueLen}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.floodDirectSentLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.nSentFlood} / {meshcoreRepeaterStatus.nSentDirect}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.floodDirectRecvLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.nRecvFlood} / {meshcoreRepeaterStatus.nRecvDirect}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.errorsLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreRepeaterStatus.errEvents}</div>
+                <div className="text-ink-200 font-mono">{meshcoreRepeaterStatus.errEvents}</div>
                 <div className="text-muted">{t('nodeDetailModal.dupsDirectFloodLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreRepeaterStatus.nDirectDups} / {meshcoreRepeaterStatus.nFloodDups}
                 </div>
               </div>
@@ -1681,7 +1681,7 @@ export default function NodeDetailModal({
               if (!record || record.neighbors.length === 0) return null;
               return (
                 <div className="space-y-2 pb-2">
-                  <h4 className="text-xs font-semibold text-zinc-300">
+                  <h4 className="text-ink-300 text-xs font-semibold">
                     {t('nodeDetailModal.neighborsHeading', { count: record.neighbors.length })}
                   </h4>
                   <div className="space-y-1">
@@ -1693,7 +1693,7 @@ export default function NodeDetailModal({
                           key={nb.nodeId}
                           className="bg-secondary-dark flex items-center justify-between rounded px-2 py-1 text-xs"
                         >
-                          <span className="text-zinc-300">{label}</span>
+                          <span className="text-ink-300">{label}</span>
                           <span className="text-muted text-xs">
                             {formatSecondsAgo(
                               Math.max(0, Math.floor(Date.now() / 1000 - nb.lastRxTime)),
@@ -1712,52 +1712,50 @@ export default function NodeDetailModal({
           {/* MeshCore Local Stats section (for connected node only) */}
           {protocol === 'meshcore' && meshcoreLocalStats && (
             <div className="space-y-2 pb-2">
-              <h4 className="text-xs font-semibold text-zinc-300">
+              <h4 className="text-ink-300 text-xs font-semibold">
                 {t('nodeDetailModal.radioStatsLocalHeading')}
               </h4>
               <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                 <div className="text-muted">{t('nodeDetailModal.noiseFloorLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreLocalStats.noiseFloor} dBm</div>
+                <div className="text-ink-200 font-mono">{meshcoreLocalStats.noiseFloor} dBm</div>
                 <div className="text-muted">{t('nodeDetailModal.lastRssiLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreLocalStats.lastRssi} dBm</div>
+                <div className="text-ink-200 font-mono">{meshcoreLocalStats.lastRssi} dBm</div>
                 <div className="text-muted">{t('nodeDetailModal.lastSnrLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreLocalStats.lastSnr.toFixed(2)} dB
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.txAirTimeLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreLocalStats.txAirSecs}s</div>
+                <div className="text-ink-200 font-mono">{meshcoreLocalStats.txAirSecs}s</div>
                 <div className="text-muted">{t('nodeDetailModal.rxAirTimeLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreLocalStats.rxAirSecs}s</div>
+                <div className="text-ink-200 font-mono">{meshcoreLocalStats.rxAirSecs}s</div>
                 <div className="text-muted">{t('nodeDetailModal.uptimeLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {Math.floor(meshcoreLocalStats.uptimeSecs / 3600)}h{' '}
                   {Math.floor((meshcoreLocalStats.uptimeSecs % 3600) / 60)}m
                 </div>
               </div>
 
-              <h4 className="text-xs font-semibold text-zinc-300">
+              <h4 className="text-ink-300 text-xs font-semibold">
                 {t('nodeDetailModal.packetsLocalHeading')}
               </h4>
               <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                 <div className="text-muted">{t('nodeDetailModal.sentFloodDirectLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreLocalStats.nSentFlood} / {meshcoreLocalStats.nSentDirect}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.recvFloodDirectLabel')}</div>
-                <div className="font-mono text-zinc-200">
+                <div className="text-ink-200 font-mono">
                   {meshcoreLocalStats.nRecvFlood} / {meshcoreLocalStats.nRecvDirect}
                 </div>
                 <div className="text-muted">{t('nodeDetailModal.totalSentLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreLocalStats.sent}</div>
+                <div className="text-ink-200 font-mono">{meshcoreLocalStats.sent}</div>
                 <div className="text-muted">{t('nodeDetailModal.totalRecvLabel')}</div>
-                <div className="font-mono text-zinc-200">{meshcoreLocalStats.recv}</div>
+                <div className="text-ink-200 font-mono">{meshcoreLocalStats.recv}</div>
                 {meshcoreLocalStats.nRecvErrors !== undefined &&
                   meshcoreLocalStats.nRecvErrors !== null && (
                     <>
                       <div className="text-muted">{t('nodeDetailModal.rxErrorsLabel')}</div>
-                      <div className="font-mono text-zinc-200">
-                        {meshcoreLocalStats.nRecvErrors}
-                      </div>
+                      <div className="text-ink-200 font-mono">{meshcoreLocalStats.nRecvErrors}</div>
                     </>
                   )}
               </div>
@@ -1775,23 +1773,23 @@ export default function NodeDetailModal({
               const maxCount = Math.max(...recent.map((p) => p.count), 1);
               return (
                 <div className="space-y-2 px-5 pb-2">
-                  <h4 className="text-xs font-semibold text-zinc-300">
+                  <h4 className="text-ink-300 text-xs font-semibold">
                     {t('nodeDetailModal.paxCounter.heading')}
                   </h4>
                   <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                     <div className="text-muted">
                       {t('nodeDetailModal.paxCounter.detectedCount')}
                     </div>
-                    <div className="font-mono text-zinc-200">{paxData.count}</div>
+                    <div className="text-ink-200 font-mono">{paxData.count}</div>
                     <div className="text-muted">{t('nodeDetailModal.paxCounter.lastSeen')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {formatSecondsAgo(
                         Math.max(0, Math.floor((Date.now() - paxData.timestamp) / 1000)),
                         t,
                       )}
                     </div>
                     <div className="text-muted">{t('nodeDetailModal.paxCounter.samples')}</div>
-                    <div className="font-mono text-zinc-200">{history.length}</div>
+                    <div className="text-ink-200 font-mono">{history.length}</div>
                   </div>
                   <div
                     className="bg-secondary-dark flex h-10 items-end gap-0.5 rounded p-2"
@@ -1823,7 +1821,7 @@ export default function NodeDetailModal({
               const list = [...sensorEvents].reverse().slice(0, 20);
               return (
                 <div className="space-y-2 px-5 pb-2">
-                  <h4 className="text-xs font-semibold text-zinc-300">
+                  <h4 className="text-ink-300 text-xs font-semibold">
                     {t('nodeDetailModal.detectionSensor.heading', {
                       count: sensorEvents.length,
                     })}
@@ -1832,7 +1830,7 @@ export default function NodeDetailModal({
                     <div className="text-muted">
                       {t('nodeDetailModal.detectionSensor.lastDetection')}
                     </div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {formatSecondsAgo(
                         Math.max(0, Math.floor((Date.now() - latestEvent.timestamp) / 1000)),
                         t,
@@ -1841,7 +1839,7 @@ export default function NodeDetailModal({
                     <div className="text-muted">
                       {t('nodeDetailModal.detectionSensor.dataSize')}
                     </div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {t('nodeDetailModal.detectionSensor.dataSizeBytes', {
                         count: latestEvent.data.length,
                       })}
@@ -1859,7 +1857,7 @@ export default function NodeDetailModal({
                         <div className="text-muted text-2xs font-mono">
                           {formatIsoDateTime(ev.timestamp)}
                         </div>
-                        <div className="font-mono break-all text-zinc-200">
+                        <div className="text-ink-200 font-mono break-all">
                           {ev.text ?? bytesToHex(ev.data)}
                         </div>
                       </li>
@@ -1881,12 +1879,12 @@ export default function NodeDetailModal({
               const list = [...packets].reverse().slice(0, 20);
               return (
                 <div className="space-y-2 px-5 pb-2">
-                  <h4 className="text-xs font-semibold text-zinc-300">
+                  <h4 className="text-ink-300 text-xs font-semibold">
                     {t('nodeDetailModal.rangeTest.heading', { count: packets.length })}
                   </h4>
                   <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs">
                     <div className="text-muted">{t('nodeDetailModal.rangeTest.lastPacket')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {formatSecondsAgo(
                         Math.max(0, Math.floor((Date.now() - latest.timestamp) / 1000)),
                         t,
@@ -1895,25 +1893,25 @@ export default function NodeDetailModal({
                     {decoded.sequence !== undefined && (
                       <>
                         <div className="text-muted">{t('nodeDetailModal.rangeTest.sequence')}</div>
-                        <div className="font-mono text-zinc-200">{decoded.sequence}</div>
+                        <div className="text-ink-200 font-mono">{decoded.sequence}</div>
                       </>
                     )}
                     {decoded.snr !== undefined && (
                       <>
                         <div className="text-muted">{t('nodeDetailModal.rangeTest.snr')}</div>
-                        <div className="font-mono text-zinc-200">{decoded.snr}</div>
+                        <div className="text-ink-200 font-mono">{decoded.snr}</div>
                       </>
                     )}
                     {decoded.rssi !== undefined && (
                       <>
                         <div className="text-muted">{t('nodeDetailModal.rangeTest.rssi')}</div>
-                        <div className="font-mono text-zinc-200">{decoded.rssi}</div>
+                        <div className="text-ink-200 font-mono">{decoded.rssi}</div>
                       </>
                     )}
                     {lossRate !== undefined && (
                       <>
                         <div className="text-muted">{t('nodeDetailModal.rangeTest.lossRate')}</div>
-                        <div className="font-mono text-zinc-200">
+                        <div className="text-ink-200 font-mono">
                           {t('nodeDetailModal.rangeTest.lossRatePercent', {
                             percent: Math.round(lossRate * 100),
                           })}
@@ -1935,7 +1933,7 @@ export default function NodeDetailModal({
                           <div className="text-muted text-2xs font-mono">
                             {formatIsoDateTime(ev.timestamp)}
                           </div>
-                          <div className="font-mono break-all text-zinc-200">
+                          <div className="text-ink-200 font-mono break-all">
                             {d.rawText ?? bytesToHex(ev.data)}
                           </div>
                         </li>
@@ -1962,14 +1960,14 @@ export default function NodeDetailModal({
                 return (
                   <div className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded py-2 text-xs">
                     <div className="text-muted">{t('nodeDetailModal.mapReportLastReport')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {formatSecondsAgo(
                         Math.max(0, Math.floor((Date.now() - mapReport.timestamp) / 1000)),
                         t,
                       )}
                     </div>
                     <div className="text-muted">{t('nodeDetailModal.mapReportDataLabel')}</div>
-                    <div className="font-mono text-zinc-200">
+                    <div className="text-ink-200 font-mono">
                       {mapReport.data
                         ? JSON.stringify(mapReport.data).slice(0, 50)
                         : t('nodeDetailModal.mapReportDataNa')}
@@ -2006,11 +2004,11 @@ export default function NodeDetailModal({
                       <div className="text-muted">
                         {t('nodeDetailModal.positionHistoryRecordedPoints')}
                       </div>
-                      <div className="font-mono text-zinc-200">{points.length}</div>
+                      <div className="text-ink-200 font-mono">{points.length}</div>
                       <div className="text-muted">
                         {t('nodeDetailModal.positionHistoryTimeSpan')}
                       </div>
-                      <div className="font-mono text-zinc-200">
+                      <div className="text-ink-200 font-mono">
                         {t('nodeDetailModal.positionHistoryDurationHours', {
                           hours: durationHours,
                         })}
@@ -2018,11 +2016,11 @@ export default function NodeDetailModal({
                       <div className="text-muted">
                         {t('nodeDetailModal.positionHistoryFirstPosition')}
                       </div>
-                      <div className="font-mono text-zinc-200">{formatIsoDateTime(first.t)}</div>
+                      <div className="text-ink-200 font-mono">{formatIsoDateTime(first.t)}</div>
                       <div className="text-muted">
                         {t('nodeDetailModal.positionHistoryLastPosition')}
                       </div>
-                      <div className="font-mono text-zinc-200">{formatIsoDateTime(last.t)}</div>
+                      <div className="text-ink-200 font-mono">{formatIsoDateTime(last.t)}</div>
                     </div>
                     {sorted.length > 1 && (
                       <div className="text-2xs text-muted">
@@ -2047,7 +2045,7 @@ export default function NodeDetailModal({
                           className="text-2xs grid grid-cols-[auto_1fr] gap-x-2"
                         >
                           <span className="text-muted">{formatIsoDateTime(point.t)}</span>
-                          <span className="font-mono whitespace-nowrap text-zinc-200">
+                          <span className="text-ink-200 font-mono whitespace-nowrap">
                             {formatCoordPair(point.lat, point.lon, coordinateFormat)}
                           </span>
                         </div>
@@ -2114,7 +2112,7 @@ export default function NodeDetailModal({
                   type="button"
                   disabled={!isConnected}
                   aria-label={t('nodeDetailModal.saveRemoteAdminKey')}
-                  className="bg-secondary-dark rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-200 transition-colors hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  className="bg-secondary-dark hover:bg-ink-600 rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-200 transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                   onClick={() => {
                     void (async () => {
                       const trimmed = adminKeyDraft.trim();
@@ -2150,7 +2148,7 @@ export default function NodeDetailModal({
                   <button
                     type="button"
                     aria-label={t('nodeDetailModal.clearRemoteAdminKey')}
-                    className="bg-secondary-dark rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600"
+                    className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
                     onClick={() => {
                       void (async () => {
                         try {
@@ -2204,7 +2202,7 @@ export default function NodeDetailModal({
         {variant !== 'pane' && actionsRow}
 
         {/* MQTT Ignore toggle */}
-        <div className="shrink-0 border-t border-zinc-800 px-5 py-3">
+        <div className="border-ink-800 shrink-0 border-t px-5 py-3">
           <Switch
             checked={mqttIgnoredNodes.has(node.node_id)}
             onChange={(next) => {
@@ -2230,7 +2228,7 @@ export default function NodeDetailModal({
 
         {/* Node notes */}
         <div className="shrink-0 px-5 pb-2">
-          <label className="mb-1 block text-xs font-medium text-zinc-400">
+          <label className="text-ink-400 mb-1 block text-xs font-medium">
             {t('nodeDetailModal.notesLabel')}
           </label>
           <textarea
@@ -2316,7 +2314,7 @@ export default function NodeDetailModal({
       <>
         <aside
           aria-labelledby="node-modal-title"
-          className="bg-deep-black flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-zinc-800"
+          className="bg-deep-black border-ink-800 flex h-full min-h-0 flex-col overflow-hidden rounded-xl border"
         >
           {detailContent}
         </aside>
@@ -2341,7 +2339,7 @@ export default function NodeDetailModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="node-modal-title"
-          className="bg-deep-black rounded-modal shadow-level-3 relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-lg flex-col overflow-hidden border border-zinc-800"
+          className="bg-deep-black rounded-modal shadow-level-3 border-ink-800 relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-lg flex-col overflow-hidden border"
         >
           {detailContent}
         </div>

@@ -21,9 +21,9 @@ const AXE_BG_CLASS_TO_CSS: Record<string, string> = {
 };
 
 const AXE_TEXT_CLASS_TO_CSS: Record<string, string> = {
-  'text-zinc-300': '#d4d4d8',
+  'text-ink-300': '#cdd4e2',
   'text-white': '#ffffff',
-  'text-app-bg': '#111113',
+  'text-app-bg': '#11151c',
 };
 
 const DEFAULT_HEX_BY_CSS_VAR: Record<string, string> = Object.fromEntries(

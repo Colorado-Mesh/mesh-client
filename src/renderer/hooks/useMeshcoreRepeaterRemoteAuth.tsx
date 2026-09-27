@@ -45,7 +45,7 @@ function InfraRemoteAuthFields({
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
       <div className="min-w-[12rem] flex-1 space-y-1">
-        <label htmlFor={passwordInputId} className="text-xs text-zinc-400">
+        <label htmlFor={passwordInputId} className="text-ink-400 text-xs">
           {t('repeatersPanel.remoteAuthLabel')}
         </label>
         <input
@@ -195,13 +195,13 @@ export function useMeshcoreRepeaterRemoteAuth() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="repeater-remote-auth-title"
-          className="shadow-level-4 relative z-10 w-full max-w-md space-y-3 rounded-lg border border-zinc-600 bg-zinc-900 p-4"
+          className="shadow-level-4 border-ink-600 bg-ink-900 relative z-10 w-full max-w-md space-y-3 rounded-lg border p-4"
         >
           <h2 id="repeater-remote-auth-title" className="text-base font-semibold text-white">
             {t('repeatersPanel.remoteAuthTitle')}
           </h2>
-          <p className="text-sm text-zinc-400">{pending.displayName}</p>
-          <p className="text-sm text-zinc-400">{t('repeatersPanel.remoteAuthModalHelp')}</p>
+          <p className="text-ink-400 text-sm">{pending.displayName}</p>
+          <p className="text-ink-400 text-sm">{t('repeatersPanel.remoteAuthModalHelp')}</p>
           <ModalAuthBody
             passwordId={passwordId}
             nodeId={pending.nodeId}
@@ -262,7 +262,7 @@ function ModalAuthBody({
         onSubmit={submitPassword}
         passwordInputId={passwordId}
       />
-      <label className="flex items-center gap-2 text-xs text-zinc-400">
+      <label className="text-ink-400 flex items-center gap-2 text-xs">
         <input
           type="checkbox"
           checked={rememberPassword}
@@ -277,7 +277,7 @@ function ModalAuthBody({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
+          className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 rounded border px-3 py-1.5 text-xs font-medium"
           aria-label={cancelLabel}
         >
           {cancelLabel}
@@ -285,7 +285,7 @@ function ModalAuthBody({
         <button
           type="button"
           onClick={onSkip}
-          className="rounded border border-zinc-600 bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-600"
+          className="border-ink-600 bg-ink-700 text-ink-200 hover:bg-ink-600 rounded border px-3 py-1.5 text-xs font-medium"
           aria-label={skipLabel}
         >
           {skipLabel}

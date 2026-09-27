@@ -112,11 +112,11 @@ export function ReticulumVoiceOverlay() {
         aria-modal="true"
         aria-label={t('reticulumVoice.incomingTitle')}
       >
-        <div className="bg-deep-black shadow-level-3 w-full max-w-md rounded-lg border border-zinc-600 p-4">
+        <div className="bg-deep-black shadow-level-3 border-ink-600 w-full max-w-md rounded-lg border p-4">
           <h2 className="text-bright-green mb-2 text-lg font-semibold">
             {t('reticulumVoice.incomingTitle')}
           </h2>
-          <p className="mb-4 truncate text-sm text-zinc-300" title={remoteHash}>
+          <p className="text-ink-300 mb-4 truncate text-sm" title={remoteHash}>
             {remoteLabel}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -146,24 +146,24 @@ export function ReticulumVoiceOverlay() {
 
   return (
     <div
-      className="shadow-level-3 fixed top-1/2 left-1/2 z-[70] flex -translate-x-1/2 -translate-y-1/2 flex-col gap-1 rounded-lg border border-zinc-600 bg-zinc-900/95 px-3 py-2"
+      className="shadow-level-3 border-ink-600 bg-ink-900/95 fixed top-1/2 left-1/2 z-[70] flex -translate-x-1/2 -translate-y-1/2 flex-col gap-1 rounded-lg border px-3 py-2"
       role="status"
       aria-label={t(phaseLabelKey(active.status))}
     >
       <div className="flex items-center gap-2">
-        <span className="text-xs text-zinc-200">{t(phaseLabelKey(active.status))}</span>
+        <span className="text-ink-200 text-xs">{t(phaseLabelKey(active.status))}</span>
         <span
-          className="text-2xs font-mono text-zinc-400"
+          className="text-2xs text-ink-400 font-mono"
           aria-label={t('reticulumVoice.elapsedAria', { time: elapsedLabel })}
         >
           {elapsedLabel}
         </span>
-        <span className="text-2xs max-w-[8rem] truncate text-zinc-300" title={remoteHash}>
+        <span className="text-2xs text-ink-300 max-w-[8rem] truncate" title={remoteHash}>
           {remoteLabel}
         </span>
         <button
           type="button"
-          className="rounded p-1.5 text-zinc-100 hover:bg-zinc-700"
+          className="text-ink-100 hover:bg-ink-700 rounded p-1.5"
           aria-label={muted ? t('reticulumVoice.unmuteAria') : t('reticulumVoice.muteAria')}
           onClick={() => void reticulumVoiceSetMuted(!muted)}
         >
@@ -182,7 +182,7 @@ export function ReticulumVoiceOverlay() {
           <PhoneOff className="h-4 w-4" aria-hidden />
         </button>
       </div>
-      <div className="text-2xs flex gap-3 font-mono text-zinc-400">
+      <div className="text-2xs text-ink-400 flex gap-3 font-mono">
         <span aria-label={t('reticulumVoice.txAria', { count: stats.txFrames })}>
           {t('reticulumVoice.txFrames', { count: stats.txFrames })}
           {stats.txPackets > 0

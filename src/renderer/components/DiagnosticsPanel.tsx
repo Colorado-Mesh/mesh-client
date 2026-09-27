@@ -621,7 +621,7 @@ export default function DiagnosticsPanel({
                   <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
                 )}
                 <div>
-                  <div className="font-medium text-zinc-200">{displayName}</div>
+                  <div className="text-ink-200 font-medium">{displayName}</div>
                   <div className="text-muted font-mono text-xs">{hexId}</div>
                 </div>
               </div>
@@ -635,9 +635,9 @@ export default function DiagnosticsPanel({
                   </span>
                 )}
               </div>
-              <div className="max-w-xs text-xs text-zinc-400">{translateRfCauseText(t, rf)}</div>
+              <div className="text-ink-400 max-w-xs text-xs">{translateRfCauseText(t, rf)}</div>
             </td>
-            <td className="px-4 py-2.5 text-right text-xs text-zinc-300">—</td>
+            <td className="text-ink-300 px-4 py-2.5 text-right text-xs">—</td>
             <td className="text-muted px-4 py-2.5 text-right text-xs">
               {formatRowTime(rf.detectedAt)}
             </td>
@@ -699,7 +699,7 @@ export default function DiagnosticsPanel({
                 <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
               )}
               <div>
-                <div className="font-medium text-zinc-200">{displayName}</div>
+                <div className="text-ink-200 font-medium">{displayName}</div>
                 <div className="text-muted font-mono text-xs">{hexId}</div>
               </div>
             </div>
@@ -708,7 +708,7 @@ export default function DiagnosticsPanel({
             <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
               {translateRoutingAnomalyType(t, anomaly.type)}
             </div>
-            <div className="max-w-xs text-xs text-zinc-400">
+            <div className="text-ink-400 max-w-xs text-xs">
               {translateRoutingRowDescription(t, routingRow)}
             </div>
             {showMqttControls &&
@@ -720,9 +720,7 @@ export default function DiagnosticsPanel({
                 </div>
               )}
           </td>
-          <td className="px-4 py-2.5 text-right text-xs text-zinc-300">
-            {anomaly.hopsAway ?? '—'}
-          </td>
+          <td className="text-ink-300 px-4 py-2.5 text-right text-xs">{anomaly.hopsAway ?? '—'}</td>
           <td className="text-muted px-4 py-2.5 text-right text-xs">
             {isPending ? (
               <span className="inline-flex items-center justify-end gap-1 text-indigo-400">
@@ -767,10 +765,10 @@ export default function DiagnosticsPanel({
                   <div className="text-muted text-2xs mb-0.5">
                     {t('diagnosticsPanel.routeColumn')}
                   </div>
-                  <div className="flex flex-wrap justify-end gap-0.5 font-mono text-xs text-zinc-300">
+                  <div className="text-ink-300 flex flex-wrap justify-end gap-0.5 font-mono text-xs">
                     {traceHops.map((hop, i) => (
                       <span key={i} className="flex items-center gap-0.5">
-                        {i > 0 && <span className="text-zinc-600">›</span>}
+                        {i > 0 && <span className="text-ink-600">›</span>}
                         <span
                           className={
                             i === 0 || i === traceHops.length - 1 ? 'text-brand-green' : ''
@@ -785,7 +783,7 @@ export default function DiagnosticsPanel({
                     type="button"
                     onClick={() => handleTraceRoute(anomaly.nodeId)}
                     disabled={!isConnected}
-                    className="bg-secondary-dark text-2xs mt-1 rounded px-2 py-0.5 text-zinc-400 hover:bg-zinc-600 disabled:opacity-40"
+                    className="bg-secondary-dark text-2xs text-ink-400 hover:bg-ink-600 mt-1 rounded px-2 py-0.5 disabled:opacity-40"
                   >
                     {t('diagnosticsPanel.reTrace')}
                   </button>
@@ -799,7 +797,7 @@ export default function DiagnosticsPanel({
                   className={`rounded px-2.5 py-1 text-xs whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                     isFailed
                       ? 'border border-red-800/50 bg-red-900/40 text-red-300 hover:bg-red-900/60'
-                      : 'bg-secondary-dark text-zinc-300 hover:bg-zinc-600'
+                      : 'bg-secondary-dark text-ink-300 hover:bg-ink-600'
                   }`}
                 >
                   {isFailed ? t('diagnosticsPanel.retryTrace') : t('diagnosticsPanel.traceRoute')}
@@ -823,7 +821,7 @@ export default function DiagnosticsPanel({
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, true);
                     }}
-                    className="bg-secondary-dark text-muted text-2xs rounded px-2 py-0.5 whitespace-nowrap transition-colors hover:bg-zinc-600 hover:text-zinc-300"
+                    className="bg-secondary-dark text-muted text-2xs hover:bg-ink-600 hover:text-ink-300 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
                     title={t('diagnosticsPanel.excludeMqttData')}
                   >
                     {t('diagnosticsPanel.ignoreMqttButton')}
@@ -840,7 +838,7 @@ export default function DiagnosticsPanel({
   return (
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-zinc-200">
+        <h2 className="text-ink-200 text-xl font-semibold">
           {t('diagnosticsPanel.networkDiagnosticsTitle')}
         </h2>
         <div className="flex items-center gap-3">
@@ -848,7 +846,7 @@ export default function DiagnosticsPanel({
             type="button"
             aria-label={t('diagnosticsPanel.exportJsonAria')}
             disabled={visibleDiagnosticRows.length === 0}
-            className="rounded border border-zinc-600/50 px-2 py-1 text-xs text-zinc-300 transition-colors hover:border-zinc-500 hover:text-zinc-100 disabled:opacity-50"
+            className="border-ink-600/50 text-ink-300 hover:border-ink-500 hover:text-ink-100 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-50"
             onClick={() => {
               const payload = diagnosticsRowsToJson(visibleDiagnosticRows);
               downloadBlob(
@@ -926,7 +924,7 @@ export default function DiagnosticsPanel({
                   {meshHealth.label}
                 </span>
               </div>
-              <div className="text-sm text-zinc-300">
+              <div className="text-ink-300 text-sm">
                 <span className="text-muted">
                   {t('diagnosticsPanel.nodesWithTelemetry', { count: nodesWithTelemetryCount })}
                 </span>
@@ -956,7 +954,7 @@ export default function DiagnosticsPanel({
               {(connectedHealth.errors > 0 || connectedHealth.warnings > 0) &&
                 (connectedHealth.errors !== errorCount ||
                   connectedHealth.warnings !== warningCount) && (
-                  <div className="text-muted border-t border-zinc-700/40 pt-1 text-xs">
+                  <div className="text-muted border-ink-700/40 border-t pt-1 text-xs">
                     {t('diagnosticsPanel.thisNodePrefix')}{' '}
                     {connectedHealth.errors > 0 && (
                       <span className="text-red-400">
@@ -991,34 +989,34 @@ export default function DiagnosticsPanel({
                 }));
               if (chartData.length < 2) return null;
               return (
-                <div className="mb-4 rounded-lg border border-zinc-700/60 bg-zinc-800/40 p-4">
-                  <h3 className="mb-3 text-sm font-semibold text-zinc-200">
+                <div className="border-ink-700/60 bg-ink-800/40 mb-4 rounded-lg border p-4">
+                  <h3 className="text-ink-200 mb-3 text-sm font-semibold">
                     {t('diagnosticsPanel.cuHistoryHeading')}
                   </h3>
                   <ResponsiveContainer height={140} width="100%">
                     <LineChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
-                      <CartesianGrid stroke="#3f3f46" strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid stroke="#364156" strokeDasharray="3 3" vertical={false} />
                       <XAxis
                         dataKey="time"
                         interval="preserveStartEnd"
-                        tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                        tick={{ fill: '#93a0b7', fontSize: 10 }}
                         tickLine={false}
                       />
                       <YAxis
                         domain={[0, 100]}
-                        tick={{ fill: '#a1a1aa', fontSize: 10 }}
+                        tick={{ fill: '#93a0b7', fontSize: 10 }}
                         tickLine={false}
                         unit="%"
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#27272a',
-                          border: '1px solid #3f3f46',
+                          backgroundColor: '#212d40',
+                          border: '1px solid #364156',
                           borderRadius: '6px',
                           fontSize: '12px',
                         }}
                         formatter={(v) => [`${v}%`, t('diagnosticsPanel.cuHistoryTooltipLabel')]}
-                        labelStyle={{ color: '#a1a1aa' }}
+                        labelStyle={{ color: '#93a0b7' }}
                       />
                       <Line
                         dataKey="cu"
@@ -1053,7 +1051,7 @@ export default function DiagnosticsPanel({
               {t('diagnosticsPanel.meshcoreRepeaterConflictBanner')}
             </p>
           )}
-          <div className="overflow-auto rounded-lg border border-zinc-700">
+          <div className="border-ink-700 overflow-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1068,7 +1066,7 @@ export default function DiagnosticsPanel({
                   <th className="px-4 py-2.5 text-right">{t('diagnosticsPanel.signalColumn')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-700/50">
+              <tbody className="divide-ink-700/50 divide-y">
                 {meshcoreHeardList.map((d, i) => {
                   const { displayName, hexId, node } = meshcoreHeardDisplay(
                     d,
@@ -1091,17 +1089,17 @@ export default function DiagnosticsPanel({
                       }`}
                     >
                       <td className="px-4 py-2.5">
-                        <div className="font-medium text-zinc-200">{displayName}</div>
+                        <div className="text-ink-200 font-medium">{displayName}</div>
                         {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
                       </td>
-                      <td className="px-4 py-2.5 text-zinc-300">
+                      <td className="text-ink-300 px-4 py-2.5">
                         {proximityLabels[d.proximity] ?? d.proximity}
                       </td>
                       <td className="text-muted px-4 py-2.5 text-right text-xs">
                         {formatRowTime(d.detectedAt)}
                       </td>
-                      <td className="px-4 py-2.5 text-right text-zinc-300">{d.count}×</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-xs text-zinc-300">
+                      <td className="text-ink-300 px-4 py-2.5 text-right">{d.count}×</td>
+                      <td className="text-ink-300 px-4 py-2.5 text-right font-mono text-xs">
                         {d.rssi !== undefined
                           ? t('diagnosticsPanel.rssiShort', { rssi: d.rssi })
                           : '—'}
@@ -1156,21 +1154,21 @@ export default function DiagnosticsPanel({
                   className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
                 >
                   <div className="text-muted">{t('diagnosticsPanel.foreignClassColumn')}</div>
-                  <div className="text-zinc-200">{classLabel}</div>
+                  <div className="text-ink-200">{classLabel}</div>
                   <div className="text-muted">{t('diagnosticsPanel.foreignProximityColumn')}</div>
-                  <div className="text-zinc-200">{proximityLabel}</div>
+                  <div className="text-ink-200">{proximityLabel}</div>
                   <div className="text-muted">{t('diagnosticsPanel.foreignLastSeenColumn')}</div>
-                  <div className="text-zinc-200">
+                  <div className="text-ink-200">
                     {minutesAgo < 1
                       ? t('common.justNow')
                       : t('common.minutesAgo', { count: minutesAgo })}
                   </div>
                   <div className="text-muted">{t('diagnosticsPanel.foreignCountColumn')}</div>
-                  <div className="text-zinc-200">{d.count}×</div>
+                  <div className="text-ink-200">{d.count}×</div>
                   {(d.rssi !== undefined || d.snr !== undefined) && (
                     <>
                       <div className="text-muted">{t('diagnosticsPanel.signalColumn')}</div>
-                      <div className="font-mono text-zinc-200">
+                      <div className="text-ink-200 font-mono">
                         {d.rssi !== undefined
                           ? t('diagnosticsPanel.rssiDbm', { rssi: d.rssi })
                           : ''}
@@ -1184,7 +1182,7 @@ export default function DiagnosticsPanel({
                   {d.lastSenderId != null && (
                     <>
                       <div className="text-muted">{t('diagnosticsPanel.senderLabel')}</div>
-                      <div className="font-mono text-zinc-200">
+                      <div className="text-ink-200 font-mono">
                         {formatMeshtasticNodeId(d.lastSenderId)}
                         {senderName ? ` (${senderName})` : ''}
                       </div>
@@ -1200,7 +1198,7 @@ export default function DiagnosticsPanel({
       {/* Settings */}
       {showLoRaMeshDiagnostics && (
         <>
-          <div className="bg-deep-black rounded-xl border border-zinc-800 p-4">
+          <div className="bg-deep-black border-ink-800 rounded-xl border p-4">
             <h3 className="text-muted mb-3 text-sm font-medium">
               {t('diagnosticsPanel.displaySettings')}
             </h3>
@@ -1215,7 +1213,7 @@ export default function DiagnosticsPanel({
                   }}
                   className="accent-brand-green"
                 />
-                <label htmlFor="congestionHalos" className="cursor-pointer text-sm text-zinc-300">
+                <label htmlFor="congestionHalos" className="text-ink-300 cursor-pointer text-sm">
                   {t('diagnosticsPanel.showChannelUtilHalos')}
                 </label>
               </div>
@@ -1229,7 +1227,7 @@ export default function DiagnosticsPanel({
                   }}
                   className="accent-brand-green"
                 />
-                <label htmlFor="anomalyHalos" className="cursor-pointer text-sm text-zinc-300">
+                <label htmlFor="anomalyHalos" className="text-ink-300 cursor-pointer text-sm">
                   {t('diagnosticsPanel.showRoutingAnomalyHalos')}
                 </label>
               </div>
@@ -1244,7 +1242,7 @@ export default function DiagnosticsPanel({
                     }}
                     className="accent-brand-green"
                   />
-                  <label htmlFor="ignoreMqtt" className="cursor-pointer text-sm text-zinc-300">
+                  <label htmlFor="ignoreMqtt" className="text-ink-300 cursor-pointer text-sm">
                     {t('diagnosticsPanel.ignoreMqttToggle')}
                   </label>
                   <span className="text-muted text-xs">{t('diagnosticsPanel.ignoreMqttHelp')}</span>
@@ -1260,7 +1258,7 @@ export default function DiagnosticsPanel({
                   }}
                   className="accent-brand-green"
                 />
-                <label htmlFor="autoTraceroute" className="cursor-pointer text-sm text-zinc-300">
+                <label htmlFor="autoTraceroute" className="text-ink-300 cursor-pointer text-sm">
                   {t('diagnosticsPanel.autoTraceroute')}
                 </label>
                 <span className="text-muted text-xs">
@@ -1269,10 +1267,10 @@ export default function DiagnosticsPanel({
                 </span>
               </div>
               <div className="flex flex-col gap-1.5">
-                <div className="text-sm text-zinc-300">
+                <div className="text-ink-300 text-sm">
                   {t('diagnosticsPanel.environmentProfile')}
                 </div>
-                <div className="flex w-fit overflow-hidden rounded-lg border border-zinc-600/50">
+                <div className="border-ink-600/50 flex w-fit overflow-hidden rounded-lg border">
                   {(
                     [
                       { mode: 'standard', label: t('diagnosticsPanel.environmentStandard') },
@@ -1286,10 +1284,10 @@ export default function DiagnosticsPanel({
                       onClick={() => {
                         setEnvMode(mode);
                       }}
-                      className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-l border-zinc-600/50' : ''} ${
+                      className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-ink-600/50 border-l' : ''} ${
                         envMode === mode
                           ? 'bg-brand-green/20 text-brand-green border-brand-green/50'
-                          : 'bg-secondary-dark text-zinc-400 hover:text-zinc-200'
+                          : 'bg-secondary-dark text-ink-400 hover:text-ink-200'
                       }`}
                     >
                       {label}
@@ -1303,7 +1301,7 @@ export default function DiagnosticsPanel({
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="distanceOffsetKm" className="text-sm text-zinc-400">
+                <label htmlFor="distanceOffsetKm" className="text-ink-400 text-sm">
                   {t('diagnosticsPanel.distanceOffsetKm')}
                 </label>
                 <input
@@ -1320,17 +1318,17 @@ export default function DiagnosticsPanel({
                   aria-label={t('diagnosticsPanel.distanceOffsetKm')}
                   className={`${INPUT_BOX_CLASS} w-20 text-right`}
                 />
-                <span className="text-sm text-zinc-400">{t('diagnosticsPanel.km')}</span>
+                <span className="text-ink-400 text-sm">{t('diagnosticsPanel.km')}</span>
                 <span className="text-muted text-xs">
                   {t('diagnosticsPanel.distanceOffsetHelp')}
                 </span>
               </div>
-              <div className="flex flex-col gap-1.5 border-t border-zinc-700/50 pt-2">
-                <div className="text-sm text-zinc-300">
+              <div className="border-ink-700/50 flex flex-col gap-1.5 border-t pt-2">
+                <div className="text-ink-300 text-sm">
                   {t('diagnosticsPanel.staleRoutingDiagnostics')}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label htmlFor="diagnosticRowsMaxAgeHours" className="text-sm text-zinc-400">
+                  <label htmlFor="diagnosticRowsMaxAgeHours" className="text-ink-400 text-sm">
                     {t('diagnosticsPanel.dropRoutingRowsLabel')}
                   </label>
                   <input
@@ -1348,7 +1346,7 @@ export default function DiagnosticsPanel({
                     })}
                     className={`${INPUT_BOX_CLASS} w-16 text-right`}
                   />
-                  <span className="text-sm text-zinc-400">{t('diagnosticsPanel.hoursRange')}</span>
+                  <span className="text-ink-400 text-sm">{t('diagnosticsPanel.hoursRange')}</span>
                 </div>
                 <span className="text-muted text-xs">{t('diagnosticsPanel.staleRoutingHelp')}</span>
               </div>
@@ -1357,7 +1355,7 @@ export default function DiagnosticsPanel({
 
           {/* Per-Node MQTT Filters */}
           {showMqttControls && mqttIgnoredNodes.size > 0 && (
-            <div className="bg-deep-black rounded-xl border border-zinc-800 p-3">
+            <div className="bg-deep-black border-ink-800 rounded-xl border p-3">
               <h3 className="text-muted mb-2 text-xs font-medium">
                 {t('diagnosticsPanel.perNodeMqttFilters')}
               </h3>
@@ -1438,7 +1436,7 @@ export default function DiagnosticsPanel({
           </div>
 
           {anomalyList.length === 0 ? (
-            <div className="bg-deep-black text-muted rounded-xl border border-zinc-800 p-8 text-center text-sm">
+            <div className="bg-deep-black text-muted border-ink-800 rounded-xl border p-8 text-center text-sm">
               {visibleDiagnosticRows.length === 0
                 ? t('diagnosticsPanel.noDiagnosticsHealthy')
                 : t('diagnosticsPanel.noAnomaliesMatchSearch')}
@@ -1447,10 +1445,10 @@ export default function DiagnosticsPanel({
             <div className="space-y-6">
               {selfRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold text-zinc-400">
+                  <h4 className="text-ink-400 mb-2 text-xs font-semibold">
                     {t('diagnosticsPanel.connectedNodeYouHeading', { count: selfRows.length })}
                   </h4>
-                  <div className="border-brand-green/20 overflow-auto rounded-lg border border-zinc-700">
+                  <div className="border-brand-green/20 border-ink-700 overflow-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1468,7 +1466,7 @@ export default function DiagnosticsPanel({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-700/50">
+                      <tbody className="divide-ink-700/50 divide-y">
                         {renderTableBody(selfRows)}
                       </tbody>
                     </table>
@@ -1477,12 +1475,12 @@ export default function DiagnosticsPanel({
               )}
               {otherCrossProtocolRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold text-zinc-400">
+                  <h4 className="text-ink-400 mb-2 text-xs font-semibold">
                     {t('diagnosticsPanel.otherCrossProtocolHeading', {
                       count: otherCrossProtocolRows.length,
                     })}
                   </h4>
-                  <div className="overflow-auto rounded-lg border border-orange-500/20 border-zinc-700">
+                  <div className="border-ink-700 overflow-auto rounded-lg border border-orange-500/20">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1500,7 +1498,7 @@ export default function DiagnosticsPanel({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-700/50">
+                      <tbody className="divide-ink-700/50 divide-y">
                         {renderTableBody(otherCrossProtocolRows)}
                       </tbody>
                     </table>
@@ -1509,10 +1507,10 @@ export default function DiagnosticsPanel({
               )}
               {meshRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold text-zinc-400">
+                  <h4 className="text-ink-400 mb-2 text-xs font-semibold">
                     {t('diagnosticsPanel.meshDiagnosticsHeading', { count: meshRows.length })}
                   </h4>
-                  <div className="overflow-auto rounded-lg border border-zinc-700">
+                  <div className="border-ink-700 overflow-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1530,7 +1528,7 @@ export default function DiagnosticsPanel({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-zinc-700/50">
+                      <tbody className="divide-ink-700/50 divide-y">
                         {renderTableBody(meshRows)}
                       </tbody>
                     </table>

@@ -35,7 +35,7 @@ export function GroupButton({
   return (
     <button
       type={type}
-      className={`hover:bg-secondary-dark text-body flex h-7.5 shrink-0 items-center gap-1.5 px-3 font-medium whitespace-nowrap text-zinc-200 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent ${className ?? ''}`}
+      className={`hover:bg-secondary-dark text-body text-ink-200 flex h-7.5 shrink-0 items-center gap-1.5 px-3 font-medium whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent ${className ?? ''}`}
       {...rest}
     >
       {icon}

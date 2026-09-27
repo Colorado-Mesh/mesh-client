@@ -131,7 +131,7 @@ describe('RrcPanel', () => {
   it('renders standard hub chrome and select-hub prompt', async () => {
     const { container } = render(<RrcPanel isActive />);
     expect(screen.getAllByText(/Select an RRC hub/i).length).toBeGreaterThan(0);
-    expect(container.querySelector('[class*="border-zinc-800"]')).toBeTruthy();
+    expect(container.querySelector('[class*="border-ink-800"]')).toBeTruthy();
     // v6: one list column (Rooms | Hubs) instead of separate hub and room sidebars.
     expect(screen.getByRole('complementary', { name: 'Rooms and hubs' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Rooms' })).toBeDisabled();

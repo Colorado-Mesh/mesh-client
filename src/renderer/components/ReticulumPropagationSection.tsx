@@ -92,8 +92,8 @@ function DiscoveredPropagationList({
   );
 
   return (
-    <div className="mt-4 border-t border-zinc-800 pt-3">
-      <h4 className="text-xs font-medium text-zinc-300">
+    <div className="border-ink-800 mt-4 border-t pt-3">
+      <h4 className="text-ink-300 text-xs font-medium">
         {t('reticulumPropagation.discoveredTitle')}
       </h4>
       {activeRows.length === 0 ? (
@@ -105,10 +105,10 @@ function DiscoveredPropagationList({
             return (
               <li
                 key={row.destination_hash}
-                className="flex flex-wrap items-center justify-between gap-2 rounded border border-zinc-800 bg-zinc-900/40 px-2 py-1.5"
+                className="border-ink-800 bg-ink-900/40 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5"
               >
                 <div className="min-w-0">
-                  <div className="truncate text-zinc-200">{label}</div>
+                  <div className="text-ink-200 truncate">{label}</div>
                   <div className="text-muted text-label flex flex-wrap gap-x-2">
                     <span className="font-mono">
                       {t('reticulumPropagation.discoveredHash', {
@@ -156,7 +156,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={ignoreBusy}
-                    className="rounded border border-zinc-600 px-2 py-0.5 text-xs text-zinc-300 disabled:opacity-40"
+                    className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs disabled:opacity-40"
                     aria-label={t('reticulumPropagation.ignoreForAutoAria', { name: label })}
                     onClick={() => {
                       onIgnoreForAuto(row.destination_hash);
@@ -184,10 +184,10 @@ function DiscoveredPropagationList({
               return (
                 <li
                   key={row.destination_hash}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-zinc-800/80 bg-zinc-950/40 px-2 py-1.5 opacity-80"
+                  className="border-ink-800/80 bg-ink-950/40 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 opacity-80"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-zinc-400">{label}</div>
+                    <div className="text-ink-400 truncate">{label}</div>
                     <div className="text-muted text-label font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: row.destination_hash.slice(0, 12),
@@ -197,7 +197,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={ignoreBusy}
-                    className="rounded border border-zinc-600 px-2 py-0.5 text-xs text-zinc-300 disabled:opacity-40"
+                    className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs disabled:opacity-40"
                     aria-label={t('reticulumPropagation.allowForAutoAria', { name: label })}
                     onClick={() => {
                       onAllowForAuto(row.destination_hash);
@@ -213,10 +213,10 @@ function DiscoveredPropagationList({
               return (
                 <li
                   key={hash}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-zinc-800/80 bg-zinc-950/40 px-2 py-1.5 opacity-80"
+                  className="border-ink-800/80 bg-ink-950/40 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 opacity-80"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-zinc-400">{label}</div>
+                    <div className="text-ink-400 truncate">{label}</div>
                     <div className="text-muted text-label font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: hash.slice(0, 12),
@@ -226,7 +226,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={ignoreBusy}
-                    className="rounded border border-zinc-600 px-2 py-0.5 text-xs text-zinc-300 disabled:opacity-40"
+                    className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs disabled:opacity-40"
                     aria-label={t('reticulumPropagation.allowForAutoAria', { name: label })}
                     onClick={() => {
                       onAllowForAuto(hash);
@@ -461,7 +461,7 @@ export default function ReticulumPropagationSection({
     <>
       {!embedded ? (
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-medium text-zinc-200">
+          <h3 className="text-ink-200 text-sm font-medium">
             {t('connectionPanel.reticulumPropagation.title')}
           </h3>
           <ReticulumPropagationRefreshButton
@@ -480,7 +480,7 @@ export default function ReticulumPropagationSection({
         />
       )}
       <div className="space-y-1">
-        <label className="flex items-center gap-2 text-xs text-zinc-300">
+        <label className="text-ink-300 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={!chatNoticeDismissed}
@@ -515,7 +515,7 @@ export default function ReticulumPropagationSection({
           return (
             <li
               key={node.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded border border-zinc-700/60 px-2 py-1.5"
+              className="border-ink-700/60 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5"
             >
               <span className="min-w-0 flex-1">
                 {isRenaming ? (
@@ -665,7 +665,7 @@ export default function ReticulumPropagationSection({
                 {!isLocal && destHash ? (
                   <button
                     type="button"
-                    className="text-xs text-zinc-400 hover:underline disabled:opacity-40"
+                    className="text-ink-400 text-xs hover:underline disabled:opacity-40"
                     disabled={ignoreBusy}
                     onClick={() => {
                       if (ignoredForAuto) handleAllowForAuto(destHash);
@@ -933,5 +933,5 @@ export default function ReticulumPropagationSection({
 
   if (embedded) return body;
 
-  return <div className="bg-deep-black rounded-lg border border-zinc-700 p-4">{body}</div>;
+  return <div className="bg-deep-black border-ink-700 rounded-lg border p-4">{body}</div>;
 }

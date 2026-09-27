@@ -128,7 +128,7 @@ export default function ConfigureNodeSelector({
             onClick={() => {
               setIsOpen((o) => !o);
             }}
-            className="bg-secondary-dark focus:border-brand-green flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-600 px-3 py-2 text-left text-sm text-zinc-200 focus:outline-none"
+            className="bg-secondary-dark focus:border-brand-green border-ink-600 text-ink-200 flex w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm focus:outline-none"
           >
             <span className="truncate">{triggerLabel}</span>
             <span className="text-muted shrink-0 text-xs" aria-hidden="true">
@@ -140,7 +140,7 @@ export default function ConfigureNodeSelector({
             <ul
               role="listbox"
               aria-label={t('configureNode.label')}
-              className="bg-deep-black shadow-level-4 absolute top-full right-0 left-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-zinc-700 py-1"
+              className="bg-deep-black shadow-level-4 border-ink-700 absolute top-full right-0 left-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border py-1"
             >
               <li role="presentation">
                 <button
@@ -152,8 +152,8 @@ export default function ConfigureNodeSelector({
                   }}
                   className={`w-full px-3 py-2 text-left text-sm transition-colors ${
                     configureTargetNodeNum == null
-                      ? 'text-brand-green bg-zinc-800'
-                      : 'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100'
+                      ? 'text-brand-green bg-ink-800'
+                      : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100'
                   }`}
                 >
                   {t('configureNode.localDevice')}
@@ -170,8 +170,8 @@ export default function ConfigureNodeSelector({
                     }}
                     className={`w-full px-3 py-2 text-left text-sm transition-colors ${
                       configureTargetNodeNum === node.node_id
-                        ? 'text-brand-green bg-zinc-800'
-                        : 'text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100'
+                        ? 'text-brand-green bg-ink-800'
+                        : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100'
                     }`}
                   >
                     {remoteCandidateLabel(node, getNodeName)}

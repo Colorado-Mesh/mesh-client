@@ -22,7 +22,7 @@ export default function SignalMeter({ rssi, snr, className }: SignalMeterProps) 
 
   return (
     <div
-      className={`inline-flex items-center gap-3 rounded border border-zinc-600/60 bg-zinc-800/60 px-2 py-1 text-xs ${className ?? ''}`}
+      className={`border-ink-600/60 bg-ink-800/60 inline-flex items-center gap-3 rounded border px-2 py-1 text-xs ${className ?? ''}`}
       role="status"
       aria-label={t('signalMeter.aria', {
         rssi: hasRssi ? Math.round(rssi) : t('signalMeter.noData'),
@@ -33,7 +33,7 @@ export default function SignalMeter({ rssi, snr, className }: SignalMeterProps) 
       <div className="flex items-center gap-1.5">
         <span className="text-muted">{t('signalMeter.rssi')}</span>
         <SignalBars rssi={hasRssi ? rssi : null} />
-        <span className="font-mono text-zinc-200">
+        <span className="text-ink-200 font-mono">
           {hasRssi
             ? t('signalMeter.rssiValue', { value: Math.round(rssi) })
             : t('signalMeter.noData')}

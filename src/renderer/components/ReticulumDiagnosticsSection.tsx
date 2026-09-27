@@ -221,7 +221,7 @@ export function ReticulumDiagnosticsSection({
         </p>
       </div>
 
-      <div className="overflow-auto rounded-lg border border-zinc-700">
+      <div className="border-ink-700 overflow-auto rounded-lg border">
         <table className="w-full min-w-[32rem] text-left text-sm">
           <thead className="bg-deep-black text-muted sticky top-0">
             <tr>
@@ -233,7 +233,7 @@ export function ReticulumDiagnosticsSection({
               <th className="px-4 py-2 font-medium">{t('diagnosticsPanel.reticulum.colAction')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-700/50">
+          <tbody className="divide-ink-700/50 divide-y">
             {grouped.map(({ severity, rows: groupRows }) =>
               groupRows.length > 0 ? (
                 <React.Fragment key={`group-${severity}`}>
@@ -250,7 +250,7 @@ export function ReticulumDiagnosticsSection({
                     const repairKind = row.reticulumRepairKind;
                     return (
                       <tr key={row.id} className="hover:bg-secondary-dark/50">
-                        <td className="px-4 py-2.5 text-zinc-200">
+                        <td className="text-ink-200 px-4 py-2.5">
                           {row.reticulumInterfaceId
                             ? (/"([^"]+)"/.exec(row.cause)?.[1] ?? t('common.emDash'))
                             : t('diagnosticsPanel.reticulum.stackScope')}
@@ -261,7 +261,7 @@ export function ReticulumDiagnosticsSection({
                           <div className="max-w-md">
                             {row.causeI18n ? translateReticulumDiagnosticCause(t, row) : row.cause}
                             {row.condition === 'reticulum/announce-bus-pressure' ? (
-                              <ul className="text-muted text-label mt-1.5 list-disc space-y-0.5 pl-4 font-normal text-zinc-400">
+                              <ul className="text-muted text-label text-ink-400 mt-1.5 list-disc space-y-0.5 pl-4 font-normal">
                                 {typeof row.causeI18n?.params?.hotInterface === 'string' ? (
                                   <li>
                                     {t(
@@ -308,7 +308,7 @@ export function ReticulumDiagnosticsSection({
                               onClick={() => {
                                 void runAction(row);
                               }}
-                              className="bg-secondary-dark rounded px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-600 disabled:opacity-40"
+                              className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded px-2 py-1 text-xs disabled:opacity-40"
                               aria-label={t(`diagnosticsPanel.reticulum.action.${repairKind}`)}
                             >
                               {t(`diagnosticsPanel.reticulum.action.${repairKind}`)}

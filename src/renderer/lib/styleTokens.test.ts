@@ -41,7 +41,7 @@ function opaqueHex(value: string): string {
   return value.toLowerCase();
 }
 
-const ZINC_800 = '#27272a';
+const INK_800 = token('--color-ink-800');
 
 describe('style guide tokens (styles.css)', () => {
   it('every theme default in themeColors.ts matches styles.css, which it overrides at boot', () => {
@@ -61,12 +61,12 @@ describe('style guide tokens (styles.css)', () => {
     }
   });
 
-  it('protocol 700 steps keep 4.5:1 under white and 500 steps keep 4.5:1 on zinc-800', () => {
+  it('protocol 700 steps keep 4.5:1 under white and 500 steps keep 4.5:1 on ink-800', () => {
     for (const protocol of REGISTERED_MESH_PROTOCOLS) {
       expect(contrastRatio('#ffffff', token(`--color-${protocol}-700`))).toBeGreaterThanOrEqual(
         4.5,
       );
-      expect(contrastRatio(token(`--color-${protocol}-500`), ZINC_800)).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(token(`--color-${protocol}-500`), INK_800)).toBeGreaterThanOrEqual(4.5);
     }
   });
 
@@ -85,7 +85,22 @@ describe('style guide tokens (styles.css)', () => {
 
   it('status colors reach 3:1 against raised surfaces (dots and icons)', () => {
     for (const status of ['success', 'warning', 'error', 'info']) {
-      expect(contrastRatio(token(`--color-status-${status}`), ZINC_800)).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(token(`--color-status-${status}`), INK_800)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('the ink neutrals carry the Midnight Serenity swatches and keep muted text at 4.5:1', () => {
+    for (const step of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {
+      expect(token(`--color-ink-${step}`)).toMatch(/^#[0-9a-f]{6}$/);
+    }
+    expect(token('--color-ink-950')).toBe('#11151c'); // Ink Black
+    expect(token('--color-ink-800')).toBe('#212d40'); // Deep Space Blue
+    expect(token('--color-ink-700')).toBe('#364156'); // Charcoal Blue
+    expect(DEFAULT_THEME_COLORS.muted).toBe(token('--color-ink-400'));
+    for (const surface of [950, 900, 800]) {
+      expect(
+        contrastRatio(DEFAULT_THEME_COLORS.muted, token(`--color-ink-${surface}`)),
+      ).toBeGreaterThanOrEqual(4.5);
     }
   });
 

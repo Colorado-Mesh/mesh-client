@@ -42,12 +42,12 @@ export function AppAboutSection({ onPlayAnimation }: Props) {
           onClick={onPlayAnimation}
           aria-label={t('aria.playAnimation')}
           title={t('aria.playAnimation')}
-          className="hover:bg-sidebar-active-bg flex shrink-0 items-center justify-center rounded-lg border border-zinc-800 p-2 transition-colors"
+          className="hover:bg-sidebar-active-bg border-ink-800 flex shrink-0 items-center justify-center rounded-lg border p-2 transition-colors"
         >
           <ColoradoMeshMark />
         </button>
         <div className="min-w-0 space-y-1 text-sm">
-          <p className="font-semibold text-zinc-200">{t('app.brandName')}</p>
+          <p className="text-ink-200 font-semibold">{t('app.brandName')}</p>
           <p className="text-muted">
             {t('app.footerSlogan')}{' '}
             <span className="inline-flex flex-wrap gap-x-3">
@@ -58,7 +58,7 @@ export function AppAboutSection({ onPlayAnimation }: Props) {
                   title={t(link.titleKey)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-zinc-300 underline decoration-zinc-600 underline-offset-2 transition-colors hover:text-zinc-100"
+                  className="text-ink-300 decoration-ink-600 hover:text-ink-100 underline underline-offset-2 transition-colors"
                 >
                   {t(link.labelKey)}
                 </a>

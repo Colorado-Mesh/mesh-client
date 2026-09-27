@@ -29,10 +29,10 @@ export function ReticulumRmapConnectionStatus({
   }
 
   const statusClass =
-    tone === 'full' ? 'text-green-400' : tone === 'partial' ? 'text-orange-300' : 'text-zinc-400';
+    tone === 'full' ? 'text-green-400' : tone === 'partial' ? 'text-orange-300' : 'text-ink-400';
 
   return (
-    <div className="rounded border border-zinc-700 bg-zinc-900/40 px-3 py-2 text-xs" role="status">
+    <div className="border-ink-700 bg-ink-900/40 rounded border px-3 py-2 text-xs" role="status">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={statusClass}>
           {tone === 'off'
@@ -63,7 +63,7 @@ export function ReticulumRmapConnectionStatus({
         </a>
       </div>
       {summary.publishTargetCount === 0 ? (
-        <p className="mt-1 text-zinc-400">{t('connectionPanel.reticulumRmap.noPublishTargets')}</p>
+        <p className="text-ink-400 mt-1">{t('connectionPanel.reticulumRmap.noPublishTargets')}</p>
       ) : null}
     </div>
   );

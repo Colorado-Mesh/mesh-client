@@ -30,7 +30,7 @@ export function ReticulumPeerDetailErrorBoundary({
           aria-modal="true"
           aria-label={i18n.t('errorBoundary.title')}
         >
-          <div className="shadow-level-4 w-full max-w-md space-y-4 rounded-lg border border-red-800 bg-zinc-900 p-6">
+          <div className="shadow-level-4 bg-ink-900 w-full max-w-md space-y-4 rounded-lg border border-red-800 p-6">
             <div className="text-lg font-semibold text-red-400">
               {i18n.t('errorBoundary.title')}
             </div>
@@ -40,7 +40,7 @@ export function ReticulumPeerDetailErrorBoundary({
             <button
               type="button"
               aria-label={i18n.t('aria.closeDialog')}
-              className="rounded-lg bg-zinc-700 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-600"
+              className="bg-ink-700 text-ink-200 hover:bg-ink-600 rounded-lg px-4 py-2 text-sm font-medium"
               onClick={() => {
                 resetError();
                 onClose();

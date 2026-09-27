@@ -63,16 +63,16 @@ const COLORS = [
   '#60a5fa', // blue-400
   '#f472b6', // pink-400
 ];
-const OTHER_COLOR = '#71717a'; // gray-500
+const OTHER_COLOR = '#65738c'; // gray-500
 const OTHER_THRESHOLD = 0.02; // < 2% → "Other"
 
 const TIME_FILTER_VALUES: TimeFilter[] = ['hour', 'day', 'all'];
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#18181b',
-  border: '1px solid #3f3f46',
+  backgroundColor: '#19212d',
+  border: '1px solid #364156',
   borderRadius: '6px',
-  color: '#e4e4e7',
+  color: '#e3e8f0',
   fontSize: '12px',
 };
 
@@ -201,9 +201,9 @@ function LegendEntry({ name, value, total, fill }: LegendEntryProps) {
   return (
     <div className="flex items-center gap-2 text-xs">
       <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: fill }} />
-      <span className="text-zinc-300">
+      <span className="text-ink-300">
         {name}:{' '}
-        <span className="text-zinc-100">
+        <span className="text-ink-100">
           {pct}% ({value.toLocaleString()})
         </span>
       </span>
@@ -225,15 +225,15 @@ function DonutChart({ title, slices }: DonutProps) {
   if (slices.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2">
-        <p className="text-sm font-medium text-zinc-400">{title}</p>
-        <p className="text-xs text-zinc-600">{t('packetDistribution.noData')}</p>
+        <p className="text-ink-400 text-sm font-medium">{title}</p>
+        <p className="text-ink-600 text-xs">{t('packetDistribution.noData')}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-1 flex-col gap-3">
-      <p className="text-center text-sm font-medium text-zinc-300">{title}</p>
+      <p className="text-ink-300 text-center text-sm font-medium">{title}</p>
       <div className="flex flex-col items-center gap-4 md:flex-row md:items-start">
         <div className="h-44 w-44 shrink-0">
           <ResponsiveContainer width="100%" height={176}>
@@ -346,7 +346,7 @@ export default function PacketDistributionPanel({
       {/* ── Top controls ── */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Main view toggle */}
-        <div className="flex rounded border border-zinc-700 text-xs">
+        <div className="border-ink-700 flex rounded border text-xs">
           {(
             [
               { value: 'overall', label: t('packetDistribution.overallDistribution') },
@@ -361,8 +361,8 @@ export default function PacketDistributionPanel({
               }}
               className={`px-3 py-1.5 transition-colors ${
                 mainView === value
-                  ? 'bg-zinc-700 text-zinc-100'
-                  : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                  ? 'bg-ink-700 text-ink-100'
+                  : 'text-ink-400 hover:bg-ink-800 hover:text-ink-200'
               }`}
             >
               {label}
@@ -387,7 +387,7 @@ export default function PacketDistributionPanel({
 
         {/* Time filter — Overall view only */}
         {mainView === 'overall' && (
-          <div className="flex rounded border border-zinc-700 text-xs">
+          <div className="border-ink-700 flex rounded border text-xs">
             {TIME_FILTER_VALUES.map((value) => {
               const timeLabel = {
                 hour: t('packetDistribution.lastHour'),
@@ -403,8 +403,8 @@ export default function PacketDistributionPanel({
                   }}
                   className={`px-3 py-1.5 transition-colors ${
                     timeFilter === value
-                      ? 'bg-zinc-700 text-zinc-100'
-                      : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
+                      ? 'bg-ink-700 text-ink-100'
+                      : 'text-ink-400 hover:bg-ink-800 hover:text-ink-200'
                   }`}
                 >
                   {timeLabel}
@@ -450,11 +450,11 @@ export default function PacketDistributionPanel({
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           {effectiveType ? (
             <>
-              <p className="text-sm text-zinc-400">
+              <p className="text-ink-400 text-sm">
                 {t('packetDistribution.devicesTransmitting')}{' '}
-                <span className="font-mono text-zinc-200">{effectiveType}</span>
+                <span className="text-ink-200 font-mono">{effectiveType}</span>
                 {' — '}
-                <span className="text-zinc-300">
+                <span className="text-ink-300">
                   {t('packetDistribution.packets', { count: typeDeviceTotal })}
                 </span>
               </p>
@@ -494,7 +494,7 @@ export default function PacketDistributionPanel({
               </div>
             </>
           ) : (
-            <p className="text-sm text-zinc-600">{t('packetDistribution.noPacketsYet')}</p>
+            <p className="text-ink-600 text-sm">{t('packetDistribution.noPacketsYet')}</p>
           )}
         </div>
       )}

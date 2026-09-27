@@ -24,7 +24,7 @@ export function DeviceSelector({
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="block text-xs text-zinc-400">
+      <label className="text-ink-400 block text-xs">
         {t('flasher.selectProduct')}
         <select
           value={selectedProduct?.catalogKey ?? ''}
@@ -46,7 +46,7 @@ export function DeviceSelector({
           ))}
         </select>
       </label>
-      <label className="block text-xs text-zinc-400">
+      <label className="text-ink-400 block text-xs">
         {t('flasher.selectModel')}
         <select
           value={selectedModel?.id ?? ''}

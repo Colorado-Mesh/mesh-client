@@ -30,8 +30,8 @@ export function RrcNickList({
   const { t } = useTranslation();
   return (
     <>
-      <div className="flex min-h-14 shrink-0 items-center gap-1 border-b border-zinc-800 pr-2 pl-3">
-        <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-200">
+      <div className="border-ink-800 flex min-h-14 shrink-0 items-center gap-1 border-b pr-2 pl-3">
+        <h3 className="text-ink-200 min-w-0 flex-1 truncate text-sm font-semibold">
           {t('rrc.members')}{' '}
           <span className="text-muted font-mono text-xs font-normal">{members.length}</span>
         </h3>

@@ -166,9 +166,9 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
 
   return (
     <div className="relative flex flex-col items-center gap-3">
-      <div className="text-sm text-zinc-100">{statusText}</div>
+      <div className="text-ink-100 text-sm">{statusText}</div>
       <div
-        className="relative grid grid-cols-8 border border-zinc-600"
+        className="border-ink-600 relative grid grid-cols-8 border"
         role="group"
         aria-label={t('gamesPanel.chess.boardAria')}
       >
@@ -184,7 +184,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
                 key={square}
                 type="button"
                 className={`flex h-10 w-10 items-center justify-center text-xl ${
-                  dark ? 'bg-zinc-700' : 'bg-zinc-600'
+                  dark ? 'bg-ink-700' : 'bg-ink-600'
                 } ${isSelected ? 'ring-2 ring-cyan-400' : ''} enabled:hover:brightness-125 disabled:cursor-default`}
                 aria-label={t('gamesPanel.chess.squareAria', {
                   square,
@@ -218,7 +218,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
             />
             <div
               role="group"
-              className="bg-deep-black relative z-20 flex flex-col gap-1 rounded border border-zinc-600 p-2"
+              className="bg-deep-black border-ink-600 relative z-20 flex flex-col gap-1 rounded border p-2"
             >
               {promoOptions.map((p) => {
                 const glyphKey = myColor === 'b' ? p : p.toUpperCase();
@@ -226,7 +226,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
                   <button
                     key={p}
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded text-2xl text-zinc-100 hover:bg-zinc-800 disabled:cursor-default disabled:opacity-40"
+                    className="text-ink-100 hover:bg-ink-800 flex h-10 w-10 items-center justify-center rounded text-2xl disabled:cursor-default disabled:opacity-40"
                     aria-label={t(`gamesPanel.chess.promoteTo.${p}`)}
                     disabled={disabled || !isMyTurn}
                     onClick={() => {
@@ -247,7 +247,7 @@ export function ChessBoard({ session, onMove, disabled = false }: ChessBoardProp
             <button
               key={move}
               type="button"
-              className="rounded border border-zinc-600 bg-zinc-800/80 px-1.5 py-0.5 text-xs text-zinc-300 enabled:hover:bg-zinc-700"
+              className="border-ink-600 bg-ink-800/80 text-ink-300 enabled:hover:bg-ink-700 rounded border px-1.5 py-0.5 text-xs"
               aria-label={t('gamesPanel.chess.legalMoveAria', { move })}
               disabled={disabled || !isMyTurn}
               onClick={() => {

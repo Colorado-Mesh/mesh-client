@@ -63,7 +63,7 @@ export function RemoteSavedSection() {
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto p-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700/60 p-3">
+      <div className="border-ink-700/60 flex flex-wrap items-center gap-2 rounded-lg border p-3">
         <input
           type="text"
           value={label}
@@ -108,7 +108,7 @@ export function RemoteSavedSection() {
             type="button"
             aria-label={t('common.cancel')}
             onClick={resetForm}
-            className="rounded bg-zinc-700/60 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-600"
+            className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-3 py-1.5 text-xs"
           >
             {t('common.cancel')}
           </button>
@@ -122,9 +122,9 @@ export function RemoteSavedSection() {
           list.map((addr) => (
             <div
               key={addr.id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700/60 bg-zinc-800/30 px-3 py-2 text-xs text-zinc-200"
+              className="border-ink-700/60 bg-ink-800/30 text-ink-200 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs"
             >
-              <span className="text-2xs rounded bg-zinc-700/60 px-1.5 py-0.5 text-zinc-300 uppercase">
+              <span className="text-2xs bg-ink-700/60 text-ink-300 rounded px-1.5 py-0.5 uppercase">
                 {addr.service}
               </span>
               <span className="font-medium">{addr.label}</span>
@@ -138,7 +138,7 @@ export function RemoteSavedSection() {
                   setHash(addr.destination_hash);
                   setService(addr.service);
                 }}
-                className="rounded bg-zinc-700/60 px-2 py-1 text-zinc-200 hover:bg-zinc-600"
+                className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-2 py-1"
               >
                 {t('common.edit')}
               </button>

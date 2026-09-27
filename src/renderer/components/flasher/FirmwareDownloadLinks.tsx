@@ -43,7 +43,7 @@ export function FirmwareDownloadLinks({ recommendedFilename }: FirmwareDownloadL
   const latestDownloadUrl = recommendedFilename ? (resolvedUrl ?? fallbackUrl) : null;
 
   return (
-    <div className="space-y-2 rounded border border-zinc-700/60 bg-zinc-900/30 p-2 text-xs text-zinc-400">
+    <div className="border-ink-700/60 bg-ink-900/30 text-ink-400 space-y-2 rounded border p-2 text-xs">
       <div>
         <span>{t('flasher.downloadFirmware')}</span>
         {recommendedFilename && latestDownloadUrl ? (

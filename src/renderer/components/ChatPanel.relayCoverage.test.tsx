@@ -266,7 +266,7 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       heardRepeaters: [{ nodeId: 1, name: 'Hilltop', snr: 4.5 }],
     });
     const { container } = render(
-      <div className="bg-zinc-900 p-2 text-white">
+      <div className="bg-ink-900 p-2 text-white">
         <RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn identityId={IDENTITY} />
       </div>,
     );

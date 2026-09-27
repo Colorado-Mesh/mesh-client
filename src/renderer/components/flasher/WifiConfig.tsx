@@ -37,10 +37,10 @@ export function WifiConfig({
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
-    <div className="space-y-2 rounded border border-zinc-700 bg-zinc-900/40 p-3">
-      <h4 className="text-sm font-medium text-zinc-200">{t('flasher.wifiTitle')}</h4>
-      <p className="text-xs text-zinc-400">{t('flasher.wifiHint')}</p>
-      <label className="block text-xs text-zinc-400">
+    <div className="border-ink-700 bg-ink-900/40 space-y-2 rounded border p-3">
+      <h4 className="text-ink-200 text-sm font-medium">{t('flasher.wifiTitle')}</h4>
+      <p className="text-ink-400 text-xs">{t('flasher.wifiHint')}</p>
+      <label className="text-ink-400 block text-xs">
         {t('flasher.wifiSsidLabel')}
         <input
           value={ssid}
@@ -52,7 +52,7 @@ export function WifiConfig({
           aria-label={t('flasher.wifiSsidLabel')}
         />
       </label>
-      <label className="block text-xs text-zinc-400">
+      <label className="text-ink-400 block text-xs">
         {t('flasher.wifiPskLabel')}
         <input
           type="password"
@@ -66,8 +66,8 @@ export function WifiConfig({
         />
       </label>
       {showAdvanced ? (
-        <div className="space-y-2 rounded border border-zinc-700/60 p-2">
-          <label className="block text-xs text-zinc-400">
+        <div className="border-ink-700/60 space-y-2 rounded border p-2">
+          <label className="text-ink-400 block text-xs">
             {t('flasher.wifiChannelLabel')}
             <input
               value={channel}
@@ -79,7 +79,7 @@ export function WifiConfig({
               aria-label={t('flasher.wifiChannelLabel')}
             />
           </label>
-          <label className="block text-xs text-zinc-400">
+          <label className="text-ink-400 block text-xs">
             {t('flasher.wifiStaticIpLabel')}
             <input
               value={staticIp}
@@ -92,7 +92,7 @@ export function WifiConfig({
               aria-label={t('flasher.wifiStaticIpLabel')}
             />
           </label>
-          <label className="block text-xs text-zinc-400">
+          <label className="text-ink-400 block text-xs">
             {t('flasher.wifiStaticNetmaskLabel')}
             <input
               value={staticNetmask}
@@ -113,7 +113,7 @@ export function WifiConfig({
           disabled={disabled}
           aria-label={t('flasher.wifiOff')}
           onClick={onWifiOff}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.wifiOff')}
         </button>
@@ -124,7 +124,7 @@ export function WifiConfig({
           onClick={() => {
             onEnableAp(ssid, psk);
           }}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.wifiEnableAp')}
         </button>
@@ -149,7 +149,7 @@ export function WifiConfig({
               staticNetmask: staticNetmask.trim() || undefined,
             });
           }}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.wifiApplyStation')}
         </button>
@@ -158,7 +158,7 @@ export function WifiConfig({
           disabled={disabled}
           aria-label={t('flasher.wifiReadConfig')}
           onClick={onReadConfig}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.wifiReadConfig')}
         </button>
@@ -169,13 +169,13 @@ export function WifiConfig({
           onClick={() => {
             setShowAdvanced((v) => !v);
           }}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {showAdvanced ? t('flasher.wifiAdvancedHide') : t('flasher.wifiAdvancedShow')}
         </button>
       </div>
       {configSummary ? (
-        <pre className="text-label overflow-x-auto rounded bg-zinc-950/60 p-2 whitespace-pre-wrap text-orange-100/90">
+        <pre className="text-label bg-ink-950/60 overflow-x-auto rounded p-2 whitespace-pre-wrap text-orange-100/90">
           {configSummary}
         </pre>
       ) : null}

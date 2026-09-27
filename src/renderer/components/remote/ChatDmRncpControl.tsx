@@ -44,7 +44,7 @@ const TRANSFER_STATUS_BADGE_CLASS: Record<RncpTransferUiStatus, string> = {
   active: 'bg-indigo-800/60 text-indigo-200',
   completed: 'bg-green-800/60 text-green-200',
   failed: 'bg-red-900/60 text-red-200',
-  cancelled: 'bg-zinc-700/60 text-zinc-300',
+  cancelled: 'bg-ink-700/60 text-ink-300',
 };
 
 /**
@@ -363,9 +363,9 @@ export function ChatDmRncpControl({
       </button>
 
       {open && (
-        <div className="bg-secondary-dark shadow-level-4 absolute top-full right-0 z-20 mt-1 w-80 space-y-2 rounded-lg border border-zinc-600/50 p-3">
+        <div className="bg-secondary-dark shadow-level-4 border-ink-600/50 absolute top-full right-0 z-20 mt-1 w-80 space-y-2 rounded-lg border p-3">
           {relevantOffers.length > 0 && (
-            <div className="space-y-1 border-b border-zinc-700/60 pb-2">
+            <div className="border-ink-700/60 space-y-1 border-b pb-2">
               <p className="text-label font-medium text-orange-300">
                 {t('reticulumRemote.transfer.pendingOffersTitle')}
               </p>
@@ -401,12 +401,12 @@ export function ChatDmRncpControl({
           )}
 
           {peerTransfers.length > 0 && (
-            <div className="space-y-1 border-b border-zinc-700/60 pb-2">
-              <p className="text-label font-medium text-zinc-300">
+            <div className="border-ink-700/60 space-y-1 border-b pb-2">
+              <p className="text-label text-ink-300 font-medium">
                 {t('chatPanel.rncp.transfersTitle')}
               </p>
               {peerTransfers.map((transfer) => (
-                <div key={transfer.transfer_id} className="text-label space-y-1 text-zinc-200">
+                <div key={transfer.transfer_id} className="text-label text-ink-200 space-y-1">
                   <div className="flex flex-wrap items-center gap-1">
                     <span className="min-w-0 flex-1 truncate">{transfer.file_name ?? '—'}</span>
                     <span
@@ -431,7 +431,7 @@ export function ChatDmRncpControl({
                   </div>
                   {transfer.status === 'active' && (
                     <div
-                      className="h-1.5 w-full overflow-hidden rounded bg-zinc-700/80"
+                      className="bg-ink-700/80 h-1.5 w-full overflow-hidden rounded"
                       role="progressbar"
                       aria-valuenow={transfer.progress}
                       aria-valuemin={0}
@@ -457,7 +457,7 @@ export function ChatDmRncpControl({
             </div>
           )}
 
-          <label className="text-label block text-zinc-400" htmlFor="chat-dm-rncp-dest">
+          <label className="text-label text-ink-400 block" htmlFor="chat-dm-rncp-dest">
             {t('chatPanel.rncp.destinationLabel')}
           </label>
           <p className="text-2xs text-muted leading-snug">{t('chatPanel.rncp.destinationHelp')}</p>
@@ -496,7 +496,7 @@ export function ChatDmRncpControl({
             </p>
           )}
           {!savedAddress && (
-            <label className="text-label flex items-center gap-2 text-zinc-400">
+            <label className="text-label text-ink-400 flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={rememberAddress}
@@ -539,7 +539,7 @@ export function ChatDmRncpControl({
               onClick={() => {
                 handleUseFromChat();
               }}
-              className="w-full rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+              className="border-ink-600 text-ink-300 hover:bg-ink-800 w-full rounded border px-3 py-1.5 text-xs disabled:opacity-50"
             >
               {t('chatPanel.rncp.useFromChat')}
             </button>
@@ -549,7 +549,7 @@ export function ChatDmRncpControl({
             disabled={!sidecarRunning}
             aria-label={t('chatPanel.rncp.requestEnableAria')}
             onClick={() => void handleRequestEnable()}
-            className="w-full rounded border border-zinc-600 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 disabled:opacity-50"
+            className="border-ink-600 text-ink-300 hover:bg-ink-800 w-full rounded border px-3 py-1.5 text-xs disabled:opacity-50"
           >
             {t('chatPanel.rncp.requestEnable')}
           </button>

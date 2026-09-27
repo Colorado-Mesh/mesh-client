@@ -148,7 +148,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
         <p className="text-muted text-xs">{t('radioPanel.floodScopeHelp')}</p>
         <fieldset className="space-y-2" disabled={disabled || applying}>
           <legend className="sr-only">{t('radioPanel.floodScopeTitle')}</legend>
-          <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <label className="text-ink-300 flex items-center gap-2 text-sm">
             <input
               type="radio"
               name="flood-scope-mode"
@@ -160,7 +160,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
             />
             {t('radioPanel.floodScopeNone')}
           </label>
-          <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <label className="text-ink-300 flex items-center gap-2 text-sm">
             <input
               type="radio"
               name="flood-scope-mode"
@@ -215,7 +215,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
               )}
             </div>
           )}
-          <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <label className="text-ink-300 flex items-center gap-2 text-sm">
             <input
               type="radio"
               name="flood-scope-mode"
@@ -241,7 +241,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
             />
           )}
         </fieldset>
-        {status && <p className="text-xs text-zinc-400">{status}</p>}
+        {status && <p className="text-ink-400 text-xs">{status}</p>}
       </>
     );
 
@@ -250,9 +250,9 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
     }
 
     return (
-      <div className="space-y-3 rounded-lg border border-zinc-700 bg-zinc-800/40 p-4">
+      <div className="border-ink-700 bg-ink-800/40 space-y-3 rounded-lg border p-4">
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-medium text-zinc-200">{t('radioPanel.floodScopeTitle')}</h4>
+          <h4 className="text-ink-200 text-sm font-medium">{t('radioPanel.floodScopeTitle')}</h4>
         </div>
         {fields}
         <button

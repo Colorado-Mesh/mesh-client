@@ -24,16 +24,16 @@ export function BluetoothConfig({
   const pinLabel = pairingPin !== null ? String(pairingPin).padStart(6, '0') : null;
 
   return (
-    <div className="space-y-2 rounded border border-zinc-700 bg-zinc-900/40 p-3">
-      <h4 className="text-sm font-medium text-zinc-200">{t('flasher.bluetoothTitle')}</h4>
-      <p className="text-xs text-zinc-400">{t('flasher.bluetoothHint')}</p>
+    <div className="border-ink-700 bg-ink-900/40 space-y-2 rounded border p-3">
+      <h4 className="text-ink-200 text-sm font-medium">{t('flasher.bluetoothTitle')}</h4>
+      <p className="text-ink-400 text-xs">{t('flasher.bluetoothHint')}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={disabled}
           aria-label={t('flasher.enableBluetooth')}
           onClick={onEnable}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.enableBluetooth')}
         </button>
@@ -42,7 +42,7 @@ export function BluetoothConfig({
           disabled={disabled}
           aria-label={t('flasher.disableBluetooth')}
           onClick={onDisable}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.disableBluetooth')}
         </button>
@@ -51,7 +51,7 @@ export function BluetoothConfig({
           disabled={disabled || pairingPending}
           aria-label={t('flasher.startPairing')}
           onClick={onStartPairing}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.startPairing')}
         </button>

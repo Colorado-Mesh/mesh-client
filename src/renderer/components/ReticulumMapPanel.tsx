@@ -337,15 +337,15 @@ export default function ReticulumMapPanel({
     <div className="flex h-full min-h-[500px] flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
         <div>
-          <h2 className="text-lg font-semibold text-zinc-100">{t('reticulumMap.title')}</h2>
-          <p className="text-xs text-zinc-400">{t('reticulumMap.subtitle')}</p>
+          <h2 className="text-ink-100 text-lg font-semibold">{t('reticulumMap.title')}</h2>
+          <p className="text-ink-400 text-xs">{t('reticulumMap.subtitle')}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <a
             href={RMAP_GLOBAL_MAP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-md border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-700"
+            className="border-ink-600 bg-ink-800 text-ink-200 hover:bg-ink-700 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs"
             aria-label={t('reticulumMap.openGlobalMapAria')}
           >
             <Globe className="h-3.5 w-3.5" aria-hidden />
@@ -356,7 +356,7 @@ export default function ReticulumMapPanel({
             <button
               type="button"
               onClick={onOpenRmapSettings}
-              className="rounded-md border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-700"
+              className="border-ink-600 bg-ink-800 text-ink-200 hover:bg-ink-700 rounded-md border px-2 py-1 text-xs"
               aria-label={t('reticulumMap.openPublishSettingsAria')}
             >
               {t('reticulumMap.openPublishSettings')}
@@ -366,7 +366,7 @@ export default function ReticulumMapPanel({
             type="button"
             onClick={() => void refresh()}
             disabled={loading}
-            className="inline-flex items-center gap-1 rounded-md border border-zinc-600 bg-zinc-800 px-2 py-1 text-xs text-zinc-200 hover:bg-zinc-700 disabled:opacity-60"
+            className="border-ink-600 bg-ink-800 text-ink-200 hover:bg-ink-700 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs disabled:opacity-60"
             aria-label={t('reticulumMap.refreshAria')}
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden />
@@ -386,7 +386,7 @@ export default function ReticulumMapPanel({
             className={`rounded-full px-2.5 py-0.5 text-xs ${
               filter === value
                 ? 'bg-cyan-700 text-white'
-                : 'border border-zinc-600 bg-zinc-800 text-zinc-300'
+                : 'border-ink-600 bg-ink-800 text-ink-300 border'
             }`}
             aria-pressed={filter === value}
             aria-label={t(`reticulumMap.filter.${value}`)}
@@ -410,13 +410,13 @@ export default function ReticulumMapPanel({
 
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_280px]">
         <div
-          className="relative min-h-[420px] overflow-hidden rounded-lg border border-zinc-700/50"
+          className="border-ink-700/50 relative min-h-[420px] overflow-hidden rounded-lg border"
           aria-label={t('reticulumMap.title')}
         >
           <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
             <div className={MAP_CHIP_CLASS}>
               <span
-                className="flex items-center gap-1 text-zinc-200"
+                className="text-ink-200 flex items-center gap-1"
                 title={t('reticulumMap.reachable')}
               >
                 <span
@@ -426,7 +426,7 @@ export default function ReticulumMapPanel({
                 {reachableCount}
               </span>
               <span
-                className="flex items-center gap-1 text-zinc-200"
+                className="text-ink-200 flex items-center gap-1"
                 title={t('reticulumMap.heardOnly')}
               >
                 <span
@@ -490,11 +490,11 @@ export default function ReticulumMapPanel({
                     <div className="font-semibold">{row.discovery_name}</div>
                     <div className="text-xs">{row.interface_type}</div>
                     {formatRmapDiscoveredEndpoint(row) ? (
-                      <div className="mt-1 font-mono text-xs text-zinc-700">
+                      <div className="text-ink-700 mt-1 font-mono text-xs">
                         {formatRmapDiscoveredEndpoint(row)}
                       </div>
                     ) : null}
-                    <div className="mt-1 text-xs text-zinc-600">
+                    <div className="text-ink-600 mt-1 text-xs">
                       {t('reticulumMap.stampStatus', {
                         stamp: row.stamp_value,
                         status: row.status,
@@ -506,11 +506,9 @@ export default function ReticulumMapPanel({
                         {t('reticulumMap.reachable')}
                       </div>
                     ) : (
-                      <div className="mt-1 text-xs text-zinc-600">
-                        {t('reticulumMap.heardOnly')}
-                      </div>
+                      <div className="text-ink-600 mt-1 text-xs">{t('reticulumMap.heardOnly')}</div>
                     )}
-                    <div className="mt-1 text-xs text-zinc-600">
+                    <div className="text-ink-600 mt-1 text-xs">
                       {t('reticulumMap.lastHeard', {
                         time: formatDisplayDateTime(row.last_heard * 1000, {
                           use24Hour: use24HourTime,
@@ -525,10 +523,10 @@ export default function ReticulumMapPanel({
           </MapContainer>
 
           {emptyReason ? (
-            <div className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-zinc-950/40 p-6">
-              <div className="pointer-events-auto max-w-md rounded-lg border border-dashed border-zinc-700 bg-zinc-900/90 p-6 text-center">
+            <div className="bg-ink-950/40 pointer-events-none absolute inset-0 z-[500] flex items-center justify-center p-6">
+              <div className="border-ink-700 bg-ink-900/90 pointer-events-auto max-w-md rounded-lg border border-dashed p-6 text-center">
                 <MapPin className="text-muted mx-auto h-8 w-8" aria-hidden />
-                <p className="mt-2 text-sm text-zinc-300">
+                <p className="text-ink-300 mt-2 text-sm">
                   {t(`reticulumMap.empty.${emptyReason}`)}
                 </p>
                 {emptyReason === 'noDiscoveries' ? (
@@ -557,8 +555,8 @@ export default function ReticulumMapPanel({
           ) : null}
         </div>
 
-        <aside className="relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900/50">
-          <h3 className="text-2xs shrink-0 border-b border-zinc-700 px-2 py-1.5 font-semibold text-zinc-400">
+        <aside className="border-ink-700 bg-ink-900/50 relative flex min-h-0 flex-col overflow-hidden rounded-lg border">
+          <h3 className="text-2xs border-ink-700 text-ink-400 shrink-0 border-b px-2 py-1.5 font-semibold">
             {t('reticulumMap.listTitle')}
           </h3>
           <ul
@@ -579,12 +577,12 @@ export default function ReticulumMapPanel({
                 return (
                   <li
                     key={row.discovery_hash}
-                    className="border-b border-zinc-800/80 last:border-b-0"
+                    className="border-ink-800/80 border-b last:border-b-0"
                   >
                     <button
                       type="button"
-                      className={`w-full px-2 py-1 text-left transition-colors hover:bg-zinc-800/70 ${
-                        isSelected ? 'bg-zinc-800/90' : ''
+                      className={`hover:bg-ink-800/70 w-full px-2 py-1 text-left transition-colors ${
+                        isSelected ? 'bg-ink-800/90' : ''
                       }`}
                       onClick={() => {
                         handleListItemClick(row);
@@ -595,11 +593,11 @@ export default function ReticulumMapPanel({
                       <div className="flex min-w-0 items-center gap-1.5">
                         <span
                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${
-                            row.reachable ? 'bg-brand-green' : 'bg-zinc-500'
+                            row.reachable ? 'bg-brand-green' : 'bg-ink-500'
                           }`}
                           aria-hidden
                         />
-                        <span className="truncate text-xs font-medium text-zinc-100">
+                        <span className="text-ink-100 truncate text-xs font-medium">
                           {row.discovery_name}
                         </span>
                       </div>
@@ -608,7 +606,7 @@ export default function ReticulumMapPanel({
                         {!hasCoords ? ` · ${t('reticulumMap.noCoords')}` : ''}
                       </div>
                       {formatRmapDiscoveredEndpoint(row) ? (
-                        <div className="text-2xs truncate pl-3 font-mono leading-tight text-zinc-400">
+                        <div className="text-2xs text-ink-400 truncate pl-3 font-mono leading-tight">
                           {formatRmapDiscoveredEndpoint(row)}
                         </div>
                       ) : null}
@@ -660,7 +658,7 @@ export default function ReticulumMapPanel({
             <button
               type="button"
               onClick={scrollListToTop}
-              className="bg-secondary-dark text-2xs shadow-level-3 absolute top-9 right-2 z-10 rounded-full border border-zinc-600 px-2.5 py-1 font-medium text-zinc-300 transition-all hover:bg-zinc-600"
+              className="bg-secondary-dark text-2xs shadow-level-3 border-ink-600 text-ink-300 hover:bg-ink-600 absolute top-9 right-2 z-10 rounded-full border px-2.5 py-1 font-medium transition-all"
               aria-label={t('aria.backToTop')}
             >
               {t('app.scrollToTop')}

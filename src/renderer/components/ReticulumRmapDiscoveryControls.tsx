@@ -342,7 +342,7 @@ export function ReticulumRmapDiscoveryControls({
     <>
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-200">
+          <label className="text-ink-200 flex cursor-pointer items-center gap-2 text-sm">
             <input
               ref={publishCheckboxRef}
               type="checkbox"
@@ -382,7 +382,7 @@ export function ReticulumRmapDiscoveryControls({
           <p className="text-xs text-orange-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
         )}
         {coords ? (
-          <p className="text-xs text-zinc-300" role="status">
+          <p className="text-ink-300 text-xs" role="status">
             {t('reticulumRmapDiscovery.coordsStatus', {
               lat: coords.lat.toFixed(5),
               lon: coords.lon.toFixed(5),
@@ -394,7 +394,7 @@ export function ReticulumRmapDiscoveryControls({
           </p>
         )}
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-xs text-zinc-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.announceIntervalMin')}
             <input
               type="number"
@@ -409,7 +409,7 @@ export function ReticulumRmapDiscoveryControls({
               }}
             />
           </label>
-          <label className="block text-xs text-zinc-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.heightMeters')}
             <input
               type="number"
@@ -424,7 +424,7 @@ export function ReticulumRmapDiscoveryControls({
             />
           </label>
         </div>
-        <label className="block text-xs text-zinc-400">
+        <label className="text-ink-400 block text-xs">
           {hasServerPublishTarget
             ? t('reticulumRmapDiscovery.reachableOnRequired')
             : t('reticulumRmapDiscovery.reachableOn')}
@@ -449,7 +449,7 @@ export function ReticulumRmapDiscoveryControls({
           ) : null}
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-xs text-zinc-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.discoveryLxmfAddress')}
             <input
               type="text"
@@ -467,7 +467,7 @@ export function ReticulumRmapDiscoveryControls({
               <span className="mt-1 block text-xs text-red-400">{lxmfAddressError}</span>
             ) : null}
           </label>
-          <label className="block text-xs text-zinc-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.discoveryStampValue')}
             <input
               type="number"
@@ -484,7 +484,7 @@ export function ReticulumRmapDiscoveryControls({
           </label>
         </div>
         <div className="flex flex-wrap gap-4">
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
+          <label className="text-ink-300 flex cursor-pointer items-center gap-2 text-xs">
             <input
               type="checkbox"
               checked={discoveryEncrypt}
@@ -496,7 +496,7 @@ export function ReticulumRmapDiscoveryControls({
             />
             <span>{t('reticulumRmapDiscovery.discoveryEncrypt')}</span>
           </label>
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-300">
+          <label className="text-ink-300 flex cursor-pointer items-center gap-2 text-xs">
             <input
               type="checkbox"
               checked={publishIfac}

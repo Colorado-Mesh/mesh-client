@@ -13,11 +13,11 @@ const BUTTON_BASE =
 export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'border-transparent bg-brand-green text-app-bg hover:bg-brand-green/90',
   secondary:
-    'border-secondary-dark bg-sidebar-active-bg text-zinc-200 hover:bg-secondary-dark disabled:hover:bg-sidebar-active-bg',
+    'border-secondary-dark bg-sidebar-active-bg text-ink-200 hover:bg-secondary-dark disabled:hover:bg-sidebar-active-bg',
   danger:
     'border-red-400/45 bg-transparent text-red-400 hover:bg-red-400/10 disabled:hover:bg-transparent',
   ghost:
-    'border-transparent bg-transparent text-zinc-300 hover:bg-sidebar-active-bg hover:text-zinc-100',
+    'border-transparent bg-transparent text-ink-300 hover:bg-sidebar-active-bg hover:text-ink-100',
 };
 
 export const BUTTON_SIZE_CLASS: Record<ButtonSize, string> = {
@@ -98,9 +98,9 @@ const ICON_BUTTON_SIZE: Record<ButtonSize, string> = { sm: 'h-7.5 w-7.5', md: 'h
 
 const ICON_BUTTON_VARIANT: Record<NonNullable<IconButtonProps['variant']>, string> = {
   ghost:
-    'border-transparent bg-transparent text-muted hover:bg-sidebar-active-bg hover:text-zinc-200',
+    'border-transparent bg-transparent text-muted hover:bg-sidebar-active-bg hover:text-ink-200',
   secondary:
-    'border-secondary-dark bg-sidebar-active-bg text-zinc-300 hover:bg-secondary-dark hover:text-zinc-100',
+    'border-secondary-dark bg-sidebar-active-bg text-ink-300 hover:bg-secondary-dark hover:text-ink-100',
   danger: 'border-transparent bg-transparent text-red-400 hover:bg-red-400/10',
 };
 

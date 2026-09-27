@@ -17,7 +17,7 @@ export function FlashProgress({ active, progress, syncing = false }: FlashProgre
     <div className="space-y-1">
       <p className="text-xs text-orange-300">{label}</p>
       <div
-        className="h-2 overflow-hidden rounded bg-zinc-800"
+        className="bg-ink-800 h-2 overflow-hidden rounded"
         role="progressbar"
         aria-valuenow={progress}
         aria-valuemin={0}

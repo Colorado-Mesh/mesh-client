@@ -31,13 +31,13 @@ export function ensureMapStyles(): void {
       width: 30px;
       height: 30px;
       background: #ffffff;
-      color: #52525b;
+      color: #48556a;
       cursor: pointer;
       border: none;
       outline: none;
     }
     .leaflet-locate-control a:hover {
-      background: #f4f4f5;
+      background: #f2f5f9;
       color: #000000;
     }
     .leaflet-locate-control a.locating {
@@ -72,9 +72,9 @@ export function ensureLoRaMapPanelStyles(): void {
       opacity: 0.75 !important;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-content-wrapper {
-      background: #18181b;
-      border: 1px solid #3f3f46;
-      color: #e4e4e7;
+      background: #19212d;
+      border: 1px solid #364156;
+      color: #e3e8f0;
       border-radius: 0.75rem;
       padding: 0;
       box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
@@ -91,13 +91,13 @@ export function ensureLoRaMapPanelStyles(): void {
       overflow-y: auto;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-tip {
-      background: #18181b;
+      background: #19212d;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-close-button {
-      color: #a1a1aa !important;
+      color: #93a0b7 !important;
     }
     .leaflet-popup.map-node-popup .leaflet-popup-close-button:hover {
-      color: #e4e4e7 !important;
+      color: #e3e8f0 !important;
     }
   `;
   document.head.appendChild(style);
@@ -209,7 +209,7 @@ export function MapBasemapControl() {
       {layersPanelOpen ? (
         <div className={MAP_OVERLAY_PANEL_CLASS}>
           <div className="space-y-1">
-            <div className="text-2xs font-medium text-zinc-400">{t('mapPanel.basemapHeading')}</div>
+            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.basemapHeading')}</div>
             <select
               aria-label={t('mapPanel.basemapSelectAria')}
               className={`${SELECT_BOX_SM_CLASS} w-full`}
@@ -225,7 +225,7 @@ export function MapBasemapControl() {
             </select>
           </div>
           <div className="space-y-1.5">
-            <div className="text-2xs font-medium text-zinc-400">{t('mapPanel.layersHeading')}</div>
+            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.layersHeading')}</div>
             <label className="text-muted flex cursor-pointer items-center gap-2 text-xs">
               <input
                 type="checkbox"

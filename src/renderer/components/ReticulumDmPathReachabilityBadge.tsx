@@ -71,7 +71,7 @@ export function ReticulumDmPathReachabilityBadge({
       >
         {status === 'probing' ? (
           <span
-            className="inline-block h-3 w-3 shrink-0 animate-spin rounded-full border border-zinc-400 border-t-transparent"
+            className="border-ink-400 inline-block h-3 w-3 shrink-0 animate-spin rounded-full border border-t-transparent"
             aria-hidden
           />
         ) : (

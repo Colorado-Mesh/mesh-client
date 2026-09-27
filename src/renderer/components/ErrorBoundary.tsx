@@ -89,7 +89,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <button
             type="button"
             onClick={this.resetError}
-            className="rounded-lg bg-zinc-700 px-6 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-600"
+            className="bg-ink-700 text-ink-200 hover:bg-ink-600 rounded-lg px-6 py-2 text-sm font-medium transition-colors"
           >
             {i18n.t('errorBoundary.tryAgain')}
           </button>

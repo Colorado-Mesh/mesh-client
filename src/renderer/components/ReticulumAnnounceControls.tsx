@@ -143,9 +143,9 @@ export function ReticulumAnnounceControls({
   const controlsDisabled = disabled || busy;
 
   return (
-    <div className={embedded ? 'space-y-2' : 'mt-4 border-t border-zinc-700 pt-4'}>
+    <div className={embedded ? 'space-y-2' : 'border-ink-700 mt-4 border-t pt-4'}>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs text-zinc-400" htmlFor="reticulum-announce-interval">
+        <label className="text-ink-400 text-xs" htmlFor="reticulum-announce-interval">
           {t('reticulumIdentity.announceIntervalSec')}
         </label>
         <input
@@ -166,7 +166,7 @@ export function ReticulumAnnounceControls({
           type="button"
           disabled={controlsDisabled}
           aria-label={t('common.save')}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200 transition-colors hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-40"
           onClick={() => {
             void saveAnnounceInterval();
           }}
@@ -177,7 +177,7 @@ export function ReticulumAnnounceControls({
           type="button"
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.announceNow')}
-          className="border-brand-green/60 text-brand-green rounded border px-2 py-1 text-xs transition-colors hover:bg-zinc-800 disabled:opacity-40"
+          className="border-brand-green/60 text-brand-green hover:bg-ink-800 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-40"
           onClick={() => {
             void announceNow();
           }}
@@ -188,7 +188,7 @@ export function ReticulumAnnounceControls({
           type="button"
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.clearAnnounces')}
-          className="rounded border border-zinc-600 px-2 py-1 text-xs text-orange-300 transition-colors hover:bg-zinc-800 disabled:opacity-40"
+          className="border-ink-600 hover:bg-ink-800 rounded border px-2 py-1 text-xs text-orange-300 transition-colors disabled:opacity-40"
           onClick={() => {
             void clearAnnounces();
           }}
@@ -198,7 +198,7 @@ export function ReticulumAnnounceControls({
       </div>
       <p className="text-muted text-xs">{t('reticulumIdentity.announceIntervalHint')}</p>
       {statusMessage ? (
-        <p className="mt-2 text-xs text-zinc-300" role="status">
+        <p className="text-ink-300 mt-2 text-xs" role="status">
           {statusMessage}
         </p>
       ) : null}

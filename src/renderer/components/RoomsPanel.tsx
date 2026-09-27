@@ -1435,7 +1435,7 @@ export default function RoomsPanel({
     return (
       <li
         key={room.node_id}
-        className={`flex items-stretch border-b border-zinc-800/70 transition-colors ${
+        className={`border-ink-800/70 flex items-stretch border-b transition-colors ${
           selected ? 'bg-sidebar-active-bg' : 'hover:bg-secondary-dark/40'
         }`}
       >
@@ -1448,7 +1448,7 @@ export default function RoomsPanel({
           }}
           className="flex min-w-0 flex-1 flex-col gap-0.5 py-2 pl-3 text-left"
         >
-          <span className="text-body flex min-w-0 items-center gap-2 text-zinc-200">
+          <span className="text-body text-ink-200 flex min-w-0 items-center gap-2">
             {isLoggingIn ? (
               <span
                 role="img"
@@ -1505,7 +1505,7 @@ export default function RoomsPanel({
             aria-label={room.favorited ? t('roomsPanel.unfavorite') : t('roomsPanel.favorite')}
             title={room.favorited ? t('roomsPanel.unfavorite') : t('roomsPanel.favorite')}
             className={`flex w-10 shrink-0 items-center justify-center transition-colors ${
-              room.favorited ? 'text-yellow-400' : 'text-muted hover:text-zinc-200'
+              room.favorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'
             }`}
           >
             <Star
@@ -1521,8 +1521,8 @@ export default function RoomsPanel({
 
   const listColumn = (
     <>
-      <div className="flex min-h-14 shrink-0 items-center gap-2 border-b border-zinc-800 pr-2 pl-3">
-        <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-100">
+      <div className="border-ink-800 flex min-h-14 shrink-0 items-center gap-2 border-b pr-2 pl-3">
+        <h2 className="text-ink-100 min-w-0 flex-1 truncate text-sm font-semibold">
           {t('roomsPanel.title')}{' '}
           <span className="text-muted font-normal tabular-nums">({roomServers.length})</span>
         </h2>
@@ -1554,7 +1554,7 @@ export default function RoomsPanel({
       {roomServers.length > 0 && (
         <ul
           aria-label={t('roomsPanel.sidebarLegendTitle')}
-          className="text-muted flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b border-zinc-800 px-3 py-2 text-xs"
+          className="text-muted border-ink-800 flex shrink-0 flex-wrap gap-x-3 gap-y-1 border-b px-3 py-2 text-xs"
         >
           <li className="flex items-center gap-1.5">
             <StatusDot tone="ok" size="md" />
@@ -1571,7 +1571,7 @@ export default function RoomsPanel({
         </ul>
       )}
       {savedCredentialNodeIds.length > 0 && (
-        <div className="shrink-0 border-b border-zinc-800">
+        <div className="border-ink-800 shrink-0 border-b">
           <h3 id="rooms-saved-passwords-heading" className="sr-only">
             {t('roomsPanel.savedPasswordsHeading')}
           </h3>
@@ -1580,7 +1580,7 @@ export default function RoomsPanel({
             onClick={() => {
               setSavedPasswordsOpen((open) => !open);
             }}
-            className="hover:bg-secondary-dark/40 flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-medium text-zinc-300"
+            className="hover:bg-secondary-dark/40 text-ink-300 flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-medium"
             aria-expanded={savedPasswordsOpen}
             aria-labelledby="rooms-saved-passwords-heading"
           >
@@ -1592,32 +1592,32 @@ export default function RoomsPanel({
             {t('roomsPanel.savedPasswordsCount', { count: savedCredentialNodeIds.length })}
           </button>
           {savedPasswordsOpen && (
-            <ul className="max-h-48 overflow-y-auto border-t border-zinc-800/70">
+            <ul className="border-ink-800/70 max-h-48 overflow-y-auto border-t">
               {savedCredentialNodeIds.map((nodeId) => {
                 const summary = getMeshcoreRoomSavedSecretsSummary(nodeId);
                 return (
                   <li
                     key={nodeId}
-                    className="space-y-1.5 border-b border-zinc-800/70 px-3 py-2 last:border-b-0"
+                    className="border-ink-800/70 space-y-1.5 border-b px-3 py-2 last:border-b-0"
                   >
                     <button
                       type="button"
                       onClick={() => {
                         handleSelectRoom(nodeId);
                       }}
-                      className="hover:text-bright-green text-body w-full truncate text-left text-zinc-200"
+                      className="hover:text-bright-green text-body text-ink-200 w-full truncate text-left"
                     >
                       {resolveRoomDisplayName(nodeId)}
                     </button>
                     {(summary.autoLoginOnConnect || summary.syncEnabled) && (
                       <div className="flex flex-wrap items-center gap-1">
                         {summary.autoLoginOnConnect && (
-                          <span className="bg-secondary-dark text-label rounded-md px-1.5 py-0.5 text-zinc-300">
+                          <span className="bg-secondary-dark text-label text-ink-300 rounded-md px-1.5 py-0.5">
                             {t('roomsPanel.badgeAutoLogin')}
                           </span>
                         )}
                         {summary.syncEnabled && (
-                          <span className="bg-secondary-dark text-label rounded-md px-1.5 py-0.5 text-zinc-300">
+                          <span className="bg-secondary-dark text-label text-ink-300 rounded-md px-1.5 py-0.5">
                             {t('roomsPanel.badgeAutoSync')}
                           </span>
                         )}
@@ -1682,10 +1682,10 @@ export default function RoomsPanel({
 
   const conversationHeader =
     selectedRoomId != null ? (
-      <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b border-zinc-800 px-3 py-2">
+      <header className="border-ink-800 flex min-h-14 shrink-0 flex-wrap items-center gap-2 border-b px-3 py-2">
         {listToggle}
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-semibold text-zinc-100">
+          <h2 className="text-ink-100 truncate text-sm font-semibold">
             {activeRoom?.long_name ?? resolveRoomDisplayName(selectedRoomId)}
           </h2>
           {loggedIn && (
@@ -1791,8 +1791,8 @@ export default function RoomsPanel({
 
   const loginCard = selectedRoomId != null && !loggedIn && !selectedRoomLoginLoading && (
     <div className="flex min-h-0 flex-1 justify-center overflow-y-auto p-4 sm:items-center">
-      <div className="bg-app-bg h-fit w-full max-w-sm space-y-3 rounded-xl border border-zinc-800 p-4">
-        <h3 className="text-base font-semibold text-zinc-100">{t('roomsPanel.loginTitle')}</h3>
+      <div className="bg-app-bg border-ink-800 h-fit w-full max-w-sm space-y-3 rounded-xl border p-4">
+        <h3 className="text-ink-100 text-base font-semibold">{t('roomsPanel.loginTitle')}</h3>
         <p className="text-muted text-xs">{t('roomsPanel.loginHelp')}</p>
         <input
           type="password"
@@ -1808,7 +1808,7 @@ export default function RoomsPanel({
           className={INPUT_CLASS}
           aria-label={t('roomsPanel.guestPasswordLabel')}
         />
-        <label className="flex items-center gap-2 text-xs text-zinc-300">
+        <label className="text-ink-300 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             className={CHECKBOX_CLASS}
@@ -1889,8 +1889,8 @@ export default function RoomsPanel({
   const detailsPanel =
     selectedRoomId != null && loggedIn ? (
       <div className="flex min-h-0 flex-1 flex-col">
-        <div className="flex min-h-14 shrink-0 items-center gap-2 border-b border-zinc-800 pr-2 pl-3">
-          <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-100">
+        <div className="border-ink-800 flex min-h-14 shrink-0 items-center gap-2 border-b pr-2 pl-3">
+          <h3 className="text-ink-100 min-w-0 flex-1 truncate text-sm font-semibold">
             {t('roomsPanel.details')}
           </h3>
           <IconButton
@@ -1904,7 +1904,7 @@ export default function RoomsPanel({
         </div>
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3">
           <section aria-labelledby="rooms-details-sync-heading" className="space-y-3">
-            <h4 id="rooms-details-sync-heading" className="text-xs font-semibold text-zinc-300">
+            <h4 id="rooms-details-sync-heading" className="text-ink-300 text-xs font-semibold">
               {t('roomsPanel.loginAndSyncHeading')}
             </h4>
             <Switch
@@ -1975,7 +1975,7 @@ export default function RoomsPanel({
           </section>
 
           <section aria-labelledby="rooms-details-members-heading" className="space-y-3">
-            <h4 id="rooms-details-members-heading" className="text-xs font-semibold text-zinc-300">
+            <h4 id="rooms-details-members-heading" className="text-ink-300 text-xs font-semibold">
               {recognizedPosters.length > 0
                 ? t('roomsPanel.membersHeadingWithCount', { count: recognizedPosters.length })
                 : t('roomsPanel.membersHeading')}
@@ -1991,7 +1991,7 @@ export default function RoomsPanel({
                       key={p.senderId}
                       className="hover:bg-secondary-dark/40 flex min-h-8 items-center gap-2 rounded-lg px-2"
                     >
-                      <span className="text-body min-w-0 flex-1 truncate text-zinc-200">
+                      <span className="text-body text-ink-200 min-w-0 flex-1 truncate">
                         {p.senderName}
                       </span>
                       <span className="text-muted text-label shrink-0 font-mono tabular-nums">
@@ -2045,9 +2045,9 @@ export default function RoomsPanel({
                     {aclEntries.map((entry) => (
                       <li
                         key={`${entry.pubkeyHex}:${entry.permissionLevel}`}
-                        className="bg-app-bg space-y-1 rounded-lg border border-zinc-800 px-2 py-1.5"
+                        className="bg-app-bg border-ink-800 space-y-1 rounded-lg border px-2 py-1.5"
                       >
-                        <span className="text-label block font-mono break-all text-zinc-300">
+                        <span className="text-label text-ink-300 block font-mono break-all">
                           {entry.pubkeyHex}
                         </span>
                         <span className="text-xs text-orange-200">
@@ -2076,7 +2076,7 @@ export default function RoomsPanel({
       )}
 
       {loginAllInProgress && (
-        <div className="bg-brand-green/10 text-bright-green border-b border-zinc-800 px-3 py-2 text-xs">
+        <div className="bg-brand-green/10 text-bright-green border-ink-800 border-b px-3 py-2 text-xs">
           {t('roomsPanel.loginAllInProgress', {
             count: Math.max(loginQueueCount, localLoginRoomIds.size),
           })}
@@ -2102,7 +2102,7 @@ export default function RoomsPanel({
       {loginCard}
 
       {selectedRoomId != null && !loggedIn && selectedRoomLoginLoading && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm text-zinc-300">
+        <div className="text-ink-300 flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm">
           <p className="inline-flex items-center gap-2">
             <StatusDot tone="warn" pulse size="md" />
             {t('roomsPanel.loggingIn')}
@@ -2117,7 +2117,7 @@ export default function RoomsPanel({
       {selectedRoomId != null && loggedIn && (
         <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
           {showSearch && streamView === 'posts' && (
-            <div className="shrink-0 border-b border-zinc-800 px-3 py-2">
+            <div className="border-ink-800 shrink-0 border-b px-3 py-2">
               <div className="flex items-center gap-2">
                 <input
                   ref={searchInputRef}
@@ -2150,7 +2150,7 @@ export default function RoomsPanel({
             </div>
           )}
           {showDatePicker && streamView === 'posts' && (
-            <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 px-3 py-2">
+            <div className="border-ink-800 flex shrink-0 items-center gap-2 border-b px-3 py-2">
               <input
                 type="date"
                 value={jumpDate}
@@ -2174,7 +2174,7 @@ export default function RoomsPanel({
             </div>
           )}
           {filterSender != null && streamView === 'posts' && (
-            <div className="bg-app-bg flex shrink-0 items-center justify-between gap-2 border-b border-zinc-800 px-3 py-1.5 text-xs text-zinc-300">
+            <div className="bg-app-bg border-ink-800 text-ink-300 flex shrink-0 items-center justify-between gap-2 border-b px-3 py-1.5 text-xs">
               <span className="min-w-0 truncate">
                 {t('chatPanel.filteringBySender', {
                   name:
@@ -2193,13 +2193,13 @@ export default function RoomsPanel({
           )}
 
           {leaveError && (
-            <p role="alert" className="border-b border-zinc-800 px-3 py-2 text-sm text-red-400">
+            <p role="alert" className="border-ink-800 border-b px-3 py-2 text-sm text-red-400">
               {leaveError}
             </p>
           )}
 
           {selectedRoomLeaveLoading && (
-            <div className="bg-app-bg/85 absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 p-6 text-center text-sm text-zinc-300">
+            <div className="bg-app-bg/85 text-ink-300 absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 p-6 text-center text-sm">
               <p>{t('roomsPanel.leaveRoomInProgress')}</p>
               <p className="text-muted max-w-xs text-xs">{t('roomsPanel.leaveRoomHint')}</p>
             </div>
@@ -2223,16 +2223,16 @@ export default function RoomsPanel({
                     return (
                       <div
                         key={s.starId}
-                        className="bg-app-bg mb-2 rounded-lg border border-zinc-800 px-3 py-2 text-sm"
+                        className="bg-app-bg border-ink-800 mb-2 rounded-lg border px-3 py-2 text-sm"
                       >
-                        <div className="mb-1 flex items-baseline gap-2 text-xs text-zinc-400">
-                          <span className="font-medium text-zinc-300">{s.sender_name}</span>
+                        <div className="text-ink-400 mb-1 flex items-baseline gap-2 text-xs">
+                          <span className="text-ink-300 font-medium">{s.sender_name}</span>
                           <span>{formatTimestamp(s.timestamp)}</span>
-                          <span className="bg-secondary-dark text-label rounded-md px-1.5 text-zinc-300">
+                          <span className="bg-secondary-dark text-label text-ink-300 rounded-md px-1.5">
                             {roomLabel}
                           </span>
                         </div>
-                        <p className="break-words whitespace-pre-wrap text-zinc-200">{s.payload}</p>
+                        <p className="text-ink-200 break-words whitespace-pre-wrap">{s.payload}</p>
                         <button
                           type="button"
                           onClick={() => {
@@ -2279,11 +2279,11 @@ export default function RoomsPanel({
                     const isUnreadStart = index === unreadStartIndex;
                     const daySeparator = daySeparatorIndices.has(index) ? (
                       <div className="flex items-center gap-3 py-2">
-                        <div className="flex-1 border-t border-zinc-700" />
+                        <div className="border-ink-700 flex-1 border-t" />
                         <span className="text-muted shrink-0 text-xs font-medium">
                           {formatDayLabel(m.timestamp, t)}
                         </span>
-                        <div className="flex-1 border-t border-zinc-700" />
+                        <div className="border-ink-700 flex-1 border-t" />
                       </div>
                     ) : null;
                     const prevMsg = index > 0 ? filteredRoomPosts[index - 1] : null;
@@ -2323,8 +2323,8 @@ export default function RoomsPanel({
                               compactMode ? 'py-1' : 'py-2'
                             } ${
                               isOwn
-                                ? 'border-chat-outgoing-border bg-chat-outgoing-bg border text-zinc-100'
-                                : 'border-chat-incoming-border bg-chat-incoming-bg border text-zinc-200'
+                                ? 'border-chat-outgoing-border bg-chat-outgoing-bg text-ink-100 border'
+                                : 'border-chat-incoming-border bg-chat-incoming-bg text-ink-200 border'
                             } ${
                               compactMerged
                                 ? compactStackTop
@@ -2335,7 +2335,7 @@ export default function RoomsPanel({
                                 : ''
                             }`}
                           >
-                            <div className="mb-1 flex items-baseline gap-2 text-xs text-zinc-400">
+                            <div className="text-ink-400 mb-1 flex items-baseline gap-2 text-xs">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2344,7 +2344,7 @@ export default function RoomsPanel({
                                   );
                                 }}
                                 className={`font-medium hover:underline ${
-                                  filterSender === m.sender_id ? 'text-indigo-300' : 'text-zinc-300'
+                                  filterSender === m.sender_id ? 'text-indigo-300' : 'text-ink-300'
                                 }`}
                                 aria-pressed={filterSender === m.sender_id}
                               >
@@ -2445,7 +2445,7 @@ export default function RoomsPanel({
                                     onClick={() => {
                                       void onSendRoomPost(selectedRoomId, m.payload);
                                     }}
-                                    className="text-muted transition-colors hover:text-zinc-300"
+                                    className="text-muted hover:text-ink-300 transition-colors"
                                     title={t('chatPanel.resendMessage')}
                                     aria-label={t('chatPanel.resendMessage')}
                                   >
@@ -2474,7 +2474,7 @@ export default function RoomsPanel({
               <button
                 type="button"
                 onClick={scrollToTop}
-                className="bg-deep-black hover:bg-sidebar-active-bg shadow-level-3 absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors"
+                className="bg-deep-black hover:bg-sidebar-active-bg shadow-level-3 border-ink-700 text-ink-200 absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
                 aria-label={t('aria.backToTop')}
               >
                 <ArrowUp aria-hidden className="h-3.5 w-3.5" size={14} />
@@ -2488,7 +2488,7 @@ export default function RoomsPanel({
                   scrollToUnreadOrBottom();
                 }}
                 {...{ [PARENT_HOVER_ATTR]: '' }}
-                className="bg-deep-black hover:bg-sidebar-active-bg shadow-level-3 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors"
+                className="bg-deep-black hover:bg-sidebar-active-bg shadow-level-3 border-ink-700 text-ink-200 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors"
                 aria-label={
                   unreadDividerTimestamp > 0
                     ? t('roomsPanel.jumpToUnread')
@@ -2509,13 +2509,13 @@ export default function RoomsPanel({
           </div>
 
           <div
-            className={`shrink-0 border-t border-zinc-800 p-3 ${streamView === 'starred' ? 'hidden' : ''}`}
+            className={`border-ink-800 shrink-0 border-t p-3 ${streamView === 'starred' ? 'hidden' : ''}`}
             data-testid="rooms-composer-footer"
           >
             {!canPost ? (
               <div className="space-y-2">
                 <p className="text-xs text-orange-200">{t('roomsPanel.readOnlyHint')}</p>
-                <p className="text-xs font-medium text-zinc-300">{t('roomsPanel.upgradeAccess')}</p>
+                <p className="text-ink-300 text-xs font-medium">{t('roomsPanel.upgradeAccess')}</p>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <input
                     type="password"
@@ -2542,7 +2542,7 @@ export default function RoomsPanel({
                       : t('roomsPanel.upgradeAccess')}
                   </Button>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-zinc-300">
+                <label className="text-ink-300 flex items-center gap-2 text-xs">
                   <input
                     type="checkbox"
                     className={CHECKBOX_CLASS}
@@ -2582,7 +2582,7 @@ export default function RoomsPanel({
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 text-zinc-100">
+    <div className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
       {forgetConfirmNodeId != null && (
         <ConfirmModal
           title={t('roomsPanel.forgetSavedPasswordConfirmTitle')}

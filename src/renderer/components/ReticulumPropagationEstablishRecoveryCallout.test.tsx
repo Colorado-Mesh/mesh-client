@@ -204,7 +204,7 @@ describe('ReticulumPropagationEstablishRecoveryCallout', () => {
   it('has no axe violations on the callout subtree', async () => {
     proxyGet.mockResolvedValue({ interfaces: [{ enabled: true, type: 'tcp' }] });
     const { container } = render(
-      <div className="bg-zinc-900 p-2">
+      <div className="bg-ink-900 p-2">
         <ReticulumPropagationEstablishRecoveryCallout
           lastSyncError="reticulumPropagation.syncEstablishNoLinkProof"
           retryTargetId="pn-aabb"

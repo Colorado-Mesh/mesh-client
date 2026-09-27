@@ -145,10 +145,10 @@ export default function LogAnalyzeModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="log-analyze-title"
-        className="bg-deep-black rounded-modal shadow-level-3 relative z-10 flex max-h-[80vh] w-full max-w-2xl flex-col border border-zinc-700"
+        className="bg-deep-black rounded-modal shadow-level-3 border-ink-700 relative z-10 flex max-h-[80vh] w-full max-w-2xl flex-col border"
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-zinc-700 px-5 py-4">
-          <h2 id="log-analyze-title" className="text-lg font-semibold text-zinc-100">
+        <div className="border-ink-700 flex shrink-0 items-center justify-between border-b px-5 py-4">
+          <h2 id="log-analyze-title" className="text-ink-100 text-lg font-semibold">
             {t('logAnalyzeModal.title')}
           </h2>
           <button
@@ -156,15 +156,15 @@ export default function LogAnalyzeModal({
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
             {...{ [PARENT_HOVER_ATTR]: '' }}
-            className="hover:bg-secondary-dark text-muted rounded-lg p-1.5 transition-colors hover:text-zinc-200"
+            className="hover:bg-secondary-dark text-muted hover:text-ink-200 rounded-lg p-1.5 transition-colors"
           >
             <X aria-hidden className="h-5 w-5" trigger={parentIconTrigger} size={20} />
           </button>
         </div>
 
-        <div className="shrink-0 border-b border-zinc-700 px-5 py-3">
+        <div className="border-ink-700 shrink-0 border-b px-5 py-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-zinc-400">
+            <span className="text-ink-400">
               {t('logAnalyzeModal.totalEntries', {
                 count: result.totalEntries.toLocaleString(),
               })}
@@ -195,12 +195,12 @@ export default function LogAnalyzeModal({
               onClick={() => {
                 void copyReport();
               }}
-              className="rounded border border-zinc-600 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
+              className="border-ink-600 bg-ink-800 text-ink-200 hover:bg-ink-700 rounded border px-3 py-1.5 text-xs disabled:opacity-50"
             >
               {t('logAnalyzeModal.copyReport')}
             </button>
             {copyStatus === 'copied' && (
-              <span role="status" className="text-xs text-zinc-300">
+              <span role="status" className="text-ink-300 text-xs">
                 {t('logAnalyzeModal.copySuccess')}
               </span>
             )}
@@ -222,7 +222,7 @@ export default function LogAnalyzeModal({
                 <div key={cat.id} className="bg-secondary-dark/50 space-y-1 rounded-lg px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <span className="text-sm text-zinc-200">
+                      <span className="text-ink-200 text-sm">
                         {t(LOG_ANALYZER_CATEGORY_LABEL_KEYS[cat.id])}
                       </span>
                       <span
@@ -232,7 +232,7 @@ export default function LogAnalyzeModal({
                       </span>
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
-                      <span className="font-mono text-sm text-zinc-300">{cat.count}</span>
+                      <span className="text-ink-300 font-mono text-sm">{cat.count}</span>
                       <span className="text-muted text-xs">{formatLogTimeAgo(cat.lastTs, t)}</span>
                     </div>
                   </div>
@@ -245,7 +245,7 @@ export default function LogAnalyzeModal({
                     </p>
                   ) : null}
                   <details className="pt-1 text-xs">
-                    <summary className="cursor-pointer rounded py-1 text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2">
+                    <summary className="text-ink-200 cursor-pointer rounded py-1 focus-visible:outline-2 focus-visible:outline-offset-2">
                       {t('logAnalyzeModal.evidence', {
                         category: t(LOG_ANALYZER_CATEGORY_LABEL_KEYS[cat.id]),
                       })}
@@ -265,7 +265,7 @@ export default function LogAnalyzeModal({
                       {cat.entries.slice(0, 20).map((entry, index) => (
                         <li
                           key={index}
-                          className="border-l-2 border-zinc-600 pl-2 font-mono text-zinc-300"
+                          className="border-ink-600 text-ink-300 border-l-2 pl-2 font-mono"
                         >
                           <div className="break-all">
                             <time dateTime={new Date(entry.ts).toISOString()}>
@@ -289,7 +289,7 @@ export default function LogAnalyzeModal({
           )}
 
           {result.categories.length > 0 && (
-            <div className="mt-4 border-t border-zinc-700 pt-4">
+            <div className="border-ink-700 mt-4 border-t pt-4">
               <h3 className="text-muted mb-2 text-xs">
                 {t('logAnalyzeModal.recommendationsHeading')}
               </h3>
@@ -297,7 +297,7 @@ export default function LogAnalyzeModal({
                 {dedupedRecs.map((row) => (
                   <li
                     key={row.recommendationGroup}
-                    className="flex items-start gap-2 text-sm text-zinc-300"
+                    className="text-ink-300 flex items-start gap-2 text-sm"
                   >
                     <span className={`${severityColor(row.severity)} mt-0.5`}>•</span>
                     <span>

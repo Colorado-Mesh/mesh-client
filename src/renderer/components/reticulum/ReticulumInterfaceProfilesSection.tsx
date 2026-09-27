@@ -79,11 +79,11 @@ export function ReticulumInterfaceProfilesSection({
 
   return (
     <section
-      className="space-y-2 rounded border border-zinc-700/80 bg-zinc-950/40 p-2"
+      className="border-ink-700/80 bg-ink-950/40 space-y-2 rounded border p-2"
       aria-label={t('connectionPanel.reticulumInterfaces.profilesTitle')}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold text-zinc-300">
+        <h3 className="text-ink-300 text-xs font-semibold">
           {t('connectionPanel.reticulumInterfaces.profilesTitle')}
         </h3>
         <p className="text-2xs text-muted">
@@ -100,7 +100,7 @@ export function ReticulumInterfaceProfilesSection({
               className={`rounded px-2 py-1 ${
                 activeId == null
                   ? 'bg-orange-900/40 text-orange-200'
-                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                  : 'bg-ink-800 text-ink-300 hover:bg-ink-700'
               }`}
               onClick={() => {
                 void applyMembers(state.defaultMembers ?? []);
@@ -132,7 +132,7 @@ export function ReticulumInterfaceProfilesSection({
                   />
                   <button
                     type="button"
-                    className="rounded bg-zinc-700 px-2 py-0.5 text-zinc-100"
+                    className="bg-ink-700 text-ink-100 rounded px-2 py-0.5"
                     disabled={disabled}
                     onClick={() => {
                       persist(renameInterfaceProfile(state, p.id, renameValue));
@@ -150,7 +150,7 @@ export function ReticulumInterfaceProfilesSection({
                     className={`rounded px-2 py-1 ${
                       activeId === p.id
                         ? 'bg-orange-900/40 text-orange-200'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                        : 'bg-ink-800 text-ink-300 hover:bg-ink-700'
                     }`}
                     onClick={() => {
                       void applyMembers(p.members);
@@ -161,7 +161,7 @@ export function ReticulumInterfaceProfilesSection({
                   </button>
                   <button
                     type="button"
-                    className="text-zinc-400 hover:text-zinc-200"
+                    className="text-ink-400 hover:text-ink-200"
                     disabled={disabled}
                     onClick={() => {
                       setRenameId(p.id);
@@ -200,7 +200,7 @@ export function ReticulumInterfaceProfilesSection({
         <button
           type="button"
           disabled={disabled}
-          className="rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-100 hover:bg-zinc-600"
+          className="bg-ink-700 text-ink-100 hover:bg-ink-600 rounded px-2 py-1 text-xs"
           onClick={() => {
             const next = saveCurrentAsInterfaceProfile(state, draftName || 'Profile', interfaces);
             persist(next);
@@ -212,7 +212,7 @@ export function ReticulumInterfaceProfilesSection({
         <button
           type="button"
           disabled={disabled}
-          className="rounded bg-zinc-800 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-700"
+          className="bg-ink-800 text-ink-300 hover:bg-ink-700 rounded px-2 py-1 text-xs"
           onClick={() => {
             const next = createInterfaceProfile(state, draftName || 'Profile', []);
             persist(next);

@@ -327,7 +327,7 @@ function ContactCountBadge({
   return (
     <div className="flex items-center gap-2">
       <span
-        className={`font-mono text-xs ${isNearCapacity ? 'text-red-400' : 'text-zinc-400'}`}
+        className={`font-mono text-xs ${isNearCapacity ? 'text-red-400' : 'text-ink-400'}`}
         title={t('radioPanel.contactsOnRadioBadgeTitle', {
           part: `${contactCount ?? '?'} / ${MESHCORE_MAX_CONTACTS}`,
         })}
@@ -447,7 +447,7 @@ function ConfigToggle({
           }}
           disabled={disabled}
           className={`relative h-5 w-10 rounded-full transition-colors disabled:opacity-50 ${
-            checked ? 'bg-brand-green' : 'bg-zinc-600'
+            checked ? 'bg-brand-green' : 'bg-ink-600'
           }`}
         >
           <span
@@ -598,8 +598,8 @@ function ConfigSection({
 }) {
   const { t } = useTranslation();
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-zinc-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
       </summary>
@@ -703,7 +703,7 @@ function WifiPasswordField({
           }}
           disabled={disabled}
           aria-label={show ? t('common.hide') : t('common.show')}
-          className="text-muted px-2 py-2 text-xs hover:text-zinc-300 disabled:opacity-50"
+          className="text-muted hover:text-ink-300 px-2 py-2 text-xs disabled:opacity-50"
         >
           {show ? t('common.hide') : t('common.show')}
         </button>
@@ -1530,14 +1530,14 @@ export default function RadioPanel({
 
   return (
     <div className="w-full space-y-4">
-      <h2 className="text-xl font-semibold text-zinc-200">{t('radioPanel.title')}</h2>
+      <h2 className="text-ink-200 text-xl font-semibold">{t('radioPanel.title')}</h2>
 
       {capabilities?.hasJsonRadioConfigImport && (
         <div className="flex justify-end">
           <button
             type="button"
             onClick={handleImportConfig}
-            className="bg-secondary-dark rounded-lg border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:bg-zinc-700"
+            className="bg-secondary-dark border-ink-600 text-ink-300 hover:bg-ink-700 rounded-lg border px-3 py-1.5 text-sm transition-colors"
           >
             {t('radioPanel.importConfigJson')}
           </button>
@@ -1730,7 +1730,7 @@ export default function RadioPanel({
               />
               <p className="text-muted text-xs">{t('radioPanel.frequencyHint')}</p>
             </div>
-            <div className="space-y-4 border-l border-zinc-700 pl-3">
+            <div className="border-ink-700 space-y-4 border-l pl-3">
               <ConfigSelect
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
@@ -1938,7 +1938,7 @@ export default function RadioPanel({
               disabled={loraDisabled || applyingSection !== null}
             />
           ) : (
-            <div className="space-y-4 border-l border-zinc-700 pl-3">
+            <div className="border-ink-700 space-y-4 border-l pl-3">
               <ConfigSelect
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
@@ -2014,7 +2014,7 @@ export default function RadioPanel({
                 disabled={loraDisabled || applyingSection !== null}
                 className="flex-1 accent-green-500 disabled:opacity-50"
               />
-              <span className="w-6 text-center font-mono text-lg text-zinc-200">{hopLimit}</span>
+              <span className="text-ink-200 w-6 text-center font-mono text-lg">{hopLimit}</span>
             </div>
             <p className="text-muted text-xs">{t('radioPanel.hopLimitDescription')}</p>
           </div>
@@ -2159,7 +2159,7 @@ export default function RadioPanel({
           />
         )}
 
-      <h3 className="border-t border-zinc-700 pt-4 text-xl font-semibold text-zinc-200">
+      <h3 className="border-ink-700 text-ink-200 border-t pt-4 text-xl font-semibold">
         {t('radioPanel.sectionGroupDevice')}
       </h3>
 
@@ -2373,7 +2373,7 @@ export default function RadioPanel({
               description={t('radioPanel.smartPositionBroadcastDesc')}
             />
             {smartPositionEnabled && (
-              <div className="space-y-4 border-l border-zinc-700 pl-3">
+              <div className="border-ink-700 space-y-4 border-l pl-3">
                 <ConfigNumber
                   label={t('radioPanel.minDistanceTriggerLabel')}
                   value={smartPositionMinDistance}
@@ -2404,7 +2404,7 @@ export default function RadioPanel({
         {/* For Meshtastic: lat/lon shown when fixedPosition toggle is on */}
         {/* For MeshCore: lat/lon always shown (fixed position is the only option) */}
         {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
-          <div className="space-y-3 border-t border-zinc-700 pt-2">
+          <div className="border-ink-700 space-y-3 border-t pt-2">
             {capabilities?.hasFullPositionConfig === false &&
               (() => {
                 const advertised = formatMeshcoreAdvertisedPositionDegrees(
@@ -2898,7 +2898,7 @@ export default function RadioPanel({
         capabilities?.hasCompanionContactManagementConfig) && (
         <div className="space-y-3">
           <h3 className="text-muted text-sm font-medium">{t('radioPanel.deviceActions')}</h3>
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-800/50 px-3 py-2">
+          <div className="border-ink-700 bg-ink-800/50 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
             {onSendAdvert && (
               <button
                 type="button"
@@ -3240,14 +3240,14 @@ function ChannelUrlImportExport({
   };
 
   return (
-    <div className="space-y-4 border-t border-zinc-700/80 pt-3">
-      <h4 className="text-sm font-medium text-zinc-300">
+    <div className="border-ink-700/80 space-y-4 border-t pt-3">
+      <h4 className="text-ink-300 text-sm font-medium">
         {t('radioPanel.channelUrl.sectionTitle')}
       </h4>
 
       <div className="space-y-2">
         <p className="text-muted text-xs font-medium">{t('radioPanel.channelUrl.exportTitle')}</p>
-        <label className="flex items-center gap-2 text-sm text-zinc-300">
+        <label className="text-ink-300 flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={includeSecondary}
@@ -3268,7 +3268,7 @@ function ChannelUrlImportExport({
           type="button"
           onClick={handleGenerate}
           disabled={disabled}
-          className="bg-secondary-dark disabled:text-muted rounded-lg px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-600 disabled:opacity-50"
+          className="bg-secondary-dark disabled:text-muted text-ink-200 hover:bg-ink-600 rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
           aria-label={t('radioPanel.channelUrl.generateLink')}
         >
           {t('radioPanel.channelUrl.generateLink')}
@@ -3351,7 +3351,7 @@ function ChannelUrlImportExport({
         />
         {parseError && <p className="text-xs text-red-400">{parseError}</p>}
         {parsed && (
-          <div className="bg-deep-black/40 space-y-2 rounded-lg border border-zinc-700/60 p-3 text-xs">
+          <div className="bg-deep-black/40 border-ink-700/60 space-y-2 rounded-lg border p-3 text-xs">
             <span
               className={`inline-block rounded px-2 py-0.5 font-medium ${
                 parsed.mode === 'add'
@@ -3368,9 +3368,7 @@ function ChannelUrlImportExport({
                 ? t('radioPanel.channelUrl.addWarning')
                 : t('radioPanel.channelUrl.replaceWarning')}
             </p>
-            <p className="font-medium text-zinc-300">
-              {t('radioPanel.channelUrl.previewChannels')}
-            </p>
+            <p className="text-ink-300 font-medium">{t('radioPanel.channelUrl.previewChannels')}</p>
             <ul className="text-muted space-y-1">
               {parsed.settings.map((ch, i) => (
                 <li key={i}>
@@ -3399,7 +3397,7 @@ function ChannelUrlImportExport({
               </p>
             )}
             {parsed.mode === 'add' && parsed.loraConfig && (
-              <label className="flex items-center gap-2 text-zinc-300">
+              <label className="text-ink-300 flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={applyLoraOnAdd}
@@ -3420,7 +3418,7 @@ function ChannelUrlImportExport({
                 onClick={() => {
                   setConfirmApply(parsed);
                 }}
-                className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg rounded-lg px-3 py-1.5 text-sm font-medium disabled:bg-zinc-600"
+                className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg disabled:bg-ink-600 rounded-lg px-3 py-1.5 text-sm font-medium"
                 aria-label={t('radioPanel.channelUrl.apply')}
               >
                 {applying ? t('radioPanel.channelUrl.applying') : t('radioPanel.channelUrl.apply')}
@@ -3633,9 +3631,9 @@ function ChannelSection({
     return (
       <div
         ref={formRef}
-        className="bg-deep-black/60 mt-1 space-y-3 rounded-lg border border-zinc-600 p-3"
+        className="bg-deep-black/60 border-ink-600 mt-1 space-y-3 rounded-lg border p-3"
       >
-        <h4 className="text-sm font-medium text-zinc-200">
+        <h4 className="text-ink-200 text-sm font-medium">
           {t('radioPanel.editChannelTitle', { index: selectedIndex })}
         </h4>
 
@@ -3739,7 +3737,7 @@ function ChannelSection({
                   setEditPskB64(pskToBase64(generateRandomPsk(editKeySize === 'aes128' ? 16 : 32)));
                 }}
                 disabled={disabled}
-                className="bg-secondary-dark text-muted rounded border border-zinc-600 px-2 py-1.5 text-xs whitespace-nowrap hover:text-zinc-200 disabled:opacity-50"
+                className="bg-secondary-dark text-muted border-ink-600 hover:text-ink-200 rounded border px-2 py-1.5 text-xs whitespace-nowrap disabled:opacity-50"
                 title={t('radioPanel.generateRandomKey')}
               >
                 {t('radioPanel.regeneratePsk')}
@@ -3792,7 +3790,7 @@ function ChannelSection({
             type="button"
             onClick={saveChannel}
             disabled={disabled || saving}
-            className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors disabled:bg-zinc-600"
+            className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg disabled:bg-ink-600 flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors"
           >
             {saving ? t('radioPanel.savingChannel') : t('radioPanel.saveChannel')}
           </button>
@@ -3800,7 +3798,7 @@ function ChannelSection({
             type="button"
             onClick={resetChannel}
             disabled={disabled || saving}
-            className="rounded bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600 disabled:opacity-50"
+            className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
             title={
               selectedIndex === 0
                 ? t('radioPanel.resetChannelDefaults')
@@ -3817,8 +3815,8 @@ function ChannelSection({
   };
 
   return (
-    <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-zinc-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
+    <details ref={detailsRef} className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('radioPanel.channels')}</span>
         <DetailsChevron />
       </summary>
@@ -3852,14 +3850,14 @@ function ChannelSection({
                   }}
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
                     isSelected
-                      ? 'border border-zinc-500 bg-zinc-700'
-                      : 'bg-deep-black/60 border border-zinc-700/50 hover:bg-zinc-800'
+                      ? 'border-ink-500 bg-ink-700 border'
+                      : 'bg-deep-black/60 border-ink-700/50 hover:bg-ink-800 border'
                   }`}
                 >
                   {/* Index badge */}
                   <span
                     className={`rounded px-1.5 py-0.5 font-mono text-xs font-bold ${
-                      i === 0 ? 'bg-indigo-900/60 text-indigo-300' : 'bg-zinc-700 text-zinc-400'
+                      i === 0 ? 'bg-indigo-900/60 text-indigo-300' : 'bg-ink-700 text-ink-400'
                     }`}
                   >
                     {i}
@@ -3872,7 +3870,7 @@ function ChannelSection({
                         : isPendingTail
                           ? 'text-muted italic'
                           : role !== 0
-                            ? 'text-zinc-200'
+                            ? 'text-ink-200'
                             : 'text-muted italic'
                     }`}
                   >
@@ -3884,12 +3882,12 @@ function ChannelSection({
                       isFailed
                         ? 'bg-orange-900/40 text-orange-300'
                         : isPendingTail
-                          ? 'text-muted bg-zinc-800'
+                          ? 'text-muted bg-ink-800'
                           : role === 1
                             ? 'bg-brand-green/10 text-bright-green'
                             : role === 2
                               ? 'bg-indigo-900/50 text-indigo-400'
-                              : 'text-muted bg-zinc-800'
+                              : 'text-muted bg-ink-800'
                     }`}
                   >
                     {isFailed
@@ -4102,9 +4100,9 @@ function MeshcoreChannelSection({
   const renderChannelForm = (mode: 'edit' | 'add') => (
     <div
       ref={formRef}
-      className="bg-deep-black/60 mt-1 space-y-3 rounded-lg border border-zinc-600 p-3"
+      className="bg-deep-black/60 border-ink-600 mt-1 space-y-3 rounded-lg border p-3"
     >
-      <h4 className="text-sm font-medium text-zinc-200">
+      <h4 className="text-ink-200 text-sm font-medium">
         {mode === 'add'
           ? t('radioPanel.meshcoreChannel.addTitle')
           : t('radioPanel.meshcoreChannel.editTitle', { index: editingIdx })}
@@ -4205,7 +4203,7 @@ function MeshcoreChannelSection({
           type="button"
           onClick={handleSave}
           disabled={disabled || saving || !isValidHex || (mode === 'add' && newIdx === '')}
-          className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors disabled:bg-zinc-600"
+          className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg disabled:bg-ink-600 flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors"
         >
           {saving ? t('common.saving') : t('common.save')}
         </button>
@@ -4215,7 +4213,7 @@ function MeshcoreChannelSection({
             setEditingIdx(null);
             setAddingNew(false);
           }}
-          className="rounded bg-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-zinc-600"
+          className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-3 py-1.5 text-xs font-medium transition-colors"
         >
           {t('common.cancel')}
         </button>
@@ -4224,8 +4222,8 @@ function MeshcoreChannelSection({
   );
 
   return (
-    <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-zinc-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
+    <details ref={detailsRef} className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('radioPanel.channelsMeshcore')}</span>
         <DetailsChevron />
       </summary>
@@ -4255,11 +4253,11 @@ function MeshcoreChannelSection({
             }
             return (
               <div key={`ch-${ch.index}-${ch.name}`} className="space-y-1">
-                <div className="bg-deep-black/60 flex items-center gap-2 rounded-lg border border-zinc-700/50 px-3 py-2">
-                  <span className="rounded bg-zinc-700 px-1.5 py-0.5 font-mono text-xs font-bold text-zinc-400">
+                <div className="bg-deep-black/60 border-ink-700/50 flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <span className="bg-ink-700 text-ink-400 rounded px-1.5 py-0.5 font-mono text-xs font-bold">
                     {ch.index}
                   </span>
-                  <span className="flex-1 text-sm text-zinc-200">{channelName}</span>
+                  <span className="text-ink-200 flex-1 text-sm">{channelName}</span>
                   <span className="text-muted font-mono text-xs">
                     {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
                   </span>
@@ -4273,7 +4271,7 @@ function MeshcoreChannelSection({
                         return next;
                       });
                     }}
-                    className="text-muted px-1 text-xs hover:text-zinc-300"
+                    className="text-muted hover:text-ink-300 px-1 text-xs"
                     title={revealed ? t('radioPanel.hideKey') : t('radioPanel.revealKey')}
                   >
                     {revealed ? t('common.hide') : t('common.show')}
@@ -4320,7 +4318,7 @@ function MeshcoreChannelSection({
                         onClick={() => {
                           setConfirmDeleteIdx(null);
                         }}
-                        className="text-muted text-xs hover:text-zinc-300"
+                        className="text-muted hover:text-ink-300 text-xs"
                       >
                         {t('common.cancel')}
                       </button>
@@ -4341,7 +4339,7 @@ function MeshcoreChannelSection({
                 {shareQrUri != null ? (
                   <div
                     ref={shareQrRef}
-                    className="bg-deep-black/40 rounded-lg border border-zinc-700/50 p-3"
+                    className="bg-deep-black/40 border-ink-700/50 rounded-lg border p-3"
                   >
                     <QrCodeImage
                       value={shareQrUri}
@@ -4417,7 +4415,7 @@ function MeshcoreChannelSection({
             type="button"
             onClick={openAdd}
             disabled={disabled}
-            className="text-muted w-full rounded border border-dashed border-zinc-600 px-3 py-1.5 text-xs transition-colors hover:border-zinc-400 hover:text-zinc-300 disabled:opacity-50"
+            className="text-muted border-ink-600 hover:border-ink-400 hover:text-ink-300 w-full rounded border border-dashed px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
           >
             {t('radioPanel.meshcoreChannel.addButton')}
           </button>

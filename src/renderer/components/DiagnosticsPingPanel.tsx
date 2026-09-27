@@ -82,11 +82,11 @@ export default function DiagnosticsPingPanel() {
   };
 
   return (
-    <div className="bg-deep-black rounded-lg border border-zinc-700 p-4">
-      <h3 className="text-sm font-medium text-zinc-200">{t('diagnosticsPing.title')}</h3>
+    <div className="bg-deep-black border-ink-700 rounded-lg border p-4">
+      <h3 className="text-ink-200 text-sm font-medium">{t('diagnosticsPing.title')}</h3>
       <p className="text-muted mt-1 text-xs">{t('diagnosticsPing.reticulumHint')}</p>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="min-w-0 flex-1 text-xs text-zinc-400">
+        <label className="text-ink-400 min-w-0 flex-1 text-xs">
           {t('diagnosticsPing.hashLabel')}
           <input
             type="text"
@@ -100,7 +100,7 @@ export default function DiagnosticsPingPanel() {
             className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           />
         </label>
-        <label className="text-xs text-zinc-400">
+        <label className="text-ink-400 text-xs">
           {t('diagnosticsPing.intervalLabel')}
           <input
             type="number"
@@ -137,7 +137,7 @@ export default function DiagnosticsPingPanel() {
         <button
           type="button"
           disabled={running || !hash.trim()}
-          className="rounded border border-zinc-600 px-3 py-1.5 text-sm text-zinc-300 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-sm disabled:opacity-40"
           onClick={() => {
             void runOnce().catch((e: unknown) => {
               console.warn('[DiagnosticsPingPanel] single ping ' + errLikeToLogString(e));
@@ -149,9 +149,9 @@ export default function DiagnosticsPingPanel() {
       </div>
       {rows.length > 0 ? (
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-left text-xs text-zinc-300">
+          <table className="text-ink-300 w-full text-left text-xs">
             <thead>
-              <tr className="text-muted border-b border-zinc-700">
+              <tr className="text-muted border-ink-700 border-b">
                 <th className="py-1 pr-3 font-medium">{t('diagnosticsPing.colSeq')}</th>
                 <th className="py-1 pr-3 font-medium">{t('diagnosticsPing.colRtt')}</th>
                 <th className="py-1 pr-3 font-medium">{t('diagnosticsPing.colHops')}</th>
@@ -160,7 +160,7 @@ export default function DiagnosticsPingPanel() {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.seq} className="border-b border-zinc-800/80">
+                <tr key={row.seq} className="border-ink-800/80 border-b">
                   <td className="py-1 pr-3 font-mono">{row.seq}</td>
                   <td className="py-1 pr-3 font-mono">
                     {row.result.rttMs != null

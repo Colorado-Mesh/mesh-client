@@ -4,7 +4,7 @@
  */
 export function Kbd({ children }: { children: string }) {
   return (
-    <kbd className="border-secondary-dark bg-sidebar-active-bg text-label rounded-[3px] border px-1.5 py-px font-mono leading-4 text-zinc-300 pointer-coarse:hidden">
+    <kbd className="border-secondary-dark bg-sidebar-active-bg text-label text-ink-300 rounded-[3px] border px-1.5 py-px font-mono leading-4 pointer-coarse:hidden">
       {children}
     </kbd>
   );

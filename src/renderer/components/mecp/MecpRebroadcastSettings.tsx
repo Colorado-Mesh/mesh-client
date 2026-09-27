@@ -56,13 +56,13 @@ export function MecpRebroadcastSettings() {
 
   return (
     <div className="space-y-2" aria-label={t('mecp.rebroadcast.title')}>
-      <h4 className="text-sm font-semibold text-zinc-200">{t('mecp.rebroadcast.title')}</h4>
-      <p className="text-xs text-zinc-400">{t('mecp.rebroadcast.hint')}</p>
+      <h4 className="text-ink-200 text-sm font-semibold">{t('mecp.rebroadcast.title')}</h4>
+      <p className="text-ink-400 text-xs">{t('mecp.rebroadcast.hint')}</p>
       <ul className="flex flex-col gap-3">
         {rules.map((rule) => (
           <li
             key={rule.id}
-            className="rounded border border-zinc-700/50 bg-zinc-900/40 p-2 text-xs text-zinc-300"
+            className="border-ink-700/50 bg-ink-900/40 text-ink-300 rounded border p-2 text-xs"
           >
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-1">
@@ -135,7 +135,7 @@ export function MecpRebroadcastSettings() {
       </ul>
       <button
         type="button"
-        className="mt-2 rounded border border-zinc-600 px-2 py-1 text-xs text-zinc-200"
+        className="border-ink-600 text-ink-200 mt-2 rounded border px-2 py-1 text-xs"
         onClick={addRule}
         aria-label={t('mecp.rebroadcast.add')}
       >

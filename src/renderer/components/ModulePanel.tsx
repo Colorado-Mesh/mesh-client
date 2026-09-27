@@ -133,7 +133,7 @@ function ConfigToggle({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-zinc-300">{label}</span>
+        <span className="text-ink-300 text-sm">{label}</span>
         <button
           type="button"
           role="switch"
@@ -143,7 +143,7 @@ function ConfigToggle({
           }}
           disabled={disabled}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-            checked ? 'bg-brand-green' : 'bg-zinc-600'
+            checked ? 'bg-brand-green' : 'bg-ink-600'
           }`}
         >
           <span
@@ -242,7 +242,7 @@ function ConfigText({
             onClick={() => {
               setShow((s) => !s);
             }}
-            className="text-muted px-2 py-2 text-xs hover:text-zinc-300"
+            className="text-muted hover:text-ink-300 px-2 py-2 text-xs"
           >
             {show ? t('common.hide') : t('common.show')}
           </button>
@@ -278,8 +278,8 @@ function ModuleSection({
   const { t } = useTranslation();
   const applyDisabled = disabled || applying || !sliceReady || globalApplyLocked;
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-zinc-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
       </summary>
@@ -307,8 +307,8 @@ function ModuleSection({
 
 function StatusOnlySection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-zinc-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-zinc-200 transition-colors hover:bg-zinc-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
       </summary>
@@ -361,7 +361,7 @@ function ModuleStatus({
   const { t } = useTranslation();
   if (!packets || packets.size === 0) {
     return (
-      <div className="rounded bg-zinc-800/50 px-3 py-2 text-xs">
+      <div className="bg-ink-800/50 rounded px-3 py-2 text-xs">
         <span className="text-muted">{t('modulePanel.statusNoPackets', { label })}</span>
       </div>
     );
@@ -372,8 +372,8 @@ function ModuleStatus({
   );
   const lastSeen = formatTimeAgo(latest, t);
   return (
-    <div className="rounded bg-zinc-800/50 px-3 py-2 text-xs">
-      <span className="text-zinc-400">
+    <div className="bg-ink-800/50 rounded px-3 py-2 text-xs">
+      <span className="text-ink-400">
         {t('modulePanel.statusLine', {
           count: packets.size,
           label,
@@ -936,7 +936,7 @@ export default function ModulePanel({
 
   return (
     <div className="w-full space-y-4">
-      <h2 className="text-xl font-semibold text-zinc-200">{t('modulePanel.title')}</h2>
+      <h2 className="text-ink-200 text-xl font-semibold">{t('modulePanel.title')}</h2>
 
       {!isConnected && (
         <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
@@ -955,7 +955,7 @@ export default function ModulePanel({
       <ConfigApplyNotice />
 
       {Object.keys(moduleConfigs).length === 0 && isConnected && (
-        <div className="bg-deep-black/50 text-muted rounded-lg border border-zinc-700 px-4 py-3 text-sm">
+        <div className="bg-deep-black/50 text-muted border-ink-700 rounded-lg border px-4 py-3 text-sm">
           {t('modulePanel.waitingForModuleConfig')}
         </div>
       )}
@@ -1805,9 +1805,9 @@ export default function ModulePanel({
                 handleAmbientColorChange(e.target.value);
               }}
               disabled={disabled || !ambientLedState}
-              className="bg-secondary-dark h-9 w-16 cursor-pointer rounded border border-zinc-600 p-0.5 disabled:opacity-50"
+              className="bg-secondary-dark border-ink-600 h-9 w-16 cursor-pointer rounded border p-0.5 disabled:opacity-50"
             />
-            <span className="font-mono text-sm text-zinc-400">{ambientHex.toUpperCase()}</span>
+            <span className="text-ink-400 font-mono text-sm">{ambientHex.toUpperCase()}</span>
             <span className="text-muted text-xs">
               {t('modulePanel.ambientColors.rgbComponents', {
                 red: ambientRed,

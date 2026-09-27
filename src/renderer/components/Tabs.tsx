@@ -21,7 +21,7 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
     <div
       role="tablist"
       aria-label={t('aria.applicationPanels')}
-      className="bg-deep-black flex gap-1 border-b border-zinc-700 px-2"
+      className="bg-deep-black border-ink-700 flex gap-1 border-b px-2"
     >
       {tabs.map((name, i) => {
         const showChatBadge = name === 'Chat' && chatUnread > 0;
@@ -46,10 +46,10 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
             title={isDisabled ? t('sidebar.disabledTabTooltip') : undefined}
             className={`relative flex items-center gap-1.5 rounded-t-md px-3 py-2.5 text-sm font-medium transition-colors ${
               isDisabled
-                ? 'cursor-not-allowed text-zinc-600 opacity-50'
+                ? 'text-ink-600 cursor-not-allowed opacity-50'
                 : safeActive === i
-                  ? 'text-bright-green border-bright-green border-b-2 bg-zinc-900'
-                  : 'text-muted hover:bg-secondary-dark hover:text-zinc-200'
+                  ? 'text-bright-green border-bright-green bg-ink-900 border-b-2'
+                  : 'text-muted hover:bg-secondary-dark hover:text-ink-200'
             }`}
           >
             <TabIcon name={name} />

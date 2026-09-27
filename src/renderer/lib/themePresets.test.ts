@@ -4,7 +4,7 @@ import { DEFAULT_THEME_COLORS } from './themeColors';
 import { matchThemePreset, THEME_PRESETS } from './themePresets';
 import { contrastRatio } from './wcagContrast';
 
-const SLATE_200 = '#e2e8f0';
+const SLATE_200 = '#e3e8f0';
 
 describe('THEME_PRESETS', () => {
   it('starts with the default palette and has unique ids', () => {

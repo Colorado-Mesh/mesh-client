@@ -147,7 +147,7 @@ describe('RrcHubBrowser', () => {
 
     // Status dots, not glyphs: connected is the green dot, auto-join (not linked) a hollow ring.
     expect(screen.getByTitle('Connected').firstElementChild).toHaveClass('bg-status-success');
-    expect(screen.getByTitle('Auto-join enabled').firstElementChild).toHaveClass('border-zinc-400');
+    expect(screen.getByTitle('Auto-join enabled').firstElementChild).toHaveClass('border-ink-400');
   });
 
   it('toggles hub auto-join with the Auto chip', async () => {

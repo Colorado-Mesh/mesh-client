@@ -119,10 +119,10 @@ describe('themeColors', () => {
     it('sets chatIncomingBg as rgb() with 0.38 opacity, not bare hex', () => {
       const setProp = vi.fn();
       vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);
-      applyThemeColors({ ...DEFAULT_THEME_COLORS, chatIncomingBg: '#1e293b' });
+      applyThemeColors({ ...DEFAULT_THEME_COLORS, chatIncomingBg: '#212d40' });
       const call = setProp.mock.calls.find(([prop]) => prop === '--color-chat-incoming-bg');
       expect(call).toBeDefined();
-      expect(call![1]).toBe('rgb(30 41 59 / 0.38)');
+      expect(call![1]).toBe('rgb(33 45 64 / 0.38)');
       vi.restoreAllMocks();
     });
 
@@ -140,10 +140,10 @@ describe('themeColors', () => {
     it('sets appBg as bare hex', () => {
       const setProp = vi.fn();
       vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);
-      applyThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#020617' });
+      applyThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#11151c' });
       const call = setProp.mock.calls.find(([prop]) => prop === '--color-app-bg');
       expect(call).toBeDefined();
-      expect(call![1]).toBe('#020617');
+      expect(call![1]).toBe('#11151c');
       vi.restoreAllMocks();
     });
 

@@ -433,12 +433,12 @@ function PanelSkeleton() {
   const { t } = useTranslation();
   return (
     <div
-      className="flex h-full min-h-[12rem] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50"
+      className="border-ink-800 bg-ink-900/50 flex h-full min-h-[12rem] items-center justify-center rounded-xl border"
       role="status"
       aria-busy="true"
     >
       <span className="sr-only">{t('app.loadingPanel')}</span>
-      <div className="h-8 w-8 animate-pulse rounded-full bg-zinc-700" aria-hidden />
+      <div className="bg-ink-700 h-8 w-8 animate-pulse rounded-full" aria-hidden />
     </div>
   );
 }
@@ -453,7 +453,7 @@ function DialogLazyFallback() {
       aria-busy="true"
     >
       <span className="sr-only">{t('app.loadingDialog')}</span>
-      <div className="h-10 w-10 animate-pulse rounded-full bg-zinc-600" aria-hidden />
+      <div className="bg-ink-600 h-10 w-10 animate-pulse rounded-full" aria-hidden />
     </div>
   );
 }
@@ -3739,7 +3739,7 @@ function AppContent() {
                     aria-expanded={launcherOpen}
                     aria-label={launcherButtonLabel}
                     title={launcherButtonLabel}
-                    className="text-muted hover:bg-sidebar-active-bg flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors hover:text-zinc-200"
+                    className="text-muted hover:bg-sidebar-active-bg hover:text-ink-200 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
                   >
                     <Search aria-hidden className={ICON_MD} size={16} />
                   </button>
@@ -3766,16 +3766,16 @@ function AppContent() {
                   <div
                     role="status"
                     aria-live="polite"
-                    className="flex items-center justify-between gap-3 border-b border-zinc-700 bg-zinc-900 px-4 py-2 text-sm"
+                    className="border-ink-700 bg-ink-900 flex items-center justify-between gap-3 border-b px-4 py-2 text-sm"
                   >
-                    <span className="text-zinc-300">{t('app.telemetryDisabled')}</span>
+                    <span className="text-ink-300">{t('app.telemetryDisabled')}</span>
                     <button
                       type="button"
                       onClick={() => {
                         setTelemetryNoticeDismissed(true);
                       }}
                       aria-label={t('common.dismiss')}
-                      className="shrink-0 rounded border border-zinc-600 px-2 py-1 text-xs font-medium text-zinc-400 transition-colors hover:border-zinc-500 hover:text-zinc-300"
+                      className="border-ink-600 text-ink-400 hover:border-ink-500 hover:text-ink-300 shrink-0 rounded border px-2 py-1 text-xs font-medium transition-colors"
                     >
                       {t('common.dismiss')}
                     </button>

@@ -186,7 +186,7 @@ function MeshcoreGifEmbed({
       title={t('chatPayload.meshcoreGifOpen')}
       onContentResize={onContentResize}
       fallback={
-        <span className="whitespace-pre-wrap text-zinc-300">
+        <span className="text-ink-300 whitespace-pre-wrap">
           {highlightCaseInsensitive(wireText, query)}
         </span>
       }

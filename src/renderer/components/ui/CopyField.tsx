@@ -48,7 +48,7 @@ export function CopyField({ value, display, copyLabel }: CopyFieldProps) {
   return (
     <div className="flex min-w-0 gap-2">
       <div
-        className="bg-app-bg text-control rounded-control flex h-8 min-w-0 flex-1 items-center overflow-hidden border border-zinc-800 px-2.5 font-mono whitespace-nowrap text-zinc-300"
+        className="bg-app-bg text-control rounded-control border-ink-800 text-ink-300 flex h-8 min-w-0 flex-1 items-center overflow-hidden border px-2.5 font-mono whitespace-nowrap"
         title={value}
       >
         <span className="truncate">{display ?? value}</span>

@@ -432,8 +432,8 @@ export function ReticulumStackPanel({
               </div>
             </>
           ) : null}
-          <div className="space-y-2.5 border-t border-zinc-800 pt-4">
-            <label className="text-body flex cursor-pointer items-center gap-2 text-zinc-200">
+          <div className="border-ink-800 space-y-2.5 border-t pt-4">
+            <label className="text-body text-ink-200 flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 className={CHECKBOX_CLASS}
@@ -445,7 +445,7 @@ export function ReticulumStackPanel({
               />
               {t('connectionPanel.reticulumAutostart')}
             </label>
-            <label className="text-body flex cursor-pointer items-center gap-2 text-zinc-200">
+            <label className="text-body text-ink-200 flex cursor-pointer items-center gap-2">
               <input
                 type="checkbox"
                 className={CHECKBOX_CLASS}

@@ -15,7 +15,7 @@ export interface ProtocolTheme {
 }
 
 export const RAIL_PROTOCOL_INACTIVE_CLASS =
-  'bg-sidebar-active-bg text-muted hover:bg-secondary-dark hover:text-zinc-200';
+  'bg-sidebar-active-bg text-muted hover:bg-secondary-dark hover:text-ink-200';
 
 export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
   meshtastic: {

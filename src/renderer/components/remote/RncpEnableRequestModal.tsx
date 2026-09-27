@@ -245,11 +245,11 @@ export function RncpEnableRequestModal() {
       aria-modal="true"
       aria-label={t('reticulumRemote.enableRequest.title')}
     >
-      <div className="shadow-level-4 w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 p-4">
-        <h2 className="text-lg font-semibold text-zinc-100">
+      <div className="shadow-level-4 border-ink-700 bg-ink-900 w-full max-w-md rounded-lg border p-4">
+        <h2 className="text-ink-100 text-lg font-semibold">
           {t('reticulumRemote.enableRequest.title')}
         </h2>
-        <p className="mt-2 text-sm text-zinc-300">
+        <p className="text-ink-300 mt-2 text-sm">
           {t('reticulumRemote.enableRequest.body', { peer })}
         </p>
         <p className="mt-2 text-xs text-orange-200/90">
@@ -274,7 +274,7 @@ export function RncpEnableRequestModal() {
           </button>
           <button
             type="button"
-            className="rounded border border-zinc-600 px-3 py-2 text-sm text-zinc-200"
+            className="border-ink-600 text-ink-200 rounded border px-3 py-2 text-sm"
             aria-label={t('reticulumRemote.enableRequest.notNowAria')}
             onClick={() => {
               dismiss(current.peerHash, false);
@@ -284,7 +284,7 @@ export function RncpEnableRequestModal() {
           </button>
           <button
             type="button"
-            className="rounded px-3 py-2 text-sm text-zinc-400 hover:text-zinc-200"
+            className="text-ink-400 hover:text-ink-200 rounded px-3 py-2 text-sm"
             aria-label={t('reticulumRemote.enableRequest.dontAskAria')}
             onClick={() => {
               dismiss(current.peerHash, true);

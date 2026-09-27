@@ -111,7 +111,7 @@ function createMarkerIcon(
   const nodeBadgeSvg = (c: number) => {
     const path = nodeBadge ? NODE_BADGE_PATHS[nodeBadge] : null;
     if (!path) return '';
-    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#18181b" stroke="#ffffff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
+    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#19212d" stroke="#ffffff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
   };
 
   if (isSelf) {
@@ -514,7 +514,7 @@ function MapLayerControl({
       {layersPanelOpen && (
         <div className={MAP_OVERLAY_PANEL_CLASS}>
           <div className="space-y-1">
-            <div className="text-2xs font-medium text-zinc-400">{t('mapPanel.basemapHeading')}</div>
+            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.basemapHeading')}</div>
             <select
               aria-label={t('mapPanel.basemapSelectAria')}
               className={`${SELECT_BOX_SM_CLASS} w-full`}
@@ -530,7 +530,7 @@ function MapLayerControl({
             </select>
           </div>
           <div className="space-y-1.5">
-            <div className="text-2xs font-medium text-zinc-400">{t('mapPanel.layersHeading')}</div>
+            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.layersHeading')}</div>
             {layerRow('nodes', t('mapPanel.layerNodes'), showNodes, setShowNodes)}
             {layerRow('paths', t('mapPanel.layerPaths'), showPaths, setShowPaths)}
             {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
@@ -1025,7 +1025,7 @@ export default function MapPanel({
       if (count > 100) size = 60;
       const border = overlayColors.online;
       const fill = basemap.isDark ? overlayColors.online : '#15803d';
-      const text = basemap.isDark ? '#09090b' : '#ffffff';
+      const text = basemap.isDark ? '#11151c' : '#ffffff';
       return L.divIcon({
         html: `<div style="background:${border}33;border:3px solid ${border};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"><span style="display:inline-flex;align-items:center;justify-content:center;padding:0 4px;min-width:18px;height:18px;border-radius:9999px;background:${fill};color:${text};font-size:12px;font-weight:800;line-height:1;opacity:1;">${count}</span></div>`,
         className: '',
@@ -1037,7 +1037,7 @@ export default function MapPanel({
 
   return (
     <div
-      className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-zinc-700/50"
+      className="border-ink-700/50 relative h-full min-h-[500px] overflow-hidden rounded-lg border"
       aria-label={t('mapPanel.networkMap')}
     >
       {/* Status legend + layer controls — top right, below Leaflet zoom (+/-) on the left */}
@@ -1055,7 +1055,7 @@ export default function MapPanel({
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-zinc-700" />
+            <span className="bg-ink-700 inline-block h-2 w-2 rounded-full" />
             {statusCounts.offline}
           </span>
         </div>
@@ -1155,10 +1155,10 @@ export default function MapPanel({
             <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
               <Popup>
                 <div className="space-y-1 p-2">
-                  <div className="text-sm font-medium text-zinc-100">
+                  <div className="text-ink-100 text-sm font-medium">
                     {wp.name || t('mapPanel.waypointDefaultName')}
                   </div>
-                  {wp.description && <div className="text-xs text-zinc-400">{wp.description}</div>}
+                  {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
                   <div className="text-muted font-mono text-xs">
                     {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
                   </div>

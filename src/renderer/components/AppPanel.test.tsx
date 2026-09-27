@@ -169,8 +169,8 @@ describe('AppPanel: theme presets', () => {
       string,
       string
     >;
-    expect(stored.muted).toBe('#d4d4d8');
-    expect(document.documentElement.style.getPropertyValue('--color-muted')).toBe('#d4d4d8');
+    expect(stored.muted).toBe('#cdd4e2');
+    expect(document.documentElement.style.getPropertyValue('--color-muted')).toBe('#cdd4e2');
 
     fireEvent.click(standard);
     expect(standard).toHaveAttribute('aria-pressed', 'true');

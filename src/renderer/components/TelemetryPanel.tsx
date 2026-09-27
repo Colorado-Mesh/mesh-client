@@ -267,7 +267,7 @@ export default function TelemetryPanel({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-xl font-semibold text-zinc-200">{t('telemetryPanel.title')}</h2>
+          <h2 className="text-ink-200 text-xl font-semibold">{t('telemetryPanel.title')}</h2>
           {showLiveSignalMeter && <SignalMeter rssi={latestSignal?.rssi} snr={latestSignal?.snr} />}
         </div>
         <div className="flex items-center gap-2">
@@ -276,7 +276,7 @@ export default function TelemetryPanel({
               type="button"
               onClick={onToggleFahrenheit}
               title={t('telemetryPanel.toggleTempUnit')}
-              className="rounded bg-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:bg-zinc-600"
+              className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-2 py-1 text-xs"
             >
               {useFahrenheit ? t('telemetryPanel.tempUnitF') : t('telemetryPanel.tempUnitC')}
             </button>
@@ -288,7 +288,7 @@ export default function TelemetryPanel({
               type="button"
               onClick={handleExportCsv}
               {...{ [PARENT_HOVER_ATTR]: '' }}
-              className="flex items-center gap-1.5 rounded-lg bg-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-600"
+              className="bg-ink-700 text-ink-300 hover:bg-ink-600 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
               title={t('telemetryPanel.exportCsv')}
             >
               <Download aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
@@ -319,8 +319,8 @@ export default function TelemetryPanel({
               <div role="img" aria-label={batteryChartAria}>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                    <XAxis dataKey="time" stroke="#71717a" tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
+                    <XAxis dataKey="time" stroke="#65738c" tick={{ fontSize: 11 }} />
                     <YAxis
                       yAxisId="battery"
                       domain={[0, 100]}
@@ -348,8 +348,8 @@ export default function TelemetryPanel({
                     />
                     <Tooltip
                       contentStyle={{
-                        background: '#18181b',
-                        border: '1px solid #3f3f46',
+                        background: '#19212d',
+                        border: '1px solid #364156',
                         borderRadius: '8px',
                       }}
                     />
@@ -389,8 +389,8 @@ export default function TelemetryPanel({
               <div role="img" aria-label={signalChartAria}>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={signalChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                    <XAxis dataKey="time" stroke="#71717a" tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
+                    <XAxis dataKey="time" stroke="#65738c" tick={{ fontSize: 11 }} />
                     <YAxis
                       yAxisId="snr"
                       stroke="#ef4444"
@@ -416,8 +416,8 @@ export default function TelemetryPanel({
                     />
                     <Tooltip
                       contentStyle={{
-                        background: '#18181b',
-                        border: '1px solid #3f3f46',
+                        background: '#19212d',
+                        border: '1px solid #364156',
                         borderRadius: '8px',
                       }}
                     />
@@ -457,8 +457,8 @@ export default function TelemetryPanel({
               <div role="img" aria-label={tempHumidityChartAria}>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={envChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                    <XAxis dataKey="time" stroke="#71717a" tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
+                    <XAxis dataKey="time" stroke="#65738c" tick={{ fontSize: 11 }} />
                     {(hasTemp || hasMcuTemp) && (
                       <YAxis
                         yAxisId="temp"
@@ -489,8 +489,8 @@ export default function TelemetryPanel({
                     )}
                     <Tooltip
                       contentStyle={{
-                        background: '#18181b',
-                        border: '1px solid #3f3f46',
+                        background: '#19212d',
+                        border: '1px solid #364156',
                         borderRadius: '8px',
                       }}
                     />
@@ -554,8 +554,8 @@ export default function TelemetryPanel({
               <div role="img" aria-label={pressureChartAria}>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={envChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                    <XAxis dataKey="time" stroke="#71717a" tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
+                    <XAxis dataKey="time" stroke="#65738c" tick={{ fontSize: 11 }} />
                     <YAxis
                       yAxisId="pressure"
                       stroke="#a78bfa"
@@ -569,8 +569,8 @@ export default function TelemetryPanel({
                     />
                     <Tooltip
                       contentStyle={{
-                        background: '#18181b',
-                        border: '1px solid #3f3f46',
+                        background: '#19212d',
+                        border: '1px solid #364156',
                         borderRadius: '8px',
                       }}
                     />
@@ -600,8 +600,8 @@ export default function TelemetryPanel({
               <div role="img" aria-label={iaqChartAria}>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={envChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                    <XAxis dataKey="time" stroke="#71717a" tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
+                    <XAxis dataKey="time" stroke="#65738c" tick={{ fontSize: 11 }} />
                     <YAxis
                       yAxisId="iaq"
                       domain={[0, 500]}
@@ -616,8 +616,8 @@ export default function TelemetryPanel({
                     />
                     <Tooltip
                       contentStyle={{
-                        background: '#18181b',
-                        border: '1px solid #3f3f46',
+                        background: '#19212d',
+                        border: '1px solid #364156',
                         borderRadius: '8px',
                       }}
                     />
@@ -647,8 +647,8 @@ export default function TelemetryPanel({
               <div role="img" aria-label={particulateChartAria}>
                 <ResponsiveContainer width="100%" height={250}>
                   <LineChart data={envChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#3f3f46" />
-                    <XAxis dataKey="time" stroke="#71717a" tick={{ fontSize: 11 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#364156" />
+                    <XAxis dataKey="time" stroke="#65738c" tick={{ fontSize: 11 }} />
                     <YAxis
                       yAxisId="pm"
                       stroke="#a78bfa"
@@ -677,8 +677,8 @@ export default function TelemetryPanel({
                     <YAxis yAxisId="strikes" orientation="right" hide />
                     <Tooltip
                       contentStyle={{
-                        background: '#18181b',
-                        border: '1px solid #3f3f46',
+                        background: '#19212d',
+                        border: '1px solid #364156',
                         borderRadius: '8px',
                       }}
                     />
@@ -764,7 +764,7 @@ export default function TelemetryPanel({
             </div>
           )}
 
-          <div className="text-center text-xs text-zinc-600">
+          <div className="text-ink-600 text-center text-xs">
             {t('telemetryPanel.footerBattery', { count: telemetry.length })} &nbsp;·&nbsp;{' '}
             {t('telemetryPanel.footerSignal', { count: signalTelemetry.length })}
             {environmentTelemetry.length > 0 && (

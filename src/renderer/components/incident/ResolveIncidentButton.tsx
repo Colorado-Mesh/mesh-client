@@ -26,7 +26,7 @@ export function ResolveIncidentButton({
         if (onResolve) onResolve(incident);
         else resolveIncident(incident.id);
       }}
-      className="rounded bg-zinc-700 px-2 py-1 text-xs font-semibold text-white hover:bg-zinc-600"
+      className="bg-ink-700 hover:bg-ink-600 rounded px-2 py-1 text-xs font-semibold text-white"
     >
       {t(labelKey)}
     </button>

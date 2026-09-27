@@ -19,7 +19,7 @@ export interface PanelProps {
   bodyClassName?: string;
 }
 
-/** Card with a 56px header (style guide: panels are `bg-deep-black`, `border-zinc-800`, `rounded-card`). */
+/** Card with a 56px header (style guide: panels are `bg-deep-black`, `border-ink-800`, `rounded-card`). */
 export function Panel({
   title,
   icon,
@@ -36,17 +36,15 @@ export function Panel({
   return (
     <section
       aria-labelledby={titleId}
-      className={`bg-deep-black rounded-card shadow-level-1 flex min-w-0 flex-col border border-zinc-800 ${className ?? ''}`}
+      className={`bg-deep-black rounded-card shadow-level-1 border-ink-800 flex min-w-0 flex-col border ${className ?? ''}`}
     >
-      <div className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b border-zinc-800 py-2 pr-3 pl-4.5">
-        {icon && <span className="flex shrink-0 text-zinc-300">{icon}</span>}
-        <Heading id={titleId} className="text-sm font-semibold text-zinc-200">
+      <div className="border-ink-800 flex min-h-14 shrink-0 flex-wrap items-center gap-x-2.5 gap-y-2 border-b py-2 pr-3 pl-4.5">
+        {icon && <span className="text-ink-300 flex shrink-0">{icon}</span>}
+        <Heading id={titleId} className="text-ink-200 text-sm font-semibold">
           {title}
         </Heading>
         {status && (
-          <span className="text-control ml-1 flex items-center gap-1.5 text-zinc-300">
-            {status}
-          </span>
+          <span className="text-control text-ink-300 ml-1 flex items-center gap-1.5">{status}</span>
         )}
         {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
