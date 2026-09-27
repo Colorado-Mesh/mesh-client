@@ -99,11 +99,13 @@ export function AppRail({
   return (
     <nav
       aria-label={t('aria.applicationPanels')}
-      className="bg-deep-black border-ink-800 flex h-full w-18 shrink-0 flex-col items-center border-r py-3.5 [@media(max-height:720px)]:py-2.5"
+      className="bg-deep-black border-ink-800 flex h-full w-18 shrink-0 flex-col items-center border-r pt-1.5 pb-3.5 [@media(max-height:720px)]:pt-1 [@media(max-height:720px)]:pb-2.5"
     >
+      {/* The scroller clips its overflow, so part of the top padding lives inside it: the protocol
+          switcher's unread badge sits above the first button. */}
       <div
         data-rail-scroll=""
-        className="flex min-h-0 w-full flex-1 [scrollbar-width:none] flex-col items-center gap-1.5 overflow-x-hidden overflow-y-auto"
+        className="flex min-h-0 w-full flex-1 [scrollbar-width:none] flex-col items-center gap-1.5 overflow-x-hidden overflow-y-auto pt-2 [@media(max-height:720px)]:pt-1.5"
       >
         {header}
         {header != null && <div aria-hidden="true" className="bg-ink-800 my-2 h-px w-8 shrink-0" />}
