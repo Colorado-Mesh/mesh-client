@@ -191,7 +191,7 @@ describe('RrcChatView IRC layout', () => {
     );
     const el = screen.getByText('@nv0n');
     expect(el.tagName).toBe('SPAN');
-    expect(el.className).toContain('font-bold');
+    expect(el.className).toContain('font-semibold');
     expect(el.className).toContain('text-red-500');
     expect(el.className).not.toMatch(/bg-yellow/);
   });

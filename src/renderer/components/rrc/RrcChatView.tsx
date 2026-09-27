@@ -222,7 +222,7 @@ function highlightRrcSelfMentions(text: string, nickname: string, opts: RrcInlin
       nodes.push(...renderRrcInlineText(text.slice(last, match.start), `t${last}`, opts));
     }
     nodes.push(
-      <span key={`m-${match.start}`} className="font-bold text-red-500">
+      <span key={`m-${match.start}`} className="font-semibold text-red-500">
         {text.slice(match.start, match.end)}
       </span>,
     );

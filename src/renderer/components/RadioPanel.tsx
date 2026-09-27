@@ -3856,7 +3856,7 @@ function ChannelSection({
                 >
                   {/* Index badge */}
                   <span
-                    className={`rounded px-1.5 py-0.5 font-mono text-xs font-bold ${
+                    className={`rounded px-1.5 py-0.5 font-mono text-xs font-medium ${
                       i === 0 ? 'bg-indigo-900/60 text-indigo-300' : 'bg-ink-700 text-ink-400'
                     }`}
                   >
@@ -4254,7 +4254,7 @@ function MeshcoreChannelSection({
             return (
               <div key={`ch-${ch.index}-${ch.name}`} className="space-y-1">
                 <div className="bg-deep-black/60 border-ink-700/50 flex items-center gap-2 rounded-lg border px-3 py-2">
-                  <span className="bg-ink-700 text-ink-400 rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                  <span className="bg-ink-700 text-ink-400 rounded px-1.5 py-0.5 font-mono text-xs font-medium">
                     {ch.index}
                   </span>
                   <span className="text-ink-200 flex-1 text-sm">{channelName}</span>

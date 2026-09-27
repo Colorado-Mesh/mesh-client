@@ -90,6 +90,14 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
       "Style guide: elevation uses shadow-level-1 to shadow-level-4 (styles.css); Tailwind's stock shadows are tuned for light surfaces and vanish on the dark UI",
   },
   {
+    id: 'renderer-bundled-font-weights',
+    include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],
+    forbid: /(?<![\w-])font-(?:bold|extrabold|black)(?![\w-])/,
+    message:
+      'Only IBM Plex 400, 500 and 600 are bundled (offline), so bold is synthesized and smears; use font-semibold',
+  },
+  {
     id: 'renderer-no-uppercase-micro-labels',
     include: ['src/renderer/**/*.tsx'],
     exclude: ['src/renderer/**/*.test.tsx'],

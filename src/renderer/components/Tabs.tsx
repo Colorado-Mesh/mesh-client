@@ -55,7 +55,7 @@ export default function Tabs({ tabs, active, onChange, chatUnread = 0, disabledT
             <TabIcon name={name} />
             {name}
             {showChatBadge && (
-              <span className="text-2xs absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 font-bold text-white">
+              <span className="text-2xs absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 font-semibold text-white">
                 {chatUnread > 99 ? '99+' : chatUnread}
               </span>
             )}

@@ -118,7 +118,7 @@ function HubRow({
               {label}
             </div>
             {unread > 0 && (
-              <span className="text-2xs shrink-0 rounded-full bg-red-600 px-1.5 font-bold text-white">
+              <span className="text-2xs shrink-0 rounded-full bg-red-600 px-1.5 font-semibold text-white">
                 {unread > 99 ? '99+' : unread}
               </span>
             )}

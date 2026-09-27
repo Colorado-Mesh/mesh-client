@@ -247,7 +247,7 @@ function ChipUnreadBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden="true"
-      className="text-2xs flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-bold text-white"
+      className="text-2xs flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white"
     >
       {count > 99 ? '99+' : count}
     </span>

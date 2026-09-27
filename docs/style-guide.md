@@ -140,7 +140,7 @@ All sizes are rem, so App > Appearance > Text size scales the whole UI (the root
 
 Tailwind's own `text-2xl` to `text-4xl` sizes are close to the guide's 22, 28 and 36px headings; use them until the designer's heading tokens are final.
 
-Minimum: 12px for anything a person reads; 13px body for dense data views, 14px for standard content. Line height 1.4 to 1.5 for body, 1.2 to 1.3 for headings. Weights: sans 300, 400, 500, 600; mono 400, 500.
+Minimum: 12px for anything a person reads; 13px body for dense data views, 14px for standard content. Line height 1.4 to 1.5 for body, 1.2 to 1.3 for headings. Weights: sans 400, 500, 600; mono 400, 500. Those are the only faces bundled, so anything heavier is synthesized: `font-semibold` is the top weight for sans and `font-medium` for mono.
 
 ## Spacing
 
@@ -310,15 +310,16 @@ Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outsid
 
 Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-commit):
 
-| Rule                                 | Rejects                                          |
-| ------------------------------------ | ------------------------------------------------ |
-| `renderer-font-size-in-rem`          | `text-[Npx]` font sizes                          |
-| `renderer-ink-neutrals`              | `slate-*`, `zinc-*` and `gray-*` palette classes |
-| `renderer-elevation-levels`          | stock `shadow-xs` to `shadow-2xl` classes        |
-| `renderer-no-low-contrast-gray-text` | `text-ink-500` (and slate, zinc, gray-500) text  |
-| `renderer-no-uppercase-micro-labels` | `uppercase` with `tracking-wide*`                |
-| `renderer-icons-not-glyphs`          | a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ   |
-| `axe-tests-hydrate-theme-colors`     | axe tests that skip `hydrateAxeThemeColors()`    |
+| Rule                                 | Rejects                                                                 |
+| ------------------------------------ | ----------------------------------------------------------------------- |
+| `renderer-font-size-in-rem`          | `text-[Npx]` font sizes                                                 |
+| `renderer-ink-neutrals`              | `slate-*`, `zinc-*` and `gray-*` palette classes                        |
+| `renderer-elevation-levels`          | stock `shadow-xs` to `shadow-2xl` classes                               |
+| `renderer-bundled-font-weights`      | `font-bold`, `font-extrabold`, `font-black` (only Plex 400 to 600 ship) |
+| `renderer-no-low-contrast-gray-text` | `text-ink-500` (and slate, zinc, gray-500) text                         |
+| `renderer-no-uppercase-micro-labels` | `uppercase` with `tracking-wide*`                                       |
+| `renderer-icons-not-glyphs`          | a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ                          |
+| `axe-tests-hydrate-theme-colors`     | axe tests that skip `hydrateAxeThemeColors()`                           |
 
 ## Open items
 

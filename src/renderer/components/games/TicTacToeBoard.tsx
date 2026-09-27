@@ -70,7 +70,7 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
             <button
               key={index}
               type="button"
-              className="border-ink-600 bg-ink-800/80 text-ink-100 enabled:hover:bg-ink-700 flex h-14 w-14 items-center justify-center rounded border text-2xl font-bold disabled:cursor-default disabled:opacity-70"
+              className="border-ink-600 bg-ink-800/80 text-ink-100 enabled:hover:bg-ink-700 flex h-14 w-14 items-center justify-center rounded border text-2xl font-semibold disabled:cursor-default disabled:opacity-70"
               aria-label={
                 isEmpty
                   ? t('gamesPanel.ttt.cellEmptyAria', { index: index + 1 })

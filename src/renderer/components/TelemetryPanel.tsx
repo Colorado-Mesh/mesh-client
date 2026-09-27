@@ -727,11 +727,13 @@ export default function TelemetryPanel({
               </h3>
               <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-cyan-400">{meshcorePacketStats.sent}</div>
+                  <div className="text-2xl font-semibold text-cyan-400">
+                    {meshcorePacketStats.sent}
+                  </div>
                   <div className="text-muted text-xs">{t('telemetryPanel.statSent')}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-400">
+                  <div className="text-2xl font-semibold text-purple-400">
                     {meshcorePacketStats.recv}
                   </div>
                   <div className="text-muted text-xs">{t('telemetryPanel.statReceived')}</div>

@@ -1480,7 +1480,7 @@ export default function RoomsPanel({
               {room.long_name}
             </span>
             {unread > 0 && (
-              <span className="text-2xs flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-bold text-white">
+              <span className="text-2xs flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white">
                 {unreadLabel}
               </span>
             )}

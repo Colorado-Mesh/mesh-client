@@ -121,7 +121,7 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
                   <span
                     key={row}
                     aria-hidden="true"
-                    className={`border-ink-600 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-bold ${fill} ${
+                    className={`border-ink-600 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold ${fill} ${
                       winSet.has(index) ? 'ring-2 ring-yellow-300' : ''
                     }`}
                   >
