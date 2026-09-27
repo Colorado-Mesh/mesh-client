@@ -767,12 +767,12 @@ export default function NodeListPanel({
       `mesh-topology-${new Date().toISOString().slice(0, 10)}.csv`,
     );
   };
+  // The heading stays the same in All and History, so the view control beside it never moves. The
+  // count changes with every filter, so it sits after the control.
   const listHeading =
-    listTab === 'history'
-      ? t('nodeListPanel.tabHistory')
-      : mode === 'meshcore'
-        ? t('nodeListPanel.headingContacts')
-        : t('nodeListPanel.headingNodeDatabase');
+    mode === 'meshcore'
+      ? t('nodeListPanel.headingContacts')
+      : t('nodeListPanel.headingNodeDatabase');
   const smallSpinner = (
     <span
       aria-hidden
@@ -783,9 +783,7 @@ export default function NodeListPanel({
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="text-ink-200 text-base font-semibold">
-          {listHeading} <span className="text-muted font-mono text-sm">({headerCountLabel})</span>
-        </h2>
+        <h2 className="text-ink-200 text-base font-semibold">{listHeading}</h2>
         <SegmentedControl
           aria-label={t('nodeListPanel.listViewAria')}
           value={listTab}
@@ -795,6 +793,9 @@ export default function NodeListPanel({
             { value: 'history', label: t('nodeListPanel.tabHistory') },
           ]}
         />
+        <span data-list-count="" className="text-muted font-mono text-sm">
+          ({headerCountLabel})
+        </span>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {mode === 'meshcore' && meshcoreShowRefreshControl && onRefreshContacts ? (
             <Button

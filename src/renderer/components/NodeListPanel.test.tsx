@@ -160,8 +160,36 @@ describe('NodeListPanel accessibility', () => {
         mode="meshcore"
       />,
     );
-    expect(screen.getByRole('heading', { name: 'Contacts (0)' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Contacts' })).toBeInTheDocument();
   });
+
+  it.each([
+    ['meshcore', 'Contacts'],
+    ['meshtastic', 'Node Database'],
+  ] as const)(
+    'keeps the %s heading in History so the view control does not move',
+    async (mode, heading) => {
+      const user = userEvent.setup();
+      render(
+        <NodeListPanel
+          nodes={new Map()}
+          myNodeNum={0}
+          onNodeClick={vi.fn()}
+          locationFilter={defaultFilter}
+          onToggleFavorite={vi.fn()}
+          mode={mode}
+        />,
+      );
+      const title = screen.getByRole('heading', { name: heading });
+      const views = screen.getByRole('radiogroup', { name: 'List view' });
+      // Heading, then the view control, then the count: nothing before the control changes width.
+      expect(title.nextElementSibling).toBe(views);
+      expect(views.nextElementSibling).toHaveTextContent('(0)');
+      await user.click(screen.getByRole('radio', { name: 'History' }));
+      expect(screen.getByRole('heading', { name: heading })).toBe(title);
+      expect(title.nextElementSibling).toBe(views);
+    },
+  );
 
   it('does not fade offline, stale, or MQTT-only rows with opacity classes', () => {
     diagnosticsStoreState.ignoreMqttEnabled = true;

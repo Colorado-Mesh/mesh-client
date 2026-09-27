@@ -806,10 +806,9 @@ export default function ReticulumPeerListPanel({
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h2 className="text-ink-200 text-base font-semibold">
-          {t('peerListPanel.heading')}{' '}
-          <span className="text-muted font-mono text-sm">({sortedRows.length})</span>
-        </h2>
+        {/* The count changes with the tab and the search, so it sits after the tab control, which
+            then never moves. */}
+        <h2 className="text-ink-200 text-base font-semibold">{t('peerListPanel.heading')}</h2>
         <SegmentedControl
           aria-label={t('peerListPanel.heading')}
           value={activeTab}
@@ -827,6 +826,9 @@ export default function ReticulumPeerListPanel({
             { value: 'favorites', label: t('peerListPanel.tabFavorites') },
           ]}
         />
+        <span data-list-count="" className="text-muted font-mono text-sm">
+          ({sortedRows.length})
+        </span>
         <div className="ml-auto flex items-center gap-2">
           <Button
             size="sm"

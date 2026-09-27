@@ -370,6 +370,19 @@ describe('ReticulumPeerListPanel', () => {
     expect(sortState('peerListPanel.colName')).toBe('desc');
   });
 
+  it('keeps the tab control in place: the count sits after it, not in the heading', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    const title = screen.getByRole('heading', { name: 'peerListPanel.heading' });
+    const tabs = screen.getByRole('radiogroup', { name: 'peerListPanel.heading' });
+    expect(title.nextElementSibling).toBe(tabs);
+    expect(tabs.nextElementSibling).toHaveAttribute('data-list-count');
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabHistory' }));
+    expect(title.nextElementSibling).toBe(tabs);
+  });
+
   it('shows empty history state', async () => {
     useReticulumPeerStore.setState({ history: new Map() });
     const user = userEvent.setup();
@@ -449,7 +462,7 @@ describe('ReticulumPeerListPanel', () => {
       expect(screen.getByText('Peer 0')).toBeInTheDocument();
     });
     expect(screen.queryByText('Peer 50')).not.toBeInTheDocument();
-    expect(screen.getByText(/peerListPanel\.heading/)).toHaveTextContent('(150)');
+    expect(document.querySelector('[data-list-count]')).toHaveTextContent('(150)');
   });
 
   it('finds a buried peer by display name after search', async () => {
