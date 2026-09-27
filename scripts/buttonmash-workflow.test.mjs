@@ -13,9 +13,6 @@ const isIgnored = (message) =>
     new RegExp(pattern, 'i').test(message),
   );
 
-// Buttonmash reports a failed request as `METHOD URL <em dash> errorText`.
-const DASH = String.fromCharCode(0x2014);
-
 // "Reset <sound event>" in App > Notification sounds: the event names the settings screen shows.
 const soundSettings = readFileSync('src/renderer/components/NotificationSoundSettings.tsx', 'utf8');
 const soundLabelKeys = [
@@ -105,16 +102,5 @@ describe('Buttonmash CI', () => {
     ]) {
       expect(isSafeName(name), name).toBe(false);
     }
-  });
-
-  it('ignores offline map tiles only where the Electron-registered scheme is missing', () => {
-    // The main process registers `mesh-tiles:`; the plain-browser lane has no main process.
-    expect(isIgnored(`GET mesh-tiles://osm/2/1/1.png ${DASH} net::ERR_UNKNOWN_URL_SCHEME`)).toBe(
-      true,
-    );
-    expect(isIgnored(`GET mesh-tiles://osm/2/1/1.png ${DASH} net::ERR_FAILED`)).toBe(false);
-    expect(
-      isIgnored(`GET https://tile.openstreetmap.org/2/1/1.png ${DASH} net::ERR_NAME_NOT_RESOLVED`),
-    ).toBe(false);
   });
 });

@@ -32,7 +32,12 @@ import {
 } from '../lib/diagnostics/diagnosticRows';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
-import { getMapOverlayColors, isValidMapBasemapId, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import {
+  getMapOverlayColors,
+  isValidMapBasemapId,
+  MAP_BASEMAPS,
+  meshTilesAvailable,
+} from '../lib/mapBasemapUtils';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
@@ -1093,14 +1098,16 @@ export default function MapPanel({
         />
         <LocateMeControl onLocateMe={onLocateMe} />
         <MeasureControl />
-        <TileLayer
-          key={basemapId}
-          url={basemap.url}
-          attribution={basemap.attribution}
-          maxNativeZoom={basemap.maxNativeZoom}
-          keepBuffer={1}
-          updateWhenIdle
-        />
+        {meshTilesAvailable() && (
+          <TileLayer
+            key={basemapId}
+            url={basemap.url}
+            attribution={basemap.attribution}
+            maxNativeZoom={basemap.maxNativeZoom}
+            keepBuffer={1}
+            updateWhenIdle
+          />
+        )}
         {showMgrsGrid ? <MgrsGridLayer /> : null}
         {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
           <PathPolyline

@@ -5,6 +5,8 @@ import {
   USGS_TOPO_MAX_NATIVE_ZOOM,
 } from '@/shared/offlineMaps/basemapRegistry';
 
+import { isDevElectronApiStub } from './devElectronApiStub';
+
 export type MapBasemapId = OfflineMapBasemapId;
 
 export interface MapBasemapConfig {
@@ -39,6 +41,14 @@ export const MAP_BASEMAPS: Record<MapBasemapId, MapBasemapConfig> = {
 };
 
 export const DEFAULT_MAP_BASEMAP_ID: MapBasemapId = 'osm';
+
+/**
+ * Whether `mesh-tiles:` tiles can load. The main process serves that scheme, so on the plain-browser
+ * dev bridge every tile would fail; maps then draw without a basemap instead of broken images.
+ */
+export function meshTilesAvailable(): boolean {
+  return !isDevElectronApiStub();
+}
 
 export function isValidMapBasemapId(value: unknown): value is MapBasemapId {
   return value === 'dark' || value === 'osm' || value === 'usgs-topo';

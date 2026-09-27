@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createDevElectronApiStub, installDevElectronApiStubIfNeeded } from './devElectronApiStub';
+import {
+  createDevElectronApiStub,
+  installDevElectronApiStubIfNeeded,
+  isDevElectronApiStub,
+} from './devElectronApiStub';
+import { meshTilesAvailable } from './mapBasemapUtils';
 
 describe('devElectronApiStub', () => {
   beforeEach(() => {
@@ -20,6 +25,15 @@ describe('devElectronApiStub', () => {
     expect(installDevElectronApiStubIfNeeded()).toBe(true);
     expect(window.electronAPI.getPlatform()).toBe('linux');
     expect(installDevElectronApiStubIfNeeded()).toBe(false);
+  });
+
+  it('marks only the installed stub, which has no mesh-tiles scheme behind it', () => {
+    expect(isDevElectronApiStub()).toBe(false);
+    expect(meshTilesAvailable()).toBe(true);
+    expect(isDevElectronApiStub(createDevElectronApiStub())).toBe(false);
+    installDevElectronApiStubIfNeeded();
+    expect(isDevElectronApiStub()).toBe(true);
+    expect(meshTilesAvailable()).toBe(false);
   });
 
   it('returns no-op IPC surface with expected namespaces', async () => {

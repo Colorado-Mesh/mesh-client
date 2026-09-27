@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
+import { installDevElectronApiStubIfNeeded } from '@/renderer/lib/devElectronApiStub';
 
 import { ChatPayloadText } from './ChatPayloadText';
 
@@ -52,6 +53,30 @@ describe('ChatPayloadText', () => {
     );
     const tile = screen.getByRole('img', { name: 'Shared location map tile' });
     expect(tile.getAttribute('src')).toContain('mesh-tiles://osm/');
+  });
+
+  it('leaves the map tile out of a LocationCard on the plain-browser dev bridge', () => {
+    // @ts-expect-error test setup: no preload, as in a plain browser tab
+    delete window.electronAPI;
+    vi.stubEnv('DEV', true);
+    try {
+      expect(installDevElectronApiStubIfNeeded()).toBe(true);
+      render(
+        <ChatPayloadText
+          text={
+            '📍 Shared location: 39.7392, -104.9903' +
+            String.fromCharCode(10) +
+            'https://www.openstreetmap.org/?mlat=39.7392&mlon=-104.9903'
+          }
+          query=""
+          loadLinkPreviews={false}
+        />,
+      );
+      expect(screen.queryByRole('img', { name: 'Shared location map tile' })).toBeNull();
+      expect(screen.getByRole('link', { name: 'Open in Maps' })).toBeInTheDocument();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('LocationCard has no axe violations for cyan card contrast', async () => {

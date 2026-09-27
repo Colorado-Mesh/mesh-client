@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
+import { meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import {
   meshcoreGiphyMediaUrl,
   meshcoreGiphyPageUrl,
@@ -208,7 +209,8 @@ function LocationCard({
   onContentResize?: () => void;
 }>) {
   const { t } = useTranslation();
-  const [tileFailed, setTileFailed] = useState(false);
+  // Without the tile scheme (plain-browser dev) the preview would only ever fail to load.
+  const [tileFailed, setTileFailed] = useState(() => !meshTilesAvailable());
   const tileUrl = buildStaticTileUrl(lat, lon);
   const coordLabel = `${lat}, ${lon}`;
 

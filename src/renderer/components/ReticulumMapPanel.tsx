@@ -27,6 +27,7 @@ import {
   DEFAULT_MAP_BASEMAP_ID,
   getMapOverlayColors,
   MAP_BASEMAPS,
+  meshTilesAvailable,
 } from '@/renderer/lib/mapBasemapUtils';
 import {
   joinRmapDiscoveryWithPeers,
@@ -446,14 +447,16 @@ export default function ReticulumMapPanel({
             preferCanvas
             scrollWheelZoom
           >
-            <TileLayer
-              key={basemapId}
-              url={basemap.url}
-              attribution={basemap.attribution}
-              maxNativeZoom={basemap.maxNativeZoom}
-              keepBuffer={1}
-              updateWhenIdle
-            />
+            {meshTilesAvailable() && (
+              <TileLayer
+                key={basemapId}
+                url={basemap.url}
+                attribution={basemap.attribution}
+                maxNativeZoom={basemap.maxNativeZoom}
+                keepBuffer={1}
+                updateWhenIdle
+              />
+            )}
             <MapResizeInvalidator active />
             <MapViewportSaver hasAnyPositions={hasMapPositions} />
             <LocateMeControl onLocateMe={locateMe} />

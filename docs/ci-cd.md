@@ -49,9 +49,9 @@ or `critical` findings, and uploads both the Buttonmash report and the Vite serv
 fails. The detector config ignores the browser stub's expected no-peripheral BLE rejection and two
 exact third-party teardown races from `lucide-react-motion` and Leaflet. Native BLE behavior remains
 covered outside this stubbed lane, while all other high-severity browser errors remain blocking.
-It also ignores map tile requests to `mesh-tiles://` that fail with `ERR_UNKNOWN_URL_SCHEME`: the
-Electron main process registers that scheme, and this lane runs no main process. The destructive
-guard may click the notification-sound **Reset** buttons (`guardrails.destructive.safeNames`), which
+Maps draw without a basemap here: the Electron main process serves the `mesh-tiles:` scheme, so the
+renderer skips tiles on the browser bridge instead of logging a failed request for each. The
+destructive guard may click the notification-sound **Reset** buttons (`guardrails.destructive.safeNames`), which
 only restore that sound's default; every other Reset and Delete control stays blocked.
 `guardrails.blockMedia` is off so the run draws text in the bundled IBM Plex fonts the app serves
 from its own origin; Buttonmash blocks font and media requests by default. The action and time
