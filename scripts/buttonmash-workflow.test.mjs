@@ -16,6 +16,22 @@ const isIgnored = (message) =>
 // Buttonmash reports a failed request as `METHOD URL <em dash> errorText`.
 const DASH = String.fromCharCode(0x2014);
 
+// "Reset <sound event>" in App > Notification sounds: the event names the settings screen shows.
+const soundSettings = readFileSync('src/renderer/components/NotificationSoundSettings.tsx', 'utf8');
+const soundLabelKeys = [
+  .../'notificationSounds\.(\w+)'/g[Symbol.matchAll](
+    /const EVENT_LABELS = \{([\s\S]*?)\} as const;/.exec(soundSettings)?.[1] ?? '',
+  ),
+].map((match) => match[1]);
+const soundStrings = JSON.parse(
+  readFileSync('src/renderer/locales/en/translation.json', 'utf8'),
+).notificationSounds;
+const isSafeName = (name) =>
+  config.guardrails.destructive.safeNames.some((pattern) =>
+    // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
+    new RegExp(pattern, 'i').test(name),
+  );
+
 describe('Buttonmash CI', () => {
   it('runs the Vite renderer through the browser-safe Electron API stub', () => {
     expect(workflow).toContain('pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort');
@@ -72,6 +88,23 @@ describe('Buttonmash CI', () => {
     '[useMeshcoreRuntime] connect error BLE peripheral ID required',
   ])('keeps missing-device wiring failures visible: %s', (message) => {
     expect(isIgnored(message)).toBe(false);
+  });
+
+  it('lets the monkey reset a notification sound, and nothing else named Reset', () => {
+    // Each Reset only restores that sound's default tone and volume.
+    expect(soundLabelKeys.length).toBeGreaterThanOrEqual(9);
+    for (const key of soundLabelKeys) {
+      const name = soundStrings.resetFor.replace('{{event}}', soundStrings[key]);
+      expect(isSafeName(name), name).toBe(true);
+    }
+    for (const name of [
+      'Reset',
+      'Reset node database',
+      'Factory reset',
+      'Reset Channel messages now',
+    ]) {
+      expect(isSafeName(name), name).toBe(false);
+    }
   });
 
   it('ignores offline map tiles only where the Electron-registered scheme is missing', () => {

@@ -50,7 +50,9 @@ fails. The detector config ignores the browser stub's expected no-peripheral BLE
 exact third-party teardown races from `lucide-react-motion` and Leaflet. Native BLE behavior remains
 covered outside this stubbed lane, while all other high-severity browser errors remain blocking.
 It also ignores map tile requests to `mesh-tiles://` that fail with `ERR_UNKNOWN_URL_SCHEME`: the
-Electron main process registers that scheme, and this lane runs no main process.
+Electron main process registers that scheme, and this lane runs no main process. The destructive
+guard may click the notification-sound **Reset** buttons (`guardrails.destructive.safeNames`), which
+only restore that sound's default; every other Reset and Delete control stays blocked.
 `guardrails.blockMedia` is off so the run draws text in the bundled IBM Plex fonts the app serves
 from its own origin; Buttonmash blocks font and media requests by default. The action and time
 budgets live in
