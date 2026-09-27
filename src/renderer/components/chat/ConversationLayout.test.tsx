@@ -104,6 +104,42 @@ describe('ConversationLayout', () => {
     expect(onCloseSide).toHaveBeenCalledTimes(2);
   });
 
+  it('moves keyboard focus into the sheet, makes the covered panes inert, and returns focus', () => {
+    const layout = (sideOpen: boolean) => (
+      <ConversationLayout
+        mode={{ compact: false, sideOverlay: true }}
+        list={<button type="button">Room</button>}
+        listLabel="Rooms and hubs"
+        listOpen
+        compactPane="conversation"
+        conversation={<button type="button">Disconnect</button>}
+        side={<button type="button">Refresh members</button>}
+        sideLabel="Members"
+        sideOpen={sideOpen}
+        onCloseSide={vi.fn()}
+        closeSideLabel="Hide members"
+      />
+    );
+    const { rerender } = render(layout(false));
+    const disconnect = screen.getByRole('button', { name: 'Disconnect' });
+    disconnect.focus();
+
+    rerender(layout(true));
+    expect(screen.getByRole('dialog', { name: 'Members' })).toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Refresh members' }));
+    // Covered by the backdrop, so out of the tab order and hidden from assistive tech.
+    expect(disconnect.closest('section')).toHaveAttribute('inert');
+    expect(
+      screen.getByRole('complementary', { name: 'Rooms and hubs', hidden: true }),
+    ).toHaveAttribute('inert');
+
+    rerender(layout(false));
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Disconnect' }));
+    expect(
+      screen.getByRole('button', { name: 'Disconnect' }).closest('section'),
+    ).not.toHaveAttribute('inert');
+  });
+
   it('shows one pane at a time on compact windows', () => {
     const { rerender } = renderLayout(
       { compact: true, sideOverlay: true },

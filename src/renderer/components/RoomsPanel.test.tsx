@@ -1656,15 +1656,11 @@ describe('RoomsPanel layout', () => {
     });
     renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
 
-    expect(
-      screen.queryByRole('complementary', { name: 'roomsPanel.details' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'roomsPanel.details' })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
-    expect(screen.getByRole('complementary', { name: 'roomsPanel.details' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'roomsPanel.details' })).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
-    expect(
-      screen.queryByRole('complementary', { name: 'roomsPanel.details' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: 'roomsPanel.details' })).not.toBeInTheDocument();
     // Closing the sheet is not a saved preference.
     expect(localStorage.getItem('mesh-client:rooms:detailsCollapsed')).toBeNull();
   });

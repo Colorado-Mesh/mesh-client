@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Phones and very narrow windows: one pane at a time (list, then conversation). */
 export const CONVERSATION_COMPACT_QUERY = '(max-width: 767px)';
@@ -77,6 +80,19 @@ export function ConversationLayout({
     };
   }, [sideAsSheet, onCloseSide]);
 
+  // The sheet covers the list and conversation, so those go inert (below) and keyboard focus
+  // moves into the sheet, then back to where it was when the sheet closes.
+  const sheetRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!sideAsSheet) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const sheet = sheetRef.current;
+    (sheet?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR) ?? sheet)?.focus();
+    return () => {
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [sideAsSheet]);
+
   return (
     <div
       className="bg-deep-black border-ink-800 relative flex h-full min-h-0 w-full min-w-0 overflow-hidden rounded-xl border"
@@ -85,6 +101,7 @@ export function ConversationLayout({
       {showList && (
         <aside
           aria-label={listLabel}
+          inert={sideAsSheet}
           className={`border-ink-800 flex min-h-0 flex-col ${
             compact ? 'w-full' : 'w-72 shrink-0 border-r'
           }`}
@@ -93,7 +110,9 @@ export function ConversationLayout({
         </aside>
       )}
       {showConversation && (
-        <section className="flex min-h-0 min-w-0 flex-1 flex-col">{conversation}</section>
+        <section inert={sideAsSheet} className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {conversation}
+        </section>
       )}
       {showSide &&
         (sideAsSheet ? (
@@ -106,8 +125,11 @@ export function ConversationLayout({
               onClick={onCloseSide}
             />
             <aside
+              ref={sheetRef}
+              role="dialog"
               aria-label={sideLabel}
-              className="bg-deep-black shadow-level-4 border-ink-800 absolute inset-y-0 right-0 z-20 flex min-h-0 w-[min(18rem,85%)] flex-col border-l"
+              tabIndex={-1}
+              className="bg-deep-black shadow-level-4 border-ink-800 absolute inset-y-0 right-0 z-20 flex min-h-0 w-[min(18rem,85%)] flex-col border-l outline-none"
             >
               {side}
             </aside>
