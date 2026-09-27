@@ -450,9 +450,7 @@
       "deepSea": "Tiefsee",
       "dusk": "Dämmerung",
       "evergreen": "Tannengrün",
-      "highContrast": "Hoher Kontrast",
-      "nightVision": "Nachtsicht",
-      "nightVisionHint": "Nur rotes Licht, für an die Dunkelheit gewöhnte Augen. Stellen Sie auch die Bildschirmhelligkeit herunter. Der Status bleibt an Symbol und Beschriftung erkennbar, nicht an der Farbe."
+      "highContrast": "Hoher Kontrast"
     },
     "themeAccents": {
       "heading": "Akzent",

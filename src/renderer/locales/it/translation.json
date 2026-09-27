@@ -450,9 +450,7 @@
       "deepSea": "Abissi",
       "dusk": "Crepuscolo",
       "evergreen": "Sempreverde",
-      "highContrast": "Contrasto elevato",
-      "nightVision": "Visione notturna",
-      "nightVisionHint": "Solo luce rossa, per occhi abituati al buio. Abbassa anche la luminosità dello schermo. Lo stato resta indicato da icona ed etichetta, non dal colore."
+      "highContrast": "Contrasto elevato"
     },
     "themeAccents": {
       "heading": "Accento",

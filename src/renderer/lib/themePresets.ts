@@ -7,15 +7,7 @@ export type InkStep = (typeof INK_STEPS)[number];
 export type InkScale = Record<InkStep, string>;
 
 export type ThemeSurfaceId =
-  | 'midnight'
-  | 'slate'
-  | 'zinc'
-  | 'graphite'
-  | 'deepSea'
-  | 'dusk'
-  | 'evergreen'
-  | 'highContrast'
-  | 'nightVision';
+  'midnight' | 'slate' | 'zinc' | 'graphite' | 'deepSea' | 'dusk' | 'evergreen' | 'highContrast';
 
 export type ThemeAccentId = 'meshtastic' | 'meshcore' | 'reticulum' | 'sky' | 'classic';
 
@@ -24,8 +16,6 @@ export interface ThemeSurface {
   id: ThemeSurfaceId;
   labelKey: string;
   scale: InkScale;
-  /** A whole-window filter in styles.css, keyed by `data-theme-surface` on the root element. */
-  filter?: 'nightVision';
 }
 
 export interface ThemeAccent {
@@ -187,28 +177,6 @@ export const THEME_SURFACES: readonly ThemeSurface[] = [
       '#11151c',
     ]),
   },
-  {
-    // Midnight drawn through a red-only filter (styles.css, index.html): every pixel's luminance
-    // goes to the red channel and green and blue stay off, since those are what rods are most
-    // sensitive to. Red cannot reach WCAG text contrast and is only useful when dim, so this is a
-    // field mode for dark-adapted eyes, not a general theme.
-    id: 'nightVision',
-    labelKey: 'appPanel.themeSurfaces.nightVision',
-    filter: 'nightVision',
-    scale: scale([
-      '#f9fafc',
-      '#f2f5f9',
-      '#e3e8f0',
-      '#cdd4e2',
-      '#93a0b7',
-      '#65738c',
-      '#48556a',
-      '#364156',
-      '#212d40',
-      '#19212d',
-      '#11151c',
-    ]),
-  },
 ];
 
 /** Accents are the protocol scales plus two extras; any accent pairs with any surface. */
@@ -322,5 +290,4 @@ export function applyThemeSurface(id: ThemeSurfaceId): void {
   for (const step of INK_STEPS) {
     root.style.setProperty(`--color-ink-${step}`, surface.scale[step]);
   }
-  root.dataset.themeSurface = surface.id;
 }

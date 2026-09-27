@@ -458,9 +458,7 @@
       "deepSea": "Hlubina",
       "dusk": "Soumrak",
       "evergreen": "Jehličí",
-      "highContrast": "Vysoký kontrast",
-      "nightVision": "Noční vidění",
-      "nightVisionHint": "Pouze červené světlo pro oči přivyklé tmě. Snižte také jas obrazovky. Stav dál ukazuje ikona a popisek, ne barva."
+      "highContrast": "Vysoký kontrast"
     },
     "themeAccents": {
       "heading": "Zvýraznění",

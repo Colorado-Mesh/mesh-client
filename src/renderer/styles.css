@@ -134,14 +134,6 @@
 }
 
 /*
- * Night vision theme (lib/themePresets.ts): the whole window through the red-only filter defined
- * in index.html. On html so portalled modals and toasts are filtered too.
- */
-html[data-theme-surface='nightVision'] {
-  filter: url('#mesh-night-vision');
-}
-
-/*
  * App > Appearance > Reduce motion (seeded from the OS setting on first run): stop decorative
  * pulses and shorten transitions app-wide. Spinners and status pulses (class `motion-status`:
  * connecting, logging in, sending, MAYDAY / URGENT) keep moving, as the setting's description

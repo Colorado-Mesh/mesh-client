@@ -450,9 +450,7 @@
       "deepSea": "Mar profundo",
       "dusk": "Anochecer",
       "evergreen": "Perenne",
-      "highContrast": "Alto contraste",
-      "nightVision": "Visión nocturna",
-      "nightVisionHint": "Solo luz roja, para ojos adaptados a la oscuridad. Baja también el brillo de la pantalla. El estado se sigue mostrando con icono y etiqueta, no con color."
+      "highContrast": "Alto contraste"
     },
     "themeAccents": {
       "heading": "Acento",

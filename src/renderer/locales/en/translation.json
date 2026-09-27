@@ -450,9 +450,7 @@
       "deepSea": "Deep sea",
       "dusk": "Dusk",
       "evergreen": "Evergreen",
-      "highContrast": "High contrast",
-      "nightVision": "Night vision",
-      "nightVisionHint": "Red light only, for eyes adjusted to the dark. Turn your screen brightness down as well. Status still shows by icon and label, not color."
+      "highContrast": "High contrast"
     },
     "themeAccents": {
       "heading": "Accent",

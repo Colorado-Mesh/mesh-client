@@ -450,9 +450,7 @@
       "deepSea": "Laut dalam",
       "dusk": "Senja",
       "evergreen": "Hijau abadi",
-      "highContrast": "Kontras tinggi",
-      "nightVision": "Penglihatan malam",
-      "nightVisionHint": "Hanya cahaya merah, untuk mata yang sudah terbiasa gelap. Turunkan juga kecerahan layar. Status tetap ditunjukkan dengan ikon dan label, bukan warna."
+      "highContrast": "Kontras tinggi"
     },
     "themeAccents": {
       "heading": "Aksen",

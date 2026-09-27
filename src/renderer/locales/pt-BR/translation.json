@@ -450,9 +450,7 @@
       "deepSea": "Mar profundo",
       "dusk": "Crepúsculo",
       "evergreen": "Sempre-verde",
-      "highContrast": "Alto contraste",
-      "nightVision": "Visão noturna",
-      "nightVisionHint": "Só luz vermelha, para olhos adaptados ao escuro. Diminua também o brilho da tela. O status continua indicado por ícone e rótulo, não pela cor."
+      "highContrast": "Alto contraste"
     },
     "themeAccents": {
       "heading": "Destaque",

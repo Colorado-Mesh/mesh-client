@@ -466,9 +466,7 @@
       "deepSea": "Głębia",
       "dusk": "Zmierzch",
       "evergreen": "Wiecznie zielony",
-      "highContrast": "Wysoki kontrast",
-      "nightVision": "Widzenie nocne",
-      "nightVisionHint": "Tylko czerwone światło, dla oczu przyzwyczajonych do ciemności. Zmniejsz też jasność ekranu. Stan nadal pokazuje ikona i etykieta, a nie kolor."
+      "highContrast": "Wysoki kontrast"
     },
     "themeAccents": {
       "heading": "Akcent",

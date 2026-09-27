@@ -450,9 +450,7 @@
       "deepSea": "Derin deniz",
       "dusk": "Alacakaranlık",
       "evergreen": "Her dem yeşil",
-      "highContrast": "Yüksek kontrast",
-      "nightVision": "Gece görüşü",
-      "nightVisionHint": "Yalnızca kırmızı ışık, karanlığa alışmış gözler için. Ekran parlaklığını da düşürün. Durum renkle değil, simge ve etiketle gösterilmeye devam eder."
+      "highContrast": "Yüksek kontrast"
     },
     "themeAccents": {
       "heading": "Vurgu",

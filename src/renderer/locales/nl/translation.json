@@ -450,9 +450,7 @@
       "deepSea": "Diepzee",
       "dusk": "Schemering",
       "evergreen": "Groenblijvend",
-      "highContrast": "Hoog contrast",
-      "nightVision": "Nachtzicht",
-      "nightVisionHint": "Alleen rood licht, voor ogen die aan het donker gewend zijn. Zet ook de schermhelderheid lager. De status blijft zichtbaar via pictogram en label, niet via kleur."
+      "highContrast": "Hoog contrast"
     },
     "themeAccents": {
       "heading": "Accent",

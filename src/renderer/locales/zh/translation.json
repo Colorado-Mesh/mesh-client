@@ -450,9 +450,7 @@
       "deepSea": "深海",
       "dusk": "黄昏",
       "evergreen": "常青",
-      "highContrast": "高对比度",
-      "nightVision": "夜视",
-      "nightVisionHint": "仅使用红光，适合已适应黑暗的眼睛。请同时调低屏幕亮度。状态仍通过图标和标签显示，而不是颜色。"
+      "highContrast": "高对比度"
     },
     "themeAccents": {
       "heading": "强调色",

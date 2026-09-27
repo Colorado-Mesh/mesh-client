@@ -450,9 +450,7 @@
       "deepSea": "ディープシー",
       "dusk": "ダスク",
       "evergreen": "エバーグリーン",
-      "highContrast": "ハイコントラスト",
-      "nightVision": "ナイトビジョン",
-      "nightVisionHint": "赤い光だけを使い、暗さに慣れた目を守ります。画面の明るさも下げてください。状態は色ではなくアイコンとラベルで表示されます。"
+      "highContrast": "ハイコントラスト"
     },
     "themeAccents": {
       "heading": "アクセント",

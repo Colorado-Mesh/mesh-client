@@ -42,11 +42,7 @@ describe('theme surfaces and accents', () => {
     },
   );
 
-  // Night vision draws through a red-only filter and cannot reach WCAG text contrast by design
-  // (themePresets.ts), so the readability pairs cover every other surface.
-  const readable = THEME_SURFACES.filter((s) => !s.filter);
-
-  it.each(readable.map((s) => [s.id, s] as const))(
+  it.each(THEME_SURFACES.map((s) => [s.id, s] as const))(
     '%s keeps text readable on backgrounds, panels, rows and control fills',
     (_id, surface) => {
       const s = surface.scale;
@@ -59,18 +55,17 @@ describe('theme surfaces and accents', () => {
     },
   );
 
-  it.each(readable.flatMap((s) => THEME_ACCENTS.map((a) => [`${s.id} + ${a.id}`, s, a] as const)))(
-    '%s passes the accent guards, so no combination is ever reset',
-    (_label, surface, accent) => {
-      const c = themeColorsFor(surface, accent);
-      for (const bg of [c.appBg, c.deepBlack, c.sidebarActiveBg]) {
-        expect(contrastRatio(c.brandGreen, bg)).toBeGreaterThanOrEqual(4.5);
-      }
-      // Primary fills: app-background text on the accent, and white text on the fill.
-      expect(contrastRatio(c.appBg, c.brandGreen)).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#ffffff', c.readableGreen)).toBeGreaterThanOrEqual(4.5);
-    },
-  );
+  it.each(
+    THEME_SURFACES.flatMap((s) => THEME_ACCENTS.map((a) => [`${s.id} + ${a.id}`, s, a] as const)),
+  )('%s passes the accent guards, so no combination is ever reset', (_label, surface, accent) => {
+    const c = themeColorsFor(surface, accent);
+    for (const bg of [c.appBg, c.deepBlack, c.sidebarActiveBg]) {
+      expect(contrastRatio(c.brandGreen, bg)).toBeGreaterThanOrEqual(4.5);
+    }
+    // Primary fills: app-background text on the accent, and white text on the fill.
+    expect(contrastRatio(c.appBg, c.brandGreen)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio('#ffffff', c.readableGreen)).toBeGreaterThanOrEqual(4.5);
+  });
 
   it('High contrast field borders reach 3:1 against panels and field backgrounds', () => {
     const surface = themeSurface('highContrast');
@@ -120,13 +115,10 @@ describe('surface storage', () => {
     expect(localStorage.getItem(THEME_SURFACE_STORAGE_KEY)).toBeNull();
   });
 
-  it('points every ink class at the scale and tags the root for window filters', () => {
+  it('points every ink class at the surface scale', () => {
     applyThemeSurface('zinc');
     const root = document.documentElement;
     expect(root.style.getPropertyValue('--color-ink-800')).toBe('#27272a');
     expect(root.style.getPropertyValue('--color-ink-50')).toBe('#fafafa');
-    expect(root.dataset.themeSurface).toBe('zinc');
-    applyThemeSurface('nightVision');
-    expect(root.dataset.themeSurface).toBe('nightVision');
   });
 });

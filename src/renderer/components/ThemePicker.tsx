@@ -24,26 +24,13 @@ export interface ThemePickerProps {
  * The surface's steps as bands (950 to 700, the order they stack in the app), with primary and
  * muted text lines and the current accent on top.
  */
-function SurfaceSwatch({
-  surface,
-  accent,
-  windowFiltered,
-}: {
-  surface: ThemeSurface;
-  accent: string;
-  /** The window already runs through this filter; applying it again would dim the swatch. */
-  windowFiltered: boolean;
-}) {
+function SurfaceSwatch({ surface, accent }: { surface: ThemeSurface; accent: string }) {
   const s = surface.scale;
   return (
     <span
       aria-hidden="true"
       className="rounded-control relative block h-12 overflow-hidden"
-      style={{
-        backgroundColor: s[950],
-        boxShadow: `inset 0 0 0 1px ${s[800]}`,
-        filter: surface.filter && !windowFiltered ? 'url(#mesh-night-vision)' : undefined,
-      }}
+      style={{ backgroundColor: s[950], boxShadow: `inset 0 0 0 1px ${s[800]}` }}
     >
       <span className="absolute inset-y-0 right-0 left-1/4" style={{ backgroundColor: s[900] }} />
       <span className="absolute inset-y-0 right-0 left-1/2" style={{ backgroundColor: s[800] }} />
@@ -74,7 +61,6 @@ export function ThemePicker({
   const { t } = useTranslation();
   const activeSurface = matchThemeSurface(colors, surfaceId);
   const activeAccent = matchThemeAccent(colors);
-  const windowFiltered = THEME_SURFACES.some((s) => s.id === surfaceId && s.filter);
 
   return (
     <>
@@ -110,11 +96,7 @@ export function ThemePicker({
                     : 'bg-deep-black border-ink-800 hover:border-secondary-dark'
                 }`}
               >
-                <SurfaceSwatch
-                  surface={surface}
-                  accent={colors.brandGreen}
-                  windowFiltered={windowFiltered}
-                />
+                <SurfaceSwatch surface={surface} accent={colors.brandGreen} />
                 <span className="flex items-center justify-between gap-2">
                   <span className="text-body text-ink-200 font-medium">{t(surface.labelKey)}</span>
                   {active && <Check aria-hidden className={`${ICON_SM} text-bright-green`} />}
@@ -123,9 +105,6 @@ export function ThemePicker({
             );
           })}
         </div>
-        {surfaceId === 'nightVision' && (
-          <p className="text-muted text-xs">{t('appPanel.themeSurfaces.nightVisionHint')}</p>
-        )}
       </section>
       <section aria-labelledby="app-theme-accents-heading" className="space-y-2">
         <h4 id="app-theme-accents-heading" className="text-ink-200 text-sm font-medium">
