@@ -28,6 +28,25 @@ export function chatNotificationTargetFromViewKey(
   };
 }
 
+export interface RrcNotificationFocusActions {
+  setFocusedHub: (hash: string | null) => void;
+  setActiveRoom: (room: string | null, hubHash?: string) => void;
+}
+
+/**
+ * Land on the hub the line arrived on, not whichever hub is focused when the user clicks
+ * (it may have changed while the window was in the background).
+ */
+export function focusRrcNotificationTarget(
+  target: Extract<ChatNotificationTarget, { kind: 'rrc' }>,
+  rrc: RrcNotificationFocusActions,
+): void {
+  if (target.hubHash) rrc.setFocusedHub(target.hubHash);
+  if (target.room === '[hub]') return;
+  if (target.hubHash) rrc.setActiveRoom(target.room, target.hubHash);
+  else rrc.setActiveRoom(target.room);
+}
+
 function openFromNotification(
   target: ChatNotificationTarget,
   onOpen: (target: ChatNotificationTarget) => void,

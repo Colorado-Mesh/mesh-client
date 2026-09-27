@@ -2142,6 +2142,9 @@
       "esp32FlashStalled": "Firmware transfer stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and flash again.",
       "esp32ReadStalled": "Reading flash stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and back up again.",
       "esp32ReadIncomplete": "The flash read ended early, so no backup was saved. Reconnect the board and try again.",
+      "esp32FlashSizeUnknown": "Could not detect the flash size, so no backup was taken. Select your exact board model and try again.",
+      "esp32FlashTooLarge": "This board's flash is larger than the 32 MiB backup limit, so no backup was taken.",
+      "esp32ReadVerifyFailed": "The flash read failed its checksum, so no backup was saved. Reconnect the board and try again.",
       "provisionWipeRequired": "EEPROM is locked with an invalid identity. Wipe EEPROM first, then Provision again.",
       "provisionVerifyFailed": "Provision writes finished but the device still reports an unprovisioned EEPROM. Power-cycle the board, wait for boot, and try again — or wipe EEPROM first."
     }

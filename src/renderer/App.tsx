@@ -27,6 +27,7 @@ import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
   type ChatNotificationTarget,
+  focusRrcNotificationTarget,
   notifyInactiveChat,
   notifyInactiveRrc,
 } from '@/renderer/lib/chatDesktopNotifications';
@@ -2613,7 +2614,7 @@ function AppContent() {
       if (tabIndex >= 0) setActiveTab(tabIndex);
       if (target.kind === 'rrc') {
         setRrcTabVisited(true);
-        if (target.room !== '[hub]') useRrcSessionStore.getState().setActiveRoom(target.room);
+        focusRrcNotificationTarget(target, useRrcSessionStore.getState());
       } else if (target.dmPeer != null) {
         setPendingDmTarget(target.dmPeer);
       } else if (target.channel != null) {

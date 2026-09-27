@@ -156,6 +156,7 @@ import { sendEmergencyText } from '../lib/emergencySend';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import {
   getCachedMecpLanguage,
+  isMecpMessage,
   loadMecpLanguage,
   localizeMecpCodes,
   mecpLanguageForAppLocale,
@@ -1739,12 +1740,16 @@ function ChatPanel({
         return t('chatPanel.srNewMessages', { count });
       },
     });
-    messageAnnouncerRef.current.push(
-      inboundForView.map((msg) => ({
-        sender: truncateForAnnouncement(msg.sender_name || String(msg.sender_id)),
-        text: truncateForAnnouncement(msg.payload),
-      })),
-    );
+    // MECP payloads are wire codes, not prose; the bubble renders them as a localized card.
+    const announceable = inboundForView.filter((msg) => !isMecpMessage(msg.payload));
+    if (announceable.length > 0) {
+      messageAnnouncerRef.current.push(
+        announceable.map((msg) => ({
+          sender: truncateForAnnouncement(msg.sender_name || String(msg.sender_id)),
+          text: truncateForAnnouncement(msg.payload),
+        })),
+      );
+    }
 
     requestAnimationFrame(() => {
       const dist = getDistFromChatBottom(

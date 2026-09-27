@@ -1719,7 +1719,7 @@ function createWindow() {
       spellcheck: true,
       // Security note: experimentalFeatures enables the Web Bluetooth and Web Serial APIs
       // required for direct device communication. These APIs are permission-gated via
-      // setPermissionCheckHandler/setPermissionRequestHandler (serial, geolocation, media).
+      // setPermissionCheckHandler/setPermissionRequestHandler (serial, geolocation, media, notifications).
       experimentalFeatures: true,
     },
   });
@@ -1943,17 +1943,22 @@ function createWindow() {
   // Allow serial, geolocation, and media (camera / future live audio). Deny web-app-installation etc.
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
     const granted =
-      permission === 'serial' || permission === 'geolocation' || permission === 'media';
+      permission === 'serial' ||
+      permission === 'geolocation' ||
+      permission === 'media' ||
+      permission === 'notifications';
     console.debug(
       `[permissions] checkHandler: ${sanitizeLogMessage(permission)} → ${granted ? 'granted' : 'denied'}`,
     );
     return granted;
   });
 
-  // Grant geolocation (browser GPS fallback) and media (camera QR; microphone reserved for future LXST)
+  // Grant geolocation (browser GPS fallback), media (camera QR; microphone reserved for future LXST)
+  // and notifications (renderer `new Notification` for chat / node / ops / MECP alerts).
   mainWindow.webContents.session.setPermissionRequestHandler(
     (_webContents, permission, callback) => {
-      const grant = permission === 'geolocation' || permission === 'media';
+      const grant =
+        permission === 'geolocation' || permission === 'media' || permission === 'notifications';
       console.debug(
         `[permissions] requestHandler: ${sanitizeLogMessage(permission)} → ${grant ? 'granted' : 'denied'}`,
       );

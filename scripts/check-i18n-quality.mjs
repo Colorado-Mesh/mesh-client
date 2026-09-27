@@ -447,6 +447,27 @@ export const FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS = new Map([
   ['nl', /\bflits/i],
 ]);
 
+/** Flasher backup/read strings where "flash" is flash memory (read it, back it up). */
+export const FLASHER_FLASH_MEMORY_KEY_RE =
+  /^flasher\.(?:backupFirmwareHint|backingUp|errors\.esp32(?:Read\w+|FlashSizeUnknown|FlashTooLarge))$/;
+/** MT renders flash memory as camera flash / lightning, and "before you flash" as LED blink. */
+export const FLASHER_FLASH_MEMORY_FALSE_FRIENDS = new Map([
+  ['de', /blitz|blink/i],
+  ['cs', /blesk|blik/i],
+  ['nl', /flits/i],
+  ['pl', /błysk|mignię/i],
+  ['it', /lampegg|lampo/i],
+  ['fr', /clignot/i],
+  ['es', /parpad/i],
+  ['pt-BR', /pisc/i],
+  ['id', /lampu kilat|berkedip/i],
+  ['ru', /вспышк|вспыхн/i],
+  ['uk', /спалах/i],
+  ['zh', /闪光|闪烁/],
+  ['ko', /깜박/],
+  ['tr', /yanıp\s+sön/i],
+]);
+
 /** flasher.errors.provision* — MT booking/reservation false friends for "Provision". */
 export const FLASHER_PROVISION_RESERVATION_FALSE_FRIENDS =
   /\b(rezerv[auy]|rezerwacj|reservierung|резерв|reservation)\b/i;
@@ -2988,6 +3009,21 @@ function checkFlasherIssues(ctx) {
     }
     if (!/\bBOOT\b/.test(val) || !/\bRESET\b/.test(val)) {
       issues.push('esp32FlashStalled must preserve literal button labels BOOT and RESET');
+    }
+  }
+
+  if (locale !== 'en' && FLASHER_FLASH_MEMORY_KEY_RE.test(flatKey)) {
+    if (FLASHER_FLASH_MEMORY_FALSE_FRIENDS.get(locale)?.test(val)) {
+      issues.push(
+        'flasher backup copy must use flash-memory / firmware-flash wording, not camera flash, lightning, or LED blink',
+      );
+    }
+    if (
+      /\bBOOT\b/.test(enVal) &&
+      /\bRESET\b/.test(enVal) &&
+      (!/\bBOOT\b/.test(val) || !/\bRESET\b/.test(val))
+    ) {
+      issues.push('flasher backup copy must preserve literal button labels BOOT and RESET');
     }
   }
 

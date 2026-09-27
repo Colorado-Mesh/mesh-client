@@ -8,6 +8,7 @@ vi.mock('./desktopNotification', () => ({
 
 import {
   chatNotificationTargetFromViewKey,
+  focusRrcNotificationTarget,
   notifyInactiveChat,
   notifyInactiveRrc,
 } from './chatDesktopNotifications';
@@ -43,6 +44,36 @@ describe('chatNotificationTargetFromViewKey', () => {
       protocol: 'meshcore',
       ...expected,
     });
+  });
+});
+
+describe('focusRrcNotificationTarget', () => {
+  function actions() {
+    return { setFocusedHub: vi.fn(), setActiveRoom: vi.fn() };
+  }
+
+  it('focuses the originating hub before opening the room on it', () => {
+    const rrc = actions();
+    focusRrcNotificationTarget({ kind: 'rrc', room: '#ops', hubHash: 'abc123' }, rrc);
+    expect(rrc.setFocusedHub).toHaveBeenCalledWith('abc123');
+    expect(rrc.setActiveRoom).toHaveBeenCalledWith('#ops', 'abc123');
+    expect(rrc.setFocusedHub.mock.invocationCallOrder[0]).toBeLessThan(
+      rrc.setActiveRoom.mock.invocationCallOrder[0] ?? 0,
+    );
+  });
+
+  it('focuses the hub but does not open the hub stream as a room', () => {
+    const rrc = actions();
+    focusRrcNotificationTarget({ kind: 'rrc', room: '[hub]', hubHash: 'abc123' }, rrc);
+    expect(rrc.setFocusedHub).toHaveBeenCalledWith('abc123');
+    expect(rrc.setActiveRoom).not.toHaveBeenCalled();
+  });
+
+  it('opens the room on the focused hub when the hub is unknown', () => {
+    const rrc = actions();
+    focusRrcNotificationTarget({ kind: 'rrc', room: '#ops', hubHash: null }, rrc);
+    expect(rrc.setFocusedHub).not.toHaveBeenCalled();
+    expect(rrc.setActiveRoom).toHaveBeenCalledWith('#ops');
   });
 });
 

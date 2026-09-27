@@ -5850,4 +5850,19 @@ describe('ChatPanel — screen reader announcements', () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(region.textContent).toBe('');
   });
+
+  it('does not read MECP wire codes aloud', async () => {
+    const initial = [makeMsg({ payload: 'old', timestamp: Date.now() - 5000 })];
+    const { rerender } = render(renderWith(initial));
+    rerender(
+      renderWith([
+        ...initial,
+        makeMsg({ payload: 'MECP/0/M01 M07 P05 2pax 48.65,20.13' }),
+        makeMsg({ payload: 'fresh news' }),
+      ]),
+    );
+    await waitFor(() => {
+      expect(region.textContent).toBe('New message from Alice: fresh news');
+    });
+  });
 });

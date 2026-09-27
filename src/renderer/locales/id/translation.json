@@ -2088,8 +2088,11 @@
       "unknown": "Kesalahan tak terduga terjadi.",
       "provisionWipeRequired": "EEPROM dikunci dengan identitas yang tidak valid. Hapus EEPROM terlebih dahulu, lalu lakukan provisioning lagi.",
       "provisionVerifyFailed": "Penulisan provisioning selesai tetapi perangkat masih melaporkan EEPROM yang belum diprovision. Matikan dan nyalakan ulang papan, tunggu booting, lalu coba lagi — atau hapus EEPROM terlebih dahulu.",
-      "esp32ReadStalled": "Membaca lampu kilat terhenti tanpa kemajuan. Coba kabel atau port USB lain, masuk ke mode bootloader (tahan BOOT, ketuk RESET), dan buat cadangan lagi.",
-      "esp32ReadIncomplete": "Pembacaan flash berakhir lebih awal, jadi tidak ada cadangan yang disimpan. Sambungkan kembali papan dan coba lagi."
+      "esp32ReadStalled": "Pembacaan flash terhenti tanpa kemajuan. Coba kabel atau port USB lain, masuk ke mode bootloader (tahan BOOT, ketuk RESET), dan cadangkan lagi.",
+      "esp32ReadIncomplete": "Pembacaan flash berakhir lebih awal, jadi tidak ada cadangan yang disimpan. Sambungkan kembali papan dan coba lagi.",
+      "esp32FlashSizeUnknown": "Ukuran flash tidak dapat dideteksi, jadi tidak ada cadangan yang dibuat. Pilih model papan yang tepat dan coba lagi.",
+      "esp32FlashTooLarge": "Flash papan ini lebih besar dari batas cadangan 32 MiB, jadi tidak ada cadangan yang dibuat.",
+      "esp32ReadVerifyFailed": "Pembacaan flash gagal dalam pemeriksaan checksum, jadi tidak ada cadangan yang disimpan. Sambungkan kembali papan dan coba lagi."
     },
     "selectSerialPort": "Pilih port serial",
     "noSerialPorts": "Tidak ditemukan port serial USB.",
@@ -2139,7 +2142,7 @@
     "clearPairedDevicesConfirm": "Hapus ikatan Bluetooth",
     "clearPairedDevicesSuccess": "Permintaan hapus tabel ikatan Bluetooth radio dikirim.",
     "backupFirmware": "Cadangkan firmware",
-    "backupFirmwareHint": "Menyimpan gambar lengkap flash ESP32 (pengaturan firmware dan perangkat) ke file sebelum Anda berkedip. Tidak tersedia untuk papan nRF52.",
+    "backupFirmwareHint": "Menyimpan image lengkap flash ESP32 (firmware dan pengaturan perangkat) ke file sebelum Anda melakukan flash. Tidak tersedia untuk papan nRF52.",
     "backingUp": "Membaca flash… {{progress}}%",
     "cancelBackup": "Batalkan pencadangan",
     "backupSaved": "Cadangan firmware disimpan ke {{path}}.",

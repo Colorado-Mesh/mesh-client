@@ -31,8 +31,17 @@ export function humanizeFlasherError(err: unknown): string {
   if (message === 'ESP32_READ_STALLED') {
     return i18n.t('flasher.errors.esp32ReadStalled');
   }
-  if (message === 'ESP32_READ_INCOMPLETE' || message === 'ESP32_FLASH_SIZE_UNKNOWN') {
+  if (message === 'ESP32_READ_INCOMPLETE') {
     return i18n.t('flasher.errors.esp32ReadIncomplete');
+  }
+  if (message === 'ESP32_FLASH_SIZE_UNKNOWN') {
+    return i18n.t('flasher.errors.esp32FlashSizeUnknown');
+  }
+  if (message === 'ESP32_FLASH_TOO_LARGE') {
+    return i18n.t('flasher.errors.esp32FlashTooLarge');
+  }
+  if (message === 'ESP32_READ_VERIFY_FAILED') {
+    return i18n.t('flasher.errors.esp32ReadVerifyFailed');
   }
   if (message === 'FLASHER_SERIAL_PORT_SELECTION_TIMEOUT') {
     return i18n.t('flasher.errors.portSelectionTimedOut');

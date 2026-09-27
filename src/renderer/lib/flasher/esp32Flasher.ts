@@ -5,6 +5,7 @@ import { ESPLoader, Transport } from 'esptool-js';
 
 import { closeSerialPortIfOpen } from '@/renderer/lib/connection';
 import { FIRMWARE_BACKUP_MAX_BYTES } from '@/shared/firmwareBackup';
+import { bytesToHex } from '@/shared/hexBytes';
 
 import { blobToUint8Array, parseFlashAddress, sleepMillis } from './binaryUtils';
 import { forceEsp32DownloadMode } from './esp32BootloaderEntry';
@@ -217,6 +218,14 @@ export interface Esp32FlashReadResult {
   flashSizeBytes: number;
 }
 
+/** Stub `read_flash` ends with one 16-byte MD5 frame over the bytes it sent. */
+const ESP32_READ_DIGEST_BYTES = 16;
+const ESP32_READ_DIGEST_TIMEOUT_MS = 3000;
+
+/**
+ * Never guess: a wrong size saves a truncated image that looks like a full backup, and a
+ * larger chip cannot be captured under the 32 MiB IPC cap.
+ */
 function resolveEsp32FlashSizeBytes(
   esploader: ESPLoader,
   flashId: number,
@@ -224,12 +233,40 @@ function resolveEsp32FlashSizeBytes(
 ): number {
   const sizeId = (flashId >> 16) & 0xff;
   const detected = (esploader.DETECTED_FLASH_SIZES as Record<number, string | undefined>)[sizeId];
-  const label = detected ?? fallbackFlashSize ?? '4MB';
+  const label = detected ?? fallbackFlashSize;
+  if (!label) {
+    throw new Error('ESP32_FLASH_SIZE_UNKNOWN');
+  }
   const bytes = esploader.flashSizeBytes(label as FlashSizeValues);
   if (!Number.isFinite(bytes) || bytes <= 0) {
     throw new Error('ESP32_FLASH_SIZE_UNKNOWN');
   }
-  return Math.min(bytes, FIRMWARE_BACKUP_MAX_BYTES);
+  if (bytes > FIRMWARE_BACKUP_MAX_BYTES) {
+    throw new Error('ESP32_FLASH_TOO_LARGE');
+  }
+  return bytes;
+}
+
+/**
+ * esptool-js 0.6.1 `readFlash` returns once it has `size` bytes and leaves the stub's trailing
+ * MD5 frame unread (esptool.py verifies it). Consume it here: it is the on-chip digest of the
+ * streamed flash, and leaving it buffered would be misparsed as the next command's response.
+ */
+async function verifyEsp32ReadDigest(transport: Transport, data: Uint8Array): Promise<void> {
+  let digest: Uint8Array;
+  try {
+    digest = await transport.read(ESP32_READ_DIGEST_TIMEOUT_MS);
+  } catch (e) {
+    console.warn(
+      '[esp32Flasher] readFlash digest frame missing',
+      e instanceof Error ? e.message : String(e),
+    );
+    throw new Error('ESP32_READ_VERIFY_FAILED');
+  }
+  if (digest.byteLength !== ESP32_READ_DIGEST_BYTES || bytesToHex(digest) !== md5HexBytes(data)) {
+    console.warn('[esp32Flasher] readFlash digest mismatch');
+    throw new Error('ESP32_READ_VERIFY_FAILED');
+  }
 }
 
 /**
@@ -293,6 +330,7 @@ export async function readEsp32Flash(
     if (data.byteLength !== flashSizeBytes) {
       throw new Error('ESP32_READ_INCOMPLETE');
     }
+    await verifyEsp32ReadDigest(transport, data);
 
     await transport.setDTR(false);
     await sleepMillis(100);

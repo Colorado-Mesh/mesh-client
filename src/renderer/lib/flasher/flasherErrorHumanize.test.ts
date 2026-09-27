@@ -50,7 +50,13 @@ describe('humanizeFlasherError', () => {
       'flasher.errors.esp32ReadIncomplete',
     );
     expect(humanizeFlasherError(new Error('ESP32_FLASH_SIZE_UNKNOWN'))).toBe(
-      'flasher.errors.esp32ReadIncomplete',
+      'flasher.errors.esp32FlashSizeUnknown',
+    );
+    expect(humanizeFlasherError(new Error('ESP32_FLASH_TOO_LARGE'))).toBe(
+      'flasher.errors.esp32FlashTooLarge',
+    );
+    expect(humanizeFlasherError(new Error('ESP32_READ_VERIFY_FAILED'))).toBe(
+      'flasher.errors.esp32ReadVerifyFailed',
     );
   });
 
