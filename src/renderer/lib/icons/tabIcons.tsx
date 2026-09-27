@@ -103,6 +103,8 @@ export function NavSectionIcon({ id }: { id: NavSectionId }) {
       return <Network {...p} />;
     case 'map':
       return <MapPin {...p} />;
+    case 'nomad':
+      return <Globe {...p} />;
     case 'monitor':
       return <FileChartColumn {...p} />;
     case 'device':

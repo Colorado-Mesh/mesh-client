@@ -64,25 +64,31 @@ describe('computeNavSections', () => {
     expect(ids.slice(-2)).toEqual(['incident', 'app']);
   });
 
-  it('groups MeshCore tabs as in the Option B mockups', () => {
+  it('groups MeshCore tabs as in the Option B mockups, with the maintainer moves', () => {
+    // Telemetry sits with the device it reports on; TAK is a network bridge, not a device.
     expect(slotsBySection(PROTOCOLS[1])).toEqual({
       chat: ['Chat', 'Rooms'],
-      network: ['Nodes', 'Modules', 'Graph'],
+      network: ['Nodes', 'Modules', 'Graph', 'TAK'],
       map: ['Map'],
-      monitor: ['Diagnostics', 'Telemetry', 'Stats', 'Sniffer', 'RF'],
-      device: ['Connection', 'Radio', 'Admin', 'Security', 'TAK'],
+      monitor: ['Diagnostics', 'Stats', 'Sniffer', 'RF'],
+      device: ['Connection', 'Radio', 'Telemetry', 'Admin', 'Security'],
       incident: ['Incident'],
       app: ['App'],
     });
   });
 
-  it('places Reticulum-only panels in Chat and Network', () => {
+  it('places Reticulum-only panels in Chat and Network, with Nomad Network on the rail', () => {
     const sections = slotsBySection(PROTOCOLS[2]);
     expect(sections.chat).toEqual(expect.arrayContaining(['Chat', 'RRC', 'Games']));
-    expect(sections.network).toEqual(
-      expect.arrayContaining(['Nodes', 'Topology', 'NomadNetwork', 'Remote']),
-    );
+    expect(sections.network).toEqual(expect.arrayContaining(['Nodes', 'Topology', 'Remote']));
+    expect(sections.nomad).toEqual(['NomadNetwork']);
+    expect(sections.network).not.toContain('NomadNetwork');
     expect(sections.device).toContain('Radio');
+  });
+
+  it('shows no Nomad rail entry on protocols without Nomad Network', () => {
+    expect(slotsBySection(PROTOCOLS[0]).nomad).toBeUndefined();
+    expect(slotsBySection(PROTOCOLS[1]).nomad).toBeUndefined();
   });
 
   it('keeps Meshtastic Modules in Device', () => {
@@ -99,6 +105,7 @@ describe('computeNavSections', () => {
       'tabs.contacts',
       'tabs.repeaters',
       'tabs.graph',
+      'tabs.tak',
     ]);
     expect(network?.tabs[1]?.iconSlot).toBe('Repeaters');
   });

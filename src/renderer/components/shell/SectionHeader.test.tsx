@@ -49,13 +49,7 @@ describe('SectionHeader', () => {
     );
     const tablist = screen.getByRole('tablist', { name: 'Monitor panels' });
     const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
-    expect(tabs.map((tab) => tab.textContent)).toEqual([
-      'Diagnostics',
-      'Telemetry',
-      'Stats',
-      'Sniffer',
-      'RF',
-    ]);
+    expect(tabs.map((tab) => tab.textContent)).toEqual(['Diagnostics', 'Stats', 'Sniffer', 'RF']);
     const snifferTab = screen.getByRole('tab', { name: 'Sniffer' });
     expect(snifferTab).toHaveAttribute('aria-selected', 'true');
     expect(snifferTab).toHaveAttribute('id', `tab-${sniffer?.tabIndex}`);
@@ -78,7 +72,7 @@ describe('SectionHeader', () => {
       />,
     );
     await user.click(screen.getByRole('tab', { name: 'RF' }));
-    expect(onTabSelect).toHaveBeenCalledWith(monitor.tabs[4]?.tabIndex);
+    expect(onTabSelect).toHaveBeenCalledWith(monitor.tabs[3]?.tabIndex);
   });
 
   it('moves between tabs with arrow keys, Home and End', () => {
@@ -97,9 +91,9 @@ describe('SectionHeader', () => {
     fireEvent.keyDown(first, { key: 'ArrowRight' });
     expect(onTabSelect).toHaveBeenLastCalledWith(monitor.tabs[1]?.tabIndex);
     fireEvent.keyDown(first, { key: 'ArrowLeft' });
-    expect(onTabSelect).toHaveBeenLastCalledWith(monitor.tabs[4]?.tabIndex);
+    expect(onTabSelect).toHaveBeenLastCalledWith(monitor.tabs[3]?.tabIndex);
     fireEvent.keyDown(first, { key: 'End' });
-    expect(onTabSelect).toHaveBeenLastCalledWith(monitor.tabs[4]?.tabIndex);
+    expect(onTabSelect).toHaveBeenLastCalledWith(monitor.tabs[3]?.tabIndex);
     fireEvent.keyDown(first, { key: 'Home' });
     expect(onTabSelect).toHaveBeenLastCalledWith(monitor.tabs[0]?.tabIndex);
   });

@@ -207,15 +207,16 @@ Small windows: minimum 900x600 on desktop; test at 1024x768 and 390px. The rail 
 
 ## Navigation
 
-| Section  | Panels                                                                               |
-| -------- | ------------------------------------------------------------------------------------ |
-| Chat     | Chat, Rooms, RRC, Games                                                              |
-| Network  | Contacts / Nodes / Peers, Repeaters, Graph, Topology, Nomad Network, Remote          |
-| Map      | Map                                                                                  |
-| Monitor  | Diagnostics, Telemetry, Stats, Sniffer, RF                                           |
-| Device   | Connection, Radio (Network on Reticulum), Modules (Meshtastic), Admin, Security, TAK |
-| Incident | Incident                                                                             |
-| App      | App                                                                                  |
+| Section       | Panels                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| Chat          | Chat, Rooms, RRC, Games                                                                    |
+| Network       | Contacts / Nodes / Peers, Repeaters, Graph, Topology, Remote, TAK                          |
+| Map           | Map                                                                                        |
+| Nomad Network | Nomad Network (Reticulum only; its own rail entry)                                         |
+| Monitor       | Diagnostics, Stats, Sniffer, RF                                                            |
+| Device        | Connection, Radio (Network on Reticulum), Modules (Meshtastic), Telemetry, Admin, Security |
+| Incident      | Incident                                                                                   |
+| App           | App                                                                                        |
 
 - Panel labels do not change when they move into a section. Every panel is reachable from the rail and the launcher.
 - Clicking a section reopens the panel last shown in it for the current protocol.
