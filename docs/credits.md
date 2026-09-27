@@ -15,6 +15,7 @@
 - FuzzyChaos (ADL) - Donation for devices
 - [M3SHGH0ST](https://github.com/cj-vana)
 - [M0Rf30](https://github.com/M0Rf30) - Flatpak Electron packaging
+- [ashortgrayble](https://github.com/ashortgrayble) - Colorado Mesh style guide (color scales, type, radius and elevation)
 
 ## Colorado Mesh
 

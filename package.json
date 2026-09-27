@@ -28,7 +28,8 @@
     "Letark https://github.com/Letark",
     "FuzzyChaos (ADL)",
     "M3SHGH0ST https://github.com/cj-vana",
-    "M0Rf30 https://github.com/M0Rf30"
+    "M0Rf30 https://github.com/M0Rf30",
+    "ashortgrayble https://github.com/ashortgrayble"
   ],
   "main": "dist-electron/main/index.js",
   "scripts": {
