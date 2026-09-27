@@ -30,7 +30,7 @@ export function ReticulumPeerDetailErrorBoundary({
           aria-modal="true"
           aria-label={i18n.t('errorBoundary.title')}
         >
-          <div className="w-full max-w-md space-y-4 rounded-lg border border-red-800 bg-zinc-900 p-6 shadow-xl">
+          <div className="shadow-level-4 w-full max-w-md space-y-4 rounded-lg border border-red-800 bg-zinc-900 p-6">
             <div className="text-lg font-semibold text-red-400">
               {i18n.t('errorBoundary.title')}
             </div>

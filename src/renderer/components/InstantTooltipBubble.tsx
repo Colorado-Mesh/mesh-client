@@ -12,7 +12,7 @@ export function InstantTooltipBubble({ text, pos }: { text: string; pos: Instant
         transform: pos.below ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
         zIndex: Z_INSTANT_TOOLTIP,
       }}
-      className="pointer-events-none w-64 rounded border border-zinc-600 bg-zinc-800 px-2.5 py-1.5 text-xs whitespace-pre-wrap text-zinc-200 shadow-lg"
+      className="shadow-level-3 pointer-events-none w-64 rounded border border-zinc-600 bg-zinc-800 px-2.5 py-1.5 text-xs whitespace-pre-wrap text-zinc-200"
     >
       {text}
     </span>

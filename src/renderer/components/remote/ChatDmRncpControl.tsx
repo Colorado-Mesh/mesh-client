@@ -363,7 +363,7 @@ export function ChatDmRncpControl({
       </button>
 
       {open && (
-        <div className="bg-secondary-dark absolute top-full right-0 z-20 mt-1 w-80 space-y-2 rounded-lg border border-zinc-600/50 p-3 shadow-xl">
+        <div className="bg-secondary-dark shadow-level-4 absolute top-full right-0 z-20 mt-1 w-80 space-y-2 rounded-lg border border-zinc-600/50 p-3">
           {relevantOffers.length > 0 && (
             <div className="space-y-1 border-b border-zinc-700/60 pb-2">
               <p className="text-label font-medium text-orange-300">

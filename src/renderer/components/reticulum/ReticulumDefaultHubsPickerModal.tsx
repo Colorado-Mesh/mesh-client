@@ -159,7 +159,7 @@ export function ReticulumDefaultHubsPickerModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={hintId}
-        className="bg-deep-black rounded-modal relative mx-4 flex max-h-[min(85vh,640px)] w-full max-w-lg flex-col border border-zinc-600 shadow-lg"
+        className="bg-deep-black rounded-modal shadow-level-3 relative mx-4 flex max-h-[min(85vh,640px)] w-full max-w-lg flex-col border border-zinc-600"
       >
         <div className="space-y-2 border-b border-zinc-700 px-5 py-4">
           <h3 id={titleId} className="text-lg font-semibold text-zinc-200">

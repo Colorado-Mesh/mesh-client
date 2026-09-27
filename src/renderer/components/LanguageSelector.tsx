@@ -121,7 +121,7 @@ export default function LanguageSelector() {
               top: menuPos.top,
               right: menuPos.right,
             }}
-            className="bg-deep-black z-50 max-h-72 w-44 overflow-y-auto rounded-lg border border-zinc-700 py-1 shadow-xl"
+            className="bg-deep-black shadow-level-4 z-50 max-h-72 w-44 overflow-y-auto rounded-lg border border-zinc-700 py-1"
           >
             {SUPPORTED_LANGUAGES.map(({ code, label }) => (
               <li key={code} role="option" aria-selected={i18n.language === code}>

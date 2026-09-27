@@ -150,7 +150,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm shadow-lg backdrop-blur-sm transition-all duration-300 ${colors} ${
+      className={`shadow-level-3 pointer-events-auto flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm backdrop-blur-sm transition-all duration-300 ${colors} ${
         visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
       }`}
     >

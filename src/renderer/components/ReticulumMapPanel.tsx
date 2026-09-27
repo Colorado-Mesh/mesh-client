@@ -660,7 +660,7 @@ export default function ReticulumMapPanel({
             <button
               type="button"
               onClick={scrollListToTop}
-              className="bg-secondary-dark text-2xs absolute top-9 right-2 z-10 rounded-full border border-zinc-600 px-2.5 py-1 font-medium text-zinc-300 shadow-lg transition-all hover:bg-zinc-600"
+              className="bg-secondary-dark text-2xs shadow-level-3 absolute top-9 right-2 z-10 rounded-full border border-zinc-600 px-2.5 py-1 font-medium text-zinc-300 transition-all hover:bg-zinc-600"
               aria-label={t('aria.backToTop')}
             >
               {t('app.scrollToTop')}

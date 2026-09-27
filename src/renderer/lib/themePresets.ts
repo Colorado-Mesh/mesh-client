@@ -25,14 +25,15 @@ function preset(
  */
 export const THEME_PRESETS: readonly ThemePreset[] = [
   preset('default', 'appPanel.themePresets.meshtastic', {}),
-  // Protocol scales from the style guide as accent themes on the zinc neutrals: MeshCore cyan
-  // (400 accent, 700 fills) and Reticulum yellow (400 accent, 700 fills). Default is Meshtastic.
+  // Protocol scales from the style guide as accent themes on the zinc neutrals: the 500 step is
+  // the accent, 700 the fills (styles.css --color-meshcore-* / --color-reticulum-*). Default is
+  // Meshtastic.
   preset('meshcore', 'appPanel.themePresets.meshcore', {
-    brandGreen: '#22d3ee',
-    brightGreen: '#22d3ee',
+    brandGreen: '#00d3f2',
+    brightGreen: '#00d3f2',
     readableGreen: '#0e7490',
     chatOutgoingBg: '#0e7490',
-    chatOutgoingBorder: '#22d3ee',
+    chatOutgoingBorder: '#00d3f2',
   }),
   preset('reticulum', 'appPanel.themePresets.reticulum', {
     brandGreen: '#facc15',

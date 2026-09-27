@@ -1401,7 +1401,7 @@ export default function RawPacketLogPanel(props: Props) {
             <button
               type="button"
               onClick={scrollToLatest}
-              className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-300 shadow-lg transition-all hover:bg-zinc-600"
+              className="bg-secondary-dark shadow-level-3 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-all hover:bg-zinc-600"
             >
               <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
               {t('rawPacketLog.jumpToLatest')}

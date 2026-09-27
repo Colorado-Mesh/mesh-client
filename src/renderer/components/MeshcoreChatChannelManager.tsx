@@ -130,7 +130,7 @@ export default function MeshcoreChatChannelManager({
             role="dialog"
             aria-modal="true"
             aria-labelledby="meshcore-chat-channel-title"
-            className="bg-secondary-dark rounded-modal w-full max-w-md space-y-4 border border-zinc-600 p-4 shadow-lg"
+            className="bg-secondary-dark rounded-modal shadow-level-3 w-full max-w-md space-y-4 border border-zinc-600 p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <h2 id="meshcore-chat-channel-title" className="text-base font-semibold text-white">

@@ -13,8 +13,9 @@ const AXE_BG_CLASS_TO_CSS: Record<string, string> = {
   'bg-secondary-dark': '--color-secondary-dark',
   'bg-cyan-800': '#155e75',
   'bg-cyan-700': '#0e7490',
-  'bg-emerald-700': '#047857',
-  'bg-yellow-700': '#a16207',
+  'bg-meshtastic-700': '#047857',
+  'bg-meshcore-700': '#0e7490',
+  'bg-reticulum-700': '#a16207',
   'bg-orange-700': '#c2410c',
   'bg-orange-800': '#9a3412',
 };

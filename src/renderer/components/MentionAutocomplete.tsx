@@ -30,7 +30,7 @@ export default function MentionAutocomplete({
   return (
     <div
       id={listboxId}
-      className="absolute bottom-full left-0 z-50 mb-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-zinc-600 bg-zinc-800 shadow-lg"
+      className="shadow-level-3 absolute bottom-full left-0 z-50 mb-1 max-h-48 w-64 overflow-y-auto rounded-lg border border-zinc-600 bg-zinc-800"
       role="listbox"
       aria-label={t('chatPanel.mentionSuggestionsAria')}
     >

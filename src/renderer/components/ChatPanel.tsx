@@ -3918,7 +3918,7 @@ function ChatPanel({
             onClick={() => {
               scrollToUnreadOrBottom();
             }}
-            className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-zinc-200 shadow-lg transition-all"
+            className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark shadow-level-3 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium text-zinc-200 transition-all"
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" trigger={parentIconTrigger} size={14} />
             {hasUnreadDivider ? t('chatPanel.jumpToUnread') : t('chatPanel.jumpToLatest')}

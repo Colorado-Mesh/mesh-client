@@ -900,7 +900,7 @@ export default function ReticulumPeerDetailModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="reticulum-peer-detail-title"
-        className="bg-deep-black rounded-modal relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto border border-zinc-800 p-4 shadow-xl"
+        className="bg-deep-black rounded-modal shadow-level-4 relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto border border-zinc-800 p-4"
       >
         {detailBody}
       </div>

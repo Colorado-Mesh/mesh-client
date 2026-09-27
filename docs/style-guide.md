@@ -2,6 +2,8 @@
 
 Rules for the Mesh Client UI (desktop today, iOS and Android later), written for contributors and for AI coding agents. It combines the Colorado Mesh style guide by ashortgrayble (color scales, type system, radius, elevation) with the v6 redesign from [issue #1062](https://github.com/Colorado-Mesh/mesh-client/issues/1062): Option B navigation (rail, section tabs, status bar) plus Option C's launcher.
 
+The source of truth for exact values, contrast ratios and rationale is the [Colorado Mesh style guide in Figma](https://www.figma.com/design/ZPZsHgPZX8dQTUYzP4uDjZ/Colorado-Mesh?node-id=17-4). The tokens in `src/renderer/styles.css` carry its values.
+
 When a rule here conflicts with an older panel, follow this guide for new or changed UI. Source-policy rules (see [Enforcement](#enforcement)) keep the most important ones from regressing.
 
 ## Who we design for
@@ -40,6 +42,8 @@ Principles:
 
 Everything uses Tailwind utility classes. Theme tokens (below) are CSS variables users can change in App > Appearance > Colors (`src/renderer/lib/themeColors.ts`); hard-coded hex ignores their choice and is only allowed in canvas drawing and Leaflet marker HTML.
 
+`themeColors.ts` writes the theme tokens onto `:root` as inline styles at boot, which overrides the `@theme` block in `styles.css`. A changed default must change in both `styles.css` and `DEFAULT_THEME_COLORS`; `styleTokens.test.ts` fails when they drift.
+
 ### Neutrals (Zinc)
 
 Zinc is a plain neutral that works under every protocol theme (Slate's blue undertone clashed with the yellow Reticulum scale). Use `zinc-*` utilities or the tokens; `slate-*` and `gray-*` are rejected by source policy.
@@ -58,13 +62,13 @@ Zinc is a plain neutral that works under every protocol theme (Slate's blue unde
 
 ### Protocol scales
 
-Each protocol has a five-step scale from Tailwind. The base step marks the protocol (rail switcher, its name, identity links); the 700 step is the fill under white text (badges).
+Each protocol has a five-step scale, tuned in OKLCH and contrast-checked per step on light and dark backgrounds. Use the token classes (`text-meshtastic-500`, `bg-meshcore-700`, `border-reticulum-300`, and so on). The 500 base step marks the protocol (rail switcher, its name, identity links); the 700 step is the fill under white text (badges).
 
-| Protocol   | Scale   | 100       | 300       | Base            | 700       | 900       |
-| ---------- | ------- | --------- | --------- | --------------- | --------- | --------- |
-| Meshtastic | emerald | `#d1fae5` | `#6ee7b7` | `#6ee7b7` (300) | `#047857` | `#064e3b` |
-| MeshCore   | cyan    | `#cffafe` | `#67e8f9` | `#22d3ee` (400) | `#0e7490` | `#164e63` |
-| Reticulum  | yellow  | `#fef9c3` | `#fde047` | `#facc15` (400) | `#a16207` | `#713f12` |
+| Protocol   | Token prefix  | 100       | 300       | 500 (base) | 700       | 900       |
+| ---------- | ------------- | --------- | --------- | ---------- | --------- | --------- |
+| Meshtastic | `meshtastic-` | `#d1fae5` | `#a7f3d0` | `#67e8b4`  | `#047857` | `#064e3b` |
+| MeshCore   | `meshcore-`   | `#cffafe` | `#a5f3fc` | `#00d3f2`  | `#0e7490` | `#164e63` |
+| Reticulum  | `reticulum-`  | `#fef9c3` | `#fef08a` | `#facc15`  | `#a16207` | `#713f12` |
 
 Reticulum is yellow, not amber, so it never reads as a warning. Protocol classes live in `lib/protocolTheme.ts` and are fixed: they keep their identity under every theme.
 
@@ -72,29 +76,30 @@ Reticulum is yellow, not amber, so it never reads as a warning. Protocol classes
 
 The accent tokens follow the selected theme preset; the default preset is Meshtastic.
 
-| Token / class                          | Default                 | Use                                                                        |
-| -------------------------------------- | ----------------------- | -------------------------------------------------------------------------- |
-| `text-bright-green` / `bg-brand-green` | `#6ee7b7` emerald-300   | Accent: active nav, selection, focus ring, links, primary buttons          |
-| `text-app-bg` on `bg-brand-green`      |                         | Primary button label (dark on accent, about 13:1)                          |
-| `bg-readable-green`                    | `#047857` emerald-700   | Fills under white text; must keep 4.5:1 with white (`themeColors.test.ts`) |
-| `--color-chat-outgoing-bg` / `-border` | 700 at 22% / 300 at 25% | Own chat bubbles                                                           |
+| Token / class                          | Default                  | Use                                                                        |
+| -------------------------------------- | ------------------------ | -------------------------------------------------------------------------- |
+| `text-bright-green` / `bg-brand-green` | `#67e8b4` meshtastic-500 | Accent: active nav, selection, focus ring, links, primary buttons          |
+| `text-app-bg` on `bg-brand-green`      |                          | Primary button label (dark on accent, about 13:1)                          |
+| `bg-readable-green`                    | `#047857` meshtastic-700 | Fills under white text; must keep 4.5:1 with white (`themeColors.test.ts`) |
+| `--color-chat-outgoing-bg` / `-border` | 700 at 22% / 500 at 25%  | Own chat bubbles                                                           |
 
 The token names say "green" for history; they hold whatever accent the theme sets.
 
 ### Status (semantic)
 
-Status colors never double as the accent. Each has a light, main and dark step.
+Status colors never double as the accent. The style guide gives each a Light-BG, Main and Dark-Text step. The Main step is a token; the other two are Tailwind steps until the designer's values are in `styles.css`.
 
-| Meaning                 | Scale  | Light (bg on light) | Main (dots, icons, text)        | Dark (fills, text on light) |
-| ----------------------- | ------ | ------------------- | ------------------------------- | --------------------------- |
-| Success, online         | green  | `green-100`         | `green-400` / `green-500` dot   | `green-800`                 |
-| Warning, caution, stale | orange | `orange-100`        | `orange-400` / `orange-500` dot | `orange-800`                |
-| Error, offline, danger  | red    | `red-100`           | `red-400` / `red-500` dot       | `red-800`                   |
-| Info, neutral status    | indigo | `indigo-100`        | `indigo-400` / `indigo-500` dot | `indigo-800`                |
+| Meaning                 | Main token (dots, icons)   | Text on dark surfaces | Light (tint)             | Dark (fills) |
+| ----------------------- | -------------------------- | --------------------- | ------------------------ | ------------ |
+| Success, online         | `status-success` `#34d399` | `green-400`           | `green-900/40` or `100`  | `green-800`  |
+| Warning, caution, stale | `status-warning` `#f97316` | `orange-400`          | `orange-900/40` or `100` | `orange-800` |
+| Error, offline, danger  | `status-error` `#ef4444`   | `red-400`             | `red-900/40` or `100`    | `red-800`    |
+| Info, neutral status    | `status-info` `#818cf8`    | `indigo-400`          | `indigo-900/40` or `100` | `indigo-800` |
 
-- Success is Tailwind green, warmer than the Meshtastic emerald, so "online" is never confused with "Meshtastic".
+- Status dots use `StatusDot` tones (`ok`, `idle`, `off`, `warn`, `error`, `info`), which read the Main tokens. Use `bg-status-*` / `text-status-*` for any other dot or status icon.
+- Keep the `-400` steps for status text: the Main error red is under 4.5:1 on `zinc-800` rows.
 - Red means broken; orange means caution or delay (maintainer rule). Unread badges stay `bg-red-600` with white text, like the macOS dock.
-- Inline notices use `NOTICE_CLASS` in `formClasses.ts`; status dots use `StatusDot` tones (`ok`, `idle`, `off`, `warn`, `error`, `info`).
+- Inline notices use `NOTICE_CLASS` in `formClasses.ts`.
 
 Allowed exceptions: favourite stars are `yellow-400`; search highlights are yellow; data scales (battery, SNR, MECP severity, chart series, packet types) keep their own ramps and are labelled.
 
@@ -145,29 +150,31 @@ A 4px grid (Tailwind spacing, base 1rem = 16px): `0.5` 2px (inline icon gaps), `
 
 ## Radius
 
-Radius tokens in `styles.css` (`--radius-*`), so a family changes in one place:
+Radius tokens in `styles.css` (`--radius-*`), so a family changes in one place. The sizes are Tailwind's stock scale; the Figma names use Tailwind v3's naming, which v4 (this app) shifted by one step, so the roles get their own class names:
 
-| Class               | Size | Use                                       |
-| ------------------- | ---- | ----------------------------------------- |
-| `rounded-none`      | 0    | Tables, inline data                       |
-| `rounded-badge`     | 2px  | Badges, chips, tags, segments, menu items |
-| `rounded-control`   | 4px  | Buttons, inputs, selects, map controls    |
-| `rounded-card`      | 6px  | Cards, panels, popovers, menus, notices   |
-| `rounded-modal`     | 8px  | Modals, sheets                            |
-| `rounded-container` | 12px | Page sections, large containers           |
-| `rounded-full`      | pill | Pills, avatars, toggles, dots             |
+| Class               | Size | Figma name | Stock v4 class | Use                                       |
+| ------------------- | ---- | ---------- | -------------- | ----------------------------------------- |
+| `rounded-none`      | 0    |            | `rounded-none` | Tables, inline data                       |
+| `rounded-badge`     | 2px  | `sm`       | `rounded-xs`   | Badges, chips, tags, segments, menu items |
+| `rounded-control`   | 4px  | (default)  | `rounded-sm`   | Buttons, inputs, selects, map controls    |
+| `rounded-card`      | 6px  | `md`       | `rounded-md`   | Cards, panels, popovers, menus, notices   |
+| `rounded-modal`     | 8px  | `lg`       | `rounded-lg`   | Modals, sheets                            |
+| `rounded-container` | 12px | `xl`       | `rounded-xl`   | Page sections, large containers           |
+| `rounded-full`      | pill |            | `rounded-full` | Pills, avatars, toggles, dots             |
 
 ## Elevation
 
-Tailwind's default shadows disappear on near-black, so `styles.css` redefines them for dark surfaces:
+The style guide's shadows are tuned for dark surfaces (much heavier than Tailwind's light-mode shadows), so they are their own tokens, not overrides of `shadow-sm` / `shadow-md` / `shadow-lg`. Source policy rejects the stock classes.
 
-| Level | Class                     | Use                                      |
-| ----- | ------------------------- | ---------------------------------------- |
-| 0     | none                      | Inline elements, table rows              |
-| 1     | `shadow-xs`, `shadow-sm`  | Cards, list items                        |
-| 2     | `shadow-md`               | Dropdowns, popovers, menus, map controls |
-| 3     | `shadow-lg`               | Modals, dialogs                          |
-| 4     | `shadow-xl`, `shadow-2xl` | Toasts, floating panels                  |
+| Level | Class            | Use                                      |
+| ----- | ---------------- | ---------------------------------------- |
+| 0     | none             | Inline elements, table rows              |
+| 1     | `shadow-level-1` | Cards, list items                        |
+| 2     | `shadow-level-2` | Dropdowns, popovers, menus, map controls |
+| 3     | `shadow-level-3` | Modals, dialogs                          |
+| 4     | `shadow-level-4` | Toasts, floating panels                  |
+
+The values in `styles.css` are provisional until the Figma shadows are copied in.
 
 ## Icons
 
@@ -308,6 +315,7 @@ Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-comm
 | ------------------------------------ | ---------------------------------------------- |
 | `renderer-font-size-in-rem`          | `text-[Npx]` font sizes                        |
 | `renderer-zinc-neutrals`             | `slate-*` and `gray-*` palette classes         |
+| `renderer-elevation-levels`          | stock `shadow-xs` to `shadow-2xl` classes      |
 | `renderer-no-low-contrast-gray-text` | `text-zinc-500` (and slate/gray-500) text      |
 | `renderer-no-uppercase-micro-labels` | `uppercase` with `tracking-wide*`              |
 | `renderer-icons-not-glyphs`          | a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ |
@@ -315,8 +323,10 @@ Source-policy rules in `src/architecture/sourcePolicyRules.ts` (Vitest, pre-comm
 
 ## Open items
 
-- Exact token values from the designer's file: the scales here are the Tailwind palettes the guide matches (emerald, cyan, yellow, green, orange, red, indigo, zinc) and the elevation values are approximations.
-- Token hexes (`#6ee7b7`, `#047857`, `#a1a1aa`, and so on) are Tailwind v3 values set in `styles.css` and `themeColors.ts`, while utilities such as `text-emerald-300` and `bg-emerald-700` render Tailwind v4's oklch values (about `#5ee9b5` and `#007a55`). They are visually close; aligning the tokens to v4 is a one-line change per token.
-- The dark end of the Reticulum scale (yellow-700 and 900) leans toward orange; worth a look so it never reads as a dark warning.
+- From the designer's Figma: the status Light-BG and Dark-Text steps, and the exact Level 1 to 4 shadows. Protocol scales, status Main colors, neutrals and type are already exact.
+- Protocol colors outside `protocolTheme.ts` (for example some Reticulum panels and data ramps) still use Tailwind's `emerald` / `cyan` / `yellow` classes; move the ones that mark a protocol to the scale tokens.
+- Status text still uses Tailwind's `-400` steps (v4 oklch values) next to the exact Main tokens used by dots.
+- The Main success green (`#34d399`) sits close to the Meshtastic base (`#67e8b4`); status dots always come with text, so "online" is never color alone.
+- The dark end of the Reticulum scale (700 and 900) leans toward orange; worth a look so it never reads as a dark warning.
 - A light theme.
 - Per-protocol automatic theming (today the protocol accents are opt-in presets).

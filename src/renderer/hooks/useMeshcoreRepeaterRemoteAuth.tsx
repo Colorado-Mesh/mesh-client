@@ -195,7 +195,7 @@ export function useMeshcoreRepeaterRemoteAuth() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="repeater-remote-auth-title"
-          className="relative z-10 w-full max-w-md space-y-3 rounded-lg border border-zinc-600 bg-zinc-900 p-4 shadow-xl"
+          className="shadow-level-4 relative z-10 w-full max-w-md space-y-3 rounded-lg border border-zinc-600 bg-zinc-900 p-4"
         >
           <h2 id="repeater-remote-auth-title" className="text-base font-semibold text-white">
             {t('repeatersPanel.remoteAuthTitle')}

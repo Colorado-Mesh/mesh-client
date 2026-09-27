@@ -82,6 +82,14 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
       'Style guide: neutrals use the Zinc palette (zinc-50 to zinc-950) or the theme tokens (app-bg, deep-black, secondary-dark, muted); slate and gray have a blue undertone',
   },
   {
+    id: 'renderer-elevation-levels',
+    include: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    exclude: ['src/renderer/**/*.test.ts', 'src/renderer/**/*.test.tsx'],
+    forbid: /(?<![\w-])shadow-(?:xs|sm|md|lg|xl|2xl)(?![\w-])/,
+    message:
+      "Style guide: elevation uses shadow-level-1 to shadow-level-4 (styles.css); Tailwind's stock shadows are tuned for light surfaces and vanish on the dark UI",
+  },
+  {
     id: 'renderer-no-uppercase-micro-labels',
     include: ['src/renderer/**/*.tsx'],
     exclude: ['src/renderer/**/*.test.tsx'],

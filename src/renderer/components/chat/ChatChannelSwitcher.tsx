@@ -203,7 +203,7 @@ export function ChatChannelSwitcher({
         createPortal(
           <div
             ref={popoverRef}
-            className="bg-deep-black rounded-modal fixed flex max-h-[min(420px,70vh)] flex-col overflow-hidden border border-zinc-800 shadow-lg"
+            className="bg-deep-black rounded-modal shadow-level-3 fixed flex max-h-[min(420px,70vh)] flex-col overflow-hidden border border-zinc-800"
             style={{
               zIndex: Z_POPOVER_MENU,
               width: `${POPOVER_WIDTH / 16}rem`,

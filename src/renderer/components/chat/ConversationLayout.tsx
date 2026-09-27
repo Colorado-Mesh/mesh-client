@@ -107,7 +107,7 @@ export function ConversationLayout({
             />
             <aside
               aria-label={sideLabel}
-              className="bg-deep-black absolute inset-y-0 right-0 z-20 flex min-h-0 w-[min(18rem,85%)] flex-col border-l border-zinc-800 shadow-2xl"
+              className="bg-deep-black shadow-level-4 absolute inset-y-0 right-0 z-20 flex min-h-0 w-[min(18rem,85%)] flex-col border-l border-zinc-800"
             >
               {side}
             </aside>

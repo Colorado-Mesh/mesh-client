@@ -156,7 +156,7 @@ export function Menu({
         top: position?.top ?? -9999,
         left: position?.left ?? -9999,
       }}
-      className="border-secondary-dark bg-deep-black rounded-card fixed border p-1 shadow-md"
+      className="border-secondary-dark bg-deep-black rounded-card shadow-level-2 fixed border p-1"
     >
       {entries.map((entry, index) =>
         entry === 'separator' ? (

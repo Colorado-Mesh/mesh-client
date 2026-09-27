@@ -245,7 +245,7 @@ export function RncpEnableRequestModal() {
       aria-modal="true"
       aria-label={t('reticulumRemote.enableRequest.title')}
     >
-      <div className="w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 p-4 shadow-xl">
+      <div className="shadow-level-4 w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-900 p-4">
         <h2 className="text-lg font-semibold text-zinc-100">
           {t('reticulumRemote.enableRequest.title')}
         </h2>

@@ -213,7 +213,7 @@ export default function ContactGroupsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="groups-modal-title"
-        className="bg-deep-black rounded-modal relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col border border-zinc-700 shadow-lg"
+        className="bg-deep-black rounded-modal shadow-level-3 relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col border border-zinc-700"
       >
         {/* Header */}
         <div className="flex shrink-0 items-center justify-between border-b border-zinc-700 px-5 py-4">

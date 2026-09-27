@@ -1226,7 +1226,7 @@ export function ChatComposer({
               setGifPreviewFailed(false);
             }}
           />
-          <div className="bg-deep-black rounded-modal relative mx-4 w-full max-w-md space-y-4 border border-zinc-600 p-6 shadow-lg">
+          <div className="bg-deep-black rounded-modal shadow-level-3 relative mx-4 w-full max-w-md space-y-4 border border-zinc-600 p-6">
             <h3 className="text-lg font-semibold text-zinc-200">
               {t('chatPanel.meshcoreGifTitle')}
             </h3>
@@ -1549,7 +1549,7 @@ export function ChatComposer({
                       bottom: floodScopeMenuPos.bottom,
                       right: floodScopeMenuPos.right,
                     }}
-                    className="bg-deep-black z-50 max-h-72 min-w-[12rem] overflow-y-auto rounded-lg border border-zinc-700 py-1 shadow-xl"
+                    className="bg-deep-black shadow-level-4 z-50 max-h-72 min-w-[12rem] overflow-y-auto rounded-lg border border-zinc-700 py-1"
                   >
                     {floodScopeCustomEditing ? (
                       <div className="space-y-2 px-2 py-1.5">

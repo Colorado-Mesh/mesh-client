@@ -140,7 +140,7 @@ export default function ConfigureNodeSelector({
             <ul
               role="listbox"
               aria-label={t('configureNode.label')}
-              className="bg-deep-black absolute top-full right-0 left-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-zinc-700 py-1 shadow-xl"
+              className="bg-deep-black shadow-level-4 absolute top-full right-0 left-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-zinc-700 py-1"
             >
               <li role="presentation">
                 <button

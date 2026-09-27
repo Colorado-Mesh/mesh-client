@@ -2474,7 +2474,7 @@ export default function RoomsPanel({
               <button
                 type="button"
                 onClick={scrollToTop}
-                className="bg-deep-black hover:bg-sidebar-active-bg absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 shadow-lg transition-colors"
+                className="bg-deep-black hover:bg-sidebar-active-bg shadow-level-3 absolute top-2 right-2 z-10 flex items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors"
                 aria-label={t('aria.backToTop')}
               >
                 <ArrowUp aria-hidden className="h-3.5 w-3.5" size={14} />
@@ -2488,7 +2488,7 @@ export default function RoomsPanel({
                   scrollToUnreadOrBottom();
                 }}
                 {...{ [PARENT_HOVER_ATTR]: '' }}
-                className="bg-deep-black hover:bg-sidebar-active-bg absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 shadow-lg transition-colors"
+                className="bg-deep-black hover:bg-sidebar-active-bg shadow-level-3 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors"
                 aria-label={
                   unreadDividerTimestamp > 0
                     ? t('roomsPanel.jumpToUnread')

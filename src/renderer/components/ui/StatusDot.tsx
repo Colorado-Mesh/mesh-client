@@ -5,13 +5,13 @@
 export type StatusDotTone = 'ok' | 'idle' | 'off' | 'warn' | 'error' | 'info';
 
 const DOT_CLASS: Record<StatusDotTone, string> = {
-  ok: 'bg-green-500',
+  ok: 'bg-status-success',
   // Hollow ring: stale / stopped.
   idle: 'border-[1.5px] border-zinc-400 bg-transparent',
   off: 'bg-zinc-600',
-  warn: 'bg-orange-500',
-  error: 'bg-red-500',
-  info: 'bg-indigo-500',
+  warn: 'bg-status-warning',
+  error: 'bg-status-error',
+  info: 'bg-status-info',
 };
 
 export function StatusDot({

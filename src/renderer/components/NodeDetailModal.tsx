@@ -2341,7 +2341,7 @@ export default function NodeDetailModal({
           role="dialog"
           aria-modal="true"
           aria-labelledby="node-modal-title"
-          className="bg-deep-black rounded-modal relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-lg flex-col overflow-hidden border border-zinc-800 shadow-lg"
+          className="bg-deep-black rounded-modal shadow-level-3 relative z-10 flex max-h-[90vh] min-h-0 w-full max-w-lg flex-col overflow-hidden border border-zinc-800"
         >
           {detailContent}
         </div>

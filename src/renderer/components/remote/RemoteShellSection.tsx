@@ -238,7 +238,7 @@ export function RemoteShellSection({
             className={`${INPUT_BOX_CLASS} w-full`}
           />
           {showTypeahead && typeaheadMatches.length > 0 && (
-            <ul className="bg-secondary-dark absolute z-10 mt-1 w-full rounded-lg border border-zinc-600/50 shadow-lg">
+            <ul className="bg-secondary-dark shadow-level-3 absolute z-10 mt-1 w-full rounded-lg border border-zinc-600/50">
               {typeaheadMatches.map((addr) => (
                 <li key={addr.id}>
                   <button

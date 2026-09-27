@@ -99,7 +99,7 @@ describe('themeColors', () => {
     it('resets a brandGreen override that is too dark for text or dark-on-green fills', () => {
       localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ brandGreen: '#14532d' }));
       const colors = loadThemeColors();
-      expect(colors.brandGreen).toBe('#6ee7b7');
+      expect(colors.brandGreen).toBe('#67e8b4');
       expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
     });
 
@@ -133,7 +133,7 @@ describe('themeColors', () => {
       const fill = setProp.mock.calls.find(([prop]) => prop === '--color-chat-outgoing-bg');
       const border = setProp.mock.calls.find(([prop]) => prop === '--color-chat-outgoing-border');
       expect(fill?.[1]).toBe('rgb(4 120 87 / 0.22)');
-      expect(border?.[1]).toBe('rgb(110 231 183 / 0.25)');
+      expect(border?.[1]).toBe('rgb(103 232 180 / 0.25)');
       vi.restoreAllMocks();
     });
 

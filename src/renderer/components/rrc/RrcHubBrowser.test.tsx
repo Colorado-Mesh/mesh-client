@@ -146,7 +146,7 @@ describe('RrcHubBrowser', () => {
     });
 
     // Status dots, not glyphs: connected is the green dot, auto-join (not linked) a hollow ring.
-    expect(screen.getByTitle('Connected').firstElementChild).toHaveClass('bg-green-500');
+    expect(screen.getByTitle('Connected').firstElementChild).toHaveClass('bg-status-success');
     expect(screen.getByTitle('Auto-join enabled').firstElementChild).toHaveClass('border-zinc-400');
   });
 

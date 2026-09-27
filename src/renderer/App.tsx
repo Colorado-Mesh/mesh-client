@@ -5298,7 +5298,7 @@ function AppContent() {
                   <button
                     type="button"
                     onClick={scrollMainToTop}
-                    className="bg-brand-green text-deep-black hover:bg-bright-green fixed right-28 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold shadow-lg transition-colors"
+                    className="bg-brand-green text-deep-black hover:bg-bright-green shadow-level-3 fixed right-28 bottom-12 z-50 rounded-full px-3 py-2 text-xs font-bold transition-colors"
                     title={t('aria.backToTop')}
                     aria-label={t('aria.backToTop')}
                   >

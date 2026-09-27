@@ -112,7 +112,7 @@ export function ReticulumVoiceOverlay() {
         aria-modal="true"
         aria-label={t('reticulumVoice.incomingTitle')}
       >
-        <div className="bg-deep-black w-full max-w-md rounded-lg border border-zinc-600 p-4 shadow-lg">
+        <div className="bg-deep-black shadow-level-3 w-full max-w-md rounded-lg border border-zinc-600 p-4">
           <h2 className="text-bright-green mb-2 text-lg font-semibold">
             {t('reticulumVoice.incomingTitle')}
           </h2>
@@ -146,7 +146,7 @@ export function ReticulumVoiceOverlay() {
 
   return (
     <div
-      className="fixed top-1/2 left-1/2 z-[70] flex -translate-x-1/2 -translate-y-1/2 flex-col gap-1 rounded-lg border border-zinc-600 bg-zinc-900/95 px-3 py-2 shadow-lg"
+      className="shadow-level-3 fixed top-1/2 left-1/2 z-[70] flex -translate-x-1/2 -translate-y-1/2 flex-col gap-1 rounded-lg border border-zinc-600 bg-zinc-900/95 px-3 py-2"
       role="status"
       aria-label={t(phaseLabelKey(active.status))}
     >

@@ -177,7 +177,7 @@ export default function SearchModal({
         className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0"
         onClick={onClose}
       />
-      <div className="rounded-modal relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col border border-zinc-700 bg-zinc-900 shadow-lg">
+      <div className="rounded-modal shadow-level-3 relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col border border-zinc-700 bg-zinc-900">
         {/* Input */}
         <div className="flex items-center gap-2 border-b border-zinc-700 px-4 py-3">
           <Search

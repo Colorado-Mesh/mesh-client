@@ -36,7 +36,7 @@ describe('matchThemePreset', () => {
     const meshcore = THEME_PRESETS.find((p) => p.id === 'meshcore');
     expect(meshcore).toBeDefined();
     if (!meshcore) return;
-    expect(matchThemePreset({ ...meshcore.colors, brandGreen: '#22D3EE' })).toBe('meshcore');
+    expect(matchThemePreset({ ...meshcore.colors, brandGreen: '#00D3F2' })).toBe('meshcore');
     expect(matchThemePreset({ ...DEFAULT_THEME_COLORS })).toBe('default');
   });
 

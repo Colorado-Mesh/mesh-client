@@ -177,7 +177,7 @@ export default function MicronPageEditor({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="bg-deep-black rounded-modal relative mx-4 flex h-[85vh] w-full max-w-5xl flex-col gap-3 border border-zinc-600 p-4 shadow-lg"
+        className="bg-deep-black rounded-modal shadow-level-3 relative mx-4 flex h-[85vh] w-full max-w-5xl flex-col gap-3 border border-zinc-600 p-4"
       >
         <div className="flex flex-wrap items-center gap-2">
           <h3 id={titleId} className="text-sm font-medium text-zinc-100">

@@ -23,29 +23,32 @@ export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
     monogram: 'MT',
     ariaSwitchKey: 'aria.switchToMeshtastic',
     ariaSwitchWithUnreadKey: 'aria.switchToMeshtasticWithUnread',
-    // Style guide protocol scales: Meshtastic emerald, MeshCore cyan, Reticulum yellow (base step
-    // for the rail, 700 for white-text badges). Fixed classes, not the themeable accent token, so each
-    // protocol keeps its identity under every theme preset.
-    railActiveClass: 'bg-emerald-300/15 text-emerald-300 ring-[1.5px] ring-inset ring-emerald-300',
-    nameTextClass: 'text-emerald-300',
-    unreadBadgeFillClass: 'bg-emerald-700 text-white',
+    // Style guide protocol scales (styles.css --color-meshtastic-* and so on): the 500 base step for
+    // the rail, 700 for white-text badges. Fixed, not the themeable accent token, so each protocol
+    // keeps its identity under every theme preset.
+    railActiveClass:
+      'bg-meshtastic-500/15 text-meshtastic-500 ring-[1.5px] ring-inset ring-meshtastic-500',
+    nameTextClass: 'text-meshtastic-500',
+    unreadBadgeFillClass: 'bg-meshtastic-700 text-white',
   },
   meshcore: {
     displayName: 'MeshCore',
     monogram: 'MC',
     ariaSwitchKey: 'aria.switchToMeshCore',
     ariaSwitchWithUnreadKey: 'aria.switchToMeshCoreWithUnread',
-    railActiveClass: 'bg-cyan-400/15 text-cyan-400 ring-[1.5px] ring-inset ring-cyan-400',
-    nameTextClass: 'text-cyan-400',
-    unreadBadgeFillClass: 'bg-cyan-700 text-white',
+    railActiveClass:
+      'bg-meshcore-500/15 text-meshcore-500 ring-[1.5px] ring-inset ring-meshcore-500',
+    nameTextClass: 'text-meshcore-500',
+    unreadBadgeFillClass: 'bg-meshcore-700 text-white',
   },
   reticulum: {
     displayName: 'Reticulum',
     monogram: 'RN',
     ariaSwitchKey: 'aria.switchToReticulum',
     ariaSwitchWithUnreadKey: 'aria.switchToReticulumWithUnread',
-    railActiveClass: 'bg-yellow-400/15 text-yellow-400 ring-[1.5px] ring-inset ring-yellow-400',
-    nameTextClass: 'text-yellow-400',
-    unreadBadgeFillClass: 'bg-yellow-700 text-white',
+    railActiveClass:
+      'bg-reticulum-500/15 text-reticulum-500 ring-[1.5px] ring-inset ring-reticulum-500',
+    nameTextClass: 'text-reticulum-500',
+    unreadBadgeFillClass: 'bg-reticulum-700 text-white',
   },
 };

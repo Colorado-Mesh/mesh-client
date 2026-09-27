@@ -280,7 +280,7 @@ export function PanelLauncher({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`border-secondary-dark bg-deep-black relative flex w-full flex-col overflow-hidden border shadow-lg outline-none ${
+        className={`border-secondary-dark bg-deep-black shadow-level-3 relative flex w-full flex-col overflow-hidden border outline-none ${
           variant === 'sheet'
             ? 'max-h-[85vh] rounded-t-xl border-b-0 pb-[env(safe-area-inset-bottom)]'
             : 'rounded-modal max-h-[76vh] max-w-170'

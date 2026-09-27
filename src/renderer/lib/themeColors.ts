@@ -49,8 +49,8 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   appBg: '#09090b',
   sidebarActiveBg: '#27272a',
-  brandGreen: '#6ee7b7',
-  brightGreen: '#6ee7b7',
+  brandGreen: '#67e8b4',
+  brightGreen: '#67e8b4',
   readableGreen: '#047857',
   deepBlack: '#18181b',
   secondaryDark: '#3f3f46',
@@ -58,7 +58,7 @@ export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   chatIncomingBg: '#27272a',
   chatIncomingBorder: '#27272a',
   chatOutgoingBg: '#047857',
-  chatOutgoingBorder: '#6ee7b7',
+  chatOutgoingBorder: '#67e8b4',
   messageActionsBarBg: '#18181b',
   messageActionButtonHover: '#a1a1aa',
 };

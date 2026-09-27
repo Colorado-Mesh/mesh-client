@@ -4,14 +4,47 @@
 @source not './**/*.test.{ts,tsx}';
 
 @theme {
+  /*
+   * Values from the Colorado Mesh style guide (Figma, node 17:4). lib/themeColors.ts applies the
+   * theme tokens below as inline styles on :root at boot, so a changed default must change in
+   * DEFAULT_THEME_COLORS too or this file appears to do nothing.
+   */
   --color-app-bg: #09090b;
   --color-sidebar-active-bg: #27272a;
-  --color-brand-green: #6ee7b7;
+  --color-brand-green: #67e8b4; /* meshtastic-500 */
   --color-bright-green: var(--color-brand-green);
-  --color-readable-green: #047857;
+  --color-readable-green: #047857; /* meshtastic-700 */
   --color-deep-black: #18181b;
   --color-secondary-dark: #3f3f46;
   --color-muted: #a1a1aa;
+
+  /*
+   * Protocol scales (100 / 300 / 500 base / 700 / 900), contrast-checked per tier on light and dark
+   * backgrounds. The base step marks the protocol; 700 is the fill under white text. Fixed: they do
+   * not follow the theme accent.
+   */
+  --color-meshtastic-100: #d1fae5;
+  --color-meshtastic-300: #a7f3d0;
+  --color-meshtastic-500: #67e8b4;
+  --color-meshtastic-700: #047857;
+  --color-meshtastic-900: #064e3b;
+  --color-meshcore-100: #cffafe;
+  --color-meshcore-300: #a5f3fc;
+  --color-meshcore-500: #00d3f2;
+  --color-meshcore-700: #0e7490;
+  --color-meshcore-900: #164e63;
+  --color-reticulum-100: #fef9c3;
+  --color-reticulum-300: #fef08a;
+  --color-reticulum-500: #facc15;
+  --color-reticulum-700: #a16207;
+  --color-reticulum-900: #713f12;
+
+  /* Status, main tier (dots and icons). The light-background and dark-text tiers are still Tailwind
+     steps until the designer's values land (docs/style-guide.md, Status). */
+  --color-status-success: #34d399;
+  --color-status-warning: #f97316;
+  --color-status-error: #ef4444;
+  --color-status-info: #818cf8;
 
   /*
    * Type scale from the Colorado Mesh style guide (IBM Plex Sans / Mono), in rem so App > Appearance
@@ -39,7 +72,9 @@
   /*
    * Radius tokens (style guide): rounded-badge 2px (badges, chips, tags), rounded-control 4px
    * (buttons, inputs, selects), rounded-card 6px (cards, panels, popovers, menus), rounded-modal 8px
-   * (modals, sheets), rounded-container 12px (page sections). Change a whole family here.
+   * (modals, sheets), rounded-container 12px (page sections). Change a whole family here. The Figma
+   * names are Tailwind v3's sm / (default) / md / lg / xl; in v4 the same sizes are xs / sm / md / lg
+   * / xl, which is why the roles get their own names here.
    */
   --radius-badge: 0.125rem;
   --radius-control: 0.25rem;
@@ -48,16 +83,15 @@
   --radius-container: 0.75rem;
 
   /*
-   * Elevation for dark surfaces (style guide): Tailwind's default shadows vanish on near-black, so
-   * each level is darker and wider. xs/sm level 1 (cards), md level 2 (dropdowns, popovers), lg
-   * level 3 (modals), xl/2xl level 4 (toasts, floating panels).
+   * Elevation Level 1 to 4 (style guide; Level 0 is no shadow). Tuned for dark surfaces, so they are
+   * their own tokens (shadow-level-N) rather than overrides of Tailwind's light-tuned shadow-sm/md/lg.
+   * Level 1 cards, 2 dropdowns / popovers / map controls, 3 modals, 4 toasts and floating panels.
+   * The values are provisional until the designer's exact shadows land.
    */
-  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.4);
-  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.45), 0 1px 2px -1px rgb(0 0 0 / 0.45);
-  --shadow-md: 0 4px 8px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.45);
-  --shadow-lg: 0 10px 20px -3px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.5);
-  --shadow-xl: 0 20px 32px -5px rgb(0 0 0 / 0.6), 0 8px 12px -6px rgb(0 0 0 / 0.55);
-  --shadow-2xl: 0 28px 56px -12px rgb(0 0 0 / 0.7);
+  --shadow-level-1: 0 1px 3px 0 rgb(0 0 0 / 0.45), 0 1px 2px -1px rgb(0 0 0 / 0.45);
+  --shadow-level-2: 0 4px 8px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.45);
+  --shadow-level-3: 0 10px 20px -3px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.5);
+  --shadow-level-4: 0 20px 32px -5px rgb(0 0 0 / 0.6), 0 8px 12px -6px rgb(0 0 0 / 0.55);
   /* Bundled IBM Plex (OFL-1.1, assets/fonts/plex) so the UI renders the same offline on every OS;
      system stacks cover scripts outside the bundled latin, latin-ext and cyrillic subsets (CJK). */
   --font-sans:
@@ -70,9 +104,9 @@
      color-mixes to a light/white ring on Chromium/Electron. */
   --color-chat-incoming-bg: rgb(39 39 42 / 0.38);
   --color-chat-incoming-border: #27272a;
-  /* Own messages: readable (emerald-700) fill at 22%, accent (emerald-300) border at 25%. */
+  /* Own messages: readable (meshtastic-700) fill at 22%, accent (meshtastic-500) border at 25%. */
   --color-chat-outgoing-bg: rgb(4 120 87 / 0.22);
-  --color-chat-outgoing-border: rgb(110 231 183 / 0.25);
+  --color-chat-outgoing-border: rgb(103 232 180 / 0.25);
   /* Message actions bar background — hidden by default (opacity 0); toggled to
      fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
   --color-message-actions-bar-bg: rgb(24 24 27 / 0);
@@ -110,7 +144,7 @@ html[data-reduce-motion='true'] *::after {
 .leaflet-container .leaflet-control.leaflet-bar {
   border: 1px solid var(--color-zinc-700, #3f3f46);
   border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  box-shadow: var(--shadow-level-2);
   overflow: hidden;
 }
 .leaflet-container .leaflet-bar a,

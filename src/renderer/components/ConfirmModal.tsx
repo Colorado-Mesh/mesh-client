@@ -111,7 +111,7 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={messageId}
-        className="bg-deep-black rounded-modal relative mx-4 w-full max-w-sm space-y-4 border border-zinc-600 p-6 shadow-lg"
+        className="bg-deep-black rounded-modal shadow-level-3 relative mx-4 w-full max-w-sm space-y-4 border border-zinc-600 p-6"
       >
         <h3 id={titleId} className="text-lg font-semibold text-zinc-200">
           {title}

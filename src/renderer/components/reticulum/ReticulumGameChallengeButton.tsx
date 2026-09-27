@@ -68,7 +68,7 @@ export function ReticulumGameChallengeButton({
         <span>{t('gamesPanel.challenge')}</span>
       </button>
       {showMenu && (
-        <div className="bg-deep-black absolute top-full right-0 z-10 mt-1 w-36 rounded border border-zinc-600 shadow-lg">
+        <div className="bg-deep-black shadow-level-3 absolute top-full right-0 z-10 mt-1 w-36 rounded border border-zinc-600">
           {GAMES_CHALLENGE_APPS.map((appId) => (
             <button
               key={appId}
