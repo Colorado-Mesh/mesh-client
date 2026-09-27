@@ -12,10 +12,8 @@ const BUTTON_BASE =
 
 export const BUTTON_VARIANT_CLASS: Record<ButtonVariant, string> = {
   primary: 'border-transparent bg-brand-green text-app-bg hover:bg-brand-green/90',
-  secondary:
-    'border-secondary-dark bg-sidebar-active-bg text-ink-200 hover:bg-secondary-dark disabled:hover:bg-sidebar-active-bg',
-  danger:
-    'border-red-400/45 bg-transparent text-red-400 hover:bg-red-400/10 disabled:hover:bg-transparent',
+  secondary: 'border-secondary-dark bg-sidebar-active-bg text-ink-200 hover:bg-secondary-dark',
+  danger: 'border-red-400/45 bg-transparent text-red-400 hover:bg-red-400/10',
   ghost:
     'border-transparent bg-transparent text-ink-300 hover:bg-sidebar-active-bg hover:text-ink-100',
 };

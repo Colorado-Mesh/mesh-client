@@ -119,4 +119,11 @@ describe('style guide tokens (styles.css)', () => {
       expect(TOKENS.has(`--shadow-${stock}`)).toBe(false);
     }
   });
+
+  it('hover: never lights up a disabled control', () => {
+    // One override covers every hover: utility, so no control needs a disabled:hover: undo class.
+    const variant = CSS.slice(CSS.indexOf('@custom-variant hover {'));
+    expect(variant).toContain("&:hover:not(:disabled, [aria-disabled='true'])");
+    expect(variant.indexOf('@media (hover: hover)')).toBeGreaterThan(0);
+  });
 });

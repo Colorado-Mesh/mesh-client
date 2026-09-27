@@ -3,6 +3,18 @@
 @source './**/*.{ts,tsx}';
 @source not './**/*.test.{ts,tsx}';
 
+/*
+ * `hover:` never matches a disabled control, so a button that cannot be pressed never lights up
+ * as if it could. Tailwind's own hover variant, plus the :not().
+ */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      @slot;
+    }
+  }
+}
+
 @theme {
   /*
    * Values from the Colorado Mesh style guide (Figma, node 17:4). lib/themeColors.ts applies the

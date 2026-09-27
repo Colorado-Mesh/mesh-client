@@ -2143,7 +2143,7 @@ export default function AppPanel({
                 disabled={!hasSavedThemeSnapshot}
                 aria-label={t('appPanel.restoreTheme')}
                 title={hasSavedThemeSnapshot ? undefined : t('appPanel.noSavedThemeTooltip')}
-                className="bg-deep-black disabled:hover:bg-deep-black border-ink-600 text-ink-300 hover:bg-ink-700 flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                className="bg-deep-black border-ink-600 text-ink-300 hover:bg-ink-700 flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {t('appPanel.restoreThemeButton')}
               </button>
