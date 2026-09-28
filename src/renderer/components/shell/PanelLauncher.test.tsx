@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { TFunction } from 'i18next';
 import { describe, expect, it, vi } from 'vitest';
@@ -190,17 +190,67 @@ describe('PanelLauncher', () => {
     expect(props.onOpenTab).toHaveBeenCalledWith(tabIndexOf('Diagnostics'));
   });
 
-  it('moves through rows with the arrow keys and back to the search field', () => {
+  function activeEntryRows(): HTMLElement[] {
+    return screen
+      .getAllByRole('button')
+      .filter(
+        (button) =>
+          button.hasAttribute('data-launcher-entry') &&
+          button.classList.contains('bg-sidebar-active-bg'),
+      );
+  }
+
+  it('moves the single highlight with the arrow keys and back to the search field', () => {
     renderLauncher();
     const input = screen.getByRole('textbox', { name: 'Search panels, contacts and channels' });
+    const chat = screen.getByRole('button', { name: 'Chat, 4 unread' });
+    const rooms = screen.getByRole('button', { name: 'Rooms, 2 unread' });
+    expect(activeEntryRows()).toEqual([chat]);
+    expect(chat.className).toContain('focus-visible:outline-brand-green');
+
     fireEvent.keyDown(input, { key: 'ArrowDown' });
-    const firstRow = screen.getByRole('button', { name: 'Chat, 4 unread' });
-    expect(firstRow).toHaveFocus();
-    fireEvent.keyDown(firstRow, { key: 'ArrowDown' });
-    expect(screen.getByRole('button', { name: 'Rooms, 2 unread' })).toHaveFocus();
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowUp' });
-    fireEvent.keyDown(document.activeElement!, { key: 'ArrowUp' });
+    expect(rooms).toHaveFocus();
+    expect(activeEntryRows()).toEqual([rooms]);
+
+    fireEvent.keyDown(rooms, { key: 'ArrowDown' });
+    const third = document.activeElement;
+    expect(third).toHaveAttribute('data-launcher-entry');
+    expect(third).not.toBe(rooms);
+    fireEvent.keyDown(third as HTMLElement, { key: 'ArrowUp' });
+    expect(rooms).toHaveFocus();
+    fireEvent.keyDown(rooms, { key: 'ArrowUp' });
+    expect(chat).toHaveFocus();
+    fireEvent.keyDown(chat, { key: 'ArrowUp' });
     expect(input).toHaveFocus();
+    expect(activeEntryRows()).toEqual([chat]);
+  });
+
+  it('ArrowDown after a search moves the highlight, and Enter opens that row', async () => {
+    const user = userEvent.setup();
+    const onOpenTab = vi.fn();
+    renderLauncher({ onOpenTab });
+    const input = screen.getByRole('textbox', { name: 'Search panels, contacts and channels' });
+    await user.type(input, 'a');
+    const chat = screen.getByRole('button', { name: 'Chat, 4 unread' });
+    const contacts = screen.getByRole('button', { name: 'Contacts' });
+    expect(activeEntryRows()).toEqual([chat]);
+
+    await user.keyboard('{ArrowDown}');
+    expect(contacts).toHaveFocus();
+    expect(activeEntryRows()).toEqual([contacts]);
+
+    act(() => {
+      input.focus();
+    });
+    await user.keyboard('{Enter}');
+    expect(onOpenTab).toHaveBeenCalledExactlyOnceWith(tabIndexOf('Contacts'));
+
+    onOpenTab.mockClear();
+    act(() => {
+      contacts.focus();
+    });
+    await user.keyboard('{Enter}');
+    expect(onOpenTab).toHaveBeenCalledExactlyOnceWith(tabIndexOf('Contacts'));
   });
 
   it('sends typing on a row back to the search field', () => {
@@ -253,7 +303,9 @@ describe('PanelLauncher', () => {
     const onTogglePin = vi.fn();
     renderLauncher({ platform, pins: ['Chat'], onTogglePin });
     const row = screen.getByRole('button', { name: 'Graph' });
-    row.focus();
+    act(() => {
+      row.focus();
+    });
     fireEvent.keyDown(row, { key: 'p', code: 'KeyP', ...mod });
     expect(onTogglePin).toHaveBeenCalledWith('Graph');
   });
@@ -274,7 +326,9 @@ describe('PanelLauncher', () => {
       dialog.querySelectorAll<HTMLElement>('input:not([disabled]), button:not([disabled])'),
     );
     const last = focusables[focusables.length - 1];
-    last?.focus();
+    act(() => {
+      last?.focus();
+    });
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(
       screen.getByRole('textbox', { name: 'Search panels, contacts and channels' }),
