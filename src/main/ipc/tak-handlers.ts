@@ -160,26 +160,6 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     }
   });
 
-  ipcMain.handle('tak:pushNodeUpdate', async (event, node: unknown) => {
-    assertIpcSender(event, 'tak:pushNodeUpdate');
-    try {
-      const update = parseTakNodeUpdate(node);
-      if (!update) throw new Error('tak:pushNodeUpdate: invalid node update');
-      const m = await ensureTakServerManager();
-      if (!m.hasActiveSink()) {
-        console.debug('[IPC] tak:pushNodeUpdate: no TAK sink active, skipping');
-        return;
-      }
-      m.onNodeUpdate(update);
-    } catch (err) {
-      console.error(
-        '[IPC] tak:pushNodeUpdate failed:',
-        sanitizeLogMessage(err instanceof Error ? err.message : String(err)),
-      );
-      throw err;
-    }
-  });
-
   ipcMain.handle('tak:pushNodeUpdates', (event, nodes: unknown) => {
     assertIpcSender(event, 'tak:pushNodeUpdates');
     if (!Array.isArray(nodes) || nodes.length > TAK_NODE_UPDATE_BATCH_MAX) {

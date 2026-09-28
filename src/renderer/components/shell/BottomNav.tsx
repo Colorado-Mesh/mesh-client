@@ -79,6 +79,7 @@ export function BottomNav({
         badge={moreBadge}
         active={moreActive || moreOpen}
         dataSection="more"
+        ariaCurrent={moreActive ? 'page' : undefined}
         ariaHasPopup="dialog"
         ariaExpanded={moreOpen}
         onClick={onMore}

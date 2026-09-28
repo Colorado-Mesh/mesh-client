@@ -5218,9 +5218,6 @@
     "missingKeyMaterial": "Matériel clé manquant",
     "unknownError": "Erreur inconnue"
   },
-  "sidebar": {
-    "disabledTabTooltip": "Non disponible dans ce mode"
-  },
   "tabs": {
     "connection": "Connexion",
     "chat": "Chat",

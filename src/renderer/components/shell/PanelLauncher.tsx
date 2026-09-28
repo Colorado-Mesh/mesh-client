@@ -71,6 +71,32 @@ interface LauncherGroup {
 
 const ENTRY_SELECTOR = '[data-launcher-entry]';
 const FOCUSABLE_SELECTOR = 'input:not([disabled]), button:not([disabled])';
+/** Keyboard focus ring, distinct from the active-row fill (`bg-sidebar-active-bg`). */
+const LAUNCHER_ROW_FOCUS =
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-brand-green';
+
+interface LauncherTabTarget {
+  kind: 'tab';
+  tabIndex: number;
+}
+
+interface LauncherChannelTarget {
+  kind: 'channel';
+  index: number;
+}
+
+interface LauncherContactTarget {
+  kind: 'contact';
+  id: string;
+}
+
+type LauncherRowTarget = LauncherTabTarget | LauncherChannelTarget | LauncherContactTarget;
+
+function launcherRowClass(isActive: boolean, fullWidth: boolean): string {
+  return `hover:bg-sidebar-active-bg text-body text-ink-200 flex h-9 min-w-0 items-center gap-2.5 rounded-md px-2 text-left ${LAUNCHER_ROW_FOCUS} ${
+    fullWidth ? 'w-full' : 'flex-1'
+  }${isActive ? ' bg-sidebar-active-bg' : ''}`;
+}
 
 /**
  * All-panels launcher (Ctrl+K, Cmd+K on macOS). Every panel visible for the active protocol,
@@ -95,6 +121,8 @@ export function PanelLauncher({
   const { t } = useTranslation();
   const titleId = useId();
   const [query, setQuery] = useState('');
+  // One index drives the row fill and what Enter opens, including while the search field is focused.
+  const [activeIndex, setActiveIndex] = useState(0);
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -160,7 +188,6 @@ export function PanelLauncher({
     [allGroups, query],
   );
   const panelCount = allGroups.reduce((sum, group) => sum + group.entries.length, 0);
-  const firstMatch = groups[0]?.entries[0];
   const channelMatches: LauncherMatches<LauncherChannelItem> = useMemo(
     () => (channels && onOpenChannel ? findLauncherDestinations(channels, query) : NO_MATCHES),
     [channels, onOpenChannel, query],
@@ -170,18 +197,31 @@ export function PanelLauncher({
     [contacts, onOpenContact, query],
   );
   const hasDestinations = channelMatches.matches.length + contactMatches.matches.length > 0;
-  const openFirstDestination = (): boolean => {
-    const channel = channelMatches.matches[0];
-    if (channel && onOpenChannel) {
-      onOpenChannel(channel.index);
-      return true;
+  // Same order as the rendered `[data-launcher-entry]` buttons.
+  const targets: LauncherRowTarget[] = [];
+  const panelRowIndex = new Map<number, number>();
+  for (const group of groups) {
+    for (const entry of group.entries) {
+      panelRowIndex.set(entry.panelIndex, targets.length);
+      targets.push({ kind: 'tab', tabIndex: entry.tabIndex });
     }
-    const contact = contactMatches.matches[0];
-    if (contact && onOpenContact) {
-      onOpenContact(contact.id);
-      return true;
-    }
-    return false;
+  }
+  const channelRowIndex = new Map<number, number>();
+  for (const channel of channelMatches.matches) {
+    channelRowIndex.set(channel.index, targets.length);
+    targets.push({ kind: 'channel', index: channel.index });
+  }
+  const contactRowIndex = new Map<string, number>();
+  for (const contact of contactMatches.matches) {
+    contactRowIndex.set(contact.id, targets.length);
+    targets.push({ kind: 'contact', id: contact.id });
+  }
+  const active = targets.length === 0 ? -1 : Math.min(activeIndex, targets.length - 1);
+  const openTarget = (target: LauncherRowTarget | undefined) => {
+    if (!target) return;
+    if (target.kind === 'tab') onOpenTab(target.tabIndex);
+    else if (target.kind === 'channel') onOpenChannel?.(target.index);
+    else onOpenContact?.(target.id);
   };
   const pinsFull = pins.length >= MAX_LAUNCHER_PINS;
 
@@ -191,13 +231,17 @@ export function PanelLauncher({
   const focusEntry = (from: HTMLElement | null, step: 1 | -1) => {
     const buttons = entryButtons();
     if (buttons.length === 0) return;
-    const index = from ? buttons.indexOf(from as HTMLButtonElement) : -1;
-    const next = index + step;
+    // From the search field, step away from the row that is already highlighted.
+    const current = from ? buttons.indexOf(from as HTMLButtonElement) : Math.max(active, 0);
+    const next = current + step;
     if (next < 0) {
+      setActiveIndex(0);
       inputRef.current?.focus();
       return;
     }
-    buttons[Math.min(next, buttons.length - 1)]?.focus();
+    const index = Math.min(next, buttons.length - 1);
+    setActiveIndex(index);
+    buttons[index]?.focus();
   };
 
   const handleInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -205,12 +249,9 @@ export function PanelLauncher({
       e.preventDefault();
       focusEntry(null, 1);
     } else if (e.key === 'Enter') {
-      if (firstMatch) {
-        e.preventDefault();
-        onOpenTab(firstMatch.tabIndex);
-      } else if (openFirstDestination()) {
-        e.preventDefault();
-      }
+      if (active < 0) return;
+      e.preventDefault();
+      openTarget(targets[active]);
     }
   };
 
@@ -224,6 +265,7 @@ export function PanelLauncher({
     if (e.key.length === 1 && e.key !== ' ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       setQuery((q) => q + e.key);
+      setActiveIndex(0);
       inputRef.current?.focus();
       return true;
     }
@@ -240,8 +282,6 @@ export function PanelLauncher({
     handleRowNavKeyDown(e);
   };
 
-  const destinationRowClass =
-    'hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body flex h-9 w-full min-w-0 items-center gap-2.5 rounded-md px-2 text-left text-ink-200 outline-none';
   const renderDestinationGroup = (
     key: string,
     label: string,
@@ -298,6 +338,7 @@ export function PanelLauncher({
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
+              setActiveIndex(0);
             }}
             onKeyDown={handleInputKeyDown}
             aria-label={t('shell.launcher.searchLabel')}
@@ -337,7 +378,8 @@ export function PanelLauncher({
                         const badge = slotBadge(entry.slot, badgeCounts);
                         const pinPosition = pins.indexOf(entry.slot);
                         const isPinned = pinPosition !== -1;
-                        const isFirstMatch = query.trim() !== '' && entry === firstMatch;
+                        const rowIndex = panelRowIndex.get(entry.panelIndex) ?? -1;
+                        const isActive = rowIndex === active;
                         return (
                           <li key={entry.panelIndex} className="flex items-center gap-1">
                             <button
@@ -352,12 +394,13 @@ export function PanelLauncher({
                               onClick={() => {
                                 onOpenTab(entry.tabIndex);
                               }}
+                              onFocus={() => {
+                                setActiveIndex(rowIndex);
+                              }}
                               onKeyDown={(e) => {
                                 handleEntryKeyDown(e, entry);
                               }}
-                              className={`hover:bg-sidebar-active-bg focus-visible:bg-sidebar-active-bg text-body text-ink-200 flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md px-2 text-left outline-none ${
-                                isFirstMatch ? 'bg-sidebar-active-bg' : ''
-                              }`}
+                              className={launcherRowClass(isActive, false)}
                             >
                               <span className="text-muted flex shrink-0">
                                 <TabIcon name={entry.iconSlot} />
@@ -370,7 +413,7 @@ export function PanelLauncher({
                                   {formatBadgeCount(badge.count)}
                                 </span>
                               )}
-                              {isFirstMatch && <Kbd>Enter</Kbd>}
+                              {query.trim() !== '' && isActive && <Kbd>Enter</Kbd>}
                               {isPinned && (
                                 <Kbd>{formatShortcut(String(pinPosition + 1), platform)}</Kbd>
                               )}
@@ -417,22 +460,28 @@ export function PanelLauncher({
               'channels',
               t('shell.launcher.channelsGroup'),
               channelMatches.more,
-              channelMatches.matches.map((channel) => (
-                <li key={`ch-${String(channel.index)}`}>
-                  <button
-                    type="button"
-                    data-launcher-entry=""
-                    onClick={() => {
-                      onOpenChannel(channel.index);
-                    }}
-                    onKeyDown={handleRowNavKeyDown}
-                    className={destinationRowClass}
-                  >
-                    <Hash aria-hidden className={`${ICON_MD} text-muted shrink-0`} size={16} />
-                    <span className="min-w-0 flex-1 truncate">{channel.name}</span>
-                  </button>
-                </li>
-              )),
+              channelMatches.matches.map((channel) => {
+                const rowIndex = channelRowIndex.get(channel.index) ?? -1;
+                return (
+                  <li key={`ch-${String(channel.index)}`}>
+                    <button
+                      type="button"
+                      data-launcher-entry=""
+                      onClick={() => {
+                        onOpenChannel(channel.index);
+                      }}
+                      onFocus={() => {
+                        setActiveIndex(rowIndex);
+                      }}
+                      onKeyDown={handleRowNavKeyDown}
+                      className={launcherRowClass(rowIndex === active, true)}
+                    >
+                      <Hash aria-hidden className={`${ICON_MD} text-muted shrink-0`} size={16} />
+                      <span className="min-w-0 flex-1 truncate">{channel.name}</span>
+                    </button>
+                  </li>
+                );
+              }),
             )}
           {contactMatches.matches.length > 0 &&
             onOpenContact &&
@@ -440,27 +489,33 @@ export function PanelLauncher({
               'contacts',
               contactsLabel ?? t('shell.launcher.contactsGroup'),
               contactMatches.more,
-              contactMatches.matches.map((contact) => (
-                <li key={`c-${contact.id}`}>
-                  <button
-                    type="button"
-                    data-launcher-entry=""
-                    onClick={() => {
-                      onOpenContact(contact.id);
-                    }}
-                    onKeyDown={handleRowNavKeyDown}
-                    className={destinationRowClass}
-                  >
-                    <User aria-hidden className={`${ICON_MD} text-muted shrink-0`} size={16} />
-                    <span className="min-w-0 flex-1 truncate">{contact.name}</span>
-                    {contact.detail && (
-                      <span className="text-muted text-meta shrink-0 font-mono">
-                        {contact.detail}
-                      </span>
-                    )}
-                  </button>
-                </li>
-              )),
+              contactMatches.matches.map((contact) => {
+                const rowIndex = contactRowIndex.get(contact.id) ?? -1;
+                return (
+                  <li key={`c-${contact.id}`}>
+                    <button
+                      type="button"
+                      data-launcher-entry=""
+                      onClick={() => {
+                        onOpenContact(contact.id);
+                      }}
+                      onFocus={() => {
+                        setActiveIndex(rowIndex);
+                      }}
+                      onKeyDown={handleRowNavKeyDown}
+                      className={launcherRowClass(rowIndex === active, true)}
+                    >
+                      <User aria-hidden className={`${ICON_MD} text-muted shrink-0`} size={16} />
+                      <span className="min-w-0 flex-1 truncate">{contact.name}</span>
+                      {contact.detail && (
+                        <span className="text-muted text-meta shrink-0 font-mono">
+                          {contact.detail}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              }),
             )}
         </div>
 

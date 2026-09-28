@@ -75,7 +75,19 @@ describe('BottomNav', () => {
     const { nav } = renderNav({ activeSectionId: 'device' });
     const more = within(nav).getByRole('button', { name: 'More' });
     expect(more.className).toContain('text-bright-green');
+    expect(more).toHaveAttribute('aria-current', 'page');
     expect(within(nav).getByRole('button', { name: 'Chat' })).not.toHaveAttribute('aria-current');
+  });
+
+  it('does not mark More current when it is only open over a primary section', () => {
+    const { nav } = renderNav({ activeSectionId: 'chat', moreOpen: true });
+    const more = within(nav).getByRole('button', { name: 'More' });
+    expect(more.className).toContain('text-bright-green');
+    expect(more).not.toHaveAttribute('aria-current');
+    expect(within(nav).getByRole('button', { name: 'Chat' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('has no axe violations with badges', async () => {

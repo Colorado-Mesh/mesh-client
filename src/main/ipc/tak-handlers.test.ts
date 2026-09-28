@@ -65,7 +65,6 @@ describe('tak-handlers', () => {
         'tak:getConnectedClients',
         'tak:generateDataPackage',
         'tak:regenerateCertificates',
-        'tak:pushNodeUpdate',
       ]),
     );
 

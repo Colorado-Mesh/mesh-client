@@ -5885,9 +5885,6 @@
     "importingPrivateKey": "Importing...",
     "regenerateKeysConfirm": "Regenerating keys will replace your current DM public and private keys. Any existing encrypted messages will no longer be decryptable. Are you sure?"
   },
-  "sidebar": {
-    "disabledTabTooltip": "Not available in this mode"
-  },
   "signalMeter": {
     "rssi": "RSSI",
     "snr": "SNR",
