@@ -7,7 +7,7 @@ export interface ReticulumTxBufferingHeaderIndicatorProps {
   interfaceName?: string | null;
 }
 
-/** Amber spinner when Reticulum host TX is buffering outbound to a local RNode. */
+/** Orange spinner when Reticulum host TX is buffering outbound to a local RNode. */
 export function ReticulumTxBufferingHeaderIndicator({
   buffering,
   interfaceName,

@@ -13,7 +13,7 @@ Mesh-Client provides one desktop workflow for **Meshtastic**, **MeshCore**, and 
 Key outcomes:
 
 - True message persistence with SQLite-backed history.
-- Unified interface across Meshtastic, MeshCore, and Reticulum (tri-protocol switcher: green / cyan / amber).
+- Unified interface across Meshtastic, MeshCore, and Reticulum (rail protocol switcher, MT / MC / RN: Meshtastic green, MeshCore cyan, Reticulum yellow).
 - Advanced mesh visibility via diagnostics, map/topology overlays, and routing insights.
 - EMCOMM: MECP emergency reports, Incident Command, and TAK (CoT) on all three protocols.
 - Offline-ready maps (`mesh-tiles:` cache + region download) and configurable chat/MECP notification tones.
@@ -117,4 +117,4 @@ Yes. When adding or editing a channel in the **Radio** tab, click **"Derive from
 
 ### How do I use Reticulum?
 
-Select the **Reticulum** pill (amber) in the header → **Connection** → **Start stack** → **Network** to create or import identity → add **Interfaces** (TCP, Auto, or RNode). Chat is **DM-only** over LXMF. See [reticulum.md](reticulum.md) for RNode Wi‑Fi, propagation nodes, and sidecar build steps.
+Select **RN** (Reticulum, yellow) at the top of the rail → **Connection** → **Start stack** → **Network** to create or import identity → add **Interfaces** (TCP, Auto, or RNode). Chat is **DM-only** over LXMF. See [reticulum.md](reticulum.md) for RNode Wi‑Fi, propagation nodes, and sidecar build steps.
