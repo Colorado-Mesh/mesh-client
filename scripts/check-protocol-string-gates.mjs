@@ -26,7 +26,6 @@ const ALLOWLIST = new Set([
   'src/renderer/components/MapPanel.tsx',
   'src/renderer/components/NodeDetailModal.tsx',
   'src/renderer/components/NodeInfoBody.tsx',
-  'src/renderer/components/SearchModal.tsx',
   'src/renderer/components/SecurityPanel.tsx',
   'src/renderer/components/LogPanel.tsx',
 ]);

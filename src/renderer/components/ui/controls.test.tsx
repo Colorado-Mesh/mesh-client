@@ -7,7 +7,6 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
 import { Button, IconButton } from './Button';
-import { ButtonGroup, GroupButton } from './ButtonGroup';
 import { CopyField } from './CopyField';
 import { LabelValue, LabelValueGrid } from './LabelValue';
 import { Panel } from './Panel';
@@ -38,22 +37,6 @@ describe('Button', () => {
       'title',
       'Refresh contacts',
     );
-  });
-});
-
-describe('ButtonGroup', () => {
-  it('groups related actions under one name', async () => {
-    const user = userEvent.setup();
-    const onImport = vi.fn();
-    render(
-      <ButtonGroup aria-label="Contact actions">
-        <GroupButton>Flood advert</GroupButton>
-        <GroupButton onClick={onImport}>Import</GroupButton>
-      </ButtonGroup>,
-    );
-    expect(screen.getByRole('group', { name: 'Contact actions' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Import' }));
-    expect(onImport).toHaveBeenCalledTimes(1);
   });
 });
 

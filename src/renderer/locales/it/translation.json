@@ -5123,13 +5123,6 @@
     "moreActions": "Altre azioni della stanza",
     "loginAndSyncHeading": "Accesso e sincronizzazione"
   },
-  "searchModal": {
-    "closeSearch": "Chiudi ricerca",
-    "placeholder": "Cerca tutti i messaggi… (utente:nome, canale:nome)",
-    "noResults": "Nessun risultato",
-    "hint": "Digita per cercare in tutti i messaggi",
-    "resultCount": "{{count}} risultato/i — clicca per navigare"
-  },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",
     "failed": "Non riuscito: {{message}}",
