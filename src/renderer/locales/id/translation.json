@@ -5218,9 +5218,6 @@
     "missingKeyMaterial": "Bahan utama tidak ada",
     "unknownError": "Kesalahan tidak dikenal"
   },
-  "sidebar": {
-    "disabledTabTooltip": "Tidak tersedia dalam mode ini"
-  },
   "tabs": {
     "connection": "Koneksi",
     "chat": "Mengobrol",

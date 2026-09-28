@@ -5218,9 +5218,6 @@
     "missingKeyMaterial": "Ontbrekend belangrijk materiaal",
     "unknownError": "Onbekende fout"
   },
-  "sidebar": {
-    "disabledTabTooltip": "Niet beschikbaar in deze modus"
-  },
   "tabs": {
     "connection": "Verbinding",
     "chat": "Chatten",

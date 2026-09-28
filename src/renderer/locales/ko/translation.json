@@ -5218,9 +5218,6 @@
     "missingKeyMaterial": "핵심 자료 누락",
     "unknownError": "알 수 없는 오류"
   },
-  "sidebar": {
-    "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."
-  },
   "tabs": {
     "connection": "연결",
     "chat": "채팅",
