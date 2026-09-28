@@ -51,6 +51,7 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { MESHCORE_PUBLIC_CHANNEL_INDEX } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
 import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
 import {
@@ -199,6 +200,7 @@ import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ChatRfHopLabel } from './ChatRfHopLabel';
+import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MecpComposeModal } from './mecp/MecpComposeModal';
 import { mecpChatBubbleToneClasses, MecpSeverityBadge } from './mecp/MecpSeverityBadge';
@@ -225,6 +227,7 @@ import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
 import { Button } from './ui/Button';
 import { chipClass, INPUT_CLASS } from './ui/formClasses';
+import { Menu } from './ui/Menu';
 import { ScrollStrip } from './ui/ScrollStrip';
 
 function chatPanelIsLinux(): boolean {
@@ -585,6 +588,8 @@ export interface ChatPanelProps {
   meshcoreChannelSources?: readonly MeshcoreChatChannelSource[];
   /** MeshCore: save a channel on the connected companion radio. */
   onSetMeshcoreChannel?: (index: number, name: string, secret: Uint8Array) => Promise<void>;
+  /** MeshCore: remove a channel from the connected companion radio (chat asks first). */
+  onDeleteMeshcoreChannel?: (index: number) => Promise<void>;
   /** MeshCore: companion radio is unavailable for channel writes. */
   meshcoreChannelManagementDisabled?: boolean;
   myNodeNum: number;
@@ -676,6 +681,7 @@ function ChatPanel({
   channels,
   meshcoreChannelSources,
   onSetMeshcoreChannel,
+  onDeleteMeshcoreChannel,
   meshcoreChannelManagementDisabled = false,
   myNodeNum,
   ownNodeIds,
@@ -981,6 +987,42 @@ function ChatPanel({
     },
     [channelRestoreScopeKey],
   );
+
+  // MeshCore channels can be removed from chat: right-click a channel chip (or the menu key or
+  // Shift+F10 on it), or the x beside it in the + dialog. Public, in slot 0, is never offered.
+  const channelMenuAnchorRef = useRef<HTMLElement | null>(null);
+  const [channelMenu, setChannelMenu] = useState<{ index: number; name: string } | null>(null);
+  const [channelToRemove, setChannelToRemove] = useState<{ index: number; name: string } | null>(
+    null,
+  );
+  const [removingChannel, setRemovingChannel] = useState(false);
+  const canRemoveChannel = (index: number) =>
+    onDeleteMeshcoreChannel != null && index !== MESHCORE_PUBLIC_CHANNEL_INDEX;
+  const openChannelMenu = (anchor: HTMLElement, target: { index: number; name: string }) => {
+    channelMenuAnchorRef.current = anchor;
+    setChannelMenu({ index: target.index, name: target.name });
+  };
+  const removeChannel = async (target: { index: number; name: string }) => {
+    if (!onDeleteMeshcoreChannel) return;
+    setRemovingChannel(true);
+    try {
+      await onDeleteMeshcoreChannel(target.index);
+      setChannelToRemove(null);
+      if (channel === target.index) {
+        const next = channels.find((ch) => ch.index !== target.index);
+        if (next) selectChannel(next.index);
+      }
+    } catch (e) {
+      console.warn('[ChatPanel] remove channel failed ' + errLikeToLogString(e));
+      setChannelToRemove(null);
+      addToast(
+        t('chatPanel.removeChannelFailed', { name: target.name, message: errLikeToLogString(e) }),
+        'error',
+      );
+    } finally {
+      setRemovingChannel(false);
+    }
+  };
 
   const [chatActionError, setChatActionError] = useState<{
     message: string;
@@ -2644,6 +2686,27 @@ function ChatPanel({
                         selectChannel(ch.index);
                         setViewMode('channels');
                       }}
+                      onContextMenu={
+                        canRemoveChannel(ch.index)
+                          ? (event) => {
+                              event.preventDefault();
+                              openChannelMenu(event.currentTarget, ch);
+                            }
+                          : undefined
+                      }
+                      onKeyDown={
+                        canRemoveChannel(ch.index)
+                          ? (event) => {
+                              if (
+                                event.key === 'ContextMenu' ||
+                                (event.key === 'F10' && event.shiftKey)
+                              ) {
+                                event.preventDefault();
+                                openChannelMenu(event.currentTarget, ch);
+                              }
+                            }
+                          : undefined
+                      }
                       className={`${chipClass(isActiveChannel)} inline-flex shrink-0 items-center gap-1.5`}
                     >
                       {!ch.name.startsWith('#') && (
@@ -2665,6 +2728,45 @@ function ChatPanel({
                   onSelectChannel={(index) => {
                     selectChannel(index);
                     setViewMode('channels');
+                  }}
+                  onRemoveChannel={onDeleteMeshcoreChannel ? setChannelToRemove : undefined}
+                />
+              ) : null}
+              <Menu
+                open={channelMenu != null}
+                onClose={() => {
+                  setChannelMenu(null);
+                }}
+                anchorRef={channelMenuAnchorRef}
+                aria-label={t('chatPanel.channelMenuAria', { name: channelMenu?.name ?? '' })}
+                align="start"
+                entries={[
+                  {
+                    id: 'remove-channel',
+                    label: t('chatPanel.removeChannel'),
+                    tone: 'danger',
+                    disabled: meshcoreChannelManagementDisabled,
+                    description: meshcoreChannelManagementDisabled
+                      ? t('chatPanel.removeChannelNeedsRadio')
+                      : undefined,
+                    onSelect: () => {
+                      if (channelMenu) setChannelToRemove(channelMenu);
+                    },
+                  },
+                ]}
+              />
+              {channelToRemove ? (
+                <ConfirmModal
+                  title={t('chatPanel.removeChannelTitle', { name: channelToRemove.name })}
+                  message={t('chatPanel.removeChannelMessage', { name: channelToRemove.name })}
+                  confirmLabel={t('chatPanel.removeChannel')}
+                  danger
+                  confirmDisabled={removingChannel}
+                  onConfirm={() => {
+                    void removeChannel(channelToRemove);
+                  }}
+                  onCancel={() => {
+                    if (!removingChannel) setChannelToRemove(null);
                   }}
                 />
               ) : null}

@@ -489,6 +489,13 @@
     "tooltipLabel": "Channel utilization"
   },
   "chatPanel": {
+    "channelMenuAria": "Options for {{name}}",
+    "removeChannel": "Remove channel",
+    "removeChannelAria": "Remove {{name}}",
+    "removeChannelTitle": "Remove {{name}}?",
+    "removeChannelMessage": "The radio stops receiving {{name}} and forgets its key. You can add it again with the + button: by name for a hashtag channel, or with its key for a private one.",
+    "removeChannelFailed": "Couldn't remove {{name}}: {{message}}",
+    "removeChannelNeedsRadio": "Available once the radio is connected",
     "floodScopeOverrideLabel": "Flood scope for this chat view",
     "floodScopeOverrideAria": "Per-view flood scope override",
     "floodScopeOverrideDefault": "Default scope",

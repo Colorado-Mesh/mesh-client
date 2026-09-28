@@ -4031,6 +4031,11 @@ function AppContent() {
                                   ? meshcorePanelActions.meshcoreSetChannel
                                   : undefined
                               }
+                              onDeleteMeshcoreChannel={
+                                capabilities.hasCompanionContactManagementConfig
+                                  ? meshcorePanelActions.meshcoreDeleteChannel
+                                  : undefined
+                              }
                               meshcoreChannelManagementDisabled={!isOperational}
                               myNodeNum={activeSelfNodeNum}
                               ownNodeIds={

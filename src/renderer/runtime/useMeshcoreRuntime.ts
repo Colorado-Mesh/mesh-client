@@ -7206,6 +7206,8 @@ export function useMeshcoreRuntime() {
         setChannels((prev) => prev.filter((c) => c.index !== idx));
       } catch (e) {
         console.warn('[useMeshcoreRuntime] deleteMeshcoreChannel error ' + errLikeToLogString(e));
+        // Callers say so on screen; a swallowed failure looked like a removed channel.
+        throw e;
       }
     },
     [runMeshcoreUserTxWithLiveTcp],

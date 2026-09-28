@@ -489,6 +489,13 @@
     "tooltipLabel": "Utilización del canal."
   },
   "chatPanel": {
+    "channelMenuAria": "Opciones de {{name}}",
+    "removeChannel": "Quitar canal",
+    "removeChannelAria": "Quitar {{name}}",
+    "removeChannelTitle": "¿Quitar {{name}}?",
+    "removeChannelMessage": "La radio deja de recibir {{name}} y olvida su clave. Puedes volver a añadirlo con el botón +: por nombre si es un canal hashtag, o con su clave si es privado.",
+    "removeChannelFailed": "No se pudo quitar {{name}}: {{message}}",
+    "removeChannelNeedsRadio": "Disponible cuando la radio esté conectada",
     "channels": "Canales",
     "searchMessages": "Buscar mensajes",
     "closeDmTab": "Cerrar pestaña DM",

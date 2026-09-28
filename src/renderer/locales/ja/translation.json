@@ -489,6 +489,13 @@
     "tooltipLabel": "チャネル使用率"
   },
   "chatPanel": {
+    "channelMenuAria": "{{name}} のオプション",
+    "removeChannel": "チャンネルを削除",
+    "removeChannelAria": "{{name}} を削除",
+    "removeChannelTitle": "{{name}} を削除しますか？",
+    "removeChannelMessage": "無線機は {{name}} の受信を停止し、そのキーを削除します。+ ボタンで再び追加できます。ハッシュタグチャンネルは名前で、プライベートチャンネルはキーで追加します。",
+    "removeChannelFailed": "{{name}} を削除できませんでした: {{message}}",
+    "removeChannelNeedsRadio": "無線機の接続後に使用できます",
     "channels": "チャンネル",
     "searchMessages": "メッセージを検索する",
     "closeDmTab": "DMタブを閉じる",

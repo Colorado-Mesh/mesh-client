@@ -497,6 +497,13 @@
     "tooltipLabel": "Využití kanálu"
   },
   "chatPanel": {
+    "channelMenuAria": "Možnosti pro {{name}}",
+    "removeChannel": "Odebrat kanál",
+    "removeChannelAria": "Odebrat {{name}}",
+    "removeChannelTitle": "Odebrat {{name}}?",
+    "removeChannelMessage": "Rádio přestane přijímat {{name}} a zapomene jeho klíč. Znovu ho přidáte tlačítkem +: hashtagový kanál podle názvu, soukromý pomocí klíče.",
+    "removeChannelFailed": "{{name}} se nepodařilo odebrat: {{message}}",
+    "removeChannelNeedsRadio": "Dostupné po připojení rádia",
     "channels": "Kanály",
     "searchMessages": "Hledat zprávy",
     "closeDmTab": "Zavřít kartu DM",

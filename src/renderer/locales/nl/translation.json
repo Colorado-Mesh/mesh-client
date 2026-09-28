@@ -489,6 +489,13 @@
     "tooltipLabel": "Kanaalgebruik"
   },
   "chatPanel": {
+    "channelMenuAria": "Opties voor {{name}}",
+    "removeChannel": "Kanaal verwijderen",
+    "removeChannelAria": "{{name}} verwijderen",
+    "removeChannelTitle": "{{name}} verwijderen?",
+    "removeChannelMessage": "De radio ontvangt {{name}} niet meer en vergeet de sleutel. Met de knop + voeg je het kanaal weer toe: op naam voor een hashtagkanaal, of met de sleutel voor een privékanaal.",
+    "removeChannelFailed": "{{name}} kon niet worden verwijderd: {{message}}",
+    "removeChannelNeedsRadio": "Beschikbaar zodra de radio is verbonden",
     "channels": "Kanalen",
     "searchMessages": "Berichten zoeken",
     "closeDmTab": "Sluit het DM-tabblad",

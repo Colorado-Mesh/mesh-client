@@ -505,6 +505,13 @@
     "tooltipLabel": "Використання каналу"
   },
   "chatPanel": {
+    "channelMenuAria": "Параметри {{name}}",
+    "removeChannel": "Вилучити канал",
+    "removeChannelAria": "Вилучити {{name}}",
+    "removeChannelTitle": "Вилучити {{name}}?",
+    "removeChannelMessage": "Радіо перестане приймати {{name}} і забуде його ключ. Ви зможете знову додати канал кнопкою +: хештег-канал за назвою, приватний за ключем.",
+    "removeChannelFailed": "Не вдалося вилучити {{name}}: {{message}}",
+    "removeChannelNeedsRadio": "Доступно після підключення радіо",
     "channels": "Канали",
     "searchMessages": "Пошук повідомлень",
     "closeDmTab": "Закрити вкладку DM",

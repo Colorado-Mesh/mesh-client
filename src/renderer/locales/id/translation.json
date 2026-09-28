@@ -489,6 +489,13 @@
     "tooltipLabel": "Pemanfaatan saluran"
   },
   "chatPanel": {
+    "channelMenuAria": "Opsi untuk {{name}}",
+    "removeChannel": "Hapus saluran",
+    "removeChannelAria": "Hapus {{name}}",
+    "removeChannelTitle": "Hapus {{name}}?",
+    "removeChannelMessage": "Radio berhenti menerima {{name}} dan melupakan kuncinya. Anda dapat menambahkannya lagi dengan tombol +: dengan nama untuk saluran hashtag, atau dengan kuncinya untuk saluran pribadi.",
+    "removeChannelFailed": "Tidak dapat menghapus {{name}}: {{message}}",
+    "removeChannelNeedsRadio": "Tersedia setelah radio terhubung",
     "channels": "Saluran",
     "searchMessages": "Cari pesan",
     "closeDmTab": "Tutup tab DM",

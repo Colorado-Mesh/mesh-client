@@ -489,6 +489,13 @@
     "tooltipLabel": "Kanal kullanımı"
   },
   "chatPanel": {
+    "channelMenuAria": "{{name}} seçenekleri",
+    "removeChannel": "Kanalı kaldır",
+    "removeChannelAria": "{{name}} kanalını kaldır",
+    "removeChannelTitle": "{{name}} kaldırılsın mı?",
+    "removeChannelMessage": "Telsiz {{name}} kanalını almayı bırakır ve anahtarını unutur. + düğmesiyle yeniden ekleyebilirsiniz: hashtag kanalını adıyla, özel kanalı anahtarıyla.",
+    "removeChannelFailed": "{{name}} kaldırılamadı: {{message}}",
+    "removeChannelNeedsRadio": "Telsiz bağlandığında kullanılabilir",
     "channels": "Kanallar",
     "searchMessages": "Mesajlarda ara",
     "closeDmTab": "DM sekmesini kapat",

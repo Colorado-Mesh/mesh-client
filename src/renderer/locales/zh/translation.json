@@ -489,6 +489,13 @@
     "tooltipLabel": "渠道利用率"
   },
   "chatPanel": {
+    "channelMenuAria": "{{name}} 的选项",
+    "removeChannel": "移除频道",
+    "removeChannelAria": "移除 {{name}}",
+    "removeChannelTitle": "要移除 {{name}} 吗？",
+    "removeChannelMessage": "电台将停止接收 {{name}} 并忘记它的密钥。你可以用 + 按钮重新添加：话题标签频道按名称添加，私有频道使用其密钥添加。",
+    "removeChannelFailed": "无法移除 {{name}}：{{message}}",
+    "removeChannelNeedsRadio": "连接电台后可用",
     "channels": "槽钢",
     "searchMessages": "搜索消息",
     "closeDmTab": "关闭DM选项卡",
