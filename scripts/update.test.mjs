@@ -250,6 +250,12 @@ exit 0
     const mecpPrsCall = updateScript.lastIndexOf('\ncheck_mecp_prs\n');
     expect(mecpUpstreamCall).toBeGreaterThanOrEqual(0);
     expect(mecpPrsCall).toBeGreaterThan(mecpUpstreamCall);
+    const mecpPrsFn = updateScript.slice(
+      updateScript.indexOf('check_mecp_prs() {'),
+      updateScript.indexOf('check_ratspeak_upstream() {'),
+    );
+    expect(mecpPrsFn).toContain('local change present');
+    expect(mecpPrsFn).not.toContain('M16');
   });
 
   /**
@@ -337,6 +343,7 @@ exit 1
       if (mode === 'closed') {
         expect(result.stdout).toContain('WARNING:');
         expect(result.stdout).toContain('PR closed (not merged?)');
+        expect(result.stdout).toContain('local change present');
       }
     },
   );

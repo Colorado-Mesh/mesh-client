@@ -10,6 +10,7 @@ import {
   buildLaunchArgs,
   buildLaunchEnv,
   launchAndAssert,
+  listLaunchableAppImages,
   logShowsRendererFailure,
   logShowsStartup,
   shouldLaunchOnHost,
@@ -104,6 +105,41 @@ describe('shouldLaunchOnHost', () => {
       expect(shouldLaunchOnHost(arm64, 'x64')).toBe(false);
       const x64 = writeElfAppImage(dir, 'app-x64.AppImage', EM_X86_64);
       expect(shouldLaunchOnHost(x64, 'arm64')).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('listLaunchableAppImages', () => {
+  it('fails when no AppImage matches the host architecture', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'launch-none-'));
+    try {
+      writeElfAppImage(dir, 'app-arm64.AppImage', EM_AARCH64);
+      expect(() => listLaunchableAppImages(dir, 'x64')).toThrow(LaunchSmokeError);
+      expect(() => listLaunchableAppImages(dir, 'x64')).toThrow(
+        /No native-arch AppImage to launch on x64 \(found: app-arm64\.AppImage\)/,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('fails when the release directory has no AppImage', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'launch-empty-'));
+    try {
+      expect(() => listLaunchableAppImages(dir, 'x64')).toThrow(/No AppImage found in release\//);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns the native-arch AppImage', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'launch-native-'));
+    try {
+      writeElfAppImage(dir, 'app-x64.AppImage', EM_X86_64);
+      writeElfAppImage(dir, 'app-arm64.AppImage', EM_AARCH64);
+      expect(listLaunchableAppImages(dir, 'x64')).toEqual(['app-x64.AppImage']);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

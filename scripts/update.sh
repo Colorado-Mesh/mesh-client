@@ -720,7 +720,7 @@ check_mecp_prs() {
         HAS_WARNING=1
         ;;
       closed)
-        warn_box "${label} (MECP upstream PR)" "local M16 present" "PR closed (not merged?)" "${url}"
+        warn_box "${label} (MECP upstream PR)" "local change present" "PR closed (not merged?)" "${url}"
         echo "  Reason tracked: ${repo}#${pr} closed without merge — keep local code or revert;"
         echo "    then drop entry from MECP_PR_WATCH_ENTRIES."
         has_mecp_pr_warning=1

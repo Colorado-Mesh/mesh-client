@@ -6,6 +6,7 @@ import {
   createDraftRelease,
   deleteOrphanUntaggedRef,
   ensureGithubDraftRelease,
+  isReleaseTagNameInUse,
   listReleasesForTag,
   normalizeDraftReleasesForTag,
   pickCanonicalRelease,
@@ -241,6 +242,49 @@ describe('listReleasesForTag', () => {
 
     const releases = await listReleasesForTag(TAG, 'token');
     expect(releases.map((release) => release.id)).toEqual([2, 3]);
+  });
+});
+
+describe('isReleaseTagNameInUse', () => {
+  it('keeps paging past 500 releases until the tag is found', async () => {
+    const tagName = 'untagged-deadbeef';
+    const fetchMock = vi.fn(async (url) => {
+      const page = Number(new URL(String(url)).searchParams.get('page'));
+      if (page >= 1 && page <= 5) {
+        return new Response(
+          JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ tag_name: `v0.${page}.${i}` }))),
+          { status: 200 },
+        );
+      }
+      if (page === 6) {
+        return new Response(JSON.stringify([{ tag_name: tagName }]), { status: 200 });
+      }
+      throw new Error(`unexpected page ${page}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(isReleaseTagNameInUse(tagName, 'token')).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(6);
+  });
+
+  it('returns false after a short page when the tag is absent', async () => {
+    const fetchMock = vi.fn(async (url) => {
+      const page = Number(new URL(String(url)).searchParams.get('page'));
+      if (page === 1) {
+        return new Response(
+          JSON.stringify(Array.from({ length: 100 }, (_, i) => ({ tag_name: `v1.0.${i}` }))),
+          { status: 200 },
+        );
+      }
+      if (page === 2) {
+        return new Response(JSON.stringify([{ tag_name: 'v9.9.9' }]), { status: 200 });
+      }
+      throw new Error(`unexpected page ${page}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(isReleaseTagNameInUse('untagged-cafebabe', 'token')).resolves.toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 
