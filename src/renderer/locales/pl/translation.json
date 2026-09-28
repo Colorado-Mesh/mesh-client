@@ -5459,6 +5459,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Dostępna aktualizacja oprogramowania sprzętowego: v{{version}}",
+    "firmwareDismiss": "Nie przypominaj",
     "newMessages_one": "{{protocol}}: {{count}} nowa wiadomość",
     "newMessages_other": "{{protocol}}: {{count}} nowe wiadomości",
     "meshcoreDistanceFilterHint": "Masz {{count}} kontaktów z GPS na mapie. Włącz filtr odległości w Aplikacja → Wygląd, aby skupić się na pobliskich węzłach.",

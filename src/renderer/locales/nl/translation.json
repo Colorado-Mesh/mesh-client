@@ -5387,6 +5387,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Firmware-update beschikbaar: v{{version}}",
+    "firmwareDismiss": "Niet meer herinneren",
     "newMessages_one": "{{protocol}}: {{count}} nieuw bericht",
     "newMessages_other": "{{protocol}}: {{count}} nieuwe berichten",
     "meshcoreDistanceFilterHint": "Je hebt {{count}} contacten met GPS op de kaart. Schakel het afstandsfilter in onder App → Verschijning om je te concentreren op knooppunten in de buurt."

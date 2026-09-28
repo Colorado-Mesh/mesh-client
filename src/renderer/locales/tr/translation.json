@@ -5387,6 +5387,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Ürün yazılımı güncellemesi mevcut: v{{version}}",
+    "firmwareDismiss": "Bir daha hatırlatma",
     "newMessages_one": "{{protocol}}: {{count}} yeni mesaj",
     "newMessages_other": "{{protocol}}: {{count}} yeni mesajlar",
     "meshcoreDistanceFilterHint": "Haritada GPS'li {{count}} kişi var. Yakındaki düğümlere odaklanmak için Uygulama → Dış görünüş bölümünde mesafe filtresini etkinleştirin."

@@ -5387,6 +5387,7 @@
   },
   "toasts": {
     "firmwareAvailable": "利用可能なファームウェアアップデート: v{{version}}",
+    "firmwareDismiss": "今後通知しない",
     "newMessages_one": "{{protocol}}: {{count}} 新しいメッセージ",
     "newMessages_other": "{{protocol}}: {{count}} 件の新しいメッセージ",
     "meshcoreDistanceFilterHint": "地図上にGPS付きの連絡先が{{count}}件あります。アプリ → 外観で距離フィルターを有効にして、近くのノードに集中できます。"

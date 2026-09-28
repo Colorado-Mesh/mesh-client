@@ -5459,6 +5459,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Доступно обновление прошивки: v{{version}}",
+    "firmwareDismiss": "Не напоминать",
     "newMessages_one": "{{protocol}}: {{count}} новое сообщение",
     "newMessages_other": "{{protocol}}: {{count}} новых сообщений",
     "meshcoreDistanceFilterHint": "У вас {{count}} контактов с GPS на карте. Включите фильтр расстояния в Приложение → Появление, чтобы сосредоточиться на близлежащих узлах.",

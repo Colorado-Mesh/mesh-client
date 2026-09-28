@@ -5459,6 +5459,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Доступне оновлення прошивки: v{{version}}",
+    "firmwareDismiss": "Не нагадувати",
     "newMessages_one": "{{protocol}}: {{count}} нове повідомлення",
     "newMessages_other": "{{protocol}}: {{count}} нові повідомлення",
     "meshcoreDistanceFilterHint": "На карті {{count}} контактів із GPS. Увімкніть фільтр відстані в Додаток → Зовнішній вигляд, щоб зосередитися на сусідніх вузлах.",

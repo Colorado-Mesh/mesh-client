@@ -9,6 +9,10 @@ import {
   meshCoreFirmwareUpdateAvailable,
   semverGt,
 } from '@/renderer/lib/firmwareCheck';
+import {
+  dismissFirmwareVersion,
+  readDismissedFirmwareVersion,
+} from '@/renderer/lib/firmwareUpdateDismiss';
 import type { ProtocolCapabilities } from '@/renderer/lib/radio/BaseRadioProvider';
 import type { DeviceState, MeshProtocol } from '@/renderer/lib/types';
 
@@ -79,9 +83,22 @@ export function FirmwareUpdateNotifier({
                 releaseUrl: release.releaseUrl,
               },
         );
-        if (updateAvailable && !toastShownRef.current) {
+        // A release the user dismissed stays quiet until a newer one ships. Custom builds that
+        // trail upstream (MeshCoMod 1.17.0.4 against 1.17.1, #1097) toasted on every launch.
+        if (
+          updateAvailable &&
+          !toastShownRef.current &&
+          readDismissedFirmwareVersion(activeProtocol) !== release.version
+        ) {
           toastShownRef.current = true;
-          addToast(t('toasts.firmwareAvailable', { version: release.version }), 'warning', 8000);
+          addToast(t('toasts.firmwareAvailable', { version: release.version }), 'warning', 8000, {
+            action: {
+              label: t('toasts.firmwareDismiss'),
+              onClick: () => {
+                dismissFirmwareVersion(activeProtocol, release.version);
+              },
+            },
+          });
         }
       })
       .catch((err: unknown) => {

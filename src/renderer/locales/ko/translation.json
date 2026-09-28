@@ -5387,6 +5387,7 @@
   },
   "toasts": {
     "firmwareAvailable": "사용 가능한 펌웨어 업데이트: v{{version}}",
+    "firmwareDismiss": "다시 알리지 않기",
     "newMessages_one": "{{protocol}}: {{count}} 새 메시지",
     "newMessages_other": "{{protocol}}: {{count}} 새 메시지",
     "meshcoreDistanceFilterHint": "지도에 GPS가 있는 연락처가 {{count}}개 있습니다. 앱 → 모습에서 거리 필터를 활성화하여 근처 노드에 집중하세요."
