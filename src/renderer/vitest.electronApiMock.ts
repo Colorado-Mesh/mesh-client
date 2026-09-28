@@ -395,7 +395,6 @@ export function createElectronAPIMock(): ElectronAPI {
       getConnectedClients: vi.fn().mockResolvedValue([]),
       generateDataPackage: vi.fn().mockResolvedValue(undefined),
       regenerateCertificates: vi.fn().mockResolvedValue(undefined),
-      pushNodeUpdate: vi.fn().mockResolvedValue(undefined),
       pushNodeUpdates: vi.fn().mockResolvedValue(undefined),
       onStatus: vi.fn().mockReturnValue(() => {}),
       onClientConnected: vi.fn().mockReturnValue(() => {}),

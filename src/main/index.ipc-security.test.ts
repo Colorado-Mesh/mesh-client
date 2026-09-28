@@ -422,7 +422,6 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:getConnectedClients',
     'tak:generateDataPackage',
     'tak:regenerateCertificates',
-    'tak:pushNodeUpdate',
     'tak:pushNodeUpdates',
     'tak:remoteStart',
     'tak:remoteStop',
