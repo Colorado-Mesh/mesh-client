@@ -224,7 +224,7 @@ Small windows: minimum 900x600 on desktop; test at 1024x768 and 390px. The rail 
 
 ## Keyboard
 
-Cmd on macOS and iOS, Ctrl on Windows, Linux and Android (`usesCommandModifier` / `formatShortcut` in `lib/panelLauncher.ts`). Pins are stored in `mesh-client:launcherPins`, shared by all protocols, four at most (defaults Chat, Contacts, Map, Connection).
+Cmd on macOS and iOS, Ctrl on Windows, Linux and Android (`usesCommandModifier` / `formatShortcut` in `lib/panelLauncher.ts`). Pins are stored in `mesh-client:launcherPins`, shared by all protocols, four at most. Nothing is pinned by default (`DEFAULT_LAUNCHER_PINS` is `[]`).
 
 | Shortcut                       | Action                                          |
 | ------------------------------ | ----------------------------------------------- |

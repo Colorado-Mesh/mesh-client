@@ -30,7 +30,7 @@ With a dedicated local SQLite database, Mesh-Client keeps message history and me
 **Why Mesh-Client?**
 
 - **True message persistence:** Local SQLite storage for reliable long-term history, without lost chats or broken logs.
-- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, and Reticulum (amber protocol pill; LXMF DMs, RRC hub chat, Nomad, Remote, Games, and LXST voice via sidecar).
+- **Universal protocol support:** One consistent interface for Meshtastic, MeshCore, and Reticulum (rail protocol switcher, MT / MC / RN; Reticulum yellow; LXMF DMs, RRC hub chat, Nomad, Remote, Games, and LXST voice via sidecar).
 - **Advanced mesh visibility:** Routing diagnostics and mesh health insight that mobile apps often skip.
 - **Desktop-first workflow:** MQTT integration (Meshtastic/MeshCore); for Reticulum, LXMF DMs / encrypted paper / propagation, RRC, LRGP Games, LXST voice, and rnsh/rncp Remote — aimed at Ratspeak-compatible peers.
 - **Cross-platform stability:** A feature-rich experience across macOS, Linux, and Windows.
@@ -84,7 +84,7 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 ## Key Features
 
-Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **protocol switcher** (Meshtastic green, MeshCore cyan, Reticulum amber) to focus a tab; the other sessions stay connected in the background.
+Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protocol switcher** at the top of the rail (MT / MC / RN; Meshtastic green, MeshCore cyan, Reticulum yellow) to focus a tab; the other sessions stay connected in the background.
 
 | Protocol   | Transport focus                                    | Deep-dive doc                                                                                                      |
 | ---------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -152,7 +152,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 **TAK Server (CoT Gateway)**
 
-- **TAK** tab (between Security and Incident) on Meshtastic, MeshCore, and Reticulum: broadcast node positions as Cursor on Target (CoT) XML events over TLS TCP (port 8089)
+- **TAK** tab (Network rail section, after Remote) on Meshtastic, MeshCore, and Reticulum: broadcast node positions as Cursor on Target (CoT) XML events over TLS TCP (port 8089)
 - Feeds every protocol at once, whichever tab is open: Meshtastic and MeshCore nodes heard within their protocol's online window, Reticulum RMAP-discovered interfaces with coordinates, and your own Reticulum position when a static GPS position is set. Positions are re-sent every 5 minutes so markers do not go stale in ATAK
 - Enables **ATAK, WinTAK, and iTAK clients** to see mesh nodes on their tactical maps
 - **Remote TAK server relay**: stream the same positions to an OpenTAKServer, FreeTAKServer, or TAK Server over mutual TLS. Import the server truststore and your client certificate as `.p12` or PEM files; the private key stays in the main process. With verification on (the default), the server certificate must chain to the imported CA, or to the system trust store when no CA is imported, and must name the server address. An opt-out accepts a certificate issued for another name, as ATAK does; it needs verification on and an imported CA. With verification off, certificate failures do not stop the connection, so anyone who can intercept it receives the relayed positions, and the relay does not connect at launch. The relay reconnects on its own after a drop
@@ -165,7 +165,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the header **
 
 ### Desktop shell (all protocols)
 
-- **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (emerald / cyan / yellow — Reticulum yellow = LXMF Chat + **RRC** unread, not Games; Games has its own tab badge); passive toast notifications when an inactive protocol receives traffic
+- **Tri-protocol switcher**: Meshtastic, MeshCore, and Reticulum run simultaneously; per-protocol unread badges (Meshtastic green, MeshCore cyan, Reticulum yellow — the Reticulum total is LXMF Chat + **RRC** + **Games**; Games also has its own tab badge); passive toast notifications when an inactive protocol receives traffic
 - **Localization**: 16 languages via static JSON bundles; fully offline — see [Localization & Languages](docs/localization.md)
 - **Accessibility**: modal focus trap, screen reader labels, reduce-motion and **Use 24-hour time** toggles in App → Appearance — see [Accessibility Checklist](docs/accessibility-checklist.md)
 - **Colors** (App → Appearance): customize theme tokens including chat/RRC **message action** bar and button hover colors; optional **Show background** on the action bar and **Always show message actions**
@@ -322,7 +322,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 ### Reticulum Features
 
-Reticulum is the third protocol tab (**amber** pill). The stack runs in an **AGPL-3.0-or-later Rust sidecar** (`mesh-client-reticulum`) spawned by Electron main; the GPL-3.0-or-later renderer talks to it through `electronAPI.reticulum` (HTTP/WS proxy). Chat history and LXMF contacts persist in SQLite.
+Reticulum is the third protocol (yellow **RN** on the rail switcher). The stack runs in an **AGPL-3.0-or-later Rust sidecar** (`mesh-client-reticulum`) spawned by Electron main; the GPL-3.0-or-later renderer talks to it through `electronAPI.reticulum` (HTTP/WS proxy). Chat history and LXMF contacts persist in SQLite.
 
 **Ratspeak-compatible stack.** Primary interop target is [Ratspeak](https://github.com/ratspeak/Ratspeak) peers on [rsReticulum](https://github.com/ratspeak/rsReticulum) / [rsLXMF](https://github.com/ratspeak/rsLXMF), with sibling crates for the same surfaces Ratspeak ships:
 
@@ -353,13 +353,13 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **Chat tab:** **DM-only** LXMF text and reactions (peer file transfer via Remote rncp; historic LXMF attachment labels still render; **cached raster images** under `reticulum/attachments/` display inline)
 - **Encrypted paper (Ratspeak / LXMF paper):** Chat DM **Share as paper** encrypts offline to a QR / `lxm://` URI with **no network send** (Completes immediately, **Paper** delivery badge); **Scan paper** (Chat or Network **Scan / import**) decrypts into the local inbox when the identity matches. OS `lxm://` paper deep links ingest without a confirm prompt; contact / MeshCore imports still confirm
 - **LXST voice Call** on DM headers and Peers rows — live telephony over rsLXST (not an LXMF voice-note clip)
-- **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs); @mentions badge Chat + the amber protocol pill
+- **RRC tab:** multi-hub relay chat (rooms, nicklists, slash commands, favourites, auto-join, reconnect; up to 8 hubs); @mentions badge Chat + the Reticulum rail switcher
 - **Remote tab:** **rnsh** interactive shell sessions and **rncp** file transfer (send / receive / fetch), saved addresses and inbound-policy controls; Chat DM send-file convenience (distinct from Meshtastic remote admin)
 - **Delivery:** **Direct** when the destination is in the path table; after Direct exhausts, **multi-PN cascade** (preferred remote → other enabled remotes hop-sorted → local-prop last). Remote PN Completes show **Stored at propagation node** (`delivered`); local-prop Completes as local inbox (`stored_locally`) — neither is recipient Delivered
 
 **Games (LRGP)**
 
-- **Games** tab (Reticulum-only): **Tic-Tac-Toe**, **Chess**, and **Four in a Row** over [LRGP](https://github.com/ratspeak/lrgp-rs), wire-compatible with Ratspeak — challenge, accept, play, draw/resign, session list + unread badge (sidebar; **not** folded into the amber protocol-pill total)
+- **Games** tab (Reticulum-only): **Tic-Tac-Toe**, **Chess**, and **Four in a Row** over [LRGP](https://github.com/ratspeak/lrgp-rs), wire-compatible with Ratspeak — challenge, accept, play, draw/resign, session list + unread badge (sidebar; folded into the rail protocol switcher total with LXMF Chat and RRC)
 - **Challenge** from Peers rows and Chat DM headers; deep links `lrgp:<session>` and `lxm://game/<id>` open the Games tab to that session
 - See [Games parity checklist](docs/reticulum-games-parity.md) for command/UI interop status vs Ratspeak
 
@@ -490,7 +490,7 @@ For OS-specific steps; BLE permissions on macOS, serial port group on Linux, Vis
 
 ### Choosing a Protocol
 
-All three protocols can run at the same time. Use the **Meshtastic / MeshCore / Reticulum** switcher in the header to bring the desired view into focus; the other sessions remain connected in the background. Meshtastic and MeshCore each store last-connection settings and auto-reconnect on startup; Reticulum can **Auto-start** the sidecar from the Connection tab.
+All three protocols can run at the same time. Use the **MT / MC / RN** protocol switcher at the top of the rail to bring the desired view into focus; the other sessions remain connected in the background. Meshtastic and MeshCore each store last-connection settings and auto-reconnect on startup; Reticulum can **Auto-start** the sidecar from the Connection tab.
 
 ### Connecting Your Device
 
@@ -513,7 +513,7 @@ All three protocols can run at the same time. Use the **Meshtastic / MeshCore / 
 
 **Reticulum:**
 
-1. Select the **Reticulum** pill (amber) in the header
+1. Select **RN** (Reticulum, yellow) at the top of the rail
 2. Open the **Connection** tab and click **Start stack** (enable **Auto-start** to skip this on future launches)
 3. On **Network**, generate or import your LXMF identity (the sidecar must be running)
 4. On **Connection → Interfaces**, add transports (TCP hub, Auto, or RNode over USB/BLE/Wi‑Fi) and enable them; restart the stack after interface changes when using the full `rns-stack` build

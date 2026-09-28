@@ -12,7 +12,7 @@ describe('ReticulumTxBufferingHeaderIndicator', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows amber spinner with named tooltip when buffering', () => {
+  it('shows an orange spinner with named tooltip when buffering', () => {
     render(<ReticulumTxBufferingHeaderIndicator buffering interfaceName="RNode 41F4" />);
     const status = screen.getByRole('status');
     expect(status).toHaveAttribute('aria-busy', 'true');

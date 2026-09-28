@@ -44,7 +44,7 @@ export function sendEmergencyText(
 
 /**
  * Same live-send / enqueue-on-failure path as {@link sendEmergencyText} with an explicit outbox
- * priority (quick-status presets and roll-call commands use `'normal'`).
+ * priority. Incident ACK uses `'normal'` so it does not compete with emergency reports.
  */
 export async function sendTextWithOutboxFallback(
   text: string,
