@@ -265,8 +265,8 @@
         "description": "Visualizzazione del contenuto principale e sfondo della finestra dell'app: la tela scura dietro tutti i pannelli."
       },
       "sidebarActiveBg": {
-        "label": "Scheda attiva della barra laterale",
-        "description": "Sfondo della scheda attualmente selezionata nella navigazione della barra laterale."
+        "label": "Elemento selezionato e passaggio",
+        "description": "Riempimento dell'elemento selezionato nella barra, della riga selezionata e del passaggio del mouse."
       },
       "brandGreen": {
         "label": "Accento",
@@ -281,12 +281,12 @@
         "description": "Riempimento pieno di accento sotto il testo bianco, come nei badge. Mantiene 4,5:1 con il testo bianco."
       },
       "deepBlack": {
-        "label": "Barra laterale, intestazione e superfici modali",
-        "description": "Navigazione della barra laterale, intestazione, piè di pagina, shell modali e superfici scure primarie."
+        "label": "Barra, barra di stato e avvio",
+        "description": "Barra di navigazione, barra di stato, navigazione in basso e avviatore dei pannelli."
       },
       "secondaryDark": {
-        "label": "Pannello e sfondo di input",
-        "description": "Sfondi dei pannelli, input, pulsanti, passaggi del mouse sulle righe della tabella e traccia di avanzamento."
+        "label": "Riempimento dei controlli e bordi dei campi",
+        "description": "Riempimento dei controlli secondari e bordo dei campi di testo."
       },
       "muted": {
         "label": "Etichette e didascalie secondarie",
@@ -5306,7 +5306,36 @@
     "remoteVerifyOffWarning": "Senza verifica, chiunque possa intercettare questa connessione riceve le posizioni trasmesse.",
     "remoteAllowNameMismatch": "Accettare un certificato rilasciato per un nome diverso (solo CA importata, come fa ATAK)",
     "remoteNameMismatchNeedsCa": "Importa la CA del server per utilizzare questa opzione.",
-    "remoteAutoConnectNeedsVerify": "La connessione al lancio rimane disattivata fino all'attivazione della verifica."
+    "remoteAutoConnectNeedsVerify": "La connessione al lancio rimane disattivata fino all'attivazione della verifica.",
+    "remoteErrors": {
+      "connRefused": "Connessione rifiutata; controlla l'indirizzo e la porta del server",
+      "hostNotFound": "Indirizzo del server non trovato",
+      "dnsFailed": "Impossibile risolvere l'indirizzo del server",
+      "timedOut": "Tempo di connessione scaduto",
+      "hostUnreachable": "Server irraggiungibile",
+      "netUnreachable": "Rete irraggiungibile",
+      "connReset": "Connessione reimpostata dal server",
+      "untrustedCert": "Il certificato del server non è attendibile; importa la CA del server",
+      "certExpired": "Il certificato del server è scaduto",
+      "nameMismatch": "Il certificato del server è per un altro nome; consenti un nome diverso se questo server TAK è configurato così",
+      "clientCertRequired": "Il server richiede un certificato client; importane uno",
+      "clientCertRejected": "Il server ha rifiutato il certificato client ({{reason}})",
+      "closedAfterHandshake": "Il server ha chiuso la connessione subito dopo l'handshake TLS; potrebbe non accettare il certificato client",
+      "connectionClosed": "Connessione chiusa",
+      "keyDecryptFailed": "Impossibile decifrare la chiave privata; controlla la password",
+      "keyEncrypted": "La chiave privata è cifrata; inserisci la password e importa di nuovo",
+      "pkcs12WrongPassword": "{{name}}: password errata per il file PKCS#12",
+      "notACredential": "{{name}}: non è un file PEM, un certificato DER o un PKCS#12",
+      "oneKey": "Importa una sola chiave privata client alla volta",
+      "noCerts": "Nessun certificato nei file selezionati",
+      "keyMismatch": "La chiave privata non corrisponde ad alcun certificato nei file selezionati",
+      "savedKeyDecryptFailed": "Impossibile decifrare la chiave client salvata; importa di nuovo il certificato client",
+      "notAFile": "{{name}} non è un file normale",
+      "fileTooLarge": "{{name}} è troppo grande per essere un file di certificato",
+      "tooManyFiles": "Seleziona al massimo {{max}} file di certificato",
+      "chooserOpen": "Il selettore dei certificati è già aperto",
+      "importInProgress": "Attendi la fine dell'importazione del certificato prima di rimuovere i certificati"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetria",

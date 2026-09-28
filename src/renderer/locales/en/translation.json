@@ -355,8 +355,8 @@
         "description": "Main content viewport and app window background — the dark canvas behind all panels."
       },
       "sidebarActiveBg": {
-        "label": "Active sidebar tab",
-        "description": "Background of the currently selected tab in the sidebar navigation."
+        "label": "Selected item & hover",
+        "description": "Fill for the selected rail item, the selected row, and hover."
       },
       "brandGreen": {
         "label": "Accent",
@@ -371,12 +371,12 @@
         "description": "Solid accent fill under white text, such as badges. Kept at 4.5:1 with white text."
       },
       "deepBlack": {
-        "label": "Sidebar, header & modal surfaces",
-        "description": "Sidebar navigation, header, footer, modal shells, and primary dark surfaces."
+        "label": "Rail, status bar & launcher",
+        "description": "Navigation rail, status bar, bottom navigation, and panel launcher."
       },
       "secondaryDark": {
-        "label": "Panel & input background",
-        "description": "Panel backgrounds, inputs, buttons, table row hovers, and progress track."
+        "label": "Control fill & field borders",
+        "description": "Fill for secondary controls and the border around text fields."
       },
       "muted": {
         "label": "Secondary labels & captions",
@@ -5980,7 +5980,36 @@
     "remoteImport": "Import Certificates",
     "remoteClear": "Remove Certificates",
     "remoteConnect": "Connect",
-    "remoteDisconnect": "Disconnect"
+    "remoteDisconnect": "Disconnect",
+    "remoteErrors": {
+      "connRefused": "Connection refused; check the server address and port",
+      "hostNotFound": "Server address not found",
+      "dnsFailed": "Server address could not be resolved",
+      "timedOut": "Connection timed out",
+      "hostUnreachable": "Server unreachable",
+      "netUnreachable": "Network unreachable",
+      "connReset": "Connection reset by the server",
+      "untrustedCert": "The server certificate is not trusted; import the server's CA",
+      "certExpired": "The server certificate has expired",
+      "nameMismatch": "The server certificate is for a different name; allow a name mismatch if this TAK server is set up that way",
+      "clientCertRequired": "The server requires a client certificate; import one",
+      "clientCertRejected": "The server rejected the client certificate ({{reason}})",
+      "closedAfterHandshake": "The server closed the connection right after the TLS handshake; it may not accept the client certificate",
+      "connectionClosed": "Connection closed",
+      "keyDecryptFailed": "Could not decrypt the private key; check the password",
+      "keyEncrypted": "The private key is encrypted; enter its password and import again",
+      "pkcs12WrongPassword": "{{name}}: Wrong password for the PKCS#12 file",
+      "notACredential": "{{name}}: Not a PEM, DER certificate, or PKCS#12 file",
+      "oneKey": "Import one client private key at a time",
+      "noCerts": "No certificates found in the selected files",
+      "keyMismatch": "The private key does not match any certificate in the selected files",
+      "savedKeyDecryptFailed": "The saved client key could not be decrypted; import the client certificate again",
+      "notAFile": "{{name}} is not a regular file",
+      "fileTooLarge": "{{name}} is too large to be a certificate file",
+      "tooManyFiles": "Select at most {{max}} certificate files",
+      "chooserOpen": "Certificate chooser is already open",
+      "importInProgress": "Wait for the certificate import to finish before removing certificates"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetry",

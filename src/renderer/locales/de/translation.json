@@ -265,8 +265,8 @@
         "description": "Hauptinhaltsansichtsfenster und Hintergrund des App-Fensters – die dunkle Leinwand hinter allen Bedienfeldern."
       },
       "sidebarActiveBg": {
-        "label": "Aktive Registerkarte in der Seitenleiste",
-        "description": "Hintergrund der aktuell ausgewählten Registerkarte in der Seitenleistennavigation."
+        "label": "Ausgewähltes Element und Hover",
+        "description": "Füllung für das ausgewählte Element der Navigationsleiste, die ausgewählte Zeile und den Hover."
       },
       "brandGreen": {
         "label": "Akzent",
@@ -281,12 +281,12 @@
         "description": "Volle Akzentfüllung unter weißem Text, etwa bei Abzeichen. Hält 4,5:1 zu weißem Text."
       },
       "deepBlack": {
-        "label": "Seitenleiste, Kopfzeile und modale Oberflächen",
-        "description": "Seitenleistennavigation, Kopf- und Fußzeile, modale Shells und primäre dunkle Oberflächen."
+        "label": "Leiste, Statusleiste und Starter",
+        "description": "Navigationsleiste, Statusleiste, untere Navigation und Panel-Starter."
       },
       "secondaryDark": {
-        "label": "Panel- und Eingabehintergrund",
-        "description": "Panel-Hintergründe, Eingaben, Schaltflächen, Tabellenzeilen-Hover und Fortschrittsanzeige."
+        "label": "Füllung und Feldränder",
+        "description": "Füllung für sekundäre Steuerelemente und der Rand um Textfelder."
       },
       "muted": {
         "label": "Sekundäre Beschriftungen und Bildunterschriften",
@@ -3152,7 +3152,7 @@
     "telemetryFailed": "Telemetrie fehlgeschlagen: {{message}}",
     "sensorTelemetryButton": "Sensor-Telemetrie",
     "requestingNeighbors": "Nachbarn werden angefordert...",
-    "getNeighbors": "Nachbarn 🔗 holen",
+    "getNeighbors": "Nachbarn holen",
     "neighborsFailed": "Nachbarn fehlgeschlagen: {{message}}",
     "messageNoKeyTitle": "Nachricht nicht möglich: kein Verschlüsselungsschlüssel. Warten Sie auf einen vollständigen Kontaktaustausch oder aktualisieren Sie die Kontakte.",
     "messageButton": "Nachricht",
@@ -3166,11 +3166,11 @@
     "sharingEllipsis": "Wird geteilt...",
     "shareFailed": "Teilen gescheitert",
     "addingToRadio": "Radio wird hinzugefügt...",
-    "addToRadio": "Zu Radio ➕ hinzufügen",
+    "addToRadio": "Zu Radio hinzufügen",
     "addingEllipsis": "Hinzufügen…",
     "addToRadioFailed": "Zum Radio hinzufügen fehlgeschlagen",
     "removingFromRadio": "Wird aus dem Radio entfernt...",
-    "removeFromRadio": "Aus dem Radio ➖ entfernen",
+    "removeFromRadio": "Aus dem Radio entfernen",
     "removingEllipsis": "Wird entfernt...",
     "removeFromRadioFailed": "Entfernen aus dem Radio fehlgeschlagen",
     "mqttIgnoreHeading": "MQTT Ignorieren",
@@ -5306,7 +5306,36 @@
     "remoteVerifyOffWarning": "Ohne Überprüfung erhält jeder, der diese Verbindung abfangen kann, die weitergeleiteten Positionen.",
     "remoteAllowNameMismatch": "Akzeptieren Sie ein Zertifikat, das für einen anderen Namen ausgestellt wurde (nur importierte CA, wie ATAK)",
     "remoteNameMismatchNeedsCa": "Importieren Sie die CA des Servers, um diese Option zu verwenden.",
-    "remoteAutoConnectNeedsVerify": "Die Verbindung beim Start bleibt deaktiviert, bis die Verifizierung aktiviert ist."
+    "remoteAutoConnectNeedsVerify": "Die Verbindung beim Start bleibt deaktiviert, bis die Verifizierung aktiviert ist.",
+    "remoteErrors": {
+      "connRefused": "Verbindung abgelehnt; Serveradresse und Port prüfen",
+      "hostNotFound": "Serveradresse nicht gefunden",
+      "dnsFailed": "Serveradresse konnte nicht aufgelöst werden",
+      "timedOut": "Zeitüberschreitung der Verbindung",
+      "hostUnreachable": "Server nicht erreichbar",
+      "netUnreachable": "Netzwerk nicht erreichbar",
+      "connReset": "Verbindung wurde vom Server zurückgesetzt",
+      "untrustedCert": "Das Serverzertifikat ist nicht vertrauenswürdig; importieren Sie die CA des Servers",
+      "certExpired": "Das Serverzertifikat ist abgelaufen",
+      "nameMismatch": "Das Serverzertifikat gilt für einen anderen Namen; erlauben Sie eine Namensabweichung, wenn dieser TAK-Server so eingerichtet ist",
+      "clientCertRequired": "Der Server verlangt ein Clientzertifikat; importieren Sie eines",
+      "clientCertRejected": "Der Server hat das Clientzertifikat abgelehnt ({{reason}})",
+      "closedAfterHandshake": "Der Server hat die Verbindung direkt nach dem TLS-Handshake geschlossen; er akzeptiert das Clientzertifikat möglicherweise nicht",
+      "connectionClosed": "Verbindung geschlossen",
+      "keyDecryptFailed": "Der private Schlüssel konnte nicht entschlüsselt werden; prüfen Sie das Passwort",
+      "keyEncrypted": "Der private Schlüssel ist verschlüsselt; geben Sie das Passwort ein und importieren Sie erneut",
+      "pkcs12WrongPassword": "{{name}}: Falsches Passwort für die PKCS#12-Datei",
+      "notACredential": "{{name}}: Keine PEM-, DER-Zertifikats- oder PKCS#12-Datei",
+      "oneKey": "Importieren Sie jeweils nur einen privaten Clientschlüssel",
+      "noCerts": "In den ausgewählten Dateien wurden keine Zertifikate gefunden",
+      "keyMismatch": "Der private Schlüssel passt zu keinem Zertifikat in den ausgewählten Dateien",
+      "savedKeyDecryptFailed": "Der gespeicherte Clientschlüssel konnte nicht entschlüsselt werden; importieren Sie das Clientzertifikat erneut",
+      "notAFile": "{{name}} ist keine reguläre Datei",
+      "fileTooLarge": "{{name}} ist zu groß für eine Zertifikatsdatei",
+      "tooManyFiles": "Wählen Sie höchstens {{max}} Zertifikatsdateien",
+      "chooserOpen": "Die Zertifikatsauswahl ist bereits geöffnet",
+      "importInProgress": "Warten Sie, bis der Zertifikatsimport abgeschlossen ist, bevor Sie Zertifikate entfernen"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetrie",

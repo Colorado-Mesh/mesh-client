@@ -265,8 +265,8 @@
         "description": "기본 콘텐츠 뷰포트 및 앱 창 배경 - 모든 패널 뒤에 있는 어두운 캔버스입니다."
       },
       "sidebarActiveBg": {
-        "label": "활성 사이드바 탭",
-        "description": "사이드바 탐색에서 현재 선택된 탭의 배경입니다."
+        "label": "선택한 항목과 가리킴",
+        "description": "선택한 레일 항목, 선택한 행, 가리킴의 채우기."
       },
       "brandGreen": {
         "label": "강조색",
@@ -281,12 +281,12 @@
         "description": "흰색 글자 아래의 강조색 채우기(배지 등). 흰색 글자와 4.5:1 대비를 유지합니다."
       },
       "deepBlack": {
-        "label": "사이드바, 헤더 및 모달 표면",
-        "description": "사이드바 탐색, 머리글, 바닥글, 모달 쉘 및 기본 어두운 표면."
+        "label": "레일, 상태 표시줄, 실행기",
+        "description": "탐색 레일, 상태 표시줄, 하단 탐색, 패널 실행기."
       },
       "secondaryDark": {
-        "label": "패널 및 입력 배경",
-        "description": "패널 배경, 입력, 버튼, 테이블 행 가리키기 및 진행률 트랙."
+        "label": "컨트롤 채우기와 필드 테두리",
+        "description": "보조 컨트롤의 채우기와 텍스트 필드의 테두리."
       },
       "muted": {
         "label": "보조 라벨 및 캡션",
@@ -5306,7 +5306,36 @@
     "remoteVerifyOffWarning": "검증 없이 이 연결을 가로챌 수 있는 사람은 릴레이된 포지션을 받습니다.",
     "remoteAllowNameMismatch": "다른 이름으로 발급된 인증서 수락 (ATAK와 마찬가지로 가져온 CA만 해당)",
     "remoteNameMismatchNeedsCa": "이 옵션을 사용하려면 서버의 CA를 가져옵니다.",
-    "remoteAutoConnectNeedsVerify": "앱을 시작할 때의 자동 연결은 검증을 켤 때까지 꺼진 상태로 유지됩니다."
+    "remoteAutoConnectNeedsVerify": "앱을 시작할 때의 자동 연결은 검증을 켤 때까지 꺼진 상태로 유지됩니다.",
+    "remoteErrors": {
+      "connRefused": "연결이 거부되었습니다. 서버 주소와 포트를 확인하세요",
+      "hostNotFound": "서버 주소를 찾을 수 없습니다",
+      "dnsFailed": "서버 주소를 확인할 수 없습니다",
+      "timedOut": "연결 시간이 초과되었습니다",
+      "hostUnreachable": "서버에 연결할 수 없습니다",
+      "netUnreachable": "네트워크에 연결할 수 없습니다",
+      "connReset": "서버가 연결을 재설정했습니다",
+      "untrustedCert": "서버 인증서를 신뢰할 수 없습니다. 서버의 CA를 가져오세요",
+      "certExpired": "서버 인증서가 만료되었습니다",
+      "nameMismatch": "서버 인증서가 다른 이름용입니다. 이 TAK 서버가 그렇게 설정된 경우 이름 불일치를 허용하세요",
+      "clientCertRequired": "서버가 클라이언트 인증서를 요구합니다. 하나 가져오세요",
+      "clientCertRejected": "서버가 클라이언트 인증서를 거부했습니다 ({{reason}})",
+      "closedAfterHandshake": "서버가 TLS 핸드셰이크 직후 연결을 닫았습니다. 클라이언트 인증서를 받아들이지 않을 수 있습니다",
+      "connectionClosed": "연결이 닫혔습니다",
+      "keyDecryptFailed": "개인 키를 복호화하지 못했습니다. 비밀번호를 확인하세요",
+      "keyEncrypted": "개인 키가 암호화되어 있습니다. 비밀번호를 입력한 뒤 다시 가져오세요",
+      "pkcs12WrongPassword": "{{name}}: PKCS#12 파일의 비밀번호가 올바르지 않습니다",
+      "notACredential": "{{name}}: PEM, DER 인증서 또는 PKCS#12 파일이 아닙니다",
+      "oneKey": "클라이언트 개인 키는 한 번에 하나만 가져오세요",
+      "noCerts": "선택한 파일에서 인증서를 찾지 못했습니다",
+      "keyMismatch": "개인 키가 선택한 파일의 어떤 인증서와도 일치하지 않습니다",
+      "savedKeyDecryptFailed": "저장된 클라이언트 키를 복호화하지 못했습니다. 클라이언트 인증서를 다시 가져오세요",
+      "notAFile": "{{name}}은(는) 일반 파일이 아닙니다",
+      "fileTooLarge": "{{name}}은(는) 인증서 파일로 쓰기에는 너무 큽니다",
+      "tooManyFiles": "인증서 파일은 최대 {{max}}개까지 선택하세요",
+      "chooserOpen": "인증서 선택 창이 이미 열려 있습니다",
+      "importInProgress": "인증서를 제거하기 전에 인증서 가져오기가 끝날 때까지 기다리세요"
+    }
   },
   "telemetryPanel": {
     "title": "원격 측정",

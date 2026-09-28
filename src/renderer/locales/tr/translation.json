@@ -265,8 +265,8 @@
         "description": "Ana içerik görünüm alanı ve uygulama penceresi arka planı — tüm panellerin arkasındaki karanlık tuval."
       },
       "sidebarActiveBg": {
-        "label": "Aktif kenar çubuğu sekmesi",
-        "description": "Kenar çubuğu gezintisinde o anda seçili olan sekmenin arka planı."
+        "label": "Seçili öğe ve üzerine gelme",
+        "description": "Gezinme çubuğundaki seçili öğenin, seçili satırın ve üzerine gelmenin dolgusu."
       },
       "brandGreen": {
         "label": "Vurgu",
@@ -281,12 +281,12 @@
         "description": "Beyaz metnin altındaki düz vurgu dolgusu, örneğin rozetler. Beyaz metinle 4,5:1 kontrastı korur."
       },
       "deepBlack": {
-        "label": "Kenar çubuğu, başlık ve modal yüzeyler",
-        "description": "Kenar çubuğu gezintisi, üst bilgi, alt bilgi, modal kabuklar ve birincil koyu yüzeyler."
+        "label": "Çubuk, durum çubuğu ve başlatıcı",
+        "description": "Gezinme çubuğu, durum çubuğu, alt gezinme ve panel başlatıcısı."
       },
       "secondaryDark": {
-        "label": "Panel ve giriş arka planı",
-        "description": "Panel arka planları, girişler, düğmeler, tablo satırlarında gezinme ve ilerleme izleme."
+        "label": "Denetim dolgusu ve alan kenarlıkları",
+        "description": "İkincil denetimlerin dolgusu ve metin alanlarının kenarlığı."
       },
       "muted": {
         "label": "İkincil etiketler ve başlıklar",
@@ -5306,7 +5306,36 @@
     "remoteVerifyOffWarning": "Doğrulama olmadan, bu bağlantıyı kesebilen herkes aktarılan konumları alır.",
     "remoteAllowNameMismatch": "Farklı bir ad için verilen bir sertifikayı kabul edin (ATAK gibi yalnızca içe aktarılan CA)",
     "remoteNameMismatchNeedsCa": "Bu seçeneği kullanmak için sunucunun CA'sını içe aktarın.",
-    "remoteAutoConnectNeedsVerify": "Başlatma sırasında bağlantı, doğrulama açılana kadar kapalı kalır."
+    "remoteAutoConnectNeedsVerify": "Başlatma sırasında bağlantı, doğrulama açılana kadar kapalı kalır.",
+    "remoteErrors": {
+      "connRefused": "Bağlantı reddedildi; sunucu adresini ve bağlantı noktasını kontrol edin",
+      "hostNotFound": "Sunucu adresi bulunamadı",
+      "dnsFailed": "Sunucu adresi çözümlenemedi",
+      "timedOut": "Bağlantı zaman aşımına uğradı",
+      "hostUnreachable": "Sunucuya ulaşılamıyor",
+      "netUnreachable": "Ağa ulaşılamıyor",
+      "connReset": "Bağlantı sunucu tarafından sıfırlandı",
+      "untrustedCert": "Sunucu sertifikası güvenilir değil; sunucunun CA sertifikasını içe aktarın",
+      "certExpired": "Sunucu sertifikasının süresi dolmuş",
+      "nameMismatch": "Sunucu sertifikası başka bir ad için; bu TAK sunucusu böyle kurulduysa ad uyuşmazlığına izin verin",
+      "clientCertRequired": "Sunucu bir istemci sertifikası istiyor; bir tane içe aktarın",
+      "clientCertRejected": "Sunucu istemci sertifikasını reddetti ({{reason}})",
+      "closedAfterHandshake": "Sunucu, TLS el sıkışmasından hemen sonra bağlantıyı kapattı; istemci sertifikasını kabul etmiyor olabilir",
+      "connectionClosed": "Bağlantı kapatıldı",
+      "keyDecryptFailed": "Özel anahtarın şifresi çözülemedi; parolayı kontrol edin",
+      "keyEncrypted": "Özel anahtar şifreli; parolasını girip yeniden içe aktarın",
+      "pkcs12WrongPassword": "{{name}}: PKCS#12 dosyası için parola yanlış",
+      "notACredential": "{{name}}: PEM, DER sertifikası veya PKCS#12 dosyası değil",
+      "oneKey": "Aynı anda yalnızca bir istemci özel anahtarı içe aktarın",
+      "noCerts": "Seçilen dosyalarda sertifika bulunamadı",
+      "keyMismatch": "Özel anahtar, seçilen dosyalardaki hiçbir sertifikayla eşleşmiyor",
+      "savedKeyDecryptFailed": "Kayıtlı istemci anahtarının şifresi çözülemedi; istemci sertifikasını yeniden içe aktarın",
+      "notAFile": "{{name}} normal bir dosya değil",
+      "fileTooLarge": "{{name}} bir sertifika dosyası olamayacak kadar büyük",
+      "tooManyFiles": "En fazla {{max}} sertifika dosyası seçin",
+      "chooserOpen": "Sertifika seçici zaten açık",
+      "importInProgress": "Sertifikaları kaldırmadan önce sertifika içe aktarmanın bitmesini bekleyin"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetri",

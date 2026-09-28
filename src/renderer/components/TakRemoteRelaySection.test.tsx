@@ -6,6 +6,7 @@ import { axe } from 'vitest-axe';
 import type { TAKRemoteStatus } from '@/shared/tak-types';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import i18n from '../lib/i18n';
 import TakRemoteRelaySection from './TakRemoteRelaySection';
 
 const tak = () => window.electronAPI.tak;
@@ -184,6 +185,31 @@ describe('TakRemoteRelaySection', () => {
     expect(screen.getByText(/client certificate: kd0abc/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Certificate password')).toHaveValue('');
     expect(screen.getByRole('button', { name: 'Remove Certificates' })).toBeInTheDocument();
+  });
+
+  it('translates a known relay status error', async () => {
+    const key = 'takServerPanel.remoteErrors.connRefused';
+    const previous = i18n.t(key);
+    i18n.addResource('en', 'translation', key, 'REFUSED_SENTINEL');
+    let push: ((s: TAKRemoteStatus) => void) | undefined;
+    vi.mocked(tak().onRemoteStatus).mockImplementation((cb) => {
+      push = cb;
+      return () => {};
+    });
+    try {
+      await renderSection();
+      act(() => {
+        push?.({
+          state: 'connecting',
+          host: 'tak.example.org',
+          port: 8089,
+          error: 'Connection refused; check the server address and port',
+        });
+      });
+      expect(screen.getByText('Last error: REFUSED_SENTINEL')).toBeInTheDocument();
+    } finally {
+      i18n.addResource('en', 'translation', key, previous);
+    }
   });
 
   it('shows an import error without the Electron IPC prefix', async () => {

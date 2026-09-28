@@ -265,8 +265,8 @@
         "description": "Area pandang konten utama dan latar belakang jendela aplikasi — kanvas gelap di belakang semua panel."
       },
       "sidebarActiveBg": {
-        "label": "Tab bilah sisi aktif",
-        "description": "Latar belakang tab yang dipilih saat ini di navigasi sidebar."
+        "label": "Item terpilih dan hover",
+        "description": "Isian untuk item rel yang dipilih, baris yang dipilih, dan hover."
       },
       "brandGreen": {
         "label": "Aksen",
@@ -281,12 +281,12 @@
         "description": "Isian aksen penuh di bawah teks putih, misalnya lencana. Menjaga kontras 4,5:1 dengan teks putih."
       },
       "deepBlack": {
-        "label": "Permukaan sidebar, header & modal",
-        "description": "Navigasi sidebar, header, footer, modal shell, dan permukaan gelap primer."
+        "label": "Rel, bilah status, dan peluncur",
+        "description": "Rel navigasi, bilah status, navigasi bawah, dan peluncur panel."
       },
       "secondaryDark": {
-        "label": "Panel & masukan latar belakang",
-        "description": "Latar belakang panel, input, tombol, baris tabel melayang, dan jalur kemajuan."
+        "label": "Isian kontrol dan batas bidang",
+        "description": "Isian untuk kontrol sekunder dan batas di sekitar bidang teks."
       },
       "muted": {
         "label": "Label & keterangan sekunder",
@@ -5306,7 +5306,36 @@
     "remoteVerifyOffWarning": "Tanpa verifikasi, siapa pun yang dapat mencegat koneksi ini akan menerima posisi relay.",
     "remoteAllowNameMismatch": "Terima sertifikat yang diterbitkan untuk nama yang berbeda (hanya CA yang diimpor, seperti yang dilakukan ATAK)",
     "remoteNameMismatchNeedsCa": "Impor CA server untuk menggunakan opsi ini.",
-    "remoteAutoConnectNeedsVerify": "Terhubung saat peluncuran tetap nonaktif hingga verifikasi aktif."
+    "remoteAutoConnectNeedsVerify": "Terhubung saat peluncuran tetap nonaktif hingga verifikasi aktif.",
+    "remoteErrors": {
+      "connRefused": "Koneksi ditolak; periksa alamat dan port server",
+      "hostNotFound": "Alamat server tidak ditemukan",
+      "dnsFailed": "Alamat server tidak dapat diuraikan",
+      "timedOut": "Waktu koneksi habis",
+      "hostUnreachable": "Server tidak dapat dijangkau",
+      "netUnreachable": "Jaringan tidak dapat dijangkau",
+      "connReset": "Koneksi direset oleh server",
+      "untrustedCert": "Sertifikat server tidak tepercaya; impor CA server",
+      "certExpired": "Sertifikat server telah kedaluwarsa",
+      "nameMismatch": "Sertifikat server untuk nama lain; izinkan ketidakcocokan nama jika server TAK ini memang diatur begitu",
+      "clientCertRequired": "Server meminta sertifikat klien; impor satu",
+      "clientCertRejected": "Server menolak sertifikat klien ({{reason}})",
+      "closedAfterHandshake": "Server menutup koneksi tepat setelah jabat tangan TLS; sertifikat klien mungkin tidak diterima",
+      "connectionClosed": "Koneksi ditutup",
+      "keyDecryptFailed": "Kunci privat tidak dapat didekripsi; periksa kata sandi",
+      "keyEncrypted": "Kunci privat terenkripsi; masukkan kata sandinya dan impor lagi",
+      "pkcs12WrongPassword": "{{name}}: kata sandi berkas PKCS#12 salah",
+      "notACredential": "{{name}}: bukan berkas PEM, sertifikat DER, atau PKCS#12",
+      "oneKey": "Impor satu kunci privat klien setiap kali",
+      "noCerts": "Tidak ada sertifikat dalam berkas yang dipilih",
+      "keyMismatch": "Kunci privat tidak cocok dengan sertifikat mana pun dalam berkas yang dipilih",
+      "savedKeyDecryptFailed": "Kunci klien yang tersimpan tidak dapat didekripsi; impor lagi sertifikat klien",
+      "notAFile": "{{name}} bukan berkas biasa",
+      "fileTooLarge": "{{name}} terlalu besar untuk berkas sertifikat",
+      "tooManyFiles": "Pilih paling banyak {{max}} berkas sertifikat",
+      "chooserOpen": "Pemilih sertifikat sudah terbuka",
+      "importInProgress": "Tunggu impor sertifikat selesai sebelum menghapus sertifikat"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetri",

@@ -265,8 +265,8 @@
         "description": "Kijkvenster voor hoofdinhoud en achtergrond van app-venster: het donkere canvas achter alle panelen."
       },
       "sidebarActiveBg": {
-        "label": "Actief zijbalktabblad",
-        "description": "Achtergrond van het momenteel geselecteerde tabblad in de zijbalknavigatie."
+        "label": "Geselecteerd item en hover",
+        "description": "Vulling voor het geselecteerde railitem, de geselecteerde rij en hover."
       },
       "brandGreen": {
         "label": "Accent",
@@ -281,12 +281,12 @@
         "description": "Volle accentvulling onder witte tekst, zoals badges. Houdt 4,5:1 met witte tekst."
       },
       "deepBlack": {
-        "label": "Zijbalk, koptekst en modale oppervlakken",
-        "description": "Zijbalknavigatie, koptekst, voettekst, modale shells en primaire donkere oppervlakken."
+        "label": "Rail, statusbalk en starter",
+        "description": "Navigatierail, statusbalk, onderste navigatie en paneelstarter."
       },
       "secondaryDark": {
-        "label": "Paneel- en invoerachtergrond",
-        "description": "Paneelachtergronden, invoer, knoppen, zwevende tabelrijen en voortgangstrack."
+        "label": "Controlvulling en veldranden",
+        "description": "Vulling voor secundaire controls en de rand om tekstvelden."
       },
       "muted": {
         "label": "Secundaire labels en bijschriften",
@@ -5306,7 +5306,36 @@
     "remoteVerifyOffWarning": "Zonder verificatie ontvangt iedereen die deze verbinding kan onderscheppen de doorgegeven posities.",
     "remoteAllowNameMismatch": "Accepteer een certificaat dat is uitgegeven voor een andere naam (alleen geïmporteerde CA, zoals ATAK doet)",
     "remoteNameMismatchNeedsCa": "Importeer de CA van de server om deze optie te gebruiken.",
-    "remoteAutoConnectNeedsVerify": "Verbinding maken bij de lancering blijft uitgeschakeld totdat de verificatie is ingeschakeld."
+    "remoteAutoConnectNeedsVerify": "Verbinding maken bij de lancering blijft uitgeschakeld totdat de verificatie is ingeschakeld.",
+    "remoteErrors": {
+      "connRefused": "Verbinding geweigerd; controleer het serveradres en de poort",
+      "hostNotFound": "Serveradres niet gevonden",
+      "dnsFailed": "Serveradres kon niet worden omgezet",
+      "timedOut": "Time-out bij verbinden",
+      "hostUnreachable": "Server onbereikbaar",
+      "netUnreachable": "Netwerk onbereikbaar",
+      "connReset": "Verbinding verbroken door de server",
+      "untrustedCert": "Het servercertificaat wordt niet vertrouwd; importeer de CA van de server",
+      "certExpired": "Het servercertificaat is verlopen",
+      "nameMismatch": "Het servercertificaat is voor een andere naam; sta een andere naam toe als deze TAK-server zo is ingesteld",
+      "clientCertRequired": "De server vereist een clientcertificaat; importeer er een",
+      "clientCertRejected": "De server heeft het clientcertificaat geweigerd ({{reason}})",
+      "closedAfterHandshake": "De server sloot de verbinding direct na de TLS-handshake; het clientcertificaat wordt mogelijk niet geaccepteerd",
+      "connectionClosed": "Verbinding gesloten",
+      "keyDecryptFailed": "De privésleutel kon niet worden ontsleuteld; controleer het wachtwoord",
+      "keyEncrypted": "De privésleutel is versleuteld; voer het wachtwoord in en importeer opnieuw",
+      "pkcs12WrongPassword": "{{name}}: onjuist wachtwoord voor het PKCS#12-bestand",
+      "notACredential": "{{name}}: geen PEM-, DER-certificaat- of PKCS#12-bestand",
+      "oneKey": "Importeer één clientprivésleutel tegelijk",
+      "noCerts": "Geen certificaten gevonden in de geselecteerde bestanden",
+      "keyMismatch": "De privésleutel hoort bij geen enkel certificaat in de geselecteerde bestanden",
+      "savedKeyDecryptFailed": "De opgeslagen clientsleutel kon niet worden ontsleuteld; importeer het clientcertificaat opnieuw",
+      "notAFile": "{{name}} is geen gewoon bestand",
+      "fileTooLarge": "{{name}} is te groot voor een certificaatbestand",
+      "tooManyFiles": "Selecteer maximaal {{max}} certificaatbestanden",
+      "chooserOpen": "De certificaatkiezer is al geopend",
+      "importInProgress": "Wacht tot het importeren van het certificaat klaar is voordat u certificaten verwijdert"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetrie",

@@ -265,8 +265,8 @@
         "description": "主要内容视口和应用程序窗口背景 - 所有面板后面的深色画布。"
       },
       "sidebarActiveBg": {
-        "label": "活动侧边栏选项卡",
-        "description": "侧边栏导航中当前选定选项卡的背景。"
+        "label": "选中项与悬停",
+        "description": "选中的导航轨项目、选中行和悬停的填充色。"
       },
       "brandGreen": {
         "label": "强调色",
@@ -281,12 +281,12 @@
         "description": "白色文字下方的强调色实心填充（如徽章）。与白色文字保持 4.5:1 对比度。"
       },
       "deepBlack": {
-        "label": "侧边栏、标题和模态界面",
-        "description": "侧边栏导航、页眉、页脚、模式外壳和主要深色表面。"
+        "label": "导航轨、状态栏和启动器",
+        "description": "导航轨、状态栏、底部导航和面板启动器。"
       },
       "secondaryDark": {
-        "label": "面板和输入背景",
-        "description": "面板背景、输入、按钮、表格行悬停和进度跟踪。"
+        "label": "控件填充与字段边框",
+        "description": "次要控件的填充色，以及文本框的边框。"
       },
       "muted": {
         "label": "二级标签和标题",
@@ -3170,7 +3170,7 @@
     "addingEllipsis": "正在添加...",
     "addToRadioFailed": "添加到收音机失败",
     "removingFromRadio": "正在从收音机中删除...",
-    "removeFromRadio": "从收音机➖中删除",
+    "removeFromRadio": "从收音机中删除",
     "removingEllipsis": "移除中...",
     "removeFromRadioFailed": "从收音机中删除失败",
     "mqttIgnoreHeading": "MQTT忽略",
@@ -5306,7 +5306,36 @@
     "remoteVerifyOffWarning": "未经验证，任何可以拦截此连接的人都会收到中继位置。",
     "remoteAllowNameMismatch": "接受为其他名称颁发的证书（仅导入CA ，与ATAK一样）",
     "remoteNameMismatchNeedsCa": "导入服务器的CA以使用此选项。",
-    "remoteAutoConnectNeedsVerify": "在验证开启之前，启动时连接将保持关闭状态。"
+    "remoteAutoConnectNeedsVerify": "在验证开启之前，启动时连接将保持关闭状态。",
+    "remoteErrors": {
+      "connRefused": "连接被拒绝；请检查服务器地址和端口",
+      "hostNotFound": "找不到服务器地址",
+      "dnsFailed": "无法解析服务器地址",
+      "timedOut": "连接超时",
+      "hostUnreachable": "服务器无法访问",
+      "netUnreachable": "网络无法访问",
+      "connReset": "服务器重置了连接",
+      "untrustedCert": "服务器证书不受信任；请导入服务器的 CA",
+      "certExpired": "服务器证书已过期",
+      "nameMismatch": "服务器证书用于其他名称；如果此 TAK 服务器如此配置，请允许名称不一致",
+      "clientCertRequired": "服务器要求客户端证书；请导入一份",
+      "clientCertRejected": "服务器拒绝了客户端证书（{{reason}}）",
+      "closedAfterHandshake": "服务器在 TLS 握手后立即关闭了连接；它可能不接受客户端证书",
+      "connectionClosed": "连接已关闭",
+      "keyDecryptFailed": "无法解密私钥；请检查密码",
+      "keyEncrypted": "私钥已加密；请输入密码后重新导入",
+      "pkcs12WrongPassword": "{{name}}：PKCS#12 文件的密码不正确",
+      "notACredential": "{{name}}：不是 PEM、DER 证书或 PKCS#12 文件",
+      "oneKey": "一次只能导入一个客户端私钥",
+      "noCerts": "所选文件中没有证书",
+      "keyMismatch": "私钥与所选文件中的任何证书都不匹配",
+      "savedKeyDecryptFailed": "无法解密已保存的客户端密钥；请重新导入客户端证书",
+      "notAFile": "{{name}} 不是普通文件",
+      "fileTooLarge": "{{name}} 作为证书文件过大",
+      "tooManyFiles": "最多选择 {{max}} 个证书文件",
+      "chooserOpen": "证书选择窗口已打开",
+      "importInProgress": "请等待证书导入完成后再移除证书"
+    }
   },
   "telemetryPanel": {
     "title": "遥测",
