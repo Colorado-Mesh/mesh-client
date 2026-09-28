@@ -89,7 +89,8 @@ export function Menu({
     const menu = menuRef.current;
     if (!anchor || !menu) return;
     setPosition(computePosition(anchor, menu, align));
-    itemButtons()[0]?.focus();
+    // With every item disabled, focus the menu itself so Escape and Tab still reach its handler.
+    (itemButtons()[0] ?? menu).focus();
   }, [open, align, anchorRef]);
 
   useEffect(() => {

@@ -5957,6 +5957,39 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     expect(await screen.findByText("Couldn't remove #test: radio busy")).toBeInTheDocument();
   });
 
+  it('removes nothing if the slot no longer holds that channel when you confirm', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove channel' }));
+    // The radio's list changes while the dialog is open: slot 3 now holds another channel.
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...props}
+          channels={[
+            { index: 0, name: 'Public' },
+            { index: 3, name: '#weather' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove channel' }),
+    );
+    expect(props.onDeleteMeshcoreChannel).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        '#test is no longer in that slot on the radio, so nothing was removed.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('keeps Remove unavailable until the radio is connected', () => {
     renderPanel({ meshcoreChannelManagementDisabled: true } as Partial<
       ReturnType<typeof baseProps>

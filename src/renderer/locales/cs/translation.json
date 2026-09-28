@@ -503,6 +503,7 @@
     "removeChannelTitle": "Odebrat {{name}}?",
     "removeChannelMessage": "Rádio přestane přijímat {{name}} a zapomene jeho klíč. Znovu ho přidáte tlačítkem +: hashtagový kanál podle názvu, soukromý pomocí klíče.",
     "removeChannelFailed": "{{name}} se nepodařilo odebrat: {{message}}",
+    "removeChannelChanged": "{{name}} už na rádiu v tomto slotu není, nic se neodebralo.",
     "removeChannelNeedsRadio": "Dostupné po připojení rádia",
     "channels": "Kanály",
     "searchMessages": "Hledat zprávy",

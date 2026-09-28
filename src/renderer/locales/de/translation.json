@@ -495,6 +495,7 @@
     "removeChannelTitle": "{{name}} entfernen?",
     "removeChannelMessage": "Das Funkgerät empfängt {{name}} nicht mehr und vergisst den Schlüssel. Mit der Schaltfläche + fügen Sie den Kanal wieder hinzu: einen Hashtag-Kanal über den Namen, einen privaten über seinen Schlüssel.",
     "removeChannelFailed": "{{name}} konnte nicht entfernt werden: {{message}}",
+    "removeChannelChanged": "{{name}} ist nicht mehr an diesem Platz auf dem Funkgerät, es wurde nichts entfernt.",
     "removeChannelNeedsRadio": "Verfügbar, sobald das Funkgerät verbunden ist",
     "channels": "Rinnen",
     "searchMessages": "Nachrichten durchsuchen",

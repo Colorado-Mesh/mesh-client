@@ -1004,6 +1004,13 @@ function ChatPanel({
   };
   const removeChannel = async (target: { index: number; name: string }) => {
     if (!onDeleteMeshcoreChannel) return;
+    // The delete goes by slot. If the radio's list changed while the dialog was open (a
+    // reconnect, another radio), that slot may now hold a different channel: remove nothing.
+    if (!channels.some((ch) => ch.index === target.index && ch.name === target.name)) {
+      setChannelToRemove(null);
+      addToast(t('chatPanel.removeChannelChanged', { name: target.name }), 'warning');
+      return;
+    }
     setRemovingChannel(true);
     try {
       await onDeleteMeshcoreChannel(target.index);

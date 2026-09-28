@@ -495,6 +495,7 @@
     "removeChannelTitle": "Remove {{name}}?",
     "removeChannelMessage": "The radio stops receiving {{name}} and forgets its key. You can add it again with the + button: by name for a hashtag channel, or with its key for a private one.",
     "removeChannelFailed": "Couldn't remove {{name}}: {{message}}",
+    "removeChannelChanged": "{{name}} is no longer in that slot on the radio, so nothing was removed.",
     "removeChannelNeedsRadio": "Available once the radio is connected",
     "floodScopeOverrideLabel": "Flood scope for this chat view",
     "floodScopeOverrideAria": "Per-view flood scope override",

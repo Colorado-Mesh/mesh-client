@@ -495,6 +495,7 @@
     "removeChannelTitle": "Rimuovere {{name}}?",
     "removeChannelMessage": "La radio smette di ricevere {{name}} e ne dimentica la chiave. Puoi aggiungerlo di nuovo con il pulsante +: con il nome per un canale hashtag, o con la sua chiave per uno privato.",
     "removeChannelFailed": "Impossibile rimuovere {{name}}: {{message}}",
+    "removeChannelChanged": "{{name}} non è più in quella posizione della radio, quindi non è stato rimosso nulla.",
     "removeChannelNeedsRadio": "Disponibile quando la radio è connessa",
     "channels": "Scanalature",
     "searchMessages": "Cerca nei messaggi",

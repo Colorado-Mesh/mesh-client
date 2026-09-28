@@ -511,6 +511,7 @@
     "removeChannelTitle": "Usunąć {{name}}?",
     "removeChannelMessage": "Radio przestanie odbierać {{name}} i zapomni jego klucz. Możesz dodać go ponownie przyciskiem +: kanał hashtagowy po nazwie, a prywatny za pomocą klucza.",
     "removeChannelFailed": "Nie udało się usunąć {{name}}: {{message}}",
+    "removeChannelChanged": "{{name}} nie zajmuje już tego miejsca w radiu, więc nic nie zostało usunięte.",
     "removeChannelNeedsRadio": "Dostępne po podłączeniu radia",
     "channels": "Kanały",
     "searchMessages": "Wyszukaj wiadomości",

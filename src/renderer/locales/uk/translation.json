@@ -511,6 +511,7 @@
     "removeChannelTitle": "Вилучити {{name}}?",
     "removeChannelMessage": "Радіо перестане приймати {{name}} і забуде його ключ. Ви зможете знову додати канал кнопкою +: хештег-канал за назвою, приватний за ключем.",
     "removeChannelFailed": "Не вдалося вилучити {{name}}: {{message}}",
+    "removeChannelChanged": "{{name}} більше немає в цьому слоті радіо, тому нічого не вилучено.",
     "removeChannelNeedsRadio": "Доступно після підключення радіо",
     "channels": "Канали",
     "searchMessages": "Пошук повідомлень",
