@@ -5288,9 +5288,6 @@
     "missingKeyMaterial": "Brakujący materiał klucza",
     "unknownError": "Nieznany błąd"
   },
-  "sidebar": {
-    "disabledTabTooltip": "Niedostępne w tym trybie"
-  },
   "tabs": {
     "connection": "Więzi",
     "chat": "Czat",

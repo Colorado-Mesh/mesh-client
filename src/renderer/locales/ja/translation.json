@@ -5218,9 +5218,6 @@
     "missingKeyMaterial": "キー素材がありません",
     "unknownError": "不明なエラー"
   },
-  "sidebar": {
-    "disabledTabTooltip": "このモードでは使用できません"
-  },
   "tabs": {
     "connection": "繋がり",
     "chat": "チャット",

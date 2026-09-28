@@ -5218,9 +5218,6 @@
     "missingKeyMaterial": "缺少密钥材料",
     "unknownError": "未知错误"
   },
-  "sidebar": {
-    "disabledTabTooltip": "在此模式下不可用"
-  },
   "tabs": {
     "connection": "与公司的关系",
     "chat": "聊天",

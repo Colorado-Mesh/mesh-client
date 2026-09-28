@@ -5288,9 +5288,6 @@
     "missingKeyMaterial": "Відсутній ключовий матеріал",
     "unknownError": "Невідома помилка"
   },
-  "sidebar": {
-    "disabledTabTooltip": "Недоступно в цьому режимі"
-  },
   "tabs": {
     "connection": "Підключення",
     "chat": "Розмова",
