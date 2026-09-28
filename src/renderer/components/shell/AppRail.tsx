@@ -118,26 +118,30 @@ export function AppRail({
         {pins.length > 0 && (
           <div aria-hidden="true" className="bg-ink-800 my-2 h-px w-8 shrink-0" />
         )}
-        {pins.map((pin) => (
-          <button
-            key={pin.tabIndex}
-            type="button"
-            data-rail-pin=""
-            aria-label={`${pin.label} (${pin.shortcut})`}
-            title={`${pin.label} (${pin.shortcut})`}
-            {...{ [PARENT_HOVER_ATTR]: '' }}
-            onClick={() => {
-              onPinSelect?.(pin.tabIndex);
-            }}
-            className={`rounded-modal flex h-10 w-10 shrink-0 items-center justify-center transition-colors ${
-              pin.tabIndex === activeTabIndex
-                ? 'bg-sidebar-active-bg text-bright-green'
-                : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-ink-200'
-            }`}
-          >
-            <TabIcon name={pin.iconSlot} />
-          </button>
-        ))}
+        {pins.map((pin) => {
+          const isActive = pin.tabIndex === activeTabIndex;
+          return (
+            <button
+              key={pin.tabIndex}
+              type="button"
+              data-rail-pin=""
+              aria-current={isActive ? 'page' : undefined}
+              aria-label={`${pin.label} (${pin.shortcut})`}
+              title={`${pin.label} (${pin.shortcut})`}
+              {...{ [PARENT_HOVER_ATTR]: '' }}
+              onClick={() => {
+                onPinSelect?.(pin.tabIndex);
+              }}
+              className={`rounded-modal flex h-10 w-10 shrink-0 items-center justify-center transition-colors ${
+                isActive
+                  ? 'bg-sidebar-active-bg text-bright-green'
+                  : 'text-muted hover:bg-sidebar-active-bg/60 hover:text-ink-200'
+              }`}
+            >
+              <TabIcon name={pin.iconSlot} />
+            </button>
+          );
+        })}
       </div>
       {footer.length > 0 && (
         <div

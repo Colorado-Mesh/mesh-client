@@ -416,6 +416,12 @@ describe('Windows packaging (contract)', () => {
       expect(workflow).toContain('node scripts/verify-mac-packaging.mjs');
       expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
       expect(workflow).toContain('node scripts/test-linux-appimage-reticulum-sidecar.mjs');
+      const launchSmoke = workflow.slice(
+        workflow.indexOf('- name: Headless AppImage launch smoke (Linux)'),
+        workflow.indexOf('- name: Upload Windows x64 install failure logs'),
+      );
+      expect(launchSmoke).toContain('node scripts/test-linux-appimage-launch.mjs');
+      expect(launchSmoke).not.toContain('continue-on-error');
       expect(workflow).toContain(
         'node scripts/assert-update-yml-artifacts.mjs --require latest-mac.yml',
       );

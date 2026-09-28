@@ -5218,9 +5218,6 @@
     "missingKeyMaterial": "Eksik anahtar materyali",
     "unknownError": "Bilinmeyen hata"
   },
-  "sidebar": {
-    "disabledTabTooltip": "Bu modda kullanılamaz"
-  },
   "tabs": {
     "connection": "Bağlantı",
     "chat": "Sohbet",

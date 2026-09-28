@@ -1182,8 +1182,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tak:getConnectedClients'),
     generateDataPackage: (): Promise<void> => ipcRenderer.invoke('tak:generateDataPackage'),
     regenerateCertificates: (): Promise<void> => ipcRenderer.invoke('tak:regenerateCertificates'),
-    pushNodeUpdate: (node: Record<string, unknown>): Promise<void> =>
-      ipcRenderer.invoke('tak:pushNodeUpdate', node),
     pushNodeUpdates: (nodes: TAKNodeUpdate[]): Promise<void> =>
       ipcRenderer.invoke('tak:pushNodeUpdates', nodes),
     onStatus: (cb: (status: TAKServerStatus) => void): (() => void) => {
