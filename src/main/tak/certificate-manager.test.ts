@@ -116,6 +116,35 @@ describe('certificate-manager', () => {
     expect(san.ips).toContain('10.1.2.3');
   }, 30_000);
 
+  // OS-specific: POSIX file modes; Windows protects the per-user profile with ACLs instead.
+  it.skipIf(process.platform === 'win32')(
+    'writes tak-certs owner-only and tightens existing private keys',
+    async () => {
+      const identity = { serverName: 'test-server.local', ipAddresses: ['192.168.1.50'] };
+      await loadOrGenerateCerts(identity);
+
+      const dir = getCertsDir();
+      const keyNames = ['ca-key.pem', 'server-key.pem', 'client-key.pem'] as const;
+      expect(fs.statSync(dir).mode & 0o777).toBe(0o700);
+      for (const name of keyNames) {
+        expect(fs.statSync(path.join(dir, name)).mode & 0o777).toBe(0o600);
+      }
+
+      fs.chmodSync(dir, 0o755);
+      for (const name of keyNames) {
+        fs.chmodSync(path.join(dir, name), 0o644);
+      }
+
+      await loadOrGenerateCerts(identity);
+
+      expect(fs.statSync(dir).mode & 0o777).toBe(0o700);
+      for (const name of keyNames) {
+        expect(fs.statSync(path.join(dir, name)).mode & 0o777).toBe(0o600);
+      }
+    },
+    30_000,
+  );
+
   it('serverCertMatchesIdentity is false without SAN IP', async () => {
     const bundle = await loadOrGenerateCerts({
       serverName: 'mesh-client',
