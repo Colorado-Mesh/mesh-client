@@ -5123,13 +5123,6 @@
     "moreActions": "Weitere Raumaktionen",
     "loginAndSyncHeading": "Anmeldung und Synchronisierung"
   },
-  "searchModal": {
-    "closeSearch": "Suche schließen",
-    "placeholder": "Alle Nachrichten durchsuchen… (Benutzer:Name, Kanal:Name)",
-    "noResults": "Keine Ergebnisse",
-    "hint": "Geben Sie ein, um über alle Nachrichten zu suchen",
-    "resultCount": "{{count}} Ergebnis(se) — zum Navigieren anklicken"
-  },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",
     "failed": "Fehlgeschlagen: {{message}}",

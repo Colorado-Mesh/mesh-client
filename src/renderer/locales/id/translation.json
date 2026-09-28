@@ -5123,13 +5123,6 @@
     "moreActions": "Tindakan ruangan lainnya",
     "loginAndSyncHeading": "Masuk dan sinkronisasi"
   },
-  "searchModal": {
-    "closeSearch": "Tutup pencarian",
-    "placeholder": "Cari semua pesan… (pengguna:nama, saluran:nama)",
-    "noResults": "Tidak ada hasil",
-    "hint": "Ketik untuk mencari di semua pesan",
-    "resultCount": "{{count}} hasil- klik untuk menavigasi"
-  },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",
     "failed": "Gagal: {{message}}",

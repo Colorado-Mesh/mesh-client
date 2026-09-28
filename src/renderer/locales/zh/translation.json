@@ -5123,13 +5123,6 @@
     "moreActions": "更多房间操作",
     "loginAndSyncHeading": "登录与同步"
   },
-  "searchModal": {
-    "closeSearch": "关闭搜索",
-    "placeholder": "搜索所有消息...（用户：名称，频道：名称）",
-    "noResults": "搜不到",
-    "hint": "键入以搜索所有消息",
-    "resultCount": "{{count}}个结果—点击导航"
-  },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
     "failed": "失败： {{message}}",

@@ -5160,13 +5160,6 @@
     "moreActions": "Další akce místnosti",
     "loginAndSyncHeading": "Přihlášení a synchronizace"
   },
-  "searchModal": {
-    "closeSearch": "Zavřít vyhledávání",
-    "placeholder": "Prohledat všechny zprávy… (uživatel:jméno, kanál:jméno)",
-    "noResults": "Žádné výsledky",
-    "hint": "Zadejte pro vyhledávání ve všech zprávách",
-    "resultCount": "{{count}} výsledky — klikni pro navigaci"
-  },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",
     "failed": "Selhalo: {{message}}",

@@ -5790,13 +5790,6 @@
     "hideMembers": "Hide members",
     "listColumnAria": "Rooms and hubs"
   },
-  "searchModal": {
-    "closeSearch": "Close search",
-    "placeholder": "Search all messages… (user:name, channel:name)",
-    "noResults": "No results",
-    "hint": "Type to search across all messages",
-    "resultCount": "{{count}} result(s) — click to navigate"
-  },
   "securityPanel": {
     "keyRegenRequested": "Key regeneration requested. Device will generate new keys.",
     "failed": "Failed: {{message}}",

@@ -5123,13 +5123,6 @@
     "moreActions": "추가 룸 작업",
     "loginAndSyncHeading": "로그인 및 동기화"
   },
-  "searchModal": {
-    "closeSearch": "검색 닫기",
-    "placeholder": "모든 메시지 검색… (사용자:이름, 채널:이름)",
-    "noResults": "결과 없음",
-    "hint": "모든 메시지를 검색하려면 입력하세요.",
-    "resultCount": "{{count}} 결과 - 클릭하여 탐색"
-  },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",
     "failed": "실패: {{message}}",

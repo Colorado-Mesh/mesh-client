@@ -5193,13 +5193,6 @@
     "moreActions": "Więcej działań pokoju",
     "loginAndSyncHeading": "Logowanie i synchronizacja"
   },
-  "searchModal": {
-    "closeSearch": "Zamknij wyszukiwanie",
-    "placeholder": "Przeszukaj wszystkie wiadomości… (użytkownik:nazwa, kanał:nazwa)",
-    "noResults": "Brak wyników",
-    "hint": "Wpisz, aby wyszukać we wszystkich wiadomościach",
-    "resultCount": "{{count}} wynik(i) — kliknij, aby nawigować"
-  },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",
     "failed": "Niepowodzenie: {{message}}",

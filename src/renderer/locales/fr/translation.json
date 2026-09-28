@@ -5123,13 +5123,6 @@
     "moreActions": "Autres actions de la salle",
     "loginAndSyncHeading": "Connexion et synchronisation"
   },
-  "searchModal": {
-    "closeSearch": "Fermer recherche",
-    "placeholder": "Rechercher tous les messages… (utilisateur : nom, canal : nom)",
-    "noResults": "Aucun résultat",
-    "hint": "Tapez pour rechercher dans tous les messages",
-    "resultCount": "{{count}} résultat(s) — cliquez pour naviguer"
-  },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",
     "failed": "Échec : {{message}}",

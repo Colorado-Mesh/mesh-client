@@ -5123,13 +5123,6 @@
     "moreActions": "Diğer oda işlemleri",
     "loginAndSyncHeading": "Oturum açma ve eşitleme"
   },
-  "searchModal": {
-    "closeSearch": "Aramayı kapat",
-    "placeholder": "Tüm mesajları ara… (kullanıcı:adı, kanal:adı)",
-    "noResults": "Sonuç yok",
-    "hint": "Tüm mesajlarda aramak için yazın",
-    "resultCount": "{{count}} sonuç — gezinmek için tıklayın"
-  },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",
     "failed": "Başarısız: {{message}}",

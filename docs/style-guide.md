@@ -247,7 +247,7 @@ Use the class strings and primitives; do not restyle native elements per panel.
   - Secondary: `bg-sidebar-active-bg` with `border-secondary-dark`.
   - Danger: red outline sized to its label. Never a full-width red bar. A stacked list of destructive actions with a second line uses `DANGER_ROW_CLASS`.
   - Ghost and icon-only (`IconButton`): transparent, `text-muted`, `aria-label` and `title`.
-- Related actions: `ButtonGroup`. A main action with rare variants: `SplitButton`. Row actions: one `MenuButton` overflow menu.
+- A main action with rare variants: `SplitButton`. Row actions: one `MenuButton` overflow menu.
 - Single choice (filters, modes, protocol): `SegmentedControl` (`role="radiogroup"`, arrow keys). Toggle chips with `aria-pressed`: `chipClass()`.
 - Fields: `INPUT_CLASS` / `SELECT_CLASS` / `TEXTAREA_CLASS` (full width) or the `*_BOX_CLASS` variants sized by their row (`w-24`, `flex-1`); `*_BOX_SM_CLASS` for dense rows. 32px (28px compact), 40px on touch. Invalid state comes from `aria-invalid`. Every field has a label (visually hidden is fine).
 - On/off settings: `Switch`. Small integers: `Stepper`. Read-only values: `CopyField`.
@@ -260,7 +260,6 @@ Use the class strings and primitives; do not restyle native elements per panel.
 | Need                                          | Use                                                         |
 | --------------------------------------------- | ----------------------------------------------------------- |
 | Buttons, icon buttons                         | `Button`, `IconButton`, `buttonClassName` (`ui/Button.tsx`) |
-| Related actions                               | `ButtonGroup`, `GroupButton`                                |
 | Split button, overflow menu                   | `SplitButton`, `MenuButton`, `Menu` (`ui/Menu.tsx`)         |
 | Single choice                                 | `SegmentedControl`                                          |
 | Switch, stepper                               | `Switch`, `Stepper`                                         |

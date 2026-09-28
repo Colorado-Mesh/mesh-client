@@ -5123,13 +5123,6 @@
     "moreActions": "Meer ruimteacties",
     "loginAndSyncHeading": "Inloggen en synchroniseren"
   },
-  "searchModal": {
-    "closeSearch": "Zoekopdracht sluiten",
-    "placeholder": "Zoek in alle berichten… (gebruiker:naam, kanaal:naam)",
-    "noResults": "Geen resultaten",
-    "hint": "Typ om in alle berichten te zoeken",
-    "resultCount": "{{count}} result(s) — klik om te navigeren"
-  },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",
     "failed": "Mislukt: {{message}}",
