@@ -294,7 +294,8 @@ export function assertSafeUntaggedPlaceholderTag(tag) {
  * @param {string} token
  */
 export async function isReleaseTagNameInUse(tagName, token) {
-  for (let page = 1; page <= 5; page += 1) {
+  // Page until a short or empty page. A 5×100 cap missed tag_name rows past 500 releases.
+  for (let page = 1; ; page += 1) {
     const { response, json } = await githubRequest(`/releases?per_page=100&page=${page}`, {
       token,
     });

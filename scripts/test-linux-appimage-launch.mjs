@@ -15,6 +15,7 @@
  *
  * Only the native-arch AppImage is launched: an arm64 runtime cannot execute on
  * an x64 runner (that image is still covered by the sidecar extraction smoke).
+ * If no AppImage matches the host architecture, the smoke fails instead of exiting 0.
  *
  * Exits 0 on success. Failures throw so the extract and user-data dirs are removed
  * before the process exits 1.
@@ -117,6 +118,33 @@ export function logShowsRendererFailure(text) {
  */
 export function shouldLaunchOnHost(appImagePath, hostArch = process.arch) {
   return !appImageNeedsUnsquashfsExtract(appImagePath, hostArch);
+}
+
+/**
+ * AppImage names in `dir` whose runtime matches `hostArch`.
+ * A missing native-arch artifact fails the smoke so it cannot pass silently.
+ * @param {string} dir
+ * @param {string} [hostArch=process.arch]
+ * @returns {string[]}
+ */
+export function listLaunchableAppImages(dir, hostArch = process.arch) {
+  if (!existsSync(dir)) {
+    fail(`Missing release directory: ${dir}`);
+  }
+
+  const appImages = readdirSync(dir, { withFileTypes: true })
+    .filter((e) => e.isFile() && e.name.endsWith('.AppImage'))
+    .map((e) => e.name);
+
+  if (appImages.length === 0) {
+    fail('No AppImage found in release/');
+  }
+
+  const launchable = appImages.filter((name) => shouldLaunchOnHost(path.join(dir, name), hostArch));
+  if (launchable.length === 0) {
+    fail(`No native-arch AppImage to launch on ${hostArch} (found: ${appImages.join(', ')})`);
+  }
+  return launchable;
 }
 
 /**
@@ -379,27 +407,9 @@ async function main() {
     console.debug('[test-linux-appimage-launch] Skipping on non-Linux host');
     return;
   }
-  if (!existsSync(releaseDir)) {
-    fail(`Missing release directory: ${releaseDir}`);
-  }
-
-  const appImages = readdirSync(releaseDir, { withFileTypes: true })
-    .filter((e) => e.isFile() && e.name.endsWith('.AppImage'))
-    .map((e) => e.name);
-
-  if (appImages.length === 0) {
-    fail('No AppImage found in release/');
-  }
-
   // Launch only the native-arch AppImage; cross-arch cannot execute here.
-  const launchable = appImages.filter((name) => shouldLaunchOnHost(path.join(releaseDir, name)));
-  if (launchable.length === 0) {
-    console.debug(
-      `[test-linux-appimage-launch] No native-arch AppImage to launch on ${process.arch}; skipping ` +
-        `(cross-arch images are covered by test-linux-appimage-reticulum-sidecar.mjs)`,
-    );
-    return;
-  }
+  // No match is a failure: a missing artifact must not exit 0.
+  const launchable = listLaunchableAppImages(releaseDir);
 
   for (const name of launchable) {
     const appImagePath = path.join(releaseDir, name);

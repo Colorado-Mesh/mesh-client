@@ -416,6 +416,8 @@ describe('Windows packaging (contract)', () => {
       expect(workflow).toContain('node scripts/verify-mac-packaging.mjs');
       expect(workflow).toContain('node scripts/verify-linux-packaging.mjs');
       expect(workflow).toContain('node scripts/test-linux-appimage-reticulum-sidecar.mjs');
+      expect(workflow).toContain('bash scripts/ci-install-linux-appimage-smoke-deps.sh');
+      expect(workflow).not.toContain('libatk-bridge2.0-0t64');
       const launchSmoke = workflow.slice(
         workflow.indexOf('- name: Headless AppImage launch smoke (Linux)'),
         workflow.indexOf('- name: Upload Windows x64 install failure logs'),
