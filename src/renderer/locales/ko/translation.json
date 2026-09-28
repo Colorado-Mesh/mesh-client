@@ -498,6 +498,7 @@
     "removeChannelMessage": "무전기가 {{name}} 수신을 중단하고 해당 키를 잊습니다. + 버튼으로 다시 추가할 수 있습니다. 해시태그 채널은 이름으로, 비공개 채널은 키로 추가하세요.",
     "removeChannelFailed": "{{name}}을(를) 제거하지 못했습니다: {{message}}",
     "removeChannelChanged": "{{name}}이(가) 더 이상 무전기의 해당 슬롯에 없어서 아무것도 제거하지 않았습니다.",
+    "removeChannelRadioChanged": "연결된 무전기가 바뀌어서 {{name}}을(를) 제거하지 않았습니다.",
     "clearChannelMessages": "메시지 지우기",
     "clearChannelMessagesTitle": "{{name}}의 메시지를 지울까요?",
     "clearChannelMessagesMessage": "이 컴퓨터에 저장된 {{name}}의 모든 메시지를 삭제합니다. 채널은 유지되며 새 메시지는 계속 수신됩니다.",

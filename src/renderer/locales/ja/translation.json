@@ -498,6 +498,7 @@
     "removeChannelMessage": "無線機は {{name}} の受信を停止し、そのキーを削除します。+ ボタンで再び追加できます。ハッシュタグチャンネルは名前で、プライベートチャンネルはキーで追加します。",
     "removeChannelFailed": "{{name}} を削除できませんでした: {{message}}",
     "removeChannelChanged": "{{name}} は無線機のそのスロットにもうないため、何も削除されませんでした。",
+    "removeChannelRadioChanged": "接続中の無線機が変わったため、{{name}} は削除されませんでした。",
     "clearChannelMessages": "メッセージを消去",
     "clearChannelMessagesTitle": "{{name}} のメッセージを消去しますか？",
     "clearChannelMessagesMessage": "このコンピューターに保存された {{name}} のメッセージをすべて削除します。チャンネルは残り、新しいメッセージは引き続き届きます。",

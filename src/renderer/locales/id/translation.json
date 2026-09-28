@@ -498,6 +498,7 @@
     "removeChannelMessage": "Radio berhenti menerima {{name}} dan melupakan kuncinya. Anda dapat menambahkannya lagi dengan tombol +: dengan nama untuk saluran hashtag, atau dengan kuncinya untuk saluran pribadi.",
     "removeChannelFailed": "Tidak dapat menghapus {{name}}: {{message}}",
     "removeChannelChanged": "{{name}} tidak lagi berada di slot itu pada radio, jadi tidak ada yang dihapus.",
+    "removeChannelRadioChanged": "Radio yang terhubung berubah saat ini terbuka, jadi {{name}} tidak dihapus.",
     "clearChannelMessages": "Hapus pesan",
     "clearChannelMessagesTitle": "Hapus pesan di {{name}}?",
     "clearChannelMessagesMessage": "Menghapus semua pesan tersimpan di {{name}} dari komputer ini. Saluran tetap ada, dan pesan baru tetap masuk.",

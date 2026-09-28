@@ -498,6 +498,7 @@
     "removeChannelMessage": "O rádio deixa de receber {{name}} e esquece a chave. Você pode adicioná-lo de novo com o botão +: pelo nome, se for um canal hashtag, ou com a chave, se for privado.",
     "removeChannelFailed": "Não foi possível remover {{name}}: {{message}}",
     "removeChannelChanged": "{{name}} não está mais nessa posição do rádio, então nada foi removido.",
+    "removeChannelRadioChanged": "O rádio conectado mudou nesse meio-tempo, então {{name}} não foi removido.",
     "clearChannelMessages": "Limpar mensagens",
     "clearChannelMessagesTitle": "Limpar as mensagens de {{name}}?",
     "clearChannelMessagesMessage": "Apaga deste computador todas as mensagens salvas de {{name}}. O canal continua, e as novas mensagens seguem chegando.",

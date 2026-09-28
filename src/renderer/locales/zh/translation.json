@@ -498,6 +498,7 @@
     "removeChannelMessage": "电台将停止接收 {{name}} 并忘记它的密钥。你可以用 + 按钮重新添加：话题标签频道按名称添加，私有频道使用其密钥添加。",
     "removeChannelFailed": "无法移除 {{name}}：{{message}}",
     "removeChannelChanged": "{{name}} 已不在电台的该位置，因此未移除任何内容。",
+    "removeChannelRadioChanged": "已连接的电台已更换，因此未移除 {{name}}。",
     "clearChannelMessages": "清除消息",
     "clearChannelMessagesTitle": "要清除 {{name}} 中的消息吗？",
     "clearChannelMessagesMessage": "从这台电脑删除 {{name}} 中保存的所有消息。频道会保留，新消息仍会继续收到。",

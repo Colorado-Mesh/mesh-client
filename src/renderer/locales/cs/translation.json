@@ -506,6 +506,7 @@
     "removeChannelMessage": "Rádio přestane přijímat {{name}} a zapomene jeho klíč. Znovu ho přidáte tlačítkem +: hashtagový kanál podle názvu, soukromý pomocí klíče.",
     "removeChannelFailed": "{{name}} se nepodařilo odebrat: {{message}}",
     "removeChannelChanged": "{{name}} už na rádiu v tomto slotu není, nic se neodebralo.",
+    "removeChannelRadioChanged": "Připojené rádio se mezitím změnilo, kanál {{name}} nebyl odebrán.",
     "clearChannelMessages": "Vymazat zprávy",
     "clearChannelMessagesTitle": "Vymazat zprávy v {{name}}?",
     "clearChannelMessagesMessage": "Smaže z tohoto počítače všechny uložené zprávy v {{name}}. Kanál zůstane a nové zprávy dál přicházejí.",

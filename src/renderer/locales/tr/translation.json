@@ -498,6 +498,7 @@
     "removeChannelMessage": "Telsiz {{name}} kanalını almayı bırakır ve anahtarını unutur. + düğmesiyle yeniden ekleyebilirsiniz: hashtag kanalını adıyla, özel kanalı anahtarıyla.",
     "removeChannelFailed": "{{name}} kaldırılamadı: {{message}}",
     "removeChannelChanged": "{{name}} artık telsizde o yuvada değil, bu yüzden hiçbir şey kaldırılmadı.",
+    "removeChannelRadioChanged": "Bağlı telsiz bu arada değişti, bu yüzden {{name}} kaldırılmadı.",
     "clearChannelMessages": "Mesajları temizle",
     "clearChannelMessagesTitle": "{{name}} mesajları temizlensin mi?",
     "clearChannelMessagesMessage": "{{name}} kanalına ait kayıtlı tüm mesajları bu bilgisayardan siler. Kanal kalır ve yeni mesajlar gelmeye devam eder.",

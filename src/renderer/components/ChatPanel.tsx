@@ -995,9 +995,12 @@ function ChatPanel({
   // Shift+F10 on it), or the x beside it in the + dialog. Public, in slot 0, is never offered.
   const channelMenuAnchorRef = useRef<HTMLElement | null>(null);
   const [channelMenu, setChannelMenu] = useState<{ index: number; name: string } | null>(null);
-  const [channelToRemove, setChannelToRemove] = useState<{ index: number; name: string } | null>(
-    null,
-  );
+  // The confirm records which radio listed the channel (nodeNum), since the delete goes by slot.
+  const [channelToRemove, setChannelToRemove] = useState<{
+    index: number;
+    name: string;
+    nodeNum: number;
+  } | null>(null);
   const [removingChannel, setRemovingChannel] = useState(false);
   const canRemoveChannel = (index: number) =>
     onDeleteMeshcoreChannel != null && index !== MESHCORE_PUBLIC_CHANNEL_INDEX;
@@ -1032,10 +1035,19 @@ function ChatPanel({
     channelMenuAnchorRef.current = anchor;
     setChannelMenu({ index: target.index, name: target.name });
   };
-  const removeChannel = async (target: { index: number; name: string }) => {
+  const askToRemoveChannel = (target: { index: number; name: string }) => {
+    setChannelToRemove({ index: target.index, name: target.name, nodeNum: myNodeNum });
+  };
+  const removeChannel = async (target: { index: number; name: string; nodeNum: number }) => {
     if (!onDeleteMeshcoreChannel) return;
-    // The delete goes by slot. If the radio's list changed while the dialog was open (a
-    // reconnect, another radio), that slot may now hold a different channel: remove nothing.
+    // The delete goes by slot on whichever radio is connected now. If another radio connected
+    // while the dialog was open, its slot is not the channel the user saw: remove nothing.
+    if (target.nodeNum !== myNodeNum) {
+      setChannelToRemove(null);
+      addToast(t('chatPanel.removeChannelRadioChanged', { name: target.name }), 'warning');
+      return;
+    }
+    // Same radio, but its list changed (a reconnect): the slot may hold a different channel.
     if (!channels.some((ch) => ch.index === target.index && ch.name === target.name)) {
       setChannelToRemove(null);
       addToast(t('chatPanel.removeChannelChanged', { name: target.name }), 'warning');
@@ -2766,7 +2778,7 @@ function ChatPanel({
                     selectChannel(index);
                     setViewMode('channels');
                   }}
-                  onRemoveChannel={onDeleteMeshcoreChannel ? setChannelToRemove : undefined}
+                  onRemoveChannel={onDeleteMeshcoreChannel ? askToRemoveChannel : undefined}
                 />
               ) : null}
               <Menu
@@ -2801,7 +2813,7 @@ function ChatPanel({
                             ? t('chatPanel.removeChannelNeedsRadio')
                             : undefined,
                           onSelect: () => {
-                            setChannelToRemove(channelMenu);
+                            askToRemoveChannel(channelMenu);
                           },
                         },
                       ]

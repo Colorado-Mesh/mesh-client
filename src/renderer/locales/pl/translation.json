@@ -514,6 +514,7 @@
     "removeChannelMessage": "Radio przestanie odbierać {{name}} i zapomni jego klucz. Możesz dodać go ponownie przyciskiem +: kanał hashtagowy po nazwie, a prywatny za pomocą klucza.",
     "removeChannelFailed": "Nie udało się usunąć {{name}}: {{message}}",
     "removeChannelChanged": "{{name}} nie zajmuje już tego miejsca w radiu, więc nic nie zostało usunięte.",
+    "removeChannelRadioChanged": "Podłączone radio zmieniło się w międzyczasie, więc kanał {{name}} nie został usunięty.",
     "clearChannelMessages": "Wyczyść wiadomości",
     "clearChannelMessagesTitle": "Wyczyścić wiadomości w {{name}}?",
     "clearChannelMessagesMessage": "Usuwa z tego komputera wszystkie zapisane wiadomości w {{name}}. Kanał pozostaje, a nowe wiadomości nadal przychodzą.",

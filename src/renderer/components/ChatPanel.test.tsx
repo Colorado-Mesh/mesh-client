@@ -5990,6 +5990,33 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     ).toBeInTheDocument();
   });
 
+  it('removes nothing if another radio connected while the dialog was open', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove channel' }));
+    // A second radio with the same channel in the same slot: the list matches, the radio does not.
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...props} myNodeNum={2} />
+      </ToastProvider>,
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove channel' }),
+    );
+    expect(props.onDeleteMeshcoreChannel).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'The connected radio changed while this was open, so #test was not removed.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("clears a channel's saved messages from its menu after asking, Public included (#1098)", async () => {
     const user = userEvent.setup();
     const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
