@@ -259,34 +259,44 @@ async function generateAndPersistCerts(identity: TakServerIdentity): Promise<Cer
 }
 
 /**
+ * One trimmed `serverName` for the certificate CN/SAN and the on-disk match.
+ * A padded name must not disagree with `serverCertMatchesIdentity` and rotate the PKI.
+ */
+function resolveServerIdentity(identity: TakServerIdentity): TakServerIdentity {
+  return { ...identity, serverName: identity.serverName.trim() };
+}
+
+/**
  * Load on-disk certs when they match `identity`; otherwise generate (or regenerate)
  * so CN + SAN cover `serverName` and every LAN IP the data package will dial.
  */
 export async function loadOrGenerateCerts(identity: TakServerIdentity): Promise<CertBundle> {
+  const resolved = resolveServerIdentity(identity);
   const certsDir = getCertsDir();
   const paths = certPaths(certsDir);
 
   const allExist = Object.values(paths).every((p) => fs.existsSync(p));
   if (allExist) {
     const bundle = readBundle(paths);
-    if (serverCertMatchesIdentity(bundle.serverCert, identity)) {
+    if (serverCertMatchesIdentity(bundle.serverCert, resolved)) {
       return bundle;
     }
     console.debug(
       '[TAK] On-disk server certificate identity mismatch; regenerating for current LAN IP / server name',
     );
-    return regenerateCerts(identity);
+    return regenerateCerts(resolved);
   }
 
-  return generateAndPersistCerts(identity);
+  return generateAndPersistCerts(resolved);
 }
 
 export async function regenerateCerts(identity: TakServerIdentity): Promise<CertBundle> {
+  const resolved = resolveServerIdentity(identity);
   const certsDir = getCertsDir();
   if (fs.existsSync(certsDir)) {
     for (const file of fs.readdirSync(certsDir)) {
       fs.rmSync(path.join(certsDir, file));
     }
   }
-  return generateAndPersistCerts(identity);
+  return generateAndPersistCerts(resolved);
 }
