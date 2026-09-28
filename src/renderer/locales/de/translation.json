@@ -814,7 +814,11 @@
       "search": "Unterhaltung suchen",
       "listLabel": "Direktnachrichten",
       "empty": "Keine passenden Unterhaltungen"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} in {{room}}",
+    "srNewMessage": "Neue Nachricht von {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} neue Nachricht",
+    "srNewMessages_other": "{{count}} neue Nachrichten"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -2083,7 +2087,12 @@
       "esp32FlashStalled": "Firmware-Übertragung ohne Fortschritt blockiert. Versuchen Sie ein anderes USB-Kabel oder einen anderen Anschluss, wechseln Sie in den Bootloader-Modus (BOOT gedrückt halten, RESET antippen) und flashen Sie erneut.",
       "unknown": "Ein unerwarteter Fehler ist aufgetreten.",
       "provisionWipeRequired": "EEPROM ist mit einer ungültigen Identität gesperrt. Löschen Sie zuerst das EEPROM und führen Sie dann erneut die Bereitstellung durch.",
-      "provisionVerifyFailed": "Bereitstellungsschreibvorgänge abgeschlossen, aber das Gerät meldet weiterhin ein nicht bereitgestelltes EEPROM. Schalten Sie die Platine aus und wieder ein, warten Sie auf den Start und versuchen Sie es erneut — oder löschen Sie zuerst das EEPROM."
+      "provisionVerifyFailed": "Bereitstellungsschreibvorgänge abgeschlossen, aber das Gerät meldet weiterhin ein nicht bereitgestelltes EEPROM. Schalten Sie die Platine aus und wieder ein, warten Sie auf den Start und versuchen Sie es erneut — oder löschen Sie zuerst das EEPROM.",
+      "esp32ReadStalled": "Lesen des Flash-Speichers ohne Fortschritt blockiert. Versuchen Sie ein anderes USB-Kabel oder einen anderen Anschluss, wechseln Sie in den Bootloader-Modus (BOOT gedrückt halten, RESET antippen) und sichern Sie erneut.",
+      "esp32ReadIncomplete": "Das Lesen des Flash-Speichers wurde vorzeitig beendet, daher wurde keine Sicherung gespeichert. Schließen Sie das Board erneut an und versuchen Sie es noch einmal.",
+      "esp32FlashSizeUnknown": "Die Flash-Größe konnte nicht ermittelt werden, daher wurde keine Sicherung erstellt. Wählen Sie das genaue Board-Modell aus und versuchen Sie es erneut.",
+      "esp32FlashTooLarge": "Der Flash-Speicher dieses Boards ist größer als das Sicherungslimit von 32 MiB, daher wurde keine Sicherung erstellt.",
+      "esp32ReadVerifyFailed": "Die Prüfsumme des gelesenen Flash-Speichers stimmt nicht, daher wurde keine Sicherung gespeichert. Schließen Sie das Board erneut an und versuchen Sie es noch einmal."
     },
     "selectSerialPort": "Serielle Schnittstelle auswählen",
     "noSerialPorts": "Keine seriellen USB-Anschlüsse gefunden.",
@@ -2131,7 +2140,14 @@
     "clearPairedDevicesConfirmTitle": "RNode-Bluetooth-Bindungen löschen?",
     "clearPairedDevicesConfirmMessage": "Sendet CMD_BT_UNPAIR über USB und löscht gebundene Hosts auf ESP32-RNodes (keine Wirkung bei manchen nRF52-Builds). Sie müssen das Gerät in Systemeinstellungen → Bluetooth trotzdem noch Vergessen, bevor Sie erneut koppeln.",
     "clearPairedDevicesConfirm": "Bluetooth-Bindungen löschen",
-    "clearPairedDevicesSuccess": "Löschen der Funk-Bluetooth-Bindungstabelle angefordert."
+    "clearPairedDevicesSuccess": "Löschen der Funk-Bluetooth-Bindungstabelle angefordert.",
+    "backupFirmware": "Firmware sichern",
+    "backupFirmwareHint": "Speichert vor dem Flashen ein vollständiges Abbild des ESP32-Flash-Speichers (Firmware und Geräteeinstellungen) in einer Datei. Für nRF52-Boards nicht verfügbar.",
+    "backingUp": "Flash wird gelesen… {{progress}}%",
+    "cancelBackup": "Sicherung abbrechen",
+    "backupSaved": "Firmware-Sicherung unter {{path}} gespeichert.",
+    "backupSaveCancelled": "Die Firmware-Sicherung wurde gelesen, aber nicht gespeichert.",
+    "backupCancelled": "Firmware-Sicherung abgebrochen."
   },
   "identityVault": {
     "title": "Identitätstresor",

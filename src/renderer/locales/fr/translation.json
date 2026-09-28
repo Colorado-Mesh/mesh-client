@@ -814,7 +814,11 @@
       "search": "Rechercher une conversation",
       "listLabel": "Messages privés",
       "empty": "Aucune conversation ne correspond"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} à {{room}}",
+    "srNewMessage": "Nouveau message de {{sender}} : {{text}}",
+    "srNewMessages_one": "{{count}} nouveau message",
+    "srNewMessages_other": "{{count}} nouveaux messages"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -2083,7 +2087,12 @@
       "esp32FlashStalled": "Le transfert du firmware est bloqué sans progression. Essayez un autre câble ou port USB, entrez en mode bootloader (maintenez BOOT, appuyez sur RESET) et flashez à nouveau.",
       "unknown": "Une erreur inattendue s'est produite.",
       "provisionWipeRequired": "EEPROM est verrouillé avec une identité non valide. Effacez d’abord l’EEPROM, puis provisionnez à nouveau.",
-      "provisionVerifyFailed": "Écritures de provision terminées, mais l’appareil signale toujours une EEPROM non provisionnée. Coupez puis rétablissez l’alimentation de la carte, attendez le démarrage et réessayez — ou effacez d’abord l’EEPROM."
+      "provisionVerifyFailed": "Écritures de provision terminées, mais l’appareil signale toujours une EEPROM non provisionnée. Coupez puis rétablissez l’alimentation de la carte, attendez le démarrage et réessayez — ou effacez d’abord l’EEPROM.",
+      "esp32ReadStalled": "La lecture de la flash est bloquée sans progression. Essayez un autre câble ou port USB, entrez en mode bootloader (maintenez BOOT, appuyez sur RESET) et relancez la sauvegarde.",
+      "esp32ReadIncomplete": "La lecture de la flash s'est arrêtée prématurément, aucune sauvegarde n'a donc été enregistrée. Reconnectez la carte et réessayez.",
+      "esp32FlashSizeUnknown": "Impossible de détecter la taille de la flash, aucune sauvegarde n'a donc été effectuée. Sélectionnez le modèle exact de la carte et réessayez.",
+      "esp32FlashTooLarge": "La flash de cette carte dépasse la limite de sauvegarde de 32 Mio, aucune sauvegarde n'a donc été effectuée.",
+      "esp32ReadVerifyFailed": "La lecture de la flash a échoué à la vérification de la somme de contrôle, aucune sauvegarde n'a donc été enregistrée. Reconnectez la carte et réessayez."
     },
     "selectSerialPort": "Sélectionner le port série",
     "noSerialPorts": "Aucun port série USB trouvé.",
@@ -2131,7 +2140,14 @@
     "clearPairedDevicesConfirmTitle": "Effacer les liaisons Bluetooth RNode ?",
     "clearPairedDevicesConfirmMessage": "Envoie CMD_BT_UNPAIR via USB et efface les hôtes liés sur les RNodes ESP32 (sans effet sur certaines builds nRF52). Vous devez quand même Oublier l’appareil dans Réglages Système → Bluetooth avant de réapparier.",
     "clearPairedDevicesConfirm": "Effacer les liaisons Bluetooth",
-    "clearPairedDevicesSuccess": "Effacement de la table de liaisons Bluetooth de la radio demandé."
+    "clearPairedDevicesSuccess": "Effacement de la table de liaisons Bluetooth de la radio demandé.",
+    "backupFirmware": "Sauvegarder le firmware",
+    "backupFirmwareHint": "Enregistre dans un fichier une image complète de la mémoire flash de l'ESP32 (firmware et paramètres de l'appareil) avant de flasher. Non disponible pour les cartes nRF52.",
+    "backingUp": "Lecture de la flash… {{progress}}%",
+    "cancelBackup": "Annuler la sauvegarde",
+    "backupSaved": "Sauvegarde du firmware enregistrée dans {{path}}.",
+    "backupSaveCancelled": "La sauvegarde du firmware a été lue mais n'a pas été enregistrée.",
+    "backupCancelled": "Sauvegarde du firmware annulée."
   },
   "identityVault": {
     "title": "Coffre-fort d'identité",

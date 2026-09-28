@@ -4,14 +4,23 @@ export interface FlashProgressProps {
   active: boolean;
   progress: number;
   syncing?: boolean;
+  /** Overrides the default "Flashing… N%" label once syncing completes. */
+  label?: string;
 }
 
-export function FlashProgress({ active, progress, syncing = false }: FlashProgressProps) {
+export function FlashProgress({
+  active,
+  progress,
+  syncing = false,
+  label: progressLabel,
+}: FlashProgressProps) {
   const { t } = useTranslation();
 
   if (!active) return null;
 
-  const label = syncing ? t('flasher.esp32Syncing') : t('flasher.flashing', { progress });
+  const label = syncing
+    ? t('flasher.esp32Syncing')
+    : (progressLabel ?? t('flasher.flashing', { progress }));
 
   return (
     <div className="space-y-1">

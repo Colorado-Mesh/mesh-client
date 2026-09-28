@@ -55,7 +55,6 @@ describe('attachMeshtasticRouterSideEffects', () => {
         },
       ],
       hasRfDevice: () => true,
-      getNodeName: () => 'Self',
       registerMqttEchoPacketId: vi.fn(),
       requestNodeInfoForNode,
       applyForeignLoraFromLog: vi.fn(),
@@ -90,7 +89,6 @@ describe('attachMeshtasticRouterSideEffects', () => {
       getMqttStatus: () => 'disconnected',
       getChannelConfigs: () => [],
       hasRfDevice: () => true,
-      getNodeName: () => 'Self',
       registerMqttEchoPacketId: vi.fn(),
       requestNodeInfoForNode: vi.fn(),
       applyForeignLoraFromLog,
@@ -115,7 +113,7 @@ describe('attachMeshtasticRouterSideEffects', () => {
     detach();
   });
 
-  it('uses i18n for hidden-window notification titles', () => {
+  it('does not raise OS notifications itself (App inactive-chat watchers own them)', () => {
     const NotificationMock = vi.fn();
     vi.stubGlobal('Notification', NotificationMock);
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
@@ -125,7 +123,6 @@ describe('attachMeshtasticRouterSideEffects', () => {
       getMqttStatus: () => 'disconnected',
       getChannelConfigs: () => [],
       hasRfDevice: () => true,
-      getNodeName: () => 'Alpha',
       registerMqttEchoPacketId: vi.fn(),
       requestNodeInfoForNode: vi.fn(),
       applyForeignLoraFromLog: vi.fn(),
@@ -147,12 +144,6 @@ describe('attachMeshtasticRouterSideEffects', () => {
       },
       'mesh-id',
     );
-    expect(NotificationMock).toHaveBeenCalledWith('DM from Alpha', {
-      body: 'secret dm',
-      silent: true,
-    });
-
-    NotificationMock.mockClear();
     packetRouter.dispatch(
       {
         type: 'text_message',
@@ -167,10 +158,7 @@ describe('attachMeshtasticRouterSideEffects', () => {
       },
       'mesh-id',
     );
-    expect(NotificationMock).toHaveBeenCalledWith('Message from Alpha', {
-      body: 'hello channel',
-      silent: true,
-    });
+    expect(NotificationMock).not.toHaveBeenCalled();
     detach();
   });
 });

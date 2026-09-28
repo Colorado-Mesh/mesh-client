@@ -296,7 +296,7 @@ describe('BrowserWindow webPreferences (source contract)', () => {
 // ─── Permission handler whitelist ───────────────────────────────────
 
 describe('session permission whitelist (source contract)', () => {
-  it('grants serial, geolocation, and media via setPermissionCheckHandler', () => {
+  it('grants serial, geolocation, media and notifications via setPermissionCheckHandler', () => {
     // Search for the actual session method call, not a comment mention of the name
     const checkIdx = INDEX_SOURCE.indexOf('.setPermissionCheckHandler(');
     expect(checkIdx).toBeGreaterThan(-1);
@@ -305,6 +305,9 @@ describe('session permission whitelist (source contract)', () => {
     expect(body).toContain("permission === 'serial'");
     expect(body).toContain("permission === 'geolocation'");
     expect(body).toContain("permission === 'media'");
+    // Renderer Notification.permission reads this handler; without it chat/node/ops/MECP
+    // desktop notifications report `denied` and never show.
+    expect(body).toContain("permission === 'notifications'");
     expect(body).not.toContain('return true'); // Must be conditional, not blanket true
   });
 
@@ -314,6 +317,7 @@ describe('session permission whitelist (source contract)', () => {
     const body = INDEX_SOURCE.slice(reqIdx, reqIdx + 450);
     expect(body).toContain("permission === 'geolocation'");
     expect(body).toContain("permission === 'media'");
+    expect(body).toContain("permission === 'notifications'");
     expect(body).not.toMatch(/callback\s*\(\s*true\s*\)/);
   });
 
@@ -525,6 +529,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'app:rendererHeartbeat',
     'app:getRendererLiveness',
     'app:getProcessUptimeSec',
+    'app:focusWindow',
     'app:relaunch',
     'meshcore:openJsonFile',
     'db:saveNode',

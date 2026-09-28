@@ -814,7 +814,11 @@
       "search": "Trova una conversazione",
       "listLabel": "Messaggi diretti",
       "empty": "Nessuna conversazione corrispondente"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} a {{room}}",
+    "srNewMessage": "Nuovo messaggio da {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} nuovo messaggio",
+    "srNewMessages_other": "{{count}} nuovi messaggi"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -2083,7 +2087,12 @@
       "esp32FlashStalled": "Trasferimento firmware bloccato senza progressi. Provare un altro cavo o porta USB, entrare in modalità bootloader (tenere premuto BOOT, toccare RESET) e riflashare.",
       "unknown": "Si è verificato un errore imprevisto.",
       "provisionWipeRequired": "La EEPROM è bloccata con un'identità non valida. Pulire prima la EEPROM, quindi eseguire nuovamente il provisioning.",
-      "provisionVerifyFailed": "Le scritture di provisioning sono terminate ma il dispositivo segnala ancora una EEPROM senza provisioning. Spegnere e riaccendere la scheda, attendere l'avvio e riprovare, oppure pulire prima la EEPROM."
+      "provisionVerifyFailed": "Le scritture di provisioning sono terminate ma il dispositivo segnala ancora una EEPROM senza provisioning. Spegnere e riaccendere la scheda, attendere l'avvio e riprovare, oppure pulire prima la EEPROM.",
+      "esp32ReadStalled": "La lettura della flash si è bloccata senza progressi. Provare un altro cavo o porta USB, entrare in modalità bootloader (tenere premuto BOOT, toccare RESET) ed eseguire di nuovo il backup.",
+      "esp32ReadIncomplete": "La lettura del flash è terminata in anticipo, quindi non è stato salvato alcun backup. Ricollegare la scheda e riprovare.",
+      "esp32FlashSizeUnknown": "Impossibile rilevare la dimensione della flash, quindi non è stato eseguito alcun backup. Selezionare il modello esatto della scheda e riprovare.",
+      "esp32FlashTooLarge": "La flash di questa scheda supera il limite di backup di 32 MiB, quindi non è stato eseguito alcun backup.",
+      "esp32ReadVerifyFailed": "La lettura della flash non ha superato la verifica del checksum, quindi non è stato salvato alcun backup. Ricollegare la scheda e riprovare."
     },
     "selectSerialPort": "Selezionare la Porta Seriale.",
     "noSerialPorts": "Nessuna porta seriale USB trovata.",
@@ -2131,7 +2140,14 @@
     "clearPairedDevicesConfirmTitle": "Cancellare i legami Bluetooth RNode?",
     "clearPairedDevicesConfirmMessage": "Invia CMD_BT_UNPAIR via USB e cancella gli host associati sugli RNode ESP32 (nessun effetto su alcune build nRF52). Devi comunque Dimenticare il dispositivo in Impostazioni di Sistema → Bluetooth prima di riaccoppiare.",
     "clearPairedDevicesConfirm": "Cancella legami Bluetooth",
-    "clearPairedDevicesSuccess": "Richiesta di cancellazione della tabella dei legami Bluetooth della radio."
+    "clearPairedDevicesSuccess": "Richiesta di cancellazione della tabella dei legami Bluetooth della radio.",
+    "backupFirmware": "Backup del firmware",
+    "backupFirmwareHint": "Salva un'immagine completa del flash ESP32 (firmware e impostazioni del dispositivo) in un file prima di eseguire il flash. Non disponibile per schede nRF52.",
+    "backingUp": "Lettura della flash… {{progress}}%",
+    "cancelBackup": "Annulla backup",
+    "backupSaved": "Backup del firmware salvato su {{path}}.",
+    "backupSaveCancelled": "Il backup del firmware è stato letto ma non salvato.",
+    "backupCancelled": "Backup del firmware annullato."
   },
   "identityVault": {
     "title": "Caveau identità",

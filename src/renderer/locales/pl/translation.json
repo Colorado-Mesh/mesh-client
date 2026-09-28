@@ -846,7 +846,13 @@
       "search": "Znajdź rozmowę",
       "listLabel": "Wiadomości prywatne",
       "empty": "Brak pasujących rozmów"
-    }
+    },
+    "notificationRrcTitle": "{{sender}} w {{room}}",
+    "srNewMessage": "Nowa wiadomość od {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} nowa wiadomość",
+    "srNewMessages_few": "{{count}} nowe wiadomości",
+    "srNewMessages_many": "{{count}} nowych wiadomości",
+    "srNewMessages_other": "{{count}} nowej wiadomości"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -2129,7 +2135,12 @@
       "esp32FlashStalled": "Transfer firmware utknął bez postępu. Wypróbuj inny kabel lub port USB, przejdź do trybu bootloadera (przytrzymaj BOOT, stuknij RESET) i wgraj ponownie.",
       "unknown": "Wystąpił nieoczekiwany błąd.",
       "provisionWipeRequired": "Pamięć EEPROM jest zablokowana z nieprawidłową tożsamością. Najpierw wyczyść EEPROM, a następnie ponownie wykonaj provisioning.",
-      "provisionVerifyFailed": "Zapisywanie provisioningu zakończone, ale urządzenie nadal zgłasza nieprzygotowaną pamięć EEPROM. Wyłącz i włącz zasilanie płyty, poczekaj na uruchomienie i spróbuj ponownie — lub najpierw wyczyść EEPROM."
+      "provisionVerifyFailed": "Zapisywanie provisioningu zakończone, ale urządzenie nadal zgłasza nieprzygotowaną pamięć EEPROM. Wyłącz i włącz zasilanie płyty, poczekaj na uruchomienie i spróbuj ponownie — lub najpierw wyczyść EEPROM.",
+      "esp32ReadStalled": "Odczyt pamięci flash utknął bez postępu. Wypróbuj inny kabel lub port USB, przejdź do trybu bootloadera (przytrzymaj BOOT, stuknij RESET) i ponownie utwórz kopię zapasową.",
+      "esp32ReadIncomplete": "Odczyt pamięci flash zakończył się przedwcześnie, więc nie zapisano kopii zapasowej. Podłącz ponownie płytkę i spróbuj ponownie.",
+      "esp32FlashSizeUnknown": "Nie udało się wykryć rozmiaru pamięci flash, więc nie utworzono kopii zapasowej. Wybierz dokładny model płytki i spróbuj ponownie.",
+      "esp32FlashTooLarge": "Pamięć flash tej płytki przekracza limit kopii zapasowej 32 MiB, więc nie utworzono kopii zapasowej.",
+      "esp32ReadVerifyFailed": "Odczyt pamięci flash nie przeszedł weryfikacji sumy kontrolnej, więc nie zapisano kopii zapasowej. Podłącz ponownie płytkę i spróbuj ponownie."
     },
     "selectSerialPort": "Wybierz port szeregowy",
     "noSerialPorts": "Nie znaleziono portów szeregowych USB.",
@@ -2177,7 +2188,14 @@
     "clearPairedDevicesConfirmTitle": "Wyczyścić powiązania Bluetooth RNode?",
     "clearPairedDevicesConfirmMessage": "Wysyła CMD_BT_UNPAIR przez USB i czyści powiązane hosty na RNode ESP32 (bez efektu na niektórych buildach nRF52). Przed ponownym parowaniem nadal musisz Zapomnieć urządzenie w Ustawieniach systemowych → Bluetooth.",
     "clearPairedDevicesConfirm": "Wyczyść powiązania Bluetooth",
-    "clearPairedDevicesSuccess": "Zażądano wyczyszczenia tabeli powiązań Bluetooth radia."
+    "clearPairedDevicesSuccess": "Zażądano wyczyszczenia tabeli powiązań Bluetooth radia.",
+    "backupFirmware": "Kopia zapasowa firmware",
+    "backupFirmwareHint": "Przed wgraniem zapisuje do pliku pełny obraz pamięci flash ESP32 (firmware i ustawienia urządzenia). Niedostępne dla płytek nRF52.",
+    "backingUp": "Odczyt pamięci flash… {{progress}}%",
+    "cancelBackup": "Anuluj kopię zapasową",
+    "backupSaved": "Kopia zapasowa firmware zapisana w {{path}}.",
+    "backupSaveCancelled": "Kopia zapasowa firmware została odczytana, ale nie zapisana.",
+    "backupCancelled": "Anulowano kopię zapasową firmware."
   },
   "identityVault": {
     "title": "Skarbiec tożsamości",

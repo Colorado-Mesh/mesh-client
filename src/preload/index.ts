@@ -26,6 +26,7 @@ import type {
   SpellcheckReplacePayload,
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
+import type { FirmwareBackupSaveResult } from '../shared/firmwareBackup';
 import type {
   NotificationSoundEvent,
   NotificationSoundImport,
@@ -1074,6 +1075,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getProcessUptimeSec: (): Promise<number> => ipcRenderer.invoke('app:getProcessUptimeSec'),
   app: {
     getRendererLiveness: () => ipcRenderer.invoke('app:getRendererLiveness'),
+    focusWindow: (): Promise<void> => ipcRenderer.invoke('app:focusWindow'),
   },
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => {
     const handler = (_: unknown, payload: SpellcheckReplacePayload) => {
@@ -1555,6 +1557,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
         success: boolean;
         path?: string;
       }>,
+  },
+
+  flasher: {
+    saveFirmwareBackup: (filename: string, data: Uint8Array) =>
+      ipcRenderer.invoke(
+        'flasher:saveFirmwareBackup',
+        filename,
+        data,
+      ) as Promise<FirmwareBackupSaveResult>,
   },
 
   // ─── Support / bug-report bundles ────────────────────────────────

@@ -1665,6 +1665,42 @@ describe('roomsPanel saved passwords per-key quality', () => {
     ).toEqual([]);
   });
 
+  const enEsp32ReadStalled =
+    'Reading flash stalled with no progress. Try another USB cable or port, enter bootloader mode (hold BOOT, tap RESET), and back up again.';
+
+  it.each([
+    ['de', 'flasher.backingUp', 'Leseblitz… {{progress}}%', 'Reading flash… {{progress}}%'],
+    ['cs', 'flasher.errors.esp32ReadStalled', 'Blesk pro čtení (BOOT, RESET).', enEsp32ReadStalled],
+    ['zh', 'flasher.backingUp', '正在读取闪光灯… {{progress}}%', 'Reading flash… {{progress}}%'],
+    ['ru', 'flasher.backingUp', 'Чтение вспышки… {{progress}}%', 'Reading flash… {{progress}}%'],
+  ])('flags camera-flash false friend in %s %s', (locale, flatKey, val, enVal) => {
+    expectIssue(
+      localeStringQualityIssues({ locale, flatKey, val, enVal }),
+      'not camera flash, lightning, or LED blink',
+    );
+  });
+
+  it('flags translated BOOT/RESET labels in flasher backup copy', () => {
+    const issues = localeStringQualityIssues({
+      locale: 'ja',
+      flatKey: 'flasher.errors.esp32ReadStalled',
+      val: 'フラッシュの読み取りが停止しました（ブートを長押し、リセットをタップ）。',
+      enVal: enEsp32ReadStalled,
+    });
+    expectIssue(issues, 'preserve literal button labels BOOT and RESET');
+  });
+
+  it('passes flasher backup copy with flash-memory wording and literal labels', () => {
+    expect(
+      localeStringQualityIssues({
+        locale: 'de',
+        flatKey: 'flasher.errors.esp32ReadStalled',
+        val: 'Lesen des Flash-Speichers blockiert (BOOT gedrückt halten, RESET antippen).',
+        enVal: enEsp32ReadStalled,
+      }),
+    ).toEqual([]);
+  });
+
   const enRnodeCommandTimeout =
     'The device stopped responding over serial. Unplug other apps using the port, wait for the board to finish booting, then retry.';
 

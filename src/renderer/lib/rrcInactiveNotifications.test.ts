@@ -1,6 +1,29 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveInactiveRrcNotificationType } from './rrcInactiveNotifications';
+import {
+  resolveInactiveRrcNotification,
+  resolveInactiveRrcNotificationType,
+} from './rrcInactiveNotifications';
+
+describe('resolveInactiveRrcNotification', () => {
+  it('returns the winning line and its room for the desktop notification', () => {
+    const result = resolveInactiveRrcNotification({
+      nickname: 'nv0n',
+      hubDestHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      mutedViews: new Set<string>(),
+      notifGloballyMuted: false,
+      localIdentityHash: null,
+      notifyMode: 'all',
+      newMessages: [
+        { id: '1', room: '#lobby', kind: 'msg', body: 'hello', timestamp: 1 },
+        { id: '2', room: ' #ops ', kind: 'msg', body: 'hey @nv0n', timestamp: 2 },
+      ],
+    });
+    expect(result?.type).toBe('dm');
+    expect(result?.message.id).toBe('2');
+    expect(result?.room).toBe('#ops');
+  });
+});
 
 describe('resolveInactiveRrcNotificationType', () => {
   const base = {

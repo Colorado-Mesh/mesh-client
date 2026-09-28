@@ -5804,3 +5804,65 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     expect(weather.textContent?.startsWith('##')).toBe(false);
   });
 });
+
+describe('ChatPanel — screen reader announcements', () => {
+  let region: HTMLDivElement;
+  let hasFocusSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    region = document.createElement('div');
+    region.id = 'app-announcer-polite';
+    document.body.appendChild(region);
+    hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    return () => {
+      region.remove();
+      hasFocusSpy.mockRestore();
+    };
+  });
+
+  function renderWith(messages: ChatMessage[]) {
+    return (
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} />
+      </ToastProvider>
+    );
+  }
+
+  it('announces an inbound message in the open conversation', async () => {
+    const initial = [makeMsg({ payload: 'old', timestamp: Date.now() - 5000 })];
+    const { rerender } = render(renderWith(initial));
+    rerender(renderWith([...initial, makeMsg({ payload: 'fresh news' })]));
+    await waitFor(() => {
+      expect(region.textContent).toBe('New message from Alice: fresh news');
+    });
+  });
+
+  it('does not announce own messages or other channels', async () => {
+    const initial = [makeMsg({ payload: 'old', timestamp: Date.now() - 5000 })];
+    const { rerender } = render(renderWith(initial));
+    rerender(
+      renderWith([
+        ...initial,
+        makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'mine' }),
+        makeMsg({ channel: 1, payload: 'elsewhere' }),
+      ]),
+    );
+    await new Promise((r) => setTimeout(r, 100));
+    expect(region.textContent).toBe('');
+  });
+
+  it('does not read MECP wire codes aloud', async () => {
+    const initial = [makeMsg({ payload: 'old', timestamp: Date.now() - 5000 })];
+    const { rerender } = render(renderWith(initial));
+    rerender(
+      renderWith([
+        ...initial,
+        makeMsg({ payload: 'MECP/0/M01 M07 P05 2pax 48.65,20.13' }),
+        makeMsg({ payload: 'fresh news' }),
+      ]),
+    );
+    await waitFor(() => {
+      expect(region.textContent).toBe('New message from Alice: fresh news');
+    });
+  });
+});

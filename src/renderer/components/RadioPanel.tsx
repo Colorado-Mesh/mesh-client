@@ -805,7 +805,9 @@ export default function RadioPanel({
   const [region, setRegion] = useState(1);
   const [modemPreset, setModemPreset] = useState(0);
   const [hopLimit, setHopLimit] = useState(3);
-  const [usePreset, setUsePreset] = useState(true);
+  const [loraUsePreset, setUsePreset] = useState(true);
+  const hasModemPresets = capabilities?.hasModemPresets ?? true;
+  const usePreset = hasModemPresets && loraUsePreset;
   const [bandwidth, setBandwidth] = useState(250);
   const [spreadFactor, setSpreadFactor] = useState(12);
   const [codingRate, setCodingRate] = useState(8);
@@ -1922,13 +1924,15 @@ export default function RadioPanel({
             onChange={setRegion}
             disabled={loraDisabled || applyingSection !== null}
           />
-          <ConfigToggle
-            label={t('radioPanel.useModemPresetLabel')}
-            checked={usePreset}
-            onChange={setUsePreset}
-            disabled={loraDisabled || applyingSection !== null}
-            description={t('radioPanel.useModemPresetDesc')}
-          />
+          {hasModemPresets && (
+            <ConfigToggle
+              label={t('radioPanel.useModemPresetLabel')}
+              checked={usePreset}
+              onChange={setUsePreset}
+              disabled={loraDisabled || applyingSection !== null}
+              description={t('radioPanel.useModemPresetDesc')}
+            />
+          )}
           {usePreset ? (
             <ConfigSelect
               label={t('radioPanel.modemPresetLabel')}

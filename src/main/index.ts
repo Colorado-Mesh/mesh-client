@@ -124,6 +124,7 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
@@ -1718,7 +1719,7 @@ function createWindow() {
       spellcheck: true,
       // Security note: experimentalFeatures enables the Web Bluetooth and Web Serial APIs
       // required for direct device communication. These APIs are permission-gated via
-      // setPermissionCheckHandler/setPermissionRequestHandler (serial, geolocation, media).
+      // setPermissionCheckHandler/setPermissionRequestHandler (serial, geolocation, media, notifications).
       experimentalFeatures: true,
     },
   });
@@ -1942,17 +1943,22 @@ function createWindow() {
   // Allow serial, geolocation, and media (camera / future live audio). Deny web-app-installation etc.
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
     const granted =
-      permission === 'serial' || permission === 'geolocation' || permission === 'media';
+      permission === 'serial' ||
+      permission === 'geolocation' ||
+      permission === 'media' ||
+      permission === 'notifications';
     console.debug(
       `[permissions] checkHandler: ${sanitizeLogMessage(permission)} → ${granted ? 'granted' : 'denied'}`,
     );
     return granted;
   });
 
-  // Grant geolocation (browser GPS fallback) and media (camera QR; microphone reserved for future LXST)
+  // Grant geolocation (browser GPS fallback), media (camera QR; microphone reserved for future LXST)
+  // and notifications (renderer `new Notification` for chat / node / ops / MECP alerts).
   mainWindow.webContents.session.setPermissionRequestHandler(
     (_webContents, permission, callback) => {
-      const grant = permission === 'geolocation' || permission === 'media';
+      const grant =
+        permission === 'geolocation' || permission === 'media' || permission === 'notifications';
       console.debug(
         `[permissions] requestHandler: ${sanitizeLogMessage(permission)} → ${grant ? 'granted' : 'denied'}`,
       );
@@ -3574,6 +3580,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
+registerFlasherHandlers();
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────
@@ -3815,6 +3822,16 @@ ipcMain.handle('appSettings:set', (event, key: unknown, value: unknown) => {
     );
     throw err;
   }
+});
+
+/** Notification click → bring the sender's window forward (restores from minimize / tray). */
+ipcMain.handle('app:focusWindow', (event) => {
+  assertIpcSender(event, 'app:focusWindow');
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window || window.isDestroyed()) return;
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
 });
 
 ipcMain.handle('app:showEmojiPanel', (event) => {

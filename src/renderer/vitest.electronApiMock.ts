@@ -288,6 +288,7 @@ export function createElectronAPIMock(): ElectronAPI {
         rss: 0,
         heapUsed: 0,
       }),
+      focusWindow: vi.fn().mockResolvedValue(undefined),
     },
     onSpellcheckReplace: vi.fn().mockReturnValue(() => {}),
     meshcore: {
@@ -372,6 +373,9 @@ export function createElectronAPIMock(): ElectronAPI {
     meshtasticXmodem: {
       pickUploadFile: vi.fn().mockResolvedValue(null),
       saveDownloadFile: vi.fn().mockResolvedValue({ success: false }),
+    },
+    flasher: {
+      saveFirmwareBackup: vi.fn().mockResolvedValue({ saved: false }),
     },
     support: {
       exportBundle: vi.fn().mockResolvedValue(null),

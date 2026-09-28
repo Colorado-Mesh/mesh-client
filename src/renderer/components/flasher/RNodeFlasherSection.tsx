@@ -5,7 +5,7 @@ import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { useElectronSerialPortPicker } from '@/renderer/hooks/useElectronSerialPortPicker';
 import { bytesToHex } from '@/renderer/lib/flasher/binaryUtils';
 import { rnodeDisplayBufferToPng } from '@/renderer/lib/flasher/displayUtils';
-import { flashEsp32Firmware } from '@/renderer/lib/flasher/esp32Flasher';
+import { flashEsp32Firmware, readEsp32Flash } from '@/renderer/lib/flasher/esp32Flasher';
 import { humanizeFlasherError } from '@/renderer/lib/flasher/flasherErrorHumanize';
 import {
   connectRNode,
@@ -37,6 +37,7 @@ import { RNodeBluetoothPairingSession } from '@/renderer/lib/flasher/rnodeBlueto
 import { ROM } from '@/renderer/lib/flasher/rom';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
 import { persistSerialPortIdentity } from '@/renderer/lib/serialPortSignature';
+import { firmwareBackupFilename } from '@/shared/firmwareBackup';
 
 import { ConfirmModal } from '../ConfirmModal';
 import { AdvancedTools } from './AdvancedTools';
@@ -84,6 +85,10 @@ export function RNodeFlasherSection({
   const [flashing, setFlashing] = useState(false);
   const [flashProgress, setFlashProgress] = useState(0);
   const [esp32Syncing, setEsp32Syncing] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
+  const [backupProgress, setBackupProgress] = useState(0);
+  const [backupSyncing, setBackupSyncing] = useState(false);
+  const backupAbortRef = useRef<AbortController | null>(null);
   const [flashSucceeded, setFlashSucceeded] = useState(() => hasFlasherFlashCompleted());
   const [provisionSucceeded, setProvisionSucceeded] = useState(() =>
     hasFlasherProvisionCompleted(),
@@ -119,16 +124,19 @@ export function RNodeFlasherSection({
     const pairingSession = pairingSessionRef.current;
     return () => {
       pairingSession.invalidate();
+      backupAbortRef.current?.abort();
     };
   }, []);
 
-  const actionsDisabled = portBlocked || busy || flashing || provisioning || settingHash;
+  const actionsDisabled =
+    portBlocked || busy || flashing || provisioning || settingHash || backingUp;
   const canFlash =
     !portBlocked &&
     !busy &&
     !provisioning &&
     !settingHash &&
     !flashing &&
+    !backingUp &&
     selectedProduct != null &&
     firmwareFile != null;
 
@@ -311,6 +319,70 @@ export function RNodeFlasherSection({
     clearStatus,
   ]);
 
+  const handleBackup = useCallback(async () => {
+    if (portBlocked) {
+      showStatus(t('flasher.errors.blockedByStack'), true);
+      return;
+    }
+    if (selectedProduct?.platform !== ROM.PLATFORM_ESP32) {
+      showStatus(t('flasher.errors.selectProduct'), true);
+      return;
+    }
+
+    clearStatus();
+    const controller = new AbortController();
+    backupAbortRef.current = controller;
+    setBackingUp(true);
+    setBackupProgress(0);
+    setBackupSyncing(true);
+    let port: SerialPort | null = null;
+    console.warn('[RNodeFlasher] backup start', { product: selectedProduct.catalogKey });
+
+    try {
+      port = await requestFlasherSerialPort(requestSerialPort, {
+        preferSessionReuse: hasFlasherSessionPort(),
+      });
+      setFlasherSessionSerialPort(port);
+      persistSerialPortIdentity(port);
+
+      const flashConfig = selectedModel?.flash_config ?? selectedProduct.flash_config;
+      const { data, chipName } = await readEsp32Flash(port, {
+        fallbackFlashSize: flashConfig?.flash_size,
+        signal: controller.signal,
+        progressCallback: (progress) => {
+          if (progress > 0) setBackupSyncing(false);
+          setBackupProgress(progress);
+        },
+      });
+      setBackupSyncing(false);
+      const result = await window.electronAPI.flasher.saveFirmwareBackup(
+        firmwareBackupFilename(chipName),
+        data,
+      );
+      if (result.saved && result.path) {
+        showStatus(t('flasher.backupSaved', { path: result.path }));
+        console.warn('[RNodeFlasher] backup saved', { bytes: data.byteLength });
+      } else {
+        showStatus(t('flasher.backupSaveCancelled'));
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (message === 'ESP32_READ_CANCELLED') {
+        console.debug('[RNodeFlasher] backup cancelled');
+        showStatus(t('flasher.backupCancelled'));
+      } else {
+        console.error('[RNodeFlasher] backup failed', e);
+        showStatus(humanizeFlasherError(e), true);
+      }
+    } finally {
+      await safeCloseSerialPort(port);
+      if (backupAbortRef.current === controller) backupAbortRef.current = null;
+      setBackupSyncing(false);
+      setBackingUp(false);
+      setFlasherSessionSerialPort(null);
+    }
+  }, [portBlocked, requestSerialPort, selectedModel, selectedProduct, showStatus, t, clearStatus]);
+
   const handleProvision = useCallback(async () => {
     if (!flashSucceeded && !hasFlasherFlashCompleted()) {
       showStatus(t('flasher.provisionRequiresFlash'), true);
@@ -488,6 +560,46 @@ export function RNodeFlasherSection({
           </button>
 
           <FlashProgress active={flashing} progress={flashProgress} syncing={esp32Syncing} />
+
+          {isEsp32 ? (
+            <div className="space-y-2">
+              <p className="text-ink-400 text-xs">{t('flasher.backupFirmwareHint')}</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={actionsDisabled}
+                  aria-label={t('flasher.backupFirmware')}
+                  aria-busy={backingUp}
+                  onClick={() => {
+                    void handleBackup();
+                  }}
+                  className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-3 py-1.5 text-xs disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {backingUp
+                    ? t('flasher.backingUp', { progress: backupProgress })
+                    : t('flasher.backupFirmware')}
+                </button>
+                {backingUp ? (
+                  <button
+                    type="button"
+                    aria-label={t('flasher.cancelBackup')}
+                    onClick={() => {
+                      backupAbortRef.current?.abort();
+                    }}
+                    className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-3 py-1.5 text-xs"
+                  >
+                    {t('flasher.cancelBackup')}
+                  </button>
+                ) : null}
+              </div>
+              <FlashProgress
+                active={backingUp}
+                progress={backupProgress}
+                syncing={backupSyncing}
+                label={t('flasher.backingUp', { progress: backupProgress })}
+              />
+            </div>
+          ) : null}
         </div>
 
         <ProvisionStep

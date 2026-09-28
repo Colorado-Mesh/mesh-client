@@ -4,6 +4,7 @@ import type { ProtocolCapabilities } from './radio/BaseRadioProvider';
 import { TAB_SLOT_IDS, type TabIconSlotId } from './tabSlotIds';
 import type { MeshProtocol } from './types';
 
+export const CHAT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Chat');
 export const INCIDENT_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Incident');
 export const GAMES_PANEL_INDEX = TAB_SLOT_IDS.indexOf('Games');
 export const RRC_PANEL_INDEX = TAB_SLOT_IDS.indexOf('RRC');

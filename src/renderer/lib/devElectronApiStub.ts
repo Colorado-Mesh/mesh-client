@@ -264,6 +264,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         rss: 0,
         heapUsed: 0,
       }),
+      focusWindow: noopAsync,
     },
     onSpellcheckReplace: noopUnsub,
     meshcore: {
@@ -319,6 +320,9 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     meshtasticXmodem: {
       pickUploadFile: async () => null,
       saveDownloadFile: async () => ({ success: false }),
+    },
+    flasher: {
+      saveFirmwareBackup: async () => ({ saved: false }),
     },
     support: {
       exportBundle: async () => null,

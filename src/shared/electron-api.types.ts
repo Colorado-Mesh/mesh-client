@@ -1,5 +1,6 @@
 // Single source of truth for the Electron context bridge API surface.
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import type { FirmwareBackupSaveResult } from './firmwareBackup';
 import type {
   GamesActionRequest,
   GamesActionResult,
@@ -1092,6 +1093,11 @@ export interface ElectronAPI {
     ) => Promise<{ success: boolean; path?: string }>;
   };
 
+  // ─── RNode flasher (ESP32 firmware backup save) ──────────────────────────────
+  flasher: {
+    saveFirmwareBackup: (filename: string, data: Uint8Array) => Promise<FirmwareBackupSaveResult>;
+  };
+
   // ─── Connection status ───────────────────────────────────────────────────────
   notifyDeviceConnected: () => void;
   notifyDeviceDisconnected: () => void;
@@ -1156,6 +1162,8 @@ export interface ElectronAPI {
    */
   app: {
     getRendererLiveness: () => Promise<RendererLivenessSnapshot>;
+    /** Restore, show and focus the calling window (desktop notification click). */
+    focusWindow: () => Promise<void>;
   };
 
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────

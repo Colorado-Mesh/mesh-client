@@ -1,8 +1,9 @@
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
 import {
+  type AudibleChatNotification,
   type ChatUnreadDmOptions,
   filterRegularChatMessages,
-  pickAudibleNotificationType,
+  pickAudibleNotification,
 } from '@/renderer/lib/chatUnreadCounts';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
 
@@ -29,10 +30,10 @@ export interface ResolveInactiveChatNotificationTypeArgs {
   dmOptions?: ChatUnreadDmOptions;
 }
 
-/** Pick notification sound type for chat traffic while App chat panel is inactive or hidden. */
-export function resolveInactiveChatNotificationType(
+/** Chat notification (type + triggering message) while the App chat panel is inactive or hidden. */
+export function resolveInactiveChatNotification(
   args: ResolveInactiveChatNotificationTypeArgs,
-): ChatNotificationType | null {
+): AudibleChatNotification | null {
   if (args.notifGloballyMuted) return null;
 
   const realNew = filterInactiveNotificationMessages(
@@ -42,7 +43,7 @@ export function resolveInactiveChatNotificationType(
   );
   if (realNew.length === 0) return null;
 
-  return pickAudibleNotificationType(
+  return pickAudibleNotification(
     realNew,
     args.protocol,
     args.mutedViews,
@@ -50,4 +51,11 @@ export function resolveInactiveChatNotificationType(
     args.dmOptions,
     args.allMessages,
   );
+}
+
+/** Pick notification sound type for chat traffic while App chat panel is inactive or hidden. */
+export function resolveInactiveChatNotificationType(
+  args: ResolveInactiveChatNotificationTypeArgs,
+): ChatNotificationType | null {
+  return resolveInactiveChatNotification(args)?.type ?? null;
 }

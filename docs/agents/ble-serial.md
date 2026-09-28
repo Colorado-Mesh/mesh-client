@@ -14,7 +14,7 @@ There is **no** Noble manager, **no** Web Bluetooth LoRa path, **no** Noble yiel
 - **Proxy:** `src/main/gatt-sidecar-proxy.ts` — scan / connect / disconnect / to-radio / WS fromRadio + RSSI events; replaces former `noble-ble-manager.ts`.
 - **IPC:** `gatt:start-scan`, `gatt:stop-scan`, `gatt:connect`, `gatt:disconnect`, `gatt:is-connected`, `gatt:to-radio`, plus push channels for discovered / connected / disconnected / fromRadio / linkRssi / issue.
 - **Error taxonomy:** stable snake_case codes (`adapter_missing`, `scan_busy`, `mac_conflict`, `connect_timeout`, `pairing_required`, …) — see `reticulum-sidecar/src/gatt/error.rs`; UI keys under `connectionPanel.errors.ble.*` via `humanizeBleError` / `bleConnectErrors`.
-- **HTTP routes:** documented in [reticulum-sidecar-ipc.md](../reticulum-sidecar-ipc.md) (`/api/v1/gatt/availability`, `/scan`, `/sessions`, write/rssi/connected, session WS, registry register/unregister).
+- **HTTP routes:** documented in [reticulum-sidecar-ipc.md](../reticulum-sidecar-ipc.md) (`/api/v1/gatt/availability`, `/scan`, `/sessions`, write/rssi/connected, session WS, registry register/unregister, Electron-main-only `release-central` / `clear-bond-recovery`). Registry register/unregister has no in-app caller; it is reserved for external owners such as rsReticulum RNode BLE, and Electron's coexistence coordinator covers configured Reticulum addresses instead.
 
 ## LoRa BLE reconnect parity (Meshtastic + MeshCore)
 
