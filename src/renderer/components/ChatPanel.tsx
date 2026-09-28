@@ -590,6 +590,8 @@ export interface ChatPanelProps {
   onSetMeshcoreChannel?: (index: number, name: string, secret: Uint8Array) => Promise<void>;
   /** MeshCore: remove a channel from the connected companion radio (chat asks first). */
   onDeleteMeshcoreChannel?: (index: number) => Promise<void>;
+  /** Clear one channel's saved messages (chat asks first). */
+  onClearChannelMessages?: (index: number) => Promise<void>;
   /** MeshCore: companion radio is unavailable for channel writes. */
   meshcoreChannelManagementDisabled?: boolean;
   myNodeNum: number;
@@ -682,6 +684,7 @@ function ChatPanel({
   meshcoreChannelSources,
   onSetMeshcoreChannel,
   onDeleteMeshcoreChannel,
+  onClearChannelMessages,
   meshcoreChannelManagementDisabled = false,
   myNodeNum,
   ownNodeIds,
@@ -998,6 +1001,33 @@ function ChatPanel({
   const [removingChannel, setRemovingChannel] = useState(false);
   const canRemoveChannel = (index: number) =>
     onDeleteMeshcoreChannel != null && index !== MESHCORE_PUBLIC_CHANNEL_INDEX;
+  // Clearing messages works on every channel, Public included: the channel itself stays.
+  const hasChannelMenu = (index: number) =>
+    canRemoveChannel(index) || onClearChannelMessages != null;
+  const [channelToClear, setChannelToClear] = useState<{ index: number; name: string } | null>(
+    null,
+  );
+  const [clearingChannel, setClearingChannel] = useState(false);
+  const clearChannelMessages = async (target: { index: number; name: string }) => {
+    if (!onClearChannelMessages) return;
+    setClearingChannel(true);
+    try {
+      await onClearChannelMessages(target.index);
+      setChannelToClear(null);
+    } catch (e) {
+      console.warn('[ChatPanel] clear channel messages failed ' + errLikeToLogString(e));
+      setChannelToClear(null);
+      addToast(
+        t('chatPanel.clearChannelMessagesFailed', {
+          name: target.name,
+          message: errLikeToLogString(e),
+        }),
+        'error',
+      );
+    } finally {
+      setClearingChannel(false);
+    }
+  };
   const openChannelMenu = (anchor: HTMLElement, target: { index: number; name: string }) => {
     channelMenuAnchorRef.current = anchor;
     setChannelMenu({ index: target.index, name: target.name });
@@ -2694,7 +2724,7 @@ function ChatPanel({
                         setViewMode('channels');
                       }}
                       onContextMenu={
-                        canRemoveChannel(ch.index)
+                        hasChannelMenu(ch.index)
                           ? (event) => {
                               event.preventDefault();
                               openChannelMenu(event.currentTarget, ch);
@@ -2702,7 +2732,7 @@ function ChatPanel({
                           : undefined
                       }
                       onKeyDown={
-                        canRemoveChannel(ch.index)
+                        hasChannelMenu(ch.index)
                           ? (event) => {
                               if (
                                 event.key === 'ContextMenu' ||
@@ -2748,18 +2778,34 @@ function ChatPanel({
                 aria-label={t('chatPanel.channelMenuAria', { name: channelMenu?.name ?? '' })}
                 align="start"
                 entries={[
-                  {
-                    id: 'remove-channel',
-                    label: t('chatPanel.removeChannel'),
-                    tone: 'danger',
-                    disabled: meshcoreChannelManagementDisabled,
-                    description: meshcoreChannelManagementDisabled
-                      ? t('chatPanel.removeChannelNeedsRadio')
-                      : undefined,
-                    onSelect: () => {
-                      if (channelMenu) setChannelToRemove(channelMenu);
-                    },
-                  },
+                  ...(onClearChannelMessages
+                    ? [
+                        {
+                          id: 'clear-messages',
+                          label: t('chatPanel.clearChannelMessages'),
+                          tone: 'danger' as const,
+                          onSelect: () => {
+                            if (channelMenu) setChannelToClear(channelMenu);
+                          },
+                        },
+                      ]
+                    : []),
+                  ...(channelMenu && canRemoveChannel(channelMenu.index)
+                    ? [
+                        {
+                          id: 'remove-channel',
+                          label: t('chatPanel.removeChannel'),
+                          tone: 'danger' as const,
+                          disabled: meshcoreChannelManagementDisabled,
+                          description: meshcoreChannelManagementDisabled
+                            ? t('chatPanel.removeChannelNeedsRadio')
+                            : undefined,
+                          onSelect: () => {
+                            setChannelToRemove(channelMenu);
+                          },
+                        },
+                      ]
+                    : []),
                 ]}
               />
               {channelToRemove ? (
@@ -2774,6 +2820,23 @@ function ChatPanel({
                   }}
                   onCancel={() => {
                     if (!removingChannel) setChannelToRemove(null);
+                  }}
+                />
+              ) : null}
+              {channelToClear ? (
+                <ConfirmModal
+                  title={t('chatPanel.clearChannelMessagesTitle', { name: channelToClear.name })}
+                  message={t('chatPanel.clearChannelMessagesMessage', {
+                    name: channelToClear.name,
+                  })}
+                  confirmLabel={t('chatPanel.clearChannelMessages')}
+                  danger
+                  confirmDisabled={clearingChannel}
+                  onConfirm={() => {
+                    void clearChannelMessages(channelToClear);
+                  }}
+                  onCancel={() => {
+                    if (!clearingChannel) setChannelToClear(null);
                   }}
                 />
               ) : null}

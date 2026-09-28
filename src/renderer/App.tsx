@@ -2849,6 +2849,19 @@ function AppContent() {
     ],
   );
 
+  // Chat's channel menu clears one MeshCore channel's saved messages, as App settings does.
+  const clearMeshcoreChatChannelMessages = useCallback(
+    async (index: number) => {
+      await window.electronAPI.db.clearMeshcoreMessagesByChannel(index);
+      refreshMessagesFromDb({
+        clearedChannel: index,
+        replaceFromDb: true,
+        messagesMode: 'replace',
+      });
+    },
+    [refreshMessagesFromDb],
+  );
+
   // Dual-mode: each protocol manages its own MQTT connection independently.
   // Meshtastic MQTT disconnects when switching to MeshCore without an RF radio.
 
@@ -4036,6 +4049,11 @@ function AppContent() {
                                   ? meshcorePanelActions.meshcoreDeleteChannel
                                   : undefined
                               }
+                              onClearChannelMessages={
+                                capabilities.hasCompanionContactManagementConfig
+                                  ? clearMeshcoreChatChannelMessages
+                                  : undefined
+                              }
                               meshcoreChannelManagementDisabled={!isOperational}
                               myNodeNum={activeSelfNodeNum}
                               ownNodeIds={
@@ -5175,6 +5193,7 @@ function AppContent() {
                               >
                                 <AppPanel
                                   protocol={protocol}
+                                  isActive={activePanelIndex === APP_PANEL_INDEX}
                                   logPanelVisible={logPanelVisible}
                                   onLogPanelVisibleChange={(visible) => {
                                     setLogPanelVisible(visible);

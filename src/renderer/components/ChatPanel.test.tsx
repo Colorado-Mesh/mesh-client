@@ -5990,6 +5990,35 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     ).toBeInTheDocument();
   });
 
+  it("clears a channel's saved messages from its menu after asking, Public included (#1098)", async () => {
+    const user = userEvent.setup();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    renderPanel({ onClearChannelMessages } as Partial<ReturnType<typeof baseProps>>);
+    fireEvent.contextMenu(chip('Public'));
+    // Public offers Clear messages but never Remove.
+    expect(screen.queryByRole('menuitem', { name: 'Remove channel' })).toBeNull();
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Clear messages in Public?' });
+    expect(onClearChannelMessages).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Clear messages' }));
+    await waitFor(() => {
+      expect(onClearChannelMessages).toHaveBeenCalledWith(0);
+    });
+  });
+
+  it('says so when clearing messages fails', async () => {
+    const user = userEvent.setup();
+    renderPanel({
+      onClearChannelMessages: vi.fn().mockRejectedValue(new Error('database locked')),
+    } as Partial<ReturnType<typeof baseProps>>);
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+    );
+    expect(await screen.findByText("Couldn't clear #test: database locked")).toBeInTheDocument();
+  });
+
   it('keeps Remove unavailable until the radio is connected', () => {
     renderPanel({ meshcoreChannelManagementDisabled: true } as Partial<
       ReturnType<typeof baseProps>
