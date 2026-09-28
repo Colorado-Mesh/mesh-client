@@ -42,4 +42,52 @@ describe('lan-ip', () => {
     expect(getLanIp()).toBe('127.0.0.1');
     expect(warn).toHaveBeenCalled();
   });
+
+  it('prefers eth0 RFC1918 over docker0 even when docker0 is listed first', () => {
+    vi.spyOn(os, 'networkInterfaces').mockReturnValue({
+      docker0: [
+        { family: 'IPv4', internal: false, address: '172.17.0.1' } as os.NetworkInterfaceInfo,
+      ],
+      eth0: [
+        { family: 'IPv4', internal: false, address: '192.168.1.20' } as os.NetworkInterfaceInfo,
+      ],
+    });
+    expect(getLanIp()).toBe('192.168.1.20');
+  });
+
+  it('prefers wlan0 RFC1918 over a VPN interface', () => {
+    vi.spyOn(os, 'networkInterfaces').mockReturnValue({
+      tailscale0: [
+        { family: 'IPv4', internal: false, address: '10.66.0.5' } as os.NetworkInterfaceInfo,
+      ],
+      wlan0: [
+        { family: 'IPv4', internal: false, address: '192.168.1.33' } as os.NetworkInterfaceInfo,
+      ],
+    });
+    expect(getLanIp()).toBe('192.168.1.33');
+  });
+
+  it('falls back to a virtual IPv4 when no physical RFC1918 qualifies', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(os, 'networkInterfaces').mockReturnValue({
+      eth0: [
+        { family: 'IPv4', internal: false, address: '169.254.8.8' } as os.NetworkInterfaceInfo,
+      ],
+      docker0: [
+        { family: 'IPv4', internal: false, address: '172.17.0.1' } as os.NetworkInterfaceInfo,
+      ],
+    });
+    expect(getLanIp()).toBe('172.17.0.1');
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('picks the same physical address regardless of interface enumeration order', () => {
+    vi.spyOn(os, 'networkInterfaces').mockReturnValue({
+      wlan0: [
+        { family: 'IPv4', internal: false, address: '192.168.1.33' } as os.NetworkInterfaceInfo,
+      ],
+      eth0: [{ family: 'IPv4', internal: false, address: '10.1.1.5' } as os.NetworkInterfaceInfo],
+    });
+    expect(getLanIp()).toBe('10.1.1.5');
+  });
 });
