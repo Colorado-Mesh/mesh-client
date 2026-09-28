@@ -24,7 +24,13 @@
   "guardrails": {
     "billing": {
       "mode": "refuse"
-    }
+    },
+    "destructive": {
+      "safeNames": [
+        "^Reset (Channel messages|Direct messages|Replies and mentions|MECP (ROUTINE|SAFETY|URGENT|MAYDAY)|Radio link lost|Node battery low)$"
+      ]
+    },
+    "blockMedia": false
   },
   "detectors": {
     "ignoreHttpStatuses": [401, 403],

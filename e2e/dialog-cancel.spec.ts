@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import {
+  expectPanelOpen,
   launchApp,
   type LaunchedApp,
   openAppTab,
@@ -33,11 +34,7 @@ test.describe('dialog cancel', () => {
       // Cancel path should return promptly; button remains enabled and App stays selected.
       await expect(exportBtn).toBeEnabled({ timeout: 15_000 });
       await expect(launched.page.locator('#root')).toBeVisible();
-      await expect(
-        launched.page
-          .getByRole('tablist', { name: 'Application panels' })
-          .getByRole('tab', { name: 'App' }),
-      ).toHaveAttribute('aria-selected', 'true');
+      await expectPanelOpen(launched.page, 'App');
     } finally {
       await restore();
     }

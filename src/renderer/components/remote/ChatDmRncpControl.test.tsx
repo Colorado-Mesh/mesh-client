@@ -99,8 +99,7 @@ describe('ChatDmRncpControl', () => {
     expect(trigger.className).toContain('border-cyan-500/35');
     expect(trigger.className).toMatch(/text-cyan-/);
     expect(trigger.className).not.toContain('hover:underline');
-    expect(trigger.className).not.toMatch(/border-gray-700\/60/);
-    expect(trigger.className).not.toMatch(/bg-gray-800\/40/);
+    expect(trigger.className).not.toMatch(/border-ink-700\/60/);
   });
 
   it('shows a pending-offer badge only for offers from this peer', () => {

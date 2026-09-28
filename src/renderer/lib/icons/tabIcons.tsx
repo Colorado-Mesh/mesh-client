@@ -25,8 +25,9 @@ import {
   Wrench,
 } from 'lucide-react-motion';
 
-import { ICON_MD } from '@/renderer/lib/icons/iconClass';
+import { ICON_LG, ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import type { NavSectionId } from '@/renderer/lib/navSections';
 
 const TAB_ICON_CLS = ICON_MD;
 
@@ -87,5 +88,30 @@ export function TabIcon({ name }: { name: string }) {
       return <Shield {...p} />;
     default:
       return null;
+  }
+}
+
+/** App rail section icons (20px); use parent-hover inside rail buttons. */
+export function NavSectionIcon({ id }: { id: NavSectionId }) {
+  const trigger = useParentIconTrigger();
+  const p = { 'aria-hidden': true as const, className: ICON_LG, trigger, size: 20 };
+
+  switch (id) {
+    case 'chat':
+      return <MessageCircle {...p} />;
+    case 'network':
+      return <Network {...p} />;
+    case 'map':
+      return <MapPin {...p} />;
+    case 'nomad':
+      return <Globe {...p} />;
+    case 'monitor':
+      return <FileChartColumn {...p} />;
+    case 'device':
+      return <Link2 {...p} />;
+    case 'incident':
+      return <Siren {...p} />;
+    case 'app':
+      return <Wrench {...p} />;
   }
 }

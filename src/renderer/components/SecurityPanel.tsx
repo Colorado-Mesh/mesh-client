@@ -17,6 +17,8 @@ import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { KeyBackupRestoreSection } from './KeyBackupRestoreSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
+import { INPUT_BOX_SM_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 
 interface SecurityConfig {
   publicKey: Uint8Array;
@@ -72,9 +74,7 @@ function isValidBase64Key(b64: string): boolean {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="border-b border-gray-700 pb-2 text-sm font-semibold tracking-wide text-gray-200 uppercase">
-      {title}
-    </h3>
+    <h3 className="border-ink-700 text-ink-200 border-b pb-2 text-sm font-semibold">{title}</h3>
   );
 }
 
@@ -94,7 +94,7 @@ function ConfigToggle({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-300">{label}</span>
+        <span className="text-ink-300 text-sm">{label}</span>
         <button
           type="button"
           role="switch"
@@ -104,12 +104,12 @@ function ConfigToggle({
           }}
           disabled={disabled}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-            checked ? 'bg-readable-green' : 'bg-gray-600'
+            checked ? 'bg-brand-green' : 'bg-ink-600'
           }`}
         >
           <span
             className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-              checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
+              checked ? 'translate-x-4.5' : 'translate-x-0.75'
             }`}
           />
         </button>
@@ -136,7 +136,7 @@ function ApplyButton({
       type="button"
       onClick={onClick}
       disabled={disabled || applying}
-      className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
+      className={buttonClassName('primary', 'md')}
     >
       {applying ? t('securityPanel.applying') : label}
     </button>
@@ -484,13 +484,13 @@ export default function SecurityPanel({
               type="text"
               value={publicKeyB64}
               readOnly
-              className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
+              className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono`}
             />
             <button
               type="button"
               disabled={disabled || !publicKeyB64}
               aria-label={t('securityPanel.copyPublicKey')}
-              className="text-muted shrink-0 rounded-lg border border-gray-600 px-3 py-2 text-xs hover:text-gray-200 disabled:opacity-50"
+              className="text-muted border-ink-600 hover:text-ink-200 shrink-0 rounded-lg border px-3 py-2 text-xs disabled:opacity-50"
               onClick={() => {
                 void writeClipboardText(publicKeyB64)
                   .then(() => {
@@ -523,7 +523,7 @@ export default function SecurityPanel({
                   type={showPrivateKey ? 'text' : 'password'}
                   value={privateKeyB64}
                   readOnly
-                  className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 disabled:opacity-50"
+                  className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono`}
                 />
                 <button
                   type="button"
@@ -531,7 +531,7 @@ export default function SecurityPanel({
                     setShowPrivateKey((s) => !s);
                   }}
                   disabled={disabled}
-                  className="text-muted px-3 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
+                  className="text-muted hover:text-ink-300 px-3 py-2 text-xs disabled:opacity-50"
                 >
                   {showPrivateKey ? t('common.hide') : t('common.show')}
                 </button>
@@ -544,7 +544,7 @@ export default function SecurityPanel({
                 setPendingRegenerate(true);
               }}
               disabled={disabled || applyingRegen || !securityConfig}
-              className="w-full rounded-lg border border-yellow-700/60 bg-yellow-700/40 px-4 py-2 text-sm font-medium text-yellow-300 transition-colors hover:bg-yellow-700/60 disabled:opacity-50"
+              className="w-full rounded-lg border border-orange-700/60 bg-orange-700/40 px-4 py-2 text-sm font-medium text-orange-300 transition-colors hover:bg-orange-700/60 disabled:opacity-50"
             >
               {applyingRegen
                 ? t('securityPanel.regeneratingKeys')
@@ -582,7 +582,7 @@ export default function SecurityPanel({
                       }}
                       disabled={disabled}
                       placeholder={t('securityPanel.adminKeyPlaceholder')}
-                      className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
+                      className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono`}
                       aria-label={t('securityPanel.adminKeyLabel', { number: i + 1 })}
                     />
                     <button
@@ -610,7 +610,7 @@ export default function SecurityPanel({
                   setAdminKeyErrors([...adminKeyErrors, null]);
                 }}
                 disabled={disabled}
-                className="text-muted w-full rounded-lg border border-dashed border-gray-600 px-4 py-2 text-sm transition-colors hover:border-gray-500 hover:text-gray-300 disabled:opacity-50"
+                className="text-muted border-ink-600 hover:border-ink-500 hover:text-ink-300 w-full rounded-lg border border-dashed px-4 py-2 text-sm transition-colors disabled:opacity-50"
               >
                 {t('securityPanel.addAdminKey')}
               </button>
@@ -708,7 +708,7 @@ export default function SecurityPanel({
                 }}
                 placeholder={t('securityPanel.signTextPlaceholder')}
                 disabled={disabled || signInProgress}
-                className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
+                className={`${TEXTAREA_BOX_SM_CLASS} w-full font-mono`}
                 rows={2}
               />
               <button
@@ -717,7 +717,7 @@ export default function SecurityPanel({
                   void handleSignData();
                 }}
                 disabled={disabled || signInProgress || !signDataInput.trim()}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-700 w-full rounded-lg border px-4 py-2 text-sm transition-colors disabled:opacity-50"
               >
                 {signInProgress ? t('securityPanel.signing') : t('securityPanel.signDataButton')}
               </button>
@@ -726,7 +726,7 @@ export default function SecurityPanel({
                   <span className="text-muted text-xs">
                     {t('securityPanel.signatureBase64Label')}
                   </span>
-                  <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
+                  <div className="bg-secondary-dark border-ink-600 text-ink-200 rounded border p-2 font-mono text-xs break-all">
                     {signDataResult}
                   </div>
                 </div>
@@ -743,7 +743,7 @@ export default function SecurityPanel({
                   void handleExportPrivateKey();
                 }}
                 disabled={disabled || exportInProgress}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-700 w-full rounded-lg border px-4 py-2 text-sm transition-colors disabled:opacity-50"
               >
                 {exportInProgress
                   ? t('securityPanel.exportingPrivateKey')
@@ -754,10 +754,10 @@ export default function SecurityPanel({
                   <span className="text-muted text-xs">
                     {t('securityPanel.privateKeyBase64Label')}
                   </span>
-                  <div className="bg-secondary-dark rounded border border-gray-600 p-2 font-mono text-xs break-all text-gray-200">
+                  <div className="bg-secondary-dark border-ink-600 text-ink-200 rounded border p-2 font-mono text-xs break-all">
                     {exportedPrivateKey}
                   </div>
-                  <p className="text-xs text-yellow-400">{t('securityPanel.exportKeyWarning')}</p>
+                  <p className="text-xs text-orange-400">{t('securityPanel.exportKeyWarning')}</p>
                 </div>
               )}
             </div>
@@ -777,7 +777,7 @@ export default function SecurityPanel({
                 }}
                 placeholder={t('securityPanel.importKeyPlaceholder')}
                 disabled={disabled || importInProgress}
-                className="bg-secondary-dark focus:ring-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:ring-1 focus:outline-none disabled:opacity-50"
+                className={`${TEXTAREA_BOX_SM_CLASS} w-full font-mono`}
                 rows={2}
               />
               <button
@@ -786,7 +786,7 @@ export default function SecurityPanel({
                   void handleImportPrivateKey();
                 }}
                 disabled={disabled || importInProgress || !importKeyInput.trim()}
-                className="bg-secondary-dark w-full rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-gray-700 disabled:opacity-50"
+                className="bg-secondary-dark border-ink-600 text-ink-200 hover:bg-ink-700 w-full rounded-lg border px-4 py-2 text-sm transition-colors disabled:opacity-50"
               >
                 {importInProgress
                   ? t('securityPanel.importingPrivateKey')

@@ -12,6 +12,8 @@ import {
   removeMeshcoreFloodScopePreset,
 } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
+
 export interface MeshcoreFloodScopeHandle {
   apply: () => Promise<void>;
 }
@@ -146,7 +148,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
         <p className="text-muted text-xs">{t('radioPanel.floodScopeHelp')}</p>
         <fieldset className="space-y-2" disabled={disabled || applying}>
           <legend className="sr-only">{t('radioPanel.floodScopeTitle')}</legend>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="text-ink-300 flex items-center gap-2 text-sm">
             <input
               type="radio"
               name="flood-scope-mode"
@@ -158,7 +160,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
             />
             {t('radioPanel.floodScopeNone')}
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="text-ink-300 flex items-center gap-2 text-sm">
             <input
               type="radio"
               name="flood-scope-mode"
@@ -185,7 +187,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
                       setSelectedSaved(e.target.value);
                     }}
                     disabled={disabled || applying}
-                    className="bg-deep-black focus:border-brand-green w-full max-w-xs rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                    className={`${SELECT_BOX_CLASS} w-full max-w-xs`}
                     aria-label={t('radioPanel.floodScopeSavedSelect')}
                   >
                     {savedPresets.map((tag) => (
@@ -213,7 +215,7 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
               )}
             </div>
           )}
-          <label className="flex items-center gap-2 text-sm text-gray-300">
+          <label className="text-ink-300 flex items-center gap-2 text-sm">
             <input
               type="radio"
               name="flood-scope-mode"
@@ -234,12 +236,12 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
               }}
               placeholder={t('radioPanel.floodScopeCustomPlaceholder')}
               disabled={disabled || applying}
-              className="bg-deep-black focus:border-brand-green ml-6 w-full max-w-xs rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} ml-6 w-full max-w-xs`}
               aria-label={t('radioPanel.floodScopeCustom')}
             />
           )}
         </fieldset>
-        {status && <p className="text-xs text-gray-400">{status}</p>}
+        {status && <p className="text-ink-400 text-xs">{status}</p>}
       </>
     );
 
@@ -248,9 +250,9 @@ export const MeshcoreFloodScopeSection = forwardRef<MeshcoreFloodScopeHandle, Pr
     }
 
     return (
-      <div className="space-y-3 rounded-lg border border-gray-700 bg-gray-800/40 p-4">
+      <div className="border-ink-700 bg-ink-800/40 space-y-3 rounded-lg border p-4">
         <div className="flex items-center gap-2">
-          <h4 className="text-sm font-medium text-gray-200">{t('radioPanel.floodScopeTitle')}</h4>
+          <h4 className="text-ink-200 text-sm font-medium">{t('radioPanel.floodScopeTitle')}</h4>
         </div>
         {fields}
         <button

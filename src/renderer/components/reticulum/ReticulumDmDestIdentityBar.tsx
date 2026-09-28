@@ -66,13 +66,13 @@ export function ReticulumDmDestIdentityBar({
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <div
-        className={`${RETICULUM_DM_HEADER_STATUS_CLASS} flex min-w-0 flex-wrap items-center gap-1.5 text-gray-400`}
+        className={`${RETICULUM_DM_HEADER_STATUS_CLASS} text-ink-400 flex min-w-0 flex-wrap items-center gap-1.5`}
         role="status"
         aria-label={t('chatPanel.reticulumDmDestHashesAria')}
       >
         <button
           type="button"
-          className="hover:text-readable-green inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-[11px] text-gray-300 hover:bg-slate-700/60"
+          className="hover:text-bright-green text-label text-ink-300 hover:bg-ink-700/60 inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono"
           aria-label={t('chatPanel.reticulumDmCopyLxmfAria', { prefix: lxmfPrefix })}
           title={lxmfHash}
           onClick={() => {
@@ -82,13 +82,13 @@ export function ReticulumDmDestIdentityBar({
           <span>{t('chatPanel.reticulumDmLxmfPrefix', { prefix: lxmfPrefix })}</span>
           <Copy className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
           {copied === 'lxmf' ? (
-            <span className="text-readable-green text-[10px]">{t('common.copied')}</span>
+            <span className="text-bright-green text-2xs">{t('common.copied')}</span>
           ) : null}
         </button>
         {identityHash && identityPrefix ? (
           <button
             type="button"
-            className="hover:text-readable-green inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono text-[11px] text-gray-300 hover:bg-slate-700/60"
+            className="hover:text-bright-green text-label text-ink-300 hover:bg-ink-700/60 inline-flex items-center gap-1 rounded px-1 py-0.5 font-mono"
             aria-label={t('chatPanel.reticulumDmCopyIdentityAria', { prefix: identityPrefix })}
             title={identityHash}
             onClick={() => {
@@ -98,14 +98,14 @@ export function ReticulumDmDestIdentityBar({
             <span>{t('chatPanel.reticulumDmIdentityPrefix', { prefix: identityPrefix })}</span>
             <Copy className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
             {copied === 'identity' ? (
-              <span className="text-readable-green text-[10px]">{t('common.copied')}</span>
+              <span className="text-bright-green text-2xs">{t('common.copied')}</span>
             ) : null}
           </button>
         ) : null}
       </div>
       {showBanner && alternatePrefix && staleHint.status === 'stale_alternate' ? (
         <div
-          className="flex min-w-0 items-start gap-2 rounded-lg border border-amber-600/40 bg-amber-950/40 px-2.5 py-1.5 text-[11px] text-amber-100"
+          className="text-label flex min-w-0 items-start gap-2 rounded-lg border border-orange-600/40 bg-orange-950/40 px-2.5 py-1.5 text-orange-100"
           role="status"
           aria-label={t('chatPanel.reticulumDmStaleAlternateAria')}
         >
@@ -123,7 +123,7 @@ export function ReticulumDmDestIdentityBar({
           </p>
           <button
             type="button"
-            className="shrink-0 rounded p-0.5 text-amber-200/80 hover:bg-amber-900/50 hover:text-amber-50"
+            className="shrink-0 rounded p-0.5 text-orange-200/80 hover:bg-orange-900/50 hover:text-orange-50"
             aria-label={t('chatPanel.reticulumDmStaleAlternateDismissAria')}
             onClick={() => {
               dismissReticulumStaleAlternate(staleHint.openHash, staleHint.alternateHash);

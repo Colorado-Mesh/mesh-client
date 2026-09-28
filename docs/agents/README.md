@@ -18,6 +18,7 @@ Deep, file-level subsystem detail for AI assistants, split out of [`AGENTS.md`](
 | MECP emergency reports, siren alerts, audit log, ALERT_APP, RF rebroadcast                                | [mecp.md](mecp.md)                             |
 | EMCOMM Incident Command, safety invariants (S1–S14), emergency outbox, ACK/beacon, ops alerts, SAR/export | [emcomm.md](emcomm.md)                         |
 | Offline maps (`mesh-tiles:`), tile cache, region download, quiet update offline                           | [offline-maps.md](offline-maps.md)             |
+| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules                     | [../style-guide.md](../style-guide.md)         |
 | Symptom → where-to-check index                                                                            | [common-issues.md](common-issues.md)           |
 
 For human-facing deep dives, see the top-level docs (e.g. [../reticulum.md](../reticulum.md), [../diagnostics.md](../diagnostics.md), [../meshcore-meshtastic-parity.md](../meshcore-meshtastic-parity.md), [../troubleshooting.md](../troubleshooting.md)).

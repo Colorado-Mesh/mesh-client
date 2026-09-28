@@ -6,6 +6,8 @@
  * Numeric Max hops is applied even when Show distant is off; the nearby hop ceiling
  * (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is All.
  */
+import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
+
 export const TOPOLOGY_HOP_FILTER_OPTIONS = [1, 2, 3, 5, 8] as const;
 
 export interface TopologyHopFilterControlsProps {
@@ -33,7 +35,7 @@ export function TopologyHopFilterControls({
 }: TopologyHopFilterControlsProps) {
   return (
     <>
-      <label className="flex items-center gap-1.5 text-slate-400">
+      <label className="text-ink-400 flex items-center gap-1.5">
         <input
           type="checkbox"
           checked={includeDistantPeers}
@@ -45,7 +47,7 @@ export function TopologyHopFilterControls({
         />
         {showDistantPeersLabel}
       </label>
-      <label className="flex items-center gap-1.5 text-slate-400">
+      <label className="text-ink-400 flex items-center gap-1.5">
         <span>{maxHopsFilterLabel}</span>
         <select
           value={maxHops ?? 'all'}
@@ -54,7 +56,7 @@ export function TopologyHopFilterControls({
             onMaxHopsChange(value === 'all' ? null : Number.parseInt(value, 10));
           }}
           aria-label={maxHopsFilterLabel}
-          className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-200"
+          className={SELECT_BOX_SM_CLASS}
         >
           <option value="all">{maxHopsAllLabel}</option>
           {hopOptions.map((hops) => (

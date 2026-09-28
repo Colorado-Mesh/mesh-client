@@ -28,7 +28,8 @@
     "Letark https://github.com/Letark",
     "FuzzyChaos (ADL)",
     "M3SHGH0ST https://github.com/cj-vana",
-    "M0Rf30 https://github.com/M0Rf30"
+    "M0Rf30 https://github.com/M0Rf30",
+    "ashortgrayble https://github.com/ashortgrayble"
   ],
   "main": "dist-electron/main/index.js",
   "scripts": {
@@ -200,7 +201,8 @@
     "@vitest/coverage-v8": "^4.1.11",
     "concurrently": "^9.2.4",
     "electron": "^44.1.1",
-    "electron-builder": "^26.16.1",
+    "electron-builder": "^26.17.0",
+    "emoji-picker-element-data": "^1.8.0",
     "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",

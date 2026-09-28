@@ -16,7 +16,8 @@ export function BleWeakSignalBanner({ rssi, className }: BleWeakSignalBannerProp
       role="status"
       aria-live="polite"
       className={
-        className ?? 'border-t border-amber-800/60 bg-amber-900/40 px-4 py-2 text-xs text-amber-200'
+        className ??
+        'border-t border-orange-800/60 bg-orange-900/40 px-4 py-2 text-xs text-orange-200'
       }
     >
       {t('connectionPanel.bleWeakSignalWarning', { rssi: Math.round(rssi) })}

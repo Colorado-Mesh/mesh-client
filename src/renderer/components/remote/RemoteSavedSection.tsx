@@ -6,6 +6,9 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import type { RemoteAddressService } from '@/shared/remote-types';
 
+import { buttonClassName } from '../ui/Button';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
+
 /** Reticulum Remote → Saved: manage the rnsh/rncp address book (`reticulum_remote_addresses`). */
 export function RemoteSavedSection() {
   const { t } = useTranslation();
@@ -60,7 +63,7 @@ export function RemoteSavedSection() {
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-3 overflow-y-auto p-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700/60 p-3">
+      <div className="border-ink-700/60 flex flex-wrap items-center gap-2 rounded-lg border p-3">
         <input
           type="text"
           value={label}
@@ -69,7 +72,7 @@ export function RemoteSavedSection() {
           }}
           placeholder={t('reticulumRemote.saved.labelPlaceholder')}
           aria-label={t('reticulumRemote.saved.labelAria')}
-          className="bg-secondary-dark/80 min-w-[140px] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+          className={`${INPUT_BOX_CLASS} min-w-35 flex-1`}
         />
         <input
           type="text"
@@ -79,7 +82,7 @@ export function RemoteSavedSection() {
           }}
           placeholder={t('reticulumRemote.saved.hashPlaceholder')}
           aria-label={t('reticulumRemote.saved.hashAria')}
-          className="bg-secondary-dark/80 min-w-[220px] flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+          className={`${INPUT_BOX_CLASS} min-w-55 flex-1`}
         />
         <select
           value={service}
@@ -87,7 +90,7 @@ export function RemoteSavedSection() {
             setService(e.target.value as RemoteAddressService);
           }}
           aria-label={t('reticulumRemote.saved.serviceAria')}
-          className="bg-secondary-dark/80 rounded-lg border border-gray-600/50 px-2 py-1.5 text-sm text-gray-200"
+          className={SELECT_BOX_CLASS}
         >
           <option value="rnsh">{t('reticulumRemote.saved.serviceRnsh')}</option>
           <option value="rncp">{t('reticulumRemote.saved.serviceRncp')}</option>
@@ -96,7 +99,7 @@ export function RemoteSavedSection() {
           type="button"
           aria-label={t('reticulumRemote.saved.saveAria')}
           onClick={() => void handleSave()}
-          className="rounded bg-blue-700/80 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-600"
+          className={buttonClassName('primary', 'sm')}
         >
           {editingId ? t('common.save') : t('reticulumRemote.saved.add')}
         </button>
@@ -105,7 +108,7 @@ export function RemoteSavedSection() {
             type="button"
             aria-label={t('common.cancel')}
             onClick={resetForm}
-            className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+            className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-3 py-1.5 text-xs"
           >
             {t('common.cancel')}
           </button>
@@ -119,9 +122,9 @@ export function RemoteSavedSection() {
           list.map((addr) => (
             <div
               key={addr.id}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700/60 bg-gray-800/30 px-3 py-2 text-xs text-gray-200"
+              className="border-ink-700/60 bg-ink-800/30 text-ink-200 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs"
             >
-              <span className="rounded bg-gray-700/60 px-1.5 py-0.5 text-[10px] text-gray-300 uppercase">
+              <span className="text-2xs bg-ink-700/60 text-ink-300 rounded px-1.5 py-0.5 uppercase">
                 {addr.service}
               </span>
               <span className="font-medium">{addr.label}</span>
@@ -135,7 +138,7 @@ export function RemoteSavedSection() {
                   setHash(addr.destination_hash);
                   setService(addr.service);
                 }}
-                className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-2 py-1"
               >
                 {t('common.edit')}
               </button>

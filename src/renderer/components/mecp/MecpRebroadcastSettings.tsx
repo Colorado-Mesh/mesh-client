@@ -9,6 +9,8 @@ import {
   parseMecpRebroadcastRules,
 } from '@/renderer/lib/mecp/mecpRebroadcast';
 
+import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from '../ui/formClasses';
+
 function newRuleId(): string {
   return `mecp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -54,13 +56,13 @@ export function MecpRebroadcastSettings() {
 
   return (
     <div className="space-y-2" aria-label={t('mecp.rebroadcast.title')}>
-      <h4 className="text-sm font-semibold text-gray-200">{t('mecp.rebroadcast.title')}</h4>
-      <p className="text-xs text-gray-400">{t('mecp.rebroadcast.hint')}</p>
+      <h4 className="text-ink-200 text-sm font-semibold">{t('mecp.rebroadcast.title')}</h4>
+      <p className="text-ink-400 text-xs">{t('mecp.rebroadcast.hint')}</p>
       <ul className="flex flex-col gap-3">
         {rules.map((rule) => (
           <li
             key={rule.id}
-            className="rounded border border-gray-700/50 bg-slate-900/40 p-2 text-xs text-gray-300"
+            className="border-ink-700/50 bg-ink-900/40 text-ink-300 rounded border p-2 text-xs"
           >
             <div className="mb-2 flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-1">
@@ -133,7 +135,7 @@ export function MecpRebroadcastSettings() {
       </ul>
       <button
         type="button"
-        className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-200"
+        className="border-ink-600 text-ink-200 mt-2 rounded border px-2 py-1 text-xs"
         onClick={addRule}
         aria-label={t('mecp.rebroadcast.add')}
       >
@@ -159,9 +161,9 @@ function EndpointEditors({
   const { t } = useTranslation();
   return (
     <fieldset className="min-w-0">
-      <legend className="mb-1 text-[10px] text-gray-500">{label}</legend>
+      <legend className="text-2xs text-muted mb-1">{label}</legend>
       <select
-        className="mb-1 w-full rounded border border-gray-700 bg-slate-950 px-1 py-0.5"
+        className={`${SELECT_BOX_SM_CLASS} mb-1 w-full`}
         value={protocol}
         onChange={(e) => {
           onProtocol(e.target.value as 'meshtastic' | 'meshcore');
@@ -175,7 +177,7 @@ function EndpointEditors({
         type="number"
         min={0}
         max={7}
-        className="w-full rounded border border-gray-700 bg-slate-950 px-1 py-0.5"
+        className={`${INPUT_BOX_SM_CLASS} w-full`}
         value={channelIndex}
         onChange={(e) => {
           onChannel(Math.min(7, Math.max(0, Math.trunc(Number(e.target.value) || 0))));

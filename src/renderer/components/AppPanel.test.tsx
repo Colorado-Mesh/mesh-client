@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
@@ -66,8 +66,16 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
       </ToastProvider>,
     );
 
-    const input = await screen.findByLabelText(/Cap stored messages, keep newest 7500 messages/i);
-    expect(input).toHaveValue(7500);
+    // Wait on the id: findByLabelText re-scans the whole App panel every poll, which ran past the
+    // 5s test timeout on CI coverage runners. Then check the label once.
+    await waitFor(() => {
+      expect(document.getElementById('apppanel-message-retention-meshtastic-count')).toHaveValue(
+        7500,
+      );
+    });
+    expect(screen.getByLabelText(/Cap stored messages, keep newest 7500 messages/i)).toBe(
+      document.getElementById('apppanel-message-retention-meshtastic-count'),
+    );
   });
 
   it('debounces count edits and persists via appSettings.set with the meshtastic key', async () => {
@@ -133,6 +141,68 @@ describe('AppPanel: DB-backed message retention card (issue #387)', () => {
 
     const input = await screen.findByLabelText(/Cap stored messages, keep newest 4000 messages/i);
     expect(input.id).toBe('apppanel-message-retention-meshcore-count');
+  });
+});
+
+describe('AppPanel: theme presets', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:themeColors');
+    localStorage.removeItem('mesh-client:themeSurface');
+  });
+
+  it('picks surfaces and an accent separately, one click each', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const midnight = await screen.findByRole('button', { name: 'Midnight' });
+    const meshtastic = screen.getByRole('button', { name: 'Meshtastic' });
+    expect(midnight).toHaveAttribute('aria-pressed', 'true');
+    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
+
+    // Slate replaces the neutrals everywhere (every ink-* class) and keeps the accent.
+    fireEvent.click(screen.getByRole('button', { name: 'Slate' }));
+    expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
+    expect(midnight).toHaveAttribute('aria-pressed', 'false');
+    expect(meshtastic).toHaveAttribute('aria-pressed', 'true');
+    const root = document.documentElement;
+    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#1e293b');
+    expect(root.style.getPropertyValue('--color-app-bg')).toBe('#020617');
+    expect(localStorage.getItem('mesh-client:themeSurface')).toBe('slate');
+
+    // Sky changes the accent and sent bubbles and keeps Slate.
+    fireEvent.click(screen.getByRole('button', { name: 'Sky' }));
+    expect(screen.getByRole('button', { name: 'Sky' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Slate' })).toHaveAttribute('aria-pressed', 'true');
+    expect(root.style.getPropertyValue('--color-brand-green')).toBe('#38bdf8');
+
+    fireEvent.click(midnight);
+    fireEvent.click(meshtastic);
+    expect(localStorage.getItem('mesh-client:themeColors')).toBeNull();
+    expect(localStorage.getItem('mesh-client:themeSurface')).toBeNull();
+    expect(root.style.getPropertyValue('--color-ink-800')).toBe('#212d40');
+  });
+
+  it('says so when an unreadable accent is put back to the default', async () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const accentSwatches = await screen.findByRole('group', { name: /^Accent Primary/ });
+    fireEvent.click(within(accentSwatches).getByRole('button', { name: 'Slate 950 #020617' }));
+    expect(await screen.findByText(/too close to the app background to read/)).toBeInTheDocument();
+    expect(document.documentElement.style.getPropertyValue('--color-brand-green')).toBe('#67e8b4');
   });
 });
 

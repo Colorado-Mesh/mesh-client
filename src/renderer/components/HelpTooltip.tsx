@@ -50,7 +50,7 @@ export function HelpTooltip({
         setPos(null);
       }}
     >
-      {children ?? <span className="text-xs text-gray-500 select-none">ⓘ</span>}
+      {children ?? <span className="text-muted text-xs select-none">ⓘ</span>}
       {pos && createPortal(<InstantTooltipBubble text={text} pos={pos} />, document.body)}
     </span>
   );

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { installDevElectronApiStubIfNeeded } from '../lib/devElectronApiStub';
 import { MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useMapLayerStore } from '../stores/mapLayerStore';
@@ -17,6 +18,7 @@ const {
   markerMock,
   circleMock,
   polylineMock,
+  tileLayerMock,
   diagnosticsStoreState,
 } = vi.hoisted(() => ({
   leafletIconMock: vi.fn().mockReturnValue({}),
@@ -26,6 +28,7 @@ const {
   markerMock: vi.fn(() => null),
   circleMock: vi.fn(() => null),
   polylineMock: vi.fn(() => null),
+  tileLayerMock: vi.fn(() => null),
   diagnosticsStoreState: {
     diagnosticRows: [] as unknown[],
     anomalyHalosEnabled: false,
@@ -60,13 +63,16 @@ const mockMapInstance = {
   on: vi.fn(),
   off: vi.fn(),
   getPane: vi.fn().mockReturnValue(null),
+  // MapResizeInvalidator: re-measure on activation and container resize.
+  invalidateSize: vi.fn(),
+  getContainer: vi.fn(() => document.createElement('div')),
   createPane: vi.fn().mockReturnValue({ style: {} }),
   getBounds: vi.fn().mockReturnValue({ isValid: () => false }),
 };
 
 vi.mock('react-leaflet', () => ({
   MapContainer: mapContainerMock,
-  TileLayer: () => null,
+  TileLayer: tileLayerMock,
   Marker: markerMock,
   Popup: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Polyline: polylineMock,
@@ -109,7 +115,41 @@ describe('MapPanel accessibility', () => {
     markerMock.mockClear();
     circleMock.mockClear();
     polylineMock.mockClear();
+    tileLayerMock.mockClear();
     mockMapInstance.flyTo.mockClear();
+  });
+
+  it('draws no basemap on the plain-browser dev bridge, where every tile would fail', () => {
+    const renderMap = () =>
+      render(
+        <MapPanel
+          nodes={new Map()}
+          myNodeNum={1}
+          locationFilter={defaultFilter}
+          ourPosition={null}
+          onLocateMe={vi.fn().mockResolvedValue(null)}
+        />,
+      );
+    const { unmount } = renderMap();
+    expect(tileLayerMock).toHaveBeenCalled();
+    unmount();
+    tileLayerMock.mockClear();
+
+    const realApi = window.electronAPI;
+    // @ts-expect-error test setup: no preload, as in a plain browser tab
+    delete window.electronAPI;
+    vi.stubEnv('DEV', true);
+    try {
+      expect(installDevElectronApiStubIfNeeded()).toBe(true);
+      renderMap();
+      expect(tileLayerMock).not.toHaveBeenCalled();
+      // With no tile layer to inherit it from, the map states its own max zoom; marker clustering
+      // throws without one.
+      expect(mapContainerMock.mock.lastCall?.[0]).toMatchObject({ maxZoom: 18 });
+    } finally {
+      vi.unstubAllEnvs();
+      window.electronAPI = realApi;
+    }
   });
 
   it('adds wifi icon badge to repeater map markers', () => {
@@ -321,6 +361,8 @@ describe('MapPanel accessibility', () => {
     );
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toMatch(/\bh-full\b/);
+    // Leaflet's panes and the z-[1000] controls stay inside the map, under any z-50 dialog.
+    expect(root.className).toMatch(/\bisolate\b/);
   });
 
   it('has no axe violations with empty nodes', async () => {

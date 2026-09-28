@@ -32,12 +32,9 @@
       "stale": "Несвіжий",
       "reconnecting": "Повторне під’єднання"
     },
-    "nodeLabel": "Вузол: {{name}}",
     "takClientLost": "Клієнт TAK втрачений",
     "title": "Меш-клієнт",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Вимкніть знак Colorado Mesh",
-    "meshTubeSignOn": "Увімкніть знак Colorado Mesh",
     "queueBadge": "З: {{used}}/{{max}}",
     "telemetryDisabled": "Телеметрію на цьому пристрої вимкнено. Увімкнення показників пристрою допомагає сітці та цьому додатку (діагностика, акумулятор, сигнал). Увімкніть його на вкладці Радіо.",
     "scrollToTop": "↑ Вгору",
@@ -255,7 +252,7 @@
     "clearMessagesChannelConfirmLabel": "Очистити {{channel}}",
     "clearMessagesTitle": "Очистити повідомлення",
     "clearAllRepeatersConfirm": "Це назавжди видалить усі збережені повторювачі MeshCore з локальної бази даних. Це неможливо скасувати.",
-    "clearAllLocalDataTitle": "⚠ Очистити всі локальні дані",
+    "clearAllLocalDataTitle": "Очистити всі локальні дані",
     "clearAllLocalDataConfirm": "Це назавжди видалить УСІ локальні повідомлення, вузли та кешовані дані сеансу. Цю дію НЕ МОЖНА скасувати.",
     "clearEverythingConfirmButton": "Очистити все",
     "dangerZoneMeshcoreHeading": "MeshCore",
@@ -272,16 +269,16 @@
         "description": "Фон поточної вибраної вкладки на бічній панелі навігації."
       },
       "brandGreen": {
-        "label": "Індикатори та виділення меж",
-        "description": "Акцент для кордонів, якщо налаштовано, індикатори онлайн/MQTT, виділення та заповнення прогресу."
+        "label": "Акцент",
+        "description": "Основні кнопки й «Надіслати» (з темним текстом), акцентний текст, активні елементи та заливки прогресу. Лишається читабельним на тлі застосунку."
       },
       "brightGreen": {
         "label": "Назва програми, посилання та виділення вузлів",
         "description": "Назва додатка, виділений текст, посилання в нижньому колонтитулі та підсвічування в списку вузлів."
       },
       "readableGreen": {
-        "label": "Кнопки дій і вибрані таблетки",
-        "description": "Суцільні заливки білим текстом — вибрані таблетки каналів і кнопки основних дій для контрасту."
+        "label": "Заливка акценту",
+        "description": "Суцільна заливка акценту під білим текстом, наприклад у значках. Зберігає контраст 4,5:1 з білим текстом."
       },
       "deepBlack": {
         "label": "Бічна панель, заголовок і модальні поверхні",
@@ -310,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Колір кнопки дії повідомлення при наведенні",
         "description": "Колір наведення для всіх кнопок дій з повідомленнями (копіювати, відповідати, реагувати, пряме повідомлення, зірка та коли зірочка)."
+      },
+      "chatOutgoingBg": {
+        "label": "Заповнення вихідного повідомлення",
+        "description": "Заливка фону для ваших власних повідомлень (застосовується з непрозорістю 22%)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Межа вихідного повідомлення",
+        "description": "Колір рамки для ваших власних повідомлень (застосовується з непрозорістю 25%)."
       }
     },
     "themePreset": {
@@ -331,7 +336,14 @@
       "purple400": "Фіолетовий 400",
       "pink400": "Рожевий 400",
       "orange400": "Апельсин 400",
-      "yellow400": "Жовтий 400"
+      "yellow400": "Жовтий 400",
+      "zinc950": "Цинк 950",
+      "zinc900": "Цинк 900",
+      "zinc800": "Цинк 800",
+      "zinc700": "Цинк 700",
+      "zinc400": "Цинк 400",
+      "emerald300": "Смарагд 300",
+      "emerald700": "Смарагд 700"
     },
     "autoPruneNodesOlderThanAria": "Автоматичне видалення вузлів під час запуску, старше {{days}} днів",
     "autoPrunePositionHistoryDaysAria": "Автоматичне видалення історії позицій під час запуску, старше {{days}} днів",
@@ -388,6 +400,8 @@
     "themeSaveFailed": "Не вдалося зберегти контрольну точку кольору.",
     "themeRestoreFailed": "Не вдалося відновити кольорову контрольну точку.",
     "themeResetFailed": "Не вдалося скинути кольори.",
+    "themeAccentKept": "Цей колір надто близький до тла застосунку й погано читається (нижче 4,5:1), тож акцент повернуто до типового.",
+    "themeFillKept": "Білий текст на цьому кольорі був би нижче 4,5:1, тож заливку повернуто до типової.",
     "messageActionsBarBgVisible": "Показувати тло",
     "rrcUnreadAllRoomMessages": "Непрочитані RRC для всіх повідомлень кімнати",
     "rrcUnreadAllRoomMessagesHint": "Коли ввімкнено, будь-яке нове повідомлення кімнати RRC позначається як непрочитане і може відтворювати звук каналу. Вимкніть для сповіщень у стилі IRC: лише прямі повідомлення та @згадки.",
@@ -437,16 +451,38 @@
     "nodeSilenceAlertMinutesPlaceholder": "Протокол за замовчуванням",
     "nodeSilenceAlertMinutesHint": "Залиште порожнім, щоб використовувати застарілий поріг кожного протоколу. Ескалація стріляє в 2рази більше цього значення.",
     "nodeBatteryLowThreshold": "Пороговий рівень заряду акумулятора (%)",
-    "notifyOnLinkDown": "Сповіщати про несподіване вимкнення радіо"
+    "notifyOnLinkDown": "Сповіщати про несподіване вимкнення радіо",
+    "aboutSection": "Про програму",
+    "themePresets": {
+      "heading": "Тема",
+      "hint": "Виберіть початкову палітру, а потім налаштуйте окремі кольори нижче.",
+      "custom": "Власні кольори. Виберіть тему, щоб почати з готового набору."
+    },
+    "themeSurfaces": {
+      "midnight": "Північ",
+      "slate": "Шифер",
+      "zinc": "Цинк",
+      "graphite": "Графіт",
+      "deepSea": "Глибина",
+      "dusk": "Сутінки",
+      "evergreen": "Хвоя",
+      "highContrast": "Висока контрастність"
+    },
+    "themeAccents": {
+      "heading": "Акцент",
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum",
+      "sky": "Небо",
+      "classic": "Класичний зелений"
+    },
+    "pruneNoFixNodesTitle": "Обрізати вузли без позиції / Zero Island"
   },
   "aria": {
     "closeDialog": "Закрити діалог",
-    "expandSidebar": "Розгорнути сайдбар",
-    "collapseSidebar": "Згорнути бічну панель",
     "languageSelector": "Вибрати мову",
     "applicationPanels": "Панелі додатків",
     "applicationLog": "Журнал заявок",
-    "playAnimation": "Відтворити імпульсну анімацію сигналу сіті",
     "protocolSwitcher": "Перемикач протоколів",
     "switchToMeshtastic": "Перейти на Meshtastic",
     "switchToMeshCore": "Перемкнутися на MeshCore",
@@ -462,37 +498,6 @@
   "battery": {
     "percentCharging": "Акумулятор {{percent}} відсотків, заряджання",
     "percent": "Акумулятор {{percent}} відсотків"
-  },
-  "bootSequence": {
-    "booting": "Завантаження стека сіті...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Сканування каналів... {{count}}",
-    "meshtasticScanningChannels": "Сканування налаштованих каналів...",
-    "databaseNodes_one": "База даних: вузол {{count}} синхронізовано",
-    "databaseNodes_other": "База даних: синхронізовано {{count}} вузлів",
-    "syncingDatabase": "Синхронізація бази даних сіті...",
-    "interfaceReady": "{{iface}} інтерфейс готовий",
-    "freqMhz": "Частота: {{mhz}} МГц",
-    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
-    "configuringRadio": "Налаштування радіопараметрів...",
-    "contacts_one": "Контакти: {{count}} контакт завантажено",
-    "contacts_other": "Контакти: завантажено {{count}} контакти",
-    "loadingContacts": "Завантаження бази даних контактів...",
-    "routes_one": "Маршрути: {{count}} вузол у сітці",
-    "routes_other": "Маршрути: {{count}} вузлів у сітці",
-    "routesEstablished": "Встановлені маршрути",
-    "meshActive": "Мережева мережа активна",
-    "transportBle": "BLE",
-    "transportSerial": "Серійний",
-    "transportHttp": "HTTP",
-    "transportRadio": "Радіо",
-    "radioInterfaceFallback": "радіоінтерфейс",
-    "contacts_few": "Контакти: завантажено {{count}} контакти",
-    "contacts_many": "Контакти: завантажено {{count}} контактів",
-    "databaseNodes_few": "База даних: синхронізовано {{count}} вузли",
-    "databaseNodes_many": "База даних: синхронізовано {{count}} вузлів",
-    "routes_few": "Маршрути: {{count}} вузли у сітці",
-    "routes_many": "Маршрути: {{count}} вузлів у сітці"
   },
   "channelUtilization": {
     "title": "Використання каналів",
@@ -706,7 +711,7 @@
       "pendingOffersBadgeAria_many": "{{count}} очікуваних пропозицій щодо вхідних файлів від цього вузла"
     },
     "shareLocation": "Поділіться місцем розташування",
-    "shareLocationLabel": "📍 Спільне розташування",
+    "shareLocationLabel": "Спільне розташування",
     "shareLocationHint": "Надішліть свою поточну GPS або статичну позицію як повідомлення чату",
     "shareLocationUnavailable": "Місцезнаходження недоступне — перевірте налаштування GPS",
     "floodScopeOverrideHint": "Лише для цього повідомлення регіональний обсяг Flood. Область за замовчуванням використовує збережене налаштування радіо; хештег обмежує це надсилання до цього регіону; надсилання без регіону без фільтра. Ваш збережений обсяг буде відновлено після надсилання.",
@@ -825,7 +830,29 @@
     "outboxEmergencyWillSend": "Продовжить повторювати спробу, доки не буде надісла",
     "outboxEmergencyCapBlocked": "Призупинено: забагато аварійних повідомлень у черзі. Повторіть спробу або скасуйте цю.",
     "outboxEmergencyCancelConfirm": "Скасувати це екстрене повідомлення? Його не буде надіслано.",
-    "retryOutboxEmergencyAttempt": "Спроба {{count}}"
+    "retryOutboxEmergencyAttempt": "Спроба {{count}}",
+    "channelSwitcher": {
+      "trigger": "Усі канали ({{total}})",
+      "triggerWithUnread": "Усі канали ({{total}}), непрочитаних: {{unread}}",
+      "search": "Знайти канал",
+      "listLabel": "Канали",
+      "empty": "Немає відповідних каналів"
+    },
+    "toolbarLabel": "Інструменти розмови",
+    "composeHint": "Enter, щоб надіслати; Shift+Enter для нового рядка",
+    "dmSwitcher": {
+      "trigger": "Усі особисті повідомлення ({{total}})",
+      "triggerWithUnread": "Усі особисті повідомлення ({{total}}), непрочитаних: {{unread}}",
+      "search": "Знайти розмову",
+      "listLabel": "Особисті повідомлення",
+      "empty": "Немає відповідних розмов"
+    },
+    "notificationRrcTitle": "{{sender}} in {{room}}",
+    "srNewMessage": "Нове повідомлення від {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} нове повідомлення",
+    "srNewMessages_few": "{{count}} нові повідомлення",
+    "srNewMessages_many": "{{count}} нових повідомлень",
+    "srNewMessages_other": "{{count}} нового повідомлення"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",
@@ -954,7 +981,6 @@
     "disconnectRadio": "Відключити",
     "manualContactApproval": "Схвалення контакту вручну",
     "manualContactApprovalDesc": "Вимагати підтвердження вручну перед появою нових контактів",
-    "disconnected": "● відключений",
     "bluetoothDevice": "пристрій Bluetooth",
     "serialDevice": "Послідовний пристрій",
     "wifiDevice": "пристрій WiFi",
@@ -983,10 +1009,6 @@
     "stageLinuxUnpaired": "Збережений пристрій не сполучено в Linux Bluetooth — виберіть його нижче, щоб ввести PIN-код і підключитися.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Підключитися",
-    "mqttStatusConnected": "підключений",
-    "mqttStatusConnecting": "підключення",
-    "mqttStatusError": "помилка",
-    "mqttStatusDisconnected": "відключений",
     "stageSelectDevice": "Виберіть свій пристрій нижче",
     "stageSelectSerial": "Виберіть послідовний порт нижче",
     "stageConnectingLast": "Підключення до останнього пристрою Bluetooth…",
@@ -1073,7 +1095,6 @@
     "reticulumSidecarStartFailed": "Не вдалося запустити стек Reticulum: {{message}}",
     "reticulumStopStack": "Зупинити стек",
     "reticulumAutostart": "Автозапуск стека при відкритті з'єднання",
-    "reticulumStackRunning": "Стек працює",
     "reticulumIdentity": {
       "title": "Ідентичність Reticulum",
       "startStackFirst": "Запустіть стек Reticulum, щоб налаштувати ідентичність.",
@@ -1486,7 +1507,9 @@
       "noPrivateKey": "Немає повної ідентичності — імпортуйте свою конфігурацію MeshCore на панель радіо (відкритий і закритий ключі) або вставте ім’я користувача (v1_<відкритий ключ>) і маркер вручну. Аудиторія JWT у маркері має відповідати імені хоста сервера.",
       "publicKeyMissing": "В ідентифікаторі відсутній відкритий ключ. Імпортуйте JSON конфігурації MeshCore на панель Radio (має містити відкритий і закритий ключі) або вставте маркер брокера в поле пароля.",
       "noIdentity": "Ідентифікатор пристрою не знайдено. Імпортуйте JSON конфігурації MeshCore на панель радіо або вставте ім’я користувача та маркер вручну.",
-      "usernameBuildFailed": "Не вдалося зібрати ім'я користувача MeshCore MQTT. Імпорт конфігурації MeshCore JSON на панелі радіо або вставка імені користувача (v1_<public key>) і маркера вручну."
+      "usernameBuildFailed": "Не вдалося зібрати ім'я користувача MeshCore MQTT. Імпорт конфігурації MeshCore JSON на панелі радіо або вставка імені користувача (v1_<public key>) і маркера вручну.",
+      "clientKey": "Ключ клієнта",
+      "copyClientKey": "Копіювати ключ клієнта"
     },
     "meshcorePacketLogger": {
       "label": "Реєстратор пакетів — при підключенні до радіо та MQTT пересилайте підсумки пакетів RX на {{topic}} у тій самій формі JSON, що й meshcoretomqtt. Вимкнено за замовчуванням; увімкніть, лише якщо ви маєте намір обмінюватися почутим повітряним трафіком з аналізатором пакетів."
@@ -1607,7 +1630,25 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Стан з'єднань",
+      "radioLink": "Радіозв'язок",
+      "stack": "Стек",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Помилка",
+      "running": "Працює",
+      "stopped": "Зупинено",
+      "clientLost": "Клієнта втрачено",
+      "takPort": "Порт {{port}}",
+      "openTak": "Відкрити TAK"
+    },
+    "disconnectAll": "Від'єднати радіо та MQTT",
+    "disconnectRadioGroup": "Від'єднати радіо",
+    "moreDisconnectOptions": "Інші варіанти від'єднання",
+    "disconnectOptions": "Варіанти від'єднання",
+    "lastConnectionLabel": "Останнє з'єднання"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",
@@ -2094,7 +2135,12 @@
       "esp32FlashStalled": "Передача прошивки зупинилася без прогресу. Спробуйте інший USB-кабель або порт, увійдіть у режим завантажувача (утримуйте BOOT, торкніться RESET) і прошийте знову.",
       "unknown": "Сталася несподівана помилка.",
       "provisionWipeRequired": "EEPROM заблоковано з недійсною ідентичністю. Спочатку очистіть EEPROM, потім виконайте provisioning знову.",
-      "provisionVerifyFailed": "Записи provisioning завершено, але пристрій досі повідомляє про непідготовлену EEPROM. Перезапустіть живлення плати, зачекайте завантаження та спробуйте знову — або спочатку очистіть EEPROM."
+      "provisionVerifyFailed": "Записи provisioning завершено, але пристрій досі повідомляє про непідготовлену EEPROM. Перезапустіть живлення плати, зачекайте завантаження та спробуйте знову — або спочатку очистіть EEPROM.",
+      "esp32ReadStalled": "Зчитування флеш-пам'яті зупинилося без прогресу. Спробуйте інший USB-кабель або порт, увійдіть у режим завантажувача (утримуйте BOOT, торкніться RESET) і знову створіть резервну копію.",
+      "esp32ReadIncomplete": "Зчитування флеш-пам'яті завершилося передчасно, тому резервну копію не збережено. Знову підключіть плату та повторіть спробу.",
+      "esp32FlashSizeUnknown": "Не вдалося визначити розмір флеш-пам'яті, тому резервну копію не створено. Виберіть точну модель плати та повторіть спробу.",
+      "esp32FlashTooLarge": "Флеш-пам'ять цієї плати перевищує ліміт резервної копії 32 МіБ, тому резервну копію не створено.",
+      "esp32ReadVerifyFailed": "Зчитані дані флеш-пам'яті не пройшли перевірку контрольної суми, тому резервну копію не збережено. Знову підключіть плату та повторіть спробу."
     },
     "selectSerialPort": "Виберіть послідовний порт",
     "noSerialPorts": "Послідовних портів USB не знайдено.",
@@ -2142,7 +2188,14 @@
     "clearPairedDevicesConfirmTitle": "Очистити Bluetooth-зв'язки RNode?",
     "clearPairedDevicesConfirmMessage": "Надсилає CMD_BT_UNPAIR через USB і очищає пов’язані хости на ESP32 RNode (без ефекту на деяких збірках nRF52). Перед повторним сполученням все одно потрібно Забути пристрій у Системних параметрах → Bluetooth.",
     "clearPairedDevicesConfirm": "Очистити Bluetooth-зв’язки",
-    "clearPairedDevicesSuccess": "Запитано очищення таблиці Bluetooth-зв’язків радіо."
+    "clearPairedDevicesSuccess": "Запитано очищення таблиці Bluetooth-зв’язків радіо.",
+    "backupFirmware": "Резервне копіювання прошивки",
+    "backupFirmwareHint": "Зберігає повний образ флеш-пам'яті ESP32 (налаштування прошивки та пристрою) у файлі перед прошивкою. Недоступно для плат nRF52.",
+    "backingUp": "Зчитування флеш-пам'яті… {{progress}}%",
+    "cancelBackup": "Скасувати резервне копіювання",
+    "backupSaved": "Резервну копію прошивки збережено в {{path}}.",
+    "backupSaveCancelled": "Резервну копію прошивки прочитано, але не збережено.",
+    "backupCancelled": "Резервне копіювання прошивки скасовано."
   },
   "identityVault": {
     "title": "Сховище ідентифікаційних даних",
@@ -3142,7 +3195,7 @@
     "radioStatsLocalHeading": "Радіостатистика (локальна)",
     "txAirTimeLabel": "Ефірний час TX",
     "rxAirTimeLabel": "Ефірний час RX",
-    "requestPosition": "📍 Запит позиції",
+    "requestPosition": "Запит позиції",
     "traceRoute": "Маршрут 🛤 відстеження",
     "tracingEllipsis": "Трасування",
     "requestStatus": "Запит статусу",
@@ -3153,31 +3206,29 @@
     "telemetryFailed": "Помилка телеметрії: {{message}}",
     "sensorTelemetryButton": "Телеметрія 🌡 датчика",
     "requestingNeighbors": "Запит сусідів...",
-    "getNeighbors": "🔗 Отримати сусідів",
+    "getNeighbors": "Отримати сусідів",
     "neighborsFailed": "Помилка сусідів: {{message}}",
     "messageNoKeyTitle": "Неможливо надіслати повідомлення: немає ключа шифрування. Дочекайтеся повного обміну контактами або оновіть контакти.",
-    "messageButton": "💬 Повідомлення",
+    "messageButton": "Повідомлення",
     "exportingContact": "Експортування контакту...",
     "noPublicKeyAvailable": "Немає відкритого ключа",
     "exportContact": "Експортувати контакт",
     "exportingEllipsis": "Експортування...",
     "exportFailed": "Помилка при експорті",
     "sharingContact": "Спільний доступ до контакту...",
-    "shareContact": "📨 Поділитися контактом",
+    "shareContact": "Поділитися контактом",
     "sharingEllipsis": "Спільне використання",
     "shareFailed": "Помилка надсилання",
     "addingToRadio": "Додавання до радіо...",
-    "addToRadio": "➕ Додати до радіо",
+    "addToRadio": "Додати до радіо",
     "addingEllipsis": "Додавання…",
     "addToRadioFailed": "Не вдалося додати до радіо",
     "removingFromRadio": "Видалення з радіо...",
-    "removeFromRadio": "➖ Видалити з радіо",
+    "removeFromRadio": "Видалити з радіо",
     "removingEllipsis": "Вилучення...",
     "removeFromRadioFailed": "Не вдалося видалити з радіо",
     "mqttIgnoreHeading": "MQTT Ігнорувати",
     "mqttIgnoreDescription": "Виключити дані MQTT цього вузла з діагностики",
-    "stopIgnoringMqttTitle": "Припинити ігнорувати MQTT для цього вузла",
-    "ignoreMqttTitle": "Ігнорувати MQTT для цього вузла",
     "deleteNode": "Видалити вузловий пункт",
     "deleteNodeConfirm": "Видалити цей вузол з локальної бази даних? Він знову з'явиться, коли знову транслюватиметься.",
     "cancel": "Скасувати",
@@ -3220,7 +3271,7 @@
     "remoteAdminKeyHint": "Після додавання відкритого ключа локального радіо (Radio → Security → Copy) до Admin keys цього віддаленого вузла вставте той самий ключ сюди для підтвердження. Потім скористайтеся «Налаштувати вузол» на вкладці Radio.",
     "remoteAdminKeyInvalid": "Введіть дійсний відкритий ключ адміністратора (base64, base64:… або 64-символьний шістнадцятковий).",
     "configureRemotelyHint": "Відкриває налаштування радіо для цього вузла через сіть (вимагає локального радіо та збереженого ключа адміністратора).",
-    "openRoomButton": "🏠 Відкрити кімнату",
+    "openRoomButton": "Відкрити кімнату",
     "remoteAuthCancelled": "Віддалений доступ скасовано.",
     "shareContactSent": "Контактний спільний ресурс надіслано по радіо.",
     "blockContact": "Блок",
@@ -3262,7 +3313,9 @@
     "xeddsaSigned": "Підписано XEdDSA",
     "xeddsaSignedHint": "Радіо перевірило підпис XEdDSA з цього вузла, тому його відкритий ключ криптографічно засвідчений.",
     "keyManuallyVerified": "Ключ підтверджено",
-    "keyManuallyVerifiedHint": "Відкритий ключ цього вузла було підтверджено вручну оператором."
+    "keyManuallyVerifiedHint": "Відкритий ключ цього вузла було підтверджено вручну оператором.",
+    "keyBadge": "Ключ",
+    "closePane": "Закрити подробиці"
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",
@@ -3356,6 +3409,7 @@
     "importResultError": "Імпортовано {{imported}}, пропущено {{skipped}}. Помилки: {{errors}}",
     "refreshContacts": "Оновити контакти з радіо",
     "sendFloodAdvert": "Надіслати flood advert",
+    "sendFloodAdvertUnavailable": "Доступно після підключення радіо MeshCore",
     "filterByContactGroup": "Фільтрувати за групою контактів",
     "manageContactGroups": "Керування групами контактів",
     "manageGroups": "Керуйте групами",
@@ -3381,12 +3435,6 @@
     "distanceFilterNoGpsBanner": "Фільтр відстані ввімкнено, але ваш пристрій не має виправлення GPS — відображаються всі вузли.",
     "distanceFilterActiveBanner_one": "Дистанційний фільтр активний — вузол {{count}} приховано за межами {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Дистанційний фільтр активний — {{count}} вузли приховані за {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} онлайн",
-    "summaryOnline_other": "{{count}} онлайн",
-    "summaryStale_one": "{{count}} застарілий",
-    "summaryStale_other": "{{count}} застарілий",
-    "summaryOffline_one": "{{count}} в автономному режимі",
-    "summaryOffline_other": "{{count}} в автономному режимі",
     "tableCaptionMeshNodes": "З'єднані вузли сіті",
     "columnFavorite": "Обране",
     "columnId": "ID",
@@ -3444,13 +3492,13 @@
     "importResultSuccess_many": "Імпортовано {{count}} контактів.",
     "importResultSuccessWithSkipped_few": "Імпортовано {{count}} контакти, пропущено {{skipped}}.",
     "importResultSuccessWithSkipped_many": "Імпортовано {{count}} контактів, пропущено {{skipped}}.",
-    "summaryOffline_few": "{{count}} в автономному режимі",
-    "summaryOffline_many": "{{count}} в автономному режимі",
-    "summaryOnline_few": "{{count}} онлайн",
-    "summaryOnline_many": "{{count}} онлайн",
-    "summaryStale_few": "{{count}} застарілі",
-    "summaryStale_many": "{{count}} застарілих",
-    "buttonExportCsv": "Експорт у CSV"
+    "buttonExportCsv": "Експорт у CSV",
+    "listViewAria": "Вигляд списку",
+    "statusFilterAria": "Фільтр за станом",
+    "statusFilterAll": "Усі",
+    "buttonExport": "Експорт",
+    "exportMenuLabel": "Формати експорту",
+    "youBadge": "Ви"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3927,12 +3975,12 @@
     "shutdownConfirm": "Вимкнення",
     "shutdownButton": "Вимкнення",
     "factoryResetConfigName": "Скидання конфігурації до заводських налаштувань",
-    "factoryResetConfigTitle": "⚠ Скидання конфігурації до заводських налаштувань",
+    "factoryResetConfigTitle": "Скидання конфігурації до заводських налаштувань",
     "factoryResetConfigMessage": "Це скине конфігурацію пристрою до заводських налаштувань, але збереже вашу базу даних вузлів. Потрібно буде змінити налаштування.",
     "factoryResetConfigConfirm": "Скинути конфігурацію",
     "factoryResetConfigButton": "Factory Reset Config Лише",
     "factoryResetName": "Скидання до заводських налаштувань",
-    "factoryResetTitle": "⚠ Скидання до заводських налаштувань",
+    "factoryResetTitle": "Скидання до заводських налаштувань",
     "factoryResetMessage": "Це призведе до видалення УСІХ налаштувань пристрою та відновлення заводських налаштувань. Усі канали, конфігурацію та збережені дані на пристрої буде остаточно втрачено. Цю дію НЕ МОЖНА скасувати.",
     "factoryResetConfirm": "Скидання до заводських налаштувань",
     "meshcoreChannelKeyLabel": "Ключ (32 шістнадцяткові символи = 16 байтів)",
@@ -4637,8 +4685,6 @@
     "noLppData": "У цій відповіді немає даних датчика LPP.",
     "enterCommand": "Введіть команду...",
     "searchRepeatersPlaceholder": "Шукати повторювачі та кімнати…",
-    "openCliInterface": "Відкритий інтерфейс CLI",
-    "sensorLppButton": "Датчик (LPP)",
     "noTelemetryResponse": "Відповіді телеметрії ще немає. Спробуйте датчик (LPP) знову.",
     "mapPositionFromAdvert": "Положення на карті отримано з реклами/контактних даних, а не цього запиту датчика.",
     "mapPositionFromTelemetry": "Позиція на карті визначається на основі даних реклами/контактів, а не телеметрії датчика.",
@@ -4664,8 +4710,6 @@
     "statusStale": "Несвіжий",
     "statusOffline": "Офлайн",
     "buttonPing": "Пінґ",
-    "buttonStatus": "Статус",
-    "buttonNeighbors": "Сусідство",
     "buttonRemove": "Видалити",
     "buttonConfirmRemove": "Confirm? (Підтвердити?)",
     "buttonErrorShort": "Помилка",
@@ -4710,15 +4754,10 @@
     "savedPasswordOrphanLabel": "Повторювач {{nodeId}}",
     "pingQueuedBehindOther": "Поставлений в чергу — інший пінг використовує радіо (MeshCore дозволяє один трас за раз).",
     "waitForPingBeforeStatus": "Очікується завершення ping перед запитом статусу.",
-    "statusLastFailedTooltip": "Не вдалося виконати останній запит на отримання статусу: {{error}}",
-    "neighborsLastFailedTooltip": "Не вдалося здійснити останній запит від сусідів: {{error}}",
-    "telemetryLastFailedTooltip": "Не вдалося виконати останній запит датчика: {{error}}",
-    "cliLastFailedTooltip": "Не вдалося виконати останню команду CLI: {{error}}",
     "telemetryError": "Помилка датчика: {{error}}",
     "neighborsFailedToast": "Помилка сусідів: {{message}}",
     "columnSnr": "SNR",
     "columnRssi": "RSSI",
-    "buttonCli": "CLI",
     "cliClearHistory": "Очистити історію",
     "cliNoCommandsYet": "Команд ще немає",
     "uptimeDaysHours": "{{days}}д {{hours}}год",
@@ -4763,7 +4802,12 @@
     "sortByAirPctAsc": "Сортувати за Air%, спочатку найнижчий",
     "sortByAirPctDesc": "Сортувати за Air%, спочатку найвищий",
     "sortByReliabilityAsc": "Сортувати за надійністю, спочатку найнижча",
-    "sortByReliabilityDesc": "Сортувати за надійністю, спочатку найвища"
+    "sortByReliabilityDesc": "Сортувати за надійністю, спочатку найвища",
+    "moreActionsFor": "Інші дії для {{name}}",
+    "rowActionsMenu": "Дії для {{name}}",
+    "rowBusy": "Виконується для {{name}}",
+    "menuShownBelow": "Показано нижче. Виберіть ще раз, щоб приховати.",
+    "confirmRemoveAria": "Підтвердити видалення {{name}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",
@@ -5120,7 +5164,7 @@
     "savedPasswordsHeading": "Збережені паролі",
     "savedPasswordsCount": "Збережені паролі ({{count}})",
     "savedPasswordOrphanLabel": "Кімната 0x{{nodeId}}",
-    "statusPasswordSaved": "Пароль збережено для цієї кімнати (блакитний маркер, якщо не виконано вхід).",
+    "statusPasswordSaved": "Пароль збережено для цієї кімнати.",
     "statusAutoLoginEnabled": "Увімкнено автоматичний вхід при з'єднанні.",
     "badgeAutoLogin": "Автоматичний вхід",
     "badgeAutoSync": "Автоматична синхронізація",
@@ -5136,17 +5180,18 @@
     "legendLoggedIn": "У системі",
     "statusLoggedInSession": "У системі",
     "statusLoggedInSessionTooltip": "Активний сеанс клієнта. Він триває до тих пір, поки ви не вийдете з кімнати або не відключитеся. Якщо сервер кімнати недоступний, вийдіть і увійдіть знову, коли він повернеться.",
-    "legendNotSavedTooltip": "Порожнє коло — для цієї кімнати не збережено пароль",
-    "legendSavedTooltip": "Напівкруг неба — пароль збережено; увійдіть, щоб відкрити сеанс",
-    "legendLoggedInTooltip": "Зелена крапка — активна клієнтська сесія (вийдіть із кімнати, якщо сервер не в мережі)",
     "historyLocalHint": "Під час входу mesh-client запитує недавні дописи, що ще є в кільцевому буфері сервера кімнати (коли на цьому пристрої ще немає локальної мітки). Увімкніть автоматичну синхронізацію, щоб залишатися передплаченим під час з’єднання.",
     "loginAllSavedDisabledNoSavedPasswords": "Спочатку збережіть пароль кімнати, щоб увійти в усі",
     "membersHeadingWithCount": "Учасники ({{count}})",
     "collapseRoomList": "Згорнути список кімнат",
     "expandRoomList": "Розгорнути список кімнат",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} непрочитано",
     "manageJumpHint": "Елементи інфраструктури (ping, status, CLI, ACL setperm) на вкладці Repeaters.",
-    "aclPubkeyPlaceholder": "0123456789abcdef…"
+    "aclPubkeyPlaceholder": "0123456789abcdef…",
+    "backToList": "Назад до списку кімнат",
+    "details": "Відомості про кімнату",
+    "hideDetails": "Сховати відомості про кімнату",
+    "moreActions": "Інші дії з кімнатою",
+    "loginAndSyncHeading": "Вхід і синхронізація"
   },
   "searchModal": {
     "closeSearch": "Закрити розклад пошуку",
@@ -5246,18 +5291,6 @@
   "sidebar": {
     "disabledTabTooltip": "Недоступно в цьому режимі"
   },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Залишайтеся на ефірі",
-      "helloOperator": "Привіт, оператор",
-      "thanksForMeshing": "Дякую за зчеплення",
-      "builtForCommunities": "Створено для громад у всьому світі",
-      "stayConnected": "Залишайтеся на зв'язку",
-      "signalsOut": "Сигнали виходять",
-      "gladYouAreHere": "Радий, що ти тут",
-      "keepTheMeshAlive": "Тримайте сітку живою"
-    }
-  },
   "tabs": {
     "connection": "Підключення",
     "chat": "Розмова",
@@ -5280,6 +5313,7 @@
     "admin": "Адміністрування",
     "peers": "Вузли",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Топологія мережі",
     "network": "Мережа",
     "rrc": "RRC",
@@ -5316,7 +5350,7 @@
     "atakDataPackageDesc": "Згенеруйте файл .zip, що містить сертифікати TLS і налаштування підключення для імпорту в ATAK, WinTAK або iTAK.",
     "generating": "Створення…",
     "generateReveal": "Створити та розкрити",
-    "packageSaved": "✓ Пакет збережено — перевірте Finder/Explorer",
+    "packageSaved": "Пакет збережено — перевірте Finder/Explorer",
     "startServerFirst": "Спочатку запустіть сервер",
     "certificates": "Сертифікати",
     "certificatesDesc": "Самопідписані сертифікати ЦС, сервера та клієнта генеруються автоматично під час першого запуску та зберігаються в каталозі даних програми.",
@@ -5485,8 +5519,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Підключитися до хешу",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5523,8 +5555,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Розгорнути список кімнат",
-    "collapseRooms": "Згорнути список кімнат",
     "joinedRooms": "Приєднався",
     "recentRooms": "Останні",
     "roomKeyOptional": "Ключ від номера (необов'язково)",
@@ -5580,8 +5610,6 @@
       "welcomeTimeout": "Підключено, але концентратор не надіслав ВІТАННЯ вчасно. Спробуйте ще раз.",
       "proxyRateLimit": "Зараз надто багато запитів (досягнуто обмеження швидкості проксі-сервера). Зачекайте кілька хвилин і повторіть спробу."
     },
-    "expandMembers": "Розгорнути список учасників",
-    "collapseMembers": "Згорнути список учасників",
     "cancelConnect": "Скасувати",
     "maxHubsConnected": "Ви можете залишатися на зв'язку не більше ніж з 8 концентраторами RRC. Спочатку від'єднайте один.",
     "enableHubAutoJoin": "Увімкнути автоматичне приєднання концентратора",
@@ -5634,7 +5662,15 @@
     "roomNameLimit": {
       "overMax": "Назва кімнати задовга — ліміт концентратора становить {{limit}} байт"
     },
-    "noConnectedHubs": "Немає підключених концентраторів RRC. З'єднуйтеся з вибраного, виявленого або за хешем."
+    "noConnectedHubs": "Немає підключених концентраторів RRC. З'єднуйтеся з вибраного, виявленого або за хешем.",
+    "autoJoinChip": "Авто",
+    "listViewAria": "Показати кімнати або хаби",
+    "hubsShort": "Хаби",
+    "hideList": "Приховати кімнати й хаби",
+    "showList": "Показати кімнати й хаби",
+    "backToList": "Назад до кімнат і хабів",
+    "hideMembers": "Приховати учасників",
+    "listColumnAria": "Кімнати й хаби"
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",
@@ -6321,5 +6357,50 @@
     "beaconCancelQueued": "Маяк скасування в черзі. Він надсилатиметься, коли радіостанція буде доступна.",
     "beaconCancelFailed": "Не вдалося надіслати або поставити в чергу скасування сигналу. Інцидент досі відкрито.",
     "emptyHint": "Вхідні звіти MECP з'являються тут автоматично. Щоб надіслати його, увімкніть кнопку → App → MECP Show MECP у чаті, а потім використовуйте MECP у чаті. → Шари карт можуть показувати відкриті інциденти з координатами."
+  },
+  "shell": {
+    "section": {
+      "monitor": "Моніторинг",
+      "device": "Пристрій"
+    },
+    "sectionPanelsAria": "Панелі розділу {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Перейти до панелі, контакту чи каналу ({{shortcut}})",
+    "status": {
+      "radio": "Радіо: {{status}}",
+      "radioWithNode": "Радіо: {{status}}, вузол {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Усі панелі",
+      "searchLabel": "Пошук панелей, контактів і каналів",
+      "placeholder": "Перейти до панелі, контакту чи каналу",
+      "noResults": "Жодна панель не відповідає пошуку",
+      "otherGroup": "Інше",
+      "pin": "Закріпити {{label}}",
+      "unpin": "Відкріпити {{label}}",
+      "pinLimit": "Максимум закріплених панелей: {{max}}. Спершу відкріпіть одну.",
+      "hintMove": "навігація",
+      "hintOpen": "відкрити",
+      "hintPin": "закріпити",
+      "panelCount_one": "{{count}} панель",
+      "panelCount_few": "{{count}} панелі",
+      "panelCount_many": "{{count}} панелей",
+      "panelCount_other": "{{count}} панелі",
+      "channelsGroup": "Канали",
+      "contactsGroup": "Контакти",
+      "moreMatches": "Є ще збіги. Продовжуйте вводити, щоб звузити список."
+    },
+    "more": "Більше",
+    "quitConfirmTitle": "Закрити Mesh Client?",
+    "quitConfirmIncidents": "Відкриті інциденти MAYDAY або URGENT: {{n}}.",
+    "quitConfirmOutbox": "Екстрені повідомлення, що очікують надсилання: {{n}}.",
+    "quitConfirmLinks": "Усі радіо- та MQTT-з’єднання буде розірвано."
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Зменшити: {{label}}",
+      "increase": "Збільшити: {{label}}"
+    }
   }
 }

@@ -28,6 +28,13 @@ const TEST_SIBLING_RE = /\.test\.(?:[cm]?[jt]sx?)$/i;
 export const SOURCE_POLICY_TEST_PATH = 'src/architecture/sourcePolicy.test.ts';
 const SRC_TS_PATH_RE = /^src\/.+\.(?:ts|tsx)$/;
 
+/** Cross-checks sidecar routes against the IPC doc; neither input is a TS import. */
+export const SIDECAR_ROUTE_DOCS_TEST_PATH = 'src/architecture/sidecarRouteDocs.test.ts';
+const SIDECAR_ROUTE_DOCS_INPUTS = new Set([
+  'reticulum-sidecar/src/api/mod.rs',
+  'docs/reticulum-sidecar-ipc.md',
+]);
+
 const FORCE_FULL_PATTERNS = [
   /^vitest\.config\./,
   /^vitest\.harness(\.|$)/,
@@ -147,6 +154,22 @@ export function appendSourcePolicyTestIfNeeded(relatedPaths) {
 }
 
 /**
+ * Append the sidecar route/doc guard when its Rust or Markdown inputs are staged. Runs even
+ * when nothing else is Vitest-relevant (docs-only or sidecar-only commits).
+ * @param {string[]} stagedPaths
+ * @param {string[]} relatedPaths
+ * @returns {string[]}
+ */
+export function appendSidecarRouteDocsTestIfNeeded(stagedPaths, relatedPaths) {
+  const needsGuard = stagedPaths.some((p) => SIDECAR_ROUTE_DOCS_INPUTS.has(p.replace(/\\/g, '/')));
+  const normalized = relatedPaths.map((p) => p.replace(/\\/g, '/'));
+  if (!needsGuard || normalized.includes(SIDECAR_ROUTE_DOCS_TEST_PATH)) {
+    return [...normalized].sort();
+  }
+  return [...normalized, SIDECAR_ROUTE_DOCS_TEST_PATH].sort();
+}
+
+/**
  * @param {string} filePath
  * @returns {boolean}
  */
@@ -235,7 +258,10 @@ export function planPrecommitTests(stagedPaths, { allowManifestOnlySkip = true }
     };
   }
 
-  const relatedPaths = appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths));
+  const relatedPaths = appendSidecarRouteDocsTestIfNeeded(
+    stagedPaths,
+    appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+  );
   if (relatedPaths.length === 0) {
     return { mode: 'skip', relatedPaths: [], projects: [] };
   }

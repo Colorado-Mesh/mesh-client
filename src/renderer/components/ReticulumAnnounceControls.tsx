@@ -11,6 +11,7 @@ import {
 } from '@/renderer/lib/reticulum/reticulumStackSettings';
 
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 export interface ReticulumAnnounceControlsProps {
   disabled?: boolean;
@@ -142,9 +143,9 @@ export function ReticulumAnnounceControls({
   const controlsDisabled = disabled || busy;
 
   return (
-    <div className={embedded ? 'space-y-2' : 'mt-4 border-t border-gray-700 pt-4'}>
+    <div className={embedded ? 'space-y-2' : 'border-ink-700 mt-4 border-t pt-4'}>
       <div className="flex flex-wrap items-end gap-2">
-        <label className="text-xs text-gray-400" htmlFor="reticulum-announce-interval">
+        <label className="text-ink-400 text-xs" htmlFor="reticulum-announce-interval">
           {t('reticulumIdentity.announceIntervalSec')}
         </label>
         <input
@@ -155,7 +156,7 @@ export function ReticulumAnnounceControls({
           value={announceInterval}
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.announceIntervalSec')}
-          className="bg-deep-black w-24 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+          className={`${INPUT_BOX_CLASS} w-24`}
           onChange={(e) => {
             setAnnounceInterval(clampAnnounceIntervalSec(Number(e.target.value)));
             setStatusMessage(null);
@@ -165,7 +166,7 @@ export function ReticulumAnnounceControls({
           type="button"
           disabled={controlsDisabled}
           aria-label={t('common.save')}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 transition-colors hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-40"
           onClick={() => {
             void saveAnnounceInterval();
           }}
@@ -176,7 +177,7 @@ export function ReticulumAnnounceControls({
           type="button"
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.announceNow')}
-          className="border-brand-green/60 text-brand-green rounded border px-2 py-1 text-xs transition-colors hover:bg-slate-800 disabled:opacity-40"
+          className="border-brand-green/60 text-brand-green hover:bg-ink-800 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-40"
           onClick={() => {
             void announceNow();
           }}
@@ -187,7 +188,7 @@ export function ReticulumAnnounceControls({
           type="button"
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.clearAnnounces')}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-amber-300 transition-colors hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 hover:bg-ink-800 rounded border px-2 py-1 text-xs text-orange-300 transition-colors disabled:opacity-40"
           onClick={() => {
             void clearAnnounces();
           }}
@@ -195,9 +196,9 @@ export function ReticulumAnnounceControls({
           {t('reticulumIdentity.clearAnnounces')}
         </button>
       </div>
-      <p className="text-xs text-gray-500">{t('reticulumIdentity.announceIntervalHint')}</p>
+      <p className="text-muted text-xs">{t('reticulumIdentity.announceIntervalHint')}</p>
       {statusMessage ? (
-        <p className="mt-2 text-xs text-gray-300" role="status">
+        <p className="text-ink-300 mt-2 text-xs" role="status">
           {statusMessage}
         </p>
       ) : null}

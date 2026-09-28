@@ -1,23 +1,42 @@
-import { applyThemeColors, loadThemeColors } from './themeColors';
+import {
+  applyThemeColors,
+  DEFAULT_THEME_COLORS,
+  loadThemeColors,
+  THEME_CSS_VARS,
+  type ThemeColorKey,
+} from './themeColors';
 
 /** Tailwind badge fills used in axe tests — jsdom does not load styles.css. */
 const AXE_BG_CLASS_TO_CSS: Record<string, string> = {
   'bg-readable-green': '--color-readable-green',
+  'bg-brand-green': '--color-brand-green',
   'bg-secondary-dark': '--color-secondary-dark',
   'bg-cyan-800': '#155e75',
-  'bg-amber-700': '#bb4d00',
-  'bg-amber-800': '#92400e',
+  'bg-cyan-700': '#0e7490',
+  'bg-meshtastic-700': '#047857',
+  'bg-meshcore-700': '#0e7490',
+  'bg-reticulum-700': '#a16207',
+  'bg-orange-700': '#c2410c',
+  'bg-orange-800': '#9a3412',
 };
 
 const AXE_TEXT_CLASS_TO_CSS: Record<string, string> = {
-  'text-gray-300': '#d1d5dc',
+  'text-ink-300': '#cdd4e2',
   'text-white': '#ffffff',
+  'text-app-bg': '#11151c',
 };
+
+const DEFAULT_HEX_BY_CSS_VAR: Record<string, string> = Object.fromEntries(
+  (Object.keys(THEME_CSS_VARS) as ThemeColorKey[]).map((key) => [
+    THEME_CSS_VARS[key],
+    DEFAULT_THEME_COLORS[key],
+  ]),
+);
 
 function resolveThemeBg(tokenOrHex: string): string {
   if (tokenOrHex.startsWith('--')) {
     const fromRoot = getComputedStyle(document.documentElement).getPropertyValue(tokenOrHex).trim();
-    return fromRoot || '#15803d';
+    return fromRoot || DEFAULT_HEX_BY_CSS_VAR[tokenOrHex] || '#15803d';
   }
   return tokenOrHex;
 }

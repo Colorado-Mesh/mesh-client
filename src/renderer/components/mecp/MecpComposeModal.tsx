@@ -14,6 +14,7 @@ import {
   severityLabelKey,
 } from '@/renderer/lib/mecp/mecpMessages';
 
+import { TEXTAREA_BOX_CLASS } from '../ui/formClasses';
 import { MECP_SEVERITY_BADGE_CLASSES } from './MecpSeverityBadge';
 
 const SEVERITY_ORDER: Severity[] = [0, 1, 2, 3];
@@ -206,7 +207,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
       />
       <div
         ref={panelRef}
-        className="bg-deep-black relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-red-700/50 p-4 shadow-xl"
+        className="bg-deep-black rounded-modal shadow-level-4 relative max-h-[90vh] w-full max-w-lg overflow-y-auto border border-red-700/50 p-4"
         role="dialog"
         aria-modal="true"
         aria-label={t('mecp.compose.title')}
@@ -215,7 +216,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           <h2 className="text-lg font-semibold text-red-200">{t('mecp.compose.title')}</h2>
           <button
             type="button"
-            className="text-sm text-gray-400 hover:text-white"
+            className="text-ink-400 text-sm hover:text-white"
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
           >
@@ -223,7 +224,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           </button>
         </div>
 
-        <p className="mb-2 text-xs text-gray-400">{t('mecp.compose.severity')}</p>
+        <p className="text-ink-400 mb-2 text-xs">{t('mecp.compose.severity')}</p>
         <div className="mb-3 flex flex-wrap gap-2">
           {SEVERITY_ORDER.map((s) => (
             <button
@@ -236,7 +237,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 setSeverity(s);
               }}
               className={`rounded px-2 py-1 text-xs font-semibold ${
-                severity === s ? MECP_SEVERITY_BADGE_CLASSES[s] : 'bg-slate-800 text-gray-300'
+                severity === s ? MECP_SEVERITY_BADGE_CLASSES[s] : 'bg-ink-800 text-ink-300'
               }`}
             >
               {t(severityLabelKey(s))}
@@ -244,7 +245,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           ))}
         </div>
 
-        <p className="mb-2 text-xs text-gray-400">{t('mecp.compose.category')}</p>
+        <p className="text-ink-400 mb-2 text-xs">{t('mecp.compose.category')}</p>
         <div className="mb-3 grid grid-cols-3 gap-1 sm:grid-cols-4">
           {(Object.keys(CATEGORIES) as CategoryLetter[]).map((letter) => (
             <button
@@ -256,8 +257,8 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 clearError();
                 setCategory(letter);
               }}
-              className={`rounded px-1 py-1 text-[10px] ${
-                category === letter ? 'bg-red-900/80 text-red-100' : 'bg-slate-800 text-gray-300'
+              className={`text-2xs rounded px-1 py-1 ${
+                category === letter ? 'bg-red-900/80 text-red-100' : 'bg-ink-800 text-ink-300'
               }`}
             >
               {letter} {langFile.categories[letter]?.name ?? ''}
@@ -265,7 +266,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           ))}
         </div>
 
-        <p className="mb-2 text-xs text-gray-400">{t('mecp.compose.codes')}</p>
+        <p className="text-ink-400 mb-2 text-xs">{t('mecp.compose.codes')}</p>
         <div className="mb-2 flex max-h-32 flex-wrap gap-1 overflow-y-auto">
           {codesForCategory.map((code) => (
             <button
@@ -275,8 +276,8 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
               onClick={() => {
                 toggleCode(code);
               }}
-              className={`rounded px-1.5 py-0.5 text-[10px] ${
-                codes.includes(code) ? 'bg-red-700 text-white' : 'bg-slate-800 text-gray-300'
+              className={`text-2xs rounded px-1.5 py-0.5 ${
+                codes.includes(code) ? 'bg-red-700 text-white' : 'bg-ink-800 text-ink-300'
               }`}
             >
               {code} {langFile.codes[code]}
@@ -293,7 +294,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
                 onClick={() => {
                   toggleCode(code);
                 }}
-                className="rounded-full bg-red-900/60 px-2 py-0.5 text-[10px] text-red-100"
+                className="text-2xs rounded-full bg-red-900/60 px-2 py-0.5 text-red-100"
               >
                 {code} ×
               </button>
@@ -301,7 +302,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           </div>
         ) : null}
 
-        <label className="mb-1 block text-xs text-gray-400" htmlFor="mecp-freetext">
+        <label className="text-ink-400 mb-1 block text-xs" htmlFor="mecp-freetext">
           {t('mecp.compose.freetext')}
         </label>
         <textarea
@@ -312,13 +313,13 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
             setFreetext(e.target.value);
           }}
           rows={2}
-          className="mb-2 w-full rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+          className={`${TEXTAREA_BOX_CLASS} mb-2 w-full`}
           aria-label={t('mecp.compose.freetext')}
         />
         <div className="mb-3 flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300"
+            className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs"
             onClick={() => {
               clearError();
               setFreetext(bumpMecpPaxFreetext);
@@ -329,7 +330,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           </button>
           <button
             type="button"
-            className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300"
+            className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs"
             onClick={() => {
               void attachGps();
             }}
@@ -339,9 +340,9 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
           </button>
         </div>
 
-        <p className="mb-1 font-mono text-xs break-all text-gray-300">{encoded.message || '—'}</p>
+        <p className="text-ink-300 mb-1 font-mono text-xs break-all">{encoded.message || '—'}</p>
         <p
-          className={`mb-3 text-xs ${encoded.overLimit ? 'text-red-400' : 'text-gray-500'}`}
+          className={`mb-3 text-xs ${encoded.overLimit ? 'text-red-400' : 'text-muted'}`}
           role="status"
         >
           {t('mecp.compose.byteBudget', { used: byteLen, max: MAX_MESSAGE_BYTES })}
@@ -356,7 +357,7 @@ export function MecpComposeModal({ open, onClose, onSend, resolveGps }: MecpComp
         <div className="flex justify-end gap-2">
           <button
             type="button"
-            className="rounded px-3 py-1.5 text-sm text-gray-300"
+            className="text-ink-300 rounded px-3 py-1.5 text-sm"
             onClick={onClose}
             aria-label={t('common.cancel')}
           >

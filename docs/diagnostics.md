@@ -4,14 +4,14 @@ This document is the authoritative reference for every diagnostic output in Mesh
 
 **Where diagnostics appear:**
 
-- **DiagnosticsPanel** (sidebar tab): network health status, anomaly table, halos toggles, environment profile, max-age settings, 24h CU timeline chart
+- **DiagnosticsPanel** (Monitor > Diagnostics): network health status, anomaly table, halos toggles, environment profile, max-age settings, 24h CU timeline chart
 - **NodeDetailModal**: per-node routing health section, redundancy path history, RF findings, MQTT ignore toggle, node notes, watch toggle
 - **NodeListPanel**: inline anomaly badges, redundancy `+N` echo count, MQTT-only node dimming, Node Health Score badge, JSON export
 - **MapPanel**: channel utilization halos, routing anomaly aura circles
 - **RF Histograms panel**: SNR, RSSI, and hop-count bar charts across all nodes
 - **Peer Graph panel**: SVG force-directed graph of mesh peers with hop filters — **Meshtastic and MeshCore only**; Reticulum uses the **Topology** tab instead (same 48/400 visible-node cap)
 
-All three protocols share one **Diagnostics** sidebar tab; sections differ by `ProtocolCapabilities` (see **Multi-protocol tab scoping** below).
+All three protocols share one **Diagnostics** tab in the Monitor section; sections differ by `ProtocolCapabilities` (see **Multi-protocol tab scoping** below).
 
 ---
 
@@ -400,7 +400,7 @@ A 24-hour CU timeline chart in DiagnosticsPanel showing the connected node's cha
 
 ## 14. RF Histograms Panel
 
-Accessible via the RF icon in the sidebar.
+Open it from Monitor > RF.
 
 Three bar charts built from live node data across both protocols:
 
@@ -414,7 +414,7 @@ Data is read directly from the node store; no additional telemetry required.
 
 ## 15. Peer Graph Panel
 
-Accessible via the graph icon in the sidebar.
+Open it from Network > Graph.
 
 SVG force-directed graph of Meshtastic and MeshCore peers (Reticulum uses the **Topology** tab with the same hop controls and visible-node cap).
 

@@ -4,7 +4,7 @@
  */
 /* eslint-disable react-hooks/incompatible-library */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, ArrowUp, Play } from 'lucide-react-motion';
+import { ArrowDown, ArrowUp, Check, Play } from 'lucide-react-motion';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -55,6 +55,7 @@ import {
 import { registerReticulumDestinationHash, reticulumHashToNodeId } from '../lib/reticulum/destHash';
 import { formatReticulumWireEnumLabel } from '../lib/reticulum/reticulumRawPacketLog';
 import { RawPacketPathChain } from './RawPacketPathChain';
+import { INPUT_BOX_SM_CLASS } from './ui/formClasses';
 
 const ROUTE_LABEL: Record<string, string> = {
   FLOOD: 'FLOOD',
@@ -67,23 +68,23 @@ const ROUTE_LABEL: Record<string, string> = {
 const RAW_PACKET_NAME_COL = 'min-w-0 flex-1 max-w-[min(28rem,50vw)]';
 
 const MESHCORE_ROUTE_BAR: Record<string, string> = {
-  FLOOD: 'border-l-blue-500',
-  TRANSPORT_FLOOD: 'border-l-blue-400',
+  FLOOD: 'border-l-indigo-500',
+  TRANSPORT_FLOOD: 'border-l-indigo-400',
   DIRECT: 'border-l-green-500',
   TRANSPORT_DIRECT: 'border-l-green-400',
 };
 
 const MESHCORE_PAYLOAD_BADGE: Record<string, string> = {
   ADVERT: 'bg-green-900/60 text-green-300',
-  TXT_MSG: 'bg-amber-900/50 text-amber-200',
+  TXT_MSG: 'bg-orange-900/50 text-orange-200',
   GRP_TXT: 'bg-yellow-900/50 text-yellow-200',
   REQ_RESP: 'bg-purple-900/50 text-purple-200',
   TRACE: 'bg-cyan-900/50 text-cyan-200',
 };
 
 function meshcoreRouteBarClass(route: string | null): string {
-  if (!route) return 'border-l-gray-700';
-  return MESHCORE_ROUTE_BAR[route] ?? 'border-l-gray-600';
+  if (!route) return 'border-l-ink-700';
+  return MESHCORE_ROUTE_BAR[route] ?? 'border-l-ink-600';
 }
 
 function meshcoreRouteBarTooltip(route: string | null, t: (key: string) => string): string {
@@ -97,15 +98,15 @@ function meshcoreRouteBarTooltip(route: string | null, t: (key: string) => strin
 }
 
 function meshcorePayloadBadgeClass(payload: string | null): string {
-  if (!payload) return 'bg-gray-700 text-gray-400';
-  return MESHCORE_PAYLOAD_BADGE[payload] ?? 'bg-slate-700 text-slate-200';
+  if (!payload) return 'bg-ink-700 text-ink-400';
+  return MESHCORE_PAYLOAD_BADGE[payload] ?? 'bg-ink-700 text-ink-200';
 }
 
 function meshtasticPortBadgeClass(portLabel: string): string {
-  if (portLabel.includes('TEXT')) return 'bg-amber-900/50 text-amber-200';
+  if (portLabel.includes('TEXT')) return 'bg-orange-900/50 text-orange-200';
   if (portLabel.includes('TELEMETRY')) return 'bg-cyan-900/50 text-cyan-200';
   if (portLabel.includes('POSITION')) return 'bg-green-900/50 text-green-300';
-  return 'bg-slate-700 text-slate-200';
+  return 'bg-ink-700 text-ink-200';
 }
 
 function PacketTypeBadge({
@@ -119,7 +120,7 @@ function PacketTypeBadge({
 }) {
   return (
     <span
-      className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${className}`}
+      className={`text-2xs shrink-0 rounded px-1.5 py-0.5 font-semibold ${className}`}
       title={tooltip ?? label}
     >
       {label}
@@ -197,7 +198,7 @@ function SortableColumnHeader({
   return (
     <button
       type="button"
-      className={`text-muted hover:text-gray-300 ${active ? 'text-gray-200' : ''} ${className}`}
+      className={`text-muted hover:text-ink-300 ${active ? 'text-ink-200' : ''} ${className}`}
       aria-label={t('rawPacketLog.sortByColumn', { column: label })}
       title={title}
       onClick={() => {
@@ -227,10 +228,10 @@ function FilterChip({
       aria-pressed={active}
       title={tooltip}
       onClick={onToggle}
-      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+      className={`text-2xs shrink-0 rounded-full border px-2 py-0.5 font-medium transition-colors ${
         active
           ? 'border-cyan-600/70 bg-cyan-950/60 text-cyan-200'
-          : 'border-gray-600 bg-slate-800 text-gray-400 hover:border-gray-500 hover:text-gray-300'
+          : 'border-ink-600 bg-ink-800 text-ink-400 hover:border-ink-500 hover:text-ink-300'
       }`}
     >
       {label}
@@ -374,7 +375,7 @@ function MeshcoreExpandedDetails({
     };
   })();
   return (
-    <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+    <div className="text-2xs text-ink-400 mb-2 space-y-0.5">
       <p>
         <span className="text-muted">{t('rawPacketLog.routeLabel')}:</span>{' '}
         {p.routeTypeString ?? '—'}{' '}
@@ -391,12 +392,19 @@ function MeshcoreExpandedDetails({
             {`return=${p.transportReturnCode}`}
           </span>
           {regionMatchDisplay === true && (
-            <span className="text-brand-green ml-1" title={t('rawPacketLog.transportRegionMatch')}>
-              ✓
+            <span
+              className="text-brand-green ml-1 inline-flex align-[-2px]"
+              title={t('rawPacketLog.transportRegionMatch')}
+            >
+              <Check aria-hidden className="h-3.5 w-3.5" />
+              <span className="sr-only">{t('rawPacketLog.transportRegionMatch')}</span>
             </span>
           )}
           {regionMatchDisplay === false && (
-            <span className="ml-1 text-amber-400" title={t('rawPacketLog.transportRegionMismatch')}>
+            <span
+              className="ml-1 text-orange-400"
+              title={t('rawPacketLog.transportRegionMismatch')}
+            >
               ≠
             </span>
           )}
@@ -502,7 +510,7 @@ function MeshtasticExpandedDetails({ p }: { p: MeshtasticRawPacketEntry }) {
   ) : null;
 
   return (
-    <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+    <div className="text-2xs text-ink-400 mb-2 space-y-0.5">
       <p>
         <span className="text-muted">{t('rawPacketLog.portLabel')}:</span> {p.portLabel}{' '}
         <span className="text-muted">{t('rawPacketLog.transportSourceLabel')}:</span>{' '}
@@ -524,7 +532,7 @@ function ReticulumExpandedDetails({
   const { t } = useTranslation();
   const destinationLabel = formatReticulumDestinationLabel(p.destinationHash, getNodeLabel);
   return (
-    <div className="mb-2 space-y-0.5 text-[10px] text-gray-400">
+    <div className="text-2xs text-ink-400 mb-2 space-y-0.5">
       <p>
         <span className="text-muted">{t('rawPacketLog.reticulum.direction')}:</span>{' '}
         {p.direction.toUpperCase()}
@@ -577,15 +585,15 @@ function ReticulumRow({
   return (
     <>
       <span
-        className="text-muted w-[72px] shrink-0 text-[10px] tabular-nums"
+        className="text-muted text-2xs w-18 shrink-0 tabular-nums"
         title={t('rawPacketLog.timeRowTooltip', { relative: relativeTime, absolute: absoluteTime })}
       >
         {relativeTime}
       </span>
       <span
-        className={`w-9 shrink-0 rounded px-1 text-center text-[10px] ${
+        className={`text-2xs w-9 shrink-0 rounded px-1 text-center ${
           p.direction === 'tx'
-            ? 'bg-blue-900/60 text-blue-200'
+            ? 'bg-indigo-900/60 text-indigo-200'
             : 'bg-emerald-900/60 text-emerald-200'
         }`}
         title={directionTooltip}
@@ -594,18 +602,18 @@ function ReticulumRow({
       </span>
       <PacketTypeBadge
         label={typeLabel}
-        className="min-w-0 flex-1 truncate bg-slate-700 text-slate-200"
+        className="bg-ink-700 text-ink-200 min-w-0 flex-1 truncate"
         tooltip={t('rawPacketLog.payloadTypeTooltip', { type: typeLabel })}
       />
       <span
-        className="text-muted min-w-0 flex-1 truncate text-[10px]"
+        className="text-muted text-2xs min-w-0 flex-1 truncate"
         title={t('rawPacketLog.colDetailsTooltip')}
       >
         {p.interfaceName}
         {destinationLabel ? ` · ${destinationLabel}` : ''}
       </span>
       <span
-        className="text-muted w-[88px] shrink-0 text-right text-[10px] tabular-nums"
+        className="text-muted text-2xs w-22 shrink-0 text-right tabular-nums"
         title={
           p.snr != null && p.rssi != null
             ? t('rawPacketLog.snrRowTooltip', { snr: p.snr.toFixed(1), rssi: p.rssi })
@@ -1033,19 +1041,19 @@ export default function RawPacketLogPanel(props: Props) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {variant === 'meshcore' ? (
-        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+        <p className="text-muted text-2xs border-ink-700 shrink-0 border-b px-3 py-1.5 leading-snug">
           {t('rawPacketLog.transportLegendHint')}
         </p>
       ) : variant === 'reticulum' ? (
-        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+        <p className="text-muted text-2xs border-ink-700 shrink-0 border-b px-3 py-1.5 leading-snug">
           {t('rawPacketLog.reticulum.legendHint')}
         </p>
       ) : (
-        <p className="text-muted shrink-0 border-b border-gray-700 px-3 py-1.5 text-[10px] leading-snug">
+        <p className="text-muted text-2xs border-ink-700 shrink-0 border-b px-3 py-1.5 leading-snug">
           {t('rawPacketLog.meshtasticLegendHint')}
         </p>
       )}
-      <div className="flex shrink-0 items-center gap-2 border-b border-gray-700 px-3 py-2">
+      <div className="border-ink-700 flex shrink-0 items-center gap-2 border-b px-3 py-2">
         <input
           type="search"
           placeholder={t('rawPacketLog.filterPlaceholder')}
@@ -1055,11 +1063,11 @@ export default function RawPacketLogPanel(props: Props) {
             setExpandedRowKey(null);
           }}
           aria-label={t('rawPacketLog.filterPackets')}
-          className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-800 px-2 py-1 font-mono text-xs text-gray-200 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+          className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
         />
-        <span className="text-muted shrink-0 text-[10px]">{filtered.length}</span>
+        <span className="text-muted text-2xs shrink-0">{filtered.length}</span>
         {isPaused && pendingWhilePaused > 0 ? (
-          <span className="shrink-0 text-[10px] text-amber-300/90">
+          <span className="text-2xs shrink-0 text-orange-300/90">
             {t('rawPacketLog.pausedPending', { count: pendingWhilePaused })}
           </span>
         ) : null}
@@ -1071,8 +1079,8 @@ export default function RawPacketLogPanel(props: Props) {
           aria-label={isPaused ? t('rawPacketLog.resumeCapture') : t('rawPacketLog.pauseCapture')}
           className={`shrink-0 rounded border px-2 py-1 text-xs ${
             isPaused
-              ? 'border-amber-600/70 bg-amber-950/50 text-amber-200 hover:bg-amber-900/50'
-              : 'border-gray-600 bg-slate-800 text-gray-300 hover:bg-slate-700'
+              ? 'border-orange-600/70 bg-orange-950/50 text-orange-200 hover:bg-orange-900/50'
+              : 'border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700'
           } disabled:opacity-40`}
         >
           {isPaused
@@ -1086,13 +1094,13 @@ export default function RawPacketLogPanel(props: Props) {
           onClick={handleClear}
           disabled={packets.length === 0}
           aria-label={t('rawPacketLog.clearPacketLog')}
-          className="shrink-0 rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700 disabled:opacity-40"
+          className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 shrink-0 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('common.clear')}
         </button>
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-gray-700/80 px-3 py-1.5">
+      <div className="border-ink-700/80 flex shrink-0 flex-wrap items-center gap-1.5 border-b px-3 py-1.5">
         {chipDefs.map((chip) => (
           <FilterChip
             key={chip.id}
@@ -1107,14 +1115,14 @@ export default function RawPacketLogPanel(props: Props) {
       </div>
 
       {packets.length > 0 && filtered.length > 0 ? (
-        <div className="text-muted flex shrink-0 items-center gap-2 border-b border-gray-700/80 px-3 py-1 text-[10px] font-medium tracking-wide uppercase">
+        <div className="text-muted text-2xs border-ink-700/80 flex shrink-0 items-center gap-2 border-b px-3 py-1 font-medium">
           <span className="w-14 shrink-0" title={t('rawPacketLog.colActionsTooltip')} aria-hidden />
           <SortableColumnHeader
             label={t('rawPacketLog.colTime')}
             column="time"
             sort={sort}
             onSort={handleSortColumn}
-            className="w-[72px] shrink-0 text-left"
+            className="w-18 shrink-0 text-left"
             tooltip={t('rawPacketLog.colTimeTooltip')}
           />
           {variant === 'meshcore' ? (
@@ -1132,7 +1140,7 @@ export default function RawPacketLogPanel(props: Props) {
                 column="type"
                 sort={sort}
                 onSort={handleSortColumn}
-                className="w-[72px] shrink-0"
+                className="w-18 shrink-0"
                 tooltip={t('rawPacketLog.colTypeTooltip')}
               />
               <span className="min-w-[8rem] flex-1">
@@ -1161,7 +1169,7 @@ export default function RawPacketLogPanel(props: Props) {
                 column="type"
                 sort={sort}
                 onSort={handleSortColumn}
-                className="w-[100px] shrink-0"
+                className="w-25 shrink-0"
                 tooltip={t('rawPacketLog.colTypeTooltip')}
               />
               <SortableColumnHeader
@@ -1194,7 +1202,7 @@ export default function RawPacketLogPanel(props: Props) {
             column="snr"
             sort={sort}
             onSort={handleSortColumn}
-            className="w-[88px] shrink-0 text-right"
+            className="w-22 shrink-0 text-right"
             tooltip={t('rawPacketLog.colSnrTooltip')}
           />
         </div>
@@ -1215,7 +1223,7 @@ export default function RawPacketLogPanel(props: Props) {
             onScroll={onScroll}
             onPointerDown={unpinScroll}
             onWheel={unpinScroll}
-            className="h-full overflow-auto overscroll-contain font-mono text-[11px] text-gray-300 [overflow-anchor:none]"
+            className="text-label text-ink-300 h-full overflow-auto overscroll-contain font-mono [overflow-anchor:none]"
             role="log"
             aria-live={isPaused ? 'off' : 'polite'}
             aria-relevant="additions"
@@ -1253,7 +1261,7 @@ export default function RawPacketLogPanel(props: Props) {
                     key={vi.key}
                     data-index={vi.index}
                     ref={virtualizer.measureElement}
-                    className={`absolute top-0 left-0 w-full border-b border-gray-800 ${
+                    className={`border-ink-800 absolute top-0 left-0 w-full border-b ${
                       variant === 'meshcore'
                         ? `border-l-2 ${meshcoreRouteBarClass(meshcoreRow?.routeTypeString ?? null)}`
                         : ''
@@ -1272,7 +1280,7 @@ export default function RawPacketLogPanel(props: Props) {
                         (filtered as RxPacketEntry[])[vi.index]?.fromNodeId != null ? (
                           <button
                             type="button"
-                            className="rounded p-0.5 text-blue-300/80 hover:bg-slate-700 hover:text-blue-200"
+                            className="hover:bg-ink-700 rounded p-0.5 text-indigo-300/80 hover:text-indigo-200"
                             aria-label={t('rawPacketLog.pingTraceNode', {
                               name: meshcoreRawPacketSenderColumnText(
                                 (filtered as RxPacketEntry[])[vi.index].fromNodeId!,
@@ -1300,7 +1308,7 @@ export default function RawPacketLogPanel(props: Props) {
                           ?.fromNodeId != null ? (
                           <button
                             type="button"
-                            className="rounded p-0.5 text-gray-400 hover:bg-slate-700 hover:text-gray-200"
+                            className="text-ink-400 hover:bg-ink-700 hover:text-ink-200 rounded p-0.5"
                             aria-label={t('rawPacketLog.jumpToNode', {
                               name: getNodeLabel(
                                 (filtered as RxPacketEntry[] | MeshtasticRawPacketEntry[])[vi.index]
@@ -1327,7 +1335,7 @@ export default function RawPacketLogPanel(props: Props) {
                       </div>
                       {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- row expands hex on click; node name uses inner button + stopPropagation */}
                       <div
-                        className="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-2 py-1.5 text-left hover:bg-slate-800/60"
+                        className="hover:bg-ink-800/60 flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-2 py-1.5 text-left"
                         onClick={toggleExpand}
                       >
                         {variant === 'meshcore' ? (
@@ -1353,14 +1361,14 @@ export default function RawPacketLogPanel(props: Props) {
                         )}
                       </div>
                       <span
-                        className="text-muted shrink-0 px-3 py-1.5 text-[10px]"
+                        className="text-muted text-2xs shrink-0 px-3 py-1.5"
                         title={t('rawPacketLog.byteLengthTooltip', { bytes: byteLen })}
                       >
                         {byteLen}B
                       </span>
                     </div>
                     {isExpanded && (
-                      <div className="bg-slate-900/60 px-3 pb-2">
+                      <div className="bg-ink-900/60 px-3 pb-2">
                         {variant === 'meshcore' && (
                           <MeshcoreExpandedDetails
                             p={(filtered as RxPacketEntry[])[vi.index]}
@@ -1378,10 +1386,10 @@ export default function RawPacketLogPanel(props: Props) {
                             getNodeLabel={getNodeLabel}
                           />
                         )}
-                        <p className="text-muted mb-1 text-[10px]">
+                        <p className="text-muted text-2xs mb-1">
                           {t('rawPacketLog.rawHexLabel', { bytes: byteLen })}
                         </p>
-                        <p className="text-[10px] break-all text-gray-400">{hexRaw}</p>
+                        <p className="text-2xs text-ink-400 break-all">{hexRaw}</p>
                       </div>
                     )}
                   </div>
@@ -1393,7 +1401,7 @@ export default function RawPacketLogPanel(props: Props) {
             <button
               type="button"
               onClick={scrollToLatest}
-              className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+              className="bg-secondary-dark shadow-level-3 border-ink-600 text-ink-300 hover:bg-ink-600 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all"
             >
               <ArrowDown aria-hidden className="h-3.5 w-3.5" size={14} />
               {t('rawPacketLog.jumpToLatest')}
@@ -1463,13 +1471,13 @@ function MeshcoreRow({
   return (
     <>
       <span
-        className="text-muted w-[72px] shrink-0 text-[10px] tabular-nums"
+        className="text-muted text-2xs w-18 shrink-0 tabular-nums"
         title={t('rawPacketLog.timeRowTooltip', { relative: relativeTime, absolute: absoluteTime })}
       >
         {relativeTime}
       </span>
       <span
-        className="w-8 shrink-0 text-center text-[10px] text-gray-300 tabular-nums"
+        className="text-2xs text-ink-300 w-8 shrink-0 text-center tabular-nums"
         title={
           p.hopCount > 0
             ? t('rawPacketLog.hbRowTooltip', { count: p.hopCount })
@@ -1484,12 +1492,12 @@ function MeshcoreRow({
         tooltip={t('rawPacketLog.payloadTypeTooltip', { type: payloadLabel })}
       />
       <span
-        className={`hidden w-[52px] shrink-0 rounded px-1 text-[10px] font-semibold sm:inline ${
+        className={`text-2xs hidden w-13 shrink-0 rounded px-1 font-semibold sm:inline ${
           p.routeTypeString === 'FLOOD' || p.routeTypeString === 'TRANSPORT_FLOOD'
-            ? 'bg-blue-900/50 text-blue-300'
+            ? 'bg-indigo-900/50 text-indigo-300'
             : p.routeTypeString === 'DIRECT' || p.routeTypeString === 'TRANSPORT_DIRECT'
               ? 'bg-green-900/50 text-green-300'
-              : 'bg-gray-700 text-gray-400'
+              : 'bg-ink-700 text-ink-400'
         }`}
         title={t('rawPacketLog.routeBadgeTooltip', { route: routeLabel })}
       >
@@ -1505,7 +1513,7 @@ function MeshcoreRow({
       />
       {name}
       <span
-        className="text-muted w-[88px] shrink-0 text-right text-[10px] tabular-nums"
+        className="text-muted text-2xs w-22 shrink-0 text-right tabular-nums"
         title={t('rawPacketLog.snrRowTooltip', { snr: p.snr.toFixed(1), rssi: p.rssi })}
       >
         {p.snr.toFixed(1)} / {p.rssi}
@@ -1570,7 +1578,7 @@ function MeshtasticRow({
   return (
     <>
       <span
-        className="text-muted w-[72px] shrink-0 text-[10px] tabular-nums"
+        className="text-muted text-2xs w-18 shrink-0 tabular-nums"
         title={t('rawPacketLog.timeRowTooltip', { relative: relativeTime, absolute: absoluteTime })}
       >
         {relativeTime}
@@ -1582,19 +1590,19 @@ function MeshtasticRow({
         tooltip={t('rawPacketLog.portLabelTooltip', { port: p.portLabel })}
       />
       <span
-        className={`w-[52px] shrink-0 rounded px-1 text-center text-[10px] font-semibold ${
+        className={`text-2xs w-13 shrink-0 rounded px-1 text-center font-semibold ${
           p.isLocal
-            ? 'bg-blue-900/50 text-blue-300'
+            ? 'bg-indigo-900/50 text-indigo-300'
             : p.viaMqtt
               ? 'bg-purple-900/50 text-purple-200'
-              : 'bg-slate-700 text-slate-200'
+              : 'bg-ink-700 text-ink-200'
         }`}
         title={transportTooltip}
       >
         {transportLabel}
       </span>
       <span
-        className="w-8 shrink-0 text-center text-[10px] text-gray-300 tabular-nums"
+        className="text-2xs text-ink-300 w-8 shrink-0 text-center tabular-nums"
         title={
           p.hopsAway != null && !p.viaMqtt
             ? t('rawPacketLog.hbRowTooltip', { count: p.hopsAway })
@@ -1606,7 +1614,7 @@ function MeshtasticRow({
         {hopsDisplay}
       </span>
       <span
-        className="text-muted min-w-0 flex-1 text-right text-[10px] tabular-nums"
+        className="text-muted text-2xs min-w-0 flex-1 text-right tabular-nums"
         title={t('rawPacketLog.snrRowTooltip', { snr: p.snr.toFixed(1), rssi: p.rssi })}
       >
         {p.snr.toFixed(1)} / {p.rssi}

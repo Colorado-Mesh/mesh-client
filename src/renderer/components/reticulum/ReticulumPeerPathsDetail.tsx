@@ -11,6 +11,8 @@ import {
   setReticulumPeerMediumPin,
 } from '@/renderer/lib/reticulum/reticulumPathMedium';
 
+import { SELECT_BOX_CLASS } from '../ui/formClasses';
+
 /** Map wire preference tokens to Network-tab path-medium labels (avoid raw API enums in UI). */
 export function pathMediumPreferenceLabelKey(
   preference: string,
@@ -125,18 +127,18 @@ export function ReticulumPeerPathsDetail({
 
   return (
     <section
-      className="rounded-lg border border-gray-700 bg-slate-950/80 p-3 text-sm text-gray-200"
+      className="border-ink-700 bg-ink-950/80 text-ink-200 rounded-lg border p-3 text-sm"
       aria-label={t('peerListPanel.pathsDetailAria', {
         hash: destinationHash.slice(0, 12),
       })}
     >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-mono text-xs text-gray-300">
+        <h3 className="text-ink-300 font-mono text-xs">
           {t('peerListPanel.pathsHeading', { hash: destinationHash.slice(0, 12) })}
         </h3>
         <button
           type="button"
-          className="text-xs text-amber-400 hover:underline"
+          className="text-xs text-yellow-400 hover:underline"
           onClick={onClose}
           aria-label={t('peerListPanel.pathsCloseAria')}
         >
@@ -144,7 +146,7 @@ export function ReticulumPeerPathsDetail({
         </button>
       </div>
 
-      <label className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-400">
+      <label className="text-ink-400 mb-3 flex flex-wrap items-center gap-2 text-xs">
         <span>{t('peerListPanel.pathsPreferLabel')}</span>
         <select
           value={pinChoice}
@@ -153,14 +155,14 @@ export function ReticulumPeerPathsDetail({
             void onPinChange(e.target.value as PeerMediumPinChoice);
           }}
           aria-label={t('peerListPanel.pathsPreferAria')}
-          className="rounded border border-gray-600 bg-slate-900 px-2 py-1 text-gray-100"
+          className={SELECT_BOX_CLASS}
         >
           <option value="auto">{t('peerListPanel.pathsPreferAuto')}</option>
           <option value="rf">{t('peerListPanel.pathsPreferRf')}</option>
           <option value="network">{t('peerListPanel.pathsPreferNetwork')}</option>
         </select>
         {preferenceLabelKey ? (
-          <span className="text-[11px] text-gray-500">
+          <span className="text-label text-muted">
             {t('peerListPanel.pathsGlobalPreference', {
               preference: t(preferenceLabelKey),
             })}
@@ -169,10 +171,10 @@ export function ReticulumPeerPathsDetail({
       </label>
 
       {error ? <p className="mb-2 text-xs text-red-400">{error}</p> : null}
-      {busy && !result ? <p className="text-xs text-gray-500">{t('common.loading')}</p> : null}
+      {busy && !result ? <p className="text-muted text-xs">{t('common.loading')}</p> : null}
 
       {result?.ok && result.paths.length === 0 ? (
-        <p className="text-xs text-gray-500">{t('peerListPanel.pathsEmpty')}</p>
+        <p className="text-muted text-xs">{t('peerListPanel.pathsEmpty')}</p>
       ) : null}
 
       {result?.ok && result.paths.length > 0 ? (
@@ -182,12 +184,12 @@ export function ReticulumPeerPathsDetail({
               key={`${slot.interface_id ?? 'x'}-${slot.via_hash ?? index}-${slot.hops ?? 'h'}`}
               className={
                 slot.active
-                  ? 'border-readable-green/40 bg-readable-green/10 rounded border px-2 py-1.5'
-                  : 'rounded border border-gray-800 px-2 py-1.5'
+                  ? 'border-brand-green/35 bg-brand-green/10 rounded border px-2 py-1.5'
+                  : 'border-ink-800 rounded border px-2 py-1.5'
               }
             >
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                <span className="font-medium text-gray-100">
+                <span className="text-ink-100 font-medium">
                   {slot.active
                     ? t('peerListPanel.pathsActiveBadge')
                     : t('peerListPanel.pathsBackupBadge')}
@@ -207,7 +209,7 @@ export function ReticulumPeerPathsDetail({
                       : '—'}
                 </span>
                 {slot.expired ? (
-                  <span className="text-amber-400">{t('peerListPanel.pathsExpired')}</span>
+                  <span className="text-orange-400">{t('peerListPanel.pathsExpired')}</span>
                 ) : null}
               </div>
             </li>

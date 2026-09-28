@@ -291,7 +291,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const user = userEvent.setup();
     const { container } = renderMeshcoreModal();
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
 
     expect(screen.getByText('Admin password')).toBeInTheDocument();
     const authOverlay = screen.getByText('Admin password').closest('.fixed');
@@ -305,7 +305,7 @@ describe('NodeDetailModal MeshCore actions', () => {
   it('disables MeshCore RPC buttons when isConnected is false', () => {
     renderMeshcoreModal({ isConnected: false });
 
-    expect(screen.getByRole('button', { name: '📊 Request Status' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Request Status' })).toBeDisabled();
   });
 
   it('renders the full public key with a copy button and copies it on click', async () => {
@@ -344,7 +344,7 @@ describe('NodeDetailModal MeshCore actions', () => {
       });
 
       const badge = await screen.findByTitle('Has public key - can send DMs');
-      expect(badge).toHaveTextContent('🔑 DM');
+      expect(badge).toHaveTextContent('DM');
       expect(screen.queryByTitle('Has public key (no direct messages)')).not.toBeInTheDocument();
       hydrateAxeThemeColors(container);
       expect(await axe(container)).toHaveNoViolations();
@@ -363,7 +363,7 @@ describe('NodeDetailModal MeshCore actions', () => {
       });
 
       const badge = await screen.findByTitle('Has public key (no direct messages)');
-      expect(badge).toHaveTextContent('🔑');
+      expect(badge).toHaveTextContent('Key');
       expect(badge).not.toHaveTextContent('DM');
       expect(screen.queryByTitle('Has public key - can send DMs')).not.toBeInTheDocument();
       hydrateAxeThemeColors(container);
@@ -387,7 +387,7 @@ describe('NodeDetailModal MeshCore actions', () => {
 
     renderMeshcoreModal({ node: chatNode });
 
-    expect(await screen.findByRole('button', { name: '💬 Message' })).not.toBeDisabled();
+    expect(await screen.findByRole('button', { name: 'Message' })).not.toBeDisabled();
   });
 
   it('shows success status when shareContact resolves true', async () => {
@@ -396,7 +396,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onShareContact = vi.fn().mockResolvedValue(true);
     renderMeshcoreModal({ onShareContact });
 
-    await user.click(screen.getByRole('button', { name: '📨 Share Contact' }));
+    await user.click(screen.getByRole('button', { name: 'Share Contact' }));
 
     expect(onShareContact).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
     expect(await screen.findByText('Contact share sent over the radio.')).toBeInTheDocument();
@@ -407,7 +407,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const user = userEvent.setup();
     renderMeshcoreModal({ onShareContact: vi.fn().mockResolvedValue(false) });
 
-    await user.click(screen.getByRole('button', { name: '📨 Share Contact' }));
+    await user.click(screen.getByRole('button', { name: 'Share Contact' }));
 
     expect(await screen.findByText('Share failed')).toBeInTheDocument();
   });
@@ -417,7 +417,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const user = userEvent.setup();
     renderMeshcoreModal({ onExportContact: vi.fn().mockResolvedValue(null) });
 
-    await user.click(screen.getByRole('button', { name: '📤 Export Contact' }));
+    await user.click(screen.getByRole('button', { name: 'Export Contact' }));
 
     expect(await screen.findByText('No public key available')).toBeInTheDocument();
   });
@@ -427,7 +427,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onTraceRoute = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onTraceRoute });
 
-    await user.click(screen.getByRole('button', { name: '🛤 Trace Route' }));
+    await user.click(screen.getByRole('button', { name: 'Trace Route' }));
 
     expect(onTraceRoute).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
   });
@@ -437,8 +437,13 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onMessageNode = vi.fn();
     renderMeshcoreModal({ onMessageNode });
 
-    expect(screen.queryByRole('button', { name: '💬 Message' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Message' })).not.toBeInTheDocument();
     expect(onMessageNode).not.toHaveBeenCalled();
+  });
+
+  it('hides Request Status when the caller omits onRequestRepeaterStatus (capability gate)', () => {
+    renderMeshcoreModal({ onRequestRepeaterStatus: undefined });
+    expect(screen.queryByRole('button', { name: 'Request Status' })).not.toBeInTheDocument();
   });
 
   it('invokes requestRepeaterStatus after repeater auth is skipped', async () => {
@@ -446,7 +451,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.click(screen.getByRole('button', { name: 'No password' }));
 
     expect(onRequestRepeaterStatus).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
@@ -457,7 +462,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -469,7 +474,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.click(screen.getByRole('checkbox'));
     await user.type(screen.getByLabelText('Admin password (optional)'), 'session-only');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
@@ -483,7 +488,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestRepeaterStatus });
 
-    await user.click(screen.getByRole('button', { name: '📊 Request Status' }));
+    await user.click(screen.getByRole('button', { name: 'Request Status' }));
     await user.type(screen.getByLabelText('Admin password (optional)'), 'repeater-secret');
     await user.click(screen.getByRole('button', { name: 'Continue' }));
 
@@ -506,7 +511,7 @@ describe('NodeDetailModal MeshCore actions', () => {
     const onRequestNeighbors = vi.fn().mockResolvedValue(undefined);
     renderMeshcoreModal({ onRequestNeighbors });
 
-    await user.click(screen.getByRole('button', { name: '🔗 Get Neighbors' }));
+    await user.click(screen.getByRole('button', { name: 'Get Neighbors' }));
     await user.click(screen.getByRole('button', { name: 'No password' }));
 
     expect(onRequestNeighbors).toHaveBeenCalledWith(meshcoreRepeaterNode.node_id);
@@ -793,5 +798,82 @@ describe('NodeDetailModal verification badges', () => {
     const results = await axe(container);
 
     expect(results).toHaveNoViolations();
+  });
+});
+
+describe('NodeDetailModal pane variant', () => {
+  function renderPane(onClose = vi.fn()) {
+    return render(
+      <NodeDetailModal
+        variant="pane"
+        node={mockNode}
+        onClose={onClose}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+  }
+
+  it('renders inline as a labelled region, not a modal dialog', async () => {
+    const { container } = renderPane();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'TEST' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Close dialog' })).not.toBeInTheDocument();
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('leads the pane actions with Message, full width', () => {
+    render(
+      <NodeDetailModal
+        variant="pane"
+        node={mockNode}
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        onMessageNode={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Message' }).className).toContain(
+      'order-first basis-full',
+    );
+  });
+
+  it('puts the actions right under the header, before the node details', () => {
+    renderPane();
+    const trace = screen.getByRole('button', { name: 'Trace Route' });
+    const scroll = document.querySelector('.overflow-y-auto');
+    expect(scroll).not.toBeNull();
+    // Actions sit above (outside) the scrolling details, so they never scroll out of reach.
+    expect(scroll?.contains(trace)).toBe(false);
+    expect(
+      trace.compareDocumentPosition(scroll as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('leaves focus and Escape to the list, and closes from its own button', async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const before = document.createElement('button');
+    document.body.appendChild(before);
+    before.focus();
+    try {
+      renderPane(onClose);
+      expect(before).toHaveFocus();
+      await user.keyboard('{Escape}');
+      expect(onClose).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: 'Close details' }));
+      expect(onClose).toHaveBeenCalledOnce();
+    } finally {
+      before.remove();
+    }
   });
 });

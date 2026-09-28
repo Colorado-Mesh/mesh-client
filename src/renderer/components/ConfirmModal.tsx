@@ -111,16 +111,16 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={messageId}
-        className="bg-deep-black relative mx-4 w-full max-w-sm space-y-4 rounded-xl border border-gray-600 p-6 shadow-2xl"
+        className="bg-deep-black rounded-modal shadow-level-3 border-ink-600 relative mx-4 w-full max-w-sm space-y-4 border p-6"
       >
-        <h3 id={titleId} className="text-lg font-semibold text-gray-200">
+        <h3 id={titleId} className="text-ink-200 text-lg font-semibold">
           {title}
         </h3>
         <p id={messageId} className="text-muted text-sm leading-relaxed">
           {message}
         </p>
         {onPreserveFavoritesChange != null && (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+          <label className="text-ink-300 flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={preserveFavorites ?? false}
@@ -137,7 +137,7 @@ export function ConfirmModal({
           <button
             type="button"
             onClick={onCancel}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
           >
             {resolvedCancelLabel}
           </button>
@@ -155,7 +155,7 @@ export function ConfirmModal({
             onClick={onConfirm}
             disabled={confirmDisabled}
             className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:opacity-50 ${
-              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-yellow-600 hover:bg-yellow-500'
+              danger ? 'bg-red-600 hover:bg-red-500' : 'bg-orange-600 hover:bg-orange-500'
             }`}
           >
             {confirmLabel}

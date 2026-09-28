@@ -12,7 +12,7 @@ export function routeWeightToStroke(weight: number, maxWeight: number): number {
 
 /**
  * Maps a routeWeight value to a color string.
- * Interpolates from gray (#6b7280) at weight=0 to brand green (#22c55e) at weight=max.
+ * Interpolates from gray (#65738c) at weight=0 to brand green (#22c55e) at weight=max.
  */
 export function routeWeightToColor(weight: number, maxWeight: number): string {
   if (!Number.isFinite(weight) || !Number.isFinite(maxWeight) || maxWeight <= 0) {

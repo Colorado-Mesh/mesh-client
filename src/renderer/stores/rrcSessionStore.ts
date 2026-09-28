@@ -2,6 +2,11 @@ import { create } from 'zustand';
 
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
+  clearRrcActiveRoom,
+  loadRrcActiveRoom,
+  saveRrcActiveRoom,
+} from '@/renderer/lib/rrcActiveRoom';
+import {
   isRrcWhisperPeerHash,
   parseRrcDmRoomKey,
   type RrcDmPeer,
@@ -489,6 +494,23 @@ interface RrcSessionStoreState {
 
 export const RRC_NICKNAME_STORAGE_KEY = 'mesh-client:rrcNickname';
 
+/**
+ * Hubs whose remembered room (rrcActiveRoom.ts) was already restored, or replaced by a choice,
+ * since the app started. The remembered room takes focus once per run: a re-JOIN after a link
+ * flap or an inbound whisper leaves the user where they are.
+ */
+const rememberedRoomSettled = new Set<string>();
+
+function pendingRememberedRoom(hub: string | null): string | null {
+  if (!hub || rememberedRoomSettled.has(hub)) return null;
+  return loadRrcActiveRoom(hub);
+}
+
+/** Test hook: a fresh app start, so every hub may restore its remembered room again. */
+export function resetRrcRememberedRoomForTests(): void {
+  rememberedRoomSettled.clear();
+}
+
 function loadInitialRrcNickname(): string {
   try {
     const nick = localStorage.getItem(RRC_NICKNAME_STORAGE_KEY)?.trim();
@@ -559,6 +581,8 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
   },
 
   setActiveRoom: (room, hubHash) => {
+    const hub = hubHash !== undefined ? normHub(hubHash) : get().focusedHubHash;
+    const chosen: { key: string | null } = { key: null };
     set((s) =>
       mutateHubSession(s, hubHash, (session) => {
         if (!room) return { ...session, activeRoom: null };
@@ -568,9 +592,15 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         for (const [rk] of session.unreadByRoom) {
           if (rrcRoomsMatch(rk, key)) unreadByRoom.delete(rk);
         }
+        chosen.key = key;
         return { ...session, activeRoom: key, unreadByRoom };
       }),
     );
+    // The hub stream is a fallback for system lines, not a room to come back to.
+    if (hub && chosen.key && !chosen.key.startsWith('[')) {
+      rememberedRoomSettled.add(hub);
+      saveRrcActiveRoom(hub, chosen.key);
+    }
   },
 
   setShowTimestamps: (show) => {
@@ -792,6 +822,14 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
     if (!isRrcWhisperPeerHash(hash)) return;
     const room = rrcDmRoomKey(hash);
     const nick = peer.nickname?.trim() ? peer.nickname.trim() : null;
+    const targetHub = hubHash !== undefined ? normHub(hubHash) : get().focusedHubHash;
+    // Only user actions focus a DM, so that is the choice to remember. Restoring open DMs at
+    // startup (persist: false) may return to the DM the user last had open; an inbound whisper
+    // (focus: false) never takes focus.
+    const chosen = opts?.focus !== false;
+    const restoring =
+      !chosen && opts?.persist === false && pendingRememberedRoom(targetHub) === room;
+    const focus = chosen || restoring;
     set((s) => {
       const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
       if (!hub) return {};
@@ -810,7 +848,6 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           member_count: 1,
           topic: existing?.topic ?? null,
         });
-        const focus = opts?.focus !== false;
         return {
           ...session,
           rooms: trimRoomMap(rooms),
@@ -818,6 +855,10 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         };
       });
     });
+    if (targetHub && focus) {
+      rememberedRoomSettled.add(targetHub);
+      if (chosen) saveRrcActiveRoom(targetHub, room);
+    }
   },
 
   closeDm: (roomOrHash, hubHash) => {
@@ -826,6 +867,7 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
       parsed ?? (isRrcWhisperPeerHash(roomOrHash) ? roomOrHash.trim().toLowerCase() : null);
     if (!hash) return;
     const room = rrcDmRoomKey(hash);
+    const targetHub = hubHash !== undefined ? normHub(hubHash) : get().focusedHubHash;
     set((s) => {
       const hub = hubHash !== undefined ? normHub(hubHash) : s.focusedHubHash;
       if (!hub) return {};
@@ -856,6 +898,8 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
         };
       });
     });
+    // A closed DM is no longer the room to come back to.
+    if (targetHub && loadRrcActiveRoom(targetHub) === room) clearRrcActiveRoom(targetHub);
   },
 
   applyStatus: (status, hubDestHash, hubName) => {
@@ -900,6 +944,9 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
 
   roomJoined: (room, members, hubHash) => {
     learnNicksFromMembers(get, hubHash, members ?? []);
+    const hub = hubHash !== undefined ? normHub(hubHash) : get().focusedHubHash;
+    const remembered = pendingRememberedRoom(hub);
+    const restored = { done: false };
     set((s) =>
       mutateHubSession(s, hubHash, (session) => {
         const { key, existing, rooms } = coalesceRoomAliases(session.rooms, room);
@@ -950,13 +997,18 @@ export const useRrcSessionStore = create<RrcSessionStoreState>((set, get) => ({
           member_count: Math.min(nextMembers.length, MAX_MEMBERS_PER_ROOM),
           topic: existing?.topic ?? null,
         });
+        // After a restart the first JOIN fills the empty slot, then the room the user last opened
+        // takes over when it arrives, once per run.
+        const isRemembered = remembered != null && rrcRoomsMatch(remembered, key);
+        if (isRemembered) restored.done = true;
         const activeRoom =
-          session.activeRoom && rrcRoomsMatch(session.activeRoom, key)
+          (session.activeRoom && rrcRoomsMatch(session.activeRoom, key)) || isRemembered
             ? key
             : (session.activeRoom ?? key);
         return { ...session, rooms: trimRoomMap(rooms), activeRoom };
       }),
     );
+    if (hub && restored.done) rememberedRoomSettled.add(hub);
   },
 
   roomParted: (room, opts, hubHash) => {

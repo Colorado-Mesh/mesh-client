@@ -8,6 +8,7 @@ import {
   headerDotClass,
   headerIconClass,
   headerTextClass,
+  headerVariantDot,
   isDeviceErrorDisconnect,
   isMqttErrorDisconnect,
   isTakErrorDisconnect,
@@ -76,14 +77,14 @@ describe('connectionHeaderStatus', () => {
 
     it('mqtt connecting uses yellow text without pulse (dot pulses)', () => {
       expect(mqttHeaderVariant('connecting', false)).toBe('warn');
-      expect(headerTextClass('warn')).toContain('text-yellow-400');
+      expect(headerTextClass('warn')).toContain('text-orange-400');
       expect(headerTextClass('warn')).not.toContain('animate-pulse');
       expect(headerDotClass('warn')).toContain('animate-pulse');
     });
 
     it('device connecting uses yellow text without pulse (dot pulses)', () => {
       expect(deviceHeaderVariant('connecting', false)).toBe('warn');
-      expect(headerTextClass('warn')).toContain('text-yellow-400');
+      expect(headerTextClass('warn')).toContain('text-orange-400');
       expect(headerTextClass('warn')).not.toContain('animate-pulse');
     });
 
@@ -109,7 +110,7 @@ describe('connectionHeaderStatus', () => {
 
     it('tak running ok is green', () => {
       expect(takHeaderVariant(true, false, false)).toBe('ok');
-      expect(headerTextClass('ok')).toContain('text-brand-green');
+      expect(headerTextClass('ok')).toContain('text-green-400');
     });
   });
 
@@ -122,6 +123,19 @@ describe('connectionHeaderStatus', () => {
       [null, RF_MAX_RECONNECT_ATTEMPTS],
     ] as const)('maps %s → %s', (type, expected) => {
       expect(reconnectBannerMaxAttempts(type)).toBe(expected);
+    });
+  });
+
+  describe('headerVariantDot', () => {
+    it.each([
+      ['ok', 'ok', false],
+      ['connected', 'info', false],
+      ['warn', 'warn', true],
+      ['error', 'error', true],
+      ['idle', 'off', false],
+      ['muted', 'off', false],
+    ] as const)('maps %s to a %s dot (pulse %s)', (variant, tone, pulse) => {
+      expect(headerVariantDot(variant)).toEqual({ tone, pulse });
     });
   });
 });

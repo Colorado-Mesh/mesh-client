@@ -2,46 +2,53 @@ import type { MeshProtocol } from '@/shared/meshProtocol';
 
 export interface ProtocolTheme {
   displayName: string;
+  /** Two-letter rail label (MT / MC / RN); the button's aria-label carries the full name. */
+  monogram: string;
   ariaSwitchKey: string;
   /** When inactive protocol has unread chat messages. Interpolates `{{count}}`. */
   ariaSwitchWithUnreadKey: string;
-  headerBorderConfigured: string;
-  pillActiveClass: string;
-  pillInactiveClass: string;
+  /** Active rail button: protocol tint, text and inset ring. */
+  railActiveClass: string;
+  /** Protocol tint for the active protocol's name under the rail switcher. */
+  nameTextClass: string;
   unreadBadgeFillClass: string;
 }
+
+export const RAIL_PROTOCOL_INACTIVE_CLASS =
+  'bg-sidebar-active-bg text-muted hover:bg-secondary-dark hover:text-ink-200';
 
 export const PROTOCOL_THEME: Record<MeshProtocol, ProtocolTheme> = {
   meshtastic: {
     displayName: 'Meshtastic',
+    monogram: 'MT',
     ariaSwitchKey: 'aria.switchToMeshtastic',
     ariaSwitchWithUnreadKey: 'aria.switchToMeshtasticWithUnread',
-    headerBorderConfigured: 'border-brand-green/20',
-    pillActiveClass: 'bg-brand-green/20 text-brand-green',
-    pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',
-    unreadBadgeFillClass: 'bg-readable-green',
+    // Style guide protocol scales (styles.css --color-meshtastic-* and so on): the 500 base step for
+    // the rail, 700 for white-text badges. Fixed, not the themeable accent token, so each protocol
+    // keeps its identity under every theme preset.
+    railActiveClass:
+      'bg-meshtastic-500/15 text-meshtastic-500 ring-[1.5px] ring-inset ring-meshtastic-500',
+    nameTextClass: 'text-meshtastic-500',
+    unreadBadgeFillClass: 'bg-meshtastic-700 text-white',
   },
   meshcore: {
     displayName: 'MeshCore',
+    monogram: 'MC',
     ariaSwitchKey: 'aria.switchToMeshCore',
     ariaSwitchWithUnreadKey: 'aria.switchToMeshCoreWithUnread',
-    headerBorderConfigured: 'border-cyan-500/20',
-    pillActiveClass: 'bg-cyan-600/20 text-cyan-400',
-    pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',
-    unreadBadgeFillClass: 'bg-cyan-800 text-white',
+    railActiveClass:
+      'bg-meshcore-500/15 text-meshcore-500 ring-[1.5px] ring-inset ring-meshcore-500',
+    nameTextClass: 'text-meshcore-500',
+    unreadBadgeFillClass: 'bg-meshcore-700 text-white',
   },
   reticulum: {
     displayName: 'Reticulum',
+    monogram: 'RN',
     ariaSwitchKey: 'aria.switchToReticulum',
     ariaSwitchWithUnreadKey: 'aria.switchToReticulumWithUnread',
-    headerBorderConfigured: 'border-amber-500/20',
-    pillActiveClass: 'bg-amber-600/20 text-amber-400',
-    pillInactiveClass: 'text-gray-400 hover:bg-gray-800 hover:text-gray-300',
-    unreadBadgeFillClass: 'bg-amber-800 text-white',
+    railActiveClass:
+      'bg-reticulum-500/15 text-reticulum-500 ring-[1.5px] ring-inset ring-reticulum-500',
+    nameTextClass: 'text-reticulum-500',
+    unreadBadgeFillClass: 'bg-reticulum-700 text-white',
   },
 };
-
-export function protocolHeaderBorderClass(protocol: MeshProtocol, isConfigured: boolean): string {
-  if (!isConfigured) return 'border-gray-700';
-  return PROTOCOL_THEME[protocol].headerBorderConfigured;
-}

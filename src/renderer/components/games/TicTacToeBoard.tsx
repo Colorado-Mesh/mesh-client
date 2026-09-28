@@ -51,9 +51,9 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="text-sm text-gray-100">{statusText}</div>
+      <div className="text-ink-100 text-sm">{statusText}</div>
       {myMarker && (
-        <div className="text-xs text-gray-400">
+        <div className="text-ink-400 text-xs">
           {t('gamesPanel.ttt.yourMarker', { marker: myMarker })}
           {moveCount > 0 ? ` · ${t('gamesPanel.ttt.moveCount', { count: moveCount })}` : ''}
         </div>
@@ -70,7 +70,7 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
             <button
               key={index}
               type="button"
-              className="flex h-14 w-14 items-center justify-center rounded border border-gray-600 bg-slate-800/80 text-2xl font-bold text-gray-100 enabled:hover:bg-gray-700 disabled:cursor-default disabled:opacity-70"
+              className="border-ink-600 bg-ink-800/80 text-ink-100 enabled:hover:bg-ink-700 flex h-14 w-14 items-center justify-center rounded border text-2xl font-semibold disabled:cursor-default disabled:opacity-70"
               aria-label={
                 isEmpty
                   ? t('gamesPanel.ttt.cellEmptyAria', { index: index + 1 })
@@ -87,10 +87,10 @@ export function TicTacToeBoard({ session, onMove, disabled = false }: TicTacToeB
         })}
       </div>
       {drawOfferedByOpponent && isActive && (
-        <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferedBanner')}</div>
+        <div className="text-xs text-orange-300">{t('gamesPanel.drawOfferedBanner')}</div>
       )}
       {drawOfferedBySelf && isActive && (
-        <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferWaitingBanner')}</div>
+        <div className="text-xs text-orange-300">{t('gamesPanel.drawOfferWaitingBanner')}</div>
       )}
     </div>
   );

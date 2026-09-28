@@ -76,7 +76,7 @@ function MeshtasticHeardLine({ coverage }: { coverage: RelayCoverage }): ReactEl
   if (coverage.broadcastHeard === false) {
     const label = t('chatPanel.notHeardTimeout');
     return (
-      <span className="text-xs text-amber-400" aria-label={label} title={label}>
+      <span className="text-xs text-orange-400" aria-label={label} title={label}>
         {label}
       </span>
     );

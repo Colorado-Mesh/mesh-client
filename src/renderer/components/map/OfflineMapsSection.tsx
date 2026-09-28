@@ -251,11 +251,9 @@ export function OfflineMapsSection() {
   };
 
   return (
-    <div className="space-y-1.5 border-t border-gray-700 pt-2">
-      <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
-        {t('mapPanel.offlineMaps.heading')}
-      </div>
-      <label className="flex items-center gap-1.5 text-[10px] text-gray-400">
+    <div className="border-ink-700 space-y-1.5 border-t pt-2">
+      <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.offlineMaps.heading')}</div>
+      <label className="text-2xs text-ink-400 flex items-center gap-1.5">
         <input
           type="checkbox"
           checked={autoCache}
@@ -272,7 +270,7 @@ export function OfflineMapsSection() {
         type="button"
         aria-label={t('mapPanel.offlineMaps.downloadAria')}
         disabled={estimating || progress != null}
-        className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 transition-colors hover:border-gray-500 disabled:opacity-50"
+        className="bg-secondary-dark border-ink-600 text-ink-200 hover:border-ink-500 w-full rounded border px-2 py-1 text-xs transition-colors disabled:opacity-50"
         onClick={() => {
           void startEstimate();
         }}
@@ -280,7 +278,7 @@ export function OfflineMapsSection() {
         {estimating ? t('mapPanel.offlineMaps.estimating') : t('mapPanel.offlineMaps.downloadView')}
       </button>
       {confirm ? (
-        <div className="space-y-1 text-[10px] text-gray-300">
+        <div className="text-2xs text-ink-300 space-y-1">
           <p>
             {t('mapPanel.offlineMaps.confirm', {
               count: confirm.tileCount,
@@ -303,7 +301,7 @@ export function OfflineMapsSection() {
             <button
               type="button"
               aria-label={t('mapPanel.offlineMaps.cancelConfirmAria')}
-              className="flex-1 rounded border border-gray-600 px-1 py-0.5"
+              className="border-ink-600 flex-1 rounded border px-1 py-0.5"
               onClick={() => {
                 setConfirm(null);
               }}
@@ -314,7 +312,7 @@ export function OfflineMapsSection() {
         </div>
       ) : null}
       {progress ? (
-        <div className="space-y-1 text-[10px] text-gray-300">
+        <div className="text-2xs text-ink-300 space-y-1">
           <p>
             {progress.paused
               ? t('mapPanel.offlineMaps.paused')
@@ -327,7 +325,7 @@ export function OfflineMapsSection() {
           <button
             type="button"
             aria-label={t('mapPanel.offlineMaps.cancelAria')}
-            className="w-full rounded border border-amber-700 px-1 py-0.5 text-amber-200"
+            className="w-full rounded border border-orange-700 px-1 py-0.5 text-orange-200"
             onClick={() => {
               void cancelJob();
             }}
@@ -337,7 +335,7 @@ export function OfflineMapsSection() {
         </div>
       ) : null}
       {stats ? (
-        <p className="text-[10px] text-gray-500">
+        <p className="text-2xs text-muted">
           {t('mapPanel.offlineMaps.cacheStats', {
             count: stats.tileCount,
             size: formatBytes(stats.diskBytes),
@@ -347,14 +345,14 @@ export function OfflineMapsSection() {
       <button
         type="button"
         aria-label={t('mapPanel.offlineMaps.clearAria')}
-        className="w-full rounded border border-gray-700 px-2 py-1 text-[10px] text-gray-400 hover:border-gray-500"
+        className="text-2xs border-ink-700 text-ink-400 hover:border-ink-500 w-full rounded border px-2 py-1"
         onClick={() => {
           void clearCache();
         }}
       >
         {t('mapPanel.offlineMaps.clear')}
       </button>
-      {statusLine ? <p className="text-[10px] text-gray-400">{statusLine}</p> : null}
+      {statusLine ? <p className="text-2xs text-ink-400">{statusLine}</p> : null}
     </div>
   );
 }

@@ -120,6 +120,8 @@ import QrCodeImage from './QrCodeImage';
 import QrIngestControl from './QrIngestControl';
 import { RadioXmodemSection } from './RadioXmodemSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
+import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 interface ChannelConfig {
   index: number;
@@ -325,7 +327,7 @@ function ContactCountBadge({
   return (
     <div className="flex items-center gap-2">
       <span
-        className={`font-mono text-xs ${isNearCapacity ? 'text-red-400' : 'text-gray-400'}`}
+        className={`font-mono text-xs ${isNearCapacity ? 'text-red-400' : 'text-ink-400'}`}
         title={t('radioPanel.contactsOnRadioBadgeTitle', {
           part: `${contactCount ?? '?'} / ${MESHCORE_MAX_CONTACTS}`,
         })}
@@ -341,7 +343,7 @@ function ContactCountBadge({
             aria-live="polite"
             aria-label={t('radioPanel.offloading')}
           >
-            <span className="inline-block h-3 w-3 animate-spin rounded-full border border-yellow-300 border-t-transparent" />
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border border-orange-300 border-t-transparent" />
             <span>
               {offloadProgress?.phase === 'removing' && offloadProgress.total > 0
                 ? t('radioPanel.offloadingProgress', {
@@ -354,7 +356,7 @@ function ContactCountBadge({
               type="button"
               onClick={cancelOffload}
               aria-label={t('common.cancel')}
-              className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+              className="rounded border border-orange-700 bg-orange-900/30 px-2 py-0.5 text-xs font-medium text-orange-300 transition-colors hover:bg-orange-800/50"
             >
               {t('common.cancel')}
             </button>
@@ -365,7 +367,7 @@ function ContactCountBadge({
             onClick={() => {
               void handleOffload();
             }}
-            className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
+            className="rounded border border-orange-700 bg-orange-900/30 px-2 py-0.5 text-xs font-medium text-orange-300 transition-colors hover:bg-orange-800/50"
             title={t('radioPanel.removeAllContactsTitle')}
           >
             {t('radioPanel.offloadContacts')}
@@ -407,7 +409,7 @@ function ConfigSelect({
           onChange(n);
         }}
         disabled={disabled}
-        className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+        className={`${SELECT_BOX_CLASS} w-full`}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -445,7 +447,7 @@ function ConfigToggle({
           }}
           disabled={disabled}
           className={`relative h-5 w-10 rounded-full transition-colors disabled:opacity-50 ${
-            checked ? 'bg-brand-green' : 'bg-gray-600'
+            checked ? 'bg-brand-green' : 'bg-ink-600'
           }`}
         >
           <span
@@ -500,7 +502,7 @@ export function ConfigNumber({
           min={min}
           max={max}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-28`}
         />
         {unit && <span className="text-muted text-sm">{unit}</span>}
       </div>
@@ -540,7 +542,7 @@ export function ConfigBluetoothPin({
             onChange(sanitizeMeshtasticBluetoothPinInput(e.target.value));
           }}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 font-mono text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-28 font-mono`}
         />
       </div>
       {description && <p className="text-muted text-xs">{description}</p>}
@@ -596,8 +598,8 @@ function ConfigSection({
 }) {
   const { t } = useTranslation();
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
       </summary>
@@ -608,7 +610,7 @@ function ConfigSection({
             type="button"
             onClick={onApply}
             disabled={disabled || applying}
-            className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
+            className={buttonClassName('primary', 'md')}
           >
             {applying
               ? t('modulePanel.applyingButton')
@@ -692,7 +694,7 @@ function WifiPasswordField({
           disabled={disabled}
           placeholder={t('radioPanel.wifiPasswordPlaceholder')}
           maxLength={64}
-          className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} flex-1`}
         />
         <button
           type="button"
@@ -701,7 +703,7 @@ function WifiPasswordField({
           }}
           disabled={disabled}
           aria-label={show ? t('common.hide') : t('common.show')}
-          className="text-muted px-2 py-2 text-xs hover:text-gray-300 disabled:opacity-50"
+          className="text-muted hover:text-ink-300 px-2 py-2 text-xs disabled:opacity-50"
         >
           {show ? t('common.hide') : t('common.show')}
         </button>
@@ -803,7 +805,9 @@ export default function RadioPanel({
   const [region, setRegion] = useState(1);
   const [modemPreset, setModemPreset] = useState(0);
   const [hopLimit, setHopLimit] = useState(3);
-  const [usePreset, setUsePreset] = useState(true);
+  const [loraUsePreset, setUsePreset] = useState(true);
+  const hasModemPresets = capabilities?.hasModemPresets ?? true;
+  const usePreset = hasModemPresets && loraUsePreset;
   const [bandwidth, setBandwidth] = useState(250);
   const [spreadFactor, setSpreadFactor] = useState(12);
   const [codingRate, setCodingRate] = useState(8);
@@ -1528,14 +1532,14 @@ export default function RadioPanel({
 
   return (
     <div className="w-full space-y-4">
-      <h2 className="text-xl font-semibold text-gray-200">{t('radioPanel.title')}</h2>
+      <h2 className="text-ink-200 text-xl font-semibold">{t('radioPanel.title')}</h2>
 
       {capabilities?.hasJsonRadioConfigImport && (
         <div className="flex justify-end">
           <button
             type="button"
             onClick={handleImportConfig}
-            className="bg-secondary-dark rounded-lg border border-gray-600 px-3 py-1.5 text-sm text-gray-300 transition-colors hover:bg-gray-700"
+            className="bg-secondary-dark border-ink-600 text-ink-300 hover:bg-ink-700 rounded-lg border px-3 py-1.5 text-sm transition-colors"
           >
             {t('radioPanel.importConfigJson')}
           </button>
@@ -1547,7 +1551,7 @@ export default function RadioPanel({
       )}
 
       {!isConnected && (
-        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
+        <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
           {t('radioPanel.connectToConfigure')}
         </div>
       )}
@@ -1619,7 +1623,7 @@ export default function RadioPanel({
             maxLength={capabilities?.hasCompanionContactManagementConfig ? undefined : 39}
             disabled={disabled}
             placeholder={t('radioPanel.yourNamePlaceholder')}
-            className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-full`}
           />
           <p className="text-muted text-xs">
             {capabilities?.hasCompanionContactManagementConfig
@@ -1644,7 +1648,7 @@ export default function RadioPanel({
                 placeholder={t('radioPanel.namePlaceholder')}
                 aria-invalid={shortNameValidationIssue != null}
                 aria-describedby={shortNameValidationIssue ? 'radio-short-name-error' : undefined}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-full`}
               />
               <p className="text-muted text-xs">{t('radioPanel.shortNameHint')}</p>
               {shortNameValidationIssue ? (
@@ -1724,11 +1728,11 @@ export default function RadioPanel({
                 min={150}
                 max={960}
                 disabled={disabled || applyingSection !== null}
-                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-36`}
               />
               <p className="text-muted text-xs">{t('radioPanel.frequencyHint')}</p>
             </div>
-            <div className="space-y-4 border-l border-gray-700 pl-3">
+            <div className="border-ink-700 space-y-4 border-l pl-3">
               <ConfigSelect
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
@@ -1920,13 +1924,15 @@ export default function RadioPanel({
             onChange={setRegion}
             disabled={loraDisabled || applyingSection !== null}
           />
-          <ConfigToggle
-            label={t('radioPanel.useModemPresetLabel')}
-            checked={usePreset}
-            onChange={setUsePreset}
-            disabled={loraDisabled || applyingSection !== null}
-            description={t('radioPanel.useModemPresetDesc')}
-          />
+          {hasModemPresets && (
+            <ConfigToggle
+              label={t('radioPanel.useModemPresetLabel')}
+              checked={usePreset}
+              onChange={setUsePreset}
+              disabled={loraDisabled || applyingSection !== null}
+              description={t('radioPanel.useModemPresetDesc')}
+            />
+          )}
           {usePreset ? (
             <ConfigSelect
               label={t('radioPanel.modemPresetLabel')}
@@ -1936,7 +1942,7 @@ export default function RadioPanel({
               disabled={loraDisabled || applyingSection !== null}
             />
           ) : (
-            <div className="space-y-4 border-l border-gray-700 pl-3">
+            <div className="border-ink-700 space-y-4 border-l pl-3">
               <ConfigSelect
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
@@ -2012,7 +2018,7 @@ export default function RadioPanel({
                 disabled={loraDisabled || applyingSection !== null}
                 className="flex-1 accent-green-500 disabled:opacity-50"
               />
-              <span className="w-6 text-center font-mono text-lg text-gray-200">{hopLimit}</span>
+              <span className="text-ink-200 w-6 text-center font-mono text-lg">{hopLimit}</span>
             </div>
             <p className="text-muted text-xs">{t('radioPanel.hopLimitDescription')}</p>
           </div>
@@ -2157,7 +2163,7 @@ export default function RadioPanel({
           />
         )}
 
-      <h3 className="border-t border-gray-700 pt-4 text-xl font-semibold text-gray-200">
+      <h3 className="border-ink-700 text-ink-200 border-t pt-4 text-xl font-semibold">
         {t('radioPanel.sectionGroupDevice')}
       </h3>
 
@@ -2204,7 +2210,7 @@ export default function RadioPanel({
           disabled={deviceApplyDisabled}
         >
           {!deviceConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', {
                 section: t('radioPanel.sectionDeviceRole'),
               })}
@@ -2284,7 +2290,7 @@ export default function RadioPanel({
               }}
               disabled={disabled || applyingSection !== null}
               placeholder={t('radioPanel.tzdefPlaceholder')}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-full`}
             />
             <p className="text-muted text-xs">{t('radioPanel.tzdefDesc')}</p>
           </div>
@@ -2314,7 +2320,7 @@ export default function RadioPanel({
         disabled={positionApplyDisabled}
       >
         {capabilities?.hasFullPositionConfig !== false && !positionConfigReady && isConnected && (
-          <p className="text-xs text-yellow-300/90">
+          <p className="text-xs text-orange-300/90">
             {t('radioPanel.waitingForConfigSection', {
               section: t('radioPanel.sectionPositionGps'),
             })}
@@ -2371,7 +2377,7 @@ export default function RadioPanel({
               description={t('radioPanel.smartPositionBroadcastDesc')}
             />
             {smartPositionEnabled && (
-              <div className="space-y-4 border-l border-gray-700 pl-3">
+              <div className="border-ink-700 space-y-4 border-l pl-3">
                 <ConfigNumber
                   label={t('radioPanel.minDistanceTriggerLabel')}
                   value={smartPositionMinDistance}
@@ -2402,7 +2408,7 @@ export default function RadioPanel({
         {/* For Meshtastic: lat/lon shown when fixedPosition toggle is on */}
         {/* For MeshCore: lat/lon always shown (fixed position is the only option) */}
         {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
-          <div className="space-y-3 border-t border-gray-700 pt-2">
+          <div className="border-ink-700 space-y-3 border-t pt-2">
             {capabilities?.hasFullPositionConfig === false &&
               (() => {
                 const advertised = formatMeshcoreAdvertisedPositionDegrees(
@@ -2454,7 +2460,7 @@ export default function RadioPanel({
                 }}
                 disabled={disabled || applyingSection !== null}
                 placeholder="0.000000"
-                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-36`}
               />
             </div>
             <div className="space-y-1">
@@ -2472,7 +2478,7 @@ export default function RadioPanel({
                 }}
                 disabled={disabled || applyingSection !== null}
                 placeholder="0.000000"
-                className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                className={`${INPUT_BOX_CLASS} w-36`}
               />
             </div>
             {capabilities?.hasFullPositionConfig !== false && (
@@ -2490,7 +2496,7 @@ export default function RadioPanel({
                   }}
                   disabled={disabled || applyingSection !== null}
                   placeholder="0"
-                  className="bg-secondary-dark focus:border-brand-green w-36 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} w-36`}
                 />
               </div>
             )}
@@ -2533,7 +2539,7 @@ export default function RadioPanel({
               title={
                 !locationSendAllowed ? t('radioPanel.sendPositionDisabledShareOff') : undefined
               }
-              className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
+              className={buttonClassName('primary', 'md')}
             >
               {t('radioPanel.sendPositionToDevice')}
             </button>
@@ -2560,7 +2566,7 @@ export default function RadioPanel({
           disabled={powerApplyDisabled}
         >
           {!powerConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionPower') })}
             </p>
           )}
@@ -2666,7 +2672,7 @@ export default function RadioPanel({
           disabled={networkApplyDisabled}
         >
           {!networkConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionWifi') })}
             </p>
           )}
@@ -2691,7 +2697,7 @@ export default function RadioPanel({
               disabled={disabled || !wifiEnabled || applyingSection !== null}
               placeholder={t('radioPanel.networkNamePlaceholder')}
               maxLength={33}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-full`}
             />
           </div>
           <WifiPasswordField
@@ -2712,7 +2718,7 @@ export default function RadioPanel({
               }}
               disabled={disabled || applyingSection !== null}
               placeholder="0.pool.ntp.org"
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_CLASS} w-full`}
             />
             <p className="text-muted text-xs">{t('radioPanel.ntpHint')}</p>
           </div>
@@ -2750,7 +2756,7 @@ export default function RadioPanel({
           disabled={displayApplyDisabled}
         >
           {!displayConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionDisplay') })}
             </p>
           )}
@@ -2856,7 +2862,7 @@ export default function RadioPanel({
           disabled={bluetoothApplyDisabled}
         >
           {!bluetoothConfigReady && isConnected && (
-            <p className="text-xs text-yellow-300/90">
+            <p className="text-xs text-orange-300/90">
               {t('radioPanel.waitingForConfigSection', {
                 section: t('radioPanel.sectionBluetooth'),
               })}
@@ -2896,7 +2902,7 @@ export default function RadioPanel({
         capabilities?.hasCompanionContactManagementConfig) && (
         <div className="space-y-3">
           <h3 className="text-muted text-sm font-medium">{t('radioPanel.deviceActions')}</h3>
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-700 bg-gray-800/50 px-3 py-2">
+          <div className="border-ink-700 bg-ink-800/50 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
             {onSendAdvert && (
               <button
                 type="button"
@@ -2932,10 +2938,10 @@ export default function RadioPanel({
                 type="button"
                 onClick={() => void handleSyncClock()}
                 disabled={!isConnected || syncClockLoading}
-                className="rounded border border-blue-700 bg-blue-900/50 px-3 py-1 text-xs font-medium text-blue-300 transition-colors hover:bg-blue-800/60 disabled:opacity-40"
+                className={buttonClassName('secondary', 'sm')}
               >
                 {syncClockLoading ? (
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-blue-400 border-t-transparent" />
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-indigo-400 border-t-transparent" />
                 ) : (
                   t('radioPanel.syncClockButton')
                 )}
@@ -2957,7 +2963,7 @@ export default function RadioPanel({
             <h3 className="text-muted text-sm font-medium">
               {t('appPanel.meshcoreOpenWireExperimentalTitle')}
             </h3>
-            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
+            <div className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3">
               <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -2977,12 +2983,12 @@ export default function RadioPanel({
                 />
                 <label
                   htmlFor="meshcoreOpenWireCompat"
-                  className="flex-1 cursor-pointer text-sm text-yellow-100"
+                  className="flex-1 cursor-pointer text-sm text-orange-100"
                 >
                   {t('appPanel.meshcoreOpenWireCompatLabel')}
                 </label>
               </div>
-              <p className="text-xs leading-relaxed text-yellow-300/90">
+              <p className="text-xs leading-relaxed text-orange-300/90">
                 {t('appPanel.meshcoreOpenWireCompatHint')}
               </p>
             </div>
@@ -2991,8 +2997,8 @@ export default function RadioPanel({
             <h3 className="text-muted text-sm font-medium">
               {t('appPanel.meshcorePathHashExperimentalTitle')}
             </h3>
-            <div className="space-y-3 rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-3">
-              <label htmlFor="meshcore-path-hash-mode" className="text-sm text-yellow-100">
+            <div className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3">
+              <label htmlFor="meshcore-path-hash-mode" className="text-sm text-orange-100">
                 {t('appPanel.meshcorePathHashModeLabel')}
               </label>
               <select
@@ -3016,14 +3022,14 @@ export default function RadioPanel({
                   }
                 }}
                 aria-label={t('appPanel.meshcorePathHashModeLabel')}
-                className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+                className={`${SELECT_BOX_CLASS} w-full max-w-md`}
               >
                 <option value={0}>{t('appPanel.meshcorePathHashMode1Byte')}</option>
                 <option value={1}>{t('appPanel.meshcorePathHashMode2Byte')}</option>
                 <option value={2}>{t('appPanel.meshcorePathHashMode3Byte')}</option>
               </select>
               {deviceReportedPathHashMode != null && isConnected ? (
-                <p className="text-xs text-yellow-200/90">
+                <p className="text-xs text-orange-200/90">
                   {t('appPanel.meshcorePathHashDeviceReported', {
                     mode:
                       deviceReportedPathHashMode === 0
@@ -3034,7 +3040,7 @@ export default function RadioPanel({
                   })}
                 </p>
               ) : null}
-              <p className="text-xs leading-relaxed text-yellow-300/90">
+              <p className="text-xs leading-relaxed text-orange-300/90">
                 {t('appPanel.meshcorePathHashModeHint')}
               </p>
             </div>
@@ -3082,7 +3088,7 @@ function SecurityIcon({ level }: { level: SecurityLevel }) {
         ? t('radioPanel.securityOpenLocationTooltip')
         : t('radioPanel.securityNoEncryptionTooltip');
   return (
-    <span title={tooltip} className="flex items-center gap-0.5 text-yellow-500">
+    <span title={tooltip} className="flex items-center gap-0.5 text-orange-500">
       <LockOpen
         {...iconProps}
         className={`h-3.5 w-3.5 ${level !== 'open' ? 'text-red-400' : ''}`}
@@ -3238,14 +3244,14 @@ function ChannelUrlImportExport({
   };
 
   return (
-    <div className="space-y-4 border-t border-gray-700/80 pt-3">
-      <h4 className="text-sm font-medium text-gray-300">
+    <div className="border-ink-700/80 space-y-4 border-t pt-3">
+      <h4 className="text-ink-300 text-sm font-medium">
         {t('radioPanel.channelUrl.sectionTitle')}
       </h4>
 
       <div className="space-y-2">
         <p className="text-muted text-xs font-medium">{t('radioPanel.channelUrl.exportTitle')}</p>
-        <label className="flex items-center gap-2 text-sm text-gray-300">
+        <label className="text-ink-300 flex items-center gap-2 text-sm">
           <input
             type="checkbox"
             checked={includeSecondary}
@@ -3258,7 +3264,7 @@ function ChannelUrlImportExport({
           {t('radioPanel.channelUrl.includeSecondary')}
         </label>
         {!meshtasticLoraConfig && (
-          <p className="text-xs text-yellow-500/90">
+          <p className="text-xs text-orange-500/90">
             {t('radioPanel.channelUrl.loraMissingWarning')}
           </p>
         )}
@@ -3266,7 +3272,7 @@ function ChannelUrlImportExport({
           type="button"
           onClick={handleGenerate}
           disabled={disabled}
-          className="bg-secondary-dark disabled:text-muted rounded-lg px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-600 disabled:opacity-50"
+          className="bg-secondary-dark disabled:text-muted text-ink-200 hover:bg-ink-600 rounded-lg px-3 py-1.5 text-sm disabled:opacity-50"
           aria-label={t('radioPanel.channelUrl.generateLink')}
         >
           {t('radioPanel.channelUrl.generateLink')}
@@ -3280,7 +3286,7 @@ function ChannelUrlImportExport({
               <input
                 readOnly
                 value={httpsUrl}
-                className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1 font-mono text-xs text-gray-300"
+                className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
                 aria-label={t('radioPanel.channelUrl.httpsUrlLabel')}
               />
               <button
@@ -3301,7 +3307,7 @@ function ChannelUrlImportExport({
               <input
                 readOnly
                 value={meshtasticUrl}
-                className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1 font-mono text-xs text-gray-300"
+                className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
                 aria-label={t('radioPanel.channelUrl.meshtasticUrlLabel')}
               />
               <button
@@ -3344,17 +3350,17 @@ function ChannelUrlImportExport({
           }}
           placeholder={t('radioPanel.channelUrl.pasteUrlPlaceholder')}
           disabled={disabled || applying}
-          className="bg-deep-black/60 w-full rounded border border-gray-700 px-2 py-1.5 text-sm text-gray-200"
+          className={`${INPUT_BOX_CLASS} w-full`}
           aria-label={t('radioPanel.channelUrl.pasteUrlLabel')}
         />
         {parseError && <p className="text-xs text-red-400">{parseError}</p>}
         {parsed && (
-          <div className="bg-deep-black/40 space-y-2 rounded-lg border border-gray-700/60 p-3 text-xs">
+          <div className="bg-deep-black/40 border-ink-700/60 space-y-2 rounded-lg border p-3 text-xs">
             <span
               className={`inline-block rounded px-2 py-0.5 font-medium ${
                 parsed.mode === 'add'
-                  ? 'bg-blue-900/50 text-blue-300'
-                  : 'bg-yellow-900/40 text-yellow-300'
+                  ? 'bg-indigo-900/50 text-indigo-300'
+                  : 'bg-orange-900/40 text-orange-300'
               }`}
             >
               {parsed.mode === 'add'
@@ -3366,9 +3372,7 @@ function ChannelUrlImportExport({
                 ? t('radioPanel.channelUrl.addWarning')
                 : t('radioPanel.channelUrl.replaceWarning')}
             </p>
-            <p className="font-medium text-gray-300">
-              {t('radioPanel.channelUrl.previewChannels')}
-            </p>
+            <p className="text-ink-300 font-medium">{t('radioPanel.channelUrl.previewChannels')}</p>
             <ul className="text-muted space-y-1">
               {parsed.settings.map((ch, i) => (
                 <li key={i}>
@@ -3397,7 +3401,7 @@ function ChannelUrlImportExport({
               </p>
             )}
             {parsed.mode === 'add' && parsed.loraConfig && (
-              <label className="flex items-center gap-2 text-gray-300">
+              <label className="text-ink-300 flex items-center gap-2">
                 <input
                   type="checkbox"
                   checked={applyLoraOnAdd}
@@ -3410,7 +3414,7 @@ function ChannelUrlImportExport({
               </label>
             )}
             {!onApplyChannelSet ? (
-              <p className="text-yellow-500/90">{t('radioPanel.channelUrl.connectToImport')}</p>
+              <p className="text-orange-500/90">{t('radioPanel.channelUrl.connectToImport')}</p>
             ) : (
               <button
                 type="button"
@@ -3418,7 +3422,7 @@ function ChannelUrlImportExport({
                 onClick={() => {
                   setConfirmApply(parsed);
                 }}
-                className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted rounded-lg px-3 py-1.5 text-sm font-medium text-white disabled:bg-gray-600"
+                className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg disabled:bg-ink-600 rounded-lg px-3 py-1.5 text-sm font-medium"
                 aria-label={t('radioPanel.channelUrl.apply')}
               >
                 {applying ? t('radioPanel.channelUrl.applying') : t('radioPanel.channelUrl.apply')}
@@ -3631,9 +3635,9 @@ function ChannelSection({
     return (
       <div
         ref={formRef}
-        className="bg-deep-black/60 mt-1 space-y-3 rounded-lg border border-gray-600 p-3"
+        className="bg-deep-black/60 border-ink-600 mt-1 space-y-3 rounded-lg border p-3"
       >
-        <h4 className="text-sm font-medium text-gray-200">
+        <h4 className="text-ink-200 text-sm font-medium">
           {t('radioPanel.editChannelTitle', { index: selectedIndex })}
         </h4>
 
@@ -3659,7 +3663,7 @@ function ChannelSection({
                 ? t('radioPanel.channelNamePrimary')
                 : t('radioPanel.channelNameSecondary')
             }
-            className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-full`}
           />
         </div>
 
@@ -3676,7 +3680,7 @@ function ChannelSection({
                 setEditRole(Number(e.target.value));
               }}
               disabled={disabled}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${SELECT_BOX_CLASS} w-full`}
             >
               <option value={0}>{t('radioPanel.channelRoleDisabled')}</option>
               <option value={2}>{t('radioPanel.channelRoleSecondary')}</option>
@@ -3699,7 +3703,7 @@ function ChannelSection({
               handleKeySizeChange(e.target.value as KeySize);
             }}
             disabled={disabled}
-            className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${SELECT_BOX_CLASS} w-full`}
           >
             <option value="none">{t('radioPanel.encryptionNone')}</option>
             <option value="simple">{t('radioPanel.encryptionSimple')}</option>
@@ -3728,7 +3732,7 @@ function ChannelSection({
               disabled={disabled || !isAesKey}
               readOnly={!isAesKey}
               placeholder={t('radioPanel.pskBase64Placeholder')}
-              className="bg-secondary-dark focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1.5 font-mono text-xs text-gray-200 read-only:opacity-60 focus:outline-none disabled:opacity-50"
+              className={`${INPUT_BOX_SM_CLASS} flex-1 font-mono read-only:opacity-60`}
             />
             {isAesKey && (
               <button
@@ -3737,7 +3741,7 @@ function ChannelSection({
                   setEditPskB64(pskToBase64(generateRandomPsk(editKeySize === 'aes128' ? 16 : 32)));
                 }}
                 disabled={disabled}
-                className="bg-secondary-dark text-muted rounded border border-gray-600 px-2 py-1.5 text-xs whitespace-nowrap hover:text-gray-200 disabled:opacity-50"
+                className="bg-secondary-dark text-ink-300 border-ink-600 hover:text-ink-200 rounded border px-2 py-1.5 text-xs whitespace-nowrap disabled:opacity-50"
                 title={t('radioPanel.generateRandomKey')}
               >
                 {t('radioPanel.regeneratePsk')}
@@ -3780,7 +3784,7 @@ function ChannelSection({
             min={0}
             max={32}
             disabled={disabled}
-            className="bg-secondary-dark focus:border-brand-green w-28 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-28`}
           />
         </div>
 
@@ -3790,7 +3794,7 @@ function ChannelSection({
             type="button"
             onClick={saveChannel}
             disabled={disabled || saving}
-            className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
+            className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg disabled:bg-ink-600 flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors"
           >
             {saving ? t('radioPanel.savingChannel') : t('radioPanel.saveChannel')}
           </button>
@@ -3798,7 +3802,7 @@ function ChannelSection({
             type="button"
             onClick={resetChannel}
             disabled={disabled || saving}
-            className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-50"
+            className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
             title={
               selectedIndex === 0
                 ? t('radioPanel.resetChannelDefaults')
@@ -3815,8 +3819,8 @@ function ChannelSection({
   };
 
   return (
-    <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details ref={detailsRef} className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('radioPanel.channels')}</span>
         <DetailsChevron />
       </summary>
@@ -3850,14 +3854,14 @@ function ChannelSection({
                   }}
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors ${
                     isSelected
-                      ? 'border border-gray-500 bg-gray-700'
-                      : 'bg-deep-black/60 border border-gray-700/50 hover:bg-gray-800'
+                      ? 'border-ink-500 bg-ink-700 border'
+                      : 'bg-deep-black/60 border-ink-700/50 hover:bg-ink-800 border'
                   }`}
                 >
                   {/* Index badge */}
                   <span
-                    className={`rounded px-1.5 py-0.5 font-mono text-xs font-bold ${
-                      i === 0 ? 'bg-blue-900/60 text-blue-300' : 'bg-gray-700 text-gray-400'
+                    className={`rounded px-1.5 py-0.5 font-mono text-xs font-medium ${
+                      i === 0 ? 'bg-indigo-900/60 text-indigo-300' : 'bg-ink-700 text-ink-400'
                     }`}
                   >
                     {i}
@@ -3866,11 +3870,11 @@ function ChannelSection({
                   <span
                     className={`flex-1 text-sm ${
                       isFailed
-                        ? 'text-amber-400 italic'
+                        ? 'text-orange-400 italic'
                         : isPendingTail
                           ? 'text-muted italic'
                           : role !== 0
-                            ? 'text-gray-200'
+                            ? 'text-ink-200'
                             : 'text-muted italic'
                     }`}
                   >
@@ -3880,14 +3884,14 @@ function ChannelSection({
                   <span
                     className={`rounded px-1.5 py-0.5 text-xs ${
                       isFailed
-                        ? 'bg-amber-900/40 text-amber-300'
+                        ? 'bg-orange-900/40 text-orange-300'
                         : isPendingTail
-                          ? 'text-muted bg-gray-800'
+                          ? 'text-muted bg-ink-800'
                           : role === 1
                             ? 'bg-brand-green/10 text-bright-green'
                             : role === 2
-                              ? 'bg-blue-900/50 text-blue-400'
-                              : 'text-muted bg-gray-800'
+                              ? 'bg-indigo-900/50 text-indigo-400'
+                              : 'text-muted bg-ink-800'
                     }`}
                   >
                     {isFailed
@@ -3918,7 +3922,7 @@ function ChannelSection({
                 onRetryRemoteChannelsTail();
               }}
               disabled={disabled || remoteChannelsTailStatus === 'loading'}
-              className="text-readable-green hover:text-bright-green text-xs underline disabled:opacity-50"
+              className="text-bright-green hover:text-bright-green text-xs underline disabled:opacity-50"
               aria-label={t('radioPanel.retryRemoteChannels')}
             >
               {t('radioPanel.retryRemoteChannels')}
@@ -4100,9 +4104,9 @@ function MeshcoreChannelSection({
   const renderChannelForm = (mode: 'edit' | 'add') => (
     <div
       ref={formRef}
-      className="bg-deep-black/60 mt-1 space-y-3 rounded-lg border border-gray-600 p-3"
+      className="bg-deep-black/60 border-ink-600 mt-1 space-y-3 rounded-lg border p-3"
     >
-      <h4 className="text-sm font-medium text-gray-200">
+      <h4 className="text-ink-200 text-sm font-medium">
         {mode === 'add'
           ? t('radioPanel.meshcoreChannel.addTitle')
           : t('radioPanel.meshcoreChannel.editTitle', { index: editingIdx })}
@@ -4125,7 +4129,7 @@ function MeshcoreChannelSection({
             min={0}
             max={MESHCORE_CHANNEL_INDEX_MAX}
             disabled={disabled}
-            className="bg-secondary-dark focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} w-20`}
           />
         </div>
       )}
@@ -4148,7 +4152,7 @@ function MeshcoreChannelSection({
           }}
           maxLength={MESHCORE_CHANNEL_NAME_MAX_LEN}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-full`}
         />
       </div>
 
@@ -4174,7 +4178,7 @@ function MeshcoreChannelSection({
             <button
               type="button"
               onClick={generateKey}
-              className="text-xs text-blue-400 hover:text-blue-300"
+              className="text-xs text-indigo-400 hover:text-indigo-300"
             >
               {t('radioPanel.meshcoreGenerateRandomKey')}
             </button>
@@ -4190,11 +4194,8 @@ function MeshcoreChannelSection({
           maxLength={32}
           placeholder={t('radioPanel.meshcorePskHexPlaceholder')}
           disabled={disabled}
-          className={`bg-secondary-dark w-full rounded border px-2 py-1.5 font-mono text-sm focus:outline-none disabled:opacity-50 ${
-            editKeyHex.length > 0 && !isValidHex
-              ? 'border-red-500 text-red-400'
-              : 'focus:border-brand-green border-gray-600 text-gray-200'
-          }`}
+          aria-invalid={editKeyHex.length > 0 && !isValidHex}
+          className={`${INPUT_BOX_CLASS} w-full font-mono aria-invalid:text-red-400`}
         />
         {editKeyHex.length > 0 && !isValidHex && (
           <p className="text-xs text-red-400">{t('radioPanel.meshcoreChannel.invalidHex')}</p>
@@ -4206,7 +4207,7 @@ function MeshcoreChannelSection({
           type="button"
           onClick={handleSave}
           disabled={disabled || saving || !isValidHex || (mode === 'add' && newIdx === '')}
-          className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted flex-1 rounded px-3 py-1.5 text-xs font-medium text-white transition-colors disabled:bg-gray-600"
+          className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg disabled:bg-ink-600 flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors"
         >
           {saving ? t('common.saving') : t('common.save')}
         </button>
@@ -4216,7 +4217,7 @@ function MeshcoreChannelSection({
             setEditingIdx(null);
             setAddingNew(false);
           }}
-          className="rounded bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-gray-600"
+          className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-3 py-1.5 text-xs font-medium transition-colors"
         >
           {t('common.cancel')}
         </button>
@@ -4225,8 +4226,8 @@ function MeshcoreChannelSection({
   );
 
   return (
-    <details ref={detailsRef} className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details ref={detailsRef} className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('radioPanel.channelsMeshcore')}</span>
         <DetailsChevron />
       </summary>
@@ -4256,11 +4257,11 @@ function MeshcoreChannelSection({
             }
             return (
               <div key={`ch-${ch.index}-${ch.name}`} className="space-y-1">
-                <div className="bg-deep-black/60 flex items-center gap-2 rounded-lg border border-gray-700/50 px-3 py-2">
-                  <span className="rounded bg-gray-700 px-1.5 py-0.5 font-mono text-xs font-bold text-gray-400">
+                <div className="bg-deep-black/60 border-ink-700/50 flex items-center gap-2 rounded-lg border px-3 py-2">
+                  <span className="bg-ink-700 text-ink-400 rounded px-1.5 py-0.5 font-mono text-xs font-medium">
                     {ch.index}
                   </span>
-                  <span className="flex-1 text-sm text-gray-200">{channelName}</span>
+                  <span className="text-ink-200 flex-1 text-sm">{channelName}</span>
                   <span className="text-muted font-mono text-xs">
                     {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
                   </span>
@@ -4274,7 +4275,7 @@ function MeshcoreChannelSection({
                         return next;
                       });
                     }}
-                    className="text-muted px-1 text-xs hover:text-gray-300"
+                    className="text-muted hover:text-ink-300 px-1 text-xs"
                     title={revealed ? t('radioPanel.hideKey') : t('radioPanel.revealKey')}
                   >
                     {revealed ? t('common.hide') : t('common.show')}
@@ -4286,7 +4287,7 @@ function MeshcoreChannelSection({
                       openEdit(ch);
                     }}
                     disabled={disabled}
-                    className="px-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50"
+                    className="px-1 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
                   >
                     {t('common.edit')}
                   </button>
@@ -4301,7 +4302,7 @@ function MeshcoreChannelSection({
                       aria-label={t('radioPanel.meshcoreChannel.shareQrAria', {
                         name: channelName,
                       })}
-                      className="px-1 text-xs text-amber-400 hover:text-amber-300"
+                      className="px-1 text-xs text-orange-400 hover:text-orange-300"
                     >
                       {t('radioPanel.meshcoreChannel.shareQr')}
                     </button>
@@ -4321,7 +4322,7 @@ function MeshcoreChannelSection({
                         onClick={() => {
                           setConfirmDeleteIdx(null);
                         }}
-                        className="text-muted text-xs hover:text-gray-300"
+                        className="text-muted hover:text-ink-300 text-xs"
                       >
                         {t('common.cancel')}
                       </button>
@@ -4342,7 +4343,7 @@ function MeshcoreChannelSection({
                 {shareQrUri != null ? (
                   <div
                     ref={shareQrRef}
-                    className="bg-deep-black/40 rounded-lg border border-gray-700/50 p-3"
+                    className="bg-deep-black/40 border-ink-700/50 rounded-lg border p-3"
                   >
                     <QrCodeImage
                       value={shareQrUri}
@@ -4358,7 +4359,7 @@ function MeshcoreChannelSection({
         </div>
 
         <div className="pt-1">
-          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+          <p className="text-muted text-label mb-1">{t('qrIngest.pasteImageHint')}</p>
           <QrIngestControl
             disabled={disabled}
             onDecoded={(text) => {
@@ -4418,7 +4419,7 @@ function MeshcoreChannelSection({
             type="button"
             onClick={openAdd}
             disabled={disabled}
-            className="text-muted w-full rounded border border-dashed border-gray-600 px-3 py-1.5 text-xs transition-colors hover:border-gray-400 hover:text-gray-300 disabled:opacity-50"
+            className="text-muted border-ink-600 hover:border-ink-400 hover:text-ink-300 w-full rounded border border-dashed px-3 py-1.5 text-xs transition-colors disabled:opacity-50"
           >
             {t('radioPanel.meshcoreChannel.addButton')}
           </button>

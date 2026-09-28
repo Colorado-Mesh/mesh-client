@@ -6,28 +6,20 @@
  * decoded twice. Everything here reacts to the event the Protocol emits instead,
  * which keeps `messageStore` / `nodeStore` the single ingress path.
  *
- * Failure point: MQTT publish and OS notification are best-effort — failures are
- * logged and never block chat ingest, which has already been persisted by
- * `PacketRouter` + `meshtasticIngest`.
+ * Failure point: MQTT publish is best-effort — failures are logged and never block
+ * chat ingest, which has already been persisted by `PacketRouter` + `meshtasticIngest`.
+ * OS chat notifications are raised by the App.tsx inactive-chat watchers.
  */
-import i18n from '@/renderer/lib/i18n';
-
 import { attachTypedPacketListeners } from '../drivers/attachTypedPacketListener';
 import { errLikeToLogString } from '../errLikeToLogString';
 import {
   loadMeshtasticMqttManualChannelPsks,
   resolveMeshtasticMqttPublishFieldsForChannel,
 } from '../meshtasticMqttPublish';
-import { truncatePacketText } from '../packetPayload';
 import type { DomainEvent } from '../protocols/Protocol';
-import { stripControlCharacters } from '../stripControlCharacters';
 import type { IdentityId, MQTTStatus } from '../types';
 
 const BROADCAST_ADDR = 0xffffffff;
-
-/** OS notification field caps (sender line / body preview). */
-const NOTIFICATION_SENDER_MAX_CHARS = 120;
-const NOTIFICATION_BODY_MAX_CHARS = 100;
 
 export interface MeshtasticRouterChannelConfig {
   index: number;
@@ -45,7 +37,6 @@ export interface MeshtasticRouterSideEffectsDeps {
   getChannelConfigs: () => MeshtasticRouterChannelConfig[];
   /** False for MQTT-only sessions, which prefer manually entered channel PSKs. */
   hasRfDevice: () => boolean;
-  getNodeName: (nodeNum: number) => string;
   /** Register the uplinked packet id so the MQTT echo is not shown twice. */
   registerMqttEchoPacketId: (senderId: number, packetId: number) => void;
   /** Ask an unknown sender for its NodeInfo (throttled by the caller). */
@@ -107,38 +98,6 @@ function uplinkTextToMqtt(
     });
 }
 
-/**
- * OS toast when the window is hidden. Silent on purpose: App.tsx owns typed Web
- * Audio via chatNotifications.ts, so sounding here would double-notify.
- */
-function notifyHiddenWindow(
-  message: TextMessagePayload,
-  deps: MeshtasticRouterSideEffectsDeps,
-): void {
-  if (!document.hidden) return;
-  try {
-    const safeSender = truncatePacketText(
-      stripControlCharacters(deps.getNodeName(message.from)),
-      NOTIFICATION_SENDER_MAX_CHARS,
-    );
-    const isDirect = message.to !== 0 && message.to !== BROADCAST_ADDR;
-    const title = isDirect
-      ? i18n.t('chatPanel.notificationDmTitle', { sender: safeSender })
-      : i18n.t('chatPanel.notificationMessageTitle', { sender: safeSender });
-    new Notification(title, {
-      body: truncatePacketText(
-        stripControlCharacters(message.payload),
-        NOTIFICATION_BODY_MAX_CHARS,
-      ),
-      silent: true,
-    });
-  } catch (e) {
-    console.debug(
-      '[meshtasticRouterSideEffects] Notification not available ' + errLikeToLogString(e),
-    );
-  }
-}
-
 function handleTextMessage(
   message: TextMessagePayload,
   deps: MeshtasticRouterSideEffectsDeps,
@@ -152,7 +111,6 @@ function handleTextMessage(
   const isDirect = message.to !== 0 && message.to !== BROADCAST_ADDR;
   // DMs are never uplinked (privacy); reactions would duplicate the parent row.
   if (!isDirect) uplinkTextToMqtt(message, deps);
-  notifyHiddenWindow(message, deps);
 }
 
 /**

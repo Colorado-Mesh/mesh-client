@@ -299,5 +299,5 @@ export function reticulumLocalInterfaceTextClass(
   if (health === 'stale_port' || health === 'enabled_down') {
     return 'text-red-400';
   }
-  return 'text-gray-200';
+  return 'text-ink-200';
 }

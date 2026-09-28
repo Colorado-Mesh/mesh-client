@@ -92,8 +92,8 @@ function interfaceSpokeColor(online: boolean): string {
 }
 
 function peerFill(node: RenderNode): string {
-  if (!node.online) return '#475569';
-  return node.peerKind === 'server' ? '#64748b' : '#2563eb';
+  if (!node.online) return '#48556a';
+  return node.peerKind === 'server' ? '#65738c' : '#2563eb';
 }
 
 function peerStroke(node: RenderNode): string {
@@ -120,7 +120,7 @@ function InterfaceGlyph({
   glyph: ReticulumTopologyInterfaceGlyph;
   ariaLabel: string;
 }) {
-  const stroke = '#f8fafc';
+  const stroke = '#f9fafc';
   const strokeWidth = 1.2;
   switch (glyph) {
     case 'wifi':
@@ -518,11 +518,11 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex flex-wrap items-center gap-4 px-4 py-2 text-xs text-slate-400">
-        <span className="font-medium text-slate-300">{t('reticulumTopology.title')}</span>
+      <div className="text-ink-400 flex flex-wrap items-center gap-4 px-4 py-2 text-xs">
+        <span className="text-ink-300 font-medium">{t('reticulumTopology.title')}</span>
         <button
           type="button"
-          className="text-amber-400 hover:underline"
+          className="text-yellow-400 hover:underline"
           onClick={() => {
             void refresh();
           }}
@@ -539,7 +539,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           maxHopsAllLabel={t('reticulumTopology.maxHopsAll')}
           maxHopsOptionLabel={(hops) => t('reticulumTopology.maxHopsOption', { count: hops })}
         />
-        <label className="flex items-center gap-1.5 text-slate-400">
+        <label className="text-ink-400 flex items-center gap-1.5">
           <input
             type="checkbox"
             checked={rfOnly}
@@ -557,7 +557,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           })}
         />
         {hasGraph && (
-          <span className="text-slate-500">
+          <span className="text-muted">
             {t('reticulumTopology.interfaceStatus', {
               online: onlineInterfaceCount,
               offline: offlineInterfaceCount,
@@ -566,7 +566,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         )}
         <span className="ml-auto flex items-center gap-2">
           {hiddenCount > 0 && (
-            <span className="text-slate-500">
+            <span className="text-muted">
               {t('reticulumTopology.hiddenCountLimit', {
                 shown: nodes.length,
                 total: totalNodeCount,
@@ -601,7 +601,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         >
           <defs>
             <pattern id="topology-bg" width="40" height="40" patternUnits="userSpaceOnUse">
-              <circle cx="20" cy="20" r="0.5" fill="#334155" />
+              <circle cx="20" cy="20" r="0.5" fill="#364156" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#topology-bg)" />
@@ -611,7 +611,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
             const b = nodeById.get(edge.target);
             if (!a || !b) return null;
             const isInterfaceSpoke = a.kind === 'self' && b.kind === 'interface';
-            const stroke = isInterfaceSpoke ? interfaceSpokeColor(b.online) : '#94a3b8';
+            const stroke = isInterfaceSpoke ? interfaceSpokeColor(b.online) : '#93a0b7';
             const strokeWidth = isInterfaceSpoke ? 3 : 1;
             return (
               <line
@@ -631,11 +631,11 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
             if (node.kind === 'self') {
               return (
                 <g key={node.id} transform={`translate(${node.x},${node.y})`}>
-                  <circle r={CENTER_R} fill="#f8fafc" stroke="#0f172a" strokeWidth={2} />
+                  <circle r={CENTER_R} fill="#f9fafc" stroke="#19212d" strokeWidth={2} />
                   <text
                     y={4}
                     textAnchor="middle"
-                    fill="#0f172a"
+                    fill="#19212d"
                     fontSize={11}
                     fontWeight={600}
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
@@ -645,7 +645,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
                   <text
                     y={CENTER_R + 14}
                     textAnchor="middle"
-                    fill="#e2e8f0"
+                    fill="#e3e8f0"
                     fontSize={10}
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
@@ -684,7 +684,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
                   <text
                     y={r + 12}
                     textAnchor="middle"
-                    fill="#d1d5db"
+                    fill="#cdd4e2"
                     fontSize={10}
                     style={{ pointerEvents: 'none', userSelect: 'none' }}
                   >
@@ -716,22 +716,22 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
                   r={r}
                   fill={peerFill(node)}
                   fillOpacity={0.92}
-                  stroke="#1e293b"
+                  stroke="#212d40"
                   strokeWidth={1}
                 />
                 {node.peerKind === 'server' ? (
                   <g aria-hidden>
-                    <rect x={-4} y={-5} width={8} height={3} fill="#f8fafc" rx={0.5} />
-                    <rect x={-4} y={-1} width={8} height={3} fill="#f8fafc" rx={0.5} />
-                    <rect x={-4} y={3} width={8} height={3} fill="#f8fafc" rx={0.5} />
+                    <rect x={-4} y={-5} width={8} height={3} fill="#f9fafc" rx={0.5} />
+                    <rect x={-4} y={-1} width={8} height={3} fill="#f9fafc" rx={0.5} />
+                    <rect x={-4} y={3} width={8} height={3} fill="#f9fafc" rx={0.5} />
                   </g>
                 ) : (
-                  <circle cy={-2} r={3} fill="#f8fafc" aria-hidden />
+                  <circle cy={-2} r={3} fill="#f9fafc" aria-hidden />
                 )}
                 <text
                   y={r + 12}
                   textAnchor="middle"
-                  fill="#d1d5db"
+                  fill="#cdd4e2"
                   fontSize={10}
                   style={{ pointerEvents: 'none', userSelect: 'none' }}
                 >
@@ -753,9 +753,9 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           })}
         </svg>
       )}
-      <div className="flex flex-wrap gap-4 px-4 py-2 text-xs text-slate-500">
+      <div className="text-muted flex flex-wrap gap-4 px-4 py-2 text-xs">
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-slate-100" />
+          <span className="bg-ink-100 inline-block h-2 w-2 rounded-full" />
           {t('reticulumTopology.legendSelf')}
         </span>
         <span className="flex items-center gap-1">
@@ -767,11 +767,11 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
           {t('reticulumTopology.legendInterfaceOffline')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-blue-600" />
+          <span className="inline-block h-2 w-2 rounded-full bg-indigo-600" />
           {t('reticulumTopology.legendPeerUser')}
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-slate-500" />
+          <span className="bg-ink-500 inline-block h-2 w-2 rounded-full" />
           {t('reticulumTopology.legendPeerServer')}
         </span>
         <span className="flex items-center gap-1.5">
@@ -782,7 +782,7 @@ export default function ReticulumTopologyPanel({ onPeerClick }: ReticulumTopolog
         </span>
         <span className="flex items-center gap-1.5">
           <svg width="24" height="8" aria-hidden>
-            <line x1="0" y1="4" x2="24" y2="4" stroke="#94a3b8" strokeWidth="1" />
+            <line x1="0" y1="4" x2="24" y2="4" stroke="#93a0b7" strokeWidth="1" />
           </svg>
           {t('reticulumTopology.peerLink')}
         </span>

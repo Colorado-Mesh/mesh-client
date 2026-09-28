@@ -9,6 +9,8 @@ import {
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
+import { INPUT_BOX_CLASS } from './ui/formClasses';
+
 const DEFAULT_INTERVAL_SEC = 5;
 const MAX_RESULTS = 50;
 
@@ -80,11 +82,11 @@ export default function DiagnosticsPingPanel() {
   };
 
   return (
-    <div className="bg-deep-black rounded-lg border border-gray-700 p-4">
-      <h3 className="text-sm font-medium text-gray-200">{t('diagnosticsPing.title')}</h3>
+    <div className="bg-deep-black border-ink-700 rounded-lg border p-4">
+      <h3 className="text-ink-200 text-sm font-medium">{t('diagnosticsPing.title')}</h3>
       <p className="text-muted mt-1 text-xs">{t('diagnosticsPing.reticulumHint')}</p>
       <div className="mt-3 flex flex-wrap items-end gap-2">
-        <label className="min-w-0 flex-1 text-xs text-gray-400">
+        <label className="text-ink-400 min-w-0 flex-1 text-xs">
           {t('diagnosticsPing.hashLabel')}
           <input
             type="text"
@@ -95,10 +97,10 @@ export default function DiagnosticsPingPanel() {
             }}
             placeholder={t('diagnosticsPing.hashPlaceholder')}
             aria-label={t('diagnosticsPing.hashAria')}
-            className="bg-deep-black mt-1 block w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           />
         </label>
-        <label className="text-xs text-gray-400">
+        <label className="text-ink-400 text-xs">
           {t('diagnosticsPing.intervalLabel')}
           <input
             type="number"
@@ -111,7 +113,7 @@ export default function DiagnosticsPingPanel() {
               if (Number.isFinite(n)) setIntervalSec(Math.min(120, Math.max(1, n)));
             }}
             aria-label={t('diagnosticsPing.intervalAria')}
-            className="bg-deep-black mt-1 block w-20 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 disabled:opacity-50"
+            className={`${INPUT_BOX_CLASS} mt-1 block w-20`}
           />
         </label>
         {running ? (
@@ -126,7 +128,7 @@ export default function DiagnosticsPingPanel() {
           <button
             type="button"
             disabled={!hash.trim()}
-            className="rounded border border-amber-600 px-3 py-1.5 text-sm text-amber-300 disabled:opacity-40"
+            className="rounded border border-orange-600 px-3 py-1.5 text-sm text-orange-300 disabled:opacity-40"
             onClick={start}
           >
             {t('diagnosticsPing.start')}
@@ -135,7 +137,7 @@ export default function DiagnosticsPingPanel() {
         <button
           type="button"
           disabled={running || !hash.trim()}
-          className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-300 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-sm disabled:opacity-40"
           onClick={() => {
             void runOnce().catch((e: unknown) => {
               console.warn('[DiagnosticsPingPanel] single ping ' + errLikeToLogString(e));
@@ -147,9 +149,9 @@ export default function DiagnosticsPingPanel() {
       </div>
       {rows.length > 0 ? (
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full text-left text-xs text-gray-300">
+          <table className="text-ink-300 w-full text-left text-xs">
             <thead>
-              <tr className="text-muted border-b border-gray-700">
+              <tr className="text-muted border-ink-700 border-b">
                 <th className="py-1 pr-3 font-medium">{t('diagnosticsPing.colSeq')}</th>
                 <th className="py-1 pr-3 font-medium">{t('diagnosticsPing.colRtt')}</th>
                 <th className="py-1 pr-3 font-medium">{t('diagnosticsPing.colHops')}</th>
@@ -158,7 +160,7 @@ export default function DiagnosticsPingPanel() {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.seq} className="border-b border-gray-800/80">
+                <tr key={row.seq} className="border-ink-800/80 border-b">
                   <td className="py-1 pr-3 font-mono">{row.seq}</td>
                   <td className="py-1 pr-3 font-mono">
                     {row.result.rttMs != null

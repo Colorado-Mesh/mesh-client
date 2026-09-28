@@ -40,6 +40,10 @@ import {
   isGamesDeliveryInFlight,
 } from '@/shared/games-types';
 
+import { buttonClassName } from './ui/Button';
+import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
+import { SegmentedControl } from './ui/SegmentedControl';
+
 export interface GamesPanelProps {
   isActive: boolean;
 }
@@ -231,10 +235,10 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
       return { label: t('gamesPanel.delivery.sending'), color: 'text-cyan-300' };
     }
     if (state === 'propagating') {
-      return { label: t('gamesPanel.delivery.propagating'), color: 'text-amber-300' };
+      return { label: t('gamesPanel.delivery.propagating'), color: 'text-orange-300' };
     }
     if (state === 'propagated') {
-      return { label: t('gamesPanel.delivery.propagated'), color: 'text-amber-200/70' };
+      return { label: t('gamesPanel.delivery.propagated'), color: 'text-orange-200/70' };
     }
     if (state === 'failed') {
       return { label: t('gamesPanel.delivery.failed'), color: 'text-red-300' };
@@ -243,40 +247,29 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 text-gray-100">
-      <aside className="bg-secondary-dark flex w-72 shrink-0 flex-col border-r border-gray-700">
-        <div className="border-b border-gray-700 p-3">
-          <h2 className="text-sm font-semibold text-gray-100">{t('gamesPanel.title')}</h2>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {GAMES_FILTERS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                className={`rounded px-2 py-1 text-xs ${
-                  filter === f
-                    ? 'bg-readable-green text-white'
-                    : 'border border-gray-600 text-gray-300 hover:bg-gray-800/60'
-                }`}
-                aria-label={t(`gamesPanel.filters.${f}`)}
-                onClick={() => {
-                  setFilter(f);
-                }}
-              >
-                {t(`gamesPanel.filters.${f}`)}
-              </button>
-            ))}
-          </div>
+    <div className="text-ink-100 flex h-full min-h-0 w-full min-w-0">
+      <aside className="bg-deep-black border-ink-800 flex w-72 shrink-0 flex-col border-r">
+        <div className="border-ink-800 border-b p-3">
+          <h2 className="text-ink-100 text-sm font-semibold">{t('gamesPanel.title')}</h2>
+          <SegmentedControl
+            className="mt-2"
+            size="sm"
+            aria-label={t('gamesPanel.title')}
+            value={filter}
+            onChange={setFilter}
+            options={GAMES_FILTERS.map((f) => ({ value: f, label: t(`gamesPanel.filters.${f}`) }))}
+          />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           {filteredSessions.length === 0 ? (
-            <div className="p-3 text-xs text-gray-400">{t('gamesPanel.noSessions')}</div>
+            <div className="text-ink-400 p-3 text-xs">{t('gamesPanel.noSessions')}</div>
           ) : (
             <ul>
               {filteredSessions.map((session) => (
                 <li key={session.session_id}>
                   <button
                     type="button"
-                    className={`flex w-full items-center gap-2 border-b border-gray-800 px-3 py-2 text-left text-xs hover:bg-gray-800/60 ${
+                    className={`border-ink-800 hover:bg-ink-800/60 flex w-full items-center gap-2 border-b px-3 py-2 text-left text-xs ${
                       selectedSessionId === session.session_id
                         ? 'border-bright-green bg-sidebar-active-bg border-l-2'
                         : ''
@@ -292,21 +285,21 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                     }}
                   >
                     <span className="min-w-0 flex-1 truncate">
-                      <span className="font-medium text-gray-100">
+                      <span className="text-ink-100 font-medium">
                         {t(`gamesPanel.apps.${session.app_id}`, {
                           defaultValue: session.app_id,
                         })}
                       </span>
-                      <span className="ml-1 text-gray-400">{sessionPeerLabel(session)}</span>
+                      <span className="text-ink-400 ml-1">{sessionPeerLabel(session)}</span>
                     </span>
-                    <span className="text-gray-400">
+                    <span className="text-ink-400">
                       {t(`gamesPanel.status.${session.status}`, {
                         defaultValue: session.status,
                       })}
                     </span>
                     {session.unread > 0 && (
                       <span
-                        className="rounded-full bg-red-600 px-1.5 text-[10px] text-white"
+                        className="text-2xs rounded-full bg-red-600 px-1.5 text-white"
                         aria-label={t('gamesPanel.unreadBadgeAria', { count: session.unread })}
                       >
                         {session.unread}
@@ -318,13 +311,13 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             </ul>
           )}
         </div>
-        <div className="border-t border-gray-700 p-3">
-          <h3 className="mb-1 text-xs font-semibold text-gray-200">
+        <div className="border-ink-700 border-t p-3">
+          <h3 className="text-ink-200 mb-1 text-xs font-semibold">
             {t('gamesPanel.newChallenge')}
           </h3>
           <input
             type="text"
-            className="bg-deep-black w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+            className={`${INPUT_BOX_SM_CLASS} w-full`}
             placeholder={t('gamesPanel.peerHashPlaceholder')}
             aria-label={t('gamesPanel.peerHashAria')}
             value={challengeHash}
@@ -334,7 +327,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
           />
           <div className="mt-2 flex items-center gap-2">
             <select
-              className="bg-deep-black rounded border border-gray-600 px-2 py-1 text-xs text-gray-100"
+              className={SELECT_BOX_SM_CLASS}
               aria-label={t('gamesPanel.selectAppAria')}
               value={challengeApp}
               onChange={(e) => {
@@ -349,7 +342,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
             </select>
             <button
               type="button"
-              className="bg-readable-green flex-1 rounded px-2 py-1 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+              className={buttonClassName('primary', 'sm', 'flex-1')}
               aria-label={t('gamesPanel.sendChallengeAria')}
               disabled={actionBusy || !challengeHash.trim()}
               onClick={() => void handleSendChallenge()}
@@ -357,17 +350,17 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
               {t('gamesPanel.sendChallenge')}
             </button>
           </div>
-          <p className="mt-2 text-[11px] leading-snug text-gray-400">
+          <p className="text-label text-ink-400 mt-2 leading-snug">
             {t('gamesPanel.idleExpiryNotice')}
           </p>
         </div>
       </aside>
       <main className="flex min-w-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto p-6">
         {!selectedSession ? (
-          <div className="text-sm text-gray-400">{t('gamesPanel.selectSessionPrompt')}</div>
+          <div className="text-ink-400 text-sm">{t('gamesPanel.selectSessionPrompt')}</div>
         ) : (
           <>
-            <div className="text-xs text-gray-400">
+            <div className="text-ink-400 text-xs">
               {t('gamesPanel.opponentLabel', { peer: sessionPeerLabel(selectedSession) })}
             </div>
             {(() => {
@@ -453,7 +446,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                     <>
                       <button
                         type="button"
-                        className="bg-readable-green rounded px-3 py-1 text-xs font-medium text-white disabled:opacity-50"
+                        className={buttonClassName('primary', 'sm')}
                         aria-label={t('gamesPanel.acceptDrawAria')}
                         disabled={actionBusy}
                         onClick={() => {
@@ -464,7 +457,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                       </button>
                       <button
                         type="button"
-                        className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
+                        className="border-ink-600 text-ink-300 hover:bg-ink-800/60 rounded border px-3 py-1 text-xs font-medium disabled:opacity-50"
                         aria-label={t('gamesPanel.declineDrawAria')}
                         disabled={actionBusy}
                         onClick={() => {
@@ -477,7 +470,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   ) : drawPending ? null : drawClaimReason === GAMES_DRAW_CLAIM.THREEFOLD ? (
                     <button
                       type="button"
-                      className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
+                      className="border-ink-600 text-ink-300 hover:bg-ink-800/60 rounded border px-3 py-1 text-xs font-medium disabled:opacity-50"
                       aria-label={t('gamesPanel.claimThreefoldAria')}
                       disabled={actionBusy}
                       onClick={() => {
@@ -489,7 +482,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   ) : drawClaimReason === GAMES_DRAW_CLAIM.FIFTY_MOVE ? (
                     <button
                       type="button"
-                      className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
+                      className="border-ink-600 text-ink-300 hover:bg-ink-800/60 rounded border px-3 py-1 text-xs font-medium disabled:opacity-50"
                       aria-label={t('gamesPanel.claimFiftyMoveAria')}
                       disabled={actionBusy}
                       onClick={() => {
@@ -501,7 +494,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
                   ) : (
                     <button
                       type="button"
-                      className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-300 hover:bg-gray-800/60 disabled:opacity-50"
+                      className="border-ink-600 text-ink-300 hover:bg-ink-800/60 rounded border px-3 py-1 text-xs font-medium disabled:opacity-50"
                       aria-label={t('gamesPanel.offerDrawAria')}
                       disabled={actionBusy}
                       onClick={() => {
@@ -526,7 +519,7 @@ export default function GamesPanel({ isActive }: GamesPanelProps) {
               )}
               <button
                 type="button"
-                className="rounded border border-gray-600 px-3 py-1 text-xs font-medium text-gray-400 hover:bg-gray-800/60 disabled:opacity-50"
+                className="border-ink-600 text-ink-400 hover:bg-ink-800/60 rounded border px-3 py-1 text-xs font-medium disabled:opacity-50"
                 aria-label={t('gamesPanel.deleteSessionAria')}
                 disabled={actionBusy}
                 onClick={() => {

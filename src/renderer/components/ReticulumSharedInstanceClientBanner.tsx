@@ -86,15 +86,15 @@ export function ReticulumSharedInstanceClientBanner({
   return (
     <div
       role="alert"
-      className="rounded-lg border border-amber-600/50 bg-amber-950/30 px-3 py-2.5 text-sm text-amber-100"
+      className="rounded-lg border border-orange-600/50 bg-orange-950/30 px-3 py-2.5 text-sm text-orange-100"
     >
-      <p className="font-medium text-amber-200">
+      <p className="font-medium text-orange-200">
         {t('connectionPanel.reticulumSharedInstance.title')}
       </p>
-      <p className="text-muted mt-1 text-xs text-amber-100/90">
+      <p className="text-muted mt-1 text-xs text-orange-100/90">
         {t('connectionPanel.reticulumSharedInstance.body')}
       </p>
-      <p className="text-muted mt-1 text-[11px]">
+      <p className="text-muted text-label mt-1">
         {t('connectionPanel.reticulumSharedInstance.networkHint')}
       </p>
       {actionError ? (
@@ -109,7 +109,7 @@ export function ReticulumSharedInstanceClientBanner({
           onClick={() => {
             void disableShareAndRestart();
           }}
-          className="rounded bg-amber-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+          className="rounded bg-orange-700/80 px-2.5 py-1 text-xs font-medium text-white hover:bg-orange-600 disabled:opacity-50"
           aria-label={t('connectionPanel.reticulumSharedInstance.disableShareAria')}
         >
           {t('connectionPanel.reticulumSharedInstance.disableShare')}
@@ -121,7 +121,7 @@ export function ReticulumSharedInstanceClientBanner({
             onClick={() => {
               void restartOnly();
             }}
-            className="rounded border border-amber-600/60 px-2.5 py-1 text-xs font-medium text-amber-100 hover:bg-amber-900/40 disabled:opacity-50"
+            className="rounded border border-orange-600/60 px-2.5 py-1 text-xs font-medium text-orange-100 hover:bg-orange-900/40 disabled:opacity-50"
             aria-label={t('connectionPanel.reticulumLocalInterfaces.restartStackAria')}
           >
             {t('connectionPanel.reticulumLocalInterfaces.restartStack')}

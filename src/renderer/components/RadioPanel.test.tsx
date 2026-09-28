@@ -620,6 +620,35 @@ describe('RadioPanel Meshtastic LoRa form synchronization', () => {
   });
 });
 
+describe('RadioPanel modem preset capability gate', () => {
+  async function openLora(capabilities: typeof MESHTASTIC_CAPABILITIES) {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel {...defaultProps} isConnected capabilities={capabilities} />
+      </ToastProvider>,
+    );
+    const loraDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'LoRa / Radio';
+    });
+    await user.click(loraDetails!.querySelector('summary')!);
+  }
+
+  it('shows the preset toggle and select when hasModemPresets is true', async () => {
+    await openLora(MESHTASTIC_CAPABILITIES);
+    expect(screen.getByText('Use modem preset')).toBeInTheDocument();
+    expect(screen.getByText('Modem Preset')).toBeInTheDocument();
+  });
+
+  it('hides presets and shows manual RF params when hasModemPresets is false', async () => {
+    await openLora({ ...MESHTASTIC_CAPABILITIES, hasModemPresets: false });
+    expect(screen.queryByText('Use modem preset')).not.toBeInTheDocument();
+    expect(screen.queryByText('Modem Preset')).not.toBeInTheDocument();
+    expect(screen.getByText('Bandwidth')).toBeInTheDocument();
+  });
+});
+
 describe('RadioPanel MeshCore LoRa form synchronization', () => {
   it('keeps in-progress edits when an unchanged loraConfig object is re-supplied', async () => {
     const user = userEvent.setup();

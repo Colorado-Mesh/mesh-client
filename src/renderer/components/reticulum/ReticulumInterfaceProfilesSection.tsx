@@ -16,6 +16,8 @@ import {
 } from '@/renderer/lib/reticulum/interfaceProfiles';
 import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulumInterfaceSnapshot';
 
+import { INPUT_BOX_SM_CLASS } from '../ui/formClasses';
+
 export interface ReticulumInterfaceProfilesSectionProps {
   interfaces: ReticulumInterfaceRow[];
   actionsDisabled: boolean;
@@ -77,14 +79,14 @@ export function ReticulumInterfaceProfilesSection({
 
   return (
     <section
-      className="space-y-2 rounded border border-gray-700/80 bg-slate-950/40 p-2"
+      className="border-ink-700/80 bg-ink-950/40 space-y-2 rounded border p-2"
       aria-label={t('connectionPanel.reticulumInterfaces.profilesTitle')}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold tracking-wide text-gray-300 uppercase">
+        <h3 className="text-ink-300 text-xs font-semibold">
           {t('connectionPanel.reticulumInterfaces.profilesTitle')}
         </h3>
-        <p className="text-[10px] text-gray-500">
+        <p className="text-2xs text-muted">
           {t('connectionPanel.reticulumInterfaces.profilesHint')}
         </p>
       </div>
@@ -97,8 +99,8 @@ export function ReticulumInterfaceProfilesSection({
               disabled={disabled || activeId != null}
               className={`rounded px-2 py-1 ${
                 activeId == null
-                  ? 'bg-amber-900/40 text-amber-200'
-                  : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                  ? 'bg-orange-900/40 text-orange-200'
+                  : 'bg-ink-800 text-ink-300 hover:bg-ink-700'
               }`}
               onClick={() => {
                 void applyMembers(state.defaultMembers ?? []);
@@ -110,7 +112,7 @@ export function ReticulumInterfaceProfilesSection({
           </li>
         ) : null}
         {state.profiles.length === 0 ? (
-          <li className="text-[11px] text-gray-500">
+          <li className="text-label text-muted">
             {t('connectionPanel.reticulumInterfaces.profilesEmpty')}
           </li>
         ) : (
@@ -119,7 +121,7 @@ export function ReticulumInterfaceProfilesSection({
               {renameId === p.id ? (
                 <>
                   <input
-                    className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-1 py-0.5 text-gray-200"
+                    className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1`}
                     value={renameValue}
                     onChange={(e) => {
                       setRenameValue(e.target.value);
@@ -130,7 +132,7 @@ export function ReticulumInterfaceProfilesSection({
                   />
                   <button
                     type="button"
-                    className="rounded bg-slate-700 px-2 py-0.5 text-gray-100"
+                    className="bg-ink-700 text-ink-100 rounded px-2 py-0.5"
                     disabled={disabled}
                     onClick={() => {
                       persist(renameInterfaceProfile(state, p.id, renameValue));
@@ -147,8 +149,8 @@ export function ReticulumInterfaceProfilesSection({
                     disabled={disabled}
                     className={`rounded px-2 py-1 ${
                       activeId === p.id
-                        ? 'bg-amber-900/40 text-amber-200'
-                        : 'bg-slate-800 text-gray-300 hover:bg-slate-700'
+                        ? 'bg-orange-900/40 text-orange-200'
+                        : 'bg-ink-800 text-ink-300 hover:bg-ink-700'
                     }`}
                     onClick={() => {
                       void applyMembers(p.members);
@@ -159,7 +161,7 @@ export function ReticulumInterfaceProfilesSection({
                   </button>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-200"
+                    className="text-ink-400 hover:text-ink-200"
                     disabled={disabled}
                     onClick={() => {
                       setRenameId(p.id);
@@ -187,7 +189,7 @@ export function ReticulumInterfaceProfilesSection({
 
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className="min-w-[8rem] flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-xs text-gray-200"
+          className={`${INPUT_BOX_SM_CLASS} min-w-[8rem] flex-1`}
           value={draftName}
           placeholder={t('connectionPanel.reticulumInterfaces.profilesNamePlaceholder')}
           onChange={(e) => {
@@ -198,7 +200,7 @@ export function ReticulumInterfaceProfilesSection({
         <button
           type="button"
           disabled={disabled}
-          className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-100 hover:bg-slate-600"
+          className="bg-ink-700 text-ink-100 hover:bg-ink-600 rounded px-2 py-1 text-xs"
           onClick={() => {
             const next = saveCurrentAsInterfaceProfile(state, draftName || 'Profile', interfaces);
             persist(next);
@@ -210,7 +212,7 @@ export function ReticulumInterfaceProfilesSection({
         <button
           type="button"
           disabled={disabled}
-          className="rounded bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+          className="bg-ink-800 text-ink-300 hover:bg-ink-700 rounded px-2 py-1 text-xs"
           onClick={() => {
             const next = createInterfaceProfile(state, draftName || 'Profile', []);
             persist(next);

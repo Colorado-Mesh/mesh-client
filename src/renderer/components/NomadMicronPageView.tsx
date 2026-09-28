@@ -240,12 +240,12 @@ export default function NomadMicronPageView({
     <div
       ref={containerRef}
       className={[
-        'nomad-micron-page text-sm leading-snug text-gray-200',
+        'nomad-micron-page text-ink-200 text-sm leading-snug',
         // Default link chrome only when Micron did not set an inline color
         // (so `` `FT020617` `` tips matching #!bg stay invisible).
-        '[&_a]:underline [&_a:not([style*="color"])]:text-amber-400 [&_a:not([style*="color"]):hover]:text-amber-300',
-        '[&_hr]:my-3 [&_hr]:border-gray-600',
-        '[&_input]:rounded [&_input]:border [&_input]:border-gray-600 [&_input]:bg-slate-900 [&_input]:px-1 [&_input]:text-gray-200',
+        '[&_a]:underline [&_a:not([style*="color"])]:text-yellow-400 [&_a:not([style*="color"]):hover]:text-yellow-300',
+        '[&_hr]:border-ink-600 [&_hr]:my-3',
+        '[&_input]:border-ink-600 [&_input]:bg-ink-900 [&_input]:text-ink-200 [&_input]:rounded [&_input]:border [&_input]:px-1',
         fitWidth ? 'nomad-micron-page--fit-width' : null,
       ]
         .filter(Boolean)

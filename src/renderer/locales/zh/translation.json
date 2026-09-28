@@ -32,12 +32,9 @@
       "stale": "陈旧",
       "reconnecting": "重新连接"
     },
-    "nodeLabel": "节点： {{name}}",
     "takClientLost": "TAK客户丢失",
     "title": "网状客户端",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Turn off Colorado Mesh sign",
-    "meshTubeSignOn": "Turn on Colorado Mesh sign",
     "queueBadge": "问：{{used}}/{{max}}",
     "telemetryDisabled": "此设备上禁用遥测。启用设备指标有助于网格和此应用程序（诊断、电池、信号）。在“无线电”选项卡中启用它。",
     "scrollToTop": "↑ 顶部",
@@ -255,7 +252,7 @@
     "clearMessagesChannelConfirmLabel": "清除 {{channel}}",
     "clearMessagesTitle": "明确的信息",
     "clearAllRepeatersConfirm": "这将从本地数据库中永久删除所有已保存的 MeshCore 中继器。此操作无法撤消。",
-    "clearAllLocalDataTitle": "⚠ 清除所有本地数据",
+    "clearAllLocalDataTitle": "清除所有本地数据",
     "clearAllLocalDataConfirm": "这将永久删除所有本地消息、节点和缓存的会话数据。此操作无法撤消。",
     "clearEverythingConfirmButton": "清除一切",
     "dangerZoneMeshcoreHeading": "MeshCore",
@@ -272,16 +269,16 @@
         "description": "侧边栏导航中当前选定选项卡的背景。"
       },
       "brandGreen": {
-        "label": "指标和边框亮点",
-        "description": "配置时强调边框、在线/MQTT 指示器、突出显示和进度填充。"
+        "label": "强调色",
+        "description": "主要按钮和发送（深色文字）、强调文字、活动项和进度填充。在应用背景上保持可读。"
       },
       "brightGreen": {
         "label": "应用程序标题、链接和节点重点",
         "description": "应用程序标题、强调文本、页脚中的链接以及节点列表中的跳跃/自我突出显示。"
       },
       "readableGreen": {
-        "label": "操作按钮和选定的药丸",
-        "description": "实心填充白色文本 - 选定的通道药丸和主要操作按钮以进行对比。"
+        "label": "强调色填充",
+        "description": "白色文字下方的强调色实心填充（如徽章）。与白色文字保持 4.5:1 对比度。"
       },
       "deepBlack": {
         "label": "侧边栏、标题和模态界面",
@@ -310,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "消息操作按钮悬停颜色",
         "description": "所有消息操作按钮（复制、回复、反应、直接消息、星标和加星标时）的悬停颜色。"
+      },
+      "chatOutgoingBg": {
+        "label": "发出消息填充",
+        "description": "你自己发送的消息的背景填充（以 22% 不透明度应用）。"
+      },
+      "chatOutgoingBorder": {
+        "label": "发出消息边框",
+        "description": "你自己发送的消息的边框颜色（以 25% 不透明度应用）。"
       }
     },
     "themePreset": {
@@ -331,7 +336,14 @@
       "purple400": "紫色400",
       "pink400": "粉色400",
       "orange400": "橙子400",
-      "yellow400": "黄400"
+      "yellow400": "黄400",
+      "zinc950": "锌950",
+      "zinc900": "锌900",
+      "zinc800": "锌800",
+      "zinc700": "锌700",
+      "zinc400": "锌400",
+      "emerald300": "翡翠 300",
+      "emerald700": "翡翠 700"
     },
     "autoPruneNodesOlderThanAria": "启动时自动修剪节点，早于 {{days}} 天",
     "autoPrunePositionHistoryDaysAria": "启动时自动修剪仓位历史记录，早于 {{days}} 天",
@@ -388,6 +400,8 @@
     "themeSaveFailed": "无法保存颜色检查点。",
     "themeRestoreFailed": "无法还原颜色检查点。",
     "themeResetFailed": "无法重置颜色。",
+    "themeAccentKept": "该颜色与应用背景过于接近，难以阅读（低于 4.5:1），因此强调色已恢复为默认值。",
+    "themeFillKept": "该颜色上的白色文字对比度会低于 4.5:1，因此填充色已恢复为默认值。",
     "messageActionsBarBgVisible": "显示背景",
     "rrcUnreadAllRoomMessages": "所有房间消息的RRC未读",
     "rrcUnreadAllRoomMessagesHint": "开启时，任何新的RRC房间消息都会标记为未读，并且可以播放频道声音。关闭IRC样式警报：仅限直接消息和@提及。",
@@ -421,16 +435,38 @@
     "nodeSilenceAlertMinutesPlaceholder": "使用通訊協定預設值(U)",
     "nodeSilenceAlertMinutesHint": "留空以使用每个方案的过时阈值。升级以此值的2倍触发。",
     "nodeBatteryLowThreshold": "电池低阈值(%)",
-    "notifyOnLinkDown": "无线电链路意外中断时通知"
+    "notifyOnLinkDown": "无线电链路意外中断时通知",
+    "aboutSection": "关于",
+    "themePresets": {
+      "heading": "主题",
+      "hint": "选择一个起始配色，然后在下方调整单个颜色。",
+      "custom": "自定义颜色。选择一个主题可从预设重新开始。"
+    },
+    "themeSurfaces": {
+      "midnight": "午夜",
+      "slate": "板岩",
+      "zinc": "锌",
+      "graphite": "石墨",
+      "deepSea": "深海",
+      "dusk": "黄昏",
+      "evergreen": "常青",
+      "highContrast": "高对比度"
+    },
+    "themeAccents": {
+      "heading": "强调色",
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum",
+      "sky": "天空",
+      "classic": "经典绿"
+    },
+    "pruneNoFixNodesTitle": "修剪无定位/零岛节点"
   },
   "aria": {
     "closeDialog": "关闭对话框",
-    "expandSidebar": "展开侧边栏",
-    "collapseSidebar": "收起侧边栏",
     "languageSelector": "选择语言",
     "applicationPanels": "应用面板",
     "applicationLog": "应用日志",
-    "playAnimation": "播放网格信号脉冲动画",
     "protocolSwitcher": "协议切换器",
     "switchToMeshtastic": "切换到Meshtastic",
     "switchToMeshCore": "切换到MeshCore",
@@ -446,31 +482,6 @@
   "battery": {
     "percentCharging": "电池{{percent}}百分比，正在充电",
     "percent": "电池{{percent}}百分比"
-  },
-  "bootSequence": {
-    "booting": "正在引导网格堆栈...",
-    "meshtasticLora": "LoRa ： {{model}}",
-    "meshtasticScanningChannelsCount": "正在扫描通道…… {{count}}",
-    "meshtasticScanningChannels": "正在扫描已配置的频道...",
-    "databaseNodes_one": "数据库： {{count}}节点已同步",
-    "databaseNodes_other": "数据库： {{count}}节点已同步",
-    "syncingDatabase": "正在同步网格数据库...",
-    "interfaceReady": "{{iface}}接口就绪",
-    "freqMhz": "频率： {{mhz}} MHz",
-    "freqMhzBw": "频率： {{mhz}} MHz |黑白： {{bw}} kHz",
-    "configuringRadio": "正在配置无线电参数...",
-    "contacts_one": "联系人： {{count}}联系人已加载",
-    "contacts_other": "联系人： {{count}}个联系人已加载",
-    "loadingContacts": "正在加载联系人数据库...",
-    "routes_one": "路由：网格中的{{count}}节点",
-    "routes_other": "路由：网格中的{{count}}节点",
-    "routesEstablished": "已建立路线",
-    "meshActive": "网络启用",
-    "transportBle": "BLE",
-    "transportSerial": "Serial 串行",
-    "transportHttp": "HTTP",
-    "transportRadio": "射频",
-    "radioInterfaceFallback": "无线电接口"
   },
   "channelUtilization": {
     "title": "渠道利用率",
@@ -678,7 +689,7 @@
       "offerBannerTitleAria": "来自该对等方的待定入站文件报价"
     },
     "shareLocation": "分享位置",
-    "shareLocationLabel": "📍 共享位置",
+    "shareLocationLabel": "共享位置",
     "shareLocationHint": "将您当前的 GPS 或静态位置作为聊天消息发送",
     "shareLocationUnavailable": "位置不可用 — 检查 GPS 设置",
     "floodScopeOverrideHint": "仅此消息的区域泛洪范围。默认范围使用无线电的已保存设置；主题标签限制此发送到该区域；不带区域过滤器的无范围发送。发送后将恢复您保存的范围。",
@@ -787,7 +798,27 @@
     "outboxEmergencyWillSend": "将继续重试，直到发送",
     "outboxEmergencyCapBlocked": "已暂停：排队的紧急消息过多。请重试或取消此操作。",
     "outboxEmergencyCancelConfirm": "要取消此紧急消息吗？它不会被发送。",
-    "retryOutboxEmergencyAttempt": "尝试{{count}}"
+    "retryOutboxEmergencyAttempt": "尝试{{count}}",
+    "channelSwitcher": {
+      "trigger": "所有频道（{{total}}）",
+      "triggerWithUnread": "所有频道（{{total}}），{{unread}} 条未读",
+      "search": "查找频道",
+      "listLabel": "频道",
+      "empty": "没有匹配的频道"
+    },
+    "toolbarLabel": "会话工具",
+    "composeHint": "按 Enter 发送，Shift+Enter 换行",
+    "dmSwitcher": {
+      "trigger": "所有私信（{{total}}）",
+      "triggerWithUnread": "所有私信（{{total}}），{{unread}} 条未读",
+      "search": "查找会话",
+      "listLabel": "私信",
+      "empty": "没有匹配的会话"
+    },
+    "notificationRrcTitle": "{{room}}的{{sender}}",
+    "srNewMessage": "来自{{sender}}的新消息： {{text}}",
+    "srNewMessages_one": "{{count}}条新消息",
+    "srNewMessages_other": "{{count}}条新消息"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -915,7 +946,6 @@
     "lastData": "最后数据",
     "disconnectRadio": "断开",
     "manualContactApproval": "手动联系批准",
-    "disconnected": "● 断开连接",
     "bluetoothDevice": "蓝牙设备",
     "serialDevice": "串口设备",
     "wifiDevice": "WiFi设备",
@@ -945,10 +975,6 @@
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "连接",
     "manualContactApprovalDesc": "新联系人出现之前需要手动批准",
-    "mqttStatusConnected": "已连接",
-    "mqttStatusConnecting": "连接",
-    "mqttStatusError": "错误",
-    "mqttStatusDisconnected": "断开连接",
     "stageSelectDevice": "在下面选择您的设备",
     "stageSelectSerial": "选择下面的串口",
     "stageConnectingLast": "正在连接到最后一个蓝牙设备...",
@@ -1035,7 +1061,6 @@
     "reticulumSidecarStartFailed": "无法启动 Reticulum 堆栈：{{message}}",
     "reticulumStopStack": "停止堆栈",
     "reticulumAutostart": "打开连接时自动启动堆栈",
-    "reticulumStackRunning": "堆栈运行",
     "reticulumIdentity": {
       "title": "Reticulum 身份",
       "startStackFirst": "启动Reticulum堆栈以配置标识。",
@@ -1448,7 +1473,9 @@
       "noPrivateKey": "没有完整的身份 - 在无线电面板中导入您的 MeshCore 配置（公钥和私钥），或手动粘贴用户名 (v1_<公钥>) 和令牌。令牌中的 JWT 受众必须与服务器主机名匹配。",
       "publicKeyMissing": "身份中缺少公钥。在无线电面板中导入 MeshCore 配置 JSON（必须包括公钥和私钥），或将代理令牌粘贴到密码字段中。",
       "noIdentity": "未找到设备标识。在 Radio 面板中导入 MeshCore 配置 JSON，或手动粘贴用户名和令牌。",
-      "usernameBuildFailed": "无法构建MeshCore MQTT用户名。在Radio面板中导入您的MeshCore配置JSON ，或<public key>手动粘贴用户名(v1_)和令牌。"
+      "usernameBuildFailed": "无法构建MeshCore MQTT用户名。在Radio面板中导入您的MeshCore配置JSON ，或<public key>手动粘贴用户名(v1_)和令牌。",
+      "clientKey": "客户端密钥",
+      "copyClientKey": "复制客户端密钥"
     },
     "meshcorePacketLogger": {
       "label": "数据包记录器 — 当连接到无线电和 MQTT 时，将 RX 数据包摘要转发到 {{topic}}，其 JSON 形状与 meshcoretomqtt 相同。默认关闭；仅当您打算与数据包分析器共享听到的空中交通时才启用。"
@@ -1569,7 +1596,25 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "链路状态",
+      "radioLink": "无线电链路",
+      "stack": "协议栈",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "错误",
+      "running": "运行中",
+      "stopped": "已停止",
+      "clientLost": "客户端已断开",
+      "takPort": "端口 {{port}}",
+      "openTak": "打开 TAK"
+    },
+    "disconnectAll": "断开无线电和 MQTT",
+    "disconnectRadioGroup": "断开无线电",
+    "moreDisconnectOptions": "更多断开选项",
+    "disconnectOptions": "断开选项",
+    "lastConnectionLabel": "上次连接"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",
@@ -2042,7 +2087,12 @@
       "esp32FlashStalled": "固件传输无进展已停止。请尝试其他 USB 线缆或端口，进入引导加载程序模式（按住 BOOT，点按 RESET），然后重新刷写固件。",
       "unknown": "发生意外错误。",
       "provisionWipeRequired": "EEPROM被无效标识锁定。请先擦除EEPROM，然后再次进行配置。",
-      "provisionVerifyFailed": "预配写入已完成，但设备仍报告未预配的EEPROM。请给电路板重新上电，等待启动后重试—或先擦除EEPROM。"
+      "provisionVerifyFailed": "预配写入已完成，但设备仍报告未预配的EEPROM。请给电路板重新上电，等待启动后重试—或先擦除EEPROM。",
+      "esp32ReadStalled": "读取闪存无进展已停止。请尝试其他 USB 线缆或端口，进入引导加载程序模式（按住 BOOT，点按 RESET），然后重新备份。",
+      "esp32ReadIncomplete": "闪存读取提前结束，因此未保存备份。请重新连接开发板后重试。",
+      "esp32FlashSizeUnknown": "无法检测闪存大小，因此未进行备份。请选择确切的开发板型号后重试。",
+      "esp32FlashTooLarge": "此开发板的闪存超过 32 MiB 备份上限，因此未进行备份。",
+      "esp32ReadVerifyFailed": "闪存读取未通过校验和验证，因此未保存备份。请重新连接开发板后重试。"
     },
     "selectSerialPort": "选择串行端口",
     "noSerialPorts": "未找到USB串行端口。",
@@ -2090,7 +2140,14 @@
     "clearPairedDevicesConfirmTitle": "清除RNode蓝牙绑定？",
     "clearPairedDevicesConfirmMessage": "这将通过 USB 发送 CMD_BT_UNPAIR，并清除 ESP32 RNode 上的已绑定主机（部分 nRF52 固件无操作）。重新配对前，仍须在系统设置 → 蓝牙中“忘记”该设备。",
     "clearPairedDevicesConfirm": "清除蓝牙绑定",
-    "clearPairedDevicesSuccess": "已请求清除电台蓝牙绑定表。"
+    "clearPairedDevicesSuccess": "已请求清除电台蓝牙绑定表。",
+    "backupFirmware": "备份固件",
+    "backupFirmwareHint": "在刷写固件前，将 ESP32 闪存的完整镜像（固件和设备设置）保存到文件。不适用于 nRF52 板。",
+    "backingUp": "正在读取闪存… {{progress}}%",
+    "cancelBackup": "取消备份",
+    "backupSaved": "固件备份已保存到{{path}}。",
+    "backupSaveCancelled": "固件备份已读取但未保存。",
+    "backupCancelled": "固件备份已取消。"
   },
   "identityVault": {
     "title": "身份保管库",
@@ -3084,8 +3141,8 @@
     "radioStatsLocalHeading": "无线电统计（本地）",
     "txAirTimeLabel": "TX空中时间",
     "rxAirTimeLabel": "RX空中时间",
-    "requestPosition": "📍 请求位置",
-    "traceRoute": "🛤 跟踪路由",
+    "requestPosition": "请求位置",
+    "traceRoute": "跟踪路由",
     "tracingEllipsis": "追查",
     "requestStatus": "请求状态",
     "requestingEllipsis": "正在请求...",
@@ -3093,15 +3150,15 @@
     "statusRequestFailed": "状态请求失败",
     "requestingSensorTelemetry": "正在请求传感器遥测(LPP)...",
     "telemetryFailed": "遥测失败： {{message}}",
-    "sensorTelemetryButton": "🌡 传感器遥测",
+    "sensorTelemetryButton": "传感器遥测",
     "requestingNeighbors": "正在请求邻居...",
-    "getNeighbors": "🔗 获取邻居",
+    "getNeighbors": "获取邻居",
     "neighborsFailed": "邻居失败： {{message}}",
     "messageNoKeyTitle": "无法发送消息：没有加密密钥。等待完整的联系人交换或刷新联系人。",
     "messageButton": "消息",
     "exportingContact": "正在导出联系人...",
     "noPublicKeyAvailable": "没有可用的公钥",
-    "exportContact": "📤 导出联系人",
+    "exportContact": "导出联系人",
     "exportingEllipsis": "正在导出…",
     "exportFailed": "导出失败",
     "sharingContact": "共享联系人",
@@ -3109,7 +3166,7 @@
     "sharingEllipsis": "社交分享",
     "shareFailed": "分享失败",
     "addingToRadio": "正在添加到收音机...",
-    "addToRadio": "➕ 添加到收音机",
+    "addToRadio": "添加到收音机",
     "addingEllipsis": "正在添加...",
     "addToRadioFailed": "添加到收音机失败",
     "removingFromRadio": "正在从收音机中删除...",
@@ -3118,8 +3175,6 @@
     "removeFromRadioFailed": "从收音机中删除失败",
     "mqttIgnoreHeading": "MQTT忽略",
     "mqttIgnoreDescription": "从诊断中排除此节点的MQTT数据",
-    "stopIgnoringMqttTitle": "停止忽略此节点的MQTT",
-    "ignoreMqttTitle": "忽略此节点的MQTT",
     "deleteNode": "删除节点",
     "deleteNodeConfirm": "从本地数据库中删除此节点？它将在再次广播时重新出现。",
     "cancel": "取消",
@@ -3162,7 +3217,7 @@
     "remoteAdminKeyHint": "将本地无线电的公钥（Radio → Security → Copy）添加到该远程节点的 Admin keys 后，把同一密钥粘贴到此处以确认。然后在 Radio 标签页使用“配置节点”。",
     "remoteAdminKeyInvalid": "输入有效的管理员公钥（ base64、base64: …或64个字符的十六进制）。",
     "configureRemotelyHint": "在网格上打开此节点的无线电设置（需要本地无线电和已保存的管理密钥）。",
-    "openRoomButton": "🏠 打开房间",
+    "openRoomButton": "打开房间",
     "remoteAuthCancelled": "远程访问已取消。",
     "shareContactSent": "通过无线电发送的联系人共享。",
     "blockContact": "物块",
@@ -3202,7 +3257,9 @@
     "xeddsaSigned": "XEdDSA已签名",
     "xeddsaSignedHint": "无线电已验证来自此节点的XEdDSA签名，因此其公钥经过加密证明。",
     "keyManuallyVerified": "密钥已验证",
-    "keyManuallyVerifiedHint": "此节点的公钥已由操作员手动确认。"
+    "keyManuallyVerifiedHint": "此节点的公钥已由操作员手动确认。",
+    "keyBadge": "密钥",
+    "closePane": "关闭详情"
   },
   "nodeInfoBody": {
     "longName": "长名称",
@@ -3292,6 +3349,7 @@
     "importResultError": "已导入{{imported}} ，已跳过{{skipped}}。错误： {{errors}}",
     "refreshContacts": "从收音机刷新联系人",
     "sendFloodAdvert": "发送泛洪通告",
+    "sendFloodAdvertUnavailable": "连接 MeshCore 电台后可用",
     "filterByContactGroup": "按联系人组筛选",
     "manageContactGroups": "管理联系人组",
     "manageGroups": "管理群组",
@@ -3317,12 +3375,6 @@
     "distanceFilterNoGpsBanner": "距离过滤器已启用，但您的设备没有GPS修复—显示所有节点。",
     "distanceFilterActiveBanner_one": "距离过滤器已激活— {{count}}节点隐藏在{{maxDistance}} {{unit}}之外。",
     "distanceFilterActiveBanner_other": "距离过滤器已激活— {{count}}节点隐藏在{{maxDistance}} {{unit}}之外。",
-    "summaryOnline_one": "{{count}}在线",
-    "summaryOnline_other": "{{count}}在线",
-    "summaryStale_one": "{{count}}陈旧",
-    "summaryStale_other": "{{count}}陈旧",
-    "summaryOffline_one": "{{count}}离线",
-    "summaryOffline_other": "{{count}}离线",
     "tableCaptionMeshNodes": "已连接的网格节点",
     "columnFavorite": "我的最愛",
     "columnId": "CN",
@@ -3374,7 +3426,13 @@
     "meshcoreTypeUnknown": "未知",
     "columnHealth": "节点健康状况",
     "hasPublicKeyTitle": "公钥",
-    "buttonExportCsv": "导出 CSV"
+    "buttonExportCsv": "导出 CSV",
+    "listViewAria": "列表视图",
+    "statusFilterAria": "按状态筛选",
+    "statusFilterAll": "全部",
+    "buttonExport": "导出",
+    "exportMenuLabel": "导出格式",
+    "youBadge": "你"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3847,12 +3905,12 @@
     "shutdownConfirm": "关闭",
     "shutdownButton": "关闭",
     "factoryResetConfigName": "恢复出厂设置配置",
-    "factoryResetConfigTitle": "⚠ 恢复出厂设置配置",
+    "factoryResetConfigTitle": "恢复出厂设置配置",
     "factoryResetConfigMessage": "这会将设备配置重置为出厂默认设置，但保留您的节点数据库。需要重新配置设置。",
     "factoryResetConfigConfirm": "重置配置",
     "factoryResetConfigButton": "仅恢复出厂设置配置",
     "factoryResetName": "恢复出厂设置",
-    "factoryResetTitle": "⚠ 恢复出厂设置",
+    "factoryResetTitle": "恢复出厂设置",
     "factoryResetMessage": "这将删除所有设备设置并恢复出厂默认设置。设备上的所有通道、配置和存储的数据都将永久丢失。此操作无法撤消。",
     "factoryResetConfirm": "恢复出厂设置",
     "meshcoreChannelKeyLabel": "密钥（32 个十六进制字符 = 16 个字节）",
@@ -4557,8 +4615,6 @@
     "noLppData": "此响应中没有 LPP 传感器数据。",
     "enterCommand": "输入命令...",
     "searchRepeatersPlaceholder": "搜索中继器和房间…",
-    "openCliInterface": "打开CLI界面",
-    "sensorLppButton": "传感器（LPP）",
     "noTelemetryResponse": "尚未有遥测响应。再次尝试传感器 (LPP)。",
     "mapPositionFromAdvert": "地图位置来自通告/联系数据，而不是此传感器请求。",
     "mapPositionFromTelemetry": "地图位置来自通告/联系数据，而不是传感器遥测数据。",
@@ -4584,8 +4640,6 @@
     "statusStale": "陈旧",
     "statusOffline": "线下",
     "buttonPing": "Ping",
-    "buttonStatus": "状态",
-    "buttonNeighbors": "邻居",
     "buttonRemove": "移除",
     "buttonConfirmRemove": "确认？",
     "buttonErrorShort": "错误",
@@ -4630,15 +4684,10 @@
     "savedPasswordOrphanLabel": "中继器{{nodeId}}",
     "pingQueuedBehindOther": "排队—另一个ping正在使用无线电（ MeshCore一次允许一个跟踪）。",
     "waitForPingBeforeStatus": "等待正在进行的ping在状态请求之前完成。",
-    "statusLastFailedTooltip": "上次状态请求失败： {{error}}",
-    "neighborsLastFailedTooltip": "最后一个邻居请求失败： {{error}}",
-    "telemetryLastFailedTooltip": "上次传感器请求失败： {{error}}",
-    "cliLastFailedTooltip": "上次CLI命令失败： {{error}}",
     "telemetryError": "传感器错误： {{error}}",
     "neighborsFailedToast": "邻居失败： {{message}}",
     "columnSnr": "信噪比",
     "columnRssi": "接收信号强度指数",
-    "buttonCli": "命令行界面",
     "cliClearHistory": "清除历史记录",
     "cliNoCommandsYet": "还没有命令",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
@@ -4683,7 +4732,12 @@
     "sortByAirPctAsc": "按空气百分比排序，从低到低",
     "sortByAirPctDesc": "按空气百分比排序，最高优先",
     "sortByReliabilityAsc": "按可靠性排序，从低到高",
-    "sortByReliabilityDesc": "按可靠性排序，最高优先"
+    "sortByReliabilityDesc": "按可靠性排序，最高优先",
+    "moreActionsFor": "{{name}} 的更多操作",
+    "rowActionsMenu": "{{name}} 的操作",
+    "rowBusy": "正在处理 {{name}}",
+    "menuShownBelow": "显示在下方。再次选择可隐藏。",
+    "confirmRemoveAria": "确认移除 {{name}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",
@@ -5040,7 +5094,7 @@
     "savedPasswordsHeading": "保存密码",
     "savedPasswordsCount": "已保存密码（{{count}}）",
     "savedPasswordOrphanLabel": "房间 0x{{nodeId}}",
-    "statusPasswordSaved": "已为此房间保存密码（未登录时显示天蓝色标记）。",
+    "statusPasswordSaved": "已为此房间保存密码。",
     "statusAutoLoginEnabled": "连接时自动登录已启用。",
     "badgeAutoLogin": "自动登录",
     "badgeAutoSync": "自动同步",
@@ -5056,17 +5110,18 @@
     "legendLoggedIn": "已登录",
     "statusLoggedInSession": "已登录",
     "statusLoggedInSessionTooltip": "活动客户端会话。它会持续存在，直到您离开房间或断开连接。如果无法访问房间服务器，请离开，并在返回时再次登录。",
-    "legendNotSavedTooltip": "空圆—此房间未存储密码",
-    "legendSavedTooltip": "天空半圆—密码已存储；登录以打开会话",
-    "legendLoggedInTooltip": "绿点—活动客户端会话（服务器离线时请离开房间）",
     "historyLocalHint": "登录时，若此设备尚无本地水印，mesh-client 会请求聊天室服务器环形缓冲区中仍保留的最近帖子。启用自动同步以在连接期间保持订阅。",
     "loginAllSavedDisabledNoSavedPasswords": "首先保存房间密码以使用全部登录",
     "membersHeadingWithCount": "成员({{count}})",
     "collapseRoomList": "折叠房间列表",
     "expandRoomList": "展开房间列表",
-    "collapsedRoomWithUnread": "{{label}}, {{count}}未读",
     "manageJumpHint": "基础设施控制（ping、status、CLI、ACL setperm）位于 Repeaters 选项卡。",
-    "aclPubkeyPlaceholder": "0123456789abcdef…"
+    "aclPubkeyPlaceholder": "0123456789abcdef…",
+    "backToList": "返回房间列表",
+    "details": "房间详情",
+    "hideDetails": "隐藏房间详情",
+    "moreActions": "更多房间操作",
+    "loginAndSyncHeading": "登录与同步"
   },
   "searchModal": {
     "closeSearch": "关闭搜索",
@@ -5166,18 +5221,6 @@
   "sidebar": {
     "disabledTabTooltip": "在此模式下不可用"
   },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "留在空中",
-      "helloOperator": "您好，接线员",
-      "thanksForMeshing": "感谢您的网格化",
-      "builtForCommunities": "专为各地社区打造",
-      "stayConnected": "保持联系",
-      "signalsOut": "发出信号",
-      "gladYouAreHere": "很高兴你在这里",
-      "keepTheMeshAlive": "保持网格存活"
-    }
-  },
   "tabs": {
     "connection": "与公司的关系",
     "chat": "聊天",
@@ -5200,6 +5243,7 @@
     "admin": "管理",
     "peers": "Pee对端",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "网络拓扑图",
     "network": "网络",
     "rrc": "RRC",
@@ -5236,7 +5280,7 @@
     "atakDataPackageDesc": "生成包含 TLS 证书和连接设置的 .zip 文件，以便导入 ATAK、WinTAK 或 iTAK。",
     "generating": "生成…",
     "generateReveal": "生成和揭示",
-    "packageSaved": "✓ 包已保存 — 检查 Finder/Explorer",
+    "packageSaved": "包已保存 — 检查 Finder/Explorer",
     "startServerFirst": "首先启动服务器",
     "certificates": "证书",
     "certificatesDesc": "自签名 CA、服务器和客户端证书在首次启动时自动生成并存储在应用程序数据目录中。",
@@ -5401,8 +5445,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "连接到哈希",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5439,8 +5481,6 @@
       "active": "已连接",
       "reconnecting": "正在重新连接…"
     },
-    "expandRooms": "展开房间列表",
-    "collapseRooms": "折叠房间列表",
     "joinedRooms": "已加入",
     "recentRooms": "最近",
     "roomKeyOptional": "房间钥匙（选填）",
@@ -5496,8 +5536,6 @@
       "welcomeTimeout": "已连接，但集线器未及时发送欢迎。请重试。",
       "proxyRateLimit": "当前请求过多（已达到代理速率限制）。请稍等片刻，然后重试。"
     },
-    "expandMembers": "扩大成员",
-    "collapseMembers": "折叠成员列表",
     "cancelConnect": "取消推荐",
     "maxHubsConnected": "您最多可以连接8个RRC集线器。先断开一个。",
     "enableHubAutoJoin": "启用集线器自动连接",
@@ -5544,7 +5582,15 @@
     "roomNameLimit": {
       "overMax": "房间名称太长—集线器限制为{{limit}}字节"
     },
-    "noConnectedHubs": "未连接RRC集线器。从收藏夹、发现或通过哈希连接。"
+    "noConnectedHubs": "未连接RRC集线器。从收藏夹、发现或通过哈希连接。",
+    "autoJoinChip": "自动",
+    "listViewAria": "显示房间或中心",
+    "hubsShort": "中心",
+    "hideList": "隐藏房间和中心",
+    "showList": "显示房间和中心",
+    "backToList": "返回房间和中心",
+    "hideMembers": "隐藏成员",
+    "listColumnAria": "房间和中心"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -6225,5 +6271,48 @@
     "beaconCancelQueued": "信标取消已排队。当无线电可用时，它将发送。",
     "beaconCancelFailed": "无法发送或排队信标取消。事件仍未解决。",
     "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP。地图→层可以用坐标显示未决事件。"
+  },
+  "shell": {
+    "section": {
+      "monitor": "监控",
+      "device": "设备"
+    },
+    "sectionPanelsAria": "{{section}}面板",
+    "navBadgeDetail": "{{label}}，{{detail}}",
+    "openLauncher": "转到面板、联系人或频道（{{shortcut}}）",
+    "status": {
+      "radio": "无线电：{{status}}",
+      "radioWithNode": "无线电：{{status}}，节点 {{node}}",
+      "radioNode": "{{node}}，{{detail}}"
+    },
+    "launcher": {
+      "title": "全部面板",
+      "searchLabel": "搜索面板、联系人和频道",
+      "placeholder": "转到面板、联系人或频道",
+      "noResults": "没有匹配的面板",
+      "otherGroup": "其他",
+      "pin": "固定{{label}}",
+      "unpin": "取消固定{{label}}",
+      "pinLimit": "最多可固定 {{max}} 个面板。请先取消固定一个。",
+      "hintMove": "移动",
+      "hintOpen": "打开",
+      "hintPin": "固定",
+      "panelCount_one": "{{count}} 个面板",
+      "panelCount_other": "{{count}} 个面板",
+      "channelsGroup": "频道",
+      "contactsGroup": "联系人",
+      "moreMatches": "还有更多匹配项。继续输入以缩小范围。"
+    },
+    "more": "更多",
+    "quitConfirmTitle": "退出 Mesh Client？",
+    "quitConfirmIncidents": "未关闭的 MAYDAY 或 URGENT 事件：{{n}}。",
+    "quitConfirmOutbox": "等待发送的紧急消息：{{n}}。",
+    "quitConfirmLinks": "所有无线电和 MQTT 连接都将断开。"
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "减少{{label}}",
+      "increase": "增加{{label}}"
+    }
   }
 }

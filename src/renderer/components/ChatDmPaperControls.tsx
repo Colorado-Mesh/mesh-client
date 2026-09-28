@@ -14,6 +14,8 @@ import { showReticulumQrIngestToast } from '@/renderer/lib/reticulum/showReticul
 import { RETICULUM_DM_HEADER_ACTION_CLASS } from '@/renderer/lib/reticulumDmHeaderActions';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 
+import { TEXTAREA_BOX_CLASS } from './ui/formClasses';
+
 export interface ChatDmPaperShareControlProps {
   lxmfPeerHash: string;
   viewKey: string;
@@ -131,21 +133,19 @@ export function ChatDmPaperShareControl({
         />
         <div
           ref={dialogPanelRef}
-          className="bg-deep-black relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-700 p-4 shadow-xl"
+          className="bg-deep-black rounded-modal shadow-level-4 border-ink-700 relative z-10 max-h-[90vh] w-full max-w-md overflow-y-auto border p-4"
           role="dialog"
           aria-modal="true"
           aria-label={t('chatPanel.shareAsPaperTitle')}
         >
-          <h2 className="text-sm font-semibold text-gray-100">
-            {t('chatPanel.shareAsPaperTitle')}
-          </h2>
+          <h2 className="text-ink-100 text-sm font-semibold">{t('chatPanel.shareAsPaperTitle')}</h2>
           <p className="text-muted mt-1 text-xs">{t('chatPanel.shareAsPaperHint')}</p>
           {uri == null ? (
             <>
               <label className="mt-3 block">
                 <span className="sr-only">{t('chatPanel.shareAsPaperMessageLabel')}</span>
                 <textarea
-                  className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-100"
+                  className={`${TEXTAREA_BOX_CLASS} mt-1 w-full`}
                   rows={4}
                   value={text}
                   onChange={(e) => {
@@ -157,7 +157,7 @@ export function ChatDmPaperShareControl({
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="bg-readable-green rounded px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40"
+                  className="bg-brand-green text-app-bg rounded px-3 py-1.5 text-xs font-medium disabled:opacity-40"
                   disabled={busy || !text.trim() || !focusedIdentityId}
                   onClick={() => {
                     void createPaper();
@@ -167,7 +167,7 @@ export function ChatDmPaperShareControl({
                 </button>
                 <button
                   type="button"
-                  className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-300"
+                  className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-xs"
                   disabled={busy}
                   onClick={closeModal}
                 >
@@ -183,7 +183,7 @@ export function ChatDmPaperShareControl({
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="bg-readable-green rounded px-3 py-1.5 text-xs font-medium text-white"
+                  className="bg-brand-green text-app-bg rounded px-3 py-1.5 text-xs font-medium"
                   onClick={() => {
                     void writeClipboardText(uri)
                       .then(() => {
@@ -201,7 +201,7 @@ export function ChatDmPaperShareControl({
                 </button>
                 <button
                   type="button"
-                  className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-300"
+                  className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-xs"
                   onClick={closeModal}
                 >
                   {t('chatPanel.shareAsPaperClose')}
@@ -229,7 +229,7 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
     <div className="mb-1">
       <button
         type="button"
-        className="text-muted inline-flex items-center gap-1 text-[11px] hover:text-gray-200"
+        className="text-muted text-label hover:text-ink-200 inline-flex items-center gap-1"
         aria-label={t('chatPanel.scanPaperAria')}
         aria-expanded={expanded}
         disabled={!sidecarRunning}
@@ -241,8 +241,8 @@ export function ChatPaperScanControl({ sidecarRunning }: Readonly<ChatPaperScanC
         {t('chatPanel.scanPaper')}
       </button>
       {expanded ? (
-        <div className="mt-1 rounded border border-gray-700/80 bg-slate-900/40 p-2">
-          <p className="text-muted mb-1 text-[11px]">{t('chatPanel.scanPaperHint')}</p>
+        <div className="border-ink-700/80 bg-ink-900/40 mt-1 rounded border p-2">
+          <p className="text-muted text-label mb-1">{t('chatPanel.scanPaperHint')}</p>
           <QrIngestControl
             disabled={!sidecarRunning}
             onDecoded={(decoded) => {

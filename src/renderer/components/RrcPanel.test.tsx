@@ -11,6 +11,7 @@ import {
   isReticulumRnsLiveReady,
   isReticulumSidecarRunning,
 } from '@/renderer/lib/reticulum/reticulumSidecarReads';
+import { clearRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
 import {
   clearRrcHubAutoJoinBackoff,
   isRrcHubAutoJoinBlocked,
@@ -29,7 +30,11 @@ import { hydrateRrcRoomMessages, resetRrcRoomHistoryForTests } from '@/renderer/
 import { applyRrcWhoInboundNotice } from '@/renderer/lib/rrcWhoInbound';
 import { RRC_WHO_REPLY_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
 import { useRrcHubStore } from '@/renderer/stores/rrcHubStore';
-import { selectRrcActiveRoomMessages, useRrcSessionStore } from '@/renderer/stores/rrcSessionStore';
+import {
+  resetRrcRememberedRoomForTests,
+  selectRrcActiveRoomMessages,
+  useRrcSessionStore,
+} from '@/renderer/stores/rrcSessionStore';
 
 import RrcPanel from './RrcPanel';
 
@@ -56,6 +61,9 @@ function whoSendCalls(): unknown[][] {
 describe('RrcPanel', () => {
   beforeEach(() => {
     useRrcSessionStore.getState().clearSession();
+    clearRrcActiveRoom(hubA);
+    clearRrcActiveRoom(hubB);
+    resetRrcRememberedRoomForTests();
     useRrcHubStore.setState({ hubs: new Map() });
     setPendingRrcLinkJoin('', null);
     resetRrcHubDisconnectSuppressForTests();
@@ -131,7 +139,11 @@ describe('RrcPanel', () => {
   it('renders standard hub chrome and select-hub prompt', async () => {
     const { container } = render(<RrcPanel isActive />);
     expect(screen.getAllByText(/Select an RRC hub/i).length).toBeGreaterThan(0);
-    expect(container.querySelector('[class*="border-gray-700"]')).toBeTruthy();
+    expect(container.querySelector('[class*="border-ink-800"]')).toBeTruthy();
+    // v6: one list column (Rooms | Hubs) instead of separate hub and room sidebars.
+    expect(screen.getByRole('complementary', { name: 'Rooms and hubs' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Rooms' })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: 'Hubs' })).toHaveAttribute('aria-checked', 'true');
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -433,7 +445,7 @@ describe('RrcPanel', () => {
 
     // Sidebar + header show peer nick, not the @hash key.
     expect(screen.getByRole('button', { name: 'Open room Alice' })).toBeInTheDocument();
-    expect(screen.getByText(/· Alice/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Alice' })).toBeInTheDocument();
 
     vi.mocked(window.electronAPI.reticulum.rrc.send).mockClear();
     const whisperComposer = screen.getByRole('textbox', { name: /Reply to Alice/i });
@@ -869,6 +881,46 @@ describe('RrcPanel', () => {
     expect(whoSendCalls()).toHaveLength(0);
     expect(window.electronAPI.reticulum.rrc.connect).not.toHaveBeenCalled();
     expect(window.electronAPI.reticulum.rrc.disconnect).not.toHaveBeenCalled();
+  });
+
+  it('counts selected-room messages as unread while the compact layout shows the room list', () => {
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        media: query,
+        matches: query === '(max-width: 767px)' || query === '(max-width: 1279px)',
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    try {
+      const store = useRrcSessionStore.getState();
+      store.applyStatus('active', hubA, 'Hub A');
+      store.roomJoined('#lobby');
+      store.setActiveRoom('#lobby');
+      render(<RrcPanel isActive />);
+      // Compact windows open on the room list, so #lobby is selected but not on screen.
+      expect(useRrcSessionStore.getState().rrcPanelFocused).toBe(false);
+      act(() => {
+        store.addMessage(
+          {
+            id: 'arrived-behind-the-list',
+            room: '#lobby',
+            kind: 'msg',
+            body: 'Arrived while the room list was showing',
+            sender_hash: 'dddddddddddddddddddddddddddddddd',
+            timestamp: Date.now(),
+          },
+          { bumpUnread: true },
+        );
+      });
+      expect(useRrcSessionStore.getState().totalUnread()).toBe(1);
+    } finally {
+      if (original) Object.defineProperty(window, 'matchMedia', original);
+      else Reflect.deleteProperty(window, 'matchMedia');
+    }
   });
 
   it('keeps selected-room messages unread while blurred and clears them on return', async () => {
@@ -1364,5 +1416,73 @@ describe('RrcPanel', () => {
       expect(useRrcSessionStore.getState().lastError).toMatch(/join a room/i);
     });
     expect(window.electronAPI.reticulum.rrc.send).not.toHaveBeenCalled();
+  });
+});
+
+describe('RrcPanel v6 layout', () => {
+  beforeEach(() => {
+    localStorage.removeItem('mesh-client:rrcHubListCollapsed');
+    localStorage.removeItem('mesh-client:rrc:roomListCollapsed');
+    localStorage.removeItem('mesh-client:rrc:nickListCollapsed');
+    localStorage.removeItem('mesh-client:rrc:listView');
+  });
+
+  it('keeps a saved "both lists collapsed" layout hidden and restores it on demand', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:rrcHubListCollapsed', '1');
+    localStorage.setItem('mesh-client:rrc:roomListCollapsed', '1');
+    render(<RrcPanel isActive />);
+
+    expect(screen.queryByRole('complementary', { name: 'Rooms and hubs' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show rooms and hubs' }));
+    expect(screen.getByRole('complementary', { name: 'Rooms and hubs' })).toBeInTheDocument();
+    expect(localStorage.getItem('mesh-client:rrcHubListCollapsed')).toBe('0');
+    expect(localStorage.getItem('mesh-client:rrc:roomListCollapsed')).toBe('0');
+
+    await user.click(screen.getByRole('button', { name: 'Hide rooms and hubs' }));
+    expect(screen.queryByRole('complementary', { name: 'Rooms and hubs' })).not.toBeInTheDocument();
+  });
+
+  it('shows unread from other rooms and hubs on the collapsed list toggle', () => {
+    useRrcSessionStore.getState().clearSession();
+    useRrcSessionStore.setState({ unreadByHub: new Map([[hubB, 2]]) });
+    localStorage.setItem('mesh-client:rrcHubListCollapsed', '1');
+    localStorage.setItem('mesh-client:rrc:roomListCollapsed', '1');
+    try {
+      render(<RrcPanel isActive />);
+      const toggle = screen.getByRole('button', { name: 'Show rooms and hubs, 2 unread' });
+      expect(toggle.parentElement?.querySelector('[data-rrc-list-unread]')).toHaveTextContent('2');
+    } finally {
+      useRrcSessionStore.setState({ unreadByHub: new Map() });
+    }
+  });
+
+  it('shows rooms once a hub is connected and toggles the members panel from the header', async () => {
+    const user = userEvent.setup();
+    const store = useRrcSessionStore.getState();
+    store.applyStatus('active', hubA, 'Hub A');
+    store.roomJoined('general', [
+      { identity_hash: 'cccccccccccccccccccccccccccccccc', nickname: 'Alice' },
+    ]);
+    store.setActiveRoom('general');
+    render(<RrcPanel isActive />);
+
+    expect(screen.getByRole('radio', { name: 'Rooms' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('heading', { name: 'general' })).toBeInTheDocument();
+    expect(screen.getByRole('complementary', { name: 'Members' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Hide members' }));
+    expect(screen.queryByRole('complementary', { name: 'Members' })).not.toBeInTheDocument();
+    expect(localStorage.getItem('mesh-client:rrc:nickListCollapsed')).toBe('1');
+
+    const membersToggle = screen.getByRole('button', { name: 'Members' });
+    expect(membersToggle).toHaveAttribute('aria-pressed', 'false');
+    await user.click(membersToggle);
+    expect(screen.getByRole('complementary', { name: 'Members' })).toBeInTheDocument();
+    expect(localStorage.getItem('mesh-client:rrc:nickListCollapsed')).toBe('0');
+
+    await user.click(screen.getByRole('radio', { name: 'Hubs' }));
+    expect(localStorage.getItem('mesh-client:rrc:listView')).toBe('hubs');
+    expect(screen.getByRole('searchbox', { name: /Search hubs/i })).toBeInTheDocument();
   });
 });

@@ -54,6 +54,13 @@ import ReticulumPnHostingDangerZone from './ReticulumPnHostingDangerZone';
 import ReticulumPropagationSection from './ReticulumPropagationSection';
 import { ReticulumRmapDiscoveryControls } from './ReticulumRmapDiscoveryControls';
 import { useToast } from './Toast';
+import {
+  INPUT_BOX_CLASS,
+  INPUT_BOX_SM_CLASS,
+  SELECT_BOX_CLASS,
+  TEXTAREA_BOX_CLASS,
+  TEXTAREA_BOX_SM_CLASS,
+} from './ui/formClasses';
 
 type IdentityReplaceAction = 'generate' | 'importPhrase' | 'importBackup' | 'importPrivate';
 
@@ -95,12 +102,12 @@ function ReticulumCollapsibleSection({
 }) {
   return (
     <details
-      className={`group bg-deep-black/50 rounded-lg border ${danger ? 'border-red-900/50' : 'border-gray-700'}`}
+      className={`group bg-deep-black/50 rounded-lg border ${danger ? 'border-red-900/50' : 'border-ink-700'}`}
       open={defaultOpen || undefined}
     >
       <summary
-        className={`flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors hover:bg-gray-800 ${
-          danger ? 'text-red-300' : 'text-gray-200'
+        className={`hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors ${
+          danger ? 'text-red-300' : 'text-ink-200'
         }`}
       >
         <span>{title}</span>
@@ -722,7 +729,7 @@ export function ReticulumNetworkPanel({
       {onOpenSetupGuide && (
         <button
           type="button"
-          className="text-sm text-amber-300 underline underline-offset-4 hover:text-amber-200"
+          className="text-sm text-yellow-300 underline underline-offset-4 hover:text-yellow-200"
           aria-label={t('reticulumSetup.open')}
           onClick={() => {
             if (!onOpenSetupGuide()) addToast(t('reticulumSetup.tabUnavailable'), 'error');
@@ -732,14 +739,14 @@ export function ReticulumNetworkPanel({
         </button>
       )}
       {!sidecarUiRunning && !connecting ? (
-        <p className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
+        <p className="rounded-lg border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </p>
       ) : null}
 
       <ReticulumCollapsibleSection title={t('networkPanel.reticulumStackSettings.title')}>
         <div className="space-y-2 text-sm">
-          <label className="flex items-center gap-2 text-gray-300">
+          <label className="text-ink-300 flex items-center gap-2">
             <input
               type="checkbox"
               checked={stackSettings.enable_transport}
@@ -750,7 +757,7 @@ export function ReticulumNetworkPanel({
             />
             {t('networkPanel.reticulumStackSettings.enableTransport')}
           </label>
-          <label className="flex items-center gap-2 text-gray-300">
+          <label className="text-ink-300 flex items-center gap-2">
             <input
               type="checkbox"
               checked={stackSettings.share_instance}
@@ -761,7 +768,7 @@ export function ReticulumNetworkPanel({
             />
             {t('networkPanel.reticulumStackSettings.shareInstance')}
           </label>
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('networkPanel.reticulumStackSettings.logLevel')}
             <select
               value={stackSettings.loglevel}
@@ -769,7 +776,7 @@ export function ReticulumNetworkPanel({
               onChange={(e) => {
                 setStackSettings((s) => ({ ...s, loglevel: Number(e.target.value) }));
               }}
-              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+              className={`${SELECT_BOX_CLASS} mt-1 block`}
             >
               {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
                 <option key={n} value={n}>
@@ -778,7 +785,7 @@ export function ReticulumNetworkPanel({
               ))}
             </select>
           </label>
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('networkPanel.reticulumStackSettings.pathMediumPreference')}
             <select
               value={pathMediumPreference}
@@ -787,7 +794,7 @@ export function ReticulumNetworkPanel({
               onChange={(e) => {
                 void savePathMediumPreference(e.target.value as PathMediumPreference);
               }}
-              className="mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+              className={`${SELECT_BOX_CLASS} mt-1 block`}
             >
               <option value="lowest">
                 {t('networkPanel.reticulumStackSettings.pathMediumLowest')}
@@ -797,18 +804,18 @@ export function ReticulumNetworkPanel({
               </option>
               <option value="rf">{t('networkPanel.reticulumStackSettings.pathMediumRf')}</option>
             </select>
-            <span className="mt-1 block text-[11px] text-gray-500">
+            <span className="text-label text-muted mt-1 block">
               {t('networkPanel.reticulumStackSettings.pathMediumPreferenceHint')}
             </span>
           </label>
-          <div className="border-t border-gray-700/60 pt-3">
-            <p className="text-xs font-medium text-gray-300">
+          <div className="border-ink-700/60 border-t pt-3">
+            <p className="text-ink-300 text-xs font-medium">
               {t('networkPanel.reticulumStackSettings.discoveryConsumeTitle')}
             </p>
-            <p className="mt-1 text-[11px] text-gray-500">
+            <p className="text-label text-muted mt-1">
               {t('networkPanel.reticulumStackSettings.discoveryConsumeHint')}
             </p>
-            <label className="mt-2 block text-xs text-gray-400">
+            <label className="text-ink-400 mt-2 block text-xs">
               {t('networkPanel.reticulumStackSettings.autoconnectDiscovered')}
               <input
                 type="number"
@@ -824,14 +831,14 @@ export function ReticulumNetworkPanel({
                     ),
                   }));
                 }}
-                className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+                className={`${INPUT_BOX_CLASS} mt-1 block w-24`}
                 aria-label={t('networkPanel.reticulumStackSettings.autoconnectDiscoveredAria')}
               />
-              <span className="mt-1 block text-[11px] text-gray-500">
+              <span className="text-label text-muted mt-1 block">
                 {t('networkPanel.reticulumStackSettings.autoconnectDiscoveredHint')}
               </span>
             </label>
-            <label className="mt-2 block text-xs text-gray-400">
+            <label className="text-ink-400 mt-2 block text-xs">
               {t('networkPanel.reticulumStackSettings.requiredDiscoveryValue')}
               <input
                 type="number"
@@ -845,11 +852,11 @@ export function ReticulumNetworkPanel({
                     required_discovery_value: clampRequiredDiscoveryValue(Number(e.target.value)),
                   }));
                 }}
-                className="mt-1 block w-24 rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm text-gray-100"
+                className={`${INPUT_BOX_CLASS} mt-1 block w-24`}
                 aria-label={t('networkPanel.reticulumStackSettings.requiredDiscoveryValueAria')}
               />
             </label>
-            <label className="mt-2 block text-xs text-gray-400">
+            <label className="text-ink-400 mt-2 block text-xs">
               {t('networkPanel.reticulumStackSettings.discoverySources')}
               <textarea
                 value={stackSettings.interface_discovery_sources}
@@ -862,22 +869,22 @@ export function ReticulumNetworkPanel({
                   }));
                   setDiscoverySourcesError(validateInterfaceDiscoverySources(e.target.value));
                 }}
-                className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-100"
+                className={`${TEXTAREA_BOX_SM_CLASS} mt-1 block w-full font-mono`}
                 aria-label={t('networkPanel.reticulumStackSettings.discoverySourcesAria')}
                 aria-invalid={discoverySourcesError != null}
                 placeholder={t('networkPanel.reticulumStackSettings.discoverySourcesPlaceholder')}
               />
               {discoverySourcesError ? (
-                <span className="mt-1 block text-[11px] text-red-400">
+                <span className="text-label mt-1 block text-red-400">
                   {t('networkPanel.reticulumStackSettings.discoverySourcesInvalid')}
                 </span>
               ) : (
-                <span className="mt-1 block text-[11px] text-gray-500">
+                <span className="text-label text-muted mt-1 block">
                   {t('networkPanel.reticulumStackSettings.discoverySourcesHint')}
                 </span>
               )}
             </label>
-            <label className="mt-2 block text-xs text-gray-400">
+            <label className="text-ink-400 mt-2 block text-xs">
               {t('networkPanel.reticulumStackSettings.networkIdentity')}
               <input
                 type="text"
@@ -886,11 +893,11 @@ export function ReticulumNetworkPanel({
                 onChange={(e) => {
                   setStackSettings((s) => ({ ...s, network_identity: e.target.value }));
                 }}
-                className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-100"
+                className={`${INPUT_BOX_SM_CLASS} mt-1 block w-full font-mono`}
                 aria-label={t('networkPanel.reticulumStackSettings.networkIdentityAria')}
                 placeholder={t('networkPanel.reticulumStackSettings.networkIdentityPlaceholder')}
               />
-              <span className="mt-1 block text-[11px] text-gray-500">
+              <span className="text-label text-muted mt-1 block">
                 {t('networkPanel.reticulumStackSettings.networkIdentityHint')}
               </span>
             </label>
@@ -901,7 +908,7 @@ export function ReticulumNetworkPanel({
             onClick={() => {
               void saveStackSettings();
             }}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+            className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           >
             {t('networkPanel.reticulumStackSettings.save')}
           </button>
@@ -911,7 +918,7 @@ export function ReticulumNetworkPanel({
       <ReticulumCollapsibleSection title={t('networkPanel.reticulumScanImport.title')}>
         <p className="text-muted text-xs">{t('networkPanel.reticulumScanImport.hint')}</p>
         <div className="mt-2">
-          <p className="text-muted mb-1 text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+          <p className="text-muted text-label mb-1">{t('qrIngest.pasteImageHint')}</p>
           <QrIngestControl
             disabled={!sidecarApiReady}
             onDecoded={(text) => {
@@ -937,7 +944,7 @@ export function ReticulumNetworkPanel({
           </p>
         ) : null}
         {identityNotice ? (
-          <p className="text-readable-green mt-2 text-sm" role="status">
+          <p className="text-bright-green mt-2 text-sm" role="status">
             {identityNotice}
           </p>
         ) : null}
@@ -1056,7 +1063,7 @@ export function ReticulumNetworkPanel({
                 setConfigPaste(e.target.value);
               }}
               rows={4}
-              className="mt-2 w-full rounded border border-gray-600 bg-slate-900 p-2 font-mono text-xs text-gray-200"
+              className={`${TEXTAREA_BOX_SM_CLASS} mt-2 w-full font-mono`}
               aria-label={t('networkPanel.reticulumConfigImport.pasteLabel')}
             />
             <div className="mt-2 flex flex-wrap gap-2">
@@ -1065,7 +1072,7 @@ export function ReticulumNetworkPanel({
                 onClick={() => {
                   void handleImportFromFile();
                 }}
-                className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800"
+                className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
               >
                 {t('networkPanel.reticulumConfigImport.fromFile')}
               </button>
@@ -1074,7 +1081,7 @@ export function ReticulumNetworkPanel({
                 onClick={() => {
                   void handleImportFromSystem();
                 }}
-                className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800"
+                className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
               >
                 {t('networkPanel.reticulumConfigImport.fromSystem')}
               </button>
@@ -1084,7 +1091,7 @@ export function ReticulumNetworkPanel({
                 onClick={() => {
                   handleImportConfig('merge');
                 }}
-                className="rounded bg-amber-700 px-2 py-1 text-xs text-white hover:bg-amber-600 disabled:opacity-40"
+                className="rounded bg-orange-700 px-2 py-1 text-xs text-white hover:bg-orange-600 disabled:opacity-40"
               >
                 {t('networkPanel.reticulumConfigImport.merge')}
               </button>
@@ -1094,7 +1101,7 @@ export function ReticulumNetworkPanel({
                 onClick={() => {
                   handleImportConfig('replace');
                 }}
-                className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 hover:bg-amber-950/40 disabled:opacity-40"
+                className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-300 hover:bg-orange-950/40 disabled:opacity-40"
               >
                 {t('networkPanel.reticulumConfigImport.replace')}
               </button>
@@ -1113,7 +1120,7 @@ export function ReticulumNetworkPanel({
               </button>
             </div>
             {importWarnings.length > 0 ? (
-              <ul className="mt-2 list-disc pl-4 text-xs text-amber-300">
+              <ul className="mt-2 list-disc pl-4 text-xs text-orange-300">
                 {importWarnings.map((w) => (
                   <li key={w}>{w}</li>
                 ))}
@@ -1121,7 +1128,7 @@ export function ReticulumNetworkPanel({
             ) : null}
             {configValidateResult ? (
               <div
-                className="mt-2 rounded border border-gray-700 bg-slate-900/50 p-2 text-xs"
+                className="border-ink-700 bg-ink-900/50 mt-2 rounded border p-2 text-xs"
                 role="status"
               >
                 {configValidateResult.error || configValidateResult.parseError ? (
@@ -1134,12 +1141,12 @@ export function ReticulumNetworkPanel({
                   <p className="text-brand-green">{t('networkPanel.reticulumConfigValidate.ok')}</p>
                 ) : (
                   <>
-                    <p className="mb-1 font-medium text-amber-200">
+                    <p className="mb-1 font-medium text-orange-200">
                       {t('networkPanel.reticulumConfigValidate.issuesHeading', {
                         count: configValidateResult.issues.length,
                       })}
                     </p>
-                    <ul className="list-disc space-y-1 pl-4 text-amber-100/90">
+                    <ul className="list-disc space-y-1 pl-4 text-orange-100/90">
                       {configValidateResult.issues.map((issue) => {
                         const severity =
                           issue.severity === 'error' ||
@@ -1155,7 +1162,7 @@ export function ReticulumNetworkPanel({
                         });
                         return (
                           <li key={`${issue.kind}-${issue.interface_id ?? ''}-${issue.message}`}>
-                            <span className="text-amber-300">[{translated.severityLabel}]</span>{' '}
+                            <span className="text-orange-300">[{translated.severityLabel}]</span>{' '}
                             {translated.message}
                           </li>
                         );
@@ -1253,10 +1260,10 @@ function IdentityImportExtras({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="mt-3 space-y-3 rounded-lg border border-gray-700 bg-slate-900/40 p-3">
+    <div className="border-ink-700 bg-ink-900/40 mt-3 space-y-3 rounded-lg border p-3">
       {showReplaceHint ? (
         <>
-          <h4 className="text-sm font-medium text-gray-200">
+          <h4 className="text-ink-200 text-sm font-medium">
             {t('connectionPanel.reticulumIdentity.replaceIdentitySection')}
           </h4>
           <p className="text-muted text-xs">
@@ -1264,9 +1271,9 @@ function IdentityImportExtras({
           </p>
         </>
       ) : null}
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('connectionPanel.reticulumIdentity.importBackupLabel')}
-        <p className="text-muted mt-1 text-[11px]">
+        <p className="text-muted text-label mt-1">
           {t('connectionPanel.reticulumIdentity.importBackupHint')}
         </p>
         <textarea
@@ -1276,11 +1283,11 @@ function IdentityImportExtras({
           }}
           disabled={disabled}
           rows={3}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs disabled:opacity-50"
+          className={`${TEXTAREA_BOX_SM_CLASS} mt-1 w-full font-mono`}
           aria-label={t('connectionPanel.reticulumIdentity.importBackupLabel')}
         />
       </label>
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('connectionPanel.reticulumIdentity.importBackupPin')}
         <input
           type="password"
@@ -1290,7 +1297,7 @@ function IdentityImportExtras({
           }}
           disabled={disabled}
           autoComplete="off"
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} mt-1 w-full`}
           aria-label={t('connectionPanel.reticulumIdentity.importBackupPin')}
         />
       </label>
@@ -1300,7 +1307,7 @@ function IdentityImportExtras({
           disabled={disabled || !importBackupJson.trim()}
           onClick={onImportBackup}
           aria-label={t('connectionPanel.reticulumIdentity.importBackupAria')}
-          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 hover:bg-ink-800 rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.importBackup')}
         </button>
@@ -1309,14 +1316,14 @@ function IdentityImportExtras({
           disabled={disabled}
           onClick={onImportBackupFromFile}
           aria-label={t('connectionPanel.reticulumIdentity.importBackupFromFileAria')}
-          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 hover:bg-ink-800 rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.importBackupFromFile')}
         </button>
       </div>
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
-        <p className="text-muted mt-1 text-[11px]">
+        <p className="text-muted text-label mt-1">
           {t('connectionPanel.reticulumIdentity.importPrivateKeyHint')}
         </p>
         <textarea
@@ -1326,7 +1333,7 @@ function IdentityImportExtras({
           }}
           disabled={disabled}
           rows={2}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs disabled:opacity-50"
+          className={`${TEXTAREA_BOX_SM_CLASS} mt-1 w-full font-mono`}
           aria-label={t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
         />
       </label>
@@ -1335,7 +1342,7 @@ function IdentityImportExtras({
           type="button"
           disabled={disabled || !importPrivateKey.trim()}
           onClick={onImportPrivateKey}
-          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 hover:bg-ink-800 rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.importPrivateKey')}
         </button>
@@ -1343,7 +1350,7 @@ function IdentityImportExtras({
           type="button"
           disabled={disabled}
           onClick={onImportPrivateKeyFromFile}
-          className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 hover:bg-ink-800 rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.importPrivateKeyFromFile')}
         </button>
@@ -1449,20 +1456,20 @@ function IdentitySlotsSection({
   }, [deleteTarget, onError, reload, t]);
 
   return (
-    <div className="mb-3 space-y-2 rounded border border-gray-700/70 p-2">
+    <div className="border-ink-700/70 mb-3 space-y-2 rounded border p-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-xs font-medium text-gray-300">
+          <p className="text-ink-300 text-xs font-medium">
             {t('connectionPanel.reticulumIdentity.slotsTitle')}
           </p>
-          <p className="text-muted text-[11px]">
+          <p className="text-muted text-label">
             {t('connectionPanel.reticulumIdentity.slotsHint')}
           </p>
         </div>
         <button
           type="button"
           disabled={disabled || busy}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           aria-label={t('connectionPanel.reticulumIdentity.slotCreateAria')}
           onClick={() => {
             void runCreate();
@@ -1480,23 +1487,23 @@ function IdentitySlotsSection({
           return (
             <li
               key={slot.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded bg-slate-900/50 px-2 py-1.5 text-xs"
+              className="bg-ink-900/50 flex flex-wrap items-center justify-between gap-2 rounded px-2 py-1.5 text-xs"
             >
               <div className="min-w-0">
-                <span className="font-medium text-gray-200">{label}</span>
+                <span className="text-ink-200 font-medium">{label}</span>
                 {slot.active ? (
-                  <span className="text-readable-green ml-2 text-[10px]">
+                  <span className="text-bright-green text-2xs ml-2">
                     {t('connectionPanel.reticulumIdentity.slotActive')}
                   </span>
                 ) : null}
-                <p className="text-muted truncate font-mono text-[10px]">{slot.id}</p>
+                <p className="text-muted text-2xs truncate font-mono">{slot.id}</p>
               </div>
               <div className="flex gap-1">
                 {!slot.active && slot.configured ? (
                   <button
                     type="button"
                     disabled={disabled || busy}
-                    className="rounded border border-gray-600 px-2 py-0.5 text-[11px] text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+                    className="text-label border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-0.5 disabled:opacity-40"
                     aria-label={t('connectionPanel.reticulumIdentity.slotSwitchAria', {
                       id: slot.id,
                     })}
@@ -1511,7 +1518,7 @@ function IdentitySlotsSection({
                   <button
                     type="button"
                     disabled={disabled || busy}
-                    className="rounded border border-red-900/60 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-950/40 disabled:opacity-40"
+                    className="text-label rounded border border-red-900/60 px-2 py-0.5 text-red-300 hover:bg-red-950/40 disabled:opacity-40"
                     aria-label={t('connectionPanel.reticulumIdentity.slotDeleteAria', {
                       id: slot.id,
                     })}
@@ -1528,7 +1535,7 @@ function IdentitySlotsSection({
         })}
       </ul>
       {notice ? (
-        <p className="text-readable-green text-[11px]" role="status">
+        <p className="text-bright-green text-label" role="status">
           {notice}
         </p>
       ) : null}
@@ -1656,18 +1663,18 @@ function IdentityConfiguredView({
   };
 
   return (
-    <div className="mt-3 space-y-1 text-sm text-gray-300">
+    <div className="text-ink-300 mt-3 space-y-1 text-sm">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-muted">
           {t('connectionPanel.reticulumIdentity.identityHashLabel')}
         </span>
-        <code className="text-gray-200" title={identityHash || undefined}>
+        <code className="text-ink-200" title={identityHash || undefined}>
           {identityHash ? `${identityHash.slice(0, 24)}…` : '—'}
         </code>
         {identityHash ? (
           <button
             type="button"
-            className="shrink-0 text-gray-400 hover:text-gray-300"
+            className="text-ink-400 hover:text-ink-300 shrink-0"
             aria-label={t('connectionPanel.reticulumIdentity.copyIdentityHash')}
             onClick={() => {
               void copyIdentityHash();
@@ -1679,13 +1686,13 @@ function IdentityConfiguredView({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-muted">{t('connectionPanel.reticulumIdentity.hashLabel')}</span>
-        <code className="text-amber-300" title={lxmfHash || undefined}>
+        <code className="text-orange-300" title={lxmfHash || undefined}>
           {lxmfHash ? `${lxmfHash.slice(0, 24)}…` : '—'}
         </code>
         {lxmfHash ? (
           <button
             type="button"
-            className="shrink-0 text-amber-400 hover:text-amber-300"
+            className="shrink-0 text-orange-400 hover:text-orange-300"
             aria-label={t('connectionPanel.reticulumIdentity.copyLxmfHash')}
             onClick={() => {
               void copyLxmfHash();
@@ -1697,7 +1704,7 @@ function IdentityConfiguredView({
         {identityQrUri ? (
           <button
             type="button"
-            className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 hover:bg-slate-800"
+            className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-0.5 text-xs"
             aria-label={t('qrIngest.showIdentityQrAria')}
             onClick={() => {
               setShowIdentityQr((v) => !v);
@@ -1716,7 +1723,7 @@ function IdentityConfiguredView({
           />
         </div>
       ) : null}
-      <label className="mt-2 block text-xs text-gray-400">
+      <label className="text-ink-400 mt-2 block text-xs">
         {t('connectionPanel.reticulumIdentity.displayName')}
         <input
           type="text"
@@ -1727,7 +1734,7 @@ function IdentityConfiguredView({
             setSaveNotice(null);
           }}
           aria-label={t('connectionPanel.reticulumIdentity.displayName')}
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200 disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
         />
       </label>
       <button
@@ -1736,16 +1743,16 @@ function IdentityConfiguredView({
         onClick={() => {
           void handleSave();
         }}
-        className="mt-2 rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+        className="border-ink-600 text-ink-300 hover:bg-ink-800 mt-2 rounded border px-2 py-1 text-xs disabled:opacity-40"
       >
         {t('connectionPanel.reticulumIdentity.saveDisplayName')}
       </button>
       {saveNotice ? (
-        <p className="text-readable-green mt-1 text-xs" role="status">
+        <p className="text-bright-green mt-1 text-xs" role="status">
           {saveNotice}
         </p>
       ) : null}
-      <label className="mt-2 block text-xs text-gray-400">
+      <label className="text-ink-400 mt-2 block text-xs">
         {t('connectionPanel.reticulumIdentity.exportPassphrase')}
         <input
           type="password"
@@ -1756,13 +1763,11 @@ function IdentityConfiguredView({
           autoComplete="new-password"
           aria-invalid={exportPinError != null}
           aria-describedby={exportPinError ? exportPinErrorId : undefined}
-          className={`mt-1 block w-full rounded border bg-slate-900 px-2 py-1.5 text-sm text-gray-200 ${
-            exportPinError ? 'border-red-500' : 'border-gray-600'
-          }`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           aria-label={t('connectionPanel.reticulumIdentity.exportPassphrase')}
         />
       </label>
-      <label className="mt-2 block text-xs text-gray-400">
+      <label className="text-ink-400 mt-2 block text-xs">
         {t('connectionPanel.reticulumIdentity.exportPassphraseConfirm')}
         <input
           type="password"
@@ -1773,9 +1778,7 @@ function IdentityConfiguredView({
           autoComplete="new-password"
           aria-invalid={exportPinError != null}
           aria-describedby={exportPinError ? exportPinErrorId : undefined}
-          className={`mt-1 block w-full rounded border bg-slate-900 px-2 py-1.5 text-sm text-gray-200 ${
-            exportPinError ? 'border-red-500' : 'border-gray-600'
-          }`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           aria-label={t('connectionPanel.reticulumIdentity.exportPassphraseConfirm')}
         />
       </label>
@@ -1790,7 +1793,7 @@ function IdentityConfiguredView({
           disabled={exportDisabled}
           onClick={onExport}
           aria-label={t('connectionPanel.reticulumIdentity.exportAria')}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.export')}
         </button>
@@ -1799,7 +1802,7 @@ function IdentityConfiguredView({
           disabled={exportDisabled}
           onClick={onExportRaw}
           aria-label={t('connectionPanel.reticulumIdentity.exportRawAria')}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('connectionPanel.reticulumIdentity.exportRaw')}
         </button>
@@ -1834,7 +1837,7 @@ function IdentitySetupView({
   const { t } = useTranslation();
   return (
     <div className="mt-3 space-y-3">
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('connectionPanel.reticulumIdentity.displayName')}
         <input
           type="text"
@@ -1843,21 +1846,21 @@ function IdentitySetupView({
             onDisplayNameChange(e.target.value);
           }}
           disabled={disabled}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} mt-1 w-full`}
         />
       </label>
       <button
         type="button"
         disabled={disabled}
         onClick={onGenerate}
-        className="rounded-lg bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-600 disabled:opacity-40"
+        className="rounded-lg bg-orange-700 px-3 py-1.5 text-sm text-white hover:bg-orange-600 disabled:opacity-40"
       >
         {t('connectionPanel.reticulumIdentity.generate')}
       </button>
       {mnemonic ? (
-        <div className="rounded border border-amber-600/40 bg-amber-950/30 p-3 text-sm">
+        <div className="rounded border border-orange-600/40 bg-orange-950/30 p-3 text-sm">
           <p className="text-muted text-xs">{t('connectionPanel.reticulumIdentity.mnemonic')}</p>
-          <p className="mt-1 font-mono text-amber-100">{mnemonic}</p>
+          <p className="mt-1 font-mono text-orange-100">{mnemonic}</p>
           <label className="mt-2 flex items-center gap-2 text-xs">
             <input
               type="checkbox"
@@ -1870,7 +1873,7 @@ function IdentitySetupView({
           </label>
         </div>
       ) : null}
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('connectionPanel.reticulumIdentity.importLabel')}
         <textarea
           value={importPhrase}
@@ -1879,14 +1882,14 @@ function IdentitySetupView({
           }}
           disabled={disabled}
           rows={2}
-          className="mt-1 w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm disabled:opacity-50"
+          className={`${TEXTAREA_BOX_CLASS} mt-1 w-full`}
         />
       </label>
       <button
         type="button"
         disabled={disabled}
         onClick={onImport}
-        className="rounded-lg border border-gray-600 px-3 py-1.5 text-sm hover:bg-slate-800 disabled:opacity-40"
+        className="border-ink-600 hover:bg-ink-800 rounded-lg border px-3 py-1.5 text-sm disabled:opacity-40"
       >
         {t('connectionPanel.reticulumIdentity.import')}
       </button>

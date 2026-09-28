@@ -177,12 +177,12 @@ export default function SearchModal({
         className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0"
         onClick={onClose}
       />
-      <div className="relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col rounded-xl border border-gray-700 bg-gray-900 shadow-2xl">
+      <div className="rounded-modal shadow-level-3 border-ink-700 bg-ink-900 relative z-10 mx-4 flex max-h-[60vh] w-full max-w-2xl flex-col border">
         {/* Input */}
-        <div className="flex items-center gap-2 border-b border-gray-700 px-4 py-3">
+        <div className="border-ink-700 flex items-center gap-2 border-b px-4 py-3">
           <Search
             aria-hidden
-            className="h-4 w-4 shrink-0 text-gray-400"
+            className="text-ink-400 h-4 w-4 shrink-0"
             trigger={searchTrigger}
             size={16}
           />
@@ -195,15 +195,15 @@ export default function SearchModal({
             }}
             placeholder={t('searchModal.placeholder')}
             spellCheck={false}
-            className="flex-1 bg-transparent text-sm text-gray-200 placeholder-gray-500 focus:outline-none"
+            className="text-ink-200 placeholder-ink-500 flex-1 bg-transparent text-sm focus:outline-none"
           />
           {loading && (
-            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border border-gray-400 border-t-transparent" />
+            <span className="border-ink-400 h-4 w-4 shrink-0 animate-spin rounded-full border border-t-transparent" />
           )}
           <button
             type="button"
             onClick={onClose}
-            className="text-lg leading-none text-gray-500 hover:text-gray-300"
+            className="text-muted hover:text-ink-300 text-lg leading-none"
           >
             ×
           </button>
@@ -212,10 +212,10 @@ export default function SearchModal({
         {/* Results */}
         <div className="overflow-y-auto">
           {results.length === 0 && !loading && query.trim() && (
-            <p className="py-8 text-center text-sm text-gray-500">{t('searchModal.noResults')}</p>
+            <p className="text-muted py-8 text-center text-sm">{t('searchModal.noResults')}</p>
           )}
           {results.length === 0 && !query.trim() && (
-            <p className="py-8 text-center text-sm text-gray-600">{t('searchModal.hint')}</p>
+            <p className="text-ink-600 py-8 text-center text-sm">{t('searchModal.hint')}</p>
           )}
           {results.map((r) => (
             <button
@@ -224,16 +224,16 @@ export default function SearchModal({
               onClick={() => {
                 handleResultClick(r);
               }}
-              className="w-full border-b border-gray-800 px-4 py-3 text-left transition-colors hover:bg-gray-800/60"
+              className="border-ink-800 hover:bg-ink-800/60 w-full border-b px-4 py-3 text-left transition-colors"
             >
               <div className="mb-0.5 flex items-center gap-2">
                 <span className="bg-brand-green/20 text-brand-green rounded px-1.5 py-0.5 font-mono text-xs">
                   {getChannelName(r.channel)}
                 </span>
-                <span className="text-xs text-gray-400">{getSenderName(r)}</span>
-                <span className="ml-auto text-xs text-gray-600">{formatTs(r.timestamp)}</span>
+                <span className="text-ink-400 text-xs">{getSenderName(r)}</span>
+                <span className="text-ink-600 ml-auto text-xs">{formatTs(r.timestamp)}</span>
               </div>
-              <p className="truncate text-sm text-gray-300">
+              <p className="text-ink-300 truncate text-sm">
                 {r.payload.length > 120 ? r.payload.slice(0, 120) + '…' : r.payload}
               </p>
             </button>
@@ -241,7 +241,7 @@ export default function SearchModal({
         </div>
 
         {results.length > 0 && (
-          <div className="border-t border-gray-800 px-4 py-2 text-xs text-gray-600">
+          <div className="border-ink-800 text-ink-600 border-t px-4 py-2 text-xs">
             {t('searchModal.resultCount', { count: results.length })}
           </div>
         )}

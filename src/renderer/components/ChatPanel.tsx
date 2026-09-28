@@ -21,6 +21,7 @@ import {
   Search,
   Smile,
   Star,
+  X,
 } from 'lucide-react-motion';
 import {
   type ComponentProps,
@@ -37,8 +38,14 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  type BatchedMessageAnnouncer,
+  createBatchedMessageAnnouncer,
+  truncateForAnnouncement,
+} from '@/renderer/lib/a11yAnnouncer';
 import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
@@ -84,6 +91,8 @@ import {
   RETICULUM_DM_HEADER_ACTION_CLASS,
   RETICULUM_DM_HEADER_STATUS_CLASS,
 } from '@/renderer/lib/reticulumDmHeaderActions';
+import { senderInitials } from '@/renderer/lib/senderInitials';
+import { CHAT_SR_ANNOUNCE_WINDOW_MS } from '@/renderer/lib/timeConstants';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
@@ -147,6 +156,7 @@ import { sendEmergencyText } from '../lib/emergencySend';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
 import {
   getCachedMecpLanguage,
+  isMecpMessage,
   loadMecpLanguage,
   localizeMecpCodes,
   mecpLanguageForAppLocale,
@@ -184,6 +194,7 @@ import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticR
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -212,12 +223,44 @@ import { ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { ReticulumPropagationNotice } from './ReticulumPropagationNotice';
 import { ReticulumVoiceMemoLine } from './ReticulumVoiceMemoLine';
 import { useToast } from './Toast';
+import { Button } from './ui/Button';
+import { chipClass, INPUT_CLASS } from './ui/formClasses';
+import { ScrollStrip } from './ui/ScrollStrip';
 
 function chatPanelIsLinux(): boolean {
   return window.electronAPI.getPlatform() === 'linux';
 }
 
 /** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
+const CHAT_TOOLBAR_BUTTON_BASE =
+  'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors';
+
+/** Icon buttons in the chat header: idle, toggled on, or a warning state (muted). */
+function chatToolbarButtonClass(state: 'idle' | 'active' | 'starred' | 'warn' = 'idle'): string {
+  switch (state) {
+    case 'active':
+      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-bright-green`;
+    case 'starred':
+      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-orange-400`;
+    case 'warn':
+      return `${CHAT_TOOLBAR_BUTTON_BASE} text-orange-400 hover:bg-sidebar-active-bg hover:text-orange-300`;
+    default:
+      return `${CHAT_TOOLBAR_BUTTON_BASE} text-muted hover:bg-sidebar-active-bg hover:text-ink-200`;
+  }
+}
+
+/** Inline unread count for chips in a scrolling strip (absolute badges would be clipped). */
+function ChipUnreadBadge({ count }: { count: number }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="text-2xs flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white"
+    >
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
+
 function ChatToolbarTooltipButton({
   tooltip,
   children,
@@ -233,9 +276,7 @@ function ChatToolbarTooltipButton({
       <button
         type="button"
         {...{ [PARENT_HOVER_ATTR]: '' }}
-        className={
-          className ?? 'text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-300'
-        }
+        className={className ?? chatToolbarButtonClass()}
         {...buttonProps}
       >
         {children}
@@ -282,7 +323,7 @@ function DmPeerInfoBar({ dmNode, nowMs, t }: { dmNode: MeshNode; nowMs: number; 
   if (parts.length === 0) return null;
   return (
     <div
-      className={`${RETICULUM_DM_HEADER_STATUS_CLASS} text-gray-400`}
+      className={`${RETICULUM_DM_HEADER_STATUS_CLASS} text-ink-400`}
       role="status"
       aria-label={t('chatPanel.dmPeerInfoAria')}
     >
@@ -315,37 +356,37 @@ function OutboxBubble({
       : row.status === 'sending'
         ? 'text-muted'
         : row.status === 'blocked'
-          ? 'text-amber-400'
+          ? 'text-orange-400'
           : 'text-red-400';
   const displayError = row.error ? translateChatSendError(t, row.error) : null;
   const isEmergency = isEmergencyOutboxPriority(row);
   return (
     <div className="mb-1 flex justify-end px-4">
       <div
-        className={`max-w-[75%] rounded-xl bg-slate-700 px-3 py-2 ${
+        className={`bg-ink-700 max-w-[75%] rounded-xl px-3 py-2 ${
           isEmergency ? 'border border-red-500' : 'opacity-80'
         }`}
       >
         {isEmergency && (
-          <div className="mb-1 flex items-center gap-2 text-[11px]">
+          <div className="text-label mb-1 flex items-center gap-2">
             <span className="rounded bg-red-600 px-1.5 py-0.5 font-semibold text-white">
               {t('chatPanel.outboxEmergencyBadge')}
             </span>
             {row.status !== 'blocked' && (
-              <span className="text-gray-300">{t('chatPanel.outboxEmergencyWillSend')}</span>
+              <span className="text-ink-300">{t('chatPanel.outboxEmergencyWillSend')}</span>
             )}
           </div>
         )}
         <div className="text-sm text-white">{row.payload}</div>
-        <div className={`mt-1 flex items-center gap-2 text-[11px] ${statusColor}`}>
+        <div className={`text-label mt-1 flex items-center gap-2 ${statusColor}`}>
           <span>{statusLabel}</span>
           {isEmergency && row.attemptCount > 0 && (
-            <span className="text-gray-300">
+            <span className="text-ink-300">
               {t('chatPanel.retryOutboxEmergencyAttempt', { count: row.attemptCount })}
             </span>
           )}
           {displayError && (
-            <span className="text-muted max-w-[140px] truncate" title={displayError}>
+            <span className="text-muted max-w-35 truncate" title={displayError}>
               — {displayError}
             </span>
           )}
@@ -356,7 +397,7 @@ function OutboxBubble({
               onClick={() => {
                 onRetry(row.id);
               }}
-              className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
+              className="text-2xs bg-ink-600 hover:bg-ink-500 rounded px-1.5 py-0.5 text-white"
             >
               {t('chatPanel.retryOutbox')}
             </button>
@@ -370,7 +411,7 @@ function OutboxBubble({
               }
               onCancel(row.id);
             }}
-            className="rounded bg-slate-600 px-1.5 py-0.5 text-[10px] text-white hover:bg-slate-500"
+            className="text-2xs bg-ink-600 hover:bg-ink-500 rounded px-1.5 py-0.5 text-white"
           >
             {t('common.cancel')}
           </button>
@@ -409,7 +450,7 @@ function TransportBadge({
     if (via === 'paper') {
       const paperLabel = t('chatPanel.reticulumSendPaper');
       return (
-        <span className="text-[10px] text-sky-400" title={paperLabel} aria-label={paperLabel}>
+        <span className="text-2xs text-sky-400" title={paperLabel} aria-label={paperLabel}>
           {paperLabel}
         </span>
       );
@@ -427,7 +468,7 @@ function TransportBadge({
               ? tcpLabel
               : networkLabel;
     return (
-      <span className="text-[10px] text-sky-400" title={label} aria-label={label}>
+      <span className="text-2xs text-sky-400" title={label} aria-label={label}>
         {viasLabel}
       </span>
     );
@@ -439,14 +480,14 @@ function TransportBadge({
   }
   if (via === 'ble') {
     return (
-      <span className="text-[10px] text-sky-400" title={bleLabel} aria-label={bleLabel}>
+      <span className="text-2xs text-sky-400" title={bleLabel} aria-label={bleLabel}>
         BLE
       </span>
     );
   }
   if (via === 'tcp') {
     return (
-      <span className="text-[10px] text-sky-400" title={tcpLabel} aria-label={tcpLabel}>
+      <span className="text-2xs text-sky-400" title={tcpLabel} aria-label={tcpLabel}>
         TCP
       </span>
     );
@@ -467,7 +508,7 @@ function StoreForwardBadge() {
   const label = t('chatPanel.receivedViaStoreForward');
   return (
     <span role="img" title={label} aria-label={label}>
-      <Archive aria-hidden className="h-3 w-3 text-amber-400" trigger={trigger} size={12} />
+      <Archive aria-hidden className="h-3 w-3 text-orange-400" trigger={trigger} size={12} />
     </span>
   );
 }
@@ -488,7 +529,7 @@ function UnreadDivider() {
   return (
     <div className="flex items-center gap-3 py-2">
       <div className="flex-1 border-t border-red-500/50" />
-      <span className="shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-red-400 uppercase">
+      <span className="text-2xs shrink-0 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 font-semibold text-red-400">
         {t('chatPanel.newMessagesDivider')}
       </span>
       <div className="flex-1 border-t border-red-500/50" />
@@ -565,6 +606,9 @@ export interface ChatPanelProps {
   nodes: Map<number, MeshNode>;
   initialDmTarget?: number | null;
   onDmTargetConsumed?: () => void;
+  /** Open this channel (launcher, notifications), then call `onChannelTargetConsumed`. */
+  initialChannelTarget?: number | null;
+  onChannelTargetConsumed?: () => void;
   isActive?: boolean;
   /** When `meshcore`, show full names, hide redundant RF-only transport badge. */
   protocol?: MeshProtocol;
@@ -646,6 +690,8 @@ function ChatPanel({
   nodes,
   initialDmTarget,
   onDmTargetConsumed,
+  initialChannelTarget,
+  onChannelTargetConsumed,
   isActive = true,
   protocol = 'meshtastic',
   identityId = null,
@@ -935,6 +981,7 @@ function ChatPanel({
     },
     [channelRestoreScopeKey],
   );
+
   const [chatActionError, setChatActionError] = useState<{
     message: string;
     viewKey: string;
@@ -1214,6 +1261,16 @@ function ChatPanel({
 
   const unreadSourceMessages = messagesForUnread ?? messages;
   const prevUnreadSourceLengthRef = useRef(unreadSourceMessages.length);
+  const messageAnnouncerRef = useRef<BatchedMessageAnnouncer | null>(null);
+  const tRef = useRef(t);
+  tRef.current = t;
+  useEffect(
+    () => () => {
+      messageAnnouncerRef.current?.dispose();
+      messageAnnouncerRef.current = null;
+    },
+    [],
+  );
 
   const getDmLabel = useCallback(
     (nodeNum: number) => {
@@ -1245,6 +1302,14 @@ function ChatPanel({
       onDmTargetConsumed?.();
     }
   }, [initialDmTarget, onDmTargetConsumed]);
+
+  // Launcher (or another panel) asked for a specific channel.
+  useEffect(() => {
+    if (initialChannelTarget == null) return;
+    selectChannel(initialChannelTarget);
+    setViewMode('channels');
+    onChannelTargetConsumed?.();
+  }, [initialChannelTarget, onChannelTargetConsumed, selectChannel]);
 
   const displayMessages = useMemo(
     () => (protocol === 'meshcore' ? meshcoreChatMessagesForDisplay(messages) : messages),
@@ -1653,7 +1718,7 @@ function ChatPanel({
     if (!isActive || isAppWindowInactive() || newLen <= prevLen) return;
 
     const newMsgs = unreadSourceMessages.slice(prevLen);
-    const hasInboundForView = newMsgs.some((msg) => {
+    const inboundForView = newMsgs.filter((msg) => {
       if (isOwnNode(msg.sender_id)) return false;
       if (msg.isHistory) return false;
       if (msg.emoji && (msg.replyId != null || msg.reticulum_reply_to_hash)) return false;
@@ -1662,7 +1727,29 @@ function ChatPanel({
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
       return msgViewKey === viewKey;
     });
-    if (!hasInboundForView) return;
+    if (inboundForView.length === 0) return;
+
+    messageAnnouncerRef.current ??= createBatchedMessageAnnouncer({
+      windowMs: CHAT_SR_ANNOUNCE_WINDOW_MS,
+      formatOne: (m) => {
+        const t = tRef.current;
+        return t('chatPanel.srNewMessage', { sender: m.sender, text: m.text });
+      },
+      formatMany: (count) => {
+        const t = tRef.current;
+        return t('chatPanel.srNewMessages', { count });
+      },
+    });
+    // MECP payloads are wire codes, not prose; the bubble renders them as a localized card.
+    const announceable = inboundForView.filter((msg) => !isMecpMessage(msg.payload));
+    if (announceable.length > 0) {
+      messageAnnouncerRef.current.push(
+        announceable.map((msg) => ({
+          sender: truncateForAnnouncement(msg.sender_name || String(msg.sender_id)),
+          text: truncateForAnnouncement(msg.payload),
+        })),
+      );
+    }
 
     requestAnimationFrame(() => {
       const dist = getDistFromChatBottom(
@@ -2407,154 +2494,169 @@ function ChatPanel({
   /** Shared DMS label + pills (Row 1 when dmOnlyChat; Row 2 otherwise). */
   const dmTabPills = (
     <>
-      <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-        {t('chatPanel.dms')}
-      </span>
+      <span className="text-muted shrink-0 text-xs font-medium">{t('chatPanel.dms')}</span>
+      {visibleDmTabs.length > 0 && (
+        <ChatChannelSwitcher
+          kind="dms"
+          channels={visibleDmTabs.map((nodeNum) => ({ index: nodeNum, name: getDmLabel(nodeNum) }))}
+          unreadCounts={dmUnreadCounts}
+          activeIndex={viewMode === 'dm' ? activeDmNode : null}
+          onSelect={openDmTo}
+        />
+      )}
       {visibleDmTabs.length === 0 ? (
-        <span className="text-[10px] text-gray-600 italic">
+        <span className="text-muted text-xs">
           {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}
         </span>
       ) : (
-        visibleDmTabs.map((nodeNum) => {
-          const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
-          const showDmUnreadBadge =
-            dmUnread > 0 && !(viewMode === 'dm' && activeDmNode === nodeNum);
-          const faceHash =
-            protocol === 'reticulum'
-              ? resolveReticulumDmFaceHash(nodeNum, nodes.get(nodeNum)?.reticulum_destination_hash)
-              : null;
-          const appearance = faceHash ? peerAppearanceByHash.get(faceHash) : undefined;
-          return (
-            <div
-              key={`dm-${protocol}-${nodeNum}`}
-              className={`relative flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                viewMode === 'dm' && activeDmNode === nodeNum
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-secondary-dark text-muted hover:text-gray-200'
-              }`}
-            >
-              <button
-                type="button"
-                aria-label={getDmLabel(nodeNum)}
-                className={`inline-flex max-w-full min-w-0 items-center gap-1 truncate rounded-full px-0 py-0 text-left font-medium transition-colors ${
-                  viewMode === 'dm' && activeDmNode === nodeNum
-                    ? 'text-white'
-                    : 'text-muted hover:text-gray-200'
+        <ScrollStrip
+          aria-label={t('chatPanel.dms')}
+          activeKey={viewMode === 'dm' ? activeDmNode : null}
+          className="flex-1"
+        >
+          {visibleDmTabs.map((nodeNum) => {
+            const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
+            const isActiveDm = viewMode === 'dm' && activeDmNode === nodeNum;
+            const showDmUnreadBadge = dmUnread > 0 && !isActiveDm;
+            const dmMuted = mutedViews.has(`dm:${nodeNum}`);
+            const faceHash =
+              protocol === 'reticulum'
+                ? resolveReticulumDmFaceHash(
+                    nodeNum,
+                    nodes.get(nodeNum)?.reticulum_destination_hash,
+                  )
+                : null;
+            const appearance = faceHash ? peerAppearanceByHash.get(faceHash) : undefined;
+            return (
+              <div
+                key={`dm-${protocol}-${nodeNum}`}
+                data-strip-active={isActiveDm ? 'true' : undefined}
+                className={`text-control flex h-7 shrink-0 items-center gap-1 rounded-lg border pr-1 pl-2 font-medium transition-colors ${
+                  isActiveDm
+                    ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
+                    : 'bg-deep-black hover:border-secondary-dark border-ink-800 text-ink-300 hover:text-ink-100'
                 }`}
-                onClick={() => {
-                  openDmTo(nodeNum);
-                }}
               >
-                {protocol === 'reticulum' ? (
-                  <ReticulumProfileIconSlot
-                    iconName={appearance?.icon_name}
-                    iconColor={appearance?.icon_color}
-                    destinationHash={faceHash}
-                    size={14}
-                    className="shrink-0"
-                  />
-                ) : null}
-                <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  toggleMuteView(`dm:${nodeNum}`);
-                }}
-                aria-label={
-                  mutedViews.has(`dm:${nodeNum}`)
-                    ? t('chatPanel.unmuteConversation')
-                    : t('chatPanel.muteConversation')
-                }
-                className={`ml-0.5 text-[10px] leading-none transition-colors ${
-                  mutedViews.has(`dm:${nodeNum}`)
-                    ? 'text-amber-500 hover:text-amber-300'
-                    : 'text-muted hover:text-white'
-                }`}
-                title={
-                  mutedViews.has(`dm:${nodeNum}`)
-                    ? t('chatPanel.unmuteConversation')
-                    : t('chatPanel.muteConversation')
-                }
-              >
-                {mutedViews.has(`dm:${nodeNum}`) ? (
-                  <BellOff
-                    aria-hidden
-                    className="h-2.5 w-2.5"
-                    trigger={parentIconTrigger}
-                    size={10}
-                  />
-                ) : (
-                  <Bell aria-hidden className="h-2.5 w-2.5" trigger={parentIconTrigger} size={10} />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  closeDmTab(nodeNum);
-                }}
-                aria-label={t('chatPanel.closeDmTab')}
-                className="text-muted ml-0.5 text-[10px] leading-none hover:text-white"
-                title={t('chatPanel.closeDm')}
-              >
-                x
-              </button>
-              {showDmUnreadBadge && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                  {dmUnread > 99 ? '99+' : dmUnread}
-                </span>
-              )}
-            </div>
-          );
-        })
+                <button
+                  type="button"
+                  aria-label={getDmLabel(nodeNum)}
+                  aria-pressed={isActiveDm}
+                  className="inline-flex max-w-[12rem] min-w-0 items-center gap-1 truncate text-left"
+                  onClick={() => {
+                    openDmTo(nodeNum);
+                  }}
+                >
+                  {protocol === 'reticulum' ? (
+                    <ReticulumProfileIconSlot
+                      iconName={appearance?.icon_name}
+                      iconColor={appearance?.icon_color}
+                      destinationHash={faceHash}
+                      size={14}
+                      className="shrink-0"
+                    />
+                  ) : null}
+                  <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
+                </button>
+                {showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleMuteView(`dm:${nodeNum}`);
+                  }}
+                  aria-label={
+                    dmMuted ? t('chatPanel.unmuteConversation') : t('chatPanel.muteConversation')
+                  }
+                  className={`flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                    dmMuted
+                      ? 'text-orange-400 hover:text-orange-300'
+                      : 'text-muted hover:text-ink-100'
+                  }`}
+                  title={
+                    dmMuted ? t('chatPanel.unmuteConversation') : t('chatPanel.muteConversation')
+                  }
+                >
+                  {dmMuted ? (
+                    <BellOff
+                      aria-hidden
+                      className="h-3 w-3"
+                      trigger={parentIconTrigger}
+                      size={12}
+                    />
+                  ) : (
+                    <Bell aria-hidden className="h-3 w-3" trigger={parentIconTrigger} size={12} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeDmTab(nodeNum);
+                  }}
+                  aria-label={t('chatPanel.closeDmTab')}
+                  className="text-muted hover:text-ink-100 flex h-5 w-5 items-center justify-center rounded"
+                  title={t('chatPanel.closeDm')}
+                >
+                  <X aria-hidden className="h-3 w-3" size={12} />
+                </button>
+              </div>
+            );
+          })}
+        </ScrollStrip>
       )}
     </>
   );
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      {/* Row 1 — Channel selector (or Reticulum DMs) + toolbar utilities */}
+      {/* Row 1 — Channels (or Reticulum DMs) in one scrolling row + toolbar utilities */}
       <div
-        className={`mb-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-50' : ''}`}
+        className={`mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
       >
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2" data-testid="chat-conversation-row">
           {dmOnlyChat ? (
             dmTabPills
           ) : (
             <>
-              <span className="text-muted mr-1 shrink-0 text-[10px] font-medium tracking-wider uppercase">
-                {t('chatPanel.channels')}
-              </span>
-              {channels.map((ch, chIdx) => {
-                const unread = unreadCounts.get(ch.index) ?? 0;
-                const channelUnreadSuffix =
-                  unread > 0 && !(viewMode === 'channels' && channel === ch.index)
-                    ? ` ${unread > 99 ? '99+' : unread}`
-                    : '';
-                return (
-                  <button
-                    type="button"
-                    key={`ch-${ch.index}-${chIdx}-${ch.name}`}
-                    aria-label={`${ch.name}${channelUnreadSuffix}`}
-                    onClick={() => {
-                      selectChannel(ch.index);
-                      setViewMode('channels');
-                    }}
-                    className={`relative shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                      viewMode === 'channels' && channel === ch.index
-                        ? 'bg-readable-green text-white'
-                        : 'bg-secondary-dark text-muted hover:text-gray-200'
-                    }`}
-                  >
-                    {ch.name}
-                    {unread > 0 && !(viewMode === 'channels' && channel === ch.index) && (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-                        {unread > 99 ? '99+' : unread}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              <ChatChannelSwitcher
+                channels={channels}
+                unreadCounts={unreadCounts}
+                activeIndex={viewMode === 'channels' ? channel : null}
+                onSelect={(index) => {
+                  selectChannel(index);
+                  setViewMode('channels');
+                }}
+              />
+              <ScrollStrip
+                aria-label={t('chatPanel.channels')}
+                activeKey={viewMode === 'channels' ? channel : null}
+                className="flex-1"
+              >
+                {channels.map((ch, chIdx) => {
+                  const isActiveChannel = viewMode === 'channels' && channel === ch.index;
+                  const unread = isActiveChannel ? 0 : (unreadCounts.get(ch.index) ?? 0);
+                  return (
+                    <button
+                      type="button"
+                      key={`ch-${ch.index}-${chIdx}-${ch.name}`}
+                      aria-label={channelButtonLabel(ch.name, unread)}
+                      aria-pressed={isActiveChannel}
+                      data-strip-active={isActiveChannel ? 'true' : undefined}
+                      onClick={() => {
+                        selectChannel(ch.index);
+                        setViewMode('channels');
+                      }}
+                      className={`${chipClass(isActiveChannel)} inline-flex shrink-0 items-center gap-1.5`}
+                    >
+                      {!ch.name.startsWith('#') && (
+                        <span aria-hidden="true" className="text-muted -mr-1 font-mono">
+                          #
+                        </span>
+                      )}
+                      {ch.name}
+                      {unread > 0 && <ChipUnreadBadge count={unread} />}
+                    </button>
+                  );
+                })}
+              </ScrollStrip>
               {meshcoreChannelSources && onSetMeshcoreChannel ? (
                 <MeshcoreChatChannelManager
                   channels={meshcoreChannelSources}
@@ -2570,16 +2672,16 @@ function ChatPanel({
           )}
         </div>
 
-        <div className="flex shrink-0 items-start gap-2 self-start">
+        <div
+          role="group"
+          aria-label={t('chatPanel.toolbarLabel')}
+          className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 rounded-lg border p-0.5"
+        >
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.jumpToDate')}
             aria-pressed={showDatePicker}
             aria-label={t('chatPanel.jumpToDate')}
-            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-              showDatePicker
-                ? 'bg-brand-green/20 text-bright-green'
-                : 'text-muted hover:text-gray-300'
-            }`}
+            className={chatToolbarButtonClass(showDatePicker ? 'active' : 'idle')}
             onClick={() => {
               setShowDatePicker((v) => !v);
             }}
@@ -2644,9 +2746,7 @@ function ChatPanel({
             tooltip={t('chatPanel.searchMessages')}
             aria-pressed={showSearch}
             aria-label={t('chatPanel.searchMessages')}
-            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-              showSearch ? 'bg-brand-green/20 text-bright-green' : 'text-muted hover:text-gray-300'
-            }`}
+            className={chatToolbarButtonClass(showSearch ? 'active' : 'idle')}
             onClick={() => {
               toggleSearch();
             }}
@@ -2667,11 +2767,7 @@ function ChatPanel({
                   ? t('chatPanel.unmuteConversation')
                   : t('chatPanel.muteConversation')
               }
-              className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-                mutedViews.has(viewKey)
-                  ? 'text-amber-500 hover:text-amber-300'
-                  : 'text-muted hover:text-gray-300'
-              }`}
+              className={chatToolbarButtonClass(mutedViews.has(viewKey) ? 'warn' : 'idle')}
               onClick={() => {
                 toggleMuteView(viewKey);
               }}
@@ -2688,11 +2784,7 @@ function ChatPanel({
             tooltip={t('chatPanel.starredMessages')}
             aria-pressed={viewMode === 'starred'}
             aria-label={t('chatPanel.starredMessages')}
-            className={`shrink-0 rounded-lg p-1.5 transition-colors ${
-              viewMode === 'starred'
-                ? 'bg-brand-green/20 text-amber-400'
-                : 'text-muted hover:text-gray-300'
-            }`}
+            className={chatToolbarButtonClass(viewMode === 'starred' ? 'starred' : 'idle')}
             onClick={() => {
               setViewMode((v) => (v === 'starred' ? (dmOnlyChat ? 'dm' : 'channels') : 'starred'));
             }}
@@ -2717,43 +2809,40 @@ function ChatPanel({
       {/* Row 2 — DM tabs (Meshtastic/MeshCore; Reticulum promotes DMs into Row 1) */}
       {!dmOnlyChat ? (
         <div
-          className={`mb-2 flex min-h-[1.75rem] min-w-0 items-center gap-2 whitespace-nowrap ${viewMode === 'channels' ? 'opacity-50' : ''}`}
+          className={`mb-2 flex min-h-7 min-w-0 items-center gap-2 ${viewMode === 'channels' ? 'opacity-60' : ''}`}
         >
           {dmTabPills}
         </div>
       ) : null}
 
       {protocol === 'reticulum' && dmOnlyChat ? (
-        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-1">
-          <input
-            type="text"
-            value={dmAddressInput}
-            onChange={(e) => {
-              setDmAddressInput(e.target.value);
-              if (dmAddressError) setDmAddressError(null);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                submitDmByAddress();
-              }
-            }}
-            placeholder={t('chatPanel.dmAddressPlaceholder')}
-            aria-label={t('chatPanel.dmAddressAria')}
-            aria-invalid={dmAddressError != null}
-            spellCheck={false}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 min-w-0 flex-1 rounded border border-gray-600/50 px-2 py-1 font-mono text-xs text-gray-200 focus:outline-none sm:max-w-md"
-          />
-          <button
-            type="button"
-            disabled={!dmAddressInput.trim()}
-            onClick={submitDmByAddress}
-            className="bg-secondary-dark text-muted shrink-0 rounded border border-gray-600/50 px-2.5 py-1 text-xs hover:text-gray-200 disabled:opacity-40"
-          >
+        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1 sm:max-w-md">
+            <input
+              type="text"
+              value={dmAddressInput}
+              onChange={(e) => {
+                setDmAddressInput(e.target.value);
+                if (dmAddressError) setDmAddressError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  submitDmByAddress();
+                }
+              }}
+              placeholder={t('chatPanel.dmAddressPlaceholder')}
+              aria-label={t('chatPanel.dmAddressAria')}
+              aria-invalid={dmAddressError != null}
+              spellCheck={false}
+              className={`${INPUT_CLASS} font-mono`}
+            />
+          </div>
+          <Button size="sm" disabled={!dmAddressInput.trim()} onClick={submitDmByAddress}>
             {t('chatPanel.openDmByAddress')}
-          </button>
+          </Button>
           {dmAddressError ? (
-            <span className="w-full text-[10px] text-red-400" role="alert">
+            <span className="w-full text-xs text-red-400" role="alert">
               {dmAddressError}
             </span>
           ) : null}
@@ -2774,7 +2863,7 @@ function ChatPanel({
               placeholder={t('chatPanel.searchMessagesPlaceholder')}
               aria-label={t('chatPanel.searchMessagesPlaceholder')}
               spellCheck={false}
-              className="bg-secondary-dark/80 focus:border-brand-green/50 min-w-0 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+              className="bg-app-bg border-secondary-dark placeholder:text-muted focus:border-brand-green text-body text-ink-200 h-8 min-w-0 flex-1 rounded-lg border px-2.5 focus:outline-none"
             />
             {searchQuery && (
               <button
@@ -2782,7 +2871,7 @@ function ChatPanel({
                 onClick={() => {
                   setSearchQuery('');
                 }}
-                className="text-muted shrink-0 px-1 text-lg leading-none hover:text-gray-300"
+                className="text-muted hover:text-ink-300 shrink-0 px-1 text-lg leading-none"
                 aria-label={t('common.clear')}
               >
                 ×
@@ -2808,7 +2897,7 @@ function ChatPanel({
               setJumpDate(e.target.value);
               handleJumpToDate(e.target.value);
             }}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+            className="bg-app-bg border-secondary-dark focus:border-brand-green text-body text-ink-200 h-8 rounded-lg border px-2.5 focus:outline-none"
           />
           {jumpDate && (
             <button
@@ -2816,7 +2905,7 @@ function ChatPanel({
               onClick={() => {
                 setJumpDate('');
               }}
-              className="text-muted text-xs hover:text-gray-300"
+              className="text-muted hover:text-ink-300 text-xs"
               aria-label={t('chatPanel.clearDateAria')}
             >
               ×
@@ -2827,7 +2916,7 @@ function ChatPanel({
 
       {/* Sender filter banner */}
       {filterSender != null && (
-        <div className="mb-2 flex items-center justify-between rounded-lg border border-blue-600/40 bg-blue-900/20 px-3 py-1.5 text-xs text-blue-300">
+        <div className="mb-2 flex items-center justify-between rounded-lg border border-indigo-600/40 bg-indigo-900/20 px-3 py-1.5 text-xs text-indigo-300">
           <span>
             {t('chatPanel.filteringBySender', {
               name: nodes.get(filterSender)
@@ -2850,7 +2939,7 @@ function ChatPanel({
 
       {/* Disconnected overlay */}
       {!isConnected && (
-        <div className="bg-deep-black/60 mb-2 rounded-xl border border-gray-700 p-4 text-center">
+        <div className="bg-deep-black border-ink-800 mb-2 rounded-xl border p-4 text-center">
           <p className="text-muted text-sm">{t('chatPanel.readOnlyDisconnected')}</p>
         </div>
       )}
@@ -3013,21 +3102,21 @@ function ChatPanel({
                   return (
                     <div
                       key={s.starId}
-                      className="border-border/30 flex items-start gap-2 rounded-lg border bg-slate-800/40 p-2.5"
+                      className="border-border/30 bg-ink-800/40 flex items-start gap-2 rounded-lg border p-2.5"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="mb-0.5 flex items-center gap-2">
-                          <span className="text-xs font-medium text-gray-300">
+                          <span className="text-ink-300 text-xs font-medium">
                             {s.sender_name || String(s.sender_id)}
                           </span>
-                          <span className="text-muted text-[10px]">
+                          <span className="text-muted text-2xs">
                             {formatFullTimestamp(s.timestamp)}
                           </span>
-                          <span className="rounded bg-slate-700 px-1 py-0 text-[9px] text-gray-400">
+                          <span className="text-3xs bg-ink-700 text-ink-400 rounded px-1 py-0">
                             {sourceLabel}
                           </span>
                         </div>
-                        <p className="text-sm break-words text-gray-200">{s.payload}</p>
+                        <p className="text-ink-200 text-sm break-words">{s.payload}</p>
                       </div>
                       <div className="flex shrink-0 flex-col gap-1">
                         <button
@@ -3042,7 +3131,7 @@ function ChatPanel({
                             }
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}
-                          className="rounded p-1 text-[10px] text-gray-500 hover:text-blue-400"
+                          className="text-2xs text-ink-400 rounded p-1 hover:text-indigo-400"
                           title={t('chatPanel.goToMessage')}
                           aria-label={t('chatPanel.goToMessage')}
                         >
@@ -3059,7 +3148,7 @@ function ChatPanel({
                             setStarred((prev) => prev.filter((x) => x.starId !== s.starId));
                           }}
                           {...{ [PARENT_HOVER_ATTR]: '' }}
-                          className="rounded p-1 text-[10px] text-amber-500 hover:text-amber-300"
+                          className="text-2xs rounded p-1 text-orange-500 hover:text-orange-300"
                           title={t('chatPanel.unstarMessage')}
                           aria-label={t('chatPanel.unstarMessage')}
                         >
@@ -3126,15 +3215,45 @@ function ChatPanel({
                   protocol === 'meshcore' && rawSenderName === 'Unknown'
                     ? t('common.unknown')
                     : rawSenderName;
+                // Reticulum peers have an LXMF face; it sits in the avatar gutter (incoming) or the
+                // header (own messages). Other protocols use initials in the gutter.
+                const senderFaceHash =
+                  protocol === 'reticulum'
+                    ? resolveReticulumDmFaceHash(
+                        msg.sender_id,
+                        msg.reticulum_sender_hash ??
+                          nodes.get(msg.sender_id)?.reticulum_destination_hash,
+                      )
+                    : null;
+                const senderAppearance = senderFaceHash
+                  ? peerAppearanceByHash.get(senderFaceHash)
+                  : undefined;
+                // Incoming transport + RF hops ("2 hops", RF / MQTT). Shown on the header line
+                // so each bubble is one line shorter; compact continuations have no header and
+                // keep it as a footer.
+                const showRfHops =
+                  msg.rxHops != null && (msg.receivedVia === 'rf' || msg.receivedVia === 'both');
+                const incomingMeta =
+                  !isOwn && (msg.receivedVia || msg.viaStoreForward || showRfHops) ? (
+                    <>
+                      {showRfHops && msg.rxHops != null && (
+                        <ChatRfHopLabel rxHops={msg.rxHops} msg={msg} />
+                      )}
+                      {msg.viaStoreForward && <StoreForwardBadge />}
+                      {msg.receivedVia && (
+                        <TransportBadge via={msg.receivedVia} protocol={protocol} />
+                      )}
+                    </>
+                  ) : null;
 
                 // Day separator
                 const daySeparator = daySeparatorIndices.has(i) ? (
                   <div className="flex items-center gap-3 py-2">
-                    <div className="flex-1 border-t border-gray-700" />
+                    <div className="border-ink-800 flex-1 border-t" />
                     <span className="text-muted shrink-0 text-xs font-medium">
                       {formatDayLabel(msg.timestamp, t)}
                     </span>
-                    <div className="flex-1 border-t border-gray-700" />
+                    <div className="border-ink-800 flex-1 border-t" />
                   </div>
                 ) : null;
 
@@ -3167,7 +3286,7 @@ function ChatPanel({
                     key={vi.key}
                     data-index={vi.index}
                     ref={messageVirtualizer.measureElement}
-                    className={`absolute top-0 left-0 w-full ${compactMode ? 'pb-0.5' : 'pb-1.5'}`}
+                    className={`absolute top-0 left-0 w-full ${compactMode ? 'pb-0.5' : 'pb-1'}`}
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
                     <div className={isContinuation ? '!mt-0' : undefined}>
@@ -3184,53 +3303,59 @@ function ChatPanel({
                       >
                         {/* Bubble row */}
                         <div
-                          className={`group/msg flex max-w-[80%] items-end gap-1 ${
+                          className={`group/msg flex max-w-[94%] items-end gap-1 sm:max-w-[80%] ${
                             isOwn ? 'flex-row-reverse' : 'flex-row'
                           }`}
                         >
+                          {/* Sender avatar (Option A): initials or the Reticulum face, once per
+                              run of messages; continuations keep the gutter so text lines up. */}
+                          {!isOwn && (
+                            <div
+                              aria-hidden="true"
+                              data-chat-avatar={isContinuation ? 'spacer' : 'sender'}
+                              className="mr-1 flex w-6 shrink-0 justify-center self-start"
+                            >
+                              {isContinuation ? null : senderFaceHash ? (
+                                <ReticulumProfileIconSlot
+                                  iconName={senderAppearance?.icon_name}
+                                  iconColor={senderAppearance?.icon_color}
+                                  destinationHash={senderFaceHash}
+                                  size={24}
+                                  className="shrink-0"
+                                />
+                              ) : (
+                                <span className="bg-sidebar-active-bg text-label text-ink-300 flex h-6 w-6 items-center justify-center rounded-full font-semibold">
+                                  {senderInitials(displaySenderName, msg.sender_id)}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {/* Message bubble */}
                           <div
-                            className={`min-w-0 rounded-2xl px-3 ${compactMode ? 'py-1' : 'py-2'} ${(() => {
+                            className={`min-w-0 rounded-xl border px-3 ${compactMode ? 'py-1' : 'py-1.5'} ${(() => {
                               const mecp = tryParseMecp(msg.payload);
                               if (mecp?.severity != null) {
                                 return mecpChatBubbleToneClasses(mecp.severity, isOwn);
                               }
-                              return compactMerged
-                                ? `${compactStackTop ? 'rounded-t-none border-t-0' : ''} ${compactStackBottom ? 'rounded-b-none border-b-0' : ''} ${
-                                    isDm
-                                      ? isOwn
-                                        ? 'border border-purple-500/30 bg-purple-600/20'
-                                        : 'border border-purple-600/30 bg-purple-700/20'
-                                      : isOwn
-                                        ? 'border border-blue-500/30 bg-blue-600/20'
-                                        : 'border-chat-incoming-border bg-chat-incoming-bg border'
-                                  }`
-                                : isDm
-                                  ? isOwn
-                                    ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-purple-500/30 bg-purple-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border border-purple-600/30 bg-purple-700/20${isContinuation ? 'rounded-tl-sm' : ''}`
-                                  : isOwn
-                                    ? `${isFollowedByContinuation ? 'rounded-br-none' : 'rounded-br-sm'} border border-blue-500/30 bg-blue-600/20${isContinuation ? 'rounded-tr-sm' : ''}`
-                                    : `${isFollowedByContinuation ? 'rounded-bl-none' : 'rounded-bl-sm'} border-chat-incoming-border border bg-chat-incoming-bg${isContinuation ? 'rounded-tl-sm' : ''}`;
+                              // Option B: incoming and outgoing tones are theme tokens (App >
+                              // Appearance > Colors); DMs use the same tones as channels.
+                              const tone = isOwn
+                                ? 'border-chat-outgoing-border bg-chat-outgoing-bg'
+                                : 'border-chat-incoming-border bg-chat-incoming-bg';
+                              // The small corner points at the sender (top-left in, top-right out).
+                              const tail = isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm';
+                              if (!compactMerged) return `${tone} ${tail}`;
+                              return `${tone} ${compactStackTop ? 'rounded-t-none border-t-0' : tail} ${
+                                compactStackBottom ? 'rounded-b-none border-b-0' : ''
+                              }`;
                             })()}`}
                           >
                             {/* Header: sender name (clickable) + DM indicator + time */}
                             {!isContinuation &&
                               (() => {
-                                const senderFaceHash =
-                                  protocol === 'reticulum'
-                                    ? resolveReticulumDmFaceHash(
-                                        msg.sender_id,
-                                        msg.reticulum_sender_hash ??
-                                          nodes.get(msg.sender_id)?.reticulum_destination_hash,
-                                      )
-                                    : null;
-                                const senderAppearance = senderFaceHash
-                                  ? peerAppearanceByHash.get(senderFaceHash)
-                                  : undefined;
                                 return (
                                   <div className="mb-0.5 flex items-center gap-2">
-                                    {senderFaceHash ? (
+                                    {isOwn && senderFaceHash ? (
                                       <ReticulumProfileIconSlot
                                         iconName={senderAppearance?.icon_name}
                                         iconColor={senderAppearance?.icon_color}
@@ -3252,14 +3377,12 @@ function ChatPanel({
                                         }
                                         onNodeClick(msg.sender_id);
                                       }}
-                                      className={`cursor-pointer text-xs font-semibold hover:underline ${
-                                        isDm
-                                          ? 'text-purple-400'
-                                          : isOwn
-                                            ? 'text-blue-400'
-                                            : filterSender === msg.sender_id
-                                              ? 'text-blue-300 underline'
-                                              : 'text-bright-green'
+                                      className={`min-w-0 cursor-pointer truncate text-xs font-semibold hover:underline ${
+                                        isOwn
+                                          ? 'text-ink-200'
+                                          : filterSender === msg.sender_id
+                                            ? 'text-bright-green underline'
+                                            : 'text-bright-green'
                                       }`}
                                       title={t('chatPanel.filterBySender')}
                                     >
@@ -3276,10 +3399,10 @@ function ChatPanel({
                                         aria-label={t('chatPanel.filterBySender')}
                                         aria-pressed={filterSender === msg.sender_id}
                                         {...{ [PARENT_HOVER_ATTR]: '' }}
-                                        className={`shrink-0 rounded px-1 py-0.5 text-[9px] transition-colors ${
+                                        className={`text-3xs shrink-0 rounded px-1 py-0.5 transition-colors ${
                                           filterSender === msg.sender_id
-                                            ? 'bg-blue-700/40 text-blue-300'
-                                            : 'text-gray-600 hover:text-blue-400'
+                                            ? 'bg-brand-green/12 text-bright-green'
+                                            : 'text-muted hover:text-ink-200'
                                         }`}
                                         title={t('chatPanel.filterBySender')}
                                       >
@@ -3292,19 +3415,22 @@ function ChatPanel({
                                       </button>
                                     )}
                                     {isDm && (
-                                      <span className="text-[10px] font-medium text-purple-400/70">
-                                        DM
-                                      </span>
+                                      <span className="text-muted text-2xs font-medium">DM</span>
                                     )}
                                     <span
-                                      className="text-muted/70 text-[10px]"
+                                      className="text-muted text-2xs shrink-0 font-mono whitespace-nowrap tabular-nums"
                                       title={formatFullTimestamp(msg.timestamp)}
                                     >
                                       {formatTime(msg.timestamp)}
                                     </span>
                                     {channels.length > 1 && !isDm && (
-                                      <span className="text-[10px] text-gray-600">
+                                      <span className="text-muted text-2xs font-mono">
                                         ch{msg.channel}
+                                      </span>
+                                    )}
+                                    {incomingMeta && (
+                                      <span className="ml-auto flex shrink-0 items-center gap-2 pl-2">
+                                        {incomingMeta}
                                       </span>
                                     )}
                                   </div>
@@ -3314,7 +3440,7 @@ function ChatPanel({
                             {showContinuationTime && (
                               <div className={`mb-0.5 ${isOwn ? 'flex justify-end' : ''}`}>
                                 <span
-                                  className="text-muted/70 text-[10px]"
+                                  className="text-muted text-2xs"
                                   title={formatFullTimestamp(msg.timestamp)}
                                 >
                                   {formatTime(msg.timestamp)}
@@ -3373,16 +3499,20 @@ function ChatPanel({
                                   !!orig && (reticulumReplyHash != null || msg.replyId != null);
                                 if (!quoteSnippet && !quotedLabel) return null;
                                 const quoteClassName =
-                                  'bg-secondary-dark/50 mb-1.5 flex w-full gap-1.5 rounded-lg border border-gray-600/50 px-2 py-1.5 text-left';
+                                  'bg-app-bg mb-1.5 flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left';
                                 const quoteBody = (
                                   <>
-                                    <div className="min-h-[2rem] w-0.5 shrink-0 self-stretch rounded-full bg-gray-500" />
+                                    <CornerUpLeft
+                                      aria-hidden
+                                      className="text-muted mt-0.5 h-3.5 w-3.5 shrink-0"
+                                      size={14}
+                                    />
                                     <div className="min-w-0 flex-1">
-                                      <span className="block text-[10px] font-semibold text-gray-400">
+                                      <span className="text-2xs text-ink-300 block font-semibold">
                                         {quotedLabel}
                                       </span>
                                       {quoteSnippet ? (
-                                        <span className="line-clamp-2 block text-[11px] break-words text-gray-500">
+                                        <span className="text-label text-muted line-clamp-2 block break-words">
                                           {quoteSnippet}
                                         </span>
                                       ) : null}
@@ -3426,10 +3556,10 @@ function ChatPanel({
                               })()}
 
                             {/* Message text with optional search highlight (div: ChatPayloadText may render block link previews) */}
-                            <div className="text-sm leading-relaxed break-words whitespace-pre-wrap text-gray-200">
+                            <div className="text-ink-200 text-sm leading-relaxed break-words whitespace-pre-wrap">
                               {/^\[voice:/i.test(msg.payload) &&
                               !(hasReticulumVoiceMemo && msg.reticulumAttachmentPath) ? (
-                                <span className="text-gray-400 italic">
+                                <span className="text-ink-400 italic">
                                   {t('chatPanel.voiceMemo.unavailable')}
                                 </span>
                               ) : hasReticulumVoiceMemo &&
@@ -3469,7 +3599,7 @@ function ChatPanel({
                                       severity={mecp.severity}
                                       pulse={!isOwn && mecp.severity <= 1 && !mecp.isDrill}
                                     />
-                                    <p className="text-[10px] font-normal text-red-200/90">
+                                    <p className="text-2xs font-normal text-red-200/90">
                                       {localizeMecpCodes(mecp, mecpLang)}
                                     </p>
                                   </div>
@@ -3477,23 +3607,12 @@ function ChatPanel({
                               })()}
                             </div>
 
-                            {/* Transport + RF hop count (incoming) */}
-                            {!isOwn &&
-                              (msg.receivedVia ||
-                                msg.viaStoreForward ||
-                                (msg.rxHops != null &&
-                                  (msg.receivedVia === 'rf' || msg.receivedVia === 'both'))) && (
-                                <div className="mt-0.5 flex items-center justify-end gap-2">
-                                  {msg.rxHops != null &&
-                                    (msg.receivedVia === 'rf' || msg.receivedVia === 'both') && (
-                                      <ChatRfHopLabel rxHops={msg.rxHops} msg={msg} />
-                                    )}
-                                  {msg.viaStoreForward && <StoreForwardBadge />}
-                                  {msg.receivedVia && (
-                                    <TransportBadge via={msg.receivedVia} protocol={protocol} />
-                                  )}
-                                </div>
-                              )}
+                            {/* Transport + RF hop count on continuations (no header line) */}
+                            {isContinuation && incomingMeta && (
+                              <div className="mt-0.5 flex items-center justify-end gap-2">
+                                {incomingMeta}
+                              </div>
+                            )}
 
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
@@ -3508,7 +3627,7 @@ function ChatPanel({
                                         onResend(msg);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="text-gray-500 transition-colors hover:text-gray-300"
+                                      className="text-ink-400 hover:text-ink-200 transition-colors"
                                       title={t('chatPanel.resendMessage')}
                                     >
                                       <RotateCcw
@@ -3600,7 +3719,7 @@ function ChatPanel({
                                 });
                               }}
                               {...{ [PARENT_HOVER_ATTR]: '' }}
-                              className="message-action rounded p-1 text-xs text-gray-600"
+                              className="message-action text-muted rounded p-1 text-xs"
                               aria-label={t('chatPanel.copyMessage')}
                               title={t('chatPanel.copyMessage')}
                             >
@@ -3620,7 +3739,7 @@ function ChatPanel({
                                     composerInputRef.current?.focus();
                                   }}
                                   {...{ [PARENT_HOVER_ATTR]: '' }}
-                                  className="message-action rounded p-1 text-xs text-gray-600"
+                                  className="message-action text-muted rounded p-1 text-xs"
                                   aria-label={t('chatPanel.replyToMessage')}
                                   title={t('chatPanel.replyButton')}
                                 >
@@ -3684,7 +3803,7 @@ function ChatPanel({
                                         }
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="message-action rounded p-1 text-xs text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
+                                      className="message-action text-muted rounded p-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
                                       aria-label={reactLabel}
                                       title={reactTitle}
                                     >
@@ -3709,7 +3828,7 @@ function ChatPanel({
                                         openDmTo(msg.sender_id);
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
-                                      className="message-action rounded p-1 text-xs text-gray-600"
+                                      className="message-action text-muted rounded p-1 text-xs"
                                       aria-label={t('chatPanel.directMessage', {
                                         name: msg.sender_name,
                                       })}
@@ -3737,7 +3856,7 @@ function ChatPanel({
                                       }}
                                       {...{ [PARENT_HOVER_ATTR]: '' }}
                                       className={`message-action-star rounded p-1 text-xs ${
-                                        isStarred ? 'starred' : 'text-gray-600'
+                                        isStarred ? 'starred' : 'text-muted'
                                       }`}
                                       aria-label={
                                         isStarred
@@ -3769,7 +3888,11 @@ function ChatPanel({
                           <div
                             className={`${pickerOpensAbove ? 'order-first mb-1' : 'mt-1'} ${isOwn ? 'self-end' : 'self-start'}`}
                           >
-                            <emoji-picker ref={reactionPickerRef} style={{ width: '320px' }} />
+                            <emoji-picker
+                              ref={reactionPickerRef}
+                              data-source={BUNDLED_EMOJI_DATA_SOURCE}
+                              style={{ width: '320px' }}
+                            />
                           </div>
                         )}
 
@@ -3799,12 +3922,12 @@ function ChatPanel({
                                       ? `r-${r.id}`
                                       : `r-${r.sender_id}-${r.emoji}-${rIdx}`
                                   }
-                                  className="bg-secondary-dark/80 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border border-gray-600/50 px-1.5 py-0.5 text-xs"
+                                  className="bg-deep-black border-ink-800 inline-flex max-w-[min(100%,14rem)] cursor-default items-center gap-1 rounded-full border px-1.5 py-0.5 text-xs"
                                   title={titleText}
                                   aria-label={ariaLabel}
                                 >
                                   {!hideReactorLabel && (
-                                    <span className="max-w-[5.5rem] truncate text-[10px] text-gray-400">
+                                    <span className="text-2xs text-ink-400 max-w-[5.5rem] truncate">
                                       {reactorLabel}
                                     </span>
                                   )}
@@ -3834,7 +3957,7 @@ function ChatPanel({
             onClick={() => {
               scrollToUnreadOrBottom();
             }}
-            className="bg-secondary-dark absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-gray-600 px-3 py-1.5 text-xs font-medium text-gray-300 shadow-lg transition-all hover:bg-gray-600"
+            className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark shadow-level-3 text-ink-200 absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all"
           >
             <ArrowDown aria-hidden className="h-3.5 w-3.5" trigger={parentIconTrigger} size={14} />
             {hasUnreadDivider ? t('chatPanel.jumpToUnread') : t('chatPanel.jumpToLatest')}
@@ -3865,7 +3988,7 @@ function ChatPanel({
       {protocol === 'reticulum' && isDmMode && reticulumDmMissingLxmf ? (
         <div
           role="status"
-          className="mt-1 rounded border border-amber-700/50 bg-amber-950/40 px-2 py-1.5 text-xs text-amber-200"
+          className="mt-1 rounded border border-orange-700/50 bg-orange-950/40 px-2 py-1.5 text-xs text-orange-200"
         >
           {t('chatPanel.reticulumChatNeedsLxmfDelivery')}
         </div>

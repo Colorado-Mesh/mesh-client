@@ -1,12 +1,13 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs */
-import { PARENT_HOVER_ATTR } from 'lucide-react-motion';
+import { PARENT_HOVER_ATTR, Unplug } from 'lucide-react-motion';
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
-import { ConnectionIcon, MqttGlobeIcon } from '@/renderer/lib/icons/connectionIcons';
+import { ConnectionIcon } from '@/renderer/lib/icons/connectionIcons';
+import { ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { SpinnerIcon, SpinnerIconLg } from '@/renderer/lib/icons/spinnerIcon';
 import { meshcoreTargetsSharedMeshtasticBlePeripheral } from '@/renderer/lib/meshcoreDualNobleBleInit';
@@ -41,6 +42,7 @@ import {
   loadBleDeviceMacCache,
 } from '../lib/bleDeviceMacCache';
 import { reconnectBleWithScan, startGattScanningWithRetry } from '../lib/bleReconnectHelper';
+import { deviceHeaderVariant } from '../lib/connectionHeaderStatus';
 import {
   humanizeBleError,
   humanizeHttpError,
@@ -73,6 +75,7 @@ import {
   letsMeshMqttUsernameFromIdentity,
   MESHCORE_CA_HOST_BACKUP,
   MESHCORE_CA_HOST_PRIMARY,
+  meshcoreClientKeyHexFromIdentity,
   meshcoreIdentityHasFullKeyPair,
   meshcoreIdentityHasPrivateKey,
   readMeshcoreIdentity,
@@ -136,6 +139,10 @@ import { useDeviceStore } from '../stores/deviceStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { BleWeakSignalBanner } from './BleWeakSignalBanner';
 import { ConfirmModal } from './ConfirmModal';
+import {
+  ConnectionStatusTiles,
+  type ConnectionTakSummary,
+} from './connection/ConnectionStatusTiles';
 import ConnectionBatteryGauge from './ConnectionBatteryGauge';
 import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
@@ -145,6 +152,22 @@ import { PickerSortControls } from './PickerSortControls';
 import type { ReticulumSetupDestination } from './reticulum/ReticulumSetupGuide';
 import { ReticulumStackPanel } from './ReticulumStackPanel';
 import SignalBars from './SignalBars';
+import { Button } from './ui/Button';
+import { CopyField } from './ui/CopyField';
+import {
+  CHECKBOX_CLASS,
+  chipClass,
+  FIELD_LABEL_CLASS,
+  INPUT_CLASS,
+  NOTICE_CLASS,
+  TEXTAREA_CLASS,
+} from './ui/formClasses';
+import { LabelValue, LabelValueGrid } from './ui/LabelValue';
+import { type MenuEntry, SplitButton } from './ui/Menu';
+import { Panel } from './ui/Panel';
+import { SegmentedControl, type SegmentedOption } from './ui/SegmentedControl';
+import { Stepper } from './ui/Stepper';
+import { Switch } from './ui/Switch';
 // ─── Last Connection (localStorage) ───────────────────────────────
 interface LastConnection {
   type: ConnectionType;
@@ -329,18 +352,6 @@ function resolveLastBleIdentity(
   return identity.display ? identity : null;
 }
 
-function MqttGlobeStatusIcon({ status }: { status: MQTTStatus }) {
-  const color =
-    status === 'connected'
-      ? 'text-brand-green'
-      : status === 'connecting'
-        ? 'text-yellow-400'
-        : status === 'error'
-          ? 'text-red-400'
-          : 'text-gray-400';
-  return <MqttGlobeIcon className={`h-5 w-5 ${color}`} />;
-}
-
 const LETS_MESH_USERNAME_SYNC_DEBOUNCE_MS = 100;
 
 function loadMqttSettings(): MQTTSettings {
@@ -357,6 +368,8 @@ interface Props {
   onAutoConnect: RfConnectAutomaticFn;
   onDisconnect: () => Promise<void>;
   mqttStatus: MQTTStatus;
+  /** The drop was unexpected; the MQTT tile then reads as an error, like the status bar. */
+  mqttConnectionLoss?: boolean;
   myNodeLabel?: string;
   protocol: MeshProtocol;
   manualAddContacts?: boolean;
@@ -374,6 +387,13 @@ interface Props {
   /** Reticulum: open Admin Bluetooth for USB Clear paired / Start pairing. */
   onOpenAdminBluetooth?: () => void;
   onOpenReticulumSetupDestination?: (destination: ReticulumSetupDestination) => boolean;
+  /** TAK server summary for the link tiles; omitted when the protocol has no TAK panel. */
+  tak?: ConnectionTakSummary;
+}
+
+/** "1200D35FA9246B15…7F9F81F3F92F6B4AEE65": enough of a 64-char key to recognize it. */
+function shortenClientKey(hex: string): string {
+  return hex.length > 40 ? `${hex.slice(0, 16)}…${hex.slice(-20)}` : hex;
 }
 
 export default function ConnectionPanel({
@@ -382,6 +402,7 @@ export default function ConnectionPanel({
   onAutoConnect,
   onDisconnect,
   mqttStatus,
+  mqttConnectionLoss = false,
   myNodeLabel,
   protocol,
   manualAddContacts,
@@ -394,6 +415,7 @@ export default function ConnectionPanel({
   onOpenAppGpsSettings,
   onOpenAdminBluetooth,
   onOpenReticulumSetupDestination,
+  tak,
 }: Props) {
   const { t } = useTranslation();
   const capabilities = useRadioProvider(protocol);
@@ -630,6 +652,9 @@ export default function ConnectionPanel({
   }, [protocol, meshcorePreset]);
 
   const [hasPrivateKey, setHasPrivateKey] = useState(() => meshcoreIdentityHasPrivateKey());
+  const meshcoreClientKeyHex = hasPrivateKey
+    ? (meshcoreClientKeyHexFromIdentity(readMeshcoreIdentity()) ?? '')
+    : '';
   useEffect(() => {
     const sync = () => {
       setHasPrivateKey(meshcoreIdentityHasPrivateKey());
@@ -1487,61 +1512,33 @@ export default function ConnectionPanel({
   const showAutoReconnectBanner =
     state.status === 'reconnecting' || (!radioUp && (isAutoConnecting || connecting));
 
-  const handleExitApp = useCallback(
-    async (variant: 'connected' | 'idle' | 'connecting') => {
-      try {
-        if (variant === 'connecting') {
-          handleCancelConnection();
-        }
-        // Connected quit skips onDisconnect: main owns teardown (BLE disconnectAll, TCP
-        // destroy, quit-fast sidecar stop), so a graceful stack stop here only delays exit.
-        if (isConnected || variant === 'connecting' || mqttStatus === 'connected') {
-          markMqttUserDisconnect();
-          void window.electronAPI.mqtt.disconnect().catch((err: unknown) => {
-            // catch-no-log-ok quit path — disconnect failure must not block quitApp
-            console.warn(
-              '[ConnectionPanel] mqtt.disconnect before quit failed:',
-              err instanceof Error ? err.message : String(err),
-            );
-          });
-        }
-      } catch (err) {
-        console.warn(
-          '[ConnectionPanel] handleExitApp disconnect failed:',
-          err instanceof Error ? err.message : String(err),
-        );
-      }
-      try {
-        await window.electronAPI.quitApp();
-      } catch (err) {
-        console.error(
-          '[ConnectionPanel] quitApp failed:',
-          err instanceof Error ? err.message : String(err),
-        );
-      }
-    },
-    [handleCancelConnection, isConnected, mqttStatus],
+  /** Linux BLE / MeshCore pairing PIN entry, shared by the connecting and disconnected views. */
+  const renderPinForm = (onSubmit: () => void) => (
+    <>
+      <p className="text-ink-200 mb-2 text-sm">{t('connectionPanel.enterPin')}</p>
+      <div className="flex flex-wrap gap-2">
+        <div className="w-40">
+          <input
+            type="text"
+            value={pinInputValue}
+            onChange={(e) => {
+              setPinInputValue(e.target.value.replace(/\D/g, '').slice(0, 6));
+            }}
+            placeholder={t('connectionPanel.pinPlaceholder')}
+            aria-label={t('connectionPanel.enterPin')}
+            className={`${INPUT_CLASS} font-mono`}
+            maxLength={6}
+            inputMode="numeric"
+            pattern="[0-9]*"
+          />
+        </div>
+        <Button variant="primary" onClick={onSubmit} disabled={!normalizePairingPin(pinInputValue)}>
+          {t('connectionPanel.submit')}
+        </Button>
+        <Button onClick={handlePinCancel}>{t('common.cancel')}</Button>
+      </div>
+    </>
   );
-
-  const renderExitActions = (variant: 'connected' | 'idle' | 'connecting') => {
-    const useDisconnectAndQuit =
-      isConnected || variant === 'connecting' || mqttStatus === 'connected';
-    const labelKey = useDisconnectAndQuit
-      ? 'connectionPanel.disconnectAndQuit'
-      : 'connectionPanel.quit';
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          void handleExitApp(variant);
-        }}
-        className="w-full rounded-lg border border-red-700 px-6 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-900/30 hover:text-red-300"
-        aria-label={t(labelKey)}
-      >
-        {t(labelKey)}
-      </button>
-    );
-  };
 
   const renderAutoReconnectBanner = (): ReactNode =>
     showAutoReconnectBanner ? (
@@ -1557,12 +1554,11 @@ export default function ConnectionPanel({
   let connectingProgressView: ReactNode = null;
   if (!capabilities.hasReticulumInterfaceConfig && connecting && !isConnected) {
     connectingProgressView = (
-      <div className="flex w-full flex-col items-center justify-center space-y-6 py-16">
-        <div className="w-full">{renderExitActions('connecting')}</div>
+      <div className="flex w-full flex-col items-center justify-center space-y-6 py-10">
         {renderAutoReconnectBanner()}
         <SpinnerIconLg className="text-bright-green" />
         <div className="space-y-2 text-center">
-          <h2 className="text-xl font-semibold text-gray-200">
+          <h2 className="text-ink-200 text-lg font-semibold">
             {showPinPrompt
               ? t('connectionPanel.pairWithDevice')
               : showBlePicker
@@ -1577,7 +1573,7 @@ export default function ConnectionPanel({
             <p
               className={
                 connectionStage === STAGE_LINUX_UNPAIRED
-                  ? 'rounded-lg border border-amber-500/45 bg-amber-950/40 px-4 py-3 text-sm text-amber-200'
+                  ? 'rounded-lg border border-orange-500/45 bg-orange-950/40 px-4 py-3 text-sm text-orange-200'
                   : 'text-muted text-sm'
               }
             >
@@ -1594,7 +1590,7 @@ export default function ConnectionPanel({
               return isWeakBleRssi(targetRssi) ? (
                 <BleWeakSignalBanner
                   rssi={targetRssi}
-                  className="mt-2 rounded-lg border border-amber-800/60 bg-amber-900/40 px-3 py-2 text-xs text-amber-200"
+                  className="mt-2 rounded-lg border border-orange-800/60 bg-orange-900/40 px-3 py-2 text-xs text-orange-200"
                 />
               ) : null;
             })()}
@@ -1606,14 +1602,14 @@ export default function ConnectionPanel({
           <div
             role="region"
             aria-labelledby="ble-device-picker-heading"
-            className="bg-deep-black w-full overflow-hidden rounded-lg border border-gray-600"
+            className="bg-deep-black border-ink-800 w-full overflow-hidden rounded-xl border"
           >
-            <div className="bg-secondary-dark flex items-center justify-between gap-2 border-b border-gray-600 px-4 py-2.5">
-              <span id="ble-device-picker-heading" className="text-sm font-medium text-gray-200">
+            <div className="border-ink-800 flex min-h-12 items-center justify-between gap-2 border-b px-4 py-2">
+              <span id="ble-device-picker-heading" className="text-ink-200 text-sm font-semibold">
                 {t('connectionPanel.selectBluetoothDevice')}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-300" aria-live="polite">
+                <span className="text-ink-300 text-xs" aria-live="polite">
                   {t('connectionPanel.devicesFound', { count: bleDevices.length })}
                 </span>
                 {bleDevices.length > 0 ? (
@@ -1664,9 +1660,9 @@ export default function ConnectionPanel({
                       onClick={() => {
                         handleSelectBleDevice(device.deviceId);
                       }}
-                      className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
+                      className="hover:bg-sidebar-active-bg border-ink-800 w-full border-b px-4 py-3 text-left transition-colors last:border-b-0"
                     >
-                      <div className="flex items-center gap-2 text-sm text-gray-200">
+                      <div className="text-ink-200 flex items-center gap-2 text-sm">
                         <ConnectionIcon type="ble" trigger={parentIconTrigger} />
                         <span className="min-w-0 flex-1 truncate">{displayName}</span>
                         {hasRssi ? (
@@ -1694,12 +1690,12 @@ export default function ConnectionPanel({
               return <BleWeakSignalBanner rssi={weakest} />;
             })()}
             {bleDevices.some((d) => d.deviceName === 'AdaDFU') && (
-              <p className="text-muted border-t border-gray-700 px-4 py-2 text-xs">
+              <p className="text-muted border-ink-800 border-t px-4 py-2 text-xs">
                 {t('connectionPanel.hintAdaDfuBle')}
               </p>
             )}
             {protocol === 'meshcore' && (
-              <p className="border-t border-gray-700 px-4 py-2 text-xs text-yellow-400">
+              <p className="border-ink-800 border-t px-4 py-2 text-xs text-orange-400">
                 <Trans
                   i18nKey="connectionPanel.meshcoreBlePairingHint"
                   components={{ strong: <strong /> }}
@@ -1714,14 +1710,14 @@ export default function ConnectionPanel({
           <div
             role="region"
             aria-labelledby="serial-port-picker-heading"
-            className="bg-deep-black w-full overflow-hidden rounded-lg border border-gray-600"
+            className="bg-deep-black border-ink-800 w-full overflow-hidden rounded-xl border"
           >
-            <div className="bg-secondary-dark flex items-center justify-between gap-2 border-b border-gray-600 px-4 py-2.5">
-              <span id="serial-port-picker-heading" className="text-sm font-medium text-gray-200">
+            <div className="border-ink-800 flex min-h-12 items-center justify-between gap-2 border-b px-4 py-2">
+              <span id="serial-port-picker-heading" className="text-ink-200 text-sm font-semibold">
                 {t('connectionPanel.selectSerialPort')}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-300" aria-live="polite">
+                <span className="text-ink-300 text-xs" aria-live="polite">
                   {t('connectionPanel.devicesFound', { count: serialPorts.length })}
                 </span>
                 {serialPorts.length > 0 ? (
@@ -1755,9 +1751,9 @@ export default function ConnectionPanel({
                       onClick={() => {
                         handleSelectSerialPort(port.portId);
                       }}
-                      className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
+                      className="hover:bg-sidebar-active-bg border-ink-800 w-full border-b px-4 py-3 text-left transition-colors last:border-b-0"
                     >
-                      <div className="flex items-center gap-2 text-sm text-gray-200">
+                      <div className="text-ink-200 flex items-center gap-2 text-sm">
                         <ConnectionIcon type="serial" trigger={parentIconTrigger} />
                         {cachedNodeName ?? port.displayName}
                       </div>
@@ -1776,213 +1772,119 @@ export default function ConnectionPanel({
 
         {/* Error in progress view */}
         {error && (
-          <div className="w-full rounded-lg border border-red-700 bg-red-900/50 px-4 py-2 text-sm text-red-300">
+          <div role="alert" className={`w-full ${NOTICE_CLASS.error}`}>
             {error}
           </div>
         )}
 
         {/* Re-pair button for Linux BLE pairing issues */}
         {showRePairButton && (
-          <div className="flex w-full flex-col gap-2">
-            <button
-              type="button"
-              onClick={handleRePair}
-              className="rounded-lg bg-orange-600 px-4 py-2 font-medium text-white transition-colors hover:bg-orange-700"
-            >
-              {t('connectionPanel.rePairDevice')}
-            </button>
-          </div>
+          <Button variant="primary" onClick={handleRePair}>
+            {t('connectionPanel.rePairDevice')}
+          </Button>
         )}
 
         {/* PIN input prompt for Linux BLE pairing (connecting view) */}
         {showPinPrompt && (
-          <div className="w-full rounded-lg border border-blue-700 bg-blue-900/50 px-4 py-3 text-blue-300">
-            <p className="mb-2 text-sm">{t('connectionPanel.enterPin')}</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={pinInputValue}
-                onChange={(e) => {
-                  setPinInputValue(e.target.value.replace(/\D/g, '').slice(0, 6));
-                }}
-                placeholder={t('connectionPanel.pinPlaceholder')}
-                className="flex-1 rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-                maxLength={6}
-                inputMode="numeric"
-                pattern="[0-9]*"
-              />
-              <button
-                type="button"
-                onClick={handlePinSubmit}
-                disabled={!normalizePairingPin(pinInputValue)}
-                className="rounded bg-blue-600 px-4 py-1.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {t('connectionPanel.submit')}
-              </button>
-              <button
-                type="button"
-                onClick={handlePinCancel}
-                className="rounded bg-gray-600 px-4 py-1.5 font-medium text-white hover:bg-gray-700"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
+          <div className={`w-full ${NOTICE_CLASS.info}`}>
+            {renderPinForm(() => {
+              void handlePinSubmit();
+            })}
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={handleCancelConnection}
-          className="bg-secondary-dark rounded-lg px-6 py-2.5 font-medium text-gray-300 transition-colors hover:bg-gray-600"
-        >
-          {t('common.cancel')}
-        </button>
+        <Button onClick={handleCancelConnection}>{t('common.cancel')}</Button>
       </div>
     );
   }
 
   // ─── Shared MQTT section ────────────────────────────────────────
-  const mqttHeaderBar = (
-    <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
-      <div className="flex items-center gap-2">
-        <MqttGlobeStatusIcon status={mqttStatus} />
-        <span className="font-medium text-gray-200">{t('connectionPanel.mqttConnection')}</span>
-      </div>
-      <span
-        className={`text-xs font-medium ${
-          mqttStatus === 'connected'
-            ? 'text-brand-green'
-            : mqttStatus === 'connecting'
-              ? 'text-yellow-400'
-              : mqttStatus === 'error'
-                ? 'text-red-400'
-                : 'text-gray-300'
-        }`}
-        aria-live="polite"
-      >
-        <span
-          aria-hidden="true"
-          className={mqttStatus === 'connecting' ? 'inline-block animate-pulse' : undefined}
-        >
-          ●{' '}
-        </span>
-        <span>
-          {mqttStatus === 'connected'
-            ? t('connectionPanel.mqttStatusConnected')
-            : mqttStatus === 'connecting'
-              ? t('connectionPanel.mqttStatusConnecting')
-              : mqttStatus === 'error'
-                ? t('connectionPanel.mqttStatusError')
-                : t('connectionPanel.mqttStatusDisconnected')}
-        </span>
-      </span>
-    </div>
-  );
+  const disconnectMqtt = (reason: string) => {
+    markMqttUserDisconnect();
+    window.electronAPI.mqtt
+      .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
+      .catch((err: unknown) => {
+        console.warn(
+          `[ConnectionPanel] mqtt.disconnect (${reason}) failed: ` + errLikeToLogString(err),
+        );
+      });
+  };
 
   const mqttSection =
     mqttStatus === 'connected' ? (
-      <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
-        {mqttHeaderBar}
-        {mqttError && (
-          <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
-            {mqttError}
-          </div>
-        )}
-        {mqttWarning && (
-          <div className="border-b border-amber-800/60 bg-amber-900/40 px-4 py-2 text-xs text-amber-200">
-            {mqttWarning}
-          </div>
-        )}
-        <div className="space-y-3 p-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted">{t('connectionPanel.server')}</span>
-            <span className="text-gray-200">
-              {activeMqttSettings.server}:{activeMqttSettings.port}
-            </span>
-          </div>
-          {protocol === 'meshcore' &&
-            /^v1_[0-9a-f]{64}$/i.test(activeMqttSettings.username ?? '') && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">{t('connectionPanel.from')}</span>
-                <span className="font-mono text-xs text-gray-200">
-                  {activeMqttSettings.username?.slice(3)}
-                </span>
-              </div>
-            )}
-          {protocol === 'meshtastic' && state.myNodeNum > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">{t('connectionPanel.from')}</span>
-              <span className="font-mono text-xs text-gray-200">
-                {formatMeshtasticNodeId(state.myNodeNum)}
-              </span>
+      <Panel
+        title={t('connectionPanel.mqttConnection')}
+        actions={
+          <Button
+            variant="danger"
+            size="sm"
+            icon={<Unplug aria-hidden className={ICON_MD} size={16} />}
+            onClick={() => {
+              disconnectMqtt('panel');
+            }}
+          >
+            {t('connectionPanel.disconnectMqtt')}
+          </Button>
+        }
+      >
+        <div className="space-y-5">
+          {mqttError && (
+            <div role="alert" className={NOTICE_CLASS.error}>
+              {mqttError}
             </div>
           )}
-          <div className="flex justify-between text-sm">
-            <span className="text-muted">{t('connectionPanel.topic')}</span>
-            <span className="font-mono text-xs text-gray-200">
+          {mqttWarning && <div className={NOTICE_CLASS.warn}>{mqttWarning}</div>}
+          <LabelValueGrid>
+            <LabelValue label={t('connectionPanel.server')} mono>
+              {activeMqttSettings.server}:{activeMqttSettings.port}
+            </LabelValue>
+            {protocol === 'meshcore' &&
+              /^v1_[0-9a-f]{64}$/i.test(activeMqttSettings.username ?? '') && (
+                <LabelValue label={t('connectionPanel.from')} mono>
+                  {activeMqttSettings.username?.slice(3)}
+                </LabelValue>
+              )}
+            {protocol === 'meshtastic' && state.myNodeNum > 0 && (
+              <LabelValue label={t('connectionPanel.from')} mono>
+                {formatMeshtasticNodeId(state.myNodeNum)}
+              </LabelValue>
+            )}
+            <LabelValue label={t('connectionPanel.topic')} mono>
               {activeMqttSettings.topicPrefix.endsWith('/')
                 ? activeMqttSettings.topicPrefix
                 : `${activeMqttSettings.topicPrefix}/`}
               #
-            </span>
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <label htmlFor="mqtt-max-retries-when-connected" className="text-muted text-xs">
-                {t('connectionPanel.maxReconnectAttempts')}
-              </label>
-              <HelpTooltip
-                text={
-                  protocol === 'meshcore'
-                    ? t('connectionPanel.maxRetriesHelpConnected.meshcore', {
-                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                      })
-                    : t('connectionPanel.maxRetriesHelpConnected.meshtastic', {
-                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                      })
-                }
-              />
-            </div>
-            <input
-              id="mqtt-max-retries-when-connected"
-              type="number"
-              aria-label={t('connectionPanel.maxReconnectAttempts')}
-              min={1}
-              max={MQTT_MAX_RECONNECT_ATTEMPTS}
-              value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
-              onChange={(e) => {
-                updateMqtt('maxRetries', clampMqttMaxRetries(e.target.value), false);
-              }}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              markMqttUserDisconnect();
-              window.electronAPI.mqtt
-                .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
-                .catch((err: unknown) => {
-                  console.warn(
-                    '[ConnectionPanel] mqtt.disconnect failed: ' + errLikeToLogString(err),
-                  );
-                });
+            </LabelValue>
+          </LabelValueGrid>
+          <Stepper
+            id="mqtt-max-retries-when-connected"
+            label={t('connectionPanel.maxReconnectAttempts')}
+            min={1}
+            max={MQTT_MAX_RECONNECT_ATTEMPTS}
+            value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
+            onChange={(value) => {
+              updateMqtt('maxRetries', clampMqttMaxRetries(value), false);
             }}
-            className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
-          >
-            {t('connectionPanel.disconnectMqtt')}
-          </button>
+            hint={
+              protocol === 'meshcore'
+                ? t('connectionPanel.maxRetriesHelpConnected.meshcore', {
+                    max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                  })
+                : t('connectionPanel.maxRetriesHelpConnected.meshtastic', {
+                    max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                  })
+            }
+          />
         </div>
-      </div>
+      </Panel>
     ) : (
-      <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
-        {mqttHeaderBar}
-        {mqttError && (
-          <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
-            {mqttError}
-          </div>
-        )}
-        <div className="space-y-3 p-4">
+      <Panel title={t('connectionPanel.mqttConnection')}>
+        <div className="max-w-3xl space-y-4">
+          {mqttError && (
+            <div role="alert" className={NOTICE_CLASS.error}>
+              {mqttError}
+            </div>
+          )}
           {protocol !== 'meshcore' && (
             <div className="space-y-1">
               <p id="conn-meshtastic-network-preset" className="text-muted text-xs">
@@ -2019,7 +1921,7 @@ export default function ConnectionPanel({
                 }}
               />
               {meshtasticPreset === 'liam' && (
-                <p className="text-xs text-amber-400">{t('connectionPanel.liamServerNote')}</p>
+                <p className="text-xs text-orange-400">{t('connectionPanel.liamServerNote')}</p>
               )}
             </div>
           )}
@@ -2076,7 +1978,7 @@ export default function ConnectionPanel({
                 }}
               />
               {meshcorePreset === 'coloradomesh' && (
-                <p className="text-xs text-amber-400">{t('connectionPanel.coloradoServerNote')}</p>
+                <p className="text-xs text-orange-400">{t('connectionPanel.coloradoServerNote')}</p>
               )}
               {meshcorePreset === 'meshcoreca' && (
                 <div
@@ -2101,11 +2003,7 @@ export default function ConnectionPanel({
                         username: fromIdentity || prev.username,
                       }));
                     }}
-                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
-                      meshcoreMqttSettings.server === MESHCORE_CA_HOST_PRIMARY
-                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
-                    }`}
+                    className={chipClass(meshcoreMqttSettings.server === MESHCORE_CA_HOST_PRIMARY)}
                   >
                     {t('connectionPanel.meshcoreCaPrimary')}
                   </button>
@@ -2125,11 +2023,7 @@ export default function ConnectionPanel({
                         username: fromIdentity || prev.username,
                       }));
                     }}
-                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
-                      meshcoreMqttSettings.server === MESHCORE_CA_HOST_BACKUP
-                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
-                    }`}
+                    className={chipClass(meshcoreMqttSettings.server === MESHCORE_CA_HOST_BACKUP)}
                   >
                     {t('connectionPanel.meshcoreCaBackup')}
                   </button>
@@ -2158,11 +2052,7 @@ export default function ConnectionPanel({
                         username: fromIdentity || prev.username,
                       }));
                     }}
-                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
-                      meshcoreMqttSettings.server === LETSMESH_HOST_US
-                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
-                    }`}
+                    className={chipClass(meshcoreMqttSettings.server === LETSMESH_HOST_US)}
                   >
                     {t('connectionPanel.letsMeshRegionUs')}
                   </button>
@@ -2182,11 +2072,7 @@ export default function ConnectionPanel({
                         username: fromIdentity || prev.username,
                       }));
                     }}
-                    className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
-                      meshcoreMqttSettings.server === LETSMESH_HOST_EU
-                        ? 'bg-brand-green/20 border-brand-green text-brand-green'
-                        : 'bg-secondary-dark border-gray-600 text-gray-300 hover:border-gray-400 hover:text-gray-100'
-                    }`}
+                    className={chipClass(meshcoreMqttSettings.server === LETSMESH_HOST_EU)}
                   >
                     {t('connectionPanel.letsMeshRegionEu')}
                   </button>
@@ -2194,8 +2080,8 @@ export default function ConnectionPanel({
               )}
             </div>
           )}
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            <div className="col-span-2 space-y-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
+            <div className="space-y-1">
               <label htmlFor="mqtt-server" className="text-muted text-xs">
                 {t('connectionPanel.server')}
               </label>
@@ -2206,7 +2092,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   updateMqtt('server', e.target.value);
                 }}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+                className={INPUT_CLASS}
               />
             </div>
             <div className="space-y-1">
@@ -2220,7 +2106,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   updateMqtt('port', clampTcpPort(e.target.value, 1883));
                 }}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+                className={INPUT_CLASS}
               />
             </div>
           </div>
@@ -2235,14 +2121,14 @@ export default function ConnectionPanel({
               onChange={(e) => {
                 updateMqtt('tlsEnabled', e.target.checked);
               }}
-              className="accent-brand-green"
+              className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqtt-tls-enabled" className="cursor-pointer text-xs text-gray-300">
+            <label htmlFor="mqtt-tls-enabled" className="text-body text-ink-200 cursor-pointer">
               {t('connectionPanel.mqttTlsEnabled')}
             </label>
           </div>
           {activeMqttTls && (
-            <div className="flex items-center gap-2 rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2">
+            <div className={`flex items-center gap-2 ${NOTICE_CLASS.warn}`}>
               <input
                 type="checkbox"
                 id="mqtt-tls-insecure"
@@ -2250,12 +2136,9 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   updateMqtt('tlsInsecure', e.target.checked);
                 }}
-                className="accent-brand-green"
+                className={CHECKBOX_CLASS}
               />
-              <label
-                htmlFor="mqtt-tls-insecure"
-                className="cursor-pointer text-xs text-amber-200/90"
-              >
+              <label htmlFor="mqtt-tls-insecure" className="cursor-pointer text-xs text-orange-200">
                 {t('connectionPanel.mqttTlsInsecure')}
               </label>
             </div>
@@ -2268,36 +2151,45 @@ export default function ConnectionPanel({
               onChange={(e) => {
                 updateMqtt('useWebSocket', e.target.checked);
               }}
-              className="accent-brand-green"
+              className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqtt-websocket" className="cursor-pointer text-xs text-gray-300">
+            <label htmlFor="mqtt-websocket" className="text-body text-ink-200 cursor-pointer">
               {t('connectionPanel.useWebSocket')}{' '}
-              <span className="text-gray-500">{t('connectionPanel.wsRequired')}</span>
+              <span className="text-muted">{t('connectionPanel.wsRequired')}</span>
             </label>
           </div>
           {protocol === 'meshcore' &&
             usesMeshcoreDeviceSigningMqtt(meshcorePreset, meshcoreMqttSettings) &&
             letsMeshPresetConfigurationDeviation(meshcoreMqttSettings) && (
-              <div className="rounded border border-amber-700/50 bg-amber-900/20 px-2 py-2 text-xs text-amber-200/90">
+              <div className={NOTICE_CLASS.warn}>
                 {meshcorePresetDeviationText(t, meshcorePreset)}
               </div>
             )}
           {protocol === 'meshcore' &&
             usesMeshcoreDeviceSigningMqtt(meshcorePreset, meshcoreMqttSettings) && (
-              <div
-                className={`flex items-start gap-2 rounded border px-2 py-2 text-xs ${
-                  hasPrivateKey
-                    ? 'border-brand-green/40 bg-brand-green/10 text-brand-green/90'
-                    : 'border-amber-700/50 bg-amber-900/20 text-amber-200/90'
-                }`}
-              >
+              <div className={hasPrivateKey ? NOTICE_CLASS.success : NOTICE_CLASS.warn}>
                 {hasPrivateKey && readMeshcoreIdentity()?.public_key
                   ? t('connectionPanel.meshcoreMqttIdentity.hasPrivateKey')
                   : t('connectionPanel.meshcoreMqttIdentity.noPrivateKey')}
               </div>
             )}
+          {protocol === 'meshcore' &&
+            usesMeshcoreDeviceSigningMqtt(meshcorePreset, meshcoreMqttSettings) &&
+            hasPrivateKey &&
+            meshcoreClientKeyHex !== '' && (
+              <div className="space-y-1">
+                <span className={FIELD_LABEL_CLASS}>
+                  {t('connectionPanel.meshcoreMqttIdentity.clientKey')}
+                </span>
+                <CopyField
+                  value={meshcoreClientKeyHex}
+                  display={shortenClientKey(meshcoreClientKeyHex)}
+                  copyLabel={t('connectionPanel.meshcoreMqttIdentity.copyClientKey')}
+                />
+              </div>
+            )}
           {protocol === 'meshcore' && (
-            <div className="bg-secondary-dark/40 flex items-start gap-2 rounded border border-gray-600/50 px-2 py-2 text-xs text-gray-300">
+            <div className={`flex items-start gap-2 ${NOTICE_CLASS.info}`}>
               <input
                 type="checkbox"
                 id="meshcore-packet-logger"
@@ -2305,7 +2197,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   updateMqtt('meshcorePacketLoggerEnabled', e.target.checked);
                 }}
-                className="accent-brand-green mt-0.5 shrink-0"
+                className={`${CHECKBOX_CLASS} mt-0.5`}
               />
               <label htmlFor="meshcore-packet-logger" className="cursor-pointer leading-snug">
                 {t('connectionPanel.meshcorePacketLogger.label', {
@@ -2314,7 +2206,7 @@ export default function ConnectionPanel({
               </label>
             </div>
           )}
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <label htmlFor="mqtt-username" className="text-muted text-xs">
                 {t('connectionPanel.username')}
@@ -2326,7 +2218,7 @@ export default function ConnectionPanel({
                 onChange={(e) => {
                   updateMqtt('username', e.target.value);
                 }}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+                className={INPUT_CLASS}
               />
             </div>
             <div className="space-y-1">
@@ -2341,7 +2233,7 @@ export default function ConnectionPanel({
                   onChange={(e) => {
                     updateMqtt('password', e.target.value);
                   }}
-                  className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 pr-8 text-sm text-gray-200 focus:outline-none"
+                  className={`${INPUT_CLASS} pr-14`}
                 />
                 <button
                   type="button"
@@ -2353,7 +2245,7 @@ export default function ConnectionPanel({
                       ? t('connectionPanel.hidePassword')
                       : t('connectionPanel.showPassword')
                   }
-                  className="absolute top-1/2 right-2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-300"
+                  className="text-muted hover:text-ink-200 absolute top-1/2 right-2.5 -translate-y-1/2 text-xs"
                 >
                   {showMqttPassword
                     ? t('connectionPanel.hidePassword')
@@ -2393,7 +2285,7 @@ export default function ConnectionPanel({
                   updateMqtt('topicPrefix', parsed.normalized, false);
                 }
               }}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
+              className={INPUT_CLASS}
               placeholder={t('connectionPanel.topicPrefixPlaceholder')}
               aria-invalid={
                 protocol === 'meshcore' &&
@@ -2404,12 +2296,12 @@ export default function ConnectionPanel({
             {protocol === 'meshcore' &&
             isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings) &&
             !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok ? (
-              <p className="text-xs text-amber-400" role="alert">
+              <p className="text-xs text-orange-400" role="alert">
                 {t('connectionPanel.topicPrefixInvalidIata')}
               </p>
             ) : null}
             {radioMqttRootDiverges ? (
-              <p className="text-xs text-amber-400" role="status">
+              <p className="text-xs text-orange-400" role="status">
                 {t('connectionPanel.radioMqttRootDivergesWarning', {
                   radioRoot: radioMqttRoot,
                   appPrefix: normalizeMeshtasticMqttTopicPrefix(activeMqttSettings.topicPrefix),
@@ -2417,33 +2309,23 @@ export default function ConnectionPanel({
               </p>
             ) : null}
           </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5">
-              <label htmlFor="mqtt-max-retries" className="text-muted text-xs">
-                {t('connectionPanel.maxRetries')}
-              </label>
-              <HelpTooltip
-                text={
-                  protocol === 'meshcore'
-                    ? t('connectionPanel.maxRetriesHelp.meshcore')
-                    : t('connectionPanel.maxRetriesHelp.meshtastic', {
-                        max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                      })
-                }
-              />
-            </div>
-            <input
-              id="mqtt-max-retries"
-              type="number"
-              min={1}
-              max={MQTT_MAX_RECONNECT_ATTEMPTS}
-              value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
-              onChange={(e) => {
-                updateMqtt('maxRetries', clampMqttMaxRetries(e.target.value), false);
-              }}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
-            />
-          </div>
+          <Stepper
+            id="mqtt-max-retries"
+            label={t('connectionPanel.maxRetries')}
+            min={1}
+            max={MQTT_MAX_RECONNECT_ATTEMPTS}
+            value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
+            onChange={(value) => {
+              updateMqtt('maxRetries', clampMqttMaxRetries(value), false);
+            }}
+            hint={
+              protocol === 'meshcore'
+                ? t('connectionPanel.maxRetriesHelp.meshcore')
+                : t('connectionPanel.maxRetriesHelp.meshtastic', {
+                    max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                  })
+            }
+          />
           {protocol !== 'meshcore' && (
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
@@ -2463,17 +2345,17 @@ export default function ConnectionPanel({
                 onBlur={() => {
                   commitChannelPskDraft();
                 }}
-                className="bg-secondary-dark focus:border-brand-green w-full resize-none rounded border border-gray-600 px-2 py-1.5 font-mono text-sm text-gray-200 focus:outline-none"
+                className={`${TEXTAREA_CLASS} resize-none font-mono`}
                 placeholder={t('connectionPanel.channelPsksPlaceholder')}
                 spellCheck={false}
               />
               {channelPskWarn && (
-                <p className="text-xs text-amber-300/90" role="status">
+                <p className="text-xs text-orange-300/90" role="status">
                   {channelPskWarn}
                 </p>
               )}
               {showMqttOnlyChannelPskIndexHint && (
-                <p className="text-xs text-amber-300/90" role="status">
+                <p className="text-xs text-orange-300/90" role="status">
                   {t('connectionPanel.channelPsksMqttOnlyIndexHint')}
                 </p>
               )}
@@ -2490,35 +2372,15 @@ export default function ConnectionPanel({
               onChange={(e) => {
                 updateMqtt('autoLaunch', e.target.checked, false);
               }}
-              className="accent-brand-green"
+              className={CHECKBOX_CLASS}
             />
-            <label htmlFor="mqttAutoLaunch" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="mqttAutoLaunch" className="text-body text-ink-200 cursor-pointer">
               {t('connectionPanel.autoConnect')}
             </label>
           </div>
-          <div className={`flex pt-1 ${mqttStatus === 'connecting' ? 'gap-2' : 'flex-col'}`}>
-            {mqttStatus === 'connecting' && (
-              <button
-                type="button"
-                aria-label={t('connectionPanel.cancelMqttConnect')}
-                onClick={() => {
-                  markMqttUserDisconnect();
-                  window.electronAPI.mqtt
-                    .disconnect(protocol === 'meshcore' ? 'meshcore' : 'meshtastic')
-                    .catch((err: unknown) => {
-                      console.warn(
-                        '[ConnectionPanel] mqtt.disconnect (cancel) failed: ' +
-                          errLikeToLogString(err),
-                      );
-                    });
-                }}
-                className="bg-secondary-dark flex-1 rounded-lg border border-gray-600 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-500 hover:bg-gray-700"
-              >
-                {t('connectionPanel.cancelMqttConnect')}
-              </button>
-            )}
-            <button
-              type="button"
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Button
+              variant="primary"
               onClick={async () => {
                 setMqttError(null);
                 const committedPsks = commitChannelPskDraft();
@@ -2601,13 +2463,22 @@ export default function ConnectionPanel({
                   isIataScopedMeshcoreMqtt(meshcorePreset, activeMqttSettings) &&
                   !parseMeshcoreIataTopicPrefix(activeMqttSettings.topicPrefix).ok)
               }
-              className={`bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:opacity-40 ${mqttStatus === 'connecting' ? 'flex-1' : 'w-full'}`}
             >
               {t('connectionPanel.connectMqtt')}
-            </button>
+            </Button>
+            {mqttStatus === 'connecting' && (
+              <Button
+                aria-label={t('connectionPanel.cancelMqttConnect')}
+                onClick={() => {
+                  disconnectMqtt('cancel');
+                }}
+              >
+                {t('connectionPanel.cancelMqttConnect')}
+              </Button>
+            )}
           </div>
         </div>
-      </div>
+      </Panel>
     );
 
   // Portal to body: MeshCore ConnectionPanel stays mounted under a `hidden` ancestor when
@@ -2673,9 +2544,61 @@ export default function ConnectionPanel({
         )
       : null;
 
+  const connectingRadio = connecting && !isConnected;
+  const radioTileDetail = isConnected
+    ? [
+        state.connectionType
+          ? connectionPanelConnectionTypeLabel(t, state.connectionType, protocol)
+          : null,
+        state.myNodeNum > 0 ? (myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)) : null,
+      ]
+        .filter((part): part is string => !!part)
+        .join(' · ')
+    : '';
+  const statusTiles = (
+    <ConnectionStatusTiles
+      link={{
+        label: t('connectionPanel.tiles.radioLink'),
+        icon: <ConnectionIcon type={state.connectionType ?? connectionType} />,
+        status: connectingRadio
+          ? connectionPanelRadioStatusLabel(t, 'connecting')
+          : connectionPanelRadioStatusLabel(t, state.status),
+        variant: connectingRadio
+          ? 'warn'
+          : deviceHeaderVariant(state.status, state.connectionLoss ?? false),
+        detail: radioTileDetail || undefined,
+      }}
+      mqtt={
+        capabilities.hasMqttConnectionPanel
+          ? {
+              status: mqttStatus,
+              connectionLoss: mqttConnectionLoss,
+              server:
+                mqttStatus === 'connected' || mqttStatus === 'connecting'
+                  ? `${activeMqttSettings.server}:${activeMqttSettings.port}`
+                  : undefined,
+            }
+          : undefined
+      }
+      tak={tak}
+    />
+  );
+
+  const docsLink = (
+    <a
+      href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
+      target="_blank"
+      rel="noreferrer"
+      className="hover:text-bright-green text-muted text-xs transition-colors"
+    >
+      {t('diagnosticsPanel.docsLink')}
+    </a>
+  );
+
   if (connectingProgressView) {
     return (
-      <div className="w-full space-y-6">
+      <div className="w-full space-y-4">
+        {statusTiles}
         {connectingProgressView}
         {mqttSection}
         {coloradoRegionGateModal}
@@ -2684,15 +2607,10 @@ export default function ConnectionPanel({
   }
 
   if (capabilities.hasReticulumInterfaceConfig) {
-    const exitVariant = isConnected
-      ? 'connected'
-      : state.status === 'connecting'
-        ? 'connecting'
-        : 'idle';
     return (
-      <div className="w-full space-y-6">
-        {renderExitActions(exitVariant)}
+      <div className="w-full space-y-4">
         <ReticulumStackPanel
+          tak={tak}
           connecting={state.status === 'connecting'}
           stackError={reticulumStackError}
           onOpenReticulumRmapSettings={onOpenReticulumRmapSettings}
@@ -2719,512 +2637,383 @@ export default function ConnectionPanel({
 
   // ─── Connected View ────────────────────────────────────────────
   if (isConnected) {
+    const mqttActive = mqttStatus === 'connected' || mqttStatus === 'connecting';
+    const disconnectRadio = () => {
+      onDisconnect().catch((err: unknown) => {
+        console.warn('[ConnectionPanel] radio disconnect failed: ' + errLikeToLogString(err));
+      });
+    };
+    const radioDisconnectEntries: MenuEntry[] = [
+      {
+        id: 'disconnect-all',
+        label: t('connectionPanel.disconnectAll'),
+        onSelect: () => {
+          disconnectMqtt('disconnect all');
+          disconnectRadio();
+        },
+      },
+    ];
+    const unplugIcon = <Unplug aria-hidden className={ICON_MD} size={16} />;
     return (
-      <div className="w-full space-y-6">
-        {renderExitActions('connected')}
+      <div className="w-full space-y-4">
+        {statusTiles}
         {renderAutoReconnectBanner()}
 
-        <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
-          <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <ConnectionIcon type={state.connectionType!} />
-              <span className="font-medium text-gray-200">
-                {t('connectionPanel.radioConnection')}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <a
-                href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
-                target="_blank"
-                rel="noreferrer"
-                className="hover:text-brand-green text-xs text-gray-300 transition-colors"
-              >
-                {t('diagnosticsPanel.docsLink')}
-              </a>
-              <span
-                className={`inline-flex items-center gap-1 text-xs font-medium ${
-                  state.status === 'reconnecting' ? 'text-orange-200' : 'text-brand-green'
-                }`}
-              >
-                {state.status === 'reconnecting' ? (
-                  <span aria-hidden className="inline-block animate-pulse">
-                    ●
-                  </span>
+        {/* Radio and MQTT side by side on wide windows (Option B), stacked below xl. */}
+        <div className="grid items-start gap-4 xl:grid-cols-2">
+          <Panel
+            title={t('connectionPanel.radioConnection')}
+            actions={
+              <>
+                {docsLink}
+                {mqttActive ? (
+                  <SplitButton
+                    variant="danger"
+                    label={t('connectionPanel.disconnectRadio')}
+                    icon={unplugIcon}
+                    onClick={disconnectRadio}
+                    groupLabel={t('connectionPanel.disconnectRadioGroup')}
+                    menuTriggerLabel={t('connectionPanel.moreDisconnectOptions')}
+                    menuLabel={t('connectionPanel.disconnectOptions')}
+                    entries={radioDisconnectEntries}
+                  />
                 ) : (
-                  <span aria-hidden>●</span>
-                )}{' '}
-                <span>{connectionPanelRadioStatusLabel(t, state.status)}</span>
-              </span>
-            </div>
-          </div>
-          <div className="space-y-3 p-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">{t('connectionPanel.connectionType')}</span>
-              <span className="text-gray-200">
-                {state.connectionType
-                  ? connectionPanelConnectionTypeLabel(t, state.connectionType, protocol)
-                  : null}
-              </span>
-            </div>
-            {state.connectionType === 'ble' && lastBleIdentity ? (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">
-                  {t(
-                    lastBleIdentity.isMac
-                      ? 'connectionPanel.bluetoothMac'
-                      : 'connectionPanel.bluetoothId',
-                  )}
-                </span>
-                <span className="font-mono text-gray-200">{lastBleIdentity.display}</span>
-              </div>
-            ) : null}
-            {hostLinkMeter.kind != null && (
-              <ConnectionLinkMeter
-                kind={hostLinkMeter.kind}
-                rssi={hostLinkMeter.rssi}
-                rttMs={hostLinkMeter.rttMs}
-                level={hostLinkMeter.level}
-              />
-            )}
-            {state.myNodeNum > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">{t('connectionPanel.myNode')}</span>
-                <span className="font-mono text-gray-200">
-                  {myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)}
-                </span>
-              </div>
-            )}
-            {state.myNodeNum > 0 && state.batteryPercent !== undefined && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">{t('connectionPanel.battery')}</span>
-                <ConnectionBatteryGauge
-                  percent={state.batteryPercent}
-                  charging={state.batteryCharging === true}
-                />
-              </div>
-            )}
-            {state.firmwareVersion && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">{t('connectionPanel.firmware')}</span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="font-mono text-xs text-gray-300">{state.firmwareVersion}</span>
-                  {firmwareCheckState && onOpenFirmwareReleases && (
-                    <FirmwareStatusIndicator
-                      phase={firmwareCheckState.phase}
-                      latestVersion={firmwareCheckState.latestVersion}
-                      onOpenReleases={onOpenFirmwareReleases}
+                  <Button variant="danger" size="sm" icon={unplugIcon} onClick={disconnectRadio}>
+                    {t('connectionPanel.disconnectRadio')}
+                  </Button>
+                )}
+              </>
+            }
+          >
+            <div className="space-y-5">
+              <LabelValueGrid>
+                <LabelValue label={t('connectionPanel.connectionType')}>
+                  {state.connectionType
+                    ? connectionPanelConnectionTypeLabel(t, state.connectionType, protocol)
+                    : null}
+                </LabelValue>
+                {state.connectionType === 'ble' && lastBleIdentity ? (
+                  <LabelValue
+                    label={t(
+                      lastBleIdentity.isMac
+                        ? 'connectionPanel.bluetoothMac'
+                        : 'connectionPanel.bluetoothId',
+                    )}
+                    mono
+                  >
+                    {lastBleIdentity.display}
+                  </LabelValue>
+                ) : null}
+                {state.myNodeNum > 0 && (
+                  <LabelValue label={t('connectionPanel.myNode')} mono>
+                    {myNodeLabel ?? formatMeshtasticNodeId(state.myNodeNum)}
+                  </LabelValue>
+                )}
+                {state.myNodeNum > 0 && state.batteryPercent !== undefined && (
+                  <LabelValue label={t('connectionPanel.battery')}>
+                    <ConnectionBatteryGauge
+                      percent={state.batteryPercent}
+                      charging={state.batteryCharging === true}
                     />
-                  )}
-                </span>
-              </div>
-            )}
-            {state.lastDataReceived && (
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">{t('connectionPanel.lastData')}</span>
-                <span className="text-xs text-gray-300">
-                  {formatDisplayTime(state.lastDataReceived, { use24Hour: use24HourTime })}
-                </span>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={onDisconnect}
-              className="w-full rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
-            >
-              {t('connectionPanel.disconnectRadio')}
-            </button>
-          </div>
-        </div>
-
-        {onToggleManualContacts !== undefined && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-gray-700 p-4">
-            <div id="manual-contact-approval-label">
-              <div className="text-sm font-medium text-gray-200">
-                {t('connectionPanel.manualContactApproval')}
-              </div>
-              <div className="text-muted mt-0.5 text-xs">
-                {t('connectionPanel.manualContactApprovalDesc')}
-              </div>
+                  </LabelValue>
+                )}
+                {state.firmwareVersion && (
+                  <LabelValue label={t('connectionPanel.firmware')}>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="text-body-lg font-mono">{state.firmwareVersion}</span>
+                      {firmwareCheckState && onOpenFirmwareReleases && (
+                        <FirmwareStatusIndicator
+                          phase={firmwareCheckState.phase}
+                          latestVersion={firmwareCheckState.latestVersion}
+                          onOpenReleases={onOpenFirmwareReleases}
+                        />
+                      )}
+                    </span>
+                  </LabelValue>
+                )}
+                {state.lastDataReceived && (
+                  <LabelValue label={t('connectionPanel.lastData')}>
+                    {formatDisplayTime(state.lastDataReceived, { use24Hour: use24HourTime })}
+                  </LabelValue>
+                )}
+              </LabelValueGrid>
+              {hostLinkMeter.kind != null && (
+                <ConnectionLinkMeter
+                  kind={hostLinkMeter.kind}
+                  rssi={hostLinkMeter.rssi}
+                  rttMs={hostLinkMeter.rttMs}
+                  level={hostLinkMeter.level}
+                />
+              )}
+              {onToggleManualContacts !== undefined && (
+                <div className="border-ink-800 border-t pt-4">
+                  <Switch
+                    checked={manualAddContacts ?? false}
+                    onChange={(next) => {
+                      onToggleManualContacts(next).catch((err: unknown) => {
+                        console.warn(
+                          '[ConnectionPanel] manual contact approval toggle failed: ' +
+                            errLikeToLogString(err),
+                        );
+                      });
+                    }}
+                    label={t('connectionPanel.manualContactApproval')}
+                    description={t('connectionPanel.manualContactApprovalDesc')}
+                  />
+                </div>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={() => onToggleManualContacts(!manualAddContacts)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-                manualAddContacts ? 'bg-purple-500' : 'bg-gray-600'
-              }`}
-              role="switch"
-              aria-checked={manualAddContacts}
-              aria-labelledby="manual-contact-approval-label"
-            >
-              <span
-                aria-hidden="true"
-                className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                  manualAddContacts ? 'translate-x-4' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-        )}
+          </Panel>
 
-        {mqttSection}
+          {mqttSection}
+        </div>
         {coloradoRegionGateModal}
       </div>
     );
   }
 
   // ─── Disconnected View ─────────────────────────────────────────
+  const showLastConnection = lastConnection !== null && !connecting;
+  const connectionTypeOptions: SegmentedOption<ConnectionType>[] = (
+    protocol === 'meshtastic'
+      ? (['ble', 'serial', 'http', 'tcp'] as const)
+      : (['ble', 'serial', 'http'] as const)
+  ).map((type) => ({
+    value: type,
+    label: connectionPanelConnectionTypeLabel(t, type, protocol),
+    icon: <ConnectionIcon type={type} />,
+  }));
   return (
-    <div className="w-full space-y-6">
-      {renderExitActions('idle')}
+    <div className="w-full space-y-4">
+      {statusTiles}
       {renderAutoReconnectBanner()}
 
       {/* Last Connection — one-click reconnect card */}
-      {lastConnection && !connecting && (
-        <div className="bg-deep-black space-y-3 rounded-lg border border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <ConnectionIcon type={lastConnection.type} />
-              <div>
-                <p className="text-sm font-medium text-gray-200">
-                  {lastConnection.type === 'ble'
-                    ? (lastConnection.bleDeviceName ?? t('connectionPanel.bluetoothDevice'))
-                    : lastConnection.type === 'serial'
-                      ? t('connectionPanel.serialDevice')
-                      : (lastConnection.httpAddress ?? t('connectionPanel.wifiDevice'))}
-                </p>
-                {lastConnection.type === 'ble' && lastBleIdentity ? (
-                  <p className="text-muted font-mono text-xs">{lastBleIdentity.display}</p>
-                ) : (
-                  <p className="text-muted text-xs">
-                    {connectionPanelConnectionTypeLabel(t, lastConnection.type, protocol)}
-                  </p>
-                )}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleReconnect}
-              className="bg-readable-green hover:bg-readable-green/90 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
-            >
-              {t('connectionPanel.reconnect')}
-            </button>
+      {showLastConnection && (
+        <div className="bg-deep-black border-ink-800 flex flex-wrap items-center gap-3 rounded-xl border px-4.5 py-4">
+          <span className="bg-sidebar-active-bg text-ink-300 flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px]">
+            <ConnectionIcon type={lastConnection.type} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-muted text-xs">{t('connectionPanel.lastConnectionLabel')}</p>
+            <p className="text-ink-200 truncate text-sm font-semibold">
+              {lastConnection.type === 'ble'
+                ? (lastConnection.bleDeviceName ?? t('connectionPanel.bluetoothDevice'))
+                : lastConnection.type === 'serial'
+                  ? t('connectionPanel.serialDevice')
+                  : (lastConnection.httpAddress ?? t('connectionPanel.wifiDevice'))}
+            </p>
+            {lastConnection.type === 'ble' && lastBleIdentity ? (
+              <p className="text-muted font-mono text-xs">{lastBleIdentity.display}</p>
+            ) : (
+              <p className="text-muted text-xs">
+                {connectionPanelConnectionTypeLabel(t, lastConnection.type, protocol)}
+              </p>
+            )}
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              clearLastConnection(protocol);
-              setLastConnection(null);
-            }}
-            className="text-xs text-gray-400 transition-colors hover:text-gray-200"
-          >
-            {t('connectionPanel.forgetDevice')}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                clearLastConnection(protocol);
+                setLastConnection(null);
+              }}
+            >
+              {t('connectionPanel.forgetDevice')}
+            </Button>
+            <Button variant="primary" onClick={handleReconnect}>
+              {t('connectionPanel.reconnect')}
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Radio Connection card */}
-      <div className="bg-deep-black overflow-hidden rounded-lg border border-gray-700">
-        {/* Header */}
-        <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-700 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <ConnectionIcon type={connectionType} />
-            <span className="font-medium text-gray-200">
-              {t('connectionPanel.radioConnection')}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-brand-green text-xs text-gray-300 transition-colors"
-            >
-              {t('diagnosticsPanel.docsLink')}
-            </a>
-            <span className="text-xs font-medium text-gray-400">
-              {t('connectionPanel.disconnected')}
-            </span>
-          </div>
-        </div>
+      {/* Radio and MQTT side by side on wide windows (Option B), stacked below xl. */}
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <Panel title={t('connectionPanel.radioConnection')} actions={docsLink}>
+          <div className="max-w-3xl space-y-4">
+            {error && (
+              <div role="alert" className={NOTICE_CLASS.error}>
+                {error}
+              </div>
+            )}
 
-        {/* Inline error */}
-        {error && (
-          <div className="border-b border-red-800 bg-red-900/50 px-4 py-2 text-xs text-red-300">
-            {error}
-          </div>
-        )}
-        {showAutoReconnectBanner && (
-          <div className="border-b border-cyan-800/60 bg-cyan-950/30 px-4 py-2 text-xs text-cyan-100">
-            {t('connectionPanel.autoReconnectInProgress')}
-          </div>
-        )}
+            {showRePairButton && isLinux && connectionType === 'ble' && (
+              <Button variant="primary" onClick={handleRePair}>
+                {t('connectionPanel.rePairDevice')}
+              </Button>
+            )}
 
-        {showRePairButton && isLinux && connectionType === 'ble' && (
-          <div className="border-b border-orange-800 bg-orange-900/30 px-4 py-2">
-            <button
-              type="button"
-              onClick={handleRePair}
-              className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-orange-700"
-            >
-              {t('connectionPanel.rePairDevice')}
-            </button>
-          </div>
-        )}
-
-        {/* PIN input prompt for Linux BLE pairing (disconnected view) */}
-        {showPinPrompt && (
-          <div className="border-b border-blue-800 bg-blue-900/30 px-4 py-3 text-blue-200">
-            <p className="mb-2 text-sm">{t('connectionPanel.enterPin')}:</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={pinInputValue}
-                onChange={(e) => {
-                  setPinInputValue(e.target.value.replace(/\D/g, '').slice(0, 6));
-                }}
-                placeholder={t('connectionPanel.pinPlaceholder')}
-                className="flex-1 rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none"
-                maxLength={6}
-                inputMode="numeric"
-                pattern="[0-9]*"
-              />
-              <button
-                type="button"
-                onClick={() => {
+            {/* PIN input prompt for Linux BLE pairing (disconnected view) */}
+            {showPinPrompt && (
+              <div className={NOTICE_CLASS.info}>
+                {renderPinForm(() => {
                   void handlePinSubmit();
-                }}
-                disabled={!normalizePairingPin(pinInputValue)}
-                className="rounded bg-blue-600 px-4 py-1.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {t('connectionPanel.submit')}
-              </button>
-              <button
-                type="button"
-                onClick={handlePinCancel}
-                className="rounded bg-gray-600 px-4 py-1.5 font-medium text-white hover:bg-gray-700"
-              >
-                {t('common.cancel')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Content */}
-        <div className="space-y-3 p-4">
-          {/* Connection type selector */}
-          <fieldset className="min-w-0 space-y-2 border-0 p-0">
-            <legend id="connection-type-legend" className="text-muted text-xs">
-              {t('connectionPanel.connectionType')}
-            </legend>
-            {protocol === 'meshtastic' ? (
-              <div
-                role="radiogroup"
-                aria-labelledby="connection-type-legend"
-                className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-              >
-                {(['ble', 'serial', 'http', 'tcp'] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    role="radio"
-                    aria-checked={connectionType === type}
-                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                    onClick={() => {
-                      setConnectionType(type);
-                    }}
-                    className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
-                      connectionType === type
-                        ? 'ring-bright-green bg-readable-green text-white ring-2'
-                        : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    <ConnectionIcon type={type} trigger={parentIconTrigger} />
-                    {type === 'ble' && t('connectionPanel.bluetooth')}
-                    {type === 'serial' && t('connectionPanel.usbSerial')}
-                    {type === 'http' && t('connectionPanel.wifiHttp')}
-                    {type === 'tcp' && t('connectionPanel.wifiTcp')}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div
-                role="radiogroup"
-                aria-labelledby="connection-type-legend"
-                className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
-              >
-                {(['ble', 'serial', 'http'] as const).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    role="radio"
-                    aria-checked={connectionType === type}
-                    {...{ [PARENT_HOVER_ATTR]: '' }}
-                    onClick={() => {
-                      setConnectionType(type);
-                    }}
-                    className={`flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
-                      connectionType === type
-                        ? 'bg-violet-600 text-white ring-2 ring-purple-500'
-                        : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    <ConnectionIcon type={type} trigger={parentIconTrigger} />
-                    {type === 'ble' && t('connectionPanel.bluetooth')}
-                    {type === 'serial' && t('connectionPanel.usbSerial')}
-                    {type === 'http' && t('connectionPanel.tcpIp')}
-                  </button>
-                ))}
+                })}
               </div>
             )}
-          </fieldset>
 
-          {/* HTTP / TCP address input */}
-          {connectionType === 'http' && protocol === 'meshtastic' && (
-            <div className="space-y-1">
-              <label htmlFor="connection-meshtastic-host" className="text-muted text-xs">
-                {t('connectionPanel.deviceAddress')}
-              </label>
-              <input
-                id="connection-meshtastic-host"
-                type="text"
-                value={httpAddress}
-                onChange={(e) => {
-                  setHttpAddress(e.target.value);
-                }}
-                placeholder={t('connectionPanel.deviceAddressPlaceholder')}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
-                autoComplete="off"
+            <fieldset className="min-w-0 space-y-2 border-0 p-0">
+              <legend className={`${FIELD_LABEL_CLASS} mb-2`}>
+                {t('connectionPanel.connectionType')}
+              </legend>
+              <SegmentedControl
+                size="md"
+                aria-label={t('connectionPanel.connectionType')}
+                value={connectionType}
+                onChange={setConnectionType}
+                options={connectionTypeOptions}
               />
-              <p className="text-muted text-xs">{t('connectionPanel.deviceAddressHint')}</p>
-              {navigator.userAgent.toLowerCase().includes('windows') && (
-                <p className="text-xs text-yellow-400">{t('connectionPanel.windowsMdnsNote')}</p>
-              )}
-            </div>
-          )}
-          {connectionType === 'tcp' && protocol === 'meshtastic' && (
-            <div className="space-y-1">
-              <label htmlFor="connection-meshtastic-tcp-host" className="text-muted text-xs">
-                {t('connectionPanel.deviceAddress')}
-              </label>
-              <input
-                id="connection-meshtastic-tcp-host"
-                type="text"
-                value={tcpAddress}
-                onChange={(e) => {
-                  setTcpAddress(e.target.value);
-                }}
-                placeholder={t('connectionPanel.tcpAddressPlaceholder')}
-                className="bg-secondary-dark focus:border-brand-green w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none"
-                autoComplete="off"
-              />
-              <p className="text-muted text-xs">{t('connectionPanel.tcpAddressHint')}</p>
-            </div>
-          )}
-          {connectionType === 'http' && protocol === 'meshcore' && (
-            <div className="space-y-1">
-              <div className="flex gap-2">
-                <div className="min-w-0 flex-1 space-y-1">
-                  <label htmlFor="connection-meshcore-tcp-host" className="text-muted text-xs">
-                    {t('connectionPanel.meshcoreHost')}
-                  </label>
-                  <input
-                    id="connection-meshcore-tcp-host"
-                    type="text"
-                    value={tcpHost}
-                    onChange={(e) => {
-                      setTcpHost(e.target.value);
-                    }}
-                    placeholder={t('connectionPanel.meshcoreHostPlaceholder')}
-                    className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
-                    autoComplete="off"
-                    aria-label={t('connectionPanel.meshcoreHost')}
-                  />
-                </div>
-                <div className="w-24 space-y-1">
-                  <label htmlFor="connection-meshcore-tcp-port" className="text-muted text-xs">
-                    {t('connectionPanel.meshcorePort')}
-                  </label>
-                  <input
-                    id="connection-meshcore-tcp-port"
-                    type="number"
-                    min={1}
-                    max={65535}
-                    value={tcpPortStr}
-                    onChange={(e) => {
-                      setTcpPortStr(e.target.value);
-                    }}
-                    className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:border-purple-500 focus:outline-none"
-                    aria-label={t('connectionPanel.meshcorePort')}
-                  />
-                </div>
-              </div>
-              <p className="text-muted text-xs">{t('connectionPanel.meshcoreHostHint')}</p>
-            </div>
-          )}
+            </fieldset>
 
-          {/* Connection hints */}
-          <div className="bg-secondary-dark space-y-1 rounded-lg p-3 text-xs text-gray-300">
-            {connectionType === 'ble' && protocol === 'meshtastic' && (
-              <>
-                <p>{t('connectionPanel.hintMeshtasticBle1')}</p>
-                <p>{t('connectionPanel.hintMeshtasticBle2')}</p>
-              </>
-            )}
-            {connectionType === 'ble' && protocol === 'meshcore' && (
-              <>
-                <p>{t('connectionPanel.hintMeshcoreBle1')}</p>
-                <p>{t('connectionPanel.hintMeshcoreBle2')}</p>
-              </>
-            )}
-            {connectionType === 'serial' && protocol === 'meshtastic' && (
-              <>
-                <p>{t('connectionPanel.hintMeshtasticSerial1')}</p>
-                <p>{t('connectionPanel.hintMeshtasticSerial2')}</p>
-              </>
-            )}
-            {connectionType === 'serial' && protocol === 'meshcore' && (
-              <>
-                <p>{t('connectionPanel.hintMeshcoreSerial1')}</p>
-                <p>{t('connectionPanel.hintMeshcoreSerial2')}</p>
-              </>
-            )}
+            {/* HTTP / TCP address input */}
             {connectionType === 'http' && protocol === 'meshtastic' && (
-              <>
-                <p>{t('connectionPanel.hintMeshtasticHttp1')}</p>
-                <p>{t('connectionPanel.hintMeshtasticHttp2')}</p>
-              </>
+              <div className="max-w-md space-y-1">
+                <label htmlFor="connection-meshtastic-host" className="text-muted text-xs">
+                  {t('connectionPanel.deviceAddress')}
+                </label>
+                <input
+                  id="connection-meshtastic-host"
+                  type="text"
+                  value={httpAddress}
+                  onChange={(e) => {
+                    setHttpAddress(e.target.value);
+                  }}
+                  placeholder={t('connectionPanel.deviceAddressPlaceholder')}
+                  className={INPUT_CLASS}
+                  autoComplete="off"
+                />
+                <p className="text-muted text-xs">{t('connectionPanel.deviceAddressHint')}</p>
+                {navigator.userAgent.toLowerCase().includes('windows') && (
+                  <p className="text-xs text-orange-400">{t('connectionPanel.windowsMdnsNote')}</p>
+                )}
+              </div>
             )}
             {connectionType === 'tcp' && protocol === 'meshtastic' && (
-              <>
-                <p>{t('connectionPanel.hintMeshtasticTcp1')}</p>
-                <p>{t('connectionPanel.hintMeshtasticTcp2')}</p>
-              </>
+              <div className="max-w-md space-y-1">
+                <label htmlFor="connection-meshtastic-tcp-host" className="text-muted text-xs">
+                  {t('connectionPanel.deviceAddress')}
+                </label>
+                <input
+                  id="connection-meshtastic-tcp-host"
+                  type="text"
+                  value={tcpAddress}
+                  onChange={(e) => {
+                    setTcpAddress(e.target.value);
+                  }}
+                  placeholder={t('connectionPanel.tcpAddressPlaceholder')}
+                  className={INPUT_CLASS}
+                  autoComplete="off"
+                />
+                <p className="text-muted text-xs">{t('connectionPanel.tcpAddressHint')}</p>
+              </div>
             )}
             {connectionType === 'http' && protocol === 'meshcore' && (
-              <p>{t('connectionPanel.hintMeshcoreHttp')}</p>
+              <div className="max-w-md space-y-1">
+                <div className="flex gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <label htmlFor="connection-meshcore-tcp-host" className="text-muted text-xs">
+                      {t('connectionPanel.meshcoreHost')}
+                    </label>
+                    <input
+                      id="connection-meshcore-tcp-host"
+                      type="text"
+                      value={tcpHost}
+                      onChange={(e) => {
+                        setTcpHost(e.target.value);
+                      }}
+                      placeholder={t('connectionPanel.meshcoreHostPlaceholder')}
+                      className={INPUT_CLASS}
+                      autoComplete="off"
+                      aria-label={t('connectionPanel.meshcoreHost')}
+                    />
+                  </div>
+                  <div className="w-24 space-y-1">
+                    <label htmlFor="connection-meshcore-tcp-port" className="text-muted text-xs">
+                      {t('connectionPanel.meshcorePort')}
+                    </label>
+                    <input
+                      id="connection-meshcore-tcp-port"
+                      type="number"
+                      min={1}
+                      max={65535}
+                      value={tcpPortStr}
+                      onChange={(e) => {
+                        setTcpPortStr(e.target.value);
+                      }}
+                      className={INPUT_CLASS}
+                      aria-label={t('connectionPanel.meshcorePort')}
+                    />
+                  </div>
+                </div>
+                <p className="text-muted text-xs">{t('connectionPanel.meshcoreHostHint')}</p>
+              </div>
             )}
-          </div>
 
-          {/* Connect button */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={handleConnect}
-              disabled={
-                connecting ||
-                state.status === 'connecting' ||
-                ((connectionType === 'http' || connectionType === 'tcp') &&
-                  !activeHostAddress.trim())
-              }
-              className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {t('connectionPanel.connectButton')}
-            </button>
+            {/* Connection hints */}
+            <div className={`space-y-1 ${NOTICE_CLASS.info}`}>
+              {connectionType === 'ble' && protocol === 'meshtastic' && (
+                <>
+                  <p>{t('connectionPanel.hintMeshtasticBle1')}</p>
+                  <p>{t('connectionPanel.hintMeshtasticBle2')}</p>
+                </>
+              )}
+              {connectionType === 'ble' && protocol === 'meshcore' && (
+                <>
+                  <p>{t('connectionPanel.hintMeshcoreBle1')}</p>
+                  <p>{t('connectionPanel.hintMeshcoreBle2')}</p>
+                </>
+              )}
+              {connectionType === 'serial' && protocol === 'meshtastic' && (
+                <>
+                  <p>{t('connectionPanel.hintMeshtasticSerial1')}</p>
+                  <p>{t('connectionPanel.hintMeshtasticSerial2')}</p>
+                </>
+              )}
+              {connectionType === 'serial' && protocol === 'meshcore' && (
+                <>
+                  <p>{t('connectionPanel.hintMeshcoreSerial1')}</p>
+                  <p>{t('connectionPanel.hintMeshcoreSerial2')}</p>
+                </>
+              )}
+              {connectionType === 'http' && protocol === 'meshtastic' && (
+                <>
+                  <p>{t('connectionPanel.hintMeshtasticHttp1')}</p>
+                  <p>{t('connectionPanel.hintMeshtasticHttp2')}</p>
+                </>
+              )}
+              {connectionType === 'tcp' && protocol === 'meshtastic' && (
+                <>
+                  <p>{t('connectionPanel.hintMeshtasticTcp1')}</p>
+                  <p>{t('connectionPanel.hintMeshtasticTcp2')}</p>
+                </>
+              )}
+              {connectionType === 'http' && protocol === 'meshcore' && (
+                <p>{t('connectionPanel.hintMeshcoreHttp')}</p>
+              )}
+            </div>
+
+            {/* Connect button: primary unless the last-connection card already offers Reconnect */}
+            <div className="pt-1">
+              <Button
+                variant={showLastConnection ? 'secondary' : 'primary'}
+                onClick={handleConnect}
+                disabled={
+                  connecting ||
+                  state.status === 'connecting' ||
+                  ((connectionType === 'http' || connectionType === 'tcp') &&
+                    !activeHostAddress.trim())
+                }
+              >
+                {t('connectionPanel.connectButton')}
+              </Button>
+            </div>
           </div>
-        </div>
+        </Panel>
+
+        {mqttSection}
       </div>
-
-      {mqttSection}
       {coloradoRegionGateModal}
     </div>
   );

@@ -19,6 +19,7 @@ import {
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
 
 import MicronPageEditor from './MicronPageEditor';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 /** Starter body for a brand-new page so the preview is not blank. */
 const NEW_PAGE_TEMPLATE = '>New page\n\nEdit this text.\n';
@@ -283,9 +284,9 @@ export default function NomadPageServerPanel({
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h3 className="text-sm font-medium text-gray-100">{t('nomadNetwork.serving.title')}</h3>
+        <h3 className="text-ink-100 text-sm font-medium">{t('nomadNetwork.serving.title')}</h3>
         {serving ? (
-          <span className="bg-readable-green rounded px-2 py-0.5 text-[10px] font-medium text-white">
+          <span className="bg-brand-green text-2xs text-app-bg rounded px-2 py-0.5 font-medium">
             {t('nomadNetwork.serving.servingChip')}
           </span>
         ) : null}
@@ -297,9 +298,9 @@ export default function NomadPageServerPanel({
 
       <p className="text-muted text-xs">{t('nomadNetwork.serving.folderHint')}</p>
 
-      <div className="flex flex-col gap-1 text-sm text-gray-200">
+      <div className="text-ink-200 flex flex-col gap-1 text-sm">
         <span>{t('nomadNetwork.serving.contentSource')}</span>
-        <code className="truncate font-mono text-xs text-gray-300" title={contentSourceLabel}>
+        <code className="text-ink-300 truncate font-mono text-xs" title={contentSourceLabel}>
           {contentSourceLabel}
         </code>
         <div className="flex flex-wrap gap-2">
@@ -322,7 +323,7 @@ export default function NomadPageServerPanel({
                 void refresh();
               }}
               aria-label={t('nomadNetwork.serving.reloadFromDiskAria')}
-              className="rounded border border-amber-600 px-3 py-1.5 text-xs text-amber-300 hover:bg-amber-900/30 disabled:opacity-40"
+              className="rounded border border-orange-600 px-3 py-1.5 text-xs text-orange-300 hover:bg-orange-900/30 disabled:opacity-40"
             >
               {t('nomadNetwork.serving.reloadFromDisk')}
             </button>
@@ -330,7 +331,7 @@ export default function NomadPageServerPanel({
         </div>
       </div>
 
-      <label className="flex flex-col gap-1 text-sm text-gray-200">
+      <label className="text-ink-200 flex flex-col gap-1 text-sm">
         <span>{t('nomadNetwork.serving.displayName')}</span>
         <input
           type="text"
@@ -341,7 +342,7 @@ export default function NomadPageServerPanel({
             setDisplayName(e.target.value);
           }}
           aria-label={t('nomadNetwork.serving.displayName')}
-          className="rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm"
+          className={INPUT_BOX_CLASS}
         />
       </label>
 
@@ -364,7 +365,7 @@ export default function NomadPageServerPanel({
             void setServing(false);
           }}
           aria-label={t('nomadNetwork.serving.disable')}
-          className="rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-3 py-1.5 text-xs disabled:opacity-40"
         >
           {t('nomadNetwork.serving.disable')}
         </button>
@@ -385,7 +386,7 @@ export default function NomadPageServerPanel({
       </div>
 
       {status?.destination_hash ? (
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+        <div className="text-ink-300 flex flex-wrap items-center gap-2 text-xs">
           <span className="text-muted">{t('nomadNetwork.serving.destinationHash')}</span>
           <code className="truncate font-mono">{status.destination_hash}</code>
           <button
@@ -394,7 +395,7 @@ export default function NomadPageServerPanel({
               void copyHash();
             }}
             aria-label={t('nomadNetwork.serving.copyHash')}
-            className="rounded border border-gray-600 px-2 py-0.5 hover:bg-slate-800"
+            className="border-ink-600 hover:bg-ink-800 rounded border px-2 py-0.5"
           >
             {copied ? t('nomadNetwork.serving.copied') : t('nomadNetwork.serving.copyHash')}
           </button>
@@ -413,9 +414,9 @@ export default function NomadPageServerPanel({
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-      <div className="border-t border-gray-700 pt-3">
+      <div className="border-ink-700 border-t pt-3">
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <h4 className="text-sm font-medium text-gray-100">{t('nomadNetwork.serving.myPages')}</h4>
+          <h4 className="text-ink-100 text-sm font-medium">{t('nomadNetwork.serving.myPages')}</h4>
           <button
             type="button"
             disabled={busy || !sidecarRunning || !hasContentSource}
@@ -432,8 +433,8 @@ export default function NomadPageServerPanel({
           ) : (
             pages.map((page) => (
               <li key={page.path} className="flex items-center gap-2 text-sm">
-                <span className="truncate text-gray-200">{page.path}</span>
-                <span className="text-muted shrink-0 text-[10px]">{page.size} B</span>
+                <span className="text-ink-200 truncate">{page.path}</span>
+                <span className="text-muted text-2xs shrink-0">{page.size} B</span>
                 <button
                   type="button"
                   disabled={busy || !sidecarRunning || !hasContentSource}
@@ -441,7 +442,7 @@ export default function NomadPageServerPanel({
                     void editPage(page);
                   }}
                   aria-label={t('nomadNetwork.serving.editPage', { path: page.path })}
-                  className="ml-auto shrink-0 rounded border border-gray-600 px-2 py-0.5 text-[10px] text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                  className="text-2xs border-ink-600 text-ink-200 hover:bg-ink-800 ml-auto shrink-0 rounded border px-2 py-0.5 disabled:opacity-40"
                 >
                   {t('nomadNetwork.serving.edit')}
                 </button>
@@ -454,7 +455,7 @@ export default function NomadPageServerPanel({
                         void removePage(page.path);
                       }}
                       aria-label={t('nomadNetwork.serving.deleteConfirmAria')}
-                      className="shrink-0 rounded border border-red-600 px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30 disabled:opacity-40"
+                      className="text-2xs shrink-0 rounded border border-red-600 px-2 py-0.5 text-red-300 hover:bg-red-900/30 disabled:opacity-40"
                     >
                       {t('common.confirm')}
                     </button>
@@ -465,7 +466,7 @@ export default function NomadPageServerPanel({
                         setPendingDelete(null);
                       }}
                       aria-label={t('common.cancel')}
-                      className="shrink-0 rounded border border-gray-600 px-2 py-0.5 text-[10px] text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                      className="text-2xs border-ink-600 text-ink-200 hover:bg-ink-800 shrink-0 rounded border px-2 py-0.5 disabled:opacity-40"
                     >
                       {t('common.cancel')}
                     </button>
@@ -478,7 +479,7 @@ export default function NomadPageServerPanel({
                       setPendingDelete(page.path);
                     }}
                     aria-label={t('nomadNetwork.serving.deletePage', { path: page.path })}
-                    className="shrink-0 rounded border border-red-600 px-2 py-0.5 text-[10px] text-red-300 hover:bg-red-900/30 disabled:opacity-40"
+                    className="text-2xs shrink-0 rounded border border-red-600 px-2 py-0.5 text-red-300 hover:bg-red-900/30 disabled:opacity-40"
                   >
                     {t('nomadNetwork.serving.delete')}
                   </button>

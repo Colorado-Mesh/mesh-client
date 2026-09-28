@@ -32,12 +32,9 @@
       "stale": "古い",
       "reconnecting": "再接続中"
     },
-    "nodeLabel": "ノード: {{name}}",
     "takClientLost": "TAKクライアントを失いました",
     "title": "メッシュクライアント",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Turn off Colorado Mesh sign",
-    "meshTubeSignOn": "Turn on Colorado Mesh sign",
     "queueBadge": "Q: {{used}}/{{max}}",
     "telemetryDisabled": "このデバイスではテレメトリが無効になっています。デバイス メトリクスを有効にすると、メッシュとこのアプリ (診断、バッテリー、信号) が向上します。 [ラジオ] タブで有効にします。",
     "scrollToTop": "↑トップへ",
@@ -255,7 +252,7 @@
     "clearMessagesChannelConfirmLabel": "{{channel}}をクリア",
     "clearMessagesTitle": "メッセージをクリアする",
     "clearAllRepeatersConfirm": "これにより、保存されているすべての MeshCore リピーターがローカル データベースから永久に削除されます。これを元に戻すことはできません。",
-    "clearAllLocalDataTitle": "⚠ ローカルデータをすべてクリア",
+    "clearAllLocalDataTitle": "ローカルデータをすべてクリア",
     "clearAllLocalDataConfirm": "これにより、すべてのローカル メッセージ、ノード、キャッシュされたセッション データが完全に削除されます。この操作は元に戻すことができません。",
     "clearEverythingConfirmButton": "すべてをクリア",
     "dangerZoneMeshcoreHeading": "MeshCore",
@@ -272,16 +269,16 @@
         "description": "サイドバー ナビゲーションで現在選択されているタブの背景。"
       },
       "brandGreen": {
-        "label": "インジケーターと境界線のハイライト",
-        "description": "設定時の境界線、オンライン/MQTT インジケーター、ハイライト、および進行状況の塗りつぶしのアクセント。"
+        "label": "アクセント",
+        "description": "主要ボタンと送信（暗い文字）、アクセントの文字、アクティブな項目、進捗の塗り。アプリの背景上で読みやすさを保ちます。"
       },
       "brightGreen": {
         "label": "アプリのタイトル、リンク、ノードの強調",
         "description": "アプリのタイトル、強調テキスト、フッター内のリンク、ノード リスト内のホップ/自己ハイライト。"
       },
       "readableGreen": {
-        "label": "アクションボタンと選択した錠剤",
-        "description": "白いテキストで塗りつぶされる塗りつぶし - 選択されたチャンネルの丸薬とコントラストのための主要なアクション ボタン。"
+        "label": "アクセントの塗り",
+        "description": "白い文字の下に敷くアクセントの塗り（バッジなど）。白い文字とのコントラスト 4.5:1 を保ちます。"
       },
       "deepBlack": {
         "label": "サイドバー、ヘッダー、モーダル サーフェス",
@@ -310,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "メッセージアクションボタンのホバー色",
         "description": "すべてのメッセージアクションボタン（コピー、返信、反応、ダイレクトメッセージ、スター、スター付き）のホバーカラー。"
+      },
+      "chatOutgoingBg": {
+        "label": "送信メッセージの塗りつぶし",
+        "description": "自分のメッセージの背景塗りつぶし (22% の不透明度で適用)。"
+      },
+      "chatOutgoingBorder": {
+        "label": "送信メッセージの境界線",
+        "description": "自分のメッセージの境界線の色 (25% の不透明度で適用)。"
       }
     },
     "themePreset": {
@@ -331,7 +336,14 @@
       "purple400": "パープル400",
       "pink400": "ピンク400",
       "orange400": "オレンジ400",
-      "yellow400": "イエロー400"
+      "yellow400": "イエロー400",
+      "zinc950": "ジンク950",
+      "zinc900": "ジンク900",
+      "zinc800": "ジンク800",
+      "zinc700": "ジンク700",
+      "zinc400": "ジンク400",
+      "emerald300": "エメラルド300",
+      "emerald700": "エメラルド700"
     },
     "autoPruneNodesOlderThanAria": "起動時に{{days}}日より古いノードを自動プルーニングします",
     "autoPrunePositionHistoryDaysAria": "{{days}} 日より古い、起動時のポジション履歴の自動プルーニング",
@@ -388,6 +400,8 @@
     "themeSaveFailed": "カラーチェックポイントの保存に失敗しました。",
     "themeRestoreFailed": "カラーチェックポイントの復元に失敗しました。",
     "themeResetFailed": "色をリセットできませんでした。",
+    "themeAccentKept": "その色はアプリの背景に近すぎて読めません（4.5:1 未満）。アクセントを既定に戻しました。",
+    "themeFillKept": "その色の上の白い文字は 4.5:1 未満になるため、塗りを既定に戻しました。",
     "messageActionsBarBgVisible": "背景を表示",
     "rrcUnreadAllRoomMessages": "すべてのルームメッセージのRRC未読",
     "rrcUnreadAllRoomMessagesHint": "オンにすると、新しいRRCルームメッセージは未読になり、チャンネルサウンドを再生できます。IRCスタイルのアラートをオフにする：ダイレクトメッセージと@メンションのみ。",
@@ -421,16 +435,38 @@
     "nodeSilenceAlertMinutesPlaceholder": "プロトコルのデフォルト",
     "nodeSilenceAlertMinutesHint": "各プロトコルの古いしきい値を使用するには、空白のままにします。エスカレーションはこの値の2倍で発生します。",
     "nodeBatteryLowThreshold": "バッテリー低閾値(%)",
-    "notifyOnLinkDown": "予期しない無線リンクダウン時に通知する"
+    "notifyOnLinkDown": "予期しない無線リンクダウン時に通知する",
+    "aboutSection": "このアプリについて",
+    "themePresets": {
+      "heading": "テーマ",
+      "hint": "基本のパレットを選び、下で個別の色を調整します。",
+      "custom": "カスタムカラーです。テーマを選ぶとプリセットからやり直せます。"
+    },
+    "themeSurfaces": {
+      "midnight": "ミッドナイト",
+      "slate": "スレート",
+      "zinc": "ジンク",
+      "graphite": "グラファイト",
+      "deepSea": "ディープシー",
+      "dusk": "ダスク",
+      "evergreen": "エバーグリーン",
+      "highContrast": "ハイコントラスト"
+    },
+    "themeAccents": {
+      "heading": "アクセント",
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum",
+      "sky": "スカイ",
+      "classic": "クラシックグリーン"
+    },
+    "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
-    "expandSidebar": "サイドバーを展開する",
-    "collapseSidebar": "サイドバーを折りたたむ",
     "languageSelector": "言語を選択してください",
     "applicationPanels": "アプリケーションパネル",
     "applicationLog": "アプリケーションログ",
-    "playAnimation": "メッシュ信号パルスのアニメーションを再生する",
     "protocolSwitcher": "プロトコルスイッチャー",
     "switchToMeshtastic": "Meshtasticに切り替える",
     "switchToMeshCore": "MeshCore に切り替える",
@@ -446,31 +482,6 @@
   "battery": {
     "percentCharging": "バッテリー {{percent}} パーセント、充電中",
     "percent": "バッテリー {{percent}} パーセント"
-  },
-  "bootSequence": {
-    "booting": "メッシュスタックを起動しています...",
-    "meshtasticLora": "LoRa ： {{model}}",
-    "meshtasticScanningChannelsCount": "チャンネルをスキャンしています... {{count}}",
-    "meshtasticScanningChannels": "設定されたチャンネルをスキャンしています...",
-    "databaseNodes_one": "データベース： {{count}}ノードが同期されました",
-    "databaseNodes_other": "データベース： {{count}}ノードが同期されました",
-    "syncingDatabase": "メッシュデータベースを同期しています...",
-    "interfaceReady": "{{iface}}インターフェース準備完了",
-    "freqMhz": "周波数： {{mhz}} MHz",
-    "freqMhzBw": "周波数： {{mhz}} MHz | BW ： {{bw}} kHz",
-    "configuringRadio": "無線パラメータを設定しています...",
-    "contacts_one": "連絡先： {{count}}連絡先が読み込まれました",
-    "contacts_other": "Contacts: {{count}}件の連絡先が読み込まれました",
-    "loadingContacts": "連絡先データベースを読み込んでいます...",
-    "routes_one": "ルート：メッシュ内の{{count}}ノード",
-    "routes_other": "ルート：メッシュ内の{{count}}ノード",
-    "routesEstablished": "ルートが確立されました",
-    "meshActive": "サイトネットワークで有効",
-    "transportBle": "BLE",
-    "transportSerial": "シリアル",
-    "transportHttp": "HTTP",
-    "transportRadio": "通信機",
-    "radioInterfaceFallback": "無線インターフェース"
   },
   "channelUtilization": {
     "title": "チャネル使用率",
@@ -678,7 +689,7 @@
       "offerBannerTitleAria": "このピアからの保留中の受信ファイル オファー"
     },
     "shareLocation": "位置情報を共有する",
-    "shareLocationLabel": "📍 共有場所",
+    "shareLocationLabel": "共有場所",
     "shareLocationHint": "現在の GPS または静的位置をチャット メッセージとして送信します",
     "shareLocationUnavailable": "位置情報が利用できません - GPS 設定を確認してください",
     "floodScopeOverrideHint": "このメッセージのみの地域的なフラッドの範囲。デフォルトのスコープは、無線の保存された設定を使用します。ハッシュタグは、この送信をその地域に制限します。地域フィルターを使用しない範囲外の送信。保存したスコープは送信後に復元されます。",
@@ -787,7 +798,27 @@
     "outboxEmergencyWillSend": "送信されるまで再試行を続けます",
     "outboxEmergencyCapBlocked": "一時停止：待機中の緊急メッセージが多すぎます。再度お試しいただくか、こちらをキャンセルしてください。",
     "outboxEmergencyCancelConfirm": "この緊急メッセージをキャンセルしますか？送信されません。",
-    "retryOutboxEmergencyAttempt": "{{count}}を試みる"
+    "retryOutboxEmergencyAttempt": "{{count}}を試みる",
+    "channelSwitcher": {
+      "trigger": "すべてのチャンネル（{{total}}）",
+      "triggerWithUnread": "すべてのチャンネル（{{total}}）、未読 {{unread}}",
+      "search": "チャンネルを検索",
+      "listLabel": "チャンネル",
+      "empty": "一致するチャンネルはありません"
+    },
+    "toolbarLabel": "会話ツール",
+    "composeHint": "Enter で送信、Shift+Enter で改行",
+    "dmSwitcher": {
+      "trigger": "すべてのダイレクトメッセージ（{{total}}）",
+      "triggerWithUnread": "すべてのダイレクトメッセージ（{{total}}）、未読 {{unread}}",
+      "search": "会話を検索",
+      "listLabel": "ダイレクトメッセージ",
+      "empty": "一致する会話はありません"
+    },
+    "notificationRrcTitle": "{{room}}の{{sender}}",
+    "srNewMessage": "{{sender}}からの新着メッセージ： {{text}}",
+    "srNewMessages_one": "{{count}} NEW MESSAGE",
+    "srNewMessages_other": "{{count}}件の新着メッセージ"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -916,7 +947,6 @@
     "disconnectRadio": "切断する",
     "manualContactApproval": "手動による連絡先の承認",
     "manualContactApprovalDesc": "新しい連絡先が表示される前に手動承認が必要",
-    "disconnected": "● 切断されました",
     "bluetoothDevice": "Bluetooth デバイス",
     "serialDevice": "シリアルデバイス",
     "wifiDevice": "WiFiデバイス",
@@ -945,10 +975,6 @@
     "stageLinuxUnpaired": "保存されたデバイスは Linux Bluetooth でペアリングされていません。下で選択して PIN を入力し、接続します。",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "接続する",
-    "mqttStatusConnected": "接続された",
-    "mqttStatusConnecting": "接続する",
-    "mqttStatusError": "エラー",
-    "mqttStatusDisconnected": "切断された",
     "stageSelectDevice": "以下からデバイスを選択してください",
     "stageSelectSerial": "以下のシリアルポートを選択してください",
     "stageConnectingLast": "最後の Bluetooth デバイスに接続中…",
@@ -1035,7 +1061,6 @@
     "reticulumSidecarStartFailed": "Reticulumスタックを開始できませんでした: {{message}}",
     "reticulumStopStack": "スタックを停止",
     "reticulumAutostart": "接続を開いたときにスタックを自動的に開始する",
-    "reticulumStackRunning": "スタック実行中",
     "reticulumIdentity": {
       "title": "Reticulum ID",
       "startStackFirst": "Reticulumスタックを起動して、アイデンティティを設定します。",
@@ -1448,7 +1473,9 @@
       "noPrivateKey": "完全な ID なし — MeshCore 設定を Radio パネル (公開キーと秘密キー) にインポートするか、ユーザー名 (v1_<公開キー>) とトークンを手動で貼り付けます。トークン内の JWT オーディエンスはサーバーのホスト名と一致する必要があります。",
       "publicKeyMissing": "ID に公開キーがありません。 [Radio] パネルに MeshCore 構成 JSON をインポートするか (公開キーと秘密キーを含める必要があります)、パスワード フィールドにブローカー トークンを貼り付けます。",
       "noIdentity": "デバイス ID が見つかりません。 MeshCore 構成 JSON を Radio パネルにインポートするか、ユーザー名とトークンを手動で貼り付けます。",
-      "usernameBuildFailed": "MeshCore MQTTユーザー名を作成できませんでした。Radioパネルで MeshCore 設定JSONをインポートするか、ユーザー名（v1_<public key>）とトークンを手動で貼り付けてください。"
+      "usernameBuildFailed": "MeshCore MQTTユーザー名を作成できませんでした。Radioパネルで MeshCore 設定JSONをインポートするか、ユーザー名（v1_<public key>）とトークンを手動で貼り付けてください。",
+      "clientKey": "クライアントキー",
+      "copyClientKey": "クライアントキーをコピー"
     },
     "meshcorePacketLogger": {
       "label": "パケット ロガー — 無線および MQTT に接続すると、RX パケットの概要を Meshcoretomqtt と同じ JSON 形式で {{topic}} に転送します。デフォルトではオフです。聞いた航空交通量をパケット アナライザーと共有する場合にのみ有効にします。"
@@ -1569,7 +1596,25 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "リンクの状態",
+      "radioLink": "無線リンク",
+      "stack": "スタック",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "エラー",
+      "running": "実行中",
+      "stopped": "停止中",
+      "clientLost": "クライアント切断",
+      "takPort": "ポート {{port}}",
+      "openTak": "TAK を開く"
+    },
+    "disconnectAll": "無線機と MQTT を切断",
+    "disconnectRadioGroup": "無線機を切断",
+    "moreDisconnectOptions": "その他の切断オプション",
+    "disconnectOptions": "切断オプション",
+    "lastConnectionLabel": "前回の接続"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",
@@ -2042,7 +2087,12 @@
       "esp32FlashStalled": "ファームウェアの転送が進まず停止しました。別のUSBケーブルまたはポートを試し、ブートローダーモード（BOOTを長押し、RESETをタップ）に入り、再度フラッシュしてください。",
       "unknown": "予期しないエラーが発生しました",
       "provisionWipeRequired": "EEPROMは無効なIDでロックされています。まずEEPROMを消去してから、再度プロビジョニングしてください。",
-      "provisionVerifyFailed": "プロビジョニング書き込みは完了しましたが、デバイスはまだプロビジョニングされていないEEPROMを報告しています。ボードの電源を入れ直し、起動を待ち、もう一度やり直すか、まずEEPROMを消去してください。"
+      "provisionVerifyFailed": "プロビジョニング書き込みは完了しましたが、デバイスはまだプロビジョニングされていないEEPROMを報告しています。ボードの電源を入れ直し、起動を待ち、もう一度やり直すか、まずEEPROMを消去してください。",
+      "esp32ReadStalled": "フラッシュの読み取りが進まず停止しました。別のUSBケーブルまたはポートを試し、ブートローダーモード（BOOTを長押し、RESETをタップ）に入り、再度バックアップしてください。",
+      "esp32ReadIncomplete": "フラッシュ読み取りが早期に終了したため、バックアップは保存されませんでした。ボードを再接続して、もう一度お試しください。",
+      "esp32FlashSizeUnknown": "フラッシュサイズを検出できなかったため、バックアップは作成されませんでした。正確なボードモデルを選択して、もう一度お試しください。",
+      "esp32FlashTooLarge": "このボードのフラッシュは32 MiBのバックアップ上限を超えているため、バックアップは作成されませんでした。",
+      "esp32ReadVerifyFailed": "フラッシュ読み取りのチェックサム検証に失敗したため、バックアップは保存されませんでした。ボードを再接続して、もう一度お試しください。"
     },
     "selectSerialPort": "シリアルポートを選択",
     "noSerialPorts": "USBシリアルポートが見つかりません。",
@@ -2090,7 +2140,14 @@
     "clearPairedDevicesConfirmTitle": "RNode Bluetoothボンドをクリアしますか？",
     "clearPairedDevicesConfirmMessage": "USB経由でCMD_BT_UNPAIRを送信し、ESP32 RNode上のボンディング済みホストを消去します（一部のnRF52ビルドでは無効）。再ペアリング前に、システム設定 → Bluetoothでデバイスを忘れ（Forget）る必要があります。",
     "clearPairedDevicesConfirm": "Bluetoothボンドを消去",
-    "clearPairedDevicesSuccess": "ラジオのBluetoothボンド表の消去を要求しました。"
+    "clearPairedDevicesSuccess": "ラジオのBluetoothボンド表の消去を要求しました。",
+    "backupFirmware": "ファームウェアのバックアップ",
+    "backupFirmwareHint": "フラッシュ書き込みの前に、ESP32フラッシュの完全なイメージ（ファームウェアとデバイス設定）をファイルに保存します。nRF52ボードでは使用できません。",
+    "backingUp": "フラッシュを読み取り中… {{progress}}%",
+    "cancelBackup": "バックアップをキャンセル",
+    "backupSaved": "ファームウェアのバックアップが{{path}}に保存されました。",
+    "backupSaveCancelled": "ファームウェアのバックアップは読み取られましたが、保存されませんでした。",
+    "backupCancelled": "ファームウェアのバックアップがキャンセルされました。"
   },
   "identityVault": {
     "title": "アイデンティティ保管庫",
@@ -3036,7 +3093,7 @@
     "statusOffline": "オフライン",
     "loadingBadge": "読み込み中...",
     "mqttIgnoredBadge": "MQTT は無視されました",
-    "chatBadge": "📢 チャット",
+    "chatBadge": "チャット",
     "onlyInDbBadge": "DB内のみ",
     "syncedBadge": "同期済み",
     "onRadioBadge": "ラジオで",
@@ -3084,42 +3141,40 @@
     "radioStatsLocalHeading": "無線統計 (ローカル)",
     "txAirTimeLabel": "TX通信時間",
     "rxAirTimeLabel": "受信通信時間",
-    "requestPosition": "📍 ポジションのリクエスト",
-    "traceRoute": "🛤 トレースルート",
+    "requestPosition": "ポジションのリクエスト",
+    "traceRoute": "トレースルート",
     "tracingEllipsis": "トレース中...",
-    "requestStatus": "📊 リクエストステータス",
+    "requestStatus": "リクエストステータス",
     "requestingEllipsis": "リクエスト中...",
     "requestingStatus": "ステータスをリクエスト中...",
     "statusRequestFailed": "ステータス要求が失敗しました",
     "requestingSensorTelemetry": "センサー テレメトリ (LPP) をリクエストしています...",
     "telemetryFailed": "テレメトリが失敗しました: {{message}}",
-    "sensorTelemetryButton": "🌡 センサーテレメトリ",
+    "sensorTelemetryButton": "センサーテレメトリ",
     "requestingNeighbors": "ご近所さんにお願いして…",
-    "getNeighbors": "🔗 隣人を獲得する",
+    "getNeighbors": "隣人を獲得する",
     "neighborsFailed": "近隣が失敗しました: {{message}}",
     "messageNoKeyTitle": "メッセージを送信できません: 暗号化キーがありません。連絡先が完全に交換されるまで待つか、連絡先を更新してください。",
-    "messageButton": "💬メッセージ",
+    "messageButton": "メッセージ",
     "exportingContact": "連絡先をエクスポートしています...",
     "noPublicKeyAvailable": "利用可能な公開キーがありません",
-    "exportContact": "📤 輸出連絡先",
+    "exportContact": "輸出連絡先",
     "exportingEllipsis": "エクスポート中...",
     "exportFailed": "エクスポートに失敗しました",
     "sharingContact": "連絡先を共有しています...",
-    "shareContact": "📨 連絡先を共有する",
+    "shareContact": "連絡先を共有する",
     "sharingEllipsis": "共有中...",
     "shareFailed": "共有に失敗しました",
     "addingToRadio": "ラジオに追加中...",
-    "addToRadio": "➕ ラジオに追加",
+    "addToRadio": "ラジオに追加",
     "addingEllipsis": "追加中...",
     "addToRadioFailed": "ラジオへの追加に失敗しました",
     "removingFromRadio": "ラジオから削除中...",
-    "removeFromRadio": "➖ ラジオから削除",
+    "removeFromRadio": "ラジオから削除",
     "removingEllipsis": "削除中...",
     "removeFromRadioFailed": "ラジオからの削除に失敗しました",
     "mqttIgnoreHeading": "MQTT 無視",
     "mqttIgnoreDescription": "このノードの MQTT データを診断から除外します",
-    "stopIgnoringMqttTitle": "このノードの MQTT 無視をやめる",
-    "ignoreMqttTitle": "このノードの MQTT を無視します",
     "deleteNode": "ノードの削除",
     "deleteNodeConfirm": "このノードをローカル データベースから削除しますか?再放送時にはまた登場します。",
     "cancel": "キャンセル",
@@ -3162,7 +3217,7 @@
     "remoteAdminKeyHint": "ローカル無線の公開鍵（Radio → Security → Copy）をこのリモートノードのAdminキーに追加したら、同じキーをここに貼り付けて確認してください。その後、Radioタブの「ノードを構成する」を使います。",
     "remoteAdminKeyInvalid": "有効な管理者公開鍵(base 64、base 64 :…、または64文字の16進数)を入力します。",
     "configureRemotelyHint": "メッシュを介してこのノードのラジオ設定を開きます（ローカルラジオと保存された管理者キーが必要です）。",
-    "openRoomButton": "🏠 ルームを開く",
+    "openRoomButton": "ルームを開く",
     "remoteAuthCancelled": "リモートアクセスがキャンセルされました。",
     "shareContactSent": "無線で送信されたコンタクトシェア。",
     "blockContact": "ブロック",
@@ -3202,7 +3257,9 @@
     "xeddsaSigned": "XEdDSA署名済み",
     "xeddsaSignedHint": "無線はこのノードからのXEdDSA署名を検証しているため、その公開鍵は暗号化されています。",
     "keyManuallyVerified": "キーが確認されました",
-    "keyManuallyVerifiedHint": "このノードの公開鍵は、オペレータによって手動で確認されました。"
+    "keyManuallyVerifiedHint": "このノードの公開鍵は、オペレータによって手動で確認されました。",
+    "keyBadge": "鍵",
+    "closePane": "詳細を閉じる"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -3292,6 +3349,7 @@
     "importResultError": "{{imported}} をインポートし、{{skipped}} をスキップしました。エラー: {{errors}}",
     "refreshContacts": "無線から連絡先を更新する",
     "sendFloodAdvert": "フラッドadvertを送信する",
+    "sendFloodAdvertUnavailable": "MeshCore無線機を接続すると使用できます",
     "filterByContactGroup": "連絡先グループでフィルタリングする",
     "manageContactGroups": "連絡先グループを管理する",
     "manageGroups": "グループの管理",
@@ -3317,12 +3375,6 @@
     "distanceFilterNoGpsBanner": "距離フィルターは有効ですが、デバイスには GPS 修正がありません。すべてのノードが表示されます。",
     "distanceFilterActiveBanner_one": "距離フィルターがアクティブです — {{count}} ノードが {{maxDistance}} {{unit}} の向こう側に隠れています。",
     "distanceFilterActiveBanner_other": "距離フィルターがアクティブ — {{count}} ノードが {{maxDistance}} {{unit}} の向こう側に隠れています。",
-    "summaryOnline_one": "{{count}} オンライン",
-    "summaryOnline_other": "{{count}} オンライン",
-    "summaryStale_one": "{{count}} は古いです",
-    "summaryStale_other": "{{count}} は古いです",
-    "summaryOffline_one": "{{count}} オフライン",
-    "summaryOffline_other": "{{count}} オフライン",
     "tableCaptionMeshNodes": "接続されたメッシュノード",
     "columnFavorite": "お気に入り",
     "columnId": "ID",
@@ -3374,7 +3426,13 @@
     "meshcoreTypeUnknown": "不明",
     "columnHealth": "ノード健全性",
     "hasPublicKeyTitle": "公開鍵",
-    "buttonExportCsv": "CSV をエクスポート"
+    "buttonExportCsv": "CSV をエクスポート",
+    "listViewAria": "リスト表示",
+    "statusFilterAria": "状態で絞り込む",
+    "statusFilterAll": "すべて",
+    "buttonExport": "エクスポート",
+    "exportMenuLabel": "エクスポート形式",
+    "youBadge": "自分"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3847,12 +3905,12 @@
     "shutdownConfirm": "シャットダウン",
     "shutdownButton": "シャットダウン",
     "factoryResetConfigName": "工場出荷時設定にリセット",
-    "factoryResetConfigTitle": "⚠ 工場出荷時設定にリセット",
+    "factoryResetConfigTitle": "工場出荷時設定にリセット",
     "factoryResetConfigMessage": "これにより、デバイス構成が工場出荷時のデフォルトにリセットされますが、ノード データベースは保持されます。設定を再構成する必要があります。",
     "factoryResetConfigConfirm": "設定をリセット",
     "factoryResetConfigButton": "工場出荷時設定へのリセットのみ",
     "factoryResetName": "工場出荷時設定にリセット",
-    "factoryResetTitle": "⚠ 工場出荷時設定にリセット",
+    "factoryResetTitle": "工場出荷時設定にリセット",
     "factoryResetMessage": "これにより、すべてのデバイス設定が消去され、工場出荷時のデフォルト設定が復元されます。デバイス上のすべてのチャネル、設定、および保存されたデータは永久に失われます。この操作は元に戻すことができません。",
     "factoryResetConfirm": "工場出荷時設定にリセット",
     "meshcoreChannelKeyLabel": "キー (32 16 進数文字 = 16 バイト)",
@@ -4557,8 +4615,6 @@
     "noLppData": "この応答には LPP センサー データがありません。",
     "enterCommand": "コマンドを入力してください...",
     "searchRepeatersPlaceholder": "リピーターとルームを検索…",
-    "openCliInterface": "CLI インターフェイスを開く",
-    "sensorLppButton": "センサー（LPP）",
     "noTelemetryResponse": "まだテレメトリ応答がありません。センサー (LPP) をもう一度試してください。",
     "mapPositionFromAdvert": "地図の位置は、このセンサーのリクエストではなく、advert/連絡先データから取得されます。",
     "mapPositionFromTelemetry": "地図の位置は、センサーテレメトリではなく、advert/連絡先データから取得されます。",
@@ -4584,8 +4640,6 @@
     "statusStale": "古い",
     "statusOffline": "オフライン",
     "buttonPing": "ピン",
-    "buttonStatus": "状態",
-    "buttonNeighbors": "隣人",
     "buttonRemove": "取り除く",
     "buttonConfirmRemove": "確認する？",
     "buttonErrorShort": "エラー",
@@ -4630,15 +4684,10 @@
     "savedPasswordOrphanLabel": "リピーター{{nodeId}}",
     "pingQueuedBehindOther": "キューイング—別のpingが無線を使用しています（ MeshCoreは一度に1つのトレースを許可します）。",
     "waitForPingBeforeStatus": "ステータスリクエストの前に進行中のpingが完了するのを待っています。",
-    "statusLastFailedTooltip": "前回のステータスリクエストは失敗しました： {{error}}",
-    "neighborsLastFailedTooltip": "前回の近隣住民リクエストは失敗しました： {{error}}",
-    "telemetryLastFailedTooltip": "前回のセンサーリクエストに失敗しました： {{error}}",
-    "cliLastFailedTooltip": "最後のCLIコマンドが失敗しました： {{error}}",
     "telemetryError": "センサーエラー： {{error}}",
     "neighborsFailedToast": "Neighbors failed: {{message}}",
     "columnSnr": "SNR",
     "columnRssi": "RSSI",
-    "buttonCli": "CLI",
     "cliClearHistory": "履歴をクリアする",
     "cliNoCommandsYet": "まだコマンドがありません",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
@@ -4683,7 +4732,12 @@
     "sortByAirPctAsc": "空気%で並べ替え、最も低い順",
     "sortByAirPctDesc": "空気%で並べ替え、最も高い順",
     "sortByReliabilityAsc": "信頼性で並べ替え、最も低い順",
-    "sortByReliabilityDesc": "信頼性で並べ替え、最も高い順"
+    "sortByReliabilityDesc": "信頼性で並べ替え、最も高い順",
+    "moreActionsFor": "{{name}} のその他の操作",
+    "rowActionsMenu": "{{name}} の操作",
+    "rowBusy": "{{name}} を処理中",
+    "menuShownBelow": "下に表示中。もう一度選ぶと非表示になります。",
+    "confirmRemoveAria": "{{name}} の削除を確認"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",
@@ -5040,7 +5094,7 @@
     "savedPasswordsHeading": "保存されているパスワード",
     "savedPasswordsCount": "保存されたパスワード（{{count}}）",
     "savedPasswordOrphanLabel": "ルーム 0x{{nodeId}}",
-    "statusPasswordSaved": "このルームにパスワードを保存しました（未ログイン時は空色マーカー）。",
+    "statusPasswordSaved": "このルームにパスワードを保存しました。",
     "statusAutoLoginEnabled": "接続時の自動ログインが有効になっています。",
     "badgeAutoLogin": "自動ログイン",
     "badgeAutoSync": "自動同期",
@@ -5056,17 +5110,18 @@
     "legendLoggedIn": "ログイン済み",
     "statusLoggedInSession": "ログイン済み",
     "statusLoggedInSessionTooltip": "アクティブなクライアントセッション。ルームを出るか切断するまで続きます。ルームサーバーに到達できない場合は、退出してから再度ログインしてください。",
-    "legendNotSavedTooltip": "空の円—このルームにはパスワードが保存されていません",
-    "legendSavedTooltip": "空色の半円 — パスワード保存済み。ログインしてセッションを開く",
-    "legendLoggedInTooltip": "緑の点 — アクティブなクライアントセッション（サーバーがオフラインの場合はルームを退出）",
     "historyLocalHint": "ログイン時、mesh-client はこのデバイスにまだローカルのウォーターマークがない場合、ルームサーバーのリングバッファに残っている最近の投稿を要求します。接続中に購読を維持するには自動同期を有効にしてください。",
     "loginAllSavedDisabledNoSavedPasswords": "すべてログインするには、まずルームパスワードを保存してください",
     "membersHeadingWithCount": "メンバー（ {{count}} ）",
     "collapseRoomList": "ルームリストを折りたたむ",
     "expandRoomList": "ルームリストを展開",
-    "collapsedRoomWithUnread": "{{label}}、{{count}}未読",
     "manageJumpHint": "インフラ制御（ping、status、CLI、ACL setperm）はRepeatersタブにあります。",
-    "aclPubkeyPlaceholder": "0123456789abcdef…"
+    "aclPubkeyPlaceholder": "0123456789abcdef…",
+    "backToList": "ルームリストに戻る",
+    "details": "ルームの詳細",
+    "hideDetails": "ルームの詳細を隠す",
+    "moreActions": "その他のルーム操作",
+    "loginAndSyncHeading": "ログインと同期"
   },
   "searchModal": {
     "closeSearch": "検索を閉じる",
@@ -5166,18 +5221,6 @@
   "sidebar": {
     "disabledTabTooltip": "このモードでは使用できません"
   },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "放送を続けてください",
-      "helloOperator": "こんにちは、オペレーター",
-      "thanksForMeshing": "噛み合わせてくれてありがとう",
-      "builtForCommunities": "あらゆる場所のコミュニティ向けに構築",
-      "stayConnected": "つながりを保つ",
-      "signalsOut": "信号を出す",
-      "gladYouAreHere": "ここに来てくれて嬉しいです",
-      "keepTheMeshAlive": "メッシュを生きたままにしておく"
-    }
-  },
   "tabs": {
     "connection": "繋がり",
     "chat": "チャット",
@@ -5200,6 +5243,7 @@
     "admin": "管理",
     "peers": "ピア",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "ネットワーク・トポロジー",
     "network": "ネットワーク",
     "rrc": "RRC",
@@ -5236,7 +5280,7 @@
     "atakDataPackageDesc": "ATAK、WinTAK、または iTAK にインポートするための TLS 証明書と接続設定を含む .zip ファイルを生成します。",
     "generating": "生成中…",
     "generateReveal": "生成と公開",
-    "packageSaved": "✓ パッケージが保存されました - Finder/Explorer を確認してください",
+    "packageSaved": "パッケージが保存されました - Finder/Explorer を確認してください",
     "startServerFirst": "最初にサーバーを起動します",
     "certificates": "証明書",
     "certificatesDesc": "自己署名 CA、サーバー、およびクライアント証明書は初回起動時に自動的に生成され、アプリ データ ディレクトリに保存されます。",
@@ -5401,8 +5445,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "ハッシュに接続",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5439,8 +5481,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "ルームを展開",
-    "collapseRooms": "ルームを折りたたむ",
     "joinedRooms": "結合",
     "recentRooms": "最近",
     "roomKeyOptional": "ルームキー（任意）",
@@ -5496,8 +5536,6 @@
       "welcomeTimeout": "接続されていますが、ハブが時間内にウェルカムを送信しませんでした。もう一度やり直してください。",
       "proxyRateLimit": "現在リクエストが多すぎます（プロキシレート制限に達しました）。しばらくしてからもう一度お試しください。"
     },
-    "expandMembers": "メンバーリストを展開",
-    "collapseMembers": "メンバーリストを折りたたむ",
     "cancelConnect": "取り消す",
     "maxHubsConnected": "最大8つのRRCハブに接続できます。最初に1つを切断します。",
     "enableHubAutoJoin": "ハブの自動結合を有効にする",
@@ -5544,7 +5582,15 @@
     "roomNameLimit": {
       "overMax": "ルーム名が長すぎます—ハブの制限は{{limit}}バイトです"
     },
-    "noConnectedHubs": "RRCハブが接続されていません。お気に入り、発見済み、またはハッシュで接続します。"
+    "noConnectedHubs": "RRCハブが接続されていません。お気に入り、発見済み、またはハッシュで接続します。",
+    "autoJoinChip": "自動",
+    "listViewAria": "ルームまたはハブを表示",
+    "hubsShort": "ハブ",
+    "hideList": "ルームとハブを隠す",
+    "showList": "ルームとハブを表示",
+    "backToList": "ルームとハブに戻る",
+    "hideMembers": "メンバーを隠す",
+    "listColumnAria": "ルームとハブ"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -6225,5 +6271,48 @@
     "beaconCancelQueued": "ビーコンキャンセルキューされました。ラジオが利用可能になると送信されます。",
     "beaconCancelFailed": "ビーコンキャンセルを送信またはキューイングできませんでした。インシデントはまだ発生していません。",
     "emptyHint": "インバウンドMECPレポートはここに自動的に表示されます。送信するには、チャットでApp → MECP → Show MECPボタンを有効にし、チャットでMECPを使用します。→マップレイヤーは、座標でオープンなインシデントを表示できます。"
+  },
+  "shell": {
+    "section": {
+      "monitor": "モニター",
+      "device": "デバイス"
+    },
+    "sectionPanelsAria": "{{section}}のパネル",
+    "navBadgeDetail": "{{label}}、{{detail}}",
+    "openLauncher": "パネル、連絡先、チャンネルに移動（{{shortcut}}）",
+    "status": {
+      "radio": "無線機：{{status}}",
+      "radioWithNode": "無線機：{{status}}、ノード {{node}}",
+      "radioNode": "{{node}}、{{detail}}"
+    },
+    "launcher": {
+      "title": "すべてのパネル",
+      "searchLabel": "パネル、連絡先、チャンネルを検索",
+      "placeholder": "パネル、連絡先、チャンネルに移動",
+      "noResults": "一致するパネルはありません",
+      "otherGroup": "その他",
+      "pin": "{{label}}をピン留め",
+      "unpin": "{{label}}のピン留めを解除",
+      "pinLimit": "ピン留めできるパネルは最大 {{max}} 個です。先に 1 つ解除してください。",
+      "hintMove": "移動",
+      "hintOpen": "開く",
+      "hintPin": "ピン留め",
+      "panelCount_one": "{{count}} 個のパネル",
+      "panelCount_other": "{{count}} 個のパネル",
+      "channelsGroup": "チャンネル",
+      "contactsGroup": "連絡先",
+      "moreMatches": "他にも一致があります。入力を続けて絞り込んでください。"
+    },
+    "more": "その他",
+    "quitConfirmTitle": "Mesh Client を終了しますか？",
+    "quitConfirmIncidents": "未解決の MAYDAY または URGENT インシデント: {{n}} 件。",
+    "quitConfirmOutbox": "送信待ちの緊急メッセージ: {{n}} 件。",
+    "quitConfirmLinks": "すべての無線および MQTT 接続が切断されます。"
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "{{label}}を減らす",
+      "increase": "{{label}}を増やす"
+    }
   }
 }

@@ -35,6 +35,7 @@ import {
   ReticulumPropagationSyncProgress,
 } from './ReticulumPropagationSyncProgress';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 const PROPAGATION_NODE_STATUS_KEYS = new Set([
   'active',
@@ -91,8 +92,8 @@ function DiscoveredPropagationList({
   );
 
   return (
-    <div className="mt-4 border-t border-gray-800 pt-3">
-      <h4 className="text-xs font-medium text-gray-300">
+    <div className="border-ink-800 mt-4 border-t pt-3">
+      <h4 className="text-ink-300 text-xs font-medium">
         {t('reticulumPropagation.discoveredTitle')}
       </h4>
       {activeRows.length === 0 ? (
@@ -104,11 +105,11 @@ function DiscoveredPropagationList({
             return (
               <li
                 key={row.destination_hash}
-                className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800 bg-slate-900/40 px-2 py-1.5"
+                className="border-ink-800 bg-ink-900/40 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5"
               >
                 <div className="min-w-0">
-                  <div className="truncate text-gray-200">{label}</div>
-                  <div className="text-muted flex flex-wrap gap-x-2 text-[11px]">
+                  <div className="text-ink-200 truncate">{label}</div>
+                  <div className="text-muted text-label flex flex-wrap gap-x-2">
                     <span className="font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: row.destination_hash.slice(0, 12),
@@ -131,7 +132,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={adding}
-                    className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-300 disabled:opacity-40"
+                    className="rounded border border-orange-600 px-2 py-0.5 text-xs text-orange-300 disabled:opacity-40"
                     aria-label={t('reticulumPropagation.discoveredAddAria', { name: label })}
                     onClick={() => {
                       onAdd(row.destination_hash);
@@ -142,7 +143,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={adding}
-                    className="rounded border border-amber-500 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200 disabled:opacity-40"
+                    className="rounded border border-orange-500 bg-orange-900/30 px-2 py-0.5 text-xs text-orange-200 disabled:opacity-40"
                     aria-label={t('reticulumPropagation.discoveredAddPreferAria', {
                       name: label,
                     })}
@@ -155,7 +156,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={ignoreBusy}
-                    className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 disabled:opacity-40"
+                    className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs disabled:opacity-40"
                     aria-label={t('reticulumPropagation.ignoreForAutoAria', { name: label })}
                     onClick={() => {
                       onIgnoreForAuto(row.destination_hash);
@@ -171,10 +172,10 @@ function DiscoveredPropagationList({
       )}
       {ignoredFromDiscovered.length > 0 || ignoredOrphanHashes.length > 0 ? (
         <div className="mt-3">
-          <h5 className="text-muted text-[11px] font-medium tracking-wide uppercase">
+          <h5 className="text-muted text-label font-medium">
             {t('reticulumPropagation.ignoredForAutoTitle')}
           </h5>
-          <p className="text-muted mt-0.5 text-[11px]">
+          <p className="text-muted text-label mt-0.5">
             {t('reticulumPropagation.ignoredForAutoHint')}
           </p>
           <ul className="mt-2 space-y-2 text-sm">
@@ -183,11 +184,11 @@ function DiscoveredPropagationList({
               return (
                 <li
                   key={row.destination_hash}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800/80 bg-slate-950/40 px-2 py-1.5 opacity-80"
+                  className="border-ink-800/80 bg-ink-950/40 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 opacity-80"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-gray-400">{label}</div>
-                    <div className="text-muted font-mono text-[11px]">
+                    <div className="text-ink-400 truncate">{label}</div>
+                    <div className="text-muted text-label font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: row.destination_hash.slice(0, 12),
                       })}
@@ -196,7 +197,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={ignoreBusy}
-                    className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 disabled:opacity-40"
+                    className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs disabled:opacity-40"
                     aria-label={t('reticulumPropagation.allowForAutoAria', { name: label })}
                     onClick={() => {
                       onAllowForAuto(row.destination_hash);
@@ -212,11 +213,11 @@ function DiscoveredPropagationList({
               return (
                 <li
                   key={hash}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-800/80 bg-slate-950/40 px-2 py-1.5 opacity-80"
+                  className="border-ink-800/80 bg-ink-950/40 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5 opacity-80"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-gray-400">{label}</div>
-                    <div className="text-muted font-mono text-[11px]">
+                    <div className="text-ink-400 truncate">{label}</div>
+                    <div className="text-muted text-label font-mono">
                       {t('reticulumPropagation.discoveredHash', {
                         hash: hash.slice(0, 12),
                       })}
@@ -225,7 +226,7 @@ function DiscoveredPropagationList({
                   <button
                     type="button"
                     disabled={ignoreBusy}
-                    className="rounded border border-gray-600 px-2 py-0.5 text-xs text-gray-300 disabled:opacity-40"
+                    className="border-ink-600 text-ink-300 rounded border px-2 py-0.5 text-xs disabled:opacity-40"
                     aria-label={t('reticulumPropagation.allowForAutoAria', { name: label })}
                     onClick={() => {
                       onAllowForAuto(hash);
@@ -460,7 +461,7 @@ export default function ReticulumPropagationSection({
     <>
       {!embedded ? (
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-medium text-gray-200">
+          <h3 className="text-ink-200 text-sm font-medium">
             {t('connectionPanel.reticulumPropagation.title')}
           </h3>
           <ReticulumPropagationRefreshButton
@@ -479,7 +480,7 @@ export default function ReticulumPropagationSection({
         />
       )}
       <div className="space-y-1">
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="text-ink-300 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={!chatNoticeDismissed}
@@ -514,7 +515,7 @@ export default function ReticulumPropagationSection({
           return (
             <li
               key={node.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded border border-gray-700/60 px-2 py-1.5"
+              className="border-ink-700/60 flex flex-wrap items-center justify-between gap-2 rounded border px-2 py-1.5"
             >
               <span className="min-w-0 flex-1">
                 {isRenaming ? (
@@ -526,12 +527,12 @@ export default function ReticulumPropagationSection({
                       onChange={(e) => {
                         setRenameDraft(e.target.value);
                       }}
-                      className="min-w-[10rem] flex-1 rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
+                      className={`${INPUT_BOX_CLASS} min-w-[10rem] flex-1`}
                       aria-label={t('reticulumPropagation.renameLabel')}
                     />
                     <button
                       type="button"
-                      className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                      className="text-xs text-yellow-400 hover:underline disabled:opacity-40"
                       disabled={!renameDraft.trim()}
                       aria-label={t('reticulumPropagation.renameSaveAria')}
                       onClick={() => {
@@ -579,7 +580,7 @@ export default function ReticulumPropagationSection({
                       </span>
                     ) : null}
                     {preferredId === node.id ? (
-                      <span className="text-readable-green ml-1 text-xs">
+                      <span className="text-bright-green ml-1 text-xs">
                         {t('reticulumPropagation.preferred')}
                       </span>
                     ) : null}
@@ -589,7 +590,7 @@ export default function ReticulumPropagationSection({
               <span className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                  className="text-xs text-yellow-400 hover:underline disabled:opacity-40"
                   onClick={() => {
                     void setPreferredOnSidecar(node.id)
                       .then((ok) => {
@@ -610,7 +611,7 @@ export default function ReticulumPropagationSection({
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline disabled:opacity-40"
+                  className="text-xs text-yellow-400 hover:underline disabled:opacity-40"
                   // Local inbox cannot settle until its messagestore finishes loading.
                   disabled={sync.active || syncStarting || mode === 'off' || isLoading}
                   onClick={() => {
@@ -624,7 +625,7 @@ export default function ReticulumPropagationSection({
                 </button>
                 <button
                   type="button"
-                  className="text-xs text-amber-400 hover:underline"
+                  className="text-xs text-yellow-400 hover:underline"
                   onClick={() => {
                     if (isLocal && !node.enabled) {
                       setPendingEnableLocal(true);
@@ -664,7 +665,7 @@ export default function ReticulumPropagationSection({
                 {!isLocal && destHash ? (
                   <button
                     type="button"
-                    className="text-xs text-gray-400 hover:underline disabled:opacity-40"
+                    className="text-ink-400 text-xs hover:underline disabled:opacity-40"
                     disabled={ignoreBusy}
                     onClick={() => {
                       if (ignoredForAuto) handleAllowForAuto(destHash);
@@ -688,7 +689,7 @@ export default function ReticulumPropagationSection({
                   <>
                     <button
                       type="button"
-                      className="text-xs text-amber-400 hover:underline"
+                      className="text-xs text-yellow-400 hover:underline"
                       onClick={() => {
                         setRenamingId(node.id);
                         setRenameDraft(node.name);
@@ -725,7 +726,7 @@ export default function ReticulumPropagationSection({
           onChange={(e) => {
             handleModeChange(e.target.value as ReticulumPropagationMode);
           }}
-          className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+          className={`${SELECT_BOX_CLASS} w-full max-w-md`}
           aria-label={t('reticulumPropagation.modeAria')}
           aria-describedby="reticulum-propagation-mode-help"
         >
@@ -769,7 +770,7 @@ export default function ReticulumPropagationSection({
                 );
               });
           }}
-          className="bg-deep-black focus:border-brand-green w-full max-w-md rounded border border-gray-600 px-2 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+          className={`${SELECT_BOX_CLASS} w-full max-w-md`}
           aria-label={t('reticulumPropagation.autoSyncIntervalAria')}
         >
           {RETICULUM_PROPAGATION_AUTO_SYNC_INTERVALS_SEC.map((sec) => (
@@ -790,7 +791,7 @@ export default function ReticulumPropagationSection({
         <button
           type="button"
           disabled={bottomSyncDisabled}
-          className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
+          className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-300 disabled:opacity-40"
           aria-label={t('reticulumPropagation.syncNowPreferredAria')}
           aria-busy={syncStarting}
           onClick={() => {
@@ -842,7 +843,7 @@ export default function ReticulumPropagationSection({
               setAddHash(e.target.value);
             }}
             placeholder={t('reticulumPropagation.addNodePlaceholder')}
-            className="rounded border border-gray-700 bg-slate-900 px-2 py-1 text-sm text-gray-200"
+            className={INPUT_BOX_CLASS}
             aria-label={t('reticulumPropagation.addNodeLabel')}
             disabled={adding}
           />
@@ -850,7 +851,7 @@ export default function ReticulumPropagationSection({
         <button
           type="button"
           disabled={!addHash.trim() || adding}
-          className="rounded border border-amber-600 px-2 py-1 text-xs text-amber-300 disabled:opacity-40"
+          className="rounded border border-orange-600 px-2 py-1 text-xs text-orange-300 disabled:opacity-40"
           onClick={() => {
             if (adding) return;
             setAdding(true);
@@ -932,5 +933,5 @@ export default function ReticulumPropagationSection({
 
   if (embedded) return body;
 
-  return <div className="bg-deep-black rounded-lg border border-gray-700 p-4">{body}</div>;
+  return <div className="bg-deep-black border-ink-700 rounded-lg border p-4">{body}</div>;
 }

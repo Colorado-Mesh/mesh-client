@@ -411,11 +411,9 @@ export default function LogPanel({
       <h2 id="log-panel-landmark-title" className="sr-only">
         {t('aria.applicationLog')}
       </h2>
-      <div className="flex flex-col gap-2 border-b border-gray-700 px-2 py-2">
+      <div className="border-ink-700 flex flex-col gap-2 border-b px-2 py-2">
         <div className="space-y-1">
-          <span className="text-muted text-[10px] tracking-wide uppercase">
-            {t('logPanel.showLevels')}
-          </span>
+          <span className="text-muted text-2xs">{t('logPanel.showLevels')}</span>
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
               <input
@@ -426,7 +424,7 @@ export default function LogPanel({
                   setFilter('logInfo', e.target.checked);
                 }}
                 aria-label={t('logPanel.logInfo')}
-                className="rounded border-gray-600"
+                className="border-ink-600 rounded"
               />
               <label htmlFor="log-filter-loginfo" className="text-muted cursor-pointer text-xs">
                 {t('logPanel.logInfo')}
@@ -441,7 +439,7 @@ export default function LogPanel({
                   setFilter('warnError', e.target.checked);
                 }}
                 aria-label={t('logPanel.warnError')}
-                className="rounded border-gray-600"
+                className="border-ink-600 rounded"
               />
               <label htmlFor="log-filter-warn" className="text-muted cursor-pointer text-xs">
                 {t('logPanel.warnError')}
@@ -456,19 +454,17 @@ export default function LogPanel({
                   setFilter('debug', e.target.checked);
                 }}
                 aria-label={t('logPanel.debug')}
-                className="rounded border-gray-600"
+                className="border-ink-600 rounded"
               />
               <label htmlFor="log-filter-debug" className="text-muted cursor-pointer text-xs">
                 {t('logPanel.debug')}
               </label>
             </div>
           </div>
-          <p className="text-muted text-[10px] leading-snug">{t('logPanel.writtenToFile')}</p>
+          <p className="text-muted text-2xs leading-snug">{t('logPanel.writtenToFile')}</p>
         </div>
-        <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
-          <span className="text-muted text-[10px] tracking-wide uppercase">
-            {t('logPanel.source')}
-          </span>
+        <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
+          <span className="text-muted text-2xs">{t('logPanel.source')}</span>
           <div className="ml-auto flex gap-1">
             <button
               type="button"
@@ -476,7 +472,7 @@ export default function LogPanel({
                 setLogSource('app');
               }}
               aria-label={t('logPanel.appSource', { count: appEntries.length })}
-              className={`rounded px-2 py-0.5 text-[10px] ${logSource === 'app' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
+              className={`text-2xs rounded px-2 py-0.5 ${logSource === 'app' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border-ink-700 bg-ink-800 text-ink-400 border'}`}
             >
               {t('logPanel.appSource', { count: appEntries.length })}
             </button>
@@ -486,7 +482,7 @@ export default function LogPanel({
                 setLogSource('device');
               }}
               aria-label={t('logPanel.deviceSource', { count: allDeviceLogs.length })}
-              className={`rounded px-2 py-0.5 text-[10px] ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border border-gray-700 bg-slate-800 text-gray-400'}`}
+              className={`text-2xs rounded px-2 py-0.5 ${logSource === 'device' ? 'bg-brand-green/20 text-brand-green border-brand-green/40 border' : 'border-ink-700 bg-ink-800 text-ink-400 border'}`}
             >
               {t('logPanel.deviceSource', { count: allDeviceLogs.length })}
             </button>
@@ -498,7 +494,7 @@ export default function LogPanel({
               type="button"
               onClick={narrow}
               aria-label={t('logPanel.narrowLogPanel')}
-              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+              className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 rounded border px-2 py-1 text-xs"
             >
               −
             </button>
@@ -506,11 +502,11 @@ export default function LogPanel({
               type="button"
               onClick={widen}
               aria-label={t('logPanel.widenLogPanel')}
-              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+              className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 rounded border px-2 py-1 text-xs"
             >
               +
             </button>
-            <span className="text-muted flex-1 text-right text-[10px]">{panelWidth}px</span>
+            <span className="text-muted text-2xs flex-1 text-right">{panelWidth}px</span>
           </div>
         )}
         <div className="flex flex-col gap-1">
@@ -521,7 +517,7 @@ export default function LogPanel({
                 setAnalyzeModalOpen(true);
               }}
               aria-label={t('logPanel.analyzeLog')}
-              className="flex-1 rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
+              className="bg-ink-700 text-ink-200 hover:bg-ink-600 flex-1 rounded px-2 py-1 text-xs"
             >
               {t('logPanel.analyze')}
             </button>
@@ -529,7 +525,7 @@ export default function LogPanel({
               type="button"
               onClick={handleExport}
               aria-label={t('logPanel.exportLog')}
-              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+              className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 rounded border px-2 py-1 text-xs"
             >
               {t('logPanel.export')}
             </button>
@@ -537,13 +533,13 @@ export default function LogPanel({
               type="button"
               onClick={handleDelete}
               aria-label={t('logPanel.deleteLog')}
-              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+              className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 rounded border px-2 py-1 text-xs"
             >
               {t('logPanel.delete')}
             </button>
           </div>
           {logClearError && (
-            <div role="alert" className="text-[10px] text-red-400">
+            <div role="alert" className="text-2xs text-red-400">
               {logClearError}
             </div>
           )}
@@ -552,7 +548,7 @@ export default function LogPanel({
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="min-h-0 flex-1 overflow-auto p-2 font-mono text-[10px] leading-tight text-gray-400"
+        className="text-2xs text-ink-400 min-h-0 flex-1 overflow-auto p-2 font-mono leading-tight"
         role="log"
         aria-live="polite"
         aria-relevant="additions"
@@ -598,17 +594,17 @@ export default function LogPanel({
     return (
       <>
         <div
-          className="bg-deep-black fixed inset-y-0 right-0 z-[1100] flex min-h-0 w-full max-w-md flex-col border-l border-gray-700"
+          className="bg-deep-black border-ink-700 fixed inset-y-0 right-0 z-[1100] flex min-h-0 w-full max-w-md flex-col border-l"
           role="complementary"
           aria-label={t('aria.applicationLog')}
           aria-labelledby="log-panel-landmark-title"
         >
-          <div className="flex shrink-0 items-center justify-end border-b border-gray-700 px-2 py-1.5">
+          <div className="border-ink-700 flex shrink-0 items-center justify-end border-b px-2 py-1.5">
             <button
               type="button"
               onClick={() => onClose?.()}
               aria-label={t('logPanel.close')}
-              className="rounded border border-gray-600 bg-slate-800 px-2 py-1 text-xs text-gray-300 hover:bg-slate-700"
+              className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 rounded border px-2 py-1 text-xs"
             >
               {t('logPanel.close')}
             </button>
@@ -632,13 +628,13 @@ export default function LogPanel({
   return (
     <>
       <div
-        className="bg-deep-black flex min-h-0 shrink-0 border-l border-gray-700"
+        className="bg-deep-black border-ink-700 flex min-h-0 shrink-0 border-l"
         style={{ width: panelWidth }}
       >
         <button
           type="button"
           aria-label={t('logPanel.dragToResize')}
-          className="w-1.5 shrink-0 cursor-col-resize self-stretch border-0 bg-gray-800/50 p-0 hover:bg-slate-600"
+          className="bg-ink-800/50 hover:bg-ink-600 w-1.5 shrink-0 cursor-col-resize self-stretch border-0 p-0"
           onMouseDown={onResizeMouseDown}
         />
         {panel}

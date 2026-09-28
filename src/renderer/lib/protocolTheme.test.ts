@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol';
 
-import { PROTOCOL_THEME, protocolHeaderBorderClass } from './protocolTheme';
-import { contrastRatio } from './wcagContrast';
+import { PROTOCOL_THEME } from './protocolTheme';
 
 describe('protocolTheme', () => {
   it('defines theme for every registered protocol', () => {
@@ -14,32 +13,27 @@ describe('protocolTheme', () => {
     }
   });
 
-  it('protocolHeaderBorderClass uses gray when not configured', () => {
-    expect(protocolHeaderBorderClass('meshtastic', false)).toBe('border-gray-700');
-    expect(protocolHeaderBorderClass('meshcore', false)).toBe('border-gray-700');
+  it('gives every protocol a unique two-letter rail monogram', () => {
+    const monograms = REGISTERED_MESH_PROTOCOLS.map((p) => PROTOCOL_THEME[p].monogram);
+    expect(monograms).toEqual(['MT', 'MC', 'RN']);
+    expect(new Set(monograms).size).toBe(monograms.length);
   });
 
-  it('protocolHeaderBorderClass uses protocol accent when configured', () => {
-    expect(protocolHeaderBorderClass('meshtastic', true)).toBe(
-      PROTOCOL_THEME.meshtastic.headerBorderConfigured,
-    );
-    expect(protocolHeaderBorderClass('meshcore', true)).toBe(
-      PROTOCOL_THEME.meshcore.headerBorderConfigured,
-    );
-    expect(protocolHeaderBorderClass('reticulum', true)).toBe(
-      PROTOCOL_THEME.reticulum.headerBorderConfigured,
-    );
+  it('keeps protocol identity colors fixed, independent of the themeable accent', () => {
+    for (const theme of Object.values(PROTOCOL_THEME)) {
+      expect(theme.railActiveClass).not.toMatch(/brand-green|bright-green/);
+      expect(theme.nameTextClass).not.toMatch(/brand-green|bright-green/);
+    }
+    expect(PROTOCOL_THEME.meshtastic.railActiveClass).toContain('meshtastic-500');
   });
 
-  it('meshcore unread badge uses accessible cyan fill for contrast', () => {
-    expect(PROTOCOL_THEME.meshcore.unreadBadgeFillClass).toBe('bg-cyan-800 text-white');
-    expect(PROTOCOL_THEME.meshcore.pillActiveClass).toContain('cyan');
-    expect(contrastRatio('#ffffff', '#155e75')).toBeGreaterThanOrEqual(4.5);
+  it('uses the style guide scale tokens: 500 on the rail, 700 under white badge text', () => {
+    for (const protocol of REGISTERED_MESH_PROTOCOLS) {
+      expect(PROTOCOL_THEME[protocol].railActiveClass).toContain(`text-${protocol}-500`);
+      expect(PROTOCOL_THEME[protocol].nameTextClass).toBe(`text-${protocol}-500`);
+      expect(PROTOCOL_THEME[protocol].unreadBadgeFillClass).toBe(`bg-${protocol}-700 text-white`);
+    }
   });
 
-  it('reticulum unread badge uses accessible amber fill for contrast', () => {
-    expect(PROTOCOL_THEME.reticulum.unreadBadgeFillClass).toBe('bg-amber-800 text-white');
-    expect(PROTOCOL_THEME.reticulum.pillActiveClass).toContain('amber');
-    expect(contrastRatio('#ffffff', '#92400e')).toBeGreaterThanOrEqual(4.5);
-  });
+  // Contrast of the scale steps themselves is checked against styles.css in styleTokens.test.ts.
 });

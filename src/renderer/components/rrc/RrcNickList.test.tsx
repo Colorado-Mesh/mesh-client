@@ -1,70 +1,54 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import { axe } from 'vitest-axe';
 
+import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
 
 import { RrcNickList } from './RrcNickList';
 
+const MEMBERS = [
+  { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
+  { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
+];
+
 describe('RrcNickList', () => {
-  it('collapses and expands the members panel', async () => {
+  it('lists members with a count and wires refresh, message and close', async () => {
     const user = userEvent.setup();
-    const onToggleCollapsed = vi.fn();
     const onRefreshWho = vi.fn();
     const onNickClick = vi.fn();
-    const members = [
-      { identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Alice' },
-      { identity_hash: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', nickname: 'Bob' },
-    ];
-
-    const { rerender } = render(
+    const onClose = vi.fn();
+    const { container } = render(
       <RrcNickList
-        collapsed={false}
-        onToggleCollapsed={onToggleCollapsed}
-        members={members}
+        members={MEMBERS}
         busy={false}
         onRefreshWho={onRefreshWho}
         onNickClick={onNickClick}
+        onClose={onClose}
       />,
     );
 
-    expect(screen.getByText('Alice')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Collapse members list' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    expect(screen.getByRole('heading', { name: 'Members 2' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Refresh members (/who)' }));
+    expect(onRefreshWho).toHaveBeenCalledOnce();
+    await user.click(screen.getByRole('button', { name: /Alice/ }));
+    expect(onNickClick).toHaveBeenCalledWith(MEMBERS[0]);
+    await user.click(screen.getByRole('button', { name: 'Hide members' }));
+    expect(onClose).toHaveBeenCalledOnce();
 
-    await user.click(screen.getByRole('button', { name: 'Collapse members list' }));
-    expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
-
-    rerender(
-      <RrcNickList
-        collapsed
-        onToggleCollapsed={onToggleCollapsed}
-        members={members}
-        busy={false}
-        onRefreshWho={onRefreshWho}
-        onNickClick={onNickClick}
-      />,
-    );
-
-    expect(screen.queryByText('Alice')).not.toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Expand members list' })).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('applies the same nick color class as the transcript helper', () => {
     render(
       <RrcNickList
-        collapsed={false}
-        onToggleCollapsed={vi.fn()}
         members={[{ identity_hash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', nickname: 'Zeva' }]}
         busy={false}
         onRefreshWho={vi.fn()}
         onNickClick={vi.fn()}
+        onClose={vi.fn()}
       />,
     );
     expect(screen.getByText('Zeva').className).toContain(rrcNickColorClass('Zeva'));

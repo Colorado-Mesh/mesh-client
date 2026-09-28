@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { FIRMWARE_PRODUCTS } from '@/renderer/lib/flasher/firmwareConfigs';
 import type { RNodeModel, RNodeProduct } from '@/renderer/lib/flasher/types';
 
+import { SELECT_BOX_CLASS } from '../ui/formClasses';
+
 export interface DeviceSelectorProps {
   selectedProduct: RNodeProduct | null;
   selectedModel: RNodeModel | null;
@@ -22,7 +24,7 @@ export function DeviceSelector({
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('flasher.selectProduct')}
         <select
           value={selectedProduct?.catalogKey ?? ''}
@@ -34,7 +36,7 @@ export function DeviceSelector({
             onProductChange(product);
             onModelChange(null);
           }}
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+          className={`${SELECT_BOX_CLASS} mt-1 block w-full`}
         >
           <option value="">{t('flasher.selectProductPlaceholder')}</option>
           {FIRMWARE_PRODUCTS.map((product) => (
@@ -44,7 +46,7 @@ export function DeviceSelector({
           ))}
         </select>
       </label>
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('flasher.selectModel')}
         <select
           value={selectedModel?.id ?? ''}
@@ -55,7 +57,7 @@ export function DeviceSelector({
             const model = selectedProduct?.models.find((m) => m.id === id) ?? null;
             onModelChange(model);
           }}
-          className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200 disabled:opacity-50"
+          className={`${SELECT_BOX_CLASS} mt-1 block w-full`}
         >
           <option value="">{t('flasher.selectModelPlaceholder')}</option>
           {selectedProduct?.models.map((model) => (

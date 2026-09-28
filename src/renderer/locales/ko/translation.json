@@ -32,12 +32,9 @@
       "stale": "탁한",
       "reconnecting": "다시 연결하는 중"
     },
-    "nodeLabel": "노드: {{name}}",
     "takClientLost": "TAK 클라이언트 연결 끊김",
     "title": "메시 클라이언트",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Turn off Colorado Mesh sign",
-    "meshTubeSignOn": "Turn on Colorado Mesh sign",
     "queueBadge": "질문: {{used}}/{{max}}",
     "telemetryDisabled": "이 기기에서는 원격 측정이 비활성화되어 있습니다. 장치 측정항목을 활성화하면 메시와 이 앱(진단, 배터리, 신호)에 도움이 됩니다. 라디오 탭에서 활성화하세요.",
     "scrollToTop": "↑ 맨 위로",
@@ -255,7 +252,7 @@
     "clearMessagesChannelConfirmLabel": "{{channel}} 지우기",
     "clearMessagesTitle": "메시지 지우기",
     "clearAllRepeatersConfirm": "이렇게 하면 저장된 모든 MeshCore 리피터가 로컬 데이터베이스에서 영구적으로 제거됩니다. 이 작업은 취소할 수 없습니다.",
-    "clearAllLocalDataTitle": "⚠ 모든 로컬 데이터 지우기",
+    "clearAllLocalDataTitle": "모든 로컬 데이터 지우기",
     "clearAllLocalDataConfirm": "이렇게 하면 모든 로컬 메시지, 노드 및 캐시된 세션 데이터가 영구적으로 삭제됩니다. 이 작업은 취소할 수 없습니다.",
     "clearEverythingConfirmButton": "모두 지우기",
     "dangerZoneMeshcoreHeading": "MeshCore",
@@ -272,16 +269,16 @@
         "description": "사이드바 탐색에서 현재 선택된 탭의 배경입니다."
       },
       "brandGreen": {
-        "label": "표시기 및 테두리 하이라이트",
-        "description": "구성된 경우 테두리에 대한 강조, 온라인/MQTT 표시기, 하이라이트 및 진행률 채우기."
+        "label": "강조색",
+        "description": "기본 버튼과 보내기(어두운 글자), 강조 텍스트, 활성 항목, 진행 채우기. 앱 배경에서 읽기 쉽게 유지됩니다."
       },
       "brightGreen": {
         "label": "앱 제목, 링크 및 노드 강조",
         "description": "앱 제목, 강조 텍스트, 바닥글의 링크, 노드 목록의 홉/자체 강조 표시."
       },
       "readableGreen": {
-        "label": "작업 버튼 및 선택한 알약",
-        "description": "흰색 텍스트로 채워진 단색 - 선택된 채널 알약과 대비를 위한 기본 작업 버튼."
+        "label": "강조색 채우기",
+        "description": "흰색 글자 아래의 강조색 채우기(배지 등). 흰색 글자와 4.5:1 대비를 유지합니다."
       },
       "deepBlack": {
         "label": "사이드바, 헤더 및 모달 표면",
@@ -310,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "메시지 작업 버튼 호버 색상",
         "description": "모든 메시지 작업 버튼 (복사, 회신, 반응, 다이렉트 메시지, 별표 표시 및 별표 표시) 에 대한 마우스 오버 색상."
+      },
+      "chatOutgoingBg": {
+        "label": "발신 메시지 채우기",
+        "description": "내가 보낸 메시지의 배경 채우기(불투명도 22%로 적용)"
+      },
+      "chatOutgoingBorder": {
+        "label": "발신 메시지 테두리",
+        "description": "내가 보낸 메시지의 테두리 색상(불투명도 25%로 적용)"
       }
     },
     "themePreset": {
@@ -331,7 +336,14 @@
       "purple400": "보라색 400",
       "pink400": "핑크 400",
       "orange400": "오렌지 400",
-      "yellow400": "노란색 400"
+      "yellow400": "노란색 400",
+      "zinc950": "징크 950",
+      "zinc900": "징크 900",
+      "zinc800": "징크 800",
+      "zinc700": "징크 700",
+      "zinc400": "징크 400",
+      "emerald300": "에메랄드 300",
+      "emerald700": "에메랄드 700"
     },
     "autoPruneNodesOlderThanAria": "{{days}}일보다 오래된 시작 시 노드 자동 정리",
     "autoPrunePositionHistoryDaysAria": "시작 시 위치 기록 자동 정리({{days}}일 이상)",
@@ -388,6 +400,8 @@
     "themeSaveFailed": "색상 체크포인트를 저장하지 못했습니다.",
     "themeRestoreFailed": "색상 체크포인트를 복원하지 못했습니다.",
     "themeResetFailed": "색상을 재설정하지 못했습니다.",
+    "themeAccentKept": "이 색은 앱 배경과 너무 비슷해 읽기 어렵습니다(4.5:1 미만). 강조색을 기본값으로 되돌렸습니다.",
+    "themeFillKept": "이 색 위의 흰색 텍스트는 4.5:1 미만이 되므로 채우기를 기본값으로 되돌렸습니다.",
     "messageActionsBarBgVisible": "배경 표시",
     "rrcUnreadAllRoomMessages": "모든 룸 메시지에 대해 읽지 않은 RRC",
     "rrcUnreadAllRoomMessagesHint": "켜져 있으면 새로운 RRC 룸 메시지가 읽지 않음으로 표시되어 채널 사운드를 재생할 수 있습니다. IRC 스타일 알림의 경우: 다이렉트 메시지 및 @ 멘션만 꺼주세요.",
@@ -421,16 +435,38 @@
     "nodeSilenceAlertMinutesPlaceholder": "프로토콜 기본값",
     "nodeSilenceAlertMinutesHint": "각 프로토콜의 유효하지 않은 임계값을 사용하려면 비워 두십시오. 에스컬레이션은 이 값의 2배에 해당합니다.",
     "nodeBatteryLowThreshold": "배터리 부족 임계값 (%)",
-    "notifyOnLinkDown": "예기치 않은 라디오 링크 다운 알림"
+    "notifyOnLinkDown": "예기치 않은 라디오 링크 다운 알림",
+    "aboutSection": "정보",
+    "themePresets": {
+      "heading": "테마",
+      "hint": "기본 팔레트를 고른 뒤 아래에서 개별 색상을 조정하세요.",
+      "custom": "사용자 지정 색상입니다. 테마를 고르면 프리셋에서 다시 시작합니다."
+    },
+    "themeSurfaces": {
+      "midnight": "미드나이트",
+      "slate": "슬레이트",
+      "zinc": "징크",
+      "graphite": "그래파이트",
+      "deepSea": "딥 시",
+      "dusk": "황혼",
+      "evergreen": "에버그린",
+      "highContrast": "고대비"
+    },
+    "themeAccents": {
+      "heading": "강조색",
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum",
+      "sky": "하늘",
+      "classic": "클래식 그린"
+    },
+    "pruneNoFixNodesTitle": "위치 없음/제로 섬 노드 정리"
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
-    "expandSidebar": "사이드바 확장",
-    "collapseSidebar": "사이드바 접기",
     "languageSelector": "언어 선택",
     "applicationPanels": "응용 패널",
     "applicationLog": "애플리케이션 로그",
-    "playAnimation": "메시 신호 펄스 애니메이션 재생",
     "protocolSwitcher": "프로토콜 전환기",
     "switchToMeshtastic": "Meshtastic으로 전환",
     "switchToMeshCore": "MeshCore로 전환",
@@ -446,31 +482,6 @@
   "battery": {
     "percentCharging": "배터리 {{percent}} 퍼센트, 충전 중",
     "percent": "배터리 {{percent}}퍼센트"
-  },
-  "bootSequence": {
-    "booting": "메시 스택 부팅 중...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "채널 스캔 중... {{count}}",
-    "meshtasticScanningChannels": "구성된 채널 스캔 중...",
-    "databaseNodes_one": "데이터베이스: {{count}} 노드 동기화됨",
-    "databaseNodes_other": "데이터베이스: {{count}} 노드 동기화됨",
-    "syncingDatabase": "메시 데이터베이스 동기화 중...",
-    "interfaceReady": "{{iface}} 인터페이스 준비 완료",
-    "freqMhz": "주파수: {{mhz}} MHz",
-    "freqMhzBw": "주파수: {{mhz}} MHz | 대역폭: {{bw}} kHz",
-    "configuringRadio": "라디오 매개 변수 구성 중...",
-    "contacts_one": "연락처: {{count}} 연락처 로드됨",
-    "contacts_other": "연락처: {{count}} 개의 연락처가 로드됨",
-    "loadingContacts": "연락처 데이터베이스 로드 중...",
-    "routes_one": "경로: {{count}} 메시의 노드",
-    "routes_other": "경로: 메시의 {{count}} 노드",
-    "routesEstablished": "설정된 노선",
-    "meshActive": "네트워크 활성",
-    "transportBle": "BLE",
-    "transportSerial": "시리얼",
-    "transportHttp": "HTTP",
-    "transportRadio": "무전",
-    "radioInterfaceFallback": "라디오 인터페이스"
   },
   "channelUtilization": {
     "title": "채널 사용률",
@@ -678,7 +689,7 @@
       "offerBannerTitleAria": "이 피어로부터 보류 중인 인바운드 파일 제안"
     },
     "shareLocation": "위치 공유",
-    "shareLocationLabel": "📍 공유 위치",
+    "shareLocationLabel": "공유 위치",
     "shareLocationHint": "현재 GPS 또는 정적 위치를 채팅 메시지로 보내기",
     "shareLocationUnavailable": "위치를 확인할 수 없음 - GPS 설정을 확인하세요",
     "floodScopeOverrideHint": "이 메시지에만 해당하는 지역 Flood 범위입니다. 기본 범위는 라디오의 저장된 설정을 사용합니다. 해시태그는 해당 지역으로의 전송을 제한합니다. 범위가 지정되지 않은 전송은 지역 필터 없이 전송됩니다. 전송 후 저장된 범위가 복원됩니다.",
@@ -787,7 +798,27 @@
     "outboxEmergencyWillSend": "전송될 때까지 계속 재시도합니다.",
     "outboxEmergencyCapBlocked": "일시 중지됨: 대기 중인 긴급 메시지가 너무 많습니다. 다시 시도하거나 취소하세요.",
     "outboxEmergencyCancelConfirm": "이 긴급 메시지를 취소하시겠어요? 전송되지 않습니다.",
-    "retryOutboxEmergencyAttempt": "시도 {{count}}"
+    "retryOutboxEmergencyAttempt": "시도 {{count}}",
+    "channelSwitcher": {
+      "trigger": "모든 채널 ({{total}})",
+      "triggerWithUnread": "모든 채널 ({{total}}), 읽지 않음 {{unread}}",
+      "search": "채널 찾기",
+      "listLabel": "채널",
+      "empty": "일치하는 채널이 없습니다"
+    },
+    "toolbarLabel": "대화 도구",
+    "composeHint": "Enter 키로 보내기, Shift+Enter 키로 줄 바꿈",
+    "dmSwitcher": {
+      "trigger": "모든 개인 메시지 ({{total}})",
+      "triggerWithUnread": "모든 개인 메시지 ({{total}}), 읽지 않음 {{unread}}",
+      "search": "대화 찾기",
+      "listLabel": "개인 메시지",
+      "empty": "일치하는 대화가 없습니다"
+    },
+    "notificationRrcTitle": "{{room}} 의 {{sender}}",
+    "srNewMessage": "{{sender}} 님의 새 메시지: {{text}}",
+    "srNewMessages_one": "{{count}} 새 메시지",
+    "srNewMessages_other": "{{count}} 새 메시지"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -916,7 +947,6 @@
     "disconnectRadio": "연결 끊기",
     "manualContactApproval": "수동 연락처 승인",
     "manualContactApprovalDesc": "새 연락처가 표시되기 전에 수동 승인 필요",
-    "disconnected": "● 연결이 끊어졌습니다.",
     "bluetoothDevice": "블루투스 장치",
     "serialDevice": "직렬 장치",
     "wifiDevice": "WiFi 장치",
@@ -945,10 +975,6 @@
     "stageLinuxUnpaired": "저장된 장치는 Linux Bluetooth에 페어링되어 있지 않습니다. 아래에서 선택하여 PIN을 입력하고 연결하세요.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "연결하다",
-    "mqttStatusConnected": "연결됨",
-    "mqttStatusConnecting": "연결",
-    "mqttStatusError": "오류",
-    "mqttStatusDisconnected": "연결이 끊어진",
     "stageSelectDevice": "아래에서 기기를 선택하세요.",
     "stageSelectSerial": "아래에서 직렬 포트를 선택하세요.",
     "stageConnectingLast": "마지막 블루투스 기기에 연결 중…",
@@ -1035,7 +1061,6 @@
     "reticulumSidecarStartFailed": "Reticulum 스택을 시작할 수 없습니다: {{message}}",
     "reticulumStopStack": "스택 중지",
     "reticulumAutostart": "연결을 열 때 스택 자동 시작",
-    "reticulumStackRunning": "스택 실행 중",
     "reticulumIdentity": {
       "title": "Reticulum 정체성",
       "startStackFirst": "아이덴티티를 구성하려면 Reticulum 스택을 시작합니다.",
@@ -1448,7 +1473,9 @@
       "noPrivateKey": "전체 ID 없음 - 라디오 패널(공개 및 개인 키)에서 MeshCore 구성을 가져오거나 사용자 이름(v1_<공개 키>)과 토큰을 수동으로 붙여넣습니다. 토큰의 JWT 대상은 서버 호스트 이름과 일치해야 합니다.",
       "publicKeyMissing": "ID에서 공개 키가 누락되었습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나(공개 및 개인 키를 포함해야 함) 비밀번호 필드에 브로커 토큰을 붙여넣습니다.",
       "noIdentity": "장치 ID를 찾을 수 없습니다. 라디오 패널에서 MeshCore 구성 JSON을 가져오거나 사용자 이름과 토큰을 수동으로 붙여넣습니다.",
-      "usernameBuildFailed": "MeshCore MQTT 사용자 이름을 빌드할 수 없습니다. MeshCore 구성 JSON을 라디오 패널에 가져오거나 사용자 이름 (v1_<public key>) 및 토큰을 수동으로 붙여넣습니다."
+      "usernameBuildFailed": "MeshCore MQTT 사용자 이름을 빌드할 수 없습니다. MeshCore 구성 JSON을 라디오 패널에 가져오거나 사용자 이름 (v1_<public key>) 및 토큰을 수동으로 붙여넣습니다.",
+      "clientKey": "클라이언트 키",
+      "copyClientKey": "클라이언트 키 복사"
     },
     "meshcorePacketLogger": {
       "label": "패킷 로거 — 라디오 및 MQTT에 연결되면 RX 패킷 요약을 meshcoretomqtt와 동일한 JSON 형태로 {{topic}}에 전달합니다. 기본적으로 꺼져 있습니다. 수신된 항공 트래픽을 패킷 분석기와 공유하려는 경우에만 활성화하십시오."
@@ -1569,7 +1596,25 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "링크 상태",
+      "radioLink": "무선 링크",
+      "stack": "스택",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "오류",
+      "running": "실행 중",
+      "stopped": "중지됨",
+      "clientLost": "클라이언트 끊김",
+      "takPort": "포트 {{port}}",
+      "openTak": "TAK 열기"
+    },
+    "disconnectAll": "무전기와 MQTT 연결 해제",
+    "disconnectRadioGroup": "무전기 연결 해제",
+    "moreDisconnectOptions": "추가 연결 해제 옵션",
+    "disconnectOptions": "연결 해제 옵션",
+    "lastConnectionLabel": "마지막 연결"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
@@ -2042,7 +2087,12 @@
       "esp32FlashStalled": "펌웨어 전송이 진행 없이 멈췄습니다. 다른 USB 케이블이나 포트를 시도하고 부트로더 모드(BOOT 길게 누르기, RESET 탭)로 들어간 후 다시 플래시하세요.",
       "unknown": "예기치 않은 오류가 발생했습니다.",
       "provisionWipeRequired": "EEPROM이 유효하지 않은 ID로 잠겨 있습니다. 먼저 EEPROM을 지운 다음 다시 프로비저닝하십시오.",
-      "provisionVerifyFailed": "프로비저닝 쓰기가 완료되었지만 장치는 여전히 프로비저닝되지 않은 EEPROM을 보고합니다. 보드의 전원을 껐다가 켜고 부팅을 기다린 다음 다시 시도하거나 EEPROM을 먼저 지우십시오."
+      "provisionVerifyFailed": "프로비저닝 쓰기가 완료되었지만 장치는 여전히 프로비저닝되지 않은 EEPROM을 보고합니다. 보드의 전원을 껐다가 켜고 부팅을 기다린 다음 다시 시도하거나 EEPROM을 먼저 지우십시오.",
+      "esp32ReadStalled": "플래시 읽기가 진행 없이 멈췄습니다. 다른 USB 케이블이나 포트를 시도하고 부트로더 모드(BOOT 길게 누르기, RESET 탭)로 들어간 후 다시 백업하세요.",
+      "esp32ReadIncomplete": "플래시 읽기가 일찍 종료되어 백업이 저장되지 않았습니다. 보드를 다시 연결하고 다시 시도하십시오.",
+      "esp32FlashSizeUnknown": "플래시 크기를 감지할 수 없어 백업을 만들지 않았습니다. 정확한 보드 모델을 선택하고 다시 시도하세요.",
+      "esp32FlashTooLarge": "이 보드의 플래시가 32 MiB 백업 한도보다 커서 백업을 만들지 않았습니다.",
+      "esp32ReadVerifyFailed": "플래시 읽기의 체크섬 검증에 실패하여 백업을 저장하지 않았습니다. 보드를 다시 연결하고 다시 시도하세요."
     },
     "selectSerialPort": "직렬 포트 선택",
     "noSerialPorts": "USB 직렬 포트를 찾을 수 없습니다.",
@@ -2090,7 +2140,14 @@
     "clearPairedDevicesConfirmTitle": "RNode 블루투스 본드를 지우시겠습니까?",
     "clearPairedDevicesConfirmMessage": "USB로 CMD_BT_UNPAIR를 보내고 ESP32 RNode의 본딩된 호스트를 지웁니다(일부 nRF52 빌드에서는 무효). 다시 페어링하기 전에 시스템 설정 → Bluetooth에서 장치를 여전히 잊어야 합니다.",
     "clearPairedDevicesConfirm": "블루투스 본드 지우기",
-    "clearPairedDevicesSuccess": "라디오 블루투스 본드 테이블 지우기가 요청되었습니다."
+    "clearPairedDevicesSuccess": "라디오 블루투스 본드 테이블 지우기가 요청되었습니다.",
+    "backupFirmware": "펌웨어 백업",
+    "backupFirmwareHint": "플래시하기 전에 ESP32 플래시의 전체 이미지(펌웨어 및 장치 설정)를 파일에 저장합니다. nRF52 보드에서는 사용할 수 없습니다.",
+    "backingUp": "플래시 읽는 중… {{progress}}%",
+    "cancelBackup": "백업 취소",
+    "backupSaved": "펌웨어 백업이 {{path}}에 저장되었습니다.",
+    "backupSaveCancelled": "펌웨어 백업을 읽었지만 저장되지 않았습니다.",
+    "backupCancelled": "펌웨어 백업이 취소되었습니다."
   },
   "identityVault": {
     "title": "신원 정보 보관소",
@@ -3036,7 +3093,7 @@
     "statusOffline": "오프라인",
     "loadingBadge": "로드 중...",
     "mqttIgnoredBadge": "MQTT가 무시됨",
-    "chatBadge": "📢 채팅",
+    "chatBadge": "채팅",
     "onlyInDbBadge": "DB에서만",
     "syncedBadge": "동기화됨",
     "onRadioBadge": "라디오에서",
@@ -3084,42 +3141,40 @@
     "radioStatsLocalHeading": "라디오 통계(로컬)",
     "txAirTimeLabel": "TX 방송 시간",
     "rxAirTimeLabel": "RX 방송 시간",
-    "requestPosition": "📍 위치 요청",
-    "traceRoute": "🛤 경로 추적",
+    "requestPosition": "위치 요청",
+    "traceRoute": "경로 추적",
     "tracingEllipsis": "트레이싱...",
-    "requestStatus": "📊 요청 상태",
+    "requestStatus": "요청 상태",
     "requestingEllipsis": "요청 중...",
     "requestingStatus": "상태를 요청하는 중...",
     "statusRequestFailed": "상태 요청 실패",
     "requestingSensorTelemetry": "센서 원격 측정(LPP) 요청 중...",
     "telemetryFailed": "원격 분석 실패: {{message}}",
-    "sensorTelemetryButton": "🌡 센서 원격 측정",
+    "sensorTelemetryButton": "센서 원격 측정",
     "requestingNeighbors": "이웃신청중...",
-    "getNeighbors": "🔗 이웃 찾기",
+    "getNeighbors": "이웃 찾기",
     "neighborsFailed": "이웃 실패: {{message}}",
     "messageNoKeyTitle": "메시지를 보낼 수 없습니다. 암호화 키가 없습니다. 전체 연락처 교환을 기다리거나 연락처를 새로 고칩니다.",
-    "messageButton": "💬 메시지",
+    "messageButton": "메시지",
     "exportingContact": "연락처를 내보내는 중...",
     "noPublicKeyAvailable": "사용 가능한 공개 키가 없습니다.",
-    "exportContact": "📤 수출 연락처",
+    "exportContact": "수출 연락처",
     "exportingEllipsis": "내보내는 중...",
     "exportFailed": "내보내기 실패",
     "sharingContact": "연락처 공유 중...",
-    "shareContact": "📨 연락처 공유",
+    "shareContact": "연락처 공유",
     "sharingEllipsis": "공유...",
     "shareFailed": "공유 실패",
     "addingToRadio": "라디오에 추가 중...",
-    "addToRadio": "➕ 라디오에 추가",
+    "addToRadio": "라디오에 추가",
     "addingEllipsis": "첨가...",
     "addToRadioFailed": "라디오에 추가하지 못했습니다.",
     "removingFromRadio": "라디오에서 삭제 중...",
-    "removeFromRadio": "➖ 라디오에서 제거",
+    "removeFromRadio": "라디오에서 제거",
     "removingEllipsis": "풀이...",
     "removeFromRadioFailed": "라디오에서 삭제하지 못했습니다.",
     "mqttIgnoreHeading": "MQTT 무시",
     "mqttIgnoreDescription": "진단에서 이 노드의 MQTT 데이터를 제외합니다.",
-    "stopIgnoringMqttTitle": "이 노드에 대한 MQTT 무시 중지",
-    "ignoreMqttTitle": "이 노드에 대한 MQTT 무시",
     "deleteNode": "노드 삭제",
     "deleteNodeConfirm": "로컬 데이터베이스에서 이 노드를 제거하시겠습니까? 다시 방송하면 또 나오겠죠.",
     "cancel": "취소",
@@ -3162,7 +3217,7 @@
     "remoteAdminKeyHint": "로컬 라디오의 공개 키(Radio → Security → Copy)를 이 원격 노드의 Admin keys에 추가한 뒤, 같은 키를 여기에 붙여넣어 확인하세요. 그런 다음 Radio 탭에서 구성을 사용하세요.",
     "remoteAdminKeyInvalid": "유효한 관리자 공개 키 (base64, base64: … 또는 64자 16진수) 를 입력합니다.",
     "configureRemotelyHint": "메시를 통해 이 노드에 대한 라디오 설정을 엽니다 (로컬 라디오 및 저장된 관리자 키 필요).",
-    "openRoomButton": "🏠 룸 열기",
+    "openRoomButton": "룸 열기",
     "remoteAuthCancelled": "원격 액세스가 취소되었습니다.",
     "shareContactSent": "라디오를 통해 전송된 연락처 공유.",
     "blockContact": "차단",
@@ -3202,7 +3257,9 @@
     "xeddsaSigned": "XEdDSA 서명됨",
     "xeddsaSignedHint": "라디오가 이 노드에서 XEdDSA 서명을 확인했으므로 공개 키가 암호로 증명됩니다.",
     "keyManuallyVerified": "키 확인됨",
-    "keyManuallyVerifiedHint": "이 노드의 공개 키는 운영자가 수동으로 확인했습니다."
+    "keyManuallyVerifiedHint": "이 노드의 공개 키는 운영자가 수동으로 확인했습니다.",
+    "keyBadge": "키",
+    "closePane": "세부 정보 닫기"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
@@ -3292,6 +3349,7 @@
     "importResultError": "{{imported}}을(를) 가져왔고 {{skipped}}을(를) 건너뛰었습니다. 오류: {{errors}}",
     "refreshContacts": "라디오에서 연락처 새로 고침",
     "sendFloodAdvert": "플러드 advert 보내기",
+    "sendFloodAdvertUnavailable": "MeshCore 무전기가 연결되면 사용할 수 있습니다",
     "filterByContactGroup": "연락처 그룹별로 필터링",
     "manageContactGroups": "연락처 그룹 관리",
     "manageGroups": "그룹 관리",
@@ -3317,12 +3375,6 @@
     "distanceFilterNoGpsBanner": "거리 필터가 활성화되었지만 장치에 GPS 수정 사항이 없습니다. 모든 노드가 표시됩니다.",
     "distanceFilterActiveBanner_one": "거리 필터 활성 — {{maxDistance}} {{unit}} 너머에 숨겨진 {{count}} 노드.",
     "distanceFilterActiveBanner_other": "거리 필터 활성 — {{maxDistance}} {{unit}} 너머에 숨겨진 {{count}} 노드.",
-    "summaryOnline_one": "{{count}} 온라인",
-    "summaryOnline_other": "{{count}} 온라인",
-    "summaryStale_one": "{{count}} 오래됨",
-    "summaryStale_other": "{{count}} 오래됨",
-    "summaryOffline_one": "{{count}} 오프라인",
-    "summaryOffline_other": "{{count}} 오프라인",
     "tableCaptionMeshNodes": "연결된 메시 노드",
     "columnFavorite": "가장 좋아하는",
     "columnId": "ID",
@@ -3374,7 +3426,13 @@
     "meshcoreTypeUnknown": "미상",
     "columnHealth": "노드 상태",
     "hasPublicKeyTitle": "공개 키",
-    "buttonExportCsv": "CSV(엑셀)로 내보내기"
+    "buttonExportCsv": "CSV(엑셀)로 내보내기",
+    "listViewAria": "목록 보기",
+    "statusFilterAria": "상태별 필터",
+    "statusFilterAll": "전체",
+    "buttonExport": "내보내기",
+    "exportMenuLabel": "내보내기 형식",
+    "youBadge": "나"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3847,12 +3905,12 @@
     "shutdownConfirm": "일시 휴업",
     "shutdownButton": "일시 휴업",
     "factoryResetConfigName": "공장 초기화 구성",
-    "factoryResetConfigTitle": "⚠ 공장 초기화 구성",
+    "factoryResetConfigTitle": "공장 초기화 구성",
     "factoryResetConfigMessage": "이렇게 하면 장치 구성이 공장 기본값으로 재설정되지만 노드 데이터베이스는 유지됩니다. 설정을 다시 구성해야 합니다.",
     "factoryResetConfigConfirm": "구성 재설정",
     "factoryResetConfigButton": "공장 초기화 구성만 해당",
     "factoryResetName": "공장 초기화",
-    "factoryResetTitle": "⚠ 공장 초기화",
+    "factoryResetTitle": "공장 초기화",
     "factoryResetMessage": "이렇게 하면 모든 장치 설정이 삭제되고 공장 기본값이 복원됩니다. 장치의 모든 채널, 구성 및 저장된 데이터가 영구적으로 손실됩니다. 이 작업은 취소할 수 없습니다.",
     "factoryResetConfirm": "공장 초기화",
     "meshcoreChannelKeyLabel": "키(32개의 16진수 = 16바이트)",
@@ -4557,8 +4615,6 @@
     "noLppData": "이 응답에는 LPP 센서 데이터가 없습니다.",
     "enterCommand": "명령을 입력하세요...",
     "searchRepeatersPlaceholder": "중계기 및 룸 검색…",
-    "openCliInterface": "개방형 CLI 인터페이스",
-    "sensorLppButton": "센서(LPP)",
     "noTelemetryResponse": "아직 원격 분석 응답이 없습니다. 센서(LPP)를 다시 시도해 보세요.",
     "mapPositionFromAdvert": "지도 위치는 이 센서 요청이 아닌 advert/연락처 데이터에서 가져옵니다.",
     "mapPositionFromTelemetry": "지도 위치는 센서 원격 측정이 아닌 advert/연락처 데이터에서 가져옵니다.",
@@ -4584,8 +4640,6 @@
     "statusStale": "탁한",
     "statusOffline": "오프라인",
     "buttonPing": "핑",
-    "buttonStatus": "상태",
-    "buttonNeighbors": "이웃",
     "buttonRemove": "제거하다",
     "buttonConfirmRemove": "확인하다?",
     "buttonErrorShort": "오류",
@@ -4630,15 +4684,10 @@
     "savedPasswordOrphanLabel": "리피터 {{nodeId}}",
     "pingQueuedBehindOther": "대기 중 — 다른 핑이 라디오를 사용하고 있습니다 (MeshCore는 한 번에 하나의 추적을 허용합니다).",
     "waitForPingBeforeStatus": "상태 요청 전에 진행 중인 ping이 완료되기를 기다리는 중입니다.",
-    "statusLastFailedTooltip": "마지막 상태 요청 실패: {{error}}",
-    "neighborsLastFailedTooltip": "마지막 이웃 요청 실패: {{error}}",
-    "telemetryLastFailedTooltip": "마지막 센서 요청 실패: {{error}}",
-    "cliLastFailedTooltip": "마지막 CLI 명령 실패: {{error}}",
     "telemetryError": "센서 오류: {{error}}",
     "neighborsFailedToast": "Neighbors failed: {{message}}",
     "columnSnr": "SNR",
     "columnRssi": "RSSI",
-    "buttonCli": "CLI",
     "cliClearHistory": "기록 지우기",
     "cliNoCommandsYet": "아직 명령이 없습니다.",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
@@ -4683,7 +4732,12 @@
     "sortByAirPctAsc": "항공순 정렬 %, 최저 우선",
     "sortByAirPctDesc": "항공순 정렬 %, 가장 높은 순",
     "sortByReliabilityAsc": "신뢰도 순으로 정렬, 가장 낮은 순",
-    "sortByReliabilityDesc": "신뢰도 순으로 정렬, 가장 높은 순"
+    "sortByReliabilityDesc": "신뢰도 순으로 정렬, 가장 높은 순",
+    "moreActionsFor": "{{name}}에 대한 추가 작업",
+    "rowActionsMenu": "{{name}} 작업",
+    "rowBusy": "{{name}} 처리 중",
+    "menuShownBelow": "아래에 표시됨. 다시 선택하면 숨겨집니다.",
+    "confirmRemoveAria": "{{name}} 제거 확인"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
@@ -5040,7 +5094,7 @@
     "savedPasswordsHeading": "저장된 비밀번호",
     "savedPasswordsCount": "저장된 비밀번호 ({{count}})",
     "savedPasswordOrphanLabel": "룸 0x{{nodeId}}",
-    "statusPasswordSaved": "이 룸에 비밀번호가 저장되었습니다(로그인하지 않은 경우 하늘색 마커).",
+    "statusPasswordSaved": "이 룸에 비밀번호가 저장되었습니다.",
     "statusAutoLoginEnabled": "연결 시 자동 로그인이 활성화되어 있습니다.",
     "badgeAutoLogin": "자동 로그인",
     "badgeAutoSync": "자동 동기화",
@@ -5056,17 +5110,18 @@
     "legendLoggedIn": "로그인했습니다",
     "statusLoggedInSession": "로그인했습니다",
     "statusLoggedInSessionTooltip": "활성 클라이언트 세션. 룸을 나가거나 연결을 끊을 때까지 지속됩니다. 룸 서버에 연결할 수 없는 경우 나가서 다시 로그인하십시오.",
-    "legendNotSavedTooltip": "빈 원 — 이 룸에 대한 비밀번호가 저장되지 않음",
-    "legendSavedTooltip": "하늘 반원 — 비밀번호가 저장되었습니다. 로그인하여 세션을 여세요",
-    "legendLoggedInTooltip": "녹색 점 — 활성 클라이언트 세션 (서버가 오프라인이면 룸을 나가세요)",
     "historyLocalHint": "로그인 시 mesh-client는 이 기기에 아직 로컬 워터마크가 없을 때 룸 서버 링 버퍼에 남아 있는 최근 게시물을 요청합니다. 연결된 동안 구독을 유지하려면 자동 동기화를 활성화하세요.",
     "loginAllSavedDisabledNoSavedPasswords": "전체 로그인을 사용하려면 먼저 룸 비밀번호를 저장하세요.",
     "membersHeadingWithCount": "회원 ({{count}})",
     "collapseRoomList": "방 목록 접기",
     "expandRoomList": "방 목록 펼치기",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} 읽지 않음",
     "manageJumpHint": "인프라 컨트롤(ping, status, CLI, ACL setperm)은 Repeaters 탭에 있습니다.",
-    "aclPubkeyPlaceholder": "0123456789abcdef…"
+    "aclPubkeyPlaceholder": "0123456789abcdef…",
+    "backToList": "룸 목록으로 돌아가기",
+    "details": "룸 세부 정보",
+    "hideDetails": "룸 세부 정보 숨기기",
+    "moreActions": "추가 룸 작업",
+    "loginAndSyncHeading": "로그인 및 동기화"
   },
   "searchModal": {
     "closeSearch": "검색 닫기",
@@ -5166,18 +5221,6 @@
   "sidebar": {
     "disabledTabTooltip": "이 모드에서는 사용할 수 없습니다."
   },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "방송을 계속하세요",
-      "helloOperator": "안녕하세요, 운영자님",
-      "thanksForMeshing": "메쉬해주셔서 감사합니다",
-      "builtForCommunities": "모든 지역의 커뮤니티를 위해 구축됨",
-      "stayConnected": "연결 상태 유지",
-      "signalsOut": "신호 출력",
-      "gladYouAreHere": "당신이 여기 있어서 다행이에요",
-      "keepTheMeshAlive": "메시를 살아있게 유지하세요"
-    }
-  },
   "tabs": {
     "connection": "연결",
     "chat": "채팅",
@@ -5200,6 +5243,7 @@
     "admin": "관리",
     "peers": "통신자",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "네트워크 토폴로지",
     "network": "회로망",
     "rrc": "RRC",
@@ -5236,7 +5280,7 @@
     "atakDataPackageDesc": "ATAK, WinTAK 또는 iTAK로 가져오기 위한 TLS 인증서 및 연결 설정이 포함된 .zip 파일을 생성합니다.",
     "generating": "생성 중…",
     "generateReveal": "생성 및 공개",
-    "packageSaved": "✓ 패키지가 저장되었습니다. Finder/Explorer를 확인하세요.",
+    "packageSaved": "패키지가 저장되었습니다. Finder/Explorer를 확인하세요.",
     "startServerFirst": "먼저 서버를 시작하세요",
     "certificates": "인증서",
     "certificatesDesc": "자체 서명된 CA, 서버 및 클라이언트 인증서는 처음 시작할 때 자동으로 생성되어 앱 데이터 디렉터리에 저장됩니다.",
@@ -5401,8 +5445,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "해시에 연결",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5439,8 +5481,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "방 목록 펼치기",
-    "collapseRooms": "방 목록 접기",
     "joinedRooms": "가입일",
     "recentRooms": "최근",
     "roomKeyOptional": "룸 열쇠 (선택 사항)",
@@ -5496,8 +5536,6 @@
       "welcomeTimeout": "연결되었지만 허브가 제시간에 환영 인사를 보내지 않았습니다. 다시 시도하십시오.",
       "proxyRateLimit": "현재 요청이 너무 많습니다 (프록시 속도 제한에 도달함). 잠시 후 다시 시도해 주세요."
     },
-    "expandMembers": "구성원 목록 펼치기",
-    "collapseMembers": "회원 목록 접기",
     "cancelConnect": "취소",
     "maxHubsConnected": "최대 8개의 RRC 허브에 연결할 수 있습니다. 먼저 하나를 분리하십시오.",
     "enableHubAutoJoin": "허브 자동 가입 활성화",
@@ -5544,7 +5582,15 @@
     "roomNameLimit": {
       "overMax": "방 이름이 너무 깁니다 — 허브 한도는 {{limit}} 바이트입니다"
     },
-    "noConnectedHubs": "연결된 RRC 허브가 없습니다. 즐겨찾기, 검색됨 또는 해시로 연결하세요."
+    "noConnectedHubs": "연결된 RRC 허브가 없습니다. 즐겨찾기, 검색됨 또는 해시로 연결하세요.",
+    "autoJoinChip": "자동",
+    "listViewAria": "방 또는 허브 보기",
+    "hubsShort": "허브",
+    "hideList": "방과 허브 숨기기",
+    "showList": "방과 허브 보기",
+    "backToList": "방과 허브로 돌아가기",
+    "hideMembers": "멤버 숨기기",
+    "listColumnAria": "방과 허브"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -6225,5 +6271,48 @@
     "beaconCancelQueued": "Beacon 취소가 대기 중입니다. 라디오를 사용할 수 있을 때 전송됩니다.",
     "beaconCancelFailed": "Beacon 취소를 보내거나 대기열에 넣을 수 없습니다. 이 사안은 아직 진행 중입니다.",
     "emptyHint": "인바운드 MECP 보고서는 자동으로 여기에 표시됩니다. 앱을 전송하려면 채팅에서 앱 → MECP → Show MECP 버튼을 활성화한 다음 채팅에서 MECP를 사용하세요. 지도 → 레이어는 열린 인시던트를 좌표로 표시할 수 있습니다."
+  },
+  "shell": {
+    "section": {
+      "monitor": "모니터링",
+      "device": "장치"
+    },
+    "sectionPanelsAria": "{{section}} 패널",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "패널, 연락처 또는 채널로 이동 ({{shortcut}})",
+    "status": {
+      "radio": "무선: {{status}}",
+      "radioWithNode": "무선: {{status}}, 노드 {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "모든 패널",
+      "searchLabel": "패널, 연락처, 채널 검색",
+      "placeholder": "패널, 연락처 또는 채널로 이동",
+      "noResults": "일치하는 패널이 없습니다",
+      "otherGroup": "기타",
+      "pin": "{{label}} 고정",
+      "unpin": "{{label}} 고정 해제",
+      "pinLimit": "패널은 최대 {{max}}개까지 고정할 수 있습니다. 먼저 하나를 고정 해제하세요.",
+      "hintMove": "이동",
+      "hintOpen": "열기",
+      "hintPin": "고정",
+      "panelCount_one": "패널 {{count}}개",
+      "panelCount_other": "패널 {{count}}개",
+      "channelsGroup": "채널",
+      "contactsGroup": "연락처",
+      "moreMatches": "일치 항목이 더 있습니다. 계속 입력해 목록을 좁히세요."
+    },
+    "more": "더보기",
+    "quitConfirmTitle": "Mesh Client를 종료할까요?",
+    "quitConfirmIncidents": "열려 있는 MAYDAY 또는 URGENT 사건: {{n}}건.",
+    "quitConfirmOutbox": "전송 대기 중인 긴급 메시지: {{n}}건.",
+    "quitConfirmLinks": "모든 무선 및 MQTT 연결이 끊어집니다."
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "{{label}} 줄이기",
+      "increase": "{{label}} 늘리기"
+    }
   }
 }

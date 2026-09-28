@@ -264,6 +264,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         rss: 0,
         heapUsed: 0,
       }),
+      focusWindow: noopAsync,
     },
     onSpellcheckReplace: noopUnsub,
     meshcore: {
@@ -319,6 +320,9 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
     meshtasticXmodem: {
       pickUploadFile: async () => null,
       saveDownloadFile: async () => ({ success: false }),
+    },
+    flasher: {
+      saveFirmwareBackup: async () => ({ saved: false }),
     },
     support: {
       exportBundle: async () => null,
@@ -450,11 +454,23 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
   } as unknown as typeof window.electronAPI;
 }
 
+const DEV_STUB_MARK = Symbol.for('mesh-client.devElectronApiStub');
+
+/**
+ * True when the renderer runs in a plain browser on the no-op bridge. There is no main process
+ * behind it, so nothing serves its custom schemes (`mesh-tiles:`) and such a request can only fail.
+ */
+export function isDevElectronApiStub(api: unknown = window.electronAPI): boolean {
+  return typeof api === 'object' && api !== null && DEV_STUB_MARK in api;
+}
+
 /** Install a no-op bridge when opening the Vite dev server in a plain browser tab. */
 export function installDevElectronApiStubIfNeeded(): boolean {
   if (typeof window.electronAPI !== 'undefined') return false;
   if (!import.meta.env.DEV) return false;
-  window.electronAPI = createDevElectronApiStub();
+  const stub = createDevElectronApiStub();
+  Object.defineProperty(stub, DEV_STUB_MARK, { value: true });
+  window.electronAPI = stub;
   console.debug(
     '[dev] Installed browser electronAPI stub — use the Electron window for RF, SQLite, and IPC',
   );

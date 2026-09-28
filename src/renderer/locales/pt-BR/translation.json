@@ -32,12 +32,9 @@
       "stale": "Rançoso",
       "reconnecting": "A restabelecer ligação"
     },
-    "nodeLabel": "Nó: {{name}}",
     "takClientLost": "Cliente TAK PERDIDO",
     "title": "Cliente de malha",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Desligue o sinal Colorado Mesh",
-    "meshTubeSignOn": "Ative o sinal Colorado Mesh",
     "queueBadge": "P: {{used}}/{{max}}",
     "telemetryDisabled": "A telemetria está desativada neste dispositivo. A ativação de métricas do dispositivo ajuda a malha e este aplicativo (diagnóstico, bateria, sinal). Habilite-o na guia Rádio.",
     "scrollToTop": "↑ Início",
@@ -255,7 +252,7 @@
     "clearMessagesChannelConfirmLabel": "Limpar {{channel}}",
     "clearMessagesTitle": "Limpar mensagens",
     "clearAllRepeatersConfirm": "Isso removerá permanentemente todos os repetidores MeshCore salvos do banco de dados local. Isto não pode ser desfeito.",
-    "clearAllLocalDataTitle": "⚠ Limpar todos os dados locais",
+    "clearAllLocalDataTitle": "Limpar todos os dados locais",
     "clearAllLocalDataConfirm": "Isso excluirá permanentemente TODAS as mensagens locais, nós e dados de sessão em cache. Esta ação NÃO PODE ser desfeita.",
     "clearEverythingConfirmButton": "Limpar tudo",
     "dangerZoneMeshcoreHeading": "MeshCore",
@@ -272,16 +269,16 @@
         "description": "Plano de fundo da guia atualmente selecionada na barra lateral de navegação."
       },
       "brandGreen": {
-        "label": "Indicadores e destaques de fronteira",
-        "description": "Destaque para bordas quando configuradas, indicadores on-line/MQTT, destaques e preenchimentos de progresso."
+        "label": "Destaque",
+        "description": "Botões principais e Enviar (com texto escuro), texto de destaque, itens ativos e preenchimentos de progresso. Continua legível sobre o fundo do app."
       },
       "brightGreen": {
         "label": "Título do aplicativo, links e ênfase do nó",
         "description": "Título do aplicativo, texto de ênfase, links no rodapé e destaques de salto/próprio na lista de nós."
       },
       "readableGreen": {
-        "label": "Botões de ação e pílulas selecionadas",
-        "description": "Preenchimentos sólidos com texto branco – painéis de canais selecionados e botões de ação principais para contraste."
+        "label": "Preenchimento de destaque",
+        "description": "Preenchimento sólido de destaque sob texto branco, como em selos. Mantém 4,5:1 com o texto branco."
       },
       "deepBlack": {
         "label": "Barra lateral, cabeçalho e superfícies modais",
@@ -310,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Cor do botão de ação da mensagem ao passar o mouse",
         "description": "Cor do cursor para todos os botões de ação da mensagem (copiar, responder, reagir, mensagem direta, estrela e quando marcado com estrela)."
+      },
+      "chatOutgoingBg": {
+        "label": "Preenchimento de mensagem enviada",
+        "description": "Preenchimento de plano de fundo para suas próprias mensagens (aplicado com 22% de opacidade)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Borda de mensagem enviada",
+        "description": "Cor da borda para suas próprias mensagens (aplicada com 25% de opacidade)."
       }
     },
     "themePreset": {
@@ -331,7 +336,14 @@
       "purple400": "Roxo 400",
       "pink400": "Rosa 400",
       "orange400": "Laranja 400",
-      "yellow400": "Amarelo 400"
+      "yellow400": "Amarelo 400",
+      "zinc950": "Zinco 950",
+      "zinc900": "Zinco 900",
+      "zinc800": "Zinco 800",
+      "zinc700": "Zinco 700",
+      "zinc400": "Zinco 400",
+      "emerald300": "Esmeralda 300",
+      "emerald700": "Esmeralda 700"
     },
     "autoPruneNodesOlderThanAria": "Remover nós automaticamente na inicialização, com mais de {{days}} dias",
     "autoPrunePositionHistoryDaysAria": "Remoção automática do histórico de posições na inicialização, com mais de {{days}} dias",
@@ -388,6 +400,8 @@
     "themeSaveFailed": "Falha ao salvar o ponto de verificação de cores.",
     "themeRestoreFailed": "Falha ao restaurar o ponto de verificação de cores.",
     "themeResetFailed": "Falha ao redefinir as cores.",
+    "themeAccentKept": "Essa cor está perto demais do fundo do app para ser lida (abaixo de 4,5:1), então o destaque voltou ao padrão.",
+    "themeFillKept": "Texto branco sobre essa cor ficaria abaixo de 4,5:1, então o preenchimento voltou ao padrão.",
     "messageActionsBarBgVisible": "Mostrar fundo",
     "rrcUnreadAllRoomMessages": "RRC não lido para todas as mensagens da sala",
     "rrcUnreadAllRoomMessagesHint": "Quando ativada, qualquer nova mensagem da sala RRC marca como não lida e pode reproduzir um som de canal. Desativar para alertas no estilo IRC: apenas mensagens diretas e @menções.",
@@ -421,16 +435,38 @@
     "nodeSilenceAlertMinutesPlaceholder": "Padrão do protocolo",
     "nodeSilenceAlertMinutesHint": "Deixe em branco para usar o limite obsoleto de cada protocolo. O escalonamento dispara a 2vezes esse valor.",
     "nodeBatteryLowThreshold": "Limite de bateria baixa (%)",
-    "notifyOnLinkDown": "Notificar no link de rádio inesperado"
+    "notifyOnLinkDown": "Notificar no link de rádio inesperado",
+    "aboutSection": "Sobre",
+    "themePresets": {
+      "heading": "Tema",
+      "hint": "Escolha uma paleta inicial e ajuste cores individuais abaixo.",
+      "custom": "Cores personalizadas. Escolha um tema para recomeçar a partir de uma predefinição."
+    },
+    "themeSurfaces": {
+      "midnight": "Meia-noite",
+      "slate": "Ardósia",
+      "zinc": "Zinco",
+      "graphite": "Grafite",
+      "deepSea": "Mar profundo",
+      "dusk": "Crepúsculo",
+      "evergreen": "Sempre-verde",
+      "highContrast": "Alto contraste"
+    },
+    "themeAccents": {
+      "heading": "Destaque",
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum",
+      "sky": "Céu",
+      "classic": "Verde clássico"
+    },
+    "pruneNoFixNodesTitle": "Podar nós sem posição / Zero Island"
   },
   "aria": {
     "closeDialog": "Fechar janela",
-    "expandSidebar": "Expandir menu lateral",
-    "collapseSidebar": "Contrair menu",
     "languageSelector": "Seleccionar idioma",
     "applicationPanels": "Painéis de aplicação",
     "applicationLog": "Log de aplicativos",
-    "playAnimation": "Reproduzir animação de pulso de sinal de malha",
     "protocolSwitcher": "Comutador de protocolo",
     "switchToMeshtastic": "Mudar para Meshtastic",
     "switchToMeshCore": "Mudar para MeshCore",
@@ -446,31 +482,6 @@
   "battery": {
     "percentCharging": "Bateria {{percent}} por cento, carregando",
     "percent": "Bateria {{percent}} por cento"
-  },
-  "bootSequence": {
-    "booting": "Iniciando pilha de malha...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Verificando canais... {{count}}",
-    "meshtasticScanningChannels": "Verificando canais configurados...",
-    "databaseNodes_one": "Banco de dados: {{count}} nó sincronizado",
-    "databaseNodes_other": "Banco de dados: {{count}} nós sincronizados",
-    "syncingDatabase": "Sincronizando banco de dados de malha...",
-    "interfaceReady": "Interface {{iface}} pronta",
-    "freqMhz": "Freq: {{mhz}} MHz",
-    "freqMhzBw": "Freq: {{mhz}} MHz | BW: {{bw}} kHz",
-    "configuringRadio": "Configurando parâmetros de rádio...",
-    "contacts_one": "Contatos: {{count}} contato carregado",
-    "contacts_other": "Contatos: {{count}} contatos carregados",
-    "loadingContacts": "Carregando banco de dados de contatos...",
-    "routes_one": "Rotas: nó {{count}} na malha",
-    "routes_other": "Rotas: {{count}} nós na malha",
-    "routesEstablished": "Rotas estabelecidas",
-    "meshActive": "Ativo na Rede",
-    "transportBle": "BLE",
-    "transportSerial": "Porta serial",
-    "transportHttp": "HTTP",
-    "transportRadio": "Rádio",
-    "radioInterfaceFallback": "a interface de rádio"
   },
   "channelUtilization": {
     "title": "Utilização do canal",
@@ -678,7 +689,7 @@
       "offerBannerTitleAria": "Ofertas de arquivos de entrada pendentes deste peer"
     },
     "shareLocation": "Compartilhar localização",
-    "shareLocationLabel": "📍 Localização compartilhada",
+    "shareLocationLabel": "Localização compartilhada",
     "shareLocationHint": "Envie seu GPS atual ou posição estática como uma mensagem de bate-papo",
     "shareLocationUnavailable": "Localização indisponível – verifique as configurações de GPS",
     "floodScopeOverrideHint": "Escopo Flood regional apenas para esta mensagem. O escopo padrão usa a configuração salva do rádio; uma hashtag limita esse envio para aquela região; envios sem escopo sem filtro de região. Seu escopo salvo é restaurado após o envio.",
@@ -787,7 +798,27 @@
     "outboxEmergencyWillSend": "Continuará a tentar novamente até ser enviado",
     "outboxEmergencyCapBlocked": "Pausado: muitas mensagens de emergência na fila. Tente novamente ou cancele este.",
     "outboxEmergencyCancelConfirm": "Cancelar esta mensagem de emergência? Não será enviado.",
-    "retryOutboxEmergencyAttempt": "Tentativa {{count}}"
+    "retryOutboxEmergencyAttempt": "Tentativa {{count}}",
+    "channelSwitcher": {
+      "trigger": "Todos os canais ({{total}})",
+      "triggerWithUnread": "Todos os canais ({{total}}), {{unread}} não lidas",
+      "search": "Encontrar um canal",
+      "listLabel": "Canais",
+      "empty": "Nenhum canal corresponde"
+    },
+    "toolbarLabel": "Ferramentas da conversa",
+    "composeHint": "Enter para enviar, Shift+Enter para nova linha",
+    "dmSwitcher": {
+      "trigger": "Todas as mensagens diretas ({{total}})",
+      "triggerWithUnread": "Todas as mensagens diretas ({{total}}), {{unread}} não lidas",
+      "search": "Encontrar uma conversa",
+      "listLabel": "Mensagens diretas",
+      "empty": "Nenhuma conversa corresponde"
+    },
+    "notificationRrcTitle": "{{sender}} em {{room}}",
+    "srNewMessage": "Nova mensagem de {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} nova mensagem",
+    "srNewMessages_other": "{{count}} novas mensagens"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -916,7 +947,6 @@
     "disconnectRadio": "Desconectar",
     "manualContactApproval": "Aprovação manual de contato",
     "manualContactApprovalDesc": "Exigir aprovação manual antes que novos contatos apareçam",
-    "disconnected": "● desconectado",
     "bluetoothDevice": "Dispositivo Bluetooth",
     "serialDevice": "Dispositivo serial",
     "wifiDevice": "Dispositivo Wi-Fi",
@@ -945,10 +975,6 @@
     "stageLinuxUnpaired": "O dispositivo salvo não está emparelhado no Linux Bluetooth – selecione-o abaixo para inserir o PIN e conectar.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Conectar",
-    "mqttStatusConnected": "conectado",
-    "mqttStatusConnecting": "conectando",
-    "mqttStatusError": "erro",
-    "mqttStatusDisconnected": "desconectado",
     "stageSelectDevice": "Selecione seu dispositivo abaixo",
     "stageSelectSerial": "Selecione uma porta serial abaixo",
     "stageConnectingLast": "Conectando ao último dispositivo Bluetooth…",
@@ -1035,7 +1061,6 @@
     "reticulumSidecarStartFailed": "Não foi possível iniciar a pilha Reticulum: {{message}}",
     "reticulumStopStack": "Parar pilha",
     "reticulumAutostart": "Iniciar pilha automaticamente ao abrir a Conexão",
-    "reticulumStackRunning": "Pilha em execução",
     "reticulumIdentity": {
       "title": "Identidade Reticulum",
       "startStackFirst": "Inicie a pilha Reticulum para configurar a identidade.",
@@ -1448,7 +1473,9 @@
       "noPrivateKey": "Sem identidade completa — importe sua configuração do MeshCore no painel Radio (chaves públicas e privadas) ou cole o nome de usuário (v1_<chave pública>) e o token manualmente. O público JWT no token deve corresponder ao nome do host do servidor.",
       "publicKeyMissing": "Chave pública ausente na identidade. Importe seu JSON de configuração do MeshCore no painel Radio (deve incluir chaves públicas e privadas) ou cole um token do corretor no campo de senha.",
       "noIdentity": "Nenhuma identidade de dispositivo encontrada. Importe seu JSON de configuração do MeshCore no painel Rádio ou cole o nome de usuário e o token manualmente.",
-      "usernameBuildFailed": "Não foi possível criar o nome de usuário MeshCore MQTT. Importe seu JSON de configuração do MeshCore no painel Rádio ou cole o nome de usuário (v1_<public key>) e o token manualmente."
+      "usernameBuildFailed": "Não foi possível criar o nome de usuário MeshCore MQTT. Importe seu JSON de configuração do MeshCore no painel Rádio ou cole o nome de usuário (v1_<public key>) e o token manualmente.",
+      "clientKey": "Chave do cliente",
+      "copyClientKey": "Copiar chave do cliente"
     },
     "meshcorePacketLogger": {
       "label": "Registrador de pacotes - quando conectado ao seu rádio e MQTT, encaminhe resumos de pacotes RX para {{topic}} no mesmo formato JSON do meshcoretomqtt. Desativado por padrão; habilite apenas se você pretende compartilhar o tráfego aéreo ouvido com um analisador de pacotes."
@@ -1569,7 +1596,25 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Status das conexões",
+      "radioLink": "Link de rádio",
+      "stack": "Pilha",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Erro",
+      "running": "Em execução",
+      "stopped": "Parado",
+      "clientLost": "Cliente perdido",
+      "takPort": "Porta {{port}}",
+      "openTak": "Abrir TAK"
+    },
+    "disconnectAll": "Desconectar rádio e MQTT",
+    "disconnectRadioGroup": "Desconectar rádio",
+    "moreDisconnectOptions": "Mais opções de desconexão",
+    "disconnectOptions": "Opções de desconexão",
+    "lastConnectionLabel": "Última conexão"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",
@@ -2042,7 +2087,12 @@
       "esp32FlashStalled": "Transferência de firmware parada sem progresso. Tente outro cabo ou porta USB, entre no modo bootloader (segure BOOT, toque RESET) e reflashe novamente.",
       "unknown": "Ocorreu um erro inesperado.",
       "provisionWipeRequired": "A EEPROM está bloqueada com uma identidade inválida. Limpe a EEPROM primeiro e, em seguida, provisione novamente.",
-      "provisionVerifyFailed": "As gravações de provisionamento foram concluídas, mas o dispositivo ainda relata uma EEPROM não provisionada. Faça o ciclo de energia da placa, aguarde a inicialização e tente novamente — ou limpe a EEPROM primeiro."
+      "provisionVerifyFailed": "As gravações de provisionamento foram concluídas, mas o dispositivo ainda relata uma EEPROM não provisionada. Faça o ciclo de energia da placa, aguarde a inicialização e tente novamente — ou limpe a EEPROM primeiro.",
+      "esp32ReadStalled": "A leitura da flash parou sem progresso. Tente outro cabo ou porta USB, entre no modo bootloader (segure BOOT, toque em RESET) e faça o backup novamente.",
+      "esp32ReadIncomplete": "A leitura do flash terminou mais cedo, então nenhum backup foi salvo. Reconecte a placa e tente novamente.",
+      "esp32FlashSizeUnknown": "Não foi possível detectar o tamanho da flash, então nenhum backup foi feito. Selecione o modelo exato da placa e tente novamente.",
+      "esp32FlashTooLarge": "A flash desta placa é maior que o limite de backup de 32 MiB, então nenhum backup foi feito.",
+      "esp32ReadVerifyFailed": "A leitura da flash falhou na verificação de checksum, então nenhum backup foi salvo. Reconecte a placa e tente novamente."
     },
     "selectSerialPort": "Selecionar porta serial",
     "noSerialPorts": "Nenhuma porta serial USB encontrada.",
@@ -2090,7 +2140,14 @@
     "clearPairedDevicesConfirmTitle": "Limpar ligações Bluetooth RNode?",
     "clearPairedDevicesConfirmMessage": "Isso envia CMD_BT_UNPAIR via USB e limpa hosts vinculados em RNodes ESP32 (sem efeito em alguns builds nRF52). Você ainda deve Esquecer o dispositivo em Ajustes do Sistema → Bluetooth antes de emparelhar de novo.",
     "clearPairedDevicesConfirm": "Limpar vínculos Bluetooth",
-    "clearPairedDevicesSuccess": "Limpeza da tabela de vínculos Bluetooth do rádio solicitada."
+    "clearPairedDevicesSuccess": "Limpeza da tabela de vínculos Bluetooth do rádio solicitada.",
+    "backupFirmware": "Fazer backup do firmware",
+    "backupFirmwareHint": "Salva em um arquivo uma imagem completa da memória flash do ESP32 (firmware e configurações do dispositivo) antes de gravar. Não disponível para placas nRF52.",
+    "backingUp": "Lendo a flash… {{progress}}%",
+    "cancelBackup": "Cancelar backup",
+    "backupSaved": "Backup de firmware salvo em {{path}}.",
+    "backupSaveCancelled": "O backup do firmware foi lido, mas não salvo.",
+    "backupCancelled": "Backup de firmware cancelado."
   },
   "identityVault": {
     "title": "Identity Vault",
@@ -3084,8 +3141,8 @@
     "radioStatsLocalHeading": "Estatísticas de Rádio (Local)",
     "txAirTimeLabel": "Tempo no ar de TX",
     "rxAirTimeLabel": "Tempo no ar de RX",
-    "requestPosition": "📍 Solicitar posição",
-    "traceRoute": "🛤 Traçar rota",
+    "requestPosition": "Solicitar posição",
+    "traceRoute": "Traçar rota",
     "tracingEllipsis": "Traçado",
     "requestStatus": "Status da Solicitação",
     "requestingEllipsis": "Solicitando...",
@@ -3095,10 +3152,10 @@
     "telemetryFailed": "Falha na telemetria: {{message}}",
     "sensorTelemetryButton": "Telemetria 🌡 do sensor",
     "requestingNeighbors": "Solicitando vizinhos...",
-    "getNeighbors": "🔗 Obter Vizinhos",
+    "getNeighbors": "Obter Vizinhos",
     "neighborsFailed": "Vizinhos reprovados: {{message}}",
     "messageNoKeyTitle": "Não é possível enviar mensagem: nenhuma chave de criptografia. Aguarde uma troca completa de contatos ou atualize os contatos.",
-    "messageButton": "💬 Mensagem",
+    "messageButton": "Mensagem",
     "exportingContact": "Exportando contato...",
     "noPublicKeyAvailable": "Nenhuma chave pública disponível",
     "exportContact": "Exportar Contato",
@@ -3109,17 +3166,15 @@
     "sharingEllipsis": "Compartilhamento",
     "shareFailed": ": Compartilhamento falhou",
     "addingToRadio": "Adicionando ao rádio...",
-    "addToRadio": "➕ Adicionar ao Rádio",
+    "addToRadio": "Adicionar ao Rádio",
     "addingEllipsis": "Adicionando...",
     "addToRadioFailed": "Falha ao adicionar ao rádio",
     "removingFromRadio": "Removendo do rádio...",
-    "removeFromRadio": "➖ Remover do rádio",
+    "removeFromRadio": "Remover do rádio",
     "removingEllipsis": "Removendo...",
     "removeFromRadioFailed": "Falha ao remover do rádio",
     "mqttIgnoreHeading": "Ignorar MQTT",
     "mqttIgnoreDescription": "Excluir os dados MQTT deste nó do diagnóstico",
-    "stopIgnoringMqttTitle": "Pare de ignorar o MQTT para este nó",
-    "ignoreMqttTitle": "Ignorar MQTT para este nó",
     "deleteNode": "Excluir nó",
     "deleteNodeConfirm": "Remover este nó do banco de dados local? Ele reaparecerá quando for transmitido novamente.",
     "cancel": "Cancelar",
@@ -3162,7 +3217,7 @@
     "remoteAdminKeyHint": "Depois de adicionar a chave pública do seu rádio local (Radio → Security → Copy) às Admin keys deste nó remoto, cole a mesma chave aqui para confirmar. Em seguida, use Configurar na aba Radio.",
     "remoteAdminKeyInvalid": "Insira uma chave pública de administrador válida (base64, base64:… ou hexadecimal de 64 caracteres).",
     "configureRemotelyHint": "Abre as configurações de rádio para este nó sobre a malha (requer rádio local e chave de administração salva).",
-    "openRoomButton": "🏠 Abrir sala",
+    "openRoomButton": "Abrir sala",
     "remoteAuthCancelled": "Acesso remoto cancelado.",
     "shareContactSent": "Compartilhamento de contato enviado pelo rádio.",
     "blockContact": "Bloquear",
@@ -3202,7 +3257,9 @@
     "xeddsaSigned": "XEdDSA assinado",
     "xeddsaSignedHint": "O rádio verificou uma assinatura XEdDSA deste nó, então sua chave pública é criptograficamente atestada.",
     "keyManuallyVerified": "Chave verificada",
-    "keyManuallyVerifiedHint": "A chave pública deste nó foi confirmada manualmente por um operador."
+    "keyManuallyVerifiedHint": "A chave pública deste nó foi confirmada manualmente por um operador.",
+    "keyBadge": "Chave",
+    "closePane": "Fechar detalhes"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",
@@ -3292,6 +3349,7 @@
     "importResultError": "Importado {{imported}}, ignorado {{skipped}}. Erros: {{errors}}",
     "refreshContacts": "Atualizar contatos do rádio",
     "sendFloodAdvert": "Enviar flood advert",
+    "sendFloodAdvertUnavailable": "Disponível quando um rádio MeshCore estiver conectado",
     "filterByContactGroup": "Filtrar por Grupo de Contato",
     "manageContactGroups": "Gerenciar grupos de contatos",
     "manageGroups": "Gerenciar grupos",
@@ -3317,12 +3375,6 @@
     "distanceFilterNoGpsBanner": "O filtro de distância está ativado, mas seu dispositivo não tem correção de GPS — todos os nós são mostrados.",
     "distanceFilterActiveBanner_one": "Filtro de distância ativo — {{count}} nó oculto além de {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Filtro de distância ativo — {{count}} nós ocultos além de {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} online",
-    "summaryOnline_other": "{{count}} online",
-    "summaryStale_one": "{{count}} obsoleto",
-    "summaryStale_other": "{{count}} obsoleto",
-    "summaryOffline_one": "{{count}} offline",
-    "summaryOffline_other": "{{count}} offline",
     "tableCaptionMeshNodes": "Nós de malha conectados",
     "columnFavorite": "Favorito",
     "columnId": "ID",
@@ -3374,7 +3426,13 @@
     "meshcoreTypeUnknown": "Desconhecida",
     "columnHealth": "Saúde do nó",
     "hasPublicKeyTitle": "Chave pública",
-    "buttonExportCsv": "Exportar CSV"
+    "buttonExportCsv": "Exportar CSV",
+    "listViewAria": "Visualização da lista",
+    "statusFilterAria": "Filtrar por status",
+    "statusFilterAll": "Todos",
+    "buttonExport": "Exportar",
+    "exportMenuLabel": "Formatos de exportação",
+    "youBadge": "Você"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3847,12 +3905,12 @@
     "shutdownConfirm": "Desligar",
     "shutdownButton": "Desligar",
     "factoryResetConfigName": "Configuração de redefinição de fábrica",
-    "factoryResetConfigTitle": "⚠ Configuração de redefinição de fábrica",
+    "factoryResetConfigTitle": "Configuração de redefinição de fábrica",
     "factoryResetConfigMessage": "Isso redefinirá a configuração do dispositivo para os padrões de fábrica, mas preservará o banco de dados do nó. As configurações precisarão ser reconfiguradas.",
     "factoryResetConfigConfirm": "Redefinir configuração",
     "factoryResetConfigButton": "Somente configuração de redefinição de fábrica",
     "factoryResetName": "Redefinição de fábrica",
-    "factoryResetTitle": "⚠ Redefinição de fábrica",
+    "factoryResetTitle": "Redefinição de fábrica",
     "factoryResetMessage": "Isso apagará TODAS as configurações do dispositivo e restaurará os padrões de fábrica. Todos os canais, configurações e dados armazenados no dispositivo serão perdidos permanentemente. Esta ação NÃO PODE ser desfeita.",
     "factoryResetConfirm": "Redefinição de fábrica",
     "meshcoreChannelKeyLabel": "Chave (32 caracteres hexadecimais = 16 bytes)",
@@ -4557,8 +4615,6 @@
     "noLppData": "Não há dados do sensor LPP nesta resposta.",
     "enterCommand": "Digite o comando...",
     "searchRepeatersPlaceholder": "Pesquisar repetidores e salas…",
-    "openCliInterface": "Interface CLI aberta",
-    "sensorLppButton": "Sensor (LPP)",
     "noTelemetryResponse": "Nenhuma resposta de telemetria ainda. Tente o Sensor (LPP) novamente.",
     "mapPositionFromAdvert": "A posição do mapa vem de dados de anúncio/contato, não desta solicitação do sensor.",
     "mapPositionFromTelemetry": "A posição do mapa vem de dados de anúncio/contato, não de telemetria do sensor.",
@@ -4584,8 +4640,6 @@
     "statusStale": "Rançoso",
     "statusOffline": "Off-line",
     "buttonPing": "Ping",
-    "buttonStatus": "Situação",
-    "buttonNeighbors": "Vizinhos",
     "buttonRemove": "Remover",
     "buttonConfirmRemove": "Confirmar?",
     "buttonErrorShort": "Erro",
@@ -4630,15 +4684,10 @@
     "savedPasswordOrphanLabel": "Repetidor {{nodeId}}",
     "pingQueuedBehindOther": "Na fila — outro ping está usando o rádio (o MeshCore permite um rastreamento de cada vez).",
     "waitForPingBeforeStatus": "Aguardando a conclusão do ping em andamento antes da solicitação de status.",
-    "statusLastFailedTooltip": "A última solicitação de status falhou: {{error}}",
-    "neighborsLastFailedTooltip": "O último pedido dos vizinhos falhou: {{error}}",
-    "telemetryLastFailedTooltip": "Falha na última solicitação do sensor: {{error}}",
-    "cliLastFailedTooltip": "O último comando CLI falhou: {{error}}",
     "telemetryError": "Erro de sensor: {{error}}",
     "neighborsFailedToast": "Vizinhos reprovados: {{message}}",
     "columnSnr": "SNR",
     "columnRssi": "RSSI",
-    "buttonCli": "CLI",
     "cliClearHistory": "Limpar histórico",
     "cliNoCommandsYet": "Nenhum comando ainda",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
@@ -4683,7 +4732,12 @@
     "sortByAirPctAsc": "Ordenar por % de ar, menor primeiro",
     "sortByAirPctDesc": "Ordenar por % de ar, maior primeiro",
     "sortByReliabilityAsc": "Ordenar por Confiabilidade, menor primeiro",
-    "sortByReliabilityDesc": "Ordenar por Confiabilidade, maior primeiro"
+    "sortByReliabilityDesc": "Ordenar por Confiabilidade, maior primeiro",
+    "moreActionsFor": "Mais ações para {{name}}",
+    "rowActionsMenu": "Ações para {{name}}",
+    "rowBusy": "Processando {{name}}",
+    "menuShownBelow": "Exibido abaixo. Escolha novamente para ocultar.",
+    "confirmRemoveAria": "Confirmar remoção de {{name}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
@@ -5040,7 +5094,7 @@
     "savedPasswordsHeading": "Senhas salvas",
     "savedPasswordsCount": "Senhas salvas ({{count}})",
     "savedPasswordOrphanLabel": "Sala 0x{{nodeId}}",
-    "statusPasswordSaved": "Senha salva para esta sala (marcador azul-céu quando não conectado).",
+    "statusPasswordSaved": "Senha salva para esta sala.",
     "statusAutoLoginEnabled": "O login automático na conexão está ativado.",
     "badgeAutoLogin": "Login automático",
     "badgeAutoSync": "Sincronização automática",
@@ -5056,17 +5110,18 @@
     "legendLoggedIn": "Conectado",
     "statusLoggedInSession": "Conectado",
     "statusLoggedInSessionTooltip": "Sessão ativa do cliente. Ela persiste até que você saia da sala ou se desconecte. Se o servidor da sala estiver inacessível, saia e faça login novamente quando ele estiver de volta.",
-    "legendNotSavedTooltip": "Círculo vazio — nenhuma senha armazenada para esta sala",
-    "legendSavedTooltip": "Meio círculo azul-céu — senha armazenada; faça login para abrir uma sessão",
-    "legendLoggedInTooltip": "Ponto verde — sessão ativa do cliente (saia da sala se o servidor estiver offline)",
     "historyLocalHint": "Ao entrar, o mesh-client solicita publicações recentes ainda no buffer circular do servidor da sala (quando este dispositivo ainda não tem marca d’água local). Ative a sincronização automática para permanecer subscrito enquanto estiver conectado.",
     "loginAllSavedDisabledNoSavedPasswords": "Salve uma senha de sala primeiro para usar o login em todos",
     "membersHeadingWithCount": "Membros ({{count}})",
     "collapseRoomList": "Recolher lista de salas",
     "expandRoomList": "Expandir lista de salas",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} não lida",
     "manageJumpHint": "Os controles de infraestrutura (ping, status, CLI, ACL setperm) estão na guia Repeaters.",
-    "aclPubkeyPlaceholder": "0123456789abcdef…"
+    "aclPubkeyPlaceholder": "0123456789abcdef…",
+    "backToList": "Voltar para a lista de salas",
+    "details": "Detalhes da sala",
+    "hideDetails": "Ocultar detalhes da sala",
+    "moreActions": "Mais ações da sala",
+    "loginAndSyncHeading": "Login e sincronização"
   },
   "searchModal": {
     "closeSearch": "Fechar pesquisa",
@@ -5166,18 +5221,6 @@
   "sidebar": {
     "disabledTabTooltip": "Não disponível neste modo"
   },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Fique no ar",
-      "helloOperator": "Olá, operador",
-      "thanksForMeshing": "Obrigado pela malha",
-      "builtForCommunities": "Construído para comunidades em todos os lugares",
-      "stayConnected": "Fique conectado",
-      "signalsOut": "Sinais de saída",
-      "gladYouAreHere": "Que bom que você está aqui",
-      "keepTheMeshAlive": "Mantenha a malha viva"
-    }
-  },
   "tabs": {
     "connection": "Conexão",
     "chat": "Bate-papo",
@@ -5200,6 +5243,7 @@
     "admin": "Administração",
     "peers": "Pares",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Topologia de rede",
     "network": "Rede",
     "rrc": "RRC",
@@ -5236,7 +5280,7 @@
     "atakDataPackageDesc": "Gere um arquivo .zip contendo certificados TLS e configurações de conexão para importação para ATAK, WinTAK ou iTAK.",
     "generating": "Gerando…",
     "generateReveal": "Gerar e revelar",
-    "packageSaved": "✓ Pacote salvo — verifique o Finder/Explorer",
+    "packageSaved": "Pacote salvo — verifique o Finder/Explorer",
     "startServerFirst": "Inicie o servidor primeiro",
     "certificates": "Certificados",
     "certificatesDesc": "Certificados autoassinados de CA, servidor e cliente são gerados automaticamente na primeira inicialização e armazenados no diretório de dados do aplicativo.",
@@ -5401,8 +5445,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Conectar ao hash",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5439,8 +5481,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Expandir lista de salas",
-    "collapseRooms": "Recolher lista de salas",
     "joinedRooms": "Participando",
     "recentRooms": "Recente",
     "roomKeyOptional": "Chave do sala (opcional)",
@@ -5496,8 +5536,6 @@
       "welcomeTimeout": "Conectado, mas o hub não enviou BOAS-VINDAS a tempo. Tente novamente.",
       "proxyRateLimit": "Muitas solicitações no momento (limite de taxa de proxy atingido). Aguarde alguns instantes e tente novamente."
     },
-    "expandMembers": "Expandir lista de membros",
-    "collapseMembers": "Recolher lista de membros",
     "cancelConnect": "Cancelar",
     "maxHubsConnected": "Você pode permanecer conectado a no máximo 8 hubs RRC. Desconecte um primeiro.",
     "enableHubAutoJoin": "Ativar a adesão automática ao hub",
@@ -5544,7 +5582,15 @@
     "roomNameLimit": {
       "overMax": "Nome da sala muito longo — o limite do hub é de {{limit}} bytes"
     },
-    "noConnectedHubs": "Nenhum hub RRC conectado. Conecte-se a partir de Favoritos, Descobertos ou por hash."
+    "noConnectedHubs": "Nenhum hub RRC conectado. Conecte-se a partir de Favoritos, Descobertos ou por hash.",
+    "autoJoinChip": "Auto",
+    "listViewAria": "Mostrar salas ou hubs",
+    "hubsShort": "Hubs",
+    "hideList": "Ocultar salas e hubs",
+    "showList": "Mostrar salas e hubs",
+    "backToList": "Voltar para salas e hubs",
+    "hideMembers": "Ocultar membros",
+    "listColumnAria": "Salas e hubs"
   },
   "signalMeter": {
     "rssi": "RSSI",
@@ -6225,5 +6271,48 @@
     "beaconCancelQueued": "Beacon cancel na fila. Ele será enviado quando o rádio estiver disponível.",
     "beaconCancelFailed": "Não foi possível enviar ou enfileirar o cancelamento do beacon. O incidente ainda está em aberto.",
     "emptyHint": "Os relatórios de MECP de entrada aparecem aqui automaticamente. Para enviar um, ative o botão App → MECP → Show MECP no Chat e, em seguida, use o MECP no Chat. → As camadas de mapa podem mostrar incidentes abertos com coordenadas."
+  },
+  "shell": {
+    "section": {
+      "monitor": "Monitor",
+      "device": "Aparelho"
+    },
+    "sectionPanelsAria": "Painéis de {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Ir para um painel, contato ou canal ({{shortcut}})",
+    "status": {
+      "radio": "Rádio: {{status}}",
+      "radioWithNode": "Rádio: {{status}}, nó {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Todos os painéis",
+      "searchLabel": "Pesquisar painéis, contatos e canais",
+      "placeholder": "Ir para um painel, contato ou canal",
+      "noResults": "Nenhum painel corresponde à busca",
+      "otherGroup": "Outros",
+      "pin": "Fixar {{label}}",
+      "unpin": "Desafixar {{label}}",
+      "pinLimit": "É possível fixar até {{max}} painéis. Desafixe um primeiro.",
+      "hintMove": "navegar",
+      "hintOpen": "abrir",
+      "hintPin": "fixar",
+      "panelCount_one": "{{count}} painel",
+      "panelCount_other": "{{count}} painéis",
+      "channelsGroup": "Canais",
+      "contactsGroup": "Contatos",
+      "moreMatches": "Há mais resultados. Continue digitando para filtrar a lista."
+    },
+    "more": "Mais",
+    "quitConfirmTitle": "Sair do Mesh Client?",
+    "quitConfirmIncidents": "Incidentes MAYDAY ou URGENT abertos: {{n}}.",
+    "quitConfirmOutbox": "Mensagens de emergência aguardando envio: {{n}}.",
+    "quitConfirmLinks": "Todos os links de rádio e MQTT serão desconectados."
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Diminuir {{label}}",
+      "increase": "Aumentar {{label}}"
+    }
   }
 }

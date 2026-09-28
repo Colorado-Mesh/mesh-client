@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 
 import ErrorBoundary from './components/ErrorBoundary';
+import { installBundledEmojiData } from './lib/bundledEmojiData';
 import { runConnectionPanelStorageMigrations } from './lib/connectionPanelStorageMigrations';
 import { installDevElectronApiStubIfNeeded } from './lib/devElectronApiStub';
 import i18n from './lib/i18n';
@@ -25,7 +26,7 @@ function AppBootSplash() {
     <main className="bg-app-bg flex h-screen w-screen items-center justify-center">
       <output className="block" aria-busy="true">
         <h1 className="sr-only">{i18n.t('app.loadingApp')}</h1>
-        <div className="h-8 w-8 animate-pulse rounded-full bg-gray-700" aria-hidden />
+        <div className="bg-ink-700 h-8 w-8 animate-pulse rounded-full" aria-hidden />
       </output>
     </main>
   );
@@ -44,6 +45,8 @@ if (import.meta.env.DEV) {
 }
 
 installRendererUnhandledRejectionLogger();
+// Linux emoji picker reads vendored data instead of cdn.jsdelivr.net (works offline).
+installBundledEmojiData();
 
 void (async () => {
   await ensureLocaleLoaded(i18n, i18n.language);

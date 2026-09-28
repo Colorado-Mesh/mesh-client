@@ -217,6 +217,36 @@ describe('ReticulumPeerListPanel', () => {
     expect(screen.getByText('TCP')).toBeTruthy();
   });
 
+  it('opens a peer from its name button and marks the one shown in the pane', async () => {
+    const user = userEvent.setup();
+    const onPeerClick = vi.fn();
+    const { rerender } = render(
+      <ReticulumPeerListPanel
+        isConnected={false}
+        onPeerClick={onPeerClick}
+        onSendMessage={vi.fn()}
+      />,
+    );
+    const name = screen.getByRole('button', { name: 'Alpha Peer' });
+    name.focus();
+    await user.keyboard('{Enter}');
+    expect(onPeerClick).toHaveBeenCalledExactlyOnceWith('abc');
+    expect(name).not.toHaveAttribute('aria-current');
+
+    rerender(
+      <ReticulumPeerListPanel
+        isConnected={false}
+        onPeerClick={onPeerClick}
+        onSendMessage={vi.fn()}
+        selectedPeerHash="abc"
+      />,
+    );
+    expect(screen.getByRole('button', { name: 'Alpha Peer' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    );
+  });
+
   it('omits the medium badge when the peer has no hop count', () => {
     useReticulumPeerStore.setState({
       peers: new Map([
@@ -279,7 +309,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.colLastHeard')).toBeInTheDocument();
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
     expect(screen.queryByText('History Peer')).not.toBeInTheDocument();
@@ -306,7 +336,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabFavorites' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabFavorites' }));
     expect(screen.getByText('History Favorite')).toBeInTheDocument();
   });
 
@@ -315,10 +345,42 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabHistory' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabHistory' }));
     expect(screen.getByRole('button', { name: 'peerListPanel.colLastHeard' })).toBeInTheDocument();
     expect(screen.getByText('History Peer')).toBeInTheDocument();
     expect(screen.getByText('Contact Peer')).toBeInTheDocument();
+  });
+
+  it('marks every sortable column with the same sort arrows as the node tables', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    const sortState = (name: string) =>
+      screen
+        .getByRole('button', { name })
+        .querySelector('svg[data-sort]')
+        ?.getAttribute('data-sort');
+    // Name sorts ascending by default; the other sortable columns show the unsorted arrows.
+    expect(sortState('peerListPanel.colName')).toBe('asc');
+    expect(sortState('connectionPanel.reticulumPeers.hops')).toBe('none');
+    expect(sortState('peerListPanel.colLastSeen')).toBe('none');
+    expect(sortState('peerListPanel.colInterface')).toBe('none');
+    await user.click(screen.getByRole('button', { name: 'peerListPanel.colName' }));
+    expect(sortState('peerListPanel.colName')).toBe('desc');
+  });
+
+  it('keeps the tab control in place: the count sits after it, not in the heading', async () => {
+    const user = userEvent.setup();
+    render(
+      <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+    const title = screen.getByRole('heading', { name: 'peerListPanel.heading' });
+    const tabs = screen.getByRole('radiogroup', { name: 'peerListPanel.heading' });
+    expect(title.nextElementSibling).toBe(tabs);
+    expect(tabs.nextElementSibling).toHaveAttribute('data-list-count');
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabHistory' }));
+    expect(title.nextElementSibling).toBe(tabs);
   });
 
   it('shows empty history state', async () => {
@@ -327,7 +389,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabHistory' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabHistory' }));
     expect(screen.getByText('peerListPanel.emptyHistory')).toBeInTheDocument();
   });
 
@@ -337,7 +399,7 @@ describe('ReticulumPeerListPanel', () => {
     render(
       <ReticulumPeerListPanel isConnected={false} onPeerClick={vi.fn()} onSendMessage={vi.fn()} />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.emptyContacts')).toBeInTheDocument();
   });
 
@@ -371,7 +433,7 @@ describe('ReticulumPeerListPanel', () => {
         contactNodes={contactNodes}
       />,
     );
-    await user.click(screen.getByRole('tab', { name: 'peerListPanel.tabContacts' }));
+    await user.click(screen.getByRole('radio', { name: 'peerListPanel.tabContacts' }));
     expect(screen.getByText('peerListPanel.emptyContacts')).toBeInTheDocument();
     expect(screen.queryByText('Path Table Peer')).not.toBeInTheDocument();
   });
@@ -400,7 +462,7 @@ describe('ReticulumPeerListPanel', () => {
       expect(screen.getByText('Peer 0')).toBeInTheDocument();
     });
     expect(screen.queryByText('Peer 50')).not.toBeInTheDocument();
-    expect(screen.getByText(/peerListPanel\.heading/)).toHaveTextContent('(150)');
+    expect(document.querySelector('[data-list-count]')).toHaveTextContent('(150)');
   });
 
   it('finds a buried peer by display name after search', async () => {

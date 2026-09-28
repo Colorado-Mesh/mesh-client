@@ -8,7 +8,7 @@ export interface TopologyVisibleLimitNoteProps {
 
 export function TopologyVisibleLimitNote({ label }: TopologyVisibleLimitNoteProps) {
   return (
-    <span className="text-slate-500" aria-label={label}>
+    <span className="text-muted" aria-label={label}>
       {label}
     </span>
   );

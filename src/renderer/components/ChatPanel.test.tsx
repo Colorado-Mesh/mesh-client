@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -2325,7 +2325,7 @@ describe('ChatPanel unread watermarks', () => {
     );
 
     expect(screen.getByRole('button', { name: 'Alice' })).toBeInTheDocument();
-    const aliceTab = screen.getByRole('button', { name: 'Alice' }).closest('.relative');
+    const aliceTab = screen.getByRole('button', { name: 'Alice' }).parentElement;
     expect(aliceTab?.querySelector('.bg-red-600')?.textContent).toBe('1');
 
     await user.click(screen.getByRole('button', { name: 'Alice' }));
@@ -2644,8 +2644,9 @@ describe('ChatPanel unread watermarks', () => {
     expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
   });
 
-  it('wraps channel pills in a dedicated column so toolbar utilities stay visible', () => {
-    const manyChannels = Array.from({ length: 24 }, (_, index) => ({
+  it('keeps many channels in one scrolling row with a searchable switcher', async () => {
+    const user = userEvent.setup();
+    const manyChannels = Array.from({ length: 25 }, (_, index) => ({
       index,
       name: `Ch${index}`,
     }));
@@ -2655,21 +2656,36 @@ describe('ChatPanel unread watermarks', () => {
       </ToastProvider>,
     );
 
-    const label = screen.getByText('Channels');
-    const channelsContainer = label.parentElement;
-    expect(channelsContainer?.className).toMatch(/flex-wrap/);
-    expect(channelsContainer?.className).not.toMatch(/whitespace-nowrap/);
+    // One row that scrolls sideways: channel count never grows the header.
+    const strip = screen.getByRole('group', { name: 'Channels' });
+    expect(strip.className).toMatch(/overflow-x-auto/);
+    expect(strip.className).toMatch(/whitespace-nowrap/);
+    expect(strip.className).not.toMatch(/flex-wrap/);
+    expect(screen.getByRole('button', { name: 'Ch24' })).toBeInTheDocument();
 
-    const headerRow = channelsContainer?.parentElement;
+    const headerRow = strip.closest('.grid');
     expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
-
     const exportBtn = screen.getByRole('button', { name: 'Export chat' });
-    const starredBtn = screen.getByRole('button', { name: 'Starred messages' });
-    expect(channelsContainer?.contains(exportBtn)).toBe(false);
-    expect(channelsContainer?.contains(starredBtn)).toBe(false);
+    expect(strip.contains(exportBtn)).toBe(false);
     expect(headerRow?.contains(exportBtn)).toBe(true);
-    expect(headerRow?.contains(starredBtn)).toBe(true);
-    expect(screen.getByRole('button', { name: 'Ch23' })).toBeInTheDocument();
+
+    // The switcher lists every channel and filters as you type.
+    await user.click(screen.getByRole('button', { name: 'All channels (25)' }));
+    const search = screen.getByRole('combobox', { name: 'Find a channel' });
+    expect(search).toHaveFocus();
+    expect(screen.getAllByRole('option')).toHaveLength(25);
+    await user.type(search, 'Ch2');
+    expect(screen.getAllByRole('option').map((o) => o.getAttribute('aria-label'))).toEqual([
+      'Ch2',
+      'Ch20',
+      'Ch21',
+      'Ch22',
+      'Ch23',
+      'Ch24',
+    ]);
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ch20' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('clears the unread divider without scrolling when all unread messages are visible', async () => {
@@ -4726,11 +4742,11 @@ describe('ChatPanel reticulum dm-only chat', () => {
     });
     expect(screen.queryByText('many one')).not.toBeInTheDocument();
     const lastFocusedBtn = screen.getAllByRole('button', { name: 'Last Focused' })[0];
-    expect(lastFocusedBtn.className).toMatch(/text-white/);
+    expect(lastFocusedBtn).toHaveAttribute('aria-pressed', 'true');
     expect(localStorage.getItem('mesh-client:activeDm:reticulum')).toBe(String(lastFocusedId));
   });
 
-  it('promotes DM pills into the channel grid column with flex-wrap (no separate DM row)', () => {
+  it('promotes DM pills into the channel row as one scrolling strip (no separate DM row)', () => {
     const peerIds = [0x101, 0x102, 0x103, 0x104, 0x105, 0x106];
     localStorage.setItem('mesh-client:openDmTabs:reticulum', JSON.stringify(peerIds));
     const nodes = new Map<number, MeshNode>(
@@ -4758,20 +4774,19 @@ describe('ChatPanel reticulum dm-only chat', () => {
       </ToastProvider>,
     );
 
-    expect(screen.queryByText('Channels')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Channels' })).not.toBeInTheDocument();
 
-    const label = screen.getByText('DMs');
-    const dmsContainer = label.parentElement;
-    expect(dmsContainer?.className).toMatch(/flex-wrap/);
-    expect(dmsContainer?.className).not.toMatch(/whitespace-nowrap/);
+    const dmsStrip = screen.getByRole('group', { name: 'DMs' });
+    expect(dmsStrip.className).toMatch(/overflow-x-auto/);
+    expect(dmsStrip.className).not.toMatch(/flex-wrap/);
 
-    const headerRow = dmsContainer?.parentElement;
+    const headerRow = dmsStrip.closest('.grid');
     expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
 
     const exportBtn = screen.getByRole('button', { name: 'Export chat' });
     const starredBtn = screen.getByRole('button', { name: 'Starred messages' });
-    expect(dmsContainer?.contains(exportBtn)).toBe(false);
-    expect(dmsContainer?.contains(starredBtn)).toBe(false);
+    expect(dmsStrip.contains(exportBtn)).toBe(false);
+    expect(dmsStrip.contains(starredBtn)).toBe(false);
     expect(headerRow?.contains(exportBtn)).toBe(true);
     expect(headerRow?.contains(starredBtn)).toBe(true);
 
@@ -5632,5 +5647,222 @@ describe('ChatPanel reticulum dm-only chat', () => {
     await user.click(screen.getByRole('button', { name: 'Unknown Peer' }));
     expect(onPeerClick).not.toHaveBeenCalled();
     expect(onNodeClick).not.toHaveBeenCalled();
+  });
+});
+
+describe('ChatPanel — Option B bubbles and toolbar', () => {
+  it('draws own messages with the outgoing tokens and others with the incoming tokens', async () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, payload: 'from alice', timestamp: now }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'from me', timestamp: now + 1 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const incoming = (await screen.findByText('from alice')).closest('.rounded-xl');
+    const outgoing = screen.getByText('from me').closest('.rounded-xl');
+    expect(incoming?.className).toContain('bg-chat-incoming-bg');
+    expect(incoming?.className).toContain('rounded-tl-sm');
+    expect(outgoing?.className).toContain('bg-chat-outgoing-bg');
+    expect(outgoing?.className).toContain('border-chat-outgoing-border');
+    expect(outgoing?.className).toContain('rounded-tr-sm');
+    for (const bubble of [incoming, outgoing]) {
+      expect(bubble?.className).not.toMatch(/purple|blue-/);
+    }
+  });
+
+  it('shows sender initials beside incoming messages only, once per run in compact mode', async () => {
+    const now = Date.now();
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          compactMode
+          messages={[
+            makeMsg({ sender_id: 2, sender_name: 'Trail Dave', payload: 'first', timestamp: now }),
+            makeMsg({
+              sender_id: 2,
+              sender_name: 'Trail Dave',
+              payload: 'second',
+              timestamp: now + 1_000,
+            }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'mine', timestamp: now + 2_000 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('second');
+    const avatars = Array.from(container.querySelectorAll('[data-chat-avatar]'));
+    expect(avatars.map((el) => el.getAttribute('data-chat-avatar'))).toEqual(['sender', 'spacer']);
+    expect(avatars[0]).toHaveTextContent('TD');
+    expect(avatars[0]).toHaveAttribute('aria-hidden', 'true');
+    const own = screen.getByText('mine').closest('[data-chat-message-key]');
+    expect(own?.querySelector('[data-chat-avatar]')).toBeNull();
+  });
+
+  it('lets incoming and own bubbles use 80% of a wide window, with no rem cap', async () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, sender_name: 'Ridge Fox', payload: 'in', timestamp: now }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'out', timestamp: now + 1 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('out');
+    for (const text of ['in', 'out']) {
+      const row = Array.from(
+        screen.getByText(text).closest('[data-chat-message-key]')?.querySelectorAll('div') ?? [],
+      ).find((el) => el.classList.contains('group/msg'));
+      expect(row?.classList.contains('sm:max-w-[80%]')).toBe(true);
+      expect(row?.className).not.toMatch(/rem\)/);
+    }
+  });
+
+  it('has no axe violations with incoming, own and reply bubbles', async () => {
+    const now = Date.now();
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, sender_name: 'Ridge Fox', payload: 'hello', timestamp: now }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'hi back', timestamp: now + 1 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('hi back');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('keeps MECP severity tones ahead of the outgoing tone', async () => {
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'MECP/0/B01 M01' })]}
+        />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(container.querySelector('.rounded-xl.bg-red-900\\/30')).not.toBeNull();
+    });
+    expect(container.querySelector('.bg-chat-outgoing-bg')).toBeNull();
+  });
+
+  it('groups the conversation tools in one labeled toolbar group', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[makeMsg({ payload: 'hello' })]} />
+      </ToastProvider>,
+    );
+    const group = await screen.findByRole('group', { name: 'Conversation tools' });
+    for (const name of ['Jump to date', 'Search messages', 'Starred messages']) {
+      expect(within(group).getByRole('button', { name })).toBeInTheDocument();
+    }
+  });
+
+  it('opens a channel requested from outside (the launcher) and reports it consumed', async () => {
+    const consumed = vi.fn();
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} initialChannelTarget={1} onChannelTargetConsumed={consumed} />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Admin' })).toHaveAttribute('aria-pressed', 'true');
+    });
+    expect(consumed).toHaveBeenCalled();
+  });
+
+  it('prefixes channel chips with a muted # unless the name already has one', () => {
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          channels={[
+            { index: 0, name: 'General' },
+            { index: 1, name: '#weather' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const general = screen.getByRole('button', { name: 'General' });
+    const weather = screen.getByRole('button', { name: '#weather' });
+    expect(general.querySelector('[aria-hidden="true"]')?.textContent).toBe('#');
+    expect(weather.textContent?.startsWith('##')).toBe(false);
+  });
+});
+
+describe('ChatPanel — screen reader announcements', () => {
+  let region: HTMLDivElement;
+  let hasFocusSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    region = document.createElement('div');
+    region.id = 'app-announcer-polite';
+    document.body.appendChild(region);
+    hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    return () => {
+      region.remove();
+      hasFocusSpy.mockRestore();
+    };
+  });
+
+  function renderWith(messages: ChatMessage[]) {
+    return (
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} />
+      </ToastProvider>
+    );
+  }
+
+  it('announces an inbound message in the open conversation', async () => {
+    const initial = [makeMsg({ payload: 'old', timestamp: Date.now() - 5000 })];
+    const { rerender } = render(renderWith(initial));
+    rerender(renderWith([...initial, makeMsg({ payload: 'fresh news' })]));
+    await waitFor(() => {
+      expect(region.textContent).toBe('New message from Alice: fresh news');
+    });
+  });
+
+  it('does not announce own messages or other channels', async () => {
+    const initial = [makeMsg({ payload: 'old', timestamp: Date.now() - 5000 })];
+    const { rerender } = render(renderWith(initial));
+    rerender(
+      renderWith([
+        ...initial,
+        makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'mine' }),
+        makeMsg({ channel: 1, payload: 'elsewhere' }),
+      ]),
+    );
+    await new Promise((r) => setTimeout(r, 100));
+    expect(region.textContent).toBe('');
+  });
+
+  it('does not read MECP wire codes aloud', async () => {
+    const initial = [makeMsg({ payload: 'old', timestamp: Date.now() - 5000 })];
+    const { rerender } = render(renderWith(initial));
+    rerender(
+      renderWith([
+        ...initial,
+        makeMsg({ payload: 'MECP/0/M01 M07 P05 2pax 48.65,20.13' }),
+        makeMsg({ payload: 'fresh news' }),
+      ]),
+    );
+    await waitFor(() => {
+      expect(region.textContent).toBe('New message from Alice: fresh news');
+    });
   });
 });

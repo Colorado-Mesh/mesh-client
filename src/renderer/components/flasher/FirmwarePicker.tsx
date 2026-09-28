@@ -13,7 +13,7 @@ export function FirmwarePicker({ disabled, file, onFileChange }: FirmwarePickerP
 
   return (
     <div className="space-y-2">
-      <label className="block text-xs text-gray-400">
+      <label className="text-ink-400 block text-xs">
         {t('flasher.firmwareFile')}
         <input
           ref={inputRef}
@@ -21,14 +21,14 @@ export function FirmwarePicker({ disabled, file, onFileChange }: FirmwarePickerP
           accept=".zip,application/zip"
           disabled={disabled}
           aria-label={t('flasher.firmwareFile')}
-          className="mt-1 block w-full text-sm text-gray-300 file:mr-2 file:rounded file:border-0 file:bg-slate-700 file:px-2 file:py-1 file:text-xs file:text-gray-200"
+          className="text-ink-300 file:bg-ink-700 file:text-ink-200 mt-1 block w-full text-sm file:mr-2 file:rounded file:border-0 file:px-2 file:py-1 file:text-xs"
           onChange={(e) => {
             const next = e.target.files?.[0] ?? null;
             onFileChange(next);
           }}
         />
       </label>
-      {file ? <p className="truncate text-xs text-gray-500">{file.name}</p> : null}
+      {file ? <p className="text-muted truncate text-xs">{file.name}</p> : null}
     </div>
   );
 }

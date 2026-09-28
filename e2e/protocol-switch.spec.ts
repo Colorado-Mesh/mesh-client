@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { launchApp, type LaunchedApp, teardownApp } from './electronApp';
+import { launchApp, type LaunchedApp, navName, teardownApp } from './electronApp';
 
 test.describe('protocol switch', () => {
   let launched: LaunchedApp;
@@ -9,37 +9,48 @@ test.describe('protocol switch', () => {
     if (launched) await teardownApp(launched);
   });
 
-  test('switches protocols and updates sidebar tab set', async () => {
+  test('switches protocols and updates the rail sections and sub-tabs', async () => {
     launched = await launchApp();
     const { page } = launched;
-    const switcher = page.getByRole('group', { name: 'Protocol switcher' });
-    const tablist = page.getByRole('tablist', { name: 'Application panels' });
+    const switcher = page.getByRole('radiogroup', { name: 'Protocol switcher' });
+    const rail = page.getByRole('navigation', { name: 'Application panels' });
+    const header = page.getByRole('banner');
+    const openSection = (name: string) => rail.getByRole('button', { name: navName(name) }).click();
 
-    await switcher.getByRole('button', { name: 'Switch to MeshCore' }).click();
-    await expect(switcher.getByRole('button', { name: 'Switch to MeshCore' })).toHaveAttribute(
-      'aria-pressed',
+    await switcher.getByRole('radio', { name: 'Switch to MeshCore' }).click();
+    await expect(switcher.getByRole('radio', { name: 'Switch to MeshCore' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
-    await expect(tablist.getByRole('tab', { name: 'Chat' })).toBeVisible();
-    await expect(tablist.getByRole('tab', { name: 'Rooms' })).toBeVisible();
-    await expect(tablist.getByRole('tab', { name: 'RRC' })).toHaveCount(0);
+    await openSection('Chat');
+    await expect(header.getByRole('tab', { name: navName('Chat') })).toBeVisible();
+    await expect(header.getByRole('tab', { name: navName('Rooms') })).toBeVisible();
+    await expect(header.getByRole('tab', { name: navName('RRC') })).toHaveCount(0);
 
-    await switcher.getByRole('button', { name: 'Switch to Reticulum' }).click();
-    await expect(switcher.getByRole('button', { name: 'Switch to Reticulum' })).toHaveAttribute(
-      'aria-pressed',
+    await switcher.getByRole('radio', { name: 'Switch to Reticulum' }).click();
+    await expect(switcher.getByRole('radio', { name: 'Switch to Reticulum' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
-    await expect(tablist.getByRole('tab', { name: 'RRC' })).toBeVisible();
-    await expect(tablist.getByRole('tab', { name: 'Nomad Network' })).toBeVisible();
-    await expect(tablist.getByRole('tab', { name: 'Chat' })).toBeVisible();
-    await expect(tablist.getByRole('tab', { name: 'Rooms' })).toHaveCount(0);
+    await openSection('Chat');
+    await expect(header.getByRole('tab', { name: navName('RRC') })).toBeVisible();
+    await expect(header.getByRole('tab', { name: navName('Rooms') })).toHaveCount(0);
+    // Nomad Network is its own rail section on Reticulum, not a Network tab. It holds one panel,
+    // so the header shows a heading instead of a tablist.
+    await openSection('Network');
+    await expect(header.getByRole('tab', { name: 'Nomad Network' })).toHaveCount(0);
+    await openSection('Nomad Network');
+    await expect(header.getByRole('heading', { name: 'Nomad Network' })).toBeVisible();
 
-    await switcher.getByRole('button', { name: 'Switch to Meshtastic' }).click();
-    await expect(switcher.getByRole('button', { name: 'Switch to Meshtastic' })).toHaveAttribute(
-      'aria-pressed',
+    await switcher.getByRole('radio', { name: 'Switch to Meshtastic' }).click();
+    await expect(switcher.getByRole('radio', { name: 'Switch to Meshtastic' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
-    await expect(tablist.getByRole('tab', { name: 'Diagnostics' })).toBeVisible();
-    await expect(tablist.getByRole('tab', { name: 'RRC' })).toHaveCount(0);
+    await expect(rail.getByRole('button', { name: navName('Nomad Network') })).toHaveCount(0);
+    await openSection('Monitor');
+    await expect(header.getByRole('tab', { name: 'Diagnostics' })).toBeVisible();
+    await openSection('Chat');
+    await expect(header.getByRole('tab', { name: navName('RRC') })).toHaveCount(0);
   });
 });

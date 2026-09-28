@@ -9,6 +9,8 @@ import {
   validateReticulumCatalogField,
 } from '@/renderer/lib/reticulum/reticulumInterfaceCatalog';
 
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
+
 export interface ReticulumSerialPortChoice {
   path: string;
   label?: string | null;
@@ -23,9 +25,6 @@ export interface ReticulumInterfaceFieldSetProps {
   disabled?: boolean;
   serialPorts?: readonly ReticulumSerialPortChoice[];
 }
-
-const INPUT_CLASS =
-  'mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50';
 
 function fieldValue(
   field: ReticulumCatalogField,
@@ -68,7 +67,7 @@ export function ReticulumInterfaceFieldSet({
 
     if (field.kind === 'bool') {
       return (
-        <label key={field.key} className="flex items-center gap-2 text-xs text-gray-400">
+        <label key={field.key} className="text-ink-400 flex items-center gap-2 text-xs">
           <input
             id={id}
             type="checkbox"
@@ -78,7 +77,7 @@ export function ReticulumInterfaceFieldSet({
               onChange(field.key, e.target.checked ? 'true' : 'false');
             }}
             aria-label={label}
-            className="h-4 w-4 rounded border-gray-600 bg-slate-900 disabled:opacity-50"
+            className="border-ink-600 bg-ink-900 h-4 w-4 rounded disabled:opacity-50"
           />
           {label}
         </label>
@@ -87,7 +86,7 @@ export function ReticulumInterfaceFieldSet({
 
     if (field.kind === 'select') {
       return (
-        <label key={field.key} className="text-xs text-gray-400" htmlFor={id}>
+        <label key={field.key} className="text-ink-400 text-xs" htmlFor={id}>
           {label}
           <select
             id={id}
@@ -97,7 +96,7 @@ export function ReticulumInterfaceFieldSet({
               onChange(field.key, e.target.value);
             }}
             aria-label={label}
-            className={INPUT_CLASS}
+            className={`${SELECT_BOX_CLASS} mt-1 block`}
           >
             {(field.options ?? []).map((option) => (
               <option key={option} value={option}>
@@ -113,7 +112,7 @@ export function ReticulumInterfaceFieldSet({
 
     if (field.kind === 'serialPort') {
       return (
-        <label key={field.key} className="text-xs text-gray-400" htmlFor={id}>
+        <label key={field.key} className="text-ink-400 text-xs" htmlFor={id}>
           {label}
           {serialPorts.length > 0 ? (
             <select
@@ -124,7 +123,7 @@ export function ReticulumInterfaceFieldSet({
                 onChange(field.key, e.target.value);
               }}
               aria-label={label}
-              className={INPUT_CLASS}
+              className={`${SELECT_BOX_CLASS} mt-1 block`}
             >
               <option value="">{t('common.emDash')}</option>
               {serialPorts.map((port) => (
@@ -142,7 +141,7 @@ export function ReticulumInterfaceFieldSet({
                 onChange(field.key, e.target.value);
               }}
               aria-label={label}
-              className={INPUT_CLASS}
+              className={`${INPUT_BOX_CLASS} mt-1 block`}
             />
           )}
         </label>
@@ -150,7 +149,7 @@ export function ReticulumInterfaceFieldSet({
     }
 
     return (
-      <label key={field.key} className="text-xs text-gray-400" htmlFor={id}>
+      <label key={field.key} className="text-ink-400 text-xs" htmlFor={id}>
         {label}
         <input
           id={id}
@@ -164,10 +163,10 @@ export function ReticulumInterfaceFieldSet({
           aria-label={label}
           aria-invalid={showError || undefined}
           aria-describedby={showError ? `${id}-error` : undefined}
-          className={`${INPUT_CLASS} ${field.kind === 'number' ? 'w-24' : 'min-w-[8rem]'}`}
+          className={`${INPUT_BOX_CLASS} mt-1 block ${field.kind === 'number' ? 'w-24' : 'min-w-[8rem]'}`}
         />
         {showError ? (
-          <span id={`${id}-error`} role="alert" className="mt-1 block text-[11px] text-red-300">
+          <span id={`${id}-error`} role="alert" className="text-label mt-1 block text-red-300">
             {t(errorKey)}
           </span>
         ) : null}
@@ -179,8 +178,8 @@ export function ReticulumInterfaceFieldSet({
     <>
       {basic.map(renderField)}
       {advanced.length > 0 ? (
-        <details className="w-full text-xs text-gray-400">
-          <summary className="cursor-pointer text-gray-300">
+        <details className="text-ink-400 w-full text-xs">
+          <summary className="text-ink-300 cursor-pointer">
             {t('connectionPanel.reticulumInterfaces.advancedFields')}
           </summary>
           <div className="mt-2 flex flex-wrap items-end gap-2">{advanced.map(renderField)}</div>

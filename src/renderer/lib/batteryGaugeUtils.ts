@@ -24,6 +24,6 @@ export const BATTERY_GAUGE_TIER_FILL_CLASS: Record<BatteryGaugeTier, string> = {
   red: 'bg-red-500',
   orange: 'bg-orange-500',
   yellow: 'bg-yellow-400',
-  blue: 'bg-blue-500',
+  blue: 'bg-indigo-500',
   green: 'bg-green-500',
 };

@@ -191,7 +191,7 @@ describe('RrcChatView IRC layout', () => {
     );
     const el = screen.getByText('@nv0n');
     expect(el.tagName).toBe('SPAN');
-    expect(el.className).toContain('font-bold');
+    expect(el.className).toContain('font-semibold');
     expect(el.className).toContain('text-red-500');
     expect(el.className).not.toMatch(/bg-yellow/);
   });
@@ -216,7 +216,7 @@ describe('RrcChatView IRC layout', () => {
     expect(line.textContent).toMatch(/<Zeva>\s*psst/);
     expect(line.textContent).not.toMatch(/-Zeva-/);
     expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
-    expect(line.className).toContain('text-gray-100');
+    expect(line.className).toContain('text-ink-100');
   });
 
   it('hides empty system/notice rows', () => {
@@ -254,7 +254,7 @@ describe('RrcChatView IRC layout', () => {
     const line = screen.getByTestId('rrc-chat-line');
     expect(line.textContent).toMatch(/<nv0n>\s*hi there/);
     expect(line.textContent).not.toContain('→');
-    expect(line.className).toContain('text-gray-100');
+    expect(line.className).toContain('text-ink-100');
     expect(line.innerHTML).toContain(rrcNickColorClass('nv0n'));
   });
 

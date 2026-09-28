@@ -25,16 +25,16 @@ export function DisplayCanvas({
   const { t } = useTranslation();
 
   return (
-    <div className="space-y-2 rounded border border-gray-700 bg-slate-900/40 p-3">
-      <h4 className="text-sm font-medium text-gray-200">{t('flasher.displayTitle')}</h4>
-      <p className="text-xs text-gray-400">{t('flasher.displayHint')}</p>
+    <div className="border-ink-700 bg-ink-900/40 space-y-2 rounded border p-3">
+      <h4 className="text-ink-200 text-sm font-medium">{t('flasher.displayTitle')}</h4>
+      <p className="text-ink-400 text-xs">{t('flasher.displayHint')}</p>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={disabled}
           aria-label={t('flasher.readDisplay')}
           onClick={onReadDisplay}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.readDisplay')}
         </button>
@@ -47,7 +47,7 @@ export function DisplayCanvas({
             onClick={() => {
               onSetRotation(rotation);
             }}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+            className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           >
             {t(ROTATION_LABEL_KEYS[rotation])}
           </button>
@@ -57,13 +57,13 @@ export function DisplayCanvas({
           disabled={disabled}
           aria-label={t('flasher.reconditionDisplay')}
           onClick={onRecondition}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
         >
           {t('flasher.reconditionDisplay')}
         </button>
       </div>
       {imageDataUrl ? (
-        <img src={imageDataUrl} alt="" className="h-28 rounded border border-gray-700" />
+        <img src={imageDataUrl} alt="" className="border-ink-700 h-28 rounded border" />
       ) : null}
     </div>
   );

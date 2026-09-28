@@ -64,7 +64,7 @@ const defaultState: ConnectionStoreState = {
  * Avoid bare `useConnectionStore()` or `useConnectionStore((s) => s)`; those subscribe to the
  * whole store and re-render whenever any identity's connection record changes.
  *
- * `getState()` / `setState()` outside React (tests, BootSequence, drivers) is fine.
+ * `getState()` / `setState()` outside React (tests, drivers) is fine.
  */
 export const useConnectionStore = create<ConnectionStoreState>()(() => defaultState);
 
@@ -99,6 +99,21 @@ export function removeConnection(id: IdentityId): void {
 
 export function getConnection(id: IdentityId): ConnectionRecord | undefined {
   return useConnectionStore.getState().connections[id];
+}
+
+/** Radio statuses that still hold a link (the Connection panel's "connected" set). */
+const LINK_UP_STATUSES: ReadonlySet<ConnectionStatus> = new Set([
+  'connected',
+  'configured',
+  'stale',
+  'reconnecting',
+]);
+
+/** True while any protocol's radio or MQTT link is up, so quitting also disconnects something. */
+export function selectAnyLinkUp(s: ConnectionStoreState): boolean {
+  return Object.values(s.connections).some(
+    (c) => LINK_UP_STATUSES.has(c.status) || c.mqttStatus === 'connected',
+  );
 }
 
 /** Mirror MQTT IPC status onto every identity bucket the UI may read for a protocol tab. */

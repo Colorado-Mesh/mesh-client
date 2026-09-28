@@ -27,6 +27,8 @@ import { ConfigApplyNotice } from './ConfigApplyNotice';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS, TEXTAREA_BOX_SM_CLASS } from './ui/formClasses';
 
 interface PacketMessage {
   from: number;
@@ -102,7 +104,7 @@ function ConfigSelect({
           onChange(n);
         }}
         disabled={disabled}
-        className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+        className={`${SELECT_BOX_CLASS} w-full`}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -131,7 +133,7 @@ function ConfigToggle({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-300">{label}</span>
+        <span className="text-ink-300 text-sm">{label}</span>
         <button
           type="button"
           role="switch"
@@ -141,12 +143,12 @@ function ConfigToggle({
           }}
           disabled={disabled}
           className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
-            checked ? 'bg-readable-green' : 'bg-gray-600'
+            checked ? 'bg-brand-green' : 'bg-ink-600'
           }`}
         >
           <span
             className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-              checked ? 'translate-x-[18px]' : 'translate-x-[3px]'
+              checked ? 'translate-x-4.5' : 'translate-x-0.75'
             }`}
           />
         </button>
@@ -195,7 +197,7 @@ function ConfigNumber({
           min={min}
           max={max}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green w-28 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-28`}
         />
         {unit && <span className="text-muted text-sm">{unit}</span>}
       </div>
@@ -232,7 +234,7 @@ function ConfigText({
             onChange(e.target.value);
           }}
           disabled={disabled}
-          className="bg-secondary-dark focus:border-brand-green flex-1 rounded-lg border border-gray-600 px-3 py-2 text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} flex-1`}
         />
         {password && (
           <button
@@ -240,7 +242,7 @@ function ConfigText({
             onClick={() => {
               setShow((s) => !s);
             }}
-            className="text-muted px-2 py-2 text-xs hover:text-gray-300"
+            className="text-muted hover:text-ink-300 px-2 py-2 text-xs"
           >
             {show ? t('common.hide') : t('common.show')}
           </button>
@@ -276,14 +278,14 @@ function ModuleSection({
   const { t } = useTranslation();
   const applyDisabled = disabled || applying || !sliceReady || globalApplyLocked;
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
       </summary>
       <div className="space-y-4 px-4 pb-4">
         {showSliceWaiting && !sliceReady && (
-          <p className="text-xs text-yellow-300/90">
+          <p className="text-xs text-orange-300/90">
             {t('radioPanel.waitingForConfigSection', { section: title })}
           </p>
         )}
@@ -292,7 +294,7 @@ function ModuleSection({
           type="button"
           onClick={onApply}
           disabled={applyDisabled}
-          className="bg-readable-green hover:bg-readable-green/90 disabled:text-muted w-full rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors disabled:bg-gray-600"
+          className={buttonClassName('primary', 'md')}
         >
           {applying
             ? t('modulePanel.applyingButton')
@@ -305,8 +307,8 @@ function ModuleSection({
 
 function StatusOnlySection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
       </summary>
@@ -359,8 +361,8 @@ function ModuleStatus({
   const { t } = useTranslation();
   if (!packets || packets.size === 0) {
     return (
-      <div className="rounded bg-gray-800/50 px-3 py-2 text-xs">
-        <span className="text-gray-500">{t('modulePanel.statusNoPackets', { label })}</span>
+      <div className="bg-ink-800/50 rounded px-3 py-2 text-xs">
+        <span className="text-muted">{t('modulePanel.statusNoPackets', { label })}</span>
       </div>
     );
   }
@@ -370,8 +372,8 @@ function ModuleStatus({
   );
   const lastSeen = formatTimeAgo(latest, t);
   return (
-    <div className="rounded bg-gray-800/50 px-3 py-2 text-xs">
-      <span className="text-gray-400">
+    <div className="bg-ink-800/50 rounded px-3 py-2 text-xs">
+      <span className="text-ink-400">
         {t('modulePanel.statusLine', {
           count: packets.size,
           label,
@@ -934,10 +936,10 @@ export default function ModulePanel({
 
   return (
     <div className="w-full space-y-4">
-      <h2 className="text-xl font-semibold text-gray-200">{t('modulePanel.title')}</h2>
+      <h2 className="text-ink-200 text-xl font-semibold">{t('modulePanel.title')}</h2>
 
       {!isConnected && (
-        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
+        <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
           {t('modulePanel.connectToDevice')}
         </div>
       )}
@@ -953,7 +955,7 @@ export default function ModulePanel({
       <ConfigApplyNotice />
 
       {Object.keys(moduleConfigs).length === 0 && isConnected && (
-        <div className="bg-deep-black/50 text-muted rounded-lg border border-gray-700 px-4 py-3 text-sm">
+        <div className="bg-deep-black/50 text-muted border-ink-700 rounded-lg border px-4 py-3 text-sm">
           {t('modulePanel.waitingForModuleConfig')}
         </div>
       )}
@@ -1712,7 +1714,7 @@ export default function ModulePanel({
             rows={6}
             placeholder={t('modulePanel.fields.cannedMessagesPlaceholder')}
             spellCheck={false}
-            className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
+            className={`${TEXTAREA_BOX_SM_CLASS} w-full resize-y font-mono`}
           />
           <p className="text-muted text-xs">{t('modulePanel.fields.cannedMessagesHint')}</p>
         </div>
@@ -1803,9 +1805,9 @@ export default function ModulePanel({
                 handleAmbientColorChange(e.target.value);
               }}
               disabled={disabled || !ambientLedState}
-              className="bg-secondary-dark h-9 w-16 cursor-pointer rounded border border-gray-600 p-0.5 disabled:opacity-50"
+              className="bg-secondary-dark border-ink-600 h-9 w-16 cursor-pointer rounded border p-0.5 disabled:opacity-50"
             />
-            <span className="font-mono text-sm text-gray-400">{ambientHex.toUpperCase()}</span>
+            <span className="text-ink-400 font-mono text-sm">{ambientHex.toUpperCase()}</span>
             <span className="text-muted text-xs">
               {t('modulePanel.ambientColors.rgbComponents', {
                 red: ambientRed,
@@ -1829,7 +1831,7 @@ export default function ModulePanel({
               setAmbientCurrent(Number(e.target.value));
             }}
             disabled={disabled || !ambientLedState}
-            className="accent-readable-green w-full disabled:opacity-50"
+            className="accent-brand-green w-full disabled:opacity-50"
           />
           <p className="text-muted text-xs">{t('modulePanel.fields.brightnessHint')}</p>
         </div>
@@ -2231,7 +2233,7 @@ export default function ModulePanel({
             <select
               id="module-rtttl-preset"
               disabled={disabled}
-              className="bg-secondary-dark focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${SELECT_BOX_CLASS} w-full`}
               value=""
               onChange={(e) => {
                 if (e.target.value) setRingtoneText(e.target.value);
@@ -2259,7 +2261,7 @@ export default function ModulePanel({
               rows={4}
               placeholder={t('modulePanel.fields.rtttlPlaceholder')}
               spellCheck={false}
-              className="bg-secondary-dark focus:border-brand-green w-full resize-y rounded-lg border border-gray-600 px-3 py-2 font-mono text-xs text-gray-200 focus:outline-none disabled:opacity-50"
+              className={`${TEXTAREA_BOX_SM_CLASS} w-full resize-y font-mono`}
             />
             <div className="text-muted flex justify-between text-xs">
               <span>

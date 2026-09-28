@@ -69,15 +69,15 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="text-sm text-gray-100">{statusText}</div>
+      <div className="text-ink-100 text-sm">{statusText}</div>
       {myMarker && (
-        <div className="text-xs text-gray-400">
+        <div className="text-ink-400 text-xs">
           {t('gamesPanel.fourInARow.yourMarker', { marker: myMarker })}
           {moveCount > 0 ? ` · ${t('gamesPanel.fourInARow.moveCount', { count: moveCount })}` : ''}
         </div>
       )}
       <div
-        className="flex gap-1 rounded bg-slate-900/60 p-1"
+        className="bg-ink-900/60 flex gap-1 rounded p-1"
         role="group"
         aria-label={t('gamesPanel.fourInARow.boardAria')}
       >
@@ -99,7 +99,7 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
             <button
               key={column}
               type="button"
-              className="flex flex-col gap-1 rounded p-1 enabled:hover:bg-slate-700/70 disabled:cursor-default"
+              className="enabled:hover:bg-ink-700/70 flex flex-col gap-1 rounded p-1 disabled:cursor-default"
               aria-label={
                 columnFull
                   ? t('gamesPanel.fourInARow.columnFullAria', { column: column + 1, contents })
@@ -115,13 +115,13 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
                 const marker = cells[index] ?? EMPTY_CELL;
                 const isEmpty = marker === EMPTY_CELL;
                 const fill = isEmpty
-                  ? 'bg-slate-800 text-transparent'
-                  : (MARKER_CLASS[marker] ?? 'bg-gray-500 text-white');
+                  ? 'bg-ink-800 text-transparent'
+                  : (MARKER_CLASS[marker] ?? 'bg-ink-500 text-white');
                 return (
                   <span
                     key={row}
                     aria-hidden="true"
-                    className={`flex h-9 w-9 items-center justify-center rounded-full border border-slate-600 text-sm font-bold ${fill} ${
+                    className={`border-ink-600 flex h-9 w-9 items-center justify-center rounded-full border text-sm font-semibold ${fill} ${
                       winSet.has(index) ? 'ring-2 ring-yellow-300' : ''
                     }`}
                   >
@@ -134,10 +134,10 @@ export function FourInARowBoard({ session, onMove, disabled = false }: FourInARo
         })}
       </div>
       {drawOfferedByOpponent && isActive && (
-        <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferedBanner')}</div>
+        <div className="text-xs text-orange-300">{t('gamesPanel.drawOfferedBanner')}</div>
       )}
       {drawOfferedBySelf && isActive && (
-        <div className="text-xs text-amber-300">{t('gamesPanel.drawOfferWaitingBanner')}</div>
+        <div className="text-xs text-orange-300">{t('gamesPanel.drawOfferWaitingBanner')}</div>
       )}
     </div>
   );

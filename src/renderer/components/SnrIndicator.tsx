@@ -1,5 +1,5 @@
 const BAR_HEIGHTS = [3, 6, 9];
-const UNFILLED_COLOR = '#374151';
+const UNFILLED_COLOR = '#364156';
 
 function snrLevel(snr: number): { level: number; color: string; textClass: string } {
   if (snr >= 5) return { level: 3, color: '#4ade80', textClass: 'text-green-400' };

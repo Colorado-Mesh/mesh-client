@@ -61,6 +61,17 @@ import {
   THEME_TOKEN_META,
   type ThemeColorKey,
 } from '../lib/themeColors';
+import {
+  accentThemeColors,
+  applyThemeSurface,
+  DEFAULT_THEME_SURFACE_ID,
+  loadThemeSurfaceId,
+  persistThemeSurfaceId,
+  surfaceThemeColors,
+  type ThemeAccent,
+  type ThemeSurface,
+  type ThemeSurfaceId,
+} from '../lib/themePresets';
 import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
@@ -71,7 +82,10 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import NotificationSoundSettings from './NotificationSoundSettings';
+import { ThemePicker } from './ThemePicker';
 import { useToast } from './Toast';
+import { buttonClassName, DANGER_ROW_CLASS } from './ui/Button';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 /** Sentinel for "clear all channels" so MeshCore DM (`channel_idx === -1`) does not collide with "All". */
 const CLEAR_ALL_CHANNELS_VALUE = -999_999;
@@ -304,6 +318,7 @@ export default function AppPanel({
   // ─── Node retention settings ────────────────────────────────
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [themeColors, setThemeColors] = useState<Record<ThemeColorKey, string>>(loadThemeColors);
+  const [themeSurfaceId, setThemeSurfaceId] = useState<ThemeSurfaceId>(loadThemeSurfaceId);
   const [hasSavedThemeSnapshot, setHasSavedThemeSnapshot] = useState<boolean>(hasThemeSnapshot);
   const [messageActionsBarBgVisible, setMessageActionsBarBgVisibleState] = useState<boolean>(
     isMessageActionsBarBgVisible(),
@@ -323,18 +338,51 @@ export default function AppPanel({
     setFontScale(DEFAULT_FONT_SCALE);
   }, []);
 
-  const commitThemeColor = useCallback((key: ThemeColorKey, hex: string) => {
-    setThemeColors((prev) => {
-      if (prev[key] === hex) return prev;
-      const next = { ...prev, [key]: hex };
+  const commitThemeColor = useCallback(
+    (key: ThemeColorKey, hex: string) => {
+      if (themeColors[key] === hex) return;
+      const next = { ...themeColors, [key]: hex };
       // Prefer the clamped map applyThemeColors returns so readableGreen stays
       // contrast-safe in React state and localStorage (not only on :root).
       const applied = applyThemeColors(next);
-      if (!applied) return prev;
+      if (!applied) return;
       persistThemeColors(applied);
-      return applied;
-    });
+      setThemeColors(applied);
+      // The contrast guards in themeColors.ts put the default back instead of applying an
+      // unreadable accent or fill. Say so rather than let the pick silently snap back.
+      if (applied.brandGreen !== next.brandGreen.toLowerCase()) {
+        addToast(t('appPanel.themeAccentKept'), 'warning');
+      } else if (applied.readableGreen !== next.readableGreen.toLowerCase()) {
+        addToast(t('appPanel.themeFillKept'), 'warning');
+      }
+    },
+    [addToast, t, themeColors],
+  );
+
+  const applyThemePalette = useCallback((next: Record<ThemeColorKey, string>) => {
+    const applied = applyThemeColors(next);
+    if (!applied) return;
+    persistThemeColors(applied);
+    setThemeColors(applied);
   }, []);
+
+  // A surface replaces the neutral tokens and keeps the accent; an accent does the reverse.
+  const handleThemeSurfaceSelect = useCallback(
+    (surface: ThemeSurface) => {
+      persistThemeSurfaceId(surface.id);
+      applyThemeSurface(surface.id);
+      setThemeSurfaceId(surface.id);
+      applyThemePalette({ ...themeColors, ...surfaceThemeColors(surface) });
+    },
+    [applyThemePalette, themeColors],
+  );
+
+  const handleThemeAccentSelect = useCallback(
+    (accent: ThemeAccent) => {
+      applyThemePalette({ ...themeColors, ...accentThemeColors(accent) });
+    },
+    [applyThemePalette, themeColors],
+  );
 
   const handleSaveThemeSnapshot = useCallback(() => {
     try {
@@ -351,6 +399,7 @@ export default function AppPanel({
     try {
       const restored = restoreThemeSnapshot();
       setThemeColors(restored);
+      setThemeSurfaceId(loadThemeSurfaceId());
       setMessageActionsBarBgVisibleState(isMessageActionsBarBgVisible());
       addToast(t('appPanel.themeRestored'), 'success');
     } catch (err) {
@@ -365,6 +414,7 @@ export default function AppPanel({
       // reset internally — just sync the React state mirrors here.
       resetThemeColors();
       setThemeColors({ ...DEFAULT_THEME_COLORS });
+      setThemeSurfaceId(DEFAULT_THEME_SURFACE_ID);
       setMessageActionsBarBgVisibleState(false);
       addToast(t('appPanel.colorsReset'), 'success');
     } catch (err) {
@@ -736,13 +786,13 @@ export default function AppPanel({
 
   return (
     <div className="w-full space-y-6">
-      <h2 className="text-xl font-semibold text-gray-200">{t('appPanel.title')}</h2>
+      <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
 
       {/* Log panel visibility */}
       {onLogPanelVisibleChange && (
         <div className="space-y-2">
           <h3 className="text-muted text-sm font-medium">{t('appPanel.logPanelSection')}</h3>
-          <div className="bg-secondary-dark rounded-lg p-4">
+          <div className="bg-deep-black border-ink-800 rounded-xl border p-4">
             <div className="flex items-center gap-2">
               <input
                 id="log-panel-visible-checkbox"
@@ -752,11 +802,11 @@ export default function AppPanel({
                   onLogPanelVisibleChange(e.target.checked);
                 }}
                 aria-label={t('appPanel.showLogPanel')}
-                className="rounded border-gray-600"
+                className="border-ink-600 rounded"
               />
               <label
                 htmlFor="log-panel-visible-checkbox"
-                className="cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 cursor-pointer text-sm"
               >
                 {t('appPanel.showLogPanel')}
               </label>
@@ -770,8 +820,8 @@ export default function AppPanel({
       {protocol === 'meshcore' && (
         <div className="space-y-2">
           <h3 className="text-muted text-sm font-medium">{t('appPanel.floodAdvertSection')}</h3>
-          <div className="bg-secondary-dark space-y-2 rounded-lg p-4">
-            <label htmlFor="flood-advert-interval" className="text-sm text-gray-300">
+          <div className="bg-deep-black border-ink-800 space-y-2 rounded-xl border p-4">
+            <label htmlFor="flood-advert-interval" className="text-ink-300 text-sm">
               {t('appPanel.floodAdvertScheduleLabel')}
             </label>
             <select
@@ -782,14 +832,14 @@ export default function AppPanel({
                 setSettings((prev) => ({ ...prev, autoFloodAdvertIntervalHours: hours }));
                 onAutoFloodAdvertIntervalChange?.(hours);
               }}
-              className="bg-deep-black focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              className={`${SELECT_BOX_CLASS} w-full`}
             >
               <option value={0}>{t('common.disabled')}</option>
               <option value={12}>{t('appPanel.floodAdvertEvery12h')}</option>
               <option value={24}>{t('appPanel.floodAdvertEvery24h')}</option>
             </select>
             <p className="text-muted text-xs">{t('appPanel.floodAdvertHelp')}</p>
-            <label htmlFor="flood-advert-type" className="text-sm text-gray-300">
+            <label htmlFor="flood-advert-type" className="text-ink-300 text-sm">
               {t('appPanel.floodAdvertTypeLabel')}
             </label>
             <select
@@ -800,7 +850,7 @@ export default function AppPanel({
                 setSettings((prev) => ({ ...prev, autoFloodAdvertType: type }));
                 onAutoFloodAdvertTypeChange?.(type);
               }}
-              className="bg-deep-black focus:border-brand-green w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none"
+              className={`${SELECT_BOX_CLASS} w-full`}
             >
               <option value="flood">{t('appPanel.floodAdvertTypeFlood')}</option>
               <option value="zeroHop">{t('appPanel.floodAdvertTypeZeroHop')}</option>
@@ -812,7 +862,7 @@ export default function AppPanel({
       {/* GPS / Location */}
       <div className="space-y-3">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.gpsSection')}</h3>
-        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+        <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -828,7 +878,7 @@ export default function AppPanel({
               aria-label={t('appPanel.shareMyLocation')}
               className="accent-brand-green"
             />
-            <label htmlFor="shareMyLocation" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="shareMyLocation" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.shareMyLocation')}
             </label>
             <HelpTooltip text={t('appPanel.shareMyLocationHint')} />
@@ -858,10 +908,10 @@ export default function AppPanel({
           {!ourPosition && <p className="text-muted text-xs">{t('appPanel.noGpsPositionYet')}</p>}
 
           {/* Static position override */}
-          <div className="space-y-2 border-t border-gray-700 pt-1">
+          <div className="border-ink-700 space-y-2 border-t pt-1">
             <p className="text-muted text-xs leading-relaxed">{t('appPanel.staticPositionDesc')}</p>
             <div className="flex items-center gap-2">
-              <label htmlFor="apppanel-static-lat" className="w-8 text-sm text-gray-300">
+              <label htmlFor="apppanel-static-lat" className="text-ink-300 w-8 text-sm">
                 {t('appPanel.latLabel')}
               </label>
               <input
@@ -876,9 +926,9 @@ export default function AppPanel({
                 }}
                 placeholder={t('appPanel.latPlaceholderExample')}
                 aria-label={`${t('appPanel.latLabel')} ${staticLatInput || t('appPanel.latPlaceholderExample')}`}
-                className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+                className={`${INPUT_BOX_CLASS} flex-1`}
               />
-              <label htmlFor="apppanel-static-lon" className="w-8 text-sm text-gray-300">
+              <label htmlFor="apppanel-static-lon" className="text-ink-300 w-8 text-sm">
                 {t('appPanel.lonLabel')}
               </label>
               <input
@@ -893,7 +943,7 @@ export default function AppPanel({
                 }}
                 placeholder={t('appPanel.lonPlaceholderExample')}
                 aria-label={`${t('appPanel.lonLabel')} ${staticLonInput || t('appPanel.lonPlaceholderExample')}`}
-                className="bg-deep-black focus:border-brand-green flex-1 rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+                className={`${INPUT_BOX_CLASS} flex-1`}
               />
             </div>
             <div className="flex gap-2">
@@ -901,7 +951,7 @@ export default function AppPanel({
                 type="button"
                 onClick={saveStaticPosition}
                 aria-label={t('appPanel.saveStaticPosition')}
-                className="bg-brand-green/20 text-brand-green hover:bg-brand-green/30 border-brand-green/40 flex-1 rounded border px-3 py-1.5 text-sm font-medium transition-colors"
+                className={buttonClassName('secondary', 'md')}
               >
                 {t('appPanel.saveStaticPosition')}
               </button>
@@ -910,7 +960,7 @@ export default function AppPanel({
                   type="button"
                   onClick={clearStaticPosition}
                   aria-label={t('common.clear')}
-                  className="bg-secondary-dark rounded px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:bg-gray-600"
+                  className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded px-3 py-1.5 text-sm font-medium transition-colors"
                 >
                   {t('common.clear')}
                 </button>
@@ -919,7 +969,7 @@ export default function AppPanel({
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="apppanel-gps-interval" className="flex-1 text-sm text-gray-300">
+            <label htmlFor="apppanel-gps-interval" className="text-ink-300 flex-1 text-sm">
               {t('appPanel.autoRefreshInterval')}
             </label>
             <select
@@ -930,7 +980,7 @@ export default function AppPanel({
               }}
               disabled={hasStaticPosition || !settings.shareMyLocation}
               aria-label={`${t('appPanel.autoRefreshInterval')} ${gpsIntervalLabel(t, gpsRefreshInterval)}`}
-              className={`bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none ${hasStaticPosition || !settings.shareMyLocation ? 'cursor-not-allowed opacity-40' : ''}`}
+              className={`${SELECT_BOX_CLASS} ${hasStaticPosition || !settings.shareMyLocation ? 'cursor-not-allowed opacity-40' : ''}`}
             >
               <option value={0}>{t('appPanel.gpsIntervalManual')}</option>
               <option value={900}>{t('appPanel.gpsInterval15min')}</option>
@@ -943,7 +993,7 @@ export default function AppPanel({
             <p className="text-muted text-xs">{t('appPanel.autoRefreshDisabledStatic')}</p>
           )}
           <div className="flex items-center gap-2">
-            <label htmlFor="apppanel-coord-format" className="flex-1 text-sm text-gray-300">
+            <label htmlFor="apppanel-coord-format" className="text-ink-300 flex-1 text-sm">
               {t('appPanel.coordinateFormat')}
             </label>
             <select
@@ -955,7 +1005,7 @@ export default function AppPanel({
                 useCoordFormatStore.getState().setCoordinateFormat(fmt);
               }}
               aria-label={`${t('appPanel.coordinateFormat')} ${settings.coordinateFormat === 'mgrs' ? t('appPanel.coordFormatMgrs') : t('appPanel.coordFormatDecimal')}`}
-              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+              className={SELECT_BOX_CLASS}
             >
               <option value="decimal">{t('appPanel.coordFormatDecimal')}</option>
               <option value="mgrs">{t('appPanel.coordFormatMgrs')}</option>
@@ -967,7 +1017,7 @@ export default function AppPanel({
             disabled={gpsLoading || !settings.shareMyLocation}
             title={!settings.shareMyLocation ? t('appPanel.shareMyLocationOffInfo') : undefined}
             aria-label={gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
-            className={`bg-secondary-dark rounded-lg px-4 py-2 text-sm font-medium text-gray-300 transition-colors ${gpsLoading || !settings.shareMyLocation ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-600'}`}
+            className={`bg-secondary-dark text-ink-300 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${gpsLoading || !settings.shareMyLocation ? 'cursor-not-allowed opacity-50' : 'hover:bg-ink-600'}`}
           >
             {gpsLoading ? t('appPanel.gpsRefreshing') : t('appPanel.gpsRefreshNow')}
           </button>
@@ -977,7 +1027,7 @@ export default function AppPanel({
       {/* Map & Node Filtering */}
       <div className="space-y-3">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.mapFilterSection')}</h3>
-        <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+        <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
           <p className="text-muted text-xs leading-relaxed">{t('appPanel.mapFilterDesc')}</p>
           <div className="flex items-center gap-2">
             <input
@@ -990,12 +1040,12 @@ export default function AppPanel({
               aria-label={t('appPanel.filterDistantNodes')}
               className="accent-brand-green"
             />
-            <label htmlFor="distanceFilter" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="distanceFilter" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.filterDistantNodesCheckbox')}
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="apppanel-max-distance" className="text-sm text-gray-300">
+            <label htmlFor="apppanel-max-distance" className="text-ink-300 text-sm">
               {t('appPanel.maxDistanceLabel')}
             </label>
             <input
@@ -1008,9 +1058,9 @@ export default function AppPanel({
               }}
               disabled={!settings.distanceFilterEnabled}
               aria-label={t('appPanel.maxDistanceAria', { value: settings.distanceFilterMax })}
-              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              className={`${INPUT_BOX_CLASS} w-24 text-right`}
             />
-            <label htmlFor="apppanel-distance-unit" className="text-sm text-gray-300">
+            <label htmlFor="apppanel-distance-unit" className="text-ink-300 text-sm">
               {t('appPanel.unitLabel')}
             </label>
             <select
@@ -1026,7 +1076,7 @@ export default function AppPanel({
                     ? t('appPanel.distanceUnitKm')
                     : t('appPanel.distanceUnitMiles'),
               })}
-              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              className={SELECT_BOX_CLASS}
             >
               <option value="miles">{t('appPanel.distanceUnitMiles')}</option>
               <option value="km">{t('appPanel.distanceUnitKm')}</option>
@@ -1040,7 +1090,7 @@ export default function AppPanel({
                 homeNodeFromStore.longitude != null &&
                 homeNodeFromStore.longitude !== 0;
               return !homeHasLocation ? (
-                <p className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-1.5 text-xs text-yellow-300">
+                <p className="rounded border border-orange-700 bg-orange-900/30 px-2 py-1.5 text-xs text-orange-300">
                   {t('appPanel.noGpsFix')}
                 </p>
               ) : null;
@@ -1057,7 +1107,7 @@ export default function AppPanel({
               aria-label={t('appPanel.hideMqttOnlyNodes')}
               className="accent-brand-green"
             />
-            <label htmlFor="filterMqttOnly" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="filterMqttOnly" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.hideMqttOnlyNodes')}
             </label>
           </div>
@@ -1072,12 +1122,12 @@ export default function AppPanel({
               aria-label={t('appPanel.showMovementPaths')}
               className="accent-brand-green"
             />
-            <label htmlFor="showMovementPaths" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="showMovementPaths" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.showMovementPaths')}
             </label>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor="apppanel-history-window" className="shrink-0 text-sm text-gray-400">
+            <label htmlFor="apppanel-history-window" className="text-ink-400 shrink-0 text-sm">
               {t('appPanel.positionHistoryWindowLabel')}
             </label>
             <select
@@ -1087,7 +1137,7 @@ export default function AppPanel({
                 setHistoryWindow(Number(e.target.value));
               }}
               aria-label={`${t('appPanel.positionHistoryWindowLabel')} ${historyWindowOptionLabels[historyWindowHours] ?? historyWindowHours}`}
-              className="bg-deep-black focus:border-brand-green rounded border border-gray-600 px-2 py-1 text-sm text-gray-200 focus:outline-none"
+              className={SELECT_BOX_CLASS}
             >
               <option value={1}>{t('appPanel.historyWindow1h')}</option>
               <option value={4}>{t('appPanel.historyWindow4h')}</option>
@@ -1105,7 +1155,7 @@ export default function AppPanel({
 
         {/* Meshtastic node retention */}
         {protocol === 'meshtastic' && (
-          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+          <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
             {/* Auto-prune nodes on startup */}
             <div className="flex items-center gap-2">
               <input
@@ -1121,7 +1171,7 @@ export default function AppPanel({
               <label
                 id="apppanel-auto-prune-label"
                 htmlFor="autoPrune"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.autoPruneNodesOlderThan')}
               </label>
@@ -1138,9 +1188,9 @@ export default function AppPanel({
                 aria-label={t('appPanel.autoPruneNodesOlderThanAria', {
                   days: settings.autoPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.days')}</span>
+              <span className="text-ink-300 text-sm">{t('common.days')}</span>
             </div>
 
             {/* Prune unnamed nodes on startup */}
@@ -1158,7 +1208,7 @@ export default function AppPanel({
                 />
                 <label
                   htmlFor="pruneEmptyNames"
-                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
                   {t('appPanel.removeUnnamedNodesLabel')}
                 </label>
@@ -1181,7 +1231,7 @@ export default function AppPanel({
               <label
                 id="apppanel-node-cap-label"
                 htmlFor="nodeCap"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.capTotalNodesLabel')}
               </label>
@@ -1196,9 +1246,9 @@ export default function AppPanel({
                 disabled={!settings.nodeCapEnabled}
                 aria-labelledby="apppanel-node-cap-label"
                 aria-label={t('appPanel.capTotalNodesCountAria', { count: settings.nodeCapCount })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.nodes')}</span>
+              <span className="text-ink-300 text-sm">{t('common.nodes')}</span>
             </div>
 
             {/* Position history prune */}
@@ -1216,7 +1266,7 @@ export default function AppPanel({
               <label
                 id="apppanel-position-history-prune-label"
                 htmlFor="positionHistoryPrune"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.autoPrunePositionHistoryLabel')}
               </label>
@@ -1236,16 +1286,16 @@ export default function AppPanel({
                 aria-label={t('appPanel.autoPrunePositionHistoryDaysAria', {
                   days: settings.positionHistoryPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.days')}</span>
+              <span className="text-ink-300 text-sm">{t('common.days')}</span>
             </div>
           </div>
         )}
 
         {/* MeshCore contact retention */}
         {protocol === 'meshcore' && (
-          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+          <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
             {/* Delete contacts that never advertised */}
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -1261,7 +1311,7 @@ export default function AppPanel({
                 />
                 <label
                   htmlFor="meshcoreDeleteNeverAdvertised"
-                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
                   {t('appPanel.meshcoreRemoveNeverAdvertisedLabel')}
                 </label>
@@ -1286,7 +1336,7 @@ export default function AppPanel({
               <label
                 id="apppanel-meshcore-auto-prune-label"
                 htmlFor="meshcoreAutoPrune"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.autoPruneUnheardContactsLabel')}
               </label>
@@ -1306,9 +1356,9 @@ export default function AppPanel({
                 aria-label={t('appPanel.autoPruneUnheardContactsDaysAria', {
                   days: settings.meshcoreAutoPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.days')}</span>
+              <span className="text-ink-300 text-sm">{t('common.days')}</span>
             </div>
 
             {/* Contact cap */}
@@ -1326,7 +1376,7 @@ export default function AppPanel({
               <label
                 id="apppanel-meshcore-contact-cap-label"
                 htmlFor="meshcoreContactCap"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.capTotalContactsLabel')}
               </label>
@@ -1347,16 +1397,16 @@ export default function AppPanel({
                 aria-label={t('appPanel.capTotalContactsCountAria', {
                   count: settings.meshcoreContactCapCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.contacts')}</span>
+              <span className="text-ink-300 text-sm">{t('common.contacts')}</span>
             </div>
           </div>
         )}
 
         {/* Reticulum destination retention (SQLite contacts/meta + in-memory peer cap) */}
         {protocol === 'reticulum' && (
-          <div className="bg-secondary-dark space-y-4 rounded-lg p-4">
+          <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
             <p className="text-muted text-xs leading-relaxed">
               {t('appPanel.reticulumDestinationRetentionHint')}
             </p>
@@ -1374,7 +1424,7 @@ export default function AppPanel({
               <label
                 id="apppanel-reticulum-auto-prune-label"
                 htmlFor="reticulumAutoPrune"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.reticulumAutoPruneDestinationsLabel')}
               </label>
@@ -1394,9 +1444,9 @@ export default function AppPanel({
                 aria-label={t('appPanel.reticulumAutoPruneDestinationsDaysAria', {
                   days: settings.reticulumAutoPruneDays,
                 })}
-                className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-20 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.days')}</span>
+              <span className="text-ink-300 text-sm">{t('common.days')}</span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -1412,7 +1462,7 @@ export default function AppPanel({
               <label
                 id="apppanel-reticulum-destination-cap-label"
                 htmlFor="reticulumDestinationCap"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.reticulumCapDestinationsLabel')}
               </label>
@@ -1433,9 +1483,9 @@ export default function AppPanel({
                 aria-label={t('appPanel.reticulumCapDestinationsCountAria', {
                   count: settings.reticulumDestinationCapCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
-              <span className="text-sm text-gray-300">
+              <span className="text-ink-300 text-sm">
                 {t('appPanel.reticulumDestinationsUnit', {
                   count: settings.reticulumDestinationCapCount,
                 })}
@@ -1445,7 +1495,7 @@ export default function AppPanel({
         )}
 
         {/* Messages: load limit (localStorage) + DB retention cap — single card (issue #387). */}
-        <div className="bg-secondary-dark space-y-3 rounded-lg p-4">
+        <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
           <p className="text-muted text-xs leading-relaxed">
             {t('appPanel.messagesLoadLimitIntro')}
           </p>
@@ -1463,7 +1513,7 @@ export default function AppPanel({
             <label
               id="apppanel-message-limit-label"
               htmlFor="messageLimit"
-              className="flex-1 cursor-pointer text-sm text-gray-300"
+              className="text-ink-300 flex-1 cursor-pointer text-sm"
             >
               {t('appPanel.limitMessagesLoadedLabel')}
             </label>
@@ -1484,12 +1534,12 @@ export default function AppPanel({
               aria-label={t('appPanel.limitMessagesLoadedCountAria', {
                 count: settings.messageLimitCount,
               })}
-              className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+              className={`${INPUT_BOX_CLASS} w-24 text-right`}
             />
-            <span className="text-sm text-gray-300">{t('common.messages')}</span>
+            <span className="text-ink-300 text-sm">{t('common.messages')}</span>
           </div>
           {protocol === 'meshcore' ? (
-            <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+            <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
               <input
                 type="checkbox"
                 id="messageRetentionMeshcore"
@@ -1503,7 +1553,7 @@ export default function AppPanel({
               <label
                 id="apppanel-message-retention-meshcore-label"
                 htmlFor="messageRetentionMeshcore"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.capStoredMessagesLabel')}
               </label>
@@ -1524,13 +1574,13 @@ export default function AppPanel({
                 aria-label={t('appPanel.capStoredMessagesCountAria', {
                   count: retention.meshcoreCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.messages')}</span>
+              <span className="text-ink-300 text-sm">{t('common.messages')}</span>
             </div>
           ) : protocol === 'reticulum' ? (
             <>
-              <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+              <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
                 <input
                   type="checkbox"
                   id="messageRetentionReticulum"
@@ -1544,7 +1594,7 @@ export default function AppPanel({
                 <label
                   id="apppanel-message-retention-reticulum-label"
                   htmlFor="messageRetentionReticulum"
-                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
                   {t('appPanel.capStoredMessagesLabel')}
                 </label>
@@ -1565,11 +1615,11 @@ export default function AppPanel({
                   aria-label={t('appPanel.capStoredMessagesCountAria', {
                     count: retention.reticulumCount,
                   })}
-                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
                 />
-                <span className="text-sm text-gray-300">{t('common.messages')}</span>
+                <span className="text-ink-300 text-sm">{t('common.messages')}</span>
               </div>
-              <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+              <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
                 <input
                   type="checkbox"
                   id="messageRetentionRrc"
@@ -1583,7 +1633,7 @@ export default function AppPanel({
                 <label
                   id="apppanel-message-retention-rrc-label"
                   htmlFor="messageRetentionRrc"
-                  className="flex-1 cursor-pointer text-sm text-gray-300"
+                  className="text-ink-300 flex-1 cursor-pointer text-sm"
                 >
                   {t('appPanel.capStoredRrcMessagesLabel')}
                 </label>
@@ -1604,13 +1654,13 @@ export default function AppPanel({
                   aria-label={t('appPanel.capStoredRrcMessagesCountAria', {
                     count: retention.rrcCount,
                   })}
-                  className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                  className={`${INPUT_BOX_CLASS} w-24 text-right`}
                 />
-                <span className="text-sm text-gray-300">{t('common.messages')}</span>
+                <span className="text-ink-300 text-sm">{t('common.messages')}</span>
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+            <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
               <input
                 type="checkbox"
                 id="messageRetentionMeshtastic"
@@ -1624,7 +1674,7 @@ export default function AppPanel({
               <label
                 id="apppanel-message-retention-meshtastic-label"
                 htmlFor="messageRetentionMeshtastic"
-                className="flex-1 cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 flex-1 cursor-pointer text-sm"
               >
                 {t('appPanel.capStoredMessagesLabel')}
               </label>
@@ -1645,12 +1695,12 @@ export default function AppPanel({
                 aria-label={t('appPanel.capStoredMessagesCountAria', {
                   count: retention.meshtasticCount,
                 })}
-                className="bg-deep-black focus:border-brand-green w-24 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none disabled:opacity-40"
+                className={`${INPUT_BOX_CLASS} w-24 text-right`}
               />
-              <span className="text-sm text-gray-300">{t('common.messages')}</span>
+              <span className="text-ink-300 text-sm">{t('common.messages')}</span>
             </div>
           )}
-          <div className="flex items-center gap-2 border-t border-gray-700 pt-2">
+          <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
             <input
               type="checkbox"
               id="chatCompactMode"
@@ -1661,7 +1711,7 @@ export default function AppPanel({
               aria-label={t('appPanel.compactMessages')}
               className="accent-brand-green"
             />
-            <label htmlFor="chatCompactMode" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="chatCompactMode" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.compactMessages')}
             </label>
           </div>
@@ -1678,7 +1728,7 @@ export default function AppPanel({
             />
             <label
               htmlFor="alwaysShowMessageActions"
-              className="cursor-pointer text-sm text-gray-300"
+              className="text-ink-300 cursor-pointer text-sm"
             >
               {t('appPanel.alwaysShowMessageActions')}
             </label>
@@ -1708,7 +1758,7 @@ export default function AppPanel({
                 />
                 <label
                   htmlFor="storeForwardAutoFetchHistory"
-                  className="cursor-pointer text-sm text-gray-300"
+                  className="text-ink-300 cursor-pointer text-sm"
                 >
                   {t('appPanel.storeForwardAutoFetchHistory')}
                 </label>
@@ -1716,7 +1766,7 @@ export default function AppPanel({
               </div>
               {settings.storeForwardAutoFetchHistory && (
                 <div className="flex flex-wrap items-center gap-2 pl-6">
-                  <label htmlFor="storeForwardHistoryProfile" className="text-sm text-gray-300">
+                  <label htmlFor="storeForwardHistoryProfile" className="text-ink-300 text-sm">
                     {t('appPanel.storeForwardHistoryProfileLabel')}
                   </label>
                   <select
@@ -1735,7 +1785,7 @@ export default function AppPanel({
                         });
                     }}
                     aria-label={t('appPanel.storeForwardHistoryProfileAria')}
-                    className="bg-secondary-dark rounded border border-slate-600 px-2 py-1 text-sm text-gray-200"
+                    className={SELECT_BOX_CLASS}
                   >
                     <option value="conservative">
                       {t('appPanel.storeForwardHistoryProfileConservative')}
@@ -1760,7 +1810,7 @@ export default function AppPanel({
                 />
                 <label
                   htmlFor="shareLocationSendWaypoint"
-                  className="cursor-pointer text-sm text-gray-300"
+                  className="text-ink-300 cursor-pointer text-sm"
                 >
                   {t('appPanel.shareLocationSendWaypoint')}
                 </label>
@@ -1782,7 +1832,7 @@ export default function AppPanel({
               aria-label={t('appPanel.exportForGitHub')}
               disabled={supportBundleExporting !== null}
               onClick={() => void handleExportSupportBundle('github')}
-              className="bg-readable-green hover:bg-readable-green/90 w-full rounded-lg px-4 py-3 text-sm font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              className={buttonClassName('primary', 'md')}
             >
               {supportBundleExporting === 'github'
                 ? t('common.loading')
@@ -1796,13 +1846,13 @@ export default function AppPanel({
               aria-label={t('appPanel.exportForDeveloper')}
               disabled={supportBundleExporting !== null}
               onClick={() => void handleExportSupportBundle('developer')}
-              className="bg-secondary-dark w-full rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="bg-secondary-dark text-ink-300 hover:bg-ink-600 w-full rounded-lg px-4 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               {supportBundleExporting === 'developer'
                 ? t('common.loading')
                 : t('appPanel.exportForDeveloperButton')}
             </button>
-            <p className="text-xs text-amber-300">{t('appPanel.exportForDeveloperWarning')}</p>
+            <p className="text-xs text-orange-300">{t('appPanel.exportForDeveloperWarning')}</p>
           </div>
         </div>
       </div>
@@ -1832,7 +1882,7 @@ export default function AppPanel({
                 );
               }
             }}
-            className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
           >
             {t('appPanel.exportDatabaseButton')}
           </button>
@@ -1853,7 +1903,7 @@ export default function AppPanel({
                 addToast(t('appPanel.debugSnapshotFailed'), 'error');
               }
             }}
-            className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
           >
             {t('appPanel.copyDebugSnapshotButton')}
           </button>
@@ -1891,7 +1941,7 @@ export default function AppPanel({
                 );
               }
             }}
-            className="bg-secondary-dark rounded-lg px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600"
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded-lg px-4 py-3 text-sm font-medium transition-colors"
           >
             {t('appPanel.importMergeButton')}
           </button>
@@ -1901,7 +1951,7 @@ export default function AppPanel({
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
       <div className="space-y-2">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.appearanceSection')}</h3>
-        <div className="bg-secondary-dark flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-3">
+        <div className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3">
           <input
             type="checkbox"
             id="reduceMotion"
@@ -1912,12 +1962,12 @@ export default function AppPanel({
             aria-label={t('appPanel.reduceMotion')}
             className="accent-brand-green"
           />
-          <label htmlFor="reduceMotion" className="cursor-pointer text-sm text-gray-300">
+          <label htmlFor="reduceMotion" className="text-ink-300 cursor-pointer text-sm">
             {t('appPanel.reduceMotion')}
           </label>
           <HelpTooltip text={t('appPanel.reduceMotionDesc')} />
         </div>
-        <div className="bg-secondary-dark flex items-center gap-2 rounded-lg border border-gray-700 px-4 py-3">
+        <div className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3">
           <input
             type="checkbox"
             id="use24HourTime"
@@ -1929,14 +1979,14 @@ export default function AppPanel({
             aria-label={t('appPanel.use24HourTime')}
             className="accent-brand-green"
           />
-          <label htmlFor="use24HourTime" className="cursor-pointer text-sm text-gray-300">
+          <label htmlFor="use24HourTime" className="text-ink-300 cursor-pointer text-sm">
             {t('appPanel.use24HourTime')}
           </label>
           <HelpTooltip text={t('appPanel.use24HourTimeDesc')} />
         </div>
-        <div className="bg-secondary-dark flex flex-col gap-2 rounded-lg border border-gray-700 px-4 py-3">
+        <div className="bg-deep-black border-ink-800 flex flex-col gap-2 rounded-xl border px-4 py-3">
           <div className="flex items-center gap-2">
-            <label htmlFor="fontScale" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="fontScale" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.fontSize')}
             </label>
             <HelpTooltip text={t('appPanel.fontSizeDesc')} />
@@ -1952,7 +2002,7 @@ export default function AppPanel({
                 updateFontScale(fontScale - FONT_SCALE_STEP);
               }}
               disabled={fontScale <= FONT_SCALE_MIN}
-              className="rounded border border-gray-600 px-2 py-1 text-sm text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-40"
+              className="border-ink-600 text-ink-300 hover:bg-ink-600 rounded border px-2 py-1 text-sm transition-colors disabled:opacity-40"
             >
               −
             </button>
@@ -1976,7 +2026,7 @@ export default function AppPanel({
                 updateFontScale(fontScale + FONT_SCALE_STEP);
               }}
               disabled={fontScale >= FONT_SCALE_MAX}
-              className="rounded border border-gray-600 px-2 py-1 text-sm text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-40"
+              className="border-ink-600 text-ink-300 hover:bg-ink-600 rounded border px-2 py-1 text-sm transition-colors disabled:opacity-40"
             >
               +
             </button>
@@ -1984,18 +2034,24 @@ export default function AppPanel({
               type="button"
               aria-label={t('appPanel.resetFontSizeAria')}
               onClick={handleResetFontScale}
-              className="text-muted text-xs underline transition-colors hover:text-gray-300"
+              className="text-muted hover:text-ink-300 text-xs underline transition-colors"
             >
               {t('appPanel.resetFontSize')}
             </button>
           </div>
         </div>
-        <details className="group bg-secondary-dark rounded-lg border border-gray-700">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium text-gray-200 hover:bg-gray-800/40 [&::-webkit-details-marker]:hidden">
+        <ThemePicker
+          colors={themeColors}
+          surfaceId={themeSurfaceId}
+          onSurfaceSelect={handleThemeSurfaceSelect}
+          onAccentSelect={handleThemeAccentSelect}
+        />
+        <details className="group bg-deep-black border-secondary-dark rounded-lg border">
+          <summary className="text-ink-200 hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
             <span>{t('appPanel.colorScheme')}</span>
             <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
           </summary>
-          <div className="space-y-3 border-t border-gray-700 px-4 pt-1 pb-4">
+          <div className="border-ink-700 space-y-3 border-t px-4 pt-1 pb-4">
             <p className="text-muted text-xs">{t('appPanel.themeColorsApplyHint')}</p>
             {THEME_TOKEN_META.map((meta) => {
               const hex = themeColors[meta.key];
@@ -2006,10 +2062,10 @@ export default function AppPanel({
               return (
                 <div
                   key={meta.key}
-                  className="flex flex-wrap items-center gap-2 border-b border-gray-600/80 pb-2 last:border-0 last:pb-0"
+                  className="border-ink-600/80 flex flex-wrap items-center gap-2 border-b pb-2 last:border-0 last:pb-0"
                 >
                   <span
-                    className="h-6 w-6 shrink-0 rounded border border-gray-600"
+                    className="border-ink-600 h-6 w-6 shrink-0 rounded border"
                     style={{ backgroundColor: hex, opacity: swatchOpacity }}
                     title={hex}
                     aria-hidden="true"
@@ -2018,8 +2074,8 @@ export default function AppPanel({
                     id={`theme-color-heading-${meta.key}`}
                     className="max-w-[9rem] min-w-[6.5rem] shrink-0"
                   >
-                    <div className="text-sm font-medium text-gray-200">{t(meta.labelKey)}</div>
-                    <div className="text-muted mt-0.5 text-[10px] leading-tight">
+                    <div className="text-ink-200 text-sm font-medium">{t(meta.labelKey)}</div>
+                    <div className="text-muted text-2xs mt-0.5 leading-tight">
                       {t(meta.descriptionKey)}
                     </div>
                   </div>
@@ -2043,8 +2099,8 @@ export default function AppPanel({
                           }}
                           className={`focus:ring-brand-green/50 h-6 w-6 shrink-0 rounded border transition-transform hover:scale-110 focus:ring-2 focus:outline-none ${
                             selected
-                              ? 'ring-brand-green ring-offset-secondary-dark ring-2 ring-offset-1'
-                              : 'border-gray-600'
+                              ? 'ring-brand-green ring-offset-deep-black ring-2 ring-offset-1'
+                              : 'border-ink-600'
                           }`}
                           style={{ backgroundColor: p.hex }}
                         />
@@ -2063,7 +2119,7 @@ export default function AppPanel({
                           className="h-4 w-4"
                           aria-label={t('appPanel.messageActionsBarBgVisible')}
                         />
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-2xs text-ink-400">
                           {t('appPanel.messageActionsBarBgVisible')}
                         </span>
                       </label>
@@ -2077,7 +2133,7 @@ export default function AppPanel({
                 type="button"
                 onClick={handleSaveThemeSnapshot}
                 aria-label={t('appPanel.saveTheme')}
-                className="bg-deep-black flex-1 rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
+                className="bg-deep-black border-ink-600 text-ink-300 hover:bg-ink-700 flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
               >
                 {t('appPanel.saveThemeButton')}
               </button>
@@ -2087,7 +2143,7 @@ export default function AppPanel({
                 disabled={!hasSavedThemeSnapshot}
                 aria-label={t('appPanel.restoreTheme')}
                 title={hasSavedThemeSnapshot ? undefined : t('appPanel.noSavedThemeTooltip')}
-                className="bg-deep-black disabled:hover:bg-deep-black flex-1 rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="bg-deep-black border-ink-600 text-ink-300 hover:bg-ink-700 flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {t('appPanel.restoreThemeButton')}
               </button>
@@ -2095,7 +2151,7 @@ export default function AppPanel({
                 type="button"
                 onClick={handleResetThemeColors}
                 aria-label={t('appPanel.resetAllColors')}
-                className="bg-deep-black flex-1 rounded-lg border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-700"
+                className="bg-deep-black border-ink-600 text-ink-300 hover:bg-ink-700 flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition-colors"
               >
                 {t('appPanel.resetAllColorsButton')}
               </button>
@@ -2118,17 +2174,15 @@ export default function AppPanel({
             aria-label={t('appPanel.soundNotifications')}
             className="accent-brand-green h-4 w-4 rounded"
           />
-          <label htmlFor="soundNotifications" className="cursor-pointer text-sm text-gray-300">
+          <label htmlFor="soundNotifications" className="text-ink-300 cursor-pointer text-sm">
             {t('appPanel.soundNotifications')}
           </label>
         </div>
         <NotificationSoundSettings />
-        <div className="space-y-2 border-t border-slate-700/60 pt-2">
-          <h4 className="text-muted text-xs font-medium tracking-wide uppercase">
-            {t('appPanel.opsAlertsHeading')}
-          </h4>
+        <div className="border-ink-700/60 space-y-2 border-t pt-2">
+          <h4 className="text-muted text-xs font-medium">{t('appPanel.opsAlertsHeading')}</h4>
           <div className="flex flex-col gap-1">
-            <label htmlFor="nodeSilenceAlertMinutes" className="text-sm text-gray-300">
+            <label htmlFor="nodeSilenceAlertMinutes" className="text-ink-300 text-sm">
               {t('appPanel.nodeSilenceAlertMinutes')}
             </label>
             <input
@@ -2146,12 +2200,12 @@ export default function AppPanel({
                   raw === '' ? null : Math.max(1, parseInt(raw, 10) || 1),
                 );
               }}
-              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} w-40`}
             />
             <p className="text-muted text-xs">{t('appPanel.nodeSilenceAlertMinutesHint')}</p>
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="nodeBatteryLowThreshold" className="text-sm text-gray-300">
+            <label htmlFor="nodeBatteryLowThreshold" className="text-ink-300 text-sm">
               {t('appPanel.nodeBatteryLowThreshold')}
             </label>
             <input
@@ -2167,7 +2221,7 @@ export default function AppPanel({
                   Math.min(100, Math.max(1, parseInt(e.target.value, 10) || 10)),
                 );
               }}
-              className="bg-secondary-dark/80 w-40 rounded border border-gray-600/50 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} w-40`}
             />
           </div>
           <div className="flex items-center gap-3">
@@ -2181,7 +2235,7 @@ export default function AppPanel({
               aria-label={t('appPanel.notifyOnLinkDown')}
               className="accent-brand-green h-4 w-4 rounded"
             />
-            <label htmlFor="notifyOnLinkDown" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="notifyOnLinkDown" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.notifyOnLinkDown')}
             </label>
           </div>
@@ -2201,7 +2255,7 @@ export default function AppPanel({
               />
               <label
                 htmlFor="rrcUnreadAllRoomMessages"
-                className="cursor-pointer text-sm text-gray-300"
+                className="text-ink-300 cursor-pointer text-sm"
               >
                 {t('appPanel.rrcUnreadAllRoomMessages')}
               </label>
@@ -2253,7 +2307,7 @@ export default function AppPanel({
               aria-label={t('mecp.section.showComposeButton')}
               className="accent-brand-green h-4 w-4 rounded"
             />
-            <label htmlFor="mecpComposeEnabled" className="cursor-pointer text-sm text-gray-300">
+            <label htmlFor="mecpComposeEnabled" className="text-ink-300 cursor-pointer text-sm">
               {t('mecp.section.showComposeButton')}
             </label>
           </div>
@@ -2264,7 +2318,7 @@ export default function AppPanel({
         <button
           type="button"
           disabled={mecpExportBusy}
-          className="rounded-lg border border-gray-600 bg-slate-900/60 px-3 py-2 text-sm text-gray-200 hover:bg-slate-800 disabled:opacity-50"
+          className="border-ink-600 bg-ink-900/60 text-ink-200 hover:bg-ink-800 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
           aria-label={t('mecp.exportLog')}
           onClick={() => {
             if (mecpExportBusy) return;
@@ -2318,7 +2372,7 @@ export default function AppPanel({
 
             {/* Diagnostics (in-memory reset) */}
             <div className="space-y-2">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZoneDiagnosticsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
@@ -2340,14 +2394,14 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.resetDiagnostics')}
               </button>
             </div>
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZoneGpsHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
@@ -2368,14 +2422,14 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearGpsData')}
               </button>
             </div>
 
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZonePositionHistoryHeading')}
               </div>
               <p className="text-muted text-xs leading-relaxed">
@@ -2397,7 +2451,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearPositionHistory')}
               </button>
@@ -2405,11 +2459,11 @@ export default function AppPanel({
 
             {/* Nodes */}
             <div className="space-y-3 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.dangerZoneNodesHeading')}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="apppanel-delete-age-days" className="text-sm text-gray-300">
+                <label htmlFor="apppanel-delete-age-days" className="text-ink-300 text-sm">
                   {t('appPanel.deleteNodesOlderThanLabel')}
                 </label>
                 <input
@@ -2421,9 +2475,9 @@ export default function AppPanel({
                     setDeleteAgeDays(Math.max(1, parseInt(e.target.value) || 1));
                   }}
                   aria-label={t('appPanel.deleteNodesOlderThanAria', { days: deleteAgeDays })}
-                  className="bg-deep-black w-20 rounded border border-red-800/60 px-2 py-1 text-right text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                  className="bg-app-bg text-body text-ink-200 h-8 w-20 rounded-lg border border-red-800/60 px-2.5 text-right focus:border-red-500 focus:outline-none pointer-coarse:h-10"
                 />
-                <span className="text-sm text-gray-300">{t('common.days')}</span>
+                <span className="text-ink-300 text-sm">{t('common.days')}</span>
                 <button
                   type="button"
                   aria-label={t('appPanel.deleteOldNodes')}
@@ -2442,7 +2496,7 @@ export default function AppPanel({
                       },
                     });
                   }}
-                  className="rounded border border-red-800 bg-red-900/50 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-red-300 transition-colors hover:bg-red-900/70"
+                  className={buttonClassName('danger', 'md')}
                 >
                   {t('appPanel.deleteOldNodes')}
                 </button>
@@ -2462,7 +2516,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 {t('appPanel.pruneMqttOnlyNodes')}
               </button>
@@ -2481,7 +2535,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 {t('appPanel.pruneUnnamedNodes')}
               </button>
@@ -2498,7 +2552,7 @@ export default function AppPanel({
                   }
                   executeWithConfirmation({
                     actionId: 'pruneNoFixNodes',
-                    title: t('appPanel.pruneNoFixNodes'),
+                    title: t('appPanel.pruneNoFixNodesTitle'),
                     message: t('appPanel.pruneNoFixNodesConfirm', {
                       count: zeroIslandNodes.length,
                     }),
@@ -2513,10 +2567,10 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
-                <div className="font-medium">{t('appPanel.pruneNoFixNodes')}</div>
-                <div className="mt-0.5 text-xs text-red-400/70">
+                <div className="font-medium">{t('appPanel.pruneNoFixNodesTitle')}</div>
+                <div className="text-muted text-xs font-normal">
                   {t('appPanel.pruneNoFixSubtitle')}
                 </div>
               </button>
@@ -2567,10 +2621,10 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 <div className="font-medium">{t('appPanel.pruneDistantNodesTitle')}</div>
-                <div className="mt-0.5 text-xs text-red-400/70">
+                <div className="text-muted text-xs font-normal">
                   {t('appPanel.pruneDistantSubtitle')}
                 </div>
               </button>
@@ -2609,10 +2663,10 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 <div className="font-medium">{t('appPanel.pruneOfflineNodesTitle')}</div>
-                <div className="mt-0.5 text-xs text-red-400/70">
+                <div className="text-muted text-xs font-normal">
                   {t('appPanel.pruneOfflineSubtitle', {
                     days: Math.round(nodeOfflineThresholdMs / (24 * 60 * 60 * 1000)),
                   })}
@@ -2633,7 +2687,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={DANGER_ROW_CLASS}
               >
                 {t('appPanel.clearAllNodesButton', { count: nodeCount })}
               </button>
@@ -2663,10 +2717,10 @@ export default function AppPanel({
                       },
                     });
                   }}
-                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                  className={DANGER_ROW_CLASS}
                 >
                   <div className="font-medium">{t('appPanel.deleteContactsNoPubkeysTitle')}</div>
-                  <div className="mt-0.5 text-xs text-red-400/70">
+                  <div className="text-muted text-xs font-normal">
                     {t('appPanel.deleteContactsWithoutPubkeysSubtitle')}
                   </div>
                 </button>
@@ -2676,7 +2730,7 @@ export default function AppPanel({
             {/* Reticulum contacts */}
             {protocol === 'reticulum' && (
               <div className="space-y-2 border-t border-red-900/50 pt-4">
-                <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+                <div className="text-xs font-medium text-red-400/90">
                   {t('appPanel.dangerZoneReticulumHeading')}
                 </div>
                 <p className="text-muted text-xs leading-relaxed">
@@ -2704,7 +2758,7 @@ export default function AppPanel({
                       },
                     });
                   }}
-                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:cursor-not-allowed disabled:opacity-40"
+                  className={DANGER_ROW_CLASS}
                 >
                   <div className="font-medium">
                     {t('appPanel.clearReticulumContactsButton', {
@@ -2717,7 +2771,7 @@ export default function AppPanel({
 
             {/* Messages */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400/90 uppercase">
+              <div className="text-xs font-medium text-red-400/90">
                 {t('appPanel.messagesSection')}
               </div>
               {isReticulumDmOnly ? (
@@ -2726,10 +2780,7 @@ export default function AppPanel({
                 </p>
               ) : (
                 <div className="flex items-center gap-2">
-                  <label
-                    htmlFor="apppanel-clear-channel"
-                    className="shrink-0 text-sm text-gray-400"
-                  >
+                  <label htmlFor="apppanel-clear-channel" className="text-ink-400 shrink-0 text-sm">
                     {t('appPanel.clearChannelLabel')}
                   </label>
                   <select
@@ -2739,7 +2790,7 @@ export default function AppPanel({
                       setClearChannelTarget(parseInt(e.target.value, 10));
                     }}
                     aria-label={t('common.channel')}
-                    className="bg-deep-black flex-1 rounded-lg border border-red-800/60 px-3 py-1.5 text-sm text-gray-200 focus:border-red-500 focus:outline-none"
+                    className="bg-app-bg text-body text-ink-200 h-8 flex-1 rounded-lg border border-red-800/60 px-2 focus:border-red-500 focus:outline-none pointer-coarse:h-10"
                   >
                     <option value={CLEAR_ALL_CHANNELS_VALUE}>
                       {t('appPanel.allChannelsOption')}
@@ -2813,7 +2864,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearMessagesCount', { count: messageCount })}
               </button>
@@ -2822,7 +2873,7 @@ export default function AppPanel({
             {/* MeshCore */}
             {onClearMeshcoreRepeaters && (
               <div className="space-y-2 border-t border-red-900/50 pt-4">
-                <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
+                <div className="text-xs font-medium text-red-400">
                   {t('appPanel.dangerZoneMeshcoreHeading')}
                 </div>
                 <button
@@ -2838,7 +2889,7 @@ export default function AppPanel({
                       action: onClearMeshcoreRepeaters,
                     });
                   }}
-                  className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                  className={buttonClassName('danger', 'md')}
                 >
                   {t('appPanel.clearAllRepeaters')}
                 </button>
@@ -2847,7 +2898,7 @@ export default function AppPanel({
 
             {/* Everything */}
             <div className="space-y-2 border-t border-red-900/50 pt-4">
-              <div className="text-xs font-medium tracking-wide text-red-400 uppercase">
+              <div className="text-xs font-medium text-red-400">
                 {t('appPanel.dangerZoneEverythingHeading')}
               </div>
               <button
@@ -2877,7 +2928,7 @@ export default function AppPanel({
                     },
                   });
                 }}
-                className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70"
+                className={buttonClassName('danger', 'md')}
               >
                 {t('appPanel.clearAllLocalData')}
               </button>

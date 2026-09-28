@@ -14,6 +14,8 @@ import { useReticulumInboundPolicyStore } from '@/renderer/stores/reticulumInbou
 import { useRncpTransferStore } from '@/renderer/stores/rncpTransferStore';
 import { isRemoteOkFailure, type RncpInboundMode } from '@/shared/remote-types';
 
+import { chipClass } from '../ui/formClasses';
+
 /** Sidecar outbound + inbound hard cap (see `MAX_RNCP_FILE_BYTES` in rncp_transfer.rs). */
 export const RNCP_MAX_FILE_SIZE_LABEL = '25 MiB';
 
@@ -386,8 +388,8 @@ export function RemoteSettingsSection({
 
   return (
     <div className="flex h-full min-w-0 flex-col gap-4 overflow-y-auto p-3">
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
+        <h3 className="text-ink-300 text-sm font-medium">
           {t('reticulumRemote.settings.inboundTitle')}
         </h3>
         <div className="flex gap-2">
@@ -399,11 +401,7 @@ export function RemoteSettingsSection({
               aria-label={t(`reticulumRemote.settings.inboundMode.${mode}`)}
               disabled={!sidecarRunning}
               onClick={() => void applyListener(mode)}
-              className={`rounded px-3 py-1 text-xs disabled:opacity-50 ${
-                listener?.inbound_mode === mode
-                  ? 'bg-blue-700 text-white'
-                  : 'bg-gray-800 text-gray-400'
-              }`}
+              className={`${chipClass(listener?.inbound_mode === mode)} disabled:opacity-50`}
             >
               {t(`reticulumRemote.settings.inboundMode.${mode}`)}
             </button>
@@ -415,7 +413,7 @@ export function RemoteSettingsSection({
             type="button"
             aria-label={t('reticulumRemote.settings.chooseSaveDirAria')}
             onClick={() => void handlePickSaveDir()}
-            className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+            className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-3 py-1.5 text-xs"
           >
             {t('reticulumRemote.settings.chooseSaveDir')}
           </button>
@@ -424,7 +422,7 @@ export function RemoteSettingsSection({
           </span>
         </div>
 
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="text-ink-300 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={allowFetch}
@@ -444,7 +442,7 @@ export function RemoteSettingsSection({
               onClick={() => {
                 handlePickFetchJail();
               }}
-              className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600"
+              className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-3 py-1.5 text-xs"
             >
               {t('reticulumRemote.settings.chooseFetchJail')}
             </button>
@@ -453,7 +451,7 @@ export function RemoteSettingsSection({
             </span>
           </div>
         )}
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="text-ink-300 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={overwrite}
@@ -470,8 +468,8 @@ export function RemoteSettingsSection({
         </p>
       </section>
 
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
+        <h3 className="text-ink-300 text-sm font-medium">
           {t('reticulumRemote.settings.allowBlockListTitle')}
         </h3>
         {policyList.length === 0 ? (
@@ -480,7 +478,7 @@ export function RemoteSettingsSection({
           policyList.map((p) => (
             <div
               key={p.identity_hash}
-              className="flex flex-wrap items-center gap-2 rounded border border-gray-700/60 bg-gray-800/30 px-2 py-1.5 text-xs text-gray-200"
+              className="border-ink-700/60 bg-ink-800/30 text-ink-200 flex flex-wrap items-center gap-2 rounded border px-2 py-1.5 text-xs"
             >
               <span
                 className={`rounded px-1.5 py-0.5 ${
@@ -498,7 +496,7 @@ export function RemoteSettingsSection({
                   label: p.label ?? p.identity_hash,
                 })}
                 onClick={() => void handleRemovePolicy(p.identity_hash)}
-                className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-2 py-1"
               >
                 {t('common.delete')}
               </button>
@@ -507,11 +505,11 @@ export function RemoteSettingsSection({
         )}
       </section>
 
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
+        <h3 className="text-ink-300 text-sm font-medium">
           {t('reticulumRemote.settings.reliabilityTitle')}
         </h3>
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="text-ink-300 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={settings.autoReconnectShell}
@@ -523,7 +521,7 @@ export function RemoteSettingsSection({
           />
           {t('reticulumRemote.settings.autoReconnectShell')}
         </label>
-        <label className="flex items-center gap-2 text-xs text-gray-300">
+        <label className="text-ink-300 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={settings.autoRetryTransfer}
@@ -537,11 +535,11 @@ export function RemoteSettingsSection({
         </label>
       </section>
 
-      <section className="space-y-2 rounded-lg border border-gray-700/60 p-3">
-        <h3 className="text-sm font-medium text-gray-300">
+      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
+        <h3 className="text-ink-300 text-sm font-medium">
           {t('reticulumRemote.settings.identityTitle')}
         </h3>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+        <div className="text-ink-300 flex flex-wrap items-center gap-2 text-xs">
           <span>{t('reticulumRemote.settings.myIdentity')}</span>
           <code className="min-w-0 flex-1 truncate">{identity?.identity_hash ?? '—'}</code>
           <button
@@ -551,12 +549,12 @@ export function RemoteSettingsSection({
             onClick={() => {
               copy(identity?.identity_hash);
             }}
-            className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+            className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-2 py-1 disabled:opacity-40"
           >
             {t('common.copy')}
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+        <div className="text-ink-300 flex flex-wrap items-center gap-2 text-xs">
           <span>{t('reticulumRemote.transfer.myReceiveDest')}</span>
           <code className="min-w-0 flex-1 truncate">{identity?.rncp_receive_hash ?? '—'}</code>
           <button
@@ -566,7 +564,7 @@ export function RemoteSettingsSection({
             onClick={() => {
               copy(identity?.rncp_receive_hash);
             }}
-            className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+            className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-2 py-1 disabled:opacity-40"
           >
             {t('common.copy')}
           </button>
@@ -578,7 +576,7 @@ export function RemoteSettingsSection({
           onClick={() => {
             void announceReceiveDest();
           }}
-          className="rounded bg-gray-700/60 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-600 disabled:opacity-40"
+          className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-3 py-1.5 text-xs disabled:opacity-40"
         >
           {t('reticulumRemote.settings.announceReceiveDest')}
         </button>

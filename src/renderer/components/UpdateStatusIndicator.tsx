@@ -33,11 +33,11 @@ export default function UpdateStatusIndicator({
     <span
       role="status"
       aria-live="polite"
-      className="inline-flex max-w-full min-w-0 flex-wrap items-center justify-end gap-x-1 gap-y-0.5 font-sans text-gray-300"
+      className="text-ink-300 inline-flex max-w-full min-w-0 flex-wrap items-center justify-end gap-x-1 gap-y-0.5 font-sans"
     >
       {phase === 'idle' && (
         <>
-          <SpinnerIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+          <SpinnerIcon className="text-ink-400 h-3.5 w-3.5 shrink-0" />
           <span aria-busy="true">{t('updateStatus.checking')}</span>
         </>
       )}
@@ -46,7 +46,7 @@ export default function UpdateStatusIndicator({
         <button
           type="button"
           onClick={onCheck}
-          className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-300 transition-colors hover:text-gray-100"
+          className="font-inherit text-ink-300 hover:text-ink-100 inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 transition-colors"
           title={t('updateStatus.checkForUpdates')}
         >
           <IconUpToDate />
@@ -57,13 +57,13 @@ export default function UpdateStatusIndicator({
       {phase === 'available' && (
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <span className="relative flex h-3.5 w-3.5 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-50" />
-            <IconUpdateAvailable className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-400 opacity-50" />
+            <IconUpdateAvailable className="h-3.5 w-3.5 shrink-0 text-orange-400" />
           </span>
           {version != null ? (
-            <span className="text-amber-300 tabular-nums">v{version}</span>
+            <span className="text-orange-300 tabular-nums">v{version}</span>
           ) : (
-            <span className="text-amber-300">{t('updateStatus.update')}</span>
+            <span className="text-orange-300">{t('updateStatus.update')}</span>
           )}
           <button
             type="button"
@@ -71,7 +71,7 @@ export default function UpdateStatusIndicator({
             title={
               useReleasePage ? t('updateStatus.viewReleaseTitle') : t('updateStatus.downloadTitle')
             }
-            className="rounded border border-amber-600 bg-amber-900/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-200 transition-colors hover:border-amber-500 hover:text-amber-100"
+            className="text-2xs rounded border border-orange-600 bg-orange-900/60 px-1.5 py-0.5 font-medium text-orange-200 transition-colors hover:border-orange-500 hover:text-orange-100"
           >
             {useReleasePage ? t('updateStatus.viewRelease') : t('updateStatus.download')}
           </button>
@@ -79,9 +79,9 @@ export default function UpdateStatusIndicator({
       )}
 
       {phase === 'downloading' && (
-        <span className="inline-flex max-w-[140px] min-w-0 items-center gap-1.5">
+        <span className="inline-flex max-w-35 min-w-0 items-center gap-1.5">
           <SpinnerIcon className="text-brand-green h-3.5 w-3.5 shrink-0" />
-          <span className="h-1 min-w-[48px] flex-1 overflow-hidden rounded-full bg-gray-700">
+          <span className="bg-ink-700 h-1 min-w-12 flex-1 overflow-hidden rounded-full">
             <span
               className="bg-brand-green block h-full transition-all duration-300"
               style={{ width: `${percent ?? 0}%` }}
@@ -107,11 +107,11 @@ export default function UpdateStatusIndicator({
         <button
           type="button"
           onClick={onCheck}
-          className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-300 transition-colors hover:text-gray-100"
+          className="font-inherit text-ink-300 hover:text-ink-100 inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 transition-colors"
           title={errorMessage?.trim() ? errorMessage : t('updateStatus.retryCheck')}
         >
-          <IconWarning className="h-3.5 w-3.5 shrink-0 text-amber-500" />
-          <span className="text-amber-500/90">{t('updateStatus.updateError')}</span>
+          <IconWarning className="h-3.5 w-3.5 shrink-0 text-orange-500" />
+          <span className="text-orange-500/90">{t('updateStatus.updateError')}</span>
         </button>
       )}
 
@@ -119,7 +119,7 @@ export default function UpdateStatusIndicator({
         <button
           type="button"
           onClick={onCheck}
-          className="font-inherit inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-gray-400 transition-colors hover:text-gray-200"
+          className="font-inherit text-ink-400 hover:text-ink-200 inline-flex min-w-0 cursor-pointer items-center gap-1 border-0 bg-transparent p-0 transition-colors"
           title={t('updateStatus.checkForUpdates')}
           aria-label={t('updateStatus.pausedOffline')}
         >

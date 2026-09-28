@@ -39,8 +39,8 @@ describe('ReticulumRmapConnectionStatus', () => {
     );
     const status = screen.getByText('connectionPanel.reticulumRmap.notPublishing:{}');
     expect(status).toBeInTheDocument();
-    expect(status).toHaveClass('text-gray-400');
-    expect(status).not.toHaveClass('text-amber-300');
+    expect(status).toHaveClass('text-ink-400');
+    expect(status).not.toHaveClass('text-orange-300');
     await user.click(
       screen.getByRole('button', { name: 'connectionPanel.reticulumRmap.openSettingsAria:{}' }),
     );
@@ -67,7 +67,7 @@ describe('ReticulumRmapConnectionStatus', () => {
     );
     expect(
       screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":1,"total":2}'),
-    ).toHaveClass('text-amber-300');
+    ).toHaveClass('text-orange-300');
     expect(screen.queryByText(/needsSync/)).not.toBeInTheDocument();
     hydrateAxeThemeColors(status);
     expect(await axe(status)).toHaveNoViolations();
@@ -86,10 +86,10 @@ describe('ReticulumRmapConnectionStatus', () => {
     const status = screen.getByRole('status');
     expect(
       screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":2,"total":2}'),
-    ).toHaveClass('text-brand-green');
+    ).toHaveClass('text-green-400');
     expect(
       screen.getByText('connectionPanel.reticulumRmap.publishingOf:{"current":2,"total":2}'),
-    ).not.toHaveClass('text-amber-300');
+    ).not.toHaveClass('text-orange-300');
     hydrateAxeThemeColors(status);
     expect(await axe(status)).toHaveNoViolations();
   });

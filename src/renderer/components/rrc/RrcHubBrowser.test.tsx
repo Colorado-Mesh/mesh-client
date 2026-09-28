@@ -37,8 +37,6 @@ function renderBrowser(
 ): ReturnType<typeof render> {
   return render(
     <RrcHubBrowser
-      collapsed={false}
-      onToggleCollapsed={() => {}}
       sidecarRunning
       hubSearch=""
       onHubSearchChange={() => {}}
@@ -55,7 +53,6 @@ function renderBrowser(
       onManualHashChange={() => {}}
       hubTab="favourites"
       onHubTabChange={() => {}}
-      onRefresh={() => {}}
       onConnect={() => {}}
       onToggleFavorite={() => {}}
       onToggleAutoJoin={() => {}}
@@ -95,7 +92,7 @@ describe('RrcHubBrowser', () => {
     const user = userEvent.setup();
     const onHubTabChange = vi.fn();
     renderBrowser({ onHubTabChange });
-    await user.click(screen.getByRole('button', { name: 'Connected' }));
+    await user.click(screen.getByRole('radio', { name: 'Connected' }));
     expect(onHubTabChange).toHaveBeenCalledWith('connected');
   });
 
@@ -103,7 +100,7 @@ describe('RrcHubBrowser', () => {
     const user = userEvent.setup();
     const onHubTabChange = vi.fn();
     renderBrowser({ onHubTabChange });
-    await user.click(screen.getByRole('button', { name: 'Discovered' }));
+    await user.click(screen.getByRole('radio', { name: 'Discovered' }));
     expect(onHubTabChange).toHaveBeenCalledWith('discovered');
   });
 
@@ -148,11 +145,12 @@ describe('RrcHubBrowser', () => {
       isHubAutoJoin: (hash) => hash === hubB.destination_hash,
     });
 
-    expect(screen.getByTitle('Connected')).toHaveTextContent('●');
-    expect(screen.getByTitle('Auto-join enabled')).toHaveTextContent('◐');
+    // Status dots, not glyphs: connected is the green dot, auto-join (not linked) a hollow ring.
+    expect(screen.getByTitle('Connected').firstElementChild).toHaveClass('bg-status-success');
+    expect(screen.getByTitle('Auto-join enabled').firstElementChild).toHaveClass('border-ink-400');
   });
 
-  it('toggles hub auto-join with the A control', async () => {
+  it('toggles hub auto-join with the Auto chip', async () => {
     const user = userEvent.setup();
     const onToggleAutoJoin = vi.fn();
     renderBrowser({ onToggleAutoJoin });

@@ -10,6 +10,7 @@ import { getMeshcoreRoomCredential } from '@/renderer/lib/meshcoreRoomCredential
 import { Z_NESTED_AUTH_OVERLAY } from '@/renderer/lib/modalZIndex';
 
 import { useToast } from '../components/Toast';
+import { INPUT_BOX_CLASS } from '../components/ui/formClasses';
 
 /** Firmware/admin passwords are short; cap input to avoid accidental paste floods. */
 const MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH = 128;
@@ -44,7 +45,7 @@ function InfraRemoteAuthFields({
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
       <div className="min-w-[12rem] flex-1 space-y-1">
-        <label htmlFor={passwordInputId} className="text-xs text-gray-400">
+        <label htmlFor={passwordInputId} className="text-ink-400 text-xs">
           {t('repeatersPanel.remoteAuthLabel')}
         </label>
         <input
@@ -64,7 +65,7 @@ function InfraRemoteAuthFields({
           disabled={disabled}
           maxLength={MESHCORE_INFRA_ADMIN_PASSWORD_MAX_LENGTH}
           placeholder={t('repeatersPanel.remoteAuthPlaceholder')}
-          className="bg-secondary-dark focus:border-brand-green/50 w-full rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-full`}
         />
       </div>
     </div>
@@ -194,13 +195,13 @@ export function useMeshcoreRepeaterRemoteAuth() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="repeater-remote-auth-title"
-          className="relative z-10 w-full max-w-md space-y-3 rounded-lg border border-gray-600 bg-gray-900 p-4 shadow-xl"
+          className="shadow-level-4 border-ink-600 bg-ink-900 relative z-10 w-full max-w-md space-y-3 rounded-lg border p-4"
         >
           <h2 id="repeater-remote-auth-title" className="text-base font-semibold text-white">
             {t('repeatersPanel.remoteAuthTitle')}
           </h2>
-          <p className="text-sm text-gray-400">{pending.displayName}</p>
-          <p className="text-sm text-gray-400">{t('repeatersPanel.remoteAuthModalHelp')}</p>
+          <p className="text-ink-400 text-sm">{pending.displayName}</p>
+          <p className="text-ink-400 text-sm">{t('repeatersPanel.remoteAuthModalHelp')}</p>
           <ModalAuthBody
             passwordId={passwordId}
             nodeId={pending.nodeId}
@@ -261,7 +262,7 @@ function ModalAuthBody({
         onSubmit={submitPassword}
         passwordInputId={passwordId}
       />
-      <label className="flex items-center gap-2 text-xs text-gray-400">
+      <label className="text-ink-400 flex items-center gap-2 text-xs">
         <input
           type="checkbox"
           checked={rememberPassword}
@@ -276,7 +277,7 @@ function ModalAuthBody({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-gray-600 bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700"
+          className="border-ink-600 bg-ink-800 text-ink-300 hover:bg-ink-700 rounded border px-3 py-1.5 text-xs font-medium"
           aria-label={cancelLabel}
         >
           {cancelLabel}
@@ -284,7 +285,7 @@ function ModalAuthBody({
         <button
           type="button"
           onClick={onSkip}
-          className="rounded border border-gray-600 bg-gray-700 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-600"
+          className="border-ink-600 bg-ink-700 text-ink-200 hover:bg-ink-600 rounded border px-3 py-1.5 text-xs font-medium"
           aria-label={skipLabel}
         >
           {skipLabel}

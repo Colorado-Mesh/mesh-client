@@ -1,18 +1,23 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as ChatPanel/RawPacketLogPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
-  ArrowUpDown,
-  ChevronDown,
-  ChevronUp,
-  PARENT_HOVER_ATTR,
+  Download,
+  KeyRound,
+  MapPin,
+  Radio,
+  RefreshCw,
+  Search,
   Settings,
+  Star,
   TriangleAlert,
+  Upload,
   User,
 } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
+import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 
 import type { ContactGroup } from '../../shared/electron-api.types';
 import { meshcoreContactDisplayName } from '../../shared/meshcoreContactSanitize';
@@ -26,6 +31,7 @@ import {
   useMeshcoreContactCapacity,
 } from '../hooks/useMeshcoreContactCapacity';
 import { useMessages } from '../hooks/useMessages';
+import { useNowMs } from '../hooks/useNowMs';
 import {
   buildChatDmPeerIndex,
   type ChatDmPeerDbRow,
@@ -48,7 +54,6 @@ import { errLikeToLogString } from '../lib/errLikeToLogString';
 import { EXPORT_FORMAT_VERSION, nodesToCsv, TOPOLOGY_EXPORT_FORMAT } from '../lib/exportFormats';
 import { formatRelativeOrIsoDate } from '../lib/formatRelativeOrIsoDate';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
-import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import {
   isMeshcoreOffloadAbortError,
   meshcoreOffloadAbortRemovedCount,
@@ -85,10 +90,15 @@ import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
-import { useMapLayerStore } from '../stores/mapLayerStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import SignalBars from './SignalBars';
 import { useToast } from './Toast';
+import { Button, IconButton } from './ui/Button';
+import { INPUT_CLASS, NOTICE_CLASS, SELECT_CLASS } from './ui/formClasses';
+import { LabeledMenuButton } from './ui/Menu';
+import { SegmentedControl } from './ui/SegmentedControl';
+import { SortIndicator } from './ui/SortIndicator';
+import { StatusDot } from './ui/StatusDot';
 
 interface ImportContactsResult {
   imported: number;
@@ -175,18 +185,10 @@ function SortIcon({
   sortField: SortField;
   sortAsc: boolean;
 }) {
-  const trigger = useIconTrigger();
-  const p = { 'aria-hidden': true as const, trigger, size: 12 };
-
-  if (sortField !== field) {
-    return <ArrowUpDown {...p} className="ml-1 inline h-3 w-3 text-gray-600" />;
-  }
-  return sortAsc ? (
-    <ChevronUp {...p} className="text-bright-green ml-1 inline h-3 w-3" />
-  ) : (
-    <ChevronDown {...p} className="text-bright-green ml-1 inline h-3 w-3" />
-  );
+  return <SortIndicator direction={sortField === field ? (sortAsc ? 'asc' : 'desc') : null} />;
 }
+
+type NodeStatusFilter = 'all' | 'online' | 'stale' | 'offline';
 
 interface Props {
   nodes: Map<number, MeshNode>;
@@ -216,6 +218,8 @@ interface Props {
   meshcorePublicKeyHexByNodeId?: Map<number, string>;
   onShowOnMap?: (nodeId: number, lat: number, lon: number) => void;
   onOffloadContactsFromRadio?: OffloadContactsFromRadioFn;
+  /** Node shown in the detail pane; its row is highlighted. */
+  selectedNodeId?: number | null;
 }
 
 export default function NodeListPanel({
@@ -242,16 +246,14 @@ export default function NodeListPanel({
   meshcorePublicKeyHexByNodeId,
   onShowOnMap,
   onOffloadContactsFromRadio,
+  selectedNodeId = null,
 }: Props) {
   const { addToast } = useToast();
   const { t } = useTranslation();
-  const parentIconTrigger = useParentIconTrigger();
   const iconTrigger = useIconTrigger();
   const capabilities = useRadioProvider(mode);
   const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = capabilities;
   const coordinateFormat = useCoordFormatStore((s) => s.coordinateFormat);
-  const basemapId = useMapLayerStore((s) => s.basemapId);
-  const staleLegendColor = getMapOverlayColors(MAP_BASEMAPS[basemapId].isDark).stale;
   const positionHistory = usePositionHistoryStore((s) => s.history);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
   const protocolDiagnosticRows = useMemo(
@@ -265,6 +267,7 @@ export default function NodeListPanel({
   const [sortField, setSortField] = useState<SortField>('last_heard');
   const [sortAsc, setSortAsc] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<NodeStatusFilter>('all');
   const [importLoading, setImportLoading] = useState(false);
   const [refreshLoading, setRefreshLoading] = useState(false);
   const [advertLoading, setAdvertLoading] = useState(false);
@@ -456,7 +459,7 @@ export default function NodeListPanel({
     }
   };
 
-  const nodeList = useMemo(() => {
+  const baseNodeList = useMemo(() => {
     let list: MeshNode[];
     const historyActivity = new Map<number, ChatDmPeerIndexEntry>();
 
@@ -644,6 +647,37 @@ export default function NodeListPanel({
     groupMemberIds,
   ]);
 
+  // Status depends on elapsed time, so the counts and the filter follow a once-a-minute clock
+  // as well as node data; otherwise a quiet node stays "online" until something else changes.
+  const statusClockMs = useNowMs();
+  const statusNowMs = statusClockMs > 0 ? statusClockMs : undefined;
+
+  const statusCounts = useMemo(() => {
+    const counts = { online: 0, stale: 0, offline: 0 };
+    for (const n of baseNodeList) {
+      counts[
+        getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs, statusNowMs)
+      ] += 1;
+    }
+    return counts;
+  }, [baseNodeList, nodeStaleThresholdMs, nodeOfflineThresholdMs, statusNowMs]);
+
+  const nodeList = useMemo(
+    () =>
+      statusFilter === 'all'
+        ? baseNodeList
+        : baseNodeList.filter(
+            (n) =>
+              getNodeStatus(
+                n.last_heard,
+                nodeStaleThresholdMs,
+                nodeOfflineThresholdMs,
+                statusNowMs,
+              ) === statusFilter,
+          ),
+    [baseNodeList, statusFilter, nodeStaleThresholdMs, nodeOfflineThresholdMs, statusNowMs],
+  );
+
   const nodeTableScrollRef = useRef<HTMLDivElement>(null);
   const nodeTableColSpan = (mode === 'meshcore' ? 11 : 19) - (coordinateFormat === 'mgrs' ? 1 : 0);
   const shouldVirtualizeNodeRows = nodeList.length > 100;
@@ -679,11 +713,11 @@ export default function NodeListPanel({
     const totalWithGps = Array.from(nodes.values()).filter(
       (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
     ).length;
-    const visibleWithGps = nodeList.filter(
+    const visibleWithGps = baseNodeList.filter(
       (n) => n.node_id !== myNodeNum && (n.latitude || n.longitude),
     ).length;
     return { hidden: totalWithGps - visibleWithGps };
-  }, [locationFilter, myNodeNum, nodes, nodeList]);
+  }, [locationFilter, myNodeNum, nodes, baseNodeList]);
   const totalNodeCount = listTab === 'history' ? dmPeerIndex.size : nodes.size;
   const visibleNodeCount = nodeList.length;
   const headerCountLabel =
@@ -695,179 +729,250 @@ export default function NodeListPanel({
     return formatRelativeOrIsoDate(ts, t, normalizeLastHeardMs);
   }
 
+  const exportJson = () => {
+    const payload = nodesToExportRows(nodeList, {
+      protocol: mode,
+      staleThresholdMs: nodeStaleThresholdMs,
+      offlineThresholdMs: nodeOfflineThresholdMs,
+    });
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          {
+            format: TOPOLOGY_EXPORT_FORMAT,
+            version: EXPORT_FORMAT_VERSION,
+            exportedAt: new Date().toISOString(),
+            nodes: payload,
+          },
+          null,
+          2,
+        ),
+      ],
+      {
+        type: 'application/json',
+      },
+    );
+    downloadBlob(blob, `mesh-topology-${new Date().toISOString().slice(0, 10)}.json`);
+  };
+  const exportCsv = () => {
+    const csv = nodesToCsv(
+      nodesToExportRows(nodeList, {
+        protocol: mode,
+        staleThresholdMs: nodeStaleThresholdMs,
+        offlineThresholdMs: nodeOfflineThresholdMs,
+      }),
+    );
+    downloadBlob(
+      new Blob([csv], { type: 'text/csv' }),
+      `mesh-topology-${new Date().toISOString().slice(0, 10)}.csv`,
+    );
+  };
+  // The heading stays the same in All and History, so the view control beside it never moves. The
+  // count changes with every filter, so it sits after the control.
+  const listHeading =
+    mode === 'meshcore'
+      ? t('nodeListPanel.headingContacts')
+      : t('nodeListPanel.headingNodeDatabase');
+  const smallSpinner = (
+    <span
+      aria-hidden
+      className="inline-block h-3 w-3 animate-spin rounded-full border border-current border-t-transparent"
+    />
+  );
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <div
-        className="flex flex-wrap items-center gap-2"
-        aria-label={
-          mode === 'meshcore'
-            ? t('nodeListPanel.headingContacts')
-            : t('nodeListPanel.headingNodeDatabase')
-        }
-      >
-        <button
-          type="button"
-          aria-pressed={listTab === 'all'}
-          className={`rounded px-3 py-1 text-sm ${listTab === 'all' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
-          onClick={() => {
-            setListTab('all');
-          }}
-        >
-          {t('nodeListPanel.tabAll')}
-        </button>
-        <button
-          type="button"
-          aria-pressed={listTab === 'history'}
-          className={`rounded px-3 py-1 text-sm ${listTab === 'history' ? 'bg-readable-green text-white' : 'border border-gray-600 text-gray-300'}`}
-          onClick={() => {
-            setListTab('history');
-          }}
-        >
-          {t('nodeListPanel.tabHistory')}
-        </button>
-      </div>
-
-      {/* 1fr | auto | 1fr keeps the search visually centered on wide screens (matches MeshCore’s title | search | import row). */}
-      <div className="grid grid-cols-1 items-center gap-3 min-[480px]:grid-cols-[1fr_auto_1fr]">
-        <h2 className="text-bright-green text-lg font-semibold min-[480px]:justify-self-start">
-          {listTab === 'history'
-            ? t('nodeListPanel.tabHistory')
-            : mode === 'meshcore'
-              ? t('nodeListPanel.headingContacts')
-              : t('nodeListPanel.headingNodeDatabase')}{' '}
-          ({headerCountLabel})
-        </h2>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-          }}
-          placeholder={
-            mode === 'meshcore'
-              ? t('nodeListPanel.searchContactsPlaceholder')
-              : t('nodeListPanel.searchNodesPlaceholder')
-          }
-          aria-label={
-            mode === 'meshcore'
-              ? t('nodeListPanel.searchContactsAria')
-              : t('nodeListPanel.searchNodesAria')
-          }
-          className="bg-secondary-dark/80 focus:border-brand-green/50 w-full max-w-[20rem] min-w-[8rem] rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none min-[480px]:justify-self-center"
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h2 className="text-ink-200 text-base font-semibold">{listHeading}</h2>
+        <SegmentedControl
+          aria-label={t('nodeListPanel.listViewAria')}
+          value={listTab}
+          onChange={setListTab}
+          options={[
+            { value: 'all', label: t('nodeListPanel.tabAll') },
+            { value: 'history', label: t('nodeListPanel.tabHistory') },
+          ]}
         />
-        <div className="flex flex-wrap justify-stretch gap-2 min-[480px]:justify-end">
+        <span data-list-count="" className="text-muted font-mono text-sm">
+          ({headerCountLabel})
+        </span>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {mode === 'meshcore' && meshcoreShowRefreshControl && onRefreshContacts ? (
-            <button
-              type="button"
+            <Button
+              size="sm"
               onClick={() => {
                 void handleRefreshContacts();
               }}
               disabled={refreshLoading}
               aria-label={t('nodeListPanel.refreshContacts')}
-              className="flex w-full items-center justify-center gap-2 rounded border border-purple-600 px-3 py-1.5 text-sm font-medium text-purple-400 transition-colors hover:bg-purple-900/30 hover:text-purple-300 disabled:opacity-50 min-[480px]:w-auto"
+              icon={
+                refreshLoading ? (
+                  smallSpinner
+                ) : (
+                  <RefreshCw aria-hidden className={ICON_SM_PLUS} size={14} />
+                )
+              }
             >
-              {refreshLoading ? (
-                <span className="inline-block h-3 w-3 animate-spin rounded-full border border-purple-400 border-t-transparent" />
-              ) : null}
               {t('nodeListPanel.buttonRefresh')}
-            </button>
+            </Button>
           ) : null}
           {mode === 'meshcore' && onSendAdvert ? (
-            <button
-              type="button"
+            <Button
+              size="sm"
               onClick={() => {
                 void handleSendAdvert();
               }}
               disabled={!meshcoreRadioOperational || advertLoading}
               aria-label={t('nodeListPanel.sendFloodAdvert')}
-              className="bg-brand-green/20 text-brand-green border-brand-green/30 hover:bg-brand-green/30 flex w-full items-center justify-center gap-2 rounded border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 min-[480px]:w-auto"
+              title={
+                meshcoreRadioOperational ? undefined : t('nodeListPanel.sendFloodAdvertUnavailable')
+              }
+              icon={
+                advertLoading ? (
+                  smallSpinner
+                ) : (
+                  <Radio aria-hidden className={ICON_SM_PLUS} size={14} />
+                )
+              }
             >
-              {advertLoading ? (
-                <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
-              ) : null}
               {t('nodeListPanel.buttonFloodAdvert')}
-            </button>
+            </Button>
           ) : null}
           {mode === 'meshcore' && onImportContacts ? (
-            <button
-              type="button"
+            <Button
+              size="sm"
               onClick={handleImport}
               disabled={importLoading}
-              className="bg-brand-green/20 text-brand-green border-brand-green/30 hover:bg-brand-green/30 flex w-full items-center justify-center gap-2 rounded border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 min-[480px]:w-auto"
+              icon={
+                importLoading ? (
+                  smallSpinner
+                ) : (
+                  <Upload aria-hidden className={ICON_SM_PLUS} size={14} />
+                )
+              }
             >
-              {importLoading ? (
-                <span className="border-brand-green inline-block h-3 w-3 animate-spin rounded-full border border-t-transparent" />
-              ) : null}
               {t('nodeListPanel.buttonImportContacts')}
-            </button>
-          ) : (
-            <div className="hidden min-w-0 min-[480px]:block" aria-hidden />
-          )}
-          <button
-            type="button"
-            aria-label={t('nodeListPanel.buttonExportJson')}
-            className="flex w-full items-center justify-center gap-2 rounded border border-gray-600/50 px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-200 min-[480px]:w-auto"
-            onClick={() => {
-              const payload = nodesToExportRows(nodeList, {
-                protocol: mode,
-                staleThresholdMs: nodeStaleThresholdMs,
-                offlineThresholdMs: nodeOfflineThresholdMs,
-              });
-              const blob = new Blob(
-                [
-                  JSON.stringify(
-                    {
-                      format: TOPOLOGY_EXPORT_FORMAT,
-                      version: EXPORT_FORMAT_VERSION,
-                      exportedAt: new Date().toISOString(),
-                      nodes: payload,
-                    },
-                    null,
-                    2,
-                  ),
-                ],
-                {
-                  type: 'application/json',
-                },
-              );
-              downloadBlob(blob, `mesh-topology-${new Date().toISOString().slice(0, 10)}.json`);
-            }}
-          >
-            {t('nodeListPanel.buttonExportJson')}
-          </button>
-          <button
-            type="button"
-            aria-label={t('nodeListPanel.buttonExportCsv')}
-            className="flex w-full items-center justify-center gap-2 rounded border border-gray-600/50 px-3 py-1.5 text-sm font-medium text-gray-400 transition-colors hover:border-gray-500 hover:text-gray-200 min-[480px]:w-auto"
-            onClick={() => {
-              const csv = nodesToCsv(
-                nodesToExportRows(nodeList, {
-                  protocol: mode,
-                  staleThresholdMs: nodeStaleThresholdMs,
-                  offlineThresholdMs: nodeOfflineThresholdMs,
-                }),
-              );
-              downloadBlob(
-                new Blob([csv], { type: 'text/csv' }),
-                `mesh-topology-${new Date().toISOString().slice(0, 10)}.csv`,
-              );
-            }}
-          >
-            {t('nodeListPanel.buttonExportCsv')}
-          </button>
+            </Button>
+          ) : null}
+          <LabeledMenuButton
+            size="sm"
+            label={t('nodeListPanel.buttonExport')}
+            icon={<Download aria-hidden className={ICON_SM_PLUS} size={14} />}
+            menuLabel={t('nodeListPanel.exportMenuLabel')}
+            entries={[
+              { id: 'json', label: t('nodeListPanel.buttonExportJson'), onSelect: exportJson },
+              { id: 'csv', label: t('nodeListPanel.buttonExportCsv'), onSelect: exportCsv },
+            ]}
+          />
         </div>
       </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-[18rem] min-w-[10rem] flex-1">
+          <Search
+            aria-hidden
+            className={`${ICON_MD} text-muted pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2`}
+            size={16}
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+            }}
+            placeholder={
+              mode === 'meshcore'
+                ? t('nodeListPanel.searchContactsPlaceholder')
+                : t('nodeListPanel.searchNodesPlaceholder')
+            }
+            aria-label={
+              mode === 'meshcore'
+                ? t('nodeListPanel.searchContactsAria')
+                : t('nodeListPanel.searchNodesAria')
+            }
+            className={`${INPUT_CLASS} pl-8`}
+          />
+        </div>
+        <SegmentedControl
+          aria-label={t('nodeListPanel.statusFilterAria')}
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            {
+              value: 'all',
+              label: t('nodeListPanel.statusFilterAll'),
+              count: baseNodeList.length,
+            },
+            {
+              value: 'online',
+              label: t('nodeListPanel.statusOnline'),
+              count: statusCounts.online,
+              dot: 'ok',
+            },
+            {
+              value: 'stale',
+              label: t('nodeListPanel.statusStale'),
+              count: statusCounts.stale,
+              dot: 'idle',
+            },
+            {
+              value: 'offline',
+              label: t('nodeListPanel.statusOffline'),
+              count: statusCounts.offline,
+              dot: 'off',
+            },
+          ]}
+        />
+        {listTab === 'all' && contactGroupsEnabled && onManageGroups && (
+          <div className="flex min-w-[12rem] items-center gap-1.5">
+            <select
+              value={selectedGroupId ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                onGroupChange?.(val === '' ? null : Number(val));
+              }}
+              aria-label={t('nodeListPanel.filterByContactGroup')}
+              className={SELECT_CLASS}
+            >
+              <option value="">
+                {mode === 'meshcore'
+                  ? t('nodeListPanel.filterOptionAllContacts')
+                  : t('nodeListPanel.filterOptionAllNodes')}
+              </option>
+              {mode === 'meshcore'
+                ? BUILTIN_TYPE_FILTERS.map((f) => (
+                    <option key={f.group_id} value={f.group_id}>
+                      {t('nodeListPanel.filterTypePrefix', { label: t(f.typeKey) })}
+                    </option>
+                  ))
+                : MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS.map((f) => (
+                    <option key={f.group_id} value={f.group_id}>
+                      {f.label}
+                    </option>
+                  ))}
+              {groups?.map((g) => (
+                <option key={g.group_id} value={g.group_id}>
+                  {t('nodeListPanel.filterGroupPrefix', {
+                    name: g.name,
+                    count: g.member_count,
+                  })}
+                </option>
+              ))}
+            </select>
+            <IconButton
+              onClick={onManageGroups}
+              aria-label={t('nodeListPanel.manageContactGroups')}
+              title={t('nodeListPanel.manageGroups')}
+              icon={<Settings aria-hidden className={ICON_MD} size={16} />}
+            />
+          </div>
+        )}
+      </div>
       {mode === 'meshcore' && (
-        <p className="max-w-2xl text-xs text-gray-500">{t('nodeListPanel.meshcoreImportedHint')}</p>
+        <p className="text-muted max-w-2xl text-xs">{t('nodeListPanel.meshcoreImportedHint')}</p>
       )}
       {mode === 'meshcore' && summary.isWarning && (
-        <div
-          className={`shrink-0 rounded-lg border px-3 py-2 text-xs ${
-            summary.isCritical
-              ? 'border-red-700 bg-red-900/30 text-red-200'
-              : 'border-yellow-700 bg-yellow-900/30 text-yellow-200'
-          }`}
-        >
+        <div className={`shrink-0 ${summary.isCritical ? NOTICE_CLASS.error : NOTICE_CLASS.warn}`}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span>
               {t('nodeDetailModal.radioCapacityTitle', {
@@ -883,7 +988,7 @@ export default function NodeListPanel({
                   aria-live="polite"
                   aria-label={t('radioPanel.offloading')}
                 >
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-yellow-300 border-t-transparent" />
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-orange-300 border-t-transparent" />
                   <span>
                     {offloadProgress?.phase === 'removing' && offloadProgress.total > 0
                       ? t('radioPanel.offloadingProgress', {
@@ -892,90 +997,34 @@ export default function NodeListPanel({
                         })
                       : t('radioPanel.offloading')}
                   </span>
-                  <button
-                    type="button"
-                    onClick={cancelOffload}
-                    aria-label={t('common.cancel')}
-                    className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
-                  >
+                  <Button size="sm" onClick={cancelOffload} aria-label={t('common.cancel')}>
                     {t('common.cancel')}
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <button
-                  type="button"
+                <Button
+                  size="sm"
                   onClick={() => {
                     void handleOffloadContacts();
                   }}
                   aria-label={t('radioPanel.offloadContacts')}
-                  className="rounded border border-yellow-700 bg-yellow-900/30 px-2 py-0.5 text-xs font-medium text-yellow-300 transition-colors hover:bg-yellow-800/50"
                 >
                   {t('radioPanel.offloadContacts')}
-                </button>
+                </Button>
               )
             ) : null}
           </div>
         </div>
       )}
 
-      {/* Group filter (MeshCore + Meshtastic when contactGroupsEnabled) — All tab only */}
-      {listTab === 'all' && contactGroupsEnabled && onManageGroups && (
-        <div className="flex shrink-0 items-center gap-2">
-          <select
-            value={selectedGroupId ?? ''}
-            onChange={(e) => {
-              const val = e.target.value;
-              onGroupChange?.(val === '' ? null : Number(val));
-            }}
-            aria-label={t('nodeListPanel.filterByContactGroup')}
-            className="bg-secondary-dark/80 focus:border-brand-green/50 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
-          >
-            <option value="">
-              {mode === 'meshcore'
-                ? t('nodeListPanel.filterOptionAllContacts')
-                : t('nodeListPanel.filterOptionAllNodes')}
-            </option>
-            {mode === 'meshcore'
-              ? BUILTIN_TYPE_FILTERS.map((f) => (
-                  <option key={f.group_id} value={f.group_id}>
-                    {t('nodeListPanel.filterTypePrefix', { label: t(f.typeKey) })}
-                  </option>
-                ))
-              : MESHTASTIC_BUILTIN_CONTACT_GROUP_FILTERS.map((f) => (
-                  <option key={f.group_id} value={f.group_id}>
-                    {f.label}
-                  </option>
-                ))}
-            {groups?.map((g) => (
-              <option key={g.group_id} value={g.group_id}>
-                {t('nodeListPanel.filterGroupPrefix', {
-                  name: g.name,
-                  count: g.member_count,
-                })}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={onManageGroups}
-            aria-label={t('nodeListPanel.manageContactGroups')}
-            title={t('nodeListPanel.manageGroups')}
-            {...{ [PARENT_HOVER_ATTR]: '' }}
-            className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
-          >
-            <Settings aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-          </button>
-        </div>
-      )}
-
       {/* Distance filter status */}
       {filterStatus === 'no-gps' && (
-        <div className="shrink-0 rounded-lg border border-yellow-700 bg-yellow-900/30 px-3 py-2 text-xs text-yellow-300">
+        <div className={`shrink-0 ${NOTICE_CLASS.warn}`}>
           {t('nodeListPanel.distanceFilterNoGpsBanner')}
         </div>
       )}
       {filterStatus !== null && filterStatus !== 'no-gps' && filterStatus.hidden > 0 && (
-        <div className="bg-brand-green/10 border-brand-green/30 text-brand-green shrink-0 rounded-lg border px-3 py-2 text-xs">
+        <div className={`shrink-0 ${NOTICE_CLASS.info}`}>
           {t('nodeListPanel.distanceFilterActiveBanner', {
             count: filterStatus.hidden,
             maxDistance: locationFilter.maxDistance,
@@ -987,51 +1036,17 @@ export default function NodeListPanel({
         </div>
       )}
 
-      {/* Online / Stale / Offline summary */}
-      <div className="text-muted flex shrink-0 gap-3 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
-          {t('nodeListPanel.summaryOnline', {
-            count: nodeList.filter(
-              (n) =>
-                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
-                'online',
-            ).length,
-          })}
-        </span>
-        <span className="flex items-center gap-1">
-          <span
-            className="inline-block h-2 w-2 rounded-full"
-            style={{ backgroundColor: staleLegendColor }}
-          />
-          {t('nodeListPanel.summaryStale', {
-            count: nodeList.filter(
-              (n) =>
-                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
-                'stale',
-            ).length,
-          })}
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-slate-700" />
-          {t('nodeListPanel.summaryOffline', {
-            count: nodeList.filter(
-              (n) =>
-                getNodeStatus(n.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs) ===
-                'offline',
-            ).length,
-          })}
-        </span>
-      </div>
-
-      <div ref={nodeTableScrollRef} className="min-h-0 min-w-0 flex-1 overflow-auto">
+      <div
+        ref={nodeTableScrollRef}
+        className="bg-deep-black border-ink-800 min-h-0 min-w-0 flex-1 overflow-auto rounded-xl border"
+      >
         <table
           style={{ minWidth: mode === 'meshcore' ? '1000px' : '1600px' }}
           className="text-sm whitespace-nowrap"
         >
           <caption className="sr-only">{t('nodeListPanel.tableCaptionMeshNodes')}</caption>
           <thead>
-            <tr className="bg-deep-black text-muted sticky top-0 z-10 text-left whitespace-nowrap">
+            <tr className="bg-deep-black text-muted border-ink-800 sticky top-0 z-10 border-b text-left text-xs whitespace-nowrap">
               <th scope="col" className="w-16 px-3 py-2">
                 {t('nodeListPanel.columnHealth')}
               </th>
@@ -1044,7 +1059,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'node_id' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="hover:text-ink-200 cursor-pointer px-3 py-2 transition-colors select-none"
                   onClick={() => {
                     handleSort('node_id');
                   }}
@@ -1058,7 +1073,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'long_name' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                className="hover:text-ink-200 cursor-pointer px-3 py-2 transition-colors select-none"
                 onClick={() => {
                   handleSort('long_name');
                 }}
@@ -1072,7 +1087,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'short_name' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="hover:text-ink-200 cursor-pointer px-3 py-2 transition-colors select-none"
                   onClick={() => {
                     handleSort('short_name');
                   }}
@@ -1086,7 +1101,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'last_heard' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                className="hover:text-ink-200 cursor-pointer px-3 py-2 transition-colors select-none"
                 onClick={() => {
                   handleSort('last_heard');
                 }}
@@ -1100,7 +1115,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'hw_model' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="hover:text-ink-200 cursor-pointer px-3 py-2 transition-colors select-none"
                   onClick={() => {
                     handleSort('hw_model');
                   }}
@@ -1113,7 +1128,7 @@ export default function NodeListPanel({
                 <th
                   scope="col"
                   aria-sort={sortField === 'role' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                  className="cursor-pointer px-3 py-2 transition-colors select-none hover:text-gray-200"
+                  className="hover:text-ink-200 cursor-pointer px-3 py-2 transition-colors select-none"
                   onClick={() => {
                     handleSort('role');
                   }}
@@ -1127,7 +1142,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'hops_away' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                 onClick={() => {
                   handleSort('hops_away');
                 }}
@@ -1141,7 +1156,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'via_mqtt' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 text-center transition-colors select-none hover:text-gray-200"
+                  className="hover:text-ink-200 cursor-pointer px-3 py-2 text-center transition-colors select-none"
                   onClick={() => {
                     handleSort('via_mqtt');
                   }}
@@ -1155,7 +1170,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'latitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                 onClick={() => {
                   handleSort('latitude');
                 }}
@@ -1171,7 +1186,7 @@ export default function NodeListPanel({
                   aria-sort={
                     sortField === 'longitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                   }
-                  className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                  className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                   onClick={() => {
                     handleSort('longitude');
                   }}
@@ -1183,7 +1198,7 @@ export default function NodeListPanel({
               <th
                 scope="col"
                 aria-sort={sortField === 'rssi' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                 onClick={() => {
                   handleSort('rssi');
                 }}
@@ -1194,7 +1209,7 @@ export default function NodeListPanel({
               <th
                 scope="col"
                 aria-sort={sortField === 'snr' ? (sortAsc ? 'ascending' : 'descending') : 'none'}
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                 onClick={() => {
                   handleSort('snr');
                 }}
@@ -1208,7 +1223,7 @@ export default function NodeListPanel({
                 aria-sort={
                   sortField === 'battery' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                 }
-                className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                 onClick={() => {
                   handleSort('battery');
                 }}
@@ -1223,7 +1238,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'voltage' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                     onClick={() => {
                       handleSort('voltage');
                     }}
@@ -1240,7 +1255,7 @@ export default function NodeListPanel({
                           : 'descending'
                         : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                     onClick={() => {
                       handleSort('channel_utilization');
                     }}
@@ -1253,7 +1268,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'air_util_tx' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                     onClick={() => {
                       handleSort('air_util_tx');
                     }}
@@ -1266,7 +1281,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'altitude' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                     onClick={() => {
                       handleSort('altitude');
                     }}
@@ -1279,7 +1294,7 @@ export default function NodeListPanel({
                     aria-sort={
                       sortField === 'redundancy' ? (sortAsc ? 'ascending' : 'descending') : 'none'
                     }
-                    className="cursor-pointer px-3 py-2 text-right transition-colors select-none hover:text-gray-200"
+                    className="hover:text-ink-200 cursor-pointer px-3 py-2 text-right transition-colors select-none"
                     onClick={() => {
                       handleSort('redundancy');
                     }}
@@ -1292,7 +1307,7 @@ export default function NodeListPanel({
               )}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-700/50">
+          <tbody className="divide-ink-800 divide-y">
             {nodeList.length === 0 ? (
               <tr>
                 <td colSpan={nodeTableColSpan} className="text-muted py-8 text-center">
@@ -1327,6 +1342,7 @@ export default function NodeListPanel({
                   const health = nodeHealthScore(node);
                   const healthTier = nodeHealthTier(health.total);
                   const isMqttOnlyDimmed = ignoreMqttEnabled && !!node.heard_via_mqtt_only;
+                  const isSelected = node.node_id === selectedNodeId;
 
                   return (
                     <tr
@@ -1336,29 +1352,20 @@ export default function NodeListPanel({
                       onClick={() => {
                         onNodeClick(node);
                       }}
-                      className={`hover:bg-secondary-dark/50 cursor-pointer transition-colors ${
-                        isSelf ? 'bg-brand-green/5 border-l-brand-green border-l-2' : ''
+                      data-selected={isSelected ? 'true' : undefined}
+                      className={`cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-sidebar-active-bg'
+                          : isSelf
+                            ? 'bg-brand-green/5 hover:bg-sidebar-active-bg/60'
+                            : 'hover:bg-sidebar-active-bg/60'
                       }`}
                     >
                       {/* Status indicator */}
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1">
                           <span
-                            role="img"
-                            className={`h-2 w-2 rounded-full ${
-                              status === 'online'
-                                ? 'bg-brand-green'
-                                : status === 'stale'
-                                  ? 'bg-purple-800'
-                                  : 'bg-gray-600'
-                            }`}
-                            aria-label={
-                              status === 'online'
-                                ? t('nodeListPanel.statusOnline')
-                                : status === 'stale'
-                                  ? t('nodeListPanel.statusStale')
-                                  : t('nodeListPanel.statusOffline')
-                            }
+                            className="inline-flex"
                             title={
                               status === 'online'
                                 ? t('nodeListPanel.statusOnline')
@@ -1366,21 +1373,26 @@ export default function NodeListPanel({
                                   ? t('nodeListPanel.statusStale')
                                   : t('nodeListPanel.statusOffline')
                             }
-                          />
-                          {isSelf && (
-                            <span
-                              className="text-bright-green text-[10px] font-bold"
-                              title={t('nodeListPanel.yourNodeTooltip')}
-                            >
-                              ★
-                            </span>
-                          )}
+                          >
+                            <StatusDot
+                              tone={
+                                status === 'online' ? 'ok' : status === 'stale' ? 'idle' : 'off'
+                              }
+                              label={
+                                status === 'online'
+                                  ? t('nodeListPanel.statusOnline')
+                                  : status === 'stale'
+                                    ? t('nodeListPanel.statusStale')
+                                    : t('nodeListPanel.statusOffline')
+                              }
+                            />
+                          </span>
                           <span
-                            className={`rounded px-1 text-[9px] leading-tight font-semibold ${
+                            className={`text-3xs rounded px-1 leading-tight font-semibold ${
                               healthTier === 'good'
                                 ? 'bg-green-900/60 text-green-400'
                                 : healthTier === 'warn'
-                                  ? 'bg-yellow-900/60 text-yellow-400'
+                                  ? 'bg-orange-900/60 text-orange-400'
                                   : 'bg-red-900/60 text-red-400'
                             }`}
                             title={t('nodeListPanel.healthTooltip', {
@@ -1421,16 +1433,15 @@ export default function NodeListPanel({
                                 : t('nodeListPanel.addToFavorites')
                             }
                           >
-                            <span
-                              className={
+                            <Star
+                              aria-hidden
+                              size={16}
+                              className={`${ICON_MD} ${
                                 node.favorited
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-600 hover:text-yellow-400'
-                              }
-                              aria-hidden="true"
-                            >
-                              {node.favorited ? '★' : '☆'}
-                            </span>
+                                  ? 'fill-current text-yellow-400'
+                                  : 'text-muted hover:text-yellow-400'
+                              }`}
+                            />
                           </button>
                         )}
                       </td>
@@ -1440,33 +1451,42 @@ export default function NodeListPanel({
                         </td>
                       )}
                       <td
-                        className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-gray-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
+                        className={`px-3 py-2 ${isSelf ? 'text-bright-green font-medium' : 'text-ink-200'} ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                       >
                         <div className="flex min-w-0 flex-col gap-0.5">
                           <span className="inline-flex min-w-0 items-center gap-1">
-                            <span
-                              className={
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onNodeClick(node);
+                              }}
+                              aria-current={isSelected ? 'true' : undefined}
+                              className={`focus-visible:outline-brand-green rounded text-left hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 ${
                                 mode === 'meshcore' ? 'break-words whitespace-normal' : 'truncate'
-                              }
+                              }`}
                             >
                               {mode === 'meshcore'
                                 ? meshcoreContactDisplayName(node.node_id, node.long_name)
                                 : node.long_name || '-'}
-                              {isSelf && (
-                                <span className="text-bright-green/60 ml-1.5 text-[10px]">
-                                  (you)
-                                </span>
-                              )}
-                            </span>
+                            </button>
+                            {isSelf && (
+                              <span
+                                className="bg-brand-green/12 text-bright-green text-label shrink-0 rounded px-1.5 py-px font-medium"
+                                title={t('nodeListPanel.yourNodeTooltip')}
+                              >
+                                {t('nodeListPanel.youBadge')}
+                              </span>
+                            )}
                             {mode === 'meshcore' &&
                               meshcorePublicKeyHexByNodeId?.has(node.node_id) && (
                                 <span
                                   role="img"
-                                  className="shrink-0"
+                                  className="text-muted shrink-0"
                                   aria-label={t('nodeListPanel.hasPublicKeyTitle')}
                                   title={t('nodeListPanel.hasPublicKeyTitle')}
                                 >
-                                  🔑
+                                  <KeyRound aria-hidden className={ICON_SM_PLUS} size={14} />
                                 </span>
                               )}
                             {!isSelf &&
@@ -1485,7 +1505,7 @@ export default function NodeListPanel({
                                         routingRow.severity === 'error'
                                           ? 'text-red-400'
                                           : routingRow.severity === 'info'
-                                            ? 'text-blue-400'
+                                            ? 'text-indigo-400'
                                             : 'text-orange-400'
                                       }`}
                                       trigger={iconTrigger}
@@ -1498,7 +1518,7 @@ export default function NodeListPanel({
                           {mode === 'meshcore' &&
                             meshcoreShowPublicKeys &&
                             meshcorePublicKeyHexByNodeId?.get(node.node_id) && (
-                              <span className="text-muted font-mono text-[10px] break-all whitespace-normal">
+                              <span className="text-muted text-2xs font-mono break-all whitespace-normal">
                                 {meshcorePublicKeyHexByNodeId.get(node.node_id)}
                               </span>
                             )}
@@ -1506,7 +1526,7 @@ export default function NodeListPanel({
                       </td>
                       {mode !== 'meshcore' && (
                         <td
-                          className={`px-3 py-2 text-gray-300 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
+                          className={`text-ink-300 px-3 py-2 ${isMqttOnlyDimmed ? 'line-through' : ''}`}
                         >
                           {node.short_name || '-'}
                         </td>
@@ -1515,14 +1535,14 @@ export default function NodeListPanel({
                       <td className="px-3 py-2 text-xs">
                         {mode === 'meshcore' ? (
                           node.hw_model === 'Repeater' || node.hw_model === 'Room' ? (
-                            <span className="inline-flex items-center gap-1 text-gray-300">
+                            <span className="text-ink-300 inline-flex items-center gap-1">
                               <svg className="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
                                 <path d={getNodeTypeIcon(node.hw_model) ?? ''} />
                               </svg>
                               {meshcoreContactTypeLabel(t, node.hw_model)}
                             </span>
                           ) : node.hw_model === 'Chat' ? (
-                            <span className="inline-flex items-center gap-1 text-gray-300">
+                            <span className="text-ink-300 inline-flex items-center gap-1">
                               <User
                                 aria-hidden
                                 className="h-3.5 w-3.5"
@@ -1532,12 +1552,12 @@ export default function NodeListPanel({
                               {meshcoreContactTypeLabel(t, node.hw_model)}
                             </span>
                           ) : (
-                            <span className="text-gray-300">
+                            <span className="text-ink-300">
                               {meshcoreContactTypeLabel(t, node.hw_model)}
                             </span>
                           )
                         ) : node.hw_model === 'Chat' ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                          <span className="text-ink-400 inline-flex items-center gap-1 text-xs">
                             <User
                               aria-hidden
                               className="h-3.5 w-3.5"
@@ -1551,7 +1571,7 @@ export default function NodeListPanel({
                         )}
                       </td>
                       <td
-                        className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-gray-300'}`}
+                        className={`px-3 py-2 text-right text-xs ${(isSelf && (node.hops_away ?? 0)) === 0 ? 'text-bright-green' : 'text-ink-300'}`}
                       >
                         {node.heard_via_mqtt_only ? (
                           <span className="text-muted">—</span>
@@ -1560,7 +1580,7 @@ export default function NodeListPanel({
                         )}
                       </td>
                       {mode !== 'meshcore' && (
-                        <td className="px-3 py-2 text-xs text-gray-300">
+                        <td className="text-ink-300 px-3 py-2 text-xs">
                           <div className="flex justify-center">
                             {(() => {
                               const pathBadge = resolveMeshtasticPathBadge({
@@ -1625,7 +1645,7 @@ export default function NodeListPanel({
                                       }
                                     }}
                                   >
-                                    📍
+                                    <MapPin aria-hidden className="h-3.5 w-3.5" />
                                   </button>
                                 )}
                               </span>
@@ -1672,7 +1692,7 @@ export default function NodeListPanel({
                                   node.battery > 50
                                     ? 'bg-brand-green'
                                     : node.battery > 20
-                                      ? 'bg-yellow-500'
+                                      ? 'bg-orange-500'
                                       : 'bg-red-500'
                                 }`}
                                 style={{
@@ -1686,7 +1706,7 @@ export default function NodeListPanel({
                               node.battery > 50
                                 ? 'text-bright-green'
                                 : node.battery > 20
-                                  ? 'text-yellow-400'
+                                  ? 'text-orange-400'
                                   : node.battery > 0
                                     ? 'text-red-400'
                                     : 'text-muted'
@@ -1698,18 +1718,18 @@ export default function NodeListPanel({
                       </td>
                       {mode !== 'meshcore' && (
                         <>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="text-ink-300 px-3 py-2 text-right text-xs">
                             {node.voltage != null ? `${node.voltage.toFixed(2)} V` : '-'}
                           </td>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="text-ink-300 px-3 py-2 text-right text-xs">
                             {node.channel_utilization != null
                               ? `${node.channel_utilization.toFixed(1)}%`
                               : '-'}
                           </td>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="text-ink-300 px-3 py-2 text-right text-xs">
                             {node.air_util_tx != null ? `${node.air_util_tx.toFixed(1)}%` : '-'}
                           </td>
-                          <td className="px-3 py-2 text-right text-xs text-gray-300">
+                          <td className="text-ink-300 px-3 py-2 text-right text-xs">
                             {node.altitude != null && node.altitude !== 0
                               ? `${node.altitude} m`
                               : '-'}
@@ -1723,7 +1743,7 @@ export default function NodeListPanel({
                                   echoes >= 3
                                     ? 'text-lime-400'
                                     : echoes > 0
-                                      ? 'text-gray-300'
+                                      ? 'text-ink-300'
                                       : 'text-muted'
                                 }`}
                                 title={

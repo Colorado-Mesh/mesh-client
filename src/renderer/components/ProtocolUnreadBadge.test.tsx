@@ -20,7 +20,7 @@ describe('ProtocolUnreadBadge', () => {
   });
 
   it('passes non-numeric counts through unchanged (e.g. "-" placeholder)', () => {
-    const { getByText } = render(<ProtocolUnreadBadge count="-" fillClass="bg-amber-800" />);
+    const { getByText } = render(<ProtocolUnreadBadge count="-" fillClass="bg-orange-800" />);
     expect(getByText('-')).toBeInTheDocument();
   });
 
@@ -38,7 +38,7 @@ describe('ProtocolUnreadBadge', () => {
     expect(label).not.toHaveClass('animate-pulse');
   });
 
-  it.each(['bg-readable-green', 'bg-cyan-800 text-white', 'bg-amber-800 text-white'] as const)(
+  it.each(['bg-readable-green', 'bg-cyan-800 text-white', 'bg-orange-800 text-white'] as const)(
     'has no axe violations with the %s fill class',
     async (fillClass) => {
       const { getByText } = render(<ProtocolUnreadBadge count={7} fillClass={fillClass} />);

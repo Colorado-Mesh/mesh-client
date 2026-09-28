@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 
 import type { EmergencyIncident } from '@/renderer/stores/incidentStore';
 
+import { buttonClassName } from '../ui/Button';
+
 /** Sending is owned by the caller (protocol-specific); this only renders the control. */
 export function AckIncidentButton({
   incident,
@@ -24,7 +26,7 @@ export function AckIncidentButton({
       onClick={() => {
         onAck(incident);
       }}
-      className="rounded bg-blue-700 px-2 py-1 text-xs font-semibold text-white hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+      className={buttonClassName('primary', 'sm')}
     >
       {t(beacon ? 'incidentPanel.ackBeacon' : 'incidentPanel.ack')}
     </button>

@@ -1,6 +1,8 @@
 import { type SyntheticEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
+
 interface Props {
   disabled?: boolean;
   onApply: (pubkeyHex: string, level: number) => Promise<void>;
@@ -33,7 +35,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
   return (
     <form className="mb-2 flex flex-wrap items-end gap-2" onSubmit={(e) => void handleSubmit(e)}>
       <label className="min-w-[12rem] flex-1 space-y-1">
-        <span className="text-xs text-gray-400">{t('roomsPanel.aclPubkeyLabel')}</span>
+        <span className="text-ink-400 text-xs">{t('roomsPanel.aclPubkeyLabel')}</span>
         <input
           type="text"
           value={aclPubkey}
@@ -42,19 +44,19 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
           }}
           placeholder={t('roomsPanel.aclPubkeyPlaceholder')}
           disabled={disabled || pending}
-          className="w-full rounded border border-gray-600 bg-gray-800 px-2 py-1 font-mono text-xs text-gray-200 disabled:opacity-40"
+          className={`${INPUT_BOX_SM_CLASS} w-full font-mono`}
           aria-label={t('roomsPanel.aclPubkeyLabel')}
         />
       </label>
       <label className="space-y-1">
-        <span className="text-xs text-gray-400">{t('roomsPanel.aclLevelLabel')}</span>
+        <span className="text-ink-400 text-xs">{t('roomsPanel.aclLevelLabel')}</span>
         <select
           value={aclLevel}
           onChange={(e) => {
             setAclLevel(Number.parseInt(e.target.value, 10));
           }}
           disabled={disabled || pending}
-          className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-gray-200 disabled:opacity-40"
+          className={SELECT_BOX_SM_CLASS}
           aria-label={t('roomsPanel.aclLevelLabel')}
         >
           <option value={0}>{t('roomsPanel.aclLevelRemove')}</option>
@@ -66,7 +68,7 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
       <button
         type="submit"
         disabled={disabled || pending || !/^[0-9a-f]{64}$/i.test(aclPubkey.trim())}
-        className="rounded border border-gray-600 bg-gray-700 px-3 py-1 text-xs text-gray-200 disabled:opacity-40"
+        className="border-ink-600 bg-ink-700 text-ink-200 rounded border px-3 py-1 text-xs disabled:opacity-40"
       >
         {t('roomsPanel.aclApply')}
       </button>

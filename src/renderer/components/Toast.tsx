@@ -1,3 +1,4 @@
+import { CircleCheck, CircleX, Info, Siren, TriangleAlert } from 'lucide-react-motion';
 import {
   createContext,
   useCallback,
@@ -10,6 +11,14 @@ import {
 import { useTranslation } from 'react-i18next';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info' | 'emergency';
+
+const TOAST_ICON: Record<ToastType, typeof Info> = {
+  success: CircleCheck,
+  error: CircleX,
+  warning: TriangleAlert,
+  info: Info,
+  emergency: Siren,
+};
 
 export interface ToastAction {
   label: string;
@@ -92,8 +101,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={contextValue}>
       {children}
-      {/* Toast container — fixed bottom-right */}
-      <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex flex-col gap-2">
+      {/* Toast container, bottom right, above the status bar and the phone-width bottom nav. */}
+      <div
+        data-toast-stack=""
+        className="pointer-events-none fixed right-4 bottom-[calc(var(--shell-bottom-chrome,0px)+0.75rem)] z-50 flex flex-col gap-2"
+      >
         {toasts.map((toast) => (
           <ToastItem key={toast.id} toast={toast} onDismiss={removeToast} />
         ))}
@@ -129,29 +141,23 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
     };
   }, [toast, dismiss]);
 
-  const icon = {
-    success: '✓',
-    error: '✗',
-    warning: '⚠',
-    info: 'ℹ',
-    emergency: '!',
-  }[toast.type];
+  const Icon = TOAST_ICON[toast.type];
 
   const colors = {
-    success: 'bg-brand-green/15 border-brand-green text-bright-green',
+    success: 'bg-green-950/90 border-green-500 text-green-200',
     error: 'bg-red-900/90 border-red-600 text-red-200',
-    warning: 'bg-yellow-900/90 border-yellow-600 text-yellow-200',
-    info: 'bg-deep-black/90 border-gray-600 text-gray-200',
+    warning: 'bg-orange-900/90 border-orange-600 text-orange-200',
+    info: 'bg-deep-black/90 border-ink-600 text-ink-200',
     emergency: 'bg-red-900/95 border-red-500 text-red-100',
   }[toast.type];
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm shadow-lg backdrop-blur-sm transition-all duration-300 ${colors} ${
+      className={`shadow-level-3 pointer-events-auto flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm backdrop-blur-sm transition-all duration-300 ${colors} ${
         visible ? 'translate-x-0 opacity-100' : 'translate-x-8 opacity-0'
       }`}
     >
-      <span className="shrink-0 text-base">{icon}</span>
+      <Icon aria-hidden className="h-4 w-4 shrink-0" />
       <span className="flex-1">{toast.message}</span>
       {toast.action ? (
         <button
@@ -170,7 +176,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         type="button"
         onClick={dismiss}
         aria-label={t('common.dismiss')}
-        className="text-muted ml-2 shrink-0 text-xs font-medium hover:text-gray-200"
+        className="text-muted hover:text-ink-200 ml-2 shrink-0 text-xs font-medium"
       >
         {t('common.dismiss')}
       </button>

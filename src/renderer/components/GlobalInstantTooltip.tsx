@@ -1,13 +1,20 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
-import { attachGlobalInstantTooltipListeners } from '@/renderer/lib/globalInstantTooltip';
+import {
+  attachGlobalInstantTooltipListeners,
+  instantTooltipSide,
+} from '@/renderer/lib/globalInstantTooltip';
 import {
   computeInstantTooltipPosition,
   type InstantTooltipPosition,
 } from '@/renderer/lib/instantTooltipPosition';
 
 import { InstantTooltipBubble } from './InstantTooltipBubble';
+
+function positionFor(host: HTMLElement): InstantTooltipPosition {
+  return computeInstantTooltipPosition(host.getBoundingClientRect(), instantTooltipSide(host));
+}
 
 /**
  * App-wide instant tooltips for native `title` attributes (Electron delays native titles).
@@ -20,17 +27,13 @@ export function GlobalInstantTooltip() {
   useEffect(() => {
     return attachGlobalInstantTooltipListeners({
       onShow: (host, text) => {
-        setState({ text, pos: computeInstantTooltipPosition(host.getBoundingClientRect()) });
+        setState({ text, pos: positionFor(host) });
       },
       onHide: () => {
         setState(null);
       },
       onReposition: (host) => {
-        setState((prev) =>
-          prev
-            ? { ...prev, pos: computeInstantTooltipPosition(host.getBoundingClientRect()) }
-            : null,
-        );
+        setState((prev) => (prev ? { ...prev, pos: positionFor(host) } : null));
       },
     });
   }, []);

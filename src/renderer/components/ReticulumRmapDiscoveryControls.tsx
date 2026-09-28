@@ -35,6 +35,7 @@ import type { ReticulumInterfaceRow } from '@/renderer/lib/reticulum/useReticulu
 
 import { ConfirmModal } from './ConfirmModal';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 export interface ReticulumRmapDiscoveryControlsProps {
   disabled?: boolean;
@@ -341,7 +342,7 @@ export function ReticulumRmapDiscoveryControls({
     <>
       <div className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-200">
+          <label className="text-ink-200 flex cursor-pointer items-center gap-2 text-sm">
             <input
               ref={publishCheckboxRef}
               type="checkbox"
@@ -369,7 +370,7 @@ export function ReticulumRmapDiscoveryControls({
               href="https://rmap.world/info.html"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200"
+              className="inline-flex items-center gap-1 text-xs text-orange-300 hover:text-orange-200"
             >
               {t('reticulumRmapDiscovery.helpLink')}
               <ExternalLink className="h-3 w-3" aria-hidden />
@@ -378,22 +379,22 @@ export function ReticulumRmapDiscoveryControls({
         </div>
         <p className="text-muted text-xs">{t('reticulumRmapDiscovery.hint')}</p>
         {!shareMyLocationLive && (
-          <p className="text-xs text-amber-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
+          <p className="text-xs text-orange-300">{t('reticulumRmapDiscovery.disabledShareOff')}</p>
         )}
         {coords ? (
-          <p className="text-xs text-gray-300" role="status">
+          <p className="text-ink-300 text-xs" role="status">
             {t('reticulumRmapDiscovery.coordsStatus', {
               lat: coords.lat.toFixed(5),
               lon: coords.lon.toFixed(5),
             })}
           </p>
         ) : (
-          <p className="text-xs text-amber-300" role="status">
+          <p className="text-xs text-orange-300" role="status">
             {t('reticulumRmapDiscovery.gpsMissingWarning')}
           </p>
         )}
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.announceIntervalMin')}
             <input
               type="number"
@@ -402,13 +403,13 @@ export function ReticulumRmapDiscoveryControls({
               value={announceIntervalMin}
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.announceIntervalMin')}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setAnnounceIntervalMin(clampRmapAnnounceIntervalMin(Number(e.target.value)));
               }}
             />
           </label>
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.heightMeters')}
             <input
               type="number"
@@ -416,14 +417,14 @@ export function ReticulumRmapDiscoveryControls({
               value={heightMeters}
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.heightMeters')}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setHeightMeters(e.target.value);
               }}
             />
           </label>
         </div>
-        <label className="block text-xs text-gray-400">
+        <label className="text-ink-400 block text-xs">
           {hasServerPublishTarget
             ? t('reticulumRmapDiscovery.reachableOnRequired')
             : t('reticulumRmapDiscovery.reachableOn')}
@@ -437,7 +438,7 @@ export function ReticulumRmapDiscoveryControls({
                 : t('reticulumRmapDiscovery.reachableOn')
             }
             aria-invalid={reachableOnError != null}
-            className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+            className={`${INPUT_BOX_CLASS} mt-1 w-full`}
             onChange={(e) => {
               setReachableOn(e.target.value);
               setReachableOnError(null);
@@ -448,7 +449,7 @@ export function ReticulumRmapDiscoveryControls({
           ) : null}
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.discoveryLxmfAddress')}
             <input
               type="text"
@@ -456,7 +457,7 @@ export function ReticulumRmapDiscoveryControls({
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.discoveryLxmfAddress')}
               aria-invalid={lxmfAddressError != null}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setDiscoveryLxmfAddress(e.target.value);
                 setLxmfAddressError(null);
@@ -466,7 +467,7 @@ export function ReticulumRmapDiscoveryControls({
               <span className="mt-1 block text-xs text-red-400">{lxmfAddressError}</span>
             ) : null}
           </label>
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('reticulumRmapDiscovery.discoveryStampValue')}
             <input
               type="number"
@@ -475,7 +476,7 @@ export function ReticulumRmapDiscoveryControls({
               value={discoveryStampValue}
               disabled={controlsDisabled}
               aria-label={t('reticulumRmapDiscovery.discoveryStampValue')}
-              className="bg-deep-black mt-1 w-full rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 w-full`}
               onChange={(e) => {
                 setDiscoveryStampValue(clampRmapDiscoveryStampValue(Number(e.target.value)));
               }}
@@ -483,7 +484,7 @@ export function ReticulumRmapDiscoveryControls({
           </label>
         </div>
         <div className="flex flex-wrap gap-4">
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-300">
+          <label className="text-ink-300 flex cursor-pointer items-center gap-2 text-xs">
             <input
               type="checkbox"
               checked={discoveryEncrypt}
@@ -495,7 +496,7 @@ export function ReticulumRmapDiscoveryControls({
             />
             <span>{t('reticulumRmapDiscovery.discoveryEncrypt')}</span>
           </label>
-          <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-300">
+          <label className="text-ink-300 flex cursor-pointer items-center gap-2 text-xs">
             <input
               type="checkbox"
               checked={publishIfac}

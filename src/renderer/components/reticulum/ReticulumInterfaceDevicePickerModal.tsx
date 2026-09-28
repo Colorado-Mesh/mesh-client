@@ -21,6 +21,7 @@ import { isWeakBleRssi, weakestBleRssi } from '@/renderer/lib/signal';
 import { BleWeakSignalBanner } from '../BleWeakSignalBanner';
 import { PickerSortControls } from '../PickerSortControls';
 import SignalBars from '../SignalBars';
+import { INPUT_BOX_CLASS } from '../ui/formClasses';
 
 export interface ReticulumInterfaceDevicePickerModalProps {
   open: boolean;
@@ -109,12 +110,12 @@ export function ReticulumInterfaceDevicePickerModal({
         role="dialog"
         aria-modal="true"
         aria-label={t(titleKey(mode))}
-        className="bg-deep-black relative w-full max-w-lg overflow-hidden rounded-lg border border-gray-600 shadow-xl"
+        className="bg-deep-black rounded-modal shadow-level-4 border-ink-600 relative w-full max-w-lg overflow-hidden border"
       >
-        <div className="bg-secondary-dark flex items-center justify-between border-b border-gray-600 px-4 py-2.5">
-          <span className="text-sm font-medium text-gray-200">{t(titleKey(mode))}</span>
+        <div className="bg-secondary-dark border-ink-600 flex items-center justify-between border-b px-4 py-2.5">
+          <span className="text-ink-200 text-sm font-medium">{t(titleKey(mode))}</span>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <span className="text-xs text-gray-300" aria-live="polite">
+            <span className="text-ink-300 text-xs" aria-live="polite">
               {t('connectionPanel.devicesFound', { count })}
             </span>
             {count > 0 ? (
@@ -130,7 +131,7 @@ export function ReticulumInterfaceDevicePickerModal({
             {isSerial ? (
               <button
                 type="button"
-                className="text-xs text-amber-300 hover:text-amber-200"
+                className="text-xs text-orange-300 hover:text-orange-200"
                 aria-label={t('connectionPanel.reticulumInterfaces.refreshPorts')}
                 onClick={onRefreshSerial}
               >
@@ -139,7 +140,7 @@ export function ReticulumInterfaceDevicePickerModal({
             ) : (
               <button
                 type="button"
-                className="text-xs text-amber-300 hover:text-amber-200"
+                className="text-xs text-orange-300 hover:text-orange-200"
                 aria-label={t('connectionPanel.reticulumInterfaces.rescanBle')}
                 disabled={scanning}
                 onClick={onRescanBle}
@@ -149,7 +150,7 @@ export function ReticulumInterfaceDevicePickerModal({
             )}
             <button
               type="button"
-              className="text-xs text-gray-400 hover:text-gray-200"
+              className="text-ink-400 hover:text-ink-200 text-xs"
               aria-label={t('common.cancel')}
               onClick={onCancel}
             >
@@ -159,7 +160,7 @@ export function ReticulumInterfaceDevicePickerModal({
         </div>
 
         {scanError ? (
-          <p className="border-b border-gray-700 px-4 py-2 text-xs text-amber-300" role="alert">
+          <p className="border-ink-700 border-b px-4 py-2 text-xs text-orange-300" role="alert">
             {(() => {
               const { key, params } = reticulumPickerScanErrorI18nKey(scanError);
               return t(key, params);
@@ -172,20 +173,20 @@ export function ReticulumInterfaceDevicePickerModal({
             serialPorts.length === 0 ? (
               <div className="text-muted px-4 py-4 text-sm">
                 <p>{t('connectionPanel.reticulumInterfaces.pickerSerialEmpty')}</p>
-                <label className="mt-3 block text-xs text-gray-400">
+                <label className="text-ink-400 mt-3 block text-xs">
                   {t('connectionPanel.reticulumInterfaces.serialPort')}
                   <input
                     value={manualPath}
                     onChange={(e) => {
                       onManualPathChange(e.target.value);
                     }}
-                    className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm"
+                    className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
                   />
                 </label>
                 {manualPath.trim() ? (
                   <button
                     type="button"
-                    className="mt-3 rounded bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-600"
+                    className="mt-3 rounded bg-orange-700 px-3 py-1.5 text-sm text-white hover:bg-orange-600"
                     aria-label={t('connectionPanel.reticulumInterfaces.useManualPort')}
                     onClick={() => {
                       onSelect({ value: manualPath.trim(), deviceName: manualPath.trim() });
@@ -207,9 +208,9 @@ export function ReticulumInterfaceDevicePickerModal({
                       deviceName: port.label?.trim() || port.path,
                     });
                   }}
-                  className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
+                  className="hover:bg-secondary-dark border-ink-700 w-full border-b px-4 py-3 text-left transition-colors last:border-b-0"
                 >
-                  <div className="flex items-center gap-2 text-sm text-gray-200">
+                  <div className="text-ink-200 flex items-center gap-2 text-sm">
                     <ConnectionIcon type="serial" />
                     {port.label ?? port.path}
                   </div>
@@ -256,9 +257,9 @@ export function ReticulumInterfaceDevicePickerModal({
                   onClick={() => {
                     onSelect({ value, deviceName: displayName });
                   }}
-                  className="hover:bg-secondary-dark w-full border-b border-gray-700 px-4 py-3 text-left transition-colors last:border-b-0"
+                  className="hover:bg-secondary-dark border-ink-700 w-full border-b px-4 py-3 text-left transition-colors last:border-b-0"
                 >
-                  <div className="flex items-center gap-2 text-sm text-gray-200">
+                  <div className="text-ink-200 flex items-center gap-2 text-sm">
                     <ConnectionIcon type="ble" />
                     <span className="min-w-0 flex-1 truncate">{displayName}</span>
                     {hasRssi ? (

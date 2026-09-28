@@ -212,7 +212,7 @@ export function ReticulumVoiceMemoLine({
 
   return (
     <div
-      className="mt-1 flex min-w-0 items-center gap-2 rounded border border-gray-700/80 bg-slate-900/60 px-2 py-1.5"
+      className="border-ink-700/80 bg-ink-900/60 mt-1 flex min-w-0 items-center gap-2 rounded border px-2 py-1.5"
       aria-label={t('chatPanel.voiceMemo.containerAria')}
     >
       <button
@@ -222,7 +222,7 @@ export function ReticulumVoiceMemoLine({
         }
         onClick={handlePlayPause}
         disabled={loadError || !ready}
-        className="shrink-0 rounded p-1 text-gray-300 hover:bg-slate-700 hover:text-white disabled:opacity-40"
+        className="text-ink-300 hover:bg-ink-700 shrink-0 rounded p-1 hover:text-white disabled:opacity-40"
       >
         {playing ? (
           <Pause aria-hidden className="h-4 w-4" size={16} />
@@ -253,7 +253,7 @@ export function ReticulumVoiceMemoLine({
               key={i}
               aria-hidden
               className={`w-1 min-w-0 rounded-sm transition-colors ${
-                played ? 'bg-readable-green' : 'bg-gray-600'
+                played ? 'bg-brand-green' : 'bg-ink-600'
               }`}
               style={{ height: `${Math.max(BAR_MIN_HEIGHT, Math.round(height * 28))}px` }}
             />
@@ -261,9 +261,9 @@ export function ReticulumVoiceMemoLine({
         })}
       </div>
 
-      <span className="min-w-[3rem] shrink-0 text-right text-xs text-gray-400 tabular-nums">
+      <span className="text-ink-400 min-w-[3rem] shrink-0 text-right text-xs tabular-nums">
         {formatDuration(displaySec)}
-        {modeLabel ? <span className="ml-1 text-[10px] text-gray-500">{modeLabel}</span> : null}
+        {modeLabel ? <span className="text-2xs text-muted ml-1">{modeLabel}</span> : null}
       </span>
     </div>
   );

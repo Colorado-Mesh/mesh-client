@@ -159,10 +159,10 @@ export function ReticulumDefaultHubsPickerModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={hintId}
-        className="bg-deep-black relative mx-4 flex max-h-[min(85vh,640px)] w-full max-w-lg flex-col rounded-xl border border-gray-600 shadow-2xl"
+        className="bg-deep-black rounded-modal shadow-level-3 border-ink-600 relative mx-4 flex max-h-[min(85vh,640px)] w-full max-w-lg flex-col border"
       >
-        <div className="space-y-2 border-b border-gray-700 px-5 py-4">
-          <h3 id={titleId} className="text-lg font-semibold text-gray-200">
+        <div className="border-ink-700 space-y-2 border-b px-5 py-4">
+          <h3 id={titleId} className="text-ink-200 text-lg font-semibold">
             {t('connectionPanel.reticulumInterfaces.defaultHubsPickerTitle')}
           </h3>
           <p id={hintId} className="text-muted text-sm leading-relaxed">
@@ -183,12 +183,12 @@ export function ReticulumDefaultHubsPickerModal({
           ))}
         </div>
 
-        <div className="flex gap-3 border-t border-gray-700 px-5 py-4">
+        <div className="border-ink-700 flex gap-3 border-t px-5 py-4">
           <button
             type="button"
             onClick={onCancel}
             disabled={confirming}
-            className="bg-secondary-dark flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-600 disabled:opacity-50"
+            className="bg-secondary-dark text-ink-300 hover:bg-ink-600 flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {t('common.cancel')}
           </button>
@@ -198,7 +198,7 @@ export function ReticulumDefaultHubsPickerModal({
               onConfirm(selectedIds);
             }}
             disabled={confirming || selectedIds.size === 0}
-            className="bg-readable-green flex-1 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:opacity-50"
+            className="bg-brand-green text-app-bg flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors hover:bg-green-600 disabled:opacity-50"
             aria-label={t('connectionPanel.reticulumInterfaces.defaultHubsPickerConfirmAria', {
               count: actionableSelectedCount,
             })}
@@ -246,7 +246,7 @@ function RegionSection({
   return (
     <fieldset className="space-y-2">
       <legend className="sr-only">{t(reticulumDefaultHubRegionLabelKey(region))}</legend>
-      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-200">
+      <label className="text-ink-200 flex cursor-pointer items-center gap-2 text-sm font-medium">
         <input
           ref={regionCheckboxRef}
           type="checkbox"
@@ -267,7 +267,7 @@ function RegionSection({
             <li key={preset.id}>
               <label
                 className={`flex items-start gap-2 text-sm ${
-                  present ? 'cursor-default text-gray-500' : 'cursor-pointer text-gray-300'
+                  present ? 'text-muted cursor-default' : 'text-ink-300 cursor-pointer'
                 }`}
               >
                 <input

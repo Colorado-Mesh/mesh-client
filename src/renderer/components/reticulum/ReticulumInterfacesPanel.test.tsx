@@ -1470,10 +1470,10 @@ describe('ReticulumInterfacesPanel', () => {
       'false',
     );
     expect(
-      screen.getByTestId('reticulum-iface-row-hub-off').querySelector('.text-gray-500'),
+      screen.getByTestId('reticulum-iface-row-hub-off').querySelector('[data-interface-disabled]'),
     ).not.toBeNull();
     expect(
-      screen.getByTestId('reticulum-iface-row-hub-on').querySelector('.text-gray-500'),
+      screen.getByTestId('reticulum-iface-row-hub-on').querySelector('[data-interface-disabled]'),
     ).toBeNull();
   });
 

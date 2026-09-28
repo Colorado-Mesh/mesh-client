@@ -6,6 +6,29 @@ import { describe, expect, it } from 'vitest';
 const workflow = readFileSync('.github/workflows/buttonmash.yaml', 'utf8');
 const config = JSON.parse(readFileSync('buttonmash.config.json', 'utf8'));
 
+// Buttonmash compiles every ignore pattern case-insensitively.
+const isIgnored = (message) =>
+  config.detectors.ignorePatterns.some((pattern) =>
+    // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
+    new RegExp(pattern, 'i').test(message),
+  );
+
+// "Reset <sound event>" in App > Notification sounds: the event names the settings screen shows.
+const soundSettings = readFileSync('src/renderer/components/NotificationSoundSettings.tsx', 'utf8');
+const soundLabelKeys = [
+  .../'notificationSounds\.(\w+)'/g[Symbol.matchAll](
+    /const EVENT_LABELS = \{([\s\S]*?)\} as const;/.exec(soundSettings)?.[1] ?? '',
+  ),
+].map((match) => match[1]);
+const soundStrings = JSON.parse(
+  readFileSync('src/renderer/locales/en/translation.json', 'utf8'),
+).notificationSounds;
+const isSafeName = (name) =>
+  config.guardrails.destructive.safeNames.some((pattern) =>
+    // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
+    new RegExp(pattern, 'i').test(name),
+  );
+
 describe('Buttonmash CI', () => {
   it('runs the Vite renderer through the browser-safe Electron API stub', () => {
     expect(workflow).toContain('pnpm exec vite --host 127.0.0.1 --port 4173 --strictPort');
@@ -18,11 +41,11 @@ describe('Buttonmash CI', () => {
     expect(workflow).toContain('persist-credentials: false');
     expect(workflow).toContain('uses: ./.github/actions/setup-node-pnpm');
     expect(workflow).toContain("node-version: '22.23.2'");
-    expect(workflow).toContain('uses: cj-vana/buttonmash@3dfe5aa15e824accfd5f72c176ac64b2f63450db');
+    expect(workflow).toContain('uses: cj-vana/buttonmash@d97dee5635d1a5432af0a26d60fb5b7038f2e4eb');
     expect(workflow).toContain(
       'uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a',
     );
-    expect(workflow).toContain("version: '0.2.0'");
+    expect(workflow).toContain("version: '0.3.1'");
     expect(config.seed).toBe('ci');
     expect(config.budget).toMatchObject({
       maxActions: 350,
@@ -40,6 +63,9 @@ describe('Buttonmash CI', () => {
       forms: { enabled: false },
     });
     expect(config.guardrails.billing.mode).toBe('refuse');
+    // Buttonmash blocks font and media requests by default. Letting them through keeps the run
+    // drawing text in the bundled IBM Plex fonts the app serves from its own origin.
+    expect(config.guardrails.blockMedia).toBe(false);
     expect(config.detectors.ignorePatterns).toContain(
       'controls\\.start\\(\\) should only be called after a component has mounted',
     );
@@ -58,10 +84,23 @@ describe('Buttonmash CI', () => {
     '[useMeshtasticRuntime] Connection failed: BLE peripheral ID required',
     '[useMeshcoreRuntime] connect error BLE peripheral ID required',
   ])('keeps missing-device wiring failures visible: %s', (message) => {
-    const ignored = config.detectors.ignorePatterns.some((pattern) =>
-      // eslint-disable-next-line security/detect-non-literal-regexp -- Patterns come from the checked-in CI config.
-      new RegExp(pattern).test(message),
-    );
-    expect(ignored).toBe(false);
+    expect(isIgnored(message)).toBe(false);
+  });
+
+  it('lets the monkey reset a notification sound, and nothing else named Reset', () => {
+    // Each Reset only restores that sound's default tone and volume.
+    expect(soundLabelKeys.length).toBeGreaterThanOrEqual(9);
+    for (const key of soundLabelKeys) {
+      const name = soundStrings.resetFor.replace('{{event}}', soundStrings[key]);
+      expect(isSafeName(name), name).toBe(true);
+    }
+    for (const name of [
+      'Reset',
+      'Reset node database',
+      'Factory reset',
+      'Reset Channel messages now',
+    ]) {
+      expect(isSafeName(name), name).toBe(false);
+    }
   });
 });

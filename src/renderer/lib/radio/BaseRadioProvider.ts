@@ -58,8 +58,6 @@ export interface ProtocolCapabilities {
   hasPowerConfig: boolean;
   /** Whether WiFi / Ethernet network config is available */
   hasWifiConfig: boolean;
-  /** Whether telemetry device metrics update interval config is available */
-  hasTelemetryIntervalConfig: boolean;
   /** User-defined contact groups + built-in filters on the Nodes/Contacts list */
   hasUserManagedContactGroups: boolean;
   /** MeshCore companion: contact auto-add / manual mode and related Radio UI */
@@ -80,8 +78,6 @@ export interface ProtocolCapabilities {
   hasRemoteAdmin: boolean;
   /** Whether the TAK panel (local CoT server + remote relay) is available */
   hasTakPanel: boolean;
-  /** Whether Remote Hardware (GPIO) control is available */
-  hasRemoteHardware: boolean;
   /** Whether Serial Bridge is available */
   hasSerial: boolean;
   /** Whether Range Test packets are available */
@@ -90,8 +86,6 @@ export interface ProtocolCapabilities {
   hasPaxCounter: boolean;
   /** Whether Audio packets are available */
   hasAudio: boolean;
-  /** Whether IP Tunnel is available */
-  hasIpTunnel: boolean;
   /** Whether Detection Sensor packets are available */
   hasDetectionSensor: boolean;
   /** Whether Store & Forward is available */
@@ -201,7 +195,6 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasDisplayConfig: true,
   hasPowerConfig: true,
   hasWifiConfig: true,
-  hasTelemetryIntervalConfig: true,
   hasUserManagedContactGroups: true,
   hasCompanionContactManagementConfig: false,
   hasCompanionTelemetryPrivacyConfig: false,
@@ -212,12 +205,10 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasSecurityPanel: true,
   hasRemoteAdmin: true,
   hasTakPanel: true,
-  hasRemoteHardware: true,
   hasSerial: true,
   hasRangeTest: true,
   hasPaxCounter: true,
   hasAudio: true,
-  hasIpTunnel: true,
   hasDetectionSensor: true,
   hasStoreForward: true,
   hasAtakPlugin: true,
@@ -284,7 +275,6 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasDisplayConfig: false,
   hasPowerConfig: false,
   hasWifiConfig: false,
-  hasTelemetryIntervalConfig: false,
   hasUserManagedContactGroups: true,
   hasCompanionContactManagementConfig: true,
   hasCompanionTelemetryPrivacyConfig: true,
@@ -295,12 +285,10 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasSecurityPanel: true,
   hasRemoteAdmin: false,
   hasTakPanel: true,
-  hasRemoteHardware: false,
   hasSerial: false,
   hasRangeTest: false,
   hasPaxCounter: false,
   hasAudio: false,
-  hasIpTunnel: false,
   hasDetectionSensor: false,
   hasStoreForward: false,
   hasAtakPlugin: false,
@@ -366,7 +354,6 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasDisplayConfig: false,
   hasPowerConfig: false,
   hasWifiConfig: false,
-  hasTelemetryIntervalConfig: false,
   hasUserManagedContactGroups: true,
   hasCompanionContactManagementConfig: false,
   hasCompanionTelemetryPrivacyConfig: false,
@@ -377,12 +364,10 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasSecurityPanel: false,
   hasRemoteAdmin: false,
   hasTakPanel: true,
-  hasRemoteHardware: false,
   hasSerial: false,
   hasRangeTest: false,
   hasPaxCounter: false,
   hasAudio: false,
-  hasIpTunnel: false,
   hasDetectionSensor: false,
   hasStoreForward: false,
   hasAtakPlugin: false,

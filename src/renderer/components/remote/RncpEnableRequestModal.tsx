@@ -245,20 +245,20 @@ export function RncpEnableRequestModal() {
       aria-modal="true"
       aria-label={t('reticulumRemote.enableRequest.title')}
     >
-      <div className="w-full max-w-md rounded-lg border border-gray-700 bg-gray-900 p-4 shadow-xl">
-        <h2 className="text-lg font-semibold text-gray-100">
+      <div className="shadow-level-4 border-ink-700 bg-ink-900 w-full max-w-md rounded-lg border p-4">
+        <h2 className="text-ink-100 text-lg font-semibold">
           {t('reticulumRemote.enableRequest.title')}
         </h2>
-        <p className="mt-2 text-sm text-gray-300">
+        <p className="text-ink-300 mt-2 text-sm">
           {t('reticulumRemote.enableRequest.body', { peer })}
         </p>
-        <p className="mt-2 text-xs text-amber-200/90">
+        <p className="mt-2 text-xs text-orange-200/90">
           {t('reticulumRemote.enableRequest.shareDestWarning')}
         </p>
         <div className="mt-4 flex flex-col gap-2">
           <button
             type="button"
-            className="bg-readable-green rounded px-3 py-2 text-sm font-medium text-white"
+            className="bg-brand-green text-app-bg rounded px-3 py-2 text-sm font-medium"
             aria-label={t('reticulumRemote.enableRequest.enableAskAria')}
             onClick={() => void enableListener(false)}
           >
@@ -274,7 +274,7 @@ export function RncpEnableRequestModal() {
           </button>
           <button
             type="button"
-            className="rounded border border-gray-600 px-3 py-2 text-sm text-gray-200"
+            className="border-ink-600 text-ink-200 rounded border px-3 py-2 text-sm"
             aria-label={t('reticulumRemote.enableRequest.notNowAria')}
             onClick={() => {
               dismiss(current.peerHash, false);
@@ -284,7 +284,7 @@ export function RncpEnableRequestModal() {
           </button>
           <button
             type="button"
-            className="rounded px-3 py-2 text-sm text-gray-400 hover:text-gray-200"
+            className="text-ink-400 hover:text-ink-200 rounded px-3 py-2 text-sm"
             aria-label={t('reticulumRemote.enableRequest.dontAskAria')}
             onClick={() => {
               dismiss(current.peerHash, true);

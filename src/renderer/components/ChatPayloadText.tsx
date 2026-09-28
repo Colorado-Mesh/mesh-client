@@ -1,3 +1,4 @@
+import { MapPin } from 'lucide-react-motion';
 import type { ReactNode } from 'react';
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -5,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
+import { meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import {
   meshcoreGiphyMediaUrl,
   meshcoreGiphyPageUrl,
@@ -185,7 +187,7 @@ function MeshcoreGifEmbed({
       title={t('chatPayload.meshcoreGifOpen')}
       onContentResize={onContentResize}
       fallback={
-        <span className="whitespace-pre-wrap text-gray-300">
+        <span className="text-ink-300 whitespace-pre-wrap">
           {highlightCaseInsensitive(wireText, query)}
         </span>
       }
@@ -207,7 +209,8 @@ function LocationCard({
   onContentResize?: () => void;
 }>) {
   const { t } = useTranslation();
-  const [tileFailed, setTileFailed] = useState(false);
+  // Without the tile scheme (plain-browser dev) the preview would only ever fail to load.
+  const [tileFailed, setTileFailed] = useState(() => !meshTilesAvailable());
   const tileUrl = buildStaticTileUrl(lat, lon);
   const coordLabel = `${lat}, ${lon}`;
 
@@ -226,8 +229,9 @@ function LocationCard({
           }}
         />
       )}
-      <div className="text-xs text-cyan-100/90">
-        📍 {highlightCaseInsensitive(coordLabel, query)}
+      <div className="flex items-center gap-1 text-xs text-cyan-100/90">
+        <MapPin aria-hidden className="h-3.5 w-3.5 shrink-0" />
+        <span>{highlightCaseInsensitive(coordLabel, query)}</span>
       </div>
       <a
         href={mapUrl}

@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import type { IdentityVaultStatus } from '@/shared/electron-api.types';
 
+import { INPUT_BOX_CLASS } from './ui/formClasses';
+
 export interface IdentityVaultPanelProps {
   disabled?: boolean;
   /** Optional identity backup JSON to encrypt when enabling the vault. */
@@ -107,16 +109,16 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
       : t('identityVault.statusNotConfigured');
 
   return (
-    <div className="mt-3 space-y-2 rounded-lg border border-gray-700 bg-slate-900/40 p-3">
+    <div className="border-ink-700 bg-ink-900/40 mt-3 space-y-2 rounded-lg border p-3">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-medium text-gray-200">{t('identityVault.title')}</h4>
+        <h4 className="text-ink-200 text-sm font-medium">{t('identityVault.title')}</h4>
         <span
           className={
             status.unlocked
               ? 'text-xs text-green-400'
               : status.configured
-                ? 'text-xs text-amber-300'
-                : 'text-xs text-gray-400'
+                ? 'text-xs text-orange-300'
+                : 'text-ink-400 text-xs'
           }
         >
           {statusLabel}
@@ -126,7 +128,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
 
       {!status.configured ? (
         <div className="space-y-2">
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('identityVault.passcode')}
             <input
               type="password"
@@ -136,10 +138,10 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
               }}
               autoComplete="new-password"
               disabled={disabled || busy}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
             />
           </label>
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('identityVault.confirmPasscode')}
             <input
               type="password"
@@ -149,7 +151,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
               }}
               autoComplete="new-password"
               disabled={disabled || busy}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
             />
           </label>
           <button
@@ -158,7 +160,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
             onClick={() => {
               void handleSetPasscode();
             }}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+            className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           >
             {t('identityVault.setPasscode')}
           </button>
@@ -170,14 +172,14 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
           onClick={() => {
             void handleLock();
           }}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           aria-label={t('identityVault.lock')}
         >
           {t('identityVault.lock')}
         </button>
       ) : (
         <div className="space-y-2">
-          <label className="block text-xs text-gray-400">
+          <label className="text-ink-400 block text-xs">
             {t('identityVault.passcode')}
             <input
               type="password"
@@ -187,7 +189,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
               }}
               autoComplete="current-password"
               disabled={disabled || busy}
-              className="mt-1 block w-full rounded border border-gray-600 bg-slate-900 px-2 py-1.5 text-sm text-gray-200"
+              className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
             />
           </label>
           <button
@@ -196,7 +198,7 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
             onClick={() => {
               void handleUnlock();
             }}
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+            className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           >
             {t('identityVault.unlock')}
           </button>

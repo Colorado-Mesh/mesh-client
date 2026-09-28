@@ -5,6 +5,13 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 
 import { parseStoredJson } from './parseStoredJson';
+import {
+  applyThemeSurface,
+  DEFAULT_THEME_SURFACE_ID,
+  loadThemeSurfaceId,
+  persistThemeSurfaceId,
+  toThemeSurfaceId,
+} from './themePresets';
 import { contrastRatio } from './wcagContrast';
 
 export const THEME_COLORS_STORAGE_KEY = 'mesh-client:themeColors';
@@ -22,6 +29,8 @@ export type ThemeColorKey =
   | 'muted'
   | 'chatIncomingBg'
   | 'chatIncomingBorder'
+  | 'chatOutgoingBg'
+  | 'chatOutgoingBorder'
   | 'messageActionsBarBg'
   | 'messageActionButtonHover';
 
@@ -37,24 +46,28 @@ export const THEME_CSS_VARS: Record<ThemeColorKey, string> = {
   muted: '--color-muted',
   chatIncomingBg: '--color-chat-incoming-bg',
   chatIncomingBorder: '--color-chat-incoming-border',
+  chatOutgoingBg: '--color-chat-outgoing-bg',
+  chatOutgoingBorder: '--color-chat-outgoing-border',
   messageActionsBarBg: '--color-message-actions-bar-bg',
   messageActionButtonHover: '--color-message-action-button-hover',
 };
 
 /** Default hex values — must match src/renderer/styles.css @theme block. */
 export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
-  appBg: '#020617',
-  sidebarActiveBg: '#1e293b',
-  brandGreen: '#86efac',
-  brightGreen: '#86efac',
-  readableGreen: '#15803d',
-  deepBlack: '#0f172a',
-  secondaryDark: '#334155',
-  muted: '#94a3b8',
-  chatIncomingBg: '#1e293b',
-  chatIncomingBorder: '#1e293b',
-  messageActionsBarBg: '#0f172a',
-  messageActionButtonHover: '#94a3b8',
+  appBg: '#11151c',
+  sidebarActiveBg: '#212d40',
+  brandGreen: '#67e8b4',
+  brightGreen: '#67e8b4',
+  readableGreen: '#047857',
+  deepBlack: '#19212d',
+  secondaryDark: '#364156',
+  muted: '#93a0b7',
+  chatIncomingBg: '#212d40',
+  chatIncomingBorder: '#212d40',
+  chatOutgoingBg: '#047857',
+  chatOutgoingBorder: '#67e8b4',
+  messageActionsBarBg: '#19212d',
+  messageActionButtonHover: '#93a0b7',
 };
 
 export interface ThemeTokenMeta {
@@ -65,7 +78,14 @@ export interface ThemeTokenMeta {
 
 /** Preset hex values — Tailwind palette only. */
 export const THEME_COLOR_PRESETS: { labelKey: string; hex: string }[] = [
+  { labelKey: 'appPanel.themePreset.emerald300', hex: '#6ee7b7' },
+  { labelKey: 'appPanel.themePreset.emerald700', hex: '#047857' },
   { labelKey: 'appPanel.themePreset.green300', hex: '#86efac' },
+  { labelKey: 'appPanel.themePreset.zinc950', hex: '#09090b' },
+  { labelKey: 'appPanel.themePreset.zinc900', hex: '#18181b' },
+  { labelKey: 'appPanel.themePreset.zinc800', hex: '#27272a' },
+  { labelKey: 'appPanel.themePreset.zinc700', hex: '#3f3f46' },
+  { labelKey: 'appPanel.themePreset.zinc400', hex: '#a1a1aa' },
   { labelKey: 'appPanel.themePreset.slate950', hex: '#020617' },
   { labelKey: 'appPanel.themePreset.slate900', hex: '#0f172a' },
   { labelKey: 'appPanel.themePreset.slate800', hex: '#1e293b' },
@@ -138,6 +158,16 @@ export const THEME_TOKEN_META: ThemeTokenMeta[] = [
     descriptionKey: 'appPanel.theme.chatIncomingBorder.description',
   },
   {
+    key: 'chatOutgoingBg',
+    labelKey: 'appPanel.theme.chatOutgoingBg.label',
+    descriptionKey: 'appPanel.theme.chatOutgoingBg.description',
+  },
+  {
+    key: 'chatOutgoingBorder',
+    labelKey: 'appPanel.theme.chatOutgoingBorder.label',
+    descriptionKey: 'appPanel.theme.chatOutgoingBorder.description',
+  },
+  {
     key: 'messageActionsBarBg',
     labelKey: 'appPanel.theme.messageActionsBarBg.label',
     descriptionKey: 'appPanel.theme.messageActionsBarBg.description',
@@ -148,6 +178,16 @@ export const THEME_TOKEN_META: ThemeTokenMeta[] = [
     descriptionKey: 'appPanel.theme.messageActionButtonHover.description',
   },
 ];
+
+/**
+ * Tokens the user picks as a solid color but that render translucent over the chat background
+ * (the alpha is part of the design, not the setting). Must match styles.css.
+ */
+const THEME_TOKEN_ALPHA: Partial<Record<ThemeColorKey, number>> = {
+  chatIncomingBg: 0.38,
+  chatOutgoingBg: 0.22,
+  chatOutgoingBorder: 0.25,
+};
 
 const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 const BARE_HEX3 = /^[0-9a-fA-F]{3}$/;
@@ -220,7 +260,9 @@ export function applyThemeColors(
   colors: Record<ThemeColorKey, string>,
 ): Record<ThemeColorKey, string> | null {
   const merged = { ...colors };
-  if (ensureReadableGreenContrast(merged)) {
+  const readableReset = ensureReadableGreenContrast(merged);
+  const brandReset = ensureBrandGreenContrast(merged);
+  if (readableReset || brandReset) {
     persistThemeColors(merged);
   }
   const resolved: Record<ThemeColorKey, string> = { ...DEFAULT_THEME_COLORS };
@@ -237,11 +279,12 @@ export function applyThemeColors(
   const root = document.documentElement;
   for (const key of Object.keys(THEME_CSS_VARS) as ThemeColorKey[]) {
     const hex = resolved[key];
-    if (key === 'chatIncomingBg') {
+    const alpha = THEME_TOKEN_ALPHA[key];
+    if (alpha !== undefined) {
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
       const b = parseInt(hex.slice(5, 7), 16);
-      root.style.setProperty(THEME_CSS_VARS[key], `rgb(${r} ${g} ${b} / 0.38)`);
+      root.style.setProperty(THEME_CSS_VARS[key], `rgb(${r} ${g} ${b} / ${String(alpha)})`);
     } else if (key === 'messageActionsBarBg') {
       const r = parseInt(hex.slice(1, 3), 16);
       const g = parseInt(hex.slice(3, 5), 16);
@@ -256,6 +299,7 @@ export function applyThemeColors(
 }
 
 const READABLE_GREEN_ON_WHITE_MIN_RATIO = 4.5;
+const BRAND_GREEN_ON_APP_BG_MIN_RATIO = 4.5;
 
 /** readableGreen is for white-on-green fills — persisted overrides must meet WCAG AA. */
 function ensureReadableGreenContrast(colors: Record<ThemeColorKey, string>): boolean {
@@ -263,6 +307,22 @@ function ensureReadableGreenContrast(colors: Record<ThemeColorKey, string>): boo
   if (!hex || contrastRatio('#ffffff', hex) < READABLE_GREEN_ON_WHITE_MIN_RATIO) {
     const wasDifferent = colors.readableGreen !== DEFAULT_THEME_COLORS.readableGreen;
     colors.readableGreen = DEFAULT_THEME_COLORS.readableGreen;
+    return wasDifferent;
+  }
+  return false;
+}
+
+/**
+ * brandGreen is the one accent green: green text on the app background and primary fills (buttons,
+ * Send) under `text-app-bg`. Both need it to keep 4.5:1 against appBg, so an override that does
+ * not is reset to the default.
+ */
+function ensureBrandGreenContrast(colors: Record<ThemeColorKey, string>): boolean {
+  const green = normalizeHex(colors.brandGreen);
+  const bg = normalizeHex(colors.appBg) ?? DEFAULT_THEME_COLORS.appBg;
+  if (!green || contrastRatio(bg, green) < BRAND_GREEN_ON_APP_BG_MIN_RATIO) {
+    const wasDifferent = colors.brandGreen !== DEFAULT_THEME_COLORS.brandGreen;
+    colors.brandGreen = DEFAULT_THEME_COLORS.brandGreen;
     return wasDifferent;
   }
   return false;
@@ -285,10 +345,25 @@ export function loadThemeColors(): Record<ThemeColorKey, string> {
       if (typeof v === 'string' && normalizeHex(v)) merged[key] = normalizeHex(v)!;
     }
   }
-  if (ensureReadableGreenContrast(merged)) {
+  const readableReset = ensureReadableGreenContrast(merged);
+  const brandReset = ensureBrandGreenContrast(merged);
+  if (readableReset || brandReset) {
     persistThemeColors(merged);
+    loadResetNotice = brandReset ? 'accent' : 'fill';
   }
   return merged;
+}
+
+/**
+ * Set when loading put a saved accent or fill back to the default (a v5 custom color under 4.5:1),
+ * so App can say so once at startup instead of changing the user's colors silently.
+ */
+let loadResetNotice: 'accent' | 'fill' | null = null;
+
+export function consumeThemeColorResetNotice(): 'accent' | 'fill' | null {
+  const notice = loadResetNotice;
+  loadResetNotice = null;
+  return notice;
 }
 
 export function persistThemeColors(colors: Record<ThemeColorKey, string>): void {
@@ -309,6 +384,8 @@ export function resetThemeColors(): void {
   // Persist before the single applyThemeColors pass so the messageActionsBarBg
   // opacity branch reads the reset (hidden) value, not the stale one.
   persistMessageActionsBarBgVisible(false);
+  persistThemeSurfaceId(DEFAULT_THEME_SURFACE_ID);
+  applyThemeSurface(DEFAULT_THEME_SURFACE_ID);
   applyThemeColors(DEFAULT_THEME_COLORS);
 }
 
@@ -323,7 +400,11 @@ export function hasThemeSnapshot(): boolean {
 export function saveThemeSnapshot(): void {
   const current = loadThemeColors();
   const visibility = isMessageActionsBarBgVisible();
-  const snapshot = { colors: current, messageActionsBarBgVisible: visibility };
+  const snapshot = {
+    colors: current,
+    messageActionsBarBgVisible: visibility,
+    surface: loadThemeSurfaceId(),
+  };
   localStorage.setItem(THEME_COLORS_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
 }
 
@@ -334,6 +415,7 @@ export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
   // Handle both old format (direct colors) and new format (colors + visibility)
   let colorData: StoredThemeColors | undefined;
   let savedVisibility = false;
+  let savedSurface = DEFAULT_THEME_SURFACE_ID;
 
   const parsed = parseStoredJson<Record<string, unknown>>(
     stored,
@@ -341,9 +423,10 @@ export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
   );
   if (parsed !== null && typeof parsed === 'object') {
     if ('colors' in parsed && typeof parsed.colors === 'object' && parsed.colors !== null) {
-      // New format with visibility
+      // New format with visibility (and the surface, from v6)
       colorData = parsed.colors;
       savedVisibility = parsed.messageActionsBarBgVisible === true;
+      savedSurface = toThemeSurfaceId(parsed.surface);
     } else {
       // Old format - just colors
       colorData = parsed;
@@ -358,10 +441,13 @@ export function restoreThemeSnapshot(): Record<ThemeColorKey, string> {
     }
   }
   ensureReadableGreenContrast(merged);
+  ensureBrandGreenContrast(merged);
   persistThemeColors(merged);
   // Persist visibility before the single applyThemeColors pass below so the
   // messageActionsBarBg opacity branch reads the restored value, not the stale one.
   persistMessageActionsBarBgVisible(savedVisibility);
+  persistThemeSurfaceId(savedSurface);
+  applyThemeSurface(savedSurface);
   applyThemeColors(merged);
 
   return merged;

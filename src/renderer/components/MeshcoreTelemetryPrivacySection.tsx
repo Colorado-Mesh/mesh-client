@@ -59,8 +59,8 @@ function TriStateRow({
   ];
 
   return (
-    <fieldset className="space-y-2 rounded-lg border border-gray-600/80 p-3" disabled={disabled}>
-      <legend className="px-1 text-sm font-medium text-gray-200">{title}</legend>
+    <fieldset className="border-ink-600/80 space-y-2 rounded-lg border p-3" disabled={disabled}>
+      <legend className="text-ink-200 px-1 text-sm font-medium">{title}</legend>
       <div className="space-y-3">
         {options.map((opt) => {
           const inputId = `${groupName}-${opt.id}`;
@@ -85,7 +85,7 @@ function TriStateRow({
                 htmlFor={inputId}
                 className={`flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 ${disabled ? 'cursor-not-allowed' : ''}`}
               >
-                <span className="text-sm text-gray-200">{opt.label}</span>
+                <span className="text-ink-200 text-sm">{opt.label}</span>
                 <span className="text-muted text-xs">{opt.sub}</span>
               </label>
             </div>
@@ -143,8 +143,8 @@ export default function MeshcoreTelemetryPrivacySection({
   const no = t('common.no');
 
   return (
-    <details className="group bg-deep-black/50 rounded-lg border border-gray-700">
-      <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium text-gray-200 transition-colors hover:bg-gray-800">
+    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+      <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('meshcoreTelemetryPrivacy.summary')}</span>
         <DetailsChevron />
       </summary>
@@ -208,7 +208,7 @@ export default function MeshcoreTelemetryPrivacySection({
               );
             })
           }
-          className="bg-readable-green rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="bg-brand-green text-app-bg rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
           {applying
             ? t('meshcoreTelemetryPrivacy.applying')

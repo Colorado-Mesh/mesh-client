@@ -16,6 +16,7 @@ import { useReticulumSidecarApi } from '@/renderer/lib/reticulum/useReticulumSid
 import { ConfirmModal } from './ConfirmModal';
 import { RNodeFlasherSection } from './flasher/RNodeFlasherSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
 
 interface ReticulumInterfaceRow {
   id: string;
@@ -119,14 +120,14 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       ) : null}
 
       {!sidecarUiRunning && !capabilities.hasRNodeFlasher ? (
-        <div className="rounded-lg border border-yellow-700 bg-yellow-900/30 px-4 py-2 text-sm text-yellow-300">
+        <div className="rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-2 text-sm text-orange-300">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </div>
       ) : null}
 
       {capabilities.hasRNodeFlasher ? (
         <details ref={flasherDetailsRef} className="group rounded-lg border border-orange-900">
-          <summary className="flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors hover:bg-gray-800">
+          <summary className="hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors">
             <span>{t('flasher.title')}</span>
             <DetailsChevron />
           </summary>
@@ -151,7 +152,7 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
             onClick={() => {
               setShowFactoryResetConfirm(true);
             }}
-            className="w-full rounded-lg border border-red-800 bg-red-900/50 px-4 py-3 text-sm font-medium text-red-300 transition-colors hover:bg-red-900/70 disabled:opacity-50"
+            className={buttonClassName('danger', 'md')}
           >
             {t('adminPanel.reticulumFactoryReset.button')}
           </button>

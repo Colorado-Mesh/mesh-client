@@ -1,4 +1,17 @@
-import { ChevronLeft, ChevronRight, PARENT_HOVER_ATTR } from 'lucide-react-motion';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Code,
+  Eraser,
+  House,
+  MoveHorizontal,
+  PARENT_HOVER_ATTR,
+  RotateCw,
+  Star,
+  X,
+} from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -60,6 +73,7 @@ import {
 import NomadMicronPageView from './NomadMicronPageView';
 import NomadPageServerPanel from './NomadPageServerPanel';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS } from './ui/formClasses';
 
 interface NomadHistoryEntry {
   hash: string;
@@ -148,7 +162,7 @@ function NomadCollapsedNodeItem({
           onOpenNode(node.destination_hash);
         }
       }}
-      className={`w-full cursor-pointer border-b border-gray-800 text-left transition-colors hover:bg-gray-800/60 ${
+      className={`border-ink-800 hover:bg-ink-800/60 w-full cursor-pointer border-b text-left transition-colors ${
         isSelected
           ? 'border-bright-green bg-sidebar-active-bg border-l-2 px-1 py-1.5'
           : 'border-l-2 border-transparent px-1 py-1.5'
@@ -158,16 +172,18 @@ function NomadCollapsedNodeItem({
     >
       <div className="relative flex flex-col items-center gap-0.5">
         <span
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[10px] leading-none font-semibold ${
-            isSelected ? 'text-bright-green bg-gray-800' : 'bg-gray-800/80 text-gray-200'
+          className={`text-2xs flex h-7 w-7 shrink-0 items-center justify-center rounded-md leading-none font-semibold ${
+            isSelected ? 'text-bright-green bg-ink-800' : 'bg-ink-800/80 text-ink-200'
           }`}
           aria-hidden
         >
           {nomadCollapsedLabel(node.display_name, node.destination_hash)}
         </span>
-        <span className={node.favorited ? 'text-yellow-400' : 'text-gray-500'} aria-hidden>
-          ★
-        </span>
+        <Star
+          aria-hidden
+          className={`h-3 w-3 ${node.favorited ? 'text-yellow-400' : 'text-muted'}`}
+          fill={node.favorited ? 'currentColor' : 'none'}
+        />
       </div>
     </div>
   );
@@ -199,7 +215,7 @@ function NomadExpandedNodeItem({
   return (
     <div
       className={`mx-2 mb-2 rounded border px-3 py-2 text-sm last:mb-0 ${
-        isSelected ? 'border-bright-green/60 bg-slate-800/80' : 'border-gray-700/60'
+        isSelected ? 'border-bright-green/60 bg-ink-800/80' : 'border-ink-700/60'
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -211,7 +227,7 @@ function NomadExpandedNodeItem({
             onOpenNode(node.destination_hash);
           }}
         >
-          <div className="truncate font-medium text-gray-100">{label}</div>
+          <div className="text-ink-100 truncate font-medium">{label}</div>
           <div className="text-muted truncate font-mono text-xs">
             {formatHash(node.destination_hash)}
           </div>
@@ -222,13 +238,14 @@ function NomadExpandedNodeItem({
         </button>
         <button
           type="button"
-          className={node.favorited ? 'text-yellow-400' : 'text-gray-500'}
+          className={node.favorited ? 'text-yellow-400' : 'text-muted'}
           aria-label={toggleFavoriteLabel}
+          aria-pressed={node.favorited}
           onClick={() => {
             onToggleFavorite(node.destination_hash, !node.favorited);
           }}
         >
-          ★
+          <Star aria-hidden className="h-4 w-4" fill={node.favorited ? 'currentColor' : 'none'} />
         </button>
       </div>
     </div>
@@ -717,10 +734,10 @@ export default function NomadNetworkPanel({
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-medium text-gray-100">{t('nomadNetwork.title')}</h2>
+        <h2 className="text-ink-100 text-lg font-medium">{t('nomadNetwork.title')}</h2>
         <button
           type="button"
-          className="text-xs text-amber-400 hover:underline"
+          className="text-xs text-yellow-400 hover:underline"
           onClick={() => {
             void refreshFromSidecar();
           }}
@@ -730,34 +747,34 @@ export default function NomadNetworkPanel({
       </div>
 
       {showStartStackBanner ? (
-        <p className="mb-3 rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
+        <p className="mb-3 rounded-lg border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
           {t('connectionPanel.reticulumIdentity.startStackFirst')}
         </p>
       ) : null}
 
       {sidecarRunning && !nomadApiAvailable ? (
-        <p className="mb-3 rounded-lg border border-amber-600/40 bg-amber-950/20 p-3 text-sm text-amber-200">
+        <p className="mb-3 rounded-lg border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
           {t('nomadNetwork.unavailable')}
         </p>
       ) : null}
 
       <div className="flex min-h-0 flex-1 gap-3">
         <div
-          className={`bg-secondary-dark flex min-h-0 shrink-0 flex-col overflow-hidden rounded-lg border border-gray-700 transition-[width] duration-300 ${
+          className={`bg-deep-black border-ink-800 flex min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border transition-[width] duration-300 ${
             nodeListCollapsed ? 'w-16' : 'w-72'
           }`}
         >
           {!nodeListCollapsed && (
-            <div className="flex items-center gap-2 border-b border-gray-700 px-3 py-2">
-              <span className="min-w-0 flex-1 text-sm font-medium text-gray-200">
-                {activeTabLabel} <span className="text-gray-500">({activeTabCount})</span>
+            <div className="border-ink-700 flex items-center gap-2 border-b px-3 py-2">
+              <span className="text-ink-200 min-w-0 flex-1 text-sm font-medium">
+                {activeTabLabel} <span className="text-muted">({activeTabCount})</span>
               </span>
             </div>
           )}
 
           {!nodeListCollapsed && (
             <>
-              <div className="mb-0 flex gap-4 border-b border-gray-700 px-3 text-sm">
+              <div className="border-ink-700 mb-0 flex gap-4 border-b px-3 text-sm">
                 <button
                   type="button"
                   role="tab"
@@ -815,7 +832,7 @@ export default function NomadNetworkPanel({
                     }}
                     placeholder={searchPlaceholder}
                     aria-label={searchPlaceholder}
-                    className="mb-2 w-full rounded border border-gray-600 bg-slate-900 px-3 py-2 text-sm text-gray-200"
+                    className={`${INPUT_BOX_CLASS} mb-2 w-full`}
                   />
                   <div
                     role="toolbar"
@@ -832,7 +849,7 @@ export default function NomadNetworkPanel({
                           aria-pressed={active}
                           aria-label={t(nomadSortAriaLabelKey(key, dirForAria))}
                           className={`rounded px-2 py-1 transition-colors ${
-                            active ? 'bg-slate-700 text-gray-100' : 'text-muted hover:text-gray-200'
+                            active ? 'bg-ink-700 text-ink-100' : 'text-muted hover:text-ink-200'
                           }`}
                           onClick={() => {
                             toggleSort(key);
@@ -860,7 +877,7 @@ export default function NomadNetworkPanel({
                 ? t('nomadNetwork.expandNodeList')
                 : t('nomadNetwork.collapseNodeList')
             }
-            className="text-muted hover:text-bright-green mx-2 mt-auto mb-2 flex shrink-0 items-center justify-center rounded-sm border border-gray-700 py-2 transition-colors hover:border-gray-600"
+            className="text-muted hover:text-bright-green border-ink-700 hover:border-ink-600 mx-2 mt-auto mb-2 flex shrink-0 items-center justify-center rounded-sm border py-2 transition-colors"
           >
             {nodeListCollapsed ? (
               <ChevronRight
@@ -880,7 +897,7 @@ export default function NomadNetworkPanel({
           </button>
         </div>
 
-        <div className="bg-secondary-dark flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-gray-700">
+        <div className="bg-deep-black border-ink-800 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border">
           {activeTab === 'myPages' ? (
             <NomadPageServerPanel
               isActive={isActive}
@@ -905,11 +922,11 @@ export default function NomadNetworkPanel({
                   }}
                   aria-label={t('nomadNetwork.urlBarAria')}
                   placeholder={t('nomadNetwork.enterUrlPlaceholder')}
-                  className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1.5 font-mono text-xs text-gray-200"
+                  className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:bg-slate-800"
+                  className="border-ink-600 text-ink-200 hover:bg-ink-800 shrink-0 rounded border px-3 py-1.5 text-xs"
                   aria-label={t('nomadNetwork.goToUrl')}
                 >
                   {t('nomadNetwork.goToUrl')}
@@ -924,8 +941,8 @@ export default function NomadNetworkPanel({
           ) : null}
           {activeTab !== 'myPages' && selectedHash ? (
             <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-gray-700/60 p-2">
-                <span className="truncate font-medium text-gray-100">
+              <div className="border-ink-700/60 flex shrink-0 flex-wrap items-center gap-2 border-b p-2">
+                <span className="text-ink-100 truncate font-medium">
                   {selectedNode?.display_name ?? selectedHash.slice(0, 16)}
                 </span>
                 {selectedNode?.hops != null ? (
@@ -957,45 +974,45 @@ export default function NomadNetworkPanel({
                   <button
                     type="button"
                     disabled={!canGoBack}
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40"
                     aria-label={t('nomadNetwork.back')}
                     title={t('nomadNetwork.back')}
                     onClick={() => {
                       navigateHistory(-1);
                     }}
                   >
-                    ←
+                    <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
                     disabled={!canGoForward}
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800 disabled:opacity-40"
+                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40"
                     aria-label={t('nomadNetwork.forward')}
                     title={t('nomadNetwork.forward')}
                     onClick={() => {
                       navigateHistory(1);
                     }}
                   >
-                    →
+                    <ArrowRight aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
                     aria-label={t('nomadNetwork.homePage')}
                     title={t('nomadNetwork.homePage')}
                     onClick={() => {
                       void loadNodePage(selectedHash, DEFAULT_NOMAD_NODE_PAGE_PATH);
                     }}
                   >
-                    ⌂
+                    <House aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   {isNomadMicronPage(pageContentType, pagePath) && pageContent != null ? (
                     <button
                       type="button"
-                      className={`rounded border px-2 py-1 text-xs ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
                         showPageSource
                           ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                          : 'border-gray-600 text-gray-200 hover:bg-slate-800'
+                          : 'border-ink-700 text-ink-200 hover:bg-ink-800'
                       }`}
                       aria-label={
                         showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
@@ -1008,16 +1025,16 @@ export default function NomadNetworkPanel({
                         setShowPageSource((prev) => !prev);
                       }}
                     >
-                      {'</>'}
+                      <Code aria-hidden className="h-3.5 w-3.5" />
                     </button>
                   ) : null}
                   {pageContent != null ? (
                     <button
                       type="button"
-                      className={`rounded border px-2 py-1 text-xs ${
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
                         pageFitWidth
                           ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                          : 'border-gray-600 text-gray-200 hover:bg-slate-800'
+                          : 'border-ink-700 text-ink-200 hover:bg-ink-800'
                       }`}
                       aria-label={
                         pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
@@ -1034,12 +1051,12 @@ export default function NomadNetworkPanel({
                         });
                       }}
                     >
-                      ⇔
+                      <MoveHorizontal aria-hidden className="h-3.5 w-3.5" />
                     </button>
                   ) : null}
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
                     aria-label={t('nomadNetwork.reloadPage')}
                     title={t('nomadNetwork.reloadPage')}
                     onClick={() => {
@@ -1053,31 +1070,31 @@ export default function NomadNetworkPanel({
                       });
                     }}
                   >
-                    ↻
+                    <RotateCw aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
                     aria-label={t('nomadNetwork.clearBrowserCaches')}
                     title={t('nomadNetwork.clearBrowserCachesHint')}
                     onClick={clearBrowserCaches}
                   >
-                    ⌀
+                    <Eraser aria-hidden className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
-                    className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-slate-800"
+                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
                     aria-label={t('nomadNetwork.closeViewer')}
                     title={t('nomadNetwork.closeViewer')}
                     onClick={closeViewer}
                   >
-                    ✕
+                    <X aria-hidden className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
 
               <form
-                className="flex shrink-0 gap-2 border-b border-gray-700/60 p-2"
+                className="border-ink-700/60 flex shrink-0 gap-2 border-b p-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   submitUrlBar();
@@ -1091,7 +1108,7 @@ export default function NomadNetworkPanel({
                   }}
                   aria-label={t('nomadNetwork.urlBarAria')}
                   placeholder={t('nomadNetwork.pagePath')}
-                  className="min-w-0 flex-1 rounded border border-gray-600 bg-slate-900 px-2 py-1 font-mono text-xs text-gray-200"
+                  className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
                 />
               </form>
 
@@ -1109,7 +1126,7 @@ export default function NomadNetworkPanel({
                     </p>
                   ) : null}
                   {filePreview ? (
-                    <div className="mb-3 space-y-2 rounded border border-gray-700/80 bg-slate-900/50 p-2">
+                    <div className="border-ink-700/80 bg-ink-900/50 mb-3 space-y-2 rounded border p-2">
                       <p className="text-muted text-xs">{filePreview.fileName}</p>
                       <img
                         src={filePreview.dataUrl}
@@ -1119,7 +1136,7 @@ export default function NomadNetworkPanel({
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-gray-800"
+                          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
                           onClick={() => {
                             downloadNomadFileFromBase64(
                               filePreview.fileName,
@@ -1131,7 +1148,7 @@ export default function NomadNetworkPanel({
                         </button>
                         <button
                           type="button"
-                          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-200 hover:bg-gray-800"
+                          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
                           onClick={() => {
                             setFilePreview(null);
                           }}
@@ -1176,7 +1193,7 @@ export default function NomadNetworkPanel({
                         {t('nomadNetwork.pageFailed', { error: pageError })}
                       </p>
                       {selectedNode && isNomadLastSeenStale(selectedNode.last_seen) ? (
-                        <p className="text-xs text-amber-200/90">
+                        <p className="text-xs text-orange-200/90">
                           {t('nomadNetwork.staleLastSeenHint', {
                             time: formatRelativeOrIsoDate((selectedNode.last_seen ?? 0) * 1000, t),
                           })}
@@ -1202,7 +1219,7 @@ export default function NomadNetworkPanel({
                       />
                     ) : (
                       <pre
-                        className={`font-mono text-xs leading-relaxed text-gray-200 ${
+                        className={`text-ink-200 font-mono text-xs leading-relaxed ${
                           pageFitWidth
                             ? 'max-w-full break-words whitespace-pre-wrap'
                             : 'whitespace-pre'

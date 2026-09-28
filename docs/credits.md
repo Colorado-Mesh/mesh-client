@@ -15,6 +15,7 @@
 - FuzzyChaos (ADL) - Donation for devices
 - [M3SHGH0ST](https://github.com/cj-vana)
 - [M0Rf30](https://github.com/M0Rf30) - Flatpak Electron packaging
+- [ashortgrayble](https://github.com/ashortgrayble) - Colorado Mesh style guide (color scales, type, radius and elevation)
 
 ## Colorado Mesh
 
@@ -44,9 +45,11 @@ Application source (Electron main / preload / renderer) is **GPL-3.0-or-later**;
 
 ### Bundled fonts
 
-| Font / file                                                         | License | Role                                                                                                                  |
-| ------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
-| `MeshClientNomadMono.woff2` (JetBrains Mono Nerd Font Mono, subset) | OFL-1.1 | Nomad Micron viewer monospace + Nerd/FA PUA icons ([OFL](../src/renderer/assets/fonts/OFL-JetBrainsMonoNerdFont.txt)) |
+| Font / file                                                                                                                 | License         | Role                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MeshClientNomadMono.woff2` (JetBrains Mono Nerd Font Mono, subset)                                                         | OFL-1.1         | Nomad Micron viewer monospace + Nerd/FA PUA icons ([OFL](../src/renderer/assets/fonts/OFL-JetBrainsMonoNerdFont.txt))                                |
+| `assets/fonts/plex/*.woff2` (IBM Plex Sans and IBM Plex Mono, latin, latin-ext and cyrillic subsets, from Fontsource 5.3.0) | OFL-1.1         | App UI typeface, bundled so it works offline ([OFL](../src/renderer/assets/fonts/plex/OFL-IBMPlex.txt))                                              |
+| `emoji-picker-element-data` (dev dependency; its English data, built from emojibase-data 17.0.0, is bundled at build time)  | Apache-2.0, MIT | Linux emoji picker data, bundled so it works offline instead of loading from a CDN ([licenses](../src/renderer/assets/emoji/LICENSE-emoji-data.txt)) |
 
 ### Vendored
 

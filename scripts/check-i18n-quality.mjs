@@ -447,6 +447,27 @@ export const FLASHER_ESP32_FLASH_BLINK_FALSE_FRIENDS = new Map([
   ['nl', /\bflits/i],
 ]);
 
+/** Flasher backup/read strings where "flash" is flash memory (read it, back it up). */
+export const FLASHER_FLASH_MEMORY_KEY_RE =
+  /^flasher\.(?:backupFirmwareHint|backingUp|errors\.esp32(?:Read\w+|FlashSizeUnknown|FlashTooLarge))$/;
+/** MT renders flash memory as camera flash / lightning, and "before you flash" as LED blink. */
+export const FLASHER_FLASH_MEMORY_FALSE_FRIENDS = new Map([
+  ['de', /blitz|blink/i],
+  ['cs', /blesk|blik/i],
+  ['nl', /flits/i],
+  ['pl', /błysk|mignię/i],
+  ['it', /lampegg|lampo/i],
+  ['fr', /clignot/i],
+  ['es', /parpad/i],
+  ['pt-BR', /pisc/i],
+  ['id', /lampu kilat|berkedip/i],
+  ['ru', /вспышк|вспыхн/i],
+  ['uk', /спалах/i],
+  ['zh', /闪光|闪烁/],
+  ['ko', /깜박/],
+  ['tr', /yanıp\s+sön/i],
+]);
+
 /** flasher.errors.provision* — MT booking/reservation false friends for "Provision". */
 export const FLASHER_PROVISION_RESERVATION_FALSE_FRIENDS =
   /\b(rezerv[auy]|rezerwacj|reservierung|резерв|reservation)\b/i;
@@ -651,67 +672,6 @@ export function reticulumRequiresTranslation(flatKey, leafKey, enVal) {
 
 /** MT mistranslates UI Disable as parallax / unrelated accessibility jargon. */
 export const RETICULUM_DISABLE_PARALLAX_RE = /parallax/i;
-
-/** Boot sequence transport labels — short connection-type names, not serial numbers or broadcast stations. */
-export const BOOT_SEQUENCE_TRANSPORT_PREFIX = 'bootSequence.transport';
-export const BOOT_SEQUENCE_RADIO_FALLBACK_KEY = 'bootSequence.radioInterfaceFallback';
-
-export const BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS = {
-  fr: [
-    {
-      re: /num[ée]ro de s[ée]rie/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
-    },
-    { re: /\bmoyeux\b/i, hint: 'network hub wording, not wheel/axle "moyeux"' },
-    {
-      re: /^Série$/i,
-      hint: 'bootSequence.transportSerial should be "Port série" (serial port), not TV series',
-    },
-  ],
-  de: [
-    {
-      re: /^Serie$/i,
-      hint: 'bootSequence.transportSerial should be "Seriell" (serial port), not TV series',
-    },
-  ],
-  'pt-BR': [
-    {
-      re: /^Série$/i,
-      hint: 'bootSequence.transportSerial should be serial port (e.g. "Porta serial"), not TV series',
-    },
-  ],
-  es: [
-    {
-      re: /n[úu]mero de serie/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not serial number',
-    },
-    {
-      re: /interfaz a[ée]rea/i,
-      hint: 'bootSequence.radioInterfaceFallback is RF/radio interface, not aerial interface',
-    },
-  ],
-  ru: [
-    {
-      re: /заводск/i,
-      hint: 'bootSequence.transportSerial is Serial transport, not factory default',
-    },
-  ],
-  zh: [
-    { re: /广播电台/, hint: 'bootSequence.transportRadio is RF transport, not broadcast station' },
-  ],
-  it: [
-    {
-      re: /Data Radio interface/i,
-      hint: 'bootSequence.radioInterfaceFallback must not mix English and Italian',
-    },
-  ],
-  nl: [
-    {
-      re: /ether-interface/i,
-      hint: 'bootSequence.radioInterfaceFallback is RF interface, not Ethernet',
-    },
-  ],
-};
 
 export const RETICULUM_DEFAULT_HUB_KEYS = [
   'connectionPanel.reticulumInterfaces.defaultHubsLabel',
@@ -3052,6 +3012,21 @@ function checkFlasherIssues(ctx) {
     }
   }
 
+  if (locale !== 'en' && FLASHER_FLASH_MEMORY_KEY_RE.test(flatKey)) {
+    if (FLASHER_FLASH_MEMORY_FALSE_FRIENDS.get(locale)?.test(val)) {
+      issues.push(
+        'flasher backup copy must use flash-memory / firmware-flash wording, not camera flash, lightning, or LED blink',
+      );
+    }
+    if (
+      /\bBOOT\b/.test(enVal) &&
+      /\bRESET\b/.test(enVal) &&
+      (!/\bBOOT\b/.test(val) || !/\bRESET\b/.test(val))
+    ) {
+      issues.push('flasher backup copy must preserve literal button labels BOOT and RESET');
+    }
+  }
+
   if (
     locale !== 'en' &&
     flatKey === 'flasher.errors.rnodeCommandTimeout' &&
@@ -3899,31 +3874,6 @@ function checkMeshcorePathHashIssues(ctx) {
  * @param {LocaleQualityCtx} ctx
  * @returns {string[]}
  */
-function checkBootSequenceTransportIssues(ctx) {
-  const { locale, flatKey, val, enVal } = ctx;
-  const issues = [];
-  if (flatKey.startsWith(BOOT_SEQUENCE_TRANSPORT_PREFIX)) {
-    issues.push(...protectedProtocolTokenIssues(enVal, val));
-    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
-      if (re.test(val)) {
-        issues.push(hint);
-      }
-    }
-  }
-  if (flatKey === BOOT_SEQUENCE_RADIO_FALLBACK_KEY) {
-    for (const { re, hint } of BOOT_SEQUENCE_TRANSPORT_FALSE_FRIENDS[locale] ?? []) {
-      if (re.test(val)) {
-        issues.push(hint);
-      }
-    }
-  }
-  return issues;
-}
-
-/**
- * @param {LocaleQualityCtx} ctx
- * @returns {string[]}
- */
 function checkReticulumDefaultHubKeyIssues(ctx) {
   const { flatKey, val } = ctx;
   const issues = [];
@@ -3969,9 +3919,6 @@ function checkRepeatersCliIssues(ctx) {
         issues.push(hint);
       }
     }
-  }
-  if (flatKey === 'bootSequence.transportBle' && locale === 'tr' && /BLE\s*:/i.test(val)) {
-    issues.push('bootSequence.transportBle must not include trailing colon');
   }
   return issues;
 }
@@ -4615,7 +4562,6 @@ const LOCALE_STRING_QUALITY_CHECKS = [
   checkMeshcoreReactionAndConnectionIssues,
   checkMeshcorePathHashIssues,
   checkReticulumRuntimeAndRoutingPortIssues,
-  checkBootSequenceTransportIssues,
   checkReticulumDefaultHubKeyIssues,
   checkRepeatersCliIssues,
   checkReticulumMapIssues,

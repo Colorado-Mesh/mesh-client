@@ -32,12 +32,9 @@
       "stale": "Несвежий",
       "reconnecting": "Повторное подключение"
     },
-    "nodeLabel": "Узел: {{name}}",
     "takClientLost": "TAK клиент потерян",
     "title": "Сетчатый клиент",
     "brandName": "Colorado Mesh",
-    "meshTubeSignOff": "Выключить знак Colorado Mesh",
-    "meshTubeSignOn": "Включите знак Colorado Mesh",
     "queueBadge": "Вопрос: {{used}}/{{max}}",
     "telemetryDisabled": "Телеметрия отключена на этом устройстве. Включение метрик устройства помогает сетке и этому приложению (диагностика, батарея, сигнал). Включите его во вкладке Радио.",
     "scrollToTop": "↑ Вверх",
@@ -255,7 +252,7 @@
     "clearMessagesChannelConfirmLabel": "Очистить {{channel}}",
     "clearMessagesTitle": "Очистить сообщения",
     "clearAllRepeatersConfirm": "Это приведет к безвозвратному удалению всех сохраненных ретрансляторов MeshCore из локальной базы данных. Это невозможно отменить.",
-    "clearAllLocalDataTitle": "⚠ Очистить все локальные данные",
+    "clearAllLocalDataTitle": "Очистить все локальные данные",
     "clearAllLocalDataConfirm": "Это приведет к безвозвратному удалению ВСЕХ локальных сообщений, узлов и кэшированных данных сеанса. Это действие НЕ МОЖЕТ быть отменено.",
     "clearEverythingConfirmButton": "Очистить все",
     "dangerZoneMeshcoreHeading": "MeshCore",
@@ -272,16 +269,16 @@
         "description": "Фон выбранной в данный момент вкладки на боковой панели навигации."
       },
       "brandGreen": {
-        "label": "Индикаторы и границы",
-        "description": "Акцент на границах при настройке, индикаторах онлайн/MQTT, выделении и заполнении прогресса."
+        "label": "Акцент",
+        "description": "Основные кнопки и «Отправить» (с тёмным текстом), акцентный текст, активные элементы и заливки прогресса. Остаётся читаемым на фоне приложения."
       },
       "brightGreen": {
         "label": "Название приложения, ссылки и акцент на узлах",
         "description": "Заголовок приложения, выделенный текст, ссылки в нижнем колонтитуле и выделение прыжка/самостояния в списке узлов."
       },
       "readableGreen": {
-        "label": "Кнопки действий и выбранные таблетки",
-        "description": "Сплошная заливка белым текстом — выделенные ячейки каналов и кнопки основных действий для контраста."
+        "label": "Заливка акцента",
+        "description": "Сплошная заливка акцента под белым текстом, например у значков. Сохраняет контраст 4,5:1 с белым текстом."
       },
       "deepBlack": {
         "label": "Боковая панель, заголовок и модальные поверхности",
@@ -310,6 +307,14 @@
       "messageActionButtonHover": {
         "label": "Цвет кнопки действия с сообщением при наведении",
         "description": "Цвет при наведении для всех кнопок действий с сообщениями (копирование, ответ, реакция, прямое сообщение, звезда и выделение звездочкой)."
+      },
+      "chatOutgoingBg": {
+        "label": "Заполнение исходящего сообщения",
+        "description": "Заливка фона для ваших сообщений (применяется с непрозрачностью 22%)."
+      },
+      "chatOutgoingBorder": {
+        "label": "Граница исходящего сообщения",
+        "description": "Цвет рамки для ваших сообщений (применяется с непрозрачностью 25%)."
       }
     },
     "themePreset": {
@@ -331,7 +336,14 @@
       "purple400": "Фиолетовый 400",
       "pink400": "Розовый 400",
       "orange400": "Оранжевый 400",
-      "yellow400": "Желтый 400"
+      "yellow400": "Желтый 400",
+      "zinc950": "Цинк 950",
+      "zinc900": "Цинк 900",
+      "zinc800": "Цинк 800",
+      "zinc700": "Цинк 700",
+      "zinc400": "Цинк 400",
+      "emerald300": "Изумруд 300",
+      "emerald700": "Изумруд 700"
     },
     "autoPruneNodesOlderThanAria": "Автоматическое удаление узлов при запуске, старше {{days}} дней.",
     "autoPrunePositionHistoryDaysAria": "Автоматическое удаление истории позиций при запуске, старше {{days}} дней.",
@@ -388,6 +400,8 @@
     "themeSaveFailed": "Не удалось сохранить цветовую контрольную точку.",
     "themeRestoreFailed": "Не удалось восстановить контрольную точку",
     "themeResetFailed": "Не удалось сбросить цвета.",
+    "themeAccentKept": "Этот цвет слишком близок к фону приложения и плохо читается (ниже 4,5:1), поэтому акцент возвращён к стандартному.",
+    "themeFillKept": "Белый текст на этом цвете был бы ниже 4,5:1, поэтому заливка возвращена к стандартной.",
     "messageActionsBarBgVisible": "Показать фон",
     "rrcUnreadAllRoomMessages": "Непрочитанные RRC для всех сообщений комнаты",
     "rrcUnreadAllRoomMessagesHint": "Когда включено, любое новое сообщение комнаты RRC помечается как непрочитанное и может воспроизводить звук канала. Отключите оповещения в стиле IRC: только прямые сообщения и @упоминания.",
@@ -437,16 +451,38 @@
     "nodeSilenceAlertMinutesPlaceholder": "Протокол по умолчанию:",
     "nodeSilenceAlertMinutesHint": "Оставьте пустым, чтобы использовать устаревшее пороговое значение каждого протокола. Эскалация срабатывает в 2раза больше этого значения.",
     "nodeBatteryLowThreshold": "Порог низкого заряда батареи (%)",
-    "notifyOnLinkDown": "Уведомлять о неожиданном отключении радиосвязи"
+    "notifyOnLinkDown": "Уведомлять о неожиданном отключении радиосвязи",
+    "aboutSection": "О программе",
+    "themePresets": {
+      "heading": "Тема",
+      "hint": "Выберите исходную палитру, затем настройте отдельные цвета ниже.",
+      "custom": "Свои цвета. Выберите тему, чтобы начать с готового набора."
+    },
+    "themeSurfaces": {
+      "midnight": "Полночь",
+      "slate": "Шифер",
+      "zinc": "Цинк",
+      "graphite": "Графит",
+      "deepSea": "Глубина",
+      "dusk": "Сумерки",
+      "evergreen": "Хвоя",
+      "highContrast": "Высокая контрастность"
+    },
+    "themeAccents": {
+      "heading": "Акцент",
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum",
+      "sky": "Небо",
+      "classic": "Классический зелёный"
+    },
+    "pruneNoFixNodesTitle": "Удалить узлы без позиции / Zero Island"
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
-    "expandSidebar": "Развернуть боковую панель",
-    "collapseSidebar": "Свернуть боковую панель",
     "languageSelector": "Выберите язык",
     "applicationPanels": "Панели приложений",
     "applicationLog": "Журнал приложений",
-    "playAnimation": "Воспроизвести анимацию импульсного сигнала сетки",
     "protocolSwitcher": "Переключатель протоколов",
     "switchToMeshtastic": "Переключиться на Meshtastic",
     "switchToMeshCore": "Переключиться на MeshCore",
@@ -462,37 +498,6 @@
   "battery": {
     "percentCharging": "Аккумулятор {{percent}} процентов, зарядка",
     "percent": "Батарея {{percent}} процентов"
-  },
-  "bootSequence": {
-    "booting": "Загрузка стека сеток...",
-    "meshtasticLora": "LoRa: {{model}}",
-    "meshtasticScanningChannelsCount": "Сканирование каналов... {{count}}",
-    "meshtasticScanningChannels": "Сканирование настроенных каналов...",
-    "databaseNodes_one": "База данных: синхронизирован узел {{count}}",
-    "databaseNodes_other": "База данных: синхронизировано {{count}} узлов",
-    "syncingDatabase": "Синхронизация базы данных сети...",
-    "interfaceReady": "{{iface}} интерфейс готов",
-    "freqMhz": "Частота: {{mhz}} МГц",
-    "freqMhzBw": "Частота: {{mhz}} МГц | BW: {{bw}} кГц",
-    "configuringRadio": "Настройка радиопараметров...",
-    "contacts_one": "Контакты: {{count}} контакт загружен",
-    "contacts_other": "Контакты: {{count}} контакты загружены",
-    "loadingContacts": "Загрузка базы данных контактов...",
-    "routes_one": "Маршруты: {{count}} узел в сетке",
-    "routes_other": "Маршруты: {{count}} узлов в сетке",
-    "routesEstablished": "Установленные маршруты",
-    "meshActive": "Сеть активна",
-    "transportBle": "BLE",
-    "transportSerial": "Serial",
-    "transportHttp": "HTTP",
-    "transportRadio": "Радиосвязь",
-    "radioInterfaceFallback": "радиоинтерфейс",
-    "contacts_few": "Контакты: загружено {{count}} контакта",
-    "contacts_many": "Контакты: загружено {{count}} контактов",
-    "databaseNodes_few": "База данных: синхронизировано {{count}} узла",
-    "databaseNodes_many": "База данных: синхронизировано {{count}} узлов",
-    "routes_few": "Маршруты: {{count}} узла в сетке",
-    "routes_many": "Маршруты: {{count}} узлов в сетке"
   },
   "channelUtilization": {
     "title": "Использование канала",
@@ -706,7 +711,7 @@
       "pendingOffersBadgeAria_many": "{{count}} ожидающих предложений по входящим файлам от этого участника"
     },
     "shareLocation": "Поделиться местоположением",
-    "shareLocationLabel": "📍 Общая локация",
+    "shareLocationLabel": "Общая локация",
     "shareLocationHint": "Отправьте свое текущее местоположение GPS или статическое местоположение в виде сообщения в чате.",
     "shareLocationUnavailable": "Местоположение недоступно — проверьте настройки GPS.",
     "floodScopeOverrideHint": "Региональная область флуда только для этого сообщения. Область по умолчанию использует сохраненные настройки радиостанции; хэштег ограничивает отправку этим регионом; Отправка без ограничения области без фильтра региона. Сохраненная область действия восстанавливается после отправки.",
@@ -825,7 +830,29 @@
     "outboxEmergencyWillSend": "Продолжит повторять попытку, пока не будет отправлено",
     "outboxEmergencyCapBlocked": "Приостановлено: слишком много экстренных сообщений в очереди. Повторите попытку или отмените ее.",
     "outboxEmergencyCancelConfirm": "Отменить это экстренное сообщение? Он не будет отправлен.",
-    "retryOutboxEmergencyAttempt": "Попытка {{count}}"
+    "retryOutboxEmergencyAttempt": "Попытка {{count}}",
+    "channelSwitcher": {
+      "trigger": "Все каналы ({{total}})",
+      "triggerWithUnread": "Все каналы ({{total}}), непрочитанных: {{unread}}",
+      "search": "Найти канал",
+      "listLabel": "Каналы",
+      "empty": "Нет подходящих каналов"
+    },
+    "toolbarLabel": "Инструменты беседы",
+    "composeHint": "Enter, чтобы отправить; Shift+Enter для новой строки",
+    "dmSwitcher": {
+      "trigger": "Все личные сообщения ({{total}})",
+      "triggerWithUnread": "Все личные сообщения ({{total}}), непрочитанных: {{unread}}",
+      "search": "Найти беседу",
+      "listLabel": "Личные сообщения",
+      "empty": "Нет подходящих бесед"
+    },
+    "notificationRrcTitle": "{{sender}} in {{room}}",
+    "srNewMessage": "Новое сообщение от {{sender}}: {{text}}",
+    "srNewMessages_one": "{{count}} новое сообщение",
+    "srNewMessages_few": "{{count}} новых сообщения",
+    "srNewMessages_many": "{{count}} новых сообщений",
+    "srNewMessages_other": "{{count}} нового сообщения"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -954,7 +981,6 @@
     "disconnectRadio": "Отключить",
     "manualContactApproval": "Утверждение контакта вручную",
     "manualContactApprovalDesc": "Требовать одобрения вручную, прежде чем появятся новые контакты",
-    "disconnected": "● отключено",
     "bluetoothDevice": "Bluetooth-устройство",
     "serialDevice": "Серийное устройство",
     "wifiDevice": "Wi-Fi-устройство",
@@ -983,10 +1009,6 @@
     "stageLinuxUnpaired": "Сохраненное устройство не подключено к Linux Bluetooth — выберите его ниже, чтобы ввести PIN-код и подключиться.",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Соединять",
-    "mqttStatusConnected": "подключен",
-    "mqttStatusConnecting": "подключение",
-    "mqttStatusError": "ошибка",
-    "mqttStatusDisconnected": "отключен",
     "stageSelectDevice": "Выберите свое устройство ниже",
     "stageSelectSerial": "Выберите последовательный порт ниже",
     "stageConnectingLast": "Подключение к последнему устройству Bluetooth…",
@@ -1073,7 +1095,6 @@
     "reticulumSidecarStartFailed": "Не удалось запустить стек Reticulum: {{message}}",
     "reticulumStopStack": "Остановить стек",
     "reticulumAutostart": "Автоматический запуск стека при открытии соединения",
-    "reticulumStackRunning": "Стек работает",
     "reticulumIdentity": {
       "title": "Идентичность Reticulum",
       "startStackFirst": "Запустите стек Reticulum для настройки идентичности.",
@@ -1486,7 +1507,9 @@
       "noPrivateKey": "Нет полной идентификации — импортируйте конфигурацию MeshCore на панель Radio (открытый и закрытый ключи) или вставьте имя пользователя (v1_<открытый ключ>) и токен вручную. Аудитория JWT в токене должна соответствовать имени хоста Сервера.",
       "publicKeyMissing": "Открытый ключ отсутствует в удостоверении личности. Импортируйте конфигурацию MeshCore в формате JSON на панель Radio (должна включать открытый и закрытый ключи) или вставьте токен брокера в поле пароля.",
       "noIdentity": "Идентификатор устройства не найден. Импортируйте конфигурацию MeshCore в формате JSON на панель «Радио» или вставьте имя пользователя и токен вручную.",
-      "usernameBuildFailed": "Не удалось создать имя пользователя MeshCore MQTT. Импортируйте конфигурацию MeshCore JSON на панели Radio или вставьте имя пользователя (v1_<public key>) и токен вручную."
+      "usernameBuildFailed": "Не удалось создать имя пользователя MeshCore MQTT. Импортируйте конфигурацию MeshCore JSON на панели Radio или вставьте имя пользователя (v1_<public key>) и токен вручную.",
+      "clientKey": "Ключ клиента",
+      "copyClientKey": "Копировать ключ клиента"
     },
     "meshcorePacketLogger": {
       "label": "Регистратор пакетов — при подключении к вашему радиомодулю и MQTT пересылайте сводные данные RX-пакетов на {{topic}} в той же форме JSON, что и meshcoretomqtt. По умолчанию выключено; Включайте только в том случае, если вы собираетесь передавать прослушиваемый воздушный трафик анализатору пакетов."
@@ -1607,7 +1630,25 @@
         "feature_disabled": "Bluetooth GATT support is not available in this build.",
         "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
       }
-    }
+    },
+    "tiles": {
+      "groupLabel": "Состояние соединений",
+      "radioLink": "Радиосвязь",
+      "stack": "Стек",
+      "mqtt": "MQTT",
+      "tak": "TAK",
+      "error": "Ошибка",
+      "running": "Работает",
+      "stopped": "Остановлен",
+      "clientLost": "Клиент потерян",
+      "takPort": "Порт {{port}}",
+      "openTak": "Открыть TAK"
+    },
+    "disconnectAll": "Отключить радио и MQTT",
+    "disconnectRadioGroup": "Отключить радио",
+    "moreDisconnectOptions": "Другие варианты отключения",
+    "disconnectOptions": "Варианты отключения",
+    "lastConnectionLabel": "Последнее подключение"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",
@@ -2094,7 +2135,12 @@
       "esp32FlashStalled": "Передача прошивки остановилась без прогресса. Попробуйте другой USB-кабель или порт, войдите в режим загрузчика (удерживайте BOOT, нажмите RESET) и прошейте снова.",
       "unknown": "Произошла непредвиденная ошибка.",
       "provisionWipeRequired": "EEPROM заблокирована с недопустимой идентичностью. Сначала очистите EEPROM, затем выполните provisioning снова.",
-      "provisionVerifyFailed": "Запись provisioning завершена, но устройство по-прежнему сообщает о неподготовленной EEPROM. Перезапустите питание платы, дождитесь загрузки и повторите попытку — или сначала очистите EEPROM."
+      "provisionVerifyFailed": "Запись provisioning завершена, но устройство по-прежнему сообщает о неподготовленной EEPROM. Перезапустите питание платы, дождитесь загрузки и повторите попытку — или сначала очистите EEPROM.",
+      "esp32ReadStalled": "Чтение флеш-памяти остановилось без прогресса. Попробуйте другой USB-кабель или порт, войдите в режим загрузчика (удерживайте BOOT, нажмите RESET) и снова создайте резервную копию.",
+      "esp32ReadIncomplete": "Чтение флеш-памяти завершилось преждевременно, поэтому резервная копия не сохранена. Переподключите плату и повторите попытку.",
+      "esp32FlashSizeUnknown": "Не удалось определить размер флеш-памяти, поэтому резервная копия не создана. Выберите точную модель платы и повторите попытку.",
+      "esp32FlashTooLarge": "Флеш-память этой платы превышает лимит резервной копии 32 МиБ, поэтому резервная копия не создана.",
+      "esp32ReadVerifyFailed": "Прочитанные данные флеш-памяти не прошли проверку контрольной суммы, поэтому резервная копия не сохранена. Переподключите плату и повторите попытку."
     },
     "selectSerialPort": "Выберите последовательный порт",
     "noSerialPorts": "Последовательные порты USB не найдены.",
@@ -2142,7 +2188,14 @@
     "clearPairedDevicesConfirmTitle": "Очистить Bluetooth-связи RNode?",
     "clearPairedDevicesConfirmMessage": "Это отправляет CMD_BT_UNPAIR по USB и очищает связанные хосты на ESP32 RNode (без эффекта на некоторых сборках nRF52). Перед повторным сопряжением всё равно нужно забыть устройство в «Системные настройки» → Bluetooth.",
     "clearPairedDevicesConfirm": "Очистить Bluetooth-связи",
-    "clearPairedDevicesSuccess": "Запрошена очистка таблицы Bluetooth-связей радио."
+    "clearPairedDevicesSuccess": "Запрошена очистка таблицы Bluetooth-связей радио.",
+    "backupFirmware": "Резервное копирование прошивки",
+    "backupFirmwareHint": "Перед прошивкой сохраняет в файл полный образ флеш-памяти ESP32 (прошивка и настройки устройства). Недоступно для плат nRF52.",
+    "backingUp": "Чтение флеш-памяти… {{progress}}%",
+    "cancelBackup": "Отменить резервное копирование",
+    "backupSaved": "Резервная копия прошивки сохранена в {{path}}.",
+    "backupSaveCancelled": "Резервная копия прошивки была прочитана, но не сохранена.",
+    "backupCancelled": "Резервное копирование прошивки отменено."
   },
   "identityVault": {
     "title": "Хранилище личных данных",
@@ -3094,7 +3147,7 @@
     "statusOffline": "Офлайн",
     "loadingBadge": "Загрузка...",
     "mqttIgnoredBadge": "MQTT игнорируется",
-    "chatBadge": "📢 Чат",
+    "chatBadge": "Чат",
     "onlyInDbBadge": "Только в БД",
     "syncedBadge": "Синхронизировано",
     "onRadioBadge": "По радио",
@@ -3142,42 +3195,40 @@
     "radioStatsLocalHeading": "Статистика радио (локальная)",
     "txAirTimeLabel": "Время передачи в эфире",
     "rxAirTimeLabel": "Время приема в эфире",
-    "requestPosition": "📍 Запросить позицию",
-    "traceRoute": "🛤 Отследить маршрут",
+    "requestPosition": "Запросить позицию",
+    "traceRoute": "Отследить маршрут",
     "tracingEllipsis": "Отслеживание...",
-    "requestStatus": "📊 Статус запроса",
+    "requestStatus": "Статус запроса",
     "requestingEllipsis": "Запрос...",
     "requestingStatus": "Запрос статуса...",
     "statusRequestFailed": "Запрос статуса не выполнен",
     "requestingSensorTelemetry": "Запрос сенсорной телеметрии (LPP)...",
     "telemetryFailed": "Ошибка телеметрии: {{message}}",
-    "sensorTelemetryButton": "🌡 Сенсорная телеметрия",
+    "sensorTelemetryButton": "Сенсорная телеметрия",
     "requestingNeighbors": "Просьба к соседям...",
-    "getNeighbors": "🔗 Найдите соседей",
+    "getNeighbors": "Найдите соседей",
     "neighborsFailed": "Соседи не удалось: {{message}}",
     "messageNoKeyTitle": "Невозможно отправить сообщение: нет ключа шифрования. Дождитесь полного обмена контактами или обновите контакты.",
-    "messageButton": "💬 Сообщение",
+    "messageButton": "Сообщение",
     "exportingContact": "Экспорт контакта...",
     "noPublicKeyAvailable": "Открытый ключ отсутствует",
-    "exportContact": "📤 Экспортный контакт",
+    "exportContact": "Экспортный контакт",
     "exportingEllipsis": "Экспорт...",
     "exportFailed": "Экспорт не удался",
     "sharingContact": "Делимся контактами...",
-    "shareContact": "📨 Поделиться контактом",
+    "shareContact": "Поделиться контактом",
     "sharingEllipsis": "Делюсь...",
     "shareFailed": "Не удалось поделиться",
     "addingToRadio": "Добавляю в радио...",
-    "addToRadio": "➕ Добавить в радио",
+    "addToRadio": "Добавить в радио",
     "addingEllipsis": "Добавление...",
     "addToRadioFailed": "Добавить в радио не удалось",
     "removingFromRadio": "Удаление с радио...",
-    "removeFromRadio": "➖ Удалить с радио",
+    "removeFromRadio": "Удалить с радио",
     "removingEllipsis": "Удаление...",
     "removeFromRadioFailed": "Удалить с радио не удалось",
     "mqttIgnoreHeading": "MQTT игнорировать",
     "mqttIgnoreDescription": "Исключить данные MQTT этого узла из диагностики.",
-    "stopIgnoringMqttTitle": "Перестаньте игнорировать MQTT для этого узла.",
-    "ignoreMqttTitle": "Игнорировать MQTT для этого узла",
     "deleteNode": "Удалить узел",
     "deleteNodeConfirm": "Удалить этот узел из локальной базы данных? Он появится снова, когда снова выйдет в эфир.",
     "cancel": "Отмена",
@@ -3220,7 +3271,7 @@
     "remoteAdminKeyHint": "После добавления открытого ключа локальной радиостанции (Radio → Security → Copy) в Admin keys этого удалённого узла вставьте тот же ключ сюда для подтверждения. Затем используйте «Настроить узел» на вкладке Radio.",
     "remoteAdminKeyInvalid": "Введите действительный открытый ключ администратора (base64, base64:… или 64-символьный шестнадцатеричный код).",
     "configureRemotelyHint": "Открывает настройки радио для этого узла по сети (требуется локальное радио и сохраненный ключ администратора).",
-    "openRoomButton": "🏠 Открыть комнату",
+    "openRoomButton": "Открыть комнату",
     "remoteAuthCancelled": "Удаленный доступ отменен.",
     "shareContactSent": "Контактный ресурс отправлен по радио.",
     "blockContact": "Заблокировать",
@@ -3262,7 +3313,9 @@
     "xeddsaSigned": "Подписано XEdDSA",
     "xeddsaSignedHint": "Радио проверило подпись XEdDSA от этого узла, поэтому его открытый ключ криптографически заверен.",
     "keyManuallyVerified": "Ключ проверен",
-    "keyManuallyVerifiedHint": "Открытый ключ этого узла был вручную подтвержден оператором."
+    "keyManuallyVerifiedHint": "Открытый ключ этого узла был вручную подтвержден оператором.",
+    "keyBadge": "Ключ",
+    "closePane": "Закрыть подробности"
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",
@@ -3356,6 +3409,7 @@
     "importResultError": "Импортирован {{imported}}, пропущен {{skipped}}. Ошибки: {{errors}}",
     "refreshContacts": "Обновить контакты с радио",
     "sendFloodAdvert": "Отправить flood advert",
+    "sendFloodAdvertUnavailable": "Доступно после подключения радио MeshCore",
     "filterByContactGroup": "Фильтровать по группе контактов",
     "manageContactGroups": "Управление группами контактов",
     "manageGroups": "Управление группами",
@@ -3381,12 +3435,6 @@
     "distanceFilterNoGpsBanner": "Фильтр расстояний включен, но на вашем устройстве нет GPS-привязки — показаны все узлы.",
     "distanceFilterActiveBanner_one": "Фильтр расстояний активен — узел {{count}} скрыт за пределами {{maxDistance}} {{unit}}.",
     "distanceFilterActiveBanner_other": "Фильтр расстояний активен — узлы {{count}} скрыты за пределами {{maxDistance}} {{unit}}.",
-    "summaryOnline_one": "{{count}} онлайн",
-    "summaryOnline_other": "{{count}} онлайн",
-    "summaryStale_one": "{{count}} устаревший",
-    "summaryStale_other": "{{count}} устаревший",
-    "summaryOffline_one": "{{count}} оффлайн",
-    "summaryOffline_other": "{{count}} оффлайн",
     "tableCaptionMeshNodes": "Связанные узлы сетки",
     "columnFavorite": "Любимый",
     "columnId": "ИДЕНТИФИКАТОР",
@@ -3444,13 +3492,13 @@
     "importResultSuccess_many": "Импортировано {{count}} контактов.",
     "importResultSuccessWithSkipped_few": "Импортировано {{count}} контакта, пропущено {{skipped}}.",
     "importResultSuccessWithSkipped_many": "Импортировано {{count}} контактов, пропущено {{skipped}}.",
-    "summaryOffline_few": "{{count}} оффлайн",
-    "summaryOffline_many": "{{count}} оффлайн",
-    "summaryOnline_few": "{{count}} онлайн",
-    "summaryOnline_many": "{{count}} онлайн",
-    "summaryStale_few": "{{count}} устаревших",
-    "summaryStale_many": "{{count}} устаревших",
-    "buttonExportCsv": "Экспорт CSV"
+    "buttonExportCsv": "Экспорт CSV",
+    "listViewAria": "Вид списка",
+    "statusFilterAria": "Фильтр по состоянию",
+    "statusFilterAll": "Все",
+    "buttonExport": "Экспорт",
+    "exportMenuLabel": "Форматы экспорта",
+    "youBadge": "Вы"
   },
   "nomadNetwork": {
     "title": "Nomad Network",
@@ -3927,12 +3975,12 @@
     "shutdownConfirm": "Неисправность",
     "shutdownButton": "Неисправность",
     "factoryResetConfigName": "Конфигурация сброса к заводским настройкам",
-    "factoryResetConfigTitle": "⚠ Конфигурация сброса настроек к заводским настройкам",
+    "factoryResetConfigTitle": "Конфигурация сброса настроек к заводским настройкам",
     "factoryResetConfigMessage": "Это вернет конфигурацию устройства к заводским настройкам по умолчанию, но сохранит базу данных вашего узла. Настройки придется перенастроить.",
     "factoryResetConfigConfirm": "Сбросить конфигурацию",
     "factoryResetConfigButton": "Только конфигурация возврата к заводским настройкам",
     "factoryResetName": "Сброс к заводским настройкам",
-    "factoryResetTitle": "⚠ Сброс к заводским настройкам",
+    "factoryResetTitle": "Сброс к заводским настройкам",
     "factoryResetMessage": "Это сотрет ВСЕ настройки устройства и восстановит заводские настройки. Все каналы, конфигурация и сохраненные данные на устройстве будут безвозвратно потеряны. Это действие НЕ МОЖЕТ быть отменено.",
     "factoryResetConfirm": "Сброс к заводским настройкам",
     "meshcoreChannelKeyLabel": "Ключ (32 шестнадцатеричных символа = 16 байт)",
@@ -4637,8 +4685,6 @@
     "noLppData": "В этом ответе нет данных датчика LPP.",
     "enterCommand": "Введите команду...",
     "searchRepeatersPlaceholder": "Поиск ретрансляторов и комнат…",
-    "openCliInterface": "Открытый интерфейс командной строки",
-    "sensorLppButton": "Датчик (ЛПП)",
     "noTelemetryResponse": "Ответа телеметрии пока нет. Попробуйте датчик (LPP) еще раз.",
     "mapPositionFromAdvert": "Положение на карте определяется рекламными/контактными данными, а не запросом датчика.",
     "mapPositionFromTelemetry": "Положение на карте определяется данными рекламы/контактов, а не телеметрией датчиков.",
@@ -4664,8 +4710,6 @@
     "statusStale": "Несвежий",
     "statusOffline": "Офлайн",
     "buttonPing": "Пинг",
-    "buttonStatus": "Статус",
-    "buttonNeighbors": "Соседи",
     "buttonRemove": "Удалять",
     "buttonConfirmRemove": "Подтверждать?",
     "buttonErrorShort": "Ошибка",
@@ -4710,15 +4754,10 @@
     "savedPasswordOrphanLabel": "Повторитель {{nodeId}}",
     "pingQueuedBehindOther": "Очередь — другой эхо-запрос использует радио (MeshCore позволяет одну трассу за раз).",
     "waitForPingBeforeStatus": "Ожидание завершения ping перед запросом состояния.",
-    "statusLastFailedTooltip": "Не удалось выполнить последний запрос статуса: {{error}}",
-    "neighborsLastFailedTooltip": "Последний запрос соседей не удался: {{error}}",
-    "telemetryLastFailedTooltip": "Не удалось выполнить последний запрос датчика: {{error}}",
-    "cliLastFailedTooltip": "Не удалось выполнить последнюю команду CLI: {{error}}",
     "telemetryError": "Ошибка датчика: {{error}}",
     "neighborsFailedToast": "Ошибка соседей: {{message}}",
     "columnSnr": "ОСШ",
     "columnRssi": "РССИ",
-    "buttonCli": "интерфейс командной строки",
     "cliClearHistory": "Очистить историю",
     "cliNoCommandsYet": "Команд пока нет",
     "uptimeDaysHours": "{{days}}d {{hours}}h",
@@ -4763,7 +4802,12 @@
     "sortByAirPctAsc": "Сортировать по Air%, сначала самые низкие",
     "sortByAirPctDesc": "Сортировать по Air%, сначала самые высокие",
     "sortByReliabilityAsc": "Сортировать по надежности, сначала самая низкая",
-    "sortByReliabilityDesc": "Сортировать по надежности, сначала наивысшая"
+    "sortByReliabilityDesc": "Сортировать по надежности, сначала наивысшая",
+    "moreActionsFor": "Другие действия для {{name}}",
+    "rowActionsMenu": "Действия для {{name}}",
+    "rowBusy": "Выполняется для {{name}}",
+    "menuShownBelow": "Показано ниже. Выберите снова, чтобы скрыть.",
+    "confirmRemoveAria": "Подтвердить удаление {{name}}"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",
@@ -5120,7 +5164,7 @@
     "savedPasswordsHeading": "Сохранённые пароли",
     "savedPasswordsCount": "Сохраненные пароли ({{count}})",
     "savedPasswordOrphanLabel": "Комната 0x{{nodeId}}",
-    "statusPasswordSaved": "Пароль сохранён для этой комнаты (голубой маркер, если не выполнен вход).",
+    "statusPasswordSaved": "Пароль сохранён для этой комнаты.",
     "statusAutoLoginEnabled": "Автоматический вход в систему при подключении включен.",
     "badgeAutoLogin": "Автовход",
     "badgeAutoSync": "Автоматическая синхронизация",
@@ -5136,17 +5180,18 @@
     "legendLoggedIn": "Вход выполнен",
     "statusLoggedInSession": "Вход выполнен",
     "statusLoggedInSessionTooltip": "Активный сеанс клиента. Он сохраняется до тех пор, пока вы не покинете комнату или не отключитесь. Если сервер комнаты недоступен, выйдите и войдите в систему снова, когда он вернется.",
-    "legendNotSavedTooltip": "Пустой круг — пароль для этой комнаты не сохранен",
-    "legendSavedTooltip": "Полукруг неба — пароль сохранен; войдите, чтобы открыть сессию",
-    "legendLoggedInTooltip": "Зелёная точка — активная клиентская сессия (покиньте комнату, если сервер не в сети)",
     "historyLocalHint": "При входе mesh-client запрашивает недавние публикации, ещё находящиеся в кольцевом буфере сервера комнаты (если на этом устройстве ещё нет локальной метки). Включите автоматическую синхронизацию, чтобы оставаться подписанным во время подключения.",
     "loginAllSavedDisabledNoSavedPasswords": "Сначала сохраните пароль комнаты, чтобы использовать вход во все",
     "membersHeadingWithCount": "Участники ({{count}})",
     "collapseRoomList": "Свернуть список комнат",
     "expandRoomList": "Развернуть список комнат",
-    "collapsedRoomWithUnread": "{{label}}, {{count}} НЕ прочитано",
     "manageJumpHint": "Элементы инфраструктуры (ping, status, CLI, ACL setperm) находятся на вкладке Repeaters.",
-    "aclPubkeyPlaceholder": "0123456789abcdef…"
+    "aclPubkeyPlaceholder": "0123456789abcdef…",
+    "backToList": "Назад к списку комнат",
+    "details": "Сведения о комнате",
+    "hideDetails": "Скрыть сведения о комнате",
+    "moreActions": "Другие действия с комнатой",
+    "loginAndSyncHeading": "Вход и синхронизация"
   },
   "searchModal": {
     "closeSearch": "Закрыть поиск",
@@ -5246,18 +5291,6 @@
   "sidebar": {
     "disabledTabTooltip": "Недоступно в этом режиме"
   },
-  "signalPropagation": {
-    "oneLiners": {
-      "stayOnTheAir": "Оставайтесь в эфире",
-      "helloOperator": "Здравствуйте, оператор",
-      "thanksForMeshing": "Спасибо за сетку",
-      "builtForCommunities": "Создан для сообществ во всем мире",
-      "stayConnected": "Оставайтесь на связи",
-      "signalsOut": "Выходные сигналы",
-      "gladYouAreHere": "Рад, что ты здесь",
-      "keepTheMeshAlive": "Сохраняйте сетку живой"
-    }
-  },
   "tabs": {
     "connection": "Связь",
     "chat": "Чат",
@@ -5280,6 +5313,7 @@
     "admin": "Администрирование",
     "peers": "Пиры",
     "nomadnetwork": "Nomad Network",
+    "nomadShort": "Nomad",
     "topology": "Топология сети",
     "network": "Сеть",
     "rrc": "RRC",
@@ -5316,7 +5350,7 @@
     "atakDataPackageDesc": "Создайте ZIP-файл, содержащий сертификаты TLS и параметры подключения для импорта в ATAK, WinTAK или iTAK.",
     "generating": "Создание…",
     "generateReveal": "Создать и раскрыть",
-    "packageSaved": "✓ Пакет сохранен — проверьте Finder/Explorer",
+    "packageSaved": "Пакет сохранен — проверьте Finder/Explorer",
     "startServerFirst": "Сначала запустите сервер",
     "certificates": "Сертификаты",
     "certificatesDesc": "Самозаверяющие сертификаты ЦС, сервера и клиента генерируются автоматически при первом запуске и сохраняются в каталоге данных приложения.",
@@ -5485,8 +5519,6 @@
     "searchRooms": "Search rooms…",
     "nickname": "Nickname",
     "refreshHubs": "Refresh hubs",
-    "expandSidebar": "Expand hub list",
-    "collapseSidebar": "Collapse hub list",
     "manualHashPlaceholder": "Hub destination hash (32 hex)",
     "connectManual": "Подключиться к хешу",
     "invalidHubHash": "Enter a valid 32-character hex destination hash.",
@@ -5523,8 +5555,6 @@
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
-    "expandRooms": "Развернуть список комнат",
-    "collapseRooms": "Свернуть список комнат",
     "joinedRooms": "Присоединение выполнено",
     "recentRooms": "Недавние",
     "roomKeyOptional": "Ключ от комнаты (необязательно)",
@@ -5580,8 +5610,6 @@
       "welcomeTimeout": "Подключен, но концентратор не отправил ПРИВЕТСТВИЕ вовремя. Попробуйте еще раз.",
       "proxyRateLimit": "Сейчас слишком много запросов (достигнут лимит скорости прокси-сервера). Подождите несколько минут и повторите попытку."
     },
-    "expandMembers": "Развернуть список участников",
-    "collapseMembers": "Свернуть список участников",
     "cancelConnect": "Отмена",
     "maxHubsConnected": "Вы можете оставаться на связи не более чем с 8 концентраторами RRC. Сначала отсоедините один.",
     "enableHubAutoJoin": "Включить автоматическое присоединение концентратора",
@@ -5634,7 +5662,15 @@
     "roomNameLimit": {
       "overMax": "Слишком длинное название комнаты — ограничение концентратора составляет {{limit}} байт"
     },
-    "noConnectedHubs": "Нет подключенных концентраторов RRC. Подключайтесь к Избранному, Обнаруженному или по хэшу."
+    "noConnectedHubs": "Нет подключенных концентраторов RRC. Подключайтесь к Избранному, Обнаруженному или по хэшу.",
+    "autoJoinChip": "Авто",
+    "listViewAria": "Показать комнаты или хабы",
+    "hubsShort": "Хабы",
+    "hideList": "Скрыть комнаты и хабы",
+    "showList": "Показать комнаты и хабы",
+    "backToList": "Назад к комнатам и хабам",
+    "hideMembers": "Скрыть участников",
+    "listColumnAria": "Комнаты и хабы"
   },
   "signalMeter": {
     "rssi": "РССИ",
@@ -6321,5 +6357,50 @@
     "beaconCancelQueued": "Маяк отменен в очереди. Он будет отправлен, когда радиостанция будет доступна.",
     "beaconCancelFailed": "Не удалось отправить или поставить в очередь отмену маяка. Инцидент все еще открыт.",
     "emptyHint": "Входящие отчеты MECP отображаются здесь автоматически. Чтобы отправить его, включите кнопку App → MECP → Show MECP в чате, а затем используйте MECP в чате. На → слоях карты могут отображаться открытые инциденты с координатами."
+  },
+  "shell": {
+    "section": {
+      "monitor": "Мониторинг",
+      "device": "Устройство"
+    },
+    "sectionPanelsAria": "Панели раздела {{section}}",
+    "navBadgeDetail": "{{label}}, {{detail}}",
+    "openLauncher": "Перейти к панели, контакту или каналу ({{shortcut}})",
+    "status": {
+      "radio": "Радио: {{status}}",
+      "radioWithNode": "Радио: {{status}}, узел {{node}}",
+      "radioNode": "{{node}}, {{detail}}"
+    },
+    "launcher": {
+      "title": "Все панели",
+      "searchLabel": "Поиск панелей, контактов и каналов",
+      "placeholder": "Перейти к панели, контакту или каналу",
+      "noResults": "Нет панелей, подходящих под поиск",
+      "otherGroup": "Прочее",
+      "pin": "Закрепить {{label}}",
+      "unpin": "Открепить {{label}}",
+      "pinLimit": "Максимум закреплённых панелей: {{max}}. Сначала открепите одну.",
+      "hintMove": "навигация",
+      "hintOpen": "открыть",
+      "hintPin": "закрепить",
+      "panelCount_one": "{{count}} панель",
+      "panelCount_few": "{{count}} панели",
+      "panelCount_many": "{{count}} панелей",
+      "panelCount_other": "{{count}} панели",
+      "channelsGroup": "Каналы",
+      "contactsGroup": "Контакты",
+      "moreMatches": "Есть ещё совпадения. Продолжайте ввод, чтобы сузить список."
+    },
+    "more": "Ещё",
+    "quitConfirmTitle": "Закрыть Mesh Client?",
+    "quitConfirmIncidents": "Открытые инциденты MAYDAY или URGENT: {{n}}.",
+    "quitConfirmOutbox": "Экстренные сообщения, ожидающие отправки: {{n}}.",
+    "quitConfirmLinks": "Все радио- и MQTT-соединения будут разорваны."
+  },
+  "ui": {
+    "stepper": {
+      "decrease": "Уменьшить: {{label}}",
+      "increase": "Увеличить: {{label}}"
+    }
   }
 }

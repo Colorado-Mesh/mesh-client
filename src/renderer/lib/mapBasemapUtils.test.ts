@@ -5,7 +5,7 @@ import { getMapOverlayColors, isValidMapBasemapId, MAP_BASEMAPS } from './mapBas
 describe('mapBasemapUtils', () => {
   it('uses darker greens on light basemap for contrast', () => {
     expect(getMapOverlayColors(false).online).toBe('#15803d');
-    expect(getMapOverlayColors(true).online).toBe('#86efac');
+    expect(getMapOverlayColors(true).online).toBe('#4ade80');
   });
 
   it('defines dark and osm basemaps', () => {

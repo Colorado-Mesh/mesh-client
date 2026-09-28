@@ -54,7 +54,7 @@ export function PickerSortControls({
             aria-pressed={active}
             aria-label={t(pickerSortAriaKey(key, dirForAria))}
             className={`rounded px-2 py-0.5 transition-colors ${
-              active ? 'bg-slate-700 text-gray-100' : 'text-muted hover:text-gray-200'
+              active ? 'bg-ink-700 text-ink-100' : 'text-muted hover:text-ink-200'
             }`}
             onClick={() => {
               onSortClick(key);

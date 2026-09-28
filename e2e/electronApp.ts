@@ -171,7 +171,7 @@ export async function launchApp(options: LaunchAppOptions = {}): Promise<Launche
 
     await page.waitForSelector('#root', { state: 'visible', timeout: 45_000 });
     await page
-      .getByRole('group', { name: 'Protocol switcher' })
+      .getByRole('radiogroup', { name: 'Protocol switcher' })
       .waitFor({ state: 'visible', timeout: 45_000 });
 
     return launched;
@@ -242,13 +242,38 @@ export function filterUnexpectedConsoleErrors(errors: string[]): string[] {
   return errors.filter((text) => !RENDERER_CONSOLE_ERROR_ALLOWLIST.some((re) => re.test(text)));
 }
 
-export async function openAppTab(page: Page): Promise<void> {
-  const tablist = page.getByRole('tablist', { name: 'Application panels' });
-  await tablist.getByRole('tab', { name: 'App' }).click();
-  await expectTabSelected(page, 'App');
+/** Matches a nav item whose accessible name may carry a badge suffix ("Chat, 2 unread"). */
+export function navName(name: string): RegExp {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // eslint-disable-next-line security/detect-non-literal-regexp -- test-authored label, regex-escaped above
+  return new RegExp(`^${escaped}(,|$)`);
 }
 
-export async function expectTabSelected(page: Page, name: string | RegExp): Promise<void> {
-  const tab = page.getByRole('tablist', { name: 'Application panels' }).getByRole('tab', { name });
-  await expect(tab).toHaveAttribute('aria-selected', 'true');
+/**
+ * v6 shell (issue #1062): click a rail section, then optionally one of its sub-tabs in the
+ * section header.
+ */
+export async function openPanel(page: Page, section: string, tab?: string): Promise<void> {
+  const railButton = page
+    .getByRole('navigation', { name: 'Application panels' })
+    .getByRole('button', { name: navName(section) });
+  await railButton.click();
+  await expect(railButton).toHaveAttribute('aria-current', 'page');
+  if (tab !== undefined) {
+    await page
+      .getByRole('banner')
+      .getByRole('tab', { name: navName(tab) })
+      .click();
+    await expectPanelOpen(page, tab);
+  }
+}
+
+export async function openAppTab(page: Page): Promise<void> {
+  await openPanel(page, 'App');
+  await expectPanelOpen(page, 'App');
+}
+
+/** Visible tabpanel, named by its sub-tab (or by the section title for single-panel sections). */
+export async function expectPanelOpen(page: Page, name: string): Promise<void> {
+  await expect(page.getByRole('tabpanel', { name: navName(name) })).toBeVisible();
 }

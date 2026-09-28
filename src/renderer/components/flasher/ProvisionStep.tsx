@@ -13,11 +13,11 @@ export function ProvisionStep({ state, onProvision }: ProvisionStepProps) {
   const enabled = state === 'ready' || state === 'busy';
 
   return (
-    <div className="space-y-2 rounded border border-gray-700 bg-slate-900/40 p-3">
-      <h4 className="text-sm font-medium text-gray-200">{t('flasher.provisionTitle')}</h4>
-      <p className="text-xs text-gray-400">{t('flasher.provisionHint')}</p>
+    <div className="border-ink-700 bg-ink-900/40 space-y-2 rounded border p-3">
+      <h4 className="text-ink-200 text-sm font-medium">{t('flasher.provisionTitle')}</h4>
+      <p className="text-ink-400 text-xs">{t('flasher.provisionHint')}</p>
       {state === 'disabled' ? (
-        <p className="text-xs text-gray-500">{t('flasher.provisionRequiresFlash')}</p>
+        <p className="text-muted text-xs">{t('flasher.provisionRequiresFlash')}</p>
       ) : null}
       <button
         type="button"

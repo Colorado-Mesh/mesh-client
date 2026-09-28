@@ -18,6 +18,7 @@ import { isMeshcoreContactEligibleForUserGroup } from '../lib/meshcoreUtils';
 import { isMeshtasticContactEligibleForUserGroup } from '../lib/meshtasticContactGroupUtils';
 import type { MeshNode, MeshProtocol } from '../lib/types';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 interface ContactGroupsModalProps {
   groups: ContactGroup[];
@@ -212,10 +213,10 @@ export default function ContactGroupsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="groups-modal-title"
-        className="bg-deep-black relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-gray-700 shadow-2xl"
+        className="bg-deep-black rounded-modal shadow-level-3 border-ink-700 relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col border"
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-700 px-5 py-4">
+        <div className="border-ink-700 flex shrink-0 items-center justify-between border-b px-5 py-4">
           {managingGroup ? (
             <div className="flex min-w-0 items-center gap-2">
               <button
@@ -225,7 +226,7 @@ export default function ContactGroupsModal({
                 }}
                 aria-label={t('contactGroupsModal.backToGroups')}
                 {...{ [PARENT_HOVER_ATTR]: '' }}
-                className="hover:bg-secondary-dark text-muted shrink-0 rounded p-1 transition-colors hover:text-gray-200"
+                className="hover:bg-secondary-dark text-muted hover:text-ink-200 shrink-0 rounded p-1 transition-colors"
               >
                 <ChevronLeft
                   aria-hidden
@@ -234,12 +235,12 @@ export default function ContactGroupsModal({
                   size={16}
                 />
               </button>
-              <h2 id="groups-modal-title" className="truncate text-lg font-semibold text-gray-100">
+              <h2 id="groups-modal-title" className="text-ink-100 truncate text-lg font-semibold">
                 {managingGroup.name}
               </h2>
             </div>
           ) : (
-            <h2 id="groups-modal-title" className="text-lg font-semibold text-gray-100">
+            <h2 id="groups-modal-title" className="text-ink-100 text-lg font-semibold">
               {t('contactGroupsModal.title')}
             </h2>
           )}
@@ -248,7 +249,7 @@ export default function ContactGroupsModal({
             onClick={onClose}
             aria-label={t('aria.closeDialog')}
             {...{ [PARENT_HOVER_ATTR]: '' }}
-            className="hover:bg-secondary-dark text-muted shrink-0 rounded-lg p-1.5 transition-colors hover:text-gray-200"
+            className="hover:bg-secondary-dark text-muted hover:text-ink-200 shrink-0 rounded-lg p-1.5 transition-colors"
           >
             <X aria-hidden className="h-5 w-5" trigger={parentIconTrigger} size={20} />
           </button>
@@ -278,7 +279,7 @@ export default function ContactGroupsModal({
                           disabled={busy}
                           className="accent-brand-green"
                         />
-                        <span className="truncate text-sm text-gray-200">
+                        <span className="text-ink-200 truncate text-sm">
                           {contact.long_name || t('common.unknown')}
                         </span>
                       </label>
@@ -304,7 +305,7 @@ export default function ContactGroupsModal({
                   placeholder={t('contactGroupsModal.newGroupNamePlaceholder')}
                   maxLength={100}
                   disabled={busy}
-                  className="bg-secondary-dark/80 focus:border-brand-green/50 flex-1 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                  className={`${INPUT_BOX_CLASS} flex-1`}
                 />
                 <button
                   type="button"
@@ -342,10 +343,10 @@ export default function ContactGroupsModal({
                           // eslint-disable-next-line jsx-a11y/no-autofocus
                           autoFocus
                           disabled={busy}
-                          className="bg-secondary-dark border-brand-green/50 flex-1 rounded border px-2 py-1 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+                          className={`${INPUT_BOX_CLASS} flex-1`}
                         />
                       ) : (
-                        <span className="flex-1 truncate text-sm text-gray-200">
+                        <span className="text-ink-200 flex-1 truncate text-sm">
                           {group.name}
                           <span className="text-muted ml-1.5 text-xs">({group.member_count})</span>
                         </span>
@@ -375,7 +376,7 @@ export default function ContactGroupsModal({
                             }}
                             aria-label={t('contactGroupsModal.cancelRename')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
-                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                            className="hover:bg-secondary-dark text-muted hover:text-ink-200 rounded p-1 transition-colors"
                           >
                             <X
                               aria-hidden
@@ -395,7 +396,7 @@ export default function ContactGroupsModal({
                             })}
                             title={t('contactGroupsModal.manageMembers')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
-                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                            className="hover:bg-secondary-dark text-muted hover:text-ink-200 rounded p-1 transition-colors"
                           >
                             <Users
                               aria-hidden
@@ -415,7 +416,7 @@ export default function ContactGroupsModal({
                             })}
                             title={t('contactGroupsModal.rename')}
                             {...{ [PARENT_HOVER_ATTR]: '' }}
-                            className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                            className="hover:bg-secondary-dark text-muted hover:text-ink-200 rounded p-1 transition-colors"
                           >
                             <Pencil
                               aria-hidden
@@ -442,7 +443,7 @@ export default function ContactGroupsModal({
                                 }}
                                 aria-label={t('contactGroupsModal.cancelDelete')}
                                 {...{ [PARENT_HOVER_ATTR]: '' }}
-                                className="hover:bg-secondary-dark text-muted rounded p-1 transition-colors hover:text-gray-200"
+                                className="hover:bg-secondary-dark text-muted hover:text-ink-200 rounded p-1 transition-colors"
                               >
                                 <X
                                   aria-hidden

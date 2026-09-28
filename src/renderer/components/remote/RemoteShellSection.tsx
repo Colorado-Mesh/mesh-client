@@ -12,6 +12,9 @@ import { parseReticulumDestinationInput } from '@/renderer/lib/reticulum/reticul
 import { useReticulumRemoteAddressStore } from '@/renderer/stores/reticulumRemoteAddressStore';
 import { MAX_RNSH_SESSIONS, useRnshSessionStore } from '@/renderer/stores/rnshSessionStore';
 
+import { buttonClassName } from '../ui/Button';
+import { INPUT_BOX_CLASS } from '../ui/formClasses';
+
 interface PendingFingerprint {
   sessionId: string;
   destinationHash: string;
@@ -27,7 +30,7 @@ interface ConfirmedFingerprint {
 /** Session tab status dot color; closed/error fall back to red. */
 const SESSION_STATUS_DOT_CLASS: Partial<Record<string, string>> = {
   active: 'bg-green-500',
-  connecting: 'bg-amber-400',
+  connecting: 'bg-orange-400',
 };
 
 export interface RemoteShellSectionProps {
@@ -216,7 +219,7 @@ export function RemoteShellSection({
   return (
     <div className="flex h-full min-w-0 flex-col gap-3 p-3">
       <div className="relative flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[260px] flex-1">
+        <div className="relative min-w-65 flex-1">
           <input
             type="text"
             value={addressInput}
@@ -232,10 +235,10 @@ export function RemoteShellSection({
             }}
             placeholder={t('reticulumRemote.shell.addressPlaceholder')}
             aria-label={t('reticulumRemote.shell.addressAria')}
-            className="bg-secondary-dark/80 w-full rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:border-blue-500/50 focus:outline-none"
+            className={`${INPUT_BOX_CLASS} w-full`}
           />
           {showTypeahead && typeaheadMatches.length > 0 && (
-            <ul className="bg-secondary-dark absolute z-10 mt-1 w-full rounded-lg border border-gray-600/50 shadow-lg">
+            <ul className="bg-secondary-dark shadow-level-3 border-ink-600/50 absolute z-10 mt-1 w-full rounded-lg border">
               {typeaheadMatches.map((addr) => (
                 <li key={addr.id}>
                   <button
@@ -243,7 +246,7 @@ export function RemoteShellSection({
                     aria-label={t('reticulumRemote.shell.selectSavedAddress', {
                       label: addr.label,
                     })}
-                    className="w-full px-3 py-1.5 text-left text-sm text-gray-200 hover:bg-gray-700/60"
+                    className="text-ink-200 hover:bg-ink-700/60 w-full px-3 py-1.5 text-left text-sm"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       setAddressInput(addr.destination_hash);
@@ -264,21 +267,21 @@ export function RemoteShellSection({
           disabled={!sidecarRunning || !parsedHash || connecting}
           aria-label={t('reticulumRemote.shell.connectAria')}
           onClick={handleConnectClick}
-          className="rounded-lg bg-blue-700/80 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:opacity-50"
+          className={buttonClassName('primary', 'md')}
         >
           {connecting ? t('reticulumRemote.shell.connecting') : t('reticulumRemote.shell.connect')}
         </button>
       </div>
 
       {sessionList.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1 border-b border-gray-700/60 pb-1">
+        <div className="border-ink-700/60 flex flex-wrap items-center gap-1 border-b pb-1">
           {sessionList.map((session) => (
             <div
               key={session.session_id}
               className={`flex items-center gap-1 rounded-t-lg border border-b-0 px-2 py-1 text-xs ${
                 session.session_id === focusedSessionId
-                  ? 'border-blue-600/60 bg-blue-900/30 text-blue-200'
-                  : 'border-gray-700/60 bg-gray-800/40 text-gray-400'
+                  ? 'border-indigo-600/60 bg-indigo-900/30 text-indigo-200'
+                  : 'border-ink-700/60 bg-ink-800/40 text-ink-400'
               }`}
             >
               <button
@@ -303,7 +306,7 @@ export function RemoteShellSection({
                   address: session.destination_hash.slice(0, 8),
                 })}
                 onClick={() => void handleDisconnect(session.session_id)}
-                className="ml-1 text-gray-500 hover:text-gray-200"
+                className="text-muted hover:text-ink-200 ml-1"
               >
                 ×
               </button>
@@ -324,7 +327,7 @@ export function RemoteShellSection({
               hidden={session.session_id !== focusedSessionId}
               className="flex h-full min-h-0 flex-col gap-2"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400">
+              <div className="text-ink-400 flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span>{t(`reticulumRemote.shell.status.${session.status}`)}</span>
                 <div className="flex gap-2">
                   {session.status !== 'active' && session.status !== 'connecting' && (
@@ -335,7 +338,7 @@ export function RemoteShellSection({
                         // eslint-disable-next-line react-hooks/refs -- event handler, not render; reconnect reads the confirmed-fingerprint ref to skip re-prompting
                         void handleReconnect(session.session_id, session.destination_hash);
                       }}
-                      className="rounded bg-gray-700/60 px-2 py-1 text-gray-200 hover:bg-gray-600"
+                      className="bg-ink-700/60 text-ink-200 hover:bg-ink-600 rounded px-2 py-1"
                     >
                       {t('reticulumRemote.shell.reconnect')}
                     </button>
@@ -353,7 +356,7 @@ export function RemoteShellSection({
               {!session.disconnectIntent &&
                 (session.status === 'closed' || session.status === 'error') &&
                 settings.autoReconnectShell && (
-                  <div className="rounded border border-amber-700/60 bg-amber-900/30 px-2 py-1 text-[11px] text-amber-200">
+                  <div className="text-label rounded border border-orange-700/60 bg-orange-900/30 px-2 py-1 text-orange-200">
                     {session.reconnectAttempts >= settings.maxReconnectAttempts
                       ? t('reticulumRemote.shell.reconnectExhausted')
                       : t('reticulumRemote.shell.reconnectingBanner', {

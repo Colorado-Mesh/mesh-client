@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
-import { Info, TriangleAlert } from 'lucide-react-motion';
+import { Info, TriangleAlert, X } from 'lucide-react-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -63,6 +63,7 @@ import { routingRowToNodeAnomaly } from '../lib/types';
 import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 function foreignLoraListFromBySender(
   bySender: Map<string, ForeignLoraDetection> | undefined,
@@ -128,7 +129,7 @@ function meshcoreHeardDisplay(
 }
 
 const CATEGORY_STYLES: Record<string, string> = {
-  Configuration: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  Configuration: 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
   Physical: 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
   Hardware: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
   Software: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
@@ -396,8 +397,8 @@ export default function DiagnosticsPanel({
       return {
         status: 'attention' as const,
         label: t('diagnosticsPanel.meshHealthAttention'),
-        textColor: 'text-yellow-400',
-        bg: 'bg-yellow-500/10 border-yellow-500/30',
+        textColor: 'text-orange-400',
+        bg: 'bg-orange-500/10 border-orange-500/30',
       };
     }
     return {
@@ -433,8 +434,8 @@ export default function DiagnosticsPanel({
     if (errors > 0 || warnings > 0) {
       return {
         label: t('diagnosticsPanel.meshHealthAttention'),
-        textColor: 'text-yellow-400',
-        bg: 'bg-yellow-500/10 border-yellow-500/20',
+        textColor: 'text-orange-400',
+        bg: 'bg-orange-500/10 border-orange-500/20',
         errors,
         warnings,
         infos,
@@ -575,7 +576,7 @@ export default function DiagnosticsPanel({
             ? 'bg-red-950/40 text-red-400'
             : sev === 'warning'
               ? 'bg-orange-950/20 text-orange-400'
-              : 'bg-blue-950/20 text-blue-400';
+              : 'bg-indigo-950/20 text-indigo-400';
         rows.push(
           <tr key={`hdr-${sev}-${row.nodeId}-${row.id}`} className={rowClass}>
             <td colSpan={6} className="px-4 py-2 text-xs font-semibold">
@@ -591,7 +592,7 @@ export default function DiagnosticsPanel({
           foreignLoraRow && rf.foreignSenderId != null ? rf.foreignSenderId : rf.nodeId;
         const node = nodes.get(linkNodeId);
         const isInfo = rf.severity === 'info';
-        const colorClass = isInfo ? 'text-blue-400' : 'text-orange-400';
+        const colorClass = isInfo ? 'text-indigo-400' : 'text-orange-400';
         const hexId =
           foreignLoraRow && rf.foreignSenderId != null
             ? formatMeshtasticNodeId(rf.foreignSenderId)
@@ -620,7 +621,7 @@ export default function DiagnosticsPanel({
                   <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
                 )}
                 <div>
-                  <div className="font-medium text-gray-200">{displayName}</div>
+                  <div className="text-ink-200 font-medium">{displayName}</div>
                   <div className="text-muted font-mono text-xs">{hexId}</div>
                 </div>
               </div>
@@ -629,14 +630,14 @@ export default function DiagnosticsPanel({
               <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
                 {translateRfConditionLabel(t, rf.condition)}
                 {rf.isLastHop && (
-                  <span className="ml-1 rounded border border-blue-500/30 bg-blue-500/20 px-1 py-0 text-[10px] text-blue-300">
+                  <span className="text-2xs ml-1 rounded border border-indigo-500/30 bg-indigo-500/20 px-1 py-0 text-indigo-300">
                     {t('diagnosticsPanel.lastHopBadge')}
                   </span>
                 )}
               </div>
-              <div className="max-w-xs text-xs text-gray-400">{translateRfCauseText(t, rf)}</div>
+              <div className="text-ink-400 max-w-xs text-xs">{translateRfCauseText(t, rf)}</div>
             </td>
-            <td className="px-4 py-2.5 text-right text-xs text-gray-300">—</td>
+            <td className="text-ink-300 px-4 py-2.5 text-right text-xs">—</td>
             <td className="text-muted px-4 py-2.5 text-right text-xs">
               {formatRowTime(rf.detectedAt)}
             </td>
@@ -644,7 +645,7 @@ export default function DiagnosticsPanel({
               {remedy ? (
                 <span
                   title={translateRemedyDescription(t, remedy)}
-                  className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
+                  className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
                 >
                   {translateRemedyTitle(t, remedy)}
                 </span>
@@ -664,7 +665,7 @@ export default function DiagnosticsPanel({
       const node = nodes.get(anomaly.nodeId);
       const isError = anomaly.severity === 'error';
       const isInfo = anomaly.severity === 'info';
-      const colorClass = isError ? 'text-red-400' : isInfo ? 'text-blue-400' : 'text-orange-400';
+      const colorClass = isError ? 'text-red-400' : isInfo ? 'text-indigo-400' : 'text-orange-400';
       const hexId = formatMeshtasticNodeId(anomaly.nodeId);
       const displayName = node?.long_name || node?.short_name || hexId;
       const isPending = tracePendingNodes.has(anomaly.nodeId);
@@ -698,33 +699,31 @@ export default function DiagnosticsPanel({
                 <AlertTriangleIcon className={`h-4 w-4 shrink-0 ${colorClass}`} />
               )}
               <div>
-                <div className="font-medium text-gray-200">{displayName}</div>
+                <div className="text-ink-200 font-medium">{displayName}</div>
                 <div className="text-muted font-mono text-xs">{hexId}</div>
               </div>
             </div>
           </td>
           <td className="px-4 py-2.5">
-            <div className={`text-xs font-medium tracking-wide uppercase ${colorClass} mb-0.5`}>
+            <div className={`text-xs font-medium ${colorClass} mb-0.5`}>
               {translateRoutingAnomalyType(t, anomaly.type)}
             </div>
-            <div className="max-w-xs text-xs text-gray-400">
+            <div className="text-ink-400 max-w-xs text-xs">
               {translateRoutingRowDescription(t, routingRow)}
             </div>
             {showMqttControls &&
               anomaly.type === 'hop_goblin' &&
               node?.heard_via_mqtt === true &&
               !node?.heard_via_mqtt_only && (
-                <div className="mt-1 text-xs text-yellow-400/70">
+                <div className="mt-1 text-xs text-orange-400/70">
                   {t('diagnosticsPanel.hybridNodeMqttWarning')}
                 </div>
               )}
           </td>
-          <td className="px-4 py-2.5 text-right text-xs text-gray-300">
-            {anomaly.hopsAway ?? '—'}
-          </td>
+          <td className="text-ink-300 px-4 py-2.5 text-right text-xs">{anomaly.hopsAway ?? '—'}</td>
           <td className="text-muted px-4 py-2.5 text-right text-xs">
             {isPending ? (
-              <span className="inline-flex items-center justify-end gap-1 text-blue-400">
+              <span className="inline-flex items-center justify-end gap-1 text-indigo-400">
                 <span aria-hidden className="inline-block animate-pulse">
                   ●
                 </span>
@@ -742,7 +741,7 @@ export default function DiagnosticsPanel({
               return (
                 <span
                   title={translateRemedyDescription(t, remedy)}
-                  className={`inline-block rounded px-2 py-0.5 text-[10px] font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
+                  className={`text-2xs inline-block rounded px-2 py-0.5 font-medium whitespace-nowrap ${CATEGORY_STYLES[remedy.category]}`}
                 >
                   {translateRemedyTitle(t, remedy)}
                 </span>
@@ -757,19 +756,19 @@ export default function DiagnosticsPanel({
           >
             <div className="flex flex-col items-end gap-1.5">
               {isPending ? (
-                <span className="flex items-center justify-end gap-1.5 text-xs text-blue-400">
-                  <SpinnerIcon className="h-3.5 w-3.5 text-blue-400" />
+                <span className="flex items-center justify-end gap-1.5 text-xs text-indigo-400">
+                  <SpinnerIcon className="h-3.5 w-3.5 text-indigo-400" />
                   {t('diagnosticsPanel.tracing')}
                 </span>
               ) : traceHops ? (
                 <div className="text-right">
-                  <div className="text-muted mb-0.5 text-[10px]">
+                  <div className="text-muted text-2xs mb-0.5">
                     {t('diagnosticsPanel.routeColumn')}
                   </div>
-                  <div className="flex flex-wrap justify-end gap-0.5 font-mono text-xs text-gray-300">
+                  <div className="text-ink-300 flex flex-wrap justify-end gap-0.5 font-mono text-xs">
                     {traceHops.map((hop, i) => (
                       <span key={i} className="flex items-center gap-0.5">
-                        {i > 0 && <span className="text-gray-600">›</span>}
+                        {i > 0 && <span className="text-ink-600">›</span>}
                         <span
                           className={
                             i === 0 || i === traceHops.length - 1 ? 'text-brand-green' : ''
@@ -784,7 +783,7 @@ export default function DiagnosticsPanel({
                     type="button"
                     onClick={() => handleTraceRoute(anomaly.nodeId)}
                     disabled={!isConnected}
-                    className="bg-secondary-dark mt-1 rounded px-2 py-0.5 text-[10px] text-gray-400 hover:bg-gray-600 disabled:opacity-40"
+                    className="bg-secondary-dark text-2xs text-ink-300 hover:bg-ink-600 mt-1 rounded px-2 py-0.5 disabled:opacity-40"
                   >
                     {t('diagnosticsPanel.reTrace')}
                   </button>
@@ -798,7 +797,7 @@ export default function DiagnosticsPanel({
                   className={`rounded px-2.5 py-1 text-xs whitespace-nowrap transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
                     isFailed
                       ? 'border border-red-800/50 bg-red-900/40 text-red-300 hover:bg-red-900/60'
-                      : 'bg-secondary-dark text-gray-300 hover:bg-gray-600'
+                      : 'bg-secondary-dark text-ink-300 hover:bg-ink-600'
                   }`}
                 >
                   {isFailed ? t('diagnosticsPanel.retryTrace') : t('diagnosticsPanel.traceRoute')}
@@ -811,7 +810,7 @@ export default function DiagnosticsPanel({
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, false);
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 text-[10px] whitespace-nowrap text-yellow-300 transition-colors hover:bg-yellow-500/30"
+                    className="text-2xs inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/20 px-2 py-0.5 whitespace-nowrap text-orange-300 transition-colors hover:bg-orange-500/30"
                     title={t('diagnosticsPanel.stopIgnoringMqtt')}
                   >
                     {t('diagnosticsPanel.mqttIgnoredToggle')}
@@ -822,7 +821,7 @@ export default function DiagnosticsPanel({
                     onClick={() => {
                       setNodeMqttIgnored(anomaly.nodeId, true);
                     }}
-                    className="bg-secondary-dark text-muted rounded px-2 py-0.5 text-[10px] whitespace-nowrap transition-colors hover:bg-gray-600 hover:text-gray-300"
+                    className="bg-secondary-dark text-ink-300 text-2xs hover:bg-ink-600 hover:text-ink-200 rounded px-2 py-0.5 whitespace-nowrap transition-colors"
                     title={t('diagnosticsPanel.excludeMqttData')}
                   >
                     {t('diagnosticsPanel.ignoreMqttButton')}
@@ -839,7 +838,7 @@ export default function DiagnosticsPanel({
   return (
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-200">
+        <h2 className="text-ink-200 text-xl font-semibold">
           {t('diagnosticsPanel.networkDiagnosticsTitle')}
         </h2>
         <div className="flex items-center gap-3">
@@ -847,7 +846,7 @@ export default function DiagnosticsPanel({
             type="button"
             aria-label={t('diagnosticsPanel.exportJsonAria')}
             disabled={visibleDiagnosticRows.length === 0}
-            className="rounded border border-gray-600/50 px-2 py-1 text-xs text-gray-300 transition-colors hover:border-gray-500 hover:text-gray-100 disabled:opacity-50"
+            className="border-ink-600/50 text-ink-300 hover:border-ink-500 hover:text-ink-100 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-50"
             onClick={() => {
               const payload = diagnosticsRowsToJson(visibleDiagnosticRows);
               downloadBlob(
@@ -887,7 +886,7 @@ export default function DiagnosticsPanel({
       {diagnosticRowsRestoredAt != null &&
         showLoRaMeshDiagnostics &&
         visibleDiagnosticRows.length > 0 && (
-          <div className="flex items-start justify-between gap-3 rounded-lg border border-blue-500/40 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
+          <div className="flex items-start justify-between gap-3 rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-200">
             <span>
               {t('diagnosticsPanel.restoredSessionBanner', {
                 time: formatIsoDateTime(diagnosticRowsRestoredAt),
@@ -898,7 +897,7 @@ export default function DiagnosticsPanel({
               onClick={() => {
                 clearDiagnosticRowsSnapshot();
               }}
-              className="shrink-0 rounded bg-blue-900/50 px-2 py-1 text-xs text-blue-100 hover:bg-blue-800/50"
+              className="shrink-0 rounded bg-indigo-900/50 px-2 py-1 text-xs text-indigo-100 hover:bg-indigo-800/50"
             >
               {t('diagnosticsPanel.stopRestoringOnLaunch')}
             </button>
@@ -925,7 +924,7 @@ export default function DiagnosticsPanel({
                   {meshHealth.label}
                 </span>
               </div>
-              <div className="text-sm text-gray-300">
+              <div className="text-ink-300 text-sm">
                 <span className="text-muted">
                   {t('diagnosticsPanel.nodesWithTelemetry', { count: nodesWithTelemetryCount })}
                 </span>
@@ -955,7 +954,7 @@ export default function DiagnosticsPanel({
               {(connectedHealth.errors > 0 || connectedHealth.warnings > 0) &&
                 (connectedHealth.errors !== errorCount ||
                   connectedHealth.warnings !== warningCount) && (
-                  <div className="text-muted border-t border-gray-700/40 pt-1 text-xs">
+                  <div className="text-muted border-ink-700/40 border-t pt-1 text-xs">
                     {t('diagnosticsPanel.thisNodePrefix')}{' '}
                     {connectedHealth.errors > 0 && (
                       <span className="text-red-400">
@@ -990,34 +989,34 @@ export default function DiagnosticsPanel({
                 }));
               if (chartData.length < 2) return null;
               return (
-                <div className="mb-4 rounded-lg border border-gray-700/60 bg-gray-800/40 p-4">
-                  <h3 className="mb-3 text-sm font-semibold text-gray-200">
+                <div className="border-ink-700/60 bg-ink-800/40 mb-4 rounded-lg border p-4">
+                  <h3 className="text-ink-200 mb-3 text-sm font-semibold">
                     {t('diagnosticsPanel.cuHistoryHeading')}
                   </h3>
                   <ResponsiveContainer height={140} width="100%">
                     <LineChart data={chartData} margin={{ top: 2, right: 8, left: -20, bottom: 0 }}>
-                      <CartesianGrid stroke="#374151" strokeDasharray="3 3" vertical={false} />
+                      <CartesianGrid stroke="#364156" strokeDasharray="3 3" vertical={false} />
                       <XAxis
                         dataKey="time"
                         interval="preserveStartEnd"
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        tick={{ fill: '#93a0b7', fontSize: 10 }}
                         tickLine={false}
                       />
                       <YAxis
                         domain={[0, 100]}
-                        tick={{ fill: '#9ca3af', fontSize: 10 }}
+                        tick={{ fill: '#93a0b7', fontSize: 10 }}
                         tickLine={false}
                         unit="%"
                       />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#1f2937',
-                          border: '1px solid #374151',
+                          backgroundColor: '#212d40',
+                          border: '1px solid #364156',
                           borderRadius: '6px',
                           fontSize: '12px',
                         }}
                         formatter={(v) => [`${v}%`, t('diagnosticsPanel.cuHistoryTooltipLabel')]}
-                        labelStyle={{ color: '#9ca3af' }}
+                        labelStyle={{ color: '#93a0b7' }}
                       />
                       <Line
                         dataKey="cu"
@@ -1037,14 +1036,14 @@ export default function DiagnosticsPanel({
 
       {/* MeshCore nodes heard by Meshtastic radio (per transmitter) */}
       {showForeignLoraTables && meshcoreHeardList.length > 0 && (
-        <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
-          <h3 className="flex items-center gap-1.5 text-sm font-medium text-amber-400">
+        <div className="space-y-3 rounded-xl border border-orange-500/30 bg-orange-500/5 p-4">
+          <h3 className="flex items-center gap-1.5 text-sm font-medium text-orange-400">
             <AlertTriangleIcon className="h-4 w-4 shrink-0" />
             {t('diagnosticsPanel.meshcoreHeardByMeshtasticHeading', {
               count: meshcoreHeardList.length,
             })}
           </h3>
-          <p className="text-xs text-amber-200/80">
+          <p className="text-xs text-orange-200/80">
             {t('diagnosticsPanel.meshcoreHeardByMeshtasticDescription')}
           </p>
           {meshcoreRepeaterConflict && (
@@ -1052,7 +1051,7 @@ export default function DiagnosticsPanel({
               {t('diagnosticsPanel.meshcoreRepeaterConflictBanner')}
             </p>
           )}
-          <div className="overflow-auto rounded-lg border border-gray-700">
+          <div className="border-ink-700 overflow-auto rounded-lg border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1067,7 +1066,7 @@ export default function DiagnosticsPanel({
                   <th className="px-4 py-2.5 text-right">{t('diagnosticsPanel.signalColumn')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700/50">
+              <tbody className="divide-ink-700/50 divide-y">
                 {meshcoreHeardList.map((d, i) => {
                   const { displayName, hexId, node } = meshcoreHeardDisplay(
                     d,
@@ -1090,17 +1089,17 @@ export default function DiagnosticsPanel({
                       }`}
                     >
                       <td className="px-4 py-2.5">
-                        <div className="font-medium text-gray-200">{displayName}</div>
+                        <div className="text-ink-200 font-medium">{displayName}</div>
                         {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
                       </td>
-                      <td className="px-4 py-2.5 text-gray-300">
+                      <td className="text-ink-300 px-4 py-2.5">
                         {proximityLabels[d.proximity] ?? d.proximity}
                       </td>
                       <td className="text-muted px-4 py-2.5 text-right text-xs">
                         {formatRowTime(d.detectedAt)}
                       </td>
-                      <td className="px-4 py-2.5 text-right text-gray-300">{d.count}×</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-xs text-gray-300">
+                      <td className="text-ink-300 px-4 py-2.5 text-right">{d.count}×</td>
+                      <td className="text-ink-300 px-4 py-2.5 text-right font-mono text-xs">
                         {d.rssi !== undefined
                           ? t('diagnosticsPanel.rssiShort', { rssi: d.rssi })
                           : '—'}
@@ -1155,21 +1154,21 @@ export default function DiagnosticsPanel({
                   className="bg-secondary-dark grid grid-cols-2 gap-x-4 gap-y-1 rounded p-2 text-xs"
                 >
                   <div className="text-muted">{t('diagnosticsPanel.foreignClassColumn')}</div>
-                  <div className="text-gray-200">{classLabel}</div>
+                  <div className="text-ink-200">{classLabel}</div>
                   <div className="text-muted">{t('diagnosticsPanel.foreignProximityColumn')}</div>
-                  <div className="text-gray-200">{proximityLabel}</div>
+                  <div className="text-ink-200">{proximityLabel}</div>
                   <div className="text-muted">{t('diagnosticsPanel.foreignLastSeenColumn')}</div>
-                  <div className="text-gray-200">
+                  <div className="text-ink-200">
                     {minutesAgo < 1
                       ? t('common.justNow')
                       : t('common.minutesAgo', { count: minutesAgo })}
                   </div>
                   <div className="text-muted">{t('diagnosticsPanel.foreignCountColumn')}</div>
-                  <div className="text-gray-200">{d.count}×</div>
+                  <div className="text-ink-200">{d.count}×</div>
                   {(d.rssi !== undefined || d.snr !== undefined) && (
                     <>
                       <div className="text-muted">{t('diagnosticsPanel.signalColumn')}</div>
-                      <div className="font-mono text-gray-200">
+                      <div className="text-ink-200 font-mono">
                         {d.rssi !== undefined
                           ? t('diagnosticsPanel.rssiDbm', { rssi: d.rssi })
                           : ''}
@@ -1183,7 +1182,7 @@ export default function DiagnosticsPanel({
                   {d.lastSenderId != null && (
                     <>
                       <div className="text-muted">{t('diagnosticsPanel.senderLabel')}</div>
-                      <div className="font-mono text-gray-200">
+                      <div className="text-ink-200 font-mono">
                         {formatMeshtasticNodeId(d.lastSenderId)}
                         {senderName ? ` (${senderName})` : ''}
                       </div>
@@ -1199,7 +1198,7 @@ export default function DiagnosticsPanel({
       {/* Settings */}
       {showLoRaMeshDiagnostics && (
         <>
-          <div className="bg-secondary-dark rounded-lg p-4">
+          <div className="bg-deep-black border-ink-800 rounded-xl border p-4">
             <h3 className="text-muted mb-3 text-sm font-medium">
               {t('diagnosticsPanel.displaySettings')}
             </h3>
@@ -1214,7 +1213,7 @@ export default function DiagnosticsPanel({
                   }}
                   className="accent-brand-green"
                 />
-                <label htmlFor="congestionHalos" className="cursor-pointer text-sm text-gray-300">
+                <label htmlFor="congestionHalos" className="text-ink-300 cursor-pointer text-sm">
                   {t('diagnosticsPanel.showChannelUtilHalos')}
                 </label>
               </div>
@@ -1228,7 +1227,7 @@ export default function DiagnosticsPanel({
                   }}
                   className="accent-brand-green"
                 />
-                <label htmlFor="anomalyHalos" className="cursor-pointer text-sm text-gray-300">
+                <label htmlFor="anomalyHalos" className="text-ink-300 cursor-pointer text-sm">
                   {t('diagnosticsPanel.showRoutingAnomalyHalos')}
                 </label>
               </div>
@@ -1243,7 +1242,7 @@ export default function DiagnosticsPanel({
                     }}
                     className="accent-brand-green"
                   />
-                  <label htmlFor="ignoreMqtt" className="cursor-pointer text-sm text-gray-300">
+                  <label htmlFor="ignoreMqtt" className="text-ink-300 cursor-pointer text-sm">
                     {t('diagnosticsPanel.ignoreMqttToggle')}
                   </label>
                   <span className="text-muted text-xs">{t('diagnosticsPanel.ignoreMqttHelp')}</span>
@@ -1259,7 +1258,7 @@ export default function DiagnosticsPanel({
                   }}
                   className="accent-brand-green"
                 />
-                <label htmlFor="autoTraceroute" className="cursor-pointer text-sm text-gray-300">
+                <label htmlFor="autoTraceroute" className="text-ink-300 cursor-pointer text-sm">
                   {t('diagnosticsPanel.autoTraceroute')}
                 </label>
                 <span className="text-muted text-xs">
@@ -1268,10 +1267,10 @@ export default function DiagnosticsPanel({
                 </span>
               </div>
               <div className="flex flex-col gap-1.5">
-                <div className="text-sm text-gray-300">
+                <div className="text-ink-300 text-sm">
                   {t('diagnosticsPanel.environmentProfile')}
                 </div>
-                <div className="flex w-fit overflow-hidden rounded-lg border border-gray-600/50">
+                <div className="border-ink-600/50 flex w-fit overflow-hidden rounded-lg border">
                   {(
                     [
                       { mode: 'standard', label: t('diagnosticsPanel.environmentStandard') },
@@ -1285,10 +1284,10 @@ export default function DiagnosticsPanel({
                       onClick={() => {
                         setEnvMode(mode);
                       }}
-                      className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-l border-gray-600/50' : ''} ${
+                      className={`px-4 py-1.5 text-sm transition-colors ${i > 0 ? 'border-ink-600/50 border-l' : ''} ${
                         envMode === mode
                           ? 'bg-brand-green/20 text-brand-green border-brand-green/50'
-                          : 'bg-secondary-dark text-gray-400 hover:text-gray-200'
+                          : 'bg-secondary-dark text-ink-300 hover:text-ink-200'
                       }`}
                     >
                       {label}
@@ -1302,7 +1301,7 @@ export default function DiagnosticsPanel({
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="distanceOffsetKm" className="text-sm text-gray-400">
+                <label htmlFor="distanceOffsetKm" className="text-ink-400 text-sm">
                   {t('diagnosticsPanel.distanceOffsetKm')}
                 </label>
                 <input
@@ -1317,19 +1316,19 @@ export default function DiagnosticsPanel({
                     if (Number.isFinite(v)) setDistanceOffsetKm(v);
                   }}
                   aria-label={t('diagnosticsPanel.distanceOffsetKm')}
-                  className="bg-deep-black focus:border-brand-green w-20 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
+                  className={`${INPUT_BOX_CLASS} w-20 text-right`}
                 />
-                <span className="text-sm text-gray-400">{t('diagnosticsPanel.km')}</span>
+                <span className="text-ink-400 text-sm">{t('diagnosticsPanel.km')}</span>
                 <span className="text-muted text-xs">
                   {t('diagnosticsPanel.distanceOffsetHelp')}
                 </span>
               </div>
-              <div className="flex flex-col gap-1.5 border-t border-gray-700/50 pt-2">
-                <div className="text-sm text-gray-300">
+              <div className="border-ink-700/50 flex flex-col gap-1.5 border-t pt-2">
+                <div className="text-ink-300 text-sm">
                   {t('diagnosticsPanel.staleRoutingDiagnostics')}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label htmlFor="diagnosticRowsMaxAgeHours" className="text-sm text-gray-400">
+                  <label htmlFor="diagnosticRowsMaxAgeHours" className="text-ink-400 text-sm">
                     {t('diagnosticsPanel.dropRoutingRowsLabel')}
                   </label>
                   <input
@@ -1345,9 +1344,9 @@ export default function DiagnosticsPanel({
                     aria-label={t('diagnosticsPanel.dropRoutingRows', {
                       hours: diagnosticRowsMaxAgeHours,
                     })}
-                    className="bg-deep-black focus:border-brand-green w-16 rounded border border-gray-600 px-2 py-1 text-right text-sm text-gray-200 focus:outline-none"
+                    className={`${INPUT_BOX_CLASS} w-16 text-right`}
                   />
-                  <span className="text-sm text-gray-400">{t('diagnosticsPanel.hoursRange')}</span>
+                  <span className="text-ink-400 text-sm">{t('diagnosticsPanel.hoursRange')}</span>
                 </div>
                 <span className="text-muted text-xs">{t('diagnosticsPanel.staleRoutingHelp')}</span>
               </div>
@@ -1356,7 +1355,7 @@ export default function DiagnosticsPanel({
 
           {/* Per-Node MQTT Filters */}
           {showMqttControls && mqttIgnoredNodes.size > 0 && (
-            <div className="bg-secondary-dark rounded-lg p-3">
+            <div className="bg-deep-black border-ink-800 rounded-xl border p-3">
               <h3 className="text-muted mb-2 text-xs font-medium">
                 {t('diagnosticsPanel.perNodeMqttFilters')}
               </h3>
@@ -1367,7 +1366,7 @@ export default function DiagnosticsPanel({
                   return (
                     <span
                       key={nodeId}
-                      className="inline-flex items-center gap-1 rounded-full border border-yellow-500/30 bg-yellow-500/20 px-2 py-0.5 text-xs text-yellow-300"
+                      className="inline-flex items-center gap-1 rounded-full border border-orange-500/30 bg-orange-500/20 px-2 py-0.5 text-xs text-orange-300"
                     >
                       {label}
                       <button
@@ -1376,10 +1375,10 @@ export default function DiagnosticsPanel({
                           setNodeMqttIgnored(nodeId, false);
                         }}
                         aria-label={t('diagnosticsPanel.dismissRow')}
-                        className="ml-0.5 leading-none hover:text-yellow-100"
+                        className="ml-0.5 rounded-sm leading-none hover:text-orange-100"
                         title={t('diagnosticsPanel.removeMqttFilter')}
                       >
-                        ✕
+                        <X aria-hidden className="h-3 w-3" />
                       </button>
                     </span>
                   );
@@ -1411,8 +1410,8 @@ export default function DiagnosticsPanel({
 
       {/* IP Geolocation Accuracy Warning */}
       {ourPosition?.source === 'ip' && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-300">
-          <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" />
+        <div className="flex items-start gap-2.5 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-300">
+          <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
           <span>{t('diagnosticsPanel.ipGeolocationBanner')}</span>
         </div>
       )}
@@ -1432,12 +1431,12 @@ export default function DiagnosticsPanel({
               }}
               placeholder={t('diagnosticsPanel.searchAnomalies')}
               aria-label={t('diagnosticsPanel.searchAnomalies')}
-              className="bg-secondary-dark/80 focus:border-brand-green/50 w-48 rounded-lg border border-gray-600/50 px-3 py-1.5 text-sm text-gray-200 focus:outline-none"
+              className={`${INPUT_BOX_CLASS} w-48`}
             />
           </div>
 
           {anomalyList.length === 0 ? (
-            <div className="bg-secondary-dark text-muted rounded-lg p-8 text-center text-sm">
+            <div className="bg-deep-black text-muted border-ink-800 rounded-xl border p-8 text-center text-sm">
               {visibleDiagnosticRows.length === 0
                 ? t('diagnosticsPanel.noDiagnosticsHealthy')
                 : t('diagnosticsPanel.noAnomaliesMatchSearch')}
@@ -1446,10 +1445,10 @@ export default function DiagnosticsPanel({
             <div className="space-y-6">
               {selfRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  <h4 className="text-ink-400 mb-2 text-xs font-semibold">
                     {t('diagnosticsPanel.connectedNodeYouHeading', { count: selfRows.length })}
                   </h4>
-                  <div className="border-brand-green/20 overflow-auto rounded-lg border border-gray-700">
+                  <div className="border-brand-green/20 border-ink-700 overflow-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1467,7 +1466,7 @@ export default function DiagnosticsPanel({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-700/50">
+                      <tbody className="divide-ink-700/50 divide-y">
                         {renderTableBody(selfRows)}
                       </tbody>
                     </table>
@@ -1476,12 +1475,12 @@ export default function DiagnosticsPanel({
               )}
               {otherCrossProtocolRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  <h4 className="text-ink-400 mb-2 text-xs font-semibold">
                     {t('diagnosticsPanel.otherCrossProtocolHeading', {
                       count: otherCrossProtocolRows.length,
                     })}
                   </h4>
-                  <div className="overflow-auto rounded-lg border border-amber-500/20 border-gray-700">
+                  <div className="border-ink-700 overflow-auto rounded-lg border border-orange-500/20">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1499,7 +1498,7 @@ export default function DiagnosticsPanel({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-700/50">
+                      <tbody className="divide-ink-700/50 divide-y">
                         {renderTableBody(otherCrossProtocolRows)}
                       </tbody>
                     </table>
@@ -1508,10 +1507,10 @@ export default function DiagnosticsPanel({
               )}
               {meshRows.length > 0 && (
                 <div>
-                  <h4 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  <h4 className="text-ink-400 mb-2 text-xs font-semibold">
                     {t('diagnosticsPanel.meshDiagnosticsHeading', { count: meshRows.length })}
                   </h4>
-                  <div className="overflow-auto rounded-lg border border-gray-700">
+                  <div className="border-ink-700 overflow-auto rounded-lg border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="bg-deep-black text-muted sticky top-0 text-left">
@@ -1529,7 +1528,7 @@ export default function DiagnosticsPanel({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-700/50">
+                      <tbody className="divide-ink-700/50 divide-y">
                         {renderTableBody(meshRows)}
                       </tbody>
                     </table>

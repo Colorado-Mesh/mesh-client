@@ -267,6 +267,13 @@ export function letsMeshMqttUsernameFromIdentity(
   return `v1_${pk.toUpperCase()}`;
 }
 
+/** The stored MeshCore identity's 32-byte public key as uppercase hex (the MQTT client key). */
+export function meshcoreClientKeyHexFromIdentity(
+  identity: { public_key?: string | number[] } | null,
+): string | null {
+  return normalizePublicKeyHex(identity?.public_key)?.toUpperCase() ?? null;
+}
+
 function normalizePublicKeyHex(publicKey: string | number[] | undefined): string | null {
   if (!publicKey) return null;
   if (Array.isArray(publicKey)) {

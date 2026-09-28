@@ -24,7 +24,7 @@ export function reticulumIconColorClass(color: string | null | undefined): strin
     case 'cyan':
       return 'text-cyan-400';
     case 'amber':
-      return 'text-amber-400';
+      return 'text-orange-400';
     case 'red':
       return 'text-red-400';
     case 'purple':

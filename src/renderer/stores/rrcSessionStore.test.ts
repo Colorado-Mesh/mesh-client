@@ -1,12 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { clearRrcActiveRoom, loadRrcActiveRoom } from '@/renderer/lib/rrcActiveRoom';
 import {
   migrateLegacyWhispersForHub,
   resetRrcLegacyWhispersMigrateForTests,
 } from '@/renderer/lib/rrcLegacyWhispersMigrate';
 import { clearRrcOpenDms, loadRrcOpenDms, saveRrcOpenDms } from '@/renderer/lib/rrcOpenDms';
 
-import { selectRrcActiveRoomMessages, useRrcSessionStore } from './rrcSessionStore';
+import {
+  resetRrcRememberedRoomForTests,
+  selectRrcActiveRoomMessages,
+  useRrcSessionStore,
+} from './rrcSessionStore';
 
 describe('rrcSessionStore', () => {
   afterEach(() => {
@@ -903,5 +908,85 @@ describe('rrcSessionStore', () => {
     expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(false);
     useRrcSessionStore.getState().markWhoReplyPending('general');
     expect(useRrcSessionStore.getState().hasWhoReplyPending('general')).toBe(true);
+  });
+
+  describe('last opened room across restarts', () => {
+    const hub = '28c7c1a68c735693aa8e6b8193ed44b2';
+    const peer = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+
+    beforeEach(() => {
+      clearRrcActiveRoom(hub);
+      resetRrcRememberedRoomForTests();
+    });
+
+    /** A restart: the session is gone, the hub comes back and re-JOINs its rooms in its order. */
+    function restart(...rooms: string[]) {
+      const store = useRrcSessionStore.getState();
+      store.clearSession();
+      resetRrcRememberedRoomForTests();
+      store.applyStatus('active', hub, 'Ratspeak');
+      for (const room of rooms) store.roomJoined(room, [], hub);
+    }
+
+    it('returns to the room the user last opened, not the first one the hub joins', () => {
+      restart('#ratspeak', '#colorado');
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#ratspeak');
+      useRrcSessionStore.getState().setActiveRoom('#colorado', hub);
+
+      restart('#ratspeak', '#colorado');
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#colorado');
+    });
+
+    it('keeps the automatic first room and the hub stream out of storage', () => {
+      restart('#ratspeak');
+      useRrcSessionStore.getState().setActiveRoom('[hub]', hub);
+      expect(loadRrcActiveRoom(hub)).toBeNull();
+    });
+
+    it('returns to a DM the user last opened', () => {
+      restart('#ratspeak');
+      useRrcSessionStore.getState().openDm({ identity_hash: peer, nickname: 'Zeva' }, hub);
+
+      restart('#ratspeak');
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#ratspeak');
+      // RrcPanel restores open DMs without focusing them; the remembered one still wins.
+      useRrcSessionStore
+        .getState()
+        .openDm({ identity_hash: peer, nickname: 'Zeva' }, hub, { focus: false, persist: false });
+      expect(useRrcSessionStore.getState().activeRoom).toBe(`@${peer}`);
+    });
+
+    it('restores once per run, so a re-JOIN after a link flap leaves the reader in place', () => {
+      restart('#ratspeak', '#colorado');
+      useRrcSessionStore.getState().setActiveRoom('#colorado', hub);
+      restart('#ratspeak', '#colorado');
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#colorado');
+
+      useRrcSessionStore.getState().setActiveRoom('[hub]', hub);
+      useRrcSessionStore.getState().roomJoined('#colorado', [], hub);
+      expect(useRrcSessionStore.getState().activeRoom).toBe('[hub]');
+    });
+
+    it('never lets an inbound whisper take focus, even for a DM the user closed', () => {
+      restart('#lobby');
+      const store = useRrcSessionStore.getState();
+      store.openDm({ identity_hash: peer, nickname: 'Alice' }, hub);
+      store.closeDm(peer, hub);
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#lobby');
+      expect(loadRrcActiveRoom(hub)).toBeNull();
+
+      store.openDm({ identity_hash: peer, nickname: 'Alice' }, hub, { focus: false });
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#lobby');
+    });
+
+    it('keeps an inbound whisper from restoring the remembered DM at startup', () => {
+      restart('#lobby');
+      useRrcSessionStore.getState().openDm({ identity_hash: peer, nickname: 'Alice' }, hub);
+      restart('#lobby');
+      useRrcSessionStore
+        .getState()
+        .openDm({ identity_hash: peer, nickname: 'Alice' }, hub, { focus: false });
+      expect(useRrcSessionStore.getState().activeRoom).toBe('#lobby');
+    });
   });
 });

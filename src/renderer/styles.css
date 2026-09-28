@@ -3,30 +3,218 @@
 @source './**/*.{ts,tsx}';
 @source not './**/*.test.{ts,tsx}';
 
+/*
+ * `hover:` never matches a disabled control, so a button that cannot be pressed never lights up
+ * as if it could. Tailwind's own hover variant, plus the :not().
+ */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      @slot;
+    }
+  }
+}
+
+/*
+ * Height of the bars along the bottom of the window: the status bar (StatusBar, h-7), plus the
+ * bottom nav below 768px (BottomNav, min-h-14 with a 1px top border and the safe area). Toasts
+ * float above it, so a toast never covers a control there.
+ */
+:root {
+  --shell-bottom-chrome: 1.75rem;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --shell-bottom-chrome: calc(1.75rem + 3.5rem + 1px + env(safe-area-inset-bottom));
+  }
+}
+
 @theme {
-  --color-app-bg: #020617;
-  --color-sidebar-active-bg: #1e293b;
-  --color-brand-green: #86efac;
+  /*
+   * Values from the Colorado Mesh style guide (Figma, node 17:4). lib/themeColors.ts applies the
+   * theme tokens below as inline styles on :root at boot, so a changed default must change in
+   * DEFAULT_THEME_COLORS too or this file appears to do nothing.
+   */
+  --color-app-bg: #11151c; /* ink-950 */
+  --color-sidebar-active-bg: #212d40; /* ink-800 */
+  --color-brand-green: #67e8b4; /* meshtastic-500 */
   --color-bright-green: var(--color-brand-green);
-  --color-readable-green: #15803d;
-  --color-deep-black: #0f172a;
-  --color-secondary-dark: #334155;
-  --color-muted: #94a3b8;
+  --color-readable-green: #047857; /* meshtastic-700 */
+  --color-deep-black: #19212d; /* ink-900 */
+  --color-secondary-dark: #364156; /* ink-700 */
+  --color-muted: #93a0b7; /* ink-400 */
+
+  /*
+   * Neutrals: the ink scale, from the Midnight Serenity palette. 950 Ink Black, 800 Deep Space Blue
+   * and 700 Charcoal Blue are the palette's swatches; 900 sits halfway between 950 and 800 in OKLCH,
+   * and the other steps keep Tailwind slate's lightness per step (so text contrast holds) with the
+   * palette's hue and chroma. Use ink-* for every neutral; slate, zinc and gray are rejected by
+   * source policy.
+   */
+  --color-ink-50: #f9fafc;
+  --color-ink-100: #f2f5f9;
+  --color-ink-200: #e3e8f0;
+  --color-ink-300: #cdd4e2;
+  --color-ink-400: #93a0b7;
+  --color-ink-500: #65738c;
+  --color-ink-600: #48556a;
+  --color-ink-700: #364156;
+  --color-ink-800: #212d40;
+  --color-ink-900: #19212d;
+  --color-ink-950: #11151c;
+
+  /*
+   * Protocol scales (100 / 300 / 500 base / 700 / 900), contrast-checked per tier on light and dark
+   * backgrounds. The base step marks the protocol; 700 is the fill under white text. Fixed: they do
+   * not follow the theme accent.
+   */
+  --color-meshtastic-100: #d1fae5;
+  --color-meshtastic-300: #a7f3d0;
+  --color-meshtastic-500: #67e8b4;
+  --color-meshtastic-700: #047857;
+  --color-meshtastic-900: #064e3b;
+  --color-meshcore-100: #cffafe;
+  --color-meshcore-300: #a5f3fc;
+  --color-meshcore-500: #00d3f2;
+  --color-meshcore-700: #0e7490;
+  --color-meshcore-900: #164e63;
+  --color-reticulum-100: #fef9c3;
+  --color-reticulum-300: #fef08a;
+  --color-reticulum-500: #facc15;
+  --color-reticulum-700: #a16207;
+  --color-reticulum-900: #713f12;
+
+  /* Status, main tier (dots and icons). The light-background and dark-text tiers are still Tailwind
+     steps until the designer's values land (docs/style-guide.md, Status). */
+  --color-status-success: #34d399;
+  --color-status-warning: #f97316;
+  --color-status-error: #ef4444;
+  --color-status-info: #818cf8;
+
+  /*
+   * Type scale from the Colorado Mesh style guide (IBM Plex Sans / Mono), in rem so App > Appearance
+   * > Text size scales everything. Readable text is 12px or larger (caption); 13px is the dense body,
+   * 14px the standard body. The two smaller steps are for count pills and badge text only. Never use
+   * px font sizes (text-[13px]).
+   */
+  --text-3xs: 0.625rem; /* 10px: count pills only */
+  --text-3xs--line-height: 0.875rem;
+  --text-2xs: 0.6875rem; /* 11px: badges and tags only */
+  --text-2xs--line-height: 1rem;
+  --text-label: 0.75rem; /* 12px: caption, rail labels, field labels */
+  --text-label--line-height: 1rem;
+  --text-meta: 0.75rem; /* 12px: mono metadata */
+  --text-meta--line-height: 1rem;
+  --text-control: 0.8125rem; /* 13px: small buttons, chips */
+  --text-control--line-height: 1.125rem;
+  --text-body: 0.8125rem; /* 13px: dense body — rows, inputs, menu items */
+  --text-body--line-height: 1.125rem;
+  --text-body-lg: 0.875rem; /* 14px: body — chat messages, paragraphs */
+  --text-body-lg--line-height: 1.25rem;
+  --text-title: 1rem; /* 16px: H4 — pane titles */
+  --text-title--line-height: 1.375rem;
+
+  /*
+   * Radius tokens (style guide): rounded-badge 2px (badges, chips, tags), rounded-control 4px
+   * (buttons, inputs, selects), rounded-card 6px (cards, panels, popovers, menus), rounded-modal 8px
+   * (modals, sheets), rounded-container 12px (page sections). Change a whole family here. The Figma
+   * names are Tailwind v3's sm / (default) / md / lg / xl; in v4 the same sizes are xs / sm / md / lg
+   * / xl, which is why the roles get their own names here.
+   */
+  --radius-badge: 0.125rem;
+  --radius-control: 0.25rem;
+  --radius-card: 0.375rem;
+  --radius-modal: 0.5rem;
+  --radius-container: 0.75rem;
+
+  /*
+   * Elevation Level 1 to 4 (style guide; Level 0 is no shadow). Tuned for dark surfaces, so they are
+   * their own tokens (shadow-level-N) rather than overrides of Tailwind's light-tuned shadow-sm/md/lg.
+   * Level 1 cards, 2 dropdowns / popovers / map controls, 3 modals, 4 toasts and floating panels.
+   * The values are provisional until the designer's exact shadows land.
+   */
+  --shadow-level-1: 0 1px 3px 0 rgb(0 0 0 / 0.45), 0 1px 2px -1px rgb(0 0 0 / 0.45);
+  --shadow-level-2: 0 4px 8px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.45);
+  --shadow-level-3: 0 10px 20px -3px rgb(0 0 0 / 0.55), 0 4px 8px -4px rgb(0 0 0 / 0.5);
+  --shadow-level-4: 0 20px 32px -5px rgb(0 0 0 / 0.6), 0 8px 12px -6px rgb(0 0 0 / 0.55);
+  /* Bundled IBM Plex (OFL-1.1, assets/fonts/plex) so the UI renders the same offline on every OS;
+     system stacks cover scripts outside the bundled latin, latin-ext and cyrillic subsets (CJK). */
+  --font-sans:
+    'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Ubuntu, Cantarell, 'Noto Sans',
+    sans-serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    monospace;
   /* Chat incoming (channel): opaque border + rgba fill so the edge never
      color-mixes to a light/white ring on Chromium/Electron. */
-  --color-chat-incoming-bg: rgb(30 41 59 / 0.38);
-  --color-chat-incoming-border: #1e293b;
+  --color-chat-incoming-bg: rgb(33 45 64 / 0.38);
+  --color-chat-incoming-border: #212d40;
+  /* Own messages: readable (meshtastic-700) fill at 22%, accent (meshtastic-500) border at 25%. */
+  --color-chat-outgoing-bg: rgb(4 120 87 / 0.22);
+  --color-chat-outgoing-border: rgb(103 232 180 / 0.25);
   /* Message actions bar background — hidden by default (opacity 0); toggled to
      fully opaque via App → Colors "Show background" checkbox (see applyThemeColors). */
-  --color-message-actions-bar-bg: rgb(15 23 42 / 0);
+  --color-message-actions-bar-bg: rgb(25 33 45 / 0);
   /* Message action button hover color */
-  --color-message-action-button-hover: #94a3b8;
+  --color-message-action-button-hover: #93a0b7;
+}
+
+/*
+ * App > Appearance > Reduce motion (seeded from the OS setting on first run): stop decorative
+ * pulses and shorten transitions app-wide. Spinners and status pulses (class `motion-status`:
+ * connecting, logging in, sending, MAYDAY / URGENT) keep moving, as the setting's description
+ * promises. Also spares the battery on field laptops.
+ */
+html[data-reduce-motion='true'] .animate-pulse:not(.motion-status),
+html[data-reduce-motion='true'] .animate-ping:not(.motion-status),
+html[data-reduce-motion='true'] .animate-bounce:not(.motion-status) {
+  animation: none !important;
+}
+
+html[data-reduce-motion='true'] *,
+html[data-reduce-motion='true'] *::before,
+html[data-reduce-motion='true'] *::after {
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
 }
 
 /* Leaflet container needs explicit height */
 .leaflet-container {
   width: 100%;
   height: 100%;
+}
+
+/* Leaflet zoom, locate and attribution follow the dark map controls (MAP_CONTROL_CLASS). Leaflet's
+   own CSS loads later with the map chunk, so every rule carries an extra class to win on specificity. */
+.leaflet-container .leaflet-control.leaflet-bar {
+  border: 1px solid var(--color-ink-700, #364156);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-level-2);
+  overflow: hidden;
+}
+.leaflet-container .leaflet-bar a,
+.leaflet-container .leaflet-bar .leaflet-bar-part {
+  background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
+  border-bottom-color: var(--color-ink-700, #364156);
+  color: var(--color-ink-200, #e3e8f0);
+}
+.leaflet-container .leaflet-bar a:hover,
+.leaflet-container .leaflet-bar a:focus-visible,
+.leaflet-container .leaflet-bar .leaflet-bar-part:hover {
+  background-color: var(--color-ink-800, #212d40);
+  color: #fff;
+}
+.leaflet-container .leaflet-bar a.leaflet-disabled {
+  background-color: color-mix(in srgb, var(--color-deep-black) 90%, transparent);
+  color: var(--color-ink-500, #65738c);
+}
+.leaflet-container .leaflet-control.leaflet-control-attribution {
+  background-color: color-mix(in srgb, var(--color-deep-black) 80%, transparent);
+  color: var(--color-ink-300, #cdd4e2);
+}
+.leaflet-container .leaflet-control-attribution a {
+  color: var(--color-bright-green);
 }
 
 /* Dark scrollbar */
@@ -38,11 +226,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-secondary-dark, #2d3748);
+  background: var(--color-secondary-dark, #364156);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #48556a;
 }
 ::-webkit-scrollbar-corner {
   background: transparent;
@@ -53,280 +241,19 @@
   -webkit-font-smoothing: antialiased;
 }
 
-.cm-watermark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.65rem;
-  margin: 0 auto;
-  border-radius: 8px;
-  border: 1px solid rgb(148 163 184 / 0.13);
-  background: linear-gradient(135deg, rgb(15 23 42 / 0.3), rgb(30 41 59 / 0.2));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.05),
-    0 4px 14px rgb(2 6 23 / 0.16);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition:
-    width 170ms ease,
-    padding 170ms ease,
-    border-radius 170ms ease,
-    background-color 170ms ease;
-}
-
-.cm-watermark-expanded {
-  width: 8.8rem;
-  gap: 0;
-  padding: 0.24rem 0.5rem;
-}
-
-.cm-watermark-collapsed {
-  width: 1.9rem;
-  min-height: 1.9rem;
-  padding: 0.22rem;
-  border-radius: 8px;
-}
-
-.cm-watermark-mark {
-  width: 1.35rem;
-  height: 1.35rem;
+/* Colorado Mesh brand mark (App panel About block). Strokes follow the theme's bright green. */
+.cm-brand-mark {
+  width: 2.25rem;
+  height: 2.25rem;
   flex-shrink: 0;
-  opacity: 0;
-  transform: scale(0.92);
-  transition:
-    opacity 170ms ease,
-    transform 170ms ease;
 }
 
-.cm-watermark-brand-stroke {
-  stroke: var(--color-bright-green, #9ae6b4);
+.cm-brand-mark-stroke {
+  stroke: var(--color-bright-green, #6ee7b7);
 }
 
-.cm-watermark-sun {
-  fill: var(--color-bright-green, #9ae6b4);
-  filter: drop-shadow(0 0 2px rgb(255 255 255 / 0.95)) drop-shadow(0 0 5px rgb(255 255 255 / 0.45));
-}
-
-.cm-watermark-text {
-  margin-top: 0;
-  font-family:
-    'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
-  font-size: 0.68rem;
-  font-weight: 500;
-  line-height: 1.05;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-  color: rgb(95 118 108 / 0.95);
-  text-shadow:
-    0 0 1px rgb(45 212 191 / 0.2),
-    0 0 6px rgb(34 211 238 / 0.12);
-  opacity: 1;
-  max-width: 100%;
-  overflow: hidden;
-  transition:
-    opacity 170ms ease,
-    max-width 170ms ease;
-}
-
-.cm-watermark-expanded .cm-watermark-text {
-  max-width: 7.5rem;
-}
-
-.cm-watermark-expanded .cm-watermark-mark {
-  display: none;
-}
-
-.cm-watermark-collapsed .cm-watermark-text {
-  opacity: 0;
-  max-width: 0;
-}
-
-.cm-watermark-collapsed .cm-watermark-mark {
-  display: block;
-  opacity: 1;
-  transform: scale(1);
-}
-
-/* Expanded header: "Colorado Mesh" cold-cathode / gas-tube toggle (glow via filter drop-shadow only) */
-button.cm-watermark-mesh-tube {
-  box-sizing: border-box;
-  width: 100%;
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-  font: inherit;
-  margin: 0;
-  text-align: center;
-}
-
-.cm-watermark-mesh-tube .cm-watermark-text {
-  text-shadow: none;
-  transition:
-    color 220ms ease,
-    filter 220ms ease;
-}
-
-.cm-watermark-mesh-tube:not(.cm-watermark-mesh-tube--lit):not(
-    .cm-watermark-mesh-tube--flicker-on
-  ):not(.cm-watermark-mesh-tube--flicker-off)
-  .cm-watermark-text {
-  color: rgb(95 130 125 / 0.92);
-  filter: drop-shadow(0 0 1px rgb(60 100 110 / 0.12));
-}
-
-.cm-watermark-mesh-tube--lit {
-  border-color: rgb(100 190 210 / 0.42);
-  background: linear-gradient(135deg, rgb(12 38 52 / 0.55), rgb(22 58 78 / 0.38));
-  box-shadow:
-    inset 0 1px 0 rgb(180 230 255 / 0.07),
-    0 4px 14px rgb(2 6 23 / 0.2);
-  filter: drop-shadow(0 0 2px rgb(0 255 235 / 0.85)) drop-shadow(0 0 8px rgb(70 210 255 / 0.55))
-    drop-shadow(0 0 16px rgb(100 190 255 / 0.28));
-}
-
-.cm-watermark-mesh-tube--lit .cm-watermark-text {
-  color: rgb(215 255 252 / 0.98);
-}
-
-@keyframes cm-watermark-mesh-tube-flicker-on {
-  0% {
-    filter: drop-shadow(0 0 1px rgb(0 160 180 / 0.12));
-    border-color: rgb(148 163 184 / 0.2);
-  }
-  4% {
-    filter: drop-shadow(0 0 4px rgb(0 240 230 / 0.45));
-  }
-  7% {
-    filter: drop-shadow(0 0 1px rgb(0 80 100 / 0.08));
-  }
-  10% {
-    filter: drop-shadow(0 0 6px rgb(0 255 240 / 0.55));
-  }
-  14% {
-    filter: drop-shadow(0 0 2px rgb(0 120 150 / 0.15));
-  }
-  18% {
-    filter: drop-shadow(0 0 8px rgb(80 230 255 / 0.5));
-  }
-  22% {
-    filter: drop-shadow(0 0 1px rgb(0 60 90 / 0.1));
-  }
-  28% {
-    filter: drop-shadow(0 0 10px rgb(0 255 245 / 0.58));
-  }
-  34% {
-    filter: drop-shadow(0 0 3px rgb(0 140 170 / 0.22));
-  }
-  40% {
-    filter: drop-shadow(0 0 9px rgb(100 220 255 / 0.52));
-  }
-  48% {
-    filter: drop-shadow(0 0 2px rgb(0 100 130 / 0.14));
-  }
-  56% {
-    filter: drop-shadow(0 0 11px rgb(0 250 245 / 0.62));
-  }
-  64% {
-    filter: drop-shadow(0 0 5px rgb(60 200 230 / 0.38));
-  }
-  72% {
-    filter: drop-shadow(0 0 12px rgb(90 215 255 / 0.58));
-  }
-  82% {
-    filter: drop-shadow(0 0 6px rgb(0 200 225 / 0.42));
-  }
-  92% {
-    filter: drop-shadow(0 0 14px rgb(120 225 255 / 0.62));
-  }
-  100% {
-    filter: drop-shadow(0 0 2px rgb(0 255 235 / 0.85)) drop-shadow(0 0 8px rgb(70 210 255 / 0.55))
-      drop-shadow(0 0 16px rgb(100 190 255 / 0.28));
-    border-color: rgb(100 190 210 / 0.42);
-  }
-}
-
-@keyframes cm-watermark-mesh-tube-flicker-off {
-  0% {
-    filter: drop-shadow(0 0 2px rgb(0 255 235 / 0.85)) drop-shadow(0 0 8px rgb(70 210 255 / 0.55))
-      drop-shadow(0 0 16px rgb(100 190 255 / 0.28));
-    border-color: rgb(100 190 210 / 0.42);
-  }
-  8% {
-    filter: drop-shadow(0 0 12px rgb(100 220 255 / 0.55));
-  }
-  16% {
-    filter: drop-shadow(0 0 3px rgb(0 120 150 / 0.2));
-  }
-  24% {
-    filter: drop-shadow(0 0 10px rgb(0 245 240 / 0.5));
-  }
-  32% {
-    filter: drop-shadow(0 0 2px rgb(0 90 110 / 0.12));
-  }
-  42% {
-    filter: drop-shadow(0 0 9px rgb(80 210 255 / 0.45));
-  }
-  52% {
-    filter: drop-shadow(0 0 4px rgb(0 150 180 / 0.25));
-  }
-  62% {
-    filter: drop-shadow(0 0 6px rgb(0 220 230 / 0.38));
-  }
-  74% {
-    filter: drop-shadow(0 0 2px rgb(0 70 95 / 0.1));
-  }
-  86% {
-    filter: drop-shadow(0 0 5px rgb(0 200 215 / 0.28));
-  }
-  100% {
-    filter: drop-shadow(0 0 1px rgb(60 100 110 / 0.12));
-    border-color: rgb(148 163 184 / 0.13);
-  }
-}
-
-.cm-watermark-mesh-tube--flicker-on {
-  animation: cm-watermark-mesh-tube-flicker-on 1.5s ease-out forwards;
-}
-
-.cm-watermark-mesh-tube--flicker-on .cm-watermark-text {
-  color: rgb(200 250 248 / 0.95);
-  animation: cm-watermark-mesh-tube-text-flicker-on 1.5s ease-out forwards;
-}
-
-.cm-watermark-mesh-tube--flicker-off {
-  animation: cm-watermark-mesh-tube-flicker-off 1.5s ease-in forwards;
-}
-
-.cm-watermark-mesh-tube--flicker-off .cm-watermark-text {
-  color: rgb(95 130 125 / 0.92);
-  animation: cm-watermark-mesh-tube-text-flicker-off 1.5s ease-in forwards;
-}
-
-/* App → Appearance → Reduce motion: suppress decorative animation */
-html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-on,
-html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off,
-html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-on .cm-watermark-text,
-html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-watermark-text {
-  animation: none !important;
-}
-
-@keyframes cm-watermark-mesh-tube-text-flicker-on {
-  0% {
-    color: rgb(95 130 125 / 0.85);
-  }
-  100% {
-    color: rgb(215 255 252 / 0.98);
-  }
-}
-
-@keyframes cm-watermark-mesh-tube-text-flicker-off {
-  0% {
-    color: rgb(215 255 252 / 0.98);
-  }
-  100% {
-    color: rgb(95 130 125 / 0.92);
-  }
+.cm-brand-mark-sun {
+  fill: var(--color-bright-green, #6ee7b7);
 }
 
 /* Nomad page viewer: lighter thumbs so bars read on deep-black / secondary-dark. */
@@ -334,10 +261,158 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
   scrollbar-gutter: stable;
 }
 .nomad-page-scroll::-webkit-scrollbar-thumb {
-  background: #64748b;
+  background: #65738c;
 }
 .nomad-page-scroll::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #93a0b7;
+}
+
+/* IBM Plex Sans (400, 500, 600) and Mono (400, 500): latin, latin-ext and cyrillic subsets,
+   fetched by unicode-range only when a glyph needs them. */
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('./assets/fonts/plex/ibm-plex-sans-cyrillic-400-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('./assets/fonts/plex/ibm-plex-sans-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('./assets/fonts/plex/ibm-plex-sans-latin-400-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('./assets/fonts/plex/ibm-plex-sans-cyrillic-500-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('./assets/fonts/plex/ibm-plex-sans-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('./assets/fonts/plex/ibm-plex-sans-latin-500-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('./assets/fonts/plex/ibm-plex-sans-cyrillic-600-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('./assets/fonts/plex/ibm-plex-sans-latin-ext-600-normal.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('./assets/fonts/plex/ibm-plex-sans-latin-600-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('./assets/fonts/plex/ibm-plex-mono-cyrillic-400-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('./assets/fonts/plex/ibm-plex-mono-latin-ext-400-normal.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('./assets/fonts/plex/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('./assets/fonts/plex/ibm-plex-mono-cyrillic-500-normal.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('./assets/fonts/plex/ibm-plex-mono-latin-ext-500-normal.woff2') format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('./assets/fonts/plex/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /* Nomad Micron pages: bundled Nerd Mono so FA/Nerd PUA icons render without an OS font.
@@ -427,9 +502,9 @@ html[data-reduce-motion='true'] .cm-watermark-mesh-tube--flicker-off .cm-waterma
 }
 
 .message-action-star.starred {
-  color: #fbbf24;
+  color: #facc15;
 }
 
 .message-action-star.starred:hover {
-  color: #fde68a;
+  color: #fef08a;
 }

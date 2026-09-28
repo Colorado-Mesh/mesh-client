@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
+import { INPUT_BOX_CLASS } from '../ui/formClasses';
+
 export function hzToMhzFieldValue(hz: number | null | undefined): string {
   if (hz == null) return '';
   return String(hz / 1_000_000);
@@ -46,11 +48,9 @@ export function RnodeRfParamFields({
   idPrefix: string;
 }) {
   const { t } = useTranslation();
-  const inputClass =
-    'mt-1 block rounded border border-gray-600 bg-slate-900 px-2 py-1 text-sm disabled:opacity-50';
   return (
     <>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-frequency`}>
+      <label className="text-ink-400 text-xs" htmlFor={`${idPrefix}-frequency`}>
         {t('connectionPanel.reticulumInterfaces.rfFrequencyMhz')}
         <input
           id={`${idPrefix}-frequency`}
@@ -62,10 +62,10 @@ export function RnodeRfParamFields({
           onChange={(e) => {
             onChange({ frequencyMhz: e.target.value });
           }}
-          className={`${inputClass} w-28`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-28`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-bandwidth`}>
+      <label className="text-ink-400 text-xs" htmlFor={`${idPrefix}-bandwidth`}>
         {t('connectionPanel.reticulumInterfaces.rfBandwidthKhz')}
         <input
           id={`${idPrefix}-bandwidth`}
@@ -77,10 +77,10 @@ export function RnodeRfParamFields({
           onChange={(e) => {
             onChange({ bandwidthKhz: e.target.value });
           }}
-          className={`${inputClass} w-24`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-24`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-sf`}>
+      <label className="text-ink-400 text-xs" htmlFor={`${idPrefix}-sf`}>
         {t('connectionPanel.reticulumInterfaces.rfSpreadingFactor')}
         <input
           id={`${idPrefix}-sf`}
@@ -93,10 +93,10 @@ export function RnodeRfParamFields({
           onChange={(e) => {
             onChange({ spreadingFactor: e.target.value });
           }}
-          className={`${inputClass} w-16`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-16`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-cr`}>
+      <label className="text-ink-400 text-xs" htmlFor={`${idPrefix}-cr`}>
         {t('connectionPanel.reticulumInterfaces.rfCodingRate')}
         <input
           id={`${idPrefix}-cr`}
@@ -109,10 +109,10 @@ export function RnodeRfParamFields({
           onChange={(e) => {
             onChange({ codingRate: e.target.value });
           }}
-          className={`${inputClass} w-16`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-16`}
         />
       </label>
-      <label className="text-xs text-gray-400" htmlFor={`${idPrefix}-txpower`}>
+      <label className="text-ink-400 text-xs" htmlFor={`${idPrefix}-txpower`}>
         {t('connectionPanel.reticulumInterfaces.rfTxPower')}
         <input
           id={`${idPrefix}-txpower`}
@@ -125,7 +125,7 @@ export function RnodeRfParamFields({
           onChange={(e) => {
             onChange({ txpower: e.target.value });
           }}
-          className={`${inputClass} w-16`}
+          className={`${INPUT_BOX_CLASS} mt-1 block w-16`}
         />
       </label>
     </>

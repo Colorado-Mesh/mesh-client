@@ -5,6 +5,7 @@ import { isValidXmodemRemoteFilename } from '@/renderer/lib/meshtastic/xmodemFil
 import type { ConfigTargetContext } from '@/renderer/lib/types';
 
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 interface Props {
   configTarget?: ConfigTargetContext;
@@ -30,7 +31,7 @@ export function RadioXmodemSection({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-blue-300/80">{t('radioPanel.xmodemSectionHint')}</p>
+      <p className="text-xs text-indigo-300/80">{t('radioPanel.xmodemSectionHint')}</p>
       <div className="space-y-1">
         <label htmlFor="radio-xmodem-filename" className="text-muted text-sm">
           {t('radioPanel.xmodemFilenameLabel')}
@@ -44,7 +45,7 @@ export function RadioXmodemSection({
           }}
           disabled={localOnlyDisabled || xmodemBusy}
           placeholder={t('radioPanel.xmodemFilenamePlaceholder')}
-          className="bg-secondary-dark focus:border-brand-green w-full max-w-md rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 focus:outline-none disabled:opacity-50"
+          className={`${INPUT_BOX_CLASS} w-full max-w-md`}
         />
       </div>
       <div className="flex flex-wrap gap-2">
@@ -70,7 +71,7 @@ export function RadioXmodemSection({
                   setXmodemBusy(false);
                 });
             }}
-            className="rounded-lg border border-blue-800/60 bg-blue-900/30 px-4 py-2 text-sm font-medium text-blue-200 hover:bg-blue-900/50 disabled:opacity-50"
+            className="rounded-lg border border-indigo-800/60 bg-indigo-900/30 px-4 py-2 text-sm font-medium text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-50"
             aria-label={t('radioPanel.xmodemUpload')}
           >
             {t('radioPanel.xmodemUpload')}
@@ -103,7 +104,7 @@ export function RadioXmodemSection({
                   setXmodemBusy(false);
                 });
             }}
-            className="rounded-lg border border-blue-800/60 bg-blue-900/30 px-4 py-2 text-sm font-medium text-blue-200 hover:bg-blue-900/50 disabled:opacity-50"
+            className="rounded-lg border border-indigo-800/60 bg-indigo-900/30 px-4 py-2 text-sm font-medium text-indigo-200 hover:bg-indigo-900/50 disabled:opacity-50"
             aria-label={t('radioPanel.xmodemDownload')}
           >
             {t('radioPanel.xmodemDownload')}

@@ -4,6 +4,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import L from 'leaflet';
+import { Download, Layers } from 'lucide-react-motion';
 import {
   Fragment,
   memo,
@@ -31,7 +32,13 @@ import {
 } from '../lib/diagnostics/diagnosticRows';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
-import { getMapOverlayColors, isValidMapBasemapId, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
+import {
+  getMapOverlayColors,
+  isValidMapBasemapId,
+  MAP_BASEMAPS,
+  MAP_MAX_ZOOM,
+  meshTilesAvailable,
+} from '../lib/mapBasemapUtils';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
@@ -49,14 +56,22 @@ import { IncidentMarkersLayer, MeasureControl, MgrsGridLayer } from './map/emcom
 import {
   ensureLoRaMapPanelStyles,
   LocateMeControl,
+  MapResizeInvalidator,
   MapViewportSaver,
 } from './map/leafletMapControls';
+import {
+  MAP_CHIP_CLASS,
+  MAP_CONTROL_CLASS,
+  MAP_OVERLAY_PANEL_CLASS,
+} from './map/mapControlClasses';
 import { OfflineMapsSection } from './map/OfflineMapsSection';
 import { useToast } from './Toast';
+import { buttonClassName } from './ui/Button';
+import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 const WAYPOINT_MARKER_ICON = L.divIcon({
   className: '',
-  html: `<div style="background:#f59e0b;border:2px solid #fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;">📍</div>`,
+  html: `<div style="background:#f59e0b;border:2px solid #fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:#fff;"><svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg></div>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
 });
@@ -102,7 +117,7 @@ function createMarkerIcon(
   const nodeBadgeSvg = (c: number) => {
     const path = nodeBadge ? NODE_BADGE_PATHS[nodeBadge] : null;
     if (!path) return '';
-    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#111827" stroke="#ffffff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
+    return `<g><circle cx="${c - 7}" cy="${c - 7}" r="6" fill="#19212d" stroke="#ffffff" stroke-width="1.2"/><path transform="translate(${c - 12},${c - 12}) scale(0.4167)" d="${path}" fill="#f9fafb"/></g>`;
   };
 
   if (isSelf) {
@@ -489,27 +504,26 @@ function MapLayerControl({
   );
 
   return (
-    <div className="flex w-52 flex-col items-stretch gap-2">
+    <div className="flex flex-col items-end gap-2">
       <button
         type="button"
         aria-label={t('mapPanel.layerControlsAria')}
         aria-expanded={layersPanelOpen}
-        className="bg-deep-black/80 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm transition-colors hover:border-gray-500"
+        className={MAP_CONTROL_CLASS}
         onClick={() => {
           setLayersPanelOpen(!layersPanelOpen);
         }}
       >
+        <Layers aria-hidden className="h-3.5 w-3.5" />
         {t('mapPanel.layerControls')}
       </button>
       {layersPanelOpen && (
-        <div className="bg-deep-black/90 w-52 space-y-3 rounded-lg border border-gray-700 p-3 text-gray-200 shadow-lg backdrop-blur-sm">
+        <div className={MAP_OVERLAY_PANEL_CLASS}>
           <div className="space-y-1">
-            <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
-              {t('mapPanel.basemapHeading')}
-            </div>
+            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.basemapHeading')}</div>
             <select
               aria-label={t('mapPanel.basemapSelectAria')}
-              className="bg-secondary-dark w-full rounded border border-gray-600 px-2 py-1 text-xs text-gray-200"
+              className={`${SELECT_BOX_SM_CLASS} w-full`}
               value={basemapId}
               onChange={(e) => {
                 const v = e.target.value;
@@ -522,9 +536,7 @@ function MapLayerControl({
             </select>
           </div>
           <div className="space-y-1.5">
-            <div className="text-[10px] font-medium tracking-wide text-gray-400 uppercase">
-              {t('mapPanel.layersHeading')}
-            </div>
+            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.layersHeading')}</div>
             {layerRow('nodes', t('mapPanel.layerNodes'), showNodes, setShowNodes)}
             {layerRow('paths', t('mapPanel.layerPaths'), showPaths, setShowPaths)}
             {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
@@ -1019,7 +1031,7 @@ export default function MapPanel({
       if (count > 100) size = 60;
       const border = overlayColors.online;
       const fill = basemap.isDark ? overlayColors.online : '#15803d';
-      const text = basemap.isDark ? '#020617' : '#ffffff';
+      const text = basemap.isDark ? '#11151c' : '#ffffff';
       return L.divIcon({
         html: `<div style="background:${border}33;border:3px solid ${border};border-radius:50%;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;"><span style="display:inline-flex;align-items:center;justify-content:center;padding:0 4px;min-width:18px;height:18px;border-radius:9999px;background:${fill};color:${text};font-size:12px;font-weight:800;line-height:1;opacity:1;">${count}</span></div>`,
         className: '',
@@ -1029,16 +1041,18 @@ export default function MapPanel({
     [overlayColors.online, basemap.isDark],
   );
 
+  // `isolate` keeps Leaflet's panes (z 400 to 1000) and the z-[1000] controls inside the map, so a
+  // dialog opened over this tab draws above them.
   return (
     <div
-      className="relative h-full min-h-[500px] overflow-hidden rounded-lg border border-gray-700/50"
+      className="border-ink-700/50 relative isolate h-full min-h-[500px] overflow-hidden rounded-lg border"
       aria-label={t('mapPanel.networkMap')}
     >
       {/* Status legend + layer controls — top right, below Leaflet zoom (+/-) on the left */}
       <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
-        <div className="bg-deep-black/80 flex items-center gap-3 rounded-lg border border-gray-700 px-3 py-1.5 text-xs backdrop-blur-sm">
+        <div className={MAP_CHIP_CLASS}>
           <span className="flex items-center gap-1">
-            <span className="bg-brand-green inline-block h-2 w-2 rounded-full" />
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
             {statusCounts.online}
           </span>
           <span className="flex items-center gap-1">
@@ -1049,7 +1063,7 @@ export default function MapPanel({
             {statusCounts.stale}
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-full bg-slate-700" />
+            <span className="bg-ink-700 inline-block h-2 w-2 rounded-full" />
             {statusCounts.offline}
           </span>
         </div>
@@ -1063,8 +1077,9 @@ export default function MapPanel({
           onClick={() => void handleExportGpx()}
           disabled={gpxExporting}
           aria-label={t('gpxExport.buttonAria')}
-          className="bg-deep-black/80 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-200 backdrop-blur-sm hover:bg-slate-800 disabled:opacity-50"
+          className={MAP_CONTROL_CLASS}
         >
+          <Download aria-hidden className="h-3.5 w-3.5" />
           {t('gpxExport.button')}
         </button>
       </div>
@@ -1072,9 +1087,11 @@ export default function MapPanel({
       <MapContainer
         center={initialViewport.center}
         zoom={initialViewport.zoom}
+        maxZoom={MAP_MAX_ZOOM}
         className="absolute inset-0"
         preferCanvas
       >
+        <MapResizeInvalidator active />
         <DiagnosticPanes />
         <MapViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
         <MapFocusController />
@@ -1085,14 +1102,16 @@ export default function MapPanel({
         />
         <LocateMeControl onLocateMe={onLocateMe} />
         <MeasureControl />
-        <TileLayer
-          key={basemapId}
-          url={basemap.url}
-          attribution={basemap.attribution}
-          maxNativeZoom={basemap.maxNativeZoom}
-          keepBuffer={1}
-          updateWhenIdle
-        />
+        {meshTilesAvailable() && (
+          <TileLayer
+            key={basemapId}
+            url={basemap.url}
+            attribution={basemap.attribution}
+            maxNativeZoom={basemap.maxNativeZoom}
+            keepBuffer={1}
+            updateWhenIdle
+          />
+        )}
         {showMgrsGrid ? <MgrsGridLayer /> : null}
         {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
           <PathPolyline
@@ -1147,18 +1166,18 @@ export default function MapPanel({
             <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
               <Popup>
                 <div className="space-y-1 p-2">
-                  <div className="text-sm font-medium text-gray-100">
+                  <div className="text-ink-100 text-sm font-medium">
                     {wp.name || t('mapPanel.waypointDefaultName')}
                   </div>
-                  {wp.description && <div className="text-xs text-gray-400">{wp.description}</div>}
-                  <div className="font-mono text-xs text-gray-500">
+                  {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
+                  <div className="text-muted font-mono text-xs">
                     {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
                   </div>
                   {onDeleteWaypoint && (
                     <button
                       type="button"
                       onClick={() => onDeleteWaypoint(wp.id)}
-                      className="mt-1 w-full rounded border border-red-800/50 bg-red-900/40 px-2 py-1 text-xs text-red-300 transition-colors hover:bg-red-900/60"
+                      className={buttonClassName('danger', 'sm', 'mt-1')}
                     >
                       {t('mapPanel.waypointDelete')}
                     </button>

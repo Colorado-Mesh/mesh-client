@@ -147,7 +147,7 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       broadcastHeard: false,
     });
     render(<RelayCoverageLine protocol="meshtastic" messageId={MSG} isOwn identityId={IDENTITY} />);
-    expect(screen.getByText('Not heard (timeout)')).toHaveClass('text-amber-400');
+    expect(screen.getByText('Not heard (timeout)')).toHaveClass('text-orange-400');
   });
 
   it('hides Meshtastic line while pending (null)', () => {
@@ -266,7 +266,7 @@ describe('RelayCoverageLine / ChatPanel.relayCoverage', () => {
       heardRepeaters: [{ nodeId: 1, name: 'Hilltop', snr: 4.5 }],
     });
     const { container } = render(
-      <div className="bg-slate-900 p-2 text-white">
+      <div className="bg-ink-900 p-2 text-white">
         <RelayCoverageLine protocol="meshcore" messageId={MSG} isOwn identityId={IDENTITY} />
       </div>,
     );

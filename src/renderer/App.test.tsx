@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
@@ -10,8 +10,10 @@ import { getProtocolUnreadBadgeLabel, hydrateAxeThemeColors } from './lib/a11yTe
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
+  OFFLINE_MESHTASTIC_IDENTITY_ID,
   OFFLINE_RETICULUM_IDENTITY_ID,
 } from './lib/offlineProtocolIdentities';
+import { writeLauncherPins } from './lib/panelLauncher';
 import { meshtasticProtocol } from './lib/protocols/MeshtasticProtocol';
 import {
   MESHCORE_CAPABILITIES,
@@ -77,7 +79,9 @@ const {
   lastAppPanelProps,
   lastChatPanelProps,
   lastConnectionPanelProps,
+  lastMapPanelProps,
   lastNodeDetailModalProps,
+  lastNodeListPanelProps,
   reticulumRefreshMessagesFromDb,
   reticulumRefreshNodesFromDb,
   tryAutoLaunchMqttMock,
@@ -261,7 +265,9 @@ const {
   lastAppPanelProps: { current: null as null | Record<string, unknown> },
   lastChatPanelProps: { current: null as null | Record<string, unknown> },
   lastConnectionPanelProps: { current: null as null | Record<string, unknown> },
+  lastMapPanelProps: { current: null as null | Record<string, unknown> },
   lastNodeDetailModalProps: { current: null as null | Record<string, unknown> },
+  lastNodeListPanelProps: { current: null as null | Record<string, unknown> },
   reticulumRefreshMessagesFromDb: vi.fn().mockResolvedValue(undefined),
   reticulumRefreshNodesFromDb: vi.fn().mockResolvedValue(undefined),
   tryAutoLaunchMqttMock: vi.fn().mockResolvedValue(undefined),
@@ -279,7 +285,9 @@ beforeEach(() => {
   lastAppPanelProps.current = null;
   lastChatPanelProps.current = null;
   lastConnectionPanelProps.current = null;
+  lastMapPanelProps.current = null;
   lastNodeDetailModalProps.current = null;
+  lastNodeListPanelProps.current = null;
   reticulumRefreshNodesFromDb.mockClear();
   reticulumRefreshMessagesFromDb.mockClear();
   tryAutoLaunchMqttMock.mockClear();
@@ -325,6 +333,36 @@ function setDocumentHidden(hidden: boolean): void {
 
 function renderApp() {
   return render(<App />);
+}
+
+/** v6 shell: the rail lists sections; each section shows its panels as sub-tabs. */
+function appRail(): HTMLElement {
+  return screen.getByRole('navigation', { name: 'Application panels' });
+}
+
+/** Rail section buttons only; the launcher's pinned panels also sit on the rail. */
+function railSectionButtons(name: string | RegExp): HTMLElement[] {
+  return within(appRail())
+    .queryAllByRole('button', { name })
+    .filter((button) => !button.hasAttribute('data-rail-pin'));
+}
+
+function railButton(name: string | RegExp): HTMLElement {
+  const [button, ...rest] = railSectionButtons(name);
+  if (!button || rest.length > 0) {
+    throw new Error(`expected one rail section button named ${String(name)}`);
+  }
+  return button;
+}
+
+function queryRailButton(name: string | RegExp): HTMLElement | null {
+  return railSectionButtons(name)[0] ?? null;
+}
+
+/** Opens a rail section, then (optionally) one of its sub-tabs. */
+function openPanel(section: string | RegExp, tab?: string | RegExp): void {
+  fireEvent.click(railButton(section));
+  if (tab !== undefined) fireEvent.click(screen.getByRole('tab', { name: tab }));
 }
 
 vi.mock('./runtime/useMeshtasticRuntime', () => ({
@@ -400,7 +438,10 @@ vi.mock('./lazyAppPanels', () => ({
     );
   },
   LogPanel: () => null,
-  NodeListPanel: () => null,
+  NodeListPanel: (props: Record<string, unknown>) => {
+    lastNodeListPanelProps.current = props;
+    return null;
+  },
 }));
 
 vi.mock('./lib/mqttAutoLaunch', async (importOriginal) => {
@@ -434,7 +475,10 @@ vi.mock('./lazyTabPanels', () => ({
   },
   DiagnosticsPanel: () => null,
   GamesPanel: () => <div data-testid="games-panel-mock">games</div>,
-  MapPanel: () => null,
+  MapPanel: (props: Record<string, unknown>) => {
+    lastMapPanelProps.current = props;
+    return null;
+  },
   ModulePanel: () => null,
   PacketDistributionPanel: () => <div data-testid="packet-distribution-mock">dist</div>,
   PeerGraphPanel: () => null,
@@ -597,28 +641,108 @@ describe('legacy hook mount invariant', () => {
   });
 });
 
-describe('App header layout', () => {
-  it('keeps the protocol switcher left of the status cluster without overlap', () => {
+describe('App shell layout', () => {
+  it('puts the protocol switcher and sections in the rail, status in the bottom bar', () => {
     renderApp();
+    const rail = appRail();
+    const protocolGroup = within(rail).getByRole('radiogroup', { name: 'Protocol switcher' });
+    // The switcher leads the scrolling part of the rail; Incident and App are pinned below it.
+    expect(rail.querySelector('[data-rail-scroll]')?.firstElementChild).toContainElement(
+      protocolGroup,
+    );
+    expect(
+      within(protocolGroup)
+        .getAllByRole('radio')
+        .map((b) => b.textContent),
+    ).toEqual(['MT', 'MC', 'RN']);
+    // Connection is the first tab, so the Device section opens on launch.
+    expect(railButton('Device')).toHaveAttribute('aria-current', 'page');
+
     const banner = screen.getByRole('banner');
-    expect(banner.className).toMatch(/\bgrid\b/);
-    expect(banner.className).toMatch(/grid-cols-\[auto_minmax\(0,1fr\)\]/);
+    expect(within(banner).getByRole('tablist', { name: 'Device panels' })).toBeInTheDocument();
+    expect(within(banner).getByRole('tab', { name: 'Connection' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(within(banner).getByRole('button', { name: /^Go to a panel/ })).toBeInTheDocument();
 
-    const protocolGroup = screen.getByRole('group', { name: 'Protocol switcher' });
-    expect(protocolGroup).toBeInTheDocument();
-    expect(protocolGroup.closest('.pl-8')).not.toBeNull();
+    const statusBar = screen.getByRole('contentinfo');
+    expect(within(statusBar).getByRole('button', { name: /^Radio: / })).toBeInTheDocument();
+    expect(within(statusBar).getByText(/messages/)).toBeInTheDocument();
+  });
 
-    const headerMain = banner.querySelector(':scope > div:last-of-type');
-    expect(headerMain?.className).toMatch(/overflow-hidden/);
+  it('switches sections from the rail and remembers the last panel per section', () => {
+    renderApp();
+    openPanel('Monitor', 'Sniffer');
+    expect(screen.getByRole('tab', { name: 'Sniffer' })).toHaveAttribute('aria-selected', 'true');
+    openPanel('Device');
+    expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    openPanel('Monitor');
+    expect(screen.getByRole('tab', { name: 'Sniffer' })).toHaveAttribute('aria-selected', 'true');
+  });
 
-    const statusCluster = headerMain?.querySelector(':scope > div:last-of-type');
-    expect(statusCluster).not.toBeNull();
-    expect(statusCluster?.className).toMatch(/justify-end/);
-    expect(statusCluster?.className).toMatch(/min-w-0/);
-    expect(statusCluster?.className).not.toMatch(/\bml-auto\b/);
+  it.each([
+    ['linux', { ctrlKey: true }],
+    ['win32', { ctrlKey: true }],
+    ['darwin', { metaKey: true }],
+  ] as const)('opens the launcher and pinned panels from the keyboard on %s', (platform, mod) => {
+    vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+    onTestFinished(() => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
+    });
+    writeLauncherPins(['Chat', 'Nodes', 'Map', 'Connection']);
+    renderApp();
 
-    const statusLabels = statusCluster?.querySelectorAll('span.hidden.lg\\:inline');
-    expect(statusLabels?.length).toBeGreaterThanOrEqual(2);
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ...mod });
+    const dialog = screen.getByRole('dialog', { name: 'All panels' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Diagnostics' }));
+    expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
+    expect(screen.getByRole('tab', { name: 'Diagnostics' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+
+    // Fourth pin: Connection.
+    fireEvent.keyDown(window, { key: '4', code: 'Digit4', ...mod });
+    expect(screen.getByRole('tab', { name: 'Connection' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('searches the contacts that were there when the launcher opened', () => {
+    // The shared setup does not reset the node store; leave it as this test found it.
+    const nodesBefore = useNodeStore.getState();
+    onTestFinished(() => {
+      useNodeStore.setState(nodesBefore, true);
+    });
+    ensureOfflineProtocolIdentities();
+    upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 0x1111, longName: 'Ridge Fox' });
+    renderApp();
+    const openLauncher = () => {
+      fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
+      const dialog = screen.getByRole('dialog', { name: 'All panels' });
+      fireEvent.change(
+        within(dialog).getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+        { target: { value: 'ridge' } },
+      );
+      return dialog;
+    };
+
+    let dialog = openLauncher();
+    expect(within(dialog).getByRole('button', { name: /Ridge Fox/ })).toBeInTheDocument();
+    // A node heard while the launcher is open does not reshuffle the list under the cursor.
+    act(() => {
+      upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 0x2222, longName: 'Ridge Owl' });
+    });
+    expect(within(dialog).queryByRole('button', { name: /Ridge Owl/ })).toBeNull();
+
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
+    dialog = openLauncher();
+    expect(within(dialog).getByRole('button', { name: /Ridge Owl/ })).toBeInTheDocument();
   });
 });
 
@@ -674,7 +798,7 @@ describe('App accessibility', () => {
     });
     getStoredMeshProtocolMock.mockReturnValue('meshtastic');
     renderApp();
-    const meshcoreSwitcher = screen.getByRole('button', { name: /Switch to MeshCore/ });
+    const meshcoreSwitcher = screen.getByRole('radio', { name: /Switch to MeshCore/ });
     const badgeWrapper = await waitFor(() => {
       const label = meshcoreSwitcher.querySelector('[data-protocol-unread-label]');
       if (!label?.textContent) throw new Error('badge not ready');
@@ -712,7 +836,7 @@ describe('App accessibility', () => {
     });
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     renderApp();
-    const meshtasticSwitcher = screen.getByRole('button', { name: /Switch to Meshtastic/ });
+    const meshtasticSwitcher = screen.getByRole('radio', { name: /Switch to Meshtastic/ });
     const badgeWrapper = await waitFor(() => {
       const label = meshtasticSwitcher.querySelector('[data-protocol-unread-label]');
       if (label?.textContent !== '86') throw new Error('badge not ready');
@@ -739,14 +863,19 @@ describe('App accessibility', () => {
 
     expect(results).toHaveNoViolations();
     expect(screen.getAllByRole('main')).toHaveLength(1);
-    expect(screen.getByRole('navigation', { name: 'Application panels' })).toContainElement(
-      screen.getByRole('tablist', { name: 'Application panels' }),
+    expect(appRail()).toContainElement(
+      screen.getByRole('radiogroup', { name: 'Protocol switcher' }),
+    );
+    expect(screen.getByRole('banner')).toContainElement(
+      screen.getByRole('tablist', { name: 'Device panels' }),
     );
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
   });
 
-  it('footer shows tagline and Discord, GitHub, Website links', () => {
+  it('App panel About block shows tagline and Discord, GitHub, Website links', async () => {
     renderApp();
+    openPanel('App');
+    await screen.findByRole('region', { name: 'About' });
 
     expect(screen.getByText(/For everyone, everywhere/)).toBeInTheDocument();
     expect(screen.getByText(/Join us:/)).toBeInTheDocument();
@@ -774,8 +903,10 @@ describe('App accessibility', () => {
 
     renderApp();
 
-    const mqttLabel = await screen.findByLabelText('MQTT error');
-    const mqttText = mqttLabel.querySelector('span.lg\\:inline');
+    const mqttLabel = await within(screen.getByRole('contentinfo')).findByRole('button', {
+      name: 'MQTT error',
+    });
+    const mqttText = mqttLabel.querySelector('span.truncate');
     expect(mqttText).toHaveClass('text-red-400');
     expect(mqttText).not.toHaveClass('animate-pulse');
     expect(mqttLabel.querySelector('svg')).toHaveClass('animate-pulse');
@@ -801,11 +932,16 @@ describe('App accessibility', () => {
 
     renderApp();
 
-    const deviceLabel = await screen.findByLabelText('Reconnecting (BLE)');
-    const deviceText = deviceLabel.querySelector('span.lg\\:inline');
+    const deviceLabel = await within(screen.getByRole('contentinfo')).findByRole('button', {
+      name: /^Radio: Reconnecting \(BLE\)/,
+    });
+    const deviceText = deviceLabel.querySelector('span.truncate');
     expect(deviceText).toHaveClass('text-red-400');
     expect(deviceText).not.toHaveClass('animate-pulse');
-    expect(deviceLabel.parentElement?.querySelector('.rounded-full')).toHaveClass('animate-pulse');
+    expect(deviceLabel.querySelector('.rounded-full')).toHaveClass('animate-pulse');
+    expect(
+      screen.getByText('Reconnecting (BLE)', { selector: '[role="status"]' }),
+    ).toBeInTheDocument();
   });
 
   it('renders the queue badge in meshcore mode when queueStatus is available', async () => {
@@ -830,7 +966,7 @@ describe('App accessibility', () => {
     });
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: 'Stats' }));
+    openPanel('Monitor', 'Stats');
 
     await waitFor(() => {
       expect(screen.getByTestId('packet-distribution-mock')).toBeInTheDocument();
@@ -851,7 +987,7 @@ describe('App accessibility', () => {
     });
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -871,7 +1007,7 @@ describe('App accessibility', () => {
     });
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
 
     await waitFor(() => {
       expect(lastChatPanelProps.current?.channels).toEqual([
@@ -897,7 +1033,7 @@ describe('App accessibility', () => {
     });
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -952,7 +1088,7 @@ describe('App accessibility', () => {
     });
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -1046,7 +1182,7 @@ describe('App accessibility', () => {
     useMeshCoreMock.mockReturnValue(meshcoreRuntime);
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -1072,7 +1208,7 @@ describe('App accessibility', () => {
     useDeviceMock.mockReturnValue(meshtasticRuntime);
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -1138,7 +1274,7 @@ describe('App accessibility', () => {
     useMeshCoreMock.mockReturnValue(meshcoreRuntime);
 
     renderApp();
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
 
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
@@ -1151,7 +1287,7 @@ describe('App accessibility', () => {
       expect(lastNodeDetailModalProps.current?.protocol).toBe('meshcore');
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Switch to Meshtastic' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Switch to Meshtastic' }));
 
     await waitFor(() => {
       expect(lastNodeDetailModalProps.current).not.toBeNull();
@@ -1208,7 +1344,7 @@ describe('App accessibility', () => {
     expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
   });
 
-  it('keeps Sidebar Chat unread badge when visible again while Chat is already active', async () => {
+  it('keeps rail Chat unread badge when visible again while Chat is already active', async () => {
     const existingMessage = {
       sender_id: 2,
       sender_name: 'Alice',
@@ -1231,7 +1367,7 @@ describe('App accessibility', () => {
     syncMeshtasticMessagesToStore(initialDevice.messages);
     const { rerender } = renderApp();
 
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
     });
@@ -1256,18 +1392,18 @@ describe('App accessibility', () => {
     rerender(<App />);
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
+      expect(railButton('Chat, 1 unread')).toBeInTheDocument();
     });
 
     setDocumentHidden(false);
     fireEvent(document, new Event('visibilitychange'));
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
+      expect(railButton('Chat, 1 unread')).toBeInTheDocument();
     });
   });
 
-  it('keeps Sidebar Chat unread after opening Chat when unread is on another channel', async () => {
+  it('keeps rail Chat unread after opening Chat when unread is on another channel', async () => {
     const ts = Date.now();
     const messages = [
       {
@@ -1294,13 +1430,13 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
+      expect(railButton('Chat, 1 unread')).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('tab', { name: /^Chat/ }));
+    openPanel(/^Chat/);
     await waitFor(() => {
       expect(lastChatPanelProps.current).not.toBeNull();
-      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
+      expect(railButton('Chat, 1 unread')).toBeInTheDocument();
     });
   });
 
@@ -1332,7 +1468,7 @@ describe('App accessibility', () => {
     expect(screen.queryByText('4')).not.toBeInTheDocument();
   });
 
-  it('shows MeshCore Sidebar Chat unread badge from store messages on Connection tab', async () => {
+  it('shows MeshCore rail Chat unread badge from store messages on Connection tab', async () => {
     getStoredMeshProtocolMock.mockReturnValue('meshcore');
     const selfNodeId = 0x12345678;
     const ts = Date.now();
@@ -1366,7 +1502,7 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: 'Chat, 1 unread' })).toBeInTheDocument();
+      expect(railButton('Chat, 1 unread')).toBeInTheDocument();
     });
   });
 
@@ -1505,9 +1641,9 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /^Chat/ })).toBeInTheDocument();
+      expect(railButton(/^Chat/)).toBeInTheDocument();
     });
-    expect(screen.queryByRole('tab', { name: /Chat.*unread/i })).not.toBeInTheDocument();
+    expect(queryRailButton(/Chat.*unread/i)).not.toBeInTheDocument();
   });
 
   it('does not count MeshCore unread on unconfigured zero-PSK channel slots', async () => {
@@ -1544,9 +1680,9 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('tab', { name: /^Chat/ })).toBeInTheDocument();
+      expect(railButton(/^Chat/)).toBeInTheDocument();
     });
-    expect(screen.queryByRole('tab', { name: /Chat.*unread/i })).not.toBeInTheDocument();
+    expect(queryRailButton(/Chat.*unread/i)).not.toBeInTheDocument();
     await waitFor(() => {
       expect(localStorage.getItem('mesh-client:meshcoreChatUnread')).toBe('0');
     });
@@ -1570,7 +1706,7 @@ describe('App accessibility', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
     });
     expect(screen.queryByRole('tab', { name: /^Games/ })).not.toBeInTheDocument();
 
@@ -1721,7 +1857,7 @@ describe('App ConnectionPanel facade wiring', () => {
         .mockResolvedValue(undefined);
       vi.spyOn(reticulumSession, 'finalizeDriverDisconnect').mockResolvedValue(undefined);
 
-      fireEvent.click(screen.getByRole('tab', { name: 'App' }));
+      openPanel('App');
       await waitFor(() => {
         expect(lastAppPanelProps.current?.onNodesPruned).toEqual(expect.any(Function));
       });
@@ -1792,21 +1928,21 @@ describe('App ConnectionPanel facade wiring', () => {
     renderApp();
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: /Switch to Meshtastic/ })).toBeInTheDocument();
     });
     expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
 
-    fireEvent.click(screen.getByRole('button', { name: /Switch to Reticulum/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Switch to Reticulum/ }));
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Switch to Reticulum/ })).toHaveAttribute(
-        'aria-pressed',
+      expect(screen.getByRole('radio', { name: /Switch to Reticulum/ })).toHaveAttribute(
+        'aria-checked',
         'true',
       );
     });
     expect(tryAutoLaunchMqttMock).not.toHaveBeenCalledWith('meshtastic');
 
     tryAutoLaunchMqttMock.mockClear();
-    fireEvent.click(screen.getByRole('button', { name: /Switch to Meshtastic/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Switch to Meshtastic/ }));
 
     await waitFor(() => {
       expect(tryAutoLaunchMqttMock).toHaveBeenCalledWith('meshtastic');
@@ -1944,4 +2080,214 @@ describe('App ConnectionPanel facade wiring', () => {
       }
     },
   );
+});
+
+describe('App phone layout (bottom bar)', () => {
+  function stubPhoneWindow() {
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        media: query,
+        matches: query.startsWith('(max-width'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    onTestFinished(() => {
+      if (original) Object.defineProperty(window, 'matchMedia', original);
+      else Reflect.deleteProperty(window, 'matchMedia');
+    });
+  }
+
+  it('replaces the rail with a bottom bar that keeps Incident and puts the rest under More', () => {
+    stubPhoneWindow();
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    const nav = appRail();
+    const items = Array.from(nav.querySelectorAll('[data-nav-section]')).map((el) =>
+      el.getAttribute('data-nav-section'),
+    );
+    expect(items[0]).toBe('chat');
+    expect(items).toContain('incident');
+    expect(items.at(-1)).toBe('more');
+    expect(items).not.toContain('device');
+    expect(within(nav).queryByRole('radiogroup', { name: 'Protocol switcher' })).toBeNull();
+    // Device (Connection) opens on launch, so More shows as the active item.
+    expect(within(nav).getByRole('button', { name: 'More' }).className).toContain(
+      'text-bright-green',
+    );
+  });
+
+  it('opens the launcher as a sheet with the protocol switcher from More', () => {
+    stubPhoneWindow();
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    const more = within(appRail()).getByRole('button', { name: 'More' });
+    expect(more).toHaveAttribute('aria-haspopup', 'dialog');
+    fireEvent.click(more);
+    const sheet = screen.getByRole('dialog', { name: 'All panels' });
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+    expect(
+      within(sheet).getByRole('radiogroup', { name: 'Protocol switcher' }),
+    ).toBeInTheDocument();
+    // Focus stays off the search field so the on-screen keyboard does not open.
+    expect(document.activeElement).toBe(sheet);
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Map/ }));
+    expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
+    expect(within(appRail()).getByRole('button', { name: 'Map' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('rebuilds sheet contacts when the protocol changes inside it', () => {
+    const nodesBefore = useNodeStore.getState();
+    onTestFinished(() => {
+      useNodeStore.setState(nodesBefore, true);
+    });
+    stubPhoneWindow();
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    ensureOfflineProtocolIdentities();
+    upsertNode(OFFLINE_MESHTASTIC_IDENTITY_ID, { nodeId: 0x1111, longName: 'Ridge Fox' });
+    upsertNode(OFFLINE_MESHCORE_IDENTITY_ID, { nodeId: 0x2222, longName: 'Ridge Relay' });
+    renderApp();
+    fireEvent.click(within(appRail()).getByRole('button', { name: 'More' }));
+    const sheet = screen.getByRole('dialog', { name: 'All panels' });
+    const search = () =>
+      within(sheet).getByRole('textbox', { name: 'Search panels, contacts and channels' });
+    fireEvent.change(search(), { target: { value: 'ridge' } });
+    expect(within(sheet).getByRole('button', { name: /Ridge Fox/ })).toBeInTheDocument();
+
+    fireEvent.click(within(sheet).getByRole('radio', { name: 'Switch to MeshCore' }));
+    fireEvent.change(search(), { target: { value: 'ridge' } });
+    expect(within(sheet).queryByRole('button', { name: /Ridge Fox/ })).toBeNull();
+    expect(within(sheet).getByRole('button', { name: /Ridge Relay/ })).toBeInTheDocument();
+  });
+});
+
+describe('App node detail pane (Option B Contacts)', () => {
+  function stubWideWindow(matches: boolean) {
+    const original = Object.getOwnPropertyDescriptor(window, 'matchMedia');
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        media: query,
+        // Only the pane's min-width query; the phone shell (max-width) stays off.
+        matches: matches && query.startsWith('(min-width'),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+    onTestFinished(() => {
+      if (original) Object.defineProperty(window, 'matchMedia', original);
+      else Reflect.deleteProperty(window, 'matchMedia');
+    });
+  }
+
+  function clickListNode(nodeId: number) {
+    const onNodeClick = lastNodeListPanelProps.current?.onNodeClick as
+      ((node: { node_id: number }) => void) | undefined;
+    expect(onNodeClick).toBeTruthy();
+    act(() => {
+      onNodeClick?.({ node_id: nodeId });
+    });
+  }
+
+  it('shows list selections in a pane beside the list on wide windows', async () => {
+    stubWideWindow(true);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Network/, /^Nodes/);
+    await waitFor(() => {
+      expect(lastNodeListPanelProps.current).not.toBeNull();
+    });
+
+    clickListNode(0x23456789);
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('pane');
+    });
+    expect(lastNodeListPanelProps.current?.selectedNodeId).toBe(0x23456789);
+
+    // Leaving Nodes hides the pane instead of turning it into a modal over another panel.
+    lastNodeDetailModalProps.current = null;
+    openPanel(/^Chat/);
+    await waitFor(() => {
+      expect(lastChatPanelProps.current).not.toBeNull();
+    });
+    expect(lastNodeDetailModalProps.current).toBeNull();
+
+    // Opening a node from elsewhere still uses the modal.
+    const onChatNodeClick = lastChatPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | undefined;
+    act(() => {
+      onChatNodeClick?.(0x23456789);
+    });
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('modal');
+    });
+  });
+
+  it('uses the modal for map selections on narrow windows', async () => {
+    stubWideWindow(false);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Map/);
+    await waitFor(() => {
+      expect(lastMapPanelProps.current).not.toBeNull();
+    });
+    const onMapNodeClick = lastMapPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | undefined;
+    act(() => {
+      onMapNodeClick?.(0x23456789);
+    });
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('modal');
+    });
+  });
+
+  it('shows map selections in a pane beside the map on wide windows', async () => {
+    stubWideWindow(true);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Map/);
+    await waitFor(() => {
+      expect(lastMapPanelProps.current).not.toBeNull();
+    });
+    const onMapNodeClick = lastMapPanelProps.current?.onNodeClick as
+      ((nodeId: number) => void) | undefined;
+    act(() => {
+      onMapNodeClick?.(0x23456789);
+    });
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('pane');
+    });
+
+    // The map's pane does not follow the user to the Nodes list.
+    lastNodeDetailModalProps.current = null;
+    openPanel(/^Network/, /^Nodes/);
+    await waitFor(() => {
+      expect(lastNodeListPanelProps.current).not.toBeNull();
+    });
+    expect(lastNodeDetailModalProps.current).toBeNull();
+    expect(lastNodeListPanelProps.current?.selectedNodeId).toBeNull();
+  });
+
+  it('keeps the modal for list selections on narrow windows', async () => {
+    stubWideWindow(false);
+    useDeviceMock.mockReturnValue(createDeviceMock());
+    renderApp();
+    openPanel(/^Network/, /^Nodes/);
+    await waitFor(() => {
+      expect(lastNodeListPanelProps.current).not.toBeNull();
+    });
+
+    clickListNode(0x23456789);
+    await waitFor(() => {
+      expect(lastNodeDetailModalProps.current?.variant).toBe('modal');
+    });
+    expect(lastNodeListPanelProps.current?.selectedNodeId).toBeNull();
+  });
 });

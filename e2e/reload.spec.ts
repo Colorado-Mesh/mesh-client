@@ -15,7 +15,7 @@ test.describe('reload', () => {
 
     await page.reload();
     await page.waitForSelector('#root', { state: 'visible', timeout: 45_000 });
-    await expect(page.getByRole('group', { name: 'Protocol switcher' })).toBeVisible({
+    await expect(page.getByRole('radiogroup', { name: 'Protocol switcher' })).toBeVisible({
       timeout: 45_000,
     });
     expect(launched.crashed).toBe(false);

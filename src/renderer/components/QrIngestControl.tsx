@@ -236,7 +236,7 @@ export default function QrIngestControl({
         <button
           type="button"
           disabled={disabled}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           aria-label={t('qrIngest.chooseImageAria')}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -245,7 +245,7 @@ export default function QrIngestControl({
         <button
           type="button"
           disabled={disabled || scanning || starting}
-          className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800 disabled:opacity-40"
+          className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs disabled:opacity-40"
           aria-label={t('qrIngest.scanCameraAria')}
           onClick={() => {
             void startCamera();
@@ -256,7 +256,7 @@ export default function QrIngestControl({
         {scanning ? (
           <button
             type="button"
-            className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300 hover:bg-slate-800"
+            className="border-ink-600 text-ink-300 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
             aria-label={t('qrIngest.stopCameraAria')}
             onClick={stopCamera}
           >
@@ -264,7 +264,7 @@ export default function QrIngestControl({
           </button>
         ) : null}
       </div>
-      <p className="text-muted text-[11px]">{t('qrIngest.pasteImageHint')}</p>
+      <p className="text-muted text-label">{t('qrIngest.pasteImageHint')}</p>
       <input
         ref={fileInputRef}
         type="file"
@@ -281,7 +281,7 @@ export default function QrIngestControl({
       {scanning ? (
         <video
           ref={videoRef}
-          className="max-h-48 w-full rounded border border-gray-700 bg-black object-contain"
+          className="border-ink-700 max-h-48 w-full rounded border bg-black object-contain"
           muted
           playsInline
           aria-label={t('qrIngest.cameraPreviewAria')}
@@ -290,7 +290,7 @@ export default function QrIngestControl({
         <video ref={videoRef} className="hidden" muted playsInline tabIndex={-1} aria-hidden />
       )}
       {status ? (
-        <p className="text-xs text-amber-400" role="status">
+        <p className="text-xs text-orange-400" role="status">
           {status}
         </p>
       ) : null}

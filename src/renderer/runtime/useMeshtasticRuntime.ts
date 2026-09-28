@@ -19,6 +19,7 @@ import { requestChatOutboxDrain } from '@/renderer/lib/chatOutboxDrain';
 import { CHAT_SEND_ERROR_MQTT_ORIGIN_REACTION_KEY } from '@/renderer/lib/chatSendErrorI18n';
 import { getConnectedMeshcoreBleMac } from '@/renderer/lib/connectedMeshcoreBleMac';
 import { setDebugSnapshotMeshtasticContext } from '@/renderer/lib/debugSnapshotMeshtasticContext';
+import { isDeviceChooserCancel } from '@/renderer/lib/deviceChooserCancel';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { canTransmitLocation } from '@/renderer/lib/locationTransmit';
 import { shouldSuppressMeshtasticNodeHear } from '@/renderer/lib/meshcoreBleMacMeshtasticNodeId';
@@ -2769,10 +2770,15 @@ export function useMeshtasticRuntime() {
     async (driverIdentityId?: string, reason?: unknown): Promise<void> => {
       clearConfigureTimeout();
       clearMeshtasticConfigureState();
-      console.error(
-        '[useMeshtasticRuntime] Connection failed: ' +
-          errLikeToLogString(reason ?? new Error('unknown connection failure')),
-      );
+      // Closing the port or device chooser is a choice, not a failure.
+      if (isDeviceChooserCancel(reason)) {
+        console.debug('[useMeshtasticRuntime] Connect cancelled at the device chooser');
+      } else {
+        console.error(
+          '[useMeshtasticRuntime] Connection failed: ' +
+            errLikeToLogString(reason ?? new Error('unknown connection failure')),
+        );
+      }
       isReconnectingRef.current = false;
       reconnectGenerationRef.current += 1;
       cleanupSubscriptions();

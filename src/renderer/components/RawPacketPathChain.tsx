@@ -31,7 +31,7 @@ function PathSegmentChip({
     : t('rawPacketLog.pathSegmentTooltip', { hex: segment.hex });
   return (
     <span
-      className="rounded bg-blue-950/70 px-1 py-0.5 font-mono text-[10px] text-blue-200"
+      className="text-2xs rounded bg-indigo-950/70 px-1 py-0.5 font-mono text-indigo-200"
       title={title}
     >
       {segment.hex}
@@ -80,7 +80,7 @@ export function RawPacketPathChain({
     >
       {segments.map((seg, i) => (
         <span key={`${seg.hex}-${i}`} className="inline-flex items-center gap-0.5">
-          {i > 0 ? <span className="text-muted text-[10px]">→</span> : null}
+          {i > 0 ? <span className="text-muted text-2xs">→</span> : null}
           <PathSegmentChip segment={seg} t={t} />
         </span>
       ))}

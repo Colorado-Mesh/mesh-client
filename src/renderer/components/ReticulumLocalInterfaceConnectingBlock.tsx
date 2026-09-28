@@ -40,7 +40,7 @@ export function ReticulumLocalInterfaceConnectingBlock({
               </li>
             ))}
           </ul>
-          <p className="text-muted mt-2 text-[11px]">
+          <p className="text-muted text-label mt-2">
             {t('connectionPanel.reticulumLocalInterfaces.connectingHintBle')}
           </p>
         </div>

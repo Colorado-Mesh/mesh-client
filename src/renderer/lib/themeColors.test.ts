@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyThemeColors,
+  consumeThemeColorResetNotice,
   DEFAULT_THEME_COLORS,
   hasThemeSnapshot,
   isMessageActionsBarBgVisible,
@@ -92,8 +93,20 @@ describe('themeColors', () => {
     it('migrates persisted legacy readableGreen (#16a34a) to accessible default', () => {
       localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ readableGreen: '#16a34a' }));
       const colors = loadThemeColors();
-      expect(colors.readableGreen).toBe('#15803d');
+      expect(colors.readableGreen).toBe('#047857');
       expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
+    });
+
+    it('resets a brandGreen override that is too dark for text or dark-on-green fills', () => {
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ brandGreen: '#14532d' }));
+      const colors = loadThemeColors();
+      expect(colors.brandGreen).toBe('#67e8b4');
+      expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
+    });
+
+    it('keeps a light enough brandGreen override', () => {
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ brandGreen: '#4ade80' }));
+      expect(loadThemeColors().brandGreen).toBe('#4ade80');
     });
 
     it('keeps accessible readableGreen override', () => {
@@ -101,26 +114,49 @@ describe('themeColors', () => {
       const colors = loadThemeColors();
       expect(colors.readableGreen).toBe('#14532d');
     });
+
+    it('reports a saved accent it had to put back, once', () => {
+      consumeThemeColorResetNotice();
+      // A v5 custom accent under 4.5:1 on the app background.
+      localStorage.setItem(THEME_COLORS_STORAGE_KEY, JSON.stringify({ brandGreen: '#1e293b' }));
+      expect(loadThemeColors().brandGreen).toBe(DEFAULT_THEME_COLORS.brandGreen);
+      expect(consumeThemeColorResetNotice()).toBe('accent');
+      expect(consumeThemeColorResetNotice()).toBeNull();
+      // Loading again finds the default already saved, so there is nothing new to report.
+      loadThemeColors();
+      expect(consumeThemeColorResetNotice()).toBeNull();
+    });
   });
 
   describe('applyThemeColors', () => {
     it('sets chatIncomingBg as rgb() with 0.38 opacity, not bare hex', () => {
       const setProp = vi.fn();
       vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);
-      applyThemeColors({ ...DEFAULT_THEME_COLORS, chatIncomingBg: '#1e293b' });
+      applyThemeColors({ ...DEFAULT_THEME_COLORS, chatIncomingBg: '#212d40' });
       const call = setProp.mock.calls.find(([prop]) => prop === '--color-chat-incoming-bg');
       expect(call).toBeDefined();
-      expect(call![1]).toBe('rgb(30 41 59 / 0.38)');
+      expect(call![1]).toBe('rgb(33 45 64 / 0.38)');
+      vi.restoreAllMocks();
+    });
+
+    it('sets the outgoing bubble fill and border as translucent rgb()', () => {
+      const setProp = vi.fn();
+      vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);
+      applyThemeColors({ ...DEFAULT_THEME_COLORS });
+      const fill = setProp.mock.calls.find(([prop]) => prop === '--color-chat-outgoing-bg');
+      const border = setProp.mock.calls.find(([prop]) => prop === '--color-chat-outgoing-border');
+      expect(fill?.[1]).toBe('rgb(4 120 87 / 0.22)');
+      expect(border?.[1]).toBe('rgb(103 232 180 / 0.25)');
       vi.restoreAllMocks();
     });
 
     it('sets appBg as bare hex', () => {
       const setProp = vi.fn();
       vi.spyOn(document.documentElement.style, 'setProperty').mockImplementation(setProp);
-      applyThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#020617' });
+      applyThemeColors({ ...DEFAULT_THEME_COLORS, appBg: '#11151c' });
       const call = setProp.mock.calls.find(([prop]) => prop === '--color-app-bg');
       expect(call).toBeDefined();
-      expect(call![1]).toBe('#020617');
+      expect(call![1]).toBe('#11151c');
       vi.restoreAllMocks();
     });
 
@@ -130,8 +166,8 @@ describe('themeColors', () => {
       const applied = applyThemeColors({ ...DEFAULT_THEME_COLORS, readableGreen: '#16a34a' });
       const call = setProp.mock.calls.find(([prop]) => prop === '--color-readable-green');
       expect(call).toBeDefined();
-      expect(call![1]).toBe('#15803d');
-      expect(applied?.readableGreen).toBe('#15803d');
+      expect(call![1]).toBe('#047857');
+      expect(applied?.readableGreen).toBe('#047857');
       expect(localStorage.getItem(THEME_COLORS_STORAGE_KEY)).toBeNull();
       vi.restoreAllMocks();
     });

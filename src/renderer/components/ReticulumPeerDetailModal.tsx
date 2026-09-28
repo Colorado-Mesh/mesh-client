@@ -1,5 +1,5 @@
 import { Copy, MessageCircle, Star, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useReticulumPeer } from '@/renderer/hooks/useReticulumPeer';
@@ -50,21 +50,24 @@ import { ConfirmModal } from './ConfirmModal';
 import QrCodeImage from './QrCodeImage';
 import { type ReticulumProfileIconName, ReticulumProfileIconSlot } from './ReticulumProfileIcon';
 import { useToast } from './Toast';
+import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from './ui/formClasses';
 
 export interface ReticulumPeerDetailModalProps {
   peerHash: string;
   onClose: () => void;
   onSendMessage: (nodeNum: number) => void;
+  /** `pane` renders inline beside the Peers list (Option B) without backdrop or Escape handling. */
+  variant?: 'modal' | 'pane';
 }
 
 export default function ReticulumPeerDetailModal({
   peerHash,
   onClose,
   onSendMessage,
+  variant = 'modal',
 }: ReticulumPeerDetailModalProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
-  const dialogRef = useRef<HTMLDivElement>(null);
   const peer = useReticulumPeer(peerHash);
   const isContact = useReticulumPeerStore((s) => s.isContact(peerHash));
   const toggleFavorite = useReticulumPeerStore((s) => s.toggleFavorite);
@@ -294,6 +297,7 @@ export default function ReticulumPeerDetailModal({
   };
 
   useEffect(() => {
+    if (variant === 'pane') return;
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -301,7 +305,7 @@ export default function ReticulumPeerDetailModal({
     return () => {
       document.removeEventListener('keydown', handleKey);
     };
-  }, [onClose]);
+  }, [onClose, variant]);
 
   const displayLabel = peer
     ? resolveReticulumPeerLabel(peer, peer.display_name ?? peer.custom_display_name)
@@ -453,6 +457,434 @@ export default function ReticulumPeerDetailModal({
     }
   }, [onClose, peerHash, removeContact]);
 
+  const closeLabel = variant === 'pane' ? t('nodeDetailModal.closePane') : t('aria.closeDialog');
+  const detailBody = (
+    <>
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          {editingName ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={nameDraft}
+                onChange={(e) => {
+                  setNameDraft(e.target.value);
+                }}
+                className={`${INPUT_BOX_CLASS} flex-1`}
+                aria-label={t('peerDetailModal.editNameAria')}
+              />
+              <button
+                type="button"
+                className="bg-brand-green text-app-bg rounded px-2 py-1 text-xs"
+                onClick={() => {
+                  void saveName();
+                }}
+              >
+                {t('common.save')}
+              </button>
+              <button
+                type="button"
+                className="border-ink-600 text-ink-300 rounded border px-2 py-1 text-xs"
+                onClick={() => {
+                  setEditingName(false);
+                }}
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <ReticulumProfileIconSlot
+                iconName={iconName}
+                iconColor={iconColor}
+                size={20}
+                destinationHash={peerHash}
+              />
+              <h2
+                id="reticulum-peer-detail-title"
+                className="text-ink-100 truncate text-lg font-semibold"
+              >
+                {displayLabel}
+              </h2>
+              <button
+                type="button"
+                className="text-xs text-yellow-400 hover:underline"
+                onClick={() => {
+                  setNameDraft(peer?.custom_display_name ?? peer?.display_name ?? '');
+                  setEditingName(true);
+                }}
+              >
+                {t('common.edit')}
+              </button>
+              <button
+                type="button"
+                className={peer?.favorited ? 'text-yellow-400' : 'text-muted'}
+                aria-label={t('peerListPanel.toggleFavorite')}
+                onClick={() => {
+                  void toggleFavorite(peerHash, !peer?.favorited);
+                }}
+              >
+                <Star className="h-5 w-5" fill={peer?.favorited ? 'currentColor' : 'none'} />
+              </button>
+            </div>
+          )}
+          <div className="text-ink-400 mt-1 flex flex-wrap items-center gap-2 text-xs">
+            <span
+              className={
+                isContact
+                  ? 'bg-brand-green/12 text-bright-green text-2xs rounded px-1.5 py-0.5 font-sans font-medium'
+                  : 'text-muted text-2xs rounded px-1.5 py-0.5 font-sans'
+              }
+            >
+              {isContact ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
+            </span>
+            {verified && !verificationMismatch ? (
+              <span className="text-2xs rounded bg-cyan-600/30 px-1.5 py-0.5 font-sans font-medium text-cyan-200">
+                {t('peerDetailModal.verifiedBadge')}
+              </span>
+            ) : null}
+            {verificationMismatch ? (
+              <span className="text-2xs rounded bg-red-900/50 px-1.5 py-0.5 font-sans font-medium text-red-300">
+                {t('peerDetailModal.verifyMismatch')}
+              </span>
+            ) : null}
+          </div>
+          <div className="border-ink-700/60 mt-2 space-y-1.5 rounded border p-2">
+            <div className="text-muted text-2xs">{t('peerDetailModal.announcedDestinations')}</div>
+            <ul className="space-y-1.5" aria-label={t('peerDetailModal.announcedDestinations')}>
+              {announcedDestinations.map((row) => {
+                const aspectLabel = reticulumAnnounceAspectLabel(row.aspect, t);
+                const trunc = `${row.destination_hash.slice(0, 12)}…`;
+                return (
+                  <li
+                    key={`${row.destination_hash}:${row.aspect}`}
+                    className={`flex min-w-0 flex-wrap items-center gap-2 rounded px-1.5 py-1 ${
+                      row.isOpened ? 'bg-cyan-950/40 ring-1 ring-cyan-700/40' : ''
+                    }`}
+                  >
+                    <span className="text-2xs bg-ink-700/80 text-ink-200 rounded px-1.5 py-0.5 font-sans font-medium">
+                      {aspectLabel}
+                    </span>
+                    {row.isOpened ? (
+                      <span className="text-2xs rounded bg-cyan-800/50 px-1.5 py-0.5 font-sans font-medium text-cyan-100">
+                        {t('peerDetailModal.openedDestinationBadge')}
+                      </span>
+                    ) : null}
+                    <span
+                      className="text-ink-300 min-w-0 flex-1 truncate font-mono text-xs"
+                      title={row.destination_hash}
+                    >
+                      {trunc}
+                    </span>
+                    <button
+                      type="button"
+                      className="shrink-0 text-orange-400 hover:text-orange-300"
+                      aria-label={t('peerDetailModal.copyAnnouncedHashAria', {
+                        aspect: aspectLabel,
+                        hash: row.destination_hash,
+                      })}
+                      onClick={() => {
+                        void copyDestinationHash(row.destination_hash);
+                      }}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="border-ink-700/60 mt-2 space-y-1 rounded border p-2">
+            <div className="text-muted text-2xs">{t('peerDetailModal.verifyFingerprint')}</div>
+            <div className="text-ink-200 font-mono text-xs break-all">{fingerprint}</div>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                className="rounded bg-cyan-800/60 px-2 py-1 text-xs text-cyan-100 hover:bg-cyan-700/60"
+                disabled={!liveIdentityHash || busy}
+                onClick={() => {
+                  void (async () => {
+                    setBusy(true);
+                    try {
+                      await window.electronAPI.db.setReticulumDestinationVerified({
+                        destination_hash: peerHash,
+                        verified: true,
+                        identity_hash: liveIdentityHash,
+                      });
+                      setVerified(true);
+                      setVerifiedIdentityHash(liveIdentityHash);
+                    } catch (err) {
+                      console.error(
+                        '[ReticulumPeerDetailModal] verify failed: ' + errLikeToLogString(err),
+                      );
+                    } finally {
+                      setBusy(false);
+                    }
+                  })();
+                }}
+              >
+                {t('peerDetailModal.verifyMark')}
+              </button>
+              <button
+                type="button"
+                className="bg-ink-700 text-ink-200 hover:bg-ink-600 rounded px-2 py-1 text-xs"
+                disabled={!verified || busy}
+                onClick={() => {
+                  void (async () => {
+                    setBusy(true);
+                    try {
+                      await window.electronAPI.db.setReticulumDestinationVerified({
+                        destination_hash: peerHash,
+                        verified: false,
+                      });
+                      setVerified(false);
+                      setVerifiedIdentityHash(null);
+                    } catch (err) {
+                      console.error(
+                        '[ReticulumPeerDetailModal] revoke verify failed: ' +
+                          errLikeToLogString(err),
+                      );
+                    } finally {
+                      setBusy(false);
+                    }
+                  })();
+                }}
+              >
+                {t('peerDetailModal.verifyRevoke')}
+              </button>
+              {contactQrUri ? (
+                <button
+                  type="button"
+                  className="bg-ink-700 text-ink-200 hover:bg-ink-600 rounded px-2 py-1 text-xs"
+                  aria-label={t('peerDetailModal.shareContactQrAria')}
+                  onClick={() => {
+                    setShowContactQr((v) => !v);
+                  }}
+                >
+                  {t('peerDetailModal.shareContactQr')}
+                </button>
+              ) : null}
+            </div>
+            {showContactQr && contactQrUri ? (
+              <div className="pt-2">
+                <QrCodeImage
+                  value={contactQrUri}
+                  size={160}
+                  ariaLabel={t('peerDetailModal.shareContactQrAria')}
+                />
+              </div>
+            ) : null}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-3">
+            <label className="text-ink-400 block text-xs" htmlFor="peer-icon-name">
+              {t('reticulumProfileIcon.iconName')}
+              <select
+                id="peer-icon-name"
+                value={iconName}
+                className={`${SELECT_BOX_CLASS} mt-1 block`}
+                aria-label={t('reticulumProfileIcon.iconNameAria')}
+                onChange={(e) => {
+                  const name = e.target.value as ReticulumProfileIconName;
+                  if (name === 'circle') {
+                    void saveIconAppearance({ icon_name: 'circle', icon_color: 'green' });
+                  } else {
+                    void saveIconAppearance({ icon_name: name });
+                  }
+                }}
+              >
+                <option value="circle">{t('reticulumProfileIcon.iconNone')}</option>
+                <option value="star">{t('reticulumProfileIcon.iconStar')}</option>
+                <option value="heart">{t('reticulumProfileIcon.iconHeart')}</option>
+                <option value="shield">{t('reticulumProfileIcon.iconShield')}</option>
+                <option value="user">{t('reticulumProfileIcon.iconUser')}</option>
+              </select>
+            </label>
+            <label className="text-ink-400 block text-xs" htmlFor="peer-icon-color">
+              {t('peerDetailModal.iconColor')}
+              <select
+                id="peer-icon-color"
+                value={iconColor}
+                className={`${SELECT_BOX_CLASS} mt-1 block`}
+                aria-label={t('peerDetailModal.iconColorAria')}
+                onChange={(e) => {
+                  void saveIconAppearance({ icon_color: e.target.value });
+                }}
+              >
+                <option value="green">{t('common.colorGreen')}</option>
+                <option value="cyan">{t('common.colorCyan')}</option>
+                <option value="amber">{t('common.colorAmber')}</option>
+                <option value="red">{t('common.colorRed')}</option>
+                <option value="purple">{t('common.colorPurple')}</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="text-muted hover:bg-sidebar-active-bg hover:text-ink-200 rounded-lg p-1.5"
+          aria-label={closeLabel}
+          title={closeLabel}
+          onClick={onClose}
+        >
+          <X aria-hidden className="h-5 w-5" />
+        </button>
+      </div>
+
+      <section className="border-ink-800 mb-4 rounded-xl border p-4">
+        <h3 className="text-ink-200 text-sm font-medium">{t('peerDetailModal.networkSection')}</h3>
+        <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+          <dt className="text-muted">{t('peerListPanel.colInterface')}</dt>
+          <dd>{peer?.interface ?? '—'}</dd>
+          <dt className="text-muted">{t('connectionPanel.reticulumPeers.hops')}</dt>
+          <dd>{peer?.hops ?? '—'}</dd>
+          <dt className="text-muted">{t('peerListPanel.pathsMedium')}</dt>
+          <dd>{mediumLabel}</dd>
+          <dt className="text-muted">{t('peerListPanel.colLastSeen')}</dt>
+          <dd>{lastSeenMs ? formatRelativeOrIsoDate(lastSeenMs, t, normalizeLastHeardMs) : '—'}</dd>
+          <dt className="text-muted">{t('peerDetailModal.backupPaths')}</dt>
+          <dd>
+            {backupPathSlots.length === 0 ? (
+              '—'
+            ) : (
+              <ul className="space-y-1" aria-label={t('peerDetailModal.backupPaths')}>
+                {backupPathSlots.map((slot, index) => (
+                  <li
+                    key={`${slot.interface_id ?? 'x'}-${slot.via_hash ?? index}-${slot.hops ?? 'h'}`}
+                    className="text-ink-300"
+                  >
+                    <span className="text-ink-400">{t('peerListPanel.pathsBackupBadge')}</span>
+                    {' · '}
+                    {t('connectionPanel.reticulumPeers.hops')}: {slot.hops ?? '—'}
+                    {' · '}
+                    {slot.interface ?? '—'}
+                    {' · '}
+                    {slot.medium === 'rf'
+                      ? t('peerListPanel.pathsPreferRf')
+                      : slot.medium === 'network'
+                        ? t('peerListPanel.pathsPreferNetwork')
+                        : '—'}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
+        </dl>
+      </section>
+
+      <section className="mb-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          className="rounded border border-orange-600 px-3 py-1.5 text-sm text-orange-300 hover:bg-orange-950/40 disabled:opacity-40"
+          onClick={() => {
+            void requestPath();
+          }}
+        >
+          {t('connectionPanel.reticulumPeers.path')}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          className="rounded border border-orange-600 px-3 py-1.5 text-sm text-orange-300 hover:bg-orange-950/40 disabled:opacity-40"
+          onClick={() => {
+            void probePeer();
+          }}
+        >
+          {t('connectionPanel.reticulumPeers.probe')}
+        </button>
+        <button
+          type="button"
+          className="border-brand-green/35 text-bright-green flex items-center gap-1 rounded border px-3 py-1.5 text-sm hover:bg-green-950/30"
+          onClick={openChat}
+        >
+          <MessageCircle className="h-4 w-4" aria-hidden />
+          {t('peerDetailModal.sendMessage')}
+        </button>
+        {!isContact ? (
+          <button
+            type="button"
+            disabled={busy}
+            className="border-ink-500 text-ink-200 hover:bg-ink-800 rounded border px-3 py-1.5 text-sm disabled:opacity-40"
+            onClick={() => {
+              void saveAsContact();
+            }}
+          >
+            {t('peerDetailModal.saveContact')}
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={busy}
+            className="rounded border border-red-800 px-3 py-1.5 text-sm text-red-300 hover:bg-red-950/40 disabled:opacity-40"
+            onClick={() => {
+              setShowRemoveConfirm(true);
+            }}
+          >
+            {t('peerDetailModal.removeContact')}
+          </button>
+        )}
+        {identityId ? (
+          isBlocked ? (
+            <button
+              type="button"
+              disabled={busy}
+              className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-3 py-1.5 text-sm disabled:opacity-40"
+              onClick={() => {
+                void unblockContact('reticulum', identityId, peerHash);
+              }}
+            >
+              {t('peerDetailModal.unblockContact')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              className="rounded border border-red-900 px-3 py-1.5 text-sm text-red-400 hover:bg-red-950/30 disabled:opacity-40"
+              onClick={() => {
+                void blockContact('reticulum', identityId, peerHash);
+              }}
+            >
+              {t('peerDetailModal.blockContact')}
+            </button>
+          )
+        ) : null}
+      </section>
+
+      {pathStatus ? <p className="text-ink-300 mb-2 text-xs">{pathStatus}</p> : null}
+      {probeStatus ? <p className="text-ink-300 mb-2 text-xs">{probeStatus}</p> : null}
+    </>
+  );
+  const removeConfirm = showRemoveConfirm ? (
+    <ConfirmModal
+      title={t('peerDetailModal.removeContactConfirmTitle')}
+      message={t('peerDetailModal.removeContactConfirmBody')}
+      confirmLabel={t('peerDetailModal.removeContact')}
+      danger
+      confirmDisabled={busy}
+      onConfirm={() => {
+        void handleRemoveContact();
+      }}
+      onCancel={() => {
+        if (busy) return;
+        setShowRemoveConfirm(false);
+      }}
+    />
+  ) : null;
+
+  if (variant === 'pane') {
+    return (
+      <>
+        <aside
+          aria-labelledby="reticulum-peer-detail-title"
+          className="bg-deep-black border-ink-800 h-full min-h-0 overflow-y-auto rounded-xl border p-4"
+        >
+          {detailBody}
+        </aside>
+        {removeConfirm}
+      </>
+    );
+  }
+
   return (
     <div
       className="fixed inset-0 flex items-center justify-center p-4"
@@ -465,428 +897,14 @@ export default function ReticulumPeerDetailModal({
         onClick={onClose}
       />
       <div
-        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reticulum-peer-detail-title"
-        className="bg-deep-black relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg border border-gray-600 p-4 shadow-xl"
+        className="bg-deep-black rounded-modal shadow-level-4 border-ink-800 relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto border p-4"
       >
-        <div className="mb-4 flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            {editingName ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <input
-                  type="text"
-                  value={nameDraft}
-                  onChange={(e) => {
-                    setNameDraft(e.target.value);
-                  }}
-                  className="flex-1 rounded border border-gray-600 bg-black px-2 py-1 text-sm text-gray-100"
-                  aria-label={t('peerDetailModal.editNameAria')}
-                />
-                <button
-                  type="button"
-                  className="bg-readable-green rounded px-2 py-1 text-xs text-white"
-                  onClick={() => {
-                    void saveName();
-                  }}
-                >
-                  {t('common.save')}
-                </button>
-                <button
-                  type="button"
-                  className="rounded border border-gray-600 px-2 py-1 text-xs text-gray-300"
-                  onClick={() => {
-                    setEditingName(false);
-                  }}
-                >
-                  {t('common.cancel')}
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <ReticulumProfileIconSlot
-                  iconName={iconName}
-                  iconColor={iconColor}
-                  size={20}
-                  destinationHash={peerHash}
-                />
-                <h2
-                  id="reticulum-peer-detail-title"
-                  className="text-bright-green truncate text-lg font-semibold"
-                >
-                  {displayLabel}
-                </h2>
-                <button
-                  type="button"
-                  className="text-xs text-amber-400 hover:underline"
-                  onClick={() => {
-                    setNameDraft(peer?.custom_display_name ?? peer?.display_name ?? '');
-                    setEditingName(true);
-                  }}
-                >
-                  {t('common.edit')}
-                </button>
-                <button
-                  type="button"
-                  className={peer?.favorited ? 'text-yellow-400' : 'text-gray-500'}
-                  aria-label={t('peerListPanel.toggleFavorite')}
-                  onClick={() => {
-                    void toggleFavorite(peerHash, !peer?.favorited);
-                  }}
-                >
-                  <Star className="h-5 w-5" fill={peer?.favorited ? 'currentColor' : 'none'} />
-                </button>
-              </div>
-            )}
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-              <span
-                className={
-                  isContact
-                    ? 'bg-readable-green/20 text-readable-green rounded px-1.5 py-0.5 font-sans text-[10px] font-medium'
-                    : 'text-muted rounded px-1.5 py-0.5 font-sans text-[10px]'
-                }
-              >
-                {isContact ? t('peerListPanel.contactYes') : t('peerListPanel.contactNo')}
-              </span>
-              {verified && !verificationMismatch ? (
-                <span className="rounded bg-cyan-600/30 px-1.5 py-0.5 font-sans text-[10px] font-medium text-cyan-200">
-                  {t('peerDetailModal.verifiedBadge')}
-                </span>
-              ) : null}
-              {verificationMismatch ? (
-                <span className="rounded bg-red-900/50 px-1.5 py-0.5 font-sans text-[10px] font-medium text-red-300">
-                  {t('peerDetailModal.verifyMismatch')}
-                </span>
-              ) : null}
-            </div>
-            <div className="mt-2 space-y-1.5 rounded border border-gray-700/60 p-2">
-              <div className="text-muted text-[10px] tracking-wide uppercase">
-                {t('peerDetailModal.announcedDestinations')}
-              </div>
-              <ul className="space-y-1.5" aria-label={t('peerDetailModal.announcedDestinations')}>
-                {announcedDestinations.map((row) => {
-                  const aspectLabel = reticulumAnnounceAspectLabel(row.aspect, t);
-                  const trunc = `${row.destination_hash.slice(0, 12)}…`;
-                  return (
-                    <li
-                      key={`${row.destination_hash}:${row.aspect}`}
-                      className={`flex min-w-0 flex-wrap items-center gap-2 rounded px-1.5 py-1 ${
-                        row.isOpened ? 'bg-cyan-950/40 ring-1 ring-cyan-700/40' : ''
-                      }`}
-                    >
-                      <span className="rounded bg-slate-700/80 px-1.5 py-0.5 font-sans text-[10px] font-medium text-gray-200">
-                        {aspectLabel}
-                      </span>
-                      {row.isOpened ? (
-                        <span className="rounded bg-cyan-800/50 px-1.5 py-0.5 font-sans text-[10px] font-medium text-cyan-100">
-                          {t('peerDetailModal.openedDestinationBadge')}
-                        </span>
-                      ) : null}
-                      <span
-                        className="min-w-0 flex-1 truncate font-mono text-xs text-gray-300"
-                        title={row.destination_hash}
-                      >
-                        {trunc}
-                      </span>
-                      <button
-                        type="button"
-                        className="shrink-0 text-amber-400 hover:text-amber-300"
-                        aria-label={t('peerDetailModal.copyAnnouncedHashAria', {
-                          aspect: aspectLabel,
-                          hash: row.destination_hash,
-                        })}
-                        onClick={() => {
-                          void copyDestinationHash(row.destination_hash);
-                        }}
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-            <div className="mt-2 space-y-1 rounded border border-gray-700/60 p-2">
-              <div className="text-muted text-[10px] tracking-wide uppercase">
-                {t('peerDetailModal.verifyFingerprint')}
-              </div>
-              <div className="font-mono text-xs break-all text-gray-200">{fingerprint}</div>
-              <div className="flex flex-wrap gap-2 pt-1">
-                <button
-                  type="button"
-                  className="rounded bg-cyan-800/60 px-2 py-1 text-xs text-cyan-100 hover:bg-cyan-700/60"
-                  disabled={!liveIdentityHash || busy}
-                  onClick={() => {
-                    void (async () => {
-                      setBusy(true);
-                      try {
-                        await window.electronAPI.db.setReticulumDestinationVerified({
-                          destination_hash: peerHash,
-                          verified: true,
-                          identity_hash: liveIdentityHash,
-                        });
-                        setVerified(true);
-                        setVerifiedIdentityHash(liveIdentityHash);
-                      } catch (err) {
-                        console.error(
-                          '[ReticulumPeerDetailModal] verify failed: ' + errLikeToLogString(err),
-                        );
-                      } finally {
-                        setBusy(false);
-                      }
-                    })();
-                  }}
-                >
-                  {t('peerDetailModal.verifyMark')}
-                </button>
-                <button
-                  type="button"
-                  className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
-                  disabled={!verified || busy}
-                  onClick={() => {
-                    void (async () => {
-                      setBusy(true);
-                      try {
-                        await window.electronAPI.db.setReticulumDestinationVerified({
-                          destination_hash: peerHash,
-                          verified: false,
-                        });
-                        setVerified(false);
-                        setVerifiedIdentityHash(null);
-                      } catch (err) {
-                        console.error(
-                          '[ReticulumPeerDetailModal] revoke verify failed: ' +
-                            errLikeToLogString(err),
-                        );
-                      } finally {
-                        setBusy(false);
-                      }
-                    })();
-                  }}
-                >
-                  {t('peerDetailModal.verifyRevoke')}
-                </button>
-                {contactQrUri ? (
-                  <button
-                    type="button"
-                    className="rounded bg-slate-700 px-2 py-1 text-xs text-gray-200 hover:bg-slate-600"
-                    aria-label={t('peerDetailModal.shareContactQrAria')}
-                    onClick={() => {
-                      setShowContactQr((v) => !v);
-                    }}
-                  >
-                    {t('peerDetailModal.shareContactQr')}
-                  </button>
-                ) : null}
-              </div>
-              {showContactQr && contactQrUri ? (
-                <div className="pt-2">
-                  <QrCodeImage
-                    value={contactQrUri}
-                    size={160}
-                    ariaLabel={t('peerDetailModal.shareContactQrAria')}
-                  />
-                </div>
-              ) : null}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-3">
-              <label className="block text-xs text-gray-400" htmlFor="peer-icon-name">
-                {t('reticulumProfileIcon.iconName')}
-                <select
-                  id="peer-icon-name"
-                  value={iconName}
-                  className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
-                  aria-label={t('reticulumProfileIcon.iconNameAria')}
-                  onChange={(e) => {
-                    const name = e.target.value as ReticulumProfileIconName;
-                    if (name === 'circle') {
-                      void saveIconAppearance({ icon_name: 'circle', icon_color: 'green' });
-                    } else {
-                      void saveIconAppearance({ icon_name: name });
-                    }
-                  }}
-                >
-                  <option value="circle">{t('reticulumProfileIcon.iconNone')}</option>
-                  <option value="star">{t('reticulumProfileIcon.iconStar')}</option>
-                  <option value="heart">{t('reticulumProfileIcon.iconHeart')}</option>
-                  <option value="shield">{t('reticulumProfileIcon.iconShield')}</option>
-                  <option value="user">{t('reticulumProfileIcon.iconUser')}</option>
-                </select>
-              </label>
-              <label className="block text-xs text-gray-400" htmlFor="peer-icon-color">
-                {t('peerDetailModal.iconColor')}
-                <select
-                  id="peer-icon-color"
-                  value={iconColor}
-                  className="bg-deep-black mt-1 block rounded border border-gray-600 px-2 py-1 text-sm text-gray-200"
-                  aria-label={t('peerDetailModal.iconColorAria')}
-                  onChange={(e) => {
-                    void saveIconAppearance({ icon_color: e.target.value });
-                  }}
-                >
-                  <option value="green">{t('common.colorGreen')}</option>
-                  <option value="cyan">{t('common.colorCyan')}</option>
-                  <option value="amber">{t('common.colorAmber')}</option>
-                  <option value="red">{t('common.colorRed')}</option>
-                  <option value="purple">{t('common.colorPurple')}</option>
-                </select>
-              </label>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="text-gray-400 hover:text-gray-200"
-            aria-label={t('aria.closeDialog')}
-            onClick={onClose}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <section className="mb-4 rounded border border-gray-700 p-3">
-          <h3 className="text-sm font-medium text-gray-200">
-            {t('peerDetailModal.networkSection')}
-          </h3>
-          <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-            <dt className="text-muted">{t('peerListPanel.colInterface')}</dt>
-            <dd>{peer?.interface ?? '—'}</dd>
-            <dt className="text-muted">{t('connectionPanel.reticulumPeers.hops')}</dt>
-            <dd>{peer?.hops ?? '—'}</dd>
-            <dt className="text-muted">{t('peerListPanel.pathsMedium')}</dt>
-            <dd>{mediumLabel}</dd>
-            <dt className="text-muted">{t('peerListPanel.colLastSeen')}</dt>
-            <dd>
-              {lastSeenMs ? formatRelativeOrIsoDate(lastSeenMs, t, normalizeLastHeardMs) : '—'}
-            </dd>
-            <dt className="text-muted">{t('peerDetailModal.backupPaths')}</dt>
-            <dd>
-              {backupPathSlots.length === 0 ? (
-                '—'
-              ) : (
-                <ul className="space-y-1" aria-label={t('peerDetailModal.backupPaths')}>
-                  {backupPathSlots.map((slot, index) => (
-                    <li
-                      key={`${slot.interface_id ?? 'x'}-${slot.via_hash ?? index}-${slot.hops ?? 'h'}`}
-                      className="text-gray-300"
-                    >
-                      <span className="text-gray-400">{t('peerListPanel.pathsBackupBadge')}</span>
-                      {' · '}
-                      {t('connectionPanel.reticulumPeers.hops')}: {slot.hops ?? '—'}
-                      {' · '}
-                      {slot.interface ?? '—'}
-                      {' · '}
-                      {slot.medium === 'rf'
-                        ? t('peerListPanel.pathsPreferRf')
-                        : slot.medium === 'network'
-                          ? t('peerListPanel.pathsPreferNetwork')
-                          : '—'}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </dd>
-          </dl>
-        </section>
-
-        <section className="mb-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded border border-amber-600 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-950/40 disabled:opacity-40"
-            onClick={() => {
-              void requestPath();
-            }}
-          >
-            {t('connectionPanel.reticulumPeers.path')}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            className="rounded border border-amber-600 px-3 py-1.5 text-sm text-amber-300 hover:bg-amber-950/40 disabled:opacity-40"
-            onClick={() => {
-              void probePeer();
-            }}
-          >
-            {t('connectionPanel.reticulumPeers.probe')}
-          </button>
-          <button
-            type="button"
-            className="border-readable-green text-readable-green flex items-center gap-1 rounded border px-3 py-1.5 text-sm hover:bg-green-950/30"
-            onClick={openChat}
-          >
-            <MessageCircle className="h-4 w-4" aria-hidden />
-            {t('peerDetailModal.sendMessage')}
-          </button>
-          {!isContact ? (
-            <button
-              type="button"
-              disabled={busy}
-              className="rounded border border-slate-500 px-3 py-1.5 text-sm text-gray-200 hover:bg-slate-800 disabled:opacity-40"
-              onClick={() => {
-                void saveAsContact();
-              }}
-            >
-              {t('peerDetailModal.saveContact')}
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={busy}
-              className="rounded border border-red-800 px-3 py-1.5 text-sm text-red-300 hover:bg-red-950/40 disabled:opacity-40"
-              onClick={() => {
-                setShowRemoveConfirm(true);
-              }}
-            >
-              {t('peerDetailModal.removeContact')}
-            </button>
-          )}
-          {identityId ? (
-            isBlocked ? (
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded border border-gray-600 px-3 py-1.5 text-sm text-gray-200 hover:bg-gray-800 disabled:opacity-40"
-                onClick={() => {
-                  void unblockContact('reticulum', identityId, peerHash);
-                }}
-              >
-                {t('peerDetailModal.unblockContact')}
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded border border-red-900 px-3 py-1.5 text-sm text-red-400 hover:bg-red-950/30 disabled:opacity-40"
-                onClick={() => {
-                  void blockContact('reticulum', identityId, peerHash);
-                }}
-              >
-                {t('peerDetailModal.blockContact')}
-              </button>
-            )
-          ) : null}
-        </section>
-
-        {pathStatus ? <p className="mb-2 text-xs text-gray-300">{pathStatus}</p> : null}
-        {probeStatus ? <p className="mb-2 text-xs text-gray-300">{probeStatus}</p> : null}
+        {detailBody}
       </div>
-      {showRemoveConfirm ? (
-        <ConfirmModal
-          title={t('peerDetailModal.removeContactConfirmTitle')}
-          message={t('peerDetailModal.removeContactConfirmBody')}
-          confirmLabel={t('peerDetailModal.removeContact')}
-          danger
-          confirmDisabled={busy}
-          onConfirm={() => {
-            void handleRemoveContact();
-          }}
-          onCancel={() => {
-            if (busy) return;
-            setShowRemoveConfirm(false);
-          }}
-        />
-      ) : null}
+      {removeConfirm}
     </div>
   );
 }
