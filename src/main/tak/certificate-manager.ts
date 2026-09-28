@@ -157,6 +157,13 @@ export function serverCertMatchesIdentity(
   }
 }
 
+/** Owner-only directory. POSIX mode; Windows uses the per-user profile ACL. */
+const CERTS_DIR_MODE = 0o700;
+/** Owner-only private keys, matching the remote relay key. */
+const PRIVATE_KEY_MODE = 0o600;
+
+const PRIVATE_KEY_FIELDS = ['caKey', 'serverKey', 'clientKey'] as const;
+
 function certPaths(certsDir: string) {
   return {
     caCert: path.join(certsDir, 'ca-cert.pem'),
@@ -166,6 +173,37 @@ function certPaths(certsDir: string) {
     clientCert: path.join(certsDir, 'client-cert.pem'),
     clientKey: path.join(certsDir, 'client-key.pem'),
   };
+}
+
+function isPrivateKeyField(key: string): key is (typeof PRIVATE_KEY_FIELDS)[number] {
+  return (PRIVATE_KEY_FIELDS as readonly string[]).includes(key);
+}
+
+/**
+ * Restrict a path to `mode`. No-op failure on Windows, where POSIX modes are not
+ * enforced and the per-user profile ACL is the protection (same as the DB file).
+ */
+function chmodOwnerOnly(target: string, mode: number): void {
+  try {
+    fs.chmodSync(target, mode);
+  } catch (err) {
+    console.debug(
+      '[TAK] chmod failed (non-fatal, expected on Windows):',
+      err instanceof Error ? err.message : err,
+    ); // log-injection-ok OS-level error from fs.chmodSync, not user input
+  }
+}
+
+function ensureCertsDir(certsDir: string): void {
+  fs.mkdirSync(certsDir, { recursive: true, mode: CERTS_DIR_MODE });
+  // mkdir mode is umask-masked and is not applied when the directory already exists.
+  chmodOwnerOnly(certsDir, CERTS_DIR_MODE);
+}
+
+function tightenPrivateKeys(paths: ReturnType<typeof certPaths>): void {
+  for (const field of PRIVATE_KEY_FIELDS) {
+    chmodOwnerOnly(paths[field], PRIVATE_KEY_MODE);
+  }
 }
 
 function readBundle(paths: ReturnType<typeof certPaths>): CertBundle {
@@ -182,7 +220,7 @@ function readBundle(paths: ReturnType<typeof certPaths>): CertBundle {
 async function generateAndPersistCerts(identity: TakServerIdentity): Promise<CertBundle> {
   const certsDir = getCertsDir();
   const paths = certPaths(certsDir);
-  fs.mkdirSync(certsDir, { recursive: true });
+  ensureCertsDir(certsDir);
 
   const altNames = buildServerAltNames(identity);
 
@@ -242,12 +280,18 @@ async function generateAndPersistCerts(identity: TakServerIdentity): Promise<Cer
   try {
     await Promise.all(
       Object.entries(tmpPaths).map(([key, tmpPath]) =>
-        fs.promises.writeFile(tmpPath, bundle[key as keyof CertBundle], 'utf-8'),
+        fs.promises.writeFile(tmpPath, bundle[key as keyof CertBundle], {
+          encoding: 'utf-8',
+          ...(isPrivateKeyField(key) ? { mode: PRIVATE_KEY_MODE } : {}),
+        }),
       ),
     );
     for (const [key, tmpPath] of Object.entries(tmpPaths)) {
+      if (isPrivateKeyField(key)) chmodOwnerOnly(tmpPath, PRIVATE_KEY_MODE);
       await fs.promises.rename(tmpPath, paths[key as keyof typeof paths]);
     }
+    // chmod after write so umask-masked creates and pre-existing loose keys end owner-only.
+    tightenPrivateKeys(paths);
   } catch (e) {
     await Promise.all(
       Object.values(tmpPaths).map((tmpPath) => fs.promises.rm(tmpPath, { force: true })),
@@ -279,6 +323,9 @@ export async function loadOrGenerateCerts(identity: TakServerIdentity): Promise<
   if (allExist) {
     const bundle = readBundle(paths);
     if (serverCertMatchesIdentity(bundle.serverCert, resolved)) {
+      // Upgrade path: keys written before owner-only modes stay on disk until identity changes.
+      ensureCertsDir(certsDir);
+      tightenPrivateKeys(paths);
       return bundle;
     }
     console.debug(
