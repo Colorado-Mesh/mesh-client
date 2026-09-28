@@ -72,6 +72,19 @@ describe('certificate-manager', () => {
     expect(fs.statSync(path.join(getCertsDir(), 'ca-cert.pem')).mtimeMs).toBe(mtime);
   }, 30_000);
 
+  it("'host ' does not trigger regeneration", async () => {
+    const identity = { serverName: 'host ', ipAddresses: ['192.168.1.10'] };
+    const first = await loadOrGenerateCerts(identity);
+    const certPath = path.join(getCertsDir(), 'ca-cert.pem');
+    const mtime = fs.statSync(certPath).mtimeMs;
+    const second = await loadOrGenerateCerts(identity);
+    expect(second.caCert).toBe(first.caCert);
+    expect(second.serverCert).toBe(first.serverCert);
+    expect(fs.statSync(certPath).mtimeMs).toBe(mtime);
+    expect(sanFromPem(second.serverCert).dns).toContain('host');
+    expect(serverCertMatchesIdentity(second.serverCert, identity)).toBe(true);
+  }, 30_000);
+
   it('regenerates sticky certs when LAN IP is missing from SAN', async () => {
     const first = await loadOrGenerateCerts({
       serverName: 'mesh-client',
