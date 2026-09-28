@@ -39,7 +39,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
 | systeminformation          | MIT                           | ^5.33.13        | 5.33.13           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.11.2         | 8.11.2            | git+https://github.com/nodejs/undici.git                                       |
-| ws                         | MIT                           | ^8.21.0         | 8.21.3            | git+https://github.com/websockets/ws.git                                       |
+| ws                         | MIT                           | ^8.21.0         | 8.22.0            | git+https://github.com/websockets/ws.git                                       |
 
 ## Development dependencies
 
@@ -71,7 +71,8 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | concurrently                          | MIT             | ^9.2.4          | 9.2.4             | git+https://github.com/open-cli-tools/concurrently.git                               |
 | electron                              | MIT             | ^44.1.1         | 44.4.5            | git+https://github.com/electron/electron.git                                         |
-| electron-builder                      | MIT             | ^26.16.1        | 26.16.1           | git+https://github.com/electron-userland/electron-builder.git                        |
+| electron-builder                      | MIT             | ^26.17.0        | 26.17.0           | git+https://github.com/electron-userland/electron-builder.git                        |
+| emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
 | eslint                                | MIT             | ^10.11.0        | 10.11.0           | git+https://github.com/eslint/eslint.git                                             |
 | eslint-config-prettier                | MIT             | ^10.1.8         | 10.1.8            | git+https://github.com/prettier/eslint-config-prettier.git                           |
