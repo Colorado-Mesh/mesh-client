@@ -234,6 +234,26 @@ describe('AppRail', () => {
       expect(pinButtons[0]).not.toHaveClass('text-bright-green');
     });
 
+    it('marks the active pin with aria-current', () => {
+      render(
+        <AppRail
+          sections={meshcoreSections}
+          activeSectionId="chat"
+          badgeCounts={{}}
+          onSectionSelect={vi.fn()}
+          pins={pins}
+          activeTabIndex={3}
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Map (Ctrl+3)' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(screen.getByRole('button', { name: 'Chat (Ctrl+1)' })).not.toHaveAttribute(
+        'aria-current',
+      );
+    });
+
     it('opens the pinned panel on click', async () => {
       const user = userEvent.setup();
       const onPinSelect = vi.fn();
