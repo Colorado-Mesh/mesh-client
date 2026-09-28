@@ -3350,6 +3350,8 @@
     "refreshContacts": "Segarkan kontak dari radio",
     "sendFloodAdvert": "Kirim flood advert",
     "sendFloodAdvertUnavailable": "Tersedia setelah radio MeshCore terhubung",
+    "advertOptions": "Opsi advert lainnya",
+    "zeroHopAdvertHint": "Hanya radio dalam jangkauan langsung yang mendengarnya; repeater tidak meneruskannya",
     "filterByContactGroup": "Filter berdasarkan grup kontak",
     "manageContactGroups": "Kelola grup kontak",
     "manageGroups": "Kelola grup",

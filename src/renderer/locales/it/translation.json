@@ -3350,6 +3350,8 @@
     "refreshContacts": "Aggiorna i contatti dalla radio",
     "sendFloodAdvert": "Invia flood advert",
     "sendFloodAdvertUnavailable": "Disponibile quando è connessa una radio MeshCore",
+    "advertOptions": "Altre opzioni di annuncio",
+    "zeroHopAdvertHint": "Lo ricevono solo le radio a portata diretta; i ripetitori non lo inoltrano",
     "filterByContactGroup": "Filtra per gruppo di contatti",
     "manageContactGroups": "Gestisci gruppi di contatti",
     "manageGroups": "Gestisci gruppi",

@@ -14,6 +14,62 @@ function renderButton(onSend = vi.fn().mockResolvedValue(undefined), disabled = 
   return onSend;
 }
 
+function renderSplit(onSendZeroHop = vi.fn().mockResolvedValue(undefined), disabled = false) {
+  const onSend = vi.fn().mockResolvedValue(undefined);
+  render(
+    <ToastProvider>
+      <MeshcoreFloodAdvertHeaderButton
+        disabled={disabled}
+        onSend={onSend}
+        onSendZeroHop={onSendZeroHop}
+      />
+    </ToastProvider>,
+  );
+  return { onSend, onSendZeroHop };
+}
+
+describe('MeshcoreFloodAdvertHeaderButton zero-hop (#1100)', () => {
+  it('keeps Flood Advert one click and offers Zero-hop Advert from the chevron', async () => {
+    const user = userEvent.setup();
+    const { onSend, onSendZeroHop } = renderSplit();
+
+    await user.click(screen.getByRole('button', { name: 'Send flood advert' }));
+    expect(onSend).toHaveBeenCalledTimes(1);
+    expect(onSendZeroHop).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'More advert options' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Zero-hop Advert' }));
+    expect(onSendZeroHop).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Zero-hop advert sent')).toBeInTheDocument();
+  });
+
+  it('reports a failed zero-hop advert', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const user = userEvent.setup();
+    renderSplit(vi.fn().mockRejectedValue(new Error('radio offline')));
+    await user.click(screen.getByRole('button', { name: 'More advert options' }));
+    await user.click(screen.getByRole('menuitem', { name: 'Zero-hop Advert' }));
+    expect(await screen.findByText('Advert failed: radio offline')).toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(
+      '[MeshcoreFloodAdvertHeaderButton] zero-hop send failed radio offline',
+    );
+    warn.mockRestore();
+  });
+
+  it('disables both parts, and says why, until the radio is connected', () => {
+    renderSplit(undefined, true);
+    const options = screen.getByRole('button', { name: 'More advert options' });
+    expect(options).toBeDisabled();
+    expect(options).toHaveAttribute('title', 'Available once a MeshCore radio is connected');
+    expect(screen.getByRole('button', { name: 'Send flood advert' })).toBeDisabled();
+  });
+
+  it('shows no chevron without a zero-hop sender', () => {
+    renderButton();
+    expect(screen.queryByRole('button', { name: 'More advert options' })).toBeNull();
+  });
+});
+
 describe('MeshcoreFloodAdvertHeaderButton', () => {
   it('sends a flood advert once and reports success', async () => {
     const user = userEvent.setup();

@@ -3410,6 +3410,8 @@
     "refreshContacts": "Оновити контакти з радіо",
     "sendFloodAdvert": "Надіслати flood advert",
     "sendFloodAdvertUnavailable": "Доступно після підключення радіо MeshCore",
+    "advertOptions": "Інші варіанти оголошення",
+    "zeroHopAdvertHint": "Його чують лише радіо в прямій досяжності; ретранслятори його не передають",
     "filterByContactGroup": "Фільтрувати за групою контактів",
     "manageContactGroups": "Керування групами контактів",
     "manageGroups": "Керуйте групами",
