@@ -11,10 +11,19 @@
  * ESM adaptation: import DOMPurify instead of expecting a browser global.
  * Local delta: markup-building innerHTML writes go through setSanitizedHtml() so page text is
  * sanitized at the sink, not only in the whole-document pass at the end of convertMicronToHtml.
+ * Local delta: character dividers repeat MICRON_DIVIDER_REPEAT times (upstream 250), so they fill
+ * an ultrawide page.
  */
 import DOMPurify from 'dompurify';
 
 const MICRON_PURIFY_CONFIG = { USE_PROFILES: { html: true } };
+
+/**
+ * Characters in a `-x` divider. Its box is 100% wide and clips the excess, so this only has to
+ * cover the widest page at the smallest text size: an 8K-wide window at about 4px per character.
+ * Upstream's 250 stopped at about 1,460px.
+ */
+const MICRON_DIVIDER_REPEAT = 2000;
 
 /**
  * Assign parser-generated markup (Mu-mws/Mu-mnt spans wrapping raw page text) as HTML.
@@ -517,7 +526,7 @@ class MicronParser {
               dividerChar = candidate;
             }
           }
-          const repeated = dividerChar.repeat(250);
+          const repeated = dividerChar.repeat(MICRON_DIVIDER_REPEAT);
 
           const div = document.createElement('div');
           div.textContent = repeated;

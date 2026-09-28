@@ -92,6 +92,19 @@ describe('renderNomadMicronPage', () => {
     expect(html.toLowerCase()).not.toContain('<script');
   });
 
+  it('draws a character divider long enough to fill an ultrawide page', () => {
+    const html = renderNomadMicronPage(['-=', 'text'].join('\n'));
+    const container = document.createElement('div');
+    mountNomadMicronHtml(container, html);
+    const divider = Array.from(container.querySelectorAll('div')).find((el) =>
+      /^=+$/.test(el.textContent),
+    );
+    // 250 characters stopped at about 1,460px on an ultrawide window; the box clips the excess.
+    expect(divider?.textContent.length).toBeGreaterThanOrEqual(2000);
+    expect(divider?.style.overflow).toBe('hidden');
+    expect(divider?.style.width).toBe('100%');
+  });
+
   it('renders Micron tables as HTML table elements', () => {
     const markup = ['`t', 'Name | Status', '--- | ---', 'Alpha | Up', 'Beta | Down', '`t'].join(
       '\n',
