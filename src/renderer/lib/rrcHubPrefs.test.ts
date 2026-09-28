@@ -48,15 +48,23 @@ describe('rrcHubPrefs', () => {
   });
 
   it('resolves connected / connecting / auto-join / idle markers', () => {
-    expect(resolveRrcHubSidebarMarker({ status: 'active', autoJoin: false }).glyph).toBe('●');
+    expect(resolveRrcHubSidebarMarker({ status: 'active', autoJoin: false }).kind).toBe(
+      'connected',
+    );
     expect(resolveRrcHubSidebarMarker({ status: 'reconnecting', autoJoin: true }).kind).toBe(
       'connected',
     );
-    expect(resolveRrcHubSidebarMarker({ status: 'connecting', autoJoin: true }).glyph).toBe('◌');
+    expect(resolveRrcHubSidebarMarker({ status: 'connecting', autoJoin: true }).kind).toBe(
+      'connecting',
+    );
     expect(resolveRrcHubSidebarMarker({ status: 'awaiting_welcome', autoJoin: false }).kind).toBe(
       'connecting',
     );
-    expect(resolveRrcHubSidebarMarker({ status: null, autoJoin: true }).glyph).toBe('◐');
-    expect(resolveRrcHubSidebarMarker({ status: 'disconnected', autoJoin: false }).glyph).toBe('○');
+    expect(resolveRrcHubSidebarMarker({ status: null, autoJoin: true }).kind).toBe(
+      'autoJoinNotConnected',
+    );
+    expect(resolveRrcHubSidebarMarker({ status: 'disconnected', autoJoin: false }).kind).toBe(
+      'idle',
+    );
   });
 });

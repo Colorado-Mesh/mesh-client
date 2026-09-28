@@ -1,4 +1,4 @@
-import { loadCanonicalStringList, readRawStringList, writeStringList } from './localStorageList';
+import { loadCanonicalStringList, writeStringList } from './localStorageList';
 
 const HUB_AUTO_JOIN_KEY = 'mesh-client:rrc:hubAutoJoin';
 
@@ -42,8 +42,6 @@ export type RrcHubSidebarMarkerKind = 'connected' | 'connecting' | 'autoJoinNotC
 
 export interface RrcHubSidebarMarker {
   kind: RrcHubSidebarMarkerKind;
-  glyph: string;
-  colorClass: string;
 }
 
 export function resolveRrcHubSidebarMarker(opts: {
@@ -52,16 +50,13 @@ export function resolveRrcHubSidebarMarker(opts: {
 }): RrcHubSidebarMarker {
   const status = (opts.status ?? '').toLowerCase();
   if (status === 'active' || status === 'reconnecting') {
-    return { kind: 'connected', glyph: '●', colorClass: 'text-brand-green' };
+    return { kind: 'connected' };
   }
   if (status === 'connecting' || status === 'awaiting_welcome') {
-    return { kind: 'connecting', glyph: '◌', colorClass: 'text-orange-300' };
+    return { kind: 'connecting' };
   }
   if (opts.autoJoin) {
-    return { kind: 'autoJoinNotConnected', glyph: '◐', colorClass: 'text-sky-400' };
+    return { kind: 'autoJoinNotConnected' };
   }
-  return { kind: 'idle', glyph: '○', colorClass: 'text-muted' };
+  return { kind: 'idle' };
 }
-
-// Re-export for callers that need raw helpers in tests.
-export { readRawStringList, writeStringList };
