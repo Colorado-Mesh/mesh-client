@@ -265,8 +265,8 @@
         "description": "Główny obszar wyświetlania treści i tło okna aplikacji — ciemne płótno za wszystkimi panelami."
       },
       "sidebarActiveBg": {
-        "label": "Aktywna zakładka na pasku bocznym",
-        "description": "Tło aktualnie wybranej zakładki w nawigacji paska bocznego."
+        "label": "Wybrany element i najechanie",
+        "description": "Wypełnienie wybranego elementu na pasku, wybranego wiersza i najechania."
       },
       "brandGreen": {
         "label": "Akcent",
@@ -281,12 +281,12 @@
         "description": "Pełne wypełnienie akcentem pod białym tekstem, np. w odznakach. Zachowuje kontrast 4,5:1 z białym tekstem."
       },
       "deepBlack": {
-        "label": "Pasek boczny, nagłówek i powierzchnie modalne",
-        "description": "Nawigacja na pasku bocznym, nagłówek, stopka, powłoki modalne i podstawowe ciemne powierzchnie."
+        "label": "Pasek, pasek stanu i uruchamiacz",
+        "description": "Pasek nawigacji, pasek stanu, dolna nawigacja i uruchamiacz paneli."
       },
       "secondaryDark": {
-        "label": "Tło panelu i wejścia",
-        "description": "Tła paneli, wejścia, przyciski, znaczniki wierszy tabeli i ścieżka postępu."
+        "label": "Wypełnienie kontrolek i obramowanie pól",
+        "description": "Wypełnienie kontrolek dodatkowych i obramowanie pól tekstowych."
       },
       "muted": {
         "label": "Dodatkowe etykiety i podpisy",
@@ -5385,7 +5385,36 @@
     "remoteVerifyOffWarning": "Bez weryfikacji każdy, kto może przechwycić to połączenie, otrzymuje pozycje przekaźnikowe.",
     "remoteAllowNameMismatch": "Zaakceptuj certyfikat wydany dla innej nazwy (tylko importowane CA, tak jak ATAK)",
     "remoteNameMismatchNeedsCa": "Zaimportuj CA serwera, aby użyć tej opcji.",
-    "remoteAutoConnectNeedsVerify": "Połączenie podczas uruchamiania pozostaje wyłączone, dopóki nie zostanie włączona weryfikacja."
+    "remoteAutoConnectNeedsVerify": "Połączenie podczas uruchamiania pozostaje wyłączone, dopóki nie zostanie włączona weryfikacja.",
+    "remoteErrors": {
+      "connRefused": "Połączenie odrzucone; sprawdź adres i port serwera",
+      "hostNotFound": "Nie znaleziono adresu serwera",
+      "dnsFailed": "Nie udało się rozwiązać adresu serwera",
+      "timedOut": "Przekroczono czas połączenia",
+      "hostUnreachable": "Serwer nieosiągalny",
+      "netUnreachable": "Sieć nieosiągalna",
+      "connReset": "Połączenie zresetowane przez serwer",
+      "untrustedCert": "Certyfikat serwera nie jest zaufany; zaimportuj CA serwera",
+      "certExpired": "Certyfikat serwera wygasł",
+      "nameMismatch": "Certyfikat serwera jest wystawiony na inną nazwę; zezwól na niezgodność nazwy, jeśli ten serwer TAK jest tak skonfigurowany",
+      "clientCertRequired": "Serwer wymaga certyfikatu klienta; zaimportuj go",
+      "clientCertRejected": "Serwer odrzucił certyfikat klienta ({{reason}})",
+      "closedAfterHandshake": "Serwer zamknął połączenie tuż po uzgadnianiu TLS; może nie akceptować certyfikatu klienta",
+      "connectionClosed": "Połączenie zamknięte",
+      "keyDecryptFailed": "Nie udało się odszyfrować klucza prywatnego; sprawdź hasło",
+      "keyEncrypted": "Klucz prywatny jest zaszyfrowany; podaj hasło i zaimportuj ponownie",
+      "pkcs12WrongPassword": "{{name}}: nieprawidłowe hasło do pliku PKCS#12",
+      "notACredential": "{{name}}: to nie jest plik PEM, certyfikat DER ani PKCS#12",
+      "oneKey": "Importuj jeden prywatny klucz klienta naraz",
+      "noCerts": "Nie znaleziono certyfikatów w wybranych plikach",
+      "keyMismatch": "Klucz prywatny nie pasuje do żadnego certyfikatu w wybranych plikach",
+      "savedKeyDecryptFailed": "Nie udało się odszyfrować zapisanego klucza klienta; zaimportuj certyfikat klienta ponownie",
+      "notAFile": "{{name}} nie jest zwykłym plikiem",
+      "fileTooLarge": "{{name}} jest za duży na plik certyfikatu",
+      "tooManyFiles": "Wybierz co najwyżej {{max}} plików certyfikatu",
+      "chooserOpen": "Wybór certyfikatu jest już otwarty",
+      "importInProgress": "Poczekaj na zakończenie importu certyfikatu, zanim usuniesz certyfikaty"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetria",

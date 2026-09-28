@@ -265,8 +265,8 @@
         "description": "Výřez hlavního obsahu a pozadí okna aplikace – tmavé plátno za všemi panely."
       },
       "sidebarActiveBg": {
-        "label": "Aktivní karta postranního panelu",
-        "description": "Pozadí aktuálně vybrané karty v navigaci postranního panelu."
+        "label": "Vybraná položka a najetí",
+        "description": "Výplň vybrané položky na liště, vybraného řádku a najetí."
       },
       "brandGreen": {
         "label": "Zvýraznění",
@@ -281,12 +281,12 @@
         "description": "Plná výplň zvýraznění pod bílým textem, například u odznaků. Drží kontrast 4,5:1 s bílým textem."
       },
       "deepBlack": {
-        "label": "Postranní panel, záhlaví a modální povrchy",
-        "description": "Navigace na postranním panelu, záhlaví, zápatí, modální shelly a primární tmavé povrchy."
+        "label": "Lišta, stavový řádek a spouštěč",
+        "description": "Navigační lišta, stavový řádek, dolní navigace a spouštěč panelů."
       },
       "secondaryDark": {
-        "label": "Panel a vstupní pozadí",
-        "description": "Pozadí panelů, vstupy, tlačítka, umístění řádků tabulky a sledování průběhu."
+        "label": "Výplň ovládacích prvků a okraje polí",
+        "description": "Výplň sekundárních ovládacích prvků a okraj textových polí."
       },
       "muted": {
         "label": "Sekundární štítky a titulky",
@@ -5351,7 +5351,36 @@
     "remoteVerifyOffWarning": "Bez ověření obdrží každý, kdo může toto spojení zachytit, přenášené pozice.",
     "remoteAllowNameMismatch": "Přijmout certifikát vydaný pro jiný název (pouze importovaná CA, jak to dělá ATAK)",
     "remoteNameMismatchNeedsCa": "Chcete-li použít tuto možnost, importujte certifikační autoritu serveru.",
-    "remoteAutoConnectNeedsVerify": "Připojení při spuštění zůstane vypnuté, dokud nebude zapnuté ověření."
+    "remoteAutoConnectNeedsVerify": "Připojení při spuštění zůstane vypnuté, dokud nebude zapnuté ověření.",
+    "remoteErrors": {
+      "connRefused": "Připojení odmítnuto; zkontrolujte adresu a port serveru",
+      "hostNotFound": "Adresa serveru nebyla nalezena",
+      "dnsFailed": "Adresu serveru se nepodařilo přeložit",
+      "timedOut": "Vypršel časový limit připojení",
+      "hostUnreachable": "Server je nedostupný",
+      "netUnreachable": "Síť je nedostupná",
+      "connReset": "Server spojení resetoval",
+      "untrustedCert": "Certifikát serveru není důvěryhodný; importujte CA serveru",
+      "certExpired": "Certifikát serveru vypršel",
+      "nameMismatch": "Certifikát serveru je pro jiný název; povolte neshodu názvu, pokud je tento TAK server tak nastavený",
+      "clientCertRequired": "Server vyžaduje klientský certifikát; importujte jej",
+      "clientCertRejected": "Server odmítl klientský certifikát ({{reason}})",
+      "closedAfterHandshake": "Server uzavřel spojení hned po navázání TLS; klientský certifikát možná nepřijímá",
+      "connectionClosed": "Spojení uzavřeno",
+      "keyDecryptFailed": "Soukromý klíč se nepodařilo dešifrovat; zkontrolujte heslo",
+      "keyEncrypted": "Soukromý klíč je zašifrovaný; zadejte heslo a importujte znovu",
+      "pkcs12WrongPassword": "{{name}}: nesprávné heslo k souboru PKCS#12",
+      "notACredential": "{{name}}: není PEM, certifikát DER ani soubor PKCS#12",
+      "oneKey": "Importujte vždy jen jeden soukromý klíč klienta",
+      "noCerts": "Ve vybraných souborech nebyly nalezeny žádné certifikáty",
+      "keyMismatch": "Soukromý klíč neodpovídá žádnému certifikátu ve vybraných souborech",
+      "savedKeyDecryptFailed": "Uložený klientský klíč se nepodařilo dešifrovat; importujte klientský certifikát znovu",
+      "notAFile": "{{name}} není běžný soubor",
+      "fileTooLarge": "{{name}} je příliš velký na soubor certifikátu",
+      "tooManyFiles": "Vyberte nejvýše {{max}} souborů certifikátu",
+      "chooserOpen": "Výběr certifikátu je už otevřený",
+      "importInProgress": "Před odebráním certifikátů počkejte, až import certifikátu skončí"
+    }
   },
   "telemetryPanel": {
     "title": "Telemetrie",

@@ -265,8 +265,8 @@
         "description": "メイン コンテンツ ビューポートとアプリ ウィンドウの背景 - すべてのパネルの背後にある暗いキャンバス。"
       },
       "sidebarActiveBg": {
-        "label": "アクティブなサイドバータブ",
-        "description": "サイドバー ナビゲーションで現在選択されているタブの背景。"
+        "label": "選択項目とホバー",
+        "description": "選択中のレール項目、選択行、ホバーの塗り。"
       },
       "brandGreen": {
         "label": "アクセント",
@@ -281,12 +281,12 @@
         "description": "白い文字の下に敷くアクセントの塗り（バッジなど）。白い文字とのコントラスト 4.5:1 を保ちます。"
       },
       "deepBlack": {
-        "label": "サイドバー、ヘッダー、モーダル サーフェス",
-        "description": "サイドバー ナビゲーション、ヘッダー、フッター、モーダル シェル、およびプライマリ ダーク サーフェス。"
+        "label": "レール、ステータスバー、ランチャー",
+        "description": "ナビゲーションレール、ステータスバー、下部ナビゲーション、パネルランチャー。"
       },
       "secondaryDark": {
-        "label": "パネルと入力背景",
-        "description": "パネルの背景、入力、ボタン、テーブル行ホバー、および進行状況トラック。"
+        "label": "コントロールの塗りとフィールドの枠",
+        "description": "二次コントロールの塗りとテキストフィールドの枠線。"
       },
       "muted": {
         "label": "二次ラベルとキャプション",
@@ -5313,7 +5313,36 @@
     "remoteVerifyOffWarning": "検証なしで、この接続を傍受できる人は誰でも中継された位置を受け取ります。",
     "remoteAllowNameMismatch": "別の名前で発行された証明書を受け入れる（ ATAKのように、インポートされたCAのみ）",
     "remoteNameMismatchNeedsCa": "このオプションを使用するには、サーバーのCAをインポートします。",
-    "remoteAutoConnectNeedsVerify": "起動時の接続は、検証を有効にするまでオフのままです。"
+    "remoteAutoConnectNeedsVerify": "起動時の接続は、検証を有効にするまでオフのままです。",
+    "remoteErrors": {
+      "connRefused": "接続が拒否されました。サーバーのアドレスとポートを確認してください",
+      "hostNotFound": "サーバーのアドレスが見つかりません",
+      "dnsFailed": "サーバーのアドレスを解決できませんでした",
+      "timedOut": "接続がタイムアウトしました",
+      "hostUnreachable": "サーバーに到達できません",
+      "netUnreachable": "ネットワークに到達できません",
+      "connReset": "サーバーが接続をリセットしました",
+      "untrustedCert": "サーバー証明書が信頼されていません。サーバーの CA を読み込んでください",
+      "certExpired": "サーバー証明書の有効期限が切れています",
+      "nameMismatch": "サーバー証明書は別の名前用です。この TAK サーバーがその設定なら、名前の不一致を許可してください",
+      "clientCertRequired": "サーバーはクライアント証明書を要求しています。読み込んでください",
+      "clientCertRejected": "サーバーがクライアント証明書を拒否しました（{{reason}}）",
+      "closedAfterHandshake": "サーバーは TLS ハンドシェイクの直後に接続を閉じました。クライアント証明書を受け付けていない可能性があります",
+      "connectionClosed": "接続が閉じられました",
+      "keyDecryptFailed": "秘密鍵を復号できませんでした。パスワードを確認してください",
+      "keyEncrypted": "秘密鍵は暗号化されています。パスワードを入力して、もう一度読み込んでください",
+      "pkcs12WrongPassword": "{{name}}: PKCS#12 ファイルのパスワードが違います",
+      "notACredential": "{{name}}: PEM、DER 証明書、PKCS#12 ファイルのどれでもありません",
+      "oneKey": "クライアントの秘密鍵は一度に一つだけ読み込んでください",
+      "noCerts": "選択したファイルに証明書がありません",
+      "keyMismatch": "秘密鍵が、選択したファイルのどの証明書とも一致しません",
+      "savedKeyDecryptFailed": "保存されたクライアント鍵を復号できませんでした。クライアント証明書を読み込み直してください",
+      "notAFile": "{{name}} は通常のファイルではありません",
+      "fileTooLarge": "{{name}} は証明書ファイルとして大きすぎます",
+      "tooManyFiles": "証明書ファイルは {{max}} 個まで選択してください",
+      "chooserOpen": "証明書の選択ダイアログはすでに開いています",
+      "importInProgress": "証明書を削除する前に、証明書の読み込みが終わるまで待ってください"
+    }
   },
   "telemetryPanel": {
     "title": "テレメトリー",

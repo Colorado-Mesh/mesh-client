@@ -265,8 +265,8 @@
         "description": "Fenêtre d'affichage du contenu principal et arrière-plan de la fenêtre de l'application : la toile sombre derrière tous les panneaux."
       },
       "sidebarActiveBg": {
-        "label": "Onglet de la barre latérale active",
-        "description": "Arrière-plan de l'onglet actuellement sélectionné dans la barre de navigation latérale."
+        "label": "Élément sélectionné et survol",
+        "description": "Fond de l'élément sélectionné dans le rail, de la ligne sélectionnée et du survol."
       },
       "brandGreen": {
         "label": "Accent",
@@ -281,12 +281,12 @@
         "description": "Remplissage plein d'accent sous du texte blanc, par exemple les badges. Garde 4,5:1 avec le texte blanc."
       },
       "deepBlack": {
-        "label": "Barre latérale, en-tête et surfaces modales",
-        "description": "Navigation dans la barre latérale, en-tête, pied de page, coques modales et surfaces sombres primaires."
+        "label": "Rail, barre d'état et lanceur",
+        "description": "Rail de navigation, barre d'état, navigation du bas et lanceur de panneaux."
       },
       "secondaryDark": {
-        "label": "Panneau et arrière-plan de saisie",
-        "description": "Arrière-plans des panneaux, entrées, boutons, survols des lignes du tableau et suivi de la progression."
+        "label": "Remplissage des commandes et bordures de champs",
+        "description": "Remplissage des commandes secondaires et bordure des champs de texte."
       },
       "muted": {
         "label": "Étiquettes et légendes secondaires",
@@ -3150,7 +3150,7 @@
     "statusRequestFailed": "Échec de la demande de",
     "requestingSensorTelemetry": "Demande de télémétrie par capteur (LPP)...",
     "telemetryFailed": "Échec de la télémétrie : {{message}}",
-    "sensorTelemetryButton": "Télémétrie par 🌡 capteur",
+    "sensorTelemetryButton": "Télémétrie par capteur",
     "requestingNeighbors": "Demande de voisins...",
     "getNeighbors": "Obtenir des voisins",
     "neighborsFailed": "Échec des voisins : {{message}}",
@@ -5313,7 +5313,36 @@
     "remoteVerifyOffWarning": "Sans vérification, toute personne pouvant intercepter cette connexion reçoit les positions relayées.",
     "remoteAllowNameMismatch": "Accepter un certificat délivré pour un nom différent (CA importée uniquement, comme le fait ATAK)",
     "remoteNameMismatchNeedsCa": "Importez l'autorité de certification du serveur pour utiliser cette option.",
-    "remoteAutoConnectNeedsVerify": "La connexion au lancement reste désactivée jusqu'à ce que la vérification soit activée."
+    "remoteAutoConnectNeedsVerify": "La connexion au lancement reste désactivée jusqu'à ce que la vérification soit activée.",
+    "remoteErrors": {
+      "connRefused": "Connexion refusée ; vérifiez l'adresse et le port du serveur",
+      "hostNotFound": "Adresse du serveur introuvable",
+      "dnsFailed": "L'adresse du serveur n'a pas pu être résolue",
+      "timedOut": "Délai de connexion dépassé",
+      "hostUnreachable": "Serveur injoignable",
+      "netUnreachable": "Réseau injoignable",
+      "connReset": "Connexion réinitialisée par le serveur",
+      "untrustedCert": "Le certificat du serveur n'est pas approuvé ; importez la CA du serveur",
+      "certExpired": "Le certificat du serveur a expiré",
+      "nameMismatch": "Le certificat du serveur est émis pour un autre nom ; autorisez un nom différent si ce serveur TAK est configuré ainsi",
+      "clientCertRequired": "Le serveur exige un certificat client ; importez-en un",
+      "clientCertRejected": "Le serveur a rejeté le certificat client ({{reason}})",
+      "closedAfterHandshake": "Le serveur a fermé la connexion juste après la négociation TLS ; il n'accepte peut-être pas le certificat client",
+      "connectionClosed": "Connexion fermée",
+      "keyDecryptFailed": "Impossible de déchiffrer la clé privée ; vérifiez le mot de passe",
+      "keyEncrypted": "La clé privée est chiffrée ; saisissez son mot de passe et importez à nouveau",
+      "pkcs12WrongPassword": "{{name}} : mot de passe incorrect pour le fichier PKCS#12",
+      "notACredential": "{{name}} : ni PEM, ni certificat DER, ni fichier PKCS#12",
+      "oneKey": "Importez une seule clé privée client à la fois",
+      "noCerts": "Aucun certificat dans les fichiers sélectionnés",
+      "keyMismatch": "La clé privée ne correspond à aucun certificat des fichiers sélectionnés",
+      "savedKeyDecryptFailed": "La clé client enregistrée n'a pas pu être déchiffrée ; importez à nouveau le certificat client",
+      "notAFile": "{{name}} n'est pas un fichier ordinaire",
+      "fileTooLarge": "{{name}} est trop volumineux pour un fichier de certificat",
+      "tooManyFiles": "Sélectionnez au plus {{max}} fichiers de certificat",
+      "chooserOpen": "Le sélecteur de certificats est déjà ouvert",
+      "importInProgress": "Attendez la fin de l'import du certificat avant de retirer des certificats"
+    }
   },
   "telemetryPanel": {
     "title": "Télémétrie",

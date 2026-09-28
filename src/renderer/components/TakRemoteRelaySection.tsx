@@ -10,6 +10,7 @@ import type {
 import { TCP_PORT_MAX, TCP_PORT_MIN } from '@/shared/tcpPort';
 
 import { useTakRemoteRelay } from '../hooks/useTakRemoteRelay';
+import { localizeTakRemoteUserError } from '../lib/takRemoteUserError';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 const DEFAULT_REMOTE_SETTINGS: TAKRemoteSettings = {
@@ -80,6 +81,11 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
       : status.state === 'connecting'
         ? t('takServerPanel.remoteConnecting', { host: status.host, port: status.port })
         : t('takServerPanel.remoteDisconnected');
+  const translateRemoteError = (key: string, options?: Record<string, string>) => t(key, options);
+  const statusError = status.error
+    ? localizeTakRemoteUserError(status.error, translateRemoteError)
+    : null;
+  const actionError = error ? localizeTakRemoteUserError(error, translateRemoteError) : null;
 
   const handleConnect = () => {
     if (!hostValid || !portValid) return;
@@ -104,17 +110,17 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
         <span className={`h-3 w-3 shrink-0 rounded-full ${STATUS_DOT[status.state]}`} />
         <div className="min-w-0">
           <p className="text-ink-200 text-sm font-medium">{statusLabel}</p>
-          {status.error && (
+          {statusError && (
             <p className="text-ink-400 text-xs break-words">
-              {t('takServerPanel.remoteLastError', { error: status.error })}
+              {t('takServerPanel.remoteLastError', { error: statusError })}
             </p>
           )}
         </div>
       </div>
 
-      {error && (
+      {actionError && (
         <div className="rounded-lg border border-red-700 bg-red-900/40 p-3 text-sm text-red-300">
-          {error}
+          {actionError}
         </div>
       )}
 
