@@ -1,3 +1,6 @@
+import { create } from '@bufbuild/protobuf';
+import { Config } from '@meshtastic/protobufs';
+
 import type { MeshtasticLoraConfig } from '@/shared/meshtasticUrlEncoder';
 
 import type { RemoteAdminStatus } from '../types';
@@ -14,4 +17,11 @@ export function shouldFetchLocalLoraConfigAfterConfigure(options: {
   if (options.remoteAdminStatus === 'loading') return false;
   if (options.loraConfig != null) return false;
   return true;
+}
+
+/** Protobuf-free shared LoRa config → `Config.LoRaConfig` for `setConfig`. */
+export function meshtasticLoraConfigToProtobuf(
+  cfg: MeshtasticLoraConfig,
+): Config.Config_LoRaConfig {
+  return create(Config.Config_LoRaConfigSchema, cfg);
 }

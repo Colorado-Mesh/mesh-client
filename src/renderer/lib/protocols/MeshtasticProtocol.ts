@@ -15,6 +15,10 @@ import {
 } from '../connection';
 import { createPacketDedupeRegistry } from '../drivers/packetDedupeRegistry';
 import { meshtasticHwModelName } from '../hardwareModels';
+import {
+  MESHTASTIC_PRIMARY_CHANNEL,
+  toMeshtasticChannelNumber,
+} from '../meshtastic/meshtasticChannelNumber';
 import { meshtasticDeviceStatusForCode } from '../meshtastic/meshtasticDeviceStatus';
 import { meshtasticPacketRxTimeMs } from '../meshtasticLastHeard';
 import { meshtasticComputedRfHopsAway } from '../meshtasticRfHops';
@@ -535,7 +539,7 @@ export class MeshtasticProtocol implements Protocol {
     }
     const dest: number | 'broadcast' = destination ?? 'broadcast';
     const channelIndex = isFiniteNumber(opts.channelIndex) ? Math.trunc(opts.channelIndex) : 0;
-    const result = await device.sendText(text, dest, true, channelIndex);
+    const result = await device.sendText(text, dest, true, toMeshtasticChannelNumber(channelIndex));
     const packetId = typeof result === 'number' ? result : undefined;
     return { packetId };
   }
@@ -578,7 +582,7 @@ export class MeshtasticProtocol implements Protocol {
         expire: opts.expire ?? 0,
       }) as Parameters<MeshDevice['sendWaypoint']>[0],
       0xffffffff,
-      0,
+      MESHTASTIC_PRIMARY_CHANNEL,
     );
   }
 
@@ -594,7 +598,7 @@ export class MeshtasticProtocol implements Protocol {
         MeshDevice['sendWaypoint']
       >[0],
       0xffffffff,
-      0,
+      MESHTASTIC_PRIMARY_CHANNEL,
     );
   }
 
@@ -616,7 +620,7 @@ export class MeshtasticProtocol implements Protocol {
       String.fromCodePoint(safeScalar),
       'broadcast',
       true,
-      isFiniteNumber(channelIndex) ? Math.trunc(channelIndex) : 0,
+      toMeshtasticChannelNumber(isFiniteNumber(channelIndex) ? Math.trunc(channelIndex) : 0),
       parentId,
       MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
     );

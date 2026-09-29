@@ -136,6 +136,10 @@ import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { rehydrateMeshtasticConnectionParamsFromStorage } from '../lib/lastConnectionStorage';
 import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
+import {
+  MESHTASTIC_PRIMARY_CHANNEL,
+  toMeshtasticChannelNumber,
+} from '../lib/meshtastic/meshtasticChannelNumber';
 import { setMeshtasticRemoteConfigTarget } from '../lib/meshtastic/meshtasticConfigIngressGuard';
 import { setMeshtasticConfigurePhase } from '../lib/meshtastic/meshtasticConfigurePhase';
 import { configureMeshtasticDeviceWithRetry } from '../lib/meshtastic/meshtasticConfigureRetry';
@@ -144,6 +148,7 @@ import {
   isMeshtasticBroadcastDestination,
   markMeshtasticBroadcastPending,
 } from '../lib/meshtastic/meshtasticHeardRepeat';
+import { meshtasticLoraConfigToProtobuf } from '../lib/meshtastic/meshtasticLocalLoraConfig';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { createDebouncedMqttChannelKeysPush } from '../lib/meshtastic/meshtasticMqttChannelKeysDebounce';
 import { normalizeMeshtasticMqttChatMessage } from '../lib/meshtastic/meshtasticMqttChatNormalize';
@@ -3739,7 +3744,10 @@ export function useMeshtasticRuntime() {
       if (applyLora && parsed.loraConfig) {
         await setConfig(
           create(Config.ConfigSchema, {
-            payloadVariant: { case: 'lora', value: parsed.loraConfig },
+            payloadVariant: {
+              case: 'lora',
+              value: meshtasticLoraConfigToProtobuf(parsed.loraConfig),
+            },
           }),
         );
       }
@@ -3873,7 +3881,11 @@ export function useMeshtasticRuntime() {
       });
       beginMeshtasticNonChatOutbound();
       try {
-        const wpWireId = await deviceRef.current.sendWaypoint(waypoint, dest, channel);
+        const wpWireId = await deviceRef.current.sendWaypoint(
+          waypoint,
+          dest,
+          toMeshtasticChannelNumber(channel),
+        );
         registerMeshtasticNonChatWirePacketId(wpWireId);
       } catch (wpErr) {
         // Routing NAK rejections carry the waypoint's wire id — register it so the
@@ -3938,7 +3950,7 @@ export function useMeshtasticRuntime() {
       id,
       expire: 1,
     });
-    await deviceRef.current.sendWaypoint(waypoint, 0xffffffff, 0);
+    await deviceRef.current.sendWaypoint(waypoint, 0xffffffff, MESHTASTIC_PRIMARY_CHANNEL);
 
     const chCfg = channelConfigsRef.current.find((c) => c.index === 0);
     const fromNum = resolveMeshtasticOutboundFromNodeId({
@@ -4412,7 +4424,7 @@ export function useMeshtasticRuntime() {
             tapPayload,
             'broadcast',
             true,
-            channel,
+            toMeshtasticChannelNumber(channel),
             wireReplyId,
             MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
           )
