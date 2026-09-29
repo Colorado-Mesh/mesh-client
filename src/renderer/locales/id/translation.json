@@ -5404,6 +5404,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Pembaruan firmware tersedia: v{{version}}",
+    "firmwareDismiss": "Jangan ingatkan saya",
     "newMessages_one": "{{protocol}}: {{count}} pesan baru",
     "newMessages_other": "{{protocol}}: {{count}} pesan baru",
     "meshcoreDistanceFilterHint": "Anda memiliki {{count}} kontak dengan GPS di peta. Aktifkan filter jarak di Aplikasi → Penampilan untuk fokus pada node terdekat."

@@ -5404,6 +5404,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Firmware-Update verfügbar: v{{version}}",
+    "firmwareDismiss": "Nicht mehr erinnern",
     "newMessages_one": "{{protocol}}: {{count}} neue Nachricht",
     "newMessages_other": "{{protocol}}: {{count}} neue Nachrichten",
     "meshcoreDistanceFilterHint": "Du hast {{count}} Kontakte mit GPS auf der Karte. Aktiviere den Entfernungsfilter unter App → Aussehen, um dich auf nahe Knoten zu konzentrieren."

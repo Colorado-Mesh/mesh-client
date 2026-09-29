@@ -5404,6 +5404,7 @@
   },
   "toasts": {
     "firmwareAvailable": "Mise à jour du micrologiciel disponible : v{{version}}",
+    "firmwareDismiss": "Ne plus me le rappeler",
     "newMessages_one": "{{protocol}} : {{count}} nouveau message",
     "newMessages_other": "{{protocol}} : {{count}} nouveaux messages",
     "meshcoreDistanceFilterHint": "Vous avez {{count}} contacts avec GPS sur la carte. Activez le filtre de distance dans Application → Apparence pour vous concentrer sur les nœuds à proximité."
