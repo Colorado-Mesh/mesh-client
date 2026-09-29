@@ -6199,7 +6199,6 @@
     "exportLog": "Export MECP log",
     "compose": {
       "title": "Compose MECP report",
-      "button": "MECP",
       "open": "Open MECP compose",
       "severity": "Severity",
       "category": "Category",

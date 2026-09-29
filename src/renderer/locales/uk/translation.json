@@ -6283,7 +6283,6 @@
     "exportLog": "Експортувати журнал MECP",
     "compose": {
       "title": "Скласти звіт MECP",
-      "button": "MECP",
       "open": "Відкрити складання MECP",
       "severity": "Серйозність",
       "category": "Категорія",

@@ -19,6 +19,7 @@ import {
   PARENT_HOVER_ATTR,
   RotateCcw,
   Search,
+  Siren,
   Smile,
   Star,
   X,
@@ -4181,21 +4182,6 @@ function ChatPanel({
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
       ) : null}
       {mecpComposeEnabled ? (
-        <div className="mt-1 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            className="rounded border border-red-600/70 bg-red-950/50 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/60"
-            aria-label={t('mecp.compose.open')}
-            onClick={() => {
-              setMecpComposeSession((n) => n + 1);
-              setMecpComposeOpen(true);
-            }}
-          >
-            {t('mecp.compose.button')}
-          </button>
-        </div>
-      ) : null}
-      {mecpComposeEnabled ? (
         <MecpComposeModal
           key={mecpComposeSession}
           open={mecpComposeOpen}
@@ -4259,6 +4245,21 @@ function ChatPanel({
           setUnreadDividerTimestamp(0);
         }}
         textareaRef={composerInputRef}
+        actionSlot={
+          mecpComposeEnabled ? (
+            <ChatToolbarTooltipButton
+              tooltip={t('mecp.compose.open')}
+              aria-label={t('mecp.compose.open')}
+              className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:opacity-50"
+              onClick={() => {
+                setMecpComposeSession((n) => n + 1);
+                setMecpComposeOpen(true);
+              }}
+            >
+              <Siren aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+            </ChatToolbarTooltipButton>
+          ) : undefined
+        }
         onVoiceMemo={
           protocol === 'reticulum' &&
           hasReticulumVoiceMemo &&

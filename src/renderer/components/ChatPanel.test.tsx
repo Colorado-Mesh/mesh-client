@@ -3041,6 +3041,56 @@ describe('ChatPanel compose emoji picker', () => {
   });
 });
 
+describe('ChatPanel MECP compose button', () => {
+  const defaultProps = {
+    messages: [],
+    channels: [{ index: 0, name: 'General' }],
+    myNodeNum: 1,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map(),
+    isActive: true,
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('is hidden when MECP compose is disabled', async () => {
+    render(
+      <ToastProvider>
+        <ChatPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Send' })).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Open MECP compose' })).toBeNull();
+  });
+
+  it('renders in the composer action row before Send and opens the compose modal', async () => {
+    localStorage.setItem('mesh-client:appSettings', JSON.stringify({ mecpComposeEnabled: true }));
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    const mecpBtn = screen.getByRole('button', { name: 'Open MECP compose' });
+    const sendBtn = screen.getByRole('button', { name: 'Send' });
+    expect(
+      mecpBtn.compareDocumentPosition(sendBtn) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(mecpBtn).not.toHaveTextContent('MECP');
+
+    await user.click(mecpBtn);
+    expect(await screen.findByRole('dialog', { name: 'Compose MECP report' })).toBeInTheDocument();
+  });
+});
+
 describe('ChatPanel tapback reaction picker', () => {
   const baseMessage = {
     sender_id: 2,
