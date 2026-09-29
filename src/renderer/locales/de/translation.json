@@ -3365,6 +3365,8 @@
     "refreshContacts": "Kontakte aus dem Radio aktualisieren",
     "sendFloodAdvert": "Flood-Advert senden",
     "sendFloodAdvertUnavailable": "Verfügbar, sobald ein MeshCore-Funkgerät verbunden ist",
+    "advertOptions": "Weitere Advert-Optionen",
+    "zeroHopAdvertHint": "Nur Funkgeräte in direkter Reichweite empfangen es, Repeater leiten es nicht weiter",
     "filterByContactGroup": "Nach Kontaktgruppe filtern",
     "manageContactGroups": "Kontaktgruppen verwalten",
     "manageGroups": "Gruppen verwalten",

@@ -3365,6 +3365,8 @@
     "refreshContacts": "라디오에서 연락처 새로 고침",
     "sendFloodAdvert": "플러드 advert 보내기",
     "sendFloodAdvertUnavailable": "MeshCore 무전기가 연결되면 사용할 수 있습니다",
+    "advertOptions": "추가 advert 옵션",
+    "zeroHopAdvertHint": "직접 범위의 무전기만 수신하며, 리피터는 전달하지 않습니다",
     "filterByContactGroup": "연락처 그룹별로 필터링",
     "manageContactGroups": "연락처 그룹 관리",
     "manageGroups": "그룹 관리",

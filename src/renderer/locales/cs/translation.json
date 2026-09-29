@@ -3397,6 +3397,8 @@
     "refreshContacts": "Obnovte kontakty z rádia",
     "sendFloodAdvert": "Odeslat flood advert",
     "sendFloodAdvertUnavailable": "Dostupné po připojení rádia MeshCore",
+    "advertOptions": "Další možnosti oznámení",
+    "zeroHopAdvertHint": "Slyší ho jen rádia v přímém dosahu, opakovače ho nepředávají",
     "filterByContactGroup": "Filtrujte podle skupiny kontaktů",
     "manageContactGroups": "Správa skupin kontaktů",
     "manageGroups": "Spravovat skupiny",

@@ -3365,6 +3365,8 @@
     "refreshContacts": "Vernieuw contacten van radio",
     "sendFloodAdvert": "Stuur een flood-advert",
     "sendFloodAdvertUnavailable": "Beschikbaar zodra een MeshCore-radio is verbonden",
+    "advertOptions": "Meer advert-opties",
+    "zeroHopAdvertHint": "Alleen radio's binnen direct bereik ontvangen het; repeaters sturen het niet door",
     "filterByContactGroup": "Filter op contactgroep",
     "manageContactGroups": "Beheer contactgroepen",
     "manageGroups": "Beheer groepen",

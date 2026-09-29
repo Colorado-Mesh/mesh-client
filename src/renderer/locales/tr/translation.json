@@ -3365,6 +3365,8 @@
     "refreshContacts": "Radyodaki kişileri yenile",
     "sendFloodAdvert": "Flood advert gönder",
     "sendFloodAdvertUnavailable": "Bir MeshCore telsizi bağlandığında kullanılabilir",
+    "advertOptions": "Diğer duyuru seçenekleri",
+    "zeroHopAdvertHint": "Yalnızca doğrudan menzildeki telsizler duyar; tekrarlayıcılar iletmez",
     "filterByContactGroup": "Kişi grubuna göre filtrele",
     "manageContactGroups": "Kişi gruplarını yönet",
     "manageGroups": "Grupları yönet",

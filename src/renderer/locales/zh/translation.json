@@ -3365,6 +3365,8 @@
     "refreshContacts": "从收音机刷新联系人",
     "sendFloodAdvert": "发送泛洪通告",
     "sendFloodAdvertUnavailable": "连接 MeshCore 电台后可用",
+    "advertOptions": "更多通告选项",
+    "zeroHopAdvertHint": "只有直接范围内的电台能收到，中继器不会转发",
     "filterByContactGroup": "按联系人组筛选",
     "manageContactGroups": "管理联系人组",
     "manageGroups": "管理群组",

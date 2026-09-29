@@ -3513,6 +3513,8 @@
     "refreshContacts": "Refresh contacts from radio",
     "sendFloodAdvert": "Send flood advert",
     "sendFloodAdvertUnavailable": "Available once a MeshCore radio is connected",
+    "advertOptions": "More advert options",
+    "zeroHopAdvertHint": "Only radios in direct range hear it; repeaters don't pass it on",
     "filterByContactGroup": "Filter by contact group",
     "manageContactGroups": "Manage contact groups",
     "manageGroups": "Manage groups",

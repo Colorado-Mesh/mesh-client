@@ -3854,6 +3854,7 @@ function AppContent() {
                     <MeshcoreFloodAdvertHeaderButton
                       disabled={!isOperational}
                       onSend={meshcorePanelActions.sendAdvert}
+                      onSendZeroHop={meshcorePanelActions.sendZeroHopAdvert}
                     />
                   ) : null}
                   <button

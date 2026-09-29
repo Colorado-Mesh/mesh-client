@@ -3365,6 +3365,8 @@
     "refreshContacts": "無線から連絡先を更新する",
     "sendFloodAdvert": "フラッドadvertを送信する",
     "sendFloodAdvertUnavailable": "MeshCore無線機を接続すると使用できます",
+    "advertOptions": "その他のアドバート オプション",
+    "zeroHopAdvertHint": "直接届く範囲の無線機だけが受信し、リピーターは中継しません",
     "filterByContactGroup": "連絡先グループでフィルタリングする",
     "manageContactGroups": "連絡先グループを管理する",
     "manageGroups": "グループの管理",

@@ -3422,6 +3422,8 @@
     "importResultError": "Zaimportowano {{imported}}, pominięto {{skipped}}. Błędy: {{errors}}",
     "sendFloodAdvert": "Wyślij flood advert",
     "sendFloodAdvertUnavailable": "Dostępne po podłączeniu radia MeshCore",
+    "advertOptions": "Więcej opcji ogłoszenia",
+    "zeroHopAdvertHint": "Odbierają je tylko radia w bezpośrednim zasięgu; przekaźniki go nie przekazują",
     "filterByContactGroup": "Filtruj według grupy kontaktów",
     "manageContactGroups": "Zarządzaj grupami kontaktów",
     "contactsRefreshed": "Kontakty odświeżone.",
