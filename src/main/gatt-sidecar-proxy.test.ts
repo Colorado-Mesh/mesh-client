@@ -41,7 +41,7 @@ vi.mock('ws', async () => {
   return { default: MockWebSocket };
 });
 
-import { GattSidecarProxy } from './gatt-sidecar-proxy';
+import { GattSidecarProxy, isPeripheralNotFoundMessage } from './gatt-sidecar-proxy';
 
 describe('GattSidecarProxy', () => {
   let proxy: GattSidecarProxy;
@@ -149,6 +149,14 @@ describe('GattSidecarProxy', () => {
       code: 'connect_timeout',
       message: 'nope',
     });
+  });
+
+  it.each([
+    { message: 'peripheral ff92959f not found — scan first', expected: true },
+    { message: 'session meshcore not found', expected: false },
+    { message: 'characteristic not found', expected: false },
+  ])('isPeripheralNotFoundMessage($message) is $expected', ({ message, expected }) => {
+    expect(isPeripheralNotFoundMessage(message)).toBe(expected);
   });
 
   it('logs peripheral-not-found connect failures at warn, other failures at error', async () => {

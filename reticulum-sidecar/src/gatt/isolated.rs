@@ -70,8 +70,9 @@ impl IsolatedExecutor {
 
     /// Run `fut` on `handle`, bounded by `budget` measured on the caller's runtime.
     /// `on_late` receives the value if the call succeeds after the budget expired
-    /// (e.g. to tear down a connection nobody is waiting for anymore).
-    pub async fn run<T, F, L>(
+    /// (e.g. to tear down a connection nobody is waiting for anymore). The executor
+    /// stays latched until the future it returns completes.
+    pub async fn run<T, F, L, LF>(
         &self,
         handle: &Handle,
         op: &'static str,
@@ -83,7 +84,8 @@ impl IsolatedExecutor {
     where
         T: Send + 'static,
         F: Future<Output = Result<T, GattError>> + Send + 'static,
-        L: FnOnce(T) + Send + 'static,
+        L: FnOnce(T) -> LF + Send + 'static,
+        LF: Future<Output = ()> + Send + 'static,
     {
         let mut join = handle.spawn(fut);
         match tokio::time::timeout(budget, &mut join).await {
@@ -104,11 +106,11 @@ impl IsolatedExecutor {
                 let stuck = Arc::clone(&self.stuck);
                 tokio::spawn(async move {
                     let late = join.await;
-                    stuck.fetch_sub(1, Ordering::SeqCst);
                     tracing::warn!(target: "gatt", op, "gatt: stuck backend call finished late");
                     if let Ok(Ok(value)) = late {
-                        on_late(value);
+                        on_late(value).await;
                     }
+                    stuck.fetch_sub(1, Ordering::SeqCst);
                 });
                 Err(GattError::new(
                     timeout_code,
@@ -156,7 +158,7 @@ mod tests {
                     std::thread::sleep(Duration::from_millis(1500));
                     Ok(())
                 },
-                |()| {},
+                |()| async {},
             )
             .await;
 
@@ -193,6 +195,7 @@ mod tests {
                 move |v| {
                     assert_eq!(v, 7);
                     late_flag.store(true, Ordering::SeqCst);
+                    async {}
                 },
             )
             .await;
@@ -213,6 +216,49 @@ mod tests {
     }
 
     #[tokio::test(flavor = "current_thread")]
+    async fn stays_latched_until_late_cleanup_completes() {
+        let rt = test_runtime();
+        let exec = IsolatedExecutor::default();
+        let cleanup_started = Arc::new(AtomicBool::new(false));
+        let started_flag = Arc::clone(&cleanup_started);
+        let (release_tx, release_rx) = tokio::sync::oneshot::channel::<()>();
+
+        let result = exec
+            .run(
+                rt.handle(),
+                "connect",
+                Duration::from_millis(50),
+                GattErrorCode::ConnectTimeout,
+                async {
+                    std::thread::sleep(Duration::from_millis(150));
+                    Ok(())
+                },
+                move |()| async move {
+                    started_flag.store(true, Ordering::SeqCst);
+                    let _ = release_rx.await;
+                },
+            )
+            .await;
+        assert!(result.is_err());
+
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while !cleanup_started.load(Ordering::SeqCst) && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert!(cleanup_started.load(Ordering::SeqCst));
+        assert_eq!(exec.stuck_count(), 1, "latched while cleanup is in flight");
+
+        release_tx.send(()).expect("release cleanup");
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while exec.stuck_count() != 0 && Instant::now() < deadline {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        assert_eq!(exec.stuck_count(), 0);
+
+        rt.shutdown_background();
+    }
+
+    #[tokio::test(flavor = "current_thread")]
     async fn fast_result_passes_through() {
         let rt = test_runtime();
         let exec = IsolatedExecutor::default();
@@ -223,7 +269,7 @@ mod tests {
                 Duration::from_secs(1),
                 GattErrorCode::Internal,
                 async { Ok(-60i16) },
-                |_| {},
+                |_| async {},
             )
             .await;
         assert_eq!(ok.expect("rssi"), -60);
@@ -235,7 +281,7 @@ mod tests {
                 Duration::from_secs(1),
                 GattErrorCode::Internal,
                 async { Err::<(), _>(GattError::new(GattErrorCode::WriteFailed, "nope")) },
-                |()| {},
+                |()| async {},
             )
             .await
             .expect_err("backend error passes through");

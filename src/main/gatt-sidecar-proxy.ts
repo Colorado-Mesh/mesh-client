@@ -77,7 +77,7 @@ function unknownMessage(value: unknown, fallback: string): string {
 }
 
 export function isPeripheralNotFoundMessage(message: string): boolean {
-  return /not found|scan first/i.test(message);
+  return /\bperipheral\b.*\bnot found\b|\bscan first\b/i.test(message);
 }
 
 function wsDataToUtf8(data: WebSocket.RawData): string {

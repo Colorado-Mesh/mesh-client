@@ -72,6 +72,35 @@ describe('ConnectionPanel manual GATT selection', () => {
     });
   });
 
+  it.each([
+    ['linux', false],
+    ['darwin', false],
+    ['win32', true],
+  ] as const)(
+    'shows the MeshCore pairing hint on %s (Windows expectations: %s)',
+    async (platform, showsWindowsHint) => {
+      const user = userEvent.setup();
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      render(
+        <ConnectionPanel
+          state={disconnectedState}
+          protocol="meshcore"
+          mqttStatus="disconnected"
+          onConnect={vi.fn().mockResolvedValue(undefined)}
+          onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+          onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        />,
+      );
+      const radio = screen.getByText('Radio Connection').closest<HTMLElement>('.bg-deep-black')!;
+      await user.click(within(radio).getByRole('button', { name: 'Connect' }));
+      act(() => discovered?.(device));
+      expect(await screen.findByText(/Pair your MeshCore device/)).toBeInTheDocument();
+      expect(screen.queryByText(/may show "Connected" for a second/) !== null).toBe(
+        showsWindowsHint,
+      );
+    },
+  );
+
   it.each(['linux', 'darwin', 'win32'] as const)(
     'ignores scan results arriving after Cancel on %s',
     async (platform) => {

@@ -772,6 +772,7 @@ export default function ConnectionPanel({
     { getName: getBlePickerName, getId: getBlePickerId, getRssi: getBlePickerRssi },
   );
   const isLinux = window.electronAPI.getPlatform() === 'linux';
+  const isWindows = window.electronAPI.getPlatform() === 'win32';
 
   // ─── Serial port picker state ─────────────────────────────────
   const [serialPorts, setSerialPorts] = useState<SerialPortInfo[]>([]);
@@ -1699,8 +1700,8 @@ export default function ConnectionPanel({
                 <Trans
                   i18nKey="connectionPanel.meshcoreBlePairingHint"
                   components={{ strong: <strong /> }}
-                />{' '}
-                {t('connectionPanel.meshcoreBlePairingExpectationsHint')}
+                />
+                {isWindows && <> {t('connectionPanel.meshcoreBlePairingExpectationsHint')}</>}
               </p>
             )}
           </div>

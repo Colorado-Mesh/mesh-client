@@ -63,42 +63,49 @@ impl LazyBtleplugBackend {
     }
 
     async fn backend(&self) -> Result<Arc<BtleplugBackend>, GattError> {
-        // Include time waiting behind another initial probe in this caller's budget.
-        tokio::time::timeout(ADAPTER_INIT_BUDGET, async {
-            let mut guard = self.backend.lock().await;
-            if let Some(existing) = guard.as_ref() {
-                return Ok(existing.clone());
-            }
-            if self.bond_recovery_hold.load(Ordering::SeqCst) {
-                return Err(GattError::new(
-                    GattErrorCode::ScanBusy,
-                    "RNode bond recovery holds the LoRa GATT adapter",
-                ));
-            }
-            let handle = ble_runtime_handle()?;
-            let created = Arc::new(
-                self.executor
-                    .run(
-                        &handle,
-                        "adapter_init",
-                        ADAPTER_INIT_BUDGET,
-                        GattErrorCode::AdapterMissing,
-                        BtleplugBackend::try_new(),
-                        |_| {},
-                    )
-                    .await?,
-            );
-            tracing::info!("gatt: using btleplug backend");
-            *guard = Some(created.clone());
-            Ok(created)
-        })
-        .await
-        .map_err(|_| {
+        let discovery_timed_out = || {
             GattError::new(
                 GattErrorCode::AdapterMissing,
                 "Bluetooth adapter discovery timed out",
             )
-        })?
+        };
+        // Time spent waiting behind another initial probe counts against this caller's budget;
+        // only the remainder goes to the executor so its own timeout can latch a stuck init.
+        let started = tokio::time::Instant::now();
+        let mut guard = tokio::time::timeout(ADAPTER_INIT_BUDGET, self.backend.lock())
+            .await
+            .map_err(|_| discovery_timed_out())?;
+        if let Some(existing) = guard.as_ref() {
+            return Ok(existing.clone());
+        }
+        if self.bond_recovery_hold.load(Ordering::SeqCst) {
+            return Err(GattError::new(
+                GattErrorCode::ScanBusy,
+                "RNode bond recovery holds the LoRa GATT adapter",
+            ));
+        }
+        self.executor
+            .ensure_responsive("adapter_init", GattErrorCode::AdapterMissing)?;
+        let remaining = ADAPTER_INIT_BUDGET.saturating_sub(started.elapsed());
+        if remaining.is_zero() {
+            return Err(discovery_timed_out());
+        }
+        let handle = ble_runtime_handle()?;
+        let created = Arc::new(
+            self.executor
+                .run(
+                    &handle,
+                    "adapter_init",
+                    remaining,
+                    GattErrorCode::AdapterMissing,
+                    BtleplugBackend::try_new(),
+                    |_| async {},
+                )
+                .await?,
+        );
+        tracing::info!("gatt: using btleplug backend");
+        *guard = Some(created.clone());
+        Ok(created)
     }
 }
 
@@ -113,7 +120,7 @@ impl BleBackend for LazyBtleplugBackend {
                 ADAPTER_STATE_BUDGET,
                 GattErrorCode::AdapterMissing,
                 async move { backend.adapter_available().await },
-                |()| {},
+                |()| async {},
             )
             .await
     }
@@ -134,7 +141,7 @@ impl BleBackend for LazyBtleplugBackend {
                 Duration::from_secs(timeout_secs.max(1)) + SCAN_OVERHEAD_BUDGET,
                 GattErrorCode::AdapterMissing,
                 async move { backend.scan(profile, timeout_secs).await },
-                |_| {},
+                |_| async {},
             )
             .await
     }
@@ -165,13 +172,18 @@ impl BleBackend for LazyBtleplugBackend {
                 CONNECT_BUDGET,
                 GattErrorCode::ConnectTimeout,
                 async move { connect_backend.connect(profile, &address).await },
-                move |(conn, _events, _mtu)| {
+                move |(conn, _events, _mtu)| async move {
                     // Nobody owns this session anymore; close it so the peripheral is free.
-                    late_handle.spawn(async move {
-                        if let Err(e) = backend.disconnect(&conn).await {
+                    let cleanup = late_handle.spawn(async move { backend.disconnect(&conn).await });
+                    match cleanup.await {
+                        Ok(Ok(())) => {}
+                        Ok(Err(e)) => {
                             tracing::warn!(target: "gatt", "gatt: late connect cleanup failed: {e}");
                         }
-                    });
+                        Err(e) => {
+                            tracing::warn!(target: "gatt", "gatt: late connect cleanup task failed: {e}");
+                        }
+                    }
                 },
             )
             .await
@@ -189,7 +201,7 @@ impl BleBackend for LazyBtleplugBackend {
                 WRITE_BUDGET,
                 GattErrorCode::WriteFailed,
                 async move { backend.write(&conn, &payload).await },
-                |()| {},
+                |()| async {},
             )
             .await
     }
@@ -205,7 +217,7 @@ impl BleBackend for LazyBtleplugBackend {
                 DISCONNECT_BUDGET,
                 GattErrorCode::Internal,
                 async move { backend.disconnect(&conn).await },
-                |()| {},
+                |()| async {},
             )
             .await
     }
@@ -221,7 +233,7 @@ impl BleBackend for LazyBtleplugBackend {
                 RSSI_BUDGET,
                 GattErrorCode::Internal,
                 async move { backend.rssi(&conn).await },
-                |_| {},
+                |_| async {},
             )
             .await
     }
