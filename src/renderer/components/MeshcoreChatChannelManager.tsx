@@ -8,7 +8,10 @@ import {
   isValidMeshcoreHashtagChannelName,
   normalizeMeshcoreHashtagChannelName,
 } from '@/renderer/lib/meshcoreChatChannelAdd';
-import { meshcoreConfiguredChatChannels } from '@/renderer/lib/meshcoreConfiguredChatChannels';
+import {
+  MESHCORE_PUBLIC_CHANNEL_INDEX,
+  meshcoreConfiguredChatChannels,
+} from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import {
   MESHCORE_CHANNEL_NAME_MAX_LEN,
   meshcoreDeriveChannelKeyHexFromName,
@@ -23,6 +26,8 @@ interface Props {
   disabled: boolean;
   onSetChannel: (index: number, name: string, secret: Uint8Array) => Promise<void>;
   onSelectChannel: (index: number) => void;
+  /** Ask to remove a channel (the caller confirms). Public, in slot 0, never offers it. */
+  onRemoveChannel?: (channel: { index: number; name: string }) => void;
 }
 
 export default function MeshcoreChatChannelManager({
@@ -30,6 +35,7 @@ export default function MeshcoreChatChannelManager({
   disabled,
   onSetChannel,
   onSelectChannel,
+  onRemoveChannel,
 }: Props) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -152,19 +158,35 @@ export default function MeshcoreChatChannelManager({
             {configuredChannels.length > 0 ? (
               <div className="flex flex-wrap gap-2" aria-label={t('chatPanel.channels')}>
                 {configuredChannels.map((channel) => (
-                  <button
-                    type="button"
-                    key={channel.index}
-                    disabled={saving}
-                    aria-label={channel.name}
-                    onClick={() => {
-                      onSelectChannel(channel.index);
-                      closeDialog();
-                    }}
-                    className="bg-deep-black text-muted hover:border-brand-green border-ink-700 hover:text-ink-100 rounded-full border px-2.5 py-1 text-xs"
-                  >
-                    {channel.name}
-                  </button>
+                  <span key={channel.index} className="inline-flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      disabled={saving}
+                      aria-label={channel.name}
+                      onClick={() => {
+                        onSelectChannel(channel.index);
+                        closeDialog();
+                      }}
+                      className="bg-deep-black text-muted hover:border-brand-green border-ink-700 hover:text-ink-100 rounded-full border px-2.5 py-1 text-xs"
+                    >
+                      {channel.name}
+                    </button>
+                    {onRemoveChannel && channel.index !== MESHCORE_PUBLIC_CHANNEL_INDEX ? (
+                      <button
+                        type="button"
+                        disabled={saving || disabled}
+                        aria-label={t('chatPanel.removeChannelAria', { name: channel.name })}
+                        title={t('chatPanel.removeChannelAria', { name: channel.name })}
+                        onClick={() => {
+                          closeDialog();
+                          onRemoveChannel(channel);
+                        }}
+                        className="text-muted flex h-6 w-6 items-center justify-center rounded hover:bg-red-400/10 hover:text-red-400"
+                      >
+                        <X aria-hidden className="h-3.5 w-3.5" size={14} />
+                      </button>
+                    ) : null}
+                  </span>
                 ))}
               </div>
             ) : (
