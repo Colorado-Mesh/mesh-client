@@ -618,3 +618,44 @@ describe('AppPanel: Clear All Nodes success toast', () => {
     expect(window.electronAPI.db.clearNodes).toHaveBeenCalled();
   });
 });
+
+describe('AppPanel: clear messages by channel (#1098)', () => {
+  const props = {
+    protocol: 'meshcore' as const,
+    nodeCount: 0,
+    messageCount: 12,
+    channels: [{ index: 3, name: '#test' }],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  it('reloads the channel list each time the panel is shown', async () => {
+    const getChannels = vi.mocked(window.electronAPI.db.getMeshcoreMessageChannels);
+    getChannels.mockReset();
+    getChannels.mockResolvedValue([]);
+    const { rerender } = render(
+      <ToastProvider>
+        <AppPanel {...props} isActive />
+      </ToastProvider>,
+    );
+    const select = await screen.findByRole('combobox', { name: 'Channel' });
+    expect(within(select).getAllByRole('option')).toHaveLength(1);
+
+    // Messages arrive on channel 3 while another panel is open.
+    getChannels.mockResolvedValue([{ channel: 3 }]);
+    rerender(
+      <ToastProvider>
+        <AppPanel {...props} isActive={false} />
+      </ToastProvider>,
+    );
+    rerender(
+      <ToastProvider>
+        <AppPanel {...props} isActive />
+      </ToastProvider>,
+    );
+    expect(
+      await within(select).findByRole('option', { name: 'Channel 3: #test' }),
+    ).toBeInTheDocument();
+    expect(getChannels).toHaveBeenCalledTimes(2);
+  });
+});
