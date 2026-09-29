@@ -162,6 +162,24 @@ describe('MenuButton', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Ping' }));
     expect(onPing).toHaveBeenCalledTimes(1);
   });
+
+  it('still closes on Escape when every item is disabled', async () => {
+    const user = userEvent.setup();
+    render(
+      <MenuButton
+        aria-label="More actions for Ridge Fox"
+        icon={<span aria-hidden="true">...</span>}
+        menuLabel="Actions for Ridge Fox"
+        entries={[{ id: 'ping', label: 'Ping', disabled: true, onSelect: vi.fn() }]}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'More actions for Ridge Fox' }));
+    const menu = screen.getByRole('menu', { name: 'Actions for Ridge Fox' });
+    // No enabled item to focus, so the menu itself takes focus and hears Escape.
+    expect(menu).toHaveFocus();
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
 });
 
 describe('LabeledMenuButton', () => {

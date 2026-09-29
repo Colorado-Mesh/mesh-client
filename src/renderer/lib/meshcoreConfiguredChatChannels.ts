@@ -3,6 +3,12 @@ import { dedupeChannelPillsByIndex } from '@/renderer/lib/channelListDedupe';
 /** MeshCore unset channel PSK (16 zero bytes). */
 export const MESHCORE_UNCONFIGURED_CHANNEL_SECRET_HEX = '00000000000000000000000000000000';
 
+/**
+ * Slot 0 holds MeshCore's Public channel (the firmware default, on the shared key). Chat never
+ * offers to remove it; Device > Radio > Channels still can.
+ */
+export const MESHCORE_PUBLIC_CHANNEL_INDEX = 0;
+
 export interface MeshcoreChatChannelSource {
   index: number;
   name: string;

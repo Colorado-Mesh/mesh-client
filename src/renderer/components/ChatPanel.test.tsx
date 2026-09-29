@@ -5866,3 +5866,209 @@ describe('ChatPanel — screen reader announcements', () => {
     });
   });
 });
+
+describe('ChatPanel removing a MeshCore channel (#1077)', () => {
+  const secret = new Uint8Array([1, ...new Array<number>(15).fill(0)]);
+  const baseProps = () => ({
+    messages: [],
+    channels: [
+      { index: 0, name: 'Public' },
+      { index: 3, name: '#test' },
+    ],
+    meshcoreChannelSources: [
+      { index: 0, name: 'Public', secret },
+      { index: 3, name: '#test', secret },
+    ],
+    onSetMeshcoreChannel: vi.fn().mockResolvedValue(undefined),
+    onDeleteMeshcoreChannel: vi.fn().mockResolvedValue(undefined),
+    protocol: 'meshcore' as const,
+    myNodeNum: 1,
+    onSend: vi.fn().mockResolvedValue(undefined),
+    onReact: vi.fn().mockResolvedValue(undefined),
+    onResend: vi.fn(),
+    onNodeClick: vi.fn(),
+    isConnected: true,
+    nodes: new Map<number, MeshNode>(),
+    isActive: true,
+  });
+  const renderPanel = (overrides: Partial<ReturnType<typeof baseProps>> = {}) => {
+    const props = { ...baseProps(), ...overrides };
+    render(
+      <ToastProvider>
+        <ChatPanel {...props} />
+      </ToastProvider>,
+    );
+    return props;
+  };
+  const chip = (name: string) =>
+    within(screen.getByLabelText('Channels')).getByRole('button', { name });
+
+  it('removes a channel from its right-click menu after asking', async () => {
+    const user = userEvent.setup();
+    const props = renderPanel();
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove channel' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Remove #test?' });
+    expect(props.onDeleteMeshcoreChannel).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Remove channel' }));
+    await waitFor(() => {
+      expect(props.onDeleteMeshcoreChannel).toHaveBeenCalledWith(3);
+    });
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+  });
+
+  it('opens the same menu from the keyboard with Shift+F10', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    chip('#test').focus();
+    await user.keyboard('{Shift>}{F10}{/Shift}');
+    expect(screen.getByRole('menuitem', { name: 'Remove channel' })).toBeInTheDocument();
+  });
+
+  it('never offers to remove Public, in slot 0', () => {
+    renderPanel();
+    fireEvent.contextMenu(chip('Public'));
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('opens Public after removing the channel that was open', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    await user.click(chip('#test'));
+    expect(chip('#test')).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove channel' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove channel' }),
+    );
+    await waitFor(() => {
+      expect(chip('Public')).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
+
+  it('says so when the radio refuses, instead of looking removed', async () => {
+    const user = userEvent.setup();
+    renderPanel({ onDeleteMeshcoreChannel: vi.fn().mockRejectedValue(new Error('radio busy')) });
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove channel' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove channel' }),
+    );
+    expect(await screen.findByText("Couldn't remove #test: radio busy")).toBeInTheDocument();
+  });
+
+  it('removes nothing if the slot no longer holds that channel when you confirm', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove channel' }));
+    // The radio's list changes while the dialog is open: slot 3 now holds another channel.
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...props}
+          channels={[
+            { index: 0, name: 'Public' },
+            { index: 3, name: '#weather' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove channel' }),
+    );
+    expect(props.onDeleteMeshcoreChannel).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        '#test is no longer in that slot on the radio, so nothing was removed.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('removes nothing if another radio connected while the dialog was open', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Remove channel' }));
+    // A second radio with the same channel in the same slot: the list matches, the radio does not.
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...props} myNodeNum={2} />
+      </ToastProvider>,
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Remove channel' }),
+    );
+    expect(props.onDeleteMeshcoreChannel).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'The connected radio changed while this was open, so #test was not removed.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("clears a channel's saved messages from its menu after asking, Public included (#1098)", async () => {
+    const user = userEvent.setup();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    renderPanel({ onClearChannelMessages } as Partial<ReturnType<typeof baseProps>>);
+    fireEvent.contextMenu(chip('Public'));
+    // Public offers Clear messages but never Remove.
+    expect(screen.queryByRole('menuitem', { name: 'Remove channel' })).toBeNull();
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    const dialog = screen.getByRole('alertdialog', { name: 'Clear messages in Public?' });
+    expect(onClearChannelMessages).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole('button', { name: 'Clear messages' }));
+    await waitFor(() => {
+      expect(onClearChannelMessages).toHaveBeenCalledWith(0);
+    });
+  });
+
+  it('says so when clearing messages fails', async () => {
+    const user = userEvent.setup();
+    renderPanel({
+      onClearChannelMessages: vi.fn().mockRejectedValue(new Error('database locked')),
+    } as Partial<ReturnType<typeof baseProps>>);
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+    );
+    expect(await screen.findByText("Couldn't clear #test: database locked")).toBeInTheDocument();
+  });
+
+  it('keeps Remove unavailable until the radio is connected', () => {
+    renderPanel({ meshcoreChannelManagementDisabled: true } as Partial<
+      ReturnType<typeof baseProps>
+    >);
+    fireEvent.contextMenu(chip('#test'));
+    const item = screen.getByRole('menuitem', { name: /Remove channel/ });
+    expect(item).toBeDisabled();
+    expect(item).toHaveTextContent('Available once the radio is connected');
+  });
+
+  it('removes a channel from the x in the + dialog, and offers none for Public', async () => {
+    const user = userEvent.setup();
+    const props = renderPanel();
+    await user.click(screen.getByRole('button', { name: '+ Add Channel' }));
+    expect(screen.queryByRole('button', { name: 'Remove Public' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Remove #test' }));
+    await user.click(
+      within(screen.getByRole('alertdialog', { name: 'Remove #test?' })).getByRole('button', {
+        name: 'Remove channel',
+      }),
+    );
+    await waitFor(() => {
+      expect(props.onDeleteMeshcoreChannel).toHaveBeenCalledWith(3);
+    });
+  });
+});

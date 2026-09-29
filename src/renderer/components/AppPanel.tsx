@@ -224,6 +224,8 @@ interface Props {
   onGpsIntervalChange?: (secs: number) => void;
   onNodesPruned?: () => void;
   onMessagesPruned?: (opts?: MessageClearRefreshOptions) => void;
+  /** The panel is on screen. It stays mounted once visited, so lists reload on each visit. */
+  isActive?: boolean;
   onClearMeshcoreRepeaters?: () => Promise<void>;
   onAutoFloodAdvertIntervalChange?: (hours: number) => void;
   onAutoFloodAdvertTypeChange?: (type: 'flood' | 'zeroHop') => void;
@@ -260,6 +262,7 @@ export default function AppPanel({
   onGpsIntervalChange,
   onNodesPruned,
   onMessagesPruned,
+  isActive = true,
   onClearMeshcoreRepeaters,
   onAutoFloodAdvertIntervalChange,
   onAutoFloodAdvertTypeChange,
@@ -733,9 +736,11 @@ export default function AppPanel({
     }
   }, [protocol]);
 
+  // Reload on every visit: the list was read once, so channels that got messages after the first
+  // visit never appeared in it (#1098).
   useEffect(() => {
-    loadMsgChannels();
-  }, [loadMsgChannels]);
+    if (isActive) loadMsgChannels();
+  }, [isActive, loadMsgChannels]);
 
   useEffect(() => {
     setClearChannelTarget(CLEAR_ALL_CHANNELS_VALUE);
@@ -746,7 +751,9 @@ export default function AppPanel({
       if (ch === -1) return t('radioPanel.directMessages');
       if (ch === -2) return t('appPanel.roomMessages');
       const named = channels.find((c) => c.index === ch);
-      return named ? `Channel ${ch} — ${named.name}` : `Channel ${ch}`;
+      return named
+        ? t('appPanel.channelOption', { index: ch, name: named.name })
+        : t('appPanel.channelOptionUnnamed', { index: ch });
     },
     [channels, t],
   );
