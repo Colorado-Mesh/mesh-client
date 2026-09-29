@@ -358,7 +358,9 @@ class IpcSidecarGattConnection {
       });
       const offAbort = window.electronAPI.onGattConnectAborted(({ sessionId: sid, message }) => {
         if (sid !== sessionId) return;
-        console.warn(`[IpcSidecarGattConnection:${sessionId}] connect aborted by main: ${message}`);
+        console.debug(
+          `[IpcSidecarGattConnection:${sessionId}] connect aborted by main: ${message}`,
+        );
         releaseListeners();
         const r = rejectHandshakeOnDisconnect;
         rejectHandshakeOnDisconnect = undefined;

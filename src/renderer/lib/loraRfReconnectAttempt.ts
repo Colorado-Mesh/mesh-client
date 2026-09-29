@@ -205,20 +205,26 @@ export async function runLoraRfReconnectAttempt<TParams>(
   let attemptActive = true;
   const lateTransport = createBleReconnectTransportCleanup(deps.disconnectIdentity, deps.logTag);
 
+  const work = { settled: false, budgetExpired: false };
   const runOpen = async () => {
-    await deps.runOpenAndAttach(
-      {
-        generation,
-        isBle,
-        attemptActive: () => attemptActive,
-        lateTransport,
-      },
-      params,
-    );
+    try {
+      await deps.runOpenAndAttach(
+        {
+          generation,
+          isBle,
+          attemptActive: () => attemptActive,
+          lateTransport,
+        },
+        params,
+      );
+    } finally {
+      work.settled = true;
+    }
   };
   const reconnectWork = runOpen();
-  // Late loser after budget timeout — avoid unhandledRejection; cleanup is in catch / late path.
+  // Always swallow to avoid unhandledRejection; in-budget failures are logged by onAttemptError.
   void reconnectWork.catch((e: unknown) => {
+    if (!work.budgetExpired) return;
     console.debug(`[${deps.logTag}] reconnectWork late reject ` + errLikeToLogString(e));
   });
 
@@ -234,6 +240,7 @@ export async function runLoraRfReconnectAttempt<TParams>(
   } catch (err) {
     // catch-no-log-ok protocol onAttemptError logs the failure (warn/debug)
     attemptActive = false;
+    if (!work.settled) work.budgetExpired = true;
     const action = await deps.onAttemptError(err, {
       params,
       generation,

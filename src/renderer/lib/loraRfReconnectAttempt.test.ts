@@ -239,6 +239,32 @@ describe('runLoraRfReconnectAttempt', () => {
     expect(scheduleAttempt).toHaveBeenCalled();
   });
 
+  it('does not log late reject for an in-budget open failure', async () => {
+    runOpenAndAttach.mockRejectedValue(new Error('peripheral not found — scan first'));
+    await runAttempt();
+    expect(console.debug).not.toHaveBeenCalledWith(expect.stringContaining('late reject'));
+  });
+
+  it('logs late reject when open fails after the attempt budget expired', async () => {
+    let rejectOpen!: (e: Error) => void;
+    runOpenAndAttach.mockImplementation(
+      () =>
+        new Promise<void>((_, reject) => {
+          rejectOpen = reject;
+        }),
+    );
+    vi.mocked(raceWithDeadline).mockImplementation(() =>
+      Promise.reject(new Error('Reconnect attempt timed out')),
+    );
+    await runAttempt();
+    expect(console.debug).not.toHaveBeenCalledWith(expect.stringContaining('late reject'));
+    rejectOpen(new Error('late open failure'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(console.debug).toHaveBeenCalledWith(
+      expect.stringContaining('reconnectWork late reject'),
+    );
+  });
+
   it('does not schedule retry when onAttemptError returns defer', async () => {
     runOpenAndAttach.mockRejectedValue(new Error('setup abort'));
     onAttemptError.mockImplementation(() => {

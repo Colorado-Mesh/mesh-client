@@ -76,6 +76,10 @@ function unknownMessage(value: unknown, fallback: string): string {
   return fallback;
 }
 
+export function isPeripheralNotFoundMessage(message: string): boolean {
+  return /not found|scan first/i.test(message);
+}
+
 function wsDataToUtf8(data: WebSocket.RawData): string {
   if (typeof data === 'string') return data;
   if (Buffer.isBuffer(data)) return data.toString('utf8');
@@ -232,9 +236,9 @@ export class GattSidecarProxy extends EventEmitter {
     // Sidecar WS/HTTP `code`/`message` are untrusted; use CodeQL-recognized barriers.
     const safeCode = sanitizeForLogSink(code);
     const safeMessage = sanitizeForLogSink(message);
-    console.error(
-      sanitizeForConsoleEcho(`[GATT:${sessionId ?? 'all'}] ${safeCode}: ${safeMessage}`),
-    ); // log-filter-ok session-scoped: LogPanel matches [GATT:meshtastic]/[GATT:all]/[GATT:meshcore] explicitly
+    // Peripheral not advertising (radio off / out of range) is expected; keep error for real faults.
+    const log = isPeripheralNotFoundMessage(safeMessage) ? console.warn : console.error;
+    log(sanitizeForConsoleEcho(`[GATT:${sessionId ?? 'all'}] ${safeCode}: ${safeMessage}`)); // log-filter-ok session-scoped: LogPanel matches [GATT:meshtastic]/[GATT:all]/[GATT:meshcore] explicitly
     this.emit('issue', { sessionId, code: safeCode, message: safeMessage });
   }
 
