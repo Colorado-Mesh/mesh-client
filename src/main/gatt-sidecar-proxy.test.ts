@@ -41,7 +41,7 @@ vi.mock('ws', async () => {
   return { default: MockWebSocket };
 });
 
-import { GattSidecarProxy } from './gatt-sidecar-proxy';
+import { GattSidecarProxy, isPeripheralNotFoundMessage } from './gatt-sidecar-proxy';
 
 describe('GattSidecarProxy', () => {
   let proxy: GattSidecarProxy;
@@ -149,6 +149,41 @@ describe('GattSidecarProxy', () => {
       code: 'connect_timeout',
       message: 'nope',
     });
+  });
+
+  it.each([
+    { message: 'peripheral ff92959f not found — scan first', expected: true },
+    { message: 'session meshcore not found', expected: false },
+    { message: 'characteristic not found', expected: false },
+  ])('isPeripheralNotFoundMessage($message) is $expected', ({ message, expected }) => {
+    expect(isPeripheralNotFoundMessage(message)).toBe(expected);
+  });
+
+  it('logs peripheral-not-found connect failures at warn, other failures at error', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          ok: false,
+          code: 'connect_timeout',
+          error: 'peripheral ff92959f not found — scan first',
+        }),
+    });
+    await proxy.connect('meshcore', 'AA:BB:CC:DD:EE:FF');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[GATT:meshcore] connect_timeout'));
+    expect(error).not.toHaveBeenCalled();
+
+    warn.mockClear();
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      json: () =>
+        Promise.resolve({ ok: false, code: 'connect_failed', error: 'service discovery failed' }),
+    });
+    await proxy.connect('meshcore', 'AA:BB:CC:DD:EE:FF');
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('[GATT:meshcore] connect_failed'));
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('connect_failed'));
   });
 
   it.each([

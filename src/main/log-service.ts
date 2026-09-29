@@ -316,6 +316,17 @@ function stringifyArgs(args: unknown[]): string {
 }
 
 let consolePatched = false;
+/** True while patched console.* echoes to the terminal, so the stream hook skips re-capturing. */
+let echoingConsole = false;
+
+function echoToOriginal(fn: (msg: string) => void, msg: string): void {
+  echoingConsole = true;
+  try {
+    fn(msg);
+  } finally {
+    echoingConsole = false;
+  }
+}
 
 function resolveMainSource(): 'sdk' | 'main' {
   const stack = new Error().stack ?? '';
@@ -336,27 +347,27 @@ export function patchMainConsole(): void {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
     appendLine('log', resolveMainSource(), safe);
-    original.log(sanitizeForConsoleEcho(joined));
+    echoToOriginal(original.log, sanitizeForConsoleEcho(joined));
   };
   console.info = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
     appendLine('info', resolveMainSource(), safe);
-    original.info(sanitizeForConsoleEcho(joined));
+    echoToOriginal(original.info, sanitizeForConsoleEcho(joined));
   };
   console.warn = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
     appendLine('warn', resolveMainSource(), safe);
     const ts = formatLogFileTimestamp(Date.now());
-    original.warn(sanitizeForConsoleEcho(`[${ts}] ${safe}`));
+    echoToOriginal(original.warn, sanitizeForConsoleEcho(`[${ts}] ${safe}`));
   };
   console.error = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
     const safe = sanitizeForLogSink(joined);
     appendLine('error', resolveMainSource(), safe);
     const ts = formatLogFileTimestamp(Date.now());
-    original.error(sanitizeForConsoleEcho(`[${ts}] ${safe}`));
+    echoToOriginal(original.error, sanitizeForConsoleEcho(`[${ts}] ${safe}`));
   };
   console.debug = (...args: unknown[]) => {
     const joined = stringifyArgs(args);
@@ -370,7 +381,7 @@ export function patchMainConsole(): void {
     stream.write = function (this: NodeJS.WriteStream, ...args: unknown[]): boolean {
       try {
         const chunk = args[0];
-        if (typeof chunk === 'string') {
+        if (!echoingConsole && typeof chunk === 'string') {
           const trimmed = chunk.replace(/\r?\n$/, '');
           if (trimmed) appendLine(level, source, sanitizeLogMessage(trimmed));
         }

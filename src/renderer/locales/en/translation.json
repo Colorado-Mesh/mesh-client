@@ -1474,6 +1474,7 @@
     "meshcoreHostPlaceholder": "localhost, 192.168.1.x, or [fd00::1]",
     "meshcorePort": "Port",
     "meshcoreBlePairingHint": "Pair your MeshCore device in <strong>system Bluetooth settings</strong> before connecting. Use a PIN code if prompted — if your system does not ask for a PIN, the connection will fail and you may need to remove the pairing and re-pair with a PIN.",
+    "meshcoreBlePairingExpectationsHint": "On Windows the device may show \"Connected\" for a second and then \"Paired\" — that is expected. Close the MeshCore app on your phone first; the radio accepts only one Bluetooth connection at a time.",
     "meshcorePreset": {
       "letsmesh": "LetsMesh",
       "coloradomesh": "Colorado Mesh",

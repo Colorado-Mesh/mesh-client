@@ -54,6 +54,11 @@ describe('shouldForwardReticulumSidecarStdout', () => {
         '2026-09-12T13:00:00Z INFO rrc: rrc DropAndRefresh failover',
       ),
     ).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        '2026-09-29T14:00:00Z INFO gatt: gatt connect stage stage="subscribe" elapsed_ms=4210 profile=meshcore',
+      ),
+    ).toBe(true);
   });
 
   it('does not forward INFO when PN markers appear only in message text', () => {
@@ -74,6 +79,7 @@ describe('resolveSidecarRustLog', () => {
   it('defaults to warn', () => {
     expect(resolveSidecarRustLog({})).toBe(SIDECAR_DEFAULT_RUST_LOG);
     expect(SIDECAR_DEFAULT_RUST_LOG).toContain('rrc=info');
+    expect(SIDECAR_DEFAULT_RUST_LOG).toContain('gatt=info');
   });
 
   it('honors MESH_CLIENT_RUST_LOG over RUST_LOG', () => {

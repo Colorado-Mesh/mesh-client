@@ -88,10 +88,10 @@ describe('log-service source contracts', () => {
 
   it('patchMainConsole echoes warn/error through sanitizeForConsoleEcho at original.* sink', () => {
     expect(LOG_SERVICE_SOURCE).toContain(
-      'original.warn(sanitizeForConsoleEcho(`[${ts}] ${safe}`))',
+      'echoToOriginal(original.warn, sanitizeForConsoleEcho(`[${ts}] ${safe}`))',
     );
     expect(LOG_SERVICE_SOURCE).toContain(
-      'original.error(sanitizeForConsoleEcho(`[${ts}] ${safe}`))',
+      'echoToOriginal(original.error, sanitizeForConsoleEcho(`[${ts}] ${safe}`))',
     );
   });
 
@@ -349,6 +349,53 @@ describe('stripConsoleStyles (via appendLine + getRecentLines)', () => {
     // appendLine sanitizes but does not strip %c — that is done by forwardRendererConsoleMessage
     // The stored message should not be empty
     expect(last.message.length).toBeGreaterThan(0);
+  });
+});
+
+describe('patchMainConsole stderr capture', () => {
+  it('records console.warn/error once (terminal echo is not re-captured as [stderr])', async () => {
+    const saved = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error,
+      debug: console.debug,
+      stdoutWrite: process.stdout.write,
+      stderrWrite: process.stderr.write,
+    };
+    const stderrSink = vi.fn(() => true);
+    process.stderr.write = stderrSink;
+    const echoToStderr = (msg: unknown) => {
+      process.stderr.write(`${String(msg)}\n`);
+    };
+    console.warn = echoToStderr;
+    console.error = echoToStderr;
+    try {
+      vi.resetModules();
+      const { patchMainConsole, getRecentLines } = await import('./log-service');
+      patchMainConsole();
+
+      console.error('[GATT:meshcore] dup-check-error');
+      console.warn('dup-check-warn');
+      process.stderr.write('dep-direct-stderr\n');
+
+      const lines = getRecentLines();
+      const matching = (text: string) => lines.filter((l) => l.message.includes(text));
+      expect(matching('dup-check-error')).toHaveLength(1);
+      expect(matching('dup-check-error')[0].level).toBe('error');
+      expect(matching('dup-check-warn')).toHaveLength(1);
+      expect(matching('dep-direct-stderr')).toHaveLength(1);
+      expect(matching('dep-direct-stderr')[0].source).toBe('stderr');
+      expect(stderrSink).toHaveBeenCalledTimes(3);
+    } finally {
+      console.log = saved.log;
+      console.info = saved.info;
+      console.warn = saved.warn;
+      console.error = saved.error;
+      console.debug = saved.debug;
+      process.stdout.write = saved.stdoutWrite;
+      process.stderr.write = saved.stderrWrite;
+    }
   });
 });
 

@@ -1648,7 +1648,8 @@
     "disconnectRadioGroup": "Odpojit rádio",
     "moreDisconnectOptions": "Další možnosti odpojení",
     "disconnectOptions": "Možnosti odpojení",
-    "lastConnectionLabel": "Poslední připojení"
+    "lastConnectionLabel": "Poslední připojení",
+    "meshcoreBlePairingExpectationsHint": "V systému Windows může zařízení na sekundu zobrazit „Připojeno“ a poté „Spárováno“ — to se očekává. Nejprve zavřete aplikaci MeshCore v telefonu; rádio přijímá pouze jedno připojení Bluetooth najednou."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",

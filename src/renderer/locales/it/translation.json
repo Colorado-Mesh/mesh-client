@@ -1629,7 +1629,8 @@
     "disconnectRadioGroup": "Disconnetti radio",
     "moreDisconnectOptions": "Altre opzioni di disconnessione",
     "disconnectOptions": "Opzioni di disconnessione",
-    "lastConnectionLabel": "Ultima connessione"
+    "lastConnectionLabel": "Ultima connessione",
+    "meshcoreBlePairingExpectationsHint": "Su Windows il dispositivo può mostrare \"Connesso\" per un secondo e poi \"Accoppiato\" — questo è previsto. Chiudi prima l'app MeshCore sul telefono; la radio accetta solo una connessione Bluetooth alla volta."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",
