@@ -6199,7 +6199,6 @@
     "exportLog": "Exporter le journal MECP",
     "compose": {
       "title": "Composer le rapport MECP",
-      "button": "MECP",
       "open": "Ouvrir MECP compose",
       "severity": "Sévérité (%)",
       "category": "Catégorie",

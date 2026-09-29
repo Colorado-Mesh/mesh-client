@@ -6199,7 +6199,6 @@
     "exportLog": "导出MECP日志",
     "compose": {
       "title": "撰写MECP报告",
-      "button": "MECP",
       "open": "打开MECP撰写",
       "severity": "严重性",
       "category": "类别",

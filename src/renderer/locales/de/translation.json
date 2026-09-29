@@ -6199,7 +6199,6 @@
     "exportLog": "MECP-Protokoll exportieren",
     "compose": {
       "title": "MECP-Bericht erstellen",
-      "button": "MECP",
       "open": "Öffnen Sie MECP Compose",
       "severity": "Schweregrad",
       "category": "Kategorie",

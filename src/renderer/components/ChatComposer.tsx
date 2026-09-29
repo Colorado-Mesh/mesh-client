@@ -210,6 +210,8 @@ export interface ChatComposerProps {
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   /** When set, renders a mic button that triggers voice memo recording. */
   onVoiceMemo?: () => void;
+  /** Extra compose action rendered in the action row, before the Send button. */
+  actionSlot?: ReactNode;
   className?: string;
   /**
    * When provided and returns true, ChatComposer clears the draft and skips split/send
@@ -266,6 +268,7 @@ export function ChatComposer({
   onSendLocationWaypoint,
   textareaRef,
   onVoiceMemo,
+  actionSlot,
   className,
   onInterceptSend,
   useWireByteCount = false,
@@ -1482,6 +1485,7 @@ export function ChatComposer({
             </button>
           </HelpTooltip>
         )}
+        {actionSlot}
         {showFloodScopeOverride ? (
           <div ref={floodScopeSplitRef} className="inline-flex shrink-0 items-stretch">
             <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>

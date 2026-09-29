@@ -151,6 +151,66 @@ describe('ChatComposer', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  describe('actionSlot', () => {
+    const emergencySlot = (
+      <button
+        type="button"
+        aria-label="Open emergency report"
+        className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200"
+      >
+        <svg aria-hidden className="h-4 w-4" />
+      </button>
+    );
+
+    it.each([false, true])(
+      'renders before the Send button (showFloodScopeOverride=%s)',
+      (showFloodScopeOverride) => {
+        render(
+          <ChatComposer
+            protocol="meshcore"
+            viewKey="ch:0"
+            isConnected
+            allowOutbox={false}
+            showFloodScopeOverride={showFloodScopeOverride}
+            actionSlot={emergencySlot}
+            onSendChunk={vi.fn().mockResolvedValue(undefined)}
+          />,
+        );
+        const slot = screen.getByRole('button', { name: 'Open emergency report' });
+        const send = screen.getByRole('button', { name: 'Send' });
+        expect(slot.compareDocumentPosition(send) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      },
+    );
+
+    it('renders nothing extra when omitted', () => {
+      render(
+        <ChatComposer
+          protocol="meshcore"
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          onSendChunk={vi.fn().mockResolvedValue(undefined)}
+        />,
+      );
+      expect(screen.queryByRole('button', { name: 'Open emergency report' })).toBeNull();
+    });
+
+    it('has no axe violations with the red emergency action present', async () => {
+      const { container } = render(
+        <ChatComposer
+          protocol="meshtastic"
+          viewKey="ch:0"
+          isConnected
+          allowOutbox={false}
+          actionSlot={emergencySlot}
+          onSendChunk={vi.fn().mockResolvedValue(undefined)}
+        />,
+      );
+      hydrateAxeThemeColors(container);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
   it('shows the Enter hint until the length counter takes its place, and the send icon with its label', () => {
     render(
       <ChatComposer
