@@ -34,7 +34,10 @@ import {
   writeToRadioWithoutQueue,
 } from './meshtasticBacklogUtils';
 
-function sfPacket(rr: number, variant: { case: string; value: unknown }): Uint8Array {
+function sfPacket(
+  rr: StoreForward.StoreAndForward_RequestResponse,
+  variant: { case: string; value: unknown },
+): Uint8Array {
   const msg = create(StoreForward.StoreAndForwardSchema, { rr, variant } as Parameters<
     typeof create<typeof StoreForward.StoreAndForwardSchema>
   >[1]);

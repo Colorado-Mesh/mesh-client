@@ -799,7 +799,7 @@ describe('onMessage — NODEINFO_APP', () => {
       id: `!${nodeId.toString(16)}`,
       longName: 'Bravo Station',
       shortName: 'BRV',
-      hwModel: 43,
+      hwModel: Mesh.HardwareModel.HELTEC_V3,
     });
     const dataBytes = toBinary(
       DataSchema,

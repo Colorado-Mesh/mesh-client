@@ -10,12 +10,12 @@ describe('decodeTakPacket', () => {
       ATAK.TAKPacketV2Schema,
       create(ATAK.TAKPacketV2Schema, {
         callsign: 'RANGER-1',
-        cotTypeId: 1,
+        cotTypeId: ATAK.CotType.CotType_a_f_G_U_C,
         latitudeI: 398_000_000,
         longitudeI: -1_050_000_000,
         altitude: 1620,
         battery: 87,
-        team: 2,
+        team: ATAK.Team.Yellow,
       }),
     );
 
@@ -35,7 +35,7 @@ describe('decodeTakPacket', () => {
       ATAK.TAKPacketV2Schema,
       create(ATAK.TAKPacketV2Schema, {
         callsign: 'SCOUT',
-        cotTypeId: 1,
+        cotTypeId: ATAK.CotType.CotType_a_f_G_U_C,
         cotTypeStr: 'a-f-G-U-C-I-T',
       }),
     );
@@ -65,7 +65,7 @@ describe('decodeTakPacket', () => {
       create(ATAK.TAKPacketV2Schema, {
         callsign: 'WX',
         environment: { temperatureCX10: 213, windDirectionDeg: 270, windSpeedCmS: 450 },
-        sensorFov: { type: 1, rangeM: 800 },
+        sensorFov: { type: ATAK.SensorFov_SensorType.SensorType_Camera, rangeM: 800 },
       }),
     );
     const summary = decodeTakPacket(bytes);
@@ -81,7 +81,10 @@ describe('decodeTakPacket', () => {
       ATAK.TAKPacketV2Schema,
       create(ATAK.TAKPacketV2Schema, {
         callsign: 'ENGINEER',
-        payloadVariant: { case: 'shape', value: { kind: 1, majorCm: 5000 } },
+        payloadVariant: {
+          case: 'shape',
+          value: { kind: ATAK.DrawnShape_Kind.Circle, majorCm: 5000 },
+        },
       }),
     );
     expect(decodeTakPacket(bytes)).toMatchObject({ payloadKind: 'shape' });
@@ -93,7 +96,7 @@ describe('decodeTakPacket', () => {
       ATAK.TAKPacketSchema,
       create(ATAK.TAKPacketSchema, {
         contact: { callsign: 'LEGACY', deviceCallsign: 'MESH-1' },
-        group: { team: 2, role: 1 },
+        group: { team: ATAK.Team.Yellow, role: ATAK.MemberRole.TeamMember },
         status: { battery: 55 },
         payloadVariant: {
           case: 'pli',

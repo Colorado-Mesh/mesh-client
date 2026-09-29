@@ -2,6 +2,7 @@ import type { MeshDevice } from '@meshtastic/core';
 import type { RefObject } from 'react';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
+import { toMeshtasticChannelNumber } from '@/renderer/lib/meshtastic/meshtasticChannelNumber';
 import { humanizeMeshtasticSdkQueueRejectionError } from '@/renderer/lib/meshtastic/meshtasticSdkRoutingErrorLog';
 import {
   loadMeshtasticMqttManualChannelPsks,
@@ -100,7 +101,7 @@ export class TransportManager {
           text,
           dest,
           true,
-          channel,
+          toMeshtasticChannelNumber(channel),
           replyId,
           tapback ? MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG : undefined,
         )
