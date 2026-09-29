@@ -1663,7 +1663,8 @@
     "disconnectRadioGroup": "Rozłącz radio",
     "moreDisconnectOptions": "Więcej opcji rozłączania",
     "disconnectOptions": "Opcje rozłączania",
-    "lastConnectionLabel": "Ostatnie połączenie"
+    "lastConnectionLabel": "Ostatnie połączenie",
+    "meshcoreBlePairingExpectationsHint": "W systemie Windows urządzenie może przez sekundę wyświetlać komunikat „Connected” (Połączone), a następnie „Paired” (Sparowane) — jest to oczekiwane. Najpierw zamknij aplikację MeshCore w telefonie; radio akceptuje tylko jedno połączenie Bluetooth na raz."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

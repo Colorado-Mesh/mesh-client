@@ -1629,7 +1629,8 @@
     "disconnectRadioGroup": "Funkgerät trennen",
     "moreDisconnectOptions": "Weitere Trennoptionen",
     "disconnectOptions": "Trennoptionen",
-    "lastConnectionLabel": "Letzte Verbindung"
+    "lastConnectionLabel": "Letzte Verbindung",
+    "meshcoreBlePairingExpectationsHint": "Unter Windows kann das Gerät für eine Sekunde \"Verbunden\" und dann \"Gekoppelt\" anzeigen — das wird erwartet. Schließen Sie zuerst die MeshCore-App auf Ihrem Telefon; das Radio akzeptiert jeweils nur eine Bluetooth-Verbindung."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Mitglieder konnten nicht geladen werden: {{message}}",

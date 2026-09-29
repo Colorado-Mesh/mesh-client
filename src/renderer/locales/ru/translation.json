@@ -1663,7 +1663,8 @@
     "disconnectRadioGroup": "Отключить радио",
     "moreDisconnectOptions": "Другие варианты отключения",
     "disconnectOptions": "Варианты отключения",
-    "lastConnectionLabel": "Последнее подключение"
+    "lastConnectionLabel": "Последнее подключение",
+    "meshcoreBlePairingExpectationsHint": "В Windows устройство может показывать «Подключено» в течение секунды, а затем «Сопряжено» — это ожидается. Сначала закройте приложение MeshCore на телефоне; радиостанция принимает только одно соединение Bluetooth за раз."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не удалось загрузить участников: {{message}}.",

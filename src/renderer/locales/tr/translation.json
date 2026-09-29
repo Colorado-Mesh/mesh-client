@@ -1629,7 +1629,8 @@
     "disconnectRadioGroup": "Radyo bağlantısını kes",
     "moreDisconnectOptions": "Diğer bağlantı kesme seçenekleri",
     "disconnectOptions": "Bağlantı kesme seçenekleri",
-    "lastConnectionLabel": "Son bağlantı"
+    "lastConnectionLabel": "Son bağlantı",
+    "meshcoreBlePairingExpectationsHint": "Windows'ta cihaz bir saniyeliğine \"Bağlandı\" ve ardından \"Eşleştirildi\" gösterebilir — bu beklenir. Önce telefonunuzdaki MeshCore uygulamasını kapatın; radyo aynı anda yalnızca bir Bluetooth bağlantısını kabul eder."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

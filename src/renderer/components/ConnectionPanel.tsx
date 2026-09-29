@@ -1699,7 +1699,8 @@ export default function ConnectionPanel({
                 <Trans
                   i18nKey="connectionPanel.meshcoreBlePairingHint"
                   components={{ strong: <strong /> }}
-                />
+                />{' '}
+                {t('connectionPanel.meshcoreBlePairingExpectationsHint')}
               </p>
             )}
           </div>

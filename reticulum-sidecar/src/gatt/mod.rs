@@ -15,6 +15,8 @@ mod registry;
 #[cfg(feature = "gatt-ble")]
 mod btleplug_backend;
 #[cfg(feature = "gatt-ble")]
+mod isolated;
+#[cfg(feature = "gatt-ble")]
 mod lazy_backend;
 
 pub use events::GattSessionEvent;

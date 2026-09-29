@@ -1663,7 +1663,8 @@
     "disconnectRadioGroup": "Від'єднати радіо",
     "moreDisconnectOptions": "Інші варіанти від'єднання",
     "disconnectOptions": "Варіанти від'єднання",
-    "lastConnectionLabel": "Останнє з'єднання"
+    "lastConnectionLabel": "Останнє з'єднання",
+    "meshcoreBlePairingExpectationsHint": "У Windows пристрій може показати \"Connected\" (Підключено) на секунду, а потім \"Paired\" (Об'єднано в пару) — це очікувано. Спочатку закрийте програму MeshCore на телефоні; радіо одночасно приймає лише одне з'єднання Bluetooth."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

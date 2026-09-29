@@ -420,7 +420,13 @@ impl BleBackend for BtleplugBackend {
     > {
         let key = normalize_address(address)?;
         // The proxy's 45s HTTP budget also has to cover the bounded 5s cleanup.
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(35);
+        let started = tokio::time::Instant::now();
+        let deadline = started + Duration::from_secs(35);
+        let stage = |name: &'static str| {
+            let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+            tracing::info!(target: "gatt", stage = name, elapsed_ms, profile = %profile, "gatt connect stage");
+        };
+        stage("lookup");
         let peripheral =
             tokio::time::timeout_at(deadline, self.find_peripheral_scanning(profile, &key))
                 .await
@@ -428,12 +434,14 @@ impl BleBackend for BtleplugBackend {
                     GattError::new(GattErrorCode::ConnectTimeout, "peripheral lookup timed out")
                 })??;
         let peripheral_id = Self::peripheral_id_str(&peripheral);
+        stage("found");
         let mut central_events = tokio::time::timeout_at(deadline, self.adapter.events())
             .await
             .map_err(|_| GattError::new(GattErrorCode::ConnectTimeout, "adapter events timed out"))?
             .map_err(|e| GattError::new(GattErrorCode::Internal, format!("adapter events: {e}")))?;
 
         let setup = async {
+            stage("connect");
             tokio::time::timeout(connect_timeout(), peripheral.connect())
                 .await
                 .map_err(|_| GattError::new(GattErrorCode::ConnectTimeout, "connect timed out"))?
@@ -447,6 +455,7 @@ impl BleBackend for BtleplugBackend {
                     GattError::new(code, msg)
                 })?;
 
+            stage("discover_services");
             tokio::time::timeout(discovery_timeout(), peripheral.discover_services())
                 .await
                 .map_err(|_| {
@@ -493,11 +502,13 @@ impl BleBackend for BtleplugBackend {
             let from_radio_char = from_radio_uuid
                 .map(|uuid| find_char(uuid, "fromRadio"))
                 .transpose()?;
+            stage("characteristics");
 
             // Subscribe the receiver before CCCD so early notifications stay queued.
             let notifications = peripheral.notifications().await.map_err(|e| {
                 GattError::new(GattErrorCode::Internal, format!("notifications: {e}"))
             })?;
+            stage("subscribe");
             tokio::time::timeout(discovery_timeout(), peripheral.subscribe(&notify_char))
                 .await
                 .map_err(|_| {
@@ -533,7 +544,14 @@ impl BleBackend for BtleplugBackend {
             }
         };
         let (write_char, write_type, notify_uuid, from_radio_char, mut notifications, seed_rssi) =
-            setup_with_cleanup(setup_until_disconnect, peripheral.disconnect()).await?;
+            setup_with_cleanup(setup_until_disconnect, peripheral.disconnect())
+                .await
+                .inspect_err(|e| {
+                    let elapsed_ms =
+                        u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
+                    tracing::warn!(target: "gatt", elapsed_ms, profile = %profile, "gatt connect failed: {e}");
+                })?;
+        stage("ready");
 
         let (tx, rx) = mpsc::unbounded_channel();
         if let Some(rssi) = seed_rssi {
