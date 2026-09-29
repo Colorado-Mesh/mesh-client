@@ -24,8 +24,12 @@ verifyStoreIntegrity: true
 # Enforce pnpm
 engineStrict: true
 
-# When local pnpm ≠ package.json#packageManager, download the pinned version
-pmOnFail: download
+# `ignore` keeps pnpm-lock.yaml a single YAML document. With `download`, pnpm 12
+# prepends a packageManagerDependencies env document that GitHub's dependency
+# graph cannot read (pnpm/pnpm#13805), leaving Dependabot on a stale snapshot.
+# The pin is still enforced by scripts/check-package-manager.mjs (preinstall)
+# and scripts/ci-verify-pnpm.mjs in CI.
+pmOnFail: ignore
 
 allowBuilds:
   '@meshtastic/core': true

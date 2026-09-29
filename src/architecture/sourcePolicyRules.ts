@@ -51,6 +51,20 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
       'SDK PacketMetadata.rxTime is Date (ms); use meshtasticPacketRxTimeMs — never rxTime * 1000',
   },
   {
+    id: 'pnpm-lockfile-single-document',
+    include: ['pnpm-lock.yaml'],
+    forbid: /^\s*packageManagerDependencies:/m,
+    message:
+      'pnpm-lock.yaml must be a single YAML document; the env document hides every dependency from GitHub Dependabot (pnpm/pnpm#13805)',
+  },
+  {
+    id: 'pnpm-workspace-pm-on-fail-ignore',
+    include: ['pnpm-workspace.yaml'],
+    require: /^pmOnFail:\s*ignore\s*$/m,
+    message:
+      'Keep pmOnFail: ignore so pnpm does not write the env lockfile document Dependabot cannot parse',
+  },
+  {
     id: 'emcomm-mecp-compose-default-off',
     include: ['src/renderer/lib/defaultAppSettings.ts'],
     require: /mecpComposeEnabled:\s*false/,
