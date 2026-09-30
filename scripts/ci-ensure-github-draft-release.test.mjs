@@ -940,4 +940,44 @@ describe('deleteOrphanUntaggedRef', () => {
     expect(deleted).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it('treats 422 "Reference does not exist" as already absent', async () => {
+    const fetchMock = vi.fn(async (url, init) => {
+      if ((init?.method ?? 'GET') === 'DELETE' && String(url).includes('/git/refs/tags/')) {
+        return new Response(JSON.stringify({ message: 'Reference does not exist' }), {
+          status: 422,
+        });
+      }
+      throw new Error(`Unexpected fetch ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const deleted = await deleteOrphanUntaggedRef('untagged-e8e51dd3a65c4013cd17', 'token', {
+      log: () => {},
+      isTagNameInUse: async () => false,
+    });
+    expect(deleted).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('still fails on other 422 errors', async () => {
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit:${code}`);
+    });
+    const fetchMock = vi.fn(async (url, init) => {
+      if ((init?.method ?? 'GET') === 'DELETE' && String(url).includes('/git/refs/tags/')) {
+        return new Response(JSON.stringify({ message: 'Validation Failed' }), { status: 422 });
+      }
+      throw new Error(`Unexpected fetch ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      deleteOrphanUntaggedRef('untagged-deadbeef', 'token', {
+        log: () => {},
+        isTagNameInUse: async () => false,
+      }),
+    ).rejects.toThrow(/exit:1/);
+    exitSpy.mockRestore();
+  });
 });
