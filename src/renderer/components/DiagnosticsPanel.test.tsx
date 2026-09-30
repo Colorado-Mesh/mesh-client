@@ -911,3 +911,127 @@ describe('DiagnosticsPanel tracing pulse', () => {
     ).toBe(true);
   });
 });
+
+describe('DiagnosticsPanel node hex ids', () => {
+  const HEX_ID = /^![0-9a-f]{8}$/;
+
+  function impossibleHopRow(nodeId: number): RoutingDiagnosticRow {
+    return {
+      kind: 'routing',
+      id: `routing:${nodeId}`,
+      nodeId,
+      type: 'impossible_hop',
+      severity: 'error',
+      description: 'Reported as 0 hops away but 246 miles distant',
+      detectedAt: Date.now(),
+    };
+  }
+
+  it('shows long name without !hex on MeshCore findings and keeps rows clickable', () => {
+    const nodeId = 0x192ea6ac;
+    const node = { ...minimalNode(nodeId), long_name: 'KR4GTA-ETSU-Repeater', short_name: 'KR' };
+    diagnosticsStoreState.diagnosticRows = [impossibleHopRow(nodeId)];
+    diagnosticsStoreState.packetStats = new Map();
+    diagnosticsStoreState.foreignLoraDetections = new Map();
+    const onNodeClick = vi.fn();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map<number, MeshNode>([[nodeId, node]])}
+        myNodeNum={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        onNodeClick={onNodeClick}
+        protocol="meshcore"
+        capabilities={MESHCORE_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.getByText('KR4GTA-ETSU-Repeater')).toBeInTheDocument();
+    expect(screen.queryByText(formatMeshtasticNodeId(nodeId))).not.toBeInTheDocument();
+    expect(screen.queryByText(HEX_ID)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('KR4GTA-ETSU-Repeater'));
+    expect(onNodeClick).toHaveBeenCalledWith(node);
+  });
+
+  it('shows Unknown node instead of !hex for an unnamed MeshCore finding', () => {
+    const nodeId = 0xd16fe984;
+    diagnosticsStoreState.diagnosticRows = [impossibleHopRow(nodeId)];
+    diagnosticsStoreState.foreignLoraDetections = new Map();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshcore"
+        capabilities={MESHCORE_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.getByText('Unknown node')).toBeInTheDocument();
+    expect(screen.queryByText(HEX_ID)).not.toBeInTheDocument();
+  });
+
+  it('keeps the Meshtastic !hex sender on MeshCore foreign-traffic rows', () => {
+    const myNodeNum = 0x1234;
+    const senderId = 0x7d47679f;
+    diagnosticsStoreState.diagnosticRows = [
+      {
+        kind: 'rf',
+        id: `rf:${myNodeNum}:Meshtastic Traffic Detected:${senderId}`,
+        nodeId: myNodeNum,
+        condition: 'Meshtastic Traffic Detected',
+        cause: 'Meshtastic node transmitting on this frequency.',
+        severity: 'info',
+        detectedAt: Date.now(),
+        foreignSenderId: senderId,
+      },
+    ];
+    diagnosticsStoreState.foreignLoraDetections = new Map();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={myNodeNum}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshcore"
+        capabilities={MESHCORE_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.getAllByText(formatMeshtasticNodeId(senderId)).length).toBeGreaterThan(0);
+  });
+
+  it('still shows the !hex sub-line on Meshtastic findings', () => {
+    const nodeId = 0xc5c1621c;
+    const node = { ...minimalNode(nodeId), long_name: 'Aetherbug' };
+    diagnosticsStoreState.diagnosticRows = [impossibleHopRow(nodeId)];
+    diagnosticsStoreState.foreignLoraDetections = new Map();
+
+    render(
+      <DiagnosticsPanel
+        nodes={new Map<number, MeshNode>([[nodeId, node]])}
+        myNodeNum={1}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
+        capabilities={MESHTASTIC_CAPABILITIES}
+      />,
+    );
+
+    expect(screen.getByText('Aetherbug')).toBeInTheDocument();
+    expect(screen.getByText(formatMeshtasticNodeId(nodeId))).toBeInTheDocument();
+  });
+});

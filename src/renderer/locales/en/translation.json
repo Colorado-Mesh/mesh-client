@@ -1664,6 +1664,7 @@
     "dismissRow": "Dismiss",
     "searchAnomalies": "Search anomalies...",
     "meshcoreUnknownForeignNode": "Unknown MeshCore node",
+    "meshcoreUnknownNode": "Unknown node",
     "meshcoreHeardByMeshtasticHeading": "MeshCore nodes heard by your Meshtastic radio ({{count}})",
     "meshcoreHeardByMeshtasticDescription": "MeshCore transmitters overheard on local RF in the last 90 minutes (Meshtastic device logs or MeshCore radio RX). Does not include MeshCore repeater contact sync. These are not your Meshtastic node.",
     "meshcoreHeardUnknownNode": "Unidentified MeshCore transmitter",

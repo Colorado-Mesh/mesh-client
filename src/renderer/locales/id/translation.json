@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "Abaikan MQTT",
     "ignoreMqttHelp": "Redupkan node yang hanya menggunakan MQTT dan kecualikan dari diagnostik",
     "exportJson": "Ekspor ke JSON",
-    "exportJsonAria": "Ekspor baris diagnostik yang terlihat sebagai JSON"
+    "exportJsonAria": "Ekspor baris diagnostik yang terlihat sebagai JSON",
+    "meshcoreUnknownNode": "Node tidak dikenal"
   },
   "diagnosticsPing": {
     "title": "Ping berkelanjutan",

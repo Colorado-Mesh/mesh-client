@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "忽略MQTT",
     "ignoreMqttHelp": "灰显仅限MQTT的节点，并将其排除在诊断之外",
     "exportJson": "导出JSON",
-    "exportJsonAria": "将可见诊断行导出为JSON"
+    "exportJsonAria": "将可见诊断行导出为JSON",
+    "meshcoreUnknownNode": "未知节点"
   },
   "diagnosticsPing": {
     "title": "持续ping",

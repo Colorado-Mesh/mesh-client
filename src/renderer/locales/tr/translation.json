@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "MQTT'yi yok say",
     "ignoreMqttHelp": "Yalnızca MQTT kullanan düğümleri soluk göster ve tanılamadan hariç tut",
     "exportJson": "JSON olarak dışa aktar",
-    "exportJsonAria": "Görünür tanılama satırlarını JSON olarak dışa aktar"
+    "exportJsonAria": "Görünür tanılama satırlarını JSON olarak dışa aktar",
+    "meshcoreUnknownNode": "Bilinmeyen düğüm"
   },
   "diagnosticsPing": {
     "title": "Sürekli ping",

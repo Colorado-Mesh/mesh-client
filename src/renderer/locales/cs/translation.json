@@ -2025,7 +2025,8 @@
     "severityWarnings_few": "Upozornění ({{count}})",
     "warningCount_few": "{{count}} varování",
     "exportJson": "Exportovat JSON",
-    "exportJsonAria": "Exportovat viditelné diagnostické řádky jako JSON"
+    "exportJsonAria": "Exportovat viditelné diagnostické řádky jako JSON",
+    "meshcoreUnknownNode": "Neznámý uzel"
   },
   "diagnosticsPing": {
     "title": "Kontinuální ping",

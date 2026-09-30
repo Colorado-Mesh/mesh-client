@@ -908,6 +908,7 @@ function RFDiagnosticsSection({
   protocol?: MeshProtocol;
 }) {
   const { t } = useTranslation();
+  const { showsNodeNumHexId } = useRadioProvider(protocol);
   const getCuStats24h = useDiagnosticsStore((s) => s.getCuStats24h);
   const packetCache = useDiagnosticsStore((s) => s.packetCache);
   const diagnosticRows = useDiagnosticsStore((s) => s.diagnosticRows);
@@ -972,6 +973,7 @@ function RFDiagnosticsSection({
           lines={meshCongestionLines}
           originators={rfOriginators}
           nodes={nodes}
+          showNodeHexId={showsNodeNumHexId}
         />
       )}
 

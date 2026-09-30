@@ -2047,7 +2047,8 @@
     "warningCount_few": "{{count}} предупреждения",
     "warningCount_many": "{{count}} предупреждений",
     "exportJson": "Экспортировать в JSON",
-    "exportJsonAria": "Экспортировать видимые строки диагностики как JSON"
+    "exportJsonAria": "Экспортировать видимые строки диагностики как JSON",
+    "meshcoreUnknownNode": "Неизвестный узел"
   },
   "diagnosticsPing": {
     "title": "Непрерывный пинг",
