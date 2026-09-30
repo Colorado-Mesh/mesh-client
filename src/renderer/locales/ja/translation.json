@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "MQTT を無視",
     "ignoreMqttHelp": "MQTT のみのノードをグレー表示し、診断から除外します",
     "exportJson": "JSON のエクスポート",
-    "exportJsonAria": "表示されている診断行をJSONとしてエクスポートする"
+    "exportJsonAria": "表示されている診断行をJSONとしてエクスポートする",
+    "meshcoreUnknownNode": "不明なノード"
   },
   "diagnosticsPing": {
     "title": "連続ping",

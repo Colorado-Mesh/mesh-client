@@ -197,6 +197,7 @@ export default function DiagnosticsPanel({
     [t],
   );
   const showMqttControls = capabilities?.hasMqttHybrid !== false;
+  const showNodeHexId = capabilities?.showsNodeNumHexId !== false;
   // LoRa Node/Offense tables are Meshtastic/MeshCore only. Derive from
   // capabilities.protocol (not the tab prop alone) so a mismatched protocol
   // prop cannot resurrect LoRa mesh tables on Reticulum. Native Reticulum rows
@@ -598,12 +599,17 @@ export default function DiagnosticsPanel({
             ? formatMeshtasticNodeId(rf.foreignSenderId)
             : foreignLoraRow
               ? '—'
-              : formatMeshtasticNodeId(rf.nodeId);
+              : showNodeHexId
+                ? formatMeshtasticNodeId(rf.nodeId)
+                : null;
         const displayName = foreignLoraRow
           ? node?.long_name ||
             node?.short_name ||
             (rf.foreignSenderId != null ? hexId : t('diagnosticsPanel.meshcoreUnknownForeignNode'))
-          : node?.long_name || node?.short_name || hexId;
+          : node?.long_name ||
+            node?.short_name ||
+            hexId ||
+            t('diagnosticsPanel.meshcoreUnknownNode');
         const remedy = getRecommendedActionForRfCondition(rf.condition);
         rows.push(
           <tr
@@ -622,7 +628,7 @@ export default function DiagnosticsPanel({
                 )}
                 <div>
                   <div className="text-ink-200 font-medium">{displayName}</div>
-                  <div className="text-muted font-mono text-xs">{hexId}</div>
+                  {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
                 </div>
               </div>
             </td>
@@ -666,8 +672,9 @@ export default function DiagnosticsPanel({
       const isError = anomaly.severity === 'error';
       const isInfo = anomaly.severity === 'info';
       const colorClass = isError ? 'text-red-400' : isInfo ? 'text-indigo-400' : 'text-orange-400';
-      const hexId = formatMeshtasticNodeId(anomaly.nodeId);
-      const displayName = node?.long_name || node?.short_name || hexId;
+      const hexId = showNodeHexId ? formatMeshtasticNodeId(anomaly.nodeId) : null;
+      const displayName =
+        node?.long_name || node?.short_name || hexId || t('diagnosticsPanel.meshcoreUnknownNode');
       const isPending = tracePendingNodes.has(anomaly.nodeId);
       const isFailed = traceFailed.has(anomaly.nodeId);
       const traceResult = traceRouteResults.get(anomaly.nodeId);
@@ -700,7 +707,7 @@ export default function DiagnosticsPanel({
               )}
               <div>
                 <div className="text-ink-200 font-medium">{displayName}</div>
-                <div className="text-muted font-mono text-xs">{hexId}</div>
+                {hexId ? <div className="text-muted font-mono text-xs">{hexId}</div> : null}
               </div>
             </div>
           </td>
@@ -1401,6 +1408,7 @@ export default function DiagnosticsPanel({
               lines={meshCongestionBlock.lines}
               originators={meshCongestionBlock.originators}
               nodes={nodes}
+              showNodeHexId={showNodeHexId}
               scopeSubtitle={t('diagnosticsPanel.scopeSubtitle')}
               className=""
             />

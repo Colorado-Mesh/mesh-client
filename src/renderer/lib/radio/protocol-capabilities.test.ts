@@ -93,6 +93,7 @@ const REQUIRED_CAPABILITY_KEYS: (keyof ProtocolCapabilities)[] = [
   'hasGattBleScanning',
   'hasLxmfPaper',
   'hasDiagnosticsPanel',
+  'showsNodeNumHexId',
   'nodeStaleThresholdMs',
   'nodeOfflineThresholdMs',
 ];
@@ -201,6 +202,7 @@ describe('ProtocolCapabilities contract', () => {
         "prefersDeviceDeliveryStatusOverMqtt": false,
         "prefersDeviceOwnerLongNameInHeader": false,
         "protocol": "meshtastic",
+        "showsNodeNumHexId": true,
       }
     `);
   });
@@ -287,6 +289,7 @@ describe('ProtocolCapabilities contract', () => {
         "prefersDeviceDeliveryStatusOverMqtt": true,
         "prefersDeviceOwnerLongNameInHeader": true,
         "protocol": "meshcore",
+        "showsNodeNumHexId": false,
       }
     `);
   });
@@ -380,6 +383,7 @@ describe('ProtocolCapabilities contract', () => {
         "prefersDeviceDeliveryStatusOverMqtt": false,
         "prefersDeviceOwnerLongNameInHeader": false,
         "protocol": "reticulum",
+        "showsNodeNumHexId": false,
       }
     `);
   });

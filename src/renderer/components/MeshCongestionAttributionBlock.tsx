@@ -35,6 +35,8 @@ interface Props {
   lines: CongestionLine[];
   originators: RfDuplicateOriginator[];
   nodes?: Map<number, MeshNode>;
+  /** When false (non-Meshtastic), label originators by long name only — never `!xxxxxxxx`. */
+  showNodeHexId?: boolean;
   /** Shown under the main title when set (e.g. "Observed at this client"). */
   scopeSubtitle?: string;
   /** Outer wrapper margin; default mt-3 for node detail context. */
@@ -45,6 +47,7 @@ export default function MeshCongestionAttributionBlock({
   lines,
   originators,
   nodes,
+  showNodeHexId = true,
   scopeSubtitle,
   className = 'mt-3',
 }: Props) {
@@ -74,7 +77,9 @@ export default function MeshCongestionAttributionBlock({
           <ul className="space-y-1">
             {originators.map((o) => {
               const n = nodes?.get(o.nodeId);
-              const name = n?.short_name || n?.long_name || formatMeshtasticNodeId(o.nodeId);
+              const name = showNodeHexId
+                ? n?.short_name || n?.long_name || formatMeshtasticNodeId(o.nodeId)
+                : n?.long_name || n?.short_name || t('diagnosticsPanel.meshcoreUnknownNode');
               const role = getRoleInfo(n?.role);
               return (
                 <li key={o.nodeId} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">

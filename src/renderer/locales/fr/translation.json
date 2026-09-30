@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "Ignorer MQTT",
     "ignoreMqttHelp": "Griser les nœuds MQTT uniquement et les exclure des diagnostics",
     "exportJson": "Exporter JSON",
-    "exportJsonAria": "Exporter les lignes de diagnostics visibles au format JSON"
+    "exportJsonAria": "Exporter les lignes de diagnostics visibles au format JSON",
+    "meshcoreUnknownNode": "Nœud inconnu"
   },
   "diagnosticsPing": {
     "title": "Ping continu",

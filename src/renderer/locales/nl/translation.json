@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "MQTT negeren",
     "ignoreMqttHelp": "Maak nodes die alleen MQTT gebruiken grijs en sluit ze uit van diagnostiek",
     "exportJson": "Exporteer als JSON",
-    "exportJsonAria": "Zichtbare diagnoserijen exporteren als JSON"
+    "exportJsonAria": "Zichtbare diagnoserijen exporteren als JSON",
+    "meshcoreUnknownNode": "Onbekende node-type"
   },
   "diagnosticsPing": {
     "title": "Continue ping",

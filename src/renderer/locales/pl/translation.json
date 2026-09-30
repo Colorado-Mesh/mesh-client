@@ -2047,7 +2047,8 @@
     "warningCount_few": "{{count}} ostrzeżenia",
     "warningCount_many": "{{count}} ostrzeżeń",
     "exportJson": "Eksportowanie jako JSON",
-    "exportJsonAria": "Eksportuj widoczne wiersze diagnostyki jako JSON"
+    "exportJsonAria": "Eksportuj widoczne wiersze diagnostyki jako JSON",
+    "meshcoreUnknownNode": "Nieznany węzeł"
   },
   "diagnosticsPing": {
     "title": "Ciągły ping",

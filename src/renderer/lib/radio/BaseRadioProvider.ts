@@ -131,6 +131,11 @@ export interface ProtocolCapabilities {
   prefersDeviceDeliveryStatusOverMqtt: boolean;
   /** Meshtastic-centric routing/RF diagnostics (Hop Goblins, CU, foreign LoRa). */
   hasDiagnosticsPanel: boolean;
+  /**
+   * Whether peers have short numeric node ids shown as `!xxxxxxxx` (Meshtastic only).
+   * MeshCore/Reticulum ids are pubkey/hash-derived; UI shows names and opens detail on click.
+   */
+  showsNodeNumHexId: boolean;
   /** Reticulum: Connection panel interface editor (TCP, Auto, serial) */
   hasReticulumInterfaceConfig: boolean;
   /** Reticulum: Network tab (identity, stack config, propagation) */
@@ -230,6 +235,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   prefersDeviceOwnerLongNameInHeader: false,
   prefersDeviceDeliveryStatusOverMqtt: false,
   hasDiagnosticsPanel: true,
+  showsNodeNumHexId: true,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
   hasRNodeFlasher: false,
@@ -310,6 +316,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   prefersDeviceOwnerLongNameInHeader: true,
   prefersDeviceDeliveryStatusOverMqtt: true,
   hasDiagnosticsPanel: true,
+  showsNodeNumHexId: false,
   hasReticulumInterfaceConfig: false,
   hasReticulumNetworkPanel: false,
   hasRNodeFlasher: false,
@@ -389,6 +396,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   prefersDeviceOwnerLongNameInHeader: false,
   prefersDeviceDeliveryStatusOverMqtt: false,
   hasDiagnosticsPanel: true,
+  showsNodeNumHexId: false,
   hasReticulumInterfaceConfig: true,
   hasReticulumNetworkPanel: true,
   hasRNodeFlasher: true,

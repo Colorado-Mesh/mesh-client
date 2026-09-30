@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "MQTT ignorieren",
     "ignoreMqttHelp": "Nur MQTT-Knoten ausgrauen und von der Diagnose ausschließen",
     "exportJson": "Exportieren JSON",
-    "exportJsonAria": "Sichtbare Diagnosezeilen als json exportieren"
+    "exportJsonAria": "Sichtbare Diagnosezeilen als json exportieren",
+    "meshcoreUnknownNode": "Unbekannter Knoten"
   },
   "diagnosticsPing": {
     "title": "Kontinuierlicher Ping",

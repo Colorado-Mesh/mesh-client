@@ -1999,7 +1999,8 @@
     "ignoreMqttToggle": "MQTT 무시",
     "ignoreMqttHelp": "MQTT 전용 노드를 흐리게 표시하고 진단에서 제외합니다",
     "exportJson": "JSON 내보내기",
-    "exportJsonAria": "눈에 보이는 진단 행을 JSON으로 내보내기"
+    "exportJsonAria": "눈에 보이는 진단 행을 JSON으로 내보내기",
+    "meshcoreUnknownNode": "알 수 없는 노드"
   },
   "diagnosticsPing": {
     "title": "연속 핑",
