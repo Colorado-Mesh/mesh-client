@@ -1045,7 +1045,9 @@
         "scanBusy": "另一次蓝牙扫描正在进行中。稍后再试一次。",
         "sameDeviceConflict": "该蓝牙设备已连接到 {{owner}}。",
         "chooserCancelledHint": "如果您没有取消，请确保蓝牙已打开（systemctl status bluetooth），然后再次点击“连接”。在 Flatpak 上，重新安装允许蓝牙的版本，或使用 AppImage/.deb/.rpm。",
-        "bluetoothctlMissingHint": "操作系统蓝牙配对工具在此环境中不可用（在 Flatpak 中常见）。使用官方 AppImage、.deb 或 .rpm，或将无线电与主机 bluetoothctl 配对，然后重试连接。"
+        "bluetoothctlMissingHint": "操作系统蓝牙配对工具在此环境中不可用（在 Flatpak 中常见）。使用官方 AppImage、.deb 或 .rpm，或将无线电与主机 bluetoothctl 配对，然后重试连接。",
+        "stackUnresponsiveWindows": "Windows蓝牙在较早的连接尝试中卡住了，通常是未完成的配对。在“设置” > “蓝牙和设备”中删除收音机，再次将其与收音机上显示的PIN码配对，直到Windows显示“已配对”，然后重新启动 mesh-client。",
+        "stackUnresponsiveGeneric": "蓝牙在较早的连接尝试中被卡住。关闭和打开蓝牙，根据需要重新配对收音机，然后重新启动 mesh-client。"
       }
     },
     "error": {

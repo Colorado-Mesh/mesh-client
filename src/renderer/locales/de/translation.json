@@ -1043,7 +1043,9 @@
         "scanBusy": "Ein weiterer Bluetooth-Scan wird durchgeführt. Versuchen Sie es gleich noch einmal.",
         "sameDeviceConflict": "Dieses Bluetooth-Gerät ist bereits mit {{owner}} verbunden.",
         "chooserCancelledHint": "Wenn Sie nicht abgebrochen haben, stellen Sie sicher, dass Bluetooth aktiviert ist (systemctl status bluetooth), und tippen Sie dann erneut auf „Verbinden“. Installieren Sie auf Flatpak einen Build mit erlaubtem Bluetooth neu oder verwenden Sie AppImage/.deb/.rpm.",
-        "bluetoothctlMissingHint": "OS-Bluetooth-Pairing-Tools sind in dieser Umgebung nicht verfügbar (üblich in Flatpak). Verwenden Sie das offizielle AppImage, .deb oder .rpm, oder koppeln Sie das Radio mit dem Host-Bluetoothctl und versuchen Sie dann erneut, Connect durchzuführen."
+        "bluetoothctlMissingHint": "OS-Bluetooth-Pairing-Tools sind in dieser Umgebung nicht verfügbar (üblich in Flatpak). Verwenden Sie das offizielle AppImage, .deb oder .rpm, oder koppeln Sie das Radio mit dem Host-Bluetoothctl und versuchen Sie dann erneut, Connect durchzuführen.",
+        "stackUnresponsiveWindows": "Windows Bluetooth bleibt bei einem früheren Verbindungsversuch hängen, in der Regel eine nicht abgeschlossene Kopplung. Entfernen Sie das Radio unter Einstellungen > Bluetooth & Geräte, koppeln Sie es erneut mit der im Radio angezeigten PIN, bis Windows \"Gekoppelt\" anzeigt, und starten Sie dann den Mesh-Client neu.",
+        "stackUnresponsiveGeneric": "Bluetooth bleibt bei einem früheren Verbindungsversuch hängen. Schalten Sie Bluetooth aus und ein, koppeln Sie das Radio bei Bedarf neu und starten Sie dann den Mesh-Client neu."
       }
     },
     "error": {

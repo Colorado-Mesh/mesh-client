@@ -1045,7 +1045,9 @@
         "scanBusy": "Başka bir Bluetooth taraması sürüyor. Birazdan tekrar deneyin.",
         "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı.",
         "chooserCancelledHint": "İptal etmediyseniz Bluetooth'un açık olduğundan emin olun (systemctl durumu bluetooth) ve ardından tekrar Bağlan'a dokunun. Flatpak'te, Bluetooth'a izin verilen bir yapıyı yeniden yükleyin veya AppImage/.deb/.rpm dosyasını kullanın.",
-        "bluetoothctlMissingHint": "İşletim Sistemi Bluetooth eşleştirme araçları bu ortamda kullanılamaz (Flatpak'ta yaygındır). Resmi AppImage, .deb veya .rpm'yi kullanın veya radyoyu ana bilgisayar bluetoothctl ile eşleştirin ve ardından Bağlanmayı yeniden deneyin."
+        "bluetoothctlMissingHint": "İşletim Sistemi Bluetooth eşleştirme araçları bu ortamda kullanılamaz (Flatpak'ta yaygındır). Resmi AppImage, .deb veya .rpm'yi kullanın veya radyoyu ana bilgisayar bluetoothctl ile eşleştirin ve ardından Bağlanmayı yeniden deneyin.",
+        "stackUnresponsiveWindows": "Windows Bluetooth, genellikle tamamlanmamış bir eşleştirme olan daha önceki bir bağlantı girişiminde takıldı. Ayarlar > Bluetooth ve cihazlar bölümünden radyoyu kaldırın, Windows \"Paired\" (Eşleştirildi) mesajını gösterene kadar radyoda gösterilen PIN ile tekrar eşleştirin, ardından mesh-client'ı yeniden başlatın.",
+        "stackUnresponsiveGeneric": "Bluetooth daha önceki bir bağlantı denemesinde takıldı. Bluetooth'u kapatıp açın, gerekirse radyoyu yeniden eşleştirin, ardından mesh-client'ı yeniden başlatın."
       }
     },
     "error": {

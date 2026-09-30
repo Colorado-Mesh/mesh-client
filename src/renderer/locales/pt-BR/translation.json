@@ -1045,7 +1045,9 @@
         "scanBusy": "Outra varredura de Bluetooth está em andamento. Tente novamente em alguns instantes.",
         "sameDeviceConflict": "Este dispositivo Bluetooth já está conectado a {{owner}}.",
         "chooserCancelledHint": "Se você não cancelou, certifique-se de que o Bluetooth esteja ativado (systemctl status bluetooth) e toque em Conectar novamente. No Flatpak, reinstale uma compilação com Bluetooth permitido ou use AppImage/.deb/.rpm.",
-        "bluetoothctlMissingHint": "As ferramentas de emparelhamento Bluetooth do sistema operacional não estão disponíveis neste ambiente (comum no Flatpak). Use o AppImage, .deb ou .rpm oficial ou emparelhe o rádio com o host bluetoothctl e tente novamente o Connect."
+        "bluetoothctlMissingHint": "As ferramentas de emparelhamento Bluetooth do sistema operacional não estão disponíveis neste ambiente (comum no Flatpak). Use o AppImage, .deb ou .rpm oficial ou emparelhe o rádio com o host bluetoothctl e tente novamente o Connect.",
+        "stackUnresponsiveWindows": "O Bluetooth do Windows está travado em uma tentativa de conexão anterior, geralmente um emparelhamento inacabado. Remova o rádio em Configurações > Bluetooth e dispositivos, emparelhe-o novamente com o PIN mostrado no rádio até que o Windows mostre \"Emparelhado\" e reinicie o mesh-client.",
+        "stackUnresponsiveGeneric": "O Bluetooth está travado em uma tentativa de conexão anterior. Desligue e ligue o Bluetooth, emparelhe novamente o rádio, se necessário, e reinicie o mesh-client."
       }
     },
     "error": {

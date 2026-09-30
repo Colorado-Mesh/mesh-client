@@ -1567,6 +1567,8 @@
       "ble": {
         "adapterWindowsHint": "Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.",
         "adapterGenericHint": "Make sure Bluetooth is enabled. On Linux, run: systemctl status bluetooth",
+        "stackUnresponsiveWindows": "Windows Bluetooth is stuck on an earlier connection attempt, usually an unfinished pairing. Remove the radio in Settings > Bluetooth & devices, pair it again with the PIN shown on the radio until Windows shows \"Paired\", then restart mesh-client.",
+        "stackUnresponsiveGeneric": "Bluetooth is stuck on an earlier connection attempt. Turn Bluetooth off and on, re-pair the radio if needed, then restart mesh-client.",
         "securityPermissionHint": "Bluetooth permission denied. Ensure the app has access to the Bluetooth device.",
         "gattDisconnectedHint": "GATT connection dropped. Try moving closer to the device and reconnecting.",
         "gattNotSupportedBase": "The device requires pairing before connecting. Use the \"Remove & Re-pair Device\" button to re-initiate pairing.",

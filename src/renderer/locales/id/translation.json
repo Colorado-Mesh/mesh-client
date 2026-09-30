@@ -1045,7 +1045,9 @@
         "scanBusy": "Pemindaian Bluetooth lainnya sedang berlangsung. Coba lagi sebentar lagi.",
         "sameDeviceConflict": "Perangkat Bluetooth ini sudah terhubung ke {{owner}}.",
         "chooserCancelledHint": "Jika Anda tidak membatalkan, pastikan Bluetooth aktif (status sistemctl bluetooth), lalu ketuk Hubungkan lagi. Di Flatpak, instal ulang build dengan Bluetooth yang diizinkan, atau gunakan AppImage/.deb/.rpm.",
-        "bluetoothctlMissingHint": "Alat pemasangan OS Bluetooth tidak tersedia di lingkungan ini (umum di Flatpak). Gunakan AppImage resmi, .deb, atau .rpm, atau pasangkan radio dengan host bluetoothctl, lalu coba lagi Hubungkan."
+        "bluetoothctlMissingHint": "Alat pemasangan OS Bluetooth tidak tersedia di lingkungan ini (umum di Flatpak). Gunakan AppImage resmi, .deb, atau .rpm, atau pasangkan radio dengan host bluetoothctl, lalu coba lagi Hubungkan.",
+        "stackUnresponsiveWindows": "Bluetooth Windows macet pada upaya koneksi sebelumnya, biasanya pasangan yang belum selesai. Lepaskan radio di Pengaturan > Bluetooth & perangkat, pasangkan lagi dengan PIN yang ditampilkan di radio sampai Windows menunjukkan \"Dipasangkan\", lalu mulai ulang mesh-client.",
+        "stackUnresponsiveGeneric": "Bluetooth macet pada upaya koneksi sebelumnya. Matikan dan nyalakan Bluetooth, pasangkan kembali radio jika perlu, lalu mulai ulang mesh-client."
       }
     },
     "error": {

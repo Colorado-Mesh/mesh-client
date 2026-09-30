@@ -64,6 +64,9 @@ export async function startGattScanningWithRetry(
       await sleep(retryIntervalMs);
       continue;
     }
+    if ('error' in result) {
+      throw new Error(`${result.code}: ${result.error}`);
+    }
     throw new Error('GATT BLE scan failed');
   }
 

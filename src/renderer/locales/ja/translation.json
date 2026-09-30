@@ -1045,7 +1045,9 @@
         "scanBusy": "別の Bluetooth スキャンが進行中です。しばらくしてからもう一度試してください。",
         "sameDeviceConflict": "この Bluetooth デバイスはすでに {{owner}} に接続されています。",
         "chooserCancelledHint": "キャンセルしなかった場合は、Bluetooth がオンになっていることを確認し (systemctl status bluetooth)、もう一度「接続」をタップします。 Flatpak では、Bluetooth を許可してビルドを再インストールするか、AppImage/.deb/.rpm を使用します。",
-        "bluetoothctlMissingHint": "この環境では、OS Bluetooth ペアリング ツールを利用できません (Flatpak で一般的)。公式の AppImage、.deb、または .rpm を使用するか、無線をホスト bluetoothctl とペアリングしてから、接続を再試行します。"
+        "bluetoothctlMissingHint": "この環境では、OS Bluetooth ペアリング ツールを利用できません (Flatpak で一般的)。公式の AppImage、.deb、または .rpm を使用するか、無線をホスト bluetoothctl とペアリングしてから、接続を再試行します。",
+        "stackUnresponsiveWindows": "Windows Bluetoothは、通常は未完了のペアリングである、以前の接続試行で立ち往生しています。[設定] > [Bluetoothとデバイス]でラジオを削除し、Windowsに[ペアリング済み]と表示されるまでラジオに表示されるPINで再度ペアリングしてから、mesh-clientを再起動します。",
+        "stackUnresponsiveGeneric": "以前の接続試行でBluetoothが停止しています。Bluetoothの電源をオフまたはオンにし、必要に応じてラジオを再ペアリングしてから、mesh-clientを再起動します。"
       }
     },
     "error": {
