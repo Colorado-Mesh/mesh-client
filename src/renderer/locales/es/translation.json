@@ -6359,7 +6359,6 @@
     "namePlaceholder": "por ejemplo, Hogar o EDC",
     "coordsLabel": "Coordenadas",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Pegue \"latitud, longitud\" desde una aplicación de mapa o escriba ambos valores.",
     "invalidCoords": "Introduzca una latitud entre -90 y 90 y una longitud entre -180 y 180, separadas por una coma.",
     "fixedLabel": "Este equipo no se mueve (no pregunte en cada lanzamiento)",
     "useApproximate": "Empezar desde una posición aproximada",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} no se mueve",
     "deleteAria": "Eliminar {{name}}",
     "stopUsing": "Dejar de usar la ubicación guardada",
-    "addLocation": "Añadir ubicación"
+    "addLocation": "Añadir ubicación",
+    "coordsHintFormats": "Pegue las coordenadas o un enlace de mapa: decimal (39.7392, -104.9903), grados/minutos/segundos con N/S/E/W, MGRS o un enlace compartido de Google, Apple u OpenStreetMap."
   }
 }

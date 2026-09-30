@@ -6447,7 +6447,6 @@
     "namePlaceholder": "np. Home lub EOC",
     "coordsLabel": "Koordynaty",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Wklej „szerokość geograficzną, długość geograficzną” z aplikacji mapy lub wpisz obie wartości.",
     "invalidCoords": "Wprowadź szerokość geograficzną od -90 do 90 i długość geograficzną od -180 do 180, oddzielone przecinkiem.",
     "fixedLabel": "Ten komputer się nie porusza (nie pytaj przy każdym uruchomieniu)",
     "useApproximate": "Zacznij od przybliżonej pozycji",
@@ -6465,6 +6464,7 @@
     "toggleFixedAria": "{{name}} nie porusza się",
     "deleteAria": "Usuń {{name}}",
     "stopUsing": "Przestań używać zapisanej lokalizacji",
-    "addLocation": "Dodaj lokalizację"
+    "addLocation": "Dodaj lokalizację",
+    "coordsHintFormats": "Wklej współrzędne lub link do mapy: dziesiętny (39.7392, -104.9903), stopnie/minuty/sekundy za pomocą N/S/E/W, MGRS lub linku do udostępniania Google, Apple lub OpenStreetMap."
   }
 }

@@ -6359,7 +6359,6 @@
     "namePlaceholder": "por exemplo, Home ou EOC",
     "coordsLabel": "Coordinates (Coordenadas)",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Cole \"latitude, longitude\" de um aplicativo de mapa ou digite os dois valores.",
     "invalidCoords": "Insira uma latitude entre -90 e 90 e uma longitude entre -180 e 180, separadas por uma vírgula.",
     "fixedLabel": "Este computador não se move (não pergunte a cada inicialização)",
     "useApproximate": "Iniciar a partir da posição aproximada",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} não se move",
     "deleteAria": "Excluir {{name}}",
     "stopUsing": "Parar de usar o local salvo",
-    "addLocation": "Adicionar Nova Localização"
+    "addLocation": "Adicionar Nova Localização",
+    "coordsHintFormats": "Cole as coordenadas ou um link de mapa: decimal (39.7392, -104.9903), graus/minutos/segundos com N/S/E/W, MGRS ou um link DE compartilhamento do Google, Apple ou OpenStreetMap."
   }
 }

@@ -6359,7 +6359,6 @@
     "namePlaceholder": "예: 홈 또는 EOC",
     "coordsLabel": "좌표",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "지도 앱에서 '위도, 경도' 를 붙여넣거나 두 값을 모두 입력하세요.",
     "invalidCoords": "-90 ~ 90 사이의 위도와 -180 ~ 180 사이의 경도를 쉼표로 구분하여 입력하십시오.",
     "fixedLabel": "이 컴퓨터는 움직이지 않습니다 (실행할 때마다 묻지 마세요).",
     "useApproximate": "대략적인 위치에서 시작",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} 움직이지 않음",
     "deleteAria": "{{name}} 삭제",
     "stopUsing": "저장된 위치 사용 중지",
-    "addLocation": "위치 추가"
+    "addLocation": "위치 추가",
+    "coordsHintFormats": "좌표 또는 지도 링크 붙여넣기: 10진수 (39.7392, -104.9903), N/S/E/W, MGRS 또는 Google, Apple 또는 OpenStreetMap 공유 링크가 있는 도/분/초."
   }
 }

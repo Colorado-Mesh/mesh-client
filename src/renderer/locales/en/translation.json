@@ -2485,7 +2485,7 @@
     "namePlaceholder": "e.g. Home or EOC",
     "coordsLabel": "Coordinates",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Paste \"latitude, longitude\" from a map app, or type both values.",
+    "coordsHintFormats": "Paste coordinates or a map link: decimal (39.7392, -104.9903), degrees/minutes/seconds with N/S/E/W, MGRS, or a Google, Apple, or OpenStreetMap share link.",
     "invalidCoords": "Enter a latitude between -90 and 90 and a longitude between -180 and 180, separated by a comma.",
     "fixedLabel": "This computer doesn't move (don't ask each launch)",
     "useApproximate": "Start from approximate position",

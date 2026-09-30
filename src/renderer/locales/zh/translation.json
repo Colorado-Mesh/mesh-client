@@ -6359,7 +6359,6 @@
     "namePlaceholder": "例如：家庭或紧急行动中心",
     "coordsLabel": "棋盘坐标训练",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "从地图应用中粘贴“latitude, longitude” ，或同时键入两个值。",
     "invalidCoords": "输入纬度介于-90和90之间，经度介于-180和180之间，用逗号分隔。",
     "fixedLabel": "此计算机不移动（不要询问每次启动）",
     "useApproximate": "从大致位置开始",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}}不动",
     "deleteAria": "删除{{name}}",
     "stopUsing": "停止使用已保存的位置",
-    "addLocation": "添加位置"
+    "addLocation": "添加位置",
+    "coordsHintFormats": "粘贴坐标或地图链接：使用N/S/E/W、MGRS或Google、Apple或OpenStreetMap共享链接的十进制（ 39.7392 ， -104.9903 ）、度/分/秒。"
   }
 }

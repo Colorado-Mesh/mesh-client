@@ -6359,7 +6359,6 @@
     "namePlaceholder": "z.B. Home oder EOC",
     "coordsLabel": "Coordinates",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Fügen Sie \"Breitengrad, Längengrad\" aus einer Karten-App ein oder geben Sie beide Werte ein.",
     "invalidCoords": "Geben Sie einen Breitengrad zwischen -90 und 90 und einen Längengrad zwischen -180 und 180 ein, getrennt durch ein Komma.",
     "fixedLabel": "Dieser Computer bewegt sich nicht (fragen Sie nicht bei jedem Start)",
     "useApproximate": "Start von ungefähre Position",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} bewegt sich nicht",
     "deleteAria": "{{name}} löschen",
     "stopUsing": "Gespeicherten Standort nicht mehr verwenden",
-    "addLocation": "Hinzufügen"
+    "addLocation": "Hinzufügen",
+    "coordsHintFormats": "Koordinaten oder einen Kartenlink einfügen: Dezimal (39.7392, -104.9903), Grad/Minuten/Sekunden mit N/S/E/W, MGRS oder einem Freigabe-Link von Google, Apple oder OpenStreetMap."
   }
 }

@@ -6,7 +6,6 @@ import {
   deactivateSavedLocation,
   deleteSavedLocation,
   getActiveSavedLocation,
-  parseLatLonPair,
   readSavedLocations,
   resetSavedLocationsCacheForTests,
   SAVED_LOCATIONS_STORAGE_KEY,
@@ -100,20 +99,5 @@ describe('savedLocations', () => {
     expect(getActiveSavedLocation()).toMatchObject({ name: 'House', fixed: true });
     updateSavedLocation(home.id, { fixed: false });
     expect(getActiveSavedLocation()?.fixed).toBeUndefined();
-  });
-});
-
-describe('parseLatLonPair', () => {
-  it.each([
-    ['39.7392, -104.9903', { lat: 39.7392, lon: -104.9903 }],
-    ['39.7392 -104.9903', { lat: 39.7392, lon: -104.9903 }],
-    ['39.7392°, -104.9903°', { lat: 39.7392, lon: -104.9903 }],
-    [' 39.7392;-104.9903 ', { lat: 39.7392, lon: -104.9903 }],
-  ])('parses %s', (input, expected) => {
-    expect(parseLatLonPair(input)).toEqual(expected);
-  });
-
-  it.each(['', '39.7', 'abc, def', '91, 0', '0, 181', '1, 2, 3'])('rejects %s', (input) => {
-    expect(parseLatLonPair(input)).toBeNull();
   });
 });

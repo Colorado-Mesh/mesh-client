@@ -6359,7 +6359,6 @@
     "namePlaceholder": "es. Casa o EDC",
     "coordsLabel": "Coordinate",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Incolla \"latitudine, longitudine\" da un'app sulla mappa o digita entrambi i valori.",
     "invalidCoords": "Inserisci una latitudine compresa tra -90 e 90 e una longitudine compresa tra -180 e 180, separate da una virgola.",
     "fixedLabel": "Questo computer non si muove (non chiedere a ogni avvio)",
     "useApproximate": "Inizia dalla posizione approssimativa",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} non si muove",
     "deleteAria": "Elimina {{name}}",
     "stopUsing": "Interrompi l'utilizzo della posizione salv",
-    "addLocation": "Aggiungi luogo"
+    "addLocation": "Aggiungi luogo",
+    "coordsHintFormats": "Incolla le coordinate o un link della mappa: decimale (39,7392, -104,9903), gradi/minuti/secondi con N/S/E/W, MGRS o un link di condivisione di Google, Apple o OpenStreetMap."
   }
 }

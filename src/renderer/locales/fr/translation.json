@@ -6359,7 +6359,6 @@
     "namePlaceholder": "par exemple, domicile ou EDEC",
     "coordsLabel": "Coordonnées",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Collez \"latitude, longitude\" à partir d'une application de carte, ou tapez les deux valeurs.",
     "invalidCoords": "Entrez une latitude entre -90 et 90 et une longitude entre -180 et 180, séparées par une virgule.",
     "fixedLabel": "Cet ordinateur ne bouge pas (ne demandez pas à chaque lancement)",
     "useApproximate": "Commencer à partir de la position approximative",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} ne bouge pas",
     "deleteAria": "Supprimer {{name}}",
     "stopUsing": "Arrêter d'utiliser l'emplacement enregistré",
-    "addLocation": "Ajouter un lieu"
+    "addLocation": "Ajouter un lieu",
+    "coordsHintFormats": "Coller les coordonnées ou un lien de carte : décimal (39,7392, -104,9903), degrés/minutes/secondes avec N/S/E/W, MGRS ou un lien de partage Google, Apple ou OpenStreetMap."
   }
 }

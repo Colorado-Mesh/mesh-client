@@ -6359,7 +6359,6 @@
     "namePlaceholder": "例：ホームまたはEOC",
     "coordsLabel": "座標",
     "coordsPlaceholder": "39.73920、-104.99030",
-    "coordsHint": "マップアプリから「latitude, longitude」を貼り付けるか、両方の値を入力します。",
     "invalidCoords": "-90と90の間の緯度と-180と180の間の経度をカンマで区切って入力します。",
     "fixedLabel": "このコンピューターは動かない（各起動時に尋ねないでください）",
     "useApproximate": "おおよその位置から開始",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}}が動かない",
     "deleteAria": "{{name}}を削除",
     "stopUsing": "保存された場所の使用を停止する",
-    "addLocation": "ロケーションを追加"
+    "addLocation": "ロケーションを追加",
+    "coordsHintFormats": "座標またはマップリンクを貼り付けます： 10進数（ 39.7392、-104.9903 ）、度/分/秒、N/S/E/W、MGRS、またはGoogle、Apple、またはOpenStreetMapの共有リンク。"
   }
 }

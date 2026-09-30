@@ -6359,7 +6359,6 @@
     "namePlaceholder": "örneğin Ana Sayfa veya EOC",
     "coordsLabel": "Koordinatlar",
     "coordsPlaceholder": "39,73920 ,-104,99030",
-    "coordsHint": "Bir harita uygulamasından \"enlem, boylam\" ı yapıştırın veya her iki değeri de yazın.",
     "invalidCoords": "-90 ile 90 arasında bir enlem ve -180 ile 180 arasında virgülle ayrılmış bir boylam girin.",
     "fixedLabel": "Bu bilgisayar hareket etmiyor (her başlatmayı sormayın)",
     "useApproximate": "Yaklaşık konumdan başlayın",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} hareket etmiyor",
     "deleteAria": "{{name}} silin",
     "stopUsing": "Kaydedilen konumu kullanmayı bırakın",
-    "addLocation": "Şube ekle"
+    "addLocation": "Şube ekle",
+    "coordsHintFormats": "Koordinatları veya harita bağlantısını yapıştırın: N/S/E/W, MGRS veya Google, Apple veya OpenStreetMap paylaşım bağlantısı ile ondalık (39.7392 ,-104.9903), derece/dakika/saniye."
   }
 }

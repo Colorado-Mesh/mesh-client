@@ -2,12 +2,12 @@ import { MapPin, X } from 'lucide-react-motion';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { parseLatLonPair } from '../lib/coordinateInput';
 import { formatCoordPair } from '../lib/coordUtils';
 import type { OurPosition } from '../lib/gpsSource';
 import type { LocationTrust } from '../lib/locationTrust';
 import {
   activateSavedLocation,
-  parseLatLonPair,
   type SavedLocation,
   saveNewLocation,
   useSavedLocations,
@@ -100,7 +100,7 @@ export function SavedLocationForm({ approximatePosition, onSaved, onCancel }: Lo
         id={`${idBase}-coords-hint`}
         className={error ? 'text-label text-red-400' : 'text-muted text-label'}
       >
-        {error ?? t('locationPrompt.coordsHint')}
+        {error ?? t('locationPrompt.coordsHintFormats')}
       </p>
       <div className="flex items-center gap-2">
         <input

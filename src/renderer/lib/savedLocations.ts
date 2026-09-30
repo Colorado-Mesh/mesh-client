@@ -203,24 +203,6 @@ export function deactivateSavedLocation(): void {
   commit({ ...state, activeId: null });
 }
 
-/**
- * Parse a pasted or typed "lat, lon" pair (map-app copy formats: comma, semicolon, or
- * whitespace separated; optional degree signs). Returns null when out of range.
- */
-export function parseLatLonPair(text: string): { lat: number; lon: number } | null {
-  const parts = text
-    .replace(/°/g, ' ')
-    .trim()
-    .split(/[\s,;]+/)
-    .filter((p) => p.length > 0);
-  if (parts.length !== 2) return null;
-  const lat = Number(parts[0]);
-  const lon = Number(parts[1]);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
-  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
-  return { lat, lon };
-}
-
 export function subscribeSavedLocations(listener: () => void): () => void {
   listeners.add(listener);
   return () => {

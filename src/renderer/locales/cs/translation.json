@@ -6405,7 +6405,6 @@
     "namePlaceholder": "např. Home nebo EOC",
     "coordsLabel": "Souřadnic",
     "coordsPlaceholder": "39.73920, -104.99030",
-    "coordsHint": "Vložte „zeměpisnou šířku a délku“ z mapové aplikace nebo zadejte obě hodnoty.",
     "invalidCoords": "Zadejte zeměpisnou šířku mezi -90 a 90 a zeměpisnou délku mezi -180 a 180, oddělenou čárkou.",
     "fixedLabel": "Tento počítač se nepohybuje (neptejte se na každé spuštění)",
     "useApproximate": "Začněte od přibližné polohy",
@@ -6423,6 +6422,7 @@
     "toggleFixedAria": "{{name}} se nepohybuje",
     "deleteAria": "Smazat {{name}}",
     "stopUsing": "Přestat používat uloženou polohu",
-    "addLocation": "Přidat lokalitu"
+    "addLocation": "Přidat lokalitu",
+    "coordsHintFormats": "Vložte souřadnice nebo odkaz na mapu: decimální (39,7392, -104,9903), stupně/minuty/sekundy s odkazem na sdílení N/S/E/W, Mgrs nebo Google, Apple nebo OpenStreetMap."
   }
 }

@@ -6359,7 +6359,6 @@
     "namePlaceholder": "misalnya Rumah atau EOC",
     "coordsLabel": "Koordinat",
     "coordsPlaceholder": "39,73920, -104,99030",
-    "coordsHint": "Tempel \"lintang, bujur\" dari aplikasi peta, atau ketik kedua nilai.",
     "invalidCoords": "Masukkan garis lintang antara -90 dan 90 dan garis bujur antara -180 dan 180, dipisahkan dengan koma.",
     "fixedLabel": "Komputer ini tidak bergerak (jangan tanyakan setiap peluncuran)",
     "useApproximate": "Mulai dari perkiraan posisi",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} tidak bergerak",
     "deleteAria": "Hapus {{name}}",
     "stopUsing": "Berhenti menggunakan lokasi tersimpan",
-    "addLocation": "Tambahkan Lokasi"
+    "addLocation": "Tambahkan Lokasi",
+    "coordsHintFormats": "Tempel koordinat atau tautan peta: desimal (39,7392, -104,9903), derajat/menit/detik dengan N/S/E/W, MGRS, atau tautan berbagi Google, Apple, atau OpenStreetMap."
   }
 }

@@ -6359,7 +6359,6 @@
     "namePlaceholder": "bijv. Home of EOC",
     "coordsLabel": "Coördinaten",
     "coordsPlaceholder": "39,73920, -104,99030",
-    "coordsHint": "Plak \"breedtegraad, lengtegraad\" uit een kaart-app of typ beide waarden.",
     "invalidCoords": "Voer een breedtegraad in tussen -90 en 90 en een lengtegraad tussen -180 en 180, gescheiden door een komma.",
     "fixedLabel": "Deze computer beweegt niet (vraag niet om elke lancering)",
     "useApproximate": "Begin bij benadering",
@@ -6377,6 +6376,7 @@
     "toggleFixedAria": "{{name}} beweegt niet",
     "deleteAria": "{{name}} verwijderen",
     "stopUsing": "Opgeslagen locatie niet meer gebruiken",
-    "addLocation": "Locatie toevoegen"
+    "addLocation": "Locatie toevoegen",
+    "coordsHintFormats": "Plak coördinaten of een kaartlink: decimaal (39.7392, -104.9903), graden/minuten/seconden met N/S/E/W, Mgrs of een Google-, Apple- of OpenStreetMap-deellink."
   }
 }
