@@ -378,7 +378,12 @@ export async function deleteOrphanUntaggedRef(
     ({ response, json } = await attempt(fallbackToken));
   }
 
-  if (response.status === 404) {
+  // Untagged drafts often never materialize their placeholder ref; GitHub answers 422
+  // "Reference does not exist" instead of 404 in that case.
+  if (
+    response.status === 404 ||
+    (response.status === 422 && /reference does not exist/i.test(String(json?.message ?? '')))
+  ) {
     log(`[github-release] Orphan ref tags/${safe} already absent`);
     return true;
   }
