@@ -45,7 +45,7 @@ function invalidate(): void {
 }
 
 function newLocationId(): string {
-  return `loc-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `loc-${crypto.randomUUID()}`;
 }
 
 function isValidLocation(value: unknown): value is SavedLocation {
