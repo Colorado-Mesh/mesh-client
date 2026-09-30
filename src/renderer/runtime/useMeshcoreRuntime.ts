@@ -456,11 +456,7 @@ import {
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
 import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
-import {
-  clearRadioSelfPosition,
-  readRadioSelfPosition,
-  recordRadioSelfPosition,
-} from '../lib/radioSelfPosition';
+import { clearRadioSelfPosition, readRadioSelfPosition } from '../lib/radioSelfPosition';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
@@ -2548,8 +2544,6 @@ export function useMeshcoreRuntime() {
         );
         const info = enrichMeshCoreSelfInfo(rawInfo);
         setSelfInfo(info);
-        const selfAdvDeg = meshcoreScaledAdvLatLonToDeg(info.advLat ?? 0, info.advLon ?? 0);
-        recordRadioSelfPosition('meshcore', selfAdvDeg.lat, selfAdvDeg.lon);
         setState((prev) => ({ ...prev, status: 'connected' }));
 
         const myNodeId = pubkeyToNodeId(info.publicKey);

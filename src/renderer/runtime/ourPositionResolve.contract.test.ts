@@ -30,3 +30,9 @@ describe.each([
     expect(body).not.toContain('setOurPositionSource');
   });
 });
+
+describe('useMeshcoreRuntime radio self position', () => {
+  it('does not treat advert lat/lon (user- or app-set) as device GPS', () => {
+    expect(loadRuntimeSource('useMeshcoreRuntime.ts')).not.toContain('recordRadioSelfPosition');
+  });
+});

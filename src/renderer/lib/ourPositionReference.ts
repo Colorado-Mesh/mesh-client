@@ -13,12 +13,14 @@ let subscribed = false;
 
 function buildReference(pos: OurPosition | null): OurPositionReference | null {
   if (!pos) return null;
+  const active = getActiveSavedLocation();
+  const selected = pos.source === 'static' && active ? active : pos;
   const trust = getLocationTrust(
     pos,
-    getActiveSavedLocation(),
+    active,
     useLocationPromptStore.getState().confirmedLocationId,
   );
-  return { lat: pos.lat, lon: pos.lon, source: pos.source, trust };
+  return { lat: selected.lat, lon: selected.lon, source: pos.source, trust };
 }
 
 function republish(): void {
