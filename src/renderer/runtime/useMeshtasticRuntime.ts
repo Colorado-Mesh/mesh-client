@@ -116,6 +116,7 @@ import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { matchForeignLoraFromMeshtasticLog } from '../lib/foreignLoraDetection';
 import type { OurPosition } from '../lib/gpsSource';
 import {
+  isLowAccuracyPosition,
   readGpsRefreshIntervalSecs,
   readStoredStaticGps,
   resolveOurPosition,
@@ -218,8 +219,10 @@ import {
 } from '../lib/meshtasticRemoteAdminSnapshot';
 import { mergeMeshtasticTraceRouteIntoResultsMap } from '../lib/meshtasticTraceRouteLookupKeys';
 import { consumeMqttUserDisconnect } from '../lib/mqttDisconnectIntent';
+import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { MESHTASTIC_CAPABILITIES } from '../lib/radio/BaseRadioProvider';
+import { clearRadioSelfPosition, readRadioSelfPosition } from '../lib/radioSelfPosition';
 import type { MeshtasticRawPacketEntry } from '../lib/rawPacketLogConstants';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
@@ -2864,6 +2867,7 @@ export function useMeshtasticRuntime() {
         batteryCharging: undefined,
       });
       myNodeNumRef.current = 0;
+      clearRadioSelfPosition('meshtastic');
       // Drop prior radio topic→index / PSKs while MQTT may stay connected across RF swaps.
       pushMqttChannelKeys();
       setConfigureTargetNodeNumState(null);
@@ -4197,21 +4201,26 @@ export function useMeshtasticRuntime() {
     }
     setGpsLoading(true);
     try {
-      const myNode = getIdentityNode(meshtasticIdentityIdRef.current, myNodeNumRef.current);
       const storedStatic = readStoredStaticGps();
       const staticLat = storedStatic?.lat;
       const staticLon = storedStatic?.lon;
-      // When a static position is set, don't let device coords override it
-      const devLat = storedStatic != null ? undefined : myNode?.latitude;
-      const devLon = storedStatic != null ? undefined : myNode?.longitude;
-      const devAlt = storedStatic != null ? undefined : myNode?.altitude;
-      const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon, devAlt);
+      // Only a fix the radio reported this session counts as device GPS; the self node row may
+      // hold app-resolved or SQLite-restored coords. A static position still wins over it.
+      const radioSelf = storedStatic != null ? null : readRadioSelfPosition('meshtastic');
+      const pos = await resolveOurPosition(
+        radioSelf?.lat,
+        radioSelf?.lon,
+        staticLat,
+        staticLon,
+        radioSelf?.altitudeMeters,
+      );
       setOurPosition(pos);
       if (getStoredMeshProtocol() === 'meshtastic') {
-        useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
+        publishOurPositionReference(pos);
       }
 
-      if (pos) {
+      // IP/browser fixes are city-level: never write them into the self node or SQLite.
+      if (pos && !isLowAccuracyPosition(pos.source)) {
         const hasDevice = !!deviceRef.current;
         const selfNodeId =
           hasDevice && myNodeNumRef.current > 0

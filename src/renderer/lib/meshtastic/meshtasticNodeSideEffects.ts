@@ -38,6 +38,7 @@ import {
 } from '../meshtasticLastHeard';
 import type { NodeInfoEvent, PositionEvent, TelemetryEvent } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
+import { recordRadioSelfPosition } from '../radioSelfPosition';
 import { LAST_SERIAL_PORT_KEY } from '../serialPortSignature';
 import { MAX_TELEMETRY_POINTS } from '../sessionMemoryCaps';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
@@ -231,6 +232,14 @@ function handleNodeDbNodeInfo(
     info.latitude != null && info.longitude != null
       ? { latitude: info.latitude, longitude: info.longitude }
       : null;
+  if (isSelf && positionCoords && myNodeNum > 0) {
+    recordRadioSelfPosition(
+      'meshtastic',
+      positionCoords.latitude,
+      positionCoords.longitude,
+      info.altitude,
+    );
+  }
   const positionPatch = applyNodeDbPositionCoords(
     positionCoords,
     nodeNum,
@@ -350,6 +359,9 @@ function handlePosition(
     return;
   }
 
+  if (myNodeNum > 0 && nodeNum === myNodeNum) {
+    recordRadioSelfPosition('meshtastic', position.latitude, position.longitude, position.altitude);
+  }
   if (shouldPreserveStaticGpsForSelfNode(nodeNum, myNodeNum)) return;
 
   const homeNode = getIdentityNode(identityId, myNodeNum) ?? null;

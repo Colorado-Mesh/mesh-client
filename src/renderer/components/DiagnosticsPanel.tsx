@@ -57,12 +57,14 @@ import { downloadBlob } from '../lib/downloadBlob';
 import { diagnosticsRowsToJson } from '../lib/exportFormats';
 import type { OurPosition } from '../lib/gpsSource';
 import { startNetworkDiscovery } from '../lib/networkDiscovery';
+import { useLocationTrust } from '../lib/ourPositionReference';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import type { DiagnosticRow, MeshNode, MeshProtocol } from '../lib/types';
 import { routingRowToNodeAnomaly } from '../lib/types';
 import DiagnosticsPingPanel from './DiagnosticsPingPanel';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import { ReticulumDiagnosticsSection } from './ReticulumDiagnosticsSection';
+import SetLocationCard from './SetLocationCard';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 function foreignLoraListFromBySender(
@@ -159,6 +161,8 @@ interface Props {
   onNavigateToReticulumConnection?: () => void;
   /** Reticulum: refresh config audit rows after repair/disable. */
   onRefreshReticulumDiagnostics?: () => void;
+  /** Re-resolve our position after the user sets or confirms a saved location. */
+  onLocationChanged?: () => void;
 }
 
 function AlertTriangleIcon({ className }: { className?: string }) {
@@ -186,8 +190,10 @@ export default function DiagnosticsPanel({
   meshcoreNodes = new Map(),
   onNavigateToReticulumConnection,
   onRefreshReticulumDiagnostics,
+  onLocationChanged,
 }: Props) {
   const { t } = useTranslation();
+  const locationTrust = useLocationTrust(ourPosition);
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const formatRowTime = useCallback(
     (ts: number) => {
@@ -1416,12 +1422,14 @@ export default function DiagnosticsPanel({
         </>
       )}
 
-      {/* IP Geolocation Accuracy Warning */}
-      {ourPosition?.source === 'ip' && (
-        <div className="flex items-start gap-2.5 rounded-lg border border-orange-500/40 bg-orange-500/10 px-4 py-3 text-sm text-orange-300">
-          <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-orange-400" />
-          <span>{t('diagnosticsPanel.ipGeolocationBanner')}</span>
-        </div>
+      {/* Distance checks need a trusted reference position (radio GPS or confirmed location) */}
+      {showLoRaMeshDiagnostics && locationTrust !== 'trusted' && (
+        <SetLocationCard
+          ourPosition={ourPosition}
+          trust={locationTrust}
+          variant="diagnostics"
+          onLocationChanged={onLocationChanged}
+        />
       )}
 
       {/* Anomaly Table — LoRa mesh only; Reticulum-only rows live in ReticulumDiagnosticsSection */}

@@ -298,6 +298,77 @@ describe('diagnosticsStore analysis timers', () => {
   });
 });
 
+describe('diagnosticsStore reference position gates distance checks', () => {
+  const DENVER = { lat: 39.7392, lon: -104.9903 };
+  const KANSAS_CITY = { lat: 39.0997, lon: -94.5786 };
+
+  function node(nodeId: number, lat: number, lon: number, hops: number): MeshNode {
+    return {
+      node_id: nodeId,
+      long_name: `Node ${nodeId}`,
+      short_name: `N${nodeId}`,
+      hw_model: 'TBEAM',
+      snr: 5,
+      battery: 100,
+      last_heard: Date.now(),
+      latitude: lat,
+      longitude: lon,
+      hops_away: hops,
+    };
+  }
+
+  function impossibleHopRowsAfterReanalysis(): number {
+    const nodes = new Map<number, MeshNode>([
+      [1, node(1, DENVER.lat, DENVER.lon, 0)],
+      [2, node(2, KANSAS_CITY.lat, KANSAS_CITY.lon, 0)],
+    ]);
+    useDiagnosticsStore.getState().runReanalysis(() => nodes, 1);
+    vi.advanceTimersByTime(2000);
+    return useDiagnosticsStore
+      .getState()
+      .diagnosticRows.filter((r) => r.kind === 'routing' && r.type === 'impossible_hop').length;
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.removeItem(SNAPSHOT_KEY);
+    useDiagnosticsStore.getState().clearDiagnostics();
+  });
+
+  afterEach(() => {
+    resetDiagnosticsDebounceStateForTests();
+    useDiagnosticsStore.getState().setOurPositionReference(null);
+    useDiagnosticsStore.getState().clearDiagnostics();
+    localStorage.removeItem(SNAPSHOT_KEY);
+    vi.useRealTimers();
+  });
+
+  it('skips impossible-hop when our position is an approximate IP fix', () => {
+    useDiagnosticsStore
+      .getState()
+      .setOurPositionReference({ ...DENVER, source: 'ip', trust: 'approximate' });
+    expect(impossibleHopRowsAfterReanalysis()).toBe(0);
+  });
+
+  it('skips impossible-hop for an unconfirmed saved location (laptop may have moved)', () => {
+    useDiagnosticsStore
+      .getState()
+      .setOurPositionReference({ ...DENVER, source: 'static', trust: 'needsConfirm' });
+    expect(impossibleHopRowsAfterReanalysis()).toBe(0);
+  });
+
+  it('skips impossible-hop when no reference was published, even with SQLite self coords', () => {
+    expect(impossibleHopRowsAfterReanalysis()).toBe(0);
+  });
+
+  it('reports impossible-hop once the reference is trusted', () => {
+    useDiagnosticsStore
+      .getState()
+      .setOurPositionReference({ ...DENVER, source: 'static', trust: 'trusted' });
+    expect(impossibleHopRowsAfterReanalysis()).toBe(1);
+  });
+});
+
 describe('diagnosticsStore distanceOffsetKm', () => {
   afterEach(() => {
     useDiagnosticsStore.getState().setDistanceOffsetKm(0);

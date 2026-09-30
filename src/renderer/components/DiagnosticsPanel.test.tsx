@@ -127,6 +127,51 @@ describe('DiagnosticsPanel accessibility', () => {
   });
 });
 
+describe('DiagnosticsPanel location prompt', () => {
+  function renderWithPosition(
+    ourPosition: { lat: number; lon: number; source: 'ip' | 'device' } | null,
+    capabilities = MESHTASTIC_CAPABILITIES,
+  ) {
+    diagnosticsStoreState.diagnosticRows = [];
+    return render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol={capabilities.protocol}
+        capabilities={capabilities}
+        ourPosition={ourPosition}
+      />,
+    );
+  }
+
+  it('shows the set-location card instead of the IP banner for an IP fix', () => {
+    renderWithPosition({ lat: 39.7, lon: -104.9, source: 'ip' });
+    expect(
+      screen.getByRole('heading', { name: 'Your location is approximate' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Distance checks .* are paused/)).toBeInTheDocument();
+  });
+
+  it('prompts when there is no position at all', () => {
+    renderWithPosition(null);
+    expect(screen.getByRole('heading', { name: 'Set your location' })).toBeInTheDocument();
+  });
+
+  it('hides the card when the radio reports GPS', () => {
+    renderWithPosition({ lat: 39.7, lon: -104.9, source: 'device' });
+    expect(screen.queryByText(/Distance checks .* are paused/)).toBeNull();
+  });
+
+  it('hides the card on Reticulum (no LoRa distance diagnostics)', () => {
+    renderWithPosition(null, RETICULUM_CAPABILITIES);
+    expect(screen.queryByText(/Distance checks .* are paused/)).toBeNull();
+  });
+});
+
 describe('DiagnosticsPanel export', () => {
   it('exports visible rows as mesh-client-diagnostics JSON', async () => {
     const row: RoutingDiagnosticRow = {
