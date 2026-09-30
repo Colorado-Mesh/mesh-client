@@ -1043,7 +1043,9 @@
         "scanBusy": "È in corso un'altra scansione Bluetooth. Riprova tra un attimo.",
         "sameDeviceConflict": "Questo dispositivo Bluetooth è già connesso a {{owner}}.",
         "chooserCancelledHint": "Se non hai annullato, assicurati che il Bluetooth sia attivo (systemctl status bluetooth), quindi tocca di nuovo Connetti. Su Flatpak, reinstallare una build con Bluetooth consentito o utilizzare AppImage/.deb/.rpm.",
-        "bluetoothctlMissingHint": "Gli strumenti di accoppiamento Bluetooth del sistema operativo non sono disponibili in questo ambiente (comuni in Flatpak). Utilizza l'AppImage ufficiale, .deb o .rpm oppure accoppia la radio con l'host bluetoothctl, quindi riprova a connetterti."
+        "bluetoothctlMissingHint": "Gli strumenti di accoppiamento Bluetooth del sistema operativo non sono disponibili in questo ambiente (comuni in Flatpak). Utilizza l'AppImage ufficiale, .deb o .rpm oppure accoppia la radio con l'host bluetoothctl, quindi riprova a connetterti.",
+        "stackUnresponsiveWindows": "Il Bluetooth di Windows è bloccato su un tentativo di connessione precedente, di solito un accoppiamento incompleto. Rimuovere la radio in Impostazioni > Bluetooth e dispositivi, accoppiarla nuovamente con il PIN mostrato sulla radio fino a quando Windows non mostra \"Accoppiato\", quindi riavviare mesh-client.",
+        "stackUnresponsiveGeneric": "Il Bluetooth è bloccato su un tentativo di connessione precedente. Spegnere e riaccendere il Bluetooth, ricollegare la radio se necessario, quindi riavviare mesh-client."
       }
     },
     "error": {

@@ -1044,7 +1044,9 @@
         "scanBusy": "Er wordt een nieuwe Bluetooth-scan uitgevoerd. Probeer het zo nog eens.",
         "sameDeviceConflict": "Dit Bluetooth-apparaat is al verbonden met {{owner}}.",
         "chooserCancelledHint": "Als u niet hebt geannuleerd, zorg er dan voor dat Bluetooth is ingeschakeld (systemctl-status bluetooth) en tik vervolgens opnieuw op Verbinden. Installeer op Flatpak een build opnieuw waarbij Bluetooth is toegestaan, of gebruik AppImage/.deb/.rpm.",
-        "bluetoothctlMissingHint": "OS Bluetooth-koppelingstools zijn niet beschikbaar in deze omgeving (gebruikelijk in Flatpak). Gebruik de officiële AppImage, .deb of .rpm, of koppel de radio met host bluetoothctl en probeer Connect opnieuw."
+        "bluetoothctlMissingHint": "OS Bluetooth-koppelingstools zijn niet beschikbaar in deze omgeving (gebruikelijk in Flatpak). Gebruik de officiële AppImage, .deb of .rpm, of koppel de radio met host bluetoothctl en probeer Connect opnieuw.",
+        "stackUnresponsiveWindows": "Windows Bluetooth zit vast bij een eerdere verbindingspoging, meestal een onvoltooide koppeling. Verwijder de radio in Instellingen > Bluetooth en apparaten, koppel deze opnieuw met de PINCODE die op de radio wordt weergegeven totdat Windows \"Gekoppeld\" weergeeft en start vervolgens de mesh-client opnieuw op.",
+        "stackUnresponsiveGeneric": "Bluetooth zit vast bij een eerdere verbindingspoging. Schakel Bluetooth uit en in, koppel de radio indien nodig opnieuw en start de mesh-client opnieuw."
       }
     },
     "error": {

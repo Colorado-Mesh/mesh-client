@@ -186,6 +186,29 @@ describe('humanizeBleError', () => {
     expect(result).toContain(`connectionPanel.humanize.ble.${hintKey}`);
   });
 
+  it.each([
+    ['win32', 'stackUnresponsiveWindows'],
+    ['linux', 'stackUnresponsiveGeneric'],
+    ['darwin', 'stackUnresponsiveGeneric'],
+  ] as const)('maps wedged Bluetooth stack errors on %s to %s', (platform, hintKey) => {
+    mockPlatform(platform);
+    const messages = [
+      'connect_timeout: connect timed out: Bluetooth stack unresponsive',
+      'adapter_missing: scan refused: Bluetooth stack unresponsive (1 earlier call(s) still stuck)',
+    ];
+    for (const message of messages) {
+      const result = humanizeBleError(new Error(message), t);
+      expect(result).toBe(`connectionPanel.humanize.ble.${hintKey}`);
+      expect(result).not.toContain('adapter_missing');
+    }
+    expect(
+      humanizeBleError(
+        { code: 'adapter_missing', message: 'scan refused: Bluetooth stack unresponsive' },
+        t,
+      ),
+    ).toBe(`connectionPanel.humanize.ble.${hintKey}`);
+  });
+
   it('maps sidecar GATT error codes to connectionPanel.errors.ble.*', () => {
     mockPlatform('darwin');
     expect(humanizeBleError(new Error('adapter_missing: no bluetooth adapter'), t)).toBe(

@@ -1077,7 +1077,9 @@
         "scanBusy": "Trwa kolejne skanowanie Bluetooth. Spróbuj ponownie za chwilę.",
         "sameDeviceConflict": "To urządzenie Bluetooth jest już połączone z {{owner}}.",
         "chooserCancelledHint": "Jeśli nie anulowałeś, upewnij się, że Bluetooth jest włączony (systemctl status bluetooth), a następnie ponownie dotknij Połącz. W Flatpak zainstaluj ponownie kompilację z zezwoleniem na Bluetooth lub użyj AppImage/.deb/.rpm.",
-        "bluetoothctlMissingHint": "Narzędzia do parowania systemu operacyjnego Bluetooth są niedostępne w tym środowisku (powszechne w Flatpak). Użyj oficjalnego AppImage, .deb lub .rpm lub sparuj radio z hostem bluetoothctl, a następnie spróbuj połączyć się ponownie."
+        "bluetoothctlMissingHint": "Narzędzia do parowania systemu operacyjnego Bluetooth są niedostępne w tym środowisku (powszechne w Flatpak). Użyj oficjalnego AppImage, .deb lub .rpm lub sparuj radio z hostem bluetoothctl, a następnie spróbuj połączyć się ponownie.",
+        "stackUnresponsiveWindows": "Windows Bluetooth utknął podczas wcześniejszej próby połączenia, zwykle niedokończonego parowania. Usuń radio w Ustawienia > Bluetooth i urządzenia, sparuj je ponownie z KODEM PIN pokazanym w radiu, aż system Windows pokaże „Sparowane”, a następnie ponownie uruchom mesh-client.",
+        "stackUnresponsiveGeneric": "Bluetooth utknął podczas wcześniejszej próby połączenia. Włącz i wyłącz Bluetooth, w razie potrzeby ponownie sparuj radio, a następnie ponownie uruchom mesh-client."
       }
     },
     "error": {

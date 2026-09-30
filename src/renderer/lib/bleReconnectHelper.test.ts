@@ -101,6 +101,19 @@ describe('startGattScanningWithRetry', () => {
     await rejection;
     vi.useRealTimers();
   });
+
+  it('surfaces sidecar code and message on non-busy scan failures without retrying', async () => {
+    vi.mocked(window.electronAPI.startGattScanning).mockResolvedValue({
+      ok: false,
+      code: 'adapter_missing',
+      error: 'scan refused: Bluetooth stack unresponsive (1 earlier call(s) still stuck)',
+    });
+
+    await expect(startGattScanningWithRetry('meshcore')).rejects.toThrow(
+      'adapter_missing: scan refused: Bluetooth stack unresponsive (1 earlier call(s) still stuck)',
+    );
+    expect(window.electronAPI.startGattScanning).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('connectGattWithScanBusyRetry', () => {

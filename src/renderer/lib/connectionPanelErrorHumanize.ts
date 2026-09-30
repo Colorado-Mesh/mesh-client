@@ -149,13 +149,20 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
   if (isMeshcoreI18nKey(msg)) {
     return t(msg);
   }
+  const platform = runtimePlatform();
+  const isWindows = platform === 'win32';
+  // Sidecar latches scan/connect as refused (often tagged adapter_missing) while a wedged OS
+  // Bluetooth call is outstanding; the adapter exists, so the generic code copy would mislead.
+  if (/Bluetooth stack unresponsive/i.test(msg)) {
+    return isWindows
+      ? t('connectionPanel.humanize.ble.stackUnresponsiveWindows')
+      : t('connectionPanel.humanize.ble.stackUnresponsiveGeneric');
+  }
   const gattCode = extractGattBleErrorCode(err) ?? extractGattBleErrorCode(msg);
   if (gattCode) {
     const key = gattBleErrorI18nKey(gattCode);
     if (key) return t(key);
   }
-  const platform = runtimePlatform();
-  const isWindows = platform === 'win32';
   const isLinux = platform === 'linux';
   const isDarwin = platform === 'darwin';
   if (isBleScanBusyErrorMessage(msg)) {
