@@ -71,7 +71,7 @@ describe('store shape contracts', () => {
           "mqttIgnoredNodes",
           "nodeRedundancy",
           "noiseRateStats",
-          "ourPositionSource",
+          "ourPositionReference",
           "packetCache",
           "packetStats",
           "pathUpdatedTimestamps",
@@ -108,7 +108,7 @@ describe('store shape contracts', () => {
           "setEnvMode",
           "setIgnoreMqttEnabled",
           "setNodeMqttIgnored",
-          "setOurPositionSource",
+          "setOurPositionReference",
         ]
       `);
     });

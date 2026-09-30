@@ -27,8 +27,7 @@ import {
   type PacketClass,
   RollingRateCounter,
 } from '../lib/foreignLoraDetection';
-import type { GpsSource } from '../lib/gpsSource';
-import { isLowAccuracyPosition } from '../lib/gpsSource';
+import { homeNodeForDistanceChecks, type OurPositionReference } from '../lib/locationTrust';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import type { ProtocolCapabilities } from '../lib/radio/BaseRadioProvider';
 import {
@@ -215,15 +214,9 @@ const ENV_PARAMS: Record<EnvMode, { mult: number; hops: number }> = {
   canyon: { mult: 2.6, hops: 4 },
 };
 
-function getEnvParams(
-  envMode: EnvMode,
-  isLowAccuracy: boolean,
-): { distanceMultiplier: number; hopsThreshold: number } {
+function getEnvParams(envMode: EnvMode): { distanceMultiplier: number; hopsThreshold: number } {
   const { mult, hops } = ENV_PARAMS[envMode];
-  return {
-    distanceMultiplier: isLowAccuracy ? mult * 2 : mult,
-    hopsThreshold: hops,
-  };
+  return { distanceMultiplier: mult, hopsThreshold: hops };
 }
 
 /** CU samples for spike detection (connected node); pruned to 24h in processNodeUpdate */
@@ -510,7 +503,7 @@ interface DiagnosticsState {
   autoTracerouteEnabledMeshcore: boolean;
   ignoreMqttEnabled: boolean;
   mqttIgnoredNodes: Set<number>;
-  ourPositionSource: GpsSource | null;
+  ourPositionReference: OurPositionReference | null;
   envMode: EnvMode;
   /** Meshtastic listener nodeId -> senderKey -> detection (90-min window, persisted). */
   foreignLoraDetections: Map<number, Map<string, ForeignLoraDetection>>;
@@ -569,7 +562,8 @@ interface DiagnosticsState {
   setAutoTracerouteEnabled(protocol: MeshProtocol, enabled: boolean): void;
   setIgnoreMqttEnabled(enabled: boolean): void;
   setNodeMqttIgnored(nodeId: number, ignored: boolean): void;
-  setOurPositionSource(source: GpsSource | null): void;
+  /** Reference position for distance checks; untrusted references skip those checks. */
+  setOurPositionReference(reference: OurPositionReference | null): void;
   setEnvMode(mode: EnvMode): void;
   /** Hours (1–168) routing diagnostic rows are kept before pruning; RF rows use fixed 1h. */
   diagnosticRowsMaxAgeHours: number;
@@ -759,7 +753,7 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
   autoTracerouteEnabledMeshcore: loadPersistedBool('autoTracerouteEnabledMeshcore'),
   ignoreMqttEnabled: loadPersistedBool('ignoreMqttEnabled'),
   mqttIgnoredNodes: loadMqttIgnoredNodes(),
-  ourPositionSource: null,
+  ourPositionReference: null,
   envMode: loadEnvMode(),
   diagnosticRowsMaxAgeHours: loadDiagnosticRowsMaxAgeHours(),
   distanceOffsetKm: loadDistanceOffsetKm(),
@@ -974,9 +968,12 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
         for (const [id, a] of diagnosticRowsToRoutingMap(s.diagnosticRows)) {
           newAnomalies.set(id, a);
         }
-        const isLowAccuracy = !!(s.ourPositionSource && isLowAccuracyPosition(s.ourPositionSource));
-        const { distanceMultiplier, hopsThreshold } = getEnvParams(s.envMode, isLowAccuracy);
-        for (const [nodeId, { node: n, homeNode: hn }] of diagnosticsDebounce.pendingAnalyses) {
+        const { distanceMultiplier, hopsThreshold } = getEnvParams(s.envMode);
+        for (const [
+          nodeId,
+          { node: n, homeNode: pendingHome },
+        ] of diagnosticsDebounce.pendingAnalyses) {
+          const hn = homeNodeForDistanceChecks(pendingHome, s.ourPositionReference);
           const history = s.hopHistory.get(nodeId) ?? [];
           const stats = s.packetStats.get(nodeId);
           const ignoreMqtt = s.ignoreMqttEnabled || s.mqttIgnoredNodes.has(nodeId);
@@ -1351,11 +1348,11 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
       if (restoredAt != null && remoteNodeCount === 0) {
         return;
       }
-      const homeNode = nodes.get(myNodeNum) ?? null;
-      const isLowAccuracy = !!(
-        state.ourPositionSource && isLowAccuracyPosition(state.ourPositionSource)
+      const homeNode = homeNodeForDistanceChecks(
+        nodes.get(myNodeNum) ?? null,
+        state.ourPositionReference,
       );
-      const { distanceMultiplier, hopsThreshold } = getEnvParams(state.envMode, isLowAccuracy);
+      const { distanceMultiplier, hopsThreshold } = getEnvParams(state.envMode);
       const newAnomalies = new Map<number, NodeAnomaly>();
       if (restoredAt != null) {
         for (const [id, anomaly] of diagnosticRowsToRoutingMap(state.diagnosticRows)) {
@@ -1536,8 +1533,17 @@ export const useDiagnosticsStore = create<DiagnosticsState>((set, get) => ({
     });
   },
 
-  setOurPositionSource(source: GpsSource | null) {
-    set({ ourPositionSource: source });
+  setOurPositionReference(reference: OurPositionReference | null) {
+    const prev = get().ourPositionReference;
+    if (
+      prev?.lat === reference?.lat &&
+      prev?.lon === reference?.lon &&
+      prev?.source === reference?.source &&
+      prev?.trust === reference?.trust
+    ) {
+      return;
+    }
+    set({ ourPositionReference: reference });
   },
 
   setEnvMode(mode: EnvMode) {

@@ -108,6 +108,7 @@ import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import type { OurPosition } from '../lib/gpsSource';
 import {
   hasStoredStaticGps,
+  isLowAccuracyPosition,
   persistStoredStaticGps,
   readStoredStaticGps,
   resolveOurPosition,
@@ -453,7 +454,9 @@ import {
   mergeMeshcoreLastHeardFromAdvert,
 } from '../lib/nodeStatus';
 import { getOfflineIdentityIdForProtocol } from '../lib/offlineProtocolIdentities';
+import { publishOurPositionReference } from '../lib/ourPositionReference';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { clearRadioSelfPosition, readRadioSelfPosition } from '../lib/radioSelfPosition';
 import { reactionGlyphFromPicker } from '../lib/reactions';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import {
@@ -3463,6 +3466,7 @@ export function useMeshcoreRuntime() {
       }
       setChannels([]);
       setSelfInfo(null);
+      clearRadioSelfPosition('meshcore');
       setMeshcoreContactsForTelemetry([]);
       setMeshcoreAutoadd(null);
       setDeviceLogs([]);
@@ -5017,6 +5021,9 @@ export function useMeshcoreRuntime() {
         const nowSec = Math.floor(Date.now() / 1000);
         setOurPosition({ lat, lon, source: 'static' });
         persistStoredStaticGps(lat, lon);
+        if (getStoredMeshProtocol() === 'meshcore') {
+          publishOurPositionReference({ lat, lon, source: 'static' });
+        }
         if (selfNodeId > 0) {
           setNodes((prev) => {
             const next = new Map(prev);
@@ -7862,21 +7869,25 @@ export function useMeshcoreRuntime() {
   }, [fetchAndUpdateLocalStats]);
 
   const refreshOurPositionNoop = useCallback(async () => {
-    const myNode = getIdentityNode(meshcoreIdentityIdRef.current, myNodeNumRef.current);
     const storedStatic = readStoredStaticGps();
     const staticLat = storedStatic?.lat;
     const staticLon = storedStatic?.lon;
-    // Match useMeshtasticRuntime: when a static override exists, do not let device coords win over it.
-    const devLat = storedStatic != null ? undefined : myNode?.latitude;
-    const devLon = storedStatic != null ? undefined : myNode?.longitude;
-    const devAlt = storedStatic != null ? undefined : myNode?.altitude;
-    const pos = await resolveOurPosition(devLat, devLon, staticLat, staticLon, devAlt);
+    // Match useMeshtasticRuntime: only this session's radio self-info advert counts as device GPS,
+    // and a static override still wins over it.
+    const radioSelf = storedStatic != null ? null : readRadioSelfPosition('meshcore');
+    const pos = await resolveOurPosition(
+      radioSelf?.lat,
+      radioSelf?.lon,
+      staticLat,
+      staticLon,
+      radioSelf?.altitudeMeters,
+    );
     setOurPosition(pos);
     if (getStoredMeshProtocol() === 'meshcore') {
-      useDiagnosticsStore.getState().setOurPositionSource(pos?.source ?? null);
+      publishOurPositionReference(pos);
     }
 
-    if (pos) {
+    if (pos && !isLowAccuracyPosition(pos.source)) {
       const selfNodeId = myNodeNumRef.current;
       if (selfNodeId > 0) {
         const nowSec = Math.floor(Date.now() / 1000);
@@ -7936,7 +7947,9 @@ export function useMeshcoreRuntime() {
 
   // Same as useMeshtasticRuntime: resolve map/static GPS on startup so MapPanel receives ourPosition.
   useEffect(() => {
-    void refreshOurPositionNoop();
+    void refreshOurPositionMeshCoreRef.current().catch((e: unknown) => {
+      console.debug('[useMeshcoreRuntime] refreshOurPosition on mount ' + errLikeToLogString(e));
+    });
   }, [refreshOurPositionNoop]);
 
   // Telemetry may populate self-node altitude after the first refreshOurPosition; merge into device GPS.

@@ -45,6 +45,7 @@ import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { writeReduceMotion } from '../lib/reduceMotionPreference';
+import { getActiveSavedLocation, useSavedLocations } from '../lib/savedLocations';
 import { nodeRecordsToMeshNodeMap } from '../lib/storeRecordAdapters';
 import {
   applyThemeColors,
@@ -82,6 +83,7 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import NotificationSoundSettings from './NotificationSoundSettings';
+import SavedLocationsSection from './SavedLocationsSection';
 import { ThemePicker } from './ThemePicker';
 import { useToast } from './Toast';
 import { buttonClassName, DANGER_ROW_CLASS } from './ui/Button';
@@ -220,6 +222,8 @@ interface Props {
   onLocationFilterChange: (f: LocationFilter) => void;
   ourPosition?: OurPosition | null;
   onRefreshGps?: () => void;
+  /** Re-resolve our position in the active runtime after the saved location changes. */
+  onLocationChanged?: () => void;
   gpsLoading?: boolean;
   onGpsIntervalChange?: (secs: number) => void;
   onNodesPruned?: () => void;
@@ -258,6 +262,7 @@ export default function AppPanel({
   onLocationFilterChange,
   ourPosition,
   onRefreshGps,
+  onLocationChanged,
   gpsLoading,
   onGpsIntervalChange,
   onNodesPruned,
@@ -630,85 +635,18 @@ export default function AppPanel({
     [onGpsIntervalChange],
   );
 
-  // ─── Static GPS position ─────────────────────────────────────
-  const [staticLatInput, setStaticLatInput] = useState<string>(() => {
-    const s =
-      parseStoredJson<{ staticLat?: number }>(
-        localStorage.getItem('mesh-client:gpsSettings'),
-        'AppPanel staticLat state',
-      ) ?? {};
-    return typeof s.staticLat === 'number' ? s.staticLat.toFixed(5) : '';
-  });
-  const [staticLonInput, setStaticLonInput] = useState<string>(() => {
-    const s =
-      parseStoredJson<{ staticLon?: number }>(
-        localStorage.getItem('mesh-client:gpsSettings'),
-        'AppPanel staticLon state',
-      ) ?? {};
-    return typeof s.staticLon === 'number' ? s.staticLon.toFixed(5) : '';
-  });
-  const [hasStaticPosition, setHasStaticPosition] = useState<boolean>(() => {
-    const s =
-      parseStoredJson<{ staticLat?: number; staticLon?: number }>(
-        localStorage.getItem('mesh-client:gpsSettings'),
-        'AppPanel hasStaticPosition state',
-      ) ?? {};
-    return typeof s.staticLat === 'number' && typeof s.staticLon === 'number';
-  });
+  // ─── Saved locations (static GPS) ────────────────────────────
+  const savedLocations = useSavedLocations();
+  const hasStaticPosition = savedLocations.activeId != null;
 
-  const saveStaticPosition = useCallback(() => {
-    const lat = parseFloat(staticLatInput);
-    const lon = parseFloat(staticLonInput);
-    if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
-      addToast(t('appPanel.invalidLatitude'), 'error');
-      return;
-    }
-    if (!Number.isFinite(lon) || lon < -180 || lon > 180) {
-      addToast(t('appPanel.invalidLongitude'), 'error');
-      return;
-    }
-    try {
-      const existing =
-        parseStoredJson<Record<string, unknown>>(
-          localStorage.getItem('mesh-client:gpsSettings'),
-          'AppPanel save static position',
-        ) ?? {};
-      localStorage.setItem(
-        'mesh-client:gpsSettings',
-        JSON.stringify({ ...existing, staticLat: lat, staticLon: lon, refreshInterval: 0 }),
-      );
-      setHasStaticPosition(true);
+  const handleSavedLocationChanged = useCallback(() => {
+    if (getActiveSavedLocation()) {
       setGpsRefreshInterval(0);
       onGpsIntervalChange?.(0);
-      onRefreshGps?.();
-      addToast(t('appPanel.staticPositionSaved'), 'success');
-    } catch (e) {
-      console.warn('[AppPanel] save static position failed ' + errLikeToLogString(e));
-      addToast(t('appPanel.failedSavePosition'), 'error');
     }
-  }, [staticLatInput, staticLonInput, addToast, onRefreshGps, onGpsIntervalChange, t]);
-
-  const clearStaticPosition = useCallback(() => {
-    try {
-      const existing =
-        parseStoredJson<Record<string, unknown>>(
-          localStorage.getItem('mesh-client:gpsSettings'),
-          'AppPanel clear static position',
-        ) ?? {};
-      delete existing.staticLat;
-      delete existing.staticLon;
-      const rest = existing;
-      localStorage.setItem('mesh-client:gpsSettings', JSON.stringify(rest));
-      setStaticLatInput('');
-      setStaticLonInput('');
-      setHasStaticPosition(false);
-      onRefreshGps?.();
-      addToast(t('appPanel.staticPositionCleared'), 'success');
-    } catch (e) {
-      console.warn('[AppPanel] clear static position failed ' + errLikeToLogString(e));
-      addToast(t('appPanel.failedClearPosition'), 'error');
-    }
-  }, [addToast, onRefreshGps, t]);
+    if (onLocationChanged) onLocationChanged();
+    else onRefreshGps?.();
+  }, [onGpsIntervalChange, onLocationChanged, onRefreshGps]);
 
   // ─── Message channel selection ──────────────────────────────
   const [msgChannels, setMsgChannels] = useState<number[]>([]);
@@ -914,66 +852,7 @@ export default function AppPanel({
           )}
           {!ourPosition && <p className="text-muted text-xs">{t('appPanel.noGpsPositionYet')}</p>}
 
-          {/* Static position override */}
-          <div className="border-ink-700 space-y-2 border-t pt-1">
-            <p className="text-muted text-xs leading-relaxed">{t('appPanel.staticPositionDesc')}</p>
-            <div className="flex items-center gap-2">
-              <label htmlFor="apppanel-static-lat" className="text-ink-300 w-8 text-sm">
-                {t('appPanel.latLabel')}
-              </label>
-              <input
-                id="apppanel-static-lat"
-                type="number"
-                step="0.00001"
-                min={-90}
-                max={90}
-                value={staticLatInput}
-                onChange={(e) => {
-                  setStaticLatInput(e.target.value);
-                }}
-                placeholder={t('appPanel.latPlaceholderExample')}
-                aria-label={`${t('appPanel.latLabel')} ${staticLatInput || t('appPanel.latPlaceholderExample')}`}
-                className={`${INPUT_BOX_CLASS} flex-1`}
-              />
-              <label htmlFor="apppanel-static-lon" className="text-ink-300 w-8 text-sm">
-                {t('appPanel.lonLabel')}
-              </label>
-              <input
-                id="apppanel-static-lon"
-                type="number"
-                step="0.00001"
-                min={-180}
-                max={180}
-                value={staticLonInput}
-                onChange={(e) => {
-                  setStaticLonInput(e.target.value);
-                }}
-                placeholder={t('appPanel.lonPlaceholderExample')}
-                aria-label={`${t('appPanel.lonLabel')} ${staticLonInput || t('appPanel.lonPlaceholderExample')}`}
-                className={`${INPUT_BOX_CLASS} flex-1`}
-              />
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={saveStaticPosition}
-                aria-label={t('appPanel.saveStaticPosition')}
-                className={buttonClassName('secondary', 'md')}
-              >
-                {t('appPanel.saveStaticPosition')}
-              </button>
-              {hasStaticPosition && (
-                <button
-                  type="button"
-                  onClick={clearStaticPosition}
-                  aria-label={t('common.clear')}
-                  className="bg-secondary-dark text-ink-300 hover:bg-ink-600 rounded px-3 py-1.5 text-sm font-medium transition-colors"
-                >
-                  {t('common.clear')}
-                </button>
-              )}
-            </div>
-          </div>
+          <SavedLocationsSection onLocationChanged={handleSavedLocationChanged} />
 
           <div className="flex items-center gap-2">
             <label htmlFor="apppanel-gps-interval" className="text-ink-300 flex-1 text-sm">

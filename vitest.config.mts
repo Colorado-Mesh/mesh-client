@@ -91,6 +91,8 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/encryptedKeyBackupStorage.test.ts',
   'src/renderer/lib/fontScale.test.ts',
   'src/renderer/lib/gpsSource.test.ts',
+  'src/renderer/lib/savedLocations.test.ts',
+  'src/renderer/lib/ourPositionReference.test.ts',
   'src/renderer/lib/hydrateIdentityStoresFromDb.test.ts',
   'src/renderer/lib/ingest/meshtasticIngest.test.ts',
   'src/renderer/lib/ingest/meshcoreIngest.test.ts',

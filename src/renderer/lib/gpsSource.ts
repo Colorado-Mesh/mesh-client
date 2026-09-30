@@ -29,13 +29,32 @@ export function readGpsRefreshIntervalSecs(): number {
   return typeof interval === 'number' && Number.isFinite(interval) && interval > 0 ? interval : 0;
 }
 
+const staticGpsListeners = new Set<() => void>();
+
+/** Notified after static coordinates are written or cleared through this module. */
+export function subscribeStaticGpsChanged(listener: () => void): () => void {
+  staticGpsListeners.add(listener);
+  return () => {
+    staticGpsListeners.delete(listener);
+  };
+}
+
+function notifyStaticGpsChanged(): void {
+  for (const listener of staticGpsListeners) listener();
+}
+
 /** Persist static coordinates while preserving other GPS settings keys. */
-export function persistStoredStaticGps(lat: number, lon: number): void {
+export function persistStoredStaticGps(
+  lat: number,
+  lon: number,
+  opts?: { refreshInterval?: number },
+): void {
   if (typeof localStorage === 'undefined') return;
   try {
     const existing = readStoredGpsSettings();
     const refreshInterval =
-      typeof existing.refreshInterval === 'number' ? existing.refreshInterval : 0;
+      opts?.refreshInterval ??
+      (typeof existing.refreshInterval === 'number' ? existing.refreshInterval : 0);
     localStorage.setItem(
       GPS_SETTINGS_STORAGE_KEY,
       JSON.stringify({ ...existing, staticLat: lat, staticLon: lon, refreshInterval }),
@@ -43,6 +62,21 @@ export function persistStoredStaticGps(lat: number, lon: number): void {
   } catch {
     // catch-no-log-ok localStorage quota or private mode
   }
+  notifyStaticGpsChanged();
+}
+
+/** Remove static coordinates while preserving other GPS settings keys. */
+export function clearStoredStaticGps(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const existing = readStoredGpsSettings();
+    delete existing.staticLat;
+    delete existing.staticLon;
+    localStorage.setItem(GPS_SETTINGS_STORAGE_KEY, JSON.stringify(existing));
+  } catch {
+    // catch-no-log-ok localStorage quota or private mode
+  }
+  notifyStaticGpsChanged();
 }
 
 /** User-configured static coordinates from App tab GPS settings. */

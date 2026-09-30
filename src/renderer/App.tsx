@@ -152,6 +152,7 @@ import { PanelLauncher } from './components/shell/PanelLauncher';
 import { QuitButton } from './components/shell/QuitButton';
 import { SectionHeader } from './components/shell/SectionHeader';
 import { StatusBar, StatusBarButton } from './components/shell/StatusBar';
+import StartupLocationPrompt from './components/StartupLocationPrompt';
 import { ToastProvider, useToast } from './components/Toast';
 import UpdateStatusIndicator from './components/UpdateStatusIndicator';
 import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectionActions';
@@ -2146,6 +2147,7 @@ function AppContent() {
   const runReanalysis = useDiagnosticsStore((s) => s.runReanalysis);
   const ignoreMqttEnabled = useDiagnosticsStore((s) => s.ignoreMqttEnabled);
   const envMode = useDiagnosticsStore((s) => s.envMode);
+  const ourPositionReference = useDiagnosticsStore((s) => s.ourPositionReference);
 
   useEffect(() => {
     runReanalysis(() => nodesForUi, activeConnectionView.state.myNodeNum, capabilities);
@@ -2156,7 +2158,20 @@ function AppContent() {
     ignoreMqttEnabled,
     envMode,
     capabilities,
+    ourPositionReference,
   ]);
+
+  const refreshActiveOurPosition = useCallback(() => {
+    const refresh = capabilities.hasFullPositionConfig
+      ? meshtasticPanelActions.refreshOurPosition
+      : capabilities.prefersDeviceOwnerLongNameInHeader
+        ? meshcorePanelActions.refreshOurPosition
+        : null;
+    if (!refresh) return;
+    void refresh().catch((e: unknown) => {
+      console.debug('[App] refreshOurPosition after location change ' + errLikeToLogString(e));
+    });
+  }, [capabilities, meshtasticPanelActions, meshcorePanelActions]);
 
   useEffect(() => {
     const previousDeviceStatus = previousDeviceStatusRef.current;
@@ -3907,6 +3922,11 @@ function AppContent() {
                     </button>
                   </div>
                 )}
+              <StartupLocationPrompt
+                ourPosition={activeOurPosition}
+                enabled={capabilities.hasHopCount}
+                onLocationChanged={refreshActiveOurPosition}
+              />
 
               {/* Main Viewport - scrollable panel area */}
               <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -5220,6 +5240,7 @@ function AppContent() {
                                       ? meshtasticPanelActions.refreshOurPosition
                                       : undefined
                                   }
+                                  onLocationChanged={refreshActiveOurPosition}
                                   gpsLoading={activeRuntime.gpsLoading}
                                   onGpsIntervalChange={asGpsIntervalChange(
                                     activeRuntime.updateGpsInterval,
@@ -5281,6 +5302,7 @@ function AppContent() {
                                 traceRouteResults={activeTraceRouteResults}
                                 getFullNodeLabel={panelActions.getFullNodeLabel}
                                 ourPosition={activeOurPosition}
+                                onLocationChanged={refreshActiveOurPosition}
                                 onNodeClick={(node) => {
                                   setSelectedNodeId(node.node_id);
                                 }}
