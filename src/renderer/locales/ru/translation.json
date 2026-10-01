@@ -3512,6 +3512,7 @@
     "youBadge": "Вы"
   },
   "nomadNetwork": {
+    "showBrowser": "Показать браузер",
     "title": "Nomad Network",
     "toggleFavorite": "Переключить избранное",
     "favourites": "Избранные",

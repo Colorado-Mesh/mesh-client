@@ -3446,6 +3446,7 @@
     "youBadge": "Anda"
   },
   "nomadNetwork": {
+    "showBrowser": "Tampilkan browser",
     "title": "Nomad Network",
     "toggleFavorite": "Alihkan favorit",
     "favourites": "Favorit",

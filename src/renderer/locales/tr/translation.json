@@ -3446,6 +3446,7 @@
     "youBadge": "Siz"
   },
   "nomadNetwork": {
+    "showBrowser": "Tarayıcıyı göster",
     "title": "Nomad Network",
     "toggleFavorite": "Favorileri aç/kapat",
     "favourites": "Favoriler",

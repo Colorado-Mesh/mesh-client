@@ -3446,6 +3446,7 @@
     "youBadge": "自分"
   },
   "nomadNetwork": {
+    "showBrowser": "ブラウザーを表示",
     "title": "Nomad Network",
     "toggleFavorite": "お気に入りを切り替える",
     "favourites": "お気に入り",
