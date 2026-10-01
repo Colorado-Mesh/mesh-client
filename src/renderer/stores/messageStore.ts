@@ -34,6 +34,8 @@ export interface MessageRecord {
   payload: string;
   channelIndex: number;
   timestamp: number;
+  /** First local observation order for MeshCore same-second DM display. */
+  localOrder?: number;
   rxSnr?: number;
   rxRssi?: number;
   hopCount?: number;
@@ -90,6 +92,7 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'payload',
   'channelIndex',
   'timestamp',
+  'localOrder',
   'rxSnr',
   'rxRssi',
   'hopCount',
@@ -157,6 +160,7 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
     const merged = existing ? { ...existing, ...message } : message;
+    if (existing?.localOrder != null) merged.localOrder = existing.localOrder;
     if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
       merged.to = existing.to;
     }
@@ -180,6 +184,7 @@ export function upsertMessageRecordsForIdentity(
     for (const message of records) {
       const existing = byIdentity[message.id];
       const merged = existing ? { ...existing, ...message } : message;
+      if (existing?.localOrder != null) merged.localOrder = existing.localOrder;
       if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
         merged.to = existing.to;
       }

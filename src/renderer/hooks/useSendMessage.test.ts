@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mergeAppSetting } from '../lib/appSettingsStorage';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { packetRouter } from '../lib/drivers/PacketRouter';
+import { attachMeshcoreIngest } from '../lib/ingest/meshcoreIngest';
 import { resetHeardRepeatWindowsForTests } from '../lib/meshcore/heardRepeatTracker';
 import { armMeshcoreDmAckPending } from '../lib/meshcore/meshcoreDmAckRuntime';
 import type { MeshCoreConnection } from '../lib/meshcore/meshcoreHookTypes';
@@ -193,6 +194,70 @@ describe('useSendMessage', () => {
     vi.mocked(connectionDriver.getHandle).mockReturnValue(null);
     vi.spyOn(window.electronAPI.db, 'saveMeshcoreMessage').mockResolvedValue(undefined);
   });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'persists DMs independently of the selected channel and keeps a same-second reply after the command on %s',
+    async (platform) => {
+      const platformSpy = vi.spyOn(window.electronAPI, 'getPlatform').mockReturnValue(platform);
+      const sendSpy = vi
+        .spyOn(meshcoreProtocol, 'sendMessage')
+        .mockResolvedValue({ packetId: 456 });
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_576);
+      vi.mocked(connectionDriver.getHandle).mockReturnValue({ kind: 'rf' });
+      seedMeshcoreDmSender(ID_MC_DM, 10);
+      const detach = attachMeshcoreIngest(ID_MC_DM);
+      try {
+        const { result } = renderHook(() => useSendMessage(ID_MC_DM));
+        result.current('command', 0, 10);
+        const command = Object.values(useMessageStore.getState().messages[ID_MC_DM])[0];
+        expect(command.channelIndex).toBe(-1);
+        expect(command.localOrder).toBeDefined();
+        packetRouter.dispatch(
+          {
+            type: 'text_message',
+            payload: {
+              id: '10:1700000000',
+              from: 10,
+              to: 7,
+              channelIndex: -1,
+              timestamp: 1_700_000_000_000,
+              payload: 'response',
+            },
+          },
+          ID_MC_DM,
+        );
+        const order = () => meshcoreChatMessagesForDisplay(listChatMessagesFromStore(ID_MC_DM));
+        expect(order().map((m) => m.payload)).toEqual(['command', 'response']);
+        await vi.waitFor(() => {
+          expect(useMessageStore.getState().messages[ID_MC_DM]['456']).toBeDefined();
+        });
+        expect(order().map((m) => m.payload)).toEqual(['command', 'response']);
+        expect(order()[0].localOrder).toBe(command.localOrder);
+        expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            payload: 'command',
+            channel_idx: -1,
+            to_node: 10,
+            local_order: command.localOrder,
+          }),
+        );
+        const response = order()[1];
+        expect(response.localOrder).toBeGreaterThan(command.localOrder!);
+        expect(window.electronAPI.db.saveMeshcoreMessage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            payload: 'response',
+            channel_idx: -1,
+            local_order: response.localOrder,
+          }),
+        );
+      } finally {
+        detach();
+        platformSpy.mockRestore();
+        sendSpy.mockRestore();
+        nowSpy.mockRestore();
+      }
+    },
+  );
 
   it('delegates to Meshtastic runtime sendChatMessage when MQTT-only (no RF handle)', () => {
     const session = createMeshtasticSessionStub();

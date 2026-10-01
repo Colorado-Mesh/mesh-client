@@ -1,5 +1,6 @@
 import { LAST_HEARD_MS_THRESHOLD } from '../../shared/lastHeardUnits';
 import { normalizeMeshcoreGifOutboundWire } from './meshcoreGifWire';
+import { orderMeshcoreDmsWithinSecond } from './meshcoreMessageOrder';
 import {
   buildMeshcoreOpenReactionIncomingMessage,
   parseMeshcoreOpenReactionWire,
@@ -275,7 +276,7 @@ export function meshcoreChatMessagesForDisplay(messages: readonly ChatMessage[])
       (a.packetId ?? 0) - (b.packetId ?? 0) ||
       a.sender_id - b.sender_id,
   );
-  return repairMeshcoreDisplayMessages(sorted);
+  return repairMeshcoreDisplayMessages(orderMeshcoreDmsWithinSecond(sorted));
 }
 
 /**

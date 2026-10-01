@@ -725,6 +725,18 @@ describe('privileged IPC sender validation (source contract)', () => {
 
 // ─── H3: db:* mutator + app:setLoginItem + log:device-connection sender checks ─
 
+describe('MeshCore message local order IPC contract', () => {
+  it('validates the optional local order before saving a message', () => {
+    const validationStart = INDEX_SOURCE.indexOf('function validateSaveMeshcoreMessage(');
+    const validationEnd = INDEX_SOURCE.indexOf('\nfunction ', validationStart + 1);
+    expect(validationStart).toBeGreaterThan(-1);
+    expect(INDEX_SOURCE.slice(validationStart, validationEnd)).toContain(
+      'validateMeshcoreMessageLocalOrder(m.local_order)',
+    );
+    expect(ipcHandlerBody('db:saveMeshcoreMessage', 800)).toContain('validateSaveMeshcoreMessage(');
+  });
+});
+
 describe('db mutator IPC sender validation (source contract, H3)', () => {
   const dbMutatorChannels = [
     'db:setNodeFavorited',
