@@ -12,11 +12,11 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 
 | Name                       | License type                  | Defined version | Installed version | Link                                                                           |
 | :------------------------- | :---------------------------- | :-------------- | :---------------- | :----------------------------------------------------------------------------- |
-| @bufbuild/protobuf         | (Apache-2.0 AND BSD-3-Clause) | ^2.15.0         | 2.15.0            | git+https://github.com/bufbuild/protobuf-es.git                                |
+| @bufbuild/protobuf         | (Apache-2.0 AND BSD-3-Clause) | ^2.16.0         | 2.16.0            | git+https://github.com/bufbuild/protobuf-es.git                                |
 | @jsr/meshtastic__protobufs | n/a                           | ^2.8.0          | 2.8.0             | n/a                                                                            |
 | @xterm/addon-fit           | MIT                           | ^0.11.0         | 0.11.0            | git+https://github.com/xtermjs/xterm.js.git#master                             |
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
-| @zip.js/zip.js             | BSD-3-Clause                  | ^2.18.2         | 2.18.2            | git+https://github.com/gildas-lormeau/zip.js.git                               |
+| @zip.js/zip.js             | BSD-3-Clause                  | ^2.21.0         | 2.21.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
 | dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.16         | 3.4.16            | git://github.com/cure53/DOMPurify.git                                          |
 | electron-updater           | MIT                           | ^6.8.9          | 6.8.9             | git+https://github.com/electron-userland/electron-builder.git                  |
@@ -37,7 +37,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | react-leaflet-cluster      | SEE LICENSE IN LICENSE        | ^4.1.3          | 4.1.3             | git+https://github.com/akursat/react-leaflet-cluster.git                       |
 | readable-stream            | MIT                           | ^4.7.0          | 4.7.0             | git://github.com/nodejs/readable-stream.git                                    |
 | semver                     | ISC                           | ^7.8.5          | 7.8.5             | git+https://github.com/npm/node-semver.git                                     |
-| systeminformation          | MIT                           | ^5.33.14        | 5.33.14           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
+| systeminformation          | MIT                           | ^5.33.15        | 5.33.15           | git+https://github.com/sebhildebrandt/systeminformation.git                    |
 | undici                     | MIT                           | ^8.11.2         | 8.11.2            | git+https://github.com/nodejs/undici.git                                       |
 | ws                         | MIT                           | ^8.21.0         | 8.22.0            | git+https://github.com/websockets/ws.git                                       |
 
@@ -70,7 +70,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @vitejs/plugin-react                  | MIT             | ^6.1.1          | 6.1.1             | git+https://github.com/vitejs/vite-plugin-react.git                                  |
 | @vitest/coverage-v8                   | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | concurrently                          | MIT             | ^9.2.4          | 9.2.4             | git+https://github.com/open-cli-tools/concurrently.git                               |
-| electron                              | MIT             | ^44.1.1         | 44.4.5            | git+https://github.com/electron/electron.git                                         |
+| electron                              | MIT             | ^44.1.1         | 44.5.1            | git+https://github.com/electron/electron.git                                         |
 | electron-builder                      | MIT             | ^26.17.0        | 26.17.0           | git+https://github.com/electron-userland/electron-builder.git                        |
 | emoji-picker-element-data             | Apache-2.0      | ^1.8.0          | 1.8.0             | git+https://github.com/nolanlawson/emoji-picker-element-data.git                     |
 | esbuild                               | MIT             | ^0.28.2         | 0.28.2            | git+https://github.com/evanw/esbuild.git                                             |
