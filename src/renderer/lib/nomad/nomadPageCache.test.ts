@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   clearNomadPageCache,
+  clearNomadPageCacheForHash,
   getNomadPageCache,
   nomadPageCacheSizeForTests,
   setNomadPageCache,
@@ -58,5 +59,19 @@ describe('nomadPageCache', () => {
     expect(
       getNomadPageCache({ hash: `128`.padStart(32, 'a'), path: '/page/128.mu' })?.content,
     ).toBe('page-128');
+  });
+
+  it('clears every page for one node only', () => {
+    const a = 'abc1234567890abcdef1234567890abc';
+    const b = 'def1234567890abcdef1234567890def';
+    setNomadPageCache({ hash: a, path: '/page/index.mu' }, { content: 'a1' });
+    setNomadPageCache(
+      { hash: a, path: '/page/t.mu', requestData: { var_x: '1' } },
+      { content: 'a2' },
+    );
+    setNomadPageCache({ hash: b, path: '/page/index.mu' }, { content: 'b1' });
+    clearNomadPageCacheForHash(a.toUpperCase());
+    expect(nomadPageCacheSizeForTests()).toBe(1);
+    expect(getNomadPageCache({ hash: b, path: '/page/index.mu' })?.content).toBe('b1');
   });
 });

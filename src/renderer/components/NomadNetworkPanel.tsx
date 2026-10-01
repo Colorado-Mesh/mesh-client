@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Code,
   Eraser,
+  FingerprintPattern,
   House,
   MoveHorizontal,
   PARENT_HOVER_ATTR,
@@ -70,6 +71,7 @@ import {
   type NomadPageLoadOptions,
   useNomadPageViewerStore,
 } from '../stores/nomadPageViewerStore';
+import { ConfirmModal } from './ConfirmModal';
 import NomadMicronPageView from './NomadMicronPageView';
 import NomadPageServerPanel from './NomadPageServerPanel';
 import { useToast } from './Toast';
@@ -199,6 +201,9 @@ function NomadExpandedNodeItem({
   formatHash,
   hopsAwayLabel,
   lastSeenLabel,
+  identifyingLabel,
+  stopIdentifyingLabel,
+  onStopIdentifying,
 }: {
   node: NomadNodeRow;
   isSelected: boolean;
@@ -209,6 +214,9 @@ function NomadExpandedNodeItem({
   formatHash: (hash: string) => string;
   hopsAwayLabel: string | null;
   lastSeenLabel: string | null;
+  identifyingLabel: string;
+  stopIdentifyingLabel: string;
+  onStopIdentifying: (hash: string) => void;
 }) {
   const label = node.display_name ?? node.destination_hash.slice(0, 16);
 
@@ -236,6 +244,21 @@ function NomadExpandedNodeItem({
             {lastSeenLabel ? <span>{lastSeenLabel}</span> : null}
           </div>
         </button>
+        {node.identify === true ? (
+          <button
+            type="button"
+            className="text-bright-green hover:bg-ink-800 inline-flex shrink-0 items-center gap-1 rounded px-1 py-0.5 text-xs"
+            aria-label={stopIdentifyingLabel}
+            title={stopIdentifyingLabel}
+            onClick={(e) => {
+              e.stopPropagation();
+              onStopIdentifying(node.destination_hash);
+            }}
+          >
+            <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
+            <span>{identifyingLabel}</span>
+          </button>
+        ) : null}
         <button
           type="button"
           className={node.favorited ? 'text-yellow-400' : 'text-muted'}
@@ -269,6 +292,8 @@ export default function NomadNetworkPanel({
   const fetchNomadFile = useNomadNetworkStore((s) => s.fetchNomadFile);
   const fetchNomadMedia = useNomadNetworkStore((s) => s.fetchNomadMedia);
   const toggleFavorite = useNomadNetworkStore((s) => s.toggleFavorite);
+  const setIdentify = useNomadNetworkStore((s) => s.setIdentify);
+  const clearAllIdentify = useNomadNetworkStore((s) => s.clearAllIdentify);
 
   const selectedHash = useNomadPageViewerStore((s) => s.selectedHash);
   const pagePath = useNomadPageViewerStore((s) => s.pagePath);
@@ -314,6 +339,11 @@ export default function NomadNetworkPanel({
     () => localStorage.getItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY) === 'true',
   );
   const [pageFitWidth, setPageFitWidth] = useState(readNomadPageFitWidth);
+  const [pendingIdentifyConfirm, setPendingIdentifyConfirm] = useState<{
+    hash: string;
+    name: string;
+  } | null>(null);
+  const [pendingClearAllIdentify, setPendingClearAllIdentify] = useState(false);
   const [sortPref, setSortPref] = useState(readNomadNodeSortPreference);
   const sortKey = sortPref.key;
   const sortDir = sortPref.dir;
@@ -438,8 +468,13 @@ export default function NomadNetworkPanel({
   }, [filteredRows, sortDir, sortKey]);
 
   const favouritesCount = useMemo(() => allRows.filter((node) => node.favorited).length, [allRows]);
+  const identifyingCount = useMemo(
+    () => allRows.filter((node) => node.identify === true).length,
+    [allRows],
+  );
 
   const selectedNode = selectedHash ? nodes.get(selectedHash.toLowerCase()) : undefined;
+  const selectedIdentifying = selectedNode?.identify === true;
 
   const loadNodePage = useCallback(
     async (hash: string, path: string, options: NomadPageLoadOptions = {}) => {
@@ -657,6 +692,79 @@ export default function NomadNetworkPanel({
     [toggleFavorite],
   );
 
+  const nodeLabel = useCallback(
+    (hash: string) => {
+      const node = nodes.get(hash.toLowerCase());
+      return node?.display_name ?? hash.slice(0, 16);
+    },
+    [nodes],
+  );
+
+  const reloadIfViewing = useCallback(
+    (hashes: readonly string[]) => {
+      const viewer = useNomadPageViewerStore.getState();
+      const open = viewer.selectedHash?.toLowerCase();
+      if (!open || !hashes.some((h) => h.toLowerCase() === open)) return;
+      void loadNodePage(viewer.selectedHash ?? open, viewer.pagePath, {
+        forceReload: true,
+        requestData: viewer.pageRequestData,
+      });
+    },
+    [loadNodePage],
+  );
+
+  const applyIdentify = useCallback(
+    async (hash: string, identify: boolean) => {
+      const name = nodeLabel(hash);
+      const saved = await setIdentify(hash, identify);
+      if (!mountedRef.current) return;
+      if (!saved) {
+        addToast(t('nomadNetwork.identifyFailedToast', { name }), 'error');
+        return;
+      }
+      addToast(
+        identify
+          ? t('nomadNetwork.identifyEnabledToast', { name })
+          : t('nomadNetwork.identifyDisabledToast', { name }),
+        identify ? 'success' : 'info',
+      );
+      reloadIfViewing([hash]);
+    },
+    [addToast, nodeLabel, reloadIfViewing, setIdentify, t],
+  );
+
+  const handleIdentifyToggle = useCallback(() => {
+    if (!selectedNode) return;
+    const hash = selectedNode.destination_hash;
+    if (selectedIdentifying) {
+      void applyIdentify(hash, false);
+      return;
+    }
+    setPendingIdentifyConfirm({ hash, name: nodeLabel(hash) });
+  }, [applyIdentify, nodeLabel, selectedIdentifying, selectedNode, setPendingIdentifyConfirm]);
+
+  const handleStopIdentifying = useCallback(
+    (hash: string) => {
+      void applyIdentify(hash, false);
+    },
+    [applyIdentify],
+  );
+
+  const confirmClearAllIdentify = useCallback(async () => {
+    setPendingClearAllIdentify(false);
+    const affected = allRows
+      .filter((node) => node.identify === true)
+      .map((node) => node.destination_hash);
+    const cleared = await clearAllIdentify();
+    if (!mountedRef.current) return;
+    if (cleared == null) {
+      addToast(t('nomadNetwork.identifyClearAllFailedToast'), 'error');
+      return;
+    }
+    addToast(t('nomadNetwork.identifyClearedAllToast', { count: cleared }), 'info');
+    reloadIfViewing(affected);
+  }, [addToast, allRows, clearAllIdentify, reloadIfViewing, setPendingClearAllIdentify, t]);
+
   const handleMicronNavigate = useCallback(
     (hash: string, path: string, requestData?: NomadPageRequestData) => {
       void loadNodePage(hash, path, { requestData });
@@ -716,6 +824,9 @@ export default function NomadNetworkPanel({
           onOpenNode={handleOpenNode}
           onToggleFavorite={handleToggleFavorite}
           formatHash={formatNomadHash}
+          identifyingLabel={t('nomadNetwork.identifyingBadge')}
+          stopIdentifyingLabel={t('nomadNetwork.identifyStopAria', { name: label })}
+          onStopIdentifying={handleStopIdentifying}
           hopsAwayLabel={
             node.hops != null ? t('nomadNetwork.hopsAway', { count: node.hops }) : null
           }
@@ -769,6 +880,21 @@ export default function NomadNetworkPanel({
               <span className="text-ink-200 min-w-0 flex-1 text-sm font-medium">
                 {activeTabLabel} <span className="text-muted">({activeTabCount})</span>
               </span>
+              {identifyingCount > 0 ? (
+                <button
+                  type="button"
+                  disabled={!sidecarRunning}
+                  className="text-bright-green hover:bg-ink-800 inline-flex shrink-0 items-center gap-1 rounded px-1 py-0.5 text-xs disabled:opacity-40"
+                  aria-label={t('nomadNetwork.identifyClearAllAria', { count: identifyingCount })}
+                  title={t('nomadNetwork.identifyClearAllAria', { count: identifyingCount })}
+                  onClick={() => {
+                    setPendingClearAllIdentify(true);
+                  }}
+                >
+                  <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
+                  <span>{t('nomadNetwork.identifyClearAll')}</span>
+                </button>
+              ) : null}
             </div>
           )}
 
@@ -969,6 +1095,37 @@ export default function NomadNetworkPanel({
                       }}
                     >
                       {t('nomadNetwork.sendMessage')}
+                    </button>
+                  ) : null}
+                  {selectedNode ? (
+                    <button
+                      type="button"
+                      disabled={!sidecarRunning}
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40 ${
+                        selectedIdentifying
+                          ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
+                          : 'border-ink-700 text-ink-200 hover:bg-ink-800'
+                      }`}
+                      aria-label={
+                        selectedIdentifying
+                          ? t('nomadNetwork.identifyStopAria', {
+                              name: nodeLabel(selectedNode.destination_hash),
+                            })
+                          : t('nomadNetwork.identifyEnableAria', {
+                              name: nodeLabel(selectedNode.destination_hash),
+                            })
+                      }
+                      title={
+                        sidecarRunning
+                          ? selectedIdentifying
+                            ? t('nomadNetwork.identifyOnHint')
+                            : t('nomadNetwork.identifyOffHint')
+                          : t('nomadNetwork.identifyUnavailable')
+                      }
+                      aria-pressed={selectedIdentifying}
+                      onClick={handleIdentifyToggle}
+                    >
+                      <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
                     </button>
                   ) : null}
                   <button
@@ -1237,6 +1394,34 @@ export default function NomadNetworkPanel({
           ) : null}
         </div>
       </div>
+      {pendingIdentifyConfirm ? (
+        <ConfirmModal
+          title={t('nomadNetwork.identifyConfirmTitle', { name: pendingIdentifyConfirm.name })}
+          message={t('nomadNetwork.identifyConfirmBody', { name: pendingIdentifyConfirm.name })}
+          confirmLabel={t('nomadNetwork.identifyConfirmAccept')}
+          onConfirm={() => {
+            const { hash } = pendingIdentifyConfirm;
+            setPendingIdentifyConfirm(null);
+            void applyIdentify(hash, true);
+          }}
+          onCancel={() => {
+            setPendingIdentifyConfirm(null);
+          }}
+        />
+      ) : null}
+      {pendingClearAllIdentify ? (
+        <ConfirmModal
+          title={t('nomadNetwork.identifyClearAllTitle')}
+          message={t('nomadNetwork.identifyClearAllBody', { count: identifyingCount })}
+          confirmLabel={t('nomadNetwork.identifyClearAll')}
+          onConfirm={() => {
+            void confirmClearAllIdentify();
+          }}
+          onCancel={() => {
+            setPendingClearAllIdentify(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
