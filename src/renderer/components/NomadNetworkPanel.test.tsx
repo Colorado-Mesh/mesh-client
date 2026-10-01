@@ -245,6 +245,53 @@ describe('NomadNetworkPanel', () => {
     },
   );
 
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'keeps external navigation and close behavior after resizing on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      let compact = false;
+      const listeners = new Set<() => void>();
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: (query: string) => ({
+          matches: compact && query === '(max-width: 767px)',
+          media: query,
+          addEventListener: (_event: string, listener: () => void) => listeners.add(listener),
+          removeEventListener: (_event: string, listener: () => void) => listeners.delete(listener),
+        }),
+      });
+      const user = userEvent.setup();
+      render(<NomadNetworkPanel />);
+      for (let pass = 0; pass < 3; pass += 1) {
+        act(() => {
+          compact = true;
+          listeners.forEach((listener) => {
+            listener();
+          });
+        });
+        expect(screen.getByRole('searchbox')).toBeVisible();
+        await act(async () => {
+          await useNomadPageViewerStore.getState().loadPage('abc1234567890', '/page/other.mu');
+        });
+        expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toBeVisible();
+        expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toHaveFocus();
+        await user.click(screen.getByLabelText('nomadNetwork.expandNodeList'));
+        act(() => {
+          useNomadPageViewerStore.getState().closeViewer();
+        });
+        expect(screen.getByRole('searchbox')).toBeVisible();
+        expect(screen.getByLabelText('nomadNetwork.urlBarAria')).not.toBeVisible();
+        act(() => {
+          compact = false;
+          listeners.forEach((listener) => {
+            listener();
+          });
+        });
+      }
+    },
+  );
+
   it('shows empty-state URL entry before a node is selected', async () => {
     render(<NomadNetworkPanel />);
 

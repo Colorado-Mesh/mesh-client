@@ -269,11 +269,11 @@ export default function NomadNetworkPanel({
   const listRef = useRef<HTMLDivElement>(null);
   const viewerHeaderRef = useRef<HTMLElement>(null);
   const movePaneFocus = useRef(false);
-  const previousCompact = useRef(layoutMode.compact);
+  const compactModeRef = useRef(layoutMode.compact);
 
   useEffect(() => {
-    if (previousCompact.current !== layoutMode.compact) {
-      previousCompact.current = layoutMode.compact;
+    if (compactModeRef.current !== layoutMode.compact) {
+      compactModeRef.current = layoutMode.compact;
       movePaneFocus.current = true;
     }
     if (!isActive || !movePaneFocus.current) return;
@@ -294,10 +294,10 @@ export default function NomadNetworkPanel({
       useNomadPageViewerStore.subscribe((next, previous) => {
         if (next.loadGeneration === previous.loadGeneration || !next.selectedHash) return;
         setActiveTab((tab) => (tab === 'myPages' ? 'announces' : tab));
-        if (layoutMode.compact) movePaneFocus.current = true;
+        if (compactModeRef.current) movePaneFocus.current = true;
         setCompactPane('conversation');
       }),
-    [layoutMode.compact],
+    [],
   );
 
   useEffect(() => {
