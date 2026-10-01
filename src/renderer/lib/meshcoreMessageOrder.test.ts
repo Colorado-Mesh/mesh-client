@@ -12,6 +12,7 @@ import {
   upsertMessage,
   useMessageStore,
 } from '../stores/messageStore';
+import { meshcoreHydratedMessageRecords } from './hydrateIdentityStoresFromDb';
 import { meshcoreChatMessagesForDisplay } from './meshcoreChannelText';
 import {
   nextMeshcoreMessageLocalOrder,
@@ -105,6 +106,30 @@ describe.each(['linux', 'darwin', 'win32'])('same-second MeshCore DM order on %s
     expect(mapped.map((m) => m.payload)).toEqual(['command', 'response']);
     expect(mapped.map((m) => m.channel)).toEqual([-1, -1]);
     expect(mapped.map((m) => m.localOrder)).toEqual([20, 21]);
+  });
+
+  it('hydrates packetless legacy DMs to separate peers without overwriting either store record', () => {
+    const rows = [2, 3].map((to, index) => ({
+      id: 20 + index,
+      sender_id: 1,
+      sender_name: 'Local',
+      to_node: to,
+      channel_idx: index === 0 ? 0 : 7,
+      timestamp: second + 250,
+      payload: 'command',
+      packet_id: null,
+      status: 'acked',
+    })) as MeshcoreMessageDbRow[];
+    const mapped = mapMeshcoreDbRowsToChatMessages(rows);
+    const records = meshcoreHydratedMessageRecords(mapped);
+    expect(new Set(records.map((record) => record.id)).size).toBe(2);
+    replaceMessageRecordsForIdentity(identity, records);
+    expect(display().map((m) => m.to)).toEqual([2, 3]);
+    const acked = meshcoreHydratedMessageRecords([{ ...mapped[0], packetId: 123 }]);
+    expect(acked[0].id).toBe('123');
+    useMessageStore.setState({ messages: {} });
+    for (const msg of mapped) upsertMeshcoreMessageWithDedup(identity, msg);
+    expect(display().map((m) => m.to)).toEqual([2, 3]);
   });
 
   it('retains first observation order on duplicate replay', () => {

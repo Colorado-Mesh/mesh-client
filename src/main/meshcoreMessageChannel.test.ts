@@ -212,6 +212,115 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
     }
   });
 
+  it('keeps identical messages for different recipients separate across legacy and canonical DM channels', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    const row: MeshcoreMessageRowParams = {
+      sender_id: 1,
+      sender_name: null,
+      payload: 'command',
+      channel_idx: -1,
+      timestamp: 1700000000576,
+      local_order: 1700000000576000,
+      status: 'pending',
+      packet_id: null,
+      emoji: null,
+      reply_id: null,
+      to_node: 2,
+      received_via: null,
+      rx_packet_fingerprint: null,
+      reply_preview_text: null,
+      reply_preview_sender: null,
+      rx_hops: null,
+      room_server_id: null,
+    };
+    try {
+      const legacy = db
+        .prepareOnce(
+          'INSERT INTO meshcore_messages (sender_id,payload,channel_idx,timestamp,to_node,status) VALUES (1,?,0,?,2,?)',
+        )
+        .run(row.payload, row.timestamp, 'pending');
+      expect(persistMeshcoreMessage(db, { ...row, to_node: 3, status: 'acked' }).changes).toBe(1);
+      expect(persistMeshcoreMessage(db, { ...row, status: 'acked' }).changes).toBe(1);
+      expect(persistMeshcoreMessage(db, { ...row, to_node: 4 }).changes).toBe(1);
+      expect(
+        db
+          .prepareOnce('SELECT id,channel_idx,to_node,status FROM meshcore_messages ORDER BY id')
+          .all(),
+      ).toEqual([
+        { id: Number(legacy.lastInsertRowid), channel_idx: 0, to_node: 2, status: 'acked' },
+        { id: Number(legacy.lastInsertRowid) + 1, channel_idx: -1, to_node: 3, status: 'acked' },
+        { id: Number(legacy.lastInsertRowid) + 2, channel_idx: -1, to_node: 4, status: 'pending' },
+      ]);
+      const anonymous = { ...row, sender_id: null };
+      expect(persistMeshcoreMessage(db, anonymous).changes).toBe(1);
+      expect(persistMeshcoreMessage(db, { ...anonymous, to_node: 3 }).changes).toBe(1);
+      expect(persistMeshcoreMessage(db, anonymous).changes).toBe(1);
+      expect(
+        db
+          .prepareOnce('SELECT to_node FROM meshcore_messages WHERE sender_id IS NULL ORDER BY id')
+          .all(),
+      ).toEqual([{ to_node: 2 }, { to_node: 3 }]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('repairs a missing DM recipient only when the first local order identifies that observation', () => {
+    for (const recipient of [null, 0]) {
+      for (const legacy of [true, false]) {
+        const db = new NodeSqliteDB(':memory:');
+        runSchemaUpgrade(db);
+        try {
+          const inserted = db
+            .prepareOnce(
+              `INSERT INTO meshcore_messages(sender_id,payload,channel_idx,timestamp,to_node,local_order)
+            VALUES (1,'response',-1,1700000000000,?,?)`,
+            )
+            .run(recipient, legacy ? null : 100);
+          const localOrder = legacy ? Number(inserted.lastInsertRowid) : 100;
+          const row: MeshcoreMessageRowParams = {
+            sender_id: 1,
+            sender_name: null,
+            payload: 'response',
+            channel_idx: -1,
+            timestamp: 1700000000000,
+            local_order: localOrder,
+            status: 'acked',
+            packet_id: null,
+            emoji: null,
+            reply_id: null,
+            to_node: 2,
+            received_via: null,
+            rx_packet_fingerprint: null,
+            reply_preview_text: null,
+            reply_preview_sender: null,
+            rx_hops: null,
+            room_server_id: null,
+          };
+          expect(persistMeshcoreMessage(db, row).changes).toBe(1);
+          expect(
+            db.prepareOnce('SELECT id,to_node,local_order FROM meshcore_messages').all(),
+          ).toEqual([
+            { id: Number(inserted.lastInsertRowid), to_node: 2, local_order: localOrder },
+          ]);
+          db.prepareOnce('UPDATE meshcore_messages SET to_node = ?').run(recipient);
+          expect(persistMeshcoreMessage(db, { ...row, local_order: localOrder + 1 }).changes).toBe(
+            1,
+          );
+          expect(
+            db.prepareOnce('SELECT to_node,local_order FROM meshcore_messages ORDER BY id').all(),
+          ).toEqual([
+            { to_node: recipient, local_order: localOrder },
+            { to_node: 2, local_order: localOrder + 1 },
+          ]);
+        } finally {
+          db.close();
+        }
+      }
+    }
+  });
+
   it('channel choices and channel loads use the same classification as persistence and clearing', () => {
     const { db, rows } = fixture();
     try {

@@ -52,6 +52,77 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     }
   });
 
+  it.each(['linux', 'darwin', 'win32'])(
+    'rebuilds v49 MeshCore indexes to retain distinct recipients on %s',
+    () => {
+      const db = new NodeSqliteDB(':memory:');
+      try {
+        runSchemaUpgrade(db);
+        db.execScript(`DROP INDEX idx_mc_msg_dedup; DROP INDEX idx_mc_msg_dedup_null_sender;
+        CREATE UNIQUE INDEX idx_mc_msg_dedup ON meshcore_messages(sender_id,timestamp,channel_idx,payload) WHERE sender_id IS NOT NULL;
+        CREATE UNIQUE INDEX idx_mc_msg_dedup_null_sender ON meshcore_messages(timestamp,channel_idx,payload) WHERE sender_id IS NULL;`);
+        const insert = db.prepareOnce(
+          `INSERT INTO meshcore_messages(sender_id,payload,channel_idx,timestamp,to_node) VALUES (?,'command',-1,1700000000000,?)`,
+        );
+        insert.run(1, 2);
+        insert.run(null, 2);
+        db.pragma('user_version = 49');
+        runSchemaUpgrade(db);
+        for (const sender of [1, null]) {
+          for (const recipient of [null, 0, 3, 0xffffffff]) insert.run(sender, recipient);
+          expect(() => insert.run(sender, 2)).toThrow();
+          expect(() => insert.run(sender, null)).toThrow();
+        }
+        const rows = db
+          .prepareOnce('SELECT id,sender_id,to_node FROM meshcore_messages ORDER BY id')
+          .all();
+        expect(rows).toHaveLength(10);
+        const indexes = db
+          .prepareOnce(
+            "SELECT name,sql FROM sqlite_master WHERE name IN ('idx_mc_msg_dedup','idx_mc_msg_dedup_null_sender') ORDER BY name",
+          )
+          .all();
+        runSchemaUpgrade(db);
+        expect(
+          db.prepareOnce('SELECT id,sender_id,to_node FROM meshcore_messages ORDER BY id').all(),
+        ).toEqual(rows);
+        expect(
+          db
+            .prepareOnce(
+              "SELECT name,sql FROM sqlite_master WHERE name IN ('idx_mc_msg_dedup','idx_mc_msg_dedup_null_sender') ORDER BY name",
+            )
+            .all(),
+        ).toEqual(indexes);
+      } finally {
+        db.close();
+      }
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'keeps another recipient sending when an acked DM exists on %s',
+    () => {
+      const db = new NodeSqliteDB(':memory:');
+      try {
+        runSchemaUpgrade(db);
+        const timestamp = Date.now();
+        db.prepareOnce(
+          `INSERT INTO meshcore_messages(sender_id,payload,channel_idx,timestamp,to_node,status)
+        VALUES (1,'command',-1,?,2,'sending'),(1,'command',-1,?,3,'acked')`,
+        ).run(timestamp, timestamp);
+        runSchemaUpgrade(db);
+        expect(
+          db.prepareOnce('SELECT to_node,status FROM meshcore_messages ORDER BY id').all(),
+        ).toEqual([
+          { to_node: 2, status: 'sending' },
+          { to_node: 3, status: 'acked' },
+        ]);
+      } finally {
+        db.close();
+      }
+    },
+  );
+
   it('brings a new database to CURRENT_SCHEMA_VERSION with retention defaults', () => {
     dir = mkdtempSync(join(tmpdir(), 'mesh-schema-test-'));
     const dbPath = join(dir, 'test.db');

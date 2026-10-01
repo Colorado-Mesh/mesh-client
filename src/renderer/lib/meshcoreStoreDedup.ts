@@ -79,7 +79,7 @@ export function meshcoreMessageStoreId(msg: ChatMessage): string {
       msg.sender_id > 0 ? msg.sender_id : undefined,
     );
   }
-  return `${msg.sender_id}-${msg.timestamp}-${msg.channel}`;
+  return `${msg.sender_id}-${msg.timestamp}-${msg.channel}-${msg.to ?? 'unknown'}`;
 }
 
 export function listChatMessagesFromStore(identityId: IdentityId): ChatMessage[] {
