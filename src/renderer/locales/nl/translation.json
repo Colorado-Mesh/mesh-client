@@ -3448,6 +3448,7 @@
     "youBadge": "Jij"
   },
   "nomadNetwork": {
+    "showBrowser": "Browser tonen",
     "title": "Nomad Network",
     "toggleFavorite": "Favoriet in-/uitschakelen",
     "favourites": "Favorieten",

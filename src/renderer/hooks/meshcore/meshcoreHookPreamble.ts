@@ -1,4 +1,5 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
+import { meshcoreMessageChannelIndex } from '@/shared/meshcoreMessageChannel';
 
 import { isValidLatLon } from '../../../shared/geoCoords';
 import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
@@ -24,6 +25,7 @@ import {
   isMeshcoreLocallyDeletedContact,
   shouldApplyMeshcoreContact,
 } from '../../lib/meshcoreLocallyDeletedContacts';
+import { observeMeshcoreMessageLocalOrder } from '../../lib/meshcoreMessageOrder';
 import {
   CONTACT_TYPE_LABELS,
   isMeshcoreTransportStatusChatLine,
@@ -158,7 +160,8 @@ export function messageToDbRow(
     sender_id,
     sender_name: msg.sender_name ?? null,
     payload: msg.payload,
-    channel_idx: msg.channel,
+    channel_idx: meshcoreMessageChannelIndex(msg.channel, msg.to, msg.roomServerId),
+    local_order: msg.localOrder ?? null,
     timestamp: effectiveMessageTimestampMs(msg.timestamp),
     status: msg.status ?? 'acked',
     packet_id: msg.packetId ?? null,
@@ -850,6 +853,7 @@ export function buildMeshcoreNodeMapFromDb(
 /** Row shape from `db:getMeshcoreMessages` — shared by initConn, mount load, refreshMessagesFromDb. */
 export interface MeshcoreMessageDbRow {
   id: number;
+  local_order?: number | null;
   sender_id: number | null;
   sender_name: string | null;
   payload: string;
@@ -1151,12 +1155,15 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
     if (senderId === 0 && displayName && displayName !== 'Unknown') {
       senderId = meshcoreChatStubNodeIdFromDisplayName(displayName);
     }
+    const localOrder = r.local_order ?? r.id;
+    observeMeshcoreMessageLocalOrder(localOrder);
     mapped.push({
       id: r.id,
       sender_id: senderId,
       sender_name: displayName,
       payload: displayPayload,
-      channel: r.channel_idx,
+      channel: meshcoreMessageChannelIndex(r.channel_idx, r.to_node, r.room_server_id),
+      localOrder,
       timestamp: effectiveMessageTimestampMs(r.timestamp),
       status: (r.status as ChatMessage['status']) ?? 'acked',
       packetId: r.packet_id ?? undefined,

@@ -3448,6 +3448,7 @@
     "youBadge": "你"
   },
   "nomadNetwork": {
+    "showBrowser": "显示浏览器",
     "title": "Nomad Network",
     "toggleFavorite": "切换收藏夹",
     "favourites": "收藏夹",

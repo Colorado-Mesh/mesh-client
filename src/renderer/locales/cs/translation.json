@@ -3483,6 +3483,7 @@
     "youBadge": "Vy"
   },
   "nomadNetwork": {
+    "showBrowser": "Zobrazit prohlížeč",
     "title": "Nomad Network",
     "toggleFavorite": "Přepnout oblíbené",
     "favourites": "Oblíbené",

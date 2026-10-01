@@ -3648,6 +3648,7 @@
     "linkDownBody": "Radio connection lost and reconnect did not succeed"
   },
   "nomadNetwork": {
+    "showBrowser": "Show browser",
     "title": "Nomad Network",
     "favourites": "Favourites",
     "announces": "Announces",

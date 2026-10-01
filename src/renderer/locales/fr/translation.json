@@ -3448,6 +3448,7 @@
     "youBadge": "Vous"
   },
   "nomadNetwork": {
+    "showBrowser": "Afficher le navigateur",
     "title": "Nomad Network",
     "toggleFavorite": "Basculer en favori",
     "favourites": "Favoris",

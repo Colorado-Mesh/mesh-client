@@ -3514,6 +3514,7 @@
     "youBadge": "Ty"
   },
   "nomadNetwork": {
+    "showBrowser": "Pokaż przeglądarkę",
     "title": "Nomad Network",
     "toggleFavorite": "Przełącz ulubione",
     "favourites": "Ulubione",

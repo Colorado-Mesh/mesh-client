@@ -602,6 +602,7 @@ export interface ElectronAPI {
       sender_name?: string | null;
       payload: string;
       channel_idx?: number;
+      local_order?: number | null;
       timestamp: number;
       status?: string;
       packet_id?: number | null;

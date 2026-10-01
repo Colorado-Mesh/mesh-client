@@ -130,9 +130,9 @@ describe('placeholder name format', () => {
  * Fresh installs stamp CURRENT_SCHEMA_VERSION then runSchemaUpgrade() (idempotent).
  */
 describe('meshcore_messages dedup index and fresh DB version', () => {
-  it('canonical DDL defines idx_mc_msg_dedup including payload', () => {
+  it('canonical DDL defines idx_mc_msg_dedup including payload and recipient', () => {
     expect(SCHEMA_SYNC_SOURCE).toMatch(
-      /CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup\s+ON meshcore_messages\(sender_id, timestamp, channel_idx, payload\)/s,
+      /CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup\s+ON meshcore_messages\(sender_id, timestamp, channel_idx, payload, COALESCE\(to_node, -1\)\)/s,
     );
   });
 

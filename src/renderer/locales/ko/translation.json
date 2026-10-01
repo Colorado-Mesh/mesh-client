@@ -3448,6 +3448,7 @@
     "youBadge": "나"
   },
   "nomadNetwork": {
+    "showBrowser": "브라우저 표시",
     "title": "Nomad Network",
     "toggleFavorite": "즐겨찾기 전환",
     "favourites": "즐겨찾기",

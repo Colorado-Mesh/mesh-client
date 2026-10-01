@@ -19,6 +19,7 @@ import {
 } from '../lib/meshcore/meshcoreTcpInitBurst';
 import { resolveMeshcoreOutboundWireText } from '../lib/meshcoreChannelText';
 import { scheduleMeshcoreDmAckPending } from '../lib/meshcoreDmAckDelivery';
+import { nextMeshcoreMessageLocalOrder } from '../lib/meshcoreMessageOrder';
 import { listChatMessagesFromStore } from '../lib/meshcoreStoreDedup';
 import type { SendResult } from '../lib/protocols/Protocol';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
@@ -259,7 +260,8 @@ export function useSendMessage(
         ...(isMeshcore ? { senderName: meshcoreSenderName } : {}),
         to: destination ?? 0xffffffff,
         payload: resolvedOutbound.displayPayload,
-        channelIndex,
+        channelIndex: isMeshcoreDm ? -1 : channelIndex,
+        ...(isMeshcoreDm ? { localOrder: nextMeshcoreMessageLocalOrder() } : {}),
         timestamp: Date.now(),
         status: 'sending' as const,
         replyTo,

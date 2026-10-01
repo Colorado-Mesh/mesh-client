@@ -165,3 +165,25 @@ describe('ConversationLayout', () => {
     expect(screen.getByText('messages')).toBeInTheDocument();
   });
 });
+
+it('keeps an opted-in compact browser mounted and inert while returning to its list', () => {
+  const mode = { compact: true, sideOverlay: true };
+  const props = {
+    mode,
+    list: <p>Nodes</p>,
+    listLabel: 'Nodes',
+    listOpen: true,
+    conversation: <input aria-label="Micron field" defaultValue="" />,
+    keepConversationMounted: true,
+  };
+  const { rerender } = render(<ConversationLayout {...props} compactPane="conversation" />);
+  const field = screen.getByLabelText<HTMLInputElement>('Micron field');
+  field.value = 'saved callsign';
+  rerender(<ConversationLayout {...props} compactPane="list" />);
+  expect(field).not.toBeVisible();
+  expect(field.closest('section')).toHaveAttribute('inert');
+  rerender(<ConversationLayout {...props} compactPane="conversation" />);
+  expect(screen.getByLabelText('Micron field')).toBe(field);
+  expect(field).toHaveValue('saved callsign');
+  expect(field).toBeVisible();
+});

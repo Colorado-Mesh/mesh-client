@@ -19,7 +19,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 49;
+export const CURRENT_SCHEMA_VERSION = 50;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -120,6 +120,7 @@ export const CANONICAL_TABLES_DDL = `
         payload     TEXT NOT NULL,
         channel_idx INTEGER DEFAULT 0,
         timestamp   INTEGER NOT NULL,
+        local_order INTEGER,
         status      TEXT DEFAULT 'acked',
         packet_id   INTEGER,
         emoji       INTEGER,
@@ -334,10 +335,10 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
-        ON meshcore_messages(sender_id, timestamp, channel_idx, payload)
+        ON meshcore_messages(sender_id, timestamp, channel_idx, payload, COALESCE(to_node, -1))
         WHERE sender_id IS NOT NULL`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup_null_sender
-        ON meshcore_messages(timestamp, channel_idx, payload)
+        ON meshcore_messages(timestamp, channel_idx, payload, COALESCE(to_node, -1))
         WHERE sender_id IS NULL`,
   'CREATE INDEX IF NOT EXISTS idx_position_history_node_time ON position_history(node_id, recorded_at)',
   'CREATE INDEX IF NOT EXISTS idx_position_history_time ON position_history(recorded_at)',
@@ -423,6 +424,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     last_synced_from_radio: 'TEXT',
   },
   meshcore_messages: {
+    local_order: 'INTEGER',
     sender_id: 'INTEGER',
     sender_name: 'TEXT',
     payload: 'TEXT NOT NULL',
@@ -560,18 +562,22 @@ function ensureColumns(db: NodeSqliteDB): void {
   }
 }
 
-/** Legacy meshcore_messages dedup index lacked payload; drop, dedupe, then recreate (historical v17). */
+/** Keep MeshCore natural keys scoped to a recipient, including indexes created by older builds. */
 function ensureMeshcoreMessagesDedupIndex(db: NodeSqliteDB): void {
-  // Fast path: both unique indexes already present — skip DROP/DELETE/recreate on every startup.
-  const hasDedup = db
-    .prepare(`SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_mc_msg_dedup' LIMIT 1`)
-    .get();
-  const hasNullSenderDedup = db
+  const definitions = db
     .prepare(
-      `SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_mc_msg_dedup_null_sender' LIMIT 1`,
+      `SELECT sql FROM sqlite_master WHERE type='index'
+       AND name IN ('idx_mc_msg_dedup', 'idx_mc_msg_dedup_null_sender')`,
     )
-    .get();
-  if (hasDedup !== undefined && hasNullSenderDedup !== undefined) return;
+    .all() as { sql: string }[];
+  // -1 is outside the uint32 recipient domain and makes NULL recipients deduplicate too.
+  const recipientKey = 'coalesce(to_node,-1)';
+  if (
+    definitions.length === 2 &&
+    definitions.every(({ sql }) => sql.toLowerCase().replace(/\s+/g, '').includes(recipientKey))
+  ) {
+    return;
+  }
 
   db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup');
   db.execScript('DROP INDEX IF EXISTS idx_mc_msg_dedup_null_sender');
@@ -581,7 +587,7 @@ function ensureMeshcoreMessagesDedupIndex(db: NodeSqliteDB): void {
          WHERE id NOT IN (
            SELECT MIN(id) FROM meshcore_messages
            WHERE sender_id IS NOT NULL
-           GROUP BY sender_id, timestamp, channel_idx, payload
+           GROUP BY sender_id, timestamp, channel_idx, payload, COALESCE(to_node, -1)
          )
          AND sender_id IS NOT NULL`,
     ).run();
@@ -591,18 +597,18 @@ function ensureMeshcoreMessagesDedupIndex(db: NodeSqliteDB): void {
          AND id NOT IN (
            SELECT MIN(id) FROM meshcore_messages
            WHERE sender_id IS NULL
-           GROUP BY timestamp, channel_idx, payload
+           GROUP BY timestamp, channel_idx, payload, COALESCE(to_node, -1)
          )`,
     ).run();
   }
   db.execScript(
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup ' +
-      'ON meshcore_messages(sender_id, timestamp, channel_idx, payload) ' +
+      'ON meshcore_messages(sender_id, timestamp, channel_idx, payload, COALESCE(to_node, -1)) ' +
       'WHERE sender_id IS NOT NULL',
   );
   db.execScript(
     'CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup_null_sender ' +
-      'ON meshcore_messages(timestamp, channel_idx, payload) ' +
+      'ON meshcore_messages(timestamp, channel_idx, payload, COALESCE(to_node, -1)) ' +
       'WHERE sender_id IS NULL',
   );
 }
@@ -820,6 +826,7 @@ function repairMeshcoreOrphanSendingMessages(db: NodeSqliteDB): void {
          INNER JOIN meshcore_messages a ON s.id != a.id
            AND s.sender_id = a.sender_id
            AND s.channel_idx = a.channel_idx
+           AND s.to_node IS a.to_node
            AND s.payload = a.payload
            AND a.status != 'sending'
            AND ABS(a.timestamp - s.timestamp) <= ?
