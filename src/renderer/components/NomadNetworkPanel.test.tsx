@@ -1,7 +1,7 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
@@ -65,13 +65,18 @@ import {
 } from '@/renderer/lib/nomad/nomadPageCache';
 
 import { useNomadNetworkStore } from '../stores/nomadNetworkStore';
-import { resetNomadPageViewerStoreForTests } from '../stores/nomadPageViewerStore';
+import {
+  resetNomadPageViewerStoreForTests,
+  useNomadPageViewerStore,
+} from '../stores/nomadPageViewerStore';
 import NomadNetworkPanel from './NomadNetworkPanel';
 
 async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+  await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
   await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
 }
+
+const originalMatchMedia = Object.getOwnPropertyDescriptor(window, 'matchMedia');
 
 describe('NomadNetworkPanel', () => {
   beforeEach(() => {
@@ -117,18 +122,18 @@ describe('NomadNetworkPanel', () => {
     const user = userEvent.setup();
     render(<NomadNetworkPanel />);
 
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.favourites' })).toHaveAttribute(
-      'aria-selected',
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.favourites' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
-      'aria-selected',
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-checked',
       'false',
     );
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+    await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
     expect(screen.getByText('Announce only')).toBeInTheDocument();
 
@@ -137,6 +142,108 @@ describe('NomadNetworkPanel', () => {
     expect(screen.getByText('TOPICS! The Nomad Forum')).toBeInTheDocument();
     expect(screen.queryByText('Announce only')).not.toBeInTheDocument();
   });
+
+  afterEach(() => {
+    if (originalMatchMedia) Object.defineProperty(window, 'matchMedia', originalMatchMedia);
+    else Reflect.deleteProperty(window, 'matchMedia');
+  });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'keeps desktop filters and focus across repeated list toggles on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const user = userEvent.setup();
+      const { container } = render(<NomadNetworkPanel />);
+      const favourites = screen.getByRole('radio', { name: 'nomadNetwork.favourites' });
+      favourites.focus();
+      await user.keyboard('{ArrowRight}');
+      expect(screen.getByRole('radio', { name: 'nomadNetwork.announces' })).toHaveFocus();
+      await user.type(screen.getByRole('searchbox'), 'topics');
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.sortByNameAsc' }));
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
+      for (let pass = 0; pass < 3; pass += 1) {
+        await user.click(screen.getByLabelText('nomadNetwork.collapseNodeList'));
+        expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toHaveFocus();
+        await user.keyboard('{Enter}');
+        expect(screen.getByLabelText('nomadNetwork.collapseNodeList')).toHaveFocus();
+        expect(screen.getByRole('searchbox')).toHaveValue('topics');
+        expect(screen.getByRole('radio', { name: 'nomadNetwork.announces' })).toBeChecked();
+        expect(screen.getByRole('button', { name: 'nomadNetwork.sortByNameAsc' })).toHaveAttribute(
+          'aria-pressed',
+          'true',
+        );
+        expect(screen.getByRole('button', { name: 'nomadNetwork.openNode' })).toHaveAttribute(
+          'aria-current',
+          'page',
+        );
+      }
+      hydrateAxeThemeColors(document.documentElement);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'switches between the full-width list, page and My Pages on compact %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      Object.defineProperty(window, 'matchMedia', {
+        configurable: true,
+        writable: true,
+        value: vi.fn((query: string) => ({
+          matches: query === '(max-width: 767px)' || query === '(max-width: 1279px)',
+          media: query,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      });
+      const user = userEvent.setup();
+      const { container } = render(<NomadNetworkPanel />);
+      expect(container.querySelector('[data-layout="compact"]')).toBeInTheDocument();
+      expect(screen.getByLabelText('nomadNetwork.urlBarAria')).not.toBeVisible();
+      await user.click(screen.getByLabelText('nomadNetwork.showBrowser'));
+      expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toBeInTheDocument();
+      await user.click(screen.getByLabelText('nomadNetwork.expandNodeList'));
+      await user.type(screen.getByRole('searchbox'), 'topics');
+      for (let pass = 0; pass < 3; pass += 1) {
+        const node = screen.getByRole('button', { name: 'nomadNetwork.openNode' });
+        node.focus();
+        await user.keyboard('{Enter}');
+        expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toHaveFocus();
+        await user.keyboard('{Enter}');
+        expect(screen.getByRole('searchbox')).toHaveValue('topics');
+        expect(screen.getByRole('radio', { name: 'nomadNetwork.favourites' })).toHaveFocus();
+      }
+      await user.click(screen.getByLabelText('nomadNetwork.showBrowser'));
+      await waitFor(() => {
+        expect(document.querySelector('.nomad-micron-page')).toBeInTheDocument();
+      });
+      const pageView = document.querySelector('.nomad-micron-page');
+      await user.click(screen.getByLabelText('nomadNetwork.expandNodeList'));
+      await user.click(screen.getByLabelText('nomadNetwork.showBrowser'));
+      expect(document.querySelector('.nomad-micron-page')).toBe(pageView);
+      await user.click(screen.getByLabelText('nomadNetwork.expandNodeList'));
+      await act(async () => {
+        await useNomadPageViewerStore.getState().loadPage('abc1234567890', '/page/other.mu');
+      });
+      expect(screen.getByLabelText('nomadNetwork.urlBarAria')).toHaveValue(
+        'abc1234567890:/page/other.mu',
+      );
+      expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toHaveFocus();
+      await user.click(screen.getByLabelText('nomadNetwork.expandNodeList'));
+      await user.click(screen.getByRole('radio', { name: 'nomadNetwork.myPagesTab' }));
+      expect(screen.getByTestId('nomad-page-server-panel')).toBeInTheDocument();
+      expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toHaveFocus();
+      await user.click(screen.getByLabelText('nomadNetwork.expandNodeList'));
+      const list = screen.getByRole('complementary');
+      expect(within(list).getByRole('radio', { name: 'nomadNetwork.myPagesTab' })).toHaveFocus();
+      await user.keyboard('{Home}');
+      expect(screen.getByRole('searchbox')).toHaveValue('topics');
+      hydrateAxeThemeColors(document.documentElement);
+      expect(await axe(container)).toHaveNoViolations();
+    },
+  );
 
   it('shows empty-state URL entry before a node is selected', async () => {
     render(<NomadNetworkPanel />);
@@ -250,7 +357,7 @@ describe('NomadNetworkPanel', () => {
     });
     render(<NomadNetworkPanel />);
 
-    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+    await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
 
     const openButtons = screen.getAllByRole('button', { name: 'nomadNetwork.openNode' });
     // Default sort: last heard desc → newest first
@@ -277,10 +384,10 @@ describe('NomadNetworkPanel', () => {
     render(<NomadNetworkPanel />);
 
     expect(screen.queryByTestId('nomad-page-server-panel')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.myPagesTab' }));
+    await user.click(screen.getByRole('radio', { name: 'nomadNetwork.myPagesTab' }));
 
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.myPagesTab' })).toHaveAttribute(
-      'aria-selected',
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.myPagesTab' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
     expect(screen.getByTestId('nomad-page-server-panel')).toHaveAttribute('data-active', 'true');
@@ -295,11 +402,11 @@ describe('NomadNetworkPanel', () => {
     useNomadNetworkStore.setState({ refreshFromSidecar, fetchNomadPage });
 
     render(<NomadNetworkPanel />);
-    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.myPagesTab' }));
+    await user.click(screen.getByRole('radio', { name: 'nomadNetwork.myPagesTab' }));
     await user.click(screen.getByRole('button', { name: 'preview-hosted' }));
 
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
-      'aria-selected',
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
     await waitFor(() => {
@@ -688,21 +795,21 @@ describe('NomadNetworkPanel', () => {
     }
 
     render(<Harness />);
-    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
-      'aria-selected',
+    await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
 
     await user.click(screen.getByRole('button', { name: 'toggle-active' }));
     await user.click(screen.getByRole('button', { name: 'toggle-active' }));
 
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.favourites' })).toHaveAttribute(
-      'aria-selected',
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.favourites' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
-      'aria-selected',
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-checked',
       'false',
     );
   });
@@ -746,7 +853,7 @@ describe('NomadNetworkPanel', () => {
     }
 
     render(<Harness />);
-    await user.click(screen.getByRole('tab', { name: 'nomadNetwork.announces' }));
+    await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
     await user.click(screen.getByRole('button', { name: 'nomadNetwork.openNode' }));
     await waitFor(() => {
       expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('hello');
@@ -755,8 +862,8 @@ describe('NomadNetworkPanel', () => {
     await user.click(screen.getByRole('button', { name: 'toggle-active' }));
     await user.click(screen.getByRole('button', { name: 'toggle-active' }));
 
-    expect(screen.getByRole('tab', { name: 'nomadNetwork.announces' })).toHaveAttribute(
-      'aria-selected',
+    expect(screen.getByRole('radio', { name: 'nomadNetwork.announces' })).toHaveAttribute(
+      'aria-checked',
       'true',
     );
     expect(document.querySelector('.nomad-micron-page')?.textContent).toContain('hello');
@@ -773,12 +880,14 @@ describe('NomadNetworkPanel', () => {
     expect(localStorage.getItem('mesh-client:nomadNodeListCollapsed')).toBe('true');
     expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toBeInTheDocument();
     expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
-    expect(screen.queryByRole('tab', { name: 'nomadNetwork.favourites' })).not.toBeInTheDocument();
-    expect(screen.getByText('TT')).toBeInTheDocument();
-    expect(screen.getByLabelText('nomadNetwork.openNode')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('radio', { name: 'nomadNetwork.favourites' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('nomadNetwork.openNode')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('nomadNetwork.expandNodeList')).toHaveFocus();
   });
 
-  it('opens a node from the collapsed node list', async () => {
+  it('reopens the hidden node list before opening a node', async () => {
     localStorage.setItem('mesh-client:nomadNodeListCollapsed', 'true');
     const user = userEvent.setup();
     const fetchNomadPage = vi.fn().mockResolvedValue({
@@ -801,6 +910,7 @@ describe('NomadNetworkPanel', () => {
     });
 
     render(<NomadNetworkPanel />);
+    await user.click(screen.getByLabelText('nomadNetwork.expandNodeList'));
     await user.click(screen.getByLabelText('nomadNetwork.openNode'));
 
     await waitFor(() => {

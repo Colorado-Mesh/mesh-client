@@ -1,14 +1,18 @@
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   ChevronLeft,
-  ChevronRight,
+  ChevronUp,
   Code,
   Eraser,
   House,
   MoveHorizontal,
-  PARENT_HOVER_ATTR,
+  PanelLeftClose,
+  PanelLeftOpen,
+  RefreshCw,
   RotateCw,
+  Search,
   Star,
   X,
 } from 'lucide-react-motion';
@@ -17,8 +21,6 @@ import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatRelativeOrIsoDate } from '@/renderer/lib/formatRelativeOrIsoDate';
-import { ICON_MD } from '@/renderer/lib/icons/iconClass';
-import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import {
   buildNomadLinkRequest,
   DEFAULT_NOMAD_NODE_PAGE_PATH,
@@ -32,8 +34,6 @@ import { downloadNomadFileFromBase64 } from '@/renderer/lib/nomad/nomadFileDownl
 import { clearNomadImageCache } from '@/renderer/lib/nomad/nomadImageCache';
 import {
   type NomadListTab,
-  nomadNetworkActiveTabCount,
-  nomadNetworkActiveTabLabelKey,
   nomadNetworkEmptyListKey,
   nomadNetworkSearchPlaceholderKey,
 } from '@/renderer/lib/nomad/nomadNetworkTabHelpers';
@@ -70,10 +70,13 @@ import {
   type NomadPageLoadOptions,
   useNomadPageViewerStore,
 } from '../stores/nomadPageViewerStore';
+import { ConversationLayout, useConversationLayoutMode } from './chat/ConversationLayout';
 import NomadMicronPageView from './NomadMicronPageView';
 import NomadPageServerPanel from './NomadPageServerPanel';
 import { useToast } from './Toast';
+import { IconButton } from './ui/Button';
 import { INPUT_BOX_CLASS, INPUT_BOX_SM_CLASS } from './ui/formClasses';
+import { SegmentedControl } from './ui/SegmentedControl';
 
 interface NomadHistoryEntry {
   hash: string;
@@ -101,20 +104,6 @@ function nomadSortAriaLabelKey(key: NomadNodeSortKey, dir: NomadNodeSortDir): st
   return dir === 'asc' ? 'nomadNetwork.sortByNameAsc' : 'nomadNetwork.sortByNameDesc';
 }
 
-function nomadSortDirGlyph(dir: NomadNodeSortDir): string {
-  return dir === 'asc' ? ' ▲' : ' ▼';
-}
-
-function nomadCollapsedLabel(displayName: string | null | undefined, hash: string): string {
-  const name = displayName?.trim();
-  if (name) {
-    const words = name.split(/\s+/).filter(Boolean);
-    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  }
-  return hash.slice(0, 2).toUpperCase();
-}
-
 function formatNomadHash(hash: string): string {
   if (hash.length <= 16) return `<${hash}>`;
   return `<${hash.slice(0, 8)}…${hash.slice(-8)}>`;
@@ -133,60 +122,6 @@ function nomadNodeChangedSincePageError(
   node: NomadNodeRow,
 ): boolean {
   return (node.last_seen ?? null) !== snap.lastSeen || (node.hops ?? null) !== snap.hops;
-}
-
-function NomadCollapsedNodeItem({
-  node,
-  isSelected,
-  openNodeLabel,
-  onOpenNode,
-}: {
-  node: NomadNodeRow;
-  isSelected: boolean;
-  openNodeLabel: string;
-  onOpenNode: (hash: string) => void;
-}) {
-  const label = node.display_name ?? node.destination_hash.slice(0, 16);
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      {...{ [PARENT_HOVER_ATTR]: '' }}
-      onClick={() => {
-        onOpenNode(node.destination_hash);
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onOpenNode(node.destination_hash);
-        }
-      }}
-      className={`border-ink-800 hover:bg-ink-800/60 w-full cursor-pointer border-b text-left transition-colors ${
-        isSelected
-          ? 'border-bright-green bg-sidebar-active-bg border-l-2 px-1 py-1.5'
-          : 'border-l-2 border-transparent px-1 py-1.5'
-      }`}
-      title={label}
-      aria-label={openNodeLabel}
-    >
-      <div className="relative flex flex-col items-center gap-0.5">
-        <span
-          className={`text-2xs flex h-7 w-7 shrink-0 items-center justify-center rounded-md leading-none font-semibold ${
-            isSelected ? 'text-bright-green bg-ink-800' : 'bg-ink-800/80 text-ink-200'
-          }`}
-          aria-hidden
-        >
-          {nomadCollapsedLabel(node.display_name, node.destination_hash)}
-        </span>
-        <Star
-          aria-hidden
-          className={`h-3 w-3 ${node.favorited ? 'text-yellow-400' : 'text-muted'}`}
-          fill={node.favorited ? 'currentColor' : 'none'}
-        />
-      </div>
-    </div>
-  );
 }
 
 function NomadExpandedNodeItem({
@@ -213,9 +148,9 @@ function NomadExpandedNodeItem({
   const label = node.display_name ?? node.destination_hash.slice(0, 16);
 
   return (
-    <div
-      className={`mx-2 mb-2 rounded border px-3 py-2 text-sm last:mb-0 ${
-        isSelected ? 'border-bright-green/60 bg-ink-800/80' : 'border-ink-700/60'
+    <li
+      className={`rounded-card px-2 py-1.5 text-sm ${
+        isSelected ? 'bg-sidebar-active-bg' : 'hover:bg-sidebar-active-bg/60'
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -223,11 +158,16 @@ function NomadExpandedNodeItem({
           type="button"
           className="min-w-0 flex-1 text-left"
           aria-label={openNodeLabel}
+          aria-current={isSelected ? 'page' : undefined}
           onClick={() => {
             onOpenNode(node.destination_hash);
           }}
         >
-          <div className="text-ink-100 truncate font-medium">{label}</div>
+          <div
+            className={`truncate font-medium ${isSelected ? 'text-bright-green' : 'text-ink-100'}`}
+          >
+            {label}
+          </div>
           <div className="text-muted truncate font-mono text-xs">
             {formatHash(node.destination_hash)}
           </div>
@@ -238,7 +178,7 @@ function NomadExpandedNodeItem({
         </button>
         <button
           type="button"
-          className={node.favorited ? 'text-yellow-400' : 'text-muted'}
+          className={`rounded-control shrink-0 p-1 ${node.favorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'}`}
           aria-label={toggleFavoriteLabel}
           aria-pressed={node.favorited}
           onClick={() => {
@@ -248,7 +188,7 @@ function NomadExpandedNodeItem({
           <Star aria-hidden className="h-4 w-4" fill={node.favorited ? 'currentColor' : 'none'} />
         </button>
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -320,7 +260,45 @@ export default function NomadNetworkPanel({
   const fileDownloadInFlightRef = useRef(false);
   const mountedRef = useRef(true);
   const historyIndexRef = useRef(-1);
-  const listCollapseTrigger = useParentIconTrigger();
+  const layoutMode = useConversationLayoutMode();
+  const [compactPane, setCompactPane] = useState<'list' | 'conversation'>(
+    selectedHash ? 'conversation' : 'list',
+  );
+  const listToggleRef = useRef<HTMLButtonElement>(null);
+  const viewerToggleRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const viewerHeaderRef = useRef<HTMLElement>(null);
+  const movePaneFocus = useRef(false);
+  const previousCompact = useRef(layoutMode.compact);
+
+  useEffect(() => {
+    if (previousCompact.current !== layoutMode.compact) {
+      previousCompact.current = layoutMode.compact;
+      movePaneFocus.current = true;
+    }
+    if (!isActive || !movePaneFocus.current) return;
+    movePaneFocus.current = false;
+    const listVisible = layoutMode.compact ? compactPane === 'list' : !nodeListCollapsed;
+    if (listVisible) {
+      (
+        listToggleRef.current ??
+        listRef.current?.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]')
+      )?.focus();
+    } else {
+      (viewerToggleRef.current ?? viewerHeaderRef.current)?.focus();
+    }
+  }, [compactPane, isActive, layoutMode.compact, nodeListCollapsed]);
+
+  useEffect(
+    () =>
+      useNomadPageViewerStore.subscribe((next, previous) => {
+        if (next.loadGeneration === previous.loadGeneration || !next.selectedHash) return;
+        setActiveTab((tab) => (tab === 'myPages' ? 'announces' : tab));
+        if (layoutMode.compact) movePaneFocus.current = true;
+        setCompactPane('conversation');
+      }),
+    [layoutMode.compact],
+  );
 
   useEffect(() => {
     historyIndexRef.current = historyIndex;
@@ -609,6 +587,7 @@ export default function NomadNetworkPanel({
   }, [addToast, t]);
 
   const handleNodeListToggle = useCallback(() => {
+    movePaneFocus.current = true;
     setNodeListCollapsed((prev) => {
       const next = !prev;
       localStorage.setItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY, String(next));
@@ -677,34 +656,19 @@ export default function NomadNetworkPanel({
 
   const emptyKey = nomadNetworkEmptyListKey(activeTab);
 
-  const activeTabCount = nomadNetworkActiveTabCount(activeTab, favouritesCount, allRows.length);
-  const activeTabLabel = t(nomadNetworkActiveTabLabelKey(activeTab));
-
   const showStartStackBanner = !sidecarRunning && lastRefreshAt == null && allRows.length === 0;
 
   const renderNodeListBody = () => {
     if (activeTab === 'myPages') {
       return <p className="text-muted px-3 pb-3 text-sm">{t('nomadNetwork.serving.title')}</p>;
     }
-    if (!nodeListCollapsed && filteredRows.length === 0) {
+    if (filteredRows.length === 0) {
       return <p className="text-muted px-3 pb-3 text-sm">{t(emptyKey)}</p>;
     }
     return sortedRows.map((node) => {
       const isSelected = selectedHash?.toLowerCase() === node.destination_hash.toLowerCase();
       const label = node.display_name ?? node.destination_hash.slice(0, 16);
       const openNodeLabel = t('nomadNetwork.openNode', { name: label });
-
-      if (nodeListCollapsed) {
-        return (
-          <NomadCollapsedNodeItem
-            key={node.destination_hash}
-            node={node}
-            isSelected={isSelected}
-            openNodeLabel={openNodeLabel}
-            onOpenNode={handleOpenNode}
-          />
-        );
-      }
 
       return (
         <NomadExpandedNodeItem
@@ -731,512 +695,510 @@ export default function NomadNetworkPanel({
     });
   };
 
-  return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col p-4">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-ink-100 text-lg font-medium">{t('nomadNetwork.title')}</h2>
-        <button
-          type="button"
-          className="text-xs text-yellow-400 hover:underline"
-          onClick={() => {
-            void refreshFromSidecar();
-          }}
-        >
-          {t('common.refresh')}
-        </button>
+  const chooseListTab = (tab: NomadListTab) => {
+    setActiveTab(tab);
+    if (layoutMode.compact && tab === 'myPages') {
+      movePaneFocus.current = true;
+      setCompactPane('conversation');
+    }
+  };
+
+  const listColumn = (
+    <div ref={listRef} className="flex min-h-0 flex-1 flex-col">
+      <div className="border-ink-800 flex min-h-14 shrink-0 items-center gap-1.5 border-b pr-2 pl-3">
+        <h2 className="text-ink-100 min-w-0 flex-1 text-sm font-semibold">
+          {t('nomadNetwork.title')}
+        </h2>
+        <IconButton
+          size="sm"
+          aria-label={t('common.refresh')}
+          onClick={() => void refreshFromSidecar()}
+          icon={<RefreshCw aria-hidden size={14} />}
+        />
+        {layoutMode.compact ? (
+          <IconButton
+            size="sm"
+            aria-label={t('nomadNetwork.showBrowser')}
+            onClick={() => {
+              movePaneFocus.current = true;
+              setCompactPane('conversation');
+            }}
+            icon={<PanelLeftClose aria-hidden trigger="manual" size={16} />}
+          />
+        ) : (
+          <IconButton
+            ref={listToggleRef}
+            size="sm"
+            aria-label={t('nomadNetwork.collapseNodeList')}
+            aria-expanded
+            onClick={handleNodeListToggle}
+            icon={<PanelLeftClose aria-hidden trigger="manual" size={16} />}
+          />
+        )}
       </div>
-
-      {showStartStackBanner ? (
-        <p className="mb-3 rounded-lg border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
-          {t('connectionPanel.reticulumIdentity.startStackFirst')}
-        </p>
-      ) : null}
-
-      {sidecarRunning && !nomadApiAvailable ? (
-        <p className="mb-3 rounded-lg border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
-          {t('nomadNetwork.unavailable')}
-        </p>
-      ) : null}
-
-      <div className="flex min-h-0 flex-1 gap-3">
-        <div
-          className={`bg-deep-black border-ink-800 flex min-h-0 shrink-0 flex-col overflow-hidden rounded-xl border transition-[width] duration-300 ${
-            nodeListCollapsed ? 'w-16' : 'w-72'
-          }`}
-        >
-          {!nodeListCollapsed && (
-            <div className="border-ink-700 flex items-center gap-2 border-b px-3 py-2">
-              <span className="text-ink-200 min-w-0 flex-1 text-sm font-medium">
-                {activeTabLabel} <span className="text-muted">({activeTabCount})</span>
-              </span>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
+        <SegmentedControl
+          aria-label={t('nomadNetwork.title')}
+          value={activeTab}
+          onChange={chooseListTab}
+          className="w-full flex-wrap"
+          options={[
+            { value: 'favourites', label: t('nomadNetwork.favourites') },
+            { value: 'announces', label: t('nomadNetwork.announces') },
+            { value: 'myPages', label: t('nomadNetwork.myPagesTab') },
+          ]}
+        />
+        {activeTab !== 'myPages' && (
+          <>
+            <div className="relative">
+              <Search
+                aria-hidden
+                size={14}
+                className="text-muted pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2"
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                }}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                className={`${INPUT_BOX_CLASS} w-full pl-8`}
+              />
             </div>
-          )}
-
-          {!nodeListCollapsed && (
-            <>
-              <div className="border-ink-700 mb-0 flex gap-4 border-b px-3 text-sm">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'favourites'}
-                  className={`border-b-2 pb-2 ${
-                    activeTab === 'favourites'
-                      ? 'border-bright-green text-bright-green'
-                      : 'text-muted border-transparent'
-                  }`}
-                  onClick={() => {
-                    setActiveTab('favourites');
-                  }}
-                >
-                  {t('nomadNetwork.favourites')}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'announces'}
-                  className={`border-b-2 pb-2 ${
-                    activeTab === 'announces'
-                      ? 'border-bright-green text-bright-green'
-                      : 'text-muted border-transparent'
-                  }`}
-                  onClick={() => {
-                    setActiveTab('announces');
-                  }}
-                >
-                  {t('nomadNetwork.announces')}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === 'myPages'}
-                  className={`border-b-2 pb-2 ${
-                    activeTab === 'myPages'
-                      ? 'border-bright-green text-bright-green'
-                      : 'text-muted border-transparent'
-                  }`}
-                  onClick={() => {
-                    setActiveTab('myPages');
-                  }}
-                >
-                  {t('nomadNetwork.myPagesTab')}
-                </button>
-              </div>
-
-              {activeTab !== 'myPages' ? (
-                <div className="px-3 pt-3">
-                  <input
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
+            <div
+              role="toolbar"
+              aria-label={t('nomadNetwork.sortToolbar')}
+              className="flex flex-wrap items-center gap-1 text-xs"
+            >
+              {NOMAD_SORT_KEYS.map((key) => {
+                const active = sortKey === key;
+                const dirForAria = active ? sortDir : defaultNomadNodeSortDir(key);
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={active}
+                    aria-label={t(nomadSortAriaLabelKey(key, dirForAria))}
+                    className={`rounded-control inline-flex items-center gap-1 px-2 py-1 transition-colors ${active ? 'bg-sidebar-active-bg text-ink-100' : 'text-muted hover:text-ink-200'}`}
+                    onClick={() => {
+                      toggleSort(key);
                     }}
-                    placeholder={searchPlaceholder}
-                    aria-label={searchPlaceholder}
-                    className={`${INPUT_BOX_CLASS} mb-2 w-full`}
-                  />
-                  <div
-                    role="toolbar"
-                    aria-label={t('nomadNetwork.sortToolbar')}
-                    className="mb-3 flex items-center gap-1 text-xs"
                   >
-                    {NOMAD_SORT_KEYS.map((key) => {
-                      const active = sortKey === key;
-                      const dirForAria = active ? sortDir : defaultNomadNodeSortDir(key);
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          aria-pressed={active}
-                          aria-label={t(nomadSortAriaLabelKey(key, dirForAria))}
-                          className={`rounded px-2 py-1 transition-colors ${
-                            active ? 'bg-ink-700 text-ink-100' : 'text-muted hover:text-ink-200'
-                          }`}
-                          onClick={() => {
-                            toggleSort(key);
-                          }}
-                        >
-                          {t(nomadSortLabelKey(key))}
-                          {active ? nomadSortDirGlyph(sortDir) : ''}
-                        </button>
-                      );
-                    })}
+                    {t(nomadSortLabelKey(key))}
+                    {active &&
+                      (sortDir === 'asc' ? (
+                        <ChevronUp aria-hidden size={14} />
+                      ) : (
+                        <ChevronDown aria-hidden size={14} />
+                      ))}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {activeTab === 'myPages' || filteredRows.length === 0 ? (
+          renderNodeListBody()
+        ) : (
+          <ul className="space-y-0.5">{renderNodeListBody()}</ul>
+        )}
+      </div>
+    </div>
+  );
+
+  const viewer = (
+    <>
+      <header
+        ref={viewerHeaderRef}
+        tabIndex={-1}
+        className="border-ink-800 flex min-h-14 shrink-0 items-center gap-2 border-b px-3 py-2 outline-none"
+      >
+        {(layoutMode.compact || nodeListCollapsed) && (
+          <IconButton
+            ref={viewerToggleRef}
+            aria-label={t('nomadNetwork.expandNodeList')}
+            aria-expanded={false}
+            onClick={() => {
+              if (layoutMode.compact) {
+                movePaneFocus.current = true;
+                setCompactPane('list');
+              } else handleNodeListToggle();
+            }}
+            icon={
+              layoutMode.compact ? (
+                <ChevronLeft aria-hidden trigger="manual" size={16} />
+              ) : (
+                <PanelLeftOpen aria-hidden trigger="manual" size={16} />
+              )
+            }
+          />
+        )}
+        <h2 className="text-ink-100 min-w-0 flex-1 truncate text-sm font-semibold">
+          {activeTab === 'myPages' ? t('nomadNetwork.myPagesTab') : t('nomadNetwork.title')}
+        </h2>
+        {(layoutMode.compact || nodeListCollapsed) && (
+          <IconButton
+            size="sm"
+            aria-label={t('common.refresh')}
+            onClick={() => void refreshFromSidecar()}
+            icon={<RefreshCw aria-hidden size={14} />}
+          />
+        )}
+      </header>
+      {activeTab === 'myPages' ? (
+        <NomadPageServerPanel isActive={isActive} onPreviewHostedSite={handlePreviewHostedSite} />
+      ) : null}
+      {activeTab !== 'myPages' && !selectedHash ? (
+        <div className="m-auto flex w-full max-w-lg flex-col items-stretch gap-3 p-6">
+          <p className="text-muted text-center text-sm">{t('nomadNetwork.enterUrlHint')}</p>
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitUrlBar();
+            }}
+          >
+            <input
+              type="text"
+              value={urlBarValue}
+              onChange={(e) => {
+                setUrlBarValue(e.target.value);
+              }}
+              aria-label={t('nomadNetwork.urlBarAria')}
+              placeholder={t('nomadNetwork.enterUrlPlaceholder')}
+              className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
+            />
+            <button
+              type="submit"
+              className="border-ink-600 text-ink-200 hover:bg-ink-800 shrink-0 rounded border px-3 py-1.5 text-xs"
+              aria-label={t('nomadNetwork.goToUrl')}
+            >
+              {t('nomadNetwork.goToUrl')}
+            </button>
+          </form>
+          {pageError ? (
+            <p className="text-center text-sm text-red-300">
+              {t('nomadNetwork.pageFailed', { error: pageError })}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {activeTab !== 'myPages' && selectedHash ? (
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="border-ink-700/60 flex shrink-0 flex-wrap items-center gap-2 border-b p-2">
+            <span className="text-ink-100 truncate font-medium">
+              {selectedNode?.display_name ?? selectedHash.slice(0, 16)}
+            </span>
+            {selectedNode?.hops != null ? (
+              <span className="text-muted text-xs">
+                {t('nomadNetwork.hopsAway', { count: selectedNode.hops })}
+              </span>
+            ) : null}
+            <div className="ml-auto flex flex-wrap gap-1">
+              {onOpenDm && selectedNode ? (
+                <button
+                  type="button"
+                  disabled={!sidecarRunning}
+                  className="rounded border border-purple-600 px-2 py-1 text-xs text-purple-300 hover:bg-purple-900/30 disabled:opacity-40"
+                  aria-label={t('nomadNetwork.sendMessageAria', {
+                    name: selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
+                  })}
+                  title={t('nomadNetwork.sendMessageAria', {
+                    name: selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
+                  })}
+                  onClick={() => {
+                    onOpenDm(selectedNode.destination_hash);
+                  }}
+                >
+                  {t('nomadNetwork.sendMessage')}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={!canGoBack}
+                className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40"
+                aria-label={t('nomadNetwork.back')}
+                title={t('nomadNetwork.back')}
+                onClick={() => {
+                  navigateHistory(-1);
+                }}
+              >
+                <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                disabled={!canGoForward}
+                className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40"
+                aria-label={t('nomadNetwork.forward')}
+                title={t('nomadNetwork.forward')}
+                onClick={() => {
+                  navigateHistory(1);
+                }}
+              >
+                <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
+                aria-label={t('nomadNetwork.homePage')}
+                title={t('nomadNetwork.homePage')}
+                onClick={() => {
+                  void loadNodePage(selectedHash, DEFAULT_NOMAD_NODE_PAGE_PATH);
+                }}
+              >
+                <House aria-hidden className="h-3.5 w-3.5" />
+              </button>
+              {isNomadMicronPage(pageContentType, pagePath) && pageContent != null ? (
+                <button
+                  type="button"
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+                    showPageSource
+                      ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
+                      : 'border-ink-700 text-ink-200 hover:bg-ink-800'
+                  }`}
+                  aria-label={
+                    showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
+                  }
+                  title={
+                    showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
+                  }
+                  aria-pressed={showPageSource}
+                  onClick={() => {
+                    setShowPageSource((prev) => !prev);
+                  }}
+                >
+                  <Code aria-hidden className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+              {pageContent != null ? (
+                <button
+                  type="button"
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
+                    pageFitWidth
+                      ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
+                      : 'border-ink-700 text-ink-200 hover:bg-ink-800'
+                  }`}
+                  aria-label={
+                    pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
+                  }
+                  title={pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')}
+                  aria-pressed={pageFitWidth}
+                  onClick={() => {
+                    setPageFitWidth((prev) => {
+                      const next = !prev;
+                      writeNomadPageFitWidth(next);
+                      return next;
+                    });
+                  }}
+                >
+                  <MoveHorizontal aria-hidden className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
+                aria-label={t('nomadNetwork.reloadPage')}
+                title={t('nomadNetwork.reloadPage')}
+                onClick={() => {
+                  void loadNodePage(selectedHash, pagePath, {
+                    forceReload: true,
+                    forcePathRefresh: shouldForceNomadPathRefreshRetry(
+                      pageErrorCode,
+                      pageErrorEgress,
+                    ),
+                    requestData: pageRequestData,
+                  });
+                }}
+              >
+                <RotateCw aria-hidden className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
+                aria-label={t('nomadNetwork.clearBrowserCaches')}
+                title={t('nomadNetwork.clearBrowserCachesHint')}
+                onClick={clearBrowserCaches}
+              >
+                <Eraser aria-hidden className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
+                aria-label={t('nomadNetwork.closeViewer')}
+                title={t('nomadNetwork.closeViewer')}
+                onClick={closeViewer}
+              >
+                <X aria-hidden className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          <form
+            className="border-ink-700/60 flex shrink-0 gap-2 border-b p-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitUrlBar();
+            }}
+          >
+            <input
+              type="text"
+              value={urlBarValue}
+              onChange={(e) => {
+                setUrlBarValue(e.target.value);
+              }}
+              aria-label={t('nomadNetwork.urlBarAria')}
+              placeholder={t('nomadNetwork.pagePath')}
+              className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
+            />
+          </form>
+
+          <div className="relative min-h-0 min-w-0 flex-1">
+            <div
+              data-testid="nomad-page-scroll"
+              className="nomad-page-scroll bg-deep-black/50 h-full min-h-0 min-w-0 overflow-auto overscroll-contain p-3 [overflow-anchor:none]"
+            >
+              {fileDownloading ? (
+                <p className="text-muted mb-2 text-sm">{t('nomadNetwork.fileDownloading')}</p>
+              ) : null}
+              {fileDownloadError ? (
+                <p className="mb-2 text-sm text-red-300">
+                  {t('nomadNetwork.fileDownloadFailed', { error: fileDownloadError })}
+                </p>
+              ) : null}
+              {filePreview ? (
+                <div className="border-ink-700/80 bg-ink-900/50 mb-3 space-y-2 rounded border p-2">
+                  <p className="text-muted text-xs">{filePreview.fileName}</p>
+                  <img
+                    src={filePreview.dataUrl}
+                    alt={filePreview.fileName}
+                    className="max-h-[50vh] max-w-full object-contain"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
+                      onClick={() => {
+                        downloadNomadFileFromBase64(
+                          filePreview.fileName,
+                          filePreview.contentBase64,
+                        );
+                      }}
+                    >
+                      {t('nomadNetwork.downloadFile', { defaultValue: 'Download' })}
+                    </button>
+                    <button
+                      type="button"
+                      className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
+                      onClick={() => {
+                        setFilePreview(null);
+                      }}
+                    >
+                      {t('nomadNetwork.dismissPreview', { defaultValue: 'Dismiss' })}
+                    </button>
                   </div>
                 </div>
               ) : null}
-            </>
-          )}
-
-          <div className="min-h-0 flex-1 overflow-y-auto">{renderNodeListBody()}</div>
-
-          <button
-            type="button"
-            onClick={handleNodeListToggle}
-            aria-expanded={!nodeListCollapsed}
-            aria-label={
-              nodeListCollapsed
-                ? t('nomadNetwork.expandNodeList')
-                : t('nomadNetwork.collapseNodeList')
-            }
-            className="text-muted hover:text-bright-green border-ink-700 hover:border-ink-600 mx-2 mt-auto mb-2 flex shrink-0 items-center justify-center rounded-sm border py-2 transition-colors"
-          >
-            {nodeListCollapsed ? (
-              <ChevronRight
-                aria-hidden
-                className={ICON_MD}
-                trigger={listCollapseTrigger}
-                size={16}
-              />
-            ) : (
-              <ChevronLeft
-                aria-hidden
-                className={ICON_MD}
-                trigger={listCollapseTrigger}
-                size={16}
-              />
-            )}
-          </button>
-        </div>
-
-        <div className="bg-deep-black border-ink-800 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl border">
-          {activeTab === 'myPages' ? (
-            <NomadPageServerPanel
-              isActive={isActive}
-              onPreviewHostedSite={handlePreviewHostedSite}
-            />
-          ) : null}
-          {activeTab !== 'myPages' && !selectedHash ? (
-            <div className="m-auto flex w-full max-w-lg flex-col items-stretch gap-3 p-6">
-              <p className="text-muted text-center text-sm">{t('nomadNetwork.enterUrlHint')}</p>
-              <form
-                className="flex gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  submitUrlBar();
-                }}
-              >
-                <input
-                  type="text"
-                  value={urlBarValue}
-                  onChange={(e) => {
-                    setUrlBarValue(e.target.value);
-                  }}
-                  aria-label={t('nomadNetwork.urlBarAria')}
-                  placeholder={t('nomadNetwork.enterUrlPlaceholder')}
-                  className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
-                />
-                <button
-                  type="submit"
-                  className="border-ink-600 text-ink-200 hover:bg-ink-800 shrink-0 rounded border px-3 py-1.5 text-xs"
-                  aria-label={t('nomadNetwork.goToUrl')}
-                >
-                  {t('nomadNetwork.goToUrl')}
-                </button>
-              </form>
-              {pageError ? (
-                <p className="text-center text-sm text-red-300">
-                  {t('nomadNetwork.pageFailed', { error: pageError })}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-          {activeTab !== 'myPages' && selectedHash ? (
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-              <div className="border-ink-700/60 flex shrink-0 flex-wrap items-center gap-2 border-b p-2">
-                <span className="text-ink-100 truncate font-medium">
-                  {selectedNode?.display_name ?? selectedHash.slice(0, 16)}
-                </span>
-                {selectedNode?.hops != null ? (
-                  <span className="text-muted text-xs">
-                    {t('nomadNetwork.hopsAway', { count: selectedNode.hops })}
-                  </span>
-                ) : null}
-                <div className="ml-auto flex flex-wrap gap-1">
-                  {onOpenDm && selectedNode ? (
-                    <button
-                      type="button"
-                      disabled={!sidecarRunning}
-                      className="rounded border border-purple-600 px-2 py-1 text-xs text-purple-300 hover:bg-purple-900/30 disabled:opacity-40"
-                      aria-label={t('nomadNetwork.sendMessageAria', {
-                        name:
-                          selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
-                      })}
-                      title={t('nomadNetwork.sendMessageAria', {
-                        name:
-                          selectedNode.display_name ?? selectedNode.destination_hash.slice(0, 16),
-                      })}
-                      onClick={() => {
-                        onOpenDm(selectedNode.destination_hash);
-                      }}
-                    >
-                      {t('nomadNetwork.sendMessage')}
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={!canGoBack}
-                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40"
-                    aria-label={t('nomadNetwork.back')}
-                    title={t('nomadNetwork.back')}
-                    onClick={() => {
-                      navigateHistory(-1);
-                    }}
-                  >
-                    <ArrowLeft aria-hidden className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!canGoForward}
-                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40"
-                    aria-label={t('nomadNetwork.forward')}
-                    title={t('nomadNetwork.forward')}
-                    onClick={() => {
-                      navigateHistory(1);
-                    }}
-                  >
-                    <ArrowRight aria-hidden className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
-                    aria-label={t('nomadNetwork.homePage')}
-                    title={t('nomadNetwork.homePage')}
-                    onClick={() => {
-                      void loadNodePage(selectedHash, DEFAULT_NOMAD_NODE_PAGE_PATH);
-                    }}
-                  >
-                    <House aria-hidden className="h-3.5 w-3.5" />
-                  </button>
-                  {isNomadMicronPage(pageContentType, pagePath) && pageContent != null ? (
-                    <button
-                      type="button"
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
-                        showPageSource
-                          ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                          : 'border-ink-700 text-ink-200 hover:bg-ink-800'
-                      }`}
-                      aria-label={
-                        showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
-                      }
-                      title={
-                        showPageSource ? t('nomadNetwork.hideSource') : t('nomadNetwork.showSource')
-                      }
-                      aria-pressed={showPageSource}
-                      onClick={() => {
-                        setShowPageSource((prev) => !prev);
-                      }}
-                    >
-                      <Code aria-hidden className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-                  {pageContent != null ? (
-                    <button
-                      type="button"
-                      className={`inline-flex h-7 w-7 items-center justify-center rounded-md border ${
-                        pageFitWidth
-                          ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                          : 'border-ink-700 text-ink-200 hover:bg-ink-800'
-                      }`}
-                      aria-label={
-                        pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
-                      }
-                      title={
-                        pageFitWidth ? t('nomadNetwork.openWidth') : t('nomadNetwork.fitWidth')
-                      }
-                      aria-pressed={pageFitWidth}
-                      onClick={() => {
-                        setPageFitWidth((prev) => {
-                          const next = !prev;
-                          writeNomadPageFitWidth(next);
-                          return next;
-                        });
-                      }}
-                    >
-                      <MoveHorizontal aria-hidden className="h-3.5 w-3.5" />
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
-                    aria-label={t('nomadNetwork.reloadPage')}
-                    title={t('nomadNetwork.reloadPage')}
-                    onClick={() => {
-                      void loadNodePage(selectedHash, pagePath, {
-                        forceReload: true,
-                        forcePathRefresh: shouldForceNomadPathRefreshRetry(
-                          pageErrorCode,
-                          pageErrorEgress,
-                        ),
-                        requestData: pageRequestData,
-                      });
-                    }}
-                  >
-                    <RotateCw aria-hidden className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
-                    aria-label={t('nomadNetwork.clearBrowserCaches')}
-                    title={t('nomadNetwork.clearBrowserCachesHint')}
-                    onClick={clearBrowserCaches}
-                  >
-                    <Eraser aria-hidden className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border"
-                    aria-label={t('nomadNetwork.closeViewer')}
-                    title={t('nomadNetwork.closeViewer')}
-                    onClick={closeViewer}
-                  >
-                    <X aria-hidden className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <form
-                className="border-ink-700/60 flex shrink-0 gap-2 border-b p-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  submitUrlBar();
-                }}
-              >
-                <input
-                  type="text"
-                  value={urlBarValue}
-                  onChange={(e) => {
-                    setUrlBarValue(e.target.value);
-                  }}
-                  aria-label={t('nomadNetwork.urlBarAria')}
-                  placeholder={t('nomadNetwork.pagePath')}
-                  className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
-                />
-              </form>
-
-              <div className="relative min-h-0 min-w-0 flex-1">
-                <div
-                  data-testid="nomad-page-scroll"
-                  className="nomad-page-scroll bg-deep-black/50 h-full min-h-0 min-w-0 overflow-auto overscroll-contain p-3 [overflow-anchor:none]"
-                >
-                  {fileDownloading ? (
-                    <p className="text-muted mb-2 text-sm">{t('nomadNetwork.fileDownloading')}</p>
-                  ) : null}
-                  {fileDownloadError ? (
-                    <p className="mb-2 text-sm text-red-300">
-                      {t('nomadNetwork.fileDownloadFailed', { error: fileDownloadError })}
-                    </p>
-                  ) : null}
-                  {filePreview ? (
-                    <div className="border-ink-700/80 bg-ink-900/50 mb-3 space-y-2 rounded border p-2">
-                      <p className="text-muted text-xs">{filePreview.fileName}</p>
-                      <img
-                        src={filePreview.dataUrl}
-                        alt={filePreview.fileName}
-                        className="max-h-[50vh] max-w-full object-contain"
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
-                          onClick={() => {
-                            downloadNomadFileFromBase64(
-                              filePreview.fileName,
-                              filePreview.contentBase64,
-                            );
-                          }}
-                        >
-                          {t('nomadNetwork.downloadFile', { defaultValue: 'Download' })}
-                        </button>
-                        <button
-                          type="button"
-                          className="border-ink-600 text-ink-200 hover:bg-ink-800 rounded border px-2 py-1 text-xs"
-                          onClick={() => {
-                            setFilePreview(null);
-                          }}
-                        >
-                          {t('nomadNetwork.dismissPreview', { defaultValue: 'Dismiss' })}
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-                  {pageLoading ? (
-                    <div className="space-y-1">
-                      <p className="text-muted text-sm">
-                        {pageLoadingProgress
-                          ? t(pageLoadingProgress.messageKey, pageLoadingProgress.messageParams)
-                          : pageLoadingStartedAt == null
-                            ? t('nomadNetwork.pageLoading')
-                            : pageLoadingRetrying
-                              ? pageLoadingRemainingSec > 0
-                                ? t('nomadNetwork.pageLoadingRetryCountdown', {
-                                    time: formatNomadPageCountdown(pageLoadingRemainingSec),
-                                  })
-                                : t('nomadNetwork.pageLoadingRetryOverdue')
-                              : pageLoadingRemainingSec > 0
-                                ? t('nomadNetwork.pageLoadingCountdown', {
-                                    time: formatNomadPageCountdown(pageLoadingRemainingSec),
-                                  })
-                                : t('nomadNetwork.pageLoadingCountdownOverdue')}
-                      </p>
-                      {pageLoadingProgress && pageLoadingStartedAt != null ? (
-                        <p className="text-muted text-xs">
-                          {pageLoadingRemainingSec > 0
-                            ? t('nomadNetwork.pageLoadingTimeLeft', {
+              {pageLoading ? (
+                <div className="space-y-1">
+                  <p className="text-muted text-sm">
+                    {pageLoadingProgress
+                      ? t(pageLoadingProgress.messageKey, pageLoadingProgress.messageParams)
+                      : pageLoadingStartedAt == null
+                        ? t('nomadNetwork.pageLoading')
+                        : pageLoadingRetrying
+                          ? pageLoadingRemainingSec > 0
+                            ? t('nomadNetwork.pageLoadingRetryCountdown', {
                                 time: formatNomadPageCountdown(pageLoadingRemainingSec),
                               })
-                            : t('nomadNetwork.pageLoadingStillWorking')}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : pageError ? (
-                    <div className="space-y-2">
-                      <p className="text-sm text-red-300">
-                        {t('nomadNetwork.pageFailed', { error: pageError })}
-                      </p>
-                      {selectedNode && isNomadLastSeenStale(selectedNode.last_seen) ? (
-                        <p className="text-xs text-orange-200/90">
-                          {t('nomadNetwork.staleLastSeenHint', {
-                            time: formatRelativeOrIsoDate((selectedNode.last_seen ?? 0) * 1000, t),
-                          })}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : pageContent != null ? (
-                    isNomadMicronPage(pageContentType, pagePath) && !showPageSource ? (
-                      <NomadMicronPageView
-                        content={
-                          pageContentTruncated
-                            ? `${pageContent}\n\n[${t('nomadNetwork.pageTruncated')}]`
-                            : pageContent
-                        }
-                        defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
-                        selectedHash={selectedHash}
-                        fitWidth={pageFitWidth}
-                        onNavigate={handleMicronNavigate}
-                        onDownloadFile={handleMicronDownload}
-                        onOpenDm={onOpenDm}
-                        onFetchPartial={fetchNomadPage}
-                        onFetchMedia={fetchNomadMedia}
-                      />
-                    ) : (
-                      <pre
-                        className={`text-ink-200 font-mono text-xs leading-relaxed ${
-                          pageFitWidth
-                            ? 'max-w-full break-words whitespace-pre-wrap'
-                            : 'whitespace-pre'
-                        }`}
-                      >
-                        {pageContentTruncated
-                          ? `${pageContent}\n\n[${t('nomadNetwork.pageTruncated')}]`
-                          : pageContent}
-                      </pre>
-                    )
+                            : t('nomadNetwork.pageLoadingRetryOverdue')
+                          : pageLoadingRemainingSec > 0
+                            ? t('nomadNetwork.pageLoadingCountdown', {
+                                time: formatNomadPageCountdown(pageLoadingRemainingSec),
+                              })
+                            : t('nomadNetwork.pageLoadingCountdownOverdue')}
+                  </p>
+                  {pageLoadingProgress && pageLoadingStartedAt != null ? (
+                    <p className="text-muted text-xs">
+                      {pageLoadingRemainingSec > 0
+                        ? t('nomadNetwork.pageLoadingTimeLeft', {
+                            time: formatNomadPageCountdown(pageLoadingRemainingSec),
+                          })
+                        : t('nomadNetwork.pageLoadingStillWorking')}
+                    </p>
                   ) : null}
                 </div>
-              </div>
+              ) : pageError ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-red-300">
+                    {t('nomadNetwork.pageFailed', { error: pageError })}
+                  </p>
+                  {selectedNode && isNomadLastSeenStale(selectedNode.last_seen) ? (
+                    <p className="text-xs text-orange-200/90">
+                      {t('nomadNetwork.staleLastSeenHint', {
+                        time: formatRelativeOrIsoDate((selectedNode.last_seen ?? 0) * 1000, t),
+                      })}
+                    </p>
+                  ) : null}
+                </div>
+              ) : pageContent != null ? (
+                isNomadMicronPage(pageContentType, pagePath) && !showPageSource ? (
+                  <NomadMicronPageView
+                    content={
+                      pageContentTruncated
+                        ? `${pageContent}\n\n[${t('nomadNetwork.pageTruncated')}]`
+                        : pageContent
+                    }
+                    defaultPagePath={DEFAULT_NOMAD_NODE_PAGE_PATH}
+                    selectedHash={selectedHash}
+                    fitWidth={pageFitWidth}
+                    onNavigate={handleMicronNavigate}
+                    onDownloadFile={handleMicronDownload}
+                    onOpenDm={onOpenDm}
+                    onFetchPartial={fetchNomadPage}
+                    onFetchMedia={fetchNomadMedia}
+                  />
+                ) : (
+                  <pre
+                    className={`text-ink-200 font-mono text-xs leading-relaxed ${
+                      pageFitWidth ? 'max-w-full break-words whitespace-pre-wrap' : 'whitespace-pre'
+                    }`}
+                  >
+                    {pageContentTruncated
+                      ? `${pageContent}\n\n[${t('nomadNetwork.pageTruncated')}]`
+                      : pageContent}
+                  </pre>
+                )
+              ) : null}
             </div>
-          ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
+    </>
+  );
+
+  return (
+    <div className="text-ink-100 flex h-full min-h-0 min-w-0 flex-col">
+      {showStartStackBanner && (
+        <p className="rounded-card mb-3 border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
+          {t('connectionPanel.reticulumIdentity.startStackFirst')}
+        </p>
+      )}
+      {sidecarRunning && !nomadApiAvailable && (
+        <p className="rounded-card mb-3 border border-orange-600/40 bg-orange-950/20 p-3 text-sm text-orange-200">
+          {t('nomadNetwork.unavailable')}
+        </p>
+      )}
+      <ConversationLayout
+        mode={layoutMode}
+        list={listColumn}
+        listLabel={t('nomadNetwork.title')}
+        listOpen={!nodeListCollapsed}
+        compactPane={compactPane}
+        conversation={viewer}
+        keepConversationMounted
+      />
     </div>
   );
 }
