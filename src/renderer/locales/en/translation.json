@@ -1462,7 +1462,7 @@
     "meshcoreHostPlaceholder": "localhost, 192.168.1.x, or [fd00::1]",
     "meshcorePort": "Port",
     "meshcoreBlePairingHint": "Pair your MeshCore device in <strong>system Bluetooth settings</strong> before connecting. Use a PIN code if prompted — if your system does not ask for a PIN, the connection will fail and you may need to remove the pairing and re-pair with a PIN.",
-    "meshcoreBlePairingExpectationsHint": "On Windows the device may show \"Connected\" for a second and then \"Paired\" — that is expected. Close the MeshCore app on your phone first; the radio accepts only one Bluetooth connection at a time.",
+    "meshcoreBleWindowsInAppPairingHint": "On Windows, select the radio here and enter the PIN shown on its screen. mesh-client pairs it for you, so you do not need to pair it in Windows Settings. Close the MeshCore app on your phone first; the radio accepts only one Bluetooth connection at a time.",
     "meshcorePreset": {
       "letsmesh": "LetsMesh",
       "coloradomesh": "Colorado Mesh",
@@ -1531,6 +1531,8 @@
     "stagePairingFailed": "Pairing failed. Please re-pair your device.",
     "stageCheckingPairing": "Checking Bluetooth pairing…",
     "stageEnterPinLinux": "Enter the PIN shown on your device (pair with Linux first)",
+    "stageEnterPinWindows": "Enter the PIN shown on your radio to pair it with Windows",
+    "stagePairingWindows": "Pairing with Windows…",
     "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
     "connectButton": "Connect",
     "pinPlaceholder": "PIN",
@@ -1555,7 +1557,7 @@
       "ble": {
         "adapterWindowsHint": "Check Settings > Bluetooth & devices. If Bluetooth is on but unavailable, update your Bluetooth driver in Device Manager.",
         "adapterGenericHint": "Make sure Bluetooth is enabled. On Linux, run: systemctl status bluetooth",
-        "stackUnresponsiveWindows": "Windows Bluetooth is stuck on an earlier connection attempt, usually an unfinished pairing. Remove the radio in Settings > Bluetooth & devices, pair it again with the PIN shown on the radio until Windows shows \"Paired\", then restart mesh-client.",
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth is stuck on an earlier connection attempt, usually because the radio is not properly paired. Press Remove & Re-pair Device and enter the PIN shown on the radio. If connecting is still refused, restart mesh-client and try again.",
         "stackUnresponsiveGeneric": "Bluetooth is stuck on an earlier connection attempt. Turn Bluetooth off and on, re-pair the radio if needed, then restart mesh-client.",
         "securityPermissionHint": "Bluetooth permission denied. Ensure the app has access to the Bluetooth device.",
         "gattDisconnectedHint": "GATT connection dropped. Try moving closer to the device and reconnecting.",
@@ -1584,6 +1586,7 @@
       "pairingFailed": "Pairing failed: {{msg}}",
       "pinPairingFailed": "PIN pairing failed: {{msg}}",
       "pinAcceptedNext": "PIN accepted. Pairing completed. Press Connect and select your device to finish connecting.",
+      "windowsPinRejected": "Windows rejected that PIN. Check the PIN shown on the radio's screen and try again (radios without a screen use the firmware's fixed PIN).",
       "connectionFailed": "Connection failed"
     },
     "errors": {

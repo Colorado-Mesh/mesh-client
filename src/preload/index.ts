@@ -8,6 +8,8 @@ import type {
   GattBleDevice,
   GattBleIssuePayload,
   GattBleLinkRssiPayload,
+  GattBlePairResult,
+  GattBlePairStateResult,
   GattBleSessionId,
   MeshNode,
   MeshProtocol,
@@ -757,6 +759,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('gatt:is-connected', sessionId),
   gattToRadio: (sessionId: GattBleSessionId, bytes: Uint8Array): Promise<void> =>
     ipcRenderer.invoke('gatt:to-radio', sessionId, bytes),
+  gattPairState: (peripheralId: string): Promise<GattBlePairStateResult> =>
+    ipcRenderer.invoke('gatt:pair-state', peripheralId),
+  gattPair: (peripheralId: string, pin: string): Promise<GattBlePairResult> =>
+    ipcRenderer.invoke('gatt:pair', peripheralId, pin),
+  gattUnpair: (peripheralId: string): Promise<GattBlePairResult> =>
+    ipcRenderer.invoke('gatt:unpair', peripheralId),
 
   // ─── Serial port selection ──────────────────────────────────────
   // Main process intercepts select-serial-port and sends the port

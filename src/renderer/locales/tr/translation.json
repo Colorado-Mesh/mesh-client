@@ -1034,8 +1034,8 @@
         "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı.",
         "chooserCancelledHint": "İptal etmediyseniz Bluetooth'un açık olduğundan emin olun (systemctl durumu bluetooth) ve ardından tekrar Bağlan'a dokunun. Flatpak'te, Bluetooth'a izin verilen bir yapıyı yeniden yükleyin veya AppImage/.deb/.rpm dosyasını kullanın.",
         "bluetoothctlMissingHint": "İşletim Sistemi Bluetooth eşleştirme araçları bu ortamda kullanılamaz (Flatpak'ta yaygındır). Resmi AppImage, .deb veya .rpm'yi kullanın veya radyoyu ana bilgisayar bluetoothctl ile eşleştirin ve ardından Bağlanmayı yeniden deneyin.",
-        "stackUnresponsiveWindows": "Windows Bluetooth, genellikle tamamlanmamış bir eşleştirme olan daha önceki bir bağlantı girişiminde takıldı. Ayarlar > Bluetooth ve cihazlar bölümünden radyoyu kaldırın, Windows \"Paired\" (Eşleştirildi) mesajını gösterene kadar radyoda gösterilen PIN ile tekrar eşleştirin, ardından mesh-client'ı yeniden başlatın.",
-        "stackUnresponsiveGeneric": "Bluetooth daha önceki bir bağlantı denemesinde takıldı. Bluetooth'u kapatıp açın, gerekirse radyoyu yeniden eşleştirin, ardından mesh-client'ı yeniden başlatın."
+        "stackUnresponsiveGeneric": "Bluetooth daha önceki bir bağlantı denemesinde takıldı. Bluetooth'u kapatıp açın, gerekirse radyoyu yeniden eşleştirin, ardından mesh-client'ı yeniden başlatın.",
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth, genellikle radyo düzgün bir şekilde eşleştirilmediğinden önceki bir bağlantı girişiminde takıldı. Cihazı Kaldır ve Yeniden Eşleştir düğmesine basın ve radyoda gösterilen PIN KODUNU girin. Bağlantı hala reddediliyorsa, mesh-client uygulamasını yeniden başlatın ve tekrar deneyin."
       }
     },
     "error": {
@@ -1044,7 +1044,8 @@
       "pairingFailed": "Eşleştirme başarısız oldu: {{msg}}",
       "pinPairingFailed": "PIN eşleştirme başarısız oldu: {{msg}}",
       "pinAcceptedNext": "PIN kabul edildi. Eşleştirme tamamlandı. Bağlan'a basın ve bağlantıyı tamamlamak için cihazınızı seçin.",
-      "connectionFailed": "Bağlantı başarısız oldu"
+      "connectionFailed": "Bağlantı başarısız oldu",
+      "windowsPinRejected": "Windows bu PIN'İ reddetti. Radyonun ekranında gösterilen PIN'İ kontrol edin ve tekrar deneyin (ekransız radyolar ürün yazılımının sabit PIN'ini kullanır)."
     },
     "cancelMqttConnect": "İptal etmek",
     "ripplePresetConfirm": "Ripple ön ayarı, paylaşılan topluluk kimlik bilgilerini kullanır ve TLS sertifika doğrulamasını devre dışı bırakır. Bunu yalnızca güvenilir bir ağda kullanın. Devam edilsin mi?",
@@ -1620,7 +1621,9 @@
     "moreDisconnectOptions": "Diğer bağlantı kesme seçenekleri",
     "disconnectOptions": "Bağlantı kesme seçenekleri",
     "lastConnectionLabel": "Son bağlantı",
-    "meshcoreBlePairingExpectationsHint": "Windows'ta cihaz bir saniyeliğine \"Bağlandı\" ve ardından \"Eşleştirildi\" gösterebilir — bu beklenir. Önce telefonunuzdaki MeshCore uygulamasını kapatın; radyo aynı anda yalnızca bir Bluetooth bağlantısını kabul eder."
+    "meshcoreBleWindowsInAppPairingHint": "Windows'ta, radyoyu buradan seçin ve ekranında gösterilen PIN'İ girin. mesh-client sizin için eşleştirir, böylece Windows Ayarları'nda eşleştirmeniz gerekmez. Önce telefonunuzdaki MeshCore uygulamasını kapatın; radyo aynı anda yalnızca bir Bluetooth bağlantısını kabul eder.",
+    "stageEnterPinWindows": "Windows ile eşleştirmek için radyonuzda gösterilen PIN KODUNU GİRİN",
+    "stagePairingWindows": "Windows ile eşleştiriliyor…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

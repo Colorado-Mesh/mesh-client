@@ -1032,8 +1032,8 @@
         "sameDeviceConflict": "Questo dispositivo Bluetooth è già connesso a {{owner}}.",
         "chooserCancelledHint": "Se non hai annullato, assicurati che il Bluetooth sia attivo (systemctl status bluetooth), quindi tocca di nuovo Connetti. Su Flatpak, reinstallare una build con Bluetooth consentito o utilizzare AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Gli strumenti di accoppiamento Bluetooth del sistema operativo non sono disponibili in questo ambiente (comuni in Flatpak). Utilizza l'AppImage ufficiale, .deb o .rpm oppure accoppia la radio con l'host bluetoothctl, quindi riprova a connetterti.",
-        "stackUnresponsiveWindows": "Il Bluetooth di Windows è bloccato su un tentativo di connessione precedente, di solito un accoppiamento incompleto. Rimuovere la radio in Impostazioni > Bluetooth e dispositivi, accoppiarla nuovamente con il PIN mostrato sulla radio fino a quando Windows non mostra \"Accoppiato\", quindi riavviare mesh-client.",
-        "stackUnresponsiveGeneric": "Il Bluetooth è bloccato su un tentativo di connessione precedente. Spegnere e riaccendere il Bluetooth, ricollegare la radio se necessario, quindi riavviare mesh-client."
+        "stackUnresponsiveGeneric": "Il Bluetooth è bloccato su un tentativo di connessione precedente. Spegnere e riaccendere il Bluetooth, ricollegare la radio se necessario, quindi riavviare mesh-client.",
+        "stackUnresponsiveWindowsRePair": "Il Bluetooth di Windows è bloccato su un tentativo di connessione precedente, di solito perché la radio non è accoppiata correttamente. Premere Remove & Re-pair Device e inserire il PIN mostrato sulla radio. Se la connessione viene ancora rifiutata, riavviare mesh-client e riprovare."
       }
     },
     "error": {
@@ -1042,7 +1042,8 @@
       "pairingFailed": "Associazione non riuscita: {{msg}}",
       "pinPairingFailed": "Associazione PIN non riuscita: {{msg}}",
       "pinAcceptedNext": "PIN accettato. Associazione completata. Premi Connetti e seleziona il tuo dispositivo per completare la connessione.",
-      "connectionFailed": "Connessione non riuscita"
+      "connectionFailed": "Connessione non riuscita",
+      "windowsPinRejected": "Windows ha rifiutato quel PIN. Controllare il PIN visualizzato sullo schermo della radio e riprovare (le radio senza schermo utilizzano il PIN fisso del firmware)."
     },
     "cancelMqttConnect": "Cancellare",
     "ripplePresetConfirm": "Il preset Ripple utilizza le credenziali della community condivise e disabilita la verifica del certificato TLS. Utilizzarlo solo su una rete attendibile. Continuare?",
@@ -1620,7 +1621,9 @@
     "moreDisconnectOptions": "Altre opzioni di disconnessione",
     "disconnectOptions": "Opzioni di disconnessione",
     "lastConnectionLabel": "Ultima connessione",
-    "meshcoreBlePairingExpectationsHint": "Su Windows il dispositivo può mostrare \"Connesso\" per un secondo e poi \"Accoppiato\" — questo è previsto. Chiudi prima l'app MeshCore sul telefono; la radio accetta solo una connessione Bluetooth alla volta."
+    "meshcoreBleWindowsInAppPairingHint": "Su Windows, seleziona la radio qui e inserisci il PIN mostrato sullo schermo. mesh-client lo accoppia per te, quindi non è necessario accoppiarlo in Impostazioni di Windows. Chiudi prima l'app MeshCore sul telefono; la radio accetta solo una connessione Bluetooth alla volta.",
+    "stageEnterPinWindows": "Inserisci il PIN visualizzato sulla radio per associarlo a Windows",
+    "stagePairingWindows": "Accoppiamento con Windows..."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

@@ -125,6 +125,7 @@ import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
+import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
@@ -3026,6 +3027,11 @@ ipcMain.handle('gatt:to-radio', async (event, sessionId: unknown, bytes: unknown
     );
   }
   await writeGattToRadio(gattSidecarProxy, sessionId, buf);
+});
+registerGattPairingIpcHandlers({
+  proxy: gattSidecarProxy,
+  withGattScan: (operation) => bleCoexistenceCoordinator.withScan('gatt', operation),
+  isQuitting: () => isQuitting,
 });
 
 // ─── MQTT: Forward manager events to renderer ───────────────────────

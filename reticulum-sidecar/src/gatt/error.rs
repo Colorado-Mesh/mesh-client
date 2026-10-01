@@ -14,6 +14,11 @@ pub enum GattErrorCode {
     ConnectTimeout,
     GattDiscoverFailed,
     PairingRequired,
+    /// OS rejected the pairing PIN / ceremony (wrong PIN, timeout, or refused).
+    #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+    AuthenticationFailed,
+    /// Operation is not implemented on this platform (e.g. in-app pairing off Windows).
+    Unsupported,
     /// Peer bond was removed mid-session (surfaced when platforms report it).
     #[allow(dead_code)]
     BondRemoved,
@@ -35,6 +40,8 @@ impl GattErrorCode {
             Self::ConnectTimeout => "connect_timeout",
             Self::GattDiscoverFailed => "gatt_discover_failed",
             Self::PairingRequired => "pairing_required",
+            Self::AuthenticationFailed => "authentication_failed",
+            Self::Unsupported => "unsupported",
             Self::BondRemoved => "bond_removed",
             Self::WriteFailed => "write_failed",
             Self::SessionNotFound => "session_not_found",
@@ -110,6 +117,8 @@ mod tests {
             GattErrorCode::ConnectTimeout,
             GattErrorCode::GattDiscoverFailed,
             GattErrorCode::PairingRequired,
+            GattErrorCode::AuthenticationFailed,
+            GattErrorCode::Unsupported,
             GattErrorCode::BondRemoved,
             GattErrorCode::WriteFailed,
             GattErrorCode::SessionNotFound,

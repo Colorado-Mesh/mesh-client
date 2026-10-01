@@ -202,6 +202,10 @@ export interface GattBleDevice {
 
 export type GattBleSessionId = MeshProtocol;
 export type GattBleConnectResult = { ok: true } | { ok: false; error: string; code?: string };
+/** Windows in-app pairing (`code: 'unsupported'` on other platforms). */
+export type GattBlePairStateResult =
+  { ok: true; paired: boolean } | { ok: false; code: string; error: string };
+export type GattBlePairResult = { ok: true } | { ok: false; code: string; error: string };
 
 /** Host↔radio BLE RSSI while GATT is connected. */
 export interface GattBleLinkRssiPayload {
@@ -969,6 +973,12 @@ export interface ElectronAPI {
   clearGattBondRecoveryExclusive: () => Promise<void>;
   isGattConnected: (sessionId: GattBleSessionId) => Promise<boolean>;
   gattToRadio: (sessionId: GattBleSessionId, bytes: Uint8Array) => Promise<void>;
+  /** Windows: whether the OS holds a pairing for this radio (WinRT, via sidecar). */
+  gattPairState: (peripheralId: string) => Promise<GattBlePairStateResult>;
+  /** Windows: pair in-app with the PIN shown on the radio (like Chrome Web Bluetooth). */
+  gattPair: (peripheralId: string, pin: string) => Promise<GattBlePairResult>;
+  /** Windows: remove the OS pairing so it can be redone in-app. */
+  gattUnpair: (peripheralId: string) => Promise<GattBlePairResult>;
 
   // ─── Serial port selection ───────────────────────────────────────────────────
   onSerialPortsDiscovered: (callback: (ports: SerialPort[]) => void) => () => void;

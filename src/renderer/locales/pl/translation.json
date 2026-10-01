@@ -1066,8 +1066,8 @@
         "sameDeviceConflict": "To urządzenie Bluetooth jest już połączone z {{owner}}.",
         "chooserCancelledHint": "Jeśli nie anulowałeś, upewnij się, że Bluetooth jest włączony (systemctl status bluetooth), a następnie ponownie dotknij Połącz. W Flatpak zainstaluj ponownie kompilację z zezwoleniem na Bluetooth lub użyj AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Narzędzia do parowania systemu operacyjnego Bluetooth są niedostępne w tym środowisku (powszechne w Flatpak). Użyj oficjalnego AppImage, .deb lub .rpm lub sparuj radio z hostem bluetoothctl, a następnie spróbuj połączyć się ponownie.",
-        "stackUnresponsiveWindows": "Windows Bluetooth utknął podczas wcześniejszej próby połączenia, zwykle niedokończonego parowania. Usuń radio w Ustawienia > Bluetooth i urządzenia, sparuj je ponownie z KODEM PIN pokazanym w radiu, aż system Windows pokaże „Sparowane”, a następnie ponownie uruchom mesh-client.",
-        "stackUnresponsiveGeneric": "Bluetooth utknął podczas wcześniejszej próby połączenia. Włącz i wyłącz Bluetooth, w razie potrzeby ponownie sparuj radio, a następnie ponownie uruchom mesh-client."
+        "stackUnresponsiveGeneric": "Bluetooth utknął podczas wcześniejszej próby połączenia. Włącz i wyłącz Bluetooth, w razie potrzeby ponownie sparuj radio, a następnie ponownie uruchom mesh-client.",
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth utknął podczas wcześniejszej próby połączenia, zwykle z powodu nieprawidłowego sparowania radia. Naciśnij przycisk Usuń i napraw urządzenie i wprowadź KOD PIN pokazany w radiu. Jeśli połączenie jest nadal odrzucane, uruchom ponownie mesh-client i spróbuj ponownie."
       }
     },
     "error": {
@@ -1076,7 +1076,8 @@
       "pairingFailed": "Parowanie nie powiodło się: {{msg}}",
       "pinPairingFailed": "Parowanie PIN-u nie powiodło się: {{msg}}",
       "pinAcceptedNext": "PIN zaakceptowany. Parowanie zakończone. Naciśnij Połącz i wybierz urządzenie, aby zakończyć połączenie.",
-      "connectionFailed": "Połączenie nie powiodło się"
+      "connectionFailed": "Połączenie nie powiodło się",
+      "windowsPinRejected": "Windows odrzucił ten PIN. Sprawdź KOD PIN pokazany na ekranie radia i spróbuj ponownie (radia bez ekranu używają stałego KODU PIN oprogramowania sprzętowego)."
     },
     "cancelMqttConnect": "Anulować",
     "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?",
@@ -1654,7 +1655,9 @@
     "moreDisconnectOptions": "Więcej opcji rozłączania",
     "disconnectOptions": "Opcje rozłączania",
     "lastConnectionLabel": "Ostatnie połączenie",
-    "meshcoreBlePairingExpectationsHint": "W systemie Windows urządzenie może przez sekundę wyświetlać komunikat „Connected” (Połączone), a następnie „Paired” (Sparowane) — jest to oczekiwane. Najpierw zamknij aplikację MeshCore w telefonie; radio akceptuje tylko jedno połączenie Bluetooth na raz."
+    "meshcoreBleWindowsInAppPairingHint": "W systemie Windows wybierz tutaj radio i wprowadź KOD PIN pokazany na jego ekranie. mesh-client sparuje je za Ciebie, więc nie musisz parować go w ustawieniach systemu Windows. Najpierw zamknij aplikację MeshCore w telefonie; radio akceptuje tylko jedno połączenie Bluetooth na raz.",
+    "stageEnterPinWindows": "Wprowadź KOD PIN widoczny w radiu, aby sparować je z systemem Windows",
+    "stagePairingWindows": "Parowanie z Windows…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nie udało się załadować członków: {{message}}",

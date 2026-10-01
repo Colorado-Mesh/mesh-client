@@ -15,6 +15,7 @@ use super::events::GattSessionEvent;
 use super::fake::FakeBleBackend;
 use super::profile::{GattProfile, normalize_address};
 use super::registry::GattRegistry;
+use super::windows_pairing::{self, PairState};
 
 #[cfg(feature = "gatt-ble")]
 use super::LazyBtleplugBackend;
@@ -59,12 +60,48 @@ impl GattBackend {
     }
 }
 
+type AddressMap = HashMap<String, Option<String>>;
+
+/// Pair/unpair hold on an address. Dropped wherever the operation actually ends —
+/// on the blocking WinRT thread after a timeout, or in async code if the handler
+/// future is dropped first — so the address is never leaked or freed early.
+#[derive(Debug)]
+struct AddressReservation {
+    map: Arc<Mutex<AddressMap>>,
+    key: String,
+}
+
+impl AddressReservation {
+    fn release(map: &mut AddressMap, key: &str) {
+        if matches!(map.get(key), Some(None)) {
+            map.remove(key);
+        }
+    }
+}
+
+impl Drop for AddressReservation {
+    fn drop(&mut self) {
+        let key = std::mem::take(&mut self.key);
+        if let Ok(mut map) = self.map.try_lock() {
+            Self::release(&mut map, &key);
+            return;
+        }
+        let map = Arc::clone(&self.map);
+        match tokio::runtime::Handle::try_current() {
+            Ok(handle) => {
+                handle.spawn(async move { Self::release(&mut *map.lock().await, &key) });
+            }
+            Err(_) => Self::release(&mut map.blocking_lock(), &key),
+        }
+    }
+}
+
 pub struct GattManager {
     backend: GattBackend,
     registry: Mutex<GattRegistry>,
     sessions: RwLock<HashMap<String, LiveSession>>,
-    /// address → session_id; None reserves an in-progress connect.
-    by_address: Mutex<HashMap<String, Option<String>>>,
+    /// address → session_id; None reserves an in-progress connect or pair/unpair.
+    by_address: Arc<Mutex<AddressMap>>,
     event_tx: broadcast::Sender<GattSessionEvent>,
     pending_events: std::sync::Mutex<HashMap<String, PendingEvents>>,
 }
@@ -76,7 +113,7 @@ impl GattManager {
             backend,
             registry: Mutex::new(GattRegistry::new()),
             sessions: RwLock::new(HashMap::new()),
-            by_address: Mutex::new(HashMap::new()),
+            by_address: Arc::new(Mutex::new(HashMap::new())),
             event_tx,
             pending_events: std::sync::Mutex::new(HashMap::new()),
         })
@@ -563,6 +600,38 @@ impl GattManager {
         }
     }
 
+    /// Pairing / unpairing a radio we hold a GATT session for would yank the link mid-session.
+    /// Reserves the address (`None`) so a connect cannot claim it while the bond changes.
+    async fn reserve_idle_address(&self, address: &str) -> Result<AddressReservation, GattError> {
+        let key = normalize_address(address)?;
+        let mut addresses = self.by_address.lock().await;
+        if addresses.contains_key(&key) {
+            return Err(GattError::new(
+                GattErrorCode::MacConflict,
+                "disconnect the radio before pairing or unpairing it",
+            ));
+        }
+        addresses.insert(key.clone(), None);
+        Ok(AddressReservation {
+            map: Arc::clone(&self.by_address),
+            key,
+        })
+    }
+
+    pub async fn pair_state(&self, address: &str) -> Result<PairState, GattError> {
+        windows_pairing::pair_state(address).await
+    }
+
+    pub async fn pair_with_pin(&self, address: &str, pin: &str) -> Result<(), GattError> {
+        let hold = self.reserve_idle_address(address).await?;
+        windows_pairing::pair_with_pin(address, pin, hold).await
+    }
+
+    pub async fn unpair(&self, address: &str) -> Result<(), GattError> {
+        let hold = self.reserve_idle_address(address).await?;
+        windows_pairing::unpair(address, hold).await
+    }
+
     pub async fn write(&self, session_id: &str, payload: &[u8]) -> Result<(), GattError> {
         validate_write_payload(payload)?;
         let conn = {
@@ -730,6 +799,80 @@ mod tests {
                 .await
                 .is_empty()
         );
+    }
+
+    #[tokio::test]
+    async fn pair_and_unpair_refused_while_session_holds_address() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+            .await
+            .unwrap();
+        let err = mgr
+            .pair_with_pin("ef-4f-4f-1c-23-73", "123456")
+            .await
+            .unwrap_err();
+        assert_eq!(err.code, GattErrorCode::MacConflict);
+        assert_eq!(
+            mgr.unpair("ef:4f:4f:1c:23:73").await.unwrap_err().code,
+            GattErrorCode::MacConflict
+        );
+        mgr.disconnect(&sid).await.unwrap();
+        // Off Windows the idle path reaches the platform stub; on Windows it would hit WinRT.
+        #[cfg(not(target_os = "windows"))]
+        assert_eq!(
+            mgr.pair_with_pin("ef:4f:4f:1c:23:73", "123456")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::Unsupported
+        );
+        // The pairing reservation is released on failure, so connect works again.
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+            .await
+            .unwrap();
+        mgr.disconnect(&sid).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn connect_refused_while_pairing_reserves_address() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let hold = mgr.reserve_idle_address("ef:4f:4f:1c:23:73").await.unwrap();
+        assert_eq!(
+            mgr.connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
+        assert_eq!(
+            mgr.reserve_idle_address("EF-4F-4F-1C-23-73")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
+        drop(hold);
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+            .await
+            .unwrap();
+        mgr.disconnect(&sid).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn reservation_dropped_on_blocking_thread_frees_address() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let hold = mgr.reserve_idle_address("ef:4f:4f:1c:23:73").await.unwrap();
+        tokio::task::spawn_blocking(move || drop(hold))
+            .await
+            .unwrap();
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+            .await
+            .unwrap();
+        mgr.disconnect(&sid).await.unwrap();
     }
 
     #[tokio::test]

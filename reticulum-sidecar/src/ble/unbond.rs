@@ -440,7 +440,7 @@ fn unbond_windows_blocking(id: &str) -> Result<(), BleBondError> {
     use windows::core::HSTRING;
 
     // Prefer classic Bluetooth address (12 hex digits); else treat as device Id.
-    let device = if let Some(addr) = parse_bt_address_u64(id) {
+    let device = if let Some(addr) = crate::gatt::windows_pairing::ble_address_u64(id) {
         BluetoothDevice::FromBluetoothAddressAsync(addr)
             .map_err(|e| BleBondError::Failed(format!("FromBluetoothAddressAsync: {e}")))?
             .get()
@@ -475,15 +475,6 @@ fn unbond_windows_blocking(id: &str) -> Result<(), BleBondError> {
     }
     tracing::warn!(%id, "ble: Windows UnpairAsync ok (LTK desync recovery)");
     Ok(())
-}
-
-#[cfg(target_os = "windows")]
-fn parse_bt_address_u64(id: &str) -> Option<u64> {
-    let hex: String = id.chars().filter(char::is_ascii_hexdigit).collect();
-    if hex.len() != 12 {
-        return None;
-    }
-    u64::from_str_radix(&hex, 16).ok()
 }
 
 #[cfg(test)]

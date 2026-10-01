@@ -1034,8 +1034,8 @@
         "sameDeviceConflict": "이 블루투스 장치는 이미 {{owner}}에 연결되어 있습니다.",
         "chooserCancelledHint": "취소하지 않은 경우 Bluetooth가 켜져 있는지(systemctl status bluetooth) 확인한 다음 연결을 다시 탭하세요. Flatpak에서는 Bluetooth가 허용된 빌드를 다시 설치하거나 AppImage/.deb/.rpm을 사용하세요.",
         "bluetoothctlMissingHint": "이 환경에서는 OS Bluetooth 페어링 도구를 사용할 수 없습니다(Flatpak에서 일반적임). 공식 AppImage, .deb 또는 .rpm을 사용하거나 라디오를 호스트 bluetoothctl과 페어링한 다음 연결을 다시 시도하세요.",
-        "stackUnresponsiveWindows": "Windows Bluetooth는 이전 연결 시도 (일반적으로 완료되지 않은 페어링) 에서 중단됩니다. 설정 > 블루투스 및 장치에서 라디오를 제거하고 Windows에 \"페어링됨\" 이 표시될 때까지 라디오에 표시된 PIN으로 다시 페어링한 다음 mesh-client를 다시 시작합니다.",
-        "stackUnresponsiveGeneric": "블루투스가 이전 연결 시도에서 멈췄습니다. 블루투스를 껐다가 켜고 필요한 경우 라디오를 다시 페어링한 다음 mesh-client를 다시 시작하십시오."
+        "stackUnresponsiveGeneric": "블루투스가 이전 연결 시도에서 멈췄습니다. 블루투스를 껐다가 켜고 필요한 경우 라디오를 다시 페어링한 다음 mesh-client를 다시 시작하십시오.",
+        "stackUnresponsiveWindowsRePair": "일반적으로 라디오가 제대로 페어링되지 않았기 때문에 이전 연결 시도에서 Windows Bluetooth가 중단됩니다. Remove & Re-pair Device (장치 제거 및 다시 페어링) 를 누르고 라디오에 표시된 PIN을 입력합니다. 그래도 연결이 거부되면 mesh-client를 다시 시작하고 다시 시도하십시오."
       }
     },
     "error": {
@@ -1044,7 +1044,8 @@
       "pairingFailed": "페어링 실패: {{msg}}",
       "pinPairingFailed": "PIN 페어링 실패: {{msg}}",
       "pinAcceptedNext": "PIN이 승인되었습니다. 페어링이 완료되었습니다. 연결을 누르고 장치를 선택하여 연결을 완료하세요.",
-      "connectionFailed": "연결 실패"
+      "connectionFailed": "연결 실패",
+      "windowsPinRejected": "Windows에서 해당 PIN을 거부했습니다. 라디오 화면에 표시된 PIN을 확인하고 다시 시도하십시오 (화면이 없는 라디오는 펌웨어의 고정 PIN을 사용하십시오)."
     },
     "cancelMqttConnect": "취소",
     "ripplePresetConfirm": "리플 사전 설정은 공유 커뮤니티 자격 증명을 사용하고 TLS 인증서 확인을 비활성화합니다. 신뢰할 수 있는 네트워크에서만 사용하십시오. 계속하시겠습니까?",
@@ -1620,7 +1621,9 @@
     "moreDisconnectOptions": "추가 연결 해제 옵션",
     "disconnectOptions": "연결 해제 옵션",
     "lastConnectionLabel": "마지막 연결",
-    "meshcoreBlePairingExpectationsHint": "Windows에서 장치는 잠시 동안 \"연결됨\" 으로 표시된 다음 \"페어링됨\" 으로 표시될 수 있습니다. 먼저 휴대폰에서 MeshCore 앱을 닫으세요. 라디오는 한 번에 하나의 블루투스 연결만 허용합니다."
+    "meshcoreBleWindowsInAppPairingHint": "Windows에서 여기에서 라디오를 선택하고 화면에 표시된 PIN을 입력합니다. mesh-client와 페어링하므로 Windows 설정에서 페어링할 필요가 없습니다. 먼저 휴대폰에서 MeshCore 앱을 닫으세요. 라디오는 한 번에 하나의 블루투스 연결만 허용합니다.",
+    "stageEnterPinWindows": "라디오에 표시된 PIN을 입력하여 Windows와 페어링합니다.",
+    "stagePairingWindows": "Windows와 페어링 중..."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",
