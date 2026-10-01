@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "{{count}} Knoten erhalten derzeit deine Identität, wenn du eine Verbindung herstellst. Danach durchsuchen Sie jeden Knoten anonym. Knoten behalten jede Identität, die sie bereits erhalten haben.",
     "identifyClearedAllToast_one": "Identifizierung von {{count}} Knoten gestoppt. Dies gilt nur für zukünftige Verbindungen.",
     "identifyClearedAllToast_other": "Identifizierung an {{count}} -Knoten gestoppt. Dies gilt nur für zukünftige Verbindungen.",
-    "identifyClearAllFailedToast": "Konnte nicht aufhören, sich für alle Knoten zu identifizieren."
+    "identifyClearAllFailedToast": "Konnte nicht aufhören, sich für alle Knoten zu identifizieren.",
+    "favoriteSiteAria": "{{name}} zu Favoriten hinzufügen",
+    "unfavoriteSiteAria": "{{name}} aus Favoriten entfernen",
+    "favoriteAddedToast": "{{name}} zu Favoriten hinzugefügt",
+    "favoriteRemovedToast": "{{name}} aus Favoriten entfernt",
+    "favoriteFailedToast": "Favorit für {{name}} konnte nicht aktualisiert werden. Läuft Reticulum?"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",

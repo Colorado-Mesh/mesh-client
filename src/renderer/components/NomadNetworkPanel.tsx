@@ -665,13 +665,6 @@ export default function NomadNetworkPanel({
     [loadNodePage, refreshFromSidecar],
   );
 
-  const handleToggleFavorite = useCallback(
-    (hash: string, favorited: boolean) => {
-      void toggleFavorite(hash, favorited);
-    },
-    [toggleFavorite],
-  );
-
   const nodeLabel = useCallback(
     (hash: string) => {
       const node = nodes.get(hash.toLowerCase());
@@ -679,6 +672,40 @@ export default function NomadNetworkPanel({
     },
     [nodes],
   );
+
+  const applyFavorite = useCallback(
+    async (hash: string, favorited: boolean, announce: boolean) => {
+      const name = nodeLabel(hash);
+      const saved = await toggleFavorite(hash, favorited);
+      if (!mountedRef.current) return;
+      if (!saved) {
+        addToast(t('nomadNetwork.favoriteFailedToast', { name }), 'error');
+        return;
+      }
+      if (!announce) return;
+      addToast(
+        favorited
+          ? t('nomadNetwork.favoriteAddedToast', { name })
+          : t('nomadNetwork.favoriteRemovedToast', { name }),
+        'info',
+      );
+    },
+    [addToast, nodeLabel, t, toggleFavorite],
+  );
+
+  const handleToggleFavorite = useCallback(
+    (hash: string, favorited: boolean) => {
+      void applyFavorite(hash, favorited, false);
+    },
+    [applyFavorite],
+  );
+
+  const selectedFavorited = selectedNode?.favorited === true;
+
+  const handleViewerFavoriteToggle = useCallback(() => {
+    if (!selectedHash) return;
+    void applyFavorite(selectedHash, !selectedFavorited, true);
+  }, [applyFavorite, selectedFavorited, selectedHash]);
 
   const reloadIfViewing = useCallback(
     (hashes: readonly string[]) => {
@@ -714,14 +741,21 @@ export default function NomadNetworkPanel({
   );
 
   const handleIdentifyToggle = useCallback(() => {
-    if (!selectedNode) return;
-    const hash = selectedNode.destination_hash;
+    if (!selectedHash) return;
+    const hash = selectedNode?.destination_hash ?? selectedHash;
     if (selectedIdentifying) {
       void applyIdentify(hash, false);
       return;
     }
     setPendingIdentifyConfirm({ hash, name: nodeLabel(hash) });
-  }, [applyIdentify, nodeLabel, selectedIdentifying, selectedNode, setPendingIdentifyConfirm]);
+  }, [
+    applyIdentify,
+    nodeLabel,
+    selectedHash,
+    selectedIdentifying,
+    selectedNode,
+    setPendingIdentifyConfirm,
+  ]);
 
   const handleStopIdentifying = useCallback(
     (hash: string) => {
@@ -1042,37 +1076,31 @@ export default function NomadNetworkPanel({
                   {t('nomadNetwork.sendMessage')}
                 </button>
               ) : null}
-              {selectedNode ? (
-                <button
-                  type="button"
-                  disabled={!sidecarRunning}
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40 ${
-                    selectedIdentifying
-                      ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
-                      : 'border-ink-700 text-ink-200 hover:bg-ink-800'
-                  }`}
-                  aria-label={
-                    selectedIdentifying
-                      ? t('nomadNetwork.identifyStopAria', {
-                          name: nodeLabel(selectedNode.destination_hash),
-                        })
-                      : t('nomadNetwork.identifyEnableAria', {
-                          name: nodeLabel(selectedNode.destination_hash),
-                        })
-                  }
-                  title={
-                    sidecarRunning
-                      ? selectedIdentifying
-                        ? t('nomadNetwork.identifyOnHint')
-                        : t('nomadNetwork.identifyOffHint')
-                      : t('nomadNetwork.identifyUnavailable')
-                  }
-                  aria-pressed={selectedIdentifying}
-                  onClick={handleIdentifyToggle}
-                >
-                  <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
+              <button
+                type="button"
+                disabled={!sidecarRunning}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40 ${
+                  selectedIdentifying
+                    ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
+                    : 'border-ink-700 text-ink-200 hover:bg-ink-800'
+                }`}
+                aria-label={
+                  selectedIdentifying
+                    ? t('nomadNetwork.identifyStopAria', { name: nodeLabel(selectedHash) })
+                    : t('nomadNetwork.identifyEnableAria', { name: nodeLabel(selectedHash) })
+                }
+                title={
+                  sidecarRunning
+                    ? selectedIdentifying
+                      ? t('nomadNetwork.identifyOnHint')
+                      : t('nomadNetwork.identifyOffHint')
+                    : t('nomadNetwork.identifyUnavailable')
+                }
+                aria-pressed={selectedIdentifying}
+                onClick={handleIdentifyToggle}
+              >
+                <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
+              </button>
               <button
                 type="button"
                 disabled={!canGoBack}
@@ -1210,6 +1238,31 @@ export default function NomadNetworkPanel({
               placeholder={t('nomadNetwork.pagePath')}
               className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
             />
+            <button
+              type="button"
+              disabled={!sidecarRunning}
+              className={`rounded-control inline-flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-40 ${
+                selectedFavorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'
+              }`}
+              aria-label={
+                selectedFavorited
+                  ? t('nomadNetwork.unfavoriteSiteAria', { name: nodeLabel(selectedHash) })
+                  : t('nomadNetwork.favoriteSiteAria', { name: nodeLabel(selectedHash) })
+              }
+              title={
+                selectedFavorited
+                  ? t('nomadNetwork.unfavoriteSiteAria', { name: nodeLabel(selectedHash) })
+                  : t('nomadNetwork.favoriteSiteAria', { name: nodeLabel(selectedHash) })
+              }
+              aria-pressed={selectedFavorited}
+              onClick={handleViewerFavoriteToggle}
+            >
+              <Star
+                aria-hidden
+                className="h-4 w-4"
+                fill={selectedFavorited ? 'currentColor' : 'none'}
+              />
+            </button>
           </form>
 
           <div className="relative min-h-0 min-w-0 flex-1">

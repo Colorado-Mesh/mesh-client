@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "Node {{count}} saat ini menerima identitas Anda saat Anda terhubung. Setelah ini, Anda menelusuri setiap node secara anonim. Node menyimpan identitas apa pun yang telah mereka terima.",
     "identifyClearedAllToast_one": "Berhenti mengidentifikasi ke simpul {{count}}. Ini hanya berlaku untuk koneksi di masa depan.",
     "identifyClearedAllToast_other": "Berhenti mengidentifikasi ke {{count}} node. Ini hanya berlaku untuk koneksi di masa depan.",
-    "identifyClearAllFailedToast": "Tidak dapat berhenti mengidentifikasi semua node."
+    "identifyClearAllFailedToast": "Tidak dapat berhenti mengidentifikasi semua node.",
+    "favoriteSiteAria": "Tambahkan {{name}} ke favorit",
+    "unfavoriteSiteAria": "Hapus {{name}} dari favorit",
+    "favoriteAddedToast": "Menambahkan {{name}} ke favorit",
+    "favoriteRemovedToast": "Menghapus {{name}} dari favorit",
+    "favoriteFailedToast": "Tidak dapat memperbarui favorit untuk {{name}}. Apakah Reticulum berjalan?"
   },
   "packetDistribution": {
     "overallDistribution": "Distribusi Keseluruhan",

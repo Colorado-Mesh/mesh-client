@@ -25,6 +25,7 @@ const onReticulumStatus = vi.fn();
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: () => isReticulumSidecarRunning(),
+  isReticulumSidecarExpectedProxyError: () => false,
 }));
 
 vi.mock('./NomadPageServerPanel', () => ({
@@ -70,6 +71,8 @@ import {
   useNomadPageViewerStore,
 } from '../stores/nomadPageViewerStore';
 import NomadNetworkPanel from './NomadNetworkPanel';
+
+const realToggleFavorite = useNomadNetworkStore.getState().toggleFavorite;
 
 async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
@@ -499,7 +502,7 @@ describe('NomadNetworkPanel', () => {
 
   it('calls toggleFavorite when star is clicked', async () => {
     const user = userEvent.setup();
-    const toggleFavorite = vi.fn().mockResolvedValue(undefined);
+    const toggleFavorite = vi.fn().mockResolvedValue(true);
     useNomadNetworkStore.setState({
       toggleFavorite,
       nodes: new Map([
@@ -1561,6 +1564,114 @@ describe('NomadNetworkPanel', () => {
       restore();
       vi.useRealTimers();
     }
+  });
+
+  describe('URL bar favourite', () => {
+    const hash = '53819f99223ed8a5676b5900d285eb3f';
+
+    async function openPastedUnlisted(user: ReturnType<typeof userEvent.setup>) {
+      const urlBar = screen.getByLabelText('nomadNetwork.urlBarAria');
+      await user.type(urlBar, `${hash}:/page/index.mu`);
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' }));
+      await screen.findByText('pasted page');
+    }
+
+    const originalProxyPost = window.electronAPI.reticulum.proxyPost;
+
+    afterEach(() => {
+      window.electronAPI.reticulum.proxyPost = originalProxyPost;
+    });
+
+    beforeEach(() => {
+      isReticulumSidecarRunning.mockResolvedValue(true);
+      useNomadNetworkStore.setState({
+        nodes: new Map(),
+        toggleFavorite: realToggleFavorite,
+        setIdentify: vi.fn().mockResolvedValue(true),
+        fetchNomadPage: vi.fn().mockResolvedValue({
+          ok: true,
+          content: 'pasted page',
+          content_type: 'text/plain',
+        }),
+      });
+    });
+
+    it('favourites an unlisted node from the URL bar and lists it under Favourites', async () => {
+      const user = userEvent.setup();
+      const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const star = screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' });
+      expect(star).toHaveAttribute('aria-pressed', 'false');
+      await waitFor(() => {
+        expect(star).toBeEnabled();
+      });
+      await user.click(star);
+
+      await waitFor(() => {
+        expect(proxyPost).toHaveBeenCalledWith('/api/v1/nomadnetwork/nodes/favorite', {
+          destination_hash: hash,
+          favorited: true,
+        });
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.unfavoriteSiteAria' }),
+        ).toHaveAttribute('aria-pressed', 'true');
+      });
+      expect(addToast).toHaveBeenCalledWith('nomadNetwork.favoriteAddedToast', 'info');
+      expect(useNomadNetworkStore.getState().getNode(hash)?.favorited).toBe(true);
+      expect(screen.getByRole('button', { name: 'nomadNetwork.openNode' })).toBeInTheDocument();
+    });
+
+    it('reverts the star and shows an error toast when the save fails', async () => {
+      const user = userEvent.setup();
+      mockConsoleWarn();
+      const proxyPost = vi.fn().mockResolvedValue({ ok: false, error: 'disk_full' });
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const star = screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' });
+      await waitFor(() => {
+        expect(star).toBeEnabled();
+      });
+      await user.click(star);
+
+      await waitFor(() => {
+        expect(addToast).toHaveBeenCalledWith('nomadNetwork.favoriteFailedToast', 'error');
+      });
+      expect(screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+      expect(useNomadNetworkStore.getState().getNode(hash)).toBeUndefined();
+    });
+
+    it('offers the identify toggle for an unlisted node', async () => {
+      const user = userEvent.setup();
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const toggle = screen.getByRole('button', { name: 'nomadNetwork.identifyEnableAria' });
+      await waitFor(() => {
+        expect(toggle).toBeEnabled();
+      });
+      await user.click(toggle);
+      expect(screen.getByText('nomadNetwork.identifyConfirmTitle')).toBeInTheDocument();
+    });
+
+    it('has no axe violations for the URL bar with the star', async () => {
+      const user = userEvent.setup();
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+      const form = screen.getByLabelText('nomadNetwork.urlBarAria').closest('form');
+      expect(form).toBeTruthy();
+      hydrateAxeThemeColors(form!);
+      expect(await axe(form!)).toHaveNoViolations();
+    });
   });
 
   describe('identify toggle', () => {

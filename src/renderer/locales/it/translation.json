@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "I nodi {{count}} ricevono attualmente la tua identità quando ti connetti. Dopodiché, navighi in ogni nodo in modo anonimo. I nodi mantengono qualsiasi identità che hanno già ricevuto.",
     "identifyClearedAllToast_one": "Identificazione interrotta sul nodo {{count}}. Questo vale solo per le connessioni future.",
     "identifyClearedAllToast_other": "Identificazione interrotta sui nodi {{count}}. Questo vale solo per le connessioni future.",
-    "identifyClearAllFailedToast": "Impossibile interrompere l'identificazione a tutti i nodi."
+    "identifyClearAllFailedToast": "Impossibile interrompere l'identificazione a tutti i nodi.",
+    "favoriteSiteAria": "Aggiungi {{name}} ai preferiti",
+    "unfavoriteSiteAria": "Rimuovi {{name}} dai preferiti",
+    "favoriteAddedToast": "{{name}} aggiunto ai preferiti",
+    "favoriteRemovedToast": "Rimosso {{name}} dai preferiti",
+    "favoriteFailedToast": "Impossibile aggiornare il preferito per {{name}}. Reticulum è in esecuzione?"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuzione complessiva",

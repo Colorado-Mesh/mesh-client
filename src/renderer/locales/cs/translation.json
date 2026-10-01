@@ -3695,7 +3695,12 @@
     "identifyClearAllFailedToast": "Nelze zastavit identifikaci všech uzlů.",
     "identifyClearAllAria_few": "Zastavit identifikaci všech uzlů {{count}}",
     "identifyClearAllBody_few": "{{count}} uzly v současné době obdrží tvoji identitu, když se připojíš. Poté procházíte každý uzel anonymně. Uzly si ponechají veškerou identitu, kterou již obdržely.",
-    "identifyClearedAllToast_few": "Zastavena identifikace uzlů {{count}}. To platí pouze pro budoucí připojení."
+    "identifyClearedAllToast_few": "Zastavena identifikace uzlů {{count}}. To platí pouze pro budoucí připojení.",
+    "favoriteSiteAria": "Přidat {{name}} k oblíbeným",
+    "unfavoriteSiteAria": "Odebrat {{name}} z oblíbených",
+    "favoriteAddedToast": "Přidáno {{name}} k oblíbeným",
+    "favoriteRemovedToast": "Odebráno {{name}} z oblíbených",
+    "favoriteFailedToast": "Nelze aktualizovat oblíbenou položku pro {{name}}. Je Reticulum spuštěno?"
   },
   "packetDistribution": {
     "overallDistribution": "Celková distribuce",

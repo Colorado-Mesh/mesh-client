@@ -196,6 +196,20 @@ function clearNomadCachesForHash(hash: string): void {
   clearNomadImageCacheForHash(hash);
 }
 
+/** Mirrors the sidecar's placeholder row for a node that has not announced yet. */
+function placeholderNomadNode(key: string): NomadNodeRow {
+  return {
+    destination_hash: key,
+    identity_hash: null,
+    display_name: null,
+    last_seen: Math.floor(Date.now() / 1000),
+    favorited: false,
+    identify: false,
+    hops: null,
+    status: 'unknown',
+  };
+}
+
 function withNomadIdentify(
   nodes: Map<string, NomadNodeRow>,
   hashes: readonly string[],
@@ -206,7 +220,33 @@ function withNomadIdentify(
     const key = nomadNodeKey(hash);
     const existing = next.get(key);
     if (existing) next.set(key, { ...existing, identify });
+    else if (identify) next.set(key, { ...placeholderNomadNode(key), identify: true });
   }
+  return next;
+}
+
+function withNomadFavorite(
+  nodes: Map<string, NomadNodeRow>,
+  key: string,
+  favorited: boolean,
+): Map<string, NomadNodeRow> {
+  const next = new Map(nodes);
+  const existing = next.get(key);
+  if (existing) next.set(key, { ...existing, favorited });
+  else if (favorited) next.set(key, { ...placeholderNomadNode(key), favorited: true });
+  return next;
+}
+
+/** Restore one node's row to its value in `previous` (dropping a placeholder we added). */
+function withNomadRowRestored(
+  current: Map<string, NomadNodeRow>,
+  previous: Map<string, NomadNodeRow>,
+  key: string,
+): Map<string, NomadNodeRow> {
+  const next = new Map(current);
+  const prior = previous.get(key);
+  if (prior) next.set(key, prior);
+  else next.delete(key);
   return next;
 }
 
@@ -326,7 +366,8 @@ interface NomadNetworkStoreState {
     path: string,
     opts?: FetchNomadPageOpts,
   ) => Promise<NomadFileResponse>;
-  toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
+  /** Persist the favourite star; returns false (and reverts) on failure. */
+  toggleFavorite: (hash: string, favorited: boolean) => Promise<boolean>;
   /** Persist the per-node identify choice; returns false (and reverts) on failure. */
   setIdentify: (hash: string, identify: boolean) => Promise<boolean>;
   /** Stop identifying to every node; returns how many nodes changed, or null on failure. */
@@ -417,23 +458,29 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
   },
 
   toggleFavorite: async (hash, favorited) => {
-    if (!(await isReticulumSidecarRunning())) return;
+    const key = nomadNodeKey(hash);
+    if (!key) return false;
+    const previous = get().nodes;
+    set({ nodes: withNomadFavorite(previous, key, favorited) });
     try {
-      await window.electronAPI.reticulum.proxyPost('/api/v1/nomadnetwork/nodes/favorite', {
-        destination_hash: hash,
-        favorited,
-      });
-      const key = hash.toLowerCase();
-      const existing = get().nodes.get(key);
-      if (existing) {
-        const next = new Map(get().nodes);
-        next.set(key, { ...existing, favorited });
-        set({ nodes: next });
+      if (!(await isReticulumSidecarRunning())) {
+        throw new Error('sidecar_not_running');
       }
+      const body = await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/nomadnetwork/nodes/favorite',
+        { destination_hash: key, favorited },
+      );
+      const failed = sidecarBodyFailed(body);
+      if (failed) throw new Error(failed);
+      return true;
     } catch (e) {
+      // Failure point: sidecar rejected or unreachable. Fallback: restore the
+      // previous row so the star never shows a choice that was not saved.
       if (!isReticulumSidecarExpectedProxyError(e)) {
         console.warn('[nomadNetworkStore] favorite ' + errLikeToLogString(e));
       }
+      set({ nodes: withNomadRowRestored(get().nodes, previous, key) });
+      return false;
     }
   },
 
@@ -458,7 +505,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       // Failure point: sidecar rejected or unreachable. Fallback: restore the
       // previous flag so the UI never shows a choice that was not saved.
       console.warn('[nomadNetworkStore] identify ' + errLikeToLogString(e));
-      set({ nodes: withNomadIdentify(get().nodes, [key], previous.get(key)?.identify === true) });
+      set({ nodes: withNomadRowRestored(get().nodes, previous, key) });
       clearNomadCachesForHash(key);
       return false;
     }

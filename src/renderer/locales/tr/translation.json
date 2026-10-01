@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "{{count}} düğümleri şu anda bağlandığınızda kimliğinizi alıyor. Bundan sonra her düğüme anonim olarak göz atarsınız. Düğümler daha önce aldıkları kimlikleri korur.",
     "identifyClearedAllToast_one": "{{count}} düğümüne tanımlama durduruldu. Bu yalnızca gelecekteki bağlantılar için geçerlidir.",
     "identifyClearedAllToast_other": "{{count}} düğümlerine tanımlama durduruldu. Bu yalnızca gelecekteki bağlantılar için geçerlidir.",
-    "identifyClearAllFailedToast": "Tüm düğümlere yönelik tanımlama durdurulamadı."
+    "identifyClearAllFailedToast": "Tüm düğümlere yönelik tanımlama durdurulamadı.",
+    "favoriteSiteAria": "{{name}} öğesini favorilere ekleyin",
+    "unfavoriteSiteAria": "{{name}} öğesini favorilerden kaldır",
+    "favoriteAddedToast": "{{name}} favorilere eklendi",
+    "favoriteRemovedToast": "{{name}} favorilerden kaldırıldı",
+    "favoriteFailedToast": "{{name}} için favori güncellenemedi. Reticulum çalışıyor mu?"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",

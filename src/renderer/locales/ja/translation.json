@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "{{count}}ノードは現在、接続時にあなたのIDを受け取っています。その後、すべてのノードを匿名で閲覧します。ノードはすでに受け取ったアイデンティティを保持します。",
     "identifyClearedAllToast_one": "{{count}}ノードへの識別を停止しました。これは今後の接続にのみ適用されます。",
     "identifyClearedAllToast_other": "{{count}}ノードへの識別を停止しました。これは今後の接続にのみ適用されます。",
-    "identifyClearAllFailedToast": "すべてのノードの識別を停止できませんでした。"
+    "identifyClearAllFailedToast": "すべてのノードの識別を停止できませんでした。",
+    "favoriteSiteAria": "{{name}}をお気に入りに追加",
+    "unfavoriteSiteAria": "お気に入りから{{name}}を削除",
+    "favoriteAddedToast": "{{name}}をお気に入りに追加しました",
+    "favoriteRemovedToast": "お気に入りから{{name}}を削除しました",
+    "favoriteFailedToast": "{{name}}のお気に入りを更新できませんでした。Reticulumは実行中ですか？"
   },
   "packetDistribution": {
     "overallDistribution": "全体の分布",

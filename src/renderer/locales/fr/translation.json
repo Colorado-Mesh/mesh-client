@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "{{count}} nœuds reçoivent actuellement votre identité lorsque vous vous connectez. Après cela, vous parcourez chaque nœud de manière anonyme. Les nœuds conservent toute identité qu'ils ont déjà reçue.",
     "identifyClearedAllToast_one": "Arrêt de l'identification au nœud {{count}}. Cela s'applique uniquement aux connexions futures.",
     "identifyClearedAllToast_other": "Arrêt de l'identification aux nœuds {{count}}. Cela s'applique uniquement aux connexions futures.",
-    "identifyClearAllFailedToast": "Impossible d'arrêter l'identification à tous les nœuds."
+    "identifyClearAllFailedToast": "Impossible d'arrêter l'identification à tous les nœuds.",
+    "favoriteSiteAria": "Ajouter {{name}} aux favoris",
+    "unfavoriteSiteAria": "Supprimer {{name}} des favoris",
+    "favoriteAddedToast": "{{name}} ajouté aux favoris",
+    "favoriteRemovedToast": "Suppression de {{name}} des favoris",
+    "favoriteFailedToast": "Impossible de mettre à jour le favori pour {{name}}. Reticulum est-il en cours d’exécution ?"
   },
   "packetDistribution": {
     "overallDistribution": "Répartition globale",

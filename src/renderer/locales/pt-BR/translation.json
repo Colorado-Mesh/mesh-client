@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "No momento, os nós {{count}} recebem sua identidade quando você se conecta. Depois disso, você navega em cada nó anonimamente. Os nós mantêm qualquer identidade que já receberam.",
     "identifyClearedAllToast_one": "Parou de identificar o nó {{count}}. Isso se aplica apenas a conexões futuras.",
     "identifyClearedAllToast_other": "Parou de identificar os nós {{count}}. Isso se aplica apenas a conexões futuras.",
-    "identifyClearAllFailedToast": "Não foi possível parar de identificar todos os nós."
+    "identifyClearAllFailedToast": "Não foi possível parar de identificar todos os nós.",
+    "favoriteSiteAria": "Adicionar {{name}} aos favoritos",
+    "unfavoriteSiteAria": "Remover {{name}} dos favoritos",
+    "favoriteAddedToast": "{{name}} adicionado aos favoritos",
+    "favoriteRemovedToast": "{{name}} removido dos favoritos",
+    "favoriteFailedToast": "Não foi possível atualizar o favorito para {{name}}. O Reticulum está em execução?"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",

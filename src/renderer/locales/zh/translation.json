@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "{{count}}节点目前会在您连接时收到您的身份信息。之后，您可以匿名浏览每个节点。节点保留已收到的任何身份。",
     "identifyClearedAllToast_one": "已停止识别{{count}}节点。这仅适用于未来的连接。",
     "identifyClearedAllToast_other": "已停止识别{{count}}节点。这仅适用于未来的连接。",
-    "identifyClearAllFailedToast": "无法停止识别所有节点。"
+    "identifyClearAllFailedToast": "无法停止识别所有节点。",
+    "favoriteSiteAria": "将{{name}}添加到收藏夹",
+    "unfavoriteSiteAria": "从收藏夹移除{{name}}",
+    "favoriteAddedToast": "已将{{name}}添加到收藏夹",
+    "favoriteRemovedToast": "已从收藏夹移除{{name}}",
+    "favoriteFailedToast": "无法更新{{name}}的收藏夹。Reticulum正在运行吗？"
   },
   "packetDistribution": {
     "overallDistribution": "总体分布",

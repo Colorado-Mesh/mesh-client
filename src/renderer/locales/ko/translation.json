@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "{{count}} 노드는 현재 연결 시 귀하의 신원을 수신합니다. 그런 다음 모든 노드를 익명으로 탐색합니다. 노드는 이미 받은 ID를 유지합니다.",
     "identifyClearedAllToast_one": "{{count}} 노드에 대한 식별이 중지되었습니다. 이는 향후 연결에만 적용됩니다.",
     "identifyClearedAllToast_other": "{{count}} 노드에 대한 식별이 중지되었습니다. 이는 향후 연결에만 적용됩니다.",
-    "identifyClearAllFailedToast": "모든 노드에 대한 식별을 중지할 수 없습니다."
+    "identifyClearAllFailedToast": "모든 노드에 대한 식별을 중지할 수 없습니다.",
+    "favoriteSiteAria": "즐겨찾기에 {{name}} 추가",
+    "unfavoriteSiteAria": "즐겨찾기에서 {{name}} 삭제",
+    "favoriteAddedToast": "즐겨찾기에 {{name}} 추가됨",
+    "favoriteRemovedToast": "즐겨찾기에서 {{name}} 삭제됨",
+    "favoriteFailedToast": "{{name}}의 즐겨찾기를 업데이트할 수 없습니다. Reticulum이 실행 중입니까?"
   },
   "packetDistribution": {
     "overallDistribution": "전체 분포",

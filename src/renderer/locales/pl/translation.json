@@ -3731,7 +3731,12 @@
     "identifyClearAllBody_few": "Węzły {{count}} otrzymują obecnie Twoją tożsamość, gdy się łączysz. Następnie anonimowo przeglądasz każdy węzeł. Węzły zachowują każdą tożsamość, którą już otrzymały.",
     "identifyClearAllBody_many": "Węzły {{count}} otrzymują obecnie Twoją tożsamość, gdy się łączysz. Następnie anonimowo przeglądasz każdy węzeł. Węzły zachowują każdą tożsamość, którą już otrzymały.",
     "identifyClearedAllToast_few": "Zatrzymano identyfikację do węzłów {{count}}. Dotyczy to tylko przyszłych połączeń.",
-    "identifyClearedAllToast_many": "Zatrzymano identyfikację do węzłów {{count}}. Dotyczy to tylko przyszłych połączeń."
+    "identifyClearedAllToast_many": "Zatrzymano identyfikację do węzłów {{count}}. Dotyczy to tylko przyszłych połączeń.",
+    "favoriteSiteAria": "Dodaj {{name}} do ulubionych",
+    "unfavoriteSiteAria": "Usuń {{name}} z ulubionych",
+    "favoriteAddedToast": "Dodano {{name}} do ulubionych",
+    "favoriteRemovedToast": "Usunięto {{name}} z ulubionych",
+    "favoriteFailedToast": "Nie można zaktualizować ulubionych dla {{name}}. Czy Reticulum działa?"
   },
   "packetDistribution": {
     "overallDistribution": "Ogólna dystrybucja",

@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "{{count}} knooppunten ontvangen momenteel je identiteit wanneer je verbinding maakt. Hierna blader je anoniem door elk knooppunt. Knooppunten behouden de identiteit die ze al hebben ontvangen.",
     "identifyClearedAllToast_one": "Identificatie met {{count}} -knooppunt gestopt. Dit geldt alleen voor toekomstige aansluitingen.",
     "identifyClearedAllToast_other": "Identificatie van {{count}} knooppunten gestopt. Dit geldt alleen voor toekomstige aansluitingen.",
-    "identifyClearAllFailedToast": "Kon de identificatie voor alle knooppunten niet stoppen."
+    "identifyClearAllFailedToast": "Kon de identificatie voor alle knooppunten niet stoppen.",
+    "favoriteSiteAria": "Voeg {{name}} toe aan favorieten",
+    "unfavoriteSiteAria": "Verwijder {{name}} uit favorieten",
+    "favoriteAddedToast": "{{name}} toegevoegd aan favorieten",
+    "favoriteRemovedToast": "{{name}} verwijderd uit favorieten",
+    "favoriteFailedToast": "Kan favoriet voor {{name}} niet bijwerken. Draait Reticulum?"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",

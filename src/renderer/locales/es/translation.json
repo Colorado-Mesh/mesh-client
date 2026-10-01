@@ -3655,7 +3655,12 @@
     "identifyClearAllBody_other": "Los nodos {{count}} actualmente reciben tu identidad cuando te conectas. Después de esto, navega por todos los nodos de forma anónima. Los nodos mantienen cualquier identidad que ya hayan recibido.",
     "identifyClearedAllToast_one": "Se detuvo la identificación con el nodo {{count}}. Esto se aplica solo a conexiones futuras.",
     "identifyClearedAllToast_other": "Se detuvo la identificación con los nodos {{count}}. Esto se aplica solo a conexiones futuras.",
-    "identifyClearAllFailedToast": "No se ha podido dejar de identificar a todos los nodos."
+    "identifyClearAllFailedToast": "No se ha podido dejar de identificar a todos los nodos.",
+    "favoriteSiteAria": "Agrega {{name}} a tus favoritos",
+    "unfavoriteSiteAria": "Quitar {{name}} de favoritos",
+    "favoriteAddedToast": "{{name}} añadido a favoritos",
+    "favoriteRemovedToast": "{{name}} eliminado de favoritos",
+    "favoriteFailedToast": "No se ha podido actualizar el favorito para {{name}}. ¿Se está ejecutando Reticulum?"
   },
   "packetDistribution": {
     "overallDistribution": "Distribución general",
