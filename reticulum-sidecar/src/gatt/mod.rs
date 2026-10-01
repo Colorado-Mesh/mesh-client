@@ -11,6 +11,7 @@ mod fake;
 mod manager;
 mod profile;
 mod registry;
+pub mod windows_pairing;
 
 #[cfg(feature = "gatt-ble")]
 mod btleplug_backend;

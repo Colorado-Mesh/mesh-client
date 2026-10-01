@@ -50,6 +50,28 @@ fn characteristic_write_type(properties: CharPropFlags) -> Result<WriteType, Gat
     }
 }
 
+/// Encrypted characteristics on an unpaired / half-paired radio surface as WinRT
+/// access-denied or ATT insufficient-auth errors; report those as `PairingRequired`
+/// so the UI can offer in-app pairing.
+fn classify_setup_error(msg: String, fallback: GattErrorCode) -> GattError {
+    const AUTH_MARKERS: [&str; 7] = [
+        "pair",
+        "access denied",
+        "accessdenied",
+        "0x80070005",
+        "insufficient authentication",
+        "insufficient encryption",
+        "unauthorized",
+    ];
+    let lower = msg.to_ascii_lowercase();
+    let code = if AUTH_MARKERS.iter().any(|m| lower.contains(m)) {
+        GattErrorCode::PairingRequired
+    } else {
+        fallback
+    };
+    GattError::new(code, msg)
+}
+
 async fn wait_for_disconnect(
     events: &mut (impl Stream<Item = CentralEvent> + Unpin),
     peripheral_id: &str,
@@ -445,15 +467,7 @@ impl BleBackend for BtleplugBackend {
             tokio::time::timeout(connect_timeout(), peripheral.connect())
                 .await
                 .map_err(|_| GattError::new(GattErrorCode::ConnectTimeout, "connect timed out"))?
-                .map_err(|e| {
-                    let msg = e.to_string();
-                    let code = if msg.to_ascii_lowercase().contains("pair") {
-                        GattErrorCode::PairingRequired
-                    } else {
-                        GattErrorCode::ConnectTimeout
-                    };
-                    GattError::new(code, msg)
-                })?;
+                .map_err(|e| classify_setup_error(e.to_string(), GattErrorCode::ConnectTimeout))?;
 
             stage("discover_services");
             tokio::time::timeout(discovery_timeout(), peripheral.discover_services())
@@ -464,7 +478,9 @@ impl BleBackend for BtleplugBackend {
                         "service discovery timed out",
                     )
                 })?
-                .map_err(|e| GattError::new(GattErrorCode::GattDiscoverFailed, e.to_string()))?;
+                .map_err(|e| {
+                    classify_setup_error(e.to_string(), GattErrorCode::GattDiscoverFailed)
+                })?;
 
             let chars = peripheral.characteristics();
             let (write_uuid, notify_uuid, from_radio_uuid) = match profile {
@@ -515,7 +531,10 @@ impl BleBackend for BtleplugBackend {
                     GattError::new(GattErrorCode::GattDiscoverFailed, "subscribe timed out")
                 })?
                 .map_err(|e| {
-                    GattError::new(GattErrorCode::GattDiscoverFailed, format!("subscribe: {e}"))
+                    classify_setup_error(
+                        format!("subscribe: {e}"),
+                        GattErrorCode::GattDiscoverFailed,
+                    )
                 })?;
             let seed_rssi = peripheral
                 .properties()
@@ -722,6 +741,32 @@ impl BleBackend for BtleplugBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn classifies_auth_setup_errors_as_pairing_required() {
+        for msg in [
+            "subscribe: Error { code: HRESULT(0x80070005), message: \"Access is denied.\" }",
+            "subscribe: Not authorized: AccessDenied",
+            "discover: Insufficient Authentication",
+            "Insufficient Encryption",
+            "Device needs pairing",
+        ] {
+            let err = classify_setup_error(msg.to_string(), GattErrorCode::GattDiscoverFailed);
+            assert_eq!(err.code, GattErrorCode::PairingRequired, "{msg}");
+            assert_eq!(err.message, msg);
+        }
+    }
+
+    #[test]
+    fn keeps_fallback_for_non_auth_setup_errors() {
+        let err = classify_setup_error(
+            "subscribe: unreachable while discovering services".into(),
+            GattErrorCode::GattDiscoverFailed,
+        );
+        assert_eq!(err.code, GattErrorCode::GattDiscoverFailed);
+        let err = classify_setup_error("device not found".into(), GattErrorCode::ConnectTimeout);
+        assert_eq!(err.code, GattErrorCode::ConnectTimeout);
+    }
 
     #[tokio::test(start_paused = true)]
     async fn scans_wait_for_cleanup_after_completion_and_cancellation() {

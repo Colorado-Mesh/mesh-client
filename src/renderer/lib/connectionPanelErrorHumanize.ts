@@ -155,7 +155,7 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
   // Bluetooth call is outstanding; the adapter exists, so the generic code copy would mislead.
   if (/Bluetooth stack unresponsive/i.test(msg)) {
     return isWindows
-      ? t('connectionPanel.humanize.ble.stackUnresponsiveWindows')
+      ? t('connectionPanel.humanize.ble.stackUnresponsiveWindowsRePair')
       : t('connectionPanel.humanize.ble.stackUnresponsiveGeneric');
   }
   const gattCode = extractGattBleErrorCode(err) ?? extractGattBleErrorCode(msg);

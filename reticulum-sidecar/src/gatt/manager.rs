@@ -15,6 +15,7 @@ use super::events::GattSessionEvent;
 use super::fake::FakeBleBackend;
 use super::profile::{GattProfile, normalize_address};
 use super::registry::GattRegistry;
+use super::windows_pairing::{self, PairState};
 
 #[cfg(feature = "gatt-ble")]
 use super::LazyBtleplugBackend;
@@ -563,6 +564,32 @@ impl GattManager {
         }
     }
 
+    /// Pairing / unpairing a radio we hold a GATT session for would yank the link mid-session.
+    async fn ensure_address_idle(&self, address: &str) -> Result<(), GattError> {
+        let key = normalize_address(address)?;
+        if self.by_address.lock().await.contains_key(&key) {
+            return Err(GattError::new(
+                GattErrorCode::MacConflict,
+                "disconnect the radio before pairing or unpairing it",
+            ));
+        }
+        Ok(())
+    }
+
+    pub async fn pair_state(&self, address: &str) -> Result<PairState, GattError> {
+        windows_pairing::pair_state(address).await
+    }
+
+    pub async fn pair_with_pin(&self, address: &str, pin: &str) -> Result<(), GattError> {
+        self.ensure_address_idle(address).await?;
+        windows_pairing::pair_with_pin(address, pin).await
+    }
+
+    pub async fn unpair(&self, address: &str) -> Result<(), GattError> {
+        self.ensure_address_idle(address).await?;
+        windows_pairing::unpair(address).await
+    }
+
     pub async fn write(&self, session_id: &str, payload: &[u8]) -> Result<(), GattError> {
         validate_write_payload(payload)?;
         let conn = {
@@ -729,6 +756,34 @@ mod tests {
                 .writes_for("11:22:33:44:55:66")
                 .await
                 .is_empty()
+        );
+    }
+
+    #[tokio::test]
+    async fn pair_and_unpair_refused_while_session_holds_address() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+            .await
+            .unwrap();
+        let err = mgr
+            .pair_with_pin("ef-4f-4f-1c-23-73", "123456")
+            .await
+            .unwrap_err();
+        assert_eq!(err.code, GattErrorCode::MacConflict);
+        assert_eq!(
+            mgr.unpair("ef:4f:4f:1c:23:73").await.unwrap_err().code,
+            GattErrorCode::MacConflict
+        );
+        mgr.disconnect(&sid).await.unwrap();
+        // Off Windows the idle path reaches the platform stub; on Windows it would hit WinRT.
+        #[cfg(not(target_os = "windows"))]
+        assert_eq!(
+            mgr.pair_with_pin("ef:4f:4f:1c:23:73", "123456")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::Unsupported
         );
     }
 

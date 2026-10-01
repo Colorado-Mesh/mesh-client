@@ -1033,8 +1033,8 @@
         "sameDeviceConflict": "Dit Bluetooth-apparaat is al verbonden met {{owner}}.",
         "chooserCancelledHint": "Als u niet hebt geannuleerd, zorg er dan voor dat Bluetooth is ingeschakeld (systemctl-status bluetooth) en tik vervolgens opnieuw op Verbinden. Installeer op Flatpak een build opnieuw waarbij Bluetooth is toegestaan, of gebruik AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "OS Bluetooth-koppelingstools zijn niet beschikbaar in deze omgeving (gebruikelijk in Flatpak). Gebruik de officiële AppImage, .deb of .rpm, of koppel de radio met host bluetoothctl en probeer Connect opnieuw.",
-        "stackUnresponsiveWindows": "Windows Bluetooth zit vast bij een eerdere verbindingspoging, meestal een onvoltooide koppeling. Verwijder de radio in Instellingen > Bluetooth en apparaten, koppel deze opnieuw met de PINCODE die op de radio wordt weergegeven totdat Windows \"Gekoppeld\" weergeeft en start vervolgens de mesh-client opnieuw op.",
-        "stackUnresponsiveGeneric": "Bluetooth zit vast bij een eerdere verbindingspoging. Schakel Bluetooth uit en in, koppel de radio indien nodig opnieuw en start de mesh-client opnieuw."
+        "stackUnresponsiveGeneric": "Bluetooth zit vast bij een eerdere verbindingspoging. Schakel Bluetooth uit en in, koppel de radio indien nodig opnieuw en start de mesh-client opnieuw.",
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth zit vast bij een eerdere verbindingspoging, meestal omdat de radio niet goed is gekoppeld. Druk op Apparaat verwijderen en opnieuw koppelen en voer de PINCODE in die op de radio wordt weergegeven. Als de verbinding nog steeds wordt geweigerd, start u de mesh-client opnieuw op en probeert u het opnieuw."
       }
     },
     "error": {
@@ -1043,7 +1043,8 @@
       "pairingFailed": "Koppelen mislukt: {{msg}}",
       "pinPairingFailed": "PIN-koppeling mislukt: {{msg}}",
       "pinAcceptedNext": "Pincode geaccepteerd. Koppelen voltooid. Druk op Verbinden en selecteer uw apparaat om de verbinding te voltooien.",
-      "connectionFailed": "Verbinding mislukt"
+      "connectionFailed": "Verbinding mislukt",
+      "windowsPinRejected": "Windows heeft die PINCODE geweigerd. Controleer de PINCODE op het scherm van de radio en probeer het opnieuw (radio's zonder scherm gebruiken de vaste PINCODE van de firmware)."
     },
     "cancelMqttConnect": "Annuleren",
     "ripplePresetConfirm": "De Ripple-voorinstelling gebruikt gedeelde gemeenschapsreferenties en schakelt TLS-certificaatverificatie uit. Gebruik dit alleen op een vertrouwd netwerk. Doorgaan?",
@@ -1620,7 +1621,9 @@
     "moreDisconnectOptions": "Meer opties voor loskoppelen",
     "disconnectOptions": "Opties voor loskoppelen",
     "lastConnectionLabel": "Laatste verbinding",
-    "meshcoreBlePairingExpectationsHint": "Op Windows kan het apparaat gedurende een seconde \"Verbonden\" en vervolgens \"Gekoppeld\" weergeven — dat wordt verwacht. Sluit eerst de MeshCore-app op je telefoon; de radio accepteert slechts één Bluetooth-verbinding tegelijk."
+    "meshcoreBleWindowsInAppPairingHint": "Op Windows selecteert u hier de radio en voert u de PINCODE in die op het scherm wordt weergegeven. mesh-client koppelt deze voor u, zodat u deze niet hoeft te koppelen in Windows-instellingen. Sluit eerst de MeshCore-app op je telefoon; de radio accepteert slechts één Bluetooth-verbinding tegelijk.",
+    "stageEnterPinWindows": "Voer de PINCODE in die op uw radio wordt weergegeven om deze met Windows te koppelen",
+    "stagePairingWindows": "Koppelen met Windows..."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

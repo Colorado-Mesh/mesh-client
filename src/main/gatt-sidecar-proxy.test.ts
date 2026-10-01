@@ -76,6 +76,76 @@ describe('GattSidecarProxy', () => {
     vi.restoreAllMocks();
   });
 
+  describe('Windows in-app pairing', () => {
+    it('pairState encodes the address and returns paired', async () => {
+      fetchMock.mockResolvedValue({
+        status: 200,
+        json: () => Promise.resolve({ ok: true, paired: false }),
+      });
+      await expect(proxy.pairState('ef:4f:4f:1c:23:73')).resolves.toEqual({
+        ok: true,
+        paired: false,
+      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://127.0.0.1:9876/api/v1/gatt/pair-state?address=ef%3A4f%3A4f%3A1c%3A23%3A73',
+        expect.anything(),
+      );
+    });
+
+    it('pairState surfaces sidecar code and error', async () => {
+      fetchMock.mockResolvedValue({
+        status: 200,
+        json: () =>
+          Promise.resolve({ ok: false, code: 'unsupported', error: 'only implemented on Windows' }),
+      });
+      await expect(proxy.pairState('ef:4f:4f:1c:23:73')).resolves.toEqual({
+        ok: false,
+        code: 'unsupported',
+        error: 'only implemented on Windows',
+      });
+    });
+
+    it('pair posts address and PIN with a long timeout', async () => {
+      const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+      await expect(proxy.pair('ef:4f:4f:1c:23:73', '123456')).resolves.toEqual({ ok: true });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://127.0.0.1:9876/api/v1/gatt/pair',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ address: 'ef:4f:4f:1c:23:73', pin: '123456' }),
+        }),
+      );
+      expect(timeoutSpy).toHaveBeenCalledWith(65_000);
+    });
+
+    it('pair maps authentication_failed', async () => {
+      fetchMock.mockResolvedValue({
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            ok: false,
+            code: 'authentication_failed',
+            error: 'Windows rejected the pairing PIN (status=AuthenticationFailure)',
+          }),
+      });
+      await expect(proxy.pair('ef:4f:4f:1c:23:73', '000000')).resolves.toMatchObject({
+        ok: false,
+        code: 'authentication_failed',
+      });
+    });
+
+    it('unpair posts the address', async () => {
+      await expect(proxy.unpair('ef:4f:4f:1c:23:73')).resolves.toEqual({ ok: true });
+      expect(fetchMock).toHaveBeenCalledWith(
+        'http://127.0.0.1:9876/api/v1/gatt/unpair',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ address: 'ef:4f:4f:1c:23:73' }),
+        }),
+      );
+    });
+  });
+
   it('connect maps session and emits connected', async () => {
     const connected = vi.fn();
     proxy.on('connected', connected);

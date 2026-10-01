@@ -44,6 +44,22 @@ pub struct WriteBody {
 }
 
 #[derive(Debug, serde::Deserialize)]
+pub struct PairAddressQuery {
+    pub address: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct PairBody {
+    pub address: String,
+    pub pin: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct UnpairBody {
+    pub address: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
 pub struct ExternalRegisterBody {
     pub profile: String,
     pub address: String,
@@ -95,6 +111,38 @@ pub async fn gatt_clear_bond_recovery(
 ) -> Json<serde_json::Value> {
     stack.gatt().clear_bond_recovery_hold();
     Json(serde_json::json!({ "ok": true }))
+}
+
+/// Windows in-app pairing state (`unsupported` on other platforms).
+pub async fn gatt_pair_state(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<PairAddressQuery>,
+) -> Json<serde_json::Value> {
+    match stack.gatt().pair_state(&query.address).await {
+        Ok(state) => Json(serde_json::json!({ "ok": true, "paired": state.paired })),
+        Err(e) => Json(e.to_json()),
+    }
+}
+
+/// Pair with a user-entered PIN via WinRT custom pairing. The PIN is never logged.
+pub async fn gatt_pair(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<PairBody>,
+) -> Json<serde_json::Value> {
+    match stack.gatt().pair_with_pin(&body.address, &body.pin).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(e.to_json()),
+    }
+}
+
+pub async fn gatt_unpair(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<UnpairBody>,
+) -> Json<serde_json::Value> {
+    match stack.gatt().unpair(&body.address).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(e.to_json()),
+    }
 }
 
 pub async fn gatt_create_session(

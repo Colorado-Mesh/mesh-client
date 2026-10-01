@@ -1034,8 +1034,8 @@
         "sameDeviceConflict": "Perangkat Bluetooth ini sudah terhubung ke {{owner}}.",
         "chooserCancelledHint": "Jika Anda tidak membatalkan, pastikan Bluetooth aktif (status sistemctl bluetooth), lalu ketuk Hubungkan lagi. Di Flatpak, instal ulang build dengan Bluetooth yang diizinkan, atau gunakan AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Alat pemasangan OS Bluetooth tidak tersedia di lingkungan ini (umum di Flatpak). Gunakan AppImage resmi, .deb, atau .rpm, atau pasangkan radio dengan host bluetoothctl, lalu coba lagi Hubungkan.",
-        "stackUnresponsiveWindows": "Bluetooth Windows macet pada upaya koneksi sebelumnya, biasanya pasangan yang belum selesai. Lepaskan radio di Pengaturan > Bluetooth & perangkat, pasangkan lagi dengan PIN yang ditampilkan di radio sampai Windows menunjukkan \"Dipasangkan\", lalu mulai ulang mesh-client.",
-        "stackUnresponsiveGeneric": "Bluetooth macet pada upaya koneksi sebelumnya. Matikan dan nyalakan Bluetooth, pasangkan kembali radio jika perlu, lalu mulai ulang mesh-client."
+        "stackUnresponsiveGeneric": "Bluetooth macet pada upaya koneksi sebelumnya. Matikan dan nyalakan Bluetooth, pasangkan kembali radio jika perlu, lalu mulai ulang mesh-client.",
+        "stackUnresponsiveWindowsRePair": "Bluetooth Windows macet pada upaya koneksi sebelumnya, biasanya karena radio tidak dipasangkan dengan benar. Tekan Lepas & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan di radio. Jika koneksi masih ditolak, restart mesh-client dan coba lagi."
       }
     },
     "error": {
@@ -1044,7 +1044,8 @@
       "pairingFailed": "Gagal memasangkan: {{msg}}",
       "pinPairingFailed": "Gagal memasangkan PIN: {{msg}}",
       "pinAcceptedNext": "PIN diterima. Penyandingan selesai. Tekan Hubungkan dan pilih perangkat Anda untuk menyelesaikan koneksi.",
-      "connectionFailed": "Koneksi gagal"
+      "connectionFailed": "Koneksi gagal",
+      "windowsPinRejected": "Windows menolak PIN tersebut. Periksa PIN yang ditampilkan di layar radio dan coba lagi (radio tanpa layar menggunakan PIN tetap firmware)."
     },
     "cancelMqttConnect": "Membatalkan",
     "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?",
@@ -1620,7 +1621,9 @@
     "moreDisconnectOptions": "Opsi pemutusan lainnya",
     "disconnectOptions": "Opsi pemutusan",
     "lastConnectionLabel": "Koneksi terakhir",
-    "meshcoreBlePairingExpectationsHint": "Pada Windows perangkat dapat menampilkan \"Terhubung\" selama satu detik dan kemudian \"Dipasangkan\" — yang diharapkan. Tutup aplikasi MeshCore di ponsel Anda terlebih dahulu; radio hanya menerima satu koneksi Bluetooth pada satu waktu."
+    "meshcoreBleWindowsInAppPairingHint": "Di Windows, pilih radio di sini dan masukkan PIN yang ditampilkan di layarnya. mesh-client memasangkannya untuk Anda, jadi Anda tidak perlu memasangkannya di Pengaturan Windows. Tutup aplikasi MeshCore di ponsel Anda terlebih dahulu; radio hanya menerima satu koneksi Bluetooth pada satu waktu.",
+    "stageEnterPinWindows": "Masukkan PIN yang ditampilkan di radio Anda untuk memasangkannya dengan Windows",
+    "stagePairingWindows": "Memasangkan dengan Windows…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

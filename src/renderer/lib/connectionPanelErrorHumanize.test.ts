@@ -187,7 +187,7 @@ describe('humanizeBleError', () => {
   });
 
   it.each([
-    ['win32', 'stackUnresponsiveWindows'],
+    ['win32', 'stackUnresponsiveWindowsRePair'],
     ['linux', 'stackUnresponsiveGeneric'],
     ['darwin', 'stackUnresponsiveGeneric'],
   ] as const)('maps wedged Bluetooth stack errors on %s to %s', (platform, hintKey) => {

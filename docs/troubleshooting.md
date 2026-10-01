@@ -973,15 +973,15 @@ The client deduplicates overlapping RF and MQTT hears within **5 minutes** (cros
 
 - The device must be **flashed as Companion Bluetooth** (the default BLE flashing mode).
 - The device must be **paired** with your computer before connecting:
-  - **Windows**: Pair first in **Settings → Bluetooth & devices → Add device**, then connect from the app.
+  - **Windows**: Do **not** pair in Windows Settings. Select the radio in mesh-client. If Windows has no bond for it, mesh-client asks for the **PIN shown on the radio's screen** (radios without a screen use the firmware's fixed PIN) and pairs it for you, the same way the MeshCore web app does in Chrome. A radio that is already paired connects without a prompt.
   - **Linux**: Use **`bluetoothctl pair <MAC>`** first, or let the app handle the pairing prompt. See [BLE known issues](#ble-known-issues) for detailed steps.
 - **Only one app can be connected at a time.** MeshCore companion firmware accepts a single BLE connection and stops advertising while a phone app (for example the MeshCore iOS/Android app) is connected. The iOS Control Center Bluetooth toggle does not fully turn Bluetooth off, so force-quit the phone app and use **Settings → Bluetooth → Forget This Device** on the phone before pairing with the computer.
 - **Windows shows "Connected" for about 1 second, then "Not connected" (never "Paired")**, or mesh-client logs `connect timed out: Bluetooth stack unresponsive` followed by `scan refused: Bluetooth stack unresponsive (… earlier call(s) still stuck)`: Windows pairing did not finish, and the Bluetooth stack is stuck on the half-paired device. mesh-client refuses further scans and connects until that stuck call returns.
   1. On the phone: force-quit the MeshCore app and forget the radio in Bluetooth settings.
   2. On Windows: in **Settings → Bluetooth & devices**, remove every entry for the radio (including duplicates or greyed-out ones).
-  3. Power-cycle the radio to drop any hidden connection.
-  4. Pair again in Windows using the **PIN shown on the radio's screen** (radios without a screen use the firmware's fixed PIN). Wait until Windows shows **Paired**.
-  5. Fully restart mesh-client, then connect.
+  3. Power-cycle the radio to drop any hidden connection, then fully restart mesh-client.
+  4. Select the radio in mesh-client and enter the **PIN shown on the radio's screen** when asked. If the connect fails again, press **Remove & Re-pair Device** in the connection panel: mesh-client removes the stale Windows bond, asks for the PIN, pairs, and connects.
+  5. A wrong PIN keeps the PIN prompt open so you can retry.
   6. If pairing still fails, clear the radio's stored pairings from the MeshCore app or CLI, or connect over USB serial (Companion USB firmware) to confirm the radio works.
 - **Try in the official MeshCore app first**: if the device connects there, it will work in Mesh-Client.
 - If Bluetooth fails, try serial (USB) or HTTP as alternatives.

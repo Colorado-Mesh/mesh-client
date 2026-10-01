@@ -23,6 +23,11 @@ export interface GattDiscoveredDevice {
 
 export type GattConnectResult = { ok: true } | { ok: false; error: string; code?: string };
 
+export type GattPairStateResult =
+  { ok: true; paired: boolean } | { ok: false; code: string; error: string };
+
+export type GattPairResult = { ok: true } | { ok: false; code: string; error: string };
+
 export type GattStartScanResult =
   | { ok: true }
   | { ok: false; code: 'scan_busy'; owner: string }
@@ -54,6 +59,10 @@ const GATT_RSSI_POLL_MS = 4_000;
 const GATT_HTTP_TIMEOUT_MS = 3_000;
 /** Connect / scan may include an unfiltered discovery sleep (~8s) plus GATT open. */
 const GATT_HTTP_LONG_TIMEOUT_MS = 45_000;
+/** Sidecar bounds WinRT pairing at 60s (user may still be reading the PIN off the radio). */
+const GATT_HTTP_PAIR_TIMEOUT_MS = 65_000;
+/** Sidecar bounds WinRT pair-state / unpair at 10s. */
+const GATT_HTTP_PAIR_STATE_TIMEOUT_MS = 12_000;
 /** Hard ceiling for quit-time disconnectAll. */
 const GATT_DISCONNECT_ALL_BUDGET_MS = 2_000;
 /**
@@ -377,6 +386,51 @@ export class GattSidecarProxy extends EventEmitter {
       }
       if (!reservation.sidecarSessionId) this.releaseReservation(attempt);
     }
+  }
+
+  private pairFailure(
+    body: Record<string, unknown>,
+    fallback: string,
+  ): { ok: false; code: string; error: string } {
+    return {
+      ok: false,
+      code: typeof body.code === 'string' ? sanitizeForLogSink(body.code) : 'internal',
+      error: sanitizeForLogSink(unknownMessage(body.error, fallback)),
+    };
+  }
+
+  /** Windows in-app pairing: does the OS hold a bond for this radio? */
+  async pairState(address: string): Promise<GattPairStateResult> {
+    const { status, body } = await this.jsonFetch(
+      `/api/v1/gatt/pair-state?address=${encodeURIComponent(address)}`,
+      undefined,
+      { timeoutMs: GATT_HTTP_PAIR_STATE_TIMEOUT_MS },
+    );
+    if (status >= 200 && status < 300 && body.ok === true && typeof body.paired === 'boolean') {
+      return { ok: true, paired: body.paired };
+    }
+    return this.pairFailure(body, 'pair state failed');
+  }
+
+  /** Windows in-app pairing with a user-entered PIN. The PIN is never logged. */
+  async pair(address: string, pin: string): Promise<GattPairResult> {
+    const { status, body } = await this.jsonFetch(
+      '/api/v1/gatt/pair',
+      { method: 'POST', body: JSON.stringify({ address, pin }) },
+      { timeoutMs: GATT_HTTP_PAIR_TIMEOUT_MS },
+    );
+    if (status >= 200 && status < 300 && body.ok === true) return { ok: true };
+    return this.pairFailure(body, 'pairing failed');
+  }
+
+  async unpair(address: string): Promise<GattPairResult> {
+    const { status, body } = await this.jsonFetch(
+      '/api/v1/gatt/unpair',
+      { method: 'POST', body: JSON.stringify({ address }) },
+      { timeoutMs: GATT_HTTP_PAIR_STATE_TIMEOUT_MS },
+    );
+    if (status >= 200 && status < 300 && body.ok === true) return { ok: true };
+    return this.pairFailure(body, 'unpair failed');
   }
 
   private startRssiPoll(sessionId: GattSessionProfile): void {

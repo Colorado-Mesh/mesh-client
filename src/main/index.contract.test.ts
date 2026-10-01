@@ -33,6 +33,12 @@ describe('GATT BLE disconnect handling (source contract)', () => {
     expect(INDEX_SOURCE).toContain('await writeGattToRadio(gattSidecarProxy, sessionId, buf)');
   });
 
+  it('registers Windows in-app pairing IPC serialized with GATT scans', () => {
+    expect(INDEX_SOURCE).toMatch(
+      /registerGattPairingIpcHandlers\(\{[\s\S]{0,200}bleCoexistenceCoordinator\.withScan\('gatt', operation\)/,
+    );
+  });
+
   it('latches isQuitting before async GATT teardown on before-quit', () => {
     expect(INDEX_SOURCE).toMatch(
       /app\.on\('before-quit'[\s\S]{0,800}isQuitting = true;[\s\S]{0,200}event\.preventDefault\(\)/,

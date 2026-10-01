@@ -135,6 +135,13 @@ import type {
   MQTTStatus,
   SerialPortInfo,
 } from '../lib/types';
+import {
+  getWindowsBlePairState,
+  isWindowsPinRejected,
+  pairWindowsBle,
+  shouldOfferWindowsRePair,
+  unpairWindowsBle,
+} from '../lib/windowsBlePairing';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { BleWeakSignalBanner } from './BleWeakSignalBanner';
@@ -813,9 +820,10 @@ export default function ConnectionPanel({
   // Tracks BLE device MAC for potential re-pairing on Linux
   const lastSelectedBleMacRef = useRef<string | null>(null);
   /**
-   * Linux pairing completes before opening the sidecar GATT session.
+   * Linux (bluetoothctl) / Windows (WinRT in-app) pairing completes before opening the
+   * sidecar GATT session.
    */
-  const pendingLinuxBleDeviceRef = useRef<{ deviceId: string } | null>(null);
+  const pendingPairBleDeviceRef = useRef<{ deviceId: string } | null>(null);
   const manualBleScanActiveRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
@@ -860,10 +868,10 @@ export default function ConnectionPanel({
   }, [protocol]);
 
   useEffect(() => {
-    pendingLinuxBleDeviceRef.current = null;
+    pendingPairBleDeviceRef.current = null;
     manualBleScanActiveRef.current = false;
     return () => {
-      pendingLinuxBleDeviceRef.current = null;
+      pendingPairBleDeviceRef.current = null;
       manualBleScanActiveRef.current = false;
     };
   }, [protocol]);
@@ -1039,7 +1047,10 @@ export default function ConnectionPanel({
         clearMeshcoreBleSelectionOnMissingServices(err);
         const bleErrMsg = humanizeBleError(err, t);
         if (bleErrMsg) setError(bleErrMsg);
-        if (isLinux && shouldShowLinuxRePairFromBleError(err, bleErrMsg)) {
+        if (
+          (isLinux && shouldShowLinuxRePairFromBleError(err, bleErrMsg)) ||
+          (isWindows && shouldOfferWindowsRePair(err))
+        ) {
           setShowRePairButton(true);
           setConnectionStage('connectionPanel.stagePairingFailed');
         } else {
@@ -1048,7 +1059,62 @@ export default function ConnectionPanel({
         setConnecting(false);
       }
     },
-    [onConnect, clearMeshcoreBleSelectionOnMissingServices, isLinux, t],
+    [onConnect, clearMeshcoreBleSelectionOnMissingServices, isLinux, isWindows, t],
+  );
+
+  /** Windows: show the in-app PIN prompt for a radio the OS has no bond for. */
+  const promptWindowsPairing = useCallback(
+    (deviceId: string) => {
+      pendingPairBleDeviceRef.current = { deviceId };
+      lastSelectedBleMacRef.current = deviceId;
+      setManualPairingFallback(false);
+      setPinInputValue(protocol === 'meshtastic' ? '123456' : '');
+      setShowPinPrompt(true);
+      setConnecting(false);
+      setConnectionStage('connectionPanel.stageEnterPinWindows');
+    },
+    [protocol],
+  );
+
+  /** Windows: pair in-app with the PIN, then connect. Wrong PIN keeps the prompt open. */
+  const pairWindowsThenConnect = useCallback(
+    async (deviceId: string, pin: string, unpairFirst: boolean) => {
+      const pendingDevice = { deviceId };
+      pendingPairBleDeviceRef.current = pendingDevice;
+      try {
+        setError(null);
+        setConnecting(true);
+        if (unpairFirst) {
+          setShowPinPrompt(false);
+          setConnectionStage('connectionPanel.stageRemoving');
+          await unpairWindowsBle(deviceId);
+          if (pendingPairBleDeviceRef.current !== pendingDevice) return;
+        }
+        setConnectionStage('connectionPanel.stagePairingWindows');
+        await pairWindowsBle(deviceId, pin);
+        if (pendingPairBleDeviceRef.current !== pendingDevice) return;
+        pendingPairBleDeviceRef.current = null;
+        setShowPinPrompt(false);
+        setPinInputValue('');
+        setManualPairingFallback(false);
+        setShowRePairButton(false);
+        await connectSelectedBleDevice(deviceId);
+      } catch (err) {
+        if (pendingPairBleDeviceRef.current !== pendingDevice) return;
+        console.warn('[ConnectionPanel] Windows in-app pairing failed: ' + errLikeToLogString(err));
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(
+          isWindowsPinRejected(err)
+            ? t('connectionPanel.error.windowsPinRejected')
+            : t('connectionPanel.error.pairingFailed', { msg }),
+        );
+        setManualPairingFallback(false);
+        setShowPinPrompt(true);
+        setConnectionStage('connectionPanel.stageEnterPinWindows');
+        setConnecting(false);
+      }
+    },
+    [connectSelectedBleDevice, t],
   );
 
   // Handle PIN submission for pairing
@@ -1058,7 +1124,17 @@ export default function ConnectionPanel({
       setError(t('connectionPanel.error.pinFormat'));
       return;
     }
-    const pendingDevice = pendingLinuxBleDeviceRef.current;
+    const pendingDevice = pendingPairBleDeviceRef.current;
+    if (isWindows && capabilities.hasGattBleScanning) {
+      // OS-specific: WinRT custom pairing via the sidecar (Settings pairing is unreliable).
+      const deviceId = manualPairingFallback
+        ? lastSelectedBleMacRef.current
+        : pendingDevice?.deviceId;
+      if (deviceId) {
+        await pairWindowsThenConnect(deviceId, normalizedPin, manualPairingFallback);
+        return;
+      }
+    }
     if (pendingDevice && isLinux && !manualPairingFallback) {
       try {
         setError(null);
@@ -1070,14 +1146,14 @@ export default function ConnectionPanel({
         } catch {
           // catch-no-log-ok -- diagnostics only
         }
-        if (pendingLinuxBleDeviceRef.current !== pendingDevice) return;
-        pendingLinuxBleDeviceRef.current = null;
+        if (pendingPairBleDeviceRef.current !== pendingDevice) return;
+        pendingPairBleDeviceRef.current = null;
         setShowPinPrompt(false);
         setPinInputValue('');
         setConnectionStage('connectionPanel.stageConnecting');
         await connectSelectedBleDevice(pendingDevice.deviceId);
       } catch (err) {
-        if (pendingLinuxBleDeviceRef.current !== pendingDevice) return;
+        if (pendingPairBleDeviceRef.current !== pendingDevice) return;
         const msg = err instanceof Error ? err.message : String(err);
         console.warn('[ConnectionPanel] BLE pre-connect pair failed: ' + errLikeToLogString(err));
         setError(t('connectionPanel.error.pairingFailed', { msg }));
@@ -1141,11 +1217,20 @@ export default function ConnectionPanel({
     }
     setShowPinPrompt(false);
     setPinInputValue('');
-  }, [pinInputValue, manualPairingFallback, isLinux, connectSelectedBleDevice, t]);
+  }, [
+    pinInputValue,
+    manualPairingFallback,
+    isLinux,
+    isWindows,
+    capabilities.hasGattBleScanning,
+    pairWindowsThenConnect,
+    connectSelectedBleDevice,
+    t,
+  ]);
 
   // Cancel also invalidates an in-flight OS pairing result.
   const handlePinCancel = useCallback(() => {
-    pendingLinuxBleDeviceRef.current = null;
+    pendingPairBleDeviceRef.current = null;
     setShowPinPrompt(false);
     setManualPairingFallback(false);
     setPinInputValue('');
@@ -1199,7 +1284,7 @@ export default function ConnectionPanel({
     setShowBlePicker(false);
     setShowSerialPicker(false);
     setShowPinPrompt(false);
-    pendingLinuxBleDeviceRef.current = null;
+    pendingPairBleDeviceRef.current = null;
     manualBleScanActiveRef.current = false;
     setConnectionStage('connectionPanel.stagePleaseWait');
 
@@ -1256,7 +1341,7 @@ export default function ConnectionPanel({
     }
     if (showBlePicker || connectionType === 'ble') {
       manualBleScanActiveRef.current = false;
-      pendingLinuxBleDeviceRef.current = null;
+      pendingPairBleDeviceRef.current = null;
       setShowPinPrompt(false);
       setManualPairingFallback(false);
       if (capabilities.hasGattBleScanning) {
@@ -1315,14 +1400,14 @@ export default function ConnectionPanel({
       if (isLinux) {
         // OS-specific: BlueZ pairing uses bluetoothctl with the PIN entered in this panel.
         const pendingDevice = { deviceId };
-        pendingLinuxBleDeviceRef.current = pendingDevice;
+        pendingPairBleDeviceRef.current = pendingDevice;
         setConnectionStage('connectionPanel.stageCheckingPairing');
         void (async () => {
           try {
             const info = await window.electronAPI.bluetoothGetInfo(deviceId);
-            if (pendingLinuxBleDeviceRef.current !== pendingDevice) return;
+            if (pendingPairBleDeviceRef.current !== pendingDevice) return;
             if (parseBluetoothctlPairedState(info) === 'yes') {
-              pendingLinuxBleDeviceRef.current = null;
+              pendingPairBleDeviceRef.current = null;
               await connectSelectedBleDevice(deviceId);
               return;
             }
@@ -1331,7 +1416,7 @@ export default function ConnectionPanel({
               '[ConnectionPanel] pairing status unavailable ' + errLikeToLogString(err),
             );
           }
-          if (pendingLinuxBleDeviceRef.current !== pendingDevice) return;
+          if (pendingPairBleDeviceRef.current !== pendingDevice) return;
           setManualPairingFallback(false);
           setPinInputValue(protocol === 'meshtastic' ? '123456' : '');
           setShowPinPrompt(true);
@@ -1339,9 +1424,34 @@ export default function ConnectionPanel({
         })();
         return;
       }
+      if (isWindows && capabilities.hasGattBleScanning) {
+        // OS-specific: an unpaired radio can wedge btleplug's WinRT connect; pair in-app first.
+        const pendingDevice = { deviceId };
+        pendingPairBleDeviceRef.current = pendingDevice;
+        setConnectionStage('connectionPanel.stageCheckingPairing');
+        void (async () => {
+          const pairState = await getWindowsBlePairState(deviceId);
+          if (pendingPairBleDeviceRef.current !== pendingDevice) return;
+          if (pairState === 'unpaired') {
+            promptWindowsPairing(deviceId);
+            return;
+          }
+          pendingPairBleDeviceRef.current = null;
+          await connectSelectedBleDevice(deviceId);
+        })();
+        return;
+      }
       void connectSelectedBleDevice(deviceId);
     },
-    [bleDevices, isLinux, connectSelectedBleDevice, protocol, capabilities.hasGattBleScanning],
+    [
+      bleDevices,
+      isLinux,
+      isWindows,
+      connectSelectedBleDevice,
+      promptWindowsPairing,
+      protocol,
+      capabilities.hasGattBleScanning,
+    ],
   );
 
   const handleSelectSerialPort = useCallback((portId: string) => {
@@ -1386,7 +1496,7 @@ export default function ConnectionPanel({
         setBleDevices([]);
         setShowBlePicker(false);
         manualBleScanActiveRef.current = false;
-        pendingLinuxBleDeviceRef.current = null;
+        pendingPairBleDeviceRef.current = null;
         isAutoConnectingRef.current = true;
         setIsAutoConnecting(true);
         setConnecting(true);
@@ -1394,6 +1504,17 @@ export default function ConnectionPanel({
         const matchIds = [bleDeviceId, lastConnection.bleMac].filter(
           (id): id is string => typeof id === 'string' && id.trim().length > 0,
         );
+        lastSelectedBleMacRef.current = bleDeviceId;
+        if (isWindows && capabilities.hasGattBleScanning) {
+          // OS-specific: skip a doomed WinRT connect (wedges for ~41s) when the bond is gone.
+          setConnectionStage('connectionPanel.stageCheckingPairing');
+          if ((await getWindowsBlePairState(bleDeviceId)) === 'unpaired') {
+            isAutoConnectingRef.current = false;
+            setIsAutoConnecting(false);
+            promptWindowsPairing(bleDeviceId);
+            return;
+          }
+        }
         setConnectionStage('connectionPanel.stageConnecting');
         try {
           await reconnectBleWithScan(
@@ -1413,8 +1534,10 @@ export default function ConnectionPanel({
           clearMeshcoreBleSelectionOnMissingServices(err);
           const bleErrMsg = humanizeBleError(err, t);
           if (bleErrMsg) setError(bleErrMsg);
-          const isPairingRelatedError = shouldShowLinuxRePairFromBleError(err, bleErrMsg);
-          if (isLinux && isPairingRelatedError) {
+          const isPairingRelatedError = isWindows
+            ? shouldOfferWindowsRePair(err)
+            : shouldShowLinuxRePairFromBleError(err, bleErrMsg);
+          if ((isLinux || isWindows) && isPairingRelatedError) {
             setShowRePairButton(true);
             setShowBlePicker(false);
             setConnectionStage('connectionPanel.stagePairingFailed');
@@ -1496,6 +1619,9 @@ export default function ConnectionPanel({
     protocol,
     tcpHost,
     isLinux,
+    isWindows,
+    capabilities.hasGattBleScanning,
+    promptWindowsPairing,
     clearMeshcoreBleSelectionOnMissingServices,
     t,
   ]);
@@ -1701,7 +1827,7 @@ export default function ConnectionPanel({
                   i18nKey="connectionPanel.meshcoreBlePairingHint"
                   components={{ strong: <strong /> }}
                 />
-                {isWindows && <> {t('connectionPanel.meshcoreBlePairingExpectationsHint')}</>}
+                {isWindows && <> {t('connectionPanel.meshcoreBleWindowsInAppPairingHint')}</>}
               </p>
             )}
           </div>
@@ -1779,7 +1905,7 @@ export default function ConnectionPanel({
           </div>
         )}
 
-        {/* Re-pair button for Linux BLE pairing issues */}
+        {/* Re-pair button for Linux / Windows BLE pairing issues */}
         {showRePairButton && (
           <Button variant="primary" onClick={handleRePair}>
             {t('connectionPanel.rePairDevice')}
@@ -2841,7 +2967,7 @@ export default function ConnectionPanel({
               </div>
             )}
 
-            {showRePairButton && isLinux && connectionType === 'ble' && (
+            {showRePairButton && (isLinux || isWindows) && connectionType === 'ble' && (
               <Button variant="primary" onClick={handleRePair}>
                 {t('connectionPanel.rePairDevice')}
               </Button>

@@ -1034,8 +1034,8 @@
         "sameDeviceConflict": "该蓝牙设备已连接到 {{owner}}。",
         "chooserCancelledHint": "如果您没有取消，请确保蓝牙已打开（systemctl status bluetooth），然后再次点击“连接”。在 Flatpak 上，重新安装允许蓝牙的版本，或使用 AppImage/.deb/.rpm。",
         "bluetoothctlMissingHint": "操作系统蓝牙配对工具在此环境中不可用（在 Flatpak 中常见）。使用官方 AppImage、.deb 或 .rpm，或将无线电与主机 bluetoothctl 配对，然后重试连接。",
-        "stackUnresponsiveWindows": "Windows蓝牙在较早的连接尝试中卡住了，通常是未完成的配对。在“设置” > “蓝牙和设备”中删除收音机，再次将其与收音机上显示的PIN码配对，直到Windows显示“已配对”，然后重新启动 mesh-client。",
-        "stackUnresponsiveGeneric": "蓝牙在较早的连接尝试中被卡住。关闭和打开蓝牙，根据需要重新配对收音机，然后重新启动 mesh-client。"
+        "stackUnresponsiveGeneric": "蓝牙在较早的连接尝试中被卡住。关闭和打开蓝牙，根据需要重新配对收音机，然后重新启动 mesh-client。",
+        "stackUnresponsiveWindowsRePair": "Windows蓝牙在较早的连接尝试中被卡住，通常是因为无线电未正确配对。按下“删除并重新配对设备” ，然后输入收音机上显示的PIN码。如果仍然拒绝连接，请重新启动mesh-client并重试。"
       }
     },
     "error": {
@@ -1044,7 +1044,8 @@
       "pairingFailed": "配对失败：{{msg}}",
       "pinPairingFailed": "PIN 配对失败：{{msg}}",
       "pinAcceptedNext": "PIN 码已接受。配对完成。按“连接”并选择您的设备以完成连接。",
-      "connectionFailed": "连接失败"
+      "connectionFailed": "连接失败",
+      "windowsPinRejected": "Windows拒绝了该PIN。检查收音机屏幕上显示的PIN ，然后重试（没有屏幕的收音机使用固件的固定PIN ）。"
     },
     "cancelMqttConnect": "取消",
     "ripplePresetConfirm": "Ripple预设使用共享社区凭据并禁用TLS证书验证。仅在受信任的网络上使用此功能。是否继续？",
@@ -1620,7 +1621,9 @@
     "moreDisconnectOptions": "更多断开选项",
     "disconnectOptions": "断开选项",
     "lastConnectionLabel": "上次连接",
-    "meshcoreBlePairingExpectationsHint": "在Windows上，设备可能会显示“已连接”一秒钟，然后显示“已配对” —这是预期的。首先关闭手机上的MeshCore应用程序；收音机一次只接受一个蓝牙连接。"
+    "meshcoreBleWindowsInAppPairingHint": "在Windows上，在此处选择收音机并输入其屏幕上显示的PIN。mesh-client为您配对，因此您无需在Windows设置中进行配对。首先关闭手机上的MeshCore应用程序；收音机一次只接受一个蓝牙连接。",
+    "stageEnterPinWindows": "输入收音机上显示的PIN码，以便与Windows配对",
+    "stagePairingWindows": "正在与Windows配对…"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "无法加载会员： {{message}}",

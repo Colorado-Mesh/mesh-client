@@ -114,6 +114,9 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             "/api/v1/gatt/clear-bond-recovery",
             post(gatt::gatt_clear_bond_recovery),
         )
+        .route("/api/v1/gatt/pair-state", get(gatt::gatt_pair_state))
+        .route("/api/v1/gatt/pair", post(gatt::gatt_pair))
+        .route("/api/v1/gatt/unpair", post(gatt::gatt_unpair))
         .route("/api/v1/gatt/sessions", post(gatt::gatt_create_session))
         .route(
             "/api/v1/gatt/sessions/{session_id}",

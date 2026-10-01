@@ -1052,8 +1052,8 @@
         "sameDeviceConflict": "Toto zařízení Bluetooth je již připojeno k {{owner}}.",
         "chooserCancelledHint": "Pokud jste to nezrušili, ujistěte se, že je Bluetooth zapnuto (systemctl status bluetooth), potom znovu klepněte na Připojit. Na Flatpak přeinstalujte sestavení s povoleným Bluetooth nebo použijte AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Nástroje pro párování OS Bluetooth nejsou v tomto prostředí dostupné (běžné ve Flatpak). Použijte oficiální AppImage, .deb nebo .rpm, nebo spárujte rádio s hostitelským bluetoothctl a poté znovu zkuste Connect.",
-        "stackUnresponsiveWindows": "Windows Bluetooth se zasekl na dřívějším pokusu o připojení, obvykle nedokončeném párování. Vyjměte rádio v Nastavení > Bluetooth a zařízení, znovu jej spárujte s KÓDEM PIN zobrazeným v rádiu, dokud se v systému Windows nezobrazí „Spárováno“, a poté restartujte mesh-client.",
-        "stackUnresponsiveGeneric": "Bluetooth se zasekl při dřívějším pokusu o připojení. Vypněte a zapněte Bluetooth, v případě potřeby rádio znovu spárujte a poté restartujte mesh-client."
+        "stackUnresponsiveGeneric": "Bluetooth se zasekl při dřívějším pokusu o připojení. Vypněte a zapněte Bluetooth, v případě potřeby rádio znovu spárujte a poté restartujte mesh-client.",
+        "stackUnresponsiveWindowsRePair": "Systém Windows Bluetooth se zasekl při dřívějším pokusu o připojení, obvykle proto, že rádio není správně spárováno. Stiskněte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený v rádiu. Pokud je připojení stále odmítnuto, restartujte mesh-client a zkuste to znovu."
       }
     },
     "error": {
@@ -1062,7 +1062,8 @@
       "pairingFailed": "Párování se nezdařilo: {{msg}}",
       "pinPairingFailed": "Párování PIN se nezdařilo: {{msg}}",
       "pinAcceptedNext": "PIN přijat. Párování dokončeno. Stiskněte Připojit a dokončete připojení výběrem zařízení.",
-      "connectionFailed": "Připojení se nezdařilo"
+      "connectionFailed": "Připojení se nezdařilo",
+      "windowsPinRejected": "Systém Windows tento PIN odmítl. Zkontrolujte PIN zobrazený na obrazovce rádia a zkuste to znovu (rádia bez obrazovky používají pevný PIN firmwaru)."
     },
     "cancelMqttConnect": "Zrušit",
     "ripplePresetConfirm": "Přednastavení Ripple používá sdílené přihlašovací údaje komunity a zakazuje ověření certifikátu TLS. Použít pouze v důvěryhodné síti. Pokračovat?",
@@ -1639,7 +1640,9 @@
     "moreDisconnectOptions": "Další možnosti odpojení",
     "disconnectOptions": "Možnosti odpojení",
     "lastConnectionLabel": "Poslední připojení",
-    "meshcoreBlePairingExpectationsHint": "V systému Windows může zařízení na sekundu zobrazit „Připojeno“ a poté „Spárováno“ — to se očekává. Nejprve zavřete aplikaci MeshCore v telefonu; rádio přijímá pouze jedno připojení Bluetooth najednou."
+    "meshcoreBleWindowsInAppPairingHint": "V systému Windows zde vyberte rádio a zadejte KÓD PIN zobrazený na obrazovce. mesh-client jej spáruje za vás, takže jej nemusíte spárovat v nastavení systému Windows. Nejprve zavřete aplikaci MeshCore v telefonu; rádio přijímá pouze jedno připojení Bluetooth najednou.",
+    "stageEnterPinWindows": "Pro spárování s Windows zadejte PIN zobrazený v rádiu",
+    "stagePairingWindows": "Párování s Windows..."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
