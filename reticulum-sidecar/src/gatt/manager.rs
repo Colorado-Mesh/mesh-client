@@ -565,15 +565,25 @@ impl GattManager {
     }
 
     /// Pairing / unpairing a radio we hold a GATT session for would yank the link mid-session.
-    async fn ensure_address_idle(&self, address: &str) -> Result<(), GattError> {
+    /// Reserves the address (`None`) so a connect cannot claim it while the bond changes.
+    async fn reserve_idle_address(&self, address: &str) -> Result<String, GattError> {
         let key = normalize_address(address)?;
-        if self.by_address.lock().await.contains_key(&key) {
+        let mut addresses = self.by_address.lock().await;
+        if addresses.contains_key(&key) {
             return Err(GattError::new(
                 GattErrorCode::MacConflict,
                 "disconnect the radio before pairing or unpairing it",
             ));
         }
-        Ok(())
+        addresses.insert(key.clone(), None);
+        Ok(key)
+    }
+
+    async fn release_address_reservation(&self, key: &str) {
+        let mut addresses = self.by_address.lock().await;
+        if matches!(addresses.get(key), Some(None)) {
+            addresses.remove(key);
+        }
     }
 
     pub async fn pair_state(&self, address: &str) -> Result<PairState, GattError> {
@@ -581,13 +591,17 @@ impl GattManager {
     }
 
     pub async fn pair_with_pin(&self, address: &str, pin: &str) -> Result<(), GattError> {
-        self.ensure_address_idle(address).await?;
-        windows_pairing::pair_with_pin(address, pin).await
+        let key = self.reserve_idle_address(address).await?;
+        let result = windows_pairing::pair_with_pin(address, pin).await;
+        self.release_address_reservation(&key).await;
+        result
     }
 
     pub async fn unpair(&self, address: &str) -> Result<(), GattError> {
-        self.ensure_address_idle(address).await?;
-        windows_pairing::unpair(address).await
+        let key = self.reserve_idle_address(address).await?;
+        let result = windows_pairing::unpair(address).await;
+        self.release_address_reservation(&key).await;
+        result
     }
 
     pub async fn write(&self, session_id: &str, payload: &[u8]) -> Result<(), GattError> {
@@ -785,6 +799,38 @@ mod tests {
                 .code,
             GattErrorCode::Unsupported
         );
+        // The pairing reservation is released on failure, so connect works again.
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+            .await
+            .unwrap();
+        mgr.disconnect(&sid).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn connect_refused_while_pairing_reserves_address() {
+        let mgr = GattManager::new(GattBackend::fake());
+        let key = mgr.reserve_idle_address("ef:4f:4f:1c:23:73").await.unwrap();
+        assert_eq!(
+            mgr.connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
+        assert_eq!(
+            mgr.reserve_idle_address("EF-4F-4F-1C-23-73")
+                .await
+                .unwrap_err()
+                .code,
+            GattErrorCode::MacConflict
+        );
+        mgr.release_address_reservation(&key).await;
+        let (sid, _) = mgr
+            .connect(GattProfile::Meshcore, "EF:4F:4F:1C:23:73")
+            .await
+            .unwrap();
+        mgr.disconnect(&sid).await.unwrap();
     }
 
     #[tokio::test]

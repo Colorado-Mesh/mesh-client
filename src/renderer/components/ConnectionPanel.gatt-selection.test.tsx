@@ -296,6 +296,40 @@ describe('ConnectionPanel manual GATT selection', () => {
       ).toBeInTheDocument();
     });
 
+    it('rejects a PIN shorter than 4 digits before calling Windows pairing', async () => {
+      const user = userEvent.setup();
+      vi.mocked(window.electronAPI.gattPairState).mockResolvedValue({ ok: true, paired: false });
+      const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
+      await selectRadio(user);
+      await user.type(await screen.findByPlaceholderText('PIN'), '123');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+      expect(await screen.findByText(/PIN must be/)).toBeInTheDocument();
+      expect(window.electronAPI.gattPair).not.toHaveBeenCalled();
+      expect(onConnect).not.toHaveBeenCalled();
+    });
+
+    it('Reconnect stops when cancelled while the pair state is still loading', async () => {
+      const user = userEvent.setup();
+      localStorage.setItem(
+        'mesh-client:lastConnection:meshcore',
+        JSON.stringify({ type: 'ble', bleDeviceId: device.deviceId }),
+      );
+      let resolvePairState: (value: { ok: true; paired: boolean }) => void = () => {};
+      vi.mocked(window.electronAPI.gattPairState).mockReturnValue(
+        new Promise((resolve) => {
+          resolvePairState = resolve;
+        }),
+      );
+      const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
+      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      await user.click(await screen.findByRole('button', { name: 'Cancel' }));
+      resolvePairState({ ok: true, paired: false });
+      await new Promise((r) => setTimeout(r, 0));
+      expect(screen.queryByPlaceholderText('PIN')).not.toBeInTheDocument();
+      expect(onConnect).not.toHaveBeenCalled();
+      expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+    });
+
     it('Reconnect prompts for a PIN instead of a doomed connect when the bond is gone', async () => {
       const user = userEvent.setup();
       localStorage.setItem(

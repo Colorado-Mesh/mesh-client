@@ -10,9 +10,12 @@
 //! Other platforms return `Unsupported`: Linux pairs via bluetoothctl in Electron
 //! and macOS CoreBluetooth shows its own pairing dialog.
 
-use std::time::Duration;
+use std::collections::HashMap;
+use std::sync::{Arc, LazyLock};
+use std::time::{Duration, Instant};
 
 use serde::Serialize;
+use tokio::sync::Semaphore;
 
 use super::error::{GattError, GattErrorCode};
 
@@ -124,6 +127,51 @@ where
     }
 }
 
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn address_lock(addr: u64) -> Arc<Semaphore> {
+    static LOCKS: LazyLock<std::sync::Mutex<HashMap<u64, Arc<Semaphore>>>> =
+        LazyLock::new(|| std::sync::Mutex::new(HashMap::new()));
+    let mut locks = LOCKS
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    Arc::clone(
+        locks
+            .entry(addr)
+            .or_insert_with(|| Arc::new(Semaphore::new(1))),
+    )
+}
+
+/// Pair/unpair for one address, one at a time. The permit moves into the blocking
+/// closure: a timed-out WinRT call keeps running, and a retry must not overlap it.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+async fn run_exclusive<T, F>(
+    addr: u64,
+    op: &'static str,
+    budget: Duration,
+    f: F,
+) -> Result<T, GattError>
+where
+    T: Send + 'static,
+    F: FnOnce() -> Result<T, GattError> + Send + 'static,
+{
+    let deadline = Instant::now() + budget;
+    let permit = tokio::time::timeout(budget, address_lock(addr).acquire_owned())
+        .await
+        .map_err(|_| {
+            GattError::new(
+                GattErrorCode::ConnectTimeout,
+                format!("windows {op} timed out waiting for an earlier pairing call"),
+            )
+        })?
+        .map_err(|e| GattError::new(GattErrorCode::Internal, format!("windows {op}: {e}")))?;
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    run_blocking(op, remaining, move || {
+        let _permit = permit;
+        f()
+    })
+    .await
+}
+
 #[cfg_attr(not(target_os = "windows"), allow(clippy::unused_async))]
 pub async fn pair_state(address: &str) -> Result<PairState, GattError> {
     let addr = require_address(address)?;
@@ -144,7 +192,7 @@ pub async fn pair_with_pin(address: &str, pin: &str) -> Result<(), GattError> {
     let pin = validate_pin(pin)?;
     #[cfg(target_os = "windows")]
     {
-        run_blocking("pair", PAIR_TIMEOUT, move || imp::pair(addr, &pin)).await
+        run_exclusive(addr, "pair", PAIR_TIMEOUT, move || imp::pair(addr, &pin)).await
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -158,7 +206,7 @@ pub async fn unpair(address: &str) -> Result<(), GattError> {
     let addr = require_address(address)?;
     #[cfg(target_os = "windows")]
     {
-        run_blocking("unpair", STATE_TIMEOUT, move || imp::unpair(addr)).await
+        run_exclusive(addr, "unpair", STATE_TIMEOUT, move || imp::unpair(addr)).await
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -387,5 +435,35 @@ mod tests {
         .await
         .expect_err("timeout");
         assert_eq!(err.code, GattErrorCode::ConnectTimeout);
+    }
+
+    #[tokio::test]
+    async fn run_exclusive_holds_address_until_timed_out_call_returns() {
+        let addr = 0x00AA_BBCC_DDEE;
+        let err = run_exclusive(addr, "pair", Duration::from_millis(20), || {
+            std::thread::sleep(Duration::from_millis(300));
+            Ok(())
+        })
+        .await
+        .expect_err("first call times out");
+        assert_eq!(err.code, GattErrorCode::ConnectTimeout);
+
+        let retry = run_exclusive(addr, "pair", Duration::from_millis(50), || Ok(()))
+            .await
+            .expect_err("retry must wait for the still-running call");
+        assert!(
+            retry.message.contains("earlier pairing call"),
+            "{}",
+            retry.message
+        );
+
+        run_exclusive(0x0011_2233_4455, "pair", Duration::from_millis(50), || {
+            Ok(())
+        })
+        .await
+        .expect("other addresses are not blocked");
+        run_exclusive(addr, "pair", Duration::from_secs(2), || Ok(()))
+            .await
+            .expect("permit released once the blocking call returns");
     }
 }

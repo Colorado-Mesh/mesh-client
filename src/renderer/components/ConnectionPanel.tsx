@@ -824,6 +824,7 @@ export default function ConnectionPanel({
    * sidecar GATT session.
    */
   const pendingPairBleDeviceRef = useRef<{ deviceId: string } | null>(null);
+  const windowsReconnectAttemptRef = useRef<object | null>(null);
   const manualBleScanActiveRef = useRef(false);
   const lastConnectionBleDeviceNameFallbackRef = useRef(lastConnection?.bleDeviceName);
   lastConnectionBleDeviceNameFallbackRef.current = lastConnection?.bleDeviceName;
@@ -1131,6 +1132,10 @@ export default function ConnectionPanel({
         ? lastSelectedBleMacRef.current
         : pendingDevice?.deviceId;
       if (deviceId) {
+        if (!/^\d{4,6}$/.test(normalizedPin)) {
+          setError(t('connectionPanel.error.pinFormat'));
+          return;
+        }
         await pairWindowsThenConnect(deviceId, normalizedPin, manualPairingFallback);
         return;
       }
@@ -1508,7 +1513,15 @@ export default function ConnectionPanel({
         if (isWindows && capabilities.hasGattBleScanning) {
           // OS-specific: skip a doomed WinRT connect (wedges for ~41s) when the bond is gone.
           setConnectionStage('connectionPanel.stageCheckingPairing');
-          if ((await getWindowsBlePairState(bleDeviceId)) === 'unpaired') {
+          const attempt = {};
+          windowsReconnectAttemptRef.current = attempt;
+          const pairState = await getWindowsBlePairState(bleDeviceId);
+          // Cancel, manual connect, or a newer Reconnect superseded this attempt mid-await.
+          if (windowsReconnectAttemptRef.current !== attempt || !isAutoConnectingRef.current) {
+            return;
+          }
+          windowsReconnectAttemptRef.current = null;
+          if (pairState === 'unpaired') {
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
             promptWindowsPairing(bleDeviceId);
