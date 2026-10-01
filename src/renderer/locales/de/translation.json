@@ -3447,6 +3447,7 @@
     "youBadge": "Du"
   },
   "nomadNetwork": {
+    "showBrowser": "Browser anzeigen",
     "title": "Nomad Network",
     "toggleFavorite": "Ihren Favoriten hinzufügen",
     "favourites": "Favoriten",

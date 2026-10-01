@@ -3513,6 +3513,7 @@
     "youBadge": "Ви"
   },
   "nomadNetwork": {
+    "showBrowser": "Показати браузер",
     "title": "Nomad Network",
     "toggleFavorite": "Увімкнути або вимкнути вибране",
     "favourites": "Вибране",

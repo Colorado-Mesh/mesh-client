@@ -33,6 +33,8 @@ export interface ConversationLayoutProps {
   /** Compact windows: which pane fills the panel. */
   compactPane: 'list' | 'conversation';
   conversation: ReactNode;
+  /** Preserve browser forms and scroll when compact navigation returns to the list. */
+  keepConversationMounted?: boolean;
   /** Optional side panel (members), docked when wide and a sheet when narrow. */
   side?: ReactNode;
   sideLabel?: string;
@@ -56,6 +58,7 @@ export function ConversationLayout({
   listOpen,
   compactPane,
   conversation,
+  keepConversationMounted = false,
   side,
   sideLabel,
   sideOpen = false,
@@ -109,8 +112,12 @@ export function ConversationLayout({
           {list}
         </aside>
       )}
-      {showConversation && (
-        <section inert={sideAsSheet} className="flex min-h-0 min-w-0 flex-1 flex-col">
+      {(showConversation || keepConversationMounted) && (
+        <section
+          hidden={!showConversation}
+          inert={sideAsSheet || !showConversation}
+          className={`min-h-0 min-w-0 flex-1 flex-col ${showConversation ? 'flex' : 'hidden'}`}
+        >
           {conversation}
         </section>
       )}
