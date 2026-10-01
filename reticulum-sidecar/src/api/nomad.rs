@@ -217,6 +217,45 @@ pub async fn delete_nomad_serving_page(
     }
 }
 
+/// `path` is the page (e.g. `index.mu`); the sidecar resolves `index.mu.allowed`.
+pub async fn get_nomad_serving_page_acl(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<NomadServingPageQuery>,
+) -> Json<serde_json::Value> {
+    match stack.read_nomad_serving_page_acl(&query.path).await {
+        Ok(content) => Json(serde_json::json!({
+            "ok": true,
+            "path": query.path,
+            "exists": content.is_some(),
+            "content": content.unwrap_or_default(),
+        })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn put_nomad_serving_page_acl(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<NomadServingPageBody>,
+) -> Json<serde_json::Value> {
+    match stack
+        .write_nomad_serving_page_acl(&body.path, &body.content)
+        .await
+    {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn delete_nomad_serving_page_acl(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<NomadServingPageQuery>,
+) -> Json<serde_json::Value> {
+    match stack.delete_nomad_serving_page_acl(&query.path).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
 pub async fn list_nomad_serving_files(
     State(stack): State<Arc<StackHandle>>,
 ) -> Json<serde_json::Value> {

@@ -283,6 +283,12 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             get(nomad::get_nomad_serving_page),
         )
         .route(
+            "/api/v1/nomadnetwork/serving/acl",
+            get(nomad::get_nomad_serving_page_acl)
+                .put(nomad::put_nomad_serving_page_acl)
+                .delete(nomad::delete_nomad_serving_page_acl),
+        )
+        .route(
             "/api/v1/nomadnetwork/serving/files",
             get(nomad::list_nomad_serving_files)
                 .put(nomad::put_nomad_serving_file)
