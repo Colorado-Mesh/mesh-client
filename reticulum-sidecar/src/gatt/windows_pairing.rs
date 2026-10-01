@@ -141,18 +141,21 @@ fn address_lock(addr: u64) -> Arc<Semaphore> {
     )
 }
 
-/// Pair/unpair for one address, one at a time. The permit moves into the blocking
-/// closure: a timed-out WinRT call keeps running, and a retry must not overlap it.
+/// Pair/unpair for one address, one at a time. The permit and `hold` move into the
+/// blocking closure: a timed-out WinRT call keeps running, and neither a retry nor a
+/// connect (via the caller's `hold`) may touch the address until it returns.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-async fn run_exclusive<T, F>(
+async fn run_exclusive<T, F, H>(
     addr: u64,
     op: &'static str,
     budget: Duration,
+    hold: H,
     f: F,
 ) -> Result<T, GattError>
 where
     T: Send + 'static,
     F: FnOnce() -> Result<T, GattError> + Send + 'static,
+    H: Send + 'static,
 {
     let deadline = Instant::now() + budget;
     let permit = tokio::time::timeout(budget, address_lock(addr).acquire_owned())
@@ -167,6 +170,7 @@ where
     let remaining = deadline.saturating_duration_since(Instant::now());
     run_blocking(op, remaining, move || {
         let _permit = permit;
+        let _hold = hold;
         f()
     })
     .await
@@ -186,31 +190,43 @@ pub async fn pair_state(address: &str) -> Result<PairState, GattError> {
     }
 }
 
+/// `hold` is dropped only once the WinRT call returns (even after a timeout).
 #[cfg_attr(not(target_os = "windows"), allow(clippy::unused_async))]
-pub async fn pair_with_pin(address: &str, pin: &str) -> Result<(), GattError> {
+pub async fn pair_with_pin<H: Send + 'static>(
+    address: &str,
+    pin: &str,
+    hold: H,
+) -> Result<(), GattError> {
     let addr = require_address(address)?;
     let pin = validate_pin(pin)?;
     #[cfg(target_os = "windows")]
     {
-        run_exclusive(addr, "pair", PAIR_TIMEOUT, move || imp::pair(addr, &pin)).await
+        run_exclusive(addr, "pair", PAIR_TIMEOUT, hold, move || {
+            imp::pair(addr, &pin)
+        })
+        .await
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = (addr, pin);
+        let _ = (addr, pin, hold);
         Err(unsupported())
     }
 }
 
+/// `hold` is dropped only once the WinRT call returns (even after a timeout).
 #[cfg_attr(not(target_os = "windows"), allow(clippy::unused_async))]
-pub async fn unpair(address: &str) -> Result<(), GattError> {
+pub async fn unpair<H: Send + 'static>(address: &str, hold: H) -> Result<(), GattError> {
     let addr = require_address(address)?;
     #[cfg(target_os = "windows")]
     {
-        run_exclusive(addr, "unpair", STATE_TIMEOUT, move || imp::unpair(addr)).await
+        run_exclusive(addr, "unpair", STATE_TIMEOUT, hold, move || {
+            imp::unpair(addr)
+        })
+        .await
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = addr;
+        let _ = (addr, hold);
         Err(unsupported())
     }
 }
@@ -399,7 +415,7 @@ mod tests {
     async fn rejects_bad_address_before_platform_dispatch() {
         let err = pair_state("not-a-mac").await.expect_err("bad address");
         assert_eq!(err.code, GattErrorCode::InvalidAddress);
-        let err = pair_with_pin("ef:4f:4f:1c:23:73", "12")
+        let err = pair_with_pin("ef:4f:4f:1c:23:73", "12", ())
             .await
             .expect_err("bad pin");
         assert_eq!(err.code, GattErrorCode::InvalidAddress);
@@ -414,14 +430,14 @@ mod tests {
             GattErrorCode::Unsupported
         );
         assert_eq!(
-            pair_with_pin(addr, "123456")
+            pair_with_pin(addr, "123456", ())
                 .await
                 .expect_err("unsupported")
                 .code,
             GattErrorCode::Unsupported
         );
         assert_eq!(
-            unpair(addr).await.expect_err("unsupported").code,
+            unpair(addr, ()).await.expect_err("unsupported").code,
             GattErrorCode::Unsupported
         );
     }
@@ -439,16 +455,33 @@ mod tests {
 
     #[tokio::test]
     async fn run_exclusive_holds_address_until_timed_out_call_returns() {
+        struct DropFlag(Arc<std::sync::atomic::AtomicBool>);
+        impl Drop for DropFlag {
+            fn drop(&mut self) {
+                self.0.store(true, std::sync::atomic::Ordering::SeqCst);
+            }
+        }
         let addr = 0x00AA_BBCC_DDEE;
-        let err = run_exclusive(addr, "pair", Duration::from_millis(20), || {
-            std::thread::sleep(Duration::from_millis(300));
-            Ok(())
-        })
+        let dropped = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let err = run_exclusive(
+            addr,
+            "pair",
+            Duration::from_millis(20),
+            DropFlag(Arc::clone(&dropped)),
+            || {
+                std::thread::sleep(Duration::from_millis(300));
+                Ok(())
+            },
+        )
         .await
         .expect_err("first call times out");
         assert_eq!(err.code, GattErrorCode::ConnectTimeout);
+        assert!(
+            !dropped.load(std::sync::atomic::Ordering::SeqCst),
+            "hold must outlive the timeout while the blocking call runs"
+        );
 
-        let retry = run_exclusive(addr, "pair", Duration::from_millis(50), || Ok(()))
+        let retry = run_exclusive(addr, "pair", Duration::from_millis(50), (), || Ok(()))
             .await
             .expect_err("retry must wait for the still-running call");
         assert!(
@@ -457,13 +490,18 @@ mod tests {
             retry.message
         );
 
-        run_exclusive(0x0011_2233_4455, "pair", Duration::from_millis(50), || {
-            Ok(())
-        })
+        run_exclusive(
+            0x0011_2233_4455,
+            "pair",
+            Duration::from_millis(50),
+            (),
+            || Ok(()),
+        )
         .await
         .expect("other addresses are not blocked");
-        run_exclusive(addr, "pair", Duration::from_secs(2), || Ok(()))
+        run_exclusive(addr, "pair", Duration::from_secs(2), (), || Ok(()))
             .await
             .expect("permit released once the blocking call returns");
+        assert!(dropped.load(std::sync::atomic::Ordering::SeqCst));
     }
 }

@@ -330,6 +330,42 @@ describe('ConnectionPanel manual GATT selection', () => {
       expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
     });
 
+    it.each(['unmount', 'protocol switch'] as const)(
+      'Reconnect does not connect when the pair state resolves after %s',
+      async (teardown) => {
+        const user = userEvent.setup();
+        localStorage.setItem(
+          'mesh-client:lastConnection:meshcore',
+          JSON.stringify({ type: 'ble', bleDeviceId: device.deviceId }),
+        );
+        let resolvePairState: (value: { ok: true; paired: boolean }) => void = () => {};
+        vi.mocked(window.electronAPI.gattPairState).mockReturnValue(
+          new Promise((resolve) => {
+            resolvePairState = resolve;
+          }),
+        );
+        const onConnect = vi.fn().mockResolvedValue(undefined);
+        const props = {
+          state: disconnectedState,
+          mqttStatus: 'disconnected' as const,
+          onConnect,
+          onAutoConnect: vi.fn().mockResolvedValue(undefined),
+          onDisconnect: vi.fn().mockResolvedValue(undefined),
+        };
+        const view = render(<ConnectionPanel {...props} protocol="meshcore" />);
+        await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+        await waitFor(() => {
+          expect(window.electronAPI.gattPairState).toHaveBeenCalled();
+        });
+        if (teardown === 'unmount') view.unmount();
+        else view.rerender(<ConnectionPanel {...props} protocol="meshtastic" />);
+        resolvePairState({ ok: true, paired: true });
+        await new Promise((r) => setTimeout(r, 0));
+        expect(onConnect).not.toHaveBeenCalled();
+        expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+      },
+    );
+
     it('Reconnect prompts for a PIN instead of a doomed connect when the bond is gone', async () => {
       const user = userEvent.setup();
       localStorage.setItem(

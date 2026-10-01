@@ -874,6 +874,7 @@ export default function ConnectionPanel({
     return () => {
       pendingPairBleDeviceRef.current = null;
       manualBleScanActiveRef.current = false;
+      windowsReconnectAttemptRef.current = null;
     };
   }, [protocol]);
 
