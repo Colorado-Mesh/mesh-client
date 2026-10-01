@@ -3285,7 +3285,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Protokol testovacího paketu rozsahu"
     },
-    "currentRouteHeading": "Aktuální trasa",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Sdílet kontakt",
     "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace",
@@ -3298,7 +3297,9 @@
     "keyManuallyVerified": "Klíč ověřen",
     "keyManuallyVerifiedHint": "Veřejný klíč tohoto uzlu byl ručně potvrzen operátorem.",
     "keyBadge": "Klíč",
-    "closePane": "Zavřít podrobnosti"
+    "closePane": "Zavřít podrobnosti",
+    "savedPathHeading": "Uložená cesta",
+    "savedPathHint": "Nejlépe hodnocená cesta z uložené historie. Může se lišit od aktuální odesílací cesty rádia nebo od cesty přijatého oznámení."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

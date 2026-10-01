@@ -3310,7 +3310,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Журнал пакетів тестування діапазону"
     },
-    "currentRouteHeading": "Поточний маршрут",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Поділитися контактним QR-кодом",
     "shareContactQrAria": "Показати контактний QR-код MeshCore для офіційного імпорту додатка",
@@ -3324,7 +3323,9 @@
     "keyManuallyVerified": "Ключ підтверджено",
     "keyManuallyVerifiedHint": "Відкритий ключ цього вузла було підтверджено вручну оператором.",
     "keyBadge": "Ключ",
-    "closePane": "Закрити подробиці"
+    "closePane": "Закрити подробиці",
+    "savedPathHeading": "Збережений шлях",
+    "savedPathHint": "Найкращий шлях із збереженої історії. Він може відрізнятися від поточного шляху надсилання радіо або шляху отриманого оголошення."
   },
   "nodeInfoBody": {
     "longName": "Довге ім'я",

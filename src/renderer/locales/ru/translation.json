@@ -3310,7 +3310,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Журнал пакетов проверки дальности"
     },
-    "currentRouteHeading": "Текущий маршрут",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Обратная связь",
     "shareContactQrAria": "Показать контактный QR-код MeshCore для официального импорта приложения",
@@ -3324,7 +3323,9 @@
     "keyManuallyVerified": "Ключ проверен",
     "keyManuallyVerifiedHint": "Открытый ключ этого узла был вручную подтвержден оператором.",
     "keyBadge": "Ключ",
-    "closePane": "Закрыть подробности"
+    "closePane": "Закрыть подробности",
+    "savedPathHeading": "Сохраненный путь",
+    "savedPathHint": "Путь с лучшим рейтингом из сохраненной истории. Он может отличаться от текущего пути отправки радиостанции или пути полученного объявления."
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",

@@ -3256,7 +3256,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Bereichstest-Paketprotokoll"
     },
-    "currentRouteHeading": "Aktuelle Route",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Kontakt teilen",
     "shareContactQrAria": "MeshCore-Kontakt-QR-Code für offiziellen App-Import anzeigen",
@@ -3268,7 +3267,9 @@
     "keyManuallyVerified": "Schlüssel verifiziert",
     "keyManuallyVerifiedHint": "Der öffentliche Schlüssel dieses Knotens wurde manuell von einem Bediener bestätigt.",
     "keyBadge": "Schlüssel",
-    "closePane": "Details schließen"
+    "closePane": "Details schließen",
+    "savedPathHeading": "Gespeicherter Pfad",
+    "savedPathHint": "Am besten bewerteter Pfad im gespeicherten Verlauf. Er kann vom aktuellen Sendepfad des Funkgeräts oder vom Pfad einer empfangenen Ankündigung abweichen."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",

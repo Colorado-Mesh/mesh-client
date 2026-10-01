@@ -3256,7 +3256,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Registro de pacote de teste de faixa"
     },
-    "currentRouteHeading": "Rota atual",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Partilhar contacto",
     "shareContactQrAria": "Mostrar código QR de contato MeshCore para importação oficial do aplicativo",
@@ -3268,7 +3267,9 @@
     "keyManuallyVerified": "Chave verificada",
     "keyManuallyVerifiedHint": "A chave pública deste nó foi confirmada manualmente por um operador.",
     "keyBadge": "Chave",
-    "closePane": "Fechar detalhes"
+    "closePane": "Fechar detalhes",
+    "savedPathHeading": "Caminho salvo",
+    "savedPathHint": "Caminho melhor classificado do histórico salvo. Pode diferir do caminho de envio atual do rádio ou do caminho de um anúncio recebido."
   },
   "nodeInfoBody": {
     "longName": "Nome longo",

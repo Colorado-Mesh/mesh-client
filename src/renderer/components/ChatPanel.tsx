@@ -253,12 +253,12 @@ function chatToolbarButtonClass(state: 'idle' | 'active' | 'starred' | 'warn' = 
   }
 }
 
-/** Inline unread count for chips in a scrolling strip (absolute badges would be clipped). */
+/** Inline unread count for conversation chips. */
 function ChipUnreadBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden="true"
-      className="text-2xs flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white"
+      className="text-2xs flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white"
     >
       {count > 99 ? '99+' : count}
     </span>
@@ -2699,28 +2699,22 @@ function ChatPanel({
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      {/* Row 1 — Channels (or Reticulum DMs) in one scrolling row + toolbar utilities */}
+      {/* Row 1 — Wrapping channels (or Reticulum DMs) + toolbar utilities */}
       <div
-        className={`mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
+        className={`mb-2 grid min-w-0 shrink-0 grid-cols-1 items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
       >
-        <div className="flex min-w-0 items-center gap-2" data-testid="chat-conversation-row">
+        <div
+          className="flex min-w-0 flex-wrap items-center gap-2"
+          data-testid="chat-conversation-row"
+        >
           {dmOnlyChat ? (
             dmTabPills
           ) : (
             <>
-              <ChatChannelSwitcher
-                channels={channels}
-                unreadCounts={unreadCounts}
-                activeIndex={viewMode === 'channels' ? channel : null}
-                onSelect={(index) => {
-                  selectChannel(index);
-                  setViewMode('channels');
-                }}
-              />
-              <ScrollStrip
+              <div
+                role="group"
                 aria-label={t('chatPanel.channels')}
-                activeKey={viewMode === 'channels' ? channel : null}
-                className="flex-1"
+                className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
               >
                 {channels.map((ch, chIdx) => {
                   const isActiveChannel = viewMode === 'channels' && channel === ch.index;
@@ -2757,19 +2751,21 @@ function ChatPanel({
                             }
                           : undefined
                       }
-                      className={`${chipClass(isActiveChannel)} inline-flex shrink-0 items-center gap-1.5`}
+                      className={`${chipClass(isActiveChannel)} inline-flex h-auto min-h-7 max-w-full items-center gap-1.5 py-1 text-left`}
                     >
                       {!ch.name.startsWith('#') && (
                         <span aria-hidden="true" className="text-muted -mr-1 font-mono">
                           #
                         </span>
                       )}
-                      {ch.name}
+                      <span className="min-w-0 [overflow-wrap:anywhere] whitespace-normal">
+                        {ch.name}
+                      </span>
                       {unread > 0 && <ChipUnreadBadge count={unread} />}
                     </button>
                   );
                 })}
-              </ScrollStrip>
+              </div>
               {meshcoreChannelSources && onSetMeshcoreChannel ? (
                 <MeshcoreChatChannelManager
                   channels={meshcoreChannelSources}
@@ -2860,7 +2856,7 @@ function ChatPanel({
         <div
           role="group"
           aria-label={t('chatPanel.toolbarLabel')}
-          className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 rounded-lg border p-0.5"
+          className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 justify-self-end rounded-lg border p-0.5"
         >
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.jumpToDate')}

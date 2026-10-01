@@ -22,6 +22,9 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import RefreshButton from './RefreshButton';
 import SignalMeter from './SignalMeter';
 
+const SIGNAL_SNR_COLOR = 'var(--color-orange-400)';
+const SIGNAL_RSSI_COLOR = 'var(--color-blue-400)';
+
 function toF(c: number) {
   return (c * 9) / 5 + 32;
 }
@@ -393,25 +396,25 @@ export default function TelemetryPanel({
                     <XAxis dataKey="time" stroke="#65738c" tick={{ fontSize: 11 }} />
                     <YAxis
                       yAxisId="snr"
-                      stroke="#ef4444"
+                      stroke={SIGNAL_SNR_COLOR}
                       tick={{ fontSize: 11 }}
                       label={{
                         value: 'dB',
                         angle: -90,
                         position: 'insideLeft',
-                        style: { fill: '#ef4444' },
+                        style: { fill: SIGNAL_SNR_COLOR },
                       }}
                     />
                     <YAxis
                       yAxisId="rssi"
                       orientation="right"
-                      stroke="#f97316"
+                      stroke={SIGNAL_RSSI_COLOR}
                       tick={{ fontSize: 11 }}
                       label={{
                         value: 'dBm',
                         angle: 90,
                         position: 'insideRight',
-                        style: { fill: '#f97316' },
+                        style: { fill: SIGNAL_RSSI_COLOR },
                       }}
                     />
                     <Tooltip
@@ -427,7 +430,7 @@ export default function TelemetryPanel({
                       type="monotone"
                       dataKey="snr"
                       name={t('telemetryPanel.seriesSnr')}
-                      stroke="#f97316"
+                      stroke={SIGNAL_SNR_COLOR}
                       strokeWidth={2}
                       dot={false}
                       connectNulls
@@ -437,7 +440,7 @@ export default function TelemetryPanel({
                       type="monotone"
                       dataKey="rssi"
                       name={t('telemetryPanel.seriesRssi')}
-                      stroke="#3b82f6"
+                      stroke={SIGNAL_RSSI_COLOR}
                       strokeWidth={2}
                       dot={false}
                       connectNulls

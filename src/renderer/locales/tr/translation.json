@@ -3256,7 +3256,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Aralık testi paket günlüğü"
     },
-    "currentRouteHeading": "Mevcut rota",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Kişi Paylaş",
     "shareContactQrAria": "Resmi uygulama içe aktarma için MeshCore iletişim QR kodunu göster",
@@ -3268,7 +3267,9 @@
     "keyManuallyVerified": "Anahtar doğrulandı",
     "keyManuallyVerifiedHint": "Bu düğümün genel anahtarı bir operatör tarafından manuel olarak onaylandı.",
     "keyBadge": "Anahtar",
-    "closePane": "Ayrıntıları kapat"
+    "closePane": "Ayrıntıları kapat",
+    "savedPathHeading": "Kaydedilen yol",
+    "savedPathHint": "Kaydedilmiş geçmişte en yüksek puanlı yol. Telsizin mevcut gönderim yolundan veya alınan bir düğüm duyurusunun yolundan farklı olabilir."
   },
   "nodeInfoBody": {
     "longName": "Uzun Ad",
