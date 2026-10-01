@@ -140,6 +140,7 @@ function NomadExpandedNodeItem({
   stopIdentifyingLabel,
   onStopIdentifying,
   identifyBusy,
+  favoriteBusy,
 }: {
   node: NomadNodeRow;
   isSelected: boolean;
@@ -154,6 +155,7 @@ function NomadExpandedNodeItem({
   stopIdentifyingLabel: string;
   onStopIdentifying: (hash: string) => void;
   identifyBusy: boolean;
+  favoriteBusy: boolean;
 }) {
   const label = node.display_name ?? node.destination_hash.slice(0, 16);
 
@@ -204,7 +206,8 @@ function NomadExpandedNodeItem({
         ) : null}
         <button
           type="button"
-          className={`rounded-control shrink-0 p-1 ${node.favorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'}`}
+          disabled={favoriteBusy}
+          className={`rounded-control shrink-0 p-1 disabled:opacity-40 ${node.favorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'}`}
           aria-label={toggleFavoriteLabel}
           aria-pressed={node.favorited}
           onClick={() => {
@@ -676,10 +679,23 @@ export default function NomadNetworkPanel({
     [nodes],
   );
 
+  // One favourite save at a time, for the same stale-revert reason as identify below.
+  const favoriteBusyRef = useRef(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+
   const applyFavorite = useCallback(
     async (hash: string, favorited: boolean, announce: boolean) => {
+      if (favoriteBusyRef.current) return;
+      favoriteBusyRef.current = true;
+      setFavoriteBusy(true);
       const name = nodeLabel(hash);
-      const saved = await toggleFavorite(hash, favorited);
+      let saved: boolean;
+      try {
+        saved = await toggleFavorite(hash, favorited);
+      } finally {
+        favoriteBusyRef.current = false;
+        if (mountedRef.current) setFavoriteBusy(false);
+      }
       if (!mountedRef.current) return;
       if (!saved) {
         addToast(t('nomadNetwork.favoriteFailedToast', { name }), 'error');
@@ -693,7 +709,7 @@ export default function NomadNetworkPanel({
         'info',
       );
     },
-    [addToast, nodeLabel, t, toggleFavorite],
+    [addToast, nodeLabel, setFavoriteBusy, t, toggleFavorite],
   );
 
   const handleToggleFavorite = useCallback(
@@ -860,6 +876,7 @@ export default function NomadNetworkPanel({
           stopIdentifyingLabel={t('nomadNetwork.identifyStopAria', { name: label })}
           onStopIdentifying={handleStopIdentifying}
           identifyBusy={identifyBusy}
+          favoriteBusy={favoriteBusy}
           hopsAwayLabel={
             node.hops != null ? t('nomadNetwork.hopsAway', { count: node.hops }) : null
           }
@@ -1274,7 +1291,7 @@ export default function NomadNetworkPanel({
             />
             <button
               type="button"
-              disabled={!sidecarRunning}
+              disabled={!sidecarRunning || favoriteBusy}
               className={`rounded-control inline-flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-40 ${
                 selectedFavorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'
               }`}

@@ -1651,6 +1651,48 @@ describe('NomadNetworkPanel', () => {
       expect(useNomadNetworkStore.getState().getNode(hash)).toBeUndefined();
     });
 
+    it('disables the star while a favourite save is pending', async () => {
+      const user = userEvent.setup();
+      let finishSave: (body: unknown) => void = () => {};
+      const proxyPost = vi.fn(
+        () =>
+          new Promise<unknown>((resolve) => {
+            finishSave = resolve;
+          }),
+      );
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const star = screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' });
+      await waitFor(() => {
+        expect(star).toBeEnabled();
+      });
+      await user.click(star);
+      await waitFor(() => {
+        expect(proxyPost).toHaveBeenCalledTimes(1);
+      });
+      const pending = screen.getByRole('button', { name: 'nomadNetwork.unfavoriteSiteAria' });
+      expect(pending).toBeDisabled();
+      for (const listStar of screen.getAllByRole('button', {
+        name: 'nomadNetwork.toggleFavorite',
+      })) {
+        expect(listStar).toBeDisabled();
+      }
+      await user.click(pending);
+      expect(proxyPost).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        finishSave({ ok: true });
+        await Promise.resolve();
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.unfavoriteSiteAria' }),
+        ).toBeEnabled();
+      });
+    });
+
     it('offers the identify toggle for an unlisted node', async () => {
       const user = userEvent.setup();
       render(<NomadNetworkPanel />);

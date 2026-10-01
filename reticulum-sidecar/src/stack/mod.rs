@@ -2134,8 +2134,23 @@ impl StackHandle {
     pub async fn set_nomad_identify(&self, hash: &str, identify: bool) -> Result<(), String> {
         {
             let mut inner = self.inner.write().await;
+            let key = hash.trim().to_lowercase();
+            let matches = |n: &NomadNodeRow| n.destination_hash.to_lowercase() == key;
+            let prior = inner.nomad_nodes.iter().find(|n| matches(n)).cloned();
             inner.set_nomad_identify(hash, identify);
-            inner.save(&self.config_dir, &self.storage_dir)?;
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                // Failure point: disk write. Fallback: restore the row so memory
+                // never reports a flag that was not persisted.
+                match prior {
+                    Some(row) => {
+                        if let Some(slot) = inner.nomad_nodes.iter_mut().find(|n| matches(n)) {
+                            *slot = row;
+                        }
+                    }
+                    None => inner.nomad_nodes.retain(|n| !matches(n)),
+                }
+                return Err(e);
+            }
         }
         #[cfg(feature = "rns-stack")]
         if !identify {
@@ -2150,9 +2165,22 @@ impl StackHandle {
     pub async fn clear_nomad_identify_all(&self) -> Result<usize, String> {
         let cleared = {
             let mut inner = self.inner.write().await;
+            let identifying: Vec<String> = inner
+                .nomad_nodes
+                .iter()
+                .filter(|n| n.identify)
+                .map(|n| n.destination_hash.clone())
+                .collect();
             let cleared = inner.clear_nomad_identify_all();
             if cleared > 0 {
-                inner.save(&self.config_dir, &self.storage_dir)?;
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    for node in &mut inner.nomad_nodes {
+                        if identifying.contains(&node.destination_hash) {
+                            node.identify = true;
+                        }
+                    }
+                    return Err(e);
+                }
             }
             cleared
         };
@@ -4351,6 +4379,43 @@ mod tests {
         assert_eq!(state.nomad_nodes[0].status.as_deref(), Some("online"));
         let _ = std::fs::remove_dir_all(config_dir);
         let _ = std::fs::remove_dir_all(storage_dir);
+    }
+
+    #[tokio::test]
+    async fn nomad_identify_failed_save_leaves_memory_unchanged() {
+        const NODE: &str = "00112233445566778899aabbccddeeff";
+        const UNSEEN: &str = "ffeeddccbbaa99887766554433221100";
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        handle.set_nomad_identify(NODE, true).await.expect("save");
+        std::fs::remove_dir_all(&storage_dir).expect("remove storage dir");
+
+        let identify_of = |nodes: &[NomadNodeRow], hash: &str| {
+            nodes
+                .iter()
+                .find(|n| n.destination_hash.eq_ignore_ascii_case(hash))
+                .map(|n| n.identify)
+        };
+        assert!(handle.set_nomad_identify(NODE, false).await.is_err());
+        assert_eq!(
+            identify_of(&handle.list_nomad_nodes().await, NODE),
+            Some(true)
+        );
+        assert!(handle.set_nomad_identify(UNSEEN, true).await.is_err());
+        assert_eq!(identify_of(&handle.list_nomad_nodes().await, UNSEEN), None);
+        assert!(handle.clear_nomad_identify_all().await.is_err());
+        assert_eq!(
+            identify_of(&handle.list_nomad_nodes().await, NODE),
+            Some(true)
+        );
+
+        let _ = std::fs::remove_dir_all(config_dir);
     }
 
     #[tokio::test]

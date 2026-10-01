@@ -25,8 +25,15 @@ export default function NomadPageAccessDialog({
   const { t } = useTranslation();
   const titleId = useId();
   const textareaId = useId();
-  const ownIdentityHash = useReticulumIdentityStore((s) => s.identity?.identity_hash ?? '');
-  const [loading, setLoading] = useState(true);
+  const ownIdentityHash = useReticulumIdentityStore((s) =>
+    (s.identity?.identity_hash ?? '').trim().toLowerCase(),
+  );
+  // Which path the last read finished for, and whether it succeeded. Keyed on
+  // `path` so a path change resets loading; saving before a successful read
+  // would overwrite the real list with the empty draft.
+  const [readResult, setReadResult] = useState<{ path: string; ok: boolean } | null>(null);
+  const loading = readResult?.path !== path;
+  const loaded = !loading && readResult.ok;
   const [exists, setExists] = useState(false);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,7 +54,7 @@ export default function NomadPageAccessDialog({
         setExists(res.exists);
         setDraft(res.content);
       }
-      setLoading(false);
+      setReadResult({ path, ok: res.ok });
     })();
     return () => {
       cancelled = true;
@@ -56,7 +63,7 @@ export default function NomadPageAccessDialog({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || busy) return;
       e.preventDefault();
       onClose();
     };
@@ -64,7 +71,7 @@ export default function NomadPageAccessDialog({
     return () => {
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [onClose]);
+  }, [busy, onClose]);
 
   const analysis = useMemo(() => analyzeNomadPageAcl(draft), [draft]);
   const ownHashListed = Boolean(ownIdentityHash) && analysis.hashes.includes(ownIdentityHash);
@@ -116,7 +123,9 @@ export default function NomadPageAccessDialog({
         type="button"
         aria-label={t('nomadNetwork.serving.restrictCloseAria')}
         className="absolute inset-0 cursor-pointer border-0 bg-black/60 p-0 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={() => {
+          if (!busy) onClose();
+        }}
       />
       <div
         role="dialog"
@@ -237,7 +246,7 @@ export default function NomadPageAccessDialog({
             </button>
             <button
               type="button"
-              disabled={disabled || analysis.invalidLines.length > 0}
+              disabled={disabled || !loaded || analysis.invalidLines.length > 0}
               onClick={() => {
                 void save();
               }}

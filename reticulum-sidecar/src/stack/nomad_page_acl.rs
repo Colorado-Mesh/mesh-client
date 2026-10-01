@@ -24,12 +24,15 @@ fn path_error(op: &str, rel: &str, err: &NomadError) -> String {
         NomadError::Io(_) => "page_io_error",
         NomadError::Message(_) | NomadError::TransportClosed => "page_write_failed",
     };
-    tracing::warn!("[nomad-serving] {op} page acl {rel} failed ({code}): {err}");
+    // `{:?}` escapes control characters in the caller-supplied path and error text.
+    let detail = err.to_string();
+    tracing::warn!("[nomad-serving] {op} page acl {rel:?} failed ({code}): {detail:?}");
     code.to_string()
 }
 
 fn io_error(op: &str, rel: &str, err: &std::io::Error) -> String {
-    tracing::warn!("[nomad-serving] {op} page acl {rel} failed (page_io_error): {err}");
+    let detail = err.to_string();
+    tracing::warn!("[nomad-serving] {op} page acl {rel:?} failed (page_io_error): {detail:?}");
     "page_io_error".to_string()
 }
 

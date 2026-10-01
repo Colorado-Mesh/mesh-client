@@ -646,6 +646,70 @@ describe('NomadPageServerPanel', () => {
       expect(await screen.findByText('nomadNetwork.serving.pageNotFound')).toBeInTheDocument();
     });
 
+    it('keeps Save disabled after a load failure so the empty draft cannot overwrite the list', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: false, error: 'page_io_error' });
+      await openAccess(user);
+      await waitFor(() => {
+        expect(listBox()).toBeEnabled();
+      });
+      await user.type(listBox(), FRIEND);
+      expect(
+        screen.getByRole('button', {
+          name: 'nomadNetwork.serving.restrictSaveAria:members/board.mu',
+        }),
+      ).toBeDisabled();
+      expect(proxyPut).not.toHaveBeenCalled();
+    });
+
+    it('ignores Escape and backdrop clicks while a save is in flight', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: true, path: 'members/board.mu', exists: false, content: '' });
+      let finishSave: (body: unknown) => void = () => {};
+      proxyPut.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishSave = resolve;
+          }),
+      );
+      await openAccess(user);
+      await user.type(listBox(), FRIEND);
+      await user.click(
+        screen.getByRole('button', {
+          name: 'nomadNetwork.serving.restrictSaveAria:members/board.mu',
+        }),
+      );
+      await waitFor(() => {
+        expect(proxyPut).toHaveBeenCalled();
+      });
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      await user.click(
+        screen.getByRole('button', { name: 'nomadNetwork.serving.restrictCloseAria' }),
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      finishSave({ ok: true });
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).toBeNull();
+      });
+    });
+
+    it('recognises my identity hash regardless of case', async () => {
+      const user = userEvent.setup();
+      useReticulumIdentityStore.setState({
+        identity: { configured: true, identity_hash: ` ${OWN.toUpperCase()} `, lxmf_hash: FRIEND },
+      });
+      mockAcl({ ok: true, path: 'members/board.mu', exists: true, content: `${OWN}\n` });
+      await openAccess(user);
+      await waitFor(() => {
+        expect(listBox()).toHaveValue(`${OWN}\n`);
+      });
+      expect(
+        screen.getByRole('button', { name: 'nomadNetwork.serving.restrictAddSelfAria' }),
+      ).toBeDisabled();
+    });
+
     it('has no axe violations in the access dialog', async () => {
       const user = userEvent.setup();
       mockAcl({ ok: true, path: 'members/board.mu', exists: true, content: `${OWN}\n` });
