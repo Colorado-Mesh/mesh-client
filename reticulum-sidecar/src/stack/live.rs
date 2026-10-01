@@ -7831,7 +7831,11 @@ mod announce_display_name_tests {
     fn path_table_added_hashes_empty_when_membership_unchanged() {
         let prev: HashSet<String> = ["aa".into()].into_iter().collect();
         let next: HashSet<String> = ["aa".into()].into_iter().collect();
-        assert!(path_table_added_hashes(&prev, &next).is_empty());
+        assert!(
+            path_table_added_hashes(&prev, &next).is_empty(),
+            "{:?}",
+            path_table_added_hashes(&prev, &next)
+        );
     }
 
     #[test]

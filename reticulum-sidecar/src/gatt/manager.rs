@@ -792,13 +792,12 @@ mod tests {
             .unwrap();
         let err = mgr.write(&sid, &[1; 513]).await.unwrap_err();
         assert_eq!(err.code, GattErrorCode::WriteFailed);
-        assert!(
-            mgr.fake_backend()
-                .unwrap()
-                .writes_for("11:22:33:44:55:66")
-                .await
-                .is_empty()
-        );
+        let writes = mgr
+            .fake_backend()
+            .unwrap()
+            .writes_for("11:22:33:44:55:66")
+            .await;
+        assert!(writes.is_empty(), "{writes:?}");
     }
 
     #[tokio::test]

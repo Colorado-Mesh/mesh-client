@@ -1263,7 +1263,11 @@ mod tests {
         state
             .remove_propagation_auto_blacklist(hash)
             .expect("remove");
-        assert!(state.propagation_auto_blacklist.is_empty());
+        assert!(
+            state.propagation_auto_blacklist.is_empty(),
+            "{:?}",
+            state.propagation_auto_blacklist
+        );
         assert!(state.remove_propagation_auto_blacklist(hash).is_err());
     }
 
@@ -1533,6 +1537,10 @@ mod tests {
             serde_json::from_value(value).expect("legacy without rncp listener keys");
         assert!(!legacy_state.rncp_listener_enabled);
         assert!(legacy_state.rncp_listener_save_dir.is_none());
-        assert!(legacy_state.rncp_listener_allowed.is_empty());
+        assert!(
+            legacy_state.rncp_listener_allowed.is_empty(),
+            "{:?}",
+            legacy_state.rncp_listener_allowed
+        );
     }
 }

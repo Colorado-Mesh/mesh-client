@@ -60,6 +60,8 @@ mod live_tasks;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
+mod nomad_page_acl;
+#[cfg(feature = "rns-stack")]
 mod nomad_server;
 #[cfg(feature = "rns-stack")]
 mod propagation_announce;
@@ -2425,6 +2427,58 @@ impl StackHandle {
         }
     }
 
+    pub async fn read_nomad_serving_page_acl(&self, path: &str) -> Result<Option<String>, String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .read_page_acl(path)
+                .await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn write_nomad_serving_page_acl(
+        &self,
+        path: &str,
+        content: &str,
+    ) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .write_page_acl(path, content)
+                .await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (path, content);
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn delete_nomad_serving_page_acl(&self, path: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .delete_page_acl(path)
+                .await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
     pub async fn list_nomad_serving_files(&self) -> Result<Vec<serde_json::Value>, String> {
         #[cfg(feature = "rns-stack")]
         {
@@ -4543,7 +4597,11 @@ mod tests {
 
         let dropped = clear_peer_routes_for_interface(&mut peers, "RNodeLoRa");
 
-        assert!(dropped.dropped_vias.is_empty());
+        assert!(
+            dropped.dropped_vias.is_empty(),
+            "{:?}",
+            dropped.dropped_vias
+        );
         assert_eq!(dropped.changed_peers, 1);
         assert!(!dropped.is_empty());
         assert_eq!(peers[0].hops, None);
@@ -4635,7 +4693,11 @@ mod tests {
         assert!(value["pin"].is_null());
         assert!(value["effective_preference"].is_null());
         assert_eq!(value["live"], false);
-        assert!(value["paths"].as_array().expect("array").is_empty());
+        assert!(
+            value["paths"].as_array().expect("array").is_empty(),
+            "{:?}",
+            value["paths"].as_array().expect("array")
+        );
     }
 
     #[tokio::test]
@@ -4820,7 +4882,7 @@ mod tests {
             .set_propagation_mode("manual")
             .await
             .expect_err("save must fail");
-        assert!(!err.is_empty());
+        assert!(!err.is_empty(), "{err:?}");
         assert_eq!(
             handle.list_propagation().await["propagation_mode"],
             "auto",

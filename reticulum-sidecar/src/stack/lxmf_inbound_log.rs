@@ -173,7 +173,7 @@ mod tests {
         let buf = LxmfInboundBuffer::new(10);
         buf.push(msg("h2", 200, "b"));
         let rows = buf.snapshot(Some(200), None, 10);
-        assert!(rows.is_empty());
+        assert!(rows.is_empty(), "{rows:?}");
     }
 
     #[test]
@@ -206,11 +206,11 @@ mod tests {
 
         // Complete cursor at the second twin — no reprocessing.
         let after_b = buf.snapshot(Some(200), Some(seq_b), 10);
-        assert!(after_b.is_empty());
+        assert!(after_b.is_empty(), "{after_b:?}");
 
         // Timestamp-only exclusive bound still drops the whole ms bucket (legacy clients).
         let ts_only = buf.snapshot(Some(200), None, 10);
-        assert!(ts_only.is_empty());
+        assert!(ts_only.is_empty(), "{ts_only:?}");
     }
 
     #[test]
