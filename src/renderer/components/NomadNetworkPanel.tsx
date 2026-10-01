@@ -139,6 +139,7 @@ function NomadExpandedNodeItem({
   identifyingLabel,
   stopIdentifyingLabel,
   onStopIdentifying,
+  identifyBusy,
 }: {
   node: NomadNodeRow;
   isSelected: boolean;
@@ -152,6 +153,7 @@ function NomadExpandedNodeItem({
   identifyingLabel: string;
   stopIdentifyingLabel: string;
   onStopIdentifying: (hash: string) => void;
+  identifyBusy: boolean;
 }) {
   const label = node.display_name ?? node.destination_hash.slice(0, 16);
 
@@ -187,7 +189,8 @@ function NomadExpandedNodeItem({
         {node.identify === true ? (
           <button
             type="button"
-            className="text-bright-green hover:bg-ink-800 rounded-control inline-flex shrink-0 items-center gap-1 px-1 py-0.5 text-xs"
+            disabled={identifyBusy}
+            className="text-bright-green hover:bg-ink-800 rounded-control inline-flex shrink-0 items-center gap-1 px-1 py-0.5 text-xs disabled:opacity-40"
             aria-label={stopIdentifyingLabel}
             title={stopIdentifyingLabel}
             onClick={(e) => {
@@ -720,11 +723,32 @@ export default function NomadNetworkPanel({
     [loadNodePage],
   );
 
+  // One identify save at a time: each store call snapshots `nodes` for its own
+  // revert, so overlapping saves that fail out of order would restore a stale flag.
+  const identifyBusyRef = useRef(false);
+  const [identifyBusy, setIdentifyBusy] = useState(false);
+
+  const runIdentifyUpdate = useCallback(
+    async <T,>(update: () => Promise<T>): Promise<{ result: T } | null> => {
+      if (identifyBusyRef.current) return null;
+      identifyBusyRef.current = true;
+      setIdentifyBusy(true);
+      try {
+        return { result: await update() };
+      } finally {
+        identifyBusyRef.current = false;
+        if (mountedRef.current) setIdentifyBusy(false);
+      }
+    },
+    [setIdentifyBusy],
+  );
+
   const applyIdentify = useCallback(
     async (hash: string, identify: boolean) => {
       const name = nodeLabel(hash);
-      const saved = await setIdentify(hash, identify);
-      if (!mountedRef.current) return;
+      const run = await runIdentifyUpdate(() => setIdentify(hash, identify));
+      if (!run || !mountedRef.current) return;
+      const saved = run.result;
       if (!saved) {
         addToast(t('nomadNetwork.identifyFailedToast', { name }), 'error');
         return;
@@ -737,7 +761,7 @@ export default function NomadNetworkPanel({
       );
       reloadIfViewing([hash]);
     },
-    [addToast, nodeLabel, reloadIfViewing, setIdentify, t],
+    [addToast, nodeLabel, reloadIfViewing, runIdentifyUpdate, setIdentify, t],
   );
 
   const handleIdentifyToggle = useCallback(() => {
@@ -769,15 +793,24 @@ export default function NomadNetworkPanel({
     const affected = allRows
       .filter((node) => node.identify === true)
       .map((node) => node.destination_hash);
-    const cleared = await clearAllIdentify();
-    if (!mountedRef.current) return;
+    const run = await runIdentifyUpdate(() => clearAllIdentify());
+    if (!run || !mountedRef.current) return;
+    const cleared = run.result;
     if (cleared == null) {
       addToast(t('nomadNetwork.identifyClearAllFailedToast'), 'error');
       return;
     }
     addToast(t('nomadNetwork.identifyClearedAllToast', { count: cleared }), 'info');
     reloadIfViewing(affected);
-  }, [addToast, allRows, clearAllIdentify, reloadIfViewing, setPendingClearAllIdentify, t]);
+  }, [
+    addToast,
+    allRows,
+    clearAllIdentify,
+    reloadIfViewing,
+    runIdentifyUpdate,
+    setPendingClearAllIdentify,
+    t,
+  ]);
 
   const handleMicronNavigate = useCallback(
     (hash: string, path: string, requestData?: NomadPageRequestData) => {
@@ -826,6 +859,7 @@ export default function NomadNetworkPanel({
           identifyingLabel={t('nomadNetwork.identifyingBadge')}
           stopIdentifyingLabel={t('nomadNetwork.identifyStopAria', { name: label })}
           onStopIdentifying={handleStopIdentifying}
+          identifyBusy={identifyBusy}
           hopsAwayLabel={
             node.hops != null ? t('nomadNetwork.hopsAway', { count: node.hops }) : null
           }
@@ -897,7 +931,7 @@ export default function NomadNetworkPanel({
         {identifyingCount > 0 ? (
           <button
             type="button"
-            disabled={!sidecarRunning}
+            disabled={!sidecarRunning || identifyBusy}
             className="text-bright-green hover:bg-ink-800 rounded-control inline-flex items-center gap-1 self-start px-1 py-0.5 text-xs disabled:opacity-40"
             aria-label={t('nomadNetwork.identifyClearAllAria', { count: identifyingCount })}
             title={t('nomadNetwork.identifyClearAllAria', { count: identifyingCount })}
@@ -1078,7 +1112,7 @@ export default function NomadNetworkPanel({
               ) : null}
               <button
                 type="button"
-                disabled={!sidecarRunning}
+                disabled={!sidecarRunning || identifyBusy}
                 className={`inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40 ${
                   selectedIdentifying
                     ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'

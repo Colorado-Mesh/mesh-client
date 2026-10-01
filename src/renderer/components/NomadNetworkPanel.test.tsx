@@ -73,6 +73,7 @@ import {
 import NomadNetworkPanel from './NomadNetworkPanel';
 
 const realToggleFavorite = useNomadNetworkStore.getState().toggleFavorite;
+const realSetIdentify = useNomadNetworkStore.getState().setIdentify;
 
 async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
@@ -1821,6 +1822,80 @@ describe('NomadNetworkPanel', () => {
       await waitFor(() => {
         expect(addToast).toHaveBeenCalledWith('nomadNetwork.identifyFailedToast', 'error');
       });
+    });
+
+    it('serializes identify saves so out-of-order failures restore the original flag', async () => {
+      const user = userEvent.setup();
+      mockConsoleWarn();
+      seedIdentifyNodes(false);
+      useNomadNetworkStore.setState({ setIdentify: realSetIdentify });
+      const saves: ((body: unknown) => void)[] = [];
+      const proxyPost = vi.fn(
+        () =>
+          new Promise<unknown>((resolve) => {
+            saves.push(resolve);
+          }),
+      );
+      const originalProxyPost = window.electronAPI.reticulum.proxyPost;
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      const enableAndConfirm = async () => {
+        const toggle = screen.getByRole('button', { name: 'nomadNetwork.identifyEnableAria' });
+        await waitFor(() => {
+          expect(toggle).toBeEnabled();
+        });
+        await user.click(toggle);
+        await user.click(
+          screen.getByRole('button', { name: 'nomadNetwork.identifyConfirmAccept' }),
+        );
+      };
+      try {
+        render(<NomadNetworkPanel />);
+        await openForum(user);
+
+        await enableAndConfirm();
+        await waitFor(() => {
+          expect(proxyPost).toHaveBeenCalledTimes(1);
+        });
+        const stopButtons = screen.getAllByRole('button', {
+          name: 'nomadNetwork.identifyStopAria',
+        });
+        expect(stopButtons).toHaveLength(2);
+        for (const button of stopButtons) expect(button).toBeDisabled();
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.identifyClearAllAria:1' }),
+        ).toBeDisabled();
+
+        await user.click(stopButtons[0]);
+        await user.click(stopButtons[1]);
+        expect(proxyPost).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+          saves[0]?.({ ok: false, error: 'disk_full' });
+          await Promise.resolve();
+        });
+        await waitFor(() => {
+          expect(addToast).toHaveBeenCalledWith('nomadNetwork.identifyFailedToast', 'error');
+        });
+        expect(useNomadNetworkStore.getState().getNode(hash)?.identify).toBe(false);
+
+        await enableAndConfirm();
+        await waitFor(() => {
+          expect(proxyPost).toHaveBeenCalledTimes(2);
+        });
+        await act(async () => {
+          saves[1]?.({ ok: false, error: 'disk_full' });
+          await Promise.resolve();
+        });
+        await waitFor(() => {
+          expect(addToast).toHaveBeenCalledTimes(2);
+        });
+        expect(useNomadNetworkStore.getState().getNode(hash)?.identify).toBe(false);
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.identifyEnableAria' }),
+        ).toBeEnabled();
+      } finally {
+        window.electronAPI.reticulum.proxyPost = originalProxyPost;
+      }
     });
 
     it('hides "stop identifying to all" when no node is identified', async () => {
