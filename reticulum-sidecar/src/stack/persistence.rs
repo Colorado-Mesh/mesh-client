@@ -477,6 +477,7 @@ impl PersistedState {
             display_name,
             last_seen: Some(now),
             favorited: false,
+            identify: false,
             hops,
             status: Some("online".into()),
         });
@@ -498,9 +499,49 @@ impl PersistedState {
             display_name: None,
             last_seen: Some(Self::now_secs()),
             favorited,
+            identify: false,
             hops: None,
             status: Some("unknown".into()),
         });
+    }
+
+    /// Persist the per-node "identify when connecting" choice. Turning it off
+    /// for a node we have never seen is a no-op (no placeholder row).
+    pub fn set_nomad_identify(&mut self, hash: &str, identify: bool) {
+        let key = hash.trim().to_lowercase();
+        if let Some(node) = self
+            .nomad_nodes
+            .iter_mut()
+            .find(|n| n.destination_hash.to_lowercase() == key)
+        {
+            node.identify = identify;
+            return;
+        }
+        if !identify {
+            return;
+        }
+        self.nomad_nodes.push(NomadNodeRow {
+            destination_hash: hash.trim().to_string(),
+            identity_hash: None,
+            display_name: None,
+            last_seen: Some(Self::now_secs()),
+            favorited: false,
+            identify: true,
+            hops: None,
+            status: Some("unknown".into()),
+        });
+    }
+
+    /// Turn identify off for every Nomad node; returns how many rows changed.
+    pub fn clear_nomad_identify_all(&mut self) -> usize {
+        let mut cleared = 0;
+        for node in &mut self.nomad_nodes {
+            if node.identify {
+                node.identify = false;
+                cleared += 1;
+            }
+        }
+        cleared
     }
 
     pub fn upsert_rrc_hub(

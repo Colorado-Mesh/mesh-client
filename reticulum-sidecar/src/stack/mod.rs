@@ -2127,6 +2127,40 @@ impl StackHandle {
         Ok(())
     }
 
+    /// Persist whether we identify to one Nomad node. Turning it off also
+    /// closes a cached identified Link to that node.
+    pub async fn set_nomad_identify(&self, hash: &str, identify: bool) -> Result<(), String> {
+        {
+            let mut inner = self.inner.write().await;
+            inner.set_nomad_identify(hash, identify);
+            inner.save(&self.config_dir, &self.storage_dir)?;
+        }
+        #[cfg(feature = "rns-stack")]
+        if !identify {
+            if let Some(live) = self.live_opt() {
+                live.close_identified_nomad_link(Some(hash)).await;
+            }
+        }
+        Ok(())
+    }
+
+    /// Stop identifying to every Nomad node; returns how many flags changed.
+    pub async fn clear_nomad_identify_all(&self) -> Result<usize, String> {
+        let cleared = {
+            let mut inner = self.inner.write().await;
+            let cleared = inner.clear_nomad_identify_all();
+            if cleared > 0 {
+                inner.save(&self.config_dir, &self.storage_dir)?;
+            }
+            cleared
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            live.close_identified_nomad_link(None).await;
+        }
+        Ok(cleared)
+    }
+
     #[cfg(feature = "rns-stack")]
     fn require_live(&self) -> Result<Arc<live::LiveBridge>, String> {
         self.live_opt()
@@ -2883,6 +2917,7 @@ impl StackHandle {
         data_b64: Option<&str>,
         force_path_refresh: bool,
         request_id: Option<&str>,
+        identify: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -2897,10 +2932,18 @@ impl StackHandle {
                     &interfaces,
                     force_path_refresh,
                     request_id,
+                    identify,
                 )
                 .await;
         }
-        let _ = (hash, path, data_b64, force_path_refresh, request_id);
+        let _ = (
+            hash,
+            path,
+            data_b64,
+            force_path_refresh,
+            request_id,
+            identify,
+        );
         serde_json::json!({
             "ok": false,
             "error": "nomad page fetch requires live rns-stack sidecar"
@@ -2912,6 +2955,7 @@ impl StackHandle {
         hash: &str,
         path: &str,
         force_path_refresh: bool,
+        identify: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -2924,10 +2968,11 @@ impl StackHandle {
                     path,
                     &interfaces,
                     force_path_refresh,
+                    identify,
                 )
                 .await;
         }
-        let _ = (hash, path, force_path_refresh);
+        let _ = (hash, path, force_path_refresh, identify);
         serde_json::json!({
             "ok": false,
             "error": "nomad file fetch requires live rns-stack sidecar"
@@ -2939,6 +2984,7 @@ impl StackHandle {
         hash: &str,
         path: &str,
         force_path_refresh: bool,
+        identify: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -2951,10 +2997,11 @@ impl StackHandle {
                     path,
                     &interfaces,
                     force_path_refresh,
+                    identify,
                 )
                 .await;
         }
-        let _ = (hash, path, force_path_refresh);
+        let _ = (hash, path, force_path_refresh, identify);
         serde_json::json!({
             "ok": false,
             "error": "nomad media fetch requires live rns-stack sidecar"

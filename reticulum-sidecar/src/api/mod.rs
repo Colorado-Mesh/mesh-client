@@ -249,6 +249,14 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             post(nomad::favorite_nomad_node),
         )
         .route(
+            "/api/v1/nomadnetwork/nodes/identify",
+            post(nomad::identify_nomad_node),
+        )
+        .route(
+            "/api/v1/nomadnetwork/nodes/identify/clear",
+            post(nomad::clear_nomad_identify),
+        )
+        .route(
             "/api/v1/nomadnetwork/page/{hash}",
             get(nomad::get_nomad_page),
         )

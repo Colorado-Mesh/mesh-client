@@ -4,9 +4,16 @@
 //! pages pay a full TCP handshake (and can drop the cached path) for every
 //! `/media` image. Reuse the same dest's session across page + queued images.
 
-/// True when the cached initiator dest matches the next Nomad query dest.
-pub fn nomad_link_cache_should_reuse(cached_dest: &[u8; 16], dest: &[u8; 16]) -> bool {
-    cached_dest == dest
+/// True when the cached initiator dest matches the next Nomad query dest and
+/// the identification choice is unchanged. A Link cannot change whether it
+/// identified after establishment, so a mismatch forces a fresh Link.
+pub fn nomad_link_cache_should_reuse(
+    cached_dest: &[u8; 16],
+    cached_identify: bool,
+    dest: &[u8; 16],
+    identify: bool,
+) -> bool {
+    cached_dest == dest && cached_identify == identify
 }
 
 /// Outcome of `handle.request` on a session `ensure` just cached.
@@ -46,8 +53,21 @@ mod tests {
     fn reuses_only_the_same_nomad_dest() {
         let dest_a = [0x78; 16];
         let dest_b = [0x32; 16];
-        assert!(nomad_link_cache_should_reuse(&dest_a, &dest_a));
-        assert!(!nomad_link_cache_should_reuse(&dest_a, &dest_b));
+        assert!(nomad_link_cache_should_reuse(
+            &dest_a, false, &dest_a, false
+        ));
+        assert!(!nomad_link_cache_should_reuse(
+            &dest_a, false, &dest_b, false
+        ));
+    }
+
+    #[test]
+    fn identification_change_forces_a_new_link() {
+        let dest = [0x78; 16];
+        assert!(!nomad_link_cache_should_reuse(&dest, true, &dest, false));
+        assert!(!nomad_link_cache_should_reuse(&dest, false, &dest, true));
+        assert!(nomad_link_cache_should_reuse(&dest, true, &dest, true));
+        assert!(nomad_link_cache_should_reuse(&dest, false, &dest, false));
     }
 
     #[test]
@@ -64,7 +84,7 @@ mod tests {
                 "failed fresh retry must clear the cached handle"
             );
             assert!(
-                !cached.is_some_and(|c| nomad_link_cache_should_reuse(&c, &dest)),
+                !cached.is_some_and(|c| nomad_link_cache_should_reuse(&c, false, &dest, false)),
                 "failover must not reuse a failed fresh handle"
             );
         }
@@ -77,6 +97,6 @@ mod tests {
             NomadFreshRequestOutcome::Success
         ));
         let cached = cache_after_fresh_request(dest, NomadFreshRequestOutcome::Success);
-        assert!(cached.is_some_and(|c| nomad_link_cache_should_reuse(&c, &dest)));
+        assert!(cached.is_some_and(|c| nomad_link_cache_should_reuse(&c, false, &dest, false)));
     }
 }

@@ -205,6 +205,8 @@ pub struct LiveBridge {
 /// Cached Nomad initiator Link for one remote `nomadnetwork.node` dest.
 struct NomadCachedLink {
     dest: [u8; 16],
+    /// Whether this Link sent LINKIDENTIFY; a Link cannot change it later.
+    identify: bool,
     handle: LinkSessionHandle,
 }
 
@@ -1015,6 +1017,7 @@ impl LiveBridge {
         force_path_refresh: bool,
         progress_request_id: Option<&str>,
         schedule: NomadLinkSchedule,
+        identify: bool,
     ) -> Result<(Vec<u8>, NomadRemoteQueryOk), NomadRemoteQueryError> {
         let query_started = tokio::time::Instant::now();
         let remote_hash = parse_hash16(identity_hash_hex).map_err(|e| NomadRemoteQueryError {
@@ -1276,6 +1279,7 @@ impl LiveBridge {
                 path_ensure_kind,
                 link_gen,
                 schedule,
+                identify,
             )
             .await;
 
@@ -1395,6 +1399,7 @@ impl LiveBridge {
                     Some(rediscovered),
                     link_gen,
                     schedule,
+                    identify,
                 )
                 .await;
             hops = failover_hops;
@@ -1454,6 +1459,7 @@ impl LiveBridge {
         path_ensure_kind: Option<&'static str>,
         my_gen: u64,
         schedule: NomadLinkSchedule,
+        identify: bool,
     ) -> Result<(Vec<u8>, Option<Vec<u8>>), NomadRemoteQueryError> {
         let busy = || NomadRemoteQueryError {
             code: "nomad_busy".into(),
@@ -1524,8 +1530,14 @@ impl LiveBridge {
         let dest_hash =
             Destination::hash_from_name_and_identity(NOMAD_NODE_ASPECT, Some(&remote_hash));
         let query_deadline = Instant::now() + Duration::from_secs(timeout_secs);
-        let query_fut =
-            self.nomad_session_query(dest_hash, path, payload, link_hops, query_deadline);
+        let query_fut = self.nomad_session_query(
+            dest_hash,
+            path,
+            payload,
+            link_hops,
+            query_deadline,
+            identify,
+        );
         let result = tokio::select! {
             biased;
             _ = cancel_rx => {
@@ -1586,6 +1598,28 @@ impl LiveBridge {
         }
     }
 
+    /// Close the cached Nomad Link when it identified to `dest_hex`, or to any
+    /// node when `dest_hex` is `None`. Used when the user stops identifying.
+    pub async fn close_identified_nomad_link(&self, dest_hex: Option<&str>) {
+        let handle = {
+            let mut slot = self.nomad_link_session.lock().await;
+            let matches = slot.as_ref().is_some_and(|cached| {
+                cached.identify
+                    && dest_hex.is_none_or(|hex| {
+                        hex.trim().eq_ignore_ascii_case(&hex::encode(cached.dest))
+                    })
+            });
+            if matches {
+                slot.take().map(|cached| cached.handle)
+            } else {
+                None
+            }
+        };
+        if let Some(handle) = handle {
+            handle.close().await;
+        }
+    }
+
     fn spawn_nomad_session_pump(session: LinkSession) {
         tokio::spawn(async move {
             let mut events = session.events;
@@ -1613,11 +1647,17 @@ impl LiveBridge {
         dest_hash: [u8; 16],
         link_hops: u8,
         deadline: Instant,
+        identify: bool,
     ) -> Result<(LinkSessionHandle, bool), LinkSessionError> {
         {
             let slot = self.nomad_link_session.lock().await;
             if let Some(cached) = slot.as_ref() {
-                if nomad_link_cache_should_reuse(&cached.dest, &dest_hash) {
+                if nomad_link_cache_should_reuse(
+                    &cached.dest,
+                    cached.identify,
+                    &dest_hash,
+                    identify,
+                ) {
                     return Ok((cached.handle.clone(), true));
                 }
             }
@@ -1641,7 +1681,7 @@ impl LiveBridge {
             hops: link_hops,
             establishment_timeout: remaining,
             client_label: "nomad.link".into(),
-            identify: true,
+            identify,
             track_phy_stats: false,
         };
         let session = LinkSession::connect(
@@ -1654,6 +1694,7 @@ impl LiveBridge {
         Self::spawn_nomad_session_pump(session);
         *self.nomad_link_session.lock().await = Some(NomadCachedLink {
             dest: dest_hash,
+            identify,
             handle: handle.clone(),
         });
         Ok((handle, false))
@@ -1666,9 +1707,10 @@ impl LiveBridge {
         payload: Vec<u8>,
         link_hops: u8,
         deadline: Instant,
+        identify: bool,
     ) -> Result<(Vec<u8>, Option<Vec<u8>>), LinkSessionError> {
         let (handle, reused) = self
-            .ensure_nomad_link_session(dest_hash, link_hops, deadline)
+            .ensure_nomad_link_session(dest_hash, link_hops, deadline, identify)
             .await?;
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
@@ -1686,7 +1728,7 @@ impl LiveBridge {
             Err(LinkSessionError::SessionClosed) if reused => {
                 self.close_nomad_link_session().await;
                 let (handle, _) = self
-                    .ensure_nomad_link_session(dest_hash, link_hops, deadline)
+                    .ensure_nomad_link_session(dest_hash, link_hops, deadline, identify)
                     .await?;
                 let remaining = deadline.saturating_duration_since(Instant::now());
                 if remaining.is_zero() {
@@ -1909,6 +1951,7 @@ impl LiveBridge {
         path: &str,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
+        identify: bool,
     ) -> serde_json::Value {
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
             return match local {
@@ -1944,6 +1987,7 @@ impl LiveBridge {
                 force_path_refresh,
                 None,
                 NomadLinkSchedule::Preempt,
+                identify,
             )
             .await
         {
@@ -1980,6 +2024,7 @@ impl LiveBridge {
         media_path: &str,
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
+        identify: bool,
     ) -> serde_json::Value {
         if let Some(local) = self
             .nomad_server
@@ -2020,6 +2065,7 @@ impl LiveBridge {
                 force_path_refresh,
                 None,
                 NomadLinkSchedule::Queue,
+                identify,
             )
             .await
         {
@@ -2056,6 +2102,7 @@ impl LiveBridge {
         interfaces: &[InterfaceRow],
         force_path_refresh: bool,
         progress_request_id: Option<&str>,
+        identify: bool,
     ) -> serde_json::Value {
         // Self-preview: read hosted content without a Link query to ourselves.
         if let Some(local) = self.nomad_server.try_read_local_route(hash_hex, path).await {
@@ -2101,6 +2148,7 @@ impl LiveBridge {
                 force_path_refresh,
                 progress_request_id,
                 NomadLinkSchedule::Preempt,
+                identify,
             )
             .await
         {
@@ -2260,6 +2308,7 @@ impl LiveBridge {
                     );
                     serde_json::json!({
                         "destination_hash": hash_hex,
+                        "identity_hash": identity_hash_hex,
                         "display_name": display_name,
                         "hops": hops.unwrap_or(0),
                     })
