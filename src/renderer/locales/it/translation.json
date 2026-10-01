@@ -1136,7 +1136,9 @@
       "exportAria": "Esporta il backup dell'identità Ratspeak .rsi crittografato con PIN",
       "exportRawAria": "Esporta file di identità RAW Reticulum non crittografato",
       "identityHashLabel": "Hash identità:",
-      "copyIdentityHash": "Copia hash dell'identità"
+      "copyIdentityHash": "Copia hash dell'identità",
+      "fingerprintLabel": "Impronta identificativa:",
+      "copyFingerprint": "Copia l'impronta digitale dell'identità"
     },
     "reticulumInterfaces": {
       "title": "interfacce",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identità sconosciuta: nessun annuncio ancora ricevuto da questo peer, quindi non ci sono impronte digitali da verificare.",
+    "identityUnknownDestination": "Hash di destinazione (non un'impronta digitale dell'identità)"
   },
   "peerGraph": {
     "title": "Grafico di comunicazione peer",

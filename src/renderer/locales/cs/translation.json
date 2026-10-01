@@ -1156,7 +1156,9 @@
       "exportAria": "Exportovat zálohu identity Ratspeak .rsi šifrovanou pomocí kódu PIN",
       "exportRawAria": "Exportovat nešifrovaný soubor identity RAW Reticulum",
       "identityHashLabel": "Hash identity:",
-      "copyIdentityHash": "Kopírovat hash identity"
+      "copyIdentityHash": "Kopírovat hash identity",
+      "fingerprintLabel": "Identifikační otisk prstu:",
+      "copyFingerprint": "Zkopírujte otisk identity"
     },
     "reticulumInterfaces": {
       "title": "Rozhraní",
@@ -3731,7 +3733,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identita neznámá: od tohoto partnera zatím nebylo slyšet žádné oznámení, takže neexistuje žádný otisk prstu k ověření.",
+    "identityUnknownDestination": "Cílový hash (nikoli otisk identity)"
   },
   "peerGraph": {
     "title": "Graf vzájemné komunikace",

@@ -1138,7 +1138,9 @@
       "exportAria": "PIN 암호화 Ratspeak .rsi ID 백업 내보내기",
       "exportRawAria": "암호화되지 않은 원시 Reticulum ID 파일 내보내기",
       "identityHashLabel": "ID 해시:",
-      "copyIdentityHash": "ID 해시 복사"
+      "copyIdentityHash": "ID 해시 복사",
+      "fingerprintLabel": "신원 지문:",
+      "copyFingerprint": "신원 지문 복사"
     },
     "reticulumInterfaces": {
       "title": "연계 문서",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "신원을 알 수 없음: 이 피어로부터 아직 공지가 없으므로 확인할 지문이 없습니다.",
+    "identityUnknownDestination": "대상 해시(신원 지문 아님)"
   },
   "peerGraph": {
     "title": "동료 커뮤니케이션 그래프",

@@ -1138,7 +1138,9 @@
       "exportAria": "Exportar copia de seguridad de identidad Ratspeak .rsi cifrada con PIN",
       "exportRawAria": "Exportar archivo de identidad de Reticulum sin cifrar",
       "identityHashLabel": "Hash de identidad:",
-      "copyIdentityHash": "Copiar hash de identidad"
+      "copyIdentityHash": "Copiar hash de identidad",
+      "fingerprintLabel": "Huella de identidad:",
+      "copyFingerprint": "Copiar huella dactilar de identidad"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identidad desconocida: aún no se ha escuchado ningún anuncio de este par, por lo que no hay ninguna huella digital que verificar.",
+    "identityUnknownDestination": "Hash de destino (no una huella digital de identidad)"
   },
   "peerGraph": {
     "title": "Gráfico de comunicación con los compañeros",

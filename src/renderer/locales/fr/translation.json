@@ -1137,7 +1137,9 @@
       "exportAria": "Exporter la sauvegarde d'identité Ratspeak .rsi chiffrée par code PIN",
       "exportRawAria": "Exporter le fichier d'identité RAW Reticulum non chiffré",
       "identityHashLabel": "Hachage d'identité :",
-      "copyIdentityHash": "Copier le hachage d'identité"
+      "copyIdentityHash": "Copier le hachage d'identité",
+      "fingerprintLabel": "Empreinte d'identité :",
+      "copyFingerprint": "Copier l'empreinte digitale d'identité"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identité inconnue : aucune annonce n'a encore été entendue de la part de cet homologue, il n'y a donc pas d'empreinte digitale à vérifier.",
+    "identityUnknownDestination": "Hachage de destination (pas une empreinte digitale d'identité)"
   },
   "peerGraph": {
     "title": "Graphique de communication par les pairs",

@@ -1172,7 +1172,9 @@
       "exportAria": "Экспорт зашифрованной PIN-кодом резервной копии удостоверения Ratspeak .rsi",
       "exportRawAria": "Экспорт незашифрованного файла идентификации Reticulum",
       "identityHashLabel": "Хэш удостоверения:",
-      "copyIdentityHash": "Копировать хэш удостоверения"
+      "copyIdentityHash": "Копировать хэш удостоверения",
+      "fingerprintLabel": "Идентификационный отпечаток пальца:",
+      "copyFingerprint": "Скопировать идентификационный отпечаток пальца"
     },
     "reticulumInterfaces": {
       "title": "Интерфейсы",
@@ -3767,7 +3769,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Личность неизвестна: от этого узла еще не получено ни одного объявления, поэтому нет отпечатка пальца для проверки.",
+    "identityUnknownDestination": "Хэш назначения (не идентификационный отпечаток)"
   },
   "peerGraph": {
     "title": "График одноранговой связи",

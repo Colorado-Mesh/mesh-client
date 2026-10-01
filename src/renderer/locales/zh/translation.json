@@ -1138,7 +1138,9 @@
       "exportAria": "导出PIN加密的Ratspeak .rsi身份备份",
       "exportRawAria": "导出未加密的原始 Reticulum 身份文件",
       "identityHashLabel": "标识哈希：",
-      "copyIdentityHash": "复制标识哈希"
+      "copyIdentityHash": "复制标识哈希",
+      "fingerprintLabel": "身份指纹：",
+      "copyFingerprint": "复制身份指纹"
     },
     "reticulumInterfaces": {
       "title": "接口",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "身份未知：尚未收到该对等方的通知，因此没有指纹可供验证。",
+    "identityUnknownDestination": "目标哈希（不是身份指纹）"
   },
   "peerGraph": {
     "title": "同行沟通图表",

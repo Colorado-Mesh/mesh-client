@@ -1170,7 +1170,9 @@
       "exportAria": "Eksportuj zaszyfrowaną kodem PIN kopię zapasową tożsamości Ratspeak .rsi",
       "exportRawAria": "Eksportuj niezaszyfrowany surowy plik tożsamości Reticulum",
       "identityHashLabel": "Skrót tożsamości:",
-      "copyIdentityHash": "Skopiuj skrót tożsamości"
+      "copyIdentityHash": "Skopiuj skrót tożsamości",
+      "fingerprintLabel": "Odcisk palca tożsamości:",
+      "copyFingerprint": "Skopiuj odcisk palca tożsamości"
     },
     "reticulumInterfaces": {
       "title": "Interfejsy",
@@ -3767,7 +3769,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Tożsamość nieznana: nie było jeszcze żadnych zapowiedzi od tego partnera, więc nie ma odcisku palca do weryfikacji.",
+    "identityUnknownDestination": "Hash miejsca docelowego (nie odcisk palca tożsamości)"
   },
   "peerGraph": {
     "title": "Wykres komunikacji z partnerami",

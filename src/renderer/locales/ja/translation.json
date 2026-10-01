@@ -1138,7 +1138,9 @@
       "exportAria": "PIN暗号化されたRatspeak .rsi IDバックアップをエクスポート",
       "exportRawAria": "暗号化されていないRAW Reticulum IDファイルをエクスポート",
       "identityHashLabel": "IDハッシュ：",
-      "copyIdentityHash": "IDハッシュをコピー"
+      "copyIdentityHash": "IDハッシュをコピー",
+      "fingerprintLabel": "ID の指紋:",
+      "copyFingerprint": "ID フィンガープリントをコピーする"
     },
     "reticulumInterfaces": {
       "title": "インターフェース",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "アイデンティティが不明: このピアからはまだアナウンスが届いていないため、検証するためのフィンガープリントがありません。",
+    "identityUnknownDestination": "宛先ハッシュ (ID フィンガープリントではありません)"
   },
   "peerGraph": {
     "title": "ピアコミュニケーショングラフ",

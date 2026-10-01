@@ -1138,7 +1138,9 @@
       "exportAria": "Ekspor cadangan identitas Ratspeak .rsi terenkripsi PIN",
       "exportRawAria": "Ekspor file identitas Reticulum mentah yang tidak terenkripsi",
       "identityHashLabel": "Hash identitas:",
-      "copyIdentityHash": "Salin hash identitas"
+      "copyIdentityHash": "Salin hash identitas",
+      "fingerprintLabel": "Sidik jari identitas:",
+      "copyFingerprint": "Salin sidik jari identitas"
     },
     "reticulumInterfaces": {
       "title": "Interface",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identitas tidak diketahui: belum ada pengumuman yang terdengar dari rekan ini, jadi tidak ada sidik jari untuk diverifikasi.",
+    "identityUnknownDestination": "Hash tujuan (bukan sidik jari identitas)"
   },
   "peerGraph": {
     "title": "Grafik Komunikasi Rekan",

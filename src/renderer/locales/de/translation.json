@@ -1136,7 +1136,9 @@
       "exportAria": "PIN-verschlüsselte Ratspeak .rsi-Identitätssicherung exportieren",
       "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren",
       "identityHashLabel": "Identitäts-Hash:",
-      "copyIdentityHash": "Identitäts-Hash kopieren"
+      "copyIdentityHash": "Identitäts-Hash kopieren",
+      "fingerprintLabel": "Identitäts-Fingerabdruck:",
+      "copyFingerprint": "Identitäts-Fingerabdruck kopieren"
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identität unbekannt: Noch keine Ankündigung von diesem Peer, daher ist kein Fingerabdruck zur Überprüfung vorhanden.",
+    "identityUnknownDestination": "Ziel-Hash (kein Identitäts-Fingerabdruck)"
   },
   "peerGraph": {
     "title": "Peer-Kommunikationsgrafik",

@@ -1138,7 +1138,9 @@
       "exportAria": "PIN şifreli Ratspeak .rsi kimlik yedeklemesini dışa aktarın",
       "exportRawAria": "Şifrelenmemiş ham Reticulum kimlik dosyasını dışa aktar",
       "identityHashLabel": "Kimlik hash'i:",
-      "copyIdentityHash": "Kimlik karmasını kopyala"
+      "copyIdentityHash": "Kimlik karmasını kopyala",
+      "fingerprintLabel": "Kimlik parmak izi:",
+      "copyFingerprint": "Kimlik parmak izini kopyala"
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Kimlik bilinmiyor: Bu meslektaştan henüz bir duyuru duyulmadı, dolayısıyla doğrulanacak bir parmak izi yok.",
+    "identityUnknownDestination": "Hedef karması (kimlik parmak izi değil)"
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",

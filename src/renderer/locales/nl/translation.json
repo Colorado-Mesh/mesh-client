@@ -1137,7 +1137,9 @@
       "exportAria": "Export PIN-gecodeerde Ratspeak .rsi identiteitsback-up",
       "exportRawAria": "Exporteer niet-versleuteld RAW Reticulum-identiteitsbestand",
       "identityHashLabel": "Identiteitshash:",
-      "copyIdentityHash": "Identiteitshash kopiëren"
+      "copyIdentityHash": "Identiteitshash kopiëren",
+      "fingerprintLabel": "Identiteit vingerafdruk:",
+      "copyFingerprint": "Kopieer identiteitsvingerafdruk"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",
@@ -3691,7 +3693,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identiteit onbekend: er is nog geen aankondiging gehoord van deze peer, dus er is geen vingerafdruk om te verifiëren.",
+    "identityUnknownDestination": "Bestemmingshash (geen identiteitsvingerafdruk)"
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
