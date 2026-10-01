@@ -227,6 +227,8 @@ Routing bias between **RF** (LoRa / RNode) and **network** (TCP/UDP/I2P/gateway/
 | PUT    | `/api/v1/nomadnetwork/serving/files`          | `{ path, content_base64 }`                                                     | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                                                                                        |
 | DELETE | `/api/v1/nomadnetwork/serving/files?path=…`   |                                                                                | `{ ok }` — sidecar-only; not exposed in the My Pages UI                                                                                                                        |
 
+`identify` defaults to **false**: Nomad Links are anonymous unless the caller passes `identify=true`, which sends `LINKIDENTIFY` on a new Link. The sidecar keys its cached Nomad Link on destination **and** identify, so a change never reuses a Link with the other identification. The renderer sends the flag from the node's persisted `identify` field (`NomadNodeRow.identify` in `GET /nodes` rows). The `nomadnetwork.node` WS event carries `identity_hash` but not the flag.
+
 Auto-restore order when the live stack comes up: load `nomad_serving_content_source` → if `nomad_serving_enabled` and a content source is set, start hosting → start FS watcher on `pages/` (and `files/` when that directory exists). If enabled without a content source, set `last_error=content_source_required` and do not start. Other failures keep `enabled=true` with `running=false` and `last_error` set; logs use the `[nomad-serving]` tag.
 
 ### RRC (Reticulum Relay Chat)
