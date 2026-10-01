@@ -134,6 +134,29 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
         },
       ]);
       expect(clearMeshcoreMessagesByChannel(db, -1).changes).toBe(1);
+
+      const anonymousLegacy = db
+        .prepareOnce(
+          'INSERT INTO meshcore_messages (sender_id,payload,channel_idx,to_node,timestamp,status) VALUES (NULL,?,0,2,?,?)',
+        )
+        .run(row.payload, row.timestamp, 'pending');
+      const anonymousRow = {
+        ...row,
+        sender_id: null,
+        local_order: Number(anonymousLegacy.lastInsertRowid),
+      };
+      expect(persistMeshcoreMessage(db, anonymousRow).changes).toBe(1);
+      expect(persistMeshcoreMessage(db, { ...anonymousRow, status: 'acked' }).changes).toBe(1);
+      expect(
+        db.prepareOnce('SELECT id,channel_idx,local_order,status FROM meshcore_messages').all(),
+      ).toEqual([
+        {
+          id: Number(anonymousLegacy.lastInsertRowid),
+          channel_idx: 0,
+          local_order: anonymousRow.local_order,
+          status: 'acked',
+        },
+      ]);
     } finally {
       db.close();
     }
@@ -169,6 +192,21 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
       expect(db.prepareOnce('SELECT channel_idx,local_order FROM meshcore_messages').all()).toEqual(
         [{ channel_idx: -1, local_order: row.local_order }],
       );
+      const anonymousRow = { ...row, sender_id: null };
+      expect(persistMeshcoreMessage(db, anonymousRow).changes).toBe(1);
+      expect(persistMeshcoreMessage(db, { ...anonymousRow, rx_hops: 2 }).changes).toBe(1);
+      expect(
+        persistMeshcoreMessage(db, {
+          ...anonymousRow,
+          local_order: row.local_order! + 1,
+          rx_hops: 3,
+        }).changes,
+      ).toBe(0);
+      expect(
+        db
+          .prepareOnce('SELECT local_order,rx_hops FROM meshcore_messages WHERE sender_id IS NULL')
+          .all(),
+      ).toEqual([{ local_order: row.local_order, rx_hops: 2 }]);
     } finally {
       db.close();
     }
