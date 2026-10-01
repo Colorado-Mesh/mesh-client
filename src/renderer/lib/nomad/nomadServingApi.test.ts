@@ -5,12 +5,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   deleteServingPage,
+  deleteServingPageAcl,
+  getServingPageAcl,
   getServingPageRaw,
   getServingStatus,
   listServingFiles,
   listServingPages,
   pickServingContentSource,
   putServingPage,
+  putServingPageAcl,
   setServing,
   setServingContentSource,
 } from '@/renderer/lib/nomad/nomadServingApi';
@@ -248,6 +251,74 @@ describe('nomadServingApi', () => {
       await expect(deleteServingPage('index.mu')).resolves.toEqual({
         ok: false,
         error: 'delete boom',
+      });
+    });
+  });
+
+  describe('page access lists', () => {
+    it('reads the allowlist for a page path, not the .allowed path', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      proxyGet.mockResolvedValueOnce({
+        ok: true,
+        path: 'members/board.mu',
+        exists: true,
+        content: 'abc\n',
+      });
+
+      await expect(getServingPageAcl('members/board.mu')).resolves.toEqual({
+        ok: true,
+        exists: true,
+        content: 'abc\n',
+      });
+      expect(proxyGet).toHaveBeenCalledWith(
+        '/api/v1/nomadnetwork/serving/acl?path=members%2Fboard.mu',
+      );
+    });
+
+    it('reports a missing allowlist as exists=false with empty content', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      proxyGet.mockResolvedValueOnce({ ok: true, path: 'index.mu', exists: false, content: '' });
+      await expect(getServingPageAcl('index.mu')).resolves.toEqual({
+        ok: true,
+        exists: false,
+        content: '',
+      });
+    });
+
+    it('writes and deletes through the acl route', async () => {
+      const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+      const proxyDelete = window.electronAPI.reticulum.proxyDelete as ReturnType<typeof vi.fn>;
+      proxyPut.mockResolvedValueOnce({ ok: true });
+      proxyDelete.mockResolvedValueOnce({ ok: true });
+
+      await expect(putServingPageAcl('index.mu', 'abc\n')).resolves.toEqual({ ok: true });
+      expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/acl', {
+        path: 'index.mu',
+        content: 'abc\n',
+      });
+      await expect(deleteServingPageAcl('index.mu')).resolves.toEqual({ ok: true });
+      expect(proxyDelete).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/acl?path=index.mu');
+    });
+
+    it('surfaces sidecar error codes and a stopped stack', async () => {
+      const proxyGet = window.electronAPI.reticulum.proxyGet as ReturnType<typeof vi.fn>;
+      const proxyPut = window.electronAPI.reticulum.proxyPut as ReturnType<typeof vi.fn>;
+      proxyGet.mockResolvedValueOnce({ ok: false, error: 'page_not_found' });
+      proxyPut.mockResolvedValueOnce({ ok: false, error: 'invalid_page_path' });
+
+      await expect(getServingPageAcl('gone.mu')).resolves.toEqual({
+        ok: false,
+        error: 'page_not_found',
+      });
+      await expect(putServingPageAcl('x.mu.allowed', '')).resolves.toEqual({
+        ok: false,
+        error: 'invalid_page_path',
+      });
+
+      vi.mocked(isReticulumSidecarRunning).mockResolvedValue(false);
+      await expect(deleteServingPageAcl('index.mu')).resolves.toEqual({
+        ok: false,
+        error: 'sidecar_not_running',
       });
     });
   });

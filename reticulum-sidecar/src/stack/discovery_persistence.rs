@@ -151,6 +151,48 @@ mod tests {
     }
 
     #[test]
+    fn nomad_identify_survives_reload_and_announces() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut state = PersistedState::default_empty();
+        announce(&mut state, "site");
+        state.set_nomad_identify(&NODE.to_uppercase(), true);
+        state.save(dir.path(), dir.path()).unwrap();
+        let mut saved = PersistedState::load(dir.path(), dir.path());
+        assert!(saved.nomad_nodes[0].identify);
+        announce(&mut saved, "renamed");
+        assert!(
+            saved.nomad_nodes[0].identify,
+            "announce upsert keeps the flag"
+        );
+    }
+
+    #[test]
+    fn nomad_identify_off_for_unknown_node_adds_no_row() {
+        let mut state = PersistedState::default_empty();
+        state.set_nomad_identify(NODE, false);
+        assert!(state.nomad_nodes.is_empty());
+        state.set_nomad_identify(NODE, true);
+        assert_eq!(state.nomad_nodes.len(), 1);
+        assert!(state.nomad_nodes[0].identify);
+    }
+
+    #[test]
+    fn clear_nomad_identify_all_counts_and_persists() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut state = PersistedState::default_empty();
+        announce(&mut state, "a");
+        state.upsert_nomad_node("ffeeddccbbaa99887766554433221100", None, None, Some(1));
+        state.upsert_nomad_node("0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f", None, None, Some(1));
+        state.set_nomad_identify(NODE, true);
+        state.set_nomad_identify("ffeeddccbbaa99887766554433221100", true);
+        assert_eq!(state.clear_nomad_identify_all(), 2);
+        assert_eq!(state.clear_nomad_identify_all(), 0);
+        state.save(dir.path(), dir.path()).unwrap();
+        let saved = PersistedState::load(dir.path(), dir.path());
+        assert!(saved.nomad_nodes.iter().all(|n| !n.identify));
+    }
+
+    #[test]
     fn canceled_flush_keeps_its_write_order_until_blocking_save_finishes() {
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()

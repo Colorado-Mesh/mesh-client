@@ -64,6 +64,19 @@ export function clearNomadImageCache(): void {
   cacheGeneration += 1;
 }
 
+/**
+ * Drop every cached image for one node and invalidate in-flight writers, so a
+ * fetch made under the previous identify choice cannot repopulate the cache.
+ */
+export function clearNomadImageCacheForHash(hash: string): void {
+  const prefix = `${hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase()}:`;
+  if (prefix === ':') return;
+  for (const key of [...cache.keys()]) {
+    if (key.startsWith(prefix)) cache.delete(key);
+  }
+  cacheGeneration += 1;
+}
+
 /** @internal test helper */
 export function nomadImageCacheSizeForTests(): number {
   return cache.size;

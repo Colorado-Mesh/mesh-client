@@ -1263,7 +1263,11 @@ mod tests {
         let challenge = manager
             .prepare_action(&dest, "ttt", CMD_CHALLENGE, None, None)
             .expect("challenge still works without hydrate");
-        assert!(!challenge.session_id.is_empty());
+        assert!(
+            !challenge.session_id.is_empty(),
+            "{:?}",
+            challenge.session_id
+        );
     }
 
     #[test]

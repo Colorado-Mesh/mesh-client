@@ -156,6 +156,75 @@ export async function putServingPage(
   }
 }
 
+export interface NomadServingPageAcl {
+  ok: true;
+  /** False when the page has no `.allowed` file (anyone may fetch it). */
+  exists: boolean;
+  content: string;
+  error?: undefined;
+}
+
+export type NomadServingPageAclResult = NomadServingPageAcl | NomadServingErrResponse;
+
+/** Read a hosted page's `{page}.allowed` list; pass the page path, not the `.allowed` path. */
+export async function getServingPageAcl(pagePath: string): Promise<NomadServingPageAclResult> {
+  if (!(await isReticulumSidecarRunning())) {
+    return { ok: false, error: 'sidecar_not_running' };
+  }
+  try {
+    const body = (await window.electronAPI.reticulum.proxyGet(
+      `/api/v1/nomadnetwork/serving/acl?path=${encodeURIComponent(pagePath)}`,
+    )) as { ok?: boolean; exists?: boolean; content?: string; error?: string };
+    if (body.ok === false || typeof body.content !== 'string') {
+      return { ok: false, error: body.error ?? 'serving_page_unavailable' };
+    }
+    return { ok: true, exists: body.exists === true, content: body.content };
+  } catch (e) {
+    // catch-no-log-ok returned to caller for panel UI
+    return asApiError(e);
+  }
+}
+
+export async function putServingPageAcl(
+  pagePath: string,
+  content: string,
+): Promise<NomadServingApiResponse> {
+  if (!(await isReticulumSidecarRunning())) {
+    return { ok: false, error: 'sidecar_not_running' };
+  }
+  try {
+    const body = (await window.electronAPI.reticulum.proxyPut('/api/v1/nomadnetwork/serving/acl', {
+      path: pagePath,
+      content,
+    })) as { ok?: boolean; error?: string };
+    if (body.ok === false) {
+      return { ok: false, error: body.error ?? 'page_write_failed' };
+    }
+    return { ok: true };
+  } catch (e) {
+    // catch-no-log-ok returned to caller for panel UI
+    return asApiError(e);
+  }
+}
+
+export async function deleteServingPageAcl(pagePath: string): Promise<NomadServingApiResponse> {
+  if (!(await isReticulumSidecarRunning())) {
+    return { ok: false, error: 'sidecar_not_running' };
+  }
+  try {
+    const body = (await window.electronAPI.reticulum.proxyDelete(
+      `/api/v1/nomadnetwork/serving/acl?path=${encodeURIComponent(pagePath)}`,
+    )) as { ok?: boolean; error?: string };
+    if (body.ok === false) {
+      return { ok: false, error: body.error ?? 'page_delete_failed' };
+    }
+    return { ok: true };
+  } catch (e) {
+    // catch-no-log-ok returned to caller for panel UI
+    return asApiError(e);
+  }
+}
+
 export async function deleteServingPage(path: string): Promise<NomadServingApiResponse> {
   if (!(await isReticulumSidecarRunning())) {
     return { ok: false, error: 'sidecar_not_running' };

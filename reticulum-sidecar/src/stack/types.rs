@@ -204,6 +204,10 @@ pub struct NomadNodeRow {
     pub last_seen: Option<u64>,
     #[serde(default)]
     pub favorited: bool,
+    /// Send LINKIDENTIFY on Links to this node (NomadNet "Identify when
+    /// connecting"). Default false: browse anonymously.
+    #[serde(default)]
+    pub identify: bool,
     pub hops: Option<u8>,
     pub status: Option<String>,
 }

@@ -161,6 +161,6 @@ mod tests {
         assert!(!cap.transfer_allowed);
         assert!(cap.shell_allowed);
         assert_eq!(cap.reason_key, Some("path_unknown"));
-        assert!(cap.via_atoms.is_empty());
+        assert!(cap.via_atoms.is_empty(), "{:?}", cap.via_atoms);
     }
 }

@@ -19,6 +19,7 @@ import {
 import type { NomadServingPageEntry, NomadServingStatus } from '@/shared/nomad-types';
 
 import MicronPageEditor from './MicronPageEditor';
+import NomadPageAccessDialog from './NomadPageAccessDialog';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
 /** Starter body for a brand-new page so the preview is not blank. */
@@ -53,6 +54,8 @@ export default function NomadPageServerPanel({
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
   /** Content-relative path awaiting delete confirmation, if any. */
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  /** Page whose `.allowed` access list is open for editing, if any. */
+  const [accessTarget, setAccessTarget] = useState<string | null>(null);
   const refreshInFlightRef = useRef(false);
   const refreshSeqRef = useRef(0);
   /** Prefer local edits over poll/status refresh until Start/Stop serving succeeds. */
@@ -446,6 +449,18 @@ export default function NomadPageServerPanel({
                 >
                   {t('nomadNetwork.serving.edit')}
                 </button>
+                <button
+                  type="button"
+                  disabled={busy || !sidecarRunning || !hasContentSource}
+                  onClick={() => {
+                    setError(null);
+                    setAccessTarget(page.path);
+                  }}
+                  aria-label={t('nomadNetwork.serving.restrictPageAria', { path: page.path })}
+                  className="text-2xs border-ink-600 text-ink-200 hover:bg-ink-800 shrink-0 rounded border px-2 py-0.5 disabled:opacity-40"
+                >
+                  {t('nomadNetwork.serving.restrict')}
+                </button>
                 {pendingDelete === page.path ? (
                   <>
                     <button
@@ -504,6 +519,17 @@ export default function NomadPageServerPanel({
           }}
           onClose={() => {
             setEditorTarget(null);
+          }}
+        />
+      ) : null}
+      {accessTarget ? (
+        <NomadPageAccessDialog
+          path={accessTarget}
+          onChanged={() => {
+            void refresh();
+          }}
+          onClose={() => {
+            setAccessTarget(null);
           }}
         />
       ) : null}

@@ -1128,8 +1128,16 @@ mod tests {
             responder.await.expect("responder join"),
             "empty path table must DropPath then RequestPath without failover RPCs"
         );
-        assert!(failover.blocked_ifaces.is_empty());
-        assert!(failover.blocked_vias.is_empty());
+        assert!(
+            failover.blocked_ifaces.is_empty(),
+            "{:?}",
+            failover.blocked_ifaces
+        );
+        assert!(
+            failover.blocked_vias.is_empty(),
+            "{:?}",
+            failover.blocked_vias
+        );
     }
 
     #[tokio::test]
@@ -1423,8 +1431,16 @@ mod tests {
                 .is_err(),
             "SuppressCurrentPathInterface and DropAllVia stay gated by MAX_VIA_FAILOVERS"
         );
-        assert!(failover.blocked_ifaces.is_empty());
-        assert!(failover.blocked_vias.is_empty());
+        assert!(
+            failover.blocked_ifaces.is_empty(),
+            "{:?}",
+            failover.blocked_ifaces
+        );
+        assert!(
+            failover.blocked_vias.is_empty(),
+            "{:?}",
+            failover.blocked_vias
+        );
     }
 
     #[test]

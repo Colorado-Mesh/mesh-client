@@ -128,7 +128,7 @@ mod tests {
             GattErrorCode::Internal,
         ];
         for code in codes {
-            assert!(!code.as_str().is_empty());
+            assert!(!code.as_str().is_empty(), "{:?}", code.as_str());
             assert!(!code.as_str().contains(' '));
         }
     }

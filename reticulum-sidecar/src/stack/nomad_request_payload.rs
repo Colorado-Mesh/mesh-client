@@ -38,7 +38,7 @@ mod tests {
         let json = br#"{"field_q":"hello","var_mode":"search"}"#;
         let b64 = BASE64.encode(json);
         let payload = nomad_page_request_payload(Some(&b64));
-        assert!(!payload.is_empty());
+        assert!(!payload.is_empty(), "{payload:?}");
 
         let value: rmpv::Value = rmpv::decode::read_value(&mut payload.as_slice()).unwrap();
         let rmpv::Value::Map(map) = value else {
@@ -65,15 +65,27 @@ mod tests {
 
     #[test]
     fn empty_when_data_missing_or_invalid() {
-        assert!(nomad_page_request_payload(None).is_empty());
-        assert!(nomad_page_request_payload(Some("")).is_empty());
-        assert!(nomad_page_request_payload(Some("not-base64!!!")).is_empty());
+        assert!(
+            nomad_page_request_payload(None).is_empty(),
+            "{:?}",
+            nomad_page_request_payload(None)
+        );
+        assert!(
+            nomad_page_request_payload(Some("")).is_empty(),
+            "{:?}",
+            nomad_page_request_payload(Some(""))
+        );
+        assert!(
+            nomad_page_request_payload(Some("not-base64!!!")).is_empty(),
+            "{:?}",
+            nomad_page_request_payload(Some("not-base64!!!"))
+        );
     }
 
     #[test]
     fn media_request_encodes_path_with_nil_key() {
         let payload = nomad_media_request_payload("/media/header.webp");
-        assert!(!payload.is_empty());
+        assert!(!payload.is_empty(), "{payload:?}");
         let value: rmpv::Value = rmpv::decode::read_value(&mut payload.as_slice()).unwrap();
         let rmpv::Value::Map(map) = value else {
             panic!("expected map");

@@ -62,6 +62,8 @@ vi.mock('./QrCodeImage', () => ({
   ),
 }));
 
+import { formatReticulumIdentityFingerprint } from '@/shared/reticulumIdentityFingerprint';
+
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import ReticulumPeerDetailModal from './ReticulumPeerDetailModal';
@@ -240,6 +242,41 @@ describe('ReticulumPeerDetailModal — copy hash', () => {
       );
     });
     expect(refreshSpy).toHaveBeenCalled();
+  });
+
+  it('formats the identity hash as the fingerprint when it is known', async () => {
+    vi.mocked(window.electronAPI.db.getReticulumIdentityActivity).mockResolvedValue([
+      {
+        destination_hash: PEER_HASH,
+        aspect: 'lxmf.delivery',
+        identity_hash: IDENTITY_HASH,
+        last_seen: 100,
+      },
+    ]);
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    expect(await screen.findByText('peerDetailModal.verifyFingerprint')).toBeInTheDocument();
+    expect(screen.getByText(formatReticulumIdentityFingerprint(IDENTITY_HASH))).toBeInTheDocument();
+    expect(
+      screen.queryByText(formatReticulumIdentityFingerprint(PEER_HASH)),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('peerDetailModal.identityUnknown')).not.toBeInTheDocument();
+  });
+
+  it('labels the destination hash as identity unknown instead of a fingerprint', async () => {
+    render(
+      <ReticulumPeerDetailModal peerHash={PEER_HASH} onClose={vi.fn()} onSendMessage={vi.fn()} />,
+    );
+
+    expect(await screen.findByText('peerDetailModal.identityUnknown')).toBeInTheDocument();
+    expect(screen.getByText('peerDetailModal.identityUnknownDestination')).toBeInTheDocument();
+    expect(screen.queryByText('peerDetailModal.verifyFingerprint')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(formatReticulumIdentityFingerprint(PEER_HASH)),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'peerDetailModal.verifyMark' })).toBeDisabled();
   });
 });
 
