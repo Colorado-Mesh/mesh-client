@@ -22,6 +22,36 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     }
   });
 
+  it('adds local DM order to a v49 database without rewriting historical messages', () => {
+    const db = new NodeSqliteDB(':memory:');
+    try {
+      db.execScript(`CREATE TABLE meshcore_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, sender_id INTEGER, sender_name TEXT,
+        payload TEXT NOT NULL, channel_idx INTEGER DEFAULT 0, timestamp INTEGER NOT NULL,
+        status TEXT DEFAULT 'acked', packet_id INTEGER, to_node INTEGER
+      ); INSERT INTO meshcore_messages (sender_id,payload,channel_idx,timestamp,to_node)
+      VALUES (1,'synthetic historical DM',0,1700000000576,2);`);
+      db.pragma('user_version = 49');
+      runSchemaUpgrade(db);
+      expect(
+        db
+          .prepareOnce('SELECT id,payload,channel_idx,timestamp,local_order FROM meshcore_messages')
+          .get(),
+      ).toEqual({
+        id: 1,
+        payload: 'synthetic historical DM',
+        channel_idx: 0,
+        timestamp: 1_700_000_000_576,
+        local_order: null,
+      });
+      expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
+      runSchemaUpgrade(db);
+      expect(db.prepareOnce('SELECT COUNT(*) AS n FROM meshcore_messages').get()).toEqual({ n: 1 });
+    } finally {
+      db.close();
+    }
+  });
+
   it('brings a new database to CURRENT_SCHEMA_VERSION with retention defaults', () => {
     dir = mkdtempSync(join(tmpdir(), 'mesh-schema-test-'));
     const dbPath = join(dir, 'test.db');

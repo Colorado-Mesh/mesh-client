@@ -34,6 +34,7 @@ import {
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { errLikeToLogString } from '../errLikeToLogString';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
+import { nextMeshcoreMessageLocalOrder } from '../meshcoreMessageOrder';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
 import { shouldSuppressMeshtasticLocalConfigWrite } from '../meshtastic/meshtasticConfigIngressGuard';
 import { meshtasticTracerouteLastHeardNodeIds } from '../meshtasticLastHeard';
@@ -201,7 +202,8 @@ class PacketRouter {
     let skipListeners = false;
     switch (event.type) {
       case 'text_message': {
-        const isMeshtastic = getIdentity(identityId)?.protocol.type === 'meshtastic';
+        const protocolType = getIdentity(identityId)?.protocol.type;
+        const isMeshtastic = protocolType === 'meshtastic';
         if (event.payload.id) {
           const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
           const dedupWindowMs = event.payload.tapback
@@ -263,6 +265,8 @@ class PacketRouter {
         const existingRecord = useMessageStore.getState().messages[identityId]?.[event.payload.id];
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent when its identity bucket is missing.
         const existingReceivedVia = existingRecord?.receivedVia;
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Message may be absent before first receipt.
+        const existingLocalOrder = existingRecord?.localOrder;
         const receivedVia =
           existingReceivedVia === 'mqtt' || existingReceivedVia === 'both'
             ? ('both' as const)
@@ -274,6 +278,9 @@ class PacketRouter {
           payload: event.payload.payload,
           channelIndex: event.payload.channelIndex,
           timestamp: event.payload.timestamp,
+          ...(protocolType === 'meshcore' && event.payload.channelIndex === -1
+            ? { localOrder: existingLocalOrder ?? nextMeshcoreMessageLocalOrder() }
+            : {}),
           rxSnr: event.payload.rxSnr,
           rxRssi: event.payload.rxRssi,
           hopCount: event.payload.hopCount,

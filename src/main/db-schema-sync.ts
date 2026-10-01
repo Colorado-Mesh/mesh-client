@@ -19,7 +19,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 49;
+export const CURRENT_SCHEMA_VERSION = 50;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -120,6 +120,7 @@ export const CANONICAL_TABLES_DDL = `
         payload     TEXT NOT NULL,
         channel_idx INTEGER DEFAULT 0,
         timestamp   INTEGER NOT NULL,
+        local_order INTEGER,
         status      TEXT DEFAULT 'acked',
         packet_id   INTEGER,
         emoji       INTEGER,
@@ -423,6 +424,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     last_synced_from_radio: 'TEXT',
   },
   meshcore_messages: {
+    local_order: 'INTEGER',
     sender_id: 'INTEGER',
     sender_name: 'TEXT',
     payload: 'TEXT NOT NULL',

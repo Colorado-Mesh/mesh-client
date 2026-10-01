@@ -20,6 +20,7 @@ import {
   lookupMeshcoreMessageIdByDedupeKey,
   removeMeshcoreDedupeIndexForMessage,
 } from './meshcoreMessageDedupeIndex';
+import { nextMeshcoreMessageLocalOrder } from './meshcoreMessageOrder';
 import {
   chatMessageToMessageRecord,
   messageRecordsToChatMessages,
@@ -227,6 +228,7 @@ function mergeExactKeyDuplicate(existing: ChatMessage, incoming: ChatMessage): C
   return {
     ...existing,
     ...incoming,
+    localOrder: existing.localOrder ?? incoming.localOrder,
     ...replyFields,
     receivedVia: mergedReceivedVia,
     status: statusAdvances ? incoming.status : (existing.status ?? incoming.status),
@@ -494,6 +496,9 @@ export function upsertMeshcoreMessageWithDedup(
   }
 
   const canonicalId = preferredId ?? meshcoreMessageStoreId(msg);
+  if (msg.channel === -1 && msg.localOrder == null) {
+    msg = { ...msg, localOrder: nextMeshcoreMessageLocalOrder() };
+  }
   const record = chatMessageToMessageRecord(msg);
   record.id = canonicalId;
   upsertMessage(identityId, record);

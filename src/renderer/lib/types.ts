@@ -402,6 +402,8 @@ export interface ChatMessage {
   payload: string;
   channel: number;
   timestamp: number;
+  /** First local observation order, independent of packet/ACK IDs. */
+  localOrder?: number;
   // Delivery status tracking
   packetId?: number;
   status?: 'sending' | 'acked' | 'failed' | 'queued' | 'blocked'; // device (RF) transport; queued/blocked for outbox

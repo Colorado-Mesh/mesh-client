@@ -43,6 +43,7 @@ import {
   sanitizeMeshcoreLastAdvertForDb,
 } from '../shared/meshcoreContactSanitize';
 import { MESHCORE_CONTACTS_BATCH_MAX } from '../shared/meshcoreContactsBatchLimit';
+import { meshcoreMessageChannelIndex } from '../shared/meshcoreMessageChannel';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import { MESH_PROTOCOL_SET } from '../shared/meshProtocol';
 import {
@@ -159,6 +160,12 @@ import {
 } from './mecp-received-log';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 import { decodePathPayload, isPathPacket } from './meshcore-path-decoder';
+import {
+  clearMeshcoreMessagesByChannel,
+  MESHCORE_MESSAGE_CHANNEL_SQL,
+  persistMeshcoreMessage,
+  validateMeshcoreMessageLocalOrder,
+} from './meshcoreMessageChannel';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
@@ -756,6 +763,7 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
     )
       throw new Error('db:saveMeshcoreMessage: rx_packet_fingerprint must be 8 hex chars');
   }
+  validateMeshcoreMessageLocalOrder(m.local_order);
   if (m.rx_hops != null) {
     const h = Number(m.rx_hops);
     if (!Number.isInteger(h) || h < 0)
@@ -5317,7 +5325,7 @@ ipcMain.handle('db:getMeshcoreMessages', (event, channelIdx?: number, limit = 20
       const ch = typeof channelIdx === 'number' ? Math.trunc(channelIdx) : 0;
       const rows = db
         .prepareOnce(
-          'SELECT * FROM meshcore_messages WHERE channel_idx = ? ORDER BY id DESC LIMIT ?',
+          `SELECT * FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = ? ORDER BY id DESC LIMIT ?`,
         )
         .all(ch, safeLimit) as Record<string, unknown>[];
       rows.reverse();
@@ -5400,7 +5408,12 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
       sender_id: m.sender_id != null ? Number(m.sender_id) >>> 0 : null,
       sender_name: typeof m.sender_name === 'string' ? m.sender_name : null,
       payload: m.payload as string,
-      channel_idx: m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
+      channel_idx: meshcoreMessageChannelIndex(
+        m.channel_idx != null ? Math.trunc(Number(m.channel_idx)) : 0,
+        m.to_node != null ? Number(m.to_node) >>> 0 : null,
+        m.room_server_id != null ? Number(m.room_server_id) : null,
+      ),
+      local_order: m.local_order != null ? Number(m.local_order) : null,
       timestamp: effectiveMessageTimestampMs(Number(m.timestamp)),
       status: typeof m.status === 'string' ? m.status : 'acked',
       packet_id: m.packet_id != null ? Number(m.packet_id) : null,
@@ -5421,43 +5434,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
           : null,
     };
 
-    // idx_mc_msg_dedup is a partial UNIQUE index (sender_id IS NOT NULL); SQLite cannot
-    // target it with INSERT ON CONFLICT(columns). Update by natural key, then insert.
-    const senderId = rowParams.sender_id;
-    if (senderId != null && Number.isFinite(senderId) && senderId >= 0) {
-      const updated = db
-        .prepareOnce(
-          'UPDATE meshcore_messages SET ' +
-            'sender_name = COALESCE(@sender_name, sender_name), ' +
-            'status = CASE ' +
-            "WHEN @status IN ('acked', 'failed') THEN @status " +
-            "WHEN status = 'acked' THEN status " +
-            'ELSE @status END, ' +
-            'packet_id = COALESCE(@packet_id, packet_id), ' +
-            'emoji = COALESCE(@emoji, emoji), ' +
-            'reply_id = COALESCE(@reply_id, reply_id), ' +
-            'to_node = COALESCE(@to_node, to_node), ' +
-            'received_via = COALESCE(@received_via, received_via), ' +
-            'rx_packet_fingerprint = COALESCE(@rx_packet_fingerprint, rx_packet_fingerprint), ' +
-            'reply_preview_text = COALESCE(@reply_preview_text, reply_preview_text), ' +
-            'reply_preview_sender = COALESCE(@reply_preview_sender, reply_preview_sender), ' +
-            'rx_hops = COALESCE(@rx_hops, rx_hops), ' +
-            'room_server_id = COALESCE(@room_server_id, room_server_id) ' +
-            'WHERE sender_id = @sender_id AND timestamp = @timestamp AND channel_idx = @channel_idx AND payload = @payload',
-        )
-        .run(rowParams);
-      if (updated.changes > 0) {
-        return updated;
-      }
-    }
-
-    return db
-      .prepareOnce(
-        'INSERT OR IGNORE INTO meshcore_messages ' +
-          '(sender_id, sender_name, payload, channel_idx, timestamp, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id) ' +
-          'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id)',
-      )
-      .run(rowParams);
+    return persistMeshcoreMessage(db, rowParams);
   } catch (err) {
     finishDbIpcHandler('db:saveMeshcoreMessage', err);
   }
@@ -5730,7 +5707,7 @@ ipcMain.handle('db:getMeshcoreMessageChannels', (event) => {
     if (!db) return [];
     return db
       .prepareOnce(
-        'SELECT DISTINCT channel_idx AS channel FROM meshcore_messages ORDER BY channel_idx',
+        `SELECT DISTINCT ${MESHCORE_MESSAGE_CHANNEL_SQL} AS channel FROM meshcore_messages ORDER BY channel`,
       )
       .all();
   } catch (err) {
@@ -5746,7 +5723,7 @@ ipcMain.handle('db:clearMeshcoreMessagesByChannel', (event, channelIdx: number) 
     const db = getDbForIpc('db:clearMeshcoreMessagesByChannel');
     if (!db) return { changes: 0 };
     const ch = safeMeshcoreChannelIndex(channelIdx);
-    const result = db.prepareOnce('DELETE FROM meshcore_messages WHERE channel_idx = ?').run(ch);
+    const result = clearMeshcoreMessagesByChannel(db, ch);
     console.debug(
       `[IPC] db:clearMeshcoreMessagesByChannel: deleted ${result.changes} messages from channel_idx ${ch}`,
     );
