@@ -6344,7 +6344,7 @@
     "ackSent": "Accusé de réception envoyé à {{sender}}",
     "ackQueued": "Accusé de réception à {{sender}} en file d'attente ; il sera envoyé lorsque la radio sera disponible",
     "ackFailed": "Impossible d'envoyer ou de mettre en file d'attente l'accusé de réception",
-    "intro": "Image opérationnelle commune pour les urgences MECP entendues sur n'importe quel protocole. Ouvrez le badge MAYDAY et les lignes URGENTES dans cet onglet ; les exercices sont répertoriés mais jamais comptés. Utilisez Acquitter (ou Confirmer pour une balise active) pour répondre sur le maillage, puis Résoudre lorsque l'incident est fermé localement.",
+    "intro": "Image opérationnelle commune pour les urgences MECP entendues sur n'importe quel protocole. Ouvrez le badge MAYDAY et les lignes URGENTES dans cet onglet ; exercices compris. Utilisez Acquitter (ou Confirmer pour une balise active) pour répondre sur le maillage, puis Résoudre lorsque l'incident est fermé localement.",
     "ackQueuedBadge": "ACK en file d'attente",
     "pendingAckListAria": "Accusés de réception en file d'attente pour cet incident",
     "cancelPendingAck": "Annuler",

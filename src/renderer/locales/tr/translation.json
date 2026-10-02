@@ -6344,7 +6344,7 @@
     "ackSent": "Onay {{sender}} adresine gönderildi",
     "ackQueued": "{{sender}} kuyruğuna alındı; radyo uygun olduğunda gönderilecektir",
     "ackFailed": "Onay gönderilemedi veya kuyruğa alınamadı",
-    "intro": "Herhangi bir protokolde duyulan MECP acil durumları için ortak çalışma resmi. ACİL DURUM ve ACİL satırlar rozetini bu sekmede açın; tatbikatlar listelenir ancak asla sayılmaz. Ağa yanıt vermek için Onayla'yı (veya etkin bir işaretçi için Onayla'yı) kullanın, ardından olay yerel olarak kapatıldığında çözün.",
+    "intro": "Herhangi bir protokolde duyulan MECP acil durumları için ortak çalışma resmi. ACİL DURUM ve ACİL satırlar rozetini bu sekmede açın; tatbikatlar dahil. Ağa yanıt vermek için Onayla'yı (veya etkin bir işaretçi için Onayla'yı) kullanın, ardından olay yerel olarak kapatıldığında çözün.",
     "ackQueuedBadge": "ACK kuyruğa alındı",
     "pendingAckListAria": "Bu olay için kuyruğa alınmış onaylar",
     "cancelPendingAck": "İptal",
