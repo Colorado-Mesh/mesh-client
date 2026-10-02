@@ -94,11 +94,11 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(readSrc('renderer/App.tsx')).toMatch(/<IncidentPanel/);
   });
 
-  it('S9: rail and launcher badge open sev 0/1 incidents', () => {
+  it('S9: rail and launcher badge open sev 0/1 incidents (drills included)', () => {
     expect(readSrc('renderer/lib/navBadges.ts')).toMatch(/Incident: 'incident'/);
     expect(readSrc('renderer/App.tsx')).toMatch(/Incident: incidentBadgeCount/);
-    expect(readSrc('renderer/App.tsx')).toMatch(/useIncidentStore\(openMaydayUrgentCount\)/);
-    expect(readSrc('renderer/stores/incidentStore.ts')).toMatch(/openMaydayUrgentCount/);
+    expect(readSrc('renderer/App.tsx')).toMatch(/useIncidentStore\(incidentTabBadgeCount\)/);
+    expect(readSrc('renderer/stores/incidentStore.ts')).toMatch(/incidentTabBadgeCount/);
   });
 
   it('S14 remains: mecp compose defaults false (duplicate guard)', () => {

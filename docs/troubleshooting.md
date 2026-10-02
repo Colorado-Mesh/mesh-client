@@ -2071,7 +2071,7 @@ App → MECP → **Show MECP button in Chat** is off by default. Enable it to sh
 
 **What is the Incident tab?**
 
-**Incident** (pinned at the bottom of the rail, next to **App**) is the EMCOMM common operating picture — not a chat history. It lists **open** MECP emergencies only (resolved rows disappear; drills stay listed but never badge). Each row shows:
+**Incident** (pinned at the bottom of the rail, next to **App**) is the EMCOMM common operating picture — not a chat history. It lists **open** MECP emergencies only (resolved rows disappear; open MAYDAY and URGENT rows badge the tab, drills included; SAFETY and ROUTINE never badge). Each row shows:
 
 - Severity (MAYDAY / URGENT / SAFETY / ROUTINE) and MECP codes
 - Sender name, optional free text, ACK count, and which protocols heard the report
@@ -2087,7 +2087,7 @@ Emergency MECP uses the durable outbox (`priority: emergency`). It keeps retryin
 
 **Incident tab empty after restart**
 
-Incidents persist across restarts in local storage (`mesh-client:incidents`), and on startup the MECP watcher also upserts any MECP still in the hydrated chat history — without re-alerting. The tab can still be empty on a cold start when: local storage was cleared (or this is a fresh install / new profile), the incident was **Resolved** (only open/acked rows are listed), or the original message aged out of chat history before the store saw it. Drills are listed but never counted in the badge. The durable record is always `mecp-received.log` (above).
+Incidents persist across restarts in local storage (`mesh-client:incidents`), and on startup the MECP watcher also upserts any MECP still in the hydrated chat history — without re-alerting. The tab can still be empty on a cold start when: local storage was cleared (or this is a fresh install / new profile), the incident was **Resolved** (only open/acked rows are listed), or the original message aged out of chat history before the store saw it. The badge counts open MAYDAY and URGENT rows, including drills (SAFETY and ROUTINE are listed but not counted). The durable record is always `mecp-received.log` (above).
 
 **Watched node silence / battery / link-down alerts**
 

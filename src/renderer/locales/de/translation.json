@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} in {{room}}",
     "srNewMessage": "Neue Nachricht von {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} neue Nachricht",
-    "srNewMessages_other": "{{count}} neue Nachrichten"
+    "srNewMessages_other": "{{count}} neue Nachrichten",
+    "unreadMecpMarker": "Ungelesen {{severity}} MECP-Bericht"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -6343,7 +6344,7 @@
     "ackSent": "Bestätigung gesendet an {{sender}}",
     "ackQueued": "Bestätigung an {{sender}} in der Warteschlange; es wird gesendet, wenn das Radio verfügbar ist",
     "ackFailed": "Bestätigung konnte nicht gesendet oder in die Warteschlange gestellt werden",
-    "intro": "Gemeinsames Betriebsbild für MECP-Notfälle, die auf jedem Protokoll zu hören sind. Offene MAYDAY- und DRINGENDE Zeilen kennzeichnen diese Registerkarte; Bohrer werden aufgelistet, aber nie gezählt. Verwenden Sie Acknowledge (oder Confirm for an active beacon), um auf dem Netz zu antworten, und dann Resolve, wenn der Vorfall lokal geschlossen wird.",
+    "intro": "Gemeinsames Betriebsbild für MECP-Notfälle, die auf jedem Protokoll zu hören sind. Offene MAYDAY- und DRINGENDE Zeilen kennzeichnen diese Registerkarte; Übungen eingeschlossen. Verwenden Sie Acknowledge (oder Confirm for an active beacon), um auf dem Netz zu antworten, und dann Resolve, wenn der Vorfall lokal geschlossen wird.",
     "ackQueuedBadge": "ACK in Warteschlange gestellt",
     "pendingAckListAria": "Bestätigungen für diesen Vorfall in der Warteschlange",
     "cancelPendingAck": "Abbrechen",

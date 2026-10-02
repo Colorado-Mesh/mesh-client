@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{room}}の{{sender}}",
     "srNewMessage": "{{sender}}からの新着メッセージ： {{text}}",
     "srNewMessages_one": "{{count}} NEW MESSAGE",
-    "srNewMessages_other": "{{count}}件の新着メッセージ"
+    "srNewMessages_other": "{{count}}件の新着メッセージ",
+    "unreadMecpMarker": "未読{{severity}} MECPレポート"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -6343,7 +6344,7 @@
     "ackSent": "お知らせを{{sender}}に送信しました",
     "ackQueued": "{{sender}}への確認待ち。無線が利用可能になると送信されます",
     "ackFailed": "確認応答を送信またはキューイングできませんでした",
-    "intro": "任意のプロトコルで聞かれるMECP緊急事態の一般的な操作イメージ。MAYDAYと緊急行を開くと、このタブにバッジが表示されます。ドリルはリストされていますが、カウントされません。確認（またはアクティブなビーコンの確認）を使用してメッシュに返信し、インシデントがローカルで閉じられたときに解決します。",
+    "intro": "任意のプロトコルで聞かれるMECP緊急事態の一般的な操作イメージ。MAYDAYと緊急行を開くと、このタブにバッジが表示されます。訓練も含まれます。確認（またはアクティブなビーコンの確認）を使用してメッシュに返信し、インシデントがローカルで閉じられたときに解決します。",
     "ackQueuedBadge": "待機中のACK",
     "pendingAckListAria": "このインシデントのキューイング確認",
     "cancelPendingAck": "キャンセル",

@@ -117,7 +117,7 @@ import { runUpdateAction } from '@/renderer/lib/runUpdateAction';
 import { createUpdateMenuNotifyController } from '@/renderer/lib/updateMenuNotifyController';
 import {
   type EmergencyIncident,
-  openMaydayUrgentCount,
+  incidentTabBadgeCount,
   useIncidentStore,
 } from '@/renderer/stores/incidentStore';
 import type { UpdateCheckingPayload } from '@/shared/electron-api.types';
@@ -1589,7 +1589,7 @@ function AppContent() {
     settings: operationalAlertSettings,
   });
 
-  const incidentBadgeCount = useIncidentStore(openMaydayUrgentCount);
+  const incidentBadgeCount = useIncidentStore(incidentTabBadgeCount);
 
   const chatSendAvailableByProtocol = useMemo(
     () =>

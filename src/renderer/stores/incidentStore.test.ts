@@ -81,6 +81,22 @@ describe('incidentStore', () => {
     expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
   });
 
+  it('a seeded B03 older than the beacon does not clear it; a newer one does', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(report('MECP/0/B01 M01', { receivedAt: 5_000 }))!;
+
+    expect(
+      s.upsertFromMecp({ ...report('MECP/3/B03', { receivedAt: 4_000 }), fromSeed: true }),
+    ).toBeNull();
+    expect(useIncidentStore.getState().incidents[id].beaconActive).toBe(true);
+
+    expect(
+      s.upsertFromMecp({ ...report('MECP/3/B03', { receivedAt: 6_000 }), fromSeed: true }),
+    ).toBe(id);
+    expect(useIncidentStore.getState().incidents[id].beaconActive).toBe(false);
+  });
+
   it('general R01 ACK correlates by echoed codes without opening a row', async () => {
     const { useIncidentStore } = await loadStore();
     const s = useIncidentStore.getState();
@@ -88,6 +104,18 @@ describe('incidentStore', () => {
     expect(s.upsertFromMecp(report('MECP/1/R01 T04 ~EOC1', { senderId: '!eoc' }))).toBe(id);
     expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
     expect(useIncidentStore.getState().incidents[id].ackCount).toBe(1);
+  });
+
+  it('tab badge counts open MAYDAY/URGENT drills; quit count and SAFETY/ROUTINE do not', async () => {
+    const { useIncidentStore, incidentTabBadgeCount, openMaydayUrgentCount } = await loadStore();
+    const s = useIncidentStore.getState();
+    s.upsertFromMecp(report('MECP/0/D01 M01 drill'));
+    s.upsertFromMecp(report('MECP/1/D02 M02 drill', { senderId: '8' }));
+    s.upsertFromMecp(report('MECP/2/D01 drill', { senderId: '7' }));
+    s.upsertFromMecp(report('MECP/3/M01 routine', { senderId: '6' }));
+    const state = useIncidentStore.getState();
+    expect(incidentTabBadgeCount(state)).toBe(2);
+    expect(openMaydayUrgentCount(state)).toBe(0);
   });
 
   it('escalates severity for the same sender/codes/freetext and keeps the id', async () => {

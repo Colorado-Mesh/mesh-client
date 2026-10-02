@@ -855,7 +855,8 @@
     "srNewMessages_one": "{{count}} nowa wiadomość",
     "srNewMessages_few": "{{count}} nowe wiadomości",
     "srNewMessages_many": "{{count}} nowych wiadomości",
-    "srNewMessages_other": "{{count}} nowej wiadomości"
+    "srNewMessages_other": "{{count}} nowej wiadomości",
+    "unreadMecpMarker": "Nieprzeczytany raport MECP{{severity}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -6437,7 +6438,7 @@
     "ackFailed": "Nie można wysłać lub ustawić w kolejce potwierdzenia",
     "ackCount_few": "Podziękowania: {{count}}",
     "ackCount_many": "Podziękowania: {{count}}",
-    "intro": "Wspólny obraz operacyjny dla sytuacji awaryjnych MECP słyszany w dowolnym protokole. Otwórz kartę MAYDAY i PILNE wiersze; ćwiczenia są wymienione, ale nigdy nie są liczone. Użyj opcji Potwierdź (lub Potwierdź dla aktywnego sygnalizatora), aby odpowiedzieć na siatce, a następnie Rozwiąż, gdy incydent zostanie zamknięty lokalnie.",
+    "intro": "Wspólny obraz operacyjny dla sytuacji awaryjnych MECP słyszany w dowolnym protokole. Otwórz kartę MAYDAY i PILNE wiersze; w tym ćwiczenia. Użyj opcji Potwierdź (lub Potwierdź dla aktywnego sygnalizatora), aby odpowiedzieć na siatce, a następnie Rozwiąż, gdy incydent zostanie zamknięty lokalnie.",
     "ackQueuedBadge": "ACK W kolejce",
     "pendingAckListAria": "Kolejka podziękowań dla tego incydentu",
     "cancelPendingAck": "Anuluj",

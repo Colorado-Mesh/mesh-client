@@ -840,7 +840,8 @@
     "srNewMessages_one": "{{count}} nová zpráva",
     "srNewMessages_few": "{{count}} nové zprávy",
     "srNewMessages_many": "{{count}} nových zpráv",
-    "srNewMessages_other": "{{count}} nových zpráv"
+    "srNewMessages_other": "{{count}} nových zpráv",
+    "unreadMecpMarker": "Nepřečtená zpráva {{severity}} MECP"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -6392,7 +6393,7 @@
     "ackQueued": "Potvrzení o zařazení do {{sender}} fronty; odešle se, až bude rádio k dispozici",
     "ackFailed": "Potvrzení nelze odeslat nebo zařadit do fronty",
     "ackCount_few": "{{count}} poděkování",
-    "intro": "Společný provozní obraz pro nouzové situace MECP slyšený na jakémkoli protokolu. Otevřené MAYDAY a URGENTNÍ řádky označují tuto kartu; cvičení jsou uvedena, ale nikdy se nezapočítávají. Pomocí Potvrzení (nebo Potvrdit pro aktivní maják) odpovězte na síť a poté vyřešte, když je incident lokálně uzavřen.",
+    "intro": "Společný provozní obraz pro nouzové situace MECP slyšený na jakémkoli protokolu. Otevřené MAYDAY a URGENTNÍ řádky označují tuto kartu; včetně cvičení. Pomocí Potvrzení (nebo Potvrdit pro aktivní maják) odpovězte na síť a poté vyřešte, když je incident lokálně uzavřen.",
     "ackQueuedBadge": "ACK ve frontě",
     "pendingAckListAria": "Poděkování za tento incident ve frontě",
     "cancelPendingAck": "Zrušit",

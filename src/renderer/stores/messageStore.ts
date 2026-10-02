@@ -171,6 +171,29 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
   });
 }
 
+/**
+ * Record objects stored by the bulk (DB hydration) writers below. Consumers that must not treat
+ * SQLite history as fresh inbound traffic (MECP alert/incident watcher) check this; the arrival
+ * time of a bulk load relative to their mount is not reliable. Keyed by the stored object (not
+ * id) so ids reused across identities/protocols never collide, and any later write that
+ * replaces the record drops the mark.
+ */
+let bulkLoadedRecords = new WeakSet<MessageRecord>();
+
+export function wasMessageBulkLoaded(message: MessageRecord): boolean {
+  return bulkLoadedRecords.has(message);
+}
+
+/** @internal Test helper. */
+export function resetBulkLoadedMessageIdsForTests(): void {
+  bulkLoadedRecords = new WeakSet<MessageRecord>();
+}
+
+/** A DB row overwriting a live (not yet bulk-marked) record must not demote it to history. */
+function markBulkLoaded(existing: MessageRecord | undefined, stored: MessageRecord): void {
+  if (existing == null || bulkLoadedRecords.has(existing)) bulkLoadedRecords.add(stored);
+}
+
 /** Single setState merge for many messages (startup / DB hydration). */
 export function upsertMessageRecordsForIdentity(
   identityId: IdentityId,
@@ -191,6 +214,7 @@ export function upsertMessageRecordsForIdentity(
       if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
         continue;
       }
+      markBulkLoaded(existing, merged);
       byIdentity[message.id] = merged;
       changed = true;
     }
@@ -206,7 +230,9 @@ export function replaceMessageRecordsForIdentity(
 ): void {
   useMessageStore.setState((s) => {
     const byIdentity: Record<string, MessageRecord> = {};
+    const priorBucket = s.messages[identityId];
     for (const message of records) {
+      markBulkLoaded(priorBucket?.[message.id], message);
       byIdentity[message.id] = message;
     }
     const prior = s.messages[identityId];
@@ -249,11 +275,13 @@ export function mergeMessageRecordsFromDbForIdentity(
     for (const message of records) {
       const existing = byIdentity[message.id];
       if (!existing) {
+        markBulkLoaded(undefined, message);
         byIdentity[message.id] = message;
         changed = true;
         continue;
       }
       if (!messageRecordFieldsEqual(existing, message)) {
+        markBulkLoaded(existing, message);
         byIdentity[message.id] = message;
         changed = true;
       }

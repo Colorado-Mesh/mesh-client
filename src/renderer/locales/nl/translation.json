@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} in {{room}}",
     "srNewMessage": "Nieuw bericht van {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} nieuw bericht",
-    "srNewMessages_other": "{{count}} nieuwe berichten"
+    "srNewMessages_other": "{{count}} nieuwe berichten",
+    "unreadMecpMarker": "Ongelezen {{severity}} MECP-rapport"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -6343,7 +6344,7 @@
     "ackSent": "Bevestiging verzonden naar {{sender}}",
     "ackQueued": "Bevestiging aan {{sender}} in de wachtrij; deze wordt verzonden wanneer de radio beschikbaar is",
     "ackFailed": "Kon de bevestiging niet verzenden of in de wachtrij plaatsen",
-    "intro": "Gemeenschappelijk operationeel beeld voor MECP-noodsituaties gehoord op elk protocol. Open de badge voor MAYDAY en DRINGENDE rijen op dit tabblad; oefeningen worden vermeld, maar worden nooit geteld. Gebruik Bevestigen (of Bevestig voor een actief baken) om op het netwerk te reageren en vervolgens Oplossen wanneer het incident lokaal wordt gesloten.",
+    "intro": "Gemeenschappelijk operationeel beeld voor MECP-noodsituaties gehoord op elk protocol. Open de badge voor MAYDAY en DRINGENDE rijen op dit tabblad; inclusief oefeningen. Gebruik Bevestigen (of Bevestig voor een actief baken) om op het netwerk te reageren en vervolgens Oplossen wanneer het incident lokaal wordt gesloten.",
     "ackQueuedBadge": "ACK in de wachtrij",
     "pendingAckListAria": "Bevestigingen in de wachtrij voor dit incident",
     "cancelPendingAck": "Annuleren",
