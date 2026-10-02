@@ -450,7 +450,11 @@
       "sky": "Gökyüzü",
       "classic": "Klasik yeşil"
     },
-    "pruneNoFixNodesTitle": "Konumsuz / Sıfır Ada Düğümlerini Budama"
+    "pruneNoFixNodesTitle": "Konumsuz / Sıfır Ada Düğümlerini Budama",
+    "protocolsSection": "Protokoller",
+    "protocolsEnabledDesc": "Kullanmadığınız protokolleri kapatın. Devre dışı bırakılmış bir protokol, protokol değiştiriciden gizlenir, bağlantısı kesilir ve otomatik bağlantı ve otomatik başlatma tarafından atlanır. Yalnızca bir protokol etkinleştirildiğinde, anahtarlayıcı gizlenir.",
+    "protocolEnabled": "{{name}} Etkinleştir",
+    "protocolLastEnabled": "En az bir protokol etkin kalmalıdır."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",

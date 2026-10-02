@@ -450,7 +450,11 @@
       "sky": "スカイ",
       "classic": "クラシックグリーン"
     },
-    "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去"
+    "pruneNoFixNodesTitle": "位置なし/ゼロ島ノードの除去",
+    "protocolsSection": "プロトコル",
+    "protocolsEnabledDesc": "使用していないプロトコルをオフにします。無効なプロトコルは、プロトコルスイッチャーから隠され、切断され、自動接続と自動起動によってスキップされます。1つのプロトコルのみが有効になっている場合、スイッチャーは非表示になります。",
+    "protocolEnabled": "{{name}}を有効にする",
+    "protocolLastEnabled": "少なくとも1つのプロトコルを有効にしておく必要があります。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",

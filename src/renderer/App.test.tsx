@@ -7,6 +7,7 @@ import { axe, configureAxe } from 'vitest-axe';
 
 import App from './App';
 import { getProtocolUnreadBadgeLabel, hydrateAxeThemeColors } from './lib/a11yTestHelpers';
+import { getAppSettingsRaw } from './lib/appSettingsStorage';
 import {
   ensureOfflineProtocolIdentities,
   OFFLINE_MESHCORE_IDENTITY_ID,
@@ -37,9 +38,16 @@ import { upsertNode, useNodeStore } from './stores/nodeStore';
 
 const MESHTASTIC_TEST_IDENTITY = 'meshtastic-app-test';
 
-const { openReticulumGameSessionMock } = vi.hoisted(() => ({
+const { openReticulumGameSessionMock, playMessageNotificationMock } = vi.hoisted(() => ({
   openReticulumGameSessionMock: vi.fn().mockResolvedValue(true),
+  playMessageNotificationMock: vi.fn(),
 }));
+
+vi.mock('./lib/chatNotifications', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('./lib/chatNotifications')>();
+  return { ...actual, playMessageNotification: playMessageNotificationMock };
+});
 
 function syncMeshtasticMessagesToStore(messages: ChatMessage[]): void {
   const byId: Record<string, ReturnType<typeof chatMessageToMessageRecord>> = {};
@@ -670,6 +678,100 @@ describe('App shell layout', () => {
     const statusBar = screen.getByRole('contentinfo');
     expect(within(statusBar).getByRole('button', { name: /^Radio: / })).toBeInTheDocument();
     expect(within(statusBar).getByText(/messages/)).toBeInTheDocument();
+  });
+
+  it('drops disabled protocols from the switcher and hides it with one left (#1124)', async () => {
+    renderApp();
+    openPanel('App');
+    await waitFor(() => {
+      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
+    });
+    const setHidden = lastAppPanelProps.current?.onHiddenProtocolsChange as (
+      hidden: string[],
+    ) => void;
+
+    act(() => {
+      setHidden(['meshcore']);
+    });
+    const group = within(appRail()).getByRole('radiogroup', { name: 'Protocol switcher' });
+    expect(
+      within(group)
+        .getAllByRole('radio')
+        .map((b) => b.textContent),
+    ).toEqual(['MT', 'RN']);
+
+    act(() => {
+      setHidden(['meshtastic', 'meshcore']);
+    });
+    expect(within(appRail()).queryByRole('radiogroup', { name: 'Protocol switcher' })).toBeNull();
+    // The active protocol was disabled, so the app moved to the one still enabled.
+    await waitFor(() => {
+      expect(localStorage.getItem('mesh-protocol')).toBe('reticulum');
+    });
+  });
+
+  it.each([
+    { label: 'plays a sound for an enabled protocol', hidden: [] as string[], sounds: 1 },
+    { label: 'stays silent for a disabled protocol', hidden: ['meshtastic'], sounds: 0 },
+  ])('$label on new inactive-protocol messages (#1124)', async ({ hidden, sounds }) => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    vi.mocked(getAppSettingsRaw).mockReturnValue(JSON.stringify({ hiddenProtocols: hidden }));
+    onTestFinished(() => {
+      vi.mocked(getAppSettingsRaw).mockReturnValue(null);
+    });
+    const ts = Date.now();
+    const msg = (n: number): ChatMessage => ({
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: `Meshtastic ping ${n}`,
+      channel: 0,
+      timestamp: ts + n,
+      status: 'acked',
+    });
+    syncMeshtasticMessagesToStore([msg(1)]);
+    renderApp();
+    playMessageNotificationMock.mockClear();
+
+    act(() => {
+      syncMeshtasticMessagesToStore([msg(1), msg(2)]);
+    });
+
+    if (sounds > 0) {
+      await waitFor(() => {
+        expect(playMessageNotificationMock).toHaveBeenCalledTimes(sounds);
+      });
+    } else {
+      await act(async () => {});
+      expect(playMessageNotificationMock).not.toHaveBeenCalled();
+    }
+  });
+
+  it('disconnects Meshtastic MQTT when Meshtastic is disabled (#1124)', async () => {
+    getStoredMeshProtocolMock.mockReturnValue('meshcore');
+    localStorage.setItem('mesh-client:mqttSettings', JSON.stringify({ autoLaunch: true }));
+    setConnection(MESHTASTIC_TEST_IDENTITY, {
+      status: 'disconnected',
+      connectionType: null,
+      mqttStatus: 'connected',
+      myNodeNum: 0,
+    });
+    vi.mocked(window.electronAPI.mqtt.disconnect).mockClear();
+    renderApp();
+    openPanel('App');
+    await waitFor(() => {
+      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
+    });
+    expect(window.electronAPI.mqtt.disconnect).not.toHaveBeenCalled();
+
+    act(() => {
+      (lastAppPanelProps.current?.onHiddenProtocolsChange as (hidden: string[]) => void)([
+        'meshtastic',
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshtastic');
+    });
   });
 
   it('switches sections from the rail and remembers the last panel per section', () => {

@@ -158,6 +158,28 @@ describe('useProtocolRfAutoConnect cold-start skip paths', () => {
     expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).not.toHaveBeenCalled();
   });
 
+  it('never connects a disabled protocol and releases a waiting dual-radio secondary', async () => {
+    mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'radio-ble' });
+    mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(true);
+    mocks.getNobleBleDualRadioPrimaryProtocol.mockReturnValue('meshtastic');
+    const connectAutomatic = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() => {
+      useProtocolRfAutoConnect({
+        protocol: 'meshtastic',
+        state: disconnected,
+        connectAutomatic,
+        enabled: false,
+      });
+    });
+
+    await waitFor(() => {
+      expect(mocks.notifyNobleBlePrimaryAutoConnectSettled).toHaveBeenCalled();
+    });
+    expect(mocks.loadLastConnection).not.toHaveBeenCalled();
+    expect(connectAutomatic).not.toHaveBeenCalled();
+  });
+
   it('does not defer secondary when only one Noble BLE radio is configured', async () => {
     mocks.loadLastConnection.mockReturnValue({ type: 'ble', bleDeviceId: 'meshtastic-only' });
     mocks.dualNobleBleBothRadiosConfigured.mockReturnValue(false);

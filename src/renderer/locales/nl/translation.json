@@ -450,7 +450,11 @@
       "sky": "Lucht",
       "classic": "Klassiek groen"
     },
-    "pruneNoFixNodesTitle": "Snoei knooppunten zonder positie / Zero Island"
+    "pruneNoFixNodesTitle": "Snoei knooppunten zonder positie / Zero Island",
+    "protocolsSection": "Protocollen",
+    "protocolsEnabledDesc": "Schakel protocollen uit die u niet gebruikt. Een uitgeschakeld protocol wordt verborgen voor de protocolswitcher, de verbinding verbroken en overgeslagen door automatisch verbinden en automatisch starten. Met slechts één protocol ingeschakeld, is de switcher verborgen.",
+    "protocolEnabled": "{{name}} inschakelen",
+    "protocolLastEnabled": "Ten minste één protocol moet ingeschakeld blijven."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",

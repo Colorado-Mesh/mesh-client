@@ -450,7 +450,11 @@
       "sky": "天空",
       "classic": "经典绿"
     },
-    "pruneNoFixNodesTitle": "修剪无定位/零岛节点"
+    "pruneNoFixNodesTitle": "修剪无定位/零岛节点",
+    "protocolsSection": "协议",
+    "protocolsEnabledDesc": "关闭您不使用的协议。禁用的协议从协议切换器隐藏，断开连接，并通过自动连接和自动启动跳过。仅启用一个协议时，切换器将被隐藏。",
+    "protocolEnabled": "启用{{name}}",
+    "protocolLastEnabled": "至少有一个协议必须保持启用状态。"
   },
   "aria": {
     "closeDialog": "关闭对话框",

@@ -10,11 +10,12 @@ assignees: ''
 A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
 
 **Protocol relevance**
-Does this feature apply to:
+Does this feature apply to (check all that apply):
 
-- [ ] Meshtastic only
-- [ ] MeshCore only
-- [ ] Both protocols
+- [ ] Meshtastic
+- [ ] MeshCore
+- [ ] Reticulum
+- [ ] All protocols / protocol-independent (app-wide UI, settings, etc.)
 
 **Describe the solution you'd like**
 A clear and concise description of what you want to happen.

@@ -450,7 +450,11 @@
       "sky": "Céu",
       "classic": "Verde clássico"
     },
-    "pruneNoFixNodesTitle": "Podar nós sem posição / Zero Island"
+    "pruneNoFixNodesTitle": "Podar nós sem posição / Zero Island",
+    "protocolsSection": "Protocolos",
+    "protocolsEnabledDesc": "Desative os protocolos que você não usa. Um protocolo desativado é ocultado do comutador de protocolo, desconectado e ignorado por conexão automática e início automático. Com apenas um protocolo ativado, o switcher fica oculto.",
+    "protocolEnabled": "Ativar {{name}}",
+    "protocolLastEnabled": "Pelo menos um protocolo deve permanecer ativado."
   },
   "aria": {
     "closeDialog": "Fechar janela",

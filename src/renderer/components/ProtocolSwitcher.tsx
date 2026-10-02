@@ -12,6 +12,8 @@ export interface ProtocolSwitcherProps {
   /** Per-protocol unread for inactive protocols (Reticulum includes RRC). */
   unreadByProtocol: Record<MeshProtocol, number>;
   onProtocolChange: (protocol: MeshProtocol) => void;
+  /** Protocols to offer (App → Protocols); defaults to every registered protocol. */
+  protocols?: readonly MeshProtocol[];
   /** `vertical` at the top of the rail; `horizontal` in the phone More sheet. */
   orientation?: 'vertical' | 'horizontal';
 }
@@ -26,6 +28,7 @@ export function ProtocolSwitcher({
   protocol,
   unreadByProtocol,
   onProtocolChange,
+  protocols = REGISTERED_MESH_PROTOCOLS,
   orientation = 'vertical',
 }: ProtocolSwitcherProps) {
   const { t } = useTranslation();
@@ -33,7 +36,7 @@ export function ProtocolSwitcher({
   const refs = useRef<Partial<Record<MeshProtocol, HTMLButtonElement | null>>>({});
 
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    const count = REGISTERED_MESH_PROTOCOLS.length;
+    const count = protocols.length;
     let next: number | null = null;
     if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (index + 1) % count;
     else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (index - 1 + count) % count;
@@ -41,7 +44,7 @@ export function ProtocolSwitcher({
     else if (e.key === 'End') next = count - 1;
     if (next === null) return;
     e.preventDefault();
-    const target = REGISTERED_MESH_PROTOCOLS[next];
+    const target = protocols[next];
     if (!target) return;
     onProtocolChange(target);
     refs.current[target]?.focus();
@@ -59,7 +62,7 @@ export function ProtocolSwitcher({
           vertical ? 'flex-col' : 'flex-row'
         }`}
       >
-        {REGISTERED_MESH_PROTOCOLS.map((proto, index) => {
+        {protocols.map((proto, index) => {
           const theme = PROTOCOL_THEME[proto];
           const isActive = protocol === proto;
           const unread = unreadByProtocol[proto] ?? 0;
