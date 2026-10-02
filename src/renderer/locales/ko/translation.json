@@ -6434,5 +6434,40 @@
     "stopUsing": "저장된 위치 사용 중지",
     "addLocation": "위치 추가",
     "coordsHintFormats": "좌표 또는 지도 링크 붙여넣기: 10진수 (39.7392, -104.9903), N/S/E/W, MGRS 또는 Google, Apple 또는 OpenStreetMap 공유 링크가 있는 도/분/초."
+  },
+  "mqttProfiles": {
+    "optionLabel": "저장됨: {{name}}",
+    "save": "현재 프로필로 저장",
+    "rename": "이름 바꾸기",
+    "renameAria": "MQTT 프로필 이름 바꾸기 {{name}}",
+    "deleteAria": "MQTT 프로필 삭제 {{name}}",
+    "namePlaceholder": "프로필 이름 (예: 시카고)",
+    "reconnectNeeded": "이 프로필의 브로커 설정을 사용하려면 MQTT를 연결 해제했다가 다시 연결하세요.",
+    "switchLabel": "저장된 프로필",
+    "noneSelected": "현재 설정 (저장되지 않음)",
+    "nameAria": "프로필 이름"
+  },
+  "weatherFilter": {
+    "viewTooltip": "이 채널의 날씨 게시물",
+    "hideInChannels": "채널에서 날씨 게시물 숨기기",
+    "patternPlaceholder": "추가 패턴 (정규식) (예: ^ WX-BOT)",
+    "patternAria": "추가 날씨 포스트 패턴",
+    "patternInvalid": "유효하지 않은 패턴입니다. 기본 제공 패턴만 사용합니다.",
+    "markSender": "날씨 발신자로 표시",
+    "unmarkSender": "날씨 발신자 표시 해제",
+    "viewAria": "날씨 보기 (이 채널의 날씨 게시물: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "센서",
+    "metricSelectAria": "지도에 표시된 센서 값",
+    "metricTemperature": "온도",
+    "metricHumidity": "습도",
+    "metricPressure": "압력",
+    "valueTempC": "{{value}} °C",
+    "valueTempF": "{{value}} °F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "온도 (24시간)",
+    "sparklineHumidity24h": "습도 (24시간)"
   }
 }

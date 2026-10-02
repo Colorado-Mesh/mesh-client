@@ -6434,5 +6434,40 @@
     "stopUsing": "Interrompi l'utilizzo della posizione salv",
     "addLocation": "Aggiungi luogo",
     "coordsHintFormats": "Incolla le coordinate o un link della mappa: decimale (39,7392, -104,9903), gradi/minuti/secondi con N/S/E/W, MGRS o un link di condivisione di Google, Apple o OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Salvato: {{name}}",
+    "save": "Salva attuale come profilo",
+    "rename": "Rinomina",
+    "renameAria": "Rinomina profilo MQTT {{name}}",
+    "deleteAria": "Elimina profilo MQTT {{name}}",
+    "namePlaceholder": "Nome del profilo, ad es. Chicago",
+    "reconnectNeeded": "Disconnetti e riconnetti MQTT per utilizzare le impostazioni del broker di questo profilo.",
+    "switchLabel": "Profilo salvato",
+    "noneSelected": "Impostazioni correnti (non salvate)",
+    "nameAria": "Nome Profilo"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Post meteo in questo canale",
+    "hideInChannels": "Nascondi post meteo nei canali",
+    "patternPlaceholder": "Modello extra (regex), ad es. ^WX-BOT",
+    "patternAria": "Modello di post meteo extra",
+    "patternInvalid": "Modello non valido; utilizzando solo i modelli incorporati.",
+    "markSender": "Segna come mittente meteo",
+    "unmarkSender": "Deseleziona mittente meteo",
+    "viewAria": "Visualizzazione meteo (post meteo in questo canale: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensori",
+    "metricSelectAria": "Valore del sensore visualizzato sulla mappa",
+    "metricTemperature": "Temperatura",
+    "metricHumidity": "Umidità",
+    "metricPressure": "Pressione",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperatura (24h)",
+    "sparklineHumidity24h": "Umidità (24h)"
   }
 }

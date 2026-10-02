@@ -6434,5 +6434,40 @@
     "stopUsing": "Opgeslagen locatie niet meer gebruiken",
     "addLocation": "Locatie toevoegen",
     "coordsHintFormats": "Plak coördinaten of een kaartlink: decimaal (39.7392, -104.9903), graden/minuten/seconden met N/S/E/W, Mgrs of een Google-, Apple- of OpenStreetMap-deellink."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Opgeslagen: {{name}}",
+    "save": "Huidige opslaan als profiel",
+    "rename": "Hernoemen",
+    "renameAria": "Hernoem MQTT-profiel {{name}}",
+    "deleteAria": "MQTT-profiel {{name}} verwijderen",
+    "namePlaceholder": "Profielnaam, bijv. Chicago",
+    "reconnectNeeded": "Verbreek de verbinding en sluit MQTT opnieuw aan om de brokerinstellingen van dit profiel te gebruiken.",
+    "switchLabel": "Opgeslagen profiel",
+    "noneSelected": "Huidige instellingen (niet opgeslagen)",
+    "nameAria": "Profielnaam"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Weerberichten in dit kanaal",
+    "hideInChannels": "Verberg weerberichten in kanalen",
+    "patternPlaceholder": "Extra patroon (regex), bijv. ^WX-BOT",
+    "patternAria": "Extra weerbericht patroon",
+    "patternInvalid": "Ongeldig patroon; alleen met behulp van de ingebouwde patronen.",
+    "markSender": "Markeren als weersafzender",
+    "unmarkSender": "Weerzender markeren ongedaan maken",
+    "viewAria": "Weerbericht (weerberichten in dit kanaal: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensoren",
+    "metricSelectAria": "Sensorwaarde weergegeven op de kaart",
+    "metricTemperature": "Temperatuur",
+    "metricHumidity": "Humidity",
+    "metricPressure": "Druk",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperatuur (24 uur)",
+    "sparklineHumidity24h": "Luchtvochtigheid (24 uur)"
   }
 }

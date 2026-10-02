@@ -22,6 +22,7 @@ import {
   meshtasticShortNameAfterClearingDefault,
   preferNonEmptyTrimmedString,
 } from '../../../shared/nodeNameUtils';
+import { recordEnvironmentReading } from '../../stores/environmentTelemetryStore';
 import { upsertNodeRecord } from '../../stores/nodeStore';
 import { usePositionHistoryStore } from '../../stores/positionHistoryStore';
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
@@ -427,6 +428,7 @@ function handleEnvironmentTelemetry(
     pmNoxIdx: telemetry.pmNoxIdx,
   };
   deps.setEnvironmentTelemetry((prev) => [...prev, point].slice(-MAX_TELEMETRY_POINTS));
+  recordEnvironmentReading('meshtastic', nodeNum, point, 'rf');
   const existing = getIdentityNode(identityId, nodeNum) ?? deps.emptyNode(nodeNum);
   saveNode(identityId, {
     ...existing,

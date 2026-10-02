@@ -62,6 +62,10 @@ import { readMeshtasticMqttSettingsFromStorage } from '@/renderer/lib/meshtastic
 import { BLE_ADAPTER_LEASE_RELEASED_EVENT } from '@/renderer/lib/reticulum/reticulumBleAdapterLease';
 import { getReticulumBleBondDesyncActive } from '@/renderer/lib/reticulum/reticulumBleBondDesync';
 import {
+  environmentReadingFromNodePatch,
+  takeEnvironmentNodeUpdateMarker,
+} from '@/shared/environmentTelemetry';
+import {
   meshtasticDeviceRoleFromConfigSlice,
   resolveAppliedMeshtasticDeviceRole,
 } from '@/shared/meshtasticAppliedDeviceRole';
@@ -289,6 +293,7 @@ import {
 } from '../stores/connectionStore';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import {
   addMessage,
   renameMessageId,
@@ -1411,6 +1416,7 @@ export function useMeshtasticRuntime() {
         neighbors?: MeshNeighbor[];
         portnum?: number;
       };
+      const envRecordedAt = takeEnvironmentNodeUpdateMarker(nodeUpdate);
       if (!nodeUpdate.node_id) return;
 
       if (shouldSuppressMeshtasticNodeHear(nodeUpdate.node_id, getConnectedMeshcoreBleMac())) {
@@ -1524,6 +1530,10 @@ export function useMeshtasticRuntime() {
             .getState()
             .recordPosition(nodeUpdate.node_id, nodeUpdate.latitude, nodeUpdate.longitude);
         }
+      }
+      if (typeof envRecordedAt === 'number') {
+        const reading = environmentReadingFromNodePatch(nodeUpdate);
+        if (reading) recordEnvironmentReading('meshtastic', nodeUpdate.node_id, reading, 'mqtt');
       }
     });
 

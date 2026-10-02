@@ -15,6 +15,7 @@ import { canonicalizeReticulumChatDmNodeId } from '@/renderer/lib/reticulum/reso
 import { reticulumUnsetDmTo } from '@/renderer/lib/reticulum/reticulumChatDmFilter';
 import { reactionParentKeyFromChatMessage } from '@/renderer/lib/storeRecordAdapters';
 import type { ChatMessage, MeshProtocol } from '@/renderer/lib/types';
+import { isHiddenWeatherPost } from '@/renderer/stores/weatherFilterStore';
 import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 
 /** Chat rows used for unread badges (excludes tapbacks and MeshCore room-server traffic). */
@@ -166,6 +167,7 @@ export function computeChannelUnreadCounts(
     if (configured && configured.size > 0 && !configured.has(msg.channel)) continue;
     if (msg.isHistory) continue;
     if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
+    if (isHiddenWeatherPost(msg, protocol)) continue;
     const viewKey = `ch:${msg.channel}`;
     const lastRead = clampReadWatermarkMs(persistedLastRead[viewKey] ?? 0, nowMs);
     const msgTs = effectiveMessageTimestampMs(msg.timestamp, nowMs);
@@ -324,6 +326,9 @@ export function resolveChatNotificationType(
 
   const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, dmOptions);
   if (peer != null) return 'dm';
+
+  // Hidden weather posts never reach a visible channel view, so they must not beep either.
+  if (isHiddenWeatherPost(msg, protocol)) return null;
 
   return 'channel';
 }

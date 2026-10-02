@@ -125,6 +125,7 @@ import { formatGpxTracks, GPX_EXPORT_MAX_POINTS } from './gpxExportFormat';
 import { isHarmlessSocketOptionError } from './harmlessSocketOptionError';
 import { probeHttpRttMs, probeTcpRttMs } from './host-link-rtt';
 import { isValidHttpHostname } from './httpHostValidation';
+import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
@@ -6538,6 +6539,7 @@ registerReticulumIpcHandlers({
 });
 registerReticulumDbIpcHandlers({ ipcMain });
 registerRrcDbIpcHandlers({ ipcMain });
+registerEnvironmentTelemetryIpcHandlers({ ipcMain });
 registerReticulumIdentityIpcHandlers({ ipcMain });
 
 // ─── App lifecycle ─────────────────────────────────────────────────

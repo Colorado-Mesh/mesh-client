@@ -6530,5 +6530,40 @@
     "stopUsing": "Прекратить использование сохраненного местоположения",
     "addLocation": "Добавить местоположение",
     "coordsHintFormats": "Вставьте координаты или ссылку на карту: десятичную (39.7392, -104.9903), градусы/минуты/секунды с N/S/E/W, MGRS или ссылку для общего доступа к Google, Apple или OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Сохранено: {{name}}",
+    "save": "Сохранить текущий как профиль",
+    "rename": "Переименовать",
+    "renameAria": "Переименовать профиль MQTT {{name}}",
+    "deleteAria": "Удалить профиль MQTT {{name}}",
+    "namePlaceholder": "Имя профиля, например, Chicago",
+    "reconnectNeeded": "Отключите и повторно подключите MQTT, чтобы использовать настройки брокера этого профиля.",
+    "switchLabel": "Сохраненный профиль",
+    "noneSelected": "Текущие настройки сохранены.",
+    "nameAria": "Имя профиля"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Посты о погоде в этом канале",
+    "hideInChannels": "Скрыть сообщения о погоде в каналах",
+    "patternPlaceholder": "Дополнительный шаблон (регулярное выражение), например, ^WX-BOT",
+    "patternAria": "Образец сообщения о дополнительной погоде",
+    "patternInvalid": "Недопустимый шаблон; использование только встроенных шаблонов.",
+    "markSender": "Отметить как отправителя погоды",
+    "unmarkSender": "Снять отметку отправителя погоды",
+    "viewAria": "Прогноз погоды (сообщения о погоде в этом канале: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Датчики",
+    "metricSelectAria": "Значение датчика, показанное на карте",
+    "metricTemperature": "Температура",
+    "metricHumidity": "Влажность",
+    "metricPressure": "Давление",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} гПа",
+    "sparklineTemperature24h": "ТЕМПЕРАТУРА   -24ч",
+    "sparklineHumidity24h": "Влажность (24 часа)"
   }
 }

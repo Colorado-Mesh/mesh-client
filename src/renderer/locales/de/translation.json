@@ -6434,5 +6434,40 @@
     "stopUsing": "Gespeicherten Standort nicht mehr verwenden",
     "addLocation": "Hinzufügen",
     "coordsHintFormats": "Koordinaten oder einen Kartenlink einfügen: Dezimal (39.7392, -104.9903), Grad/Minuten/Sekunden mit N/S/E/W, MGRS oder einem Freigabe-Link von Google, Apple oder OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Gespeichert: {{name}}",
+    "save": "Aktuelles als Profil speichern",
+    "rename": "Umbenennen",
+    "renameAria": "MQTT-Profil {{name}} umbenennen",
+    "deleteAria": "MQTT-Profil löschen {{name}}",
+    "namePlaceholder": "Profilname, z. B. Chicago",
+    "reconnectNeeded": "Trennen und verbinden Sie MQTT erneut, um die Brokereinstellungen dieses Profils zu verwenden.",
+    "switchLabel": "GESPEICHERTES PROFIL",
+    "noneSelected": "Aktuelle Einstellungen (nicht gespeichert)",
+    "nameAria": "Profil Name"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Wetterbeiträge in diesem Kanal",
+    "hideInChannels": "Wetterbeiträge in Kanälen ausblenden",
+    "patternPlaceholder": "Zusätzliches Muster (Regex), z. B. ^WX-BOT",
+    "patternAria": "Zusätzliches Wetterpfostenmuster",
+    "patternInvalid": "Ungültiges Muster; nur die integrierten Muster verwenden.",
+    "markSender": "Als Wetterabsender markieren",
+    "unmarkSender": "Wettersender entfernen",
+    "viewAria": "Wetteransicht (Wetterbeiträge in diesem Kanal: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensorik",
+    "metricSelectAria": "Auf der Karte angezeigter Sensorwert",
+    "metricTemperature": "Temperatur",
+    "metricHumidity": "Feuchtigkeit",
+    "metricPressure": "Druck",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperatur (24h)",
+    "sparklineHumidity24h": "Luftfeuchtigkeit (24h)"
   }
 }

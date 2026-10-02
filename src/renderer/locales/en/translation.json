@@ -2536,6 +2536,41 @@
     "widenLogPanel": "Widen log panel",
     "clearFailed": "Could not clear log"
   },
+  "mqttProfiles": {
+    "optionLabel": "Saved: {{name}}",
+    "save": "Save current as profile",
+    "rename": "Rename",
+    "renameAria": "Rename MQTT profile {{name}}",
+    "deleteAria": "Delete MQTT profile {{name}}",
+    "namePlaceholder": "Profile name, e.g. Chicago",
+    "nameAria": "Profile name",
+    "reconnectNeeded": "Disconnect and reconnect MQTT to use this profile's broker settings.",
+    "switchLabel": "Saved profile",
+    "noneSelected": "Current settings (not saved)"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Weather posts in this channel",
+    "viewAria": "Weather view (weather posts in this channel: {{posts}})",
+    "hideInChannels": "Hide weather posts in channels",
+    "patternPlaceholder": "Extra pattern (regex), e.g. ^WX-BOT",
+    "patternAria": "Extra weather post pattern",
+    "patternInvalid": "Invalid pattern; using the built-in patterns only.",
+    "markSender": "Mark as weather sender",
+    "unmarkSender": "Unmark weather sender"
+  },
+  "sensorLayer": {
+    "layer": "Sensors",
+    "metricSelectAria": "Sensor value shown on the map",
+    "metricTemperature": "Temperature",
+    "metricHumidity": "Humidity",
+    "metricPressure": "Pressure",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperature (24h)",
+    "sparklineHumidity24h": "Humidity (24h)"
+  },
   "mapPanel": {
     "locationUnavailable": "Location unavailable.",
     "locationRequestFailed": "Location request failed.",

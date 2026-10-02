@@ -30,6 +30,7 @@ import {
   getRoutingRowForNode,
   routingAnomalyNodeIds,
 } from '../lib/diagnostics/diagnosticRows';
+import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
 import {
@@ -53,6 +54,7 @@ import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { IncidentMarkersLayer, MeasureControl, MgrsGridLayer } from './map/emcommMapLayers';
+import { EnvironmentSensorLayer } from './map/environmentSensorLayer';
 import {
   ensureLoRaMapPanelStyles,
   LocateMeControl,
@@ -459,10 +461,12 @@ function MapLayerControl({
   routeWeightsSupported,
   showRouteWeights,
   onToggleRouteWeights,
+  sensorsSupported,
 }: {
   routeWeightsSupported: boolean;
   showRouteWeights: boolean;
   onToggleRouteWeights: (enabled: boolean) => void;
+  sensorsSupported: boolean;
 }) {
   const { t } = useTranslation();
   const layersPanelOpen = useMapLayerStore((s) => s.layersPanelOpen);
@@ -477,6 +481,10 @@ function MapLayerControl({
   const setShowIncidents = useMapLayerStore((s) => s.setShowIncidents);
   const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
   const setShowMgrsGrid = useMapLayerStore((s) => s.setShowMgrsGrid);
+  const showSensors = useMapLayerStore((s) => s.showSensors);
+  const setShowSensors = useMapLayerStore((s) => s.setShowSensors);
+  const sensorMetric = useMapLayerStore((s) => s.sensorMetric);
+  const setSensorMetric = useMapLayerStore((s) => s.setSensorMetric);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
@@ -542,6 +550,23 @@ function MapLayerControl({
             {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
             {layerRow('incidents', t('mapPanel.layerIncidents'), showIncidents, setShowIncidents)}
             {layerRow('mgrsGrid', t('mapPanel.layerMgrsGrid'), showMgrsGrid, setShowMgrsGrid)}
+            {sensorsSupported &&
+              layerRow('sensors', t('sensorLayer.layer'), showSensors, setShowSensors)}
+            {sensorsSupported && showSensors && (
+              <select
+                aria-label={t('sensorLayer.metricSelectAria')}
+                className={`${SELECT_BOX_SM_CLASS} w-full`}
+                value={sensorMetric}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (isMapSensorMetric(v)) setSensorMetric(v);
+                }}
+              >
+                <option value="temperature">{t('sensorLayer.metricTemperature')}</option>
+                <option value="relativeHumidity">{t('sensorLayer.metricHumidity')}</option>
+                <option value="barometricPressure">{t('sensorLayer.metricPressure')}</option>
+              </select>
+            )}
             {routeWeightsSupported &&
               layerRow(
                 'routeWeights',
@@ -586,6 +611,7 @@ interface Props {
   onDeleteWaypoint?: (id: number) => Promise<void>;
   onNodeClick?: (nodeId: number) => void;
   protocol?: MeshProtocol;
+  useFahrenheit?: boolean;
 }
 
 export default function MapPanel({
@@ -598,6 +624,7 @@ export default function MapPanel({
   onDeleteWaypoint,
   onNodeClick,
   protocol = 'meshtastic',
+  useFahrenheit = false,
 }: Props) {
   const { t } = useTranslation();
   const toNodeRenderSignature = useCallback((node: MeshNode): string => {
@@ -635,7 +662,8 @@ export default function MapPanel({
     ].join('|');
   }, []);
   const homeNode = nodes.get(myNodeNum) ?? null;
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs } = useRadioProvider(protocol);
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasEnvironmentTelemetry } =
+    useRadioProvider(protocol);
   const excludeMeshcoreContactTypesInMeshtastic = protocol === 'meshtastic';
 
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
@@ -662,6 +690,8 @@ export default function MapPanel({
   const showWaypoints = useMapLayerStore((s) => s.showWaypoints);
   const showIncidents = useMapLayerStore((s) => s.showIncidents);
   const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
+  const showSensors = useMapLayerStore((s) => s.showSensors);
+  const sensorMetric = useMapLayerStore((s) => s.sensorMetric);
   const basemap = MAP_BASEMAPS[basemapId];
   const overlayColors = useMemo(() => getMapOverlayColors(basemap.isDark), [basemap.isDark]);
 
@@ -1071,6 +1101,7 @@ export default function MapPanel({
           routeWeightsSupported={routeWeightsSupported}
           showRouteWeights={showRouteWeights}
           onToggleRouteWeights={setShowRouteWeights}
+          sensorsSupported={hasEnvironmentTelemetry}
         />
         <button
           type="button"
@@ -1187,6 +1218,15 @@ export default function MapPanel({
             </Marker>
           ))}
         {showIncidents ? <IncidentMarkersLayer /> : null}
+        {hasEnvironmentTelemetry && showSensors ? (
+          <EnvironmentSensorLayer
+            nodes={nodesWithPosition}
+            protocol={protocol}
+            metric={sensorMetric}
+            useFahrenheit={useFahrenheit}
+            onNodeClick={onNodeClick}
+          />
+        ) : null}
       </MapContainer>
 
       {nodesToRender.length === 0 && (

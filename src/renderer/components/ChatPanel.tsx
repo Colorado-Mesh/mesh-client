@@ -10,6 +10,7 @@ import {
   BellOff,
   Calendar,
   Clock,
+  CloudSun,
   Copy,
   CornerUpLeft,
   Download,
@@ -105,6 +106,7 @@ import {
 } from '@/shared/messageTimestampSkew';
 import { formatMeshtasticNodeId, isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import { CHAT_COMPACT_CONTINUATION_TIME_GAP_MS } from '@/shared/timeConstants';
+import { touch } from '@/shared/touch';
 
 import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
@@ -192,11 +194,14 @@ import {
   reactionLookupKeysForParentMessage,
 } from '../lib/storeRecordAdapters';
 import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
+import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
+import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -238,18 +243,25 @@ function chatPanelIsLinux(): boolean {
 /** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
 const CHAT_TOOLBAR_BUTTON_BASE =
   'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors';
+/** Same as the base, but grows to fit an inline count next to the icon. */
+const CHAT_TOOLBAR_BUTTON_WITH_COUNT_BASE =
+  'flex h-7 min-w-7 shrink-0 items-center justify-center gap-1 rounded-lg px-1.5 transition-colors';
 
 /** Icon buttons in the chat header: idle, toggled on, or a warning state (muted). */
-function chatToolbarButtonClass(state: 'idle' | 'active' | 'starred' | 'warn' = 'idle'): string {
+function chatToolbarButtonClass(
+  state: 'idle' | 'active' | 'starred' | 'warn' = 'idle',
+  withCount = false,
+): string {
+  const base = withCount ? CHAT_TOOLBAR_BUTTON_WITH_COUNT_BASE : CHAT_TOOLBAR_BUTTON_BASE;
   switch (state) {
     case 'active':
-      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-bright-green`;
+      return `${base} bg-sidebar-active-bg text-bright-green`;
     case 'starred':
-      return `${CHAT_TOOLBAR_BUTTON_BASE} bg-sidebar-active-bg text-orange-400`;
+      return `${base} bg-sidebar-active-bg text-orange-400`;
     case 'warn':
-      return `${CHAT_TOOLBAR_BUTTON_BASE} text-orange-400 hover:bg-sidebar-active-bg hover:text-orange-300`;
+      return `${base} text-orange-400 hover:bg-sidebar-active-bg hover:text-orange-300`;
     default:
-      return `${CHAT_TOOLBAR_BUTTON_BASE} text-muted hover:bg-sidebar-active-bg hover:text-ink-200`;
+      return `${base} text-muted hover:bg-sidebar-active-bg hover:text-ink-200`;
   }
 }
 
@@ -1194,9 +1206,14 @@ function ChatPanel({
   const starredIdSet = useMemo(() => new Set(starred.map((s) => s.starId)), [starred]);
 
   // Two-section UI state — load DM tabs from localStorage for restart persistence
-  const [viewMode, setViewMode] = useState<'channels' | 'dm' | 'starred'>(() =>
+  const [viewMode, setViewMode] = useState<'channels' | 'dm' | 'starred' | 'weather'>(() =>
     dmOnlyChat ? 'dm' : 'channels',
   );
+  /** Weather view is scoped to the selected channel, so channel tabs stay active in it. */
+  const channelViewActive = viewMode === 'channels' || viewMode === 'weather';
+  const weatherHideInChannels = useWeatherFilterStore((s) => s.hideInChannels);
+  const weatherConfig = useWeatherFilterStore((s) => s.configs[protocol]);
+  const setWeatherSenderMarked = useWeatherFilterStore((s) => s.setSenderMarked);
   const [openDmTabs, setOpenDmTabs] = useState<number[]>(() => loadOpenDmTabsInitial(protocol));
   const openDmTabsRef = useRef(openDmTabs);
   const [activeDmNode, setActiveDmNode] = useState<number | null>(() =>
@@ -1512,18 +1529,26 @@ function ChatPanel({
     return new Set(channels.map((ch) => ch.index));
   }, [channels, meshcoreChannelSources, protocol]);
 
-  const unreadCounts = useMemo(
-    () =>
-      computeChannelUnreadCounts(
-        unreadSourceMessages,
-        persistedLastRead,
-        ownNodeIdSet,
-        protocol,
-        Date.now(),
-        { configuredChannelIndices },
-      ),
-    [configuredChannelIndices, ownNodeIdSet, persistedLastRead, protocol, unreadSourceMessages],
-  );
+  const unreadCounts = useMemo(() => {
+    touch(weatherHideInChannels);
+    touch(weatherConfig);
+    return computeChannelUnreadCounts(
+      unreadSourceMessages,
+      persistedLastRead,
+      ownNodeIdSet,
+      protocol,
+      Date.now(),
+      { configuredChannelIndices },
+    );
+  }, [
+    configuredChannelIndices,
+    ownNodeIdSet,
+    persistedLastRead,
+    protocol,
+    unreadSourceMessages,
+    weatherConfig,
+    weatherHideInChannels,
+  ]);
 
   const viewMessages = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) {
@@ -1548,7 +1573,17 @@ function ChatPanel({
       return [];
     }
 
-    return regularMessages.filter((m) => !m.to && m.channel === channel);
+    if (viewMode === 'weather') {
+      return regularMessages.filter(
+        (m) => !m.to && m.channel === channel && isWeatherPost(m, weatherConfig),
+      );
+    }
+    return regularMessages.filter(
+      (m) =>
+        !m.to &&
+        m.channel === channel &&
+        !(weatherHideInChannels && isWeatherPost(m, weatherConfig)),
+    );
   }, [
     activeDmNode,
     channel,
@@ -1558,7 +1593,18 @@ function ChatPanel({
     regularMessages,
     viewMode,
     ownNodeIdSet,
+    weatherConfig,
+    weatherHideInChannels,
   ]);
+
+  const channelWeatherCount = useMemo(() => {
+    if (dmOnlyChat) return 0;
+    let n = 0;
+    for (const m of regularMessages) {
+      if (!m.to && m.channel === channel && isWeatherPost(m, weatherConfig)) n++;
+    }
+    return n;
+  }, [channel, dmOnlyChat, regularMessages, weatherConfig]);
 
   const filteredMessages = useMemo(() => {
     let msgs = viewMessages;
@@ -2711,19 +2757,19 @@ function ChatPanel({
               <ChatChannelSwitcher
                 channels={channels}
                 unreadCounts={unreadCounts}
-                activeIndex={viewMode === 'channels' ? channel : null}
+                activeIndex={channelViewActive ? channel : null}
                 onSelect={(index) => {
                   selectChannel(index);
-                  setViewMode('channels');
+                  setViewMode((v) => (v === 'weather' ? 'weather' : 'channels'));
                 }}
               />
               <ScrollStrip
                 aria-label={t('chatPanel.channels')}
-                activeKey={viewMode === 'channels' ? channel : null}
+                activeKey={channelViewActive ? channel : null}
                 className="flex-1"
               >
                 {channels.map((ch, chIdx) => {
-                  const isActiveChannel = viewMode === 'channels' && channel === ch.index;
+                  const isActiveChannel = channelViewActive && channel === ch.index;
                   const unread = isActiveChannel ? 0 : (unreadCounts.get(ch.index) ?? 0);
                   return (
                     <button
@@ -2734,7 +2780,7 @@ function ChatPanel({
                       data-strip-active={isActiveChannel ? 'true' : undefined}
                       onClick={() => {
                         selectChannel(ch.index);
-                        setViewMode('channels');
+                        setViewMode((v) => (v === 'weather' ? 'weather' : 'channels'));
                       }}
                       onContextMenu={
                         hasChannelMenu(ch.index)
@@ -2965,6 +3011,32 @@ function ChatPanel({
             </ChatToolbarTooltipButton>
           )}
 
+          {!dmOnlyChat && (
+            <ChatToolbarTooltipButton
+              tooltip={t('weatherFilter.viewTooltip')}
+              aria-pressed={viewMode === 'weather'}
+              aria-label={t('weatherFilter.viewAria', { posts: channelWeatherCount })}
+              className={chatToolbarButtonClass(
+                viewMode === 'weather' ? 'active' : 'idle',
+                channelWeatherCount > 0,
+              )}
+              onClick={() => {
+                setViewMode((v) => (v === 'weather' ? 'channels' : 'weather'));
+              }}
+            >
+              <CloudSun aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+              {channelWeatherCount > 0 ? (
+                <span
+                  className="text-2xs tabular-nums"
+                  data-testid="weather-count-chip"
+                  aria-hidden="true"
+                >
+                  {channelWeatherCount}
+                </span>
+              ) : null}
+            </ChatToolbarTooltipButton>
+          )}
+
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.starredMessages')}
             aria-pressed={viewMode === 'starred'}
@@ -2994,11 +3066,13 @@ function ChatPanel({
       {/* Row 2 — DM tabs (Meshtastic/MeshCore; Reticulum promotes DMs into Row 1) */}
       {!dmOnlyChat ? (
         <div
-          className={`mb-2 flex min-h-7 min-w-0 items-center gap-2 ${viewMode === 'channels' ? 'opacity-60' : ''}`}
+          className={`mb-2 flex min-h-7 min-w-0 items-center gap-2 ${channelViewActive ? 'opacity-60' : ''}`}
         >
           {dmTabPills}
         </div>
       ) : null}
+
+      {viewMode === 'weather' ? <WeatherFilterSettings /> : null}
 
       {protocol === 'reticulum' && dmOnlyChat ? (
         <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
@@ -3599,6 +3673,45 @@ function ChatPanel({
                                         />
                                       </button>
                                     )}
+                                    {!isOwn &&
+                                      !isDm &&
+                                      !dmOnlyChat &&
+                                      (() => {
+                                        const marked = weatherConfig.markedSenders.has(
+                                          msg.sender_id,
+                                        );
+                                        const label = marked
+                                          ? t('weatherFilter.unmarkSender')
+                                          : t('weatherFilter.markSender');
+                                        return (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setWeatherSenderMarked(
+                                                protocol,
+                                                msg.sender_id,
+                                                !marked,
+                                              );
+                                            }}
+                                            aria-label={label}
+                                            aria-pressed={marked}
+                                            {...{ [PARENT_HOVER_ATTR]: '' }}
+                                            className={`text-3xs shrink-0 rounded px-1 py-0.5 transition-colors ${
+                                              marked
+                                                ? 'bg-brand-green/12 text-bright-green'
+                                                : 'text-muted hover:text-ink-200'
+                                            }`}
+                                            title={label}
+                                          >
+                                            <CloudSun
+                                              aria-hidden
+                                              className="h-2.5 w-2.5"
+                                              trigger={parentIconTrigger}
+                                              size={10}
+                                            />
+                                          </button>
+                                        );
+                                      })()}
                                     {isDm && (
                                       <span className="text-muted text-2xs font-medium">DM</span>
                                     )}

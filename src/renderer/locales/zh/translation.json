@@ -6434,5 +6434,40 @@
     "stopUsing": "停止使用已保存的位置",
     "addLocation": "添加位置",
     "coordsHintFormats": "粘贴坐标或地图链接：使用N/S/E/W、MGRS或Google、Apple或OpenStreetMap共享链接的十进制（ 39.7392 ， -104.9903 ）、度/分/秒。"
+  },
+  "mqttProfiles": {
+    "optionLabel": "已保存： {{name}}",
+    "save": "将当前保存为配置文件",
+    "rename": "重命名",
+    "renameAria": "重命名MQTT配置文件{{name}}",
+    "deleteAria": "删除MQTT配置文件{{name}}",
+    "namePlaceholder": "个人资料名称，例如芝加哥",
+    "reconnectNeeded": "断开并重新连接MQTT以使用此配置文件的经纪人设置。",
+    "switchLabel": "已保存的个人资料",
+    "noneSelected": "当前设置（未保存）",
+    "nameAria": "档案名称"
+  },
+  "weatherFilter": {
+    "viewTooltip": "此频道中的天气帖子",
+    "hideInChannels": "在频道中隐藏天气帖子",
+    "patternPlaceholder": "额外模式（正则表达式） ，例如^ WX-BOT",
+    "patternAria": "额外的天气帖子图案",
+    "patternInvalid": "模式无效；仅使用内置模式。",
+    "markSender": "标记为天气发件人",
+    "unmarkSender": "取消标记天气发送者",
+    "viewAria": "天气视图（此频道中的天气帖子： {{posts}} ）"
+  },
+  "sensorLayer": {
+    "layer": "传感器",
+    "metricSelectAria": "地图上显示的传感器值",
+    "metricTemperature": "温度",
+    "metricHumidity": "濕度",
+    "metricPressure": "气压",
+    "valueTempC": "{{value}} °C",
+    "valueTempF": "{{value}} °F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "温度（ 24小时）",
+    "sparklineHumidity24h": "湿度（ 24小时）"
   }
 }

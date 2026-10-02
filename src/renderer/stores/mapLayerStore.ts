@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 
 import { getAppSettingsRaw, mergeAppSetting } from '../lib/appSettingsStorage';
+import { isMapSensorMetric, type MapSensorMetric } from '../lib/environmentSensorDisplay';
 import {
   DEFAULT_MAP_BASEMAP_ID,
   isValidMapBasemapId,
@@ -16,6 +17,8 @@ interface MapLayerPersisted {
   mapShowWaypoints?: unknown;
   mapShowMgrsGrid?: unknown;
   mapShowIncidents?: unknown;
+  mapShowSensors?: unknown;
+  mapSensorMetric?: unknown;
 }
 
 export function readPersistedBoolean(value: unknown, defaultValue: boolean): boolean {
@@ -28,6 +31,8 @@ function loadPersisted(): {
   showWaypoints: boolean;
   showMgrsGrid: boolean;
   showIncidents: boolean;
+  showSensors: boolean;
+  sensorMetric: MapSensorMetric;
 } {
   const settings = parseStoredJson<MapLayerPersisted>(
     getAppSettingsRaw(),
@@ -42,6 +47,10 @@ function loadPersisted(): {
     showWaypoints: readPersistedBoolean(settings?.mapShowWaypoints, true),
     showMgrsGrid: readPersistedBoolean(settings?.mapShowMgrsGrid, false),
     showIncidents: readPersistedBoolean(settings?.mapShowIncidents, true),
+    showSensors: readPersistedBoolean(settings?.mapShowSensors, false),
+    sensorMetric: isMapSensorMetric(settings?.mapSensorMetric)
+      ? settings.mapSensorMetric
+      : 'temperature',
   };
 }
 
@@ -51,12 +60,16 @@ interface MapLayerState {
   showWaypoints: boolean;
   showMgrsGrid: boolean;
   showIncidents: boolean;
+  showSensors: boolean;
+  sensorMetric: MapSensorMetric;
   layersPanelOpen: boolean;
   setBasemapId: (id: MapBasemapId) => void;
   setShowNodes: (enabled: boolean) => void;
   setShowWaypoints: (enabled: boolean) => void;
   setShowMgrsGrid: (enabled: boolean) => void;
   setShowIncidents: (enabled: boolean) => void;
+  setShowSensors: (enabled: boolean) => void;
+  setSensorMetric: (metric: MapSensorMetric) => void;
   setLayersPanelOpen: (open: boolean) => void;
   hydrateFromDatabase: () => Promise<void>;
 }
@@ -75,6 +88,8 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   showWaypoints: initial.showWaypoints,
   showMgrsGrid: initial.showMgrsGrid,
   showIncidents: initial.showIncidents,
+  showSensors: initial.showSensors,
+  sensorMetric: initial.sensorMetric,
   layersPanelOpen: false,
   setBasemapId: (basemapId) => {
     mergeAppSetting('mapBasemapId', basemapId, 'mapLayerStore setBasemapId');
@@ -96,6 +111,14 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   setShowIncidents: (showIncidents) => {
     mergeAppSetting('mapShowIncidents', showIncidents, 'mapLayerStore setShowIncidents');
     set({ showIncidents });
+  },
+  setShowSensors: (showSensors) => {
+    mergeAppSetting('mapShowSensors', showSensors, 'mapLayerStore setShowSensors');
+    set({ showSensors });
+  },
+  setSensorMetric: (sensorMetric) => {
+    mergeAppSetting('mapSensorMetric', sensorMetric, 'mapLayerStore setSensorMetric');
+    set({ sensorMetric });
   },
   setLayersPanelOpen: (layersPanelOpen) => {
     set({ layersPanelOpen });

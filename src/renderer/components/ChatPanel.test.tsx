@@ -19,6 +19,7 @@ import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode } from '../lib/types';
 import type { MessageRecord } from '../stores/messageStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
+import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
@@ -6120,5 +6121,98 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     await waitFor(() => {
       expect(props.onDeleteMeshcoreChannel).toHaveBeenCalledWith(3);
     });
+  });
+});
+
+describe('ChatPanel — weather view', () => {
+  const weatherPost = makeMsg({
+    sender_id: 7,
+    sender_name: 'WxBot',
+    payload: 'Good morning Visalia: Clear. 60F now. Hi 93/Lo 65',
+  });
+  const chatPost = makeMsg({ sender_id: 2, payload: 'anyone on tonight?' });
+
+  beforeEach(() => {
+    localStorage.clear();
+    const s = useWeatherFilterStore.getState();
+    s.setHideInChannels(false);
+    s.setPattern('');
+    for (const id of s.configs.meshtastic.markedSenders) s.setSenderMarked('meshtastic', id, false);
+  });
+
+  it('shows only weather posts in the weather view, with a count', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[weatherPost, chatPost]} />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('anyone on tonight?')).toBeInTheDocument();
+    expect(screen.getByTestId('weather-count-chip').textContent).toBe('1');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Weather view (weather posts in this channel: 1)' }),
+    );
+    expect(screen.getByText(/60F now/)).toBeInTheDocument();
+    expect(screen.queryByText('anyone on tonight?')).toBeNull();
+    expect(screen.getByTestId('weather-filter-settings')).toBeInTheDocument();
+  });
+
+  it('hides weather posts from the channel when hiding is on', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[weatherPost, chatPost]} />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText(/60F now/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Weather view/ }));
+    await user.click(screen.getByRole('checkbox', { name: 'Hide weather posts in channels' }));
+    expect(useWeatherFilterStore.getState().hideInChannels).toBe(true);
+    await user.click(screen.getByRole('button', { name: /Weather view/ }));
+    expect(screen.queryByText(/60F now/)).toBeNull();
+    expect(screen.getByText('anyone on tonight?')).toBeInTheDocument();
+  });
+
+  it('catches every post from a sender marked as a weather sender', async () => {
+    const user = userEvent.setup();
+    const plain = makeMsg({ sender_id: 9, sender_name: 'Station', payload: 'Morning report' });
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[plain]} />
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('Morning report')).toBeInTheDocument();
+    expect(screen.queryByTestId('weather-count-chip')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Mark as weather sender' }));
+    expect(useWeatherFilterStore.getState().configs.meshtastic.markedSenders.has(9)).toBe(true);
+    expect(screen.getByTestId('weather-count-chip').textContent).toBe('1');
+  });
+
+  it('shows an inline error for an invalid pattern', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[chatPost]} />
+      </ToastProvider>,
+    );
+    await user.click(await screen.findByRole('button', { name: /Weather view/ }));
+    const input = screen.getByRole('textbox', { name: 'Extra weather post pattern' });
+    fireEvent.change(input, { target: { value: '([' } });
+    expect(screen.getByRole('alert').textContent).toMatch(/Invalid pattern/);
+    fireEvent.blur(input);
+    expect(useWeatherFilterStore.getState().patternInvalid).toBe(true);
+  });
+
+  it('leaves hidden weather posts out of other channels unread badges', async () => {
+    useWeatherFilterStore.getState().setHideInChannels(true);
+    const adminWeather = makeMsg({ ...weatherPost, channel: 1 });
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={[adminWeather]} />
+      </ToastProvider>,
+    );
+    const admin = await screen.findByRole('button', { name: /^Admin/ });
+    expect(admin.getAttribute('aria-label')).toBe('Admin');
   });
 });

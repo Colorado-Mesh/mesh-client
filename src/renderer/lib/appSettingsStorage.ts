@@ -104,6 +104,29 @@ export function isMecpComposeEnabled(): boolean {
   return parsed?.mecpComposeEnabled ?? DEFAULT_APP_SETTINGS_SHARED.mecpComposeEnabled;
 }
 
+export interface WeatherFilterSettings {
+  hideInChannels: boolean;
+  pattern: string;
+}
+
+/** Chat weather filter: hide weather posts in channels and the optional custom pattern. */
+export function getWeatherFilterSettings(): WeatherFilterSettings {
+  const parsed = parseStoredJson<{
+    weatherFilterHideInChannels?: unknown;
+    weatherFilterPattern?: unknown;
+  }>(getAppSettingsRaw(), 'getWeatherFilterSettings');
+  return {
+    hideInChannels:
+      typeof parsed?.weatherFilterHideInChannels === 'boolean'
+        ? parsed.weatherFilterHideInChannels
+        : DEFAULT_APP_SETTINGS_SHARED.weatherFilterHideInChannels,
+    pattern:
+      typeof parsed?.weatherFilterPattern === 'string'
+        ? parsed.weatherFilterPattern
+        : DEFAULT_APP_SETTINGS_SHARED.weatherFilterPattern,
+  };
+}
+
 export interface OperationalAlertSettings {
   /** null = protocol capability defaults. */
   nodeSilenceAlertMinutes: number | null;
