@@ -2633,6 +2633,34 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     expect((document.getElementById('mqtt-topic-prefix') as HTMLInputElement).value).toBe('msh/US');
   });
 
+  it('ignores a prior-session topic update that resolves after a reconnect', async () => {
+    const user = userEvent.setup();
+    let resolveUpdate: () => void = () => {};
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+    const panel = (mqttStatus: 'connected' | 'disconnected') => (
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus={mqttStatus}
+        protocol="meshtastic"
+      />
+    );
+    const { rerender } = render(panel('connected'));
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    rerender(panel('disconnected'));
+    rerender(panel('connected'));
+    resolveUpdate();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+  });
+
   it('applies only the latest of overlapping topic updates', async () => {
     const user = userEvent.setup();
     localStorage.setItem(

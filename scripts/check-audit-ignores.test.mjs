@@ -77,6 +77,21 @@ describe('evaluateIgnoredAdvisory', () => {
     ).toMatchObject({ status: 'unpatched' });
   });
 
+  it('skips advisories with no npm vulnerability entries', () => {
+    expect(
+      evaluateIgnoredAdvisory('GHSA-x', {
+        withdrawn_at: null,
+        vulnerabilities: [
+          {
+            package: { ecosystem: 'pip', name: 'forge' },
+            vulnerable_version_range: '< 2.0',
+            first_patched_version: '2.0',
+          },
+        ],
+      }),
+    ).toMatchObject({ status: 'skipped', reason: 'no npm vulnerabilities' });
+  });
+
   it('flags a withdrawn advisory as removable', () => {
     expect(
       evaluateIgnoredAdvisory('GHSA-x', {

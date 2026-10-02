@@ -554,6 +554,8 @@ export default function ConnectionPanel({
   const mqttStatusRef = useRef(mqttStatus);
   useEffect(() => {
     mqttStatusRef.current = mqttStatus;
+    // Replies from a prior session must not apply after a reconnect.
+    if (mqttStatus !== 'connected') mqttProfileRequestRef.current++;
   }, [mqttStatus]);
   const applyMeshtasticMqttProfile = (profile: MqttProfile) => {
     // An in-flight connect already captured the current settings.
