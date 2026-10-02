@@ -13,6 +13,7 @@ import {
   saveDraft,
 } from '../lib/chatPanelProtocolStorage';
 import { CHAT_SCROLL_END_THRESHOLD, getDistFromChatBottom } from '../lib/chatScrollUtils';
+import { computeChannelUnreadCounts } from '../lib/chatUnreadCounts';
 import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
@@ -6202,6 +6203,69 @@ describe('ChatPanel — weather view', () => {
     expect(screen.getByRole('alert').textContent).toMatch(/Invalid pattern/);
     fireEvent.blur(input);
     expect(useWeatherFilterStore.getState().patternInvalid).toBe(true);
+  });
+
+  it('reading the weather view does not mark earlier ordinary channel posts read', async () => {
+    const user = userEvent.setup();
+    const ts = 1_781_469_336_193;
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+    const messages = [
+      makeMsg({ ...chatPost, timestamp: ts - 2000 }),
+      makeMsg({ ...weatherPost, timestamp: ts - 1000 }),
+    ];
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} isActive={false} />
+      </ToastProvider>,
+    );
+    await user.click(await screen.findByRole('button', { name: /Weather view/ }));
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} isActive={true} />
+      </ToastProvider>,
+    );
+
+    await waitFor(() => {
+      const stored = JSON.parse(
+        localStorage.getItem(lastReadStorageKey('meshtastic')) ?? '{}',
+      ) as Record<string, number>;
+      expect(stored['wx:0']).toBe(ts - 1000);
+    });
+    const stored = JSON.parse(
+      localStorage.getItem(lastReadStorageKey('meshtastic')) ?? '{}',
+    ) as Record<string, number>;
+    expect(stored['ch:0']).toBe(ts - 5000);
+    expect(computeChannelUnreadCounts(messages, stored, new Set([1]), 'meshtastic').get(0)).toBe(2);
+  });
+
+  it('announces only posts the current view shows', async () => {
+    const region = document.createElement('div');
+    region.id = 'app-announcer-polite';
+    document.body.appendChild(region);
+    const hasFocusSpy = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+    try {
+      useWeatherFilterStore.getState().setHideInChannels(true);
+      const initial = [makeMsg({ ...chatPost, timestamp: Date.now() - 5000 })];
+      const view = (messages: ChatMessage[]) => (
+        <ToastProvider>
+          <ChatPanel {...baseProps} messages={messages} />
+        </ToastProvider>
+      );
+      const { rerender } = render(view(initial));
+      const withWeather = [...initial, makeMsg({ ...weatherPost, timestamp: Date.now() })];
+      rerender(view(withWeather));
+      await new Promise((r) => setTimeout(r, 100));
+      expect(region.textContent).toBe('');
+
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('button', { name: /Weather view/ }));
+      rerender(view([...withWeather, makeMsg({ payload: 'ordinary chatter' })]));
+      await new Promise((r) => setTimeout(r, 100));
+      expect(region.textContent).toBe('');
+    } finally {
+      region.remove();
+      hasFocusSpy.mockRestore();
+    }
   });
 
   it('leaves hidden weather posts out of other channels unread badges', async () => {

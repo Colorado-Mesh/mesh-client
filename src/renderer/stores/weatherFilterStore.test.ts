@@ -85,6 +85,23 @@ describe('weatherFilterStore', () => {
     expect(pickAudibleNotification([weather], 'meshtastic', new Set(), OWN)).toBeNull();
   });
 
+  it('does not raise a reply notification for a hidden weather reply to an own message', () => {
+    const parent = msg('what is the weather?', {
+      sender_id: 1,
+      packetId: 77,
+      timestamp: Date.now() - 5000,
+    });
+    const reply = msg('Clear. 60F now.', { replyId: 77 });
+    const all = [parent, reply];
+    expect(resolveChatNotificationType(reply, all, OWN, 'meshtastic')).toBe('reply');
+
+    useWeatherFilterStore.getState().setHideInChannels(true);
+    expect(resolveChatNotificationType(reply, all, OWN, 'meshtastic')).toBeNull();
+    expect(pickAudibleNotification([reply], 'meshtastic', new Set(), OWN, undefined, all)).toBe(
+      null,
+    );
+  });
+
   it('treats a marked sender as weather on that protocol only', () => {
     useWeatherFilterStore.getState().setHideInChannels(true);
     useWeatherFilterStore.getState().setSenderMarked('meshcore', 10, true);

@@ -15,6 +15,7 @@ export interface MqttProfileFields {
   password: string;
   topicPrefix: string;
   tlsEnabled?: boolean;
+  tlsInsecure?: boolean;
   useWebSocket?: boolean;
   wsPath?: string;
 }
@@ -52,6 +53,7 @@ function isMqttProfile(v: unknown): v is MqttProfile {
     typeof p.password === 'string' &&
     typeof p.topicPrefix === 'string' &&
     (p.tlsEnabled === undefined || typeof p.tlsEnabled === 'boolean') &&
+    (p.tlsInsecure === undefined || typeof p.tlsInsecure === 'boolean') &&
     (p.useWebSocket === undefined || typeof p.useWebSocket === 'boolean') &&
     (p.wsPath === undefined || typeof p.wsPath === 'string')
   );
@@ -89,6 +91,8 @@ function pickProfileFields(src: MqttProfileFields): MqttProfileFields {
     password: src.password,
     topicPrefix: src.topicPrefix,
     tlsEnabled: src.tlsEnabled,
+    // Normalized so an older profile without the field resets verification to the default.
+    tlsInsecure: src.tlsInsecure ?? false,
     useWebSocket: src.useWebSocket,
     wsPath: src.wsPath,
   };
@@ -132,6 +136,7 @@ function sameConnectionFields(a: MqttProfileFields, b: MqttProfileFields): boole
     a.username === b.username &&
     a.password === b.password &&
     (a.tlsEnabled ?? null) === (b.tlsEnabled ?? null) &&
+    (a.tlsInsecure ?? false) === (b.tlsInsecure ?? false) &&
     (a.useWebSocket ?? false) === (b.useWebSocket ?? false) &&
     (a.wsPath ?? '') === (b.wsPath ?? '')
   );

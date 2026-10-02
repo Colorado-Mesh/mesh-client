@@ -55,7 +55,7 @@ export function EnvironmentSparklines({
   const { t } = useTranslation();
   const series = useEnvironmentTelemetryStore((s) => selectEnvironmentSeries(s, protocol, nodeId));
   const nowMs = useNowMs();
-  if (series.length < 2) return null;
+  if (nowMs <= 0 || series.length < 2) return null;
   const since = nowMs - MS_PER_DAY;
   return (
     <>

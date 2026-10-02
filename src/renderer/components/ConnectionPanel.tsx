@@ -537,7 +537,9 @@ export default function ConnectionPanel({
     },
   );
   const [mqttProfiles, setMqttProfiles] = useState<MqttProfile[]>(loadMqttProfiles);
-  const [mqttProfileNeedsReconnect, setMqttProfileNeedsReconnect] = useState(false);
+  // Profile chosen while connected whose broker/credentials differ; applied once MQTT disconnects
+  // so the live session's settings and matched profile stay accurate.
+  const [pendingMqttProfile, setPendingMqttProfile] = useState<MqttProfile | null>(null);
   const activeMqttProfile = useMemo(
     () => matchMqttProfile(mqttProfiles, mqttSettings),
     [mqttProfiles, mqttSettings],
@@ -549,6 +551,11 @@ export default function ConnectionPanel({
   const applyMeshtasticMqttProfile = (profile: MqttProfile) => {
     const next = applyMqttProfile(mqttSettings, profile);
     const effect = mqttProfileApplyEffect(mqttSettings, next);
+    if (mqttStatus === 'connected' && effect === 'reconnect') {
+      setPendingMqttProfile(profile);
+      return;
+    }
+    setPendingMqttProfile(null);
     setMeshtasticPreset('custom');
     setMqttSettings(next);
     if (mqttStatus !== 'connected') return;
@@ -558,10 +565,15 @@ export default function ConnectionPanel({
         .catch((e: unknown) => {
           console.warn('[ConnectionPanel] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e));
         });
-    } else if (effect === 'reconnect') {
-      setMqttProfileNeedsReconnect(true);
     }
   };
+
+  useEffect(() => {
+    if (mqttStatus !== 'disconnected' || !pendingMqttProfile) return;
+    setMeshtasticPreset('custom');
+    setMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    setPendingMqttProfile(null);
+  }, [mqttStatus, pendingMqttProfile]);
 
   // Persist Meshtastic MQTT settings with debounce
   useEffect(() => {
@@ -668,7 +680,6 @@ export default function ConnectionPanel({
       setMqttWarning(null);
     }
     if (mqttStatus === 'connecting') setMqttWarning(null);
-    if (mqttStatus !== 'connected') setMqttProfileNeedsReconnect(false);
   }, [mqttStatus]);
 
   // Keep LetsMesh MQTT username in sync with imported MeshCore identity (v1_<64-hex public key>).
@@ -2063,7 +2074,7 @@ export default function ConnectionPanel({
                   if (profile) applyMeshtasticMqttProfile(profile);
                 }}
               />
-              {mqttProfileNeedsReconnect ? (
+              {pendingMqttProfile ? (
                 <p className="text-xs text-orange-400" role="status">
                   {t('mqttProfiles.reconnectNeeded')}
                 </p>

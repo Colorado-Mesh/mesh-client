@@ -81,6 +81,23 @@ describe('mqttProfiles', () => {
     });
   });
 
+  it('saves and restores TLS certificate verification with the profile', () => {
+    const [strict] = createMqttProfile([], 'Strict', { ...base, tlsEnabled: true }, 's');
+    const [lax] = createMqttProfile(
+      [],
+      'Lax',
+      { ...base, tlsEnabled: true, tlsInsecure: true },
+      'l',
+    );
+    expect(lax.tlsInsecure).toBe(true);
+    expect(applyMqttProfile({ ...base, tlsInsecure: true }, strict).tlsInsecure).toBe(false);
+    expect(applyMqttProfile(base, lax).tlsInsecure).toBe(true);
+    expect(matchMqttProfile([strict], { ...base, tlsEnabled: true, tlsInsecure: true })).toBe(
+      undefined,
+    );
+    expect(mqttProfileApplyEffect({ ...base, tlsInsecure: true }, base)).toBe('reconnect');
+  });
+
   it('matches the current settings to a profile', () => {
     const list = createMqttProfile([], 'Chicago', base, 'a');
     expect(matchMqttProfile(list, { ...base, autoLaunch: false })?.id).toBe('a');

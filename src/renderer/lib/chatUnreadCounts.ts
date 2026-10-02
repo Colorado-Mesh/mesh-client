@@ -310,6 +310,10 @@ export function resolveChatNotificationType(
   // MECP siren/tone owned by triggerMecpAlert (watcher + focused ChatPanel) — never channel/dm beep
   if (isMecpMessage(msg.payload)) return null;
 
+  const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, dmOptions);
+  // Hidden weather posts never reach a visible channel view, so they must not beep either.
+  if (peer == null && isHiddenWeatherPost(msg, protocol)) return null;
+
   if (msg.replyId != null) {
     const parent =
       protocol === 'meshtastic'
@@ -324,11 +328,7 @@ export function resolveChatNotificationType(
     if (parent && ownNodeIds.has(parent.sender_id)) return 'reply';
   }
 
-  const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, dmOptions);
   if (peer != null) return 'dm';
-
-  // Hidden weather posts never reach a visible channel view, so they must not beep either.
-  if (isHiddenWeatherPost(msg, protocol)) return null;
 
   return 'channel';
 }

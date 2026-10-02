@@ -2589,13 +2589,34 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     expect(screen.queryByText(/reconnect MQTT to use this profile/i)).toBeNull();
   });
 
-  it('asks for a reconnect when the broker changes on a live session', async () => {
+  it('keeps a broker change pending on a live session until MQTT disconnects', async () => {
     const user = userEvent.setup();
-    renderPanel('connected');
+    const { rerender } = renderPanel('connected');
     await user.selectOptions(liveProfileSelect(), 'profile:chi');
     expect(window.electronAPI.mqtt.updateTopicPrefix).not.toHaveBeenCalled();
     expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
     expect(screen.getByText(/reconnect MQTT to use this profile/i)).toBeInTheDocument();
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+    expect(
+      (JSON.parse(localStorage.getItem('mesh-client:mqttSettings') ?? '{}') as { server?: string })
+        .server,
+    ).toBe('mqtt.meshtastic.org');
+
+    rerender(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    expect((document.getElementById('mqtt-server') as HTMLInputElement).value).toBe(
+      'mqtt.chimesh.org',
+    );
+    expect(presetSelect().value).toBe('profile:chi');
+    expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
   });
 
   it('saves, renames and deletes profiles with inline names', async () => {

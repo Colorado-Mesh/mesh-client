@@ -1687,6 +1687,10 @@ function ChatPanel({
     return `ch:${channel}`;
   }, [viewMode, activeDmNode, channel]);
 
+  // Weather view shows a subset of the channel, so it must not advance the `ch:` watermark
+  // that channel unread counts use.
+  const readKey = viewMode === 'weather' ? `wx:${channel}` : viewKey;
+
   const outboxSendFn = useCallback(
     (text: string, ch: number, dest?: number, replyId?: number) =>
       Promise.resolve().then(() => onSend(text, ch, dest, replyId)),
@@ -1715,15 +1719,15 @@ function ChatPanel({
 
     const latest = latestMessageTimestamp(viewMessages);
     if (latest === 0) return;
-    setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[viewKey, latest]]));
-  }, [activeDmNode, viewKey, viewMessages, viewMode]);
+    setPersistedLastRead((prev) => mergeReadWatermarks(prev, [[readKey, latest]]));
+  }, [activeDmNode, readKey, viewMessages, viewMode]);
 
   // On view switch: snapshot lastRead for divider + arm scroll trigger
   useEffect(() => {
-    const snapshot = persistedLastReadRef.current[viewKey] ?? 0;
+    const snapshot = persistedLastReadRef.current[readKey] ?? 0;
     setUnreadDividerTimestamp(snapshot);
     setTriggerScrollToUnread((n) => n + 1);
-  }, [viewKey]);
+  }, [readKey]);
 
   // Clear sticky action errors when switching channel/DM/starred or leaving Chat (panel stays mounted).
   // viewMode is included because starred keeps the same viewKey as the prior channel/DM.
@@ -1739,15 +1743,15 @@ function ChatPanel({
   // Mark read when the user switches channel/DM while chat is active — not on tab re-entry alone.
   useEffect(() => {
     if (!isActive) {
-      prevViewKeyForReadRef.current = viewKey;
+      prevViewKeyForReadRef.current = readKey;
       return;
     }
     const prev = prevViewKeyForReadRef.current;
-    if (prev !== null && prev !== viewKey) {
+    if (prev !== null && prev !== readKey) {
       markCurrentViewRead();
     }
-    prevViewKeyForReadRef.current = viewKey;
-  }, [viewKey, isActive, markCurrentViewRead]);
+    prevViewKeyForReadRef.current = readKey;
+  }, [readKey, isActive, markCurrentViewRead]);
 
   useEffect(() => {
     setFilterSender(null);
@@ -1863,7 +1867,10 @@ function ChatPanel({
       if (protocol === 'meshcore' && isMeshcoreRoomChatMessage(msg)) return false;
       const peer = resolveDmPeer(msg);
       const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
-      return msgViewKey === viewKey;
+      if (msgViewKey !== viewKey) return false;
+      if (peer != null) return true;
+      const weather = isWeatherPost(msg, weatherConfig);
+      return viewMode === 'weather' ? weather : !(weatherHideInChannels && weather);
     });
     if (inboundForView.length === 0) return;
 
@@ -1906,6 +1913,9 @@ function ChatPanel({
     protocol,
     applyNearBottomReadState,
     outerScrollMetricsRootRef,
+    viewMode,
+    weatherConfig,
+    weatherHideInChannels,
   ]);
 
   // Scroll tracking for scroll-to-bottom button + mark-as-read when at bottom
