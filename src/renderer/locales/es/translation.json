@@ -3271,7 +3271,7 @@
     "keyManuallyVerifiedHint": "La clave pública de este nodo fue confirmada manualmente por un operador.",
     "keyBadge": "Clave",
     "closePane": "Cerrar detalles",
-    "savedPathHeading": "Saved Path",
+    "savedPathHeading": "Ruta guardada",
     "savedPathHint": "Ruta mejor clasificada del historial guardado. Puede diferir de la ruta de envío actual de la radio o de la ruta de un anuncio recibido."
   },
   "nodeInfoBody": {
