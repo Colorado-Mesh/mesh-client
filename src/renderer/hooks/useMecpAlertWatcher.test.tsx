@@ -269,6 +269,32 @@ describe('useMecpAlertWatcher', () => {
     expect(triggerMecpAlert).not.toHaveBeenCalled();
   });
 
+  it('ignores a stale hydrated B03 so it cannot cancel a current beacon', async () => {
+    const own = new Set<number>([9]);
+    const { rerender } = renderHook(
+      ({ messages }: { messages: MessageRecord[] }) => {
+        useMecpAlertWatcher(
+          { protocol: 'meshtastic', messages, ownNodeIds: own, ownSenderId: 9 },
+          { protocol: 'meshcore', messages: [], ownNodeIds: own },
+          { protocol: 'reticulum', messages: [], ownNodeIds: own },
+        );
+      },
+      { initialProps: { messages: [] as MessageRecord[] } },
+    );
+    const beacon = msg({ id: 'peer-b01', payload: 'MECP/0/B01', from: 4 });
+    rerender({ messages: [beacon] });
+    await vi.waitFor(() => {
+      expect(selectOpenIncidentsSorted(useIncidentStore.getState())[0]?.beaconActive).toBe(true);
+    });
+
+    const staleCancel = msg({ id: 'peer-b03-old', payload: 'MECP/0/B03', from: 4 });
+    staleCancel.timestamp = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    upsertMessageRecordsForIdentity('test-identity', [staleCancel]);
+    rerender({ messages: [beacon, staleCancel] });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(selectOpenIncidentsSorted(useIncidentStore.getState())[0]?.beaconActive).toBe(true);
+  });
+
   it('does not open an incident for a hydrated B02 beacon ACK', () => {
     const own = new Set<number>([1]);
     renderHook(() => {

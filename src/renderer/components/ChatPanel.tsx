@@ -2714,7 +2714,11 @@ function ChatPanel({
               >
                 <button
                   type="button"
-                  aria-label={getDmLabel(nodeNum)}
+                  aria-label={
+                    showDmUnreadBadge && dmMecpSeverity !== undefined
+                      ? `${getDmLabel(nodeNum)}, ${mecpUnreadLabel(dmMecpSeverity)}`
+                      : getDmLabel(nodeNum)
+                  }
                   aria-pressed={isActiveDm}
                   className="inline-flex max-w-[12rem] min-w-0 items-center gap-1 truncate text-left"
                   onClick={() => {

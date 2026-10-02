@@ -16,7 +16,9 @@ import {
   renameMessageId,
   replaceMessageRecordsForIdentity,
   updateMessageStatus,
+  upsertMessageRecordsForIdentity,
   useMessageStore,
+  wasMessageBulkLoaded,
 } from './messageStore';
 
 const ID_A = 'identity-a';
@@ -93,6 +95,28 @@ describe('messageStore replace and prune', () => {
     mergeMessageRecordsFromDbForIdentity(ID_A, [{ ...sampleRecord('same', 9), payload: 'db' }]);
     expect(useMessageStore.getState().messages[ID_A]?.same?.payload).toBe('db');
     expect(useMessageStore.getState().messages[ID_A]?.same?.from).toBe(9);
+  });
+
+  it('tracks bulk-load provenance per stored record, not per id', () => {
+    upsertMessageRecordsForIdentity(ID_A, [sampleRecord('shared', 1)]);
+    addMessage(ID_B, sampleRecord('shared', 2));
+    const state = useMessageStore.getState().messages;
+    expect(wasMessageBulkLoaded(state[ID_A].shared)).toBe(true);
+    expect(wasMessageBulkLoaded(state[ID_B].shared)).toBe(false);
+
+    addMessage(ID_A, { ...sampleRecord('shared', 1), payload: 'live edit' });
+    expect(wasMessageBulkLoaded(useMessageStore.getState().messages[ID_A].shared)).toBe(false);
+  });
+
+  it('mergeMessageRecordsFromDbForIdentity marks DB rows but never demotes a live record', () => {
+    addMessage(ID_A, { ...sampleRecord('same', 1), payload: 'live' });
+    mergeMessageRecordsFromDbForIdentity(ID_A, [
+      { ...sampleRecord('same', 9), payload: 'db' },
+      sampleRecord('db-only', 2),
+    ]);
+    const bucket = useMessageStore.getState().messages[ID_A];
+    expect(wasMessageBulkLoaded(bucket['db-only'])).toBe(true);
+    expect(wasMessageBulkLoaded(bucket.same)).toBe(false);
   });
 
   it('pruneMessageRecordsForIdentityByChannel removes one channel slice', () => {

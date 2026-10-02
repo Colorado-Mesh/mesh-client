@@ -24,7 +24,7 @@ import {
   sendMecpRebroadcastOnProtocol,
 } from '@/renderer/lib/mecp/sendMecpRebroadcast';
 import type { MeshProtocol } from '@/renderer/lib/types';
-import { useIncidentStore } from '@/renderer/stores/incidentStore';
+import { INCIDENT_SEED_MAX_AGE_MS, useIncidentStore } from '@/renderer/stores/incidentStore';
 import { type MessageRecord, wasMessageBulkLoaded } from '@/renderer/stores/messageStore';
 
 export interface MecpWatcherProtocolSlice {
@@ -102,6 +102,14 @@ function shouldSkipMecpInboundHandling(
 
 /** History path: silent incident upsert with seed age/tombstone guards; no alert/audit. */
 function seedIncidentFromHistory(slice: MecpWatcherProtocolSlice, msg: MessageRecord): void {
+  // Store applies this only to new reports; stale B03/ACKs must not mutate current incidents.
+  if (
+    typeof msg.timestamp === 'number' &&
+    msg.timestamp > 0 &&
+    Date.now() - msg.timestamp > INCIDENT_SEED_MAX_AGE_MS
+  ) {
+    return;
+  }
   const parsed = tryParseMecp(msg.payload);
   if (!parsed) return;
   const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
@@ -185,7 +193,7 @@ async function processNewMessages(
     const key = messageDedupKey(slice.protocol, msg.id);
     if (seen.has(key) || inFlight.has(key)) continue;
     // DB hydration often lands after mount (identity resolves on connect / sidecar start).
-    if (wasMessageBulkLoaded(msg.id)) {
+    if (wasMessageBulkLoaded(msg)) {
       seedIncidentFromHistory(slice, msg);
       seen.add(key);
       continue;
