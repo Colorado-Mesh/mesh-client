@@ -158,7 +158,7 @@ describe('useMecpAlertWatcher', () => {
     expect(appendReceived).not.toHaveBeenCalled();
   });
 
-  it('seeds own reports into the incident store without alert or audit', () => {
+  it('does not seed own messages into the incident store', () => {
     const own = new Set<number>([9]);
     renderHook(() => {
       useMecpAlertWatcher(
@@ -172,47 +172,7 @@ describe('useMecpAlertWatcher', () => {
         { protocol: 'reticulum', messages: [], ownNodeIds: own },
       );
     });
-    const open = selectOpenIncidentsSorted(useIncidentStore.getState());
-    expect(open).toHaveLength(1);
-    expect(open[0]).toMatchObject({ senderId: '9', codes: ['M01'] });
-    expect(triggerMecpAlert).not.toHaveBeenCalled();
-    expect(appendReceived).not.toHaveBeenCalled();
-  });
-
-  it('adds a live own channel drill without alert, audit, or rebroadcast', async () => {
-    const own = new Set<number>([9]);
-    const { rerender } = renderHook(
-      ({ messages }: { messages: MessageRecord[] }) => {
-        useMecpAlertWatcher(
-          { protocol: 'meshtastic', messages: [], ownNodeIds: own, ownSenderId: 9 },
-          { protocol: 'meshcore', messages, ownNodeIds: own, ownSenderId: 9 },
-          { protocol: 'reticulum', messages: [], ownNodeIds: own },
-        );
-      },
-      { initialProps: { messages: [] as MessageRecord[] } },
-    );
-    rerender({
-      messages: [
-        msg({
-          id: 'out:1',
-          payload: 'MECP/3/D02 40.19444,-105.06722',
-          from: 9,
-          channelIndex: 1,
-          status: 'sending',
-        }),
-      ],
-    });
-    await vi.waitFor(() => {
-      expect(selectOpenIncidentsSorted(useIncidentStore.getState())).toHaveLength(1);
-    });
-    expect(selectOpenIncidentsSorted(useIncidentStore.getState())[0]).toMatchObject({
-      protocol: 'meshcore',
-      isDrill: true,
-      channel: '1',
-    });
-    expect(triggerMecpAlert).not.toHaveBeenCalled();
-    expect(appendReceived).not.toHaveBeenCalled();
-    expect(executeMecpRebroadcast).not.toHaveBeenCalled();
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(0);
   });
 
   it('treats DB hydration that lands after mount as history (seed guards, no alert)', async () => {
@@ -220,7 +180,9 @@ describe('useMecpAlertWatcher', () => {
     const nineDaysMs = 9 * 24 * 60 * 60 * 1000;
     const stale = msg({ id: 'db-old', payload: 'MECP/0/M01 old', from: 4 });
     stale.timestamp = Date.now() - nineDaysMs;
-    const recent = msg({ id: 'db-new', payload: 'MECP/3/D01', from: 9, status: 'acked' });
+    const recent = msg({ id: 'db-new', payload: 'MECP/3/D01', from: 4 });
+    const ownRecent = msg({ id: 'db-own', payload: 'MECP/3/D02', from: 9, status: 'acked' });
+    const hydrated = [stale, recent, ownRecent];
     const { rerender } = renderHook(
       ({ messages }: { messages: MessageRecord[] }) => {
         useMecpAlertWatcher(
@@ -231,41 +193,24 @@ describe('useMecpAlertWatcher', () => {
       },
       { initialProps: { messages: [] as MessageRecord[] } },
     );
-    upsertMessageRecordsForIdentity('test-identity', [stale, recent]);
-    rerender({ messages: [stale, recent] });
+    upsertMessageRecordsForIdentity('test-identity', hydrated);
+    rerender({ messages: hydrated });
     await vi.waitFor(() => {
       expect(selectOpenIncidentsSorted(useIncidentStore.getState())).toHaveLength(1);
     });
     expect(selectOpenIncidentsSorted(useIncidentStore.getState())[0]).toMatchObject({
-      senderId: '9',
+      senderId: '4',
       isDrill: true,
     });
     expect(triggerMecpAlert).not.toHaveBeenCalled();
     expect(appendReceived).not.toHaveBeenCalled();
 
     rerender({
-      messages: [stale, recent, msg({ id: 'live', payload: 'MECP/0/M01 live', from: 4 })],
+      messages: [...hydrated, msg({ id: 'live', payload: 'MECP/0/M01 live', from: 4 })],
     });
     await vi.waitFor(() => {
       expect(triggerMecpAlert).toHaveBeenCalledTimes(1);
     });
-  });
-
-  it('does not open an incident for an own R01 ACK', () => {
-    const own = new Set<number>([9]);
-    renderHook(() => {
-      useMecpAlertWatcher(
-        {
-          protocol: 'meshtastic',
-          messages: [msg({ id: 'own-r01', payload: 'MECP/0/R01 M01', from: 9 })],
-          ownNodeIds: own,
-          ownSenderId: 9,
-        },
-        { protocol: 'meshcore', messages: [], ownNodeIds: own },
-        { protocol: 'reticulum', messages: [], ownNodeIds: own },
-      );
-    });
-    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(0);
   });
 
   it('seeds an own distress beacon without alerting so the originator can cancel it', () => {

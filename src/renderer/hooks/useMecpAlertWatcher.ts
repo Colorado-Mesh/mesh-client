@@ -5,8 +5,7 @@ import { loadMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { chatViewKeyForMessage } from '@/renderer/lib/chatUnreadCounts';
 import i18n from '@/renderer/lib/i18n';
 import { beaconCancelToNodeForMessage } from '@/renderer/lib/mecp/beaconCancel';
-import { isBeaconAck } from '@/renderer/lib/mecp/engine';
-import { isGeneralAck } from '@/renderer/lib/mecp/mecpAck';
+import { isBeacon, isBeaconCancel } from '@/renderer/lib/mecp/engine';
 import { triggerMecpAlert } from '@/renderer/lib/mecp/mecpAlert';
 import {
   getCachedMecpLanguage,
@@ -70,12 +69,9 @@ function upsertIncidentFromMessage(
   });
 }
 
-/**
- * Own reports (incl. B01/B03) still update Incident Command (no alert/audit/rebroadcast).
- * Own R01/B02 are skipped: App `handleIncidentAck` already records them on send.
- */
-function isOwnIncidentReport(parsed: MecpParsed, own: boolean): boolean {
-  return own && !isGeneralAck(parsed.codes) && !isBeaconAck(parsed.codes);
+/** Own B01/B03 still update Incident Command (no alert). Other own traffic stays ignored. */
+function isOwnBeaconControl(parsed: MecpParsed, own: boolean): boolean {
+  return own && (isBeacon(parsed.codes) || isBeaconCancel(parsed.codes));
 }
 
 function isOwnMessage(
@@ -110,8 +106,8 @@ function seedIncidentFromHistory(slice: MecpWatcherProtocolSlice, msg: MessageRe
   if (!parsed) return;
   const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
   if (shouldSkipMecpInboundHandling(msg, parsed, own)) {
-    // Keep recent own reports (an own beacon stays cancellable by its originator).
-    if (isOwnIncidentReport(parsed, own) && !msg.tapback && !msg.viaStoreForward) {
+    // Keep a recent own beacon so the originator can still cancel it.
+    if (isOwnBeaconControl(parsed, own) && !msg.tapback && !msg.viaStoreForward) {
       upsertIncidentFromMessage(slice, msg, { fromSeed: true, localOrigin: true });
     }
     return;
@@ -203,9 +199,9 @@ async function processNewMessages(
 
     const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
     if (shouldSkipMecpInboundHandling(msg, parsed, own)) {
-      // Record our own report (beacon → Resolve can transmit B03). History/S&F/tapback stay skipped.
+      // Record our own beacon so Resolve can transmit B03. History/S&F/tapback stay skipped.
       if (
-        isOwnIncidentReport(parsed, own) &&
+        isOwnBeaconControl(parsed, own) &&
         !msg.isHistory &&
         !msg.viaStoreForward &&
         !msg.tapback
