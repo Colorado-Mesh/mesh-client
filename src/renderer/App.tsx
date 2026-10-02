@@ -175,6 +175,7 @@ import { usePanelLauncherShortcuts } from './hooks/usePanelLauncherShortcuts';
 import { usePowerRecovery } from './hooks/usePowerRecovery';
 import { useProtocolConnect, useProtocolDisconnect } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
+import { useRefreshPositionOnProtocolSwitch } from './hooks/useRefreshPositionOnProtocolSwitch';
 import { useRendererHeartbeat } from './hooks/useRendererHeartbeat';
 import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions';
 import { useRrcStartupAutoConnect } from './hooks/useRrcStartupAutoConnect';
@@ -2184,6 +2185,8 @@ function AppContent() {
       console.debug('[App] refreshOurPosition after location change ' + errLikeToLogString(e));
     });
   }, [capabilities, meshtasticPanelActions, meshcorePanelActions]);
+
+  useRefreshPositionOnProtocolSwitch(protocol, refreshActiveOurPosition);
 
   useEffect(() => {
     const previousDeviceStatus = previousDeviceStatusRef.current;
