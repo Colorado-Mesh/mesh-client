@@ -90,6 +90,18 @@ describe('incidentStore', () => {
     expect(useIncidentStore.getState().incidents[id].ackCount).toBe(1);
   });
 
+  it('tab badge counts open MAYDAY/URGENT drills; quit count and SAFETY/ROUTINE do not', async () => {
+    const { useIncidentStore, incidentTabBadgeCount, openMaydayUrgentCount } = await loadStore();
+    const s = useIncidentStore.getState();
+    s.upsertFromMecp(report('MECP/0/D01 M01 drill'));
+    s.upsertFromMecp(report('MECP/1/D02 M02 drill', { senderId: '8' }));
+    s.upsertFromMecp(report('MECP/2/D01 drill', { senderId: '7' }));
+    s.upsertFromMecp(report('MECP/3/M01 routine', { senderId: '6' }));
+    const state = useIncidentStore.getState();
+    expect(incidentTabBadgeCount(state)).toBe(2);
+    expect(openMaydayUrgentCount(state)).toBe(0);
+  });
+
   it('escalates severity for the same sender/codes/freetext and keeps the id', async () => {
     const { useIncidentStore, openMaydayUrgentCount } = await loadStore();
     const s = useIncidentStore.getState();

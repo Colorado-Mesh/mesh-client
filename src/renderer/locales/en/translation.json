@@ -6316,7 +6316,7 @@
   },
   "incidentPanel": {
     "title": "Emergency incidents",
-    "intro": "Common operating picture for MECP emergencies heard on any protocol. Open MAYDAY and URGENT rows badge this tab; drills are listed but never counted. Use Acknowledge (or Confirm for an active beacon) to reply on the mesh, then Resolve when the incident is closed locally. If you sent the distress beacon, Cancel beacon also transmits B03 so other stations clear it.",
+    "intro": "Common operating picture for MECP emergencies heard on any protocol. Open MAYDAY and URGENT rows badge this tab, including drills. Use Acknowledge (or Confirm for an active beacon) to reply on the mesh, then Resolve when the incident is closed locally. If you sent the distress beacon, Cancel beacon also transmits B03 so other stations clear it.",
     "empty": "No open emergency incidents.",
     "emptyHint": "Inbound MECP reports appear here automatically. To send one, enable App → MECP → Show MECP button in Chat, then use MECP in Chat. Map → Layers can show open incidents with coordinates.",
     "listAria": "Open emergency incidents",

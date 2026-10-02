@@ -507,6 +507,18 @@ export function openMaydayUrgentCount(state: Pick<IncidentStoreState, 'incidents
   return n;
 }
 
+/**
+ * Incident tab badge: unresolved MAYDAY (0) / URGENT (1), drills included so a drill exercises
+ * the same response path. Quit confirmation keeps `openMaydayUrgentCount` (real emergencies).
+ */
+export function incidentTabBadgeCount(state: Pick<IncidentStoreState, 'incidents'>): number {
+  let n = 0;
+  for (const inc of Object.values(state.incidents)) {
+    if (isUnresolved(inc) && inc.severity <= 1) n++;
+  }
+  return n;
+}
+
 /** Unresolved incidents, most severe first, then most recent. Returns a new array; memoize callers. */
 export function selectOpenIncidentsSorted(
   state: Pick<IncidentStoreState, 'incidents'>,
