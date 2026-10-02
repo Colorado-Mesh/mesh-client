@@ -6434,5 +6434,40 @@
     "stopUsing": "Kaydedilen konumu kullanmayı bırakın",
     "addLocation": "Şube ekle",
     "coordsHintFormats": "Koordinatları veya harita bağlantısını yapıştırın: N/S/E/W, MGRS veya Google, Apple veya OpenStreetMap paylaşım bağlantısı ile ondalık (39.7392 ,-104.9903), derece/dakika/saniye."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Kaydedildi: {{name}}",
+    "save": "Mevcut olanı profil olarak kaydet",
+    "rename": "Yeniden Adlandır",
+    "renameAria": "MQTT profilini yeniden adlandır {{name}}",
+    "deleteAria": "MQTT profilini sil {{name}}",
+    "namePlaceholder": "Profil adı, ör. Chicago",
+    "reconnectNeeded": "Bu profilin aracı ayarlarını kullanmak için MQTT bağlantısını kesin ve yeniden bağlayın.",
+    "switchLabel": "Kayıtlı profil",
+    "noneSelected": "Geçerli ayarlar (kaydedilmedi)",
+    "nameAria": "Profil ismi"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Bu kanaldaki hava durumu gönderileri",
+    "hideInChannels": "Kanallardaki hava durumu gönderilerini gizle",
+    "patternPlaceholder": "Ekstra desen (regex), örn. ^ WX - bot",
+    "patternAria": "Ekstra hava durumu gönderi deseni",
+    "patternInvalid": "Geçersiz desen; yalnızca yerleşik desenler kullanılıyor.",
+    "markSender": "Hava durumu göndericisi olarak işaretle",
+    "unmarkSender": "Hava durumu göndericisinin işaretini kaldır",
+    "viewAria": "Hava durumu görünümü (bu kanaldaki hava durumu gönderileri: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensörleri",
+    "metricSelectAria": "Haritada gösterilen sensör değeri",
+    "metricTemperature": "Sıcaklık",
+    "metricHumidity": "Nem",
+    "metricPressure": "Basınç",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Sıcaklık (24 saat)",
+    "sparklineHumidity24h": "Nem (24s)"
   }
 }

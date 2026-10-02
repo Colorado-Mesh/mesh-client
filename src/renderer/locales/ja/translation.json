@@ -6434,5 +6434,40 @@
     "stopUsing": "保存された場所の使用を停止する",
     "addLocation": "ロケーションを追加",
     "coordsHintFormats": "座標またはマップリンクを貼り付けます： 10進数（ 39.7392、-104.9903 ）、度/分/秒、N/S/E/W、MGRS、またはGoogle、Apple、またはOpenStreetMapの共有リンク。"
+  },
+  "mqttProfiles": {
+    "optionLabel": "保存済み： {{name}}",
+    "save": "現在のプロファイルをプロファイルとして保存",
+    "rename": "名前を変更する",
+    "renameAria": "MQTTプロファイル名の変更{{name}}",
+    "deleteAria": "MQTTプロファイル{{name}}を削除",
+    "namePlaceholder": "シカゴなどのプロフィール名",
+    "reconnectNeeded": "このプロファイルのブローカー設定を使用するには、MQTTを切断して再接続します。",
+    "switchLabel": "保存されたプロフィール",
+    "noneSelected": "現在の設定（保存されていません）",
+    "nameAria": "プロファイル名"
+  },
+  "weatherFilter": {
+    "viewTooltip": "このチャンネルの天気予報投稿",
+    "hideInChannels": "チャンネルの天気予報投稿を非表示にする",
+    "patternPlaceholder": "追加パターン（正規表現）、例：^ WX - BOT",
+    "patternAria": "予備の天気予報ポストパターン",
+    "patternInvalid": "無効なパターン。組み込みパターンのみを使用しています。",
+    "markSender": "天気予報送信者としてマーク",
+    "unmarkSender": "天気予報送信者のマークを外す",
+    "viewAria": "天気ビュー（このチャンネルの天気情報： {{posts}} ）"
+  },
+  "sensorLayer": {
+    "layer": "センサー",
+    "metricSelectAria": "地図に表示されるセンサー値",
+    "metricTemperature": "温度",
+    "metricHumidity": "湿度",
+    "metricPressure": "圧力",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "温度（ 24時間）",
+    "sparklineHumidity24h": "湿度（ 24時間）"
   }
 }

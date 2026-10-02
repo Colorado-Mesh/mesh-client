@@ -167,6 +167,12 @@ async function executeDbPrune(label: 'startup' | 'session', opts?: DbPruneOption
     );
   }
 
+  ops.push(
+    window.electronAPI.db.pruneEnvironmentTelemetry().catch((e: unknown) => {
+      console.warn(`[App] ${label} pruneEnvironmentTelemetry failed ` + errLikeToLogString(e));
+    }),
+  );
+
   if (s.meshcoreDeleteNeverAdvertised) {
     ops.push(
       window.electronAPI.db.deleteMeshcoreContactsNeverAdvertised().catch((e: unknown) => {

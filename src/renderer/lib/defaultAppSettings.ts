@@ -36,6 +36,10 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   meshcoreFloodScopePresets: [] as string[],
   locale: 'en' as string,
   chatCompactMode: false,
+  /** Leave weather-bot posts out of channel views (they stay in the Weather view). */
+  weatherFilterHideInChannels: false,
+  /** Extra case-insensitive regex for weather posts (empty = defaults only). */
+  weatherFilterPattern: '',
   /** When true, chat/room message action bars (copy/reply/react/etc.) stay visible instead of hover-only. */
   alwaysShowMessageActions: false,
   /** When true, disables non-essential UI motion (animated icons, decorative pulses). */

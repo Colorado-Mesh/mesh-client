@@ -6530,5 +6530,40 @@
     "stopUsing": "Przestań używać zapisanej lokalizacji",
     "addLocation": "Dodaj lokalizację",
     "coordsHintFormats": "Wklej współrzędne lub link do mapy: dziesiętny (39.7392, -104.9903), stopnie/minuty/sekundy za pomocą N/S/E/W, MGRS lub linku do udostępniania Google, Apple lub OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Zapisano: {{name}}",
+    "save": "Zapisz bieżący jako profil",
+    "rename": "Zmiana nazwy",
+    "renameAria": "Zmień nazwę profilu MQTT {{name}}",
+    "deleteAria": "Usuń profil MQTT {{name}}",
+    "namePlaceholder": "Nazwa profilu, np. Chicago",
+    "reconnectNeeded": "Rozłącz i ponownie połącz MQTT, aby użyć ustawień brokera tego profilu.",
+    "switchLabel": "Zapisany profil",
+    "noneSelected": "Bieżące ustawienia (niezapisane)",
+    "nameAria": "Nazwa profilu"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Posty pogodowe w tym kanale",
+    "hideInChannels": "Ukryj posty pogodowe na kanałach",
+    "patternPlaceholder": "Dodatkowy wzór (regex), np. ^WX-BOT",
+    "patternAria": "Dodatkowy wzór słupka pogodowego",
+    "patternInvalid": "Nieprawidłowy wzór; używając tylko wbudowanych wzorów.",
+    "markSender": "Oznacz jako nadawcę pogody",
+    "unmarkSender": "Odznacz nadawcę pogody",
+    "viewAria": "Widok pogody (posty pogodowe na tym kanale: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Czujniki",
+    "metricSelectAria": "Wartość czujnika pokazana na mapie",
+    "metricTemperature": "Temperatura",
+    "metricHumidity": "Wilgotność",
+    "metricPressure": "Ciśnienie",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperatura (24h)",
+    "sparklineHumidity24h": "Wilgotność (24h)"
   }
 }

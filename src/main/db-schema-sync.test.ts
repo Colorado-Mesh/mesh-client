@@ -52,6 +52,43 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     }
   });
 
+  it('creates node_environment_telemetry with its index when upgrading a v50 database', () => {
+    const db = new NodeSqliteDB(':memory:');
+    try {
+      db.execScript(`CREATE TABLE position_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, node_id INTEGER NOT NULL,
+        latitude REAL NOT NULL, longitude REAL NOT NULL, recorded_at INTEGER NOT NULL
+      );`);
+      db.pragma('user_version = 50');
+      runSchemaUpgrade(db);
+      const cols = (
+        db.prepareOnce('PRAGMA table_info(node_environment_telemetry)').all() as { name: string }[]
+      ).map((c) => c.name);
+      expect(cols).toEqual(
+        expect.arrayContaining([
+          'protocol',
+          'node_id',
+          'recorded_at',
+          'temperature',
+          'relative_humidity',
+          'barometric_pressure',
+          'source',
+        ]),
+      );
+      expect(
+        db
+          .prepareOnce(
+            `SELECT 1 AS ok FROM sqlite_master WHERE type='index' AND name='idx_node_env_telemetry_node_time'`,
+          )
+          .get(),
+      ).toEqual({ ok: 1 });
+      expect(CURRENT_SCHEMA_VERSION).toBeGreaterThanOrEqual(51);
+      expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
+    } finally {
+      db.close();
+    }
+  });
+
   it.each(['linux', 'darwin', 'win32'])(
     'rebuilds v49 MeshCore indexes to retain distinct recipients on %s',
     () => {

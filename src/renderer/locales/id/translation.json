@@ -6434,5 +6434,40 @@
     "stopUsing": "Berhenti menggunakan lokasi tersimpan",
     "addLocation": "Tambahkan Lokasi",
     "coordsHintFormats": "Tempel koordinat atau tautan peta: desimal (39,7392, -104,9903), derajat/menit/detik dengan N/S/E/W, MGRS, atau tautan berbagi Google, Apple, atau OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Tersimpan: {{name}}",
+    "save": "Simpan saat ini sebagai profil",
+    "rename": "Ubah Nama",
+    "renameAria": "Ganti nama profil MQTT {{name}}",
+    "deleteAria": "Hapus profil MQTT {{name}}",
+    "namePlaceholder": "Nama profil, misalnya Chicago",
+    "reconnectNeeded": "Putuskan dan sambungkan kembali MQTT untuk menggunakan pengaturan broker profil ini.",
+    "switchLabel": "Profil tersimpan",
+    "noneSelected": "Pengaturan saat ini (tidak disimpan)",
+    "nameAria": "Nama profil"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Postingan cuaca di saluran ini",
+    "hideInChannels": "Sembunyikan postingan cuaca di saluran",
+    "patternPlaceholder": "Pola ekstra (regex), misalnya ^ WX - bot",
+    "patternAria": "Pola postingan cuaca ekstra",
+    "patternInvalid": "Pola tidak valid; hanya menggunakan pola bawaan.",
+    "markSender": "Tandai sebagai pengirim cuaca",
+    "unmarkSender": "Batal tandai pengirim cuaca",
+    "viewAria": "Tampilan cuaca (postingan cuaca di saluran ini: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensor",
+    "metricSelectAria": "Nilai sensor ditampilkan pada peta",
+    "metricTemperature": "Suhu",
+    "metricHumidity": "Kelembapan",
+    "metricPressure": "Tekanan",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Suhu (24jam)",
+    "sparklineHumidity24h": "Kelembaban (24jam)"
   }
 }

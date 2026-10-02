@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setConnection } from '../../stores/connectionStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
+import {
+  selectEnvironmentSeries,
+  useEnvironmentTelemetryStore,
+} from '../../stores/environmentTelemetryStore';
 import { addIdentity, useIdentityStore } from '../../stores/identityStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import {
@@ -73,6 +77,7 @@ function makeDeps(overrides: Partial<MeshtasticNodeSideEffectsDeps> = {}) {
 describe('attachMeshtasticNodeSideEffects', () => {
   beforeEach(() => {
     useNodeStore.setState({ nodes: {} });
+    useEnvironmentTelemetryStore.setState({ history: new Map() });
     useIdentityStore.setState({ identities: {}, activeIdentityId: null });
     addIdentity({
       id: IDENTITY,
@@ -223,6 +228,14 @@ describe('attachMeshtasticNodeSideEffects', () => {
       expect.objectContaining({
         env_temperature: 21.5,
         env_humidity: 45,
+      }),
+    );
+    expect(
+      selectEnvironmentSeries(useEnvironmentTelemetryStore.getState(), 'meshtastic', PEER).at(-1),
+    ).toEqual(
+      expect.objectContaining({
+        source: 'rf',
+        reading: { temperature: 21.5, relativeHumidity: 45 },
       }),
     );
     detach();

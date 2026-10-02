@@ -2508,3 +2508,139 @@ describe('ConnectionPanel link tiles and disconnect actions', () => {
     },
   );
 });
+
+describe('ConnectionPanel Meshtastic MQTT profiles', () => {
+  const baseSettings = {
+    server: 'mqtt.meshtastic.org',
+    port: 1883,
+    username: 'meshdev',
+    password: 'large4cats',
+    topicPrefix: 'msh/US',
+    autoLaunch: false,
+  };
+  const profiles = [
+    { ...baseSettings, id: 'nwi', name: 'NW Indiana', topicPrefix: 'msh/US/IN/NWI' },
+    {
+      ...baseSettings,
+      id: 'chi',
+      name: 'Chicago',
+      server: 'mqtt.chimesh.org',
+      topicPrefix: 'msh/US/IL/Chi',
+    },
+  ];
+
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('mesh-client:mqttSettings', JSON.stringify(baseSettings));
+    localStorage.setItem('mesh-client:mqttProfiles:meshtastic', JSON.stringify(profiles));
+    vi.mocked(window.electronAPI.mqtt.connect).mockClear();
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockClear();
+  });
+
+  afterEach(() => {
+    localStorage.clear();
+  });
+
+  function renderPanel(mqttStatus: 'connected' | 'disconnected') {
+    return render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus={mqttStatus}
+        protocol="meshtastic"
+      />,
+    );
+  }
+
+  const presetSelect = () =>
+    document.getElementById('conn-meshtastic-network-preset-select') as HTMLSelectElement;
+  const liveProfileSelect = () => screen.getByRole('combobox', { name: 'Saved profile' });
+
+  it('lists saved profiles and applies one without connecting', async () => {
+    const user = userEvent.setup();
+    renderPanel('disconnected');
+    expect(screen.getByRole('option', { name: 'Saved: Chicago' })).toBeInTheDocument();
+
+    await user.selectOptions(presetSelect(), 'profile:chi');
+    expect((document.getElementById('mqtt-server') as HTMLInputElement).value).toBe(
+      'mqtt.chimesh.org',
+    );
+    expect((document.getElementById('mqtt-topic-prefix') as HTMLInputElement).value).toBe(
+      'msh/US/IL/Chi',
+    );
+    expect(presetSelect().value).toBe('profile:chi');
+    expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
+    expect(window.electronAPI.mqtt.updateTopicPrefix).not.toHaveBeenCalled();
+  });
+
+  it('re-subscribes with updateTopicPrefix when only the topic changes on a live session', async () => {
+    const user = userEvent.setup();
+    renderPanel('connected');
+    expect(
+      screen.getByRole('option', { name: 'Current settings (not saved)' }),
+    ).toBeInTheDocument();
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    expect(window.electronAPI.mqtt.updateTopicPrefix).toHaveBeenCalledWith({
+      topicPrefix: 'msh/US/IN/NWI',
+    });
+    expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
+    expect(screen.queryByText(/reconnect MQTT to use this profile/i)).toBeNull();
+  });
+
+  it('keeps a broker change pending on a live session until MQTT disconnects', async () => {
+    const user = userEvent.setup();
+    const { rerender } = renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:chi');
+    expect(window.electronAPI.mqtt.updateTopicPrefix).not.toHaveBeenCalled();
+    expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
+    expect(screen.getByText(/reconnect MQTT to use this profile/i)).toBeInTheDocument();
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+    expect(
+      (JSON.parse(localStorage.getItem('mesh-client:mqttSettings') ?? '{}') as { server?: string })
+        .server,
+    ).toBe('mqtt.meshtastic.org');
+
+    rerender(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    expect((document.getElementById('mqtt-server') as HTMLInputElement).value).toBe(
+      'mqtt.chimesh.org',
+    );
+    expect(presetSelect().value).toBe('profile:chi');
+    expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
+  });
+
+  it('saves, renames and deletes profiles with inline names', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem('mesh-client:mqttProfiles:meshtastic', '[]');
+    renderPanel('disconnected');
+
+    await user.click(screen.getByRole('button', { name: 'Save current as profile' }));
+    await user.type(screen.getByRole('textbox', { name: 'Profile name' }), 'USA{Enter}');
+    expect(presetSelect().selectedOptions[0]?.textContent).toBe('Saved: USA');
+
+    await user.click(screen.getByRole('button', { name: 'Rename MQTT profile USA' }));
+    const nameInput = screen.getByRole('textbox', { name: 'Profile name' });
+    await user.clear(nameInput);
+    await user.type(nameInput, 'National{Enter}');
+    const stored = JSON.parse(
+      localStorage.getItem('mesh-client:mqttProfiles:meshtastic') ?? '[]',
+    ) as { name: string; server: string }[];
+    expect(stored).toEqual([
+      expect.objectContaining({ name: 'National', server: 'mqtt.meshtastic.org' }),
+    ]);
+
+    await user.click(screen.getByRole('button', { name: 'Delete MQTT profile National' }));
+    expect(screen.queryByRole('option', { name: 'Saved: National' })).toBeNull();
+    expect(localStorage.getItem('mesh-client:mqttProfiles:meshtastic')).toBe('[]');
+  });
+});

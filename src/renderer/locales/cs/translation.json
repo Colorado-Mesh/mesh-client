@@ -6484,5 +6484,40 @@
     "stopUsing": "Přestat používat uloženou polohu",
     "addLocation": "Přidat lokalitu",
     "coordsHintFormats": "Vložte souřadnice nebo odkaz na mapu: decimální (39,7392, -104,9903), stupně/minuty/sekundy s odkazem na sdílení N/S/E/W, Mgrs nebo Google, Apple nebo OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Uloženo: {{name}}",
+    "save": "Uložit aktuální jako profil",
+    "rename": "Přejmenovat",
+    "renameAria": "Přejmenovat profil MQTT {{name}}",
+    "deleteAria": "Smazat profil MQTT {{name}}",
+    "namePlaceholder": "Název profilu, např. Chicago",
+    "reconnectNeeded": "Chcete-li použít nastavení makléře tohoto profilu, odpojte a znovu připojte MQTT.",
+    "switchLabel": "Uložený profil",
+    "noneSelected": "Aktuální nastavení (neuloženo)",
+    "nameAria": "Jméno profilu"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Příspěvky o počasí v tomto kanálu",
+    "hideInChannels": "Skrýt příspěvky o počasí v kanálech",
+    "patternPlaceholder": "Extra vzor (regulární výraz), např. ^WX-BOT",
+    "patternAria": "Vzor dodatečných příspěvků za počasí",
+    "patternInvalid": "Neplatný vzor; pouze pomocí vestavěných vzorů.",
+    "markSender": "Označit jako odesílatele počasí",
+    "unmarkSender": "Odznačit odesílatele počasí",
+    "viewAria": "Zobrazení počasí (příspěvky počasí v tomto kanálu: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Snímače",
+    "metricSelectAria": "Hodnota senzoru zobrazená na mapě",
+    "metricTemperature": "Teplota",
+    "metricHumidity": "Vlhkost",
+    "metricPressure": "Tlak",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Teplota (24h)",
+    "sparklineHumidity24h": "Vlhkost (24 h)"
   }
 }

@@ -28,6 +28,10 @@ import type {
   SpellcheckReplacePayload,
   UpdateCheckingPayload,
 } from '../shared/electron-api.types';
+import type {
+  EnvironmentReading,
+  EnvironmentTelemetrySource,
+} from '../shared/environmentTelemetry';
 import type { FirmwareBackupSaveResult } from '../shared/firmwareBackup';
 import type {
   NotificationSoundEvent,
@@ -416,6 +420,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ) => ipcRenderer.invoke('db:savePositionHistory', nodeId, lat, lon, recordedAt, source),
     getPositionHistory: (sinceMs: number) => ipcRenderer.invoke('db:getPositionHistory', sinceMs),
     clearPositionHistory: () => ipcRenderer.invoke('db:clearPositionHistory'),
+    saveEnvironmentTelemetry: (
+      protocol: MeshProtocol,
+      nodeId: number,
+      recordedAt: number,
+      reading: EnvironmentReading,
+      source: EnvironmentTelemetrySource,
+    ) =>
+      ipcRenderer.invoke(
+        'db:saveEnvironmentTelemetry',
+        protocol,
+        nodeId,
+        recordedAt,
+        reading,
+        source,
+      ),
+    getEnvironmentTelemetry: (sinceMs: number) =>
+      ipcRenderer.invoke('db:getEnvironmentTelemetry', sinceMs),
+    clearEnvironmentTelemetry: () => ipcRenderer.invoke('db:clearEnvironmentTelemetry'),
+    pruneEnvironmentTelemetry: () => ipcRenderer.invoke('db:pruneEnvironmentTelemetry'),
     saveMeshcoreHopHistory: (
       nodeId: number,
       timestamp: number,

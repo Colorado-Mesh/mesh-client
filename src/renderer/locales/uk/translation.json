@@ -6530,5 +6530,40 @@
     "stopUsing": "Припинити використання збереженого розташування",
     "addLocation": "Додавання пункту продажу",
     "coordsHintFormats": "Вставте координати або посилання на карту: десяткове (39,7392, -104,9903), градуси/хвилини/секунди з посиланням на спільний доступ N/S/E/W, MGRS або Google, Apple або OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Збережено: {{name}}",
+    "save": "Зберегти поточний профіль",
+    "rename": "Перейменувати",
+    "renameAria": "Перейменувати профіль MQTT {{name}}",
+    "deleteAria": "Видалити профіль MQTT {{name}}",
+    "namePlaceholder": "Ім'я профілю, наприклад Чикаго",
+    "reconnectNeeded": "Від'єднайте та повторно підключіть MQTT, щоб використовувати налаштування брокера цього профілю.",
+    "switchLabel": "Використовуйте збережений профіль",
+    "noneSelected": "Поточні налаштування (не збережено)",
+    "nameAria": "Назва профілю"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Погодні дописи в цьому каналі",
+    "hideInChannels": "Приховати дописи про погоду в каналах",
+    "patternPlaceholder": "Додатковий шаблон (регулярне вираз), наприклад, ^WX-BOT",
+    "patternAria": "Зразок допису про додаткову погоду",
+    "patternInvalid": "Недійсний шаблон; використовуються лише вбудовані шаблони.",
+    "markSender": "Позначити як відправника погоди",
+    "unmarkSender": "Зняти позначку з відправника погоди",
+    "viewAria": "Вид на погоду (дописи про погоду в цьому каналі: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Датчики",
+    "metricSelectAria": "Значення датчика, показане на карті",
+    "metricTemperature": "Температура",
+    "metricHumidity": "Вологість",
+    "metricPressure": "Тиск",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} гПа",
+    "sparklineTemperature24h": "Температура (24 год)",
+    "sparklineHumidity24h": "Вологість (24 год)"
   }
 }

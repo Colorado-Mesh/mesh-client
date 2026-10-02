@@ -374,6 +374,7 @@ import { useReticulumVoiceMemoStore } from './stores/reticulumVoiceMemoStore';
 import { useRncpTransferStore } from './stores/rncpTransferStore';
 import { useRrcSessionStore } from './stores/rrcSessionStore';
 import { useTimeFormatStore } from './stores/timeFormatStore';
+import { useWeatherFilterStore } from './stores/weatherFilterStore';
 
 // Tabs capability filtering lives in appTabMappings.ts (computeTabMappings).
 
@@ -1349,8 +1350,13 @@ function AppContent() {
     [meshtasticRuntime.channels],
   );
 
+  const weatherHideInChannels = useWeatherFilterStore((s) => s.hideInChannels);
+  const weatherFilterConfigs = useWeatherFilterStore((s) => s.configs);
+
   const meshtasticChatUnread = useMemo(() => {
     touch(lastReadRevision.meshtastic);
+    touch(weatherHideInChannels);
+    touch(weatherFilterConfigs);
     const lastRead = getSanitizedMeshtasticChatLastRead(
       meshtasticUiMessages,
       meshtasticOwnNodeIdSet,
@@ -1368,6 +1374,8 @@ function AppContent() {
     meshtasticConfiguredChannelIndices,
     meshtasticOwnNodeIdSet,
     meshtasticUiMessages,
+    weatherHideInChannels,
+    weatherFilterConfigs,
   ]);
 
   const meshcoreChatLastRead = useMemo(() => {
@@ -1391,6 +1399,8 @@ function AppContent() {
   );
 
   const meshcoreChatUnread = useMemo(() => {
+    touch(weatherHideInChannels);
+    touch(weatherFilterConfigs);
     return totalUnreadCount(
       meshcoreUiMessages,
       meshcoreChatLastRead,
@@ -1405,6 +1415,8 @@ function AppContent() {
     meshcoreConfiguredChannelIndices,
     meshcoreOwnNodeIdSet,
     meshcoreUiMessages,
+    weatherHideInChannels,
+    weatherFilterConfigs,
   ]);
 
   const reticulumChatUnread = useMemo(() => {
@@ -4589,6 +4601,7 @@ function AppContent() {
                                         selectNodeFrom('map', nodeId);
                                       }}
                                       protocol={protocol}
+                                      useFahrenheit={useFahrenheit}
                                     />
                                   ) : null}
                                 </div>

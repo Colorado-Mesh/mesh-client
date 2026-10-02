@@ -19,7 +19,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 50;
+export const CURRENT_SCHEMA_VERSION = 51;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -141,6 +141,24 @@ export const CANONICAL_TABLES_DDL = `
         longitude   REAL    NOT NULL,
         recorded_at INTEGER NOT NULL,
         source      TEXT    DEFAULT 'rf'
+      );
+
+      CREATE TABLE IF NOT EXISTS node_environment_telemetry (
+        id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+        protocol            TEXT    NOT NULL DEFAULT 'meshtastic',
+        node_id             INTEGER NOT NULL,
+        recorded_at         INTEGER NOT NULL,
+        temperature         REAL,
+        relative_humidity   REAL,
+        barometric_pressure REAL,
+        iaq                 REAL,
+        gas_resistance      REAL,
+        lux                 REAL,
+        wind_speed          REAL,
+        wind_direction      REAL,
+        pm25_standard       REAL,
+        co2                 REAL,
+        source              TEXT    DEFAULT 'rf'
       );
 
       CREATE TABLE IF NOT EXISTS contact_groups (
@@ -342,6 +360,8 @@ export const INDEX_DDLS: readonly string[] = [
         WHERE sender_id IS NULL`,
   'CREATE INDEX IF NOT EXISTS idx_position_history_node_time ON position_history(node_id, recorded_at)',
   'CREATE INDEX IF NOT EXISTS idx_position_history_time ON position_history(recorded_at)',
+  'CREATE INDEX IF NOT EXISTS idx_node_env_telemetry_node_time ON node_environment_telemetry(protocol, node_id, recorded_at)',
+  'CREATE INDEX IF NOT EXISTS idx_node_env_telemetry_time ON node_environment_telemetry(recorded_at)',
   'CREATE INDEX IF NOT EXISTS idx_contact_groups_self ON contact_groups(self_node_id)',
   'CREATE INDEX IF NOT EXISTS idx_meshcore_trace_history_node_id ON meshcore_trace_history(node_id)',
   'CREATE INDEX IF NOT EXISTS idx_meshcore_path_history_node ON meshcore_path_history(node_id)',
@@ -475,6 +495,22 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     latitude: 'REAL NOT NULL',
     longitude: 'REAL NOT NULL',
     recorded_at: 'INTEGER NOT NULL',
+    source: "TEXT DEFAULT 'rf'",
+  },
+  node_environment_telemetry: {
+    protocol: "TEXT NOT NULL DEFAULT 'meshtastic'",
+    node_id: 'INTEGER NOT NULL',
+    recorded_at: 'INTEGER NOT NULL',
+    temperature: 'REAL',
+    relative_humidity: 'REAL',
+    barometric_pressure: 'REAL',
+    iaq: 'REAL',
+    gas_resistance: 'REAL',
+    lux: 'REAL',
+    wind_speed: 'REAL',
+    wind_direction: 'REAL',
+    pm25_standard: 'REAL',
+    co2: 'REAL',
     source: "TEXT DEFAULT 'rf'",
   },
   contact_groups: {

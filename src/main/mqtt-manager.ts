@@ -12,6 +12,12 @@ import { EventEmitter } from 'events';
 import * as mqtt from 'mqtt';
 
 import type { ChatMessage, MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import {
+  ENVIRONMENT_NODE_UPDATE_MARKER,
+  environmentNodePatchFromReading,
+  environmentReadingFromSnakeCase,
+  sanitizeEnvironmentReading,
+} from '../shared/environmentTelemetry';
 import { computeMeshtasticChannelHash } from '../shared/meshtasticChannelHash';
 import { splitChannelPskLine } from '../shared/meshtasticChannelPskLine';
 import {
@@ -62,6 +68,14 @@ const TelemetrySchema =
   (Telemetry as unknown as { TelemetrySchema?: unknown }).TelemetrySchema ?? null;
 const PaxcountSchema = (PaxCount as unknown as { PaxcountSchema?: unknown }).PaxcountSchema ?? null;
 const MapReportSchema = (Mqtt as unknown as { MapReportSchema?: unknown }).MapReportSchema ?? null;
+
+interface MqttDeviceMetrics {
+  batteryLevel?: number;
+  voltage?: number;
+  channelUtilization?: number;
+  airUtilTx?: number;
+  uptimeSeconds?: number;
+}
 
 // Default PSK for meshtastic: firmware Channels.h `defaultpsk` (shorthand alias 0x01 expands to
 // this — see expandMeshtasticPskAlias). NOT a zero-padded literal of the alias byte itself.
@@ -1824,6 +1838,7 @@ export class MQTTManager extends EventEmitter {
     const air_util_tx = payload.air_util_tx as number | undefined;
     const channel_utilization = payload.channel_utilization as number | undefined;
     const uptime_seconds = payload.uptime_seconds as number | undefined;
+    const environment = environmentReadingFromSnakeCase(payload);
 
     const now = Date.now();
 
@@ -1834,6 +1849,12 @@ export class MQTTManager extends EventEmitter {
       air_util_tx,
       channel_utilization,
       uptime_seconds,
+      ...(environment
+        ? {
+            ...environmentNodePatchFromReading(environment),
+            [ENVIRONMENT_NODE_UPDATE_MARKER]: now,
+          }
+        : {}),
       last_heard: now,
       from_mqtt: true,
     });
@@ -2033,17 +2054,31 @@ export class MQTTManager extends EventEmitter {
           payload,
         ) as {
           variant?: {
-            deviceMetrics?: {
-              batteryLevel?: number;
-              voltage?: number;
-              channelUtilization?: number;
-              airUtilTx?: number;
-              uptimeSeconds?: number;
-            };
+            case?: string;
+            value?: unknown;
+            deviceMetrics?: MqttDeviceMetrics;
           };
         };
-        const device = telemetry.variant?.deviceMetrics;
-        if (device) {
+        // protobuf-es v2 decodes the oneof as { case, value }; keep the flat shape for older fixtures.
+        const variantCase = telemetry.variant?.case;
+        const device =
+          variantCase === 'deviceMetrics'
+            ? (telemetry.variant?.value as MqttDeviceMetrics | undefined)
+            : telemetry.variant?.deviceMetrics;
+        const environment =
+          variantCase === 'environmentMetrics' || variantCase === 'airQualityMetrics'
+            ? sanitizeEnvironmentReading(telemetry.variant?.value)
+            : null;
+        if (environment) {
+          const now = Date.now();
+          this.emit('nodeUpdate', {
+            node_id: nodeId,
+            ...environmentNodePatchFromReading(environment),
+            [ENVIRONMENT_NODE_UPDATE_MARKER]: now,
+            last_heard: now,
+            from_mqtt: true,
+          });
+        } else if (device) {
           this.emit('nodeUpdate', {
             node_id: nodeId,
             battery: device.batteryLevel,
