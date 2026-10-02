@@ -68,6 +68,12 @@ describe('runStartupDbPrune', () => {
     expect(window.electronAPI.db.pruneRrcMessagesByAge).toHaveBeenCalledTimes(1);
   });
 
+  it('prunes environment telemetry history on startup', async () => {
+    vi.mocked(window.electronAPI.db.pruneEnvironmentTelemetry).mockClear();
+    await runStartupDbPrune();
+    expect(window.electronAPI.db.pruneEnvironmentTelemetry).toHaveBeenCalledTimes(1);
+  });
+
   it('runSessionDbPrune repeats after prior run settles (single-flight only while in-flight)', async () => {
     await runStartupDbPrune();
     await runSessionDbPrune();

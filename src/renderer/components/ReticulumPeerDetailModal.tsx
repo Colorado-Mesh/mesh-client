@@ -157,7 +157,9 @@ export default function ReticulumPeerDetailModal({
     Boolean(liveIdentityHash) &&
     verifiedIdentityHash !== liveIdentityHash;
 
-  const fingerprint = formatReticulumIdentityFingerprint(liveIdentityHash || peerHash);
+  const fingerprint = liveIdentityHash
+    ? formatReticulumIdentityFingerprint(liveIdentityHash)
+    : null;
 
   const contactQrUri = useMemo(() => {
     try {
@@ -595,8 +597,20 @@ export default function ReticulumPeerDetailModal({
             </ul>
           </div>
           <div className="border-ink-700/60 mt-2 space-y-1 rounded border p-2">
-            <div className="text-muted text-2xs">{t('peerDetailModal.verifyFingerprint')}</div>
-            <div className="text-ink-200 font-mono text-xs break-all">{fingerprint}</div>
+            {fingerprint ? (
+              <>
+                <div className="text-muted text-2xs">{t('peerDetailModal.verifyFingerprint')}</div>
+                <div className="text-ink-200 font-mono text-xs break-all">{fingerprint}</div>
+              </>
+            ) : (
+              <>
+                <div className="text-muted text-2xs">{t('peerDetailModal.identityUnknown')}</div>
+                <div className="text-muted text-2xs">
+                  {t('peerDetailModal.identityUnknownDestination')}
+                </div>
+                <div className="text-ink-200 font-mono text-xs break-all">{peerHash}</div>
+              </>
+            )}
             <div className="flex flex-wrap gap-2 pt-1">
               <button
                 type="button"

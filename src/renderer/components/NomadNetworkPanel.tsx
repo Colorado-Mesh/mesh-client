@@ -6,6 +6,7 @@ import {
   ChevronUp,
   Code,
   Eraser,
+  FingerprintPattern,
   House,
   MoveHorizontal,
   PanelLeftClose,
@@ -71,6 +72,7 @@ import {
   useNomadPageViewerStore,
 } from '../stores/nomadPageViewerStore';
 import { ConversationLayout, useConversationLayoutMode } from './chat/ConversationLayout';
+import { ConfirmModal } from './ConfirmModal';
 import NomadMicronPageView from './NomadMicronPageView';
 import NomadPageServerPanel from './NomadPageServerPanel';
 import { useToast } from './Toast';
@@ -134,6 +136,11 @@ function NomadExpandedNodeItem({
   formatHash,
   hopsAwayLabel,
   lastSeenLabel,
+  identifyingLabel,
+  stopIdentifyingLabel,
+  onStopIdentifying,
+  identifyBusy,
+  favoriteBusy,
 }: {
   node: NomadNodeRow;
   isSelected: boolean;
@@ -144,6 +151,11 @@ function NomadExpandedNodeItem({
   formatHash: (hash: string) => string;
   hopsAwayLabel: string | null;
   lastSeenLabel: string | null;
+  identifyingLabel: string;
+  stopIdentifyingLabel: string;
+  onStopIdentifying: (hash: string) => void;
+  identifyBusy: boolean;
+  favoriteBusy: boolean;
 }) {
   const label = node.display_name ?? node.destination_hash.slice(0, 16);
 
@@ -176,9 +188,26 @@ function NomadExpandedNodeItem({
             {lastSeenLabel ? <span>{lastSeenLabel}</span> : null}
           </div>
         </button>
+        {node.identify === true ? (
+          <button
+            type="button"
+            disabled={identifyBusy}
+            className="text-bright-green hover:bg-ink-800 rounded-control inline-flex shrink-0 items-center gap-1 px-1 py-0.5 text-xs disabled:opacity-40"
+            aria-label={stopIdentifyingLabel}
+            title={stopIdentifyingLabel}
+            onClick={(e) => {
+              e.stopPropagation();
+              onStopIdentifying(node.destination_hash);
+            }}
+          >
+            <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
+            <span>{identifyingLabel}</span>
+          </button>
+        ) : null}
         <button
           type="button"
-          className={`rounded-control shrink-0 p-1 ${node.favorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'}`}
+          disabled={favoriteBusy}
+          className={`rounded-control shrink-0 p-1 disabled:opacity-40 ${node.favorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'}`}
           aria-label={toggleFavoriteLabel}
           aria-pressed={node.favorited}
           onClick={() => {
@@ -209,6 +238,8 @@ export default function NomadNetworkPanel({
   const fetchNomadFile = useNomadNetworkStore((s) => s.fetchNomadFile);
   const fetchNomadMedia = useNomadNetworkStore((s) => s.fetchNomadMedia);
   const toggleFavorite = useNomadNetworkStore((s) => s.toggleFavorite);
+  const setIdentify = useNomadNetworkStore((s) => s.setIdentify);
+  const clearAllIdentify = useNomadNetworkStore((s) => s.clearAllIdentify);
 
   const selectedHash = useNomadPageViewerStore((s) => s.selectedHash);
   const pagePath = useNomadPageViewerStore((s) => s.pagePath);
@@ -254,6 +285,11 @@ export default function NomadNetworkPanel({
     () => localStorage.getItem(NOMAD_NODE_LIST_COLLAPSED_STORAGE_KEY) === 'true',
   );
   const [pageFitWidth, setPageFitWidth] = useState(readNomadPageFitWidth);
+  const [pendingIdentifyConfirm, setPendingIdentifyConfirm] = useState<{
+    hash: string;
+    name: string;
+  } | null>(null);
+  const [pendingClearAllIdentify, setPendingClearAllIdentify] = useState(false);
   const [sortPref, setSortPref] = useState(readNomadNodeSortPreference);
   const sortKey = sortPref.key;
   const sortDir = sortPref.dir;
@@ -417,7 +453,13 @@ export default function NomadNetworkPanel({
 
   const favouritesCount = useMemo(() => allRows.filter((node) => node.favorited).length, [allRows]);
 
+  const identifyingCount = useMemo(
+    () => allRows.filter((node) => node.identify === true).length,
+    [allRows],
+  );
+
   const selectedNode = selectedHash ? nodes.get(selectedHash.toLowerCase()) : undefined;
+  const selectedIdentifying = selectedNode?.identify === true;
 
   const loadNodePage = useCallback(
     async (hash: string, path: string, options: NomadPageLoadOptions = {}) => {
@@ -629,12 +671,162 @@ export default function NomadNetworkPanel({
     [loadNodePage, refreshFromSidecar],
   );
 
+  const nodeLabel = useCallback(
+    (hash: string) => {
+      const node = nodes.get(hash.toLowerCase());
+      return node?.display_name ?? hash.slice(0, 16);
+    },
+    [nodes],
+  );
+
+  // One favourite save at a time, for the same stale-revert reason as identify below.
+  const favoriteBusyRef = useRef(false);
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+
+  const applyFavorite = useCallback(
+    async (hash: string, favorited: boolean, announce: boolean) => {
+      if (favoriteBusyRef.current) return;
+      favoriteBusyRef.current = true;
+      setFavoriteBusy(true);
+      const name = nodeLabel(hash);
+      let saved: boolean;
+      try {
+        saved = await toggleFavorite(hash, favorited);
+      } finally {
+        favoriteBusyRef.current = false;
+        if (mountedRef.current) setFavoriteBusy(false);
+      }
+      if (!mountedRef.current) return;
+      if (!saved) {
+        addToast(t('nomadNetwork.favoriteFailedToast', { name }), 'error');
+        return;
+      }
+      if (!announce) return;
+      addToast(
+        favorited
+          ? t('nomadNetwork.favoriteAddedToast', { name })
+          : t('nomadNetwork.favoriteRemovedToast', { name }),
+        'info',
+      );
+    },
+    [addToast, nodeLabel, setFavoriteBusy, t, toggleFavorite],
+  );
+
   const handleToggleFavorite = useCallback(
     (hash: string, favorited: boolean) => {
-      void toggleFavorite(hash, favorited);
+      void applyFavorite(hash, favorited, false);
     },
-    [toggleFavorite],
+    [applyFavorite],
   );
+
+  const selectedFavorited = selectedNode?.favorited === true;
+
+  const handleViewerFavoriteToggle = useCallback(() => {
+    if (!selectedHash) return;
+    void applyFavorite(selectedHash, !selectedFavorited, true);
+  }, [applyFavorite, selectedFavorited, selectedHash]);
+
+  const reloadIfViewing = useCallback(
+    (hashes: readonly string[]) => {
+      const viewer = useNomadPageViewerStore.getState();
+      const open = viewer.selectedHash?.toLowerCase();
+      if (!open || !hashes.some((h) => h.toLowerCase() === open)) return;
+      void loadNodePage(viewer.selectedHash ?? open, viewer.pagePath, {
+        forceReload: true,
+        requestData: viewer.pageRequestData,
+      });
+    },
+    [loadNodePage],
+  );
+
+  // One identify save at a time: each store call snapshots `nodes` for its own
+  // revert, so overlapping saves that fail out of order would restore a stale flag.
+  const identifyBusyRef = useRef(false);
+  const [identifyBusy, setIdentifyBusy] = useState(false);
+
+  const runIdentifyUpdate = useCallback(
+    async <T,>(update: () => Promise<T>): Promise<{ result: T } | null> => {
+      if (identifyBusyRef.current) return null;
+      identifyBusyRef.current = true;
+      setIdentifyBusy(true);
+      try {
+        return { result: await update() };
+      } finally {
+        identifyBusyRef.current = false;
+        if (mountedRef.current) setIdentifyBusy(false);
+      }
+    },
+    [setIdentifyBusy],
+  );
+
+  const applyIdentify = useCallback(
+    async (hash: string, identify: boolean) => {
+      const name = nodeLabel(hash);
+      const run = await runIdentifyUpdate(() => setIdentify(hash, identify));
+      if (!run || !mountedRef.current) return;
+      const saved = run.result;
+      if (!saved) {
+        addToast(t('nomadNetwork.identifyFailedToast', { name }), 'error');
+        return;
+      }
+      addToast(
+        identify
+          ? t('nomadNetwork.identifyEnabledToast', { name })
+          : t('nomadNetwork.identifyDisabledToast', { name }),
+        identify ? 'success' : 'info',
+      );
+      reloadIfViewing([hash]);
+    },
+    [addToast, nodeLabel, reloadIfViewing, runIdentifyUpdate, setIdentify, t],
+  );
+
+  const handleIdentifyToggle = useCallback(() => {
+    if (!selectedHash) return;
+    const hash = selectedNode?.destination_hash ?? selectedHash;
+    if (selectedIdentifying) {
+      void applyIdentify(hash, false);
+      return;
+    }
+    setPendingIdentifyConfirm({ hash, name: nodeLabel(hash) });
+  }, [
+    applyIdentify,
+    nodeLabel,
+    selectedHash,
+    selectedIdentifying,
+    selectedNode,
+    setPendingIdentifyConfirm,
+  ]);
+
+  const handleStopIdentifying = useCallback(
+    (hash: string) => {
+      void applyIdentify(hash, false);
+    },
+    [applyIdentify],
+  );
+
+  const confirmClearAllIdentify = useCallback(async () => {
+    setPendingClearAllIdentify(false);
+    const affected = allRows
+      .filter((node) => node.identify === true)
+      .map((node) => node.destination_hash);
+    const run = await runIdentifyUpdate(() => clearAllIdentify());
+    if (!run || !mountedRef.current) return;
+    const cleared = run.result;
+    if (cleared == null) {
+      addToast(t('nomadNetwork.identifyClearAllFailedToast'), 'error');
+      return;
+    }
+    addToast(t('nomadNetwork.identifyClearedAllToast', { count: cleared }), 'info');
+    reloadIfViewing(affected);
+  }, [
+    addToast,
+    allRows,
+    clearAllIdentify,
+    reloadIfViewing,
+    runIdentifyUpdate,
+    setPendingClearAllIdentify,
+    t,
+  ]);
 
   const handleMicronNavigate = useCallback(
     (hash: string, path: string, requestData?: NomadPageRequestData) => {
@@ -680,6 +872,11 @@ export default function NomadNetworkPanel({
           onOpenNode={handleOpenNode}
           onToggleFavorite={handleToggleFavorite}
           formatHash={formatNomadHash}
+          identifyingLabel={t('nomadNetwork.identifyingBadge')}
+          stopIdentifyingLabel={t('nomadNetwork.identifyStopAria', { name: label })}
+          onStopIdentifying={handleStopIdentifying}
+          identifyBusy={identifyBusy}
+          favoriteBusy={favoriteBusy}
           hopsAwayLabel={
             node.hops != null ? t('nomadNetwork.hopsAway', { count: node.hops }) : null
           }
@@ -748,6 +945,21 @@ export default function NomadNetworkPanel({
             { value: 'myPages', label: t('nomadNetwork.myPagesTab') },
           ]}
         />
+        {identifyingCount > 0 ? (
+          <button
+            type="button"
+            disabled={!sidecarRunning || identifyBusy}
+            className="text-bright-green hover:bg-ink-800 rounded-control inline-flex items-center gap-1 self-start px-1 py-0.5 text-xs disabled:opacity-40"
+            aria-label={t('nomadNetwork.identifyClearAllAria', { count: identifyingCount })}
+            title={t('nomadNetwork.identifyClearAllAria', { count: identifyingCount })}
+            onClick={() => {
+              setPendingClearAllIdentify(true);
+            }}
+          >
+            <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
+            <span>{t('nomadNetwork.identifyClearAll')}</span>
+          </button>
+        ) : null}
         {activeTab !== 'myPages' && (
           <>
             <div className="relative">
@@ -917,6 +1129,31 @@ export default function NomadNetworkPanel({
               ) : null}
               <button
                 type="button"
+                disabled={!sidecarRunning || identifyBusy}
+                className={`inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40 ${
+                  selectedIdentifying
+                    ? 'border-bright-green/60 bg-bright-green/20 text-bright-green'
+                    : 'border-ink-700 text-ink-200 hover:bg-ink-800'
+                }`}
+                aria-label={
+                  selectedIdentifying
+                    ? t('nomadNetwork.identifyStopAria', { name: nodeLabel(selectedHash) })
+                    : t('nomadNetwork.identifyEnableAria', { name: nodeLabel(selectedHash) })
+                }
+                title={
+                  sidecarRunning
+                    ? selectedIdentifying
+                      ? t('nomadNetwork.identifyOnHint')
+                      : t('nomadNetwork.identifyOffHint')
+                    : t('nomadNetwork.identifyUnavailable')
+                }
+                aria-pressed={selectedIdentifying}
+                onClick={handleIdentifyToggle}
+              >
+                <FingerprintPattern aria-hidden className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
                 disabled={!canGoBack}
                 className="border-ink-700 text-ink-200 hover:bg-ink-800 inline-flex h-7 w-7 items-center justify-center rounded-md border disabled:opacity-40"
                 aria-label={t('nomadNetwork.back')}
@@ -1052,6 +1289,31 @@ export default function NomadNetworkPanel({
               placeholder={t('nomadNetwork.pagePath')}
               className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}
             />
+            <button
+              type="button"
+              disabled={!sidecarRunning || favoriteBusy}
+              className={`rounded-control inline-flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-40 ${
+                selectedFavorited ? 'text-yellow-400' : 'text-muted hover:text-ink-200'
+              }`}
+              aria-label={
+                selectedFavorited
+                  ? t('nomadNetwork.unfavoriteSiteAria', { name: nodeLabel(selectedHash) })
+                  : t('nomadNetwork.favoriteSiteAria', { name: nodeLabel(selectedHash) })
+              }
+              title={
+                selectedFavorited
+                  ? t('nomadNetwork.unfavoriteSiteAria', { name: nodeLabel(selectedHash) })
+                  : t('nomadNetwork.favoriteSiteAria', { name: nodeLabel(selectedHash) })
+              }
+              aria-pressed={selectedFavorited}
+              onClick={handleViewerFavoriteToggle}
+            >
+              <Star
+                aria-hidden
+                className="h-4 w-4"
+                fill={selectedFavorited ? 'currentColor' : 'none'}
+              />
+            </button>
           </form>
 
           <div className="relative min-h-0 min-w-0 flex-1">
@@ -1199,6 +1461,34 @@ export default function NomadNetworkPanel({
         conversation={viewer}
         keepConversationMounted
       />
+      {pendingIdentifyConfirm ? (
+        <ConfirmModal
+          title={t('nomadNetwork.identifyConfirmTitle', { name: pendingIdentifyConfirm.name })}
+          message={t('nomadNetwork.identifyConfirmBody', { name: pendingIdentifyConfirm.name })}
+          confirmLabel={t('nomadNetwork.identifyConfirmAccept')}
+          onConfirm={() => {
+            const { hash } = pendingIdentifyConfirm;
+            setPendingIdentifyConfirm(null);
+            void applyIdentify(hash, true);
+          }}
+          onCancel={() => {
+            setPendingIdentifyConfirm(null);
+          }}
+        />
+      ) : null}
+      {pendingClearAllIdentify ? (
+        <ConfirmModal
+          title={t('nomadNetwork.identifyClearAllTitle')}
+          message={t('nomadNetwork.identifyClearAllBody', { count: identifyingCount })}
+          confirmLabel={t('nomadNetwork.identifyClearAll')}
+          onConfirm={() => {
+            void confirmClearAllIdentify();
+          }}
+          onCancel={() => {
+            setPendingClearAllIdentify(false);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

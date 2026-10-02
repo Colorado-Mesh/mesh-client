@@ -56,6 +56,15 @@ export function clearNomadPageCache(): void {
   cache.clear();
 }
 
+/** Drop every cached page for one node (its identify choice changed). */
+export function clearNomadPageCacheForHash(hash: string): void {
+  const prefix = `${hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase()}:`;
+  if (prefix === ':') return;
+  for (const key of [...cache.keys()]) {
+    if (key.startsWith(prefix)) cache.delete(key);
+  }
+}
+
 /** @internal test helper */
 export function nomadPageCacheSizeForTests(): number {
   return cache.size;

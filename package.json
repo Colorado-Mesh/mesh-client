@@ -54,6 +54,7 @@
     "build:main:size": "node scripts/print-main-bundle-size.mjs",
     "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --outfile=dist-electron/preload/index.js --external:electron --format=cjs",
     "build:renderer": "vite build",
+    "check:audit-ignores": "node scripts/check-audit-ignores.mjs",
     "check:codeql-extensions": "node scripts/check-codeql-extensions.mjs",
     "check:console-log": "node scripts/check-console-log.mjs",
     "check:db-migrations": "node scripts/check-db-migrations.mjs",
@@ -145,11 +146,11 @@
     "update": "bash scripts/update.sh"
   },
   "dependencies": {
-    "@bufbuild/protobuf": "^2.15.0",
+    "@bufbuild/protobuf": "^2.16.0",
     "@meshtastic/protobufs": "npm:@jsr/meshtastic__protobufs@^2.8.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
-    "@zip.js/zip.js": "^2.18.2",
+    "@zip.js/zip.js": "^2.21.0",
     "builder-util-runtime": "^9.7.0",
     "dompurify": "^3.4.16",
     "electron-updater": "^6.8.9",
@@ -170,7 +171,7 @@
     "react-leaflet-cluster": "^4.1.3",
     "readable-stream": "^4.7.0",
     "semver": "^7.8.5",
-    "systeminformation": "^5.33.14",
+    "systeminformation": "^5.33.15",
     "undici": "^8.11.2",
     "ws": "^8.21.0"
   },

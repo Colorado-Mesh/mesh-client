@@ -1,7 +1,7 @@
 // @vitest-environment node
 /* eslint-disable no-secrets/no-secrets -- regression fixtures use reporter-shaped base64, not live credentials */
 import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
-import { Mesh, Mqtt as MqttProto, Portnums } from '@meshtastic/protobufs';
+import { Mesh, Mqtt as MqttProto, Portnums, Telemetry } from '@meshtastic/protobufs';
 import { createCipheriv } from 'crypto';
 import * as mqtt from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -859,6 +859,146 @@ describe('onMessage — NODEINFO_APP', () => {
     const u = updates[0] as Record<string, unknown>;
     expect(u.long_name).toBe('Custom Node');
     expect(u.short_name).toBe('CUS');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onMessage — TELEMETRY_APP
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('onMessage — TELEMETRY_APP', () => {
+  let manager: MQTTManager;
+  const { TelemetrySchema } = Telemetry;
+
+  beforeEach(() => {
+    manager = new MQTTManager();
+  });
+
+  function telemetryEnvelope(
+    nodeId: number,
+    variant: Parameters<typeof create<typeof TelemetrySchema>>[1],
+  ): Buffer {
+    const dataBytes = toBinary(
+      DataSchema,
+      create(DataSchema, {
+        portnum: PortNum.TELEMETRY_APP,
+        payload: toBinary(TelemetrySchema, create(TelemetrySchema, variant)),
+      }),
+    );
+    return buildEnvelope({ nodeId, packetId: 0x77, dataBytes, psk: DEFAULT_PSK });
+  }
+
+  function collect(topicNode: string, payload: Buffer): Record<string, unknown>[] {
+    const updates: Record<string, unknown>[] = [];
+    manager.on('nodeUpdate', (u: Record<string, unknown>) => updates.push(u));
+    (manager as any).onMessage(`msh/US/2/e/LongFast/!${topicNode}`, payload);
+    return updates;
+  }
+
+  it('emits env_* fields and the reading marker for environmentMetrics', () => {
+    const nodeId = 0x1a2b3c4d;
+    const updates = collect(
+      '1a2b3c4d',
+      telemetryEnvelope(nodeId, {
+        variant: {
+          case: 'environmentMetrics',
+          value: { temperature: 21.5, relativeHumidity: 40, barometricPressure: 1013.2 },
+        },
+      }),
+    );
+    const env = updates.find((u) => u.env_temperature !== undefined);
+    expect(env).toMatchObject({
+      node_id: nodeId,
+      env_temperature: 21.5,
+      env_humidity: 40,
+      env_pressure: expect.closeTo(1013.2, 1),
+      from_mqtt: true,
+    });
+    expect(typeof env?.env_recorded_at).toBe('number');
+    expect(env).not.toHaveProperty('battery');
+  });
+
+  it('emits particulates and CO2 for airQualityMetrics', () => {
+    const nodeId = 0x1a2b3c4e;
+    const updates = collect(
+      '1a2b3c4e',
+      telemetryEnvelope(nodeId, {
+        variant: { case: 'airQualityMetrics', value: { pm25Standard: 12, co2: 650 } },
+      }),
+    );
+    expect(updates.find((u) => u.env_co2 !== undefined)).toMatchObject({
+      node_id: nodeId,
+      env_pm25: 12,
+      env_co2: 650,
+    });
+  });
+
+  it('emits battery fields for deviceMetrics without an environment marker', () => {
+    const nodeId = 0x1a2b3c4f;
+    const updates = collect(
+      '1a2b3c4f',
+      telemetryEnvelope(nodeId, {
+        variant: { case: 'deviceMetrics', value: { batteryLevel: 88, voltage: 4.1 } },
+      }),
+    );
+    const device = updates.find((u) => u.battery !== undefined);
+    expect(device).toMatchObject({ node_id: nodeId, battery: 88, from_mqtt: true });
+    expect(device).not.toHaveProperty('env_recorded_at');
+  });
+
+  it('emits nothing from telemetry for other variants', () => {
+    const nodeId = 0x1a2b3c50;
+    const updates = collect(
+      '1a2b3c50',
+      telemetryEnvelope(nodeId, {
+        variant: { case: 'powerMetrics', value: { ch1Voltage: 5 } },
+      }),
+    );
+    expect(updates.some((u) => u.env_recorded_at !== undefined || u.battery !== undefined)).toBe(
+      false,
+    );
+  });
+
+  it('adds environment fields from JSON telemetry', () => {
+    const nodeId = 0x698524e9;
+    const jsonUpdates: Record<string, unknown>[] = [];
+    manager.on('nodeUpdate', (u: Record<string, unknown>) => jsonUpdates.push(u));
+    (manager as any).onMessage(
+      'msh/US/2/json/LongFast/!698524e9',
+      Buffer.from(
+        JSON.stringify({
+          type: 'telemetry',
+          from: `!${nodeId.toString(16)}`,
+          payload: { temperature: 18.25, relative_humidity: 55, barometric_pressure: 1009 },
+        }),
+      ),
+    );
+    expect(jsonUpdates[0]).toMatchObject({
+      node_id: nodeId,
+      env_temperature: 18.25,
+      env_humidity: 55,
+      env_pressure: 1009,
+    });
+    expect(typeof jsonUpdates[0].env_recorded_at).toBe('number');
+  });
+
+  it('keeps JSON device telemetry free of environment fields', () => {
+    const nodeId = 0x698524ea;
+    const jsonUpdates: Record<string, unknown>[] = [];
+    manager.on('nodeUpdate', (u: Record<string, unknown>) => jsonUpdates.push(u));
+    (manager as any).onMessage(
+      'msh/US/2/json/LongFast/!698524ea',
+      Buffer.from(
+        JSON.stringify({
+          type: 'telemetry',
+          from: `!${nodeId.toString(16)}`,
+          payload: { battery_level: 70, voltage: 3.9 },
+        }),
+      ),
+    );
+    expect(jsonUpdates[0]).toMatchObject({ node_id: nodeId, battery: 70 });
+    expect(jsonUpdates[0]).not.toHaveProperty('env_recorded_at');
+    expect(jsonUpdates[0]).not.toHaveProperty('env_temperature');
   });
 });
 

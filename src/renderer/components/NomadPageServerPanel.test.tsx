@@ -36,6 +36,10 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 
+import {
+  resetReticulumIdentityStoreForTests,
+  useReticulumIdentityStore,
+} from '../stores/reticulumIdentityStore';
 import NomadPageServerPanel from './NomadPageServerPanel';
 
 const servingStatus = {
@@ -490,5 +494,231 @@ describe('NomadPageServerPanel', () => {
     });
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  describe('page access', () => {
+    const OWN = '0123456789abcdef0123456789abcdef';
+    const FRIEND = 'fedcba9876543210fedcba9876543210';
+
+    function mockAcl(acl: Record<string, unknown>) {
+      proxyGet.mockImplementation((path: string) => {
+        if (path === '/api/v1/nomadnetwork/serving') {
+          return Promise.resolve({ ok: true, serving: servingStatus });
+        }
+        if (path === '/api/v1/nomadnetwork/serving/pages') {
+          return Promise.resolve({ ok: true, pages: [{ path: 'members/board.mu', size: 8 }] });
+        }
+        if (path === '/api/v1/nomadnetwork/serving/acl?path=members%2Fboard.mu') {
+          return Promise.resolve(acl);
+        }
+        return Promise.resolve({ ok: false, error: 'unexpected' });
+      });
+    }
+
+    async function openAccess(user: ReturnType<typeof userEvent.setup>) {
+      render(<NomadPageServerPanel isActive />);
+      await waitFor(() => {
+        expect(screen.getByText('members/board.mu')).toBeInTheDocument();
+      });
+      await user.click(
+        screen.getByRole('button', {
+          name: 'nomadNetwork.serving.restrictPageAria:members/board.mu',
+        }),
+      );
+      return screen.findByRole('dialog');
+    }
+
+    function listBox() {
+      return screen.getByRole('textbox', {
+        name: 'nomadNetwork.serving.restrictListAria:members/board.mu',
+      });
+    }
+
+    beforeEach(() => {
+      resetReticulumIdentityStoreForTests();
+      useReticulumIdentityStore.setState({
+        identity: { configured: true, identity_hash: OWN, lxmf_hash: FRIEND },
+      });
+      proxyPut.mockResolvedValue({ ok: true });
+    });
+
+    it('loads the page access list through the acl route and saves it', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: true, path: 'members/board.mu', exists: false, content: '' });
+      await openAccess(user);
+
+      expect(proxyGet).toHaveBeenCalledWith(
+        '/api/v1/nomadnetwork/serving/acl?path=members%2Fboard.mu',
+      );
+      expect(screen.getByText('nomadNetwork.serving.restrictStatusOff')).toBeInTheDocument();
+      expect(screen.getByText('nomadNetwork.serving.restrictEmptyWarning')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /nomadNetwork.serving.restrictRemoveAria/ }),
+      ).toBeNull();
+
+      await user.type(listBox(), FRIEND);
+      const pageListCallsBefore = proxyGet.mock.calls.filter(
+        (c) => c[0] === '/api/v1/nomadnetwork/serving/pages',
+      ).length;
+      await user.click(
+        screen.getByRole('button', {
+          name: 'nomadNetwork.serving.restrictSaveAria:members/board.mu',
+        }),
+      );
+
+      await waitFor(() => {
+        expect(proxyPut).toHaveBeenCalledWith('/api/v1/nomadnetwork/serving/acl', {
+          path: 'members/board.mu',
+          content: FRIEND,
+        });
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).toBeNull();
+      });
+      await waitFor(() => {
+        const after = proxyGet.mock.calls.filter(
+          (c) => c[0] === '/api/v1/nomadnetwork/serving/pages',
+        ).length;
+        expect(after).toBeGreaterThan(pageListCallsBefore);
+      });
+    });
+
+    it('adds my own identity hash once', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: true, path: 'members/board.mu', exists: true, content: `${FRIEND}\n` });
+      await openAccess(user);
+      await waitFor(() => {
+        expect(listBox()).toHaveValue(`${FRIEND}\n`);
+      });
+
+      const addSelf = screen.getByRole('button', {
+        name: 'nomadNetwork.serving.restrictAddSelfAria',
+      });
+      await user.click(addSelf);
+      expect(listBox()).toHaveValue(`${FRIEND}\n${OWN}\n`);
+      expect(addSelf).toBeDisabled();
+    });
+
+    it('blocks saving when a line is not an identity hash', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: true, path: 'members/board.mu', exists: false, content: '' });
+      await openAccess(user);
+
+      await user.type(listBox(), 'not-a-hash');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'nomadNetwork.serving.restrictInvalidLines',
+      );
+      expect(
+        screen.getByRole('button', {
+          name: 'nomadNetwork.serving.restrictSaveAria:members/board.mu',
+        }),
+      ).toBeDisabled();
+    });
+
+    it('removes an existing restriction only after confirmation', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: true, path: 'members/board.mu', exists: true, content: `${OWN}\n` });
+      await openAccess(user);
+
+      await user.click(
+        await screen.findByRole('button', {
+          name: 'nomadNetwork.serving.restrictRemoveAria:members/board.mu',
+        }),
+      );
+      expect(proxyDelete).not.toHaveBeenCalled();
+      await user.click(
+        screen.getByRole('button', { name: 'nomadNetwork.serving.restrictRemoveConfirmAria' }),
+      );
+      await waitFor(() => {
+        expect(proxyDelete).toHaveBeenCalledWith(
+          '/api/v1/nomadnetwork/serving/acl?path=members%2Fboard.mu',
+        );
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).toBeNull();
+      });
+    });
+
+    it('surfaces a load failure', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: false, error: 'page_not_found' });
+      await openAccess(user);
+      expect(await screen.findByText('nomadNetwork.serving.pageNotFound')).toBeInTheDocument();
+    });
+
+    it('keeps Save disabled after a load failure so the empty draft cannot overwrite the list', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: false, error: 'page_io_error' });
+      await openAccess(user);
+      await waitFor(() => {
+        expect(listBox()).toBeEnabled();
+      });
+      await user.type(listBox(), FRIEND);
+      expect(
+        screen.getByRole('button', {
+          name: 'nomadNetwork.serving.restrictSaveAria:members/board.mu',
+        }),
+      ).toBeDisabled();
+      expect(proxyPut).not.toHaveBeenCalled();
+    });
+
+    it('ignores Escape and backdrop clicks while a save is in flight', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: true, path: 'members/board.mu', exists: false, content: '' });
+      let finishSave: (body: unknown) => void = () => {};
+      proxyPut.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishSave = resolve;
+          }),
+      );
+      await openAccess(user);
+      await user.type(listBox(), FRIEND);
+      await user.click(
+        screen.getByRole('button', {
+          name: 'nomadNetwork.serving.restrictSaveAria:members/board.mu',
+        }),
+      );
+      await waitFor(() => {
+        expect(proxyPut).toHaveBeenCalled();
+      });
+
+      fireEvent.keyDown(document, { key: 'Escape' });
+      await user.click(
+        screen.getByRole('button', { name: 'nomadNetwork.serving.restrictCloseAria' }),
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+      finishSave({ ok: true });
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).toBeNull();
+      });
+    });
+
+    it('recognises my identity hash regardless of case', async () => {
+      const user = userEvent.setup();
+      useReticulumIdentityStore.setState({
+        identity: { configured: true, identity_hash: ` ${OWN.toUpperCase()} `, lxmf_hash: FRIEND },
+      });
+      mockAcl({ ok: true, path: 'members/board.mu', exists: true, content: `${OWN}\n` });
+      await openAccess(user);
+      await waitFor(() => {
+        expect(listBox()).toHaveValue(`${OWN}\n`);
+      });
+      expect(
+        screen.getByRole('button', { name: 'nomadNetwork.serving.restrictAddSelfAria' }),
+      ).toBeDisabled();
+    });
+
+    it('has no axe violations in the access dialog', async () => {
+      const user = userEvent.setup();
+      mockAcl({ ok: true, path: 'members/board.mu', exists: true, content: `${OWN}\n` });
+      const dialog = await openAccess(user);
+      await waitFor(() => {
+        expect(listBox()).toHaveValue(`${OWN}\n`);
+      });
+      hydrateAxeThemeColors(dialog);
+      expect(await axe(dialog)).toHaveNoViolations();
+    });
   });
 });

@@ -588,7 +588,11 @@ mod tests {
             (Value::Integer(0.into()), Value::Text("alice".into())),
             (Value::Integer(1.into()), Value::Text("Alice".into())),
         ]);
-        assert!(parse_joined_members(Some(&body)).is_empty());
+        assert!(
+            parse_joined_members(Some(&body)).is_empty(),
+            "{:?}",
+            parse_joined_members(Some(&body))
+        );
     }
 
     #[test]

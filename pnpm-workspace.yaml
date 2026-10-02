@@ -116,3 +116,11 @@ patchedDependencies:
   app-builder-lib@26.15.3: patches/app-builder-lib@26.15.3.patch
   debug@4.4.3: patches/debug@4.4.3.patch
   readable-stream@4.7.0: patches/readable-stream@4.7.0.patch
+auditConfig:
+  ignoreGhsas:
+    # node-forge GHSA-86w9-cpqp-85rv (<=1.4.0, no patched release): RSA PKCS#1 v1.5
+    # signature verification accepts extra nested DigestAlgorithm elements. TAK
+    # (src/main/tak/) only generates certs/keys and builds/parses PKCS#12; it never
+    # verifies RSA signatures with node-forge. Remove once a patched release lands
+    # (`pnpm run update` / `check:audit-ignores` warns when it does).
+    - GHSA-86w9-cpqp-85rv

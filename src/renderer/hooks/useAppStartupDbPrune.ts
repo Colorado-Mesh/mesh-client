@@ -8,6 +8,7 @@ import {
   runStartupDbPrune,
   SESSION_DB_PRUNE_INTERVAL_MS,
 } from '@/renderer/lib/startupDbPrune';
+import { useEnvironmentTelemetryStore } from '@/renderer/stores/environmentTelemetryStore';
 import { useIncidentStore } from '@/renderer/stores/incidentStore';
 
 /** Senders of open/acked incidents keep their track through retention prune (S12). */
@@ -24,7 +25,11 @@ export function useAppStartupDbPrune(onAfterPrune: () => void): void {
   useEffect(() => {
     // floating-ok: runStartupDbPrune swallows per-op IPC errors; catch covers unexpected throws.
     void runStartupDbPrune(incidentPruneOptions())
-      .then(onAfterPrune)
+      .then(() => {
+        onAfterPrune();
+        // Hydrate after prune so expired sensor rows are never loaded into memory.
+        return useEnvironmentTelemetryStore.getState().loadFromDb();
+      })
       .catch((e: unknown) => {
         console.warn('[useAppStartupDbPrune] startup prune failed ' + errLikeToLogString(e));
       });

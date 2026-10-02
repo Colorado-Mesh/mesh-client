@@ -519,6 +519,7 @@ import type {
 } from '../lib/types';
 import { mirrorMqttStatusForProtocol, setConnection } from '../stores/connectionStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { recordEnvironmentReading } from '../stores/environmentTelemetryStore';
 import {
   updateMessageStatus,
   upsertMessageRecordsForIdentity,
@@ -5827,6 +5828,16 @@ export function useMeshcoreRuntime() {
                 barometricPressure: result.barometricPressure,
               };
               setEnvironmentTelemetry((prev) => [...prev, pt].slice(-MAX_ENV_TELEMETRY_POINTS));
+              recordEnvironmentReading(
+                'meshcore',
+                nodeId,
+                {
+                  temperature: result.temperature,
+                  relativeHumidity: result.relativeHumidity,
+                  barometricPressure: result.barometricPressure,
+                },
+                'rpc',
+              );
             }
             const altM = meshcoreTelemetryGpsAltitudeMeters(result.gps);
             if (altM !== undefined) {

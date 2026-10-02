@@ -1137,7 +1137,9 @@
       "exportAria": "Export PIN-gecodeerde Ratspeak .rsi identiteitsback-up",
       "exportRawAria": "Exporteer niet-versleuteld RAW Reticulum-identiteitsbestand",
       "identityHashLabel": "Identiteitshash:",
-      "copyIdentityHash": "Identiteitshash kopiëren"
+      "copyIdentityHash": "Identiteitshash kopiëren",
+      "fingerprintLabel": "Identiteit vingerafdruk:",
+      "copyFingerprint": "Kopieer identiteitsvingerafdruk"
     },
     "reticulumInterfaces": {
       "title": "Raakvlakken",
@@ -3573,7 +3575,29 @@
       "invalidPagePath": "Dat paginapad is niet toegestaan.",
       "pageIoError": "Kan de pagina niet lezen of schrijven op schijf.",
       "pageNotUtf8": "Die pagina is geen geldige UTF-8-tekst.",
-      "pageWriteFailed": "Kon de pagina niet schrijven."
+      "pageWriteFailed": "Kon de pagina niet schrijven.",
+      "restrict": "Toegang",
+      "restrictPageAria": "Beperk wie {{path}} kan openen",
+      "restrictTitle": "Toegang beperken",
+      "restrictCloseAria": "Sluit de toegangseditor",
+      "restrictHint": "Alleen bezoekers die zich identificeren met een vermelde Reticulum-identiteit kunnen deze pagina openen. Anonieme bezoekers worden geweigerd. Zet één identiteitshash van 32 tekens per regel; lege regels en regels die beginnen met # worden genegeerd.",
+      "restrictStatusOff": "Niet beperkt: iedereen kan deze pagina openen.",
+      "restrictStatusOn_one": "Beperkt tot {{count}} identiteit.",
+      "restrictStatusOn_other": "Beperkt tot {{count}} -identiteiten.",
+      "restrictListLabel": "Toegestane identiteitshashes",
+      "restrictListAria": "Toegestane identiteitshashes voor {{path}}",
+      "restrictInvalidLines": "Deze regels zijn geen identiteitshashes van 32 tekens en zouden worden genegeerd: {{lines}}",
+      "restrictEmptyWarning": "Geen identiteiten vermeld. Als u dit opslaat, wordt iedereen geblokkeerd, inclusief u. Gebruik Beperking verwijderen om de pagina weer openbaar te maken.",
+      "restrictAddSelf": "Mijn identiteit toevoegen",
+      "restrictAddSelfAria": "Voeg mijn eigen Reticulum-identiteitshash toe aan de lijst",
+      "restrictAddSelfUnavailable": "Start de Reticulum-stack om uw identiteit te laden.",
+      "restrictRemove": "Beperking verwijderen",
+      "restrictRemoveAria": "Verwijder de toegangsbeperking van {{path}}",
+      "restrictRemoveConfirmAria": "Bevestig het verwijderen van de toegangsbeperking",
+      "restrictSaveAria": "Bewaar de toegangslijst voor {{path}}",
+      "restrictLoadError": "Kon de toegangslijst niet laden.",
+      "restrictSaveError": "Kon de toegangslijst niet opslaan.",
+      "restrictRemoveError": "Kon de toegangsbeperking niet verwijderen."
     },
     "sortLastHeard": "Laatst gehoord",
     "sortHops": "Hop",
@@ -3610,7 +3634,33 @@
     "dismissPreview": "Afwijzen",
     "clearBrowserCaches": "Pagina- en afbeeldingscaches wissen",
     "clearedBrowserCaches": "Nomad pagina- en afbeeldingscaches gewist",
-    "clearBrowserCachesHint": "Wis in-memory Nomad-pagina en afbeeldingscaches. Caches worden niet op schijf opgeslagen. Afbeeldingen groter dan 2 MiB (base64) worden nooit gecached."
+    "clearBrowserCachesHint": "Wis in-memory Nomad-pagina en afbeeldingscaches. Caches worden niet op schijf opgeslagen. Afbeeldingen groter dan 2 MiB (base64) worden nooit gecached.",
+    "identifyEnableAria": "Identificeer bij {{name}}",
+    "identifyStopAria": "Identificatie met {{name}} stopzetten",
+    "identifyOnHint": "Identificeren: dit knooppunt ontvangt uw Reticulum-identiteit wanneer u verbinding maakt. Klik om anoniem te bladeren.",
+    "identifyOffHint": "Anoniem: dit knooppunt ontvangt uw identiteit niet. Klik om te identificeren (sommige pagina's personaliseren de inhoud of vereisen deze).",
+    "identifyUnavailable": "Start de Reticulum-stack om de identificatie te wijzigen.",
+    "identifyingBadge": "Identificeren",
+    "identifyConfirmTitle": "Identificeren met {{name}}?",
+    "identifyConfirmBody": "Elke keer dat je verbinding maakt met {{name}}, wordt je Reticulum-identiteit (openbare sleutel) naar het knooppunt gestuurd. Vanuit die sleutel kan het knooppunt uw identiteitshash en uw LXMF-adres berekenen. Als u dit later uitschakelt, worden toekomstige verbindingen alleen gestopt; het kan niet terugnemen wat al is verzonden.",
+    "identifyConfirmAccept": "Bepalen",
+    "identifyEnabledToast": "Je identiteit wordt naar {{name}} gestuurd wanneer je verbinding maakt.",
+    "identifyDisabledToast": "Identificeert zich niet meer aan {{name}}. Dit geldt alleen voor toekomstige aansluitingen.",
+    "identifyFailedToast": "Kan identificatie voor {{name}} niet wijzigen.",
+    "identifyClearAll": "Stop met identificeren",
+    "identifyClearAllAria_one": "Identificatie met {{count}} -knooppunt stoppen",
+    "identifyClearAllAria_other": "Stop met het identificeren van alle {{count}} -knooppunten",
+    "identifyClearAllTitle": "Stoppen met het identificeren van alle knooppunten?",
+    "identifyClearAllBody_one": "{{count}} -knooppunt ontvangt momenteel je identiteit wanneer je verbinding maakt. Hierna blader je anoniem door elk knooppunt. Knooppunten behouden de identiteit die ze al hebben ontvangen.",
+    "identifyClearAllBody_other": "{{count}} knooppunten ontvangen momenteel je identiteit wanneer je verbinding maakt. Hierna blader je anoniem door elk knooppunt. Knooppunten behouden de identiteit die ze al hebben ontvangen.",
+    "identifyClearedAllToast_one": "Identificatie met {{count}} -knooppunt gestopt. Dit geldt alleen voor toekomstige aansluitingen.",
+    "identifyClearedAllToast_other": "Identificatie van {{count}} knooppunten gestopt. Dit geldt alleen voor toekomstige aansluitingen.",
+    "identifyClearAllFailedToast": "Kon de identificatie voor alle knooppunten niet stoppen.",
+    "favoriteSiteAria": "Voeg {{name}} toe aan favorieten",
+    "unfavoriteSiteAria": "Verwijder {{name}} uit favorieten",
+    "favoriteAddedToast": "{{name}} toegevoegd aan favorieten",
+    "favoriteRemovedToast": "{{name}} verwijderd uit favorieten",
+    "favoriteFailedToast": "Kan favoriet voor {{name}} niet bijwerken. Draait Reticulum?"
   },
   "packetDistribution": {
     "overallDistribution": "Algemene distributie",
@@ -3671,7 +3721,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identiteit onbekend: er is nog geen aankondiging gehoord van deze peer, dus er is geen vingerafdruk om te verifiëren.",
+    "identityUnknownDestination": "Bestemmingshash (geen identiteitsvingerafdruk)"
   },
   "peerGraph": {
     "title": "Peer-communicatiegrafiek",
@@ -6382,5 +6434,40 @@
     "stopUsing": "Opgeslagen locatie niet meer gebruiken",
     "addLocation": "Locatie toevoegen",
     "coordsHintFormats": "Plak coördinaten of een kaartlink: decimaal (39.7392, -104.9903), graden/minuten/seconden met N/S/E/W, Mgrs of een Google-, Apple- of OpenStreetMap-deellink."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Opgeslagen: {{name}}",
+    "save": "Huidige opslaan als profiel",
+    "rename": "Hernoemen",
+    "renameAria": "Hernoem MQTT-profiel {{name}}",
+    "deleteAria": "MQTT-profiel {{name}} verwijderen",
+    "namePlaceholder": "Profielnaam, bijv. Chicago",
+    "reconnectNeeded": "Verbreek de verbinding en sluit MQTT opnieuw aan om de brokerinstellingen van dit profiel te gebruiken.",
+    "switchLabel": "Opgeslagen profiel",
+    "noneSelected": "Huidige instellingen (niet opgeslagen)",
+    "nameAria": "Profielnaam"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Weerberichten in dit kanaal",
+    "hideInChannels": "Verberg weerberichten in kanalen",
+    "patternPlaceholder": "Extra patroon (regex), bijv. ^WX-BOT",
+    "patternAria": "Extra weerbericht patroon",
+    "patternInvalid": "Ongeldig patroon; alleen met behulp van de ingebouwde patronen.",
+    "markSender": "Markeren als weersafzender",
+    "unmarkSender": "Weerzender markeren ongedaan maken",
+    "viewAria": "Weerbericht (weerberichten in dit kanaal: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensoren",
+    "metricSelectAria": "Sensorwaarde weergegeven op de kaart",
+    "metricTemperature": "Temperatuur",
+    "metricHumidity": "Humidity",
+    "metricPressure": "Druk",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperatuur (24 uur)",
+    "sparklineHumidity24h": "Luchtvochtigheid (24 uur)"
   }
 }

@@ -18,7 +18,11 @@ import {
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 import { resetNomadEgressCacheForTests, useNomadNetworkStore } from './nomadNetworkStore';
-import { resetNomadPageViewerStoreForTests, useNomadPageViewerStore } from './nomadPageViewerStore';
+import {
+  pageFetchDedupeKeyForTests,
+  resetNomadPageViewerStoreForTests,
+  useNomadPageViewerStore,
+} from './nomadPageViewerStore';
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', async (importOriginal) => {
   const actual = await importOriginal();
@@ -67,6 +71,26 @@ describe('nomadPageViewerStore loadPage cache', () => {
     await useNomadPageViewerStore.getState().loadPage('abc1234567890', '/page/index.mu');
     expect(fetchNomadPage).toHaveBeenCalledTimes(1);
     expect(useNomadPageViewerStore.getState().pageContent).toBe('hello');
+  });
+
+  it('dedupe key differs by identify choice', () => {
+    const anon = pageFetchDedupeKeyForTests('ABC', '/page/index.mu', undefined, false, false, 'r1');
+    const ident = pageFetchDedupeKeyForTests('abc', '/page/index.mu', undefined, false, true, 'r1');
+    expect(anon).not.toBe(ident);
+  });
+
+  it('passes identify to the fetch when the node identifies', async () => {
+    useNomadNetworkStore.setState({
+      nodes: new Map([['abc1234567890', { destination_hash: 'abc1234567890', identify: true }]]),
+    });
+    const fetchNomadPage = useNomadNetworkStore.getState().fetchNomadPage;
+    await useNomadPageViewerStore.getState().loadPage('abc1234567890', '/page/index.mu');
+    expect(fetchNomadPage).toHaveBeenCalledWith(
+      'abc1234567890',
+      '/page/index.mu',
+      undefined,
+      expect.objectContaining({ identify: true }),
+    );
   });
 
   it('closeViewer clears page and image caches', () => {

@@ -14,6 +14,7 @@ interface MqttNetworkPresetSelectProps {
   value: string;
   options: MqttNetworkPresetOption[];
   onSelect: (value: string) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -26,12 +27,14 @@ export function MqttNetworkPresetSelect({
   value,
   options,
   onSelect,
+  disabled,
 }: MqttNetworkPresetSelectProps) {
   return (
     <select
       id={id}
       aria-labelledby={labelledById}
       value={value}
+      disabled={disabled}
       onChange={(e) => {
         onSelect(e.target.value);
       }}

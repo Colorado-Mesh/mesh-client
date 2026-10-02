@@ -340,6 +340,7 @@ mod tests {
                 display_name: Some("Forum".into()),
                 last_seen: None,
                 favorited: false,
+                identify: false,
                 hops: Some(2),
                 status: None,
             }],

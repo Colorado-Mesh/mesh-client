@@ -381,6 +381,23 @@ impl NomadServerHandle {
         .await
     }
 
+    pub async fn read_page_acl(&self, page_rel: &str) -> Result<Option<String>, String> {
+        let resolved = self.resolve_roots().await?;
+        super::nomad_page_acl::read_page_acl(&resolved.pages_dir, page_rel)
+    }
+
+    pub async fn write_page_acl(&self, page_rel: &str, content: &str) -> Result<(), String> {
+        let resolved = self.resolve_roots().await?;
+        super::nomad_page_acl::write_page_acl(&resolved.pages_dir, page_rel, content)?;
+        self.reload_routes_if_running().await
+    }
+
+    pub async fn delete_page_acl(&self, page_rel: &str) -> Result<(), String> {
+        let resolved = self.resolve_roots().await?;
+        super::nomad_page_acl::delete_page_acl(&resolved.pages_dir, page_rel)?;
+        self.reload_routes_if_running().await
+    }
+
     pub async fn write_file_base64(&self, rel: &str, content_base64: &str) -> Result<(), String> {
         let bytes = BASE64
             .decode(content_base64)
@@ -730,7 +747,7 @@ mod tests {
         assert_eq!(status.display_name, "Test");
         assert!(status.content_layout.is_none());
         assert!(status.content_source.is_none());
-        assert!(status.content_root.is_empty());
+        assert!(status.content_root.is_empty(), "{:?}", status.content_root);
     }
 
     #[test]

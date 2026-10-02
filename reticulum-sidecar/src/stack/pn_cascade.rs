@@ -369,7 +369,7 @@ mod tests {
     #[test]
     fn propagation_mode_off_yields_no_cascade_candidates() {
         let candidates = candidates_for_propagation_mode(&rows(), "", PropagationMode::Off);
-        assert!(candidates.is_empty());
+        assert!(candidates.is_empty(), "{candidates:?}");
         assert!(!cascade_has_capacity(
             &build_pn_cascade_order(&candidates, None),
             &HashSet::new()
@@ -572,7 +572,7 @@ mod tests {
             ("local-prop".into(), true, None, Some(0)),
         ];
         let c = candidates_from_propagation_rows(&rows, &self_hex);
-        assert!(c.is_empty());
+        assert!(c.is_empty(), "{c:?}");
     }
 
     #[test]

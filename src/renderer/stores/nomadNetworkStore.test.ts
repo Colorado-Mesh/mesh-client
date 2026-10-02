@@ -30,6 +30,11 @@ import {
   nomadImageCacheSizeForTests,
   setNomadImageCache,
 } from '@/renderer/lib/nomad/nomadImageCache';
+import {
+  clearNomadPageCache,
+  getNomadPageCache,
+  setNomadPageCache,
+} from '@/renderer/lib/nomad/nomadPageCache';
 
 import { resetNomadEgressCacheForTests, useNomadNetworkStore } from './nomadNetworkStore';
 
@@ -105,6 +110,79 @@ describe('nomadNetworkStore', () => {
       favorited: true,
     });
     expect(useNomadNetworkStore.getState().getNode('abc')?.favorited).toBe(true);
+  });
+
+  it('toggleFavorite inserts a placeholder row for an unknown node', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValue({ ok: true });
+
+    const saved = await useNomadNetworkStore
+      .getState()
+      .toggleFavorite('53819F99223ED8A5676B5900D285EB3F', true);
+
+    expect(saved).toBe(true);
+    expect(proxyPost).toHaveBeenCalledWith('/api/v1/nomadnetwork/nodes/favorite', {
+      destination_hash: '53819f99223ed8a5676b5900d285eb3f',
+      favorited: true,
+    });
+    const node = useNomadNetworkStore.getState().getNode('53819f99223ed8a5676b5900d285eb3f');
+    expect(node).toMatchObject({
+      destination_hash: '53819f99223ed8a5676b5900d285eb3f',
+      display_name: null,
+      favorited: true,
+      identify: false,
+      status: 'unknown',
+    });
+  });
+
+  it('toggleFavorite reverts and returns false when the sidecar rejects', async () => {
+    mockConsoleWarn();
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    useNomadNetworkStore.setState({
+      nodes: new Map([
+        ['abc', { destination_hash: 'abc', display_name: 'Forum', favorited: false }],
+      ]),
+    });
+    proxyPost.mockResolvedValue({ ok: false, error: 'disk_full' });
+
+    expect(await useNomadNetworkStore.getState().toggleFavorite('abc', true)).toBe(false);
+    expect(useNomadNetworkStore.getState().getNode('abc')?.favorited).toBe(false);
+
+    expect(await useNomadNetworkStore.getState().toggleFavorite('def', true)).toBe(false);
+    expect(useNomadNetworkStore.getState().getNode('def')).toBeUndefined();
+  });
+
+  it('toggleFavorite returns false without posting when the sidecar is stopped', async () => {
+    mockConsoleWarn();
+    getStatus.mockResolvedValue({ running: false, port: 0, pid: null });
+
+    expect(await useNomadNetworkStore.getState().toggleFavorite('abc', true)).toBe(false);
+    expect(proxyPost).not.toHaveBeenCalled();
+    expect(useNomadNetworkStore.getState().getNode('abc')).toBeUndefined();
+  });
+
+  it('toggleFavorite off for an unknown node does not insert a row', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValue({ ok: true });
+
+    expect(await useNomadNetworkStore.getState().toggleFavorite('abc', false)).toBe(true);
+    expect(useNomadNetworkStore.getState().nodes.size).toBe(0);
+  });
+
+  it('setIdentify on an unknown node inserts a placeholder; failure removes it', async () => {
+    getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+    proxyPost.mockResolvedValueOnce({ ok: true });
+
+    expect(await useNomadNetworkStore.getState().setIdentify('abc', true)).toBe(true);
+    expect(useNomadNetworkStore.getState().getNode('abc')).toMatchObject({
+      identify: true,
+      favorited: false,
+    });
+
+    mockConsoleWarn();
+    proxyPost.mockResolvedValueOnce({ ok: false, error: 'disk_full' });
+    expect(await useNomadNetworkStore.getState().setIdentify('def', true)).toBe(false);
+    expect(useNomadNetworkStore.getState().getNode('def')).toBeUndefined();
   });
 
   it('does not cache network egress when interfaces list is empty', async () => {
@@ -409,5 +487,138 @@ describe('nomadNetworkStore', () => {
     } finally {
       restore();
     }
+  });
+
+  describe('identify', () => {
+    const HASH = 'abcdef0123456789abcdef0123456789';
+    const OTHER = '0123456789abcdef0123456789abcdef';
+
+    function seedNodes(identify: Record<string, boolean>): void {
+      useNomadNetworkStore.setState({
+        nodes: new Map(
+          Object.entries(identify).map(([hash, on]) => [
+            hash,
+            { destination_hash: hash, display_name: hash.slice(0, 4), identify: on },
+          ]),
+        ),
+      });
+    }
+
+    function lastProxyGetUrl(): string {
+      return String(proxyGet.mock.calls.at(-1)?.[0] ?? '');
+    }
+
+    beforeEach(() => {
+      getStatus.mockResolvedValue({ running: true, port: 1, pid: 1 });
+      proxyGet.mockResolvedValue({ ok: true, content: 'x', content_base64: 'eA==' });
+      clearNomadPageCache();
+    });
+
+    it.each(['page', 'file', 'media'] as const)(
+      'omits identify for anonymous %s fetches and sends it when the node identifies',
+      async (kind) => {
+        const store = useNomadNetworkStore.getState();
+        const fetchKind = async (): Promise<unknown> => {
+          if (kind === 'page') return store.fetchNomadPage(HASH, '/page/index.mu');
+          if (kind === 'file') return store.fetchNomadFile(HASH, '/file/a.txt');
+          clearNomadImageCache();
+          return store.fetchNomadMedia(HASH, '/media/a.webp');
+        };
+        seedNodes({ [HASH]: false });
+        await fetchKind();
+        expect(lastProxyGetUrl()).toContain(`/api/v1/nomadnetwork/${kind}/`);
+        expect(lastProxyGetUrl()).not.toContain('identify=');
+
+        seedNodes({ [HASH]: true });
+        await fetchKind();
+        expect(lastProxyGetUrl()).toContain('identify=true');
+      },
+    );
+
+    it('explicit identify option overrides the saved choice', async () => {
+      seedNodes({ [HASH]: true });
+      await useNomadNetworkStore
+        .getState()
+        .fetchNomadPage(HASH, '/page/index.mu', undefined, { identify: false });
+      expect(lastProxyGetUrl()).not.toContain('identify=');
+    });
+
+    it('setIdentify updates first, clears only that node caches, and posts', async () => {
+      seedNodes({ [HASH]: false, [OTHER]: false });
+      setNomadPageCache({ hash: HASH, path: '/page/index.mu' }, { content: 'a' });
+      setNomadPageCache({ hash: OTHER, path: '/page/index.mu' }, { content: 'b' });
+      setNomadImageCache({ hash: HASH, mediaPath: '/media/a.webp' }, { content_base64: 'QQ==' });
+      let resolvePost: (v: unknown) => void = () => {};
+      proxyPost.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvePost = resolve;
+          }),
+      );
+
+      const pending = useNomadNetworkStore.getState().setIdentify(HASH.toUpperCase(), true);
+      expect(useNomadNetworkStore.getState().getNode(HASH)?.identify).toBe(true);
+      expect(getNomadPageCache({ hash: HASH, path: '/page/index.mu' })).toBeUndefined();
+      expect(getNomadPageCache({ hash: OTHER, path: '/page/index.mu' })?.content).toBe('b');
+      expect(nomadImageCacheSizeForTests()).toBe(0);
+
+      await vi.waitFor(() => {
+        expect(proxyPost).toHaveBeenCalledWith('/api/v1/nomadnetwork/nodes/identify', {
+          destination_hash: HASH,
+          identify: true,
+        });
+      });
+      resolvePost({ ok: true });
+      await expect(pending).resolves.toBe(true);
+      expect(useNomadNetworkStore.getState().getNode(HASH)?.identify).toBe(true);
+    });
+
+    it('setIdentify reverts and warns when the sidecar rejects', async () => {
+      const { spy, restore } = mockConsoleWarn();
+      try {
+        seedNodes({ [HASH]: false });
+        proxyPost.mockResolvedValue({ ok: false, error: 'save_failed' });
+        await expect(useNomadNetworkStore.getState().setIdentify(HASH, true)).resolves.toBe(false);
+        expect(useNomadNetworkStore.getState().getNode(HASH)?.identify).toBe(false);
+        expect(
+          spy.mock.calls.some((c) => String(c[0]).includes('[nomadNetworkStore] identify')),
+        ).toBe(true);
+      } finally {
+        restore();
+      }
+    });
+
+    it('clearAllIdentify clears affected nodes only and refreshes', async () => {
+      seedNodes({ [HASH]: true, [OTHER]: false });
+      setNomadPageCache({ hash: HASH, path: '/page/index.mu' }, { content: 'a' });
+      setNomadPageCache({ hash: OTHER, path: '/page/index.mu' }, { content: 'b' });
+      proxyPost.mockResolvedValue({ ok: true, cleared: 1 });
+      proxyGet.mockResolvedValue({
+        nodes: [
+          { destination_hash: HASH, identify: false },
+          { destination_hash: OTHER, identify: false },
+        ],
+      });
+
+      await expect(useNomadNetworkStore.getState().clearAllIdentify()).resolves.toBe(1);
+
+      expect(proxyPost).toHaveBeenCalledWith('/api/v1/nomadnetwork/nodes/identify/clear', {});
+      expect(useNomadNetworkStore.getState().getNode(HASH)?.identify).toBe(false);
+      expect(getNomadPageCache({ hash: HASH, path: '/page/index.mu' })).toBeUndefined();
+      expect(getNomadPageCache({ hash: OTHER, path: '/page/index.mu' })?.content).toBe('b');
+    });
+
+    it('clearAllIdentify reverts on failure', async () => {
+      const { restore } = mockConsoleWarn();
+      try {
+        seedNodes({ [HASH]: true, [OTHER]: false });
+        proxyPost.mockRejectedValue(new Error('boom'));
+        await expect(useNomadNetworkStore.getState().clearAllIdentify()).resolves.toBeNull();
+        expect(useNomadNetworkStore.getState().getNode(HASH)?.identify).toBe(true);
+        expect(useNomadNetworkStore.getState().getNode(OTHER)?.identify).toBe(false);
+      } finally {
+        restore();
+      }
+    });
   });
 });

@@ -310,6 +310,7 @@ function handleTextMessage(
 
   const merged: ChatMessage = {
     ...parsedRaw,
+    localOrder: record.localOrder,
     status: record.status ?? parsedRaw.status,
     receivedVia: record.receivedVia ?? parsedRaw.receivedVia,
   };
@@ -348,7 +349,8 @@ function handleTextMessage(
     stored.replyId !== priorReplyId ||
     stored.replyPreviewText !== priorReplyPreviewText ||
     stored.replyPreviewSender !== priorReplyPreviewSender;
-  if ((inserted || storeUpdated || replyUpgraded) && !isEcho) {
+  // PacketRouter already inserts plain DMs; they still need their first local order saved.
+  if ((inserted || storeUpdated || replyUpgraded || isDm) && !isEcho) {
     void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
       console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
     });

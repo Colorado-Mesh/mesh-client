@@ -519,6 +519,6 @@ mod tests {
 
         let c =
             resolve_blueutil_unpair_candidates("eccf2847-e1fd-3f5f-0811-064db1639a3d", None, &[]);
-        assert!(c.is_empty());
+        assert!(c.is_empty(), "{c:?}");
     }
 }

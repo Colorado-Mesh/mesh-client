@@ -2,10 +2,12 @@ import { create } from 'zustand';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import {
+  clearNomadImageCacheForHash,
   getNomadImageCache,
   getNomadImageCacheGeneration,
   setNomadImageCache,
 } from '@/renderer/lib/nomad/nomadImageCache';
+import { clearNomadPageCacheForHash } from '@/renderer/lib/nomad/nomadPageCache';
 import {
   resolveReticulumOutboundViaFromInterfaces,
   type ReticulumVia,
@@ -180,6 +182,82 @@ function hopsForNomadHash(nodes: Map<string, NomadNodeRow>, hash: string): numbe
   return nodes.get(hash.toLowerCase())?.hops ?? 8;
 }
 
+function nomadNodeKey(hash: string): string {
+  return hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
+}
+
+/** True when the user chose to identify to this Nomad node (default anonymous). */
+export function isNomadNodeIdentifying(nodes: Map<string, NomadNodeRow>, hash: string): boolean {
+  return nodes.get(nomadNodeKey(hash))?.identify === true;
+}
+
+function clearNomadCachesForHash(hash: string): void {
+  clearNomadPageCacheForHash(hash);
+  clearNomadImageCacheForHash(hash);
+}
+
+/** Mirrors the sidecar's placeholder row for a node that has not announced yet. */
+function placeholderNomadNode(key: string): NomadNodeRow {
+  return {
+    destination_hash: key,
+    identity_hash: null,
+    display_name: null,
+    last_seen: Math.floor(Date.now() / 1000),
+    favorited: false,
+    identify: false,
+    hops: null,
+    status: 'unknown',
+  };
+}
+
+function withNomadIdentify(
+  nodes: Map<string, NomadNodeRow>,
+  hashes: readonly string[],
+  identify: boolean,
+): Map<string, NomadNodeRow> {
+  const next = new Map(nodes);
+  for (const hash of hashes) {
+    const key = nomadNodeKey(hash);
+    const existing = next.get(key);
+    if (existing) next.set(key, { ...existing, identify });
+    else if (identify) next.set(key, { ...placeholderNomadNode(key), identify: true });
+  }
+  return next;
+}
+
+function withNomadFavorite(
+  nodes: Map<string, NomadNodeRow>,
+  key: string,
+  favorited: boolean,
+): Map<string, NomadNodeRow> {
+  const next = new Map(nodes);
+  const existing = next.get(key);
+  if (existing) next.set(key, { ...existing, favorited });
+  else if (favorited) next.set(key, { ...placeholderNomadNode(key), favorited: true });
+  return next;
+}
+
+/** Restore one node's row to its value in `previous` (dropping a placeholder we added). */
+function withNomadRowRestored(
+  current: Map<string, NomadNodeRow>,
+  previous: Map<string, NomadNodeRow>,
+  key: string,
+): Map<string, NomadNodeRow> {
+  const next = new Map(current);
+  const prior = previous.get(key);
+  if (prior) next.set(key, prior);
+  else next.delete(key);
+  return next;
+}
+
+function sidecarBodyFailed(body: unknown): string | null {
+  if (body && typeof body === 'object' && (body as { ok?: unknown }).ok === false) {
+    const err = (body as { error?: unknown }).error;
+    return typeof err === 'string' && err.trim() ? err : 'unknown';
+  }
+  return null;
+}
+
 async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
   kind: 'page' | 'file' | 'media',
   opts: {
@@ -190,6 +268,8 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     forcePathRefresh?: boolean;
     /** Echoed on sidecar `nomad.page_progress` for load correlation. */
     requestId?: string;
+    /** Send LINKIDENTIFY on the Link; omitted from the URL when false. */
+    identify?: boolean;
   },
 ): Promise<T> {
   const hops = hopsForNomadHash(opts.nodes, opts.hash);
@@ -216,6 +296,9 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
     }
     if (opts.forcePathRefresh) {
       qs.set('force_path_refresh', 'true');
+    }
+    if (opts.identify) {
+      qs.set('identify', 'true');
     }
     const requestId = opts.requestId?.trim();
     if (requestId) {
@@ -255,6 +338,11 @@ async function fetchNomadResource<T extends { ok: boolean; error?: string }>(
 export interface FetchNomadPageOpts {
   forcePathRefresh?: boolean;
   requestId?: string;
+  /**
+   * Reveal our Reticulum identity to the node on the Link handshake.
+   * When omitted, the node's saved choice is used (default anonymous).
+   */
+  identify?: boolean;
 }
 
 interface NomadNetworkStoreState {
@@ -278,7 +366,12 @@ interface NomadNetworkStoreState {
     path: string,
     opts?: FetchNomadPageOpts,
   ) => Promise<NomadFileResponse>;
-  toggleFavorite: (hash: string, favorited: boolean) => Promise<void>;
+  /** Persist the favourite star; returns false (and reverts) on failure. */
+  toggleFavorite: (hash: string, favorited: boolean) => Promise<boolean>;
+  /** Persist the per-node identify choice; returns false (and reverts) on failure. */
+  setIdentify: (hash: string, identify: boolean) => Promise<boolean>;
+  /** Stop identifying to every node; returns how many nodes changed, or null on failure. */
+  clearAllIdentify: () => Promise<number | null>;
   getNode: (hash: string) => NomadNodeRow | undefined;
 }
 
@@ -319,6 +412,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       requestData,
       forcePathRefresh: opts?.forcePathRefresh,
       requestId: opts?.requestId,
+      identify: opts?.identify ?? isNomadNodeIdentifying(get().nodes, hash),
     }),
 
   fetchNomadFile: async (hash, path, opts) =>
@@ -328,6 +422,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       nodes: get().nodes,
       forcePathRefresh: opts?.forcePathRefresh,
       requestId: opts?.requestId,
+      identify: opts?.identify ?? isNomadNodeIdentifying(get().nodes, hash),
     }),
 
   fetchNomadMedia: async (hash, path, opts) => {
@@ -348,6 +443,7 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
       nodes: get().nodes,
       forcePathRefresh: opts?.forcePathRefresh,
       requestId: opts?.requestId,
+      identify: opts?.identify ?? isNomadNodeIdentifying(get().nodes, hash),
     });
     if (res.ok && res.content_base64 && generation === getNomadImageCacheGeneration()) {
       setNomadImageCache(
@@ -362,23 +458,84 @@ export const useNomadNetworkStore = create<NomadNetworkStoreState>((set, get) =>
   },
 
   toggleFavorite: async (hash, favorited) => {
-    if (!(await isReticulumSidecarRunning())) return;
+    const key = nomadNodeKey(hash);
+    if (!key) return false;
+    const previous = get().nodes;
+    set({ nodes: withNomadFavorite(previous, key, favorited) });
     try {
-      await window.electronAPI.reticulum.proxyPost('/api/v1/nomadnetwork/nodes/favorite', {
-        destination_hash: hash,
-        favorited,
-      });
-      const key = hash.toLowerCase();
-      const existing = get().nodes.get(key);
-      if (existing) {
-        const next = new Map(get().nodes);
-        next.set(key, { ...existing, favorited });
-        set({ nodes: next });
+      if (!(await isReticulumSidecarRunning())) {
+        throw new Error('sidecar_not_running');
       }
+      const body = await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/nomadnetwork/nodes/favorite',
+        { destination_hash: key, favorited },
+      );
+      const failed = sidecarBodyFailed(body);
+      if (failed) throw new Error(failed);
+      return true;
     } catch (e) {
+      // Failure point: sidecar rejected or unreachable. Fallback: restore the
+      // previous row so the star never shows a choice that was not saved.
       if (!isReticulumSidecarExpectedProxyError(e)) {
         console.warn('[nomadNetworkStore] favorite ' + errLikeToLogString(e));
       }
+      set({ nodes: withNomadRowRestored(get().nodes, previous, key) });
+      return false;
+    }
+  },
+
+  setIdentify: async (hash, identify) => {
+    const key = nomadNodeKey(hash);
+    if (!key) return false;
+    const previous = get().nodes;
+    set({ nodes: withNomadIdentify(previous, [key], identify) });
+    clearNomadCachesForHash(key);
+    try {
+      if (!(await isReticulumSidecarRunning())) {
+        throw new Error('sidecar_not_running');
+      }
+      const body = await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/nomadnetwork/nodes/identify',
+        { destination_hash: key, identify },
+      );
+      const failed = sidecarBodyFailed(body);
+      if (failed) throw new Error(failed);
+      return true;
+    } catch (e) {
+      // Failure point: sidecar rejected or unreachable. Fallback: restore the
+      // previous flag so the UI never shows a choice that was not saved.
+      console.warn('[nomadNetworkStore] identify ' + errLikeToLogString(e));
+      set({ nodes: withNomadRowRestored(get().nodes, previous, key) });
+      clearNomadCachesForHash(key);
+      return false;
+    }
+  },
+
+  clearAllIdentify: async () => {
+    const previous = get().nodes;
+    const affected = [...previous.values()]
+      .filter((n) => n.identify === true)
+      .map((n) => nomadNodeKey(n.destination_hash));
+    set({ nodes: withNomadIdentify(previous, affected, false) });
+    for (const key of affected) clearNomadCachesForHash(key);
+    try {
+      if (!(await isReticulumSidecarRunning())) {
+        throw new Error('sidecar_not_running');
+      }
+      const body = await window.electronAPI.reticulum.proxyPost(
+        '/api/v1/nomadnetwork/nodes/identify/clear',
+        {},
+      );
+      const failed = sidecarBodyFailed(body);
+      if (failed) throw new Error(failed);
+      await get().refreshFromSidecar();
+      const cleared = (body as { cleared?: unknown } | null)?.cleared;
+      return typeof cleared === 'number' ? cleared : affected.length;
+    } catch (e) {
+      console.warn('[nomadNetworkStore] clear identify ' + errLikeToLogString(e));
+      set({ nodes: withNomadIdentify(get().nodes, affected, true) });
+      for (const key of affected) clearNomadCachesForHash(key);
+      return null;
     }
   },
 

@@ -392,6 +392,30 @@ exit 1
     expect(result.stdout).toContain('HAS_WARNING=0');
   });
 
+  it('wires check_audit_ignores after the pinned-majors check', () => {
+    expect(updateScript).toContain('check_audit_ignores()');
+    expect(updateScript).toContain('node scripts/check-audit-ignores.mjs');
+    const pinnedCall = updateScript.lastIndexOf('\ncheck_pinned_majors\n');
+    const auditCall = updateScript.lastIndexOf('\ncheck_audit_ignores\n');
+    const patchesCall = updateScript.lastIndexOf('\ncheck_ratspeak_patches\n');
+    expect(auditCall).toBeGreaterThan(pinnedCall);
+    expect(patchesCall).toBeGreaterThan(auditCall);
+  });
+
+  it.each([
+    { exit: 10, expected: '1', label: 'removable' },
+    { exit: 0, expected: '0', label: 'clean' },
+    { exit: 1, expected: '0', label: 'inconclusive' },
+  ])('maps check-audit-ignores $label exit to HAS_WARNING=$expected', ({ exit, expected }) => {
+    const fixture = prepareStubNodeFixture(exit);
+    const result = runUpdate([], {
+      UPDATE_SH_TEST_HOOK: 'audit-ignores-only',
+      PATH: `${fixture.binDir}:${process.env.PATH ?? ''}`,
+    });
+    expect(result.status, result.stderr || result.stdout).toBe(0);
+    expect(result.stdout).toContain(`HAS_WARNING=${expected}`);
+  });
+
   it('syncs Flatpak Electron archives after pnpm prune', () => {
     expect(updateScript).toContain('sync_flatpak_electron()');
     expect(updateScript).toContain('node scripts/sync-flatpak-electron.mjs');

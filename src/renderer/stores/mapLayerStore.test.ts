@@ -46,6 +46,19 @@ describe('mapLayerStore', () => {
     expect(parsed.mapBasemapId).toBe('dark');
   });
 
+  it('persists the sensor layer toggle and metric', () => {
+    useMapLayerStore.getState().setShowSensors(true);
+    useMapLayerStore.getState().setSensorMetric('barometricPressure');
+    expect(useMapLayerStore.getState().showSensors).toBe(true);
+    expect(useMapLayerStore.getState().sensorMetric).toBe('barometricPressure');
+    const parsed = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.mapShowSensors).toBe(true);
+    expect(parsed.mapSensorMetric).toBe('barometricPressure');
+  });
+
   it('readPersistedBoolean ignores non-boolean strings', () => {
     expect(readPersistedBoolean('false', true)).toBe(true);
     expect(readPersistedBoolean(false, true)).toBe(false);

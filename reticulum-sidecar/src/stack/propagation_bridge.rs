@@ -1246,7 +1246,7 @@ mod tests {
             })
             .collect();
         let packed = node_a.message_get_request(&wanted);
-        assert!(!packed.is_empty());
+        assert!(!packed.is_empty(), "{packed:?}");
 
         let (tx, _rx) = mpsc::channel(8);
         let bridge_b = PropagationBridge::new(

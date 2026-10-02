@@ -49,6 +49,7 @@ vi.mock('../stores/reticulumPeerStore', () => ({
 
 import { useBlockStore } from '@/renderer/stores/blockStore';
 import { buildLxmaContactUri } from '@/shared/meshClientDeepLink';
+import { formatReticulumIdentityFingerprint } from '@/shared/reticulumIdentityFingerprint';
 
 import { ReticulumNetworkPanel } from './ReticulumNetworkPanel';
 import { ToastProvider } from './Toast';
@@ -274,6 +275,24 @@ describe('ReticulumNetworkPanel', () => {
       }),
     );
     expect(writeText).toHaveBeenCalledWith(TEST_IDENTITY_HASH);
+  });
+
+  it('shows and copies the full identity fingerprint', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.mocked(window.electronAPI.clipboard.writeText);
+    writeText.mockClear();
+    const fingerprint = formatReticulumIdentityFingerprint(TEST_IDENTITY_HASH);
+
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+
+    expect(
+      await screen.findByText('connectionPanel.reticulumIdentity.fingerprintLabel'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(fingerprint)).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: 'connectionPanel.reticulumIdentity.copyFingerprint' }),
+    );
+    expect(writeText).toHaveBeenCalledWith(fingerprint);
   });
 
   it('writes full LXMF hash to clipboard via electronAPI', async () => {
