@@ -1,6 +1,6 @@
 import { isMeshcoreRoomChatMessage } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
 import type { ChatNotificationType } from '@/renderer/lib/chatNotifications';
-import { isMecpMessage } from '@/renderer/lib/mecp/mecpMessages';
+import { isMecpMessage, type Severity, tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
 import {
   clampReadWatermarkMs,
   effectiveMessageTimestampMs,
@@ -149,6 +149,45 @@ export function resolveChatDmPeer(
   return peerU32;
 }
 
+/** Channel index when `msg` counts as unread broadcast traffic, else undefined. */
+function unreadChannelIndex(
+  msg: ChatMessage,
+  persistedLastRead: Readonly<Record<string, number>>,
+  ownNodeIds: ReadonlySet<number>,
+  protocol: MeshProtocol,
+  nowMs: number,
+  channelOptions?: ChatUnreadChannelOptions,
+): number | undefined {
+  const configured = channelOptions?.configuredChannelIndices;
+  if (ownNodeIds.has(msg.sender_id)) return undefined;
+  if (msg.to) return undefined;
+  if (msg.channel < 0) return undefined;
+  if (configured && configured.size > 0 && !configured.has(msg.channel)) return undefined;
+  if (msg.isHistory) return undefined;
+  if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) return undefined;
+  if (isHiddenWeatherPost(msg, protocol)) return undefined;
+  const lastRead = clampReadWatermarkMs(persistedLastRead[`ch:${msg.channel}`] ?? 0, nowMs);
+  return effectiveMessageTimestampMs(msg.timestamp, nowMs) > lastRead ? msg.channel : undefined;
+}
+
+/** DM peer when `msg` counts as unread direct traffic, else undefined. */
+function unreadDmPeer(
+  msg: ChatMessage,
+  persistedLastRead: Readonly<Record<string, number>>,
+  ownNodeIds: ReadonlySet<number>,
+  protocol: MeshProtocol,
+  nowMs: number,
+  options?: ChatUnreadDmOptions,
+): number | undefined {
+  if (msg.isHistory) return undefined;
+  const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, options);
+  if (peer == null) return undefined;
+  if (ownNodeIds.has(msg.sender_id)) return undefined;
+  if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) return undefined;
+  const lr = clampReadWatermarkMs(persistedLastRead[`dm:${peer}`] ?? 0, nowMs);
+  return effectiveMessageTimestampMs(msg.timestamp, nowMs) > lr ? peer : undefined;
+}
+
 export function computeChannelUnreadCounts(
   messages: readonly ChatMessage[],
   persistedLastRead: Readonly<Record<string, number>>,
@@ -158,22 +197,17 @@ export function computeChannelUnreadCounts(
   channelOptions?: ChatUnreadChannelOptions,
 ): Map<number, number> {
   const counts = new Map<number, number>();
-  const configured = channelOptions?.configuredChannelIndices;
   const regular = filterRegularChatMessages(messages, protocol);
   for (const msg of regular) {
-    if (ownNodeIds.has(msg.sender_id)) continue;
-    if (msg.to) continue;
-    if (msg.channel < 0) continue;
-    if (configured && configured.size > 0 && !configured.has(msg.channel)) continue;
-    if (msg.isHistory) continue;
-    if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
-    if (isHiddenWeatherPost(msg, protocol)) continue;
-    const viewKey = `ch:${msg.channel}`;
-    const lastRead = clampReadWatermarkMs(persistedLastRead[viewKey] ?? 0, nowMs);
-    const msgTs = effectiveMessageTimestampMs(msg.timestamp, nowMs);
-    if (msgTs > lastRead) {
-      counts.set(msg.channel, (counts.get(msg.channel) ?? 0) + 1);
-    }
+    const ch = unreadChannelIndex(
+      msg,
+      persistedLastRead,
+      ownNodeIds,
+      protocol,
+      nowMs,
+      channelOptions,
+    );
+    if (ch !== undefined) counts.set(ch, (counts.get(ch) ?? 0) + 1);
   }
   return counts;
 }
@@ -189,18 +223,69 @@ export function computeDmUnreadCounts(
   const counts = new Map<number, number>();
   const regular = filterRegularChatMessages(messages, protocol);
   for (const msg of regular) {
-    if (msg.isHistory) continue;
-    const peer = resolveChatDmPeer(msg, ownNodeIds, protocol, options);
-    if (peer == null) continue;
-    if (ownNodeIds.has(msg.sender_id)) continue;
-    if (isUnreasonablyFutureMessageTimestampMs(msg.timestamp, nowMs)) continue;
-    const lr = clampReadWatermarkMs(persistedLastRead[`dm:${peer}`] ?? 0, nowMs);
-    const msgTs = effectiveMessageTimestampMs(msg.timestamp, nowMs);
-    if (msgTs > lr) {
-      counts.set(peer, (counts.get(peer) ?? 0) + 1);
-    }
+    const peer = unreadDmPeer(msg, persistedLastRead, ownNodeIds, protocol, nowMs, options);
+    if (peer !== undefined) counts.set(peer, (counts.get(peer) ?? 0) + 1);
   }
   return counts;
+}
+
+export interface UnreadMecpSeverityByView {
+  channels: Map<number, Severity>;
+  dms: Map<number, Severity>;
+}
+
+/**
+ * Most severe unread MECP per channel index / DM peer (lowest severity number wins).
+ * Uses the same unread rules as the count badges so the marker clears with them.
+ */
+export function computeUnreadMecpSeverityByView(
+  messages: readonly ChatMessage[],
+  persistedLastRead: Readonly<Record<string, number>>,
+  ownNodeIds: ReadonlySet<number>,
+  protocol: MeshProtocol,
+  dmOptions?: ChatUnreadDmOptions,
+  channelOptions?: ChatUnreadChannelOptions,
+  nowMs = Date.now(),
+): UnreadMecpSeverityByView {
+  const channels = new Map<number, Severity>();
+  const dms = new Map<number, Severity>();
+  const keepMostSevere = (map: Map<number, Severity>, key: number, severity: Severity) => {
+    const prev = map.get(key);
+    if (prev === undefined || severity < prev) map.set(key, severity);
+  };
+  for (const msg of filterRegularChatMessages(messages, protocol)) {
+    if (!isMecpMessage(msg.payload)) continue;
+    const severity = tryParseMecp(msg.payload)?.severity;
+    if (severity == null) continue;
+    const peer = unreadDmPeer(msg, persistedLastRead, ownNodeIds, protocol, nowMs, dmOptions);
+    if (peer !== undefined) {
+      keepMostSevere(dms, peer, severity);
+      continue;
+    }
+    const ch = unreadChannelIndex(
+      msg,
+      persistedLastRead,
+      ownNodeIds,
+      protocol,
+      nowMs,
+      channelOptions,
+    );
+    if (ch !== undefined) keepMostSevere(channels, ch, severity);
+  }
+  return { channels, dms };
+}
+
+/** Most severe value among `keys` (lowest number), or null. */
+export function mostSevereMecp(
+  bySlot: ReadonlyMap<number, Severity>,
+  keys: Iterable<number>,
+): Severity | null {
+  let best: Severity | null = null;
+  for (const k of keys) {
+    const s = bySlot.get(k);
+    if (s !== undefined && (best === null || s < best)) best = s;
+  }
+  return best;
 }
 
 export function totalUnreadCount(

@@ -152,6 +152,7 @@ import {
   type ChatUnreadDmOptions,
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
+  computeUnreadMecpSeverityByView,
   pickAudibleNotificationType,
   resolveChatDmPeer,
 } from '../lib/chatUnreadCounts';
@@ -210,6 +211,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import { MecpComposeModal } from './mecp/MecpComposeModal';
 import { mecpChatBubbleToneClasses, MecpSeverityBadge } from './mecp/MecpSeverityBadge';
+import { MecpUnreadIcon, useMecpUnreadLabel } from './mecp/MecpUnreadIcon';
 import MeshcoreChatChannelManager from './MeshcoreChatChannelManager';
 import { MessageStatusBadge } from './MessageStatusBadge';
 import { RelayCoverageLine, relayCoverageMessageKey } from './RelayCoverageLine';
@@ -1550,6 +1552,29 @@ function ChatPanel({
     weatherHideInChannels,
   ]);
 
+  const unreadMecpSeverity = useMemo(() => {
+    touch(weatherHideInChannels);
+    touch(weatherConfig);
+    return computeUnreadMecpSeverityByView(
+      unreadSourceMessages,
+      persistedLastRead,
+      ownNodeIdSet,
+      protocol,
+      chatUnreadDmOptions,
+      { configuredChannelIndices },
+    );
+  }, [
+    chatUnreadDmOptions,
+    configuredChannelIndices,
+    ownNodeIdSet,
+    persistedLastRead,
+    protocol,
+    unreadSourceMessages,
+    weatherConfig,
+    weatherHideInChannels,
+  ]);
+  const mecpUnreadLabel = useMecpUnreadLabel();
+
   const viewMessages = useMemo(() => {
     if (viewMode === 'dm' && activeDmNode != null) {
       const dmPeer =
@@ -2648,6 +2673,7 @@ function ChatPanel({
           kind="dms"
           channels={visibleDmTabs.map((nodeNum) => ({ index: nodeNum, name: getDmLabel(nodeNum) }))}
           unreadCounts={dmUnreadCounts}
+          mecpSeverityByIndex={unreadMecpSeverity.dms}
           activeIndex={viewMode === 'dm' ? activeDmNode : null}
           onSelect={openDmTo}
         />
@@ -2666,6 +2692,7 @@ function ChatPanel({
             const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
             const isActiveDm = viewMode === 'dm' && activeDmNode === nodeNum;
             const showDmUnreadBadge = dmUnread > 0 && !isActiveDm;
+            const dmMecpSeverity = unreadMecpSeverity.dms.get(nodeNum);
             const dmMuted = mutedViews.has(`dm:${nodeNum}`);
             const faceHash =
               protocol === 'reticulum'
@@ -2687,7 +2714,11 @@ function ChatPanel({
               >
                 <button
                   type="button"
-                  aria-label={getDmLabel(nodeNum)}
+                  aria-label={
+                    showDmUnreadBadge && dmMecpSeverity !== undefined
+                      ? `${getDmLabel(nodeNum)}, ${mecpUnreadLabel(dmMecpSeverity)}`
+                      : getDmLabel(nodeNum)
+                  }
                   aria-pressed={isActiveDm}
                   className="inline-flex max-w-[12rem] min-w-0 items-center gap-1 truncate text-left"
                   onClick={() => {
@@ -2706,6 +2737,9 @@ function ChatPanel({
                   <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
                 </button>
                 {showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
+                {showDmUnreadBadge && dmMecpSeverity !== undefined && (
+                  <MecpUnreadIcon severity={dmMecpSeverity} />
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -2770,7 +2804,7 @@ function ChatPanel({
               <div
                 role="group"
                 aria-label={t('chatPanel.channels')}
-                className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5"
+                className="flex min-w-0 flex-1 flex-wrap items-center gap-1"
               >
                 {channels.map((ch, chIdx) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
@@ -2779,11 +2813,18 @@ function ChatPanel({
                     viewMode === 'channels' && channel === ch.index
                       ? 0
                       : (unreadCounts.get(ch.index) ?? 0);
+                  const chMecpSeverity =
+                    unread > 0 ? unreadMecpSeverity.channels.get(ch.index) : undefined;
+                  const chLabel = channelButtonLabel(ch.name, unread);
                   return (
                     <button
                       type="button"
                       key={`ch-${ch.index}-${chIdx}-${ch.name}`}
-                      aria-label={channelButtonLabel(ch.name, unread)}
+                      aria-label={
+                        chMecpSeverity !== undefined
+                          ? `${chLabel}, ${mecpUnreadLabel(chMecpSeverity)}`
+                          : chLabel
+                      }
                       aria-pressed={isActiveChannel}
                       data-strip-active={isActiveChannel ? 'true' : undefined}
                       onClick={() => {
@@ -2811,10 +2852,10 @@ function ChatPanel({
                             }
                           : undefined
                       }
-                      className={`${chipClass(isActiveChannel)} inline-flex h-auto min-h-7 max-w-full items-center gap-1.5 py-1 text-left`}
+                      className={`${chipClass(isActiveChannel)} inline-flex h-auto min-h-7 max-w-full items-center gap-1 rounded-full! px-2! py-0.5 text-left`}
                     >
                       {!ch.name.startsWith('#') && (
-                        <span aria-hidden="true" className="text-muted -mr-1 font-mono">
+                        <span aria-hidden="true" className="text-muted shrink-0 font-mono">
                           #
                         </span>
                       )}
@@ -2822,6 +2863,7 @@ function ChatPanel({
                         {ch.name}
                       </span>
                       {unread > 0 && <ChipUnreadBadge count={unread} />}
+                      {chMecpSeverity !== undefined && <MecpUnreadIcon severity={chMecpSeverity} />}
                     </button>
                   );
                 })}
@@ -3908,7 +3950,7 @@ function ChatPanel({
                                       pulse={!isOwn && mecp.severity <= 1 && !mecp.isDrill}
                                     />
                                     <p className="text-2xs font-normal text-red-200/90">
-                                      {localizeMecpCodes(mecp, mecpLang)}
+                                      {localizeMecpCodes(mecp, mecpLang, { includeGps: false })}
                                     </p>
                                   </div>
                                 );

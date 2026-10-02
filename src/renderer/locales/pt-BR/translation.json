@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} em {{room}}",
     "srNewMessage": "Nova mensagem de {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} nova mensagem",
-    "srNewMessages_other": "{{count}} novas mensagens"
+    "srNewMessages_other": "{{count}} novas mensagens",
+    "unreadMecpMarker": "Relatório MECP {{severity}} não lido"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -6344,7 +6345,7 @@
     "ackSent": "Confirmação enviada para {{sender}}",
     "ackQueued": "Reconhecimento para {{sender}} na fila; será enviado quando o rádio estiver disponível",
     "ackFailed": "Não foi possível enviar ou enfileirar a confirmação",
-    "intro": "Imagem operacional comum para emergências MECP ouvida em qualquer protocolo. Abrir MAYDAY e linhas URGENTES marcam esta guia; os exercícios são listados, mas nunca contados. Use Confirmar (ou Confirmar para um sinalizador ativo) para responder na malha e, em seguida, Resolva quando o incidente for fechado localmente.",
+    "intro": "Imagem operacional comum para emergências MECP ouvida em qualquer protocolo. Abrir MAYDAY e linhas URGENTES marcam esta guia; incluindo simulados. Use Confirmar (ou Confirmar para um sinalizador ativo) para responder na malha e, em seguida, Resolva quando o incidente for fechado localmente.",
     "ackQueuedBadge": "ACK na fila",
     "pendingAckListAria": "Reconhecimentos em fila para este incidente",
     "cancelPendingAck": "Cancelar",

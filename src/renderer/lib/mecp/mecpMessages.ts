@@ -210,7 +210,15 @@ export function incidentPayloadMatchKey(parts: {
   return [String(parts.severity), codes, normalizeMecpFreetextForMatch(parts.freetext)].join('|');
 }
 
-export function localizeMecpCodes(parsed: MecpParsed, lang: LanguageFile): string {
+/**
+ * `includeGps: false` for UI that already renders the raw payload (GPS lives in the freetext),
+ * so coordinates are not shown twice.
+ */
+export function localizeMecpCodes(
+  parsed: MecpParsed,
+  lang: LanguageFile,
+  opts?: { includeGps?: boolean },
+): string {
   const parts: string[] = [];
   for (const code of parsed.codes) {
     const local = lang.codes[code];
@@ -219,7 +227,7 @@ export function localizeMecpCodes(parsed: MecpParsed, lang: LanguageFile): strin
   if (parsed.extracted.count != null) {
     parts.push(`${parsed.extracted.count}pax`);
   }
-  if (parsed.extracted.gps) {
+  if (parsed.extracted.gps && opts?.includeGps !== false) {
     parts.push(`${parsed.extracted.gps.lat},${parsed.extracted.gps.lon}`);
   }
   return parts.join(' · ');

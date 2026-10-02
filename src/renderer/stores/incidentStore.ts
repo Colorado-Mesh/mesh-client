@@ -246,8 +246,13 @@ export const useIncidentStore = create<IncidentStoreState>()(
         const tombs = get().resolvedTombstones;
 
         if (isBeaconCancel(parsed.codes)) {
+          // A hydrated B03 must not clear a beacon heard after it (DB load can land after live RX).
           const beacons = Object.values(all).filter(
-            (inc) => isUnresolved(inc) && inc.beaconActive && inc.senderId === senderId,
+            (inc) =>
+              isUnresolved(inc) &&
+              inc.beaconActive &&
+              inc.senderId === senderId &&
+              (!input.fromSeed || inc.lastSeenAt <= now),
           );
           if (beacons.length === 0) return null;
           set((s) => {
@@ -503,6 +508,18 @@ export function openMaydayUrgentCount(state: Pick<IncidentStoreState, 'incidents
   let n = 0;
   for (const inc of Object.values(state.incidents)) {
     if (isUnresolved(inc) && !inc.isDrill && inc.severity <= 1) n++;
+  }
+  return n;
+}
+
+/**
+ * Incident tab badge: unresolved MAYDAY (0) / URGENT (1), drills included so a drill exercises
+ * the same response path. Quit confirmation keeps `openMaydayUrgentCount` (real emergencies).
+ */
+export function incidentTabBadgeCount(state: Pick<IncidentStoreState, 'incidents'>): number {
+  let n = 0;
+  for (const inc of Object.values(state.incidents)) {
+    if (isUnresolved(inc) && inc.severity <= 1) n++;
   }
   return n;
 }

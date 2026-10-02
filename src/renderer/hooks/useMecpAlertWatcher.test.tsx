@@ -2,7 +2,11 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { selectOpenIncidentsSorted, useIncidentStore } from '@/renderer/stores/incidentStore';
-import type { MessageRecord } from '@/renderer/stores/messageStore';
+import {
+  type MessageRecord,
+  resetBulkLoadedMessageIdsForTests,
+  upsertMessageRecordsForIdentity,
+} from '@/renderer/stores/messageStore';
 
 import { useMecpAlertWatcher } from './useMecpAlertWatcher';
 
@@ -31,6 +35,7 @@ beforeEach(() => {
   appendReceived.mockClear();
   triggerMecpAlert.mockClear();
   executeMecpRebroadcast.mockClear();
+  resetBulkLoadedMessageIdsForTests();
   useIncidentStore.setState({ incidents: {}, resolvedTombstones: {} });
   window.electronAPI = {
     ...window.electronAPI,
@@ -170,6 +175,44 @@ describe('useMecpAlertWatcher', () => {
     expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(0);
   });
 
+  it('treats DB hydration that lands after mount as history (seed guards, no alert)', async () => {
+    const own = new Set<number>([9]);
+    const nineDaysMs = 9 * 24 * 60 * 60 * 1000;
+    const stale = msg({ id: 'db-old', payload: 'MECP/0/M01 old', from: 4 });
+    stale.timestamp = Date.now() - nineDaysMs;
+    const recent = msg({ id: 'db-new', payload: 'MECP/3/D01', from: 4 });
+    const ownRecent = msg({ id: 'db-own', payload: 'MECP/3/D02', from: 9, status: 'acked' });
+    const hydrated = [stale, recent, ownRecent];
+    const { rerender } = renderHook(
+      ({ messages }: { messages: MessageRecord[] }) => {
+        useMecpAlertWatcher(
+          { protocol: 'meshtastic', messages: [], ownNodeIds: own, ownSenderId: 9 },
+          { protocol: 'meshcore', messages: [], ownNodeIds: own, ownSenderId: 9 },
+          { protocol: 'reticulum', messages, ownNodeIds: own, ownSenderId: 9 },
+        );
+      },
+      { initialProps: { messages: [] as MessageRecord[] } },
+    );
+    upsertMessageRecordsForIdentity('test-identity', hydrated);
+    rerender({ messages: hydrated });
+    await vi.waitFor(() => {
+      expect(selectOpenIncidentsSorted(useIncidentStore.getState())).toHaveLength(1);
+    });
+    expect(selectOpenIncidentsSorted(useIncidentStore.getState())[0]).toMatchObject({
+      senderId: '4',
+      isDrill: true,
+    });
+    expect(triggerMecpAlert).not.toHaveBeenCalled();
+    expect(appendReceived).not.toHaveBeenCalled();
+
+    rerender({
+      messages: [...hydrated, msg({ id: 'live', payload: 'MECP/0/M01 live', from: 4 })],
+    });
+    await vi.waitFor(() => {
+      expect(triggerMecpAlert).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('seeds an own distress beacon without alerting so the originator can cancel it', () => {
     const own = new Set<number>([9]);
     renderHook(() => {
@@ -224,6 +267,32 @@ describe('useMecpAlertWatcher', () => {
       expect(inc?.status).toBe('open');
     });
     expect(triggerMecpAlert).not.toHaveBeenCalled();
+  });
+
+  it('ignores a stale hydrated B03 so it cannot cancel a current beacon', async () => {
+    const own = new Set<number>([9]);
+    const { rerender } = renderHook(
+      ({ messages }: { messages: MessageRecord[] }) => {
+        useMecpAlertWatcher(
+          { protocol: 'meshtastic', messages, ownNodeIds: own, ownSenderId: 9 },
+          { protocol: 'meshcore', messages: [], ownNodeIds: own },
+          { protocol: 'reticulum', messages: [], ownNodeIds: own },
+        );
+      },
+      { initialProps: { messages: [] as MessageRecord[] } },
+    );
+    const beacon = msg({ id: 'peer-b01', payload: 'MECP/0/B01', from: 4 });
+    rerender({ messages: [beacon] });
+    await vi.waitFor(() => {
+      expect(selectOpenIncidentsSorted(useIncidentStore.getState())[0]?.beaconActive).toBe(true);
+    });
+
+    const staleCancel = msg({ id: 'peer-b03-old', payload: 'MECP/0/B03', from: 4 });
+    staleCancel.timestamp = Date.now() - 2 * 24 * 60 * 60 * 1000;
+    upsertMessageRecordsForIdentity('test-identity', [staleCancel]);
+    rerender({ messages: [beacon, staleCancel] });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(selectOpenIncidentsSorted(useIncidentStore.getState())[0]?.beaconActive).toBe(true);
   });
 
   it('does not open an incident for a hydrated B02 beacon ACK', () => {

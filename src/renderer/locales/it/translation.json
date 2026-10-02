@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} a {{room}}",
     "srNewMessage": "Nuovo messaggio da {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} nuovo messaggio",
-    "srNewMessages_other": "{{count}} nuovi messaggi"
+    "srNewMessages_other": "{{count}} nuovi messaggi",
+    "unreadMecpMarker": "Report MeCP {{severity}} non letto"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -6344,7 +6345,7 @@
     "ackSent": "Conferma inviata a {{sender}}",
     "ackQueued": "Conferma a {{sender}} in coda; invierà quando la radio sarà disponibile",
     "ackFailed": "Impossibile inviare o accodare la conferma",
-    "intro": "Quadro operativo comune per le emergenze MeCP sentito su qualsiasi protocollo. Apri MAYDAY e le righe URGENTI contrassegnano questa scheda; le esercitazioni sono elencate ma mai contate. Utilizzare Conferma (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente.",
+    "intro": "Quadro operativo comune per le emergenze MeCP sentito su qualsiasi protocollo. Apri MAYDAY e le righe URGENTI contrassegnano questa scheda; incluse le esercitazioni. Utilizzare Conferma (o Conferma per un beacon attivo) per rispondere sulla mesh, quindi Risolvi quando l'incidente viene chiuso localmente.",
     "ackQueuedBadge": "ACK in coda",
     "pendingAckListAria": "Riconoscimenti in coda per questo incidente",
     "cancelPendingAck": "Annulla",

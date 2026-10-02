@@ -7,10 +7,28 @@ import {
   incidentFingerprint,
   isMecpDrill,
   isMecpMessage,
+  localizeMecpCodes,
   MAX_MESSAGE_BYTES,
   MECP_REGEX,
   tryParseMecp,
 } from './mecpMessages';
+
+describe('localizeMecpCodes', () => {
+  const lang = { codes: { D02: 'This is a test' } } as unknown as Parameters<
+    typeof localizeMecpCodes
+  >[1];
+
+  it('appends extracted GPS by default (audit log)', () => {
+    const parsed = tryParseMecp('MECP/3/D02 40.19444,-105.06722');
+    expect(parsed).not.toBeNull();
+    expect(localizeMecpCodes(parsed!, lang)).toBe('D02 This is a test · 40.19444,-105.06722');
+  });
+
+  it('omits GPS when the raw payload is already displayed', () => {
+    const parsed = tryParseMecp('MECP/3/D02 40.19444,-105.06722');
+    expect(localizeMecpCodes(parsed!, lang, { includeGps: false })).toBe('D02 This is a test');
+  });
+});
 
 describe('tryParseMecp / MECP_REGEX', () => {
   it('matches Meta.ai wire prefix', () => {

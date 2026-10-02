@@ -4,9 +4,12 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import { mostSevereMecp } from '@/renderer/lib/chatUnreadCounts';
 import { ICON_MD, ICON_SM_PLUS } from '@/renderer/lib/icons/iconClass';
+import type { Severity } from '@/renderer/lib/mecp/mecpMessages';
 import { Z_POPOVER_MENU } from '@/renderer/lib/modalZIndex';
 
+import { MecpUnreadIcon, useMecpUnreadLabel } from '../mecp/MecpUnreadIcon';
 import { INPUT_CLASS } from '../ui/formClasses';
 
 export interface ChatChannelOption {
@@ -17,6 +20,8 @@ export interface ChatChannelOption {
 export interface ChatChannelSwitcherProps {
   channels: readonly ChatChannelOption[];
   unreadCounts: ReadonlyMap<number, number>;
+  /** Most severe unread MECP per option index (shield marker beside the unread count). */
+  mecpSeverityByIndex?: ReadonlyMap<number, Severity>;
   /** Channel open in the chat, or null while a DM or the starred view is open. */
   activeIndex: number | null;
   onSelect: (index: number) => void;
@@ -48,11 +53,13 @@ export function channelButtonLabel(name: string, unread: number): string {
 export function ChatChannelSwitcher({
   channels,
   unreadCounts,
+  mecpSeverityByIndex,
   activeIndex,
   onSelect,
   kind = 'channels',
 }: ChatChannelSwitcherProps) {
   const { t } = useTranslation();
+  const mecpUnreadLabel = useMecpUnreadLabel();
   const isDms = kind === 'dms';
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -72,6 +79,16 @@ export function ChatChannelSwitcher({
     }
     return total;
   }, [channels, unreadCounts, activeIndex]);
+
+  const mecpElsewhere = useMemo(() => {
+    if (!mecpSeverityByIndex || mecpSeverityByIndex.size === 0) return null;
+    const keys: number[] = [];
+    for (const ch of channels) {
+      if (ch.index === activeIndex || (unreadCounts.get(ch.index) ?? 0) === 0) continue;
+      keys.push(ch.index);
+    }
+    return mostSevereMecp(mecpSeverityByIndex, keys);
+  }, [activeIndex, channels, mecpSeverityByIndex, unreadCounts]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -171,6 +188,9 @@ export function ChatChannelSwitcher({
     : t('chatPanel.channelSwitcher.listLabel');
   const emptyLabel = isDms ? t('chatPanel.dmSwitcher.empty') : t('chatPanel.channelSwitcher.empty');
   const TriggerIcon = isDms ? Users : Hash;
+  const withMecp = (label: string, severity: Severity | null | undefined) =>
+    severity != null ? `${label}, ${mecpUnreadLabel(severity)}` : label;
+  const triggerAriaLabel = withMecp(triggerLabel, mecpElsewhere);
 
   return (
     <>
@@ -179,8 +199,8 @@ export function ChatChannelSwitcher({
         type="button"
         aria-haspopup="listbox"
         aria-expanded={open}
-        aria-label={triggerLabel}
-        title={triggerLabel}
+        aria-label={triggerAriaLabel}
+        title={triggerAriaLabel}
         onClick={() => {
           if (open) close(false);
           else setOpen(true);
@@ -197,6 +217,7 @@ export function ChatChannelSwitcher({
             {formatUnread(unreadElsewhere)}
           </span>
         )}
+        {mecpElsewhere != null && <MecpUnreadIcon severity={mecpElsewhere} />}
         <ChevronDown aria-hidden className={`${ICON_MD} text-muted`} size={16} />
       </button>
       {open &&
@@ -245,6 +266,7 @@ export function ChatChannelSwitcher({
               ) : (
                 filtered.map((ch) => {
                   const unread = ch.index === activeIndex ? 0 : (unreadCounts.get(ch.index) ?? 0);
+                  const rowMecp = unread > 0 ? mecpSeverityByIndex?.get(ch.index) : undefined;
                   const highlighted = ch.index === activeOption?.index;
                   const selected = ch.index === activeIndex;
                   return (
@@ -253,7 +275,7 @@ export function ChatChannelSwitcher({
                       id={`${optionIdPrefix}-${ch.index}`}
                       role="option"
                       aria-selected={selected}
-                      aria-label={channelButtonLabel(ch.name, unread)}
+                      aria-label={withMecp(channelButtonLabel(ch.name, unread), rowMecp)}
                       tabIndex={-1}
                       onPointerMove={() => {
                         const i = filtered.indexOf(ch);
@@ -287,6 +309,7 @@ export function ChatChannelSwitcher({
                           {formatUnread(unread)}
                         </span>
                       )}
+                      {rowMecp !== undefined && <MecpUnreadIcon severity={rowMecp} />}
                     </div>
                   );
                 })
