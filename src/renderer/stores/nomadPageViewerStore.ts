@@ -36,7 +36,7 @@ import {
 } from '@/shared/reticulumNomadTimeouts';
 
 import { pushAppToast } from '../components/Toast';
-import { useNomadNetworkStore } from './nomadNetworkStore';
+import { isNomadNodeIdentifying, useNomadNetworkStore } from './nomadNetworkStore';
 
 /** Cap displayed page size — aligned with NomadNetworkPanel / page cache. */
 const MAX_NOMAD_PAGE_DISPLAY_CHARS = MAX_NOMAD_PAGE_CACHE_CHARS;
@@ -104,13 +104,17 @@ function pageFetchDedupeKey(
   path: string,
   requestData: NomadPageRequestData | undefined,
   forcePathRefresh: boolean,
+  identify: boolean,
   requestId: string | undefined,
 ): string {
   const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
   const dataKey = JSON.stringify(requestData ?? {});
   const idKey = requestId?.trim() || '';
-  return `${cleanHash}|${path}|${dataKey}|${forcePathRefresh ? '1' : '0'}|${idKey}`;
+  return `${cleanHash}|${path}|${dataKey}|${forcePathRefresh ? '1' : '0'}|${identify ? '1' : '0'}|${idKey}`;
 }
+
+/** @internal test helper */
+export const pageFetchDedupeKeyForTests = pageFetchDedupeKey;
 
 async function fetchNomadPageDeduped(
   hash: string,
@@ -119,15 +123,19 @@ async function fetchNomadPageDeduped(
   forcePathRefresh: boolean,
   requestId: string | undefined,
 ): Promise<NomadPageResponse> {
-  const key = pageFetchDedupeKey(hash, path, requestData, forcePathRefresh, requestId);
+  const { fetchNomadPage, nodes } = useNomadNetworkStore.getState();
+  // A reload after toggling identify must not join an in-flight fetch made
+  // under the other choice, so the flag is part of the dedupe key.
+  const identify = isNomadNodeIdentifying(nodes, hash);
+  const key = pageFetchDedupeKey(hash, path, requestData, forcePathRefresh, identify, requestId);
   const existing = inFlightPageFetches.get(key);
   if (existing) return existing;
-  const fetchNomadPage = useNomadNetworkStore.getState().fetchNomadPage;
   const opts =
-    forcePathRefresh || requestId
+    forcePathRefresh || requestId || identify
       ? {
           ...(forcePathRefresh ? { forcePathRefresh: true as const } : {}),
           ...(requestId ? { requestId } : {}),
+          ...(identify ? { identify: true as const } : {}),
         }
       : undefined;
   const pending = Promise.resolve(fetchNomadPage(hash, path, requestData, opts)).finally(() => {

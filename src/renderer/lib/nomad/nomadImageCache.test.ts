@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   clearNomadImageCache,
+  clearNomadImageCacheForHash,
   getNomadImageCache,
   getNomadImageCacheGeneration,
   MAX_NOMAD_IMAGE_CACHE_BASE64_CHARS,
@@ -94,5 +95,20 @@ describe('nomadImageCache', () => {
     clearNomadImageCache();
     expect(getNomadImageCacheGeneration()).toBe(before + 1);
     expect(nomadImageCacheSizeForTests()).toBe(0);
+  });
+
+  it('clears one node and bumps generation', () => {
+    const a = 'abc1234567890abcdef1234567890abc';
+    const b = 'def1234567890abcdef1234567890def';
+    setNomadImageCache({ hash: a, mediaPath: '/media/1.webp' }, { content_base64: 'QQ==' });
+    setNomadImageCache({ hash: a, mediaPath: '/media/2.webp' }, { content_base64: 'QQ==' });
+    setNomadImageCache({ hash: b, mediaPath: '/media/1.webp' }, { content_base64: 'Qg==' });
+    const before = getNomadImageCacheGeneration();
+    clearNomadImageCacheForHash(a.toUpperCase());
+    expect(getNomadImageCacheGeneration()).toBe(before + 1);
+    expect(getNomadImageCache({ hash: a, mediaPath: '/media/1.webp' })).toBeUndefined();
+    expect(getNomadImageCache({ hash: b, mediaPath: '/media/1.webp' })?.content_base64).toBe(
+      'Qg==',
+    );
   });
 });

@@ -2368,7 +2368,11 @@ enabled = Yes
 future_key = future_value
 "#;
         let parsed = parse_config(content).unwrap();
-        assert!(!parsed.extra_sections.is_empty());
+        assert!(
+            !parsed.extra_sections.is_empty(),
+            "{:?}",
+            parsed.extra_sections
+        );
         let serialized = serialize_config(&parsed);
         assert!(serialized.contains("[future_section]"));
         assert!(serialized.contains("future_key = future_value"));
@@ -2381,7 +2385,7 @@ future_key = future_value
         let dir = std::env::temp_dir().join(format!("mesh_reticulum_cfg_{}", Uuid::new_v4()));
         fs::create_dir_all(&dir).unwrap();
         let err = write_config(&dir, "not valid ini [[[").unwrap_err();
-        assert!(!err.is_empty());
+        assert!(!err.is_empty(), "{err:?}");
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -2530,11 +2534,8 @@ target_port = 4965
         ));
         assert!(content.contains("45.77.109.86"));
         // Second pass is a no-op.
-        assert!(
-            ensure_decommissioned_hubs_disabled(&dir)
-                .unwrap()
-                .is_empty()
-        );
+        let changed = ensure_decommissioned_hubs_disabled(&dir).unwrap();
+        assert!(changed.is_empty(), "{changed:?}");
         let _ = fs::remove_dir_all(&dir);
     }
 

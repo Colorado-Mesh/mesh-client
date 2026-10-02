@@ -115,6 +115,20 @@ import {
   meshtasticMqttErrorUserHint,
 } from '../lib/meshtasticMqttTlsMigration';
 import { tryAutoLaunchMqtt } from '../lib/mqttAutoLaunch';
+import {
+  applyMqttProfile,
+  createMqttProfile,
+  deleteMqttProfile,
+  loadMqttProfiles,
+  matchMqttProfile,
+  type MqttProfile,
+  mqttProfileApplyEffect,
+  mqttProfileIdFromSelectValue,
+  mqttProfileSelectValue,
+  normalizeLiveTopicPrefix,
+  renameMqttProfile,
+  saveMqttProfiles,
+} from '../lib/mqttProfiles';
 import { parseStoredJson } from '../lib/parseStoredJson';
 import {
   blePickerDisplayName,
@@ -155,6 +169,7 @@ import ConnectionLinkMeter from './ConnectionLinkMeter';
 import FirmwareStatusIndicator from './FirmwareStatusIndicator';
 import { HelpTooltip } from './HelpTooltip';
 import { MqttNetworkPresetSelect } from './MqttNetworkPresetSelect';
+import { MqttProfileControls } from './MqttProfileControls';
 import { PickerSortControls } from './PickerSortControls';
 import type { ReticulumSetupDestination } from './reticulum/ReticulumSetupGuide';
 import { ReticulumStackPanel } from './ReticulumStackPanel';
@@ -522,6 +537,72 @@ export default function ConnectionPanel({
       return 'custom';
     },
   );
+  const [mqttProfiles, setMqttProfiles] = useState<MqttProfile[]>(loadMqttProfiles);
+  // Profile chosen while connected whose broker/credentials differ; applied once MQTT disconnects
+  // so the live session's settings and matched profile stay accurate.
+  const [pendingMqttProfile, setPendingMqttProfile] = useState<MqttProfile | null>(null);
+  const activeMqttProfile = useMemo(
+    () => matchMqttProfile(mqttProfiles, mqttSettings),
+    [mqttProfiles, mqttSettings],
+  );
+  const updateMqttProfiles = (next: MqttProfile[]) => {
+    setMqttProfiles(next);
+    saveMqttProfiles(next);
+  };
+  // Async topic updates apply only if they are still the latest selection on a live session.
+  const mqttProfileRequestRef = useRef(0);
+  const mqttStatusRef = useRef(mqttStatus);
+  useEffect(() => {
+    mqttStatusRef.current = mqttStatus;
+    // Replies from a prior session must not apply after a reconnect.
+    if (mqttStatus !== 'connected') mqttProfileRequestRef.current++;
+  }, [mqttStatus]);
+  const applyMeshtasticMqttProfile = (profile: MqttProfile) => {
+    // An in-flight connect already captured the current settings.
+    if (mqttStatus === 'connecting') return;
+    const requestId = ++mqttProfileRequestRef.current;
+    const next = applyMqttProfile(mqttSettings, profile);
+    const effect = mqttProfileApplyEffect(mqttSettings, next);
+    if (mqttStatus === 'connected' && effect === 'reconnect') {
+      setPendingMqttProfile(profile);
+      return;
+    }
+    if (mqttStatus === 'connected' && effect === 'topicPrefix') {
+      const topicPrefix = normalizeLiveTopicPrefix(next.topicPrefix);
+      if (topicPrefix == null) {
+        console.warn('[ConnectionPanel] MQTT profile topic prefix rejected for live session');
+        return;
+      }
+      // Settings follow the live subscription only once main accepts the new prefix.
+      void window.electronAPI.mqtt
+        .updateTopicPrefix({ topicPrefix })
+        .then(() => {
+          if (
+            requestId !== mqttProfileRequestRef.current ||
+            mqttStatusRef.current !== 'connected'
+          ) {
+            return;
+          }
+          setPendingMqttProfile(null);
+          setMeshtasticPreset('custom');
+          setMqttSettings((prev) => ({ ...applyMqttProfile(prev, profile), topicPrefix }));
+        })
+        .catch((e: unknown) => {
+          console.warn('[ConnectionPanel] mqtt.updateTopicPrefix failed ' + errLikeToLogString(e));
+        });
+      return;
+    }
+    setPendingMqttProfile(null);
+    setMeshtasticPreset('custom');
+    setMqttSettings(next);
+  };
+
+  useEffect(() => {
+    if (mqttStatus !== 'disconnected' || !pendingMqttProfile) return;
+    setMeshtasticPreset('custom');
+    setMqttSettings((prev) => applyMqttProfile(prev, pendingMqttProfile));
+    setPendingMqttProfile(null);
+  }, [mqttStatus, pendingMqttProfile]);
 
   // Persist Meshtastic MQTT settings with debounce
   useEffect(() => {
@@ -1998,6 +2079,37 @@ export default function ConnectionPanel({
               #
             </LabelValue>
           </LabelValueGrid>
+          {protocol !== 'meshcore' && mqttProfiles.length > 0 ? (
+            <div className="space-y-1">
+              <p id="conn-meshtastic-live-profile" className="text-muted text-xs">
+                {t('mqttProfiles.switchLabel')}
+              </p>
+              <MqttNetworkPresetSelect
+                id="conn-meshtastic-live-profile-select"
+                labelledById="conn-meshtastic-live-profile"
+                value={activeMqttProfile ? mqttProfileSelectValue(activeMqttProfile.id) : ''}
+                options={[
+                  ...(activeMqttProfile
+                    ? []
+                    : [{ value: '', label: t('mqttProfiles.noneSelected') }]),
+                  ...mqttProfiles.map((p) => ({
+                    value: mqttProfileSelectValue(p.id),
+                    label: p.name,
+                  })),
+                ]}
+                onSelect={(value) => {
+                  const profileId = mqttProfileIdFromSelectValue(value);
+                  const profile = mqttProfiles.find((p) => p.id === profileId);
+                  if (profile) applyMeshtasticMqttProfile(profile);
+                }}
+              />
+              {pendingMqttProfile ? (
+                <p className="text-xs text-orange-400" role="status">
+                  {t('mqttProfiles.reconnectNeeded')}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <Stepper
             id="mqtt-max-retries-when-connected"
             label={t('connectionPanel.maxReconnectAttempts')}
@@ -2035,7 +2147,12 @@ export default function ConnectionPanel({
               <MqttNetworkPresetSelect
                 id="conn-meshtastic-network-preset-select"
                 labelledById="conn-meshtastic-network-preset"
-                value={meshtasticPreset}
+                disabled={mqttStatus === 'connecting'}
+                value={
+                  activeMqttProfile
+                    ? mqttProfileSelectValue(activeMqttProfile.id)
+                    : meshtasticPreset
+                }
                 options={[
                   {
                     value: 'official-plain',
@@ -2043,8 +2160,18 @@ export default function ConnectionPanel({
                   },
                   { value: 'liam', label: t('connectionPanel.meshtasticPreset.liam') },
                   { value: 'custom', label: t('connectionPanel.meshtasticPreset.custom') },
+                  ...mqttProfiles.map((p) => ({
+                    value: mqttProfileSelectValue(p.id),
+                    label: t('mqttProfiles.optionLabel', { name: p.name }),
+                  })),
                 ]}
                 onSelect={(value) => {
+                  const profileId = mqttProfileIdFromSelectValue(value);
+                  if (profileId != null) {
+                    const profile = mqttProfiles.find((p) => p.id === profileId);
+                    if (profile) applyMeshtasticMqttProfile(profile);
+                    return;
+                  }
                   const id = value as 'official-plain' | 'liam' | 'custom';
                   setMeshtasticPreset(id);
                   if (id === 'official-plain') {
@@ -2062,9 +2189,21 @@ export default function ConnectionPanel({
                   }
                 }}
               />
-              {meshtasticPreset === 'liam' && (
+              {meshtasticPreset === 'liam' && !activeMqttProfile && (
                 <p className="text-xs text-orange-400">{t('connectionPanel.liamServerNote')}</p>
               )}
+              <MqttProfileControls
+                activeProfile={activeMqttProfile}
+                onSave={(name) => {
+                  updateMqttProfiles(createMqttProfile(mqttProfiles, name, mqttSettings));
+                }}
+                onRename={(id, name) => {
+                  updateMqttProfiles(renameMqttProfile(mqttProfiles, id, name));
+                }}
+                onDelete={(id) => {
+                  updateMqttProfiles(deleteMqttProfile(mqttProfiles, id));
+                }}
+              />
             </div>
           )}
           {protocol === 'meshcore' && (

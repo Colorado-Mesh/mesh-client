@@ -40,6 +40,7 @@ import type {
   ReticulumConfigValidateResult,
   ReticulumSidecarEvent,
 } from '@/shared/reticulum-types';
+import { formatReticulumIdentityFingerprint } from '@/shared/reticulumIdentityFingerprint';
 
 import { useReticulumBlocklistIdentityId } from '../stores/blockStore';
 import { refreshReticulumPeersFromSidecar } from '../stores/reticulumPeerStore';
@@ -1640,6 +1641,17 @@ function IdentityConfiguredView({
     }
   }, [identityHash]);
 
+  const identityFingerprint = identityHash ? formatReticulumIdentityFingerprint(identityHash) : '';
+
+  const copyIdentityFingerprint = useCallback(async () => {
+    if (!identityFingerprint) return;
+    try {
+      await writeClipboardText(identityFingerprint);
+    } catch (e) {
+      console.warn('[ReticulumNetworkPanel] copy identity fingerprint ' + errLikeToLogString(e));
+    }
+  }, [identityFingerprint]);
+
   const copyLxmfHash = useCallback(async () => {
     if (!lxmfHash) return;
     try {
@@ -1684,6 +1696,24 @@ function IdentityConfiguredView({
           </button>
         ) : null}
       </div>
+      {identityFingerprint ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted">
+            {t('connectionPanel.reticulumIdentity.fingerprintLabel')}
+          </span>
+          <code className="text-ink-200 font-mono text-xs break-all">{identityFingerprint}</code>
+          <button
+            type="button"
+            className="text-ink-400 hover:text-ink-300 shrink-0"
+            aria-label={t('connectionPanel.reticulumIdentity.copyFingerprint')}
+            onClick={() => {
+              void copyIdentityFingerprint();
+            }}
+          >
+            <Copy className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-muted">{t('connectionPanel.reticulumIdentity.hashLabel')}</span>
         <code className="text-orange-300" title={lxmfHash || undefined}>

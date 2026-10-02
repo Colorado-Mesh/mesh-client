@@ -434,6 +434,7 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 
 | Script                                | Description                                                             |
 | ------------------------------------- | ----------------------------------------------------------------------- |
+| `check:audit-ignores`                 | Warn when an ignored audit GHSA has a patch (needs network)             |
 | `check:codeql-extensions`             | Verify CodeQL extension allowlist for custom queries                    |
 | `check:console-log`                   | Fail on bare `console.log` in production paths                          |
 | `check:db-migrations`                 | Verify SQLite migrations are valid                                      |
@@ -522,6 +523,8 @@ flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
 `postinstall` runs `scripts/rebuild-native.mjs` for Electron native addons and applies `patchedDependencies` from `pnpm-workspace.yaml` (Meshtastic JSR transports, MeshCore, `readable-stream`, `usb`, etc.). When bumping patched packages, update hashes under `patches/` and keep `WATCH_ENTRIES` in `scripts/update.sh` in sync — see [AGENTS.md](../AGENTS.md#6-commands--ci-checks).
 
 `pnpm run update` also runs `check_pinned_majors` (`scripts/check-pinned-majors.mjs`), which warns when an `overrides` pin in `pnpm-workspace.yaml` has fallen behind a newer npm major — a stale `undici: ^7.29.0` floor once withheld an upstream main-process crash fix. Caps that are correct because the consuming package forbids the newer major (or because the pin is a platform target, e.g. `electron`) are recorded with a reason in `PINNED_MAJOR_EXCEPTIONS`; add an entry there instead of silencing the warning. The check needs network access, so it is warn-only and is not part of pre-commit or `check:pr`.
+
+It then runs `check_audit_ignores` (`scripts/check-audit-ignores.mjs`, also `pnpm run check:audit-ignores`), which looks up each advisory in `pnpm-workspace.yaml` → `auditConfig.ignoreGhsas` on the GitHub advisory API and warns once a patched release exists (or the advisory is withdrawn), so the exception can be backed out. Every ignore must carry an inline comment saying why it is unreachable. Like the pinned-majors check it is network-dependent and warn-only; set `GITHUB_TOKEN` / `GH_TOKEN` to avoid the unauthenticated rate limit.
 
 ### Dependabot dependency updates
 

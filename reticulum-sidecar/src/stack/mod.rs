@@ -60,6 +60,8 @@ mod live_tasks;
 #[cfg(feature = "rns-stack")]
 mod lxmf_delivery;
 #[cfg(feature = "rns-stack")]
+mod nomad_page_acl;
+#[cfg(feature = "rns-stack")]
 mod nomad_server;
 #[cfg(feature = "rns-stack")]
 mod propagation_announce;
@@ -2127,6 +2129,68 @@ impl StackHandle {
         Ok(())
     }
 
+    /// Persist whether we identify to one Nomad node. Turning it off also
+    /// closes a cached identified Link to that node.
+    pub async fn set_nomad_identify(&self, hash: &str, identify: bool) -> Result<(), String> {
+        {
+            let mut inner = self.inner.write().await;
+            let key = hash.trim().to_lowercase();
+            let matches = |n: &NomadNodeRow| n.destination_hash.to_lowercase() == key;
+            let prior = inner.nomad_nodes.iter().find(|n| matches(n)).cloned();
+            inner.set_nomad_identify(hash, identify);
+            if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                // Failure point: disk write. Fallback: restore the row so memory
+                // never reports a flag that was not persisted.
+                match prior {
+                    Some(row) => {
+                        if let Some(slot) = inner.nomad_nodes.iter_mut().find(|n| matches(n)) {
+                            *slot = row;
+                        }
+                    }
+                    None => inner.nomad_nodes.retain(|n| !matches(n)),
+                }
+                return Err(e);
+            }
+        }
+        #[cfg(feature = "rns-stack")]
+        if !identify {
+            if let Some(live) = self.live_opt() {
+                live.close_identified_nomad_link(Some(hash)).await;
+            }
+        }
+        Ok(())
+    }
+
+    /// Stop identifying to every Nomad node; returns how many flags changed.
+    pub async fn clear_nomad_identify_all(&self) -> Result<usize, String> {
+        let cleared = {
+            let mut inner = self.inner.write().await;
+            let identifying: Vec<String> = inner
+                .nomad_nodes
+                .iter()
+                .filter(|n| n.identify)
+                .map(|n| n.destination_hash.clone())
+                .collect();
+            let cleared = inner.clear_nomad_identify_all();
+            if cleared > 0 {
+                if let Err(e) = inner.save(&self.config_dir, &self.storage_dir) {
+                    for node in &mut inner.nomad_nodes {
+                        if identifying.contains(&node.destination_hash) {
+                            node.identify = true;
+                        }
+                    }
+                    return Err(e);
+                }
+            }
+            cleared
+        };
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            live.close_identified_nomad_link(None).await;
+        }
+        Ok(cleared)
+    }
+
     #[cfg(feature = "rns-stack")]
     fn require_live(&self) -> Result<Arc<live::LiveBridge>, String> {
         self.live_opt()
@@ -2383,6 +2447,58 @@ impl StackHandle {
         #[cfg(feature = "rns-stack")]
         {
             return self.require_live()?.nomad_server().delete_page(path).await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn read_nomad_serving_page_acl(&self, path: &str) -> Result<Option<String>, String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .read_page_acl(path)
+                .await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = path;
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn write_nomad_serving_page_acl(
+        &self,
+        path: &str,
+        content: &str,
+    ) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .write_page_acl(path, content)
+                .await;
+        }
+        #[cfg(not(feature = "rns-stack"))]
+        {
+            let _ = (path, content);
+            Err(NOMAD_REQUIRES_STACK.into())
+        }
+    }
+
+    pub async fn delete_nomad_serving_page_acl(&self, path: &str) -> Result<(), String> {
+        #[cfg(feature = "rns-stack")]
+        {
+            return self
+                .require_live()?
+                .nomad_server()
+                .delete_page_acl(path)
+                .await;
         }
         #[cfg(not(feature = "rns-stack"))]
         {
@@ -2883,6 +2999,7 @@ impl StackHandle {
         data_b64: Option<&str>,
         force_path_refresh: bool,
         request_id: Option<&str>,
+        identify: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -2897,10 +3014,18 @@ impl StackHandle {
                     &interfaces,
                     force_path_refresh,
                     request_id,
+                    identify,
                 )
                 .await;
         }
-        let _ = (hash, path, data_b64, force_path_refresh, request_id);
+        let _ = (
+            hash,
+            path,
+            data_b64,
+            force_path_refresh,
+            request_id,
+            identify,
+        );
         serde_json::json!({
             "ok": false,
             "error": "nomad page fetch requires live rns-stack sidecar"
@@ -2912,6 +3037,7 @@ impl StackHandle {
         hash: &str,
         path: &str,
         force_path_refresh: bool,
+        identify: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -2924,10 +3050,11 @@ impl StackHandle {
                     path,
                     &interfaces,
                     force_path_refresh,
+                    identify,
                 )
                 .await;
         }
-        let _ = (hash, path, force_path_refresh);
+        let _ = (hash, path, force_path_refresh, identify);
         serde_json::json!({
             "ok": false,
             "error": "nomad file fetch requires live rns-stack sidecar"
@@ -2939,6 +3066,7 @@ impl StackHandle {
         hash: &str,
         path: &str,
         force_path_refresh: bool,
+        identify: bool,
     ) -> serde_json::Value {
         #[cfg(feature = "rns-stack")]
         if let Some(live) = self.live_opt() {
@@ -2951,10 +3079,11 @@ impl StackHandle {
                     path,
                     &interfaces,
                     force_path_refresh,
+                    identify,
                 )
                 .await;
         }
-        let _ = (hash, path, force_path_refresh);
+        let _ = (hash, path, force_path_refresh, identify);
         serde_json::json!({
             "ok": false,
             "error": "nomad media fetch requires live rns-stack sidecar"
@@ -4253,6 +4382,43 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn nomad_identify_failed_save_leaves_memory_unchanged() {
+        const NODE: &str = "00112233445566778899aabbccddeeff";
+        const UNSEEN: &str = "ffeeddccbbaa99887766554433221100";
+        let (config_dir, storage_dir) = temp_stack_dirs();
+        let (tx, _) = broadcast::channel(8);
+        let handle = Box::pin(StackHandle::bootstrap(
+            config_dir.clone(),
+            storage_dir.clone(),
+            tx,
+        ))
+        .await;
+        handle.set_nomad_identify(NODE, true).await.expect("save");
+        std::fs::remove_dir_all(&storage_dir).expect("remove storage dir");
+
+        let identify_of = |nodes: &[NomadNodeRow], hash: &str| {
+            nodes
+                .iter()
+                .find(|n| n.destination_hash.eq_ignore_ascii_case(hash))
+                .map(|n| n.identify)
+        };
+        assert!(handle.set_nomad_identify(NODE, false).await.is_err());
+        assert_eq!(
+            identify_of(&handle.list_nomad_nodes().await, NODE),
+            Some(true)
+        );
+        assert!(handle.set_nomad_identify(UNSEEN, true).await.is_err());
+        assert_eq!(identify_of(&handle.list_nomad_nodes().await, UNSEEN), None);
+        assert!(handle.clear_nomad_identify_all().await.is_err());
+        assert_eq!(
+            identify_of(&handle.list_nomad_nodes().await, NODE),
+            Some(true)
+        );
+
+        let _ = std::fs::remove_dir_all(config_dir);
+    }
+
+    #[tokio::test]
     async fn list_peers_stub_empty_after_clear_announces() {
         let (config_dir, storage_dir) = temp_stack_dirs();
         let (tx, _) = broadcast::channel(8);
@@ -4496,7 +4662,11 @@ mod tests {
 
         let dropped = clear_peer_routes_for_interface(&mut peers, "RNodeLoRa");
 
-        assert!(dropped.dropped_vias.is_empty());
+        assert!(
+            dropped.dropped_vias.is_empty(),
+            "{:?}",
+            dropped.dropped_vias
+        );
         assert_eq!(dropped.changed_peers, 1);
         assert!(!dropped.is_empty());
         assert_eq!(peers[0].hops, None);
@@ -4588,7 +4758,11 @@ mod tests {
         assert!(value["pin"].is_null());
         assert!(value["effective_preference"].is_null());
         assert_eq!(value["live"], false);
-        assert!(value["paths"].as_array().expect("array").is_empty());
+        assert!(
+            value["paths"].as_array().expect("array").is_empty(),
+            "{:?}",
+            value["paths"].as_array().expect("array")
+        );
     }
 
     #[tokio::test]
@@ -4773,7 +4947,7 @@ mod tests {
             .set_propagation_mode("manual")
             .await
             .expect_err("save must fail");
-        assert!(!err.is_empty());
+        assert!(!err.is_empty(), "{err:?}");
         assert_eq!(
             handle.list_propagation().await["propagation_mode"],
             "auto",

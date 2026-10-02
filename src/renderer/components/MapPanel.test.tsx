@@ -690,4 +690,47 @@ describe('MapPanel layer controls', () => {
     );
     expect(markerMock).not.toHaveBeenCalled();
   });
+
+  it.each(['meshtastic', 'meshcore'] as const)(
+    'toggles the sensor layer and picks its metric (%s)',
+    async (protocol) => {
+      const user = userEvent.setup();
+      useMapLayerStore.setState({ showSensors: false, sensorMetric: 'temperature' });
+      render(
+        <MapPanel
+          nodes={new Map()}
+          myNodeNum={1}
+          locationFilter={defaultFilter}
+          ourPosition={null}
+          onLocateMe={vi.fn().mockResolvedValue(null)}
+          protocol={protocol}
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Toggle map layer controls' }));
+      expect(screen.queryByRole('combobox', { name: 'Sensor value shown on the map' })).toBeNull();
+      await user.click(screen.getByRole('checkbox', { name: 'Sensors' }));
+      expect(useMapLayerStore.getState().showSensors).toBe(true);
+      await user.selectOptions(
+        screen.getByRole('combobox', { name: 'Sensor value shown on the map' }),
+        'relativeHumidity',
+      );
+      expect(useMapLayerStore.getState().sensorMetric).toBe('relativeHumidity');
+    },
+  );
+
+  it('hides the sensor toggle when the protocol has no environment telemetry', async () => {
+    const user = userEvent.setup();
+    render(
+      <MapPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        onLocateMe={vi.fn().mockResolvedValue(null)}
+        protocol="reticulum"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Toggle map layer controls' }));
+    expect(screen.queryByRole('checkbox', { name: 'Sensors' })).toBeNull();
+  });
 });

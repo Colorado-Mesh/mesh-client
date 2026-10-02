@@ -78,14 +78,14 @@ export async function loadMeshcoreMessagesForHydration(): Promise<MeshcoreMessag
   );
 }
 
-/** MeshCore chat rows → `messageStore` records (room BBS rows get their composite store id). */
+/** MeshCore chat rows → store records; packetless DMs retain their recipient in the fallback ID. */
 export function meshcoreHydratedMessageRecords(
   messages: ReturnType<typeof mapMeshcoreDbRowsToChatMessages>,
 ) {
   return messages.map((msg) => {
     const record = chatMessageToMessageRecord(msg);
-    if (isMeshcoreRoomChatMessage(msg)) {
-      record.id = meshcoreMessageStoreId(msg);
+    if (isMeshcoreRoomChatMessage(msg) || (msg.channel === -1 && msg.packetId == null)) {
+      record.id = msg.storeId ?? meshcoreMessageStoreId(msg);
     }
     return record;
   });

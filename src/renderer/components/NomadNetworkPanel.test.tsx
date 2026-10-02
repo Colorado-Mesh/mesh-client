@@ -25,6 +25,7 @@ const onReticulumStatus = vi.fn();
 
 vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
   isReticulumSidecarRunning: () => isReticulumSidecarRunning(),
+  isReticulumSidecarExpectedProxyError: () => false,
 }));
 
 vi.mock('./NomadPageServerPanel', () => ({
@@ -70,6 +71,9 @@ import {
   useNomadPageViewerStore,
 } from '../stores/nomadPageViewerStore';
 import NomadNetworkPanel from './NomadNetworkPanel';
+
+const realToggleFavorite = useNomadNetworkStore.getState().toggleFavorite;
+const realSetIdentify = useNomadNetworkStore.getState().setIdentify;
 
 async function openAnnouncesNode(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('radio', { name: 'nomadNetwork.announces' }));
@@ -499,7 +503,7 @@ describe('NomadNetworkPanel', () => {
 
   it('calls toggleFavorite when star is clicked', async () => {
     const user = userEvent.setup();
-    const toggleFavorite = vi.fn().mockResolvedValue(undefined);
+    const toggleFavorite = vi.fn().mockResolvedValue(true);
     useNomadNetworkStore.setState({
       toggleFavorite,
       nodes: new Map([
@@ -1561,5 +1565,412 @@ describe('NomadNetworkPanel', () => {
       restore();
       vi.useRealTimers();
     }
+  });
+
+  describe('URL bar favourite', () => {
+    const hash = '53819f99223ed8a5676b5900d285eb3f';
+
+    async function openPastedUnlisted(user: ReturnType<typeof userEvent.setup>) {
+      const urlBar = screen.getByLabelText('nomadNetwork.urlBarAria');
+      await user.type(urlBar, `${hash}:/page/index.mu`);
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.goToUrl' }));
+      await screen.findByText('pasted page');
+    }
+
+    const originalProxyPost = window.electronAPI.reticulum.proxyPost;
+
+    afterEach(() => {
+      window.electronAPI.reticulum.proxyPost = originalProxyPost;
+    });
+
+    beforeEach(() => {
+      isReticulumSidecarRunning.mockResolvedValue(true);
+      useNomadNetworkStore.setState({
+        nodes: new Map(),
+        toggleFavorite: realToggleFavorite,
+        setIdentify: vi.fn().mockResolvedValue(true),
+        fetchNomadPage: vi.fn().mockResolvedValue({
+          ok: true,
+          content: 'pasted page',
+          content_type: 'text/plain',
+        }),
+      });
+    });
+
+    it('favourites an unlisted node from the URL bar and lists it under Favourites', async () => {
+      const user = userEvent.setup();
+      const proxyPost = vi.fn().mockResolvedValue({ ok: true });
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const star = screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' });
+      expect(star).toHaveAttribute('aria-pressed', 'false');
+      await waitFor(() => {
+        expect(star).toBeEnabled();
+      });
+      await user.click(star);
+
+      await waitFor(() => {
+        expect(proxyPost).toHaveBeenCalledWith('/api/v1/nomadnetwork/nodes/favorite', {
+          destination_hash: hash,
+          favorited: true,
+        });
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.unfavoriteSiteAria' }),
+        ).toHaveAttribute('aria-pressed', 'true');
+      });
+      expect(addToast).toHaveBeenCalledWith('nomadNetwork.favoriteAddedToast', 'info');
+      expect(useNomadNetworkStore.getState().getNode(hash)?.favorited).toBe(true);
+      expect(screen.getByRole('button', { name: 'nomadNetwork.openNode' })).toBeInTheDocument();
+    });
+
+    it('reverts the star and shows an error toast when the save fails', async () => {
+      const user = userEvent.setup();
+      mockConsoleWarn();
+      const proxyPost = vi.fn().mockResolvedValue({ ok: false, error: 'disk_full' });
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const star = screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' });
+      await waitFor(() => {
+        expect(star).toBeEnabled();
+      });
+      await user.click(star);
+
+      await waitFor(() => {
+        expect(addToast).toHaveBeenCalledWith('nomadNetwork.favoriteFailedToast', 'error');
+      });
+      expect(screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+      expect(useNomadNetworkStore.getState().getNode(hash)).toBeUndefined();
+    });
+
+    it('disables the star while a favourite save is pending', async () => {
+      const user = userEvent.setup();
+      let finishSave: (body: unknown) => void = () => {};
+      const proxyPost = vi.fn(
+        () =>
+          new Promise<unknown>((resolve) => {
+            finishSave = resolve;
+          }),
+      );
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const star = screen.getByRole('button', { name: 'nomadNetwork.favoriteSiteAria' });
+      await waitFor(() => {
+        expect(star).toBeEnabled();
+      });
+      await user.click(star);
+      await waitFor(() => {
+        expect(proxyPost).toHaveBeenCalledTimes(1);
+      });
+      const pending = screen.getByRole('button', { name: 'nomadNetwork.unfavoriteSiteAria' });
+      expect(pending).toBeDisabled();
+      for (const listStar of screen.getAllByRole('button', {
+        name: 'nomadNetwork.toggleFavorite',
+      })) {
+        expect(listStar).toBeDisabled();
+      }
+      await user.click(pending);
+      expect(proxyPost).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        finishSave({ ok: true });
+        await Promise.resolve();
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.unfavoriteSiteAria' }),
+        ).toBeEnabled();
+      });
+    });
+
+    it('offers the identify toggle for an unlisted node', async () => {
+      const user = userEvent.setup();
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+
+      const toggle = screen.getByRole('button', { name: 'nomadNetwork.identifyEnableAria' });
+      await waitFor(() => {
+        expect(toggle).toBeEnabled();
+      });
+      await user.click(toggle);
+      expect(screen.getByText('nomadNetwork.identifyConfirmTitle')).toBeInTheDocument();
+    });
+
+    it('has no axe violations for the URL bar with the star', async () => {
+      const user = userEvent.setup();
+      render(<NomadNetworkPanel />);
+      await openPastedUnlisted(user);
+      const form = screen.getByLabelText('nomadNetwork.urlBarAria').closest('form');
+      expect(form).toBeTruthy();
+      hydrateAxeThemeColors(form!);
+      expect(await axe(form!)).toHaveNoViolations();
+    });
+  });
+
+  describe('identify toggle', () => {
+    const hash = 'aabbccddeeff00112233445566778899';
+    const otherHash = '00112233445566778899aabbccddeeff';
+
+    function seedIdentifyNodes(identify: boolean) {
+      const setIdentify = vi.fn().mockResolvedValue(true);
+      const clearAllIdentify = vi.fn().mockResolvedValue(1);
+      const fetchNomadPage = vi.fn().mockResolvedValue({ ok: true, content: 'hello' });
+      useNomadNetworkStore.setState({
+        nodes: new Map([
+          [hash, { destination_hash: hash, display_name: 'Forum', favorited: true, identify }],
+          [
+            otherHash,
+            {
+              destination_hash: otherHash,
+              display_name: 'Other',
+              favorited: true,
+              identify: false,
+            },
+          ],
+        ]),
+        setIdentify,
+        clearAllIdentify,
+        fetchNomadPage,
+      });
+      return { setIdentify, clearAllIdentify, fetchNomadPage };
+    }
+
+    async function openForum(user: ReturnType<typeof userEvent.setup>) {
+      const forumRow = screen.getByText('Forum').closest('button');
+      expect(forumRow).toBeTruthy();
+      await user.click(forumRow!);
+    }
+
+    beforeEach(() => {
+      isReticulumSidecarRunning.mockResolvedValue(true);
+    });
+
+    it('asks for confirmation before identifying, then saves and reloads the page', async () => {
+      const user = userEvent.setup();
+      const { setIdentify, fetchNomadPage } = seedIdentifyNodes(false);
+      render(<NomadNetworkPanel />);
+      await openForum(user);
+
+      const toggle = await screen.findByRole('button', { name: 'nomadNetwork.identifyEnableAria' });
+      expect(toggle).toHaveAttribute('aria-pressed', 'false');
+      await waitFor(() => {
+        expect(toggle).toBeEnabled();
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage).toHaveBeenCalled();
+      });
+      const callsBefore = fetchNomadPage.mock.calls.length;
+
+      await user.click(toggle);
+      expect(screen.getByText('nomadNetwork.identifyConfirmTitle')).toBeInTheDocument();
+      expect(screen.getByText('nomadNetwork.identifyConfirmBody')).toBeInTheDocument();
+      expect(setIdentify).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.identifyConfirmAccept' }));
+      await waitFor(() => {
+        expect(setIdentify).toHaveBeenCalledWith(hash, true);
+      });
+      await waitFor(() => {
+        expect(addToast).toHaveBeenCalledWith('nomadNetwork.identifyEnabledToast', 'success');
+      });
+      await waitFor(() => {
+        expect(fetchNomadPage.mock.calls.length).toBeGreaterThan(callsBefore);
+      });
+      expect(screen.queryByText('nomadNetwork.identifyConfirmTitle')).not.toBeInTheDocument();
+    });
+
+    it('cancelling the confirmation does not save', async () => {
+      const user = userEvent.setup();
+      const { setIdentify } = seedIdentifyNodes(false);
+      render(<NomadNetworkPanel />);
+      await openForum(user);
+
+      const toggle = await screen.findByRole('button', { name: 'nomadNetwork.identifyEnableAria' });
+      await waitFor(() => {
+        expect(toggle).toBeEnabled();
+      });
+      await user.click(toggle);
+      const dialog = screen.getByRole('alertdialog');
+      await user.click(within(dialog).getByRole('button', { name: 'common.cancel' }));
+      expect(setIdentify).not.toHaveBeenCalled();
+      expect(screen.queryByText('nomadNetwork.identifyConfirmTitle')).not.toBeInTheDocument();
+    });
+
+    it('turns identification off immediately without a confirmation', async () => {
+      const user = userEvent.setup();
+      const { setIdentify } = seedIdentifyNodes(true);
+      render(<NomadNetworkPanel />);
+      await openForum(user);
+
+      const toolbar = await screen.findAllByRole('button', {
+        name: 'nomadNetwork.identifyStopAria',
+      });
+      const toggle = toolbar.find((el) => el.hasAttribute('aria-pressed'));
+      expect(toggle).toBeTruthy();
+      expect(toggle).toHaveAttribute('aria-pressed', 'true');
+      await waitFor(() => {
+        expect(toggle).toBeEnabled();
+      });
+
+      hydrateAxeThemeColors(toggle!);
+      expect(await axe(toggle!)).toHaveNoViolations();
+
+      await user.click(toggle!);
+      expect(screen.queryByText('nomadNetwork.identifyConfirmTitle')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(setIdentify).toHaveBeenCalledWith(hash, false);
+      });
+      await waitFor(() => {
+        expect(addToast).toHaveBeenCalledWith('nomadNetwork.identifyDisabledToast', 'info');
+      });
+    });
+
+    it('shows a list badge that stops identifying without opening the node', async () => {
+      const user = userEvent.setup();
+      const { setIdentify, fetchNomadPage } = seedIdentifyNodes(true);
+      render(<NomadNetworkPanel />);
+      await act(async () => {});
+
+      expect(screen.getByText('nomadNetwork.identifyingBadge')).toBeInTheDocument();
+      const badge = screen.getByRole('button', { name: 'nomadNetwork.identifyStopAria' });
+      hydrateAxeThemeColors(badge);
+      expect(await axe(badge)).toHaveNoViolations();
+
+      await user.click(badge);
+      await waitFor(() => {
+        expect(setIdentify).toHaveBeenCalledWith(hash, false);
+      });
+      expect(fetchNomadPage).not.toHaveBeenCalled();
+      expect(screen.getByText('nomadNetwork.enterUrlHint')).toBeInTheDocument();
+    });
+
+    it('shows an error toast when saving fails', async () => {
+      const user = userEvent.setup();
+      const { setIdentify } = seedIdentifyNodes(true);
+      setIdentify.mockResolvedValue(false);
+      render(<NomadNetworkPanel />);
+
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.identifyStopAria' }));
+      await waitFor(() => {
+        expect(addToast).toHaveBeenCalledWith('nomadNetwork.identifyFailedToast', 'error');
+      });
+    });
+
+    it('serializes identify saves so out-of-order failures restore the original flag', async () => {
+      const user = userEvent.setup();
+      mockConsoleWarn();
+      seedIdentifyNodes(false);
+      useNomadNetworkStore.setState({ setIdentify: realSetIdentify });
+      const saves: ((body: unknown) => void)[] = [];
+      const proxyPost = vi.fn(
+        () =>
+          new Promise<unknown>((resolve) => {
+            saves.push(resolve);
+          }),
+      );
+      const originalProxyPost = window.electronAPI.reticulum.proxyPost;
+      window.electronAPI.reticulum.proxyPost = proxyPost;
+      const enableAndConfirm = async () => {
+        const toggle = screen.getByRole('button', { name: 'nomadNetwork.identifyEnableAria' });
+        await waitFor(() => {
+          expect(toggle).toBeEnabled();
+        });
+        await user.click(toggle);
+        await user.click(
+          screen.getByRole('button', { name: 'nomadNetwork.identifyConfirmAccept' }),
+        );
+      };
+      try {
+        render(<NomadNetworkPanel />);
+        await openForum(user);
+
+        await enableAndConfirm();
+        await waitFor(() => {
+          expect(proxyPost).toHaveBeenCalledTimes(1);
+        });
+        const stopButtons = screen.getAllByRole('button', {
+          name: 'nomadNetwork.identifyStopAria',
+        });
+        expect(stopButtons).toHaveLength(2);
+        for (const button of stopButtons) expect(button).toBeDisabled();
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.identifyClearAllAria:1' }),
+        ).toBeDisabled();
+
+        await user.click(stopButtons[0]);
+        await user.click(stopButtons[1]);
+        expect(proxyPost).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+          saves[0]?.({ ok: false, error: 'disk_full' });
+          await Promise.resolve();
+        });
+        await waitFor(() => {
+          expect(addToast).toHaveBeenCalledWith('nomadNetwork.identifyFailedToast', 'error');
+        });
+        expect(useNomadNetworkStore.getState().getNode(hash)?.identify).toBe(false);
+
+        await enableAndConfirm();
+        await waitFor(() => {
+          expect(proxyPost).toHaveBeenCalledTimes(2);
+        });
+        await act(async () => {
+          saves[1]?.({ ok: false, error: 'disk_full' });
+          await Promise.resolve();
+        });
+        await waitFor(() => {
+          expect(addToast).toHaveBeenCalledTimes(2);
+        });
+        expect(useNomadNetworkStore.getState().getNode(hash)?.identify).toBe(false);
+        expect(
+          screen.getByRole('button', { name: 'nomadNetwork.identifyEnableAria' }),
+        ).toBeEnabled();
+      } finally {
+        window.electronAPI.reticulum.proxyPost = originalProxyPost;
+      }
+    });
+
+    it('hides "stop identifying to all" when no node is identified', async () => {
+      seedIdentifyNodes(false);
+      render(<NomadNetworkPanel />);
+      await act(async () => {});
+      expect(
+        screen.queryByRole('button', { name: /nomadNetwork.identifyClearAllAria/ }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('nomadNetwork.identifyingBadge')).not.toBeInTheDocument();
+    });
+
+    it('confirms and clears identification for every node', async () => {
+      const user = userEvent.setup();
+      const { clearAllIdentify } = seedIdentifyNodes(true);
+      render(<NomadNetworkPanel />);
+
+      const stopAll = screen.getByRole('button', { name: 'nomadNetwork.identifyClearAllAria:1' });
+      await waitFor(() => {
+        expect(stopAll).toBeEnabled();
+      });
+      await user.click(stopAll);
+      expect(screen.getByText('nomadNetwork.identifyClearAllTitle')).toBeInTheDocument();
+      expect(screen.getByText('nomadNetwork.identifyClearAllBody:1')).toBeInTheDocument();
+      expect(clearAllIdentify).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'nomadNetwork.identifyClearAll' }));
+      await waitFor(() => {
+        expect(clearAllIdentify).toHaveBeenCalledTimes(1);
+      });
+      await waitFor(() => {
+        expect(addToast).toHaveBeenCalledWith('nomadNetwork.identifyClearedAllToast:1', 'info');
+      });
+    });
   });
 });

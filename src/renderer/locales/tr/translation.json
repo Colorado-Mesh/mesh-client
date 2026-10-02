@@ -1138,7 +1138,9 @@
       "exportAria": "PIN şifreli Ratspeak .rsi kimlik yedeklemesini dışa aktarın",
       "exportRawAria": "Şifrelenmemiş ham Reticulum kimlik dosyasını dışa aktar",
       "identityHashLabel": "Kimlik hash'i:",
-      "copyIdentityHash": "Kimlik karmasını kopyala"
+      "copyIdentityHash": "Kimlik karmasını kopyala",
+      "fingerprintLabel": "Kimlik parmak izi:",
+      "copyFingerprint": "Kimlik parmak izini kopyala"
     },
     "reticulumInterfaces": {
       "title": "Ara birimler",
@@ -3574,7 +3576,29 @@
       "invalidPagePath": "Bu sayfa yoluna izin verilmiyor.",
       "pageIoError": "Diskteki sayfa okunamadı veya yazılamadı.",
       "pageNotUtf8": "Bu sayfa geçerli bir UTF -8 metni değil.",
-      "pageWriteFailed": "Sayfaya yazılamadı."
+      "pageWriteFailed": "Sayfaya yazılamadı.",
+      "restrict": "Erişim",
+      "restrictPageAria": "Kimlerin açabileceğini kısıtla {{path}}",
+      "restrictTitle": "Erişim kısıtla",
+      "restrictCloseAria": "Erişim düzenleyicisini kapatın",
+      "restrictHint": "Yalnızca listelenen bir Reticulum kimliğiyle özdeşleşen ziyaretçiler bu sayfayı açabilir. Anonim ziyaretçiler reddedilir. Satır başına bir 32 karakterlik özdeşlik karması koyun; # ile başlayan boş satırlar ve satırlar göz ardı edilir.",
+      "restrictStatusOff": "Kısıtlı değil: herkes bu sayfayı açabilir.",
+      "restrictStatusOn_one": "{{count}} kimliğiyle sınırlıdır.",
+      "restrictStatusOn_other": "{{count}} kimlikleriyle sınırlıdır.",
+      "restrictListLabel": "İzin verilen kimlik hash'leri",
+      "restrictListAria": "{{path}} için izin verilen kimlik karmaları",
+      "restrictInvalidLines": "Bu satırlar 32 karakterli kimlik karmaları değildir ve göz ardı edilir: {{lines}}",
+      "restrictEmptyWarning": "Listelenen kimlik yok. Bu kaydetme işlemi, siz de dahil olmak üzere herkesi engelliyor. Sayfayı tekrar herkese açık hale getirmek için Kısıtlamayı kaldır'ı kullanın.",
+      "restrictAddSelf": "Kimliğimi ekle",
+      "restrictAddSelfAria": "Kendi Reticulum kimlik karmamı listeye ekle",
+      "restrictAddSelfUnavailable": "Kimliğini yüklemek için Reticulum yığınını başlat.",
+      "restrictRemove": "Kısıtlamayı kaldır",
+      "restrictRemoveAria": "{{path}} üzerindeki erişim kısıtlamasını kaldırın",
+      "restrictRemoveConfirmAria": "Erişim kısıtlamasının kaldırılmasını onaylayın",
+      "restrictSaveAria": "Erişim listesini {{path}} için kaydet",
+      "restrictLoadError": "Erişim listesi yüklenemedi.",
+      "restrictSaveError": "Erişim listesi kaydedilemedi.",
+      "restrictRemoveError": "Erişim kısıtlaması kaldırılamadı."
     },
     "sortLastHeard": "Son Duyma",
     "sortHops": "Hop",
@@ -3611,7 +3635,33 @@
     "dismissPreview": "Yok say",
     "clearBrowserCaches": "Sayfa ve resim önbelleklerini temizle",
     "clearedBrowserCaches": "Nomad sayfa ve resim önbellekleri temizlendi",
-    "clearBrowserCachesHint": "Bellek içi Nomad sayfasını ve resim önbelleklerini temizleyin. Önbellekler diske kaydedilmez. 2 MB'tan (base64) büyük görüntüler asla önbelleğe alınmaz."
+    "clearBrowserCachesHint": "Bellek içi Nomad sayfasını ve resim önbelleklerini temizleyin. Önbellekler diske kaydedilmez. 2 MB'tan (base64) büyük görüntüler asla önbelleğe alınmaz.",
+    "identifyEnableAria": "{{name}}'a tanımlayın",
+    "identifyStopAria": "{{name}} ile tanımlamayı durdur",
+    "identifyOnHint": "Tanımlama: Bu düğüm, bağlandığınızda Reticulum kimliğinizi alır. Anonim olarak göz atmak için tıklayın.",
+    "identifyOffHint": "Anonim: Bu düğüm kimliğinizi almaz. Tanımlamak için tıklayın (bazı sayfalar içeriği kişiselleştirir veya gerektirir).",
+    "identifyUnavailable": "Kimliği değiştirmek için Reticulum yığınını başlatın.",
+    "identifyingBadge": "Tanımlama",
+    "identifyConfirmTitle": "{{name}} ile tanımlansın mı?",
+    "identifyConfirmBody": "{{name}}'a her bağlandığınızda, Reticulum kimliğiniz (ortak anahtar) ona gönderilecektir. Düğüm bu anahtardan kimlik karmanızı ve LXMF adresinizi hesaplayabilir. Bunu daha sonra kapatmak yalnızca gelecekteki bağlantıları durdurur; zaten gönderilmiş olanı geri alamaz.",
+    "identifyConfirmAccept": "Tanımlamak",
+    "identifyEnabledToast": "Bağlandığınızda kimliğiniz {{name}} adresine gönderilecektir.",
+    "identifyDisabledToast": "{{name}} ile tanımlama durduruldu. Bu yalnızca gelecekteki bağlantılar için geçerlidir.",
+    "identifyFailedToast": "{{name}} için kimlik değiştirilemedi.",
+    "identifyClearAll": "Tanımlamayı bırak",
+    "identifyClearAllAria_one": "{{count}} düğümüne tanımlamayı durdur",
+    "identifyClearAllAria_other": "Tüm {{count}} düğümlerine tanımlamayı durdur",
+    "identifyClearAllTitle": "Tüm düğümlere tanımlama durdurulsun mu?",
+    "identifyClearAllBody_one": "{{count}} düğümü şu anda bağlandığınızda kimliğinizi alıyor. Bundan sonra her düğüme anonim olarak göz atarsınız. Düğümler daha önce aldıkları kimlikleri korur.",
+    "identifyClearAllBody_other": "{{count}} düğümleri şu anda bağlandığınızda kimliğinizi alıyor. Bundan sonra her düğüme anonim olarak göz atarsınız. Düğümler daha önce aldıkları kimlikleri korur.",
+    "identifyClearedAllToast_one": "{{count}} düğümüne tanımlama durduruldu. Bu yalnızca gelecekteki bağlantılar için geçerlidir.",
+    "identifyClearedAllToast_other": "{{count}} düğümlerine tanımlama durduruldu. Bu yalnızca gelecekteki bağlantılar için geçerlidir.",
+    "identifyClearAllFailedToast": "Tüm düğümlere yönelik tanımlama durdurulamadı.",
+    "favoriteSiteAria": "{{name}} öğesini favorilere ekleyin",
+    "unfavoriteSiteAria": "{{name}} öğesini favorilerden kaldır",
+    "favoriteAddedToast": "{{name}} favorilere eklendi",
+    "favoriteRemovedToast": "{{name}} favorilerden kaldırıldı",
+    "favoriteFailedToast": "{{name}} için favori güncellenemedi. Reticulum çalışıyor mu?"
   },
   "packetDistribution": {
     "overallDistribution": "Genel Dağıtım",
@@ -3672,7 +3722,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Kimlik bilinmiyor: Bu meslektaştan henüz bir duyuru duyulmadı, dolayısıyla doğrulanacak bir parmak izi yok.",
+    "identityUnknownDestination": "Hedef karması (kimlik parmak izi değil)"
   },
   "peerGraph": {
     "title": "Akran İletişim Grafiği",
@@ -6383,5 +6435,40 @@
     "stopUsing": "Kaydedilen konumu kullanmayı bırakın",
     "addLocation": "Şube ekle",
     "coordsHintFormats": "Koordinatları veya harita bağlantısını yapıştırın: N/S/E/W, MGRS veya Google, Apple veya OpenStreetMap paylaşım bağlantısı ile ondalık (39.7392 ,-104.9903), derece/dakika/saniye."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Kaydedildi: {{name}}",
+    "save": "Mevcut olanı profil olarak kaydet",
+    "rename": "Yeniden Adlandır",
+    "renameAria": "MQTT profilini yeniden adlandır {{name}}",
+    "deleteAria": "MQTT profilini sil {{name}}",
+    "namePlaceholder": "Profil adı, ör. Chicago",
+    "reconnectNeeded": "Bu profilin aracı ayarlarını kullanmak için MQTT bağlantısını kesin ve yeniden bağlayın.",
+    "switchLabel": "Kayıtlı profil",
+    "noneSelected": "Geçerli ayarlar (kaydedilmedi)",
+    "nameAria": "Profil ismi"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Bu kanaldaki hava durumu gönderileri",
+    "hideInChannels": "Kanallardaki hava durumu gönderilerini gizle",
+    "patternPlaceholder": "Ekstra desen (regex), örn. ^ WX - bot",
+    "patternAria": "Ekstra hava durumu gönderi deseni",
+    "patternInvalid": "Geçersiz desen; yalnızca yerleşik desenler kullanılıyor.",
+    "markSender": "Hava durumu göndericisi olarak işaretle",
+    "unmarkSender": "Hava durumu göndericisinin işaretini kaldır",
+    "viewAria": "Hava durumu görünümü (bu kanaldaki hava durumu gönderileri: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensörleri",
+    "metricSelectAria": "Haritada gösterilen sensör değeri",
+    "metricTemperature": "Sıcaklık",
+    "metricHumidity": "Nem",
+    "metricPressure": "Basınç",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Sıcaklık (24 saat)",
+    "sparklineHumidity24h": "Nem (24s)"
   }
 }

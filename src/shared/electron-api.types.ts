@@ -1,5 +1,10 @@
 // Single source of truth for the Electron context bridge API surface.
 import type { MeshNode, MQTTSettings, MQTTStatus } from '../renderer/lib/types';
+import type {
+  EnvironmentReading,
+  EnvironmentTelemetryRow,
+  EnvironmentTelemetrySource,
+} from './environmentTelemetry';
 import type { FirmwareBackupSaveResult } from './firmwareBackup';
 import type {
   GamesActionRequest,
@@ -602,6 +607,7 @@ export interface ElectronAPI {
       sender_name?: string | null;
       payload: string;
       channel_idx?: number;
+      local_order?: number | null;
       timestamp: number;
       status?: string;
       packet_id?: number | null;
@@ -722,6 +728,16 @@ export interface ElectronAPI {
       }[]
     >;
     clearPositionHistory: () => Promise<void>;
+    saveEnvironmentTelemetry: (
+      protocol: MeshProtocol,
+      nodeId: number,
+      recordedAt: number,
+      reading: EnvironmentReading,
+      source: EnvironmentTelemetrySource,
+    ) => Promise<{ changes: number } | undefined>;
+    getEnvironmentTelemetry: (sinceMs: number) => Promise<EnvironmentTelemetryRow[]>;
+    clearEnvironmentTelemetry: () => Promise<{ changes: number } | undefined>;
+    pruneEnvironmentTelemetry: () => Promise<number | undefined>;
     saveMeshcoreHopHistory: (
       nodeId: number,
       timestamp: number,

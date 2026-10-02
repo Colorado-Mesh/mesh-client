@@ -31,12 +31,43 @@ pub async fn favorite_nomad_node(
 }
 
 #[derive(Debug, Deserialize)]
+pub struct NomadIdentifyBody {
+    pub destination_hash: String,
+    pub identify: bool,
+}
+
+pub async fn identify_nomad_node(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<NomadIdentifyBody>,
+) -> Json<serde_json::Value> {
+    match stack
+        .set_nomad_identify(&body.destination_hash, body.identify)
+        .await
+    {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn clear_nomad_identify(
+    State(stack): State<Arc<StackHandle>>,
+) -> Json<serde_json::Value> {
+    match stack.clear_nomad_identify_all().await {
+        Ok(cleared) => Json(serde_json::json!({ "ok": true, "cleared": cleared })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+#[derive(Debug, Deserialize)]
 pub struct NomadPageQuery {
     pub path: String,
     pub data: Option<String>,
     /// When true, RequestPath even if a cached path exists (stale-route retry).
     #[serde(default)]
     pub force_path_refresh: bool,
+    /// Send LINKIDENTIFY on the Link. Absent means anonymous (NomadNet default).
+    #[serde(default)]
+    pub identify: bool,
     /// Client correlation id echoed on `nomad.page_progress` WS events.
     pub request_id: Option<String>,
 }
@@ -54,6 +85,7 @@ pub async fn get_nomad_page(
                 query.data.as_deref(),
                 query.force_path_refresh,
                 query.request_id.as_deref(),
+                query.identify,
             )
             .await,
     )
@@ -65,6 +97,9 @@ pub struct NomadFileQuery {
     /// When true, RequestPath even if a cached path exists (stale-route retry).
     #[serde(default)]
     pub force_path_refresh: bool,
+    /// Send LINKIDENTIFY on the Link. Absent means anonymous.
+    #[serde(default)]
+    pub identify: bool,
 }
 
 pub async fn get_nomad_file(
@@ -74,7 +109,7 @@ pub async fn get_nomad_file(
 ) -> Json<serde_json::Value> {
     Json(
         stack
-            .nomad_file(&hash, &query.path, query.force_path_refresh)
+            .nomad_file(&hash, &query.path, query.force_path_refresh, query.identify)
             .await,
     )
 }
@@ -86,6 +121,9 @@ pub struct NomadMediaQuery {
     /// When true, RequestPath even if a cached path exists (stale-route retry).
     #[serde(default)]
     pub force_path_refresh: bool,
+    /// Send LINKIDENTIFY on the Link. Absent means anonymous.
+    #[serde(default)]
+    pub identify: bool,
 }
 
 pub async fn get_nomad_media(
@@ -95,7 +133,7 @@ pub async fn get_nomad_media(
 ) -> Json<serde_json::Value> {
     Json(
         stack
-            .nomad_media(&hash, &query.path, query.force_path_refresh)
+            .nomad_media(&hash, &query.path, query.force_path_refresh, query.identify)
             .await,
     )
 }
@@ -174,6 +212,45 @@ pub async fn delete_nomad_serving_page(
     Query(query): Query<NomadServingPageQuery>,
 ) -> Json<serde_json::Value> {
     match stack.delete_nomad_serving_page(&query.path).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+/// `path` is the page (e.g. `index.mu`); the sidecar resolves `index.mu.allowed`.
+pub async fn get_nomad_serving_page_acl(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<NomadServingPageQuery>,
+) -> Json<serde_json::Value> {
+    match stack.read_nomad_serving_page_acl(&query.path).await {
+        Ok(content) => Json(serde_json::json!({
+            "ok": true,
+            "path": query.path,
+            "exists": content.is_some(),
+            "content": content.unwrap_or_default(),
+        })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn put_nomad_serving_page_acl(
+    State(stack): State<Arc<StackHandle>>,
+    Json(body): Json<NomadServingPageBody>,
+) -> Json<serde_json::Value> {
+    match stack
+        .write_nomad_serving_page_acl(&body.path, &body.content)
+        .await
+    {
+        Ok(()) => Json(serde_json::json!({ "ok": true })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
+    }
+}
+
+pub async fn delete_nomad_serving_page_acl(
+    State(stack): State<Arc<StackHandle>>,
+    Query(query): Query<NomadServingPageQuery>,
+) -> Json<serde_json::Value> {
+    match stack.delete_nomad_serving_page_acl(&query.path).await {
         Ok(()) => Json(serde_json::json!({ "ok": true })),
         Err(e) => Json(serde_json::json!({ "ok": false, "error": e })),
     }
@@ -277,5 +354,31 @@ mod force_path_refresh_query_tests {
             serde_urlencoded::from_str("path=%2Fmedia%2Fheader.webp").expect("query");
         assert!(!q.force_path_refresh);
         assert_eq!(q.path, "/media/header.webp");
+    }
+
+    #[test]
+    fn nomad_queries_default_identify_false() {
+        let page: NomadPageQuery =
+            serde_urlencoded::from_str("path=%2Fpage%2Findex.mu").expect("query");
+        let file: NomadFileQuery =
+            serde_urlencoded::from_str("path=%2Ffile%2Fx.bin").expect("query");
+        let media: NomadMediaQuery =
+            serde_urlencoded::from_str("path=%2Fmedia%2Fheader.webp").expect("query");
+        assert!(!page.identify);
+        assert!(!file.identify);
+        assert!(!media.identify);
+    }
+
+    #[test]
+    fn nomad_queries_parse_identify_true() {
+        let page: NomadPageQuery =
+            serde_urlencoded::from_str("path=%2Fpage%2Findex.mu&identify=true").expect("query");
+        let file: NomadFileQuery =
+            serde_urlencoded::from_str("path=%2Ffile%2Fx.bin&identify=true").expect("query");
+        let media: NomadMediaQuery =
+            serde_urlencoded::from_str("path=%2Fmedia%2Fheader.webp&identify=true").expect("query");
+        assert!(page.identify);
+        assert!(file.identify);
+        assert!(media.identify);
     }
 }

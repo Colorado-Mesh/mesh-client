@@ -1138,7 +1138,9 @@
       "exportAria": "Exportar backup de identidade Ratspeak .rsi criptografado por PIN",
       "exportRawAria": "Exportar arquivo de identidade Reticulum bruto não criptografado",
       "identityHashLabel": "Hash de identidade:",
-      "copyIdentityHash": "Copiar hash de identidade"
+      "copyIdentityHash": "Copiar hash de identidade",
+      "fingerprintLabel": "Impressão digital de identidade:",
+      "copyFingerprint": "Copiar impressão digital de identidade"
     },
     "reticulumInterfaces": {
       "title": "Interfaces",
@@ -3574,7 +3576,29 @@
       "invalidPagePath": "Esse caminho de página não é permitido.",
       "pageIoError": "Não foi possível ler ou gravar a página no disco.",
       "pageNotUtf8": "Essa página não é um texto UTF-8 válido.",
-      "pageWriteFailed": "Não foi possível escrever a página."
+      "pageWriteFailed": "Não foi possível escrever a página.",
+      "restrict": "Acesso",
+      "restrictPageAria": "Restringir quem pode abrir {{path}}",
+      "restrictTitle": "Acesso restrito",
+      "restrictCloseAria": "Feche o editor de acesso",
+      "restrictHint": "Somente visitantes que se identificam com uma identidade Reticulum listada podem abrir esta página. Visitantes anônimos são recusados. Coloque um hash de identidade de 32 caracteres por linha; linhas em branco e linhas começando com # são ignoradas.",
+      "restrictStatusOff": "Não restrito: qualquer pessoa pode abrir esta página.",
+      "restrictStatusOn_one": "Restrito à identidade {{count}}.",
+      "restrictStatusOn_other": "Restrito a {{count}} identidades.",
+      "restrictListLabel": "Hashes de identidade permitidos",
+      "restrictListAria": "Hashes de identidade permitidos para {{path}}",
+      "restrictInvalidLines": "Essas linhas não são hashes de identidade de 32 caracteres e seriam ignoradas: {{lines}}",
+      "restrictEmptyWarning": "Nenhuma identidade listada. Salvar isso bloqueia todos, incluindo você. Use Remover restrição para tornar a página pública novamente.",
+      "restrictAddSelf": "Adicionar minha identidade",
+      "restrictAddSelfAria": "Adicionar meu próprio hash de identidade Reticulum à lista",
+      "restrictAddSelfUnavailable": "Inicie a pilha Reticulum para carregar sua identidade.",
+      "restrictRemove": "Remover restrição",
+      "restrictRemoveAria": "Remover a restrição de acesso de {{path}}",
+      "restrictRemoveConfirmAria": "Confirme a remoção da restrição de acesso",
+      "restrictSaveAria": "Salve a lista de acesso para {{path}}",
+      "restrictLoadError": "Não foi possível carregar a lista de acesso.",
+      "restrictSaveError": "Não foi possível salvar a lista de acesso.",
+      "restrictRemoveError": "Não foi possível remover a restrição de acesso."
     },
     "sortLastHeard": "Último Ouvido",
     "sortHops": "Saltos",
@@ -3611,7 +3635,33 @@
     "dismissPreview": "Dispensar",
     "clearBrowserCaches": "Limpar caches de página e imagem",
     "clearedBrowserCaches": "Página Nomad e caches de imagem limpos",
-    "clearBrowserCachesHint": "Limpe a página do Nomad na memória e os caches de imagem. Os caches não são salvos no disco. Imagens maiores que 2 MiB (base64) nunca são armazenadas em cache."
+    "clearBrowserCachesHint": "Limpe a página do Nomad na memória e os caches de imagem. Os caches não são salvos no disco. Imagens maiores que 2 MiB (base64) nunca são armazenadas em cache.",
+    "identifyEnableAria": "Identificar para {{name}}",
+    "identifyStopAria": "Parar de identificar para {{name}}",
+    "identifyOnHint": "Identificando: este nó recebe sua identidade do Reticulum quando você se conecta. Clique para navegar anonimamente.",
+    "identifyOffHint": "Anônimo: este nó não recebe sua identidade. Clique para identificar (algumas páginas personalizam o conteúdo ou o exigem).",
+    "identifyUnavailable": "Inicie a pilha do Reticulum para alterar a identificação.",
+    "identifyingBadge": "Identificando",
+    "identifyConfirmTitle": "Identificar para {{name}}?",
+    "identifyConfirmBody": "Cada vez que você se conectar a {{name}}, sua identidade do Reticulum (chave pública) será enviada a ele. A partir dessa chave, o nó pode calcular seu hash de identidade e seu endereço LXMF. Desativar isso mais tarde apenas interrompe conexões futuras; não é possível recuperar o que já foi enviado.",
+    "identifyConfirmAccept": "Identificar",
+    "identifyEnabledToast": "Sua identidade será enviada para {{name}} quando você se conectar.",
+    "identifyDisabledToast": "A identificação foi interrompida para {{name}}. Isso se aplica apenas a conexões futuras.",
+    "identifyFailedToast": "Não foi possível alterar a identificação para {{name}}.",
+    "identifyClearAll": "Parar de identificar",
+    "identifyClearAllAria_one": "Parar a identificação para o nó {{count}}",
+    "identifyClearAllAria_other": "Parar de identificar todos os nós {{count}}",
+    "identifyClearAllTitle": "Parar de identificar todos os nós?",
+    "identifyClearAllBody_one": "O nó {{count}} atualmente recebe sua identidade quando você se conecta. Depois disso, você navega em cada nó anonimamente. Os nós mantêm qualquer identidade que já receberam.",
+    "identifyClearAllBody_other": "No momento, os nós {{count}} recebem sua identidade quando você se conecta. Depois disso, você navega em cada nó anonimamente. Os nós mantêm qualquer identidade que já receberam.",
+    "identifyClearedAllToast_one": "Parou de identificar o nó {{count}}. Isso se aplica apenas a conexões futuras.",
+    "identifyClearedAllToast_other": "Parou de identificar os nós {{count}}. Isso se aplica apenas a conexões futuras.",
+    "identifyClearAllFailedToast": "Não foi possível parar de identificar todos os nós.",
+    "favoriteSiteAria": "Adicionar {{name}} aos favoritos",
+    "unfavoriteSiteAria": "Remover {{name}} dos favoritos",
+    "favoriteAddedToast": "{{name}} adicionado aos favoritos",
+    "favoriteRemovedToast": "{{name}} removido dos favoritos",
+    "favoriteFailedToast": "Não foi possível atualizar o favorito para {{name}}. O Reticulum está em execução?"
   },
   "packetDistribution": {
     "overallDistribution": "Distribuição Geral",
@@ -3672,7 +3722,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identidade desconhecida: nenhum anúncio deste par ainda foi ouvido, portanto não há impressão digital para verificar.",
+    "identityUnknownDestination": "Hash de destino (não uma impressão digital de identidade)"
   },
   "peerGraph": {
     "title": "Gráfico de Comunicação entre Pares",
@@ -6383,5 +6435,40 @@
     "stopUsing": "Parar de usar o local salvo",
     "addLocation": "Adicionar Nova Localização",
     "coordsHintFormats": "Cole as coordenadas ou um link de mapa: decimal (39.7392, -104.9903), graus/minutos/segundos com N/S/E/W, MGRS ou um link DE compartilhamento do Google, Apple ou OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Guardado: {{name}}",
+    "save": "Salvar atual como perfil",
+    "rename": "Renomear",
+    "renameAria": "Renomear perfil MQTT {{name}}",
+    "deleteAria": "Eliminar perfil MQTT {{name}}",
+    "namePlaceholder": "Nome do perfil, por exemplo, Chicago",
+    "reconnectNeeded": "Desconecte e reconecte o MQTT para usar as configurações do corretor deste perfil.",
+    "switchLabel": "Perfil salvo",
+    "noneSelected": "Configurações atuais (não salvas)",
+    "nameAria": "Nome do perfil"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Publicações meteorológicas neste canal",
+    "hideInChannels": "Ocultar postagens meteorológicas nos canais",
+    "patternPlaceholder": "Padrão extra (regex), por exemplo, ^WX-BOT",
+    "patternAria": "Padrão de postagem de tempo extra",
+    "patternInvalid": "Padrão inválido; usando apenas os padrões internos.",
+    "markSender": "Marcar como remetente meteorológico",
+    "unmarkSender": "Desmarcar remetente meteorológico",
+    "viewAria": "Vista meteorológica (publicações meteorológicas neste canal: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensores",
+    "metricSelectAria": "Valor do sensor mostrado no mapa",
+    "metricTemperature": "Temperatura",
+    "metricHumidity": "Umidade",
+    "metricPressure": "Pressão",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperatura (24h)",
+    "sparklineHumidity24h": "Umidade (24h)"
   }
 }

@@ -1297,6 +1297,19 @@ In dev, **Start stack** now rebuilds when `reticulum-sidecar/src/**/*.rs` or `Ca
 2. Click **Start serving** if it did not auto-resume (Start stays disabled until a folder is chosen).
 3. Check **Log → Analyze** (Reticulum protocol) for **Nomad Page Hosting Issues** (`[nomad-serving]` / `[NomadHosting]`), or **Export for GitHub** — those lines are in `mesh-client.log`.
 
+### Nomad page that used to show my name is now generic (or "not allowed")
+
+**Symptoms**: A Nomad page that used to greet you by name, show your account, or let you in now shows a generic version, asks you to log in, or returns the node's "not allowed" page.
+
+**Cause**: mesh-client now browses Nomad nodes **anonymously by default**. Earlier builds sent your Reticulum identity to every node; now a node only receives it if you turn on identification for that node.
+
+**Fix**:
+
+1. Open the node and click the **fingerprint** button in the browser toolbar, then confirm. The page reloads with your identity.
+2. To stop later, click the fingerprint button again or the **Identifying** badge in the node list. This only affects future connections — the node keeps any identity it already received.
+
+**Hosting your own page restricted with Access?** Self-preview (**Open in browser** in My Pages) ignores `.allowed` lists, so test restrictions from another node. An `.allowed` file with no valid 32-character hashes blocks everyone.
+
 ### Nomad Network pages hang or almost never load
 
 **Symptoms**: Most Nomad pages spin for a long time then fail; a few nearby nodes load quickly. UI shows humanized errors (via `nomadPageErrorHumanize.ts`) instead of raw sidecar codes when recognized.

@@ -1136,7 +1136,9 @@
       "exportAria": "PIN-verschlüsselte Ratspeak .rsi-Identitätssicherung exportieren",
       "exportRawAria": "Unverschlüsselte RAW-Reticulum-Identitätsdatei exportieren",
       "identityHashLabel": "Identitäts-Hash:",
-      "copyIdentityHash": "Identitäts-Hash kopieren"
+      "copyIdentityHash": "Identitäts-Hash kopieren",
+      "fingerprintLabel": "Identitäts-Fingerabdruck:",
+      "copyFingerprint": "Identitäts-Fingerabdruck kopieren"
     },
     "reticulumInterfaces": {
       "title": "Schnittstellen",
@@ -3574,7 +3576,29 @@
       "invalidPagePath": "Dieser Seitenpfad ist nicht zulässig.",
       "pageIoError": "Die Seite konnte nicht gelesen oder auf die Festplatte geschrieben werden.",
       "pageNotUtf8": "Diese Seite ist kein gültiger UTF-8-Text.",
-      "pageWriteFailed": "Die Seite konnte nicht geschrieben werden."
+      "pageWriteFailed": "Die Seite konnte nicht geschrieben werden.",
+      "restrict": "Zugang",
+      "restrictPageAria": "Beschränken, wer {{path}} öffnen darf",
+      "restrictTitle": "Zugriff einschränken",
+      "restrictCloseAria": "Schließen Sie den Zugriffseditor",
+      "restrictHint": "Nur Besucher, die sich mit einer gelisteten Reticulum-Identität identifizieren, können diese Seite öffnen. Anonyme Besucher werden abgelehnt. Setzen Sie einen 32-stelligen Identitäts-Hash pro Zeile; leere Zeilen und Zeilen, die mit # beginnen, werden ignoriert.",
+      "restrictStatusOff": "Nicht eingeschränkt: Jeder kann diese Seite öffnen.",
+      "restrictStatusOn_one": "Beschränkt auf {{count}} Identität.",
+      "restrictStatusOn_other": "Beschränkt auf {{count}} Identitäten.",
+      "restrictListLabel": "Zulässige Identitäts-Hashes",
+      "restrictListAria": "Zulässige Identitäts-Hashes für {{path}}",
+      "restrictInvalidLines": "Diese Zeilen sind keine 32-stelligen Identitäts-Hashes und würden ignoriert: {{lines}}",
+      "restrictEmptyWarning": "Keine Identitäten aufgeführt. Durch das Speichern werden alle blockiert, auch Sie. Verwenden Sie Einschränkung entfernen, um die Seite wieder öffentlich zu machen.",
+      "restrictAddSelf": "Meine Identität",
+      "restrictAddSelfAria": "Meinen eigenen Reticulum-Identitäts-Hash zur Liste hinzufügen",
+      "restrictAddSelfUnavailable": "Starten Sie den Reticulum-Stapel, um Ihre Identität zu laden.",
+      "restrictRemove": "Einschränkung entfernen",
+      "restrictRemoveAria": "Entfernen Sie die Zugangsbeschränkung von {{path}}",
+      "restrictRemoveConfirmAria": "Bestätigen Sie die Aufhebung der Zugriffsbeschränkung",
+      "restrictSaveAria": "Speichern Sie die Zugangsliste für {{path}}",
+      "restrictLoadError": "Die Zugriffsliste konnte nicht geladen werden.",
+      "restrictSaveError": "Die Zugriffsliste konnte nicht gespeichert werden.",
+      "restrictRemoveError": "Die Zugriffsbeschränkung konnte nicht aufgehoben werden."
     },
     "sortLastHeard": "Zuletzt gehört:",
     "sortHops": "Hops",
@@ -3611,7 +3635,33 @@
     "dismissPreview": "Ablehnen",
     "clearBrowserCaches": "Seiten- und Bildcaches löschen",
     "clearedBrowserCaches": "Nomad Seiten- und Bildcaches geleert",
-    "clearBrowserCachesHint": "In-Memory-Nomad-Seite und Bild-Caches löschen. Caches werden nicht auf der Festplatte gespeichert. Bilder, die größer als 2 MiB (base64) sind, werden niemals zwischengespeichert."
+    "clearBrowserCachesHint": "In-Memory-Nomad-Seite und Bild-Caches löschen. Caches werden nicht auf der Festplatte gespeichert. Bilder, die größer als 2 MiB (base64) sind, werden niemals zwischengespeichert.",
+    "identifyEnableAria": "Identifizieren Sie sich mit {{name}}",
+    "identifyStopAria": "Hören Sie auf, {{name}} zu identifizieren",
+    "identifyOnHint": "Identifizieren: Dieser Knoten erhält Ihre Reticulum-Identität, wenn Sie eine Verbindung herstellen. Klicken Sie hier, um anonym zu surfen.",
+    "identifyOffHint": "Anonym: Dieser Knoten erhält Ihre Identität nicht. Klicken Sie zum Identifizieren (einige Seiten personalisieren Inhalte oder erfordern sie).",
+    "identifyUnavailable": "Starten Sie den Reticulum-Stack, um die Identifikation zu ändern.",
+    "identifyingBadge": "Identifiziert",
+    "identifyConfirmTitle": "Identifiziere dich mit {{name}}?",
+    "identifyConfirmBody": "Jedes Mal, wenn du dich mit {{name}} verbindest, wird deine Reticulum-Identität (öffentlicher Schlüssel) an sie gesendet. Aus diesem Schlüssel kann der Knoten Ihren Identitäts-Hash und Ihre LXMF-Adresse berechnen. Das spätere Ausschalten stoppt nur zukünftige Verbindungen; es kann nicht zurücknehmen, was bereits gesendet wurde.",
+    "identifyConfirmAccept": "Erkennen",
+    "identifyEnabledToast": "Deine Identität wird an {{name}} gesendet, wenn du eine Verbindung herstellst.",
+    "identifyDisabledToast": "Identifizierung zu {{name}} gestoppt. Dies gilt nur für zukünftige Verbindungen.",
+    "identifyFailedToast": "Identifikation für {{name}} konnte nicht geändert werden.",
+    "identifyClearAll": "Hör auf, dich zu identifizieren",
+    "identifyClearAllAria_one": "Hören Sie auf, {{count}} Knoten zu identifizieren",
+    "identifyClearAllAria_other": "Stoppen Sie die Identifizierung für alle {{count}} -Knoten",
+    "identifyClearAllTitle": "Aufhören, sich für alle Knoten zu identifizieren?",
+    "identifyClearAllBody_one": "{{count}} Node erhält derzeit deine Identität, wenn du eine Verbindung herstellst. Danach durchsuchen Sie jeden Knoten anonym. Knoten behalten jede Identität, die sie bereits erhalten haben.",
+    "identifyClearAllBody_other": "{{count}} Knoten erhalten derzeit deine Identität, wenn du eine Verbindung herstellst. Danach durchsuchen Sie jeden Knoten anonym. Knoten behalten jede Identität, die sie bereits erhalten haben.",
+    "identifyClearedAllToast_one": "Identifizierung von {{count}} Knoten gestoppt. Dies gilt nur für zukünftige Verbindungen.",
+    "identifyClearedAllToast_other": "Identifizierung an {{count}} -Knoten gestoppt. Dies gilt nur für zukünftige Verbindungen.",
+    "identifyClearAllFailedToast": "Konnte nicht aufhören, sich für alle Knoten zu identifizieren.",
+    "favoriteSiteAria": "{{name}} zu Favoriten hinzufügen",
+    "unfavoriteSiteAria": "{{name}} aus Favoriten entfernen",
+    "favoriteAddedToast": "{{name}} zu Favoriten hinzugefügt",
+    "favoriteRemovedToast": "{{name}} aus Favoriten entfernt",
+    "favoriteFailedToast": "Favorit für {{name}} konnte nicht aktualisiert werden. Läuft Reticulum?"
   },
   "packetDistribution": {
     "overallDistribution": "Gesamtverteilung",
@@ -3672,7 +3722,9 @@
       "rrc": "RRC",
       "propagation": "Propagation",
       "unknown": "Unknown"
-    }
+    },
+    "identityUnknown": "Identität unbekannt: Noch keine Ankündigung von diesem Peer, daher ist kein Fingerabdruck zur Überprüfung vorhanden.",
+    "identityUnknownDestination": "Ziel-Hash (kein Identitäts-Fingerabdruck)"
   },
   "peerGraph": {
     "title": "Peer-Kommunikationsgrafik",
@@ -6383,5 +6435,40 @@
     "stopUsing": "Gespeicherten Standort nicht mehr verwenden",
     "addLocation": "Hinzufügen",
     "coordsHintFormats": "Koordinaten oder einen Kartenlink einfügen: Dezimal (39.7392, -104.9903), Grad/Minuten/Sekunden mit N/S/E/W, MGRS oder einem Freigabe-Link von Google, Apple oder OpenStreetMap."
+  },
+  "mqttProfiles": {
+    "optionLabel": "Gespeichert: {{name}}",
+    "save": "Aktuelles als Profil speichern",
+    "rename": "Umbenennen",
+    "renameAria": "MQTT-Profil {{name}} umbenennen",
+    "deleteAria": "MQTT-Profil löschen {{name}}",
+    "namePlaceholder": "Profilname, z. B. Chicago",
+    "reconnectNeeded": "Trennen und verbinden Sie MQTT erneut, um die Brokereinstellungen dieses Profils zu verwenden.",
+    "switchLabel": "GESPEICHERTES PROFIL",
+    "noneSelected": "Aktuelle Einstellungen (nicht gespeichert)",
+    "nameAria": "Profil Name"
+  },
+  "weatherFilter": {
+    "viewTooltip": "Wetterbeiträge in diesem Kanal",
+    "hideInChannels": "Wetterbeiträge in Kanälen ausblenden",
+    "patternPlaceholder": "Zusätzliches Muster (Regex), z. B. ^WX-BOT",
+    "patternAria": "Zusätzliches Wetterpfostenmuster",
+    "patternInvalid": "Ungültiges Muster; nur die integrierten Muster verwenden.",
+    "markSender": "Als Wetterabsender markieren",
+    "unmarkSender": "Wettersender entfernen",
+    "viewAria": "Wetteransicht (Wetterbeiträge in diesem Kanal: {{posts}})"
+  },
+  "sensorLayer": {
+    "layer": "Sensorik",
+    "metricSelectAria": "Auf der Karte angezeigter Sensorwert",
+    "metricTemperature": "Temperatur",
+    "metricHumidity": "Feuchtigkeit",
+    "metricPressure": "Druck",
+    "valueTempC": "{{value}}°C",
+    "valueTempF": "{{value}}°F",
+    "valueHumidity": "{{value}}%",
+    "valuePressure": "{{value}} hPa",
+    "sparklineTemperature24h": "Temperatur (24h)",
+    "sparklineHumidity24h": "Luftfeuchtigkeit (24h)"
   }
 }

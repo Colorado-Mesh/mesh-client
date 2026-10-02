@@ -2,9 +2,16 @@
 
 export interface NomadNodeRow {
   destination_hash: string;
+  /** Identity hash recovered from the node's `nomadnetwork.node` announce. */
+  identity_hash?: string | null;
   display_name?: string | null;
   last_seen?: number | null;
   favorited?: boolean;
+  /**
+   * Send LINKIDENTIFY (our Reticulum identity) on Links to this node.
+   * Absent or false means anonymous, the NomadNet default.
+   */
+  identify?: boolean;
   hops?: number | null;
   status?: string | null;
 }

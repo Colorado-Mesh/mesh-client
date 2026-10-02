@@ -183,6 +183,31 @@ describe(
       db.close();
     });
 
+    it.each([1, null])(
+      'rebuilding MeshCore indexes deduplicates within recipient for sender %s',
+      (sender) => {
+        const db = openFreshUpgradedDb('mc-recipients.db');
+        try {
+          db.execScript('DROP INDEX idx_mc_msg_dedup; DROP INDEX idx_mc_msg_dedup_null_sender;');
+          const insert =
+            db.prepareOnce(`INSERT INTO meshcore_messages(sender_id,payload,channel_idx,timestamp,to_node)
+          VALUES (?,'command',-1,1700000000000,?)`);
+          for (const recipient of [null, 0, 2, 3]) {
+            insert.run(sender, recipient);
+            insert.run(sender, recipient);
+          }
+          runSchemaUpgrade(db);
+          expect(db.prepareOnce('SELECT to_node FROM meshcore_messages ORDER BY id').all()).toEqual(
+            [{ to_node: null }, { to_node: 0 }, { to_node: 2 }, { to_node: 3 }],
+          );
+          for (const recipient of [null, 0, 2, 3])
+            expect(() => insert.run(sender, recipient)).toThrow();
+        } finally {
+          db.close();
+        }
+      },
+    );
+
     it('idx_mc_msg_dedup: UPDATE by natural key upgrades sending row to acked', () => {
       const db = openFreshUpgradedDb('mc-upsert.db');
       const senderId = 42;

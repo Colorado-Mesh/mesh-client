@@ -247,6 +247,35 @@ if [ "${UPDATE_SH_TEST_HOOK:-}" = 'pinned-majors-only' ]; then
   exit 0
 fi
 
+# Warn when an advisory in pnpm-workspace.yaml auditConfig.ignoreGhsas has a patched
+# release (or was withdrawn) so the audit exception can be backed out. Warn-only:
+# exit 10 means removable, anything else (including offline) is treated as clean.
+# See scripts/check-audit-ignores.mjs.
+check_audit_ignores() {
+  if ! command -v node > /dev/null 2>&1; then
+    echo ''
+    echo 'Checking pnpm audit ignores for patched releases... node missing — skip.'
+    return 0
+  fi
+
+  local status=0
+  node scripts/check-audit-ignores.mjs || status=$?
+  if [ "${status}" -eq 10 ]; then
+    HAS_WARNING=1
+  elif [ "${status}" -ne 0 ]; then
+    echo -e "  ${YELLOW}check-audit-ignores exited ${status} — treating as inconclusive.${NC}"
+  fi
+  return 0
+}
+
+# Test hook: exercise check_audit_ignores without running the rest of the update.
+if [ "${UPDATE_SH_TEST_HOOK:-}" = 'audit-ignores-only' ]; then
+  HAS_WARNING=0
+  check_audit_ignores
+  printf 'HAS_WARNING=%s\n' "${HAS_WARNING}"
+  exit 0
+fi
+
 # Warn when local Ratspeak overlays may be obsolete after upstream merges.
 # Keep patch basenames in sync with scripts/lib/ratspeak-overlay-apply-list.sh
 # and reticulum-sidecar/patches/*.patch / patches/README.md.
@@ -975,6 +1004,7 @@ for i in "${!KEYS[@]}"; do
 done
 
 check_pinned_majors
+check_audit_ignores
 check_ratspeak_patches
 check_ratspeak_upstream
 check_mecp_upstream

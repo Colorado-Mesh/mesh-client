@@ -53,6 +53,7 @@ import { routingRowToNodeAnomaly } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { EnvironmentSparklines } from './map/EnvironmentSparklines';
 import MeshCongestionAttributionBlock from './MeshCongestionAttributionBlock';
 import SnrIndicator from './SnrIndicator';
 
@@ -882,6 +883,7 @@ export default function NodeInfoBody({
               }
             />
           )}
+          <EnvironmentSparklines protocol={protocol} nodeId={node.node_id} />
         </div>
       )}
 
