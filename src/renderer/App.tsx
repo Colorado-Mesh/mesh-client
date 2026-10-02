@@ -263,6 +263,12 @@ import {
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
 import { connectionDriver } from './lib/drivers/ConnectionDriver';
 import {
+  enabledProtocolsFrom,
+  getStoredEnabledMeshProtocol,
+  loadHiddenProtocols,
+  newlyHiddenProtocols,
+} from './lib/enabledProtocols';
+import {
   type FirmwareCheckResult,
   MESHCORE_FIRMWARE_RELEASES_URL,
   MESHTASTIC_FIRMWARE_RELEASES_URL,
@@ -805,7 +811,15 @@ function AppContent() {
     initNobleBleDualRadioStartup();
   }, []);
 
-  const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredMeshProtocol());
+  const [protocol, setProtocol] = useState<MeshProtocol>(() => getStoredEnabledMeshProtocol());
+  const [hiddenProtocols, setHiddenProtocols] = useState<MeshProtocol[]>(loadHiddenProtocols);
+  const enabledProtocols = useMemo(() => enabledProtocolsFrom(hiddenProtocols), [hiddenProtocols]);
+  const reticulumEnabled = enabledProtocols.includes('reticulum');
+  const handleHiddenProtocolsChange = useCallback((hidden: MeshProtocol[]) => {
+    setHiddenProtocols((prev) =>
+      prev.length === hidden.length && prev.every((p) => hidden.includes(p)) ? prev : hidden,
+    );
+  }, []);
 
   const protocolConnect = useProtocolConnect();
   const protocolDisconnect = useProtocolDisconnect();
@@ -2116,6 +2130,29 @@ function AppContent() {
     [protocol, activeTab, activePanelIndex, tabsByProtocol],
   );
 
+  useEffect(() => {
+    const fallback = enabledProtocols[0];
+    if (fallback && !enabledProtocols.includes(protocol)) handleProtocolChange(fallback);
+  }, [enabledProtocols, protocol, handleProtocolChange]);
+
+  const allConnectionActionsRef = useRef(allConnectionActions);
+  useEffect(() => {
+    allConnectionActionsRef.current = allConnectionActions;
+  }, [allConnectionActions]);
+  const prevHiddenProtocolsRef = useRef(hiddenProtocols);
+  useEffect(() => {
+    const newlyHidden = newlyHiddenProtocols(prevHiddenProtocolsRef.current, hiddenProtocols);
+    prevHiddenProtocolsRef.current = hiddenProtocols;
+    for (const hidden of newlyHidden) {
+      const actions = allConnectionActionsRef.current[hidden];
+      if (actions.state.status === 'disconnected') continue;
+      console.debug(`[App] disconnecting ${hidden}: disabled in App → Protocols`);
+      void actions.disconnect().catch((e: unknown) => {
+        console.warn(`[App] disconnect of disabled ${hidden} failed ` + errLikeToLogString(e));
+      });
+    }
+  }, [hiddenProtocols]);
+
   const handleShowOnMap = useCallback(
     (nodeId: number, lat: number, lon: number) => {
       useMapViewportStore.getState().requestFocus({ nodeId, lat, lon });
@@ -2533,6 +2570,10 @@ function AppContent() {
     (sessionId: string) => {
       // Gate on Reticulum capabilities — deep links must work while another protocol is active.
       if (!reticulumCapabilities.hasLrgpGames) return;
+      if (!reticulumEnabled) {
+        console.debug('[App] games deep link ignored: Reticulum disabled in App → Protocols');
+        return;
+      }
       void (async () => {
         if (protocol !== 'reticulum') {
           lastTabByProtocol.current.set(protocol, activeTab);
@@ -2551,7 +2592,14 @@ function AppContent() {
         await openReticulumGameSession(sessionId);
       })();
     },
-    [activePanelIndex, activeTab, protocol, reticulumCapabilities.hasLrgpGames, tabsByProtocol],
+    [
+      activePanelIndex,
+      activeTab,
+      protocol,
+      reticulumCapabilities.hasLrgpGames,
+      reticulumEnabled,
+      tabsByProtocol,
+    ],
   );
 
   useEffect(() => {
@@ -2571,6 +2619,10 @@ function AppContent() {
     (destinationHash: string, path: string) => {
       // Gate on Reticulum capabilities — links must work while another protocol is active.
       if (!reticulumCapabilities.hasNomadNetworkPanel) return;
+      if (!reticulumEnabled) {
+        console.debug('[App] Nomad link ignored: Reticulum disabled in App → Protocols');
+        return;
+      }
       if (protocol !== 'reticulum') {
         lastTabByProtocol.current.set(protocol, activeTab);
         lastPanelByProtocol.current.set(protocol, activePanelIndex);
@@ -2592,6 +2644,7 @@ function AppContent() {
       activeTab,
       protocol,
       reticulumCapabilities.hasNomadNetworkPanel,
+      reticulumEnabled,
       tabsByProtocol,
     ],
   );
@@ -2612,6 +2665,10 @@ function AppContent() {
   const handleOpenRrcHubTab = useCallback(() => {
     // Gate on Reticulum capabilities — micron rrc:// links must work while another protocol is active.
     if (!reticulumCapabilities.hasRrcPanel) return;
+    if (!reticulumEnabled) {
+      console.debug('[App] rrc:// link ignored: Reticulum disabled in App → Protocols');
+      return;
+    }
     if (protocol !== 'reticulum') {
       lastTabByProtocol.current.set(protocol, activeTab);
       lastPanelByProtocol.current.set(protocol, activePanelIndex);
@@ -2626,11 +2683,24 @@ function AppContent() {
       setActiveTab(rrcTabIndex);
       setRrcTabVisited(true);
     }
-  }, [activePanelIndex, activeTab, protocol, reticulumCapabilities.hasRrcPanel, tabsByProtocol]);
+  }, [
+    activePanelIndex,
+    activeTab,
+    protocol,
+    reticulumCapabilities.hasRrcPanel,
+    reticulumEnabled,
+    tabsByProtocol,
+  ]);
 
   const openChatFromNotification = useCallback(
     (target: ChatNotificationTarget) => {
       const targetProtocol = target.kind === 'rrc' ? 'reticulum' : target.protocol;
+      if (!enabledProtocols.includes(targetProtocol)) {
+        console.debug(
+          `[App] notification click ignored: ${targetProtocol} disabled in App → Protocols`,
+        );
+        return;
+      }
       if (protocol !== targetProtocol) {
         lastTabByProtocol.current.set(protocol, activeTab);
         lastPanelByProtocol.current.set(protocol, activePanelIndex);
@@ -2651,7 +2721,7 @@ function AppContent() {
         setPendingChannelTarget(target.channel);
       }
     },
-    [activePanelIndex, activeTab, protocol, tabsByProtocol],
+    [activePanelIndex, activeTab, enabledProtocols, protocol, tabsByProtocol],
   );
   const openChatFromNotificationRef = useRef(openChatFromNotification);
   useEffect(() => {
@@ -3831,6 +3901,7 @@ function AppContent() {
       <InactiveProtocolNotifier
         activeProtocol={protocol}
         messagesByProtocol={uiMessagesByProtocol}
+        enabledProtocols={enabledProtocols}
       />
       {capabilities.hasRemoteAdmin && (
         <RemoteAdminErrorNotifier
@@ -3856,11 +3927,14 @@ function AppContent() {
           {!shellCompact && (
             <AppRail
               header={
-                <ProtocolSwitcher
-                  protocol={protocol}
-                  unreadByProtocol={protocolSwitcherUnreadByProtocol}
-                  onProtocolChange={handleProtocolChange}
-                />
+                enabledProtocols.length > 1 ? (
+                  <ProtocolSwitcher
+                    protocol={protocol}
+                    protocols={enabledProtocols}
+                    unreadByProtocol={protocolSwitcherUnreadByProtocol}
+                    onProtocolChange={handleProtocolChange}
+                  />
+                ) : undefined
               }
               sections={navSections}
               activeSectionId={activeNavSection?.id}
@@ -3953,16 +4027,19 @@ function AppContent() {
                       meshtastic={{
                         state: meshtasticConnection.state,
                         connectAutomatic: meshtasticConnection.connectAutomatic,
+                        enabled: enabledProtocols.includes('meshtastic'),
                       }}
                       meshcore={{
                         state: meshcoreConnection.state,
                         connectAutomatic: meshcoreConnection.connectAutomatic,
+                        enabled: enabledProtocols.includes('meshcore'),
                       }}
                     />
                     {reticulumCapabilities.hasReticulumInterfaceConfig ? (
                       <ReticulumStackAutostartCoordinator
                         connecting={reticulumConnection.state.status === 'connecting'}
                         onStartStack={startReticulumStack}
+                        enabled={reticulumEnabled}
                       />
                     ) : null}
                     <ErrorBoundary>
@@ -5274,6 +5351,7 @@ function AppContent() {
                                   onAlwaysShowMessageActionsChange={
                                     handleAlwaysShowMessageActionsChange
                                   }
+                                  onHiddenProtocolsChange={handleHiddenProtocolsChange}
                                   reticulumIdentityId={reticulumIdentityId}
                                   reticulumSidecarReady={
                                     reticulumRuntime.state.status !== 'disconnected'
@@ -5674,10 +5752,11 @@ function AppContent() {
             else selectNodeFrom('list', Number(id));
           }}
           header={
-            shellCompact ? (
+            shellCompact && enabledProtocols.length > 1 ? (
               <ProtocolSwitcher
                 orientation="horizontal"
                 protocol={protocol}
+                protocols={enabledProtocols}
                 unreadByProtocol={protocolSwitcherUnreadByProtocol}
                 onProtocolChange={handleProtocolChange}
               />

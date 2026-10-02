@@ -9,12 +9,15 @@ import { useToast } from './Toast';
 export interface InactiveProtocolNotifierProps {
   activeProtocol: MeshProtocol;
   messagesByProtocol: Record<MeshProtocol, ChatMessage[]>;
+  /** Protocols enabled in App → Protocols; disabled ones never toast. */
+  enabledProtocols?: readonly MeshProtocol[];
 }
 
 /** Toast when the inactive protocol receives new chat messages. */
 export function InactiveProtocolNotifier({
   activeProtocol,
   messagesByProtocol,
+  enabledProtocols = REGISTERED_MESH_PROTOCOLS,
 }: InactiveProtocolNotifierProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -51,7 +54,7 @@ export function InactiveProtocolNotifier({
           prevCountRef.current[inactiveProtocol],
         );
         const realNew = newMsgs.filter((m) => !m.emoji && !m.isHistory);
-        if (realNew.length > 0) {
+        if (realNew.length > 0 && enabledProtocols.includes(inactiveProtocol)) {
           addToast(
             t('toasts.newMessages', {
               protocol: t(`connectionPanel.bleOwner.${inactiveProtocol}`),
@@ -64,7 +67,7 @@ export function InactiveProtocolNotifier({
       }
       prevCountRef.current[inactiveProtocol] = count;
     }
-  }, [activeProtocol, messagesByProtocol, addToast, t]);
+  }, [activeProtocol, messagesByProtocol, enabledProtocols, addToast, t]);
 
   return null;
 }

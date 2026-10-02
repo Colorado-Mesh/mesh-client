@@ -450,7 +450,11 @@
       "sky": "Langit",
       "classic": "Hijau klasik"
     },
-    "pruneNoFixNodesTitle": "Pangkas Node Tanpa Posisi / Zero Island"
+    "pruneNoFixNodesTitle": "Pangkas Node Tanpa Posisi / Zero Island",
+    "protocolsSection": "Protokol",
+    "protocolsEnabledDesc": "Matikan protokol yang tidak Anda gunakan. Protokol yang dinonaktifkan disembunyikan dari pengalih protokol, terputus, dan dilewati oleh auto - connect dan autostart. Dengan hanya satu protokol yang diaktifkan, pengalih disembunyikan.",
+    "protocolEnabled": "Aktifkan {{name}}",
+    "protocolLastEnabled": "Setidaknya satu protokol harus tetap diaktifkan."
   },
   "aria": {
     "closeDialog": "Tutup dialog",

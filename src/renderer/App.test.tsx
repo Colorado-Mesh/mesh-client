@@ -672,6 +672,36 @@ describe('App shell layout', () => {
     expect(within(statusBar).getByText(/messages/)).toBeInTheDocument();
   });
 
+  it('drops disabled protocols from the switcher and hides it with one left (#1124)', async () => {
+    renderApp();
+    openPanel('App');
+    await waitFor(() => {
+      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
+    });
+    const setHidden = lastAppPanelProps.current?.onHiddenProtocolsChange as (
+      hidden: string[],
+    ) => void;
+
+    act(() => {
+      setHidden(['meshcore']);
+    });
+    const group = within(appRail()).getByRole('radiogroup', { name: 'Protocol switcher' });
+    expect(
+      within(group)
+        .getAllByRole('radio')
+        .map((b) => b.textContent),
+    ).toEqual(['MT', 'RN']);
+
+    act(() => {
+      setHidden(['meshtastic', 'meshcore']);
+    });
+    expect(within(appRail()).queryByRole('radiogroup', { name: 'Protocol switcher' })).toBeNull();
+    // The active protocol was disabled, so the app moved to the one still enabled.
+    await waitFor(() => {
+      expect(localStorage.getItem('mesh-protocol')).toBe('reticulum');
+    });
+  });
+
   it('switches sections from the rail and remembers the last panel per section', () => {
     renderApp();
     openPanel('Monitor', 'Sniffer');

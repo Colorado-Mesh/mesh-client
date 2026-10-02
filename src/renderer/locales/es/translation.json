@@ -450,7 +450,11 @@
       "sky": "Cielo",
       "classic": "Verde clásico"
     },
-    "pruneNoFixNodesTitle": "Podar nodos sin posición / Zero Island"
+    "pruneNoFixNodesTitle": "Podar nodos sin posición / Zero Island",
+    "protocolsSection": "Protocolos",
+    "protocolsEnabledDesc": "Desactive los protocolos que no utiliza. Un protocolo deshabilitado se oculta del conmutador de protocolos, se desconecta y se omite mediante la conexión automática y el inicio automático. Con un solo protocolo habilitado, el conmutador está oculto.",
+    "protocolEnabled": "Habilitar {{name}}",
+    "protocolLastEnabled": "Al menos un protocolo debe permanecer habilitado."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",

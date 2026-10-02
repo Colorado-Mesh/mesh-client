@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { APP_SETTINGS_STORAGE_KEY } from './appSettingsStorage';
 import { COLORADO_MQTT_REGION_ACK_KEY } from './connectionPanelStorageMigrations';
 import { MESHCORE_ENC_PK_KEY, MESHCORE_IDENTITY_STORAGE_KEY, WAEV_HOST } from './letsMeshJwt';
 import { MESHTASTIC_MQTT_SETTINGS_KEY } from './meshtasticMqttSettingsStorage';
@@ -11,6 +12,7 @@ describe('tryAutoLaunchMqtt', () => {
     localStorage.removeItem('mesh-client:mqttSettings:meshcore');
     localStorage.removeItem('mesh-client:mqttPreset:meshcore');
     localStorage.removeItem(COLORADO_MQTT_REGION_ACK_KEY);
+    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
     vi.restoreAllMocks();
   });
 
@@ -49,6 +51,26 @@ describe('tryAutoLaunchMqtt', () => {
     vi.stubGlobal('window', {
       electronAPI: { mqtt: { connect } },
     });
+
+    await tryAutoLaunchMqtt('meshtastic');
+
+    expect(connect).not.toHaveBeenCalled();
+  });
+
+  it('skips a protocol disabled in App → Protocols', async () => {
+    localStorage.setItem(
+      MESHTASTIC_MQTT_SETTINGS_KEY,
+      JSON.stringify({ autoLaunch: true, server: 'mqtt.meshtastic.org' }),
+    );
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ hiddenProtocols: ['meshtastic'] }),
+    );
+    const connect = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('window', {
+      electronAPI: { mqtt: { connect } },
+    });
+    vi.spyOn(console, 'debug').mockImplementation(() => {});
 
     await tryAutoLaunchMqtt('meshtastic');
 

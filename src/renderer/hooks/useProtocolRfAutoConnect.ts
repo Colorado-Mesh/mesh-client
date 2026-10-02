@@ -104,7 +104,12 @@ export function useProtocolRfAutoConnect({
   }, [connectAutomatic]);
 
   useEffect(() => {
-    if (!enabled || protocol === 'reticulum' || firedRef.current) return;
+    if (protocol === 'reticulum' || firedRef.current) return;
+    if (!enabled) {
+      // A disabled primary must not leave the dual-radio secondary waiting on its settle.
+      notifyPrimaryAutoConnectSettledIfNeeded(protocol);
+      return;
+    }
     if (state.status !== 'disconnected') {
       firedRef.current = true;
       notifyPrimaryAutoConnectSettledIfNeeded(protocol);
