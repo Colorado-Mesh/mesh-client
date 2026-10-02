@@ -2144,6 +2144,17 @@ function AppContent() {
     const newlyHidden = newlyHiddenProtocols(prevHiddenProtocolsRef.current, hiddenProtocols);
     prevHiddenProtocolsRef.current = hiddenProtocols;
     for (const hidden of newlyHidden) {
+      if (
+        selectByProtocol(capabilitiesByProtocol, hidden).hasMqttHybrid &&
+        meshtasticConnectionView.mqttStatus !== 'disconnected'
+      ) {
+        console.debug(`[App] disconnecting ${hidden} MQTT: disabled in App → Protocols`);
+        void window.electronAPI.mqtt.disconnect('meshtastic').catch((e: unknown) => {
+          console.warn(
+            `[App] MQTT disconnect of disabled ${hidden} failed ` + errLikeToLogString(e),
+          );
+        });
+      }
       const actions = allConnectionActionsRef.current[hidden];
       if (actions.state.status === 'disconnected') continue;
       console.debug(`[App] disconnecting ${hidden}: disabled in App → Protocols`);
@@ -2151,7 +2162,7 @@ function AppContent() {
         console.warn(`[App] disconnect of disabled ${hidden} failed ` + errLikeToLogString(e));
       });
     }
-  }, [hiddenProtocols]);
+  }, [hiddenProtocols, capabilitiesByProtocol, meshtasticConnectionView.mqttStatus]);
 
   const handleShowOnMap = useCallback(
     (nodeId: number, lat: number, lon: number) => {
@@ -3166,6 +3177,11 @@ function AppContent() {
     };
   }, []);
 
+  const enabledProtocolsRef = useRef(enabledProtocols);
+  useEffect(() => {
+    enabledProtocolsRef.current = enabledProtocols;
+  }, [enabledProtocols]);
+
   // ─── Track Meshtastic messages arriving while inactive ──────────
   useEffect(() => {
     const count = meshtasticUiMessages.length;
@@ -3193,7 +3209,7 @@ function AppContent() {
         mutedViews,
         notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
       });
-      if (notification) {
+      if (notification && enabledProtocolsRef.current.includes('meshtastic')) {
         playMessageNotification(notification.type);
         if (isAppWindowInactive()) {
           notifyInactiveChat({
@@ -3232,7 +3248,7 @@ function AppContent() {
         notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
         dmOptions: meshcoreChatUnreadDmOptionsRef.current,
       });
-      if (notification) {
+      if (notification && enabledProtocolsRef.current.includes('meshcore')) {
         playMessageNotification(notification.type);
         if (isAppWindowInactive()) {
           notifyInactiveChat({
@@ -3271,7 +3287,7 @@ function AppContent() {
         mutedViews: loadMutedViews('reticulum'),
         notifGloballyMuted: localStorage.getItem('mesh-client:notifMuted') === '1',
       });
-      if (notification) {
+      if (notification && enabledProtocolsRef.current.includes('reticulum')) {
         playMessageNotification(notification.type);
         if (isAppWindowInactive()) {
           notifyInactiveChat({
@@ -3324,6 +3340,7 @@ function AppContent() {
     // Watching the active room: still ping on whisper / @nick (IRC highlight); stay silent on channel.
     if (
       notification &&
+      enabledProtocolsRef.current.includes('reticulum') &&
       shouldPlayRrcNotification({
         onRrcPanel,
         windowInactive,
