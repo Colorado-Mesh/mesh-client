@@ -81,6 +81,22 @@ describe('incidentStore', () => {
     expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(1);
   });
 
+  it('a seeded B03 older than the beacon does not clear it; a newer one does', async () => {
+    const { useIncidentStore } = await loadStore();
+    const s = useIncidentStore.getState();
+    const id = s.upsertFromMecp(report('MECP/0/B01 M01', { receivedAt: 5_000 }))!;
+
+    expect(
+      s.upsertFromMecp({ ...report('MECP/3/B03', { receivedAt: 4_000 }), fromSeed: true }),
+    ).toBeNull();
+    expect(useIncidentStore.getState().incidents[id].beaconActive).toBe(true);
+
+    expect(
+      s.upsertFromMecp({ ...report('MECP/3/B03', { receivedAt: 6_000 }), fromSeed: true }),
+    ).toBe(id);
+    expect(useIncidentStore.getState().incidents[id].beaconActive).toBe(false);
+  });
+
   it('general R01 ACK correlates by echoed codes without opening a row', async () => {
     const { useIncidentStore } = await loadStore();
     const s = useIncidentStore.getState();

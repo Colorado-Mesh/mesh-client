@@ -246,8 +246,13 @@ export const useIncidentStore = create<IncidentStoreState>()(
         const tombs = get().resolvedTombstones;
 
         if (isBeaconCancel(parsed.codes)) {
+          // A hydrated B03 must not clear a beacon heard after it (DB load can land after live RX).
           const beacons = Object.values(all).filter(
-            (inc) => isUnresolved(inc) && inc.beaconActive && inc.senderId === senderId,
+            (inc) =>
+              isUnresolved(inc) &&
+              inc.beaconActive &&
+              inc.senderId === senderId &&
+              (!input.fromSeed || inc.lastSeenAt <= now),
           );
           if (beacons.length === 0) return null;
           set((s) => {

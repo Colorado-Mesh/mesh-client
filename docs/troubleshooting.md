@@ -2071,7 +2071,7 @@ App → MECP → **Show MECP button in Chat** is off by default. Enable it to sh
 
 **What is the Incident tab?**
 
-**Incident** (pinned at the bottom of the rail, next to **App**) is the EMCOMM common operating picture — not a chat history. It lists **open** MECP emergencies only (resolved rows disappear; drills stay listed but never badge). Each row shows:
+**Incident** (pinned at the bottom of the rail, next to **App**) is the EMCOMM common operating picture — not a chat history. It lists **open** MECP emergencies only (resolved rows disappear; open MAYDAY and URGENT rows badge the tab, drills included; SAFETY and ROUTINE never badge). Each row shows:
 
 - Severity (MAYDAY / URGENT / SAFETY / ROUTINE) and MECP codes
 - Sender name, optional free text, ACK count, and which protocols heard the report
