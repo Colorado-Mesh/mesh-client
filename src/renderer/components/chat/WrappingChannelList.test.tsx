@@ -128,6 +128,46 @@ describe('WrappingChannelList', () => {
     expect(document.documentElement.scrollTop).toBe(0);
   });
 
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'keeps selection visible while typing, prioritizing a focused channel on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const user = userEvent.setup();
+      render(
+        <>
+          <WrappingChannelList activeKey={3}>
+            <Choices onChoose={vi.fn()} lastActive />
+          </WrappingChannelList>
+          <input aria-label="Composer" />
+        </>,
+      );
+      const viewport = screen.getByRole('region', { name: 'Channels' });
+      arrangeGeometry(viewport);
+      const composer = screen.getByRole('textbox', { name: 'Composer' });
+      await user.click(composer);
+      // The selected key stays unchanged while a resize moves its row offscreen.
+      viewport.scrollTop = 96;
+      act(() => {
+        resize();
+      });
+      expect(viewport.scrollTop).toBe(168);
+      expect(composer).toHaveFocus();
+
+      const weather = screen.getByRole('button', { name: 'Weather' });
+      act(() => {
+        weather.focus();
+      });
+      arrangeGeometry(viewport, 32);
+      expect(weather).toHaveFocus();
+      expect(weather.getBoundingClientRect().bottom).toBeLessThanOrEqual(32);
+      expect(
+        screen
+          .getByRole('button', { name: 'Very long emergency coordination name' })
+          .getBoundingClientRect().top,
+      ).toBeGreaterThan(32);
+    },
+  );
+
   it('does not add overflow controls or a scroll tab stop when every channel fits', () => {
     render(
       <WrappingChannelList activeKey={null}>

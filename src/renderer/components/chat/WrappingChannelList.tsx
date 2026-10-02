@@ -69,6 +69,9 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
       const focused = document.activeElement;
       if (focused instanceof HTMLButtonElement && contentRef.current?.contains(focused)) {
         reveal(focused);
+      } else if (activeKey != null) {
+        const active = contentRef.current?.querySelector<HTMLElement>('[data-strip-active="true"]');
+        if (active) reveal(active);
       }
     });
     if (rootRef.current) observer.observe(rootRef.current);
@@ -77,7 +80,7 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
     return () => {
       observer.disconnect();
     };
-  }, [children, measure, reveal]);
+  }, [activeKey, children, measure, reveal]);
 
   useLayoutEffect(() => {
     if (activeKey == null) return;
