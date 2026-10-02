@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} dalam {{room}}",
     "srNewMessage": "Pesan baru dari {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} pesan baru",
-    "srNewMessages_other": "{{count}} pesan baru"
+    "srNewMessages_other": "{{count}} pesan baru",
+    "unreadMecpMarker": "Belum dibaca {{severity}} laporan MECP"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

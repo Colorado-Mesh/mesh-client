@@ -840,7 +840,8 @@
     "srNewMessages_one": "{{count}} nová zpráva",
     "srNewMessages_few": "{{count}} nové zprávy",
     "srNewMessages_many": "{{count}} nových zpráv",
-    "srNewMessages_other": "{{count}} nových zpráv"
+    "srNewMessages_other": "{{count}} nových zpráv",
+    "unreadMecpMarker": "Nepřečtená zpráva {{severity}} MECP"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

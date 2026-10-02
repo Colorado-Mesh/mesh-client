@@ -855,7 +855,8 @@
     "srNewMessages_one": "{{count}} нове повідомлення",
     "srNewMessages_few": "{{count}} нові повідомлення",
     "srNewMessages_many": "{{count}} нових повідомлень",
-    "srNewMessages_other": "{{count}} нового повідомлення"
+    "srNewMessages_other": "{{count}} нового повідомлення",
+    "unreadMecpMarker": "Непрочитаний звіт {{severity}} MECP"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

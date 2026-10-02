@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} in {{room}}",
     "srNewMessage": "{{sender}} tarafından gönderilen yeni mesaj: {{text}}",
     "srNewMessages_one": "{{count}} yeni mesaj",
-    "srNewMessages_other": "{{count}} yeni mesaj"
+    "srNewMessages_other": "{{count}} yeni mesaj",
+    "unreadMecpMarker": "Okunmamış {{severity}} MECP raporu"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

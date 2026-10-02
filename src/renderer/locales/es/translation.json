@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} en {{room}}",
     "srNewMessage": "Nuevo mensaje de {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} mensaje nuevo",
-    "srNewMessages_other": "{{count}} mensajes nuevos"
+    "srNewMessages_other": "{{count}} mensajes nuevos",
+    "unreadMecpMarker": "Informe {{severity}} MECP no leído"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

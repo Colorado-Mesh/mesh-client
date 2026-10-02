@@ -11,6 +11,14 @@ export const MECP_SEVERITY_BADGE_CLASSES: Record<Severity, string> = {
   3: 'bg-blue-700 text-white',
 };
 
+/** Stroke color for the unread MECP shield on chat chips (non-text graphic, 3:1 on dark chips). */
+export const MECP_UNREAD_ICON_CLASSES: Record<Severity, string> = {
+  0: 'text-red-500',
+  1: 'text-red-500',
+  2: 'text-yellow-400',
+  3: 'text-blue-400',
+};
+
 /** Chat bubble border/fill for parsed MECP payloads (own solid vs received dashed). */
 export function mecpChatBubbleToneClasses(severity: Severity, isOwn: boolean): string {
   if (severity <= 1) {

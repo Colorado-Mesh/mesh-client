@@ -171,12 +171,33 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
   });
 }
 
+/**
+ * Ids written by the bulk (DB hydration) writers below. Consumers that must not treat SQLite
+ * history as fresh inbound traffic (MECP alert/incident watcher) check this; the arrival time
+ * of a bulk load relative to their mount is not reliable.
+ */
+const bulkLoadedMessageIds = new Set<string>();
+
+export function wasMessageBulkLoaded(messageId: string): boolean {
+  return bulkLoadedMessageIds.has(messageId);
+}
+
+/** @internal Test helper. */
+export function resetBulkLoadedMessageIdsForTests(): void {
+  bulkLoadedMessageIds.clear();
+}
+
+function markBulkLoaded(records: readonly MessageRecord[]): void {
+  for (const message of records) bulkLoadedMessageIds.add(message.id);
+}
+
 /** Single setState merge for many messages (startup / DB hydration). */
 export function upsertMessageRecordsForIdentity(
   identityId: IdentityId,
   records: MessageRecord[],
 ): void {
   if (records.length === 0) return;
+  markBulkLoaded(records);
   useMessageStore.setState((s) => {
     const prior = s.messages[identityId] ?? {};
     const byIdentity = { ...prior };
@@ -204,6 +225,7 @@ export function replaceMessageRecordsForIdentity(
   identityId: IdentityId,
   records: MessageRecord[],
 ): void {
+  markBulkLoaded(records);
   useMessageStore.setState((s) => {
     const byIdentity: Record<string, MessageRecord> = {};
     for (const message of records) {

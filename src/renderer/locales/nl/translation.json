@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{sender}} in {{room}}",
     "srNewMessage": "Nieuw bericht van {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} nieuw bericht",
-    "srNewMessages_other": "{{count}} nieuwe berichten"
+    "srNewMessages_other": "{{count}} nieuwe berichten",
+    "unreadMecpMarker": "Ongelezen {{severity}} MECP-rapport"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

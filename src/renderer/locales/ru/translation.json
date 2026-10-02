@@ -855,7 +855,8 @@
     "srNewMessages_one": "{{count}} новое сообщение",
     "srNewMessages_few": "{{count}} новых сообщения",
     "srNewMessages_many": "{{count}} новых сообщений",
-    "srNewMessages_other": "{{count}} нового сообщения"
+    "srNewMessages_other": "{{count}} нового сообщения",
+    "unreadMecpMarker": "Непрочитанный отчет {{severity}} MECP"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

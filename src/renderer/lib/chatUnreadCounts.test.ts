@@ -8,7 +8,9 @@ import {
   computeChannelUnreadCounts,
   computeDmUnreadCounts,
   computeReticulumChatUnread,
+  computeUnreadMecpSeverityByView,
   hasAudibleBackgroundMessages,
+  mostSevereMecp,
   pickAudibleNotificationType,
   resolveChatDmPeer,
   resolveChatNotificationType,
@@ -516,6 +518,70 @@ describe('chatUnreadCounts', () => {
     expect(
       computeReticulumChatUnread([inbound], 'configured', { [`dm:${peerId}`]: 2000 }, new Set()),
     ).toBe(0);
+  });
+});
+
+describe('computeUnreadMecpSeverityByView', () => {
+  it('keeps the most severe unread MECP per channel', () => {
+    const { channels } = computeUnreadMecpSeverityByView(
+      [
+        msg({ channel: 0, payload: 'MECP/3/D02', timestamp: 2000 }),
+        msg({ channel: 0, payload: 'MECP/2/H01', timestamp: 2100 }),
+        msg({ channel: 1, payload: 'MECP/3/D01', timestamp: 2200 }),
+        msg({ channel: 2, payload: 'plain chat', timestamp: 2300 }),
+      ],
+      {},
+      ownNodes,
+      'meshcore',
+    );
+    expect(channels.get(0)).toBe(2);
+    expect(channels.get(1)).toBe(3);
+    expect(channels.has(2)).toBe(false);
+  });
+
+  it('clears once the read watermark passes the MECP', () => {
+    const { channels } = computeUnreadMecpSeverityByView(
+      [msg({ channel: 0, payload: 'MECP/0/M01', timestamp: 2000 })],
+      { 'ch:0': 2500 },
+      ownNodes,
+      'meshtastic',
+    );
+    expect(channels.size).toBe(0);
+  });
+
+  it('ignores own and history MECP', () => {
+    const { channels } = computeUnreadMecpSeverityByView(
+      [
+        msg({ channel: 0, payload: 'MECP/0/M01', sender_id: 1, timestamp: 2000 }),
+        msg({ channel: 0, payload: 'MECP/1/T04', isHistory: true, timestamp: 2000 }),
+      ],
+      {},
+      ownNodes,
+      'meshtastic',
+    );
+    expect(channels.size).toBe(0);
+  });
+
+  it('keys DM MECP by peer, not channel', () => {
+    const { channels, dms } = computeUnreadMecpSeverityByView(
+      [msg({ channel: 0, to: 1, sender_id: 7, payload: 'MECP/1/T04', timestamp: 2000 })],
+      {},
+      ownNodes,
+      'meshtastic',
+    );
+    expect(dms.get(7)).toBe(1);
+    expect(channels.size).toBe(0);
+  });
+
+  it('mostSevereMecp picks the lowest severity among keys', () => {
+    const map = new Map([
+      [0, 3 as const],
+      [1, 1 as const],
+      [2, 2 as const],
+    ]);
+    expect(mostSevereMecp(map, [0, 2])).toBe(2);
+    expect(mostSevereMecp(map, [0, 1, 2])).toBe(1);
+    expect(mostSevereMecp(map, [5])).toBeNull();
   });
 });
 

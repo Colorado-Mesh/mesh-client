@@ -771,6 +771,7 @@
     "emptyNoMessagesYet": "No messages yet. Send one or wait for incoming messages.",
     "emptyConnectFirst": "Connect to a device to start chatting.",
     "dmPeerInfoAria": "DM peer info",
+    "unreadMecpMarker": "Unread {{severity}} MECP report",
     "dmPathChecking": "Checking path…",
     "dmPathCheckingAria": "Checking destination path reachability",
     "dmPathCheckingTooltip": "Requesting a Reticulum path to this destination.",

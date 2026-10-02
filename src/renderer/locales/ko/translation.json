@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{room}} 의 {{sender}}",
     "srNewMessage": "{{sender}} 님의 새 메시지: {{text}}",
     "srNewMessages_one": "{{count}} 새 메시지",
-    "srNewMessages_other": "{{count}} 새 메시지"
+    "srNewMessages_other": "{{count}} 새 메시지",
+    "unreadMecpMarker": "읽지 않은 {{severity}} MECP 보고서"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

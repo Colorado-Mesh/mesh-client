@@ -38,6 +38,41 @@ describe('channelButtonLabel', () => {
 });
 
 describe('ChatChannelSwitcher', () => {
+  it('shows the most severe unread MECP from non-active channels on the trigger and rows', async () => {
+    const user = userEvent.setup();
+    const { baseElement } = render(
+      <ChatChannelSwitcher
+        channels={CHANNELS}
+        unreadCounts={
+          new Map([
+            [0, 4],
+            [1, 1],
+            [2, 2],
+          ])
+        }
+        mecpSeverityByIndex={
+          new Map([
+            [0, 0 as const],
+            [1, 3 as const],
+            [2, 2 as const],
+          ])
+        }
+        activeIndex={0}
+        onSelect={vi.fn()}
+      />,
+    );
+    const trigger = screen.getByRole('button', {
+      name: 'All channels (3), 3 unread, Unread SAFETY MECP report',
+    });
+    await user.click(trigger);
+    expect(
+      screen.getByRole('option', { name: 'Ops 1, Unread ROUTINE MECP report' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Public' })).toBeInTheDocument();
+    hydrateAxeThemeColors(baseElement);
+    expect(await axe(screen.getByRole('listbox'))).toHaveNoViolations();
+  });
+
   it('counts unread outside the open channel on its trigger', () => {
     renderSwitcher();
     expect(

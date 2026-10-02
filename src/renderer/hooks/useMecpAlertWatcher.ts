@@ -5,7 +5,8 @@ import { loadMutedViews } from '@/renderer/lib/chatPanelProtocolStorage';
 import { chatViewKeyForMessage } from '@/renderer/lib/chatUnreadCounts';
 import i18n from '@/renderer/lib/i18n';
 import { beaconCancelToNodeForMessage } from '@/renderer/lib/mecp/beaconCancel';
-import { isBeacon, isBeaconCancel } from '@/renderer/lib/mecp/engine';
+import { isBeaconAck } from '@/renderer/lib/mecp/engine';
+import { isGeneralAck } from '@/renderer/lib/mecp/mecpAck';
 import { triggerMecpAlert } from '@/renderer/lib/mecp/mecpAlert';
 import {
   getCachedMecpLanguage,
@@ -25,7 +26,7 @@ import {
 } from '@/renderer/lib/mecp/sendMecpRebroadcast';
 import type { MeshProtocol } from '@/renderer/lib/types';
 import { useIncidentStore } from '@/renderer/stores/incidentStore';
-import type { MessageRecord } from '@/renderer/stores/messageStore';
+import { type MessageRecord, wasMessageBulkLoaded } from '@/renderer/stores/messageStore';
 
 export interface MecpWatcherProtocolSlice {
   protocol: MeshProtocol;
@@ -69,9 +70,12 @@ function upsertIncidentFromMessage(
   });
 }
 
-/** Own B01/B03 still update Incident Command (no alert). Other own traffic stays ignored. */
-function isOwnBeaconControl(parsed: MecpParsed, own: boolean): boolean {
-  return own && (isBeacon(parsed.codes) || isBeaconCancel(parsed.codes));
+/**
+ * Own reports (incl. B01/B03) still update Incident Command (no alert/audit/rebroadcast).
+ * Own R01/B02 are skipped: App `handleIncidentAck` already records them on send.
+ */
+function isOwnIncidentReport(parsed: MecpParsed, own: boolean): boolean {
+  return own && !isGeneralAck(parsed.codes) && !isBeaconAck(parsed.codes);
 }
 
 function isOwnMessage(
@@ -98,6 +102,21 @@ function shouldSkipMecpInboundHandling(
     Boolean(msg.tapback) ||
     parsed.severity == null
   );
+}
+
+/** History path: silent incident upsert with seed age/tombstone guards; no alert/audit. */
+function seedIncidentFromHistory(slice: MecpWatcherProtocolSlice, msg: MessageRecord): void {
+  const parsed = tryParseMecp(msg.payload);
+  if (!parsed) return;
+  const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
+  if (shouldSkipMecpInboundHandling(msg, parsed, own)) {
+    // Keep recent own reports (an own beacon stays cancellable by its originator).
+    if (isOwnIncidentReport(parsed, own) && !msg.tapback && !msg.viaStoreForward) {
+      upsertIncidentFromMessage(slice, msg, { fromSeed: true, localOrigin: true });
+    }
+    return;
+  }
+  upsertIncidentFromMessage(slice, msg, { fromSeed: true });
 }
 
 function loadRules() {
@@ -169,6 +188,12 @@ async function processNewMessages(
   for (const msg of slice.messages) {
     const key = messageDedupKey(slice.protocol, msg.id);
     if (seen.has(key) || inFlight.has(key)) continue;
+    // DB hydration often lands after mount (identity resolves on connect / sidecar start).
+    if (wasMessageBulkLoaded(msg.id)) {
+      seedIncidentFromHistory(slice, msg);
+      seen.add(key);
+      continue;
+    }
 
     const parsed = tryParseMecp(msg.payload);
     if (!parsed) {
@@ -178,9 +203,9 @@ async function processNewMessages(
 
     const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
     if (shouldSkipMecpInboundHandling(msg, parsed, own)) {
-      // Record our own beacon so Resolve can transmit B03. History/S&F/tapback stay skipped.
+      // Record our own report (beacon → Resolve can transmit B03). History/S&F/tapback stay skipped.
       if (
-        isOwnBeaconControl(parsed, own) &&
+        isOwnIncidentReport(parsed, own) &&
         !msg.isHistory &&
         !msg.viaStoreForward &&
         !msg.tapback
@@ -290,17 +315,7 @@ export function useMecpAlertWatcher(
     for (const slice of [meshtastic, meshcore, reticulum]) {
       for (const msg of slice.messages) {
         seed.add(messageDedupKey(slice.protocol, msg.id));
-        const parsed = tryParseMecp(msg.payload);
-        if (!parsed) continue;
-        const own = isOwnMessage(msg, slice.ownNodeIds, slice.ownSenderId);
-        if (shouldSkipMecpInboundHandling(msg, parsed, own)) {
-          // Hydration: keep a recent own beacon so the originator can still cancel it.
-          if (isOwnBeaconControl(parsed, own) && !msg.tapback && !msg.viaStoreForward) {
-            upsertIncidentFromMessage(slice, msg, { fromSeed: true, localOrigin: true });
-          }
-          continue;
-        }
-        upsertIncidentFromMessage(slice, msg, { fromSeed: true });
+        seedIncidentFromHistory(slice, msg);
       }
     }
     seenRef.current = seed;

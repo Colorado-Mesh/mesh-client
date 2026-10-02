@@ -26,7 +26,8 @@ MECP/<severity>/<codes> [freetext]
    - Alerts: sev **0** `'mecpSiren'` (~5s six-cycle siren, length-matched to URGENT) + emergency toast; sev **1** US EAS-style 853+960 Hz `'mecpEas'` (~5s) + toast (**ignore** mutes; **always** including focused chat); sev **2** `'mecpSafety'` (short–long dit–dah × 6, 1175 Hz square, ~4.4s) / **3** `'mecp'` repeated rising triple when unmuted; drills never alert
    - Focused Chat still alerts via `ChatPanel` → `triggerMecpAlert` (deduped with the watcher)
    - Optional RF rebroadcast (§ below)
-   - Upserts every MECP (hydrate + live) into the Incident Command store — see [Incident Command](#incident-command)
+   - Upserts every MECP (hydrate + live) into the Incident Command store — see [Incident Command](#incident-command). Own reports (not own R01/B02 ACKs) are upserted too, without alert/audit/rebroadcast; SQLite rows written via the bulk message-store writers (`wasMessageBulkLoaded`) always take the silent seed path even when hydration lands after mount
+4. Chat channel/DM chips and the overflow `ChatChannelSwitcher` (rows + trigger) show a static severity-colored `ShieldAlert` (`MecpUnreadIcon`) for the most severe **unread** MECP in that view (`computeUnreadMecpSeverityByView`, same watermark as unread counts). The Incident tab badge stays open non-drill MAYDAY/URGENT only (S9)
 
 Default tone shapes and timings: [notification-sounds.md — Default MECP tone shapes](../notification-sounds.md#default-mecp-tone-shapes).
 

@@ -855,7 +855,8 @@
     "srNewMessages_one": "{{count}} nowa wiadomość",
     "srNewMessages_few": "{{count}} nowe wiadomości",
     "srNewMessages_many": "{{count}} nowych wiadomości",
-    "srNewMessages_other": "{{count}} nowej wiadomości"
+    "srNewMessages_other": "{{count}} nowej wiadomości",
+    "unreadMecpMarker": "Nieprzeczytany raport MECP{{severity}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

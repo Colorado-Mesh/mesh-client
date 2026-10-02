@@ -821,7 +821,8 @@
     "notificationRrcTitle": "{{room}}的{{sender}}",
     "srNewMessage": "来自{{sender}}的新消息： {{text}}",
     "srNewMessages_one": "{{count}}条新消息",
-    "srNewMessages_other": "{{count}}条新消息"
+    "srNewMessages_other": "{{count}}条新消息",
+    "unreadMecpMarker": "未读{{severity}} MECP报告"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
