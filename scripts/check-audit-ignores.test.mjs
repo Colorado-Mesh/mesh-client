@@ -14,6 +14,7 @@ auditConfig:
   ignoreGhsas:
     # comment explaining the first ignore
     - GHSA-86w9-cpqp-85rv
+# column-zero comment inside the block
     - 'GHSA-aaaa-bbbb-cccc'
     - GHSA-86w9-cpqp-85rv
   ignoreCves:
@@ -33,7 +34,11 @@ describe('parseIgnoredGhsas', () => {
 
   it('parses the real pnpm-workspace.yaml', () => {
     const yaml = fs.readFileSync(path.join(ROOT, 'pnpm-workspace.yaml'), 'utf8');
-    for (const id of parseIgnoredGhsas(yaml)) {
+    const ids = parseIgnoredGhsas(yaml);
+    if (/^\s+ignoreGhsas:\s*$/m.test(yaml)) {
+      expect(ids.length).toBeGreaterThan(0);
+    }
+    for (const id of ids) {
       expect(id).toMatch(/^GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}$/i);
     }
   });
@@ -56,6 +61,20 @@ describe('evaluateIgnoredAdvisory', () => {
     expect(
       evaluateIgnoredAdvisory('GHSA-x', { withdrawn_at: null, vulnerabilities: [vuln('1.4.1')] }),
     ).toMatchObject({ status: 'removable', packages: ['node-forge >=1.4.1'] });
+  });
+
+  it('keeps the ignore while any affected npm package is still unpatched', () => {
+    const other = {
+      package: { ecosystem: 'npm', name: 'node-forge-lite' },
+      vulnerable_version_range: '<= 2.0.0',
+      first_patched_version: null,
+    };
+    expect(
+      evaluateIgnoredAdvisory('GHSA-x', {
+        withdrawn_at: null,
+        vulnerabilities: [vuln('1.4.1'), other],
+      }),
+    ).toMatchObject({ status: 'unpatched' });
   });
 
   it('flags a withdrawn advisory as removable', () => {

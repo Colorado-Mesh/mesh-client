@@ -40,10 +40,10 @@ export function parseIgnoredGhsas(yamlText) {
       continue;
     }
     if (!inAuditConfig) continue;
-    if (/^\S/.test(rawLine)) break;
 
     const line = rawLine.trim();
     if (line === '' || line.startsWith('#')) continue;
+    if (/^\S/.test(rawLine)) break;
     if (/^ignoreGhsas:\s*$/.test(line)) {
       inIgnoreList = true;
       continue;
@@ -90,8 +90,12 @@ export function evaluateIgnoredAdvisory(ghsaId, advisory) {
   if (typeof withdrawnAt === 'string' && withdrawnAt) {
     return { ghsaId, status: 'removable', reason: `advisory withdrawn ${withdrawnAt}`, packages };
   }
-  const patchedAny = vulns.some((v) => typeof v?.first_patched_version === 'string');
-  if (patchedAny) {
+  // One unpatched affected npm package still needs the ignore.
+  const npmVulns = vulns.filter((v) => v?.package?.ecosystem === 'npm');
+  const relevant = npmVulns.length > 0 ? npmVulns : vulns;
+  const patchedAll =
+    relevant.length > 0 && relevant.every((v) => typeof v?.first_patched_version === 'string');
+  if (patchedAll) {
     return { ghsaId, status: 'removable', reason: 'patched release available', packages };
   }
   return { ghsaId, status: 'unpatched', reason: 'no patched release yet', packages };

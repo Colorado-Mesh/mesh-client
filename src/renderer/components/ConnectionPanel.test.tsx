@@ -2607,6 +2607,59 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     warn.mockRestore();
   });
 
+  it('ignores a topic update that resolves after MQTT disconnects', async () => {
+    const user = userEvent.setup();
+    let resolveUpdate: () => void = () => {};
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+    const { rerender } = renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    rerender(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    resolveUpdate();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((document.getElementById('mqtt-topic-prefix') as HTMLInputElement).value).toBe('msh/US');
+  });
+
+  it('applies only the latest of overlapping topic updates', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'mesh-client:mqttProfiles:meshtastic',
+      JSON.stringify([
+        ...profiles,
+        { ...baseSettings, id: 'il', name: 'Illinois', topicPrefix: 'msh/US/IL' },
+      ]),
+    );
+    let resolveFirst: () => void = () => {};
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFirst = resolve;
+        }),
+    );
+    renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    await user.selectOptions(liveProfileSelect(), 'profile:il');
+    await waitFor(() => {
+      expect((liveProfileSelect() as HTMLSelectElement).value).toBe('profile:il');
+    });
+    resolveFirst();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('profile:il');
+  });
+
   it('never sends a wildcard profile prefix to a live session', async () => {
     const user = userEvent.setup();
     localStorage.setItem(

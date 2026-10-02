@@ -549,9 +549,16 @@ export default function ConnectionPanel({
     setMqttProfiles(next);
     saveMqttProfiles(next);
   };
+  // Async topic updates apply only if they are still the latest selection on a live session.
+  const mqttProfileRequestRef = useRef(0);
+  const mqttStatusRef = useRef(mqttStatus);
+  useEffect(() => {
+    mqttStatusRef.current = mqttStatus;
+  }, [mqttStatus]);
   const applyMeshtasticMqttProfile = (profile: MqttProfile) => {
     // An in-flight connect already captured the current settings.
     if (mqttStatus === 'connecting') return;
+    const requestId = ++mqttProfileRequestRef.current;
     const next = applyMqttProfile(mqttSettings, profile);
     const effect = mqttProfileApplyEffect(mqttSettings, next);
     if (mqttStatus === 'connected' && effect === 'reconnect') {
@@ -568,6 +575,12 @@ export default function ConnectionPanel({
       void window.electronAPI.mqtt
         .updateTopicPrefix({ topicPrefix })
         .then(() => {
+          if (
+            requestId !== mqttProfileRequestRef.current ||
+            mqttStatusRef.current !== 'connected'
+          ) {
+            return;
+          }
           setPendingMqttProfile(null);
           setMeshtasticPreset('custom');
           setMqttSettings((prev) => ({ ...applyMqttProfile(prev, profile), topicPrefix }));
