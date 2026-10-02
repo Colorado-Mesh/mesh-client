@@ -16,6 +16,8 @@
 Thumbs.db
 dist-electron/
 dist/
+# Generated at build time by scripts/ci-write-win-azure-signing.mjs — never commit (contains signing coordinates).
+electron-builder.win-signing.yml
 meta.json
 node_modules/
 release/

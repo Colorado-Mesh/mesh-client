@@ -226,6 +226,34 @@ jobs:
             exit 1
           fi
 
+      - name: Validate Windows signing secrets
+        if: matrix.os == 'windows-latest' && github.event_name == 'release'
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
+          AZURE_SIGNING_PROFILE: ${{ secrets.AZURE_SIGNING_PROFILE }}
+          AZURE_SIGNING_PUBLISHER_NAME: ${{ secrets.AZURE_SIGNING_PUBLISHER_NAME }}
+        run: |
+          if [ -z "$AZURE_CLIENT_ID" ]; then
+            echo "AZURE_CLIENT_ID not set — Windows build UNSIGNED (expected until Trusted Signing is configured)."
+            exit 0
+          fi
+          missing=""
+          [ -z "$AZURE_TENANT_ID" ] && missing="$missing AZURE_TENANT_ID"
+          [ -z "$AZURE_CLIENT_SECRET" ] && missing="$missing AZURE_CLIENT_SECRET"
+          [ -z "$AZURE_SIGNING_ENDPOINT" ] && missing="$missing AZURE_SIGNING_ENDPOINT"
+          [ -z "$AZURE_SIGNING_ACCOUNT" ] && missing="$missing AZURE_SIGNING_ACCOUNT"
+          [ -z "$AZURE_SIGNING_PROFILE" ] && missing="$missing AZURE_SIGNING_PROFILE"
+          [ -z "$AZURE_SIGNING_PUBLISHER_NAME" ] && missing="$missing AZURE_SIGNING_PUBLISHER_NAME"
+          if [ -n "$missing" ]; then
+            echo "AZURE_CLIENT_ID is set but missing required Trusted Signing secrets:$missing"
+            exit 1
+          fi
+
       # Embeds buildChannel=release + tag + Actions runUrl into the main bundle (support exports / logs).
       - name: Stamp CI build info
         env:
@@ -247,6 +275,23 @@ jobs:
           APPLE_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_ID || '' }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
           APPLE_TEAM_ID: ${{ matrix.os == 'macos-latest' && secrets.APPLE_TEAM_ID || '' }}
+          # ── Windows code signing via Azure Trusted Signing (only on windows-latest) ──
+          # Dormant-safe: scripts/ci-write-win-azure-signing.mjs injects
+          # win.azureSignOptions ONLY when AZURE_CLIENT_ID is present, so the build
+          # stays unsigned (and green) until these secrets are configured.
+          # AZURE_TENANT_ID/CLIENT_ID/CLIENT_SECRET authenticate electron-builder's
+          # Invoke-TrustedSigning via Azure EnvironmentCredential.
+          AZURE_TENANT_ID: ${{ matrix.os == 'windows-latest' && secrets.AZURE_TENANT_ID || '' }}
+          AZURE_CLIENT_ID: ${{ matrix.os == 'windows-latest' && secrets.AZURE_CLIENT_ID || '' }}
+          AZURE_CLIENT_SECRET: ${{ matrix.os == 'windows-latest' && secrets.AZURE_CLIENT_SECRET || '' }}
+          # Non-secret Trusted Signing coordinates (endpoint/account/profile) +
+          # publisherName. publisherName MUST match the certificate subject exactly,
+          # or electron-updater's verifyUpdateCodeSignature breaks Windows auto-updates.
+          AZURE_SIGNING_ENDPOINT: ${{ matrix.os == 'windows-latest' && secrets.AZURE_SIGNING_ENDPOINT || '' }}
+          AZURE_SIGNING_ACCOUNT: ${{ matrix.os == 'windows-latest' && secrets.AZURE_SIGNING_ACCOUNT || '' }}
+          AZURE_SIGNING_PROFILE: ${{ matrix.os == 'windows-latest' && secrets.AZURE_SIGNING_PROFILE || '' }}
+          AZURE_SIGNING_PUBLISHER_NAME: >-
+            ${{ matrix.os == 'windows-latest' && secrets.AZURE_SIGNING_PUBLISHER_NAME || '' }}
         # dist:* uses --publish never so electron-builder never POSTs a draft release.
         run: ${{ matrix.build_script }}
 

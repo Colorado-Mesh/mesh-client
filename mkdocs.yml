@@ -33,6 +33,7 @@ nav:
       - UI Style Guide: style-guide.md
       - CI/CD: ci-cd.md
       - Release Process: release-process.md
+      - Windows Code Signing: windows-code-signing.md
       - Localization: localization.md
       - Key Backup & Crypto: key-backup-and-crypto.md
       - Meshtastic Telemetry: meshtastic-telemetry-local-client.md

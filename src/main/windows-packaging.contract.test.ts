@@ -77,8 +77,11 @@ describe('Windows packaging (contract)', () => {
       expect(script, scriptName).toBeDefined();
       expect(script).not.toContain('dedupe:dist');
       expect(script).toMatch(
-        /pnpm run build && node scripts\/dist-win-hoisted-install\.mjs && electron-builder --win/,
+        /pnpm run build && node scripts\/dist-win-hoisted-install\.mjs && node scripts\/dist-win-electron-builder\.mjs/,
       );
+      // Windows signing is routed through the dormant-safe runner (not a bare
+      // electron-builder call) so Azure Trusted Signing activates only when creds exist.
+      expect(script).not.toContain('&& electron-builder --win');
       expect(script).toContain('node scripts/normalize-win-setup-artifact-names.mjs');
       expect(script).toContain('node scripts/verify-win-packaging.mjs');
       expect(script).toContain('node scripts/dist-win-restore-node-modules.mjs');
