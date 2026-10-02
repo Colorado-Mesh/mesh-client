@@ -121,5 +121,6 @@ auditConfig:
     # node-forge GHSA-86w9-cpqp-85rv (<=1.4.0, no patched release): RSA PKCS#1 v1.5
     # signature verification accepts extra nested DigestAlgorithm elements. TAK
     # (src/main/tak/) only generates certs/keys and builds/parses PKCS#12; it never
-    # verifies RSA signatures with node-forge. Remove once a patched release lands.
+    # verifies RSA signatures with node-forge. Remove once a patched release lands
+    # (`pnpm run update` / `check:audit-ignores` warns when it does).
     - GHSA-86w9-cpqp-85rv

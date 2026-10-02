@@ -69,6 +69,7 @@
     "check:log-injection": "node scripts/check-log-injection.mjs",
     "check:log-panel-filter": "node scripts/check-log-panel-filter.mjs",
     "check:log-service-sinks": "node scripts/check-log-service-sinks.mjs",
+    "check:audit-ignores": "node scripts/check-audit-ignores.mjs",
     "check:pinned-majors": "node scripts/check-pinned-majors.mjs",
     "check:pn-hosting-policy": "node scripts/check-pn-hosting-policy.mjs",
     "check:pr": "node scripts/check-pr.mjs",
