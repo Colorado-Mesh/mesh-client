@@ -21,6 +21,7 @@ import type { ChatMessage, MeshNode } from '../lib/types';
 import type { MessageRecord } from '../stores/messageStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
+import { channelButtonLabel } from './chat/ChatChannelSwitcher';
 import ChatPanel from './ChatPanel';
 import { ToastProvider } from './Toast';
 
@@ -6236,6 +6237,30 @@ describe('ChatPanel — weather view', () => {
     ) as Record<string, number>;
     expect(stored['ch:0']).toBe(ts - 5000);
     expect(computeChannelUnreadCounts(messages, stored, new Set([1]), 'meshtastic').get(0)).toBe(2);
+  });
+
+  it('keeps the selected channel ordinary unread badge visible in the weather view', async () => {
+    const user = userEvent.setup();
+    const ts = 1_781_469_336_193;
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+    const messages = [
+      makeMsg({ ...chatPost, timestamp: ts - 2000 }),
+      makeMsg({ ...weatherPost, timestamp: ts - 1000 }),
+    ];
+    useWeatherFilterStore.getState().setHideInChannels(true);
+    render(
+      <ToastProvider>
+        <ChatPanel {...baseProps} messages={messages} isActive={false} />
+      </ToastProvider>,
+    );
+    const generalTab = () =>
+      screen
+        .getAllByRole('button', { pressed: true })
+        .find((b) => b.getAttribute('data-strip-active') === 'true');
+    expect(generalTab()?.getAttribute('aria-label')).toBe('General');
+
+    await user.click(screen.getByRole('button', { name: /Weather view/ }));
+    expect(generalTab()?.getAttribute('aria-label')).toBe(channelButtonLabel('General', 1));
   });
 
   it('announces only posts the current view shows', async () => {

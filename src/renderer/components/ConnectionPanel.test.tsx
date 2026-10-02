@@ -2585,8 +2585,135 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     expect(window.electronAPI.mqtt.updateTopicPrefix).toHaveBeenCalledWith({
       topicPrefix: 'msh/US/IN/NWI',
     });
+    await waitFor(() => {
+      expect((liveProfileSelect() as HTMLSelectElement).value).toBe('profile:nwi');
+    });
     expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
     expect(screen.queryByText(/reconnect MQTT to use this profile/i)).toBeNull();
+  });
+
+  it('keeps settings unchanged when the live topic update is rejected', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockRejectedValueOnce(
+      new Error('topicPrefix too long'),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('updateTopicPrefix failed'));
+    });
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+    warn.mockRestore();
+  });
+
+  it('ignores a topic update that resolves after MQTT disconnects', async () => {
+    const user = userEvent.setup();
+    let resolveUpdate: () => void = () => {};
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+    const { rerender } = renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    rerender(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="disconnected"
+        protocol="meshtastic"
+      />,
+    );
+    resolveUpdate();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((document.getElementById('mqtt-topic-prefix') as HTMLInputElement).value).toBe('msh/US');
+  });
+
+  it('ignores a prior-session topic update that resolves after a reconnect', async () => {
+    const user = userEvent.setup();
+    let resolveUpdate: () => void = () => {};
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveUpdate = resolve;
+        }),
+    );
+    const panel = (mqttStatus: 'connected' | 'disconnected') => (
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus={mqttStatus}
+        protocol="meshtastic"
+      />
+    );
+    const { rerender } = render(panel('connected'));
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    rerender(panel('disconnected'));
+    rerender(panel('connected'));
+    resolveUpdate();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+  });
+
+  it('applies only the latest of overlapping topic updates', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'mesh-client:mqttProfiles:meshtastic',
+      JSON.stringify([
+        ...profiles,
+        { ...baseSettings, id: 'il', name: 'Illinois', topicPrefix: 'msh/US/IL' },
+      ]),
+    );
+    let resolveFirst: () => void = () => {};
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFirst = resolve;
+        }),
+    );
+    renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    await user.selectOptions(liveProfileSelect(), 'profile:il');
+    await waitFor(() => {
+      expect((liveProfileSelect() as HTMLSelectElement).value).toBe('profile:il');
+    });
+    resolveFirst();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('profile:il');
+  });
+
+  it('never sends a wildcard profile prefix to a live session', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'mesh-client:mqttProfiles:meshtastic',
+      JSON.stringify([{ ...baseSettings, id: 'wild', name: 'Wild', topicPrefix: 'msh/+/IN' }]),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:wild');
+    expect(window.electronAPI.mqtt.updateTopicPrefix).not.toHaveBeenCalled();
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+    warn.mockRestore();
+  });
+
+  it('disables the profile picker while MQTT is connecting', () => {
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connecting"
+        protocol="meshtastic"
+      />,
+    );
+    expect(presetSelect().disabled).toBe(true);
   });
 
   it('keeps a broker change pending on a live session until MQTT disconnects', async () => {

@@ -153,6 +153,17 @@ export function matchMqttProfile(
   );
 }
 
+/** Matches the `mqtt:updateTopicPrefix` IPC limit in src/main/index.ts. */
+export const MQTT_LIVE_TOPIC_PREFIX_MAX_LENGTH = 128;
+
+/** Trimmed prefix safe for `mqtt.updateTopicPrefix`, or null when main would reject or ignore it. */
+export function normalizeLiveTopicPrefix(topicPrefix: string): string | null {
+  const trimmed = topicPrefix.trim();
+  if (!trimmed || trimmed.length > MQTT_LIVE_TOPIC_PREFIX_MAX_LENGTH) return null;
+  if (trimmed.includes('+') || trimmed.includes('#')) return null;
+  return trimmed;
+}
+
 /**
  * What a live MQTT session needs after switching settings: nothing, a topic re-subscribe
  * (`mqtt.updateTopicPrefix`), or a reconnect (broker, credentials, or transport changed).
