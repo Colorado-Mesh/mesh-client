@@ -203,6 +203,7 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
+import { WrappingChannelList } from './chat/WrappingChannelList';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -272,6 +273,7 @@ function ChipUnreadBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden="true"
+      data-chip-unread
       className="text-2xs flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white"
     >
       {count > 99 ? '99+' : count}
@@ -2791,21 +2793,17 @@ function ChatPanel({
     <div className="flex h-full min-h-0 min-w-0 flex-col">
       {/* Row 1 — Wrapping channels (or Reticulum DMs) + toolbar utilities */}
       <div
-        className={`mb-2 grid min-w-0 shrink-0 grid-cols-1 items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
+        className={`mb-2 grid min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)] ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
       >
         <div
-          className="flex min-w-0 flex-wrap items-center gap-2"
+          className="flex h-full min-h-0 min-w-0 items-start gap-2"
           data-testid="chat-conversation-row"
         >
           {dmOnlyChat ? (
             dmTabPills
           ) : (
             <>
-              <div
-                role="group"
-                aria-label={t('chatPanel.channels')}
-                className="flex min-w-0 flex-1 flex-wrap items-center gap-1"
-              >
+              <WrappingChannelList activeKey={channelViewActive ? channel : null}>
                 {channels.map((ch, chIdx) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
                   // Weather shows a subset of the channel, so ordinary unread stays visible there.
@@ -2827,6 +2825,7 @@ function ChatPanel({
                       }
                       aria-pressed={isActiveChannel}
                       data-strip-active={isActiveChannel ? 'true' : undefined}
+                      data-channel-unread={unread}
                       onClick={() => {
                         selectChannel(ch.index);
                         setViewMode((v) => (v === 'weather' ? 'weather' : 'channels'));
@@ -2867,7 +2866,7 @@ function ChatPanel({
                     </button>
                   );
                 })}
-              </div>
+              </WrappingChannelList>
               {meshcoreChannelSources && onSetMeshcoreChannel ? (
                 <MeshcoreChatChannelManager
                   channels={meshcoreChannelSources}
@@ -3480,9 +3479,10 @@ function ChatPanel({
       )}
 
       {/* Messages area */}
-      <div className={`relative min-h-0 flex-1 ${viewMode === 'starred' ? 'hidden' : ''}`}>
+      <div className={`relative min-h-12 flex-1 ${viewMode === 'starred' ? 'hidden' : ''}`}>
         <div
           ref={scrollContainerRef}
+          data-chat-scroll-root
           onScroll={handleScroll}
           className="bg-deep-black/50 h-full overflow-y-auto overscroll-contain rounded-xl p-3 [overflow-anchor:none]"
         >
@@ -4373,7 +4373,7 @@ function ChatPanel({
         />
       ) : null}
       <ChatComposer
-        className="mt-1"
+        className="mt-1 shrink-0"
         protocol={protocol}
         viewKey={viewKey}
         isConnected={isConnected}

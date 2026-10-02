@@ -1006,7 +1006,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1041,7 +1041,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     // distFromBottom = 300 → showScrollButton on (>200), label should be "Jump to Latest" (no divider)
@@ -1365,7 +1365,7 @@ describe('ChatPanel scroll pinning', () => {
 
     mockScrollToIndex.mockClear();
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1410,7 +1410,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1476,7 +1476,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1535,7 +1535,7 @@ describe('ChatPanel scroll pinning', () => {
           <ChatPanel {...props} messages={messages} />
         </ToastProvider>,
       );
-      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      const stream = container.querySelector<HTMLDivElement>('[data-chat-scroll-root]')!;
       Object.defineProperties(stream, {
         scrollHeight: { value: 2000, configurable: true },
         clientHeight: { value: 400, configurable: true },
@@ -1585,7 +1585,7 @@ describe('ChatPanel scroll pinning', () => {
           <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
         </ToastProvider>,
       );
-      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      const stream = container.querySelector<HTMLDivElement>('[data-chat-scroll-root]')!;
       Object.defineProperties(stream, {
         scrollHeight: { value: 2000, configurable: true },
         clientHeight: { value: 400, configurable: true },
@@ -1613,7 +1613,7 @@ describe('ChatPanel scroll pinning', () => {
           <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
         </ToastProvider>,
       );
-      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      const stream = container.querySelector<HTMLDivElement>('[data-chat-scroll-root]')!;
       Object.defineProperties(stream, {
         scrollHeight: { value: 2000, configurable: true },
         clientHeight: { value: 400, configurable: true },
@@ -1641,7 +1641,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1704,7 +1704,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1742,7 +1742,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollTop', {
       value: 400,
       writable: true,
@@ -1802,7 +1802,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     // Keep distFromBottom large so applyNearBottomReadState doesn't clear the
     // divider via setUnreadDividerTimestamp(0) before the test exercises it.
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
@@ -2658,7 +2658,7 @@ describe('ChatPanel unread watermarks', () => {
         <ChatPanel {...baseProps} channels={manyChannels} />
       </ToastProvider>,
     );
-    const channels = screen.getByRole('group', { name: 'Channels' });
+    const channels = screen.getByRole('region', { name: 'Channels' });
     expect(within(channels).getAllByRole('button')).toHaveLength(25);
     const headerRow = channels.closest('.grid');
     const exportBtn = screen.getByRole('button', { name: 'Export chat' });
@@ -5847,7 +5847,7 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
           <ChatPanel {...baseProps} channels={channels} messages={messages} />
         </ToastProvider>,
       );
-      const group = screen.getByRole('group', { name: 'Channels' });
+      const group = screen.getByRole('region', { name: 'Channels' });
       expect(within(group).getAllByRole('button')).toHaveLength(24);
       for (const ch of channels.slice(1)) {
         const chip = within(group).getByRole('button', { name: `${ch.name} 1` });
@@ -6311,7 +6311,7 @@ describe('ChatPanel — weather view', () => {
         </ToastProvider>,
       );
       await user.click(screen.getByRole('button', { name: /Weather view/ }));
-      const group = screen.getByRole('group', { name: 'Channels' });
+      const group = screen.getByRole('region', { name: 'Channels' });
       expect(within(group).getAllByRole('button')).toHaveLength(40);
       const last = within(group).getByRole('button', {
         name: channelButtonLabel('Regional 39', 1),
