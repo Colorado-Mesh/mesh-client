@@ -2780,7 +2780,11 @@ function ChatPanel({
               >
                 {channels.map((ch, chIdx) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
-                  const unread = isActiveChannel ? 0 : (unreadCounts.get(ch.index) ?? 0);
+                  // Weather shows a subset of the channel, so ordinary unread stays visible there.
+                  const unread =
+                    viewMode === 'channels' && channel === ch.index
+                      ? 0
+                      : (unreadCounts.get(ch.index) ?? 0);
                   return (
                     <button
                       type="button"

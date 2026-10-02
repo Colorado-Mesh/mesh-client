@@ -6,11 +6,13 @@ import {
   deleteMqttProfile,
   loadMqttProfiles,
   matchMqttProfile,
+  MQTT_LIVE_TOPIC_PREFIX_MAX_LENGTH,
   MQTT_PROFILE_NAME_MAX_LENGTH,
   MQTT_PROFILES_STORAGE_KEY,
   mqttProfileApplyEffect,
   mqttProfileIdFromSelectValue,
   mqttProfileSelectValue,
+  normalizeLiveTopicPrefix,
   renameMqttProfile,
   saveMqttProfiles,
 } from './mqttProfiles';
@@ -111,6 +113,15 @@ describe('mqttProfiles', () => {
     );
     expect(mqttProfileApplyEffect(base, { ...base, server: 'other' })).toBe('reconnect');
     expect(mqttProfileApplyEffect(base, { ...base, password: 'x' })).toBe('reconnect');
+  });
+
+  it('normalizes live topic prefixes the main process would accept', () => {
+    expect(normalizeLiveTopicPrefix('  msh/US/IL  ')).toBe('msh/US/IL');
+    expect(normalizeLiveTopicPrefix('   ')).toBeNull();
+    expect(normalizeLiveTopicPrefix('msh/+/IL')).toBeNull();
+    expect(normalizeLiveTopicPrefix('msh/#')).toBeNull();
+    expect(normalizeLiveTopicPrefix('m'.repeat(MQTT_LIVE_TOPIC_PREFIX_MAX_LENGTH))).not.toBeNull();
+    expect(normalizeLiveTopicPrefix('m'.repeat(MQTT_LIVE_TOPIC_PREFIX_MAX_LENGTH + 1))).toBeNull();
   });
 
   it('round-trips select values', () => {

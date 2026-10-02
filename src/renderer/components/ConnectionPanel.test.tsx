@@ -2585,8 +2585,54 @@ describe('ConnectionPanel Meshtastic MQTT profiles', () => {
     expect(window.electronAPI.mqtt.updateTopicPrefix).toHaveBeenCalledWith({
       topicPrefix: 'msh/US/IN/NWI',
     });
+    await waitFor(() => {
+      expect((liveProfileSelect() as HTMLSelectElement).value).toBe('profile:nwi');
+    });
     expect(window.electronAPI.mqtt.connect).not.toHaveBeenCalled();
     expect(screen.queryByText(/reconnect MQTT to use this profile/i)).toBeNull();
+  });
+
+  it('keeps settings unchanged when the live topic update is rejected', async () => {
+    const user = userEvent.setup();
+    vi.mocked(window.electronAPI.mqtt.updateTopicPrefix).mockRejectedValueOnce(
+      new Error('topicPrefix too long'),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:nwi');
+    await waitFor(() => {
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining('updateTopicPrefix failed'));
+    });
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+    warn.mockRestore();
+  });
+
+  it('never sends a wildcard profile prefix to a live session', async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      'mesh-client:mqttProfiles:meshtastic',
+      JSON.stringify([{ ...baseSettings, id: 'wild', name: 'Wild', topicPrefix: 'msh/+/IN' }]),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    renderPanel('connected');
+    await user.selectOptions(liveProfileSelect(), 'profile:wild');
+    expect(window.electronAPI.mqtt.updateTopicPrefix).not.toHaveBeenCalled();
+    expect((liveProfileSelect() as HTMLSelectElement).value).toBe('');
+    warn.mockRestore();
+  });
+
+  it('disables the profile picker while MQTT is connecting', () => {
+    render(
+      <ConnectionPanel
+        state={disconnectedState}
+        onConnect={vi.fn().mockResolvedValue(undefined)}
+        onAutoConnect={vi.fn().mockResolvedValue(undefined)}
+        onDisconnect={vi.fn().mockResolvedValue(undefined)}
+        mqttStatus="connecting"
+        protocol="meshtastic"
+      />,
+    );
+    expect(presetSelect().disabled).toBe(true);
   });
 
   it('keeps a broker change pending on a live session until MQTT disconnects', async () => {
