@@ -4,7 +4,7 @@ import { join, relative } from 'node:path';
 export const REPO_ROOT = join(import.meta.dirname, '../../..');
 const COMPONENTS_DIR = join(REPO_ROOT, 'src/renderer/components');
 
-const ANCHOR_LITERAL_RE = /(?:data-setting-anchor|anchorId)=(["'])([^"']+)\1/g;
+const ANCHOR_LITERAL_RE = /(?:data-setting-anchor|anchorId)\s*=\s*(["'])([^"']+)\1/g;
 /** Same shape as the i18n scanner: static string-literal keys passed to `t` / `i18n.t`. */
 const T_KEY_RE = /\b(?:t|i18n\.t)\(\s*['"]([^'"]+)['"]\s*[),]/g;
 

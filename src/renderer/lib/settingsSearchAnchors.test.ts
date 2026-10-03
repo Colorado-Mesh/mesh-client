@@ -26,6 +26,14 @@ describe('settings search anchors stay in sync with the registry', () => {
     expect(orphans).toEqual([]);
   });
 
+  it('reads anchors in either quote style and with spaces around =', () => {
+    expect(
+      collectAnchorIds(
+        `<div data-setting-anchor="app.a.b" /><Panel anchorId = 'app.c.d' /><X anchorId= "app.a.b" />`,
+      ),
+    ).toEqual(['app.a.b', 'app.c.d', 'app.a.b']);
+  });
+
   it('no anchor id repeats within a single file', () => {
     const duplicates = sources.flatMap(({ path, source }) => {
       const ids = collectAnchorIds(source);

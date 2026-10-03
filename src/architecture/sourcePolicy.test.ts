@@ -167,6 +167,7 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
       "<div data-setting-anchor='app.gps.shareLocation'>",
       '<Panel anchorId="radio.lora">',
       "<Panel anchorId='nomadNetwork.pages.serve'>",
+      '<Panel anchorId = "app.gps.shareLocation">',
     ])('accepts %s', (source) => {
       expect(isFlagged(source)).toBe(false);
     });
@@ -176,6 +177,8 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
       "<div data-setting-anchor='app.gps.'>",
       '<div data-setting-anchor="app..gps">',
       "<Panel anchorId='app..gps'>",
+      '<Panel anchorId = "app..gps">',
+      '<div data-setting-anchor= "app.gps.">',
       '<div data-setting-anchor="app">',
       '<div data-setting-anchor="app.gps.share.location">',
       '<div data-setting-anchor="app.Gps.share">',
