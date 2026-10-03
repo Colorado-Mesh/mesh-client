@@ -835,7 +835,8 @@
     "srNewMessage": "Nova mensagem de {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} nova mensagem",
     "srNewMessages_other": "{{count}} novas mensagens",
-    "unreadMecpMarker": "Relatório MECP {{severity}} não lido"
+    "unreadMecpMarker": "Relatório MECP {{severity}} não lido",
+    "floodScopeSaveFailed": "Não foi possível salvar o escopo de envio. A opção salva anterior ainda se aplica."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "Mostrar QR do canal MeshCore para {{name}}",
       "privateChannel": "Canal privado (inserir chave)",
-      "privateKeyHint": "Insira a chave do canal compartilhado: exatamente 32 caracteres hexadecimais (16 bytes), nem todos zeros."
+      "privateKeyHint": "Insira a chave do canal compartilhado: exatamente 32 caracteres hexadecimais (16 bytes), nem todos zeros.",
+      "scopeLabel": "Enviar escopo para este canal",
+      "scopeEffective": "Escopo de envio efetivo: {{scope}}",
+      "scopeHint": "Salvo neste aplicativo para este rádio e canal. O padrão segue a configuração do escopo de Rádio. Substituições se aplicam temporariamente para enviar e restaurar a configuração de Rádio depois. A configuração do repetidor determina o encaminhamento.",
+      "scopeNeedsIdentity": "As preferências de escopo estão disponíveis após a descoberta de identidade de rádio.",
+      "scopeSaveFailed": "Canal salvo, mas seu escopo de envio não pôde ser salvo neste aplicativo. Tente salvar novamente."
     },
     "regions": {
       "UNSET": {

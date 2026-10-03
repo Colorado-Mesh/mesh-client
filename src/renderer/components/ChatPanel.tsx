@@ -48,11 +48,13 @@ import {
 import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
+import { clearFloodScopeOverride } from '@/renderer/lib/chatPanelProtocolStorage';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
+import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { MESHCORE_PUBLIC_CHANNEL_INDEX } from '@/renderer/lib/meshcoreConfiguredChatChannels';
 import { withMeshcoreFloodScopeOverride } from '@/renderer/lib/meshcoreFloodScopeSend';
 import { isMeshcoreDmExcludedHwModel } from '@/renderer/lib/meshcoreUtils';
@@ -97,6 +99,7 @@ import {
 import { senderInitials } from '@/renderer/lib/senderInitials';
 import { CHAT_SR_ANNOUNCE_WINDOW_MS } from '@/renderer/lib/timeConstants';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { useIdentityStore } from '@/renderer/stores/identityStore';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import {
@@ -1072,7 +1075,12 @@ function ChatPanel({
     }
     setRemovingChannel(true);
     try {
+      const scopeKey = meshcoreChannelScopeKey(
+        identityId ? useIdentityStore.getState().identities[identityId]?.signature : undefined,
+        meshcoreChannelSources?.find((ch) => ch.index === target.index),
+      );
       await onDeleteMeshcoreChannel(target.index);
+      if (scopeKey) clearFloodScopeOverride('meshcore', scopeKey);
       setChannelToRemove(null);
       if (channel === target.index) {
         const next = channels.find((ch) => ch.index !== target.index);
@@ -1713,6 +1721,18 @@ function ChatPanel({
     if (viewMode === 'dm' && activeDmNode != null) return `dm:${activeDmNode}`;
     return `ch:${channel}`;
   }, [viewMode, activeDmNode, channel]);
+
+  const scopeRadioSignature = useIdentityStore((s) =>
+    identityId ? s.identities[identityId]?.signature : undefined,
+  );
+  const channelScopeKey = useMemo(
+    () =>
+      meshcoreChannelScopeKey(
+        scopeRadioSignature,
+        meshcoreChannelSources?.find((c) => c.index === channel),
+      ),
+    [scopeRadioSignature, meshcoreChannelSources, channel],
+  );
 
   // Weather view shows a subset of the channel, so it must not advance the `ch:` watermark
   // that channel unread counts use.
@@ -4396,6 +4416,7 @@ function ChatPanel({
         payloadLimit={composerPayloadLimit}
         lxmfReplyHashReplies={lxmfReplyHashReplies}
         showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
+        floodScopeStorageKey={viewMode === 'dm' ? undefined : channelScopeKey}
         floodScopePresets={meshcoreFloodScopePresets}
         onRememberFloodScopePreset={onRememberMeshcoreFloodScopePreset}
         resolveShareLocation={resolveShareLocation}

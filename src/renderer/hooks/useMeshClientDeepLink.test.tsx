@@ -144,32 +144,38 @@ describe('MeshClientDeepLinkHost', () => {
     expect(addToast).toHaveBeenCalledWith('qrIngest.meshcoreContactImported', 'success');
   });
 
-  it('dispatches meshcore channel import event after confirm', async () => {
-    const user = userEvent.setup();
-    const spy = vi.fn();
-    window.addEventListener('mesh-client:meshcoreChannelFromQr', spy as EventListener);
-    try {
-      render(<MeshClientDeepLinkHost />);
-      const uri = `meshcore://channel/add?name=Public&secret=${MC_SECRET}`;
-      await act(async () => {
-        openUrlHandler?.(uri);
-        await Promise.resolve();
-      });
-      await user.click(
-        screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreChannelImportAction' }),
-      );
-      await waitFor(() => {
-        expect(spy).toHaveBeenCalled();
-      });
-      // No MeshcoreChannelSection consumer → deferred / queued-for-review toast; pending kept.
-      expect(addToast).toHaveBeenCalledWith('qrIngest.meshcoreChannelImported', 'success');
-      expect(
-        screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreChannelImportAction' }),
-      ).toBeTruthy();
-    } finally {
-      window.removeEventListener('mesh-client:meshcoreChannelFromQr', spy as EventListener);
-    }
-  });
+  it.each(['', '&region_scope=%23metro', '&mesh_client_scope=unscoped'])(
+    'dispatches meshcore channel scope after confirm: %s',
+    async (scopeQuery) => {
+      const user = userEvent.setup();
+      const spy = vi.fn();
+      window.addEventListener('mesh-client:meshcoreChannelFromQr', spy as EventListener);
+      try {
+        render(<MeshClientDeepLinkHost />);
+        const uri = `meshcore://channel/add?name=Public&secret=${MC_SECRET}${scopeQuery}`;
+        await act(async () => {
+          openUrlHandler?.(uri);
+          await Promise.resolve();
+        });
+        await user.click(
+          screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreChannelImportAction' }),
+        );
+        await waitFor(() => {
+          expect(spy).toHaveBeenCalled();
+        });
+        expect((spy.mock.calls[0][0] as CustomEvent).detail.regionScope).toBe(
+          scopeQuery.includes('unscoped') ? '' : scopeQuery ? '#metro' : undefined,
+        );
+        // No MeshcoreChannelSection consumer → deferred / queued-for-review toast; pending kept.
+        expect(addToast).toHaveBeenCalledWith('qrIngest.meshcoreChannelImported', 'success');
+        expect(
+          screen.getByRole('button', { name: 'qrIngest.confirmMeshcoreChannelImportAction' }),
+        ).toBeTruthy();
+      } finally {
+        window.removeEventListener('mesh-client:meshcoreChannelFromQr', spy as EventListener);
+      }
+    },
+  );
 
   it('cancel does not import', async () => {
     const user = userEvent.setup();

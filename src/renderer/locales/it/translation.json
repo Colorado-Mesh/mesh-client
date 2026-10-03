@@ -835,7 +835,8 @@
     "srNewMessage": "Nuovo messaggio da {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} nuovo messaggio",
     "srNewMessages_other": "{{count}} nuovi messaggi",
-    "unreadMecpMarker": "Report MeCP {{severity}} non letto"
+    "unreadMecpMarker": "Report MeCP {{severity}} non letto",
+    "floodScopeSaveFailed": "Impossibile salvare l'ambito di invio. La scelta salvata in precedenza è ancora valida."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "Mostra QR del canale MeshCore per {{name}}",
       "privateChannel": "Canale privato (inserisci chiave)",
-      "privateKeyHint": "Immettere la chiave del canale condiviso: esattamente 32 caratteri esadecimali (16 byte), non tutti zeri."
+      "privateKeyHint": "Immettere la chiave del canale condiviso: esattamente 32 caratteri esadecimali (16 byte), non tutti zeri.",
+      "scopeLabel": "Invia ambito per questo canale",
+      "scopeEffective": "Ambito di invio effettivo: {{scope}}",
+      "scopeHint": "Salvato in questa app per questa radio e canale. L'impostazione predefinita segue l'impostazione Radio scope. Le sostituzioni si applicano temporaneamente all'invio e al successivo ripristino dell'impostazione Radio. La configurazione del ripetitore determina l'inoltro.",
+      "scopeNeedsIdentity": "Le preferenze di ambito sono disponibili dopo la scoperta dell'identità radio.",
+      "scopeSaveFailed": "Il canale è stato salvato, ma non è stato possibile salvare il suo ambito di invio in questa app. Riprova a salvare."
     },
     "regions": {
       "UNSET": {

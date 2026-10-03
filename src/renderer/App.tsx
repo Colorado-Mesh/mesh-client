@@ -4887,6 +4887,7 @@ function AppContent() {
                                         ? meshcoreRuntime.channels
                                         : undefined
                                     }
+                                    identityId={focusedIdentityId}
                                     onMeshcoreSetChannel={
                                       capabilities.hasCompanionContactManagementConfig
                                         ? meshcorePanelActions.meshcoreSetChannel

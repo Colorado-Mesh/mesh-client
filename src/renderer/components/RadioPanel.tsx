@@ -3,11 +3,25 @@ import { Lock, LockOpen, TriangleAlert } from 'lucide-react-motion';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useFloodScopeOverride } from '@/renderer/hooks/useFloodScopeOverride';
+import {
+  FLOOD_SCOPE_OVERRIDE_UNSCOPED,
+  loadFloodScopeOverridesInitial,
+  saveFloodScopeOverride,
+} from '@/renderer/lib/chatPanelProtocolStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { tryPersistMeshcoreIdentityFromRadioExport } from '@/renderer/lib/letsMeshJwt';
 import { applyMeshcoreContactAdd } from '@/renderer/lib/meshClientDeepLinkApply';
+import {
+  effectiveMeshcoreChannelScope,
+  meshcoreChannelScopeKey,
+  meshcoreScopeOverrideForQr,
+  meshcoreScopeOverrideFromQr,
+} from '@/renderer/lib/meshcoreChannelScope';
+import { normalizeMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScope';
+import { isValidMeshcoreFloodScopeHashtag } from '@/renderer/lib/meshcoreFloodScopePresetsStorage';
 import { formatMeshtasticModuleApplyError } from '@/renderer/lib/meshtastic/meshtasticApplyErrorMessage';
 import { clearMeshtasticClientNotification } from '@/renderer/lib/meshtastic/meshtasticClientNotification';
 import {
@@ -28,7 +42,9 @@ import {
   REBROADCAST_MODE_OPTIONS,
   REGION_OPTIONS,
 } from '@/renderer/lib/meshtastic/protobufEnumOptions';
+import type { IdentityId } from '@/renderer/lib/types';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
+import { useIdentityStore } from '@/renderer/stores/identityStore';
 import { bytesToHex, hexToBytesExactOrThrow } from '@/shared/hexBytes';
 import {
   buildMeshcoreChannelAddUri,
@@ -191,6 +207,7 @@ interface Props {
   capabilities?: ProtocolCapabilities;
   onSendLockdownAuth?: (auth: MeshtasticLockdownAuthRequest) => Promise<void>;
   meshcoreChannels?: { index: number; name: string; secret: Uint8Array }[];
+  identityId?: IdentityId | null;
   onMeshcoreSetChannel?: (idx: number, name: string, secret: Uint8Array) => Promise<void>;
   onMeshcoreDeleteChannel?: (idx: number) => Promise<void>;
   onApplyLoraParams?: (params: {
@@ -745,6 +762,7 @@ export default function RadioPanel({
   capabilities,
   onSendLockdownAuth,
   meshcoreChannels,
+  identityId,
   onMeshcoreSetChannel,
   onMeshcoreDeleteChannel,
   onApplyLoraParams,
@@ -1103,6 +1121,9 @@ export default function RadioPanel({
 
   const { addToast } = useToast();
   const { t } = useTranslation();
+  const scopeRadioSignature = useIdentityStore((s) =>
+    identityId ? s.identities[identityId]?.signature : undefined,
+  );
   /**
    * Labels come from the proto enum name, not the wire number, so a new upstream value
    * lands in the dropdown with a humanized fallback instead of silently shifting labels.
@@ -2141,6 +2162,9 @@ export default function RadioPanel({
       {!capabilities?.hasChannelConfig && meshcoreChannels !== undefined && (
         <MeshcoreChannelSection
           channels={meshcoreChannels}
+          radioSignature={scopeRadioSignature}
+          radioScope={meshcoreFloodScopeHashtag}
+          scopePresets={meshcoreFloodScopePresets}
           onSetChannel={onMeshcoreSetChannel ?? (async () => {})}
           onDeleteChannel={onMeshcoreDeleteChannel ?? (async () => {})}
           disabled={disabled}
@@ -4052,22 +4076,52 @@ function hexToBytes(hex: string): Uint8Array {
   return hexToBytesExactOrThrow(hex, 16);
 }
 
+function MeshcoreChannelScopeSummary({
+  scopeKey,
+  radioScope,
+}: {
+  scopeKey: string | null;
+  radioScope: string;
+}) {
+  const { t } = useTranslation();
+  const override = useFloodScopeOverride('meshcore', scopeKey);
+  return (
+    <p className="text-muted px-3 text-xs break-words">
+      {scopeKey
+        ? t('radioPanel.meshcoreChannel.scopeEffective', {
+            scope:
+              effectiveMeshcoreChannelScope(override, radioScope) ||
+              t('chatPanel.floodScopeOverrideUnscoped'),
+          })
+        : t('radioPanel.meshcoreChannel.scopeNeedsIdentity')}
+    </p>
+  );
+}
+
 function MeshcoreChannelSection({
   channels,
   onSetChannel,
   onDeleteChannel,
   disabled,
+  radioSignature,
+  radioScope,
+  scopePresets,
 }: {
   channels: { index: number; name: string; secret: Uint8Array }[];
   onSetChannel: (idx: number, name: string, secret: Uint8Array) => Promise<void>;
   onDeleteChannel: (idx: number) => Promise<void>;
   disabled: boolean;
+  radioSignature?: string;
+  radioScope: string;
+  scopePresets: string[];
 }) {
   const { t } = useTranslation();
   const { addToast } = useToast();
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
   const [editKeyHex, setEditKeyHex] = useState('');
+  const [editScope, setEditScope] = useState('');
+  const [customScope, setCustomScope] = useState('');
   const [revealedIdx, setRevealedIdx] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [confirmDeleteIdx, setConfirmDeleteIdx] = useState<number | null>(null);
@@ -4078,8 +4132,35 @@ function MeshcoreChannelSection({
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const shareQrRef = useRef<HTMLDivElement>(null);
+  const previousRadioSignature = useRef(radioSignature);
+  const radioSwitchGeneration = useRef(0);
+
+  useEffect(() => {
+    const previous = previousRadioSignature.current;
+    previousRadioSignature.current = radioSignature;
+    // Keep a queued QR draft when first discovering the recipient radio.
+    if (!previous?.startsWith('meshcore:pk:') || previous === radioSignature) return;
+    radioSwitchGeneration.current += 1;
+    setEditingIdx(null);
+    setAddingNew(false);
+    setShareQrIdx(null);
+    setConfirmDeleteIdx(null);
+    setRevealedIdx(new Set());
+  }, [radioSignature]);
 
   const isValidHex = editKeyHex.length === 32 && /^[0-9a-fA-F]{32}$/.test(editKeyHex);
+  const shareScopeKey = meshcoreChannelScopeKey(
+    radioSignature,
+    channels.find((ch) => ch.index === shareQrIdx),
+  );
+  const shareScopeOverride = useFloodScopeOverride('meshcore', shareScopeKey);
+  const canSaveScope = /^meshcore:pk:[0-9a-f]{64}$/i.test(radioSignature ?? '');
+  const selectedScope =
+    editScope === 'custom' ? normalizeMeshcoreFloodScopeHashtag(customScope) : editScope;
+  const scopeValid = editScope !== 'custom' || isValidMeshcoreFloodScopeHashtag(selectedScope);
+  const namedScopes = [
+    ...new Set([...scopePresets, ...(editScope.startsWith('#') ? [editScope] : [])]),
+  ];
 
   useEffect(() => {
     const onChannelQr = (ev: Event) => {
@@ -4105,6 +4186,8 @@ function MeshcoreChannelSection({
       setNewIdx(String(idx));
       setEditName(detail.name);
       setEditKeyHex(detail.secretHex);
+      setEditScope(meshcoreScopeOverrideFromQr(detail.regionScope));
+      setCustomScope('');
       if (detailsRef.current) detailsRef.current.open = true;
       addToast(t('qrIngest.meshcoreChannelPrefill'), 'success');
       detail.settle?.('accepted');
@@ -4137,6 +4220,9 @@ function MeshcoreChannelSection({
     setEditingIdx(ch.index);
     setEditName(ch.name);
     setEditKeyHex(ch.secret?.length === 16 ? bytesToHex(ch.secret) : '');
+    const key = meshcoreChannelScopeKey(radioSignature, ch);
+    setEditScope(key ? (loadFloodScopeOverridesInitial('meshcore')[key] ?? '') : '');
+    setCustomScope('');
     setAddingNew(false);
     setShareQrIdx(null);
   }
@@ -4147,6 +4233,8 @@ function MeshcoreChannelSection({
     setNewIdx('');
     setEditName('');
     setEditKeyHex('');
+    setEditScope('');
+    setCustomScope('');
   }
 
   async function handleSave() {
@@ -4158,9 +4246,24 @@ function MeshcoreChannelSection({
       addToast(t('radioPanel.meshcoreChannelNameRequired'), 'error');
       return;
     }
+    const operationGeneration = radioSwitchGeneration.current;
     setSaving(true);
     try {
-      await onSetChannel(idx, finalName, hexToBytes(editKeyHex));
+      const secret = hexToBytes(editKeyHex);
+      const scope =
+        editScope === 'custom' ? normalizeMeshcoreFloodScopeHashtag(customScope) : editScope;
+      if (editScope === 'custom' && !isValidMeshcoreFloodScopeHashtag(scope)) return;
+      await onSetChannel(idx, finalName, secret);
+      if (radioSwitchGeneration.current !== operationGeneration) return;
+      const identityDiscoveredDuringSave =
+        !canSaveScope && scope === '' && previousRadioSignature.current?.startsWith('meshcore:pk:');
+      if (previousRadioSignature.current !== radioSignature && !identityDiscoveredDuringSave)
+        return;
+      const key = meshcoreChannelScopeKey(radioSignature, { index: idx, name: finalName, secret });
+      if (key && !saveFloodScopeOverride('meshcore', key, scope)) {
+        addToast(t('radioPanel.meshcoreChannel.scopeSaveFailed'), 'error');
+        return;
+      }
       setEditingIdx(null);
       setAddingNew(false);
     } catch (e) {
@@ -4173,9 +4276,16 @@ function MeshcoreChannelSection({
   }
 
   async function handleDelete(idx: number) {
+    const operationGeneration = radioSwitchGeneration.current;
     setSaving(true);
     try {
       await onDeleteChannel(idx);
+      if (radioSwitchGeneration.current !== operationGeneration) return;
+      const key = meshcoreChannelScopeKey(
+        radioSignature,
+        channels.find((ch) => ch.index === idx),
+      );
+      if (key) saveFloodScopeOverride('meshcore', key, '');
       setConfirmDeleteIdx(null);
       if (editingIdx === idx) setEditingIdx(null);
       if (shareQrIdx === idx) setShareQrIdx(null);
@@ -4210,11 +4320,11 @@ function MeshcoreChannelSection({
       ref={formRef}
       className="bg-deep-black/60 border-ink-600 mt-1 space-y-3 rounded-lg border p-3"
     >
-      <h4 className="text-ink-200 text-sm font-medium">
+      <h3 className="text-ink-200 text-sm font-medium">
         {mode === 'add'
           ? t('radioPanel.meshcoreChannel.addTitle')
           : t('radioPanel.meshcoreChannel.editTitle', { index: editingIdx })}
-      </h4>
+      </h3>
 
       {mode === 'add' && (
         <div className="space-y-1">
@@ -4306,11 +4416,69 @@ function MeshcoreChannelSection({
         )}
       </div>
 
+      <div className="space-y-2">
+        <label htmlFor="radio-mc-ch-scope" className="text-muted text-xs">
+          {t('radioPanel.meshcoreChannel.scopeLabel')}
+        </label>
+        <select
+          id="radio-mc-ch-scope"
+          value={editScope}
+          onChange={(event) => {
+            setEditScope(event.target.value);
+          }}
+          disabled={disabled || saving || !canSaveScope}
+          aria-label={t('radioPanel.meshcoreChannel.scopeLabel')}
+          className={`${SELECT_BOX_CLASS} w-full`}
+        >
+          <option value="">{t('chatPanel.floodScopeOverrideDefault')}</option>
+          <option value={FLOOD_SCOPE_OVERRIDE_UNSCOPED}>
+            {t('chatPanel.floodScopeOverrideUnscoped')}
+          </option>
+          {namedScopes.map((scope) => (
+            <option key={scope} value={scope}>
+              {scope}
+            </option>
+          ))}
+          <option value="custom">{t('chatPanel.floodScopeOverrideCustom')}</option>
+        </select>
+        {editScope === 'custom' ? (
+          <input
+            value={customScope}
+            onChange={(event) => {
+              setCustomScope(event.target.value);
+            }}
+            disabled={disabled || saving || !canSaveScope}
+            aria-label={t('chatPanel.floodScopeOverrideCustomLabel')}
+            placeholder={t('chatPanel.floodScopeOverrideCustomPlaceholder')}
+            aria-invalid={customScope.length > 0 && !scopeValid}
+            className={`${INPUT_BOX_CLASS} w-full`}
+          />
+        ) : null}
+        <p className="text-muted text-xs break-words" role="status">
+          {t('radioPanel.meshcoreChannel.scopeEffective', {
+            scope:
+              effectiveMeshcoreChannelScope(selectedScope, radioScope) ||
+              t('chatPanel.floodScopeOverrideUnscoped'),
+          })}
+        </p>
+        <p className="text-muted text-xs">{t('radioPanel.meshcoreChannel.scopeHint')}</p>
+        {!canSaveScope ? (
+          <p className="text-muted text-xs">{t('radioPanel.meshcoreChannel.scopeNeedsIdentity')}</p>
+        ) : null}
+      </div>
+
       <div className="flex gap-2 pt-1">
         <button
           type="button"
           onClick={handleSave}
-          disabled={disabled || saving || !isValidHex || (mode === 'add' && newIdx === '')}
+          disabled={
+            disabled ||
+            saving ||
+            !isValidHex ||
+            !scopeValid ||
+            (!canSaveScope && selectedScope !== '') ||
+            (mode === 'add' && newIdx === '')
+          }
           className="bg-brand-green hover:bg-brand-green/90 disabled:text-muted text-app-bg disabled:bg-ink-600 flex-1 rounded px-3 py-1.5 text-xs font-medium transition-colors"
         >
           {saving ? t('common.saving') : t('common.save')}
@@ -4357,6 +4525,7 @@ function MeshcoreChannelSection({
                 shareQrUri = buildMeshcoreChannelAddUri({
                   name: channelName,
                   secretHex: bytesToHex(ch.secret),
+                  ...meshcoreScopeOverrideForQr(shareScopeOverride),
                 });
               } catch {
                 // catch-no-log-ok invalid channel secret hides QR
@@ -4365,12 +4534,14 @@ function MeshcoreChannelSection({
             }
             return (
               <div key={`ch-${ch.index}-${ch.name}`} className="space-y-1">
-                <div className="bg-deep-black/60 border-ink-700/50 flex items-center gap-2 rounded-lg border px-3 py-2">
+                <div className="bg-deep-black/60 border-ink-700/50 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
                   <span className="bg-ink-700 text-ink-400 rounded px-1.5 py-0.5 font-mono text-xs font-medium">
                     {ch.index}
                   </span>
-                  <span className="text-ink-200 flex-1 text-sm">{channelName}</span>
-                  <span className="text-muted font-mono text-xs">
+                  <span className="text-ink-200 min-w-0 flex-1 basis-24 text-sm break-words">
+                    {channelName}
+                  </span>
+                  <span className="text-muted max-w-full font-mono text-xs break-all">
                     {revealed ? bytesToHex(ch.secret) : '••••••••••••••••'}
                   </span>
                   <button
@@ -4448,6 +4619,10 @@ function MeshcoreChannelSection({
                     </button>
                   )}
                 </div>
+                <MeshcoreChannelScopeSummary
+                  scopeKey={meshcoreChannelScopeKey(radioSignature, ch)}
+                  radioScope={radioScope}
+                />
                 {shareQrUri != null ? (
                   <div
                     ref={shareQrRef}
@@ -4478,7 +4653,9 @@ function MeshcoreChannelSection({
                     detail: {
                       name: parsed.name,
                       secretHex: parsed.secretHex,
-                      ...(parsed.regionScope ? { regionScope: parsed.regionScope } : {}),
+                      ...(parsed.regionScope !== undefined
+                        ? { regionScope: parsed.regionScope }
+                        : {}),
                     },
                   }),
                 );

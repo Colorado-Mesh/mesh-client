@@ -835,7 +835,8 @@
     "srNewMessage": "{{sender}}からの新着メッセージ： {{text}}",
     "srNewMessages_one": "{{count}} NEW MESSAGE",
     "srNewMessages_other": "{{count}}件の新着メッセージ",
-    "unreadMecpMarker": "未読{{severity}} MECPレポート"
+    "unreadMecpMarker": "未読{{severity}} MECPレポート",
+    "floodScopeSaveFailed": "送信スコープを保存できませんでした。前回保存した選択肢は引き続き適用されます。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "{{name}}のMeshCoreチャンネルQRを表示",
       "privateChannel": "プライベートチャンネル（キーを入力）",
-      "privateKeyHint": "共有チャネル キーを入力します。すべて 0 ではなく、正確に 32 個の 16 進数文字 (16 バイト) を入力します。"
+      "privateKeyHint": "共有チャネル キーを入力します。すべて 0 ではなく、正確に 32 個の 16 進数文字 (16 バイト) を入力します。",
+      "scopeLabel": "このチャンネルのスコープを送信",
+      "scopeEffective": "有効な送信範囲： {{scope}}",
+      "scopeHint": "このラジオとチャンネル用にこのアプリに保存されました。デフォルトは、ラジオスコープ設定に従います。オーバーライドは一時的に送信に適用され、その後ラジオ設定を復元します。リピータ構成は、転送を決定します。",
+      "scopeNeedsIdentity": "スコープ設定は、無線アイデンティティ発見後に利用できます。",
+      "scopeSaveFailed": "チャンネルは保存されましたが、送信範囲をこのアプリに保存できませんでした。保存を再試行してください。"
     },
     "regions": {
       "UNSET": {

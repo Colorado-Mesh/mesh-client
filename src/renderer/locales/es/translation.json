@@ -835,7 +835,8 @@
     "srNewMessage": "Nuevo mensaje de {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} mensaje nuevo",
     "srNewMessages_other": "{{count}} mensajes nuevos",
-    "unreadMecpMarker": "Informe {{severity}} MECP no leído"
+    "unreadMecpMarker": "Informe {{severity}} MECP no leído",
+    "floodScopeSaveFailed": "No se ha podido guardar el ámbito de envío. La opción guardada anterior sigue siendo válida."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "Mostrar canal QR de MeshCore para {{name}}",
       "privateChannel": "Canal privado (ingresar clave)",
-      "privateKeyHint": "Ingrese la clave del canal compartido: exactamente 32 caracteres hexadecimales (16 bytes), no todos ceros."
+      "privateKeyHint": "Ingrese la clave del canal compartido: exactamente 32 caracteres hexadecimales (16 bytes), no todos ceros.",
+      "scopeLabel": "Enviar alcance para este canal",
+      "scopeEffective": "Alcance de envío efectivo: {{scope}}",
+      "scopeHint": "Guardado en esta aplicación para esta radio y canal. El valor predeterminado sigue a la configuración del alcance de radio. Las anulaciones se aplican temporalmente a los envíos y restauran la configuración de Radio después. La configuración del repetidor determina el reenvío.",
+      "scopeNeedsIdentity": "Las preferencias de alcance están disponibles después del descubrimiento de identidad de radio.",
+      "scopeSaveFailed": "Canal guardado, pero su ámbito de envío no se ha podido guardar en esta aplicación. Vuelva a intentar guardar."
     },
     "regions": {
       "UNSET": {

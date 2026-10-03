@@ -934,6 +934,13 @@ export const radioSurface: SettingsSearchSurface = {
     'radioPanel.channelUrl.qrHeading': 'caption of the generated QR image',
     'radioPanel.meshcoreChannel.*':
       'MeshCore channel row actions and add/edit form; the channel card and add button are indexed',
+    'chatPanel.floodScopeOverrideDefault': 'Default option in the per-channel scope form',
+    'chatPanel.floodScopeOverrideUnscoped':
+      'Unscoped option and effective value in the per-channel scope form',
+    'chatPanel.floodScopeOverrideCustom': 'custom option in the per-channel scope form',
+    'chatPanel.floodScopeOverrideCustomLabel': 'custom field in the per-channel scope form',
+    'chatPanel.floodScopeOverrideCustomPlaceholder':
+      'placeholder for the per-channel custom scope field',
     'radioPanel.meshcoreChannelName*': 'MeshCore channel add/edit form field',
     'radioPanel.meshcoreChannelKeyLabel': 'MeshCore channel add/edit form field',
     'radioPanel.meshcoreDeriveFromName': 'MeshCore channel add/edit form button',

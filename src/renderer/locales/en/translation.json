@@ -835,7 +835,8 @@
       "search": "Find a conversation",
       "listLabel": "Direct messages",
       "empty": "No conversations match"
-    }
+    },
+    "floodScopeSaveFailed": "Could not save the send scope. The previous saved choice still applies."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -4418,7 +4419,12 @@
       "addButton": "+ Add Channel",
       "shareQr": "QR",
       "shareQrAria": "Show MeshCore channel QR for {{name}}",
-      "footerHelp": "Keys are 128-bit (16 bytes), shown as 32 hex characters. Channel names up to {{nameMax}} characters. Up to {{channelCount}} channels (indices 0–{{indexMax}}). For #channels, use \"Derive from name\" (SHA-256 of the name with a leading #)."
+      "footerHelp": "Keys are 128-bit (16 bytes), shown as 32 hex characters. Channel names up to {{nameMax}} characters. Up to {{channelCount}} channels (indices 0–{{indexMax}}). For #channels, use \"Derive from name\" (SHA-256 of the name with a leading #).",
+      "scopeLabel": "Send scope for this channel",
+      "scopeEffective": "Effective send scope: {{scope}}",
+      "scopeHint": "Saved in this app for this radio and channel. Default follows the Radio scope setting. Overrides apply temporarily to sends and restore the Radio setting afterward. Repeater configuration determines forwarding.",
+      "scopeNeedsIdentity": "Scope preferences are available after radio identity discovery.",
+      "scopeSaveFailed": "Channel saved, but its send scope could not be saved in this app. Retry Save."
     },
     "roleFieldLabel": "Role",
     "rebroadcastModeLabel": "Rebroadcast Mode",

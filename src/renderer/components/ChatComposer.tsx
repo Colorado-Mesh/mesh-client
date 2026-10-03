@@ -25,6 +25,7 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import { useFloodScopeOverride } from '@/renderer/hooks/useFloodScopeOverride';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -51,7 +52,6 @@ import {
   clearDraft,
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
   loadDraftsInitial,
-  loadFloodScopeOverridesInitial,
   saveDraft,
   saveFloodScopeOverride,
 } from '../lib/chatPanelProtocolStorage';
@@ -190,6 +190,8 @@ export interface ChatComposerProps {
   lxmfReplyHashReplies?: boolean;
   /** MeshCore: show per-channel flood-scope override control (remembered per viewKey). */
   showFloodScopeOverride?: boolean;
+  /** Channel preferences use radio/channel identity. Null waits for discovery. */
+  floodScopeStorageKey?: string | null;
   /** MeshCore: user-managed flood-scope quick-picks. */
   floodScopePresets?: string[];
   /**
@@ -263,6 +265,7 @@ export function ChatComposer({
   lxmfReplyHashReplies = false,
   showFloodScopeOverride = false,
   floodScopePresets = [],
+  floodScopeStorageKey,
   onRememberFloodScopePreset,
   resolveShareLocation,
   onSendLocationWaypoint,
@@ -294,7 +297,11 @@ export function ChatComposer({
     memoPhase === 'ready';
 
   const [input, setInput] = useState('');
-  const [floodScopeOverride, setFloodScopeOverride] = useState('');
+  const scopeKey = floodScopeStorageKey === undefined ? viewKey : floodScopeStorageKey;
+  const floodScopeOverride = useFloodScopeOverride(
+    protocol,
+    showFloodScopeOverride ? scopeKey : null,
+  );
   const [floodScopeMenuOpen, setFloodScopeMenuOpen] = useState(false);
   const [floodScopeCustomEditing, setFloodScopeCustomEditing] = useState(false);
   const [floodScopeCustomDraft, setFloodScopeCustomDraft] = useState('');
@@ -330,8 +337,6 @@ export function ChatComposer({
   const floodScopeCustomInputRef = useRef<HTMLInputElement | null>(null);
   const inputValueRef = useRef(input);
   inputValueRef.current = input;
-  const floodScopeOverrideRef = useRef(floodScopeOverride);
-  floodScopeOverrideRef.current = floodScopeOverride;
   const prevViewKeyRef = useRef<string | null>(null);
 
   const closeFloodScopeMenu = useCallback(() => {
@@ -350,12 +355,12 @@ export function ChatComposer({
 
   const persistFloodScopeOverride = useCallback(
     (next: string) => {
-      setFloodScopeOverride(next);
-      floodScopeOverrideRef.current = next;
-      if (!showFloodScopeOverride) return;
-      saveFloodScopeOverride(protocol, viewKey, next);
+      if (!showFloodScopeOverride || !scopeKey) return;
+      if (!saveFloodScopeOverride(protocol, scopeKey, next)) {
+        setChatActionError({ message: t('chatPanel.floodScopeSaveFailed'), viewKey });
+      }
     },
-    [protocol, showFloodScopeOverride, viewKey],
+    [protocol, showFloodScopeOverride, scopeKey, t, viewKey],
   );
 
   const commitCustomFloodScopeDraft = useCallback(() => {
@@ -517,7 +522,7 @@ export function ChatComposer({
     };
   }, [protocol]);
 
-  // Draft + flood-scope persistence: save/restore when viewKey changes
+  // Draft persistence: save/restore when viewKey changes
   useEffect(() => {
     const prevKey = prevViewKeyRef.current;
     if (prevKey !== null && prevKey !== viewKey) {
@@ -527,23 +532,11 @@ export function ChatComposer({
       } else {
         clearDraft(protocol, prevKey);
       }
-      if (showFloodScopeOverride) {
-        saveFloodScopeOverride(protocol, prevKey, floodScopeOverrideRef.current);
-      }
     }
     prevViewKeyRef.current = viewKey;
     const drafts = loadDraftsInitial(protocol);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft from localStorage on tab switch
     setInput(drafts[viewKey] ?? '');
-    if (showFloodScopeOverride) {
-      const overrides = loadFloodScopeOverridesInitial(protocol);
-      const restored = overrides[viewKey] ?? '';
-      setFloodScopeOverride(restored);
-      floodScopeOverrideRef.current = restored;
-    } else {
-      setFloodScopeOverride('');
-      floodScopeOverrideRef.current = '';
-    }
     setMentionQuery(null);
     setChatActionError(null);
     clearMentionCycle();
@@ -1487,7 +1480,7 @@ export function ChatComposer({
         )}
         {actionSlot}
         {showFloodScopeOverride ? (
-          <div ref={floodScopeSplitRef} className="inline-flex shrink-0 items-stretch">
+          <div ref={floodScopeSplitRef} className="inline-flex min-w-0 items-stretch">
             <span className="sr-only">{t('chatPanel.floodScopeOverrideLabel')}</span>
             <button
               type="button"
@@ -1527,7 +1520,7 @@ export function ChatComposer({
                 }
                 setFloodScopeMenuOpen(true);
               }}
-              disabled={disabled || sending}
+              disabled={disabled || sending || scopeKey === null}
               aria-label={
                 floodScopeOverrideIndicator
                   ? `${t('chatPanel.floodScopeOverrideMenuButton')}: ${floodScopeOverrideIndicator}`
@@ -1538,7 +1531,7 @@ export function ChatComposer({
               aria-controls={floodScopeMenuOpen ? floodScopeListboxId : undefined}
               title={floodScopeMenuOpen ? undefined : t('chatPanel.floodScopeOverrideHint')}
               {...floodScopeChevronTooltipProps}
-              className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] items-center gap-0.5`}
+              className={`${sendButtonSplitChevronClass} inline-flex max-w-[5.5rem] min-w-0 items-center gap-0.5`}
             >
               {floodScopeOverrideActive && floodScopeOverrideIndicator ? (
                 <span className="text-2xs truncate leading-none font-normal">

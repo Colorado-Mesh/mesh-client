@@ -854,7 +854,8 @@
     "srNewMessages_few": "{{count}} nové zprávy",
     "srNewMessages_many": "{{count}} nových zpráv",
     "srNewMessages_other": "{{count}} nových zpráv",
-    "unreadMecpMarker": "Nepřečtená zpráva {{severity}} MECP"
+    "unreadMecpMarker": "Nepřečtená zpráva {{severity}} MECP",
+    "floodScopeSaveFailed": "Nelze uložit rozsah odeslání. Předchozí uložená volba stále platí."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -4367,7 +4368,12 @@
       "shareQr": "QR",
       "shareQrAria": "Zobrazit QR kanál MeshCore pro {{name}}",
       "privateChannel": "Soukromý kanál (zadejte klíč)",
-      "privateKeyHint": "Zadejte klíč sdíleného kanálu: přesně 32 hexadecimálních znaků (16 bajtů), ne všechny nuly."
+      "privateKeyHint": "Zadejte klíč sdíleného kanálu: přesně 32 hexadecimálních znaků (16 bajtů), ne všechny nuly.",
+      "scopeLabel": "Odeslat rozsah pro tento kanál",
+      "scopeEffective": "Účinný rozsah odeslání: {{scope}}",
+      "scopeHint": "Uloženo v této aplikaci pro toto rádio a kanál. Výchozí nastavení se řídí nastavením rádiového rozsahu. Přepsání platí dočasně pro odeslání a poté obnovení nastavení rádia. Konfigurace opakovače určuje přesměrování.",
+      "scopeNeedsIdentity": "Předvolby rozsahu jsou k dispozici po zjištění identity rádia.",
+      "scopeSaveFailed": "Kanál uložen, ale jeho rozsah odeslání se v této aplikaci nepodařilo uložit. Zkuste to znovu."
     },
     "regions": {
       "UNSET": {

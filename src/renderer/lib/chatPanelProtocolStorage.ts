@@ -232,6 +232,17 @@ export function floodScopeOverridesStorageKey(protocol: MeshProtocol): string {
   return `mesh-client:floodScopeOverrides:${protocol}`;
 }
 
+const floodScopeSubscribers = new Set<(protocol: MeshProtocol) => void>();
+
+export function subscribeFloodScopeOverrides(
+  listener: (protocol: MeshProtocol) => void,
+): () => void {
+  floodScopeSubscribers.add(listener);
+  return () => {
+    floodScopeSubscribers.delete(listener);
+  };
+}
+
 /** True when a stored override is Unscoped or a valid named hashtag (not Default). */
 function isPersistedFloodScopeOverride(value: string): boolean {
   if (value === FLOOD_SCOPE_OVERRIDE_UNSCOPED) return true;
@@ -244,23 +255,37 @@ function normalizePersistedFloodScopeOverride(value: string): string | null {
   return isValidMeshcoreFloodScopeHashtag(normalized) ? normalized : null;
 }
 
-/** Load persisted Chat flood-scope overrides (viewKey → override) for this protocol. */
+const floodScopeCache = new Map<
+  MeshProtocol,
+  { raw: string | null; values: Record<string, string> }
+>();
+
+/** Load persisted scope overrides; bound channel keys and legacy DM keys share the map. */
 export function loadFloodScopeOverridesInitial(protocol: MeshProtocol): Record<string, string> {
-  const raw = localStorage.getItem(floodScopeOverridesStorageKey(protocol));
-  if (raw == null) return {};
-  const parsed = parseStoredJson<unknown>(raw, 'ChatPanel floodScopeOverrides');
-  if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+  try {
+    const raw = localStorage.getItem(floodScopeOverridesStorageKey(protocol));
+    const cached = floodScopeCache.get(protocol);
+    if (cached?.raw === raw) return cached.values;
     const result: Record<string, string> = {};
-    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-      if (typeof v !== 'string') continue;
-      const normalized = normalizePersistedFloodScopeOverride(v);
-      if (!normalized) continue;
-      result[k] = normalized;
-      if (Object.keys(result).length >= FLOOD_SCOPE_OVERRIDE_MAX_KEYS) break;
+    const parsed =
+      raw == null ? null : parseStoredJson<unknown>(raw, 'ChatPanel floodScopeOverrides');
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      for (const [k, v] of Object.entries(parsed)) {
+        if (typeof v !== 'string') continue;
+        const normalized = normalizePersistedFloodScopeOverride(v);
+        if (!normalized) continue;
+        result[k] = normalized;
+        if (Object.keys(result).length >= FLOOD_SCOPE_OVERRIDE_MAX_KEYS) break;
+      }
     }
+    floodScopeCache.set(protocol, { raw, values: result });
     return result;
+  } catch (e) {
+    console.debug(
+      '[chatPanelProtocolStorage] loadFloodScopeOverridesInitial failed ' + errLikeToLogString(e),
+    );
+    return {};
   }
-  return {};
 }
 
 /**
@@ -271,33 +296,39 @@ export function saveFloodScopeOverride(
   protocol: MeshProtocol,
   viewKey: string,
   override: string,
-): void {
+): boolean {
   try {
     const key = floodScopeOverridesStorageKey(protocol);
-    const current = loadFloodScopeOverridesInitial(protocol);
+    const current = { ...loadFloodScopeOverridesInitial(protocol) };
     if (!override || !isPersistedFloodScopeOverride(override)) {
       const rest = Object.fromEntries(Object.entries(current).filter(([k]) => k !== viewKey));
       localStorage.setItem(key, JSON.stringify(rest));
-      return;
+      for (const listener of floodScopeSubscribers) listener(protocol);
+      return true;
     }
     const normalized = normalizePersistedFloodScopeOverride(override);
     if (!normalized) {
       const rest = Object.fromEntries(Object.entries(current).filter(([k]) => k !== viewKey));
       localStorage.setItem(key, JSON.stringify(rest));
-      return;
+      for (const listener of floodScopeSubscribers) listener(protocol);
+      return true;
     }
     current[viewKey] = normalized;
     const entries = Object.entries(current);
     if (entries.length > FLOOD_SCOPE_OVERRIDE_MAX_KEYS) {
       const trimmed = Object.fromEntries(entries.slice(-FLOOD_SCOPE_OVERRIDE_MAX_KEYS));
       localStorage.setItem(key, JSON.stringify(trimmed));
-      return;
+      for (const listener of floodScopeSubscribers) listener(protocol);
+      return true;
     }
     localStorage.setItem(key, JSON.stringify(current));
+    for (const listener of floodScopeSubscribers) listener(protocol);
+    return true;
   } catch (e) {
     console.debug(
       '[chatPanelProtocolStorage] saveFloodScopeOverride failed ' + errLikeToLogString(e),
     );
+    return false;
   }
 }
 

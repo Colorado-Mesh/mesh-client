@@ -113,6 +113,7 @@ export function buildMeshcoreChannelAddUri(opts: {
   name: string;
   secretHex: string;
   regionScope?: string | null;
+  unscoped?: boolean;
 }): string {
   const name = opts.name.trim();
   if (!name) throw new Error('invalid name');
@@ -121,7 +122,9 @@ export function buildMeshcoreChannelAddUri(opts: {
   const params = new URLSearchParams();
   params.set('name', name);
   params.set('secret', secret);
-  if (opts.regionScope?.trim()) params.set('region_scope', opts.regionScope.trim());
+  if (!opts.unscoped && opts.regionScope?.trim())
+    params.set('region_scope', opts.regionScope.trim());
+  if (opts.unscoped) params.set('mesh_client_scope', 'unscoped');
   return `meshcore://channel/add?${params.toString()}`;
 }
 
@@ -165,7 +168,10 @@ function classifyMeshcoreUri(trimmed: string): MeshClientDeepLink {
     if (host === 'channel' && path === 'add') {
       const name = url.searchParams.get('name') ?? '';
       const secretHex = (url.searchParams.get('secret') ?? '').trim().toLowerCase();
-      const regionScope = url.searchParams.get('region_scope')?.trim() || undefined;
+      const regionScope =
+        url.searchParams.get('mesh_client_scope') === 'unscoped'
+          ? ''
+          : url.searchParams.get('region_scope')?.trim() || undefined;
       if (!name.trim() || !MESHCORE_CHANNEL_SECRET_RE.test(secretHex)) {
         return { kind: 'unknown', raw: trimmed };
       }
@@ -173,7 +179,7 @@ function classifyMeshcoreUri(trimmed: string): MeshClientDeepLink {
         kind: 'meshcoreChannelAdd',
         name: name.trim(),
         secretHex,
-        ...(regionScope ? { regionScope } : {}),
+        ...(regionScope !== undefined ? { regionScope } : {}),
       };
     }
 
