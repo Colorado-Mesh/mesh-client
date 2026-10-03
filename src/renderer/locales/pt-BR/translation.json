@@ -502,6 +502,10 @@
     "clearChannelMessagesFailed": "Não foi possível limpar {{name}}: {{message}}",
     "removeChannelNeedsRadio": "Disponível quando o rádio estiver conectado",
     "channels": "Canais",
+    "scrollChannels": "Role para ver mais canais",
+    "unreadChannelsAbove": "{{count}} não lidos acima",
+    "unreadChannelsBelow": "{{count}} não lidos abaixo",
+    "hiddenUnreadChannels": "Canais não lidos",
     "searchMessages": "Buscar mensagens",
     "closeDmTab": "Fechar guia DM",
     "searchMessagesPlaceholder": "Buscar mensagens",
@@ -3273,7 +3277,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Registro de pacote de teste de faixa"
     },
-    "currentRouteHeading": "Rota atual",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Partilhar contacto",
     "shareContactQrAria": "Mostrar código QR de contato MeshCore para importação oficial do aplicativo",
@@ -3285,7 +3288,9 @@
     "keyManuallyVerified": "Chave verificada",
     "keyManuallyVerifiedHint": "A chave pública deste nó foi confirmada manualmente por um operador.",
     "keyBadge": "Chave",
-    "closePane": "Fechar detalhes"
+    "closePane": "Fechar detalhes",
+    "savedPathHeading": "Caminho salvo",
+    "savedPathHint": "Caminho melhor classificado do histórico salvo. Pode diferir do caminho de envio atual do rádio ou do caminho de um anúncio recebido."
   },
   "nodeInfoBody": {
     "longName": "Nome longo",

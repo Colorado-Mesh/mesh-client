@@ -709,7 +709,7 @@ describe('NodeDetailModal MeshCore path names', () => {
     expect(screen.getByTitle('Dest Node')).toHaveTextContent('Dest Node');
   });
 
-  it('shows Current route from path history when trace is absent', () => {
+  it('labels saved path history without claiming it is the current radio route', () => {
     const relayId = 0xee;
     const destId = 0xdd;
     const dest: MeshNode = {
@@ -730,7 +730,9 @@ describe('NodeDetailModal MeshCore path names', () => {
         [relayId, relay],
       ]),
     });
-    expect(screen.getByText('Current route')).toBeInTheDocument();
+    expect(screen.getByText('Saved path')).toBeInTheDocument();
+    expect(screen.queryByText('Current route')).not.toBeInTheDocument();
+    expect(screen.getByText(/may differ from the radio’s current send path/)).toBeInTheDocument();
     expect(screen.getByTitle('EE → Via Relay')).toHaveTextContent('Via Relay');
     expect(screen.getByText(/▣\s*Dest Node/)).toBeInTheDocument();
   });

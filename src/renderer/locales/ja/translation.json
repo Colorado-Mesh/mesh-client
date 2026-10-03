@@ -502,6 +502,10 @@
     "clearChannelMessagesFailed": "{{name}} を消去できませんでした: {{message}}",
     "removeChannelNeedsRadio": "無線機の接続後に使用できます",
     "channels": "チャンネル",
+    "scrollChannels": "スクロールして他のチャンネルを表示",
+    "unreadChannelsAbove": "上の未読：{{count}}",
+    "unreadChannelsBelow": "下の未読：{{count}}",
+    "hiddenUnreadChannels": "未読チャンネル",
     "searchMessages": "メッセージを検索する",
     "closeDmTab": "DMタブを閉じる",
     "searchMessagesPlaceholder": "メッセージを検索...",
@@ -3273,7 +3277,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "範囲テストパケットログ"
     },
-    "currentRouteHeading": "現在のルート",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "連絡先QRを共有",
     "shareContactQrAria": "公式アプリインポートのためにMeshCore連絡先QRコードを表示する",
@@ -3285,7 +3288,9 @@
     "keyManuallyVerified": "キーが確認されました",
     "keyManuallyVerifiedHint": "このノードの公開鍵は、オペレータによって手動で確認されました。",
     "keyBadge": "鍵",
-    "closePane": "詳細を閉じる"
+    "closePane": "詳細を閉じる",
+    "savedPathHeading": "保存されたパス",
+    "savedPathHint": "保存された履歴で最も評価の高い経路です。無線機の現在の送信経路や、受信したアドバタイズの経路とは異なる場合があります。"
   },
   "nodeInfoBody": {
     "longName": "長い名前",

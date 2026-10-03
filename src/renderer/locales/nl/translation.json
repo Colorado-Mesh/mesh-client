@@ -502,6 +502,10 @@
     "clearChannelMessagesFailed": "{{name}} kon niet worden gewist: {{message}}",
     "removeChannelNeedsRadio": "Beschikbaar zodra de radio is verbonden",
     "channels": "Kanalen",
+    "scrollChannels": "Scroll voor meer kanalen",
+    "unreadChannelsAbove": "{{count}} ongelezen boven",
+    "unreadChannelsBelow": "{{count}} ongelezen onder",
+    "hiddenUnreadChannels": "Ongelezen kanalen",
     "searchMessages": "Berichten zoeken",
     "closeDmTab": "Sluit het DM-tabblad",
     "searchMessagesPlaceholder": "Berichten zoeken...",
@@ -3273,7 +3277,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Pakketlogboek voor bereiktest"
     },
-    "currentRouteHeading": "Huidige route",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Deel contact",
     "shareContactQrAria": "Toon MeshCore-contact QR-code voor officiële app-import",
@@ -3285,7 +3288,9 @@
     "keyManuallyVerified": "Sleutel geverifieerd",
     "keyManuallyVerifiedHint": "De openbare sleutel van dit knooppunt werd handmatig bevestigd door een operator.",
     "keyBadge": "Sleutel",
-    "closePane": "Details sluiten"
+    "closePane": "Details sluiten",
+    "savedPathHeading": "Opgeslagen pad",
+    "savedPathHint": "Het best beoordeelde pad uit de opgeslagen geschiedenis. Het kan verschillen van het huidige verzendpad van de radio of het pad van een ontvangen aankondiging."
   },
   "nodeInfoBody": {
     "longName": "Lange naam",

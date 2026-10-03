@@ -1006,7 +1006,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1041,7 +1041,7 @@ describe('ChatPanel accessibility', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     // distFromBottom = 300 → showScrollButton on (>200), label should be "Jump to Latest" (no divider)
@@ -1365,7 +1365,7 @@ describe('ChatPanel scroll pinning', () => {
 
     mockScrollToIndex.mockClear();
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1410,7 +1410,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1476,7 +1476,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1535,7 +1535,7 @@ describe('ChatPanel scroll pinning', () => {
           <ChatPanel {...props} messages={messages} />
         </ToastProvider>,
       );
-      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      const stream = container.querySelector<HTMLDivElement>('[data-chat-scroll-root]')!;
       Object.defineProperties(stream, {
         scrollHeight: { value: 2000, configurable: true },
         clientHeight: { value: 400, configurable: true },
@@ -1585,7 +1585,7 @@ describe('ChatPanel scroll pinning', () => {
           <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
         </ToastProvider>,
       );
-      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      const stream = container.querySelector<HTMLDivElement>('[data-chat-scroll-root]')!;
       Object.defineProperties(stream, {
         scrollHeight: { value: 2000, configurable: true },
         clientHeight: { value: 400, configurable: true },
@@ -1613,7 +1613,7 @@ describe('ChatPanel scroll pinning', () => {
           <ChatPanel {...baseProps} protocol="meshcore" messages={[makeMsg(0), makeMsg(1)]} />
         </ToastProvider>,
       );
-      const stream = container.querySelector<HTMLDivElement>('div.overflow-y-auto')!;
+      const stream = container.querySelector<HTMLDivElement>('[data-chat-scroll-root]')!;
       Object.defineProperties(stream, {
         scrollHeight: { value: 2000, configurable: true },
         clientHeight: { value: 400, configurable: true },
@@ -1641,7 +1641,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1704,7 +1704,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
     Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
     Object.defineProperty(scrollContainer, 'scrollTop', {
@@ -1742,7 +1742,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     Object.defineProperty(scrollContainer, 'scrollTop', {
       value: 400,
       writable: true,
@@ -1802,7 +1802,7 @@ describe('ChatPanel scroll pinning', () => {
       </ToastProvider>,
     );
 
-    const scrollContainer = container.querySelector('div.overflow-y-auto')!;
+    const scrollContainer = container.querySelector('[data-chat-scroll-root]')!;
     // Keep distFromBottom large so applyNearBottomReadState doesn't clear the
     // divider via setUnreadDividerTimestamp(0) before the test exercises it.
     Object.defineProperty(scrollContainer, 'scrollHeight', { value: 2000, configurable: true });
@@ -2647,7 +2647,7 @@ describe('ChatPanel unread watermarks', () => {
     expect(screen.getByRole('button', { name: 'Ops 1' })).toBeInTheDocument();
   });
 
-  it('keeps many channels in one scrolling row with a searchable switcher', async () => {
+  it('keeps every channel choice in the header alongside the conversation tools', async () => {
     const user = userEvent.setup();
     const manyChannels = Array.from({ length: 25 }, (_, index) => ({
       index,
@@ -2658,37 +2658,18 @@ describe('ChatPanel unread watermarks', () => {
         <ChatPanel {...baseProps} channels={manyChannels} />
       </ToastProvider>,
     );
-
-    // One row that scrolls sideways: channel count never grows the header.
-    const strip = screen.getByRole('group', { name: 'Channels' });
-    expect(strip.className).toMatch(/overflow-x-auto/);
-    expect(strip.className).toMatch(/whitespace-nowrap/);
-    expect(strip.className).not.toMatch(/flex-wrap/);
-    expect(screen.getByRole('button', { name: 'Ch24' })).toBeInTheDocument();
-
-    const headerRow = strip.closest('.grid');
-    expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
+    const channels = screen.getByRole('region', { name: 'Channels' });
+    expect(within(channels).getAllByRole('button')).toHaveLength(25);
+    const headerRow = channels.closest('.grid');
     const exportBtn = screen.getByRole('button', { name: 'Export chat' });
-    expect(strip.contains(exportBtn)).toBe(false);
+    expect(channels.contains(exportBtn)).toBe(false);
     expect(headerRow?.contains(exportBtn)).toBe(true);
-
-    // The switcher lists every channel and filters as you type.
-    await user.click(screen.getByRole('button', { name: 'All channels (25)' }));
-    const search = screen.getByRole('combobox', { name: 'Find a channel' });
-    expect(search).toHaveFocus();
-    expect(screen.getAllByRole('option')).toHaveLength(25);
-    await user.type(search, 'Ch2');
-    expect(screen.getAllByRole('option').map((o) => o.getAttribute('aria-label'))).toEqual([
-      'Ch2',
-      'Ch20',
-      'Ch21',
-      'Ch22',
-      'Ch23',
-      'Ch24',
-    ]);
-    await user.keyboard('{ArrowDown}{Enter}');
-    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ch20' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'All channels (25)' })).not.toBeInTheDocument();
+    await user.click(within(channels).getByRole('button', { name: 'Ch24' }));
+    expect(within(channels).getByRole('button', { name: 'Ch24' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('clears the unread divider without scrolling when all unread messages are visible', async () => {
@@ -5839,6 +5820,53 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     expect(consumed).toHaveBeenCalled();
   });
 
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'exposes every channel and unread count after adding channels on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const user = userEvent.setup();
+      const channels = Array.from({ length: 24 }, (_, index) => ({
+        index,
+        name:
+          index === 23 ? 'Emergency coordination and regional weather reports' : `Channel ${index}`,
+      }));
+      const messages = channels.slice(1).map((ch) =>
+        makeMsg({
+          channel: ch.index,
+          timestamp: Date.now() + 1000,
+          payload: `Unread ${ch.index}`,
+        }),
+      );
+      const { rerender } = render(
+        <ToastProvider>
+          <ChatPanel {...baseProps} channels={channels.slice(0, 12)} messages={messages} />
+        </ToastProvider>,
+      );
+      rerender(
+        <ToastProvider>
+          <ChatPanel {...baseProps} channels={channels} messages={messages} />
+        </ToastProvider>,
+      );
+      const group = screen.getByRole('region', { name: 'Channels' });
+      expect(within(group).getAllByRole('button')).toHaveLength(24);
+      for (const ch of channels.slice(1)) {
+        const chip = within(group).getByRole('button', { name: `${ch.name} 1` });
+        expect(chip).toBeVisible();
+        expect(chip).toHaveTextContent('1');
+        expect(chip).toHaveAttribute('aria-pressed', 'false');
+      }
+      const last = within(group).getByRole('button', {
+        name: `${channels[23].name} 1`,
+      });
+      last.focus();
+      await user.keyboard('{Enter}');
+      expect(last).toHaveFocus();
+      expect(last).toHaveAttribute('aria-pressed', 'true');
+      expect(last).toHaveAccessibleName(channels[23].name);
+      expect(within(group).getByRole('button', { name: 'Channel 22 1' })).toBeVisible();
+    },
+  );
+
   it('prefixes channel chips with a muted # unless the name already has one', () => {
     render(
       <ToastProvider>
@@ -6262,6 +6290,41 @@ describe('ChatPanel — weather view', () => {
     await user.click(screen.getByRole('button', { name: /Weather view/ }));
     expect(generalTab()?.getAttribute('aria-label')).toBe(channelButtonLabel('General', 1));
   });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'keeps all channel choices and ordinary unread counts when switching weather channels on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const user = userEvent.setup();
+      const channels = Array.from({ length: 40 }, (_, index) => ({
+        index,
+        name: `Regional ${index}`,
+      }));
+      render(
+        <ToastProvider>
+          <ChatPanel
+            {...baseProps}
+            channels={channels}
+            messages={[weatherPost, makeMsg({ ...chatPost, channel: 39 })]}
+            isActive={false}
+          />
+        </ToastProvider>,
+      );
+      await user.click(screen.getByRole('button', { name: /Weather view/ }));
+      const group = screen.getByRole('region', { name: 'Channels' });
+      expect(within(group).getAllByRole('button')).toHaveLength(40);
+      const last = within(group).getByRole('button', {
+        name: channelButtonLabel('Regional 39', 1),
+      });
+      last.focus();
+      await user.keyboard('{Enter}');
+      expect(last).toHaveFocus();
+      expect(last).toHaveAttribute('aria-pressed', 'true');
+      expect(last).toHaveAccessibleName(channelButtonLabel('Regional 39', 1));
+      expect(screen.getByTestId('weather-filter-settings')).toBeInTheDocument();
+      expect(screen.queryByText('anyone on tonight?')).not.toBeInTheDocument();
+    },
+  );
 
   it('announces only posts the current view shows', async () => {
     const region = document.createElement('div');
