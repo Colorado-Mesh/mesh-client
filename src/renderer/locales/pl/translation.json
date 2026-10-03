@@ -6501,7 +6501,6 @@
     },
     "sectionPanelsAria": "Panele sekcji {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Przejdź do panelu, kontaktu lub kanału ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, węzeł {{node}}",
@@ -6509,8 +6508,6 @@
     },
     "launcher": {
       "title": "Wszystkie panele",
-      "searchLabel": "Szukaj paneli, kontaktów i kanałów",
-      "placeholder": "Przejdź do panelu, kontaktu lub kanału",
       "noResults": "Żaden panel nie pasuje do wyszukiwania",
       "otherGroup": "Inne",
       "pin": "Przypnij {{label}}",
@@ -6525,13 +6522,18 @@
       "panelCount_other": "{{count}} panelu",
       "channelsGroup": "Kanały",
       "contactsGroup": "Kontakty",
-      "moreMatches": "Jest więcej wyników. Pisz dalej, aby zawęzić listę."
+      "moreMatches": "Jest więcej wyników. Pisz dalej, aby zawęzić listę.",
+      "settingsGroup": "Ustawienia",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Panele wyszukiwania, kontakty, kanały i ustawienia",
+      "placeholder": "Przejdź do panelu, kontaktu, kanału lub ustawienia"
     },
     "more": "Więcej",
     "quitConfirmTitle": "Zamknąć Mesh Client?",
     "quitConfirmIncidents": "Otwarte incydenty MAYDAY lub URGENT: {{n}}.",
     "quitConfirmOutbox": "Wiadomości alarmowe oczekujące na wysłanie: {{n}}.",
-    "quitConfirmLinks": "Wszystkie połączenia radiowe i MQTT zostaną rozłączone."
+    "quitConfirmLinks": "Wszystkie połączenia radiowe i MQTT zostaną rozłączone.",
+    "openLauncher": "Przejdź do panelu, kontaktu, kanału lub ustawienia ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6620,5 +6622,9 @@
     "sourceLocal": "Od lokalnego klienta atak",
     "sourceRemote": "Ze zdalnego serwera TAK",
     "lastSeen": "Ostatnio widziany {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Przeskoczono do: {{label}}",
+    "openedPanel": "Otwarto {{panel}}. To ustawienie pojawia się, gdy jest dostępne."
   }
 }

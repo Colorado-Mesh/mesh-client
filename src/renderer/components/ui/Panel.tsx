@@ -17,6 +17,8 @@ export interface PanelProps {
   className?: string;
   /** Extra classes for the body wrapper. */
   bodyClassName?: string;
+  /** Settings-search anchor id (`data-setting-anchor`); set by the owning panel, never a shared section. */
+  anchorId?: string;
 }
 
 /** Card with a 56px header (style guide: panels are `bg-deep-black`, `border-ink-800`, `rounded-card`). */
@@ -30,11 +32,13 @@ export function Panel({
   padding = 'default',
   className,
   bodyClassName,
+  anchorId,
 }: PanelProps) {
   const titleId = useId();
   const Heading = headingLevel === 3 ? 'h3' : 'h2';
   return (
     <section
+      data-setting-anchor={anchorId}
       aria-labelledby={titleId}
       className={`bg-deep-black rounded-card shadow-level-1 border-ink-800 flex min-w-0 flex-col border ${className ?? ''}`}
     >

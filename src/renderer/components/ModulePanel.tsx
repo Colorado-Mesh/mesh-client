@@ -85,6 +85,7 @@ function ConfigSelect({
   onChange,
   disabled,
   description,
+  anchorId,
 }: {
   label: string;
   value: number;
@@ -92,9 +93,10 @@ function ConfigSelect({
   onChange: (val: number) => void;
   disabled: boolean;
   description?: string;
+  anchorId?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <label className="text-muted text-sm">{label}</label>
       <select
         value={value}
@@ -123,15 +125,17 @@ function ConfigToggle({
   onChange,
   disabled,
   description,
+  anchorId,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled: boolean;
   description?: string;
+  anchorId?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-ink-300 text-sm">{label}</span>
         <button
@@ -168,6 +172,7 @@ function ConfigNumber({
   unit,
   description,
   tooltip,
+  anchorId,
 }: {
   label: string;
   value: number;
@@ -178,9 +183,10 @@ function ConfigNumber({
   unit?: string;
   description?: string;
   tooltip?: string;
+  anchorId?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <div className="flex items-center gap-1.5">
         <label className="text-muted text-sm">{label}</label>
         {tooltip && <HelpTooltip text={tooltip} />}
@@ -213,6 +219,7 @@ function ConfigText({
   disabled,
   description,
   password,
+  anchorId,
 }: {
   label: string;
   value: string;
@@ -220,11 +227,12 @@ function ConfigText({
   disabled: boolean;
   description?: string;
   password?: boolean;
+  anchorId?: string;
 }) {
   const { t } = useTranslation();
   const [show, setShow] = useState(false);
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <label className="text-muted text-sm">{label}</label>
       <div className="flex items-center gap-1">
         <input
@@ -262,6 +270,7 @@ function ModuleSection({
   sliceReady = true,
   showSliceWaiting = false,
   globalApplyLocked = false,
+  anchorId,
 }: {
   title: string;
   children: React.ReactNode;
@@ -274,11 +283,15 @@ function ModuleSection({
   showSliceWaiting?: boolean;
   /** When true, Apply is disabled while any module section is applying. */
   globalApplyLocked?: boolean;
+  anchorId?: string;
 }) {
   const { t } = useTranslation();
   const applyDisabled = disabled || applying || !sliceReady || globalApplyLocked;
   return (
-    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+    <details
+      data-setting-anchor={anchorId}
+      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    >
       <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
@@ -963,6 +976,7 @@ export default function ModulePanel({
       {/* ═══ MQTT Relay Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionMqttRelay')}
+        anchorId="modules.mqttRelay"
         {...moduleSectionProps('mqtt')}
         onApply={() => {
           const validationError = validateMqttRelayBeforeApply();
@@ -988,6 +1002,7 @@ export default function ModulePanel({
         />
         <ConfigToggle
           label={t('modulePanel.fields.mqttProxyToClientEnabled')}
+          anchorId="modules.mqttRelay.proxyToClient"
           checked={mqttProxyToClientChecked}
           onChange={setMqttProxyToClient}
           disabled={disabled || !mqttEnabled || mqttProxyForced}
@@ -998,6 +1013,7 @@ export default function ModulePanel({
         )}
         <ConfigText
           label={t('modulePanel.fields.serverAddress')}
+          anchorId="modules.mqttRelay.serverAddress"
           value={mqttAddress}
           onChange={setMqttAddress}
           disabled={disabled || !mqttEnabled}
@@ -1018,6 +1034,7 @@ export default function ModulePanel({
         />
         <ConfigText
           label={t('modulePanel.fields.rootTopic')}
+          anchorId="modules.mqttRelay.rootTopic"
           value={mqttRoot}
           onChange={setMqttRoot}
           disabled={disabled || !mqttEnabled}
@@ -1025,6 +1042,7 @@ export default function ModulePanel({
         />
         <ConfigToggle
           label={t('modulePanel.fields.encryptionEnabled')}
+          anchorId="modules.mqttRelay.encryption"
           checked={mqttEncryption}
           onChange={setMqttEncryption}
           disabled={disabled || !mqttEnabled}
@@ -1039,6 +1057,7 @@ export default function ModulePanel({
         />
         <ConfigToggle
           label={t('modulePanel.fields.tlsEnabled')}
+          anchorId="modules.mqttRelay.tls"
           checked={mqttTls}
           onChange={setMqttTls}
           disabled={disabled || !mqttEnabled}
@@ -1048,6 +1067,7 @@ export default function ModulePanel({
       {/* ═══ Map Report (MQTT module fields) ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionMapReport')}
+        anchorId="modules.mapReport"
         {...moduleSectionProps('mqtt')}
         onApply={() => {
           const validationError = validateMqttRelayBeforeApply();
@@ -1100,6 +1120,7 @@ export default function ModulePanel({
       {/* ═══ Serial Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionSerialModule')}
+        anchorId="modules.serial"
         {...moduleSectionProps('serial')}
         onApply={() => {
           const merged = buildMeshtasticModuleApplyValue('serial', serialCfg, {
@@ -1155,6 +1176,7 @@ export default function ModulePanel({
         />
         <ConfigSelect
           label={t('modulePanel.fields.baudRate')}
+          anchorId="modules.serial.baudRate"
           value={serialBaud}
           onChange={setSerialBaud}
           disabled={disabled || !serialEnabled}
@@ -1188,6 +1210,7 @@ export default function ModulePanel({
         />
         <ConfigSelect
           label={t('modulePanel.fields.serialMode')}
+          anchorId="modules.serial.mode"
           value={serialMode}
           onChange={setSerialMode}
           disabled={disabled || !serialEnabled}
@@ -1206,6 +1229,7 @@ export default function ModulePanel({
       {/* ═══ External Notification Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionExternalNotification')}
+        anchorId="modules.externalNotification"
         {...moduleSectionProps('externalNotification')}
         onApply={() => {
           applyMeshtasticModule(
@@ -1356,6 +1380,7 @@ export default function ModulePanel({
       {/* ═══ Store & Forward Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionStoreForward')}
+        anchorId="modules.storeForward"
         {...moduleSectionProps('storeForward')}
         onApply={() => {
           applyMeshtasticModule(t('modulePanel.sectionStoreForward'), 'storeForward', sfCfg, {
@@ -1418,6 +1443,7 @@ export default function ModulePanel({
       {/* ═══ Range Test Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionRangeTest')}
+        anchorId="modules.rangeTest"
         {...moduleSectionProps('rangeTest')}
         onApply={() => {
           applyMeshtasticModule(t('modulePanel.sectionRangeTest'), 'rangeTest', rangeCfg, {
@@ -1459,6 +1485,7 @@ export default function ModulePanel({
       {'telemetry' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionTelemetryModule')}
+          anchorId="modules.telemetry"
           {...moduleSectionProps('telemetry')}
           onApply={() => {
             applyMeshtasticModule(t('modulePanel.sectionTelemetryModule'), 'telemetry', telCfg, {
@@ -1487,6 +1514,7 @@ export default function ModulePanel({
           />
           <ConfigNumber
             label={t('modulePanel.fields.telDeviceInterval')}
+            anchorId="modules.telemetry.deviceInterval"
             value={telDeviceInterval}
             onChange={setTelDeviceInterval}
             disabled={disabled || !telDeviceTelemetryEnabled}
@@ -1498,6 +1526,7 @@ export default function ModulePanel({
           />
           <ConfigToggle
             label={t('modulePanel.fields.telEnvEnabled')}
+            anchorId="modules.telemetry.environment"
             checked={telEnvEnabled}
             onChange={setTelEnvEnabled}
             disabled={disabled}
@@ -1574,6 +1603,7 @@ export default function ModulePanel({
       {/* ═══ Canned Messages ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionCannedMessages')}
+        anchorId="modules.cannedMessages"
         {...moduleSectionProps('cannedMessage')}
         onApply={async () => {
           setApplyingSection('cannedMessage');
@@ -1700,7 +1730,7 @@ export default function ModulePanel({
           disabled={disabled}
           description={t('modulePanel.fields.cannedSendBellDesc')}
         />
-        <div className="space-y-1">
+        <div data-setting-anchor="modules.cannedMessages.messages" className="space-y-1">
           <label htmlFor="module-canned-messages" className="text-muted text-sm">
             {t('modulePanel.fields.messagesOnePerLine')}
           </label>
@@ -1723,6 +1753,7 @@ export default function ModulePanel({
       {/* ═══ Neighbor Info Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionNeighborInfo')}
+        anchorId="modules.neighborInfo"
         {...moduleSectionProps('neighborInfo')}
         onApply={() => {
           applyMeshtasticModule(
@@ -1767,6 +1798,7 @@ export default function ModulePanel({
       {/* ═══ Ambient Lighting Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionAmbientLighting')}
+        anchorId="modules.ambientLighting"
         {...moduleSectionProps('ambientLighting')}
         onApply={() => {
           applyMeshtasticModule(
@@ -1840,6 +1872,7 @@ export default function ModulePanel({
       {/* ═══ Detection Sensor Module ═══ */}
       <ModuleSection
         title={t('modulePanel.sectionDetectionSensor')}
+        anchorId="modules.detectionSensor"
         {...moduleSectionProps('detectionSensor')}
         onApply={() => {
           applyMeshtasticModule(
@@ -1895,6 +1928,7 @@ export default function ModulePanel({
       {'paxcounter' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionPaxCounter')}
+          anchorId="modules.paxCounter"
           {...moduleSectionProps('paxcounter')}
           onApply={() => {
             applyMeshtasticModule(t('modulePanel.sectionPaxCounter'), 'paxcounter', paxCfg, {
@@ -1928,6 +1962,7 @@ export default function ModulePanel({
       {'remoteHardware' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionRemoteHardware')}
+          anchorId="modules.remoteHardware"
           {...moduleSectionProps('remoteHardware')}
           onApply={() => {
             applyMeshtasticModule(
@@ -1984,6 +2019,7 @@ export default function ModulePanel({
       {'trafficManagement' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionTrafficManagement')}
+          anchorId="modules.trafficManagement"
           {...moduleSectionProps('trafficManagement')}
           onApply={() => {
             applyMeshtasticModule(
@@ -2060,6 +2096,7 @@ export default function ModulePanel({
           />
           <ConfigToggle
             label={t('modulePanel.fields.tmRateLimitEnabled')}
+            anchorId="modules.trafficManagement.rateLimit"
             checked={tmRateLimitEnabled}
             onChange={setTmRateLimitEnabled}
             disabled={disabled || !tmEnabled}
@@ -2125,6 +2162,7 @@ export default function ModulePanel({
       {'tak' in moduleConfigs && (
         <ModuleSection
           title={t('modulePanel.sectionTak')}
+          anchorId="modules.tak"
           {...moduleSectionProps('tak')}
           onApply={() => {
             applyMeshtasticModule(t('modulePanel.sectionTak'), 'tak', takCfg, {
@@ -2200,6 +2238,7 @@ export default function ModulePanel({
       {onSetRingtone && (
         <ModuleSection
           title={t('modulePanel.sectionRtttlRingtone')}
+          anchorId="modules.rtttlRingtone"
           onApply={async () => {
             if (ringtoneText.length > 0 && !isValidRtttl(ringtoneText)) {
               addToast(t('modulePanel.fields.invalidRtttl'), 'error');

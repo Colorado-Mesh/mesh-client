@@ -6407,7 +6407,6 @@
     },
     "sectionPanelsAria": "Panel {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Buka panel, kontak, atau kanal ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, simpul {{node}}",
@@ -6415,8 +6414,6 @@
     },
     "launcher": {
       "title": "Semua panel",
-      "searchLabel": "Cari panel, kontak, dan kanal",
-      "placeholder": "Buka panel, kontak, atau kanal",
       "noResults": "Tidak ada panel yang cocok",
       "otherGroup": "Lainnya",
       "pin": "Sematkan {{label}}",
@@ -6429,13 +6426,18 @@
       "panelCount_other": "{{count}} panel",
       "channelsGroup": "Kanal",
       "contactsGroup": "Kontak",
-      "moreMatches": "Masih ada hasil lain. Terus ketik untuk mempersempit daftar."
+      "moreMatches": "Masih ada hasil lain. Terus ketik untuk mempersempit daftar.",
+      "settingsGroup": "Pengaturan",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Cari panel, kontak, saluran, dan pengaturan",
+      "placeholder": "Buka panel, kontak, saluran, atau pengaturan"
     },
     "more": "Lainnya",
     "quitConfirmTitle": "Keluar dari Mesh Client?",
     "quitConfirmIncidents": "Insiden MAYDAY atau URGENT yang masih terbuka: {{n}}.",
     "quitConfirmOutbox": "Pesan darurat yang masih menunggu dikirim: {{n}}.",
-    "quitConfirmLinks": "Semua tautan radio dan MQTT akan terputus."
+    "quitConfirmLinks": "Semua tautan radio dan MQTT akan terputus.",
+    "openLauncher": "Buka panel, kontak, saluran, atau pengaturan ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6524,5 +6526,9 @@
     "sourceLocal": "Dari klien atak lokal",
     "sourceRemote": "Dari server TAK jarak jauh",
     "lastSeen": "Terakhir terlihat {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Dilompat ke {{label}}",
+    "openedPanel": "Dibuka {{panel}}. Pengaturan ini muncul saat tersedia."
   }
 }

@@ -6407,7 +6407,6 @@
     },
     "sectionPanelsAria": "Panels in {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Zu Panel, Kontakt oder Kanal wechseln ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, Knoten {{node}}",
@@ -6415,8 +6414,6 @@
     },
     "launcher": {
       "title": "Alle Panels",
-      "searchLabel": "Panels, Kontakte und Kanäle suchen",
-      "placeholder": "Zu Panel, Kontakt oder Kanal wechseln",
       "noResults": "Keine Panels gefunden",
       "otherGroup": "Weitere",
       "pin": "{{label}} anheften",
@@ -6429,13 +6426,18 @@
       "panelCount_other": "{{count}} Panels",
       "channelsGroup": "Kanäle",
       "contactsGroup": "Kontakte",
-      "moreMatches": "Weitere Treffer. Tippen Sie weiter, um die Liste einzugrenzen."
+      "moreMatches": "Weitere Treffer. Tippen Sie weiter, um die Liste einzugrenzen.",
+      "settingsGroup": "Einstellungen",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Panels, Kontakte, Kanäle und Einstellungen durchsuchen",
+      "placeholder": "Gehe zu einem Panel, Kontakt, Kanal oder einer Einstellung"
     },
     "more": "Mehr",
     "quitConfirmTitle": "Mesh Client beenden?",
     "quitConfirmIncidents": "Offene MAYDAY- oder URGENT-Vorfälle: {{n}}.",
     "quitConfirmOutbox": "Notrufnachrichten, die noch auf den Versand warten: {{n}}.",
-    "quitConfirmLinks": "Alle Funk- und MQTT-Verbindungen werden getrennt."
+    "quitConfirmLinks": "Alle Funk- und MQTT-Verbindungen werden getrennt.",
+    "openLauncher": "Gehe zu einem Panel, Kontakt, Kanal oder einer Einstellung ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6524,5 +6526,9 @@
     "sourceLocal": "Von einem lokalen ATAK-Kunden",
     "sourceRemote": "Vom entfernten TAK-Server",
     "lastSeen": "Zuletzt gesehen {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Auf {{label}} gesprungen",
+    "openedPanel": "{{panel}} geöffnet. Diese Einstellung wird angezeigt, wenn sie verfügbar ist."
   }
 }

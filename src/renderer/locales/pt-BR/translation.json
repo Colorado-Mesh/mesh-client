@@ -6407,7 +6407,6 @@
     },
     "sectionPanelsAria": "Painéis de {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Ir para um painel, contato ou canal ({{shortcut}})",
     "status": {
       "radio": "Rádio: {{status}}",
       "radioWithNode": "Rádio: {{status}}, nó {{node}}",
@@ -6415,8 +6414,6 @@
     },
     "launcher": {
       "title": "Todos os painéis",
-      "searchLabel": "Pesquisar painéis, contatos e canais",
-      "placeholder": "Ir para um painel, contato ou canal",
       "noResults": "Nenhum painel corresponde à busca",
       "otherGroup": "Outros",
       "pin": "Fixar {{label}}",
@@ -6429,13 +6426,18 @@
       "panelCount_other": "{{count}} painéis",
       "channelsGroup": "Canais",
       "contactsGroup": "Contatos",
-      "moreMatches": "Há mais resultados. Continue digitando para filtrar a lista."
+      "moreMatches": "Há mais resultados. Continue digitando para filtrar a lista.",
+      "settingsGroup": "Configurações",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Pesquisar painéis, contatos, canais e configurações",
+      "placeholder": "Ir para um painel, contato, canal ou configuração"
     },
     "more": "Mais",
     "quitConfirmTitle": "Sair do Mesh Client?",
     "quitConfirmIncidents": "Incidentes MAYDAY ou URGENT abertos: {{n}}.",
     "quitConfirmOutbox": "Mensagens de emergência aguardando envio: {{n}}.",
-    "quitConfirmLinks": "Todos os links de rádio e MQTT serão desconectados."
+    "quitConfirmLinks": "Todos os links de rádio e MQTT serão desconectados.",
+    "openLauncher": "Acesse um painel, contato, canal ou configuração ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6524,5 +6526,9 @@
     "sourceLocal": "De um cliente ATAK local",
     "sourceRemote": "Do servidor remoto TAK",
     "lastSeen": "Visto pela última vez {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Saltado para {{label}}",
+    "openedPanel": "Aberto {{panel}}. Esta configuração aparece quando está disponível."
   }
 }

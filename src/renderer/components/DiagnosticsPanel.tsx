@@ -857,6 +857,7 @@ export default function DiagnosticsPanel({
         <div className="flex items-center gap-3">
           <button
             type="button"
+            data-setting-anchor="diagnostics.export.json"
             aria-label={t('diagnosticsPanel.exportJsonAria')}
             disabled={visibleDiagnosticRows.length === 0}
             className="border-ink-600/50 text-ink-300 hover:border-ink-500 hover:text-ink-100 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-50"
@@ -1216,7 +1217,10 @@ export default function DiagnosticsPanel({
               {t('diagnosticsPanel.displaySettings')}
             </h3>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2"
+                data-setting-anchor="diagnostics.display.congestionHalos"
+              >
                 <input
                   type="checkbox"
                   id="congestionHalos"
@@ -1230,7 +1234,10 @@ export default function DiagnosticsPanel({
                   {t('diagnosticsPanel.showChannelUtilHalos')}
                 </label>
               </div>
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2"
+                data-setting-anchor="diagnostics.display.anomalyHalos"
+              >
                 <input
                   type="checkbox"
                   id="anomalyHalos"
@@ -1245,7 +1252,10 @@ export default function DiagnosticsPanel({
                 </label>
               </div>
               {showMqttControls && (
-                <div className="flex items-center gap-2">
+                <div
+                  className="flex items-center gap-2"
+                  data-setting-anchor="diagnostics.display.ignoreMqtt"
+                >
                   <input
                     type="checkbox"
                     id="ignoreMqtt"
@@ -1261,7 +1271,10 @@ export default function DiagnosticsPanel({
                   <span className="text-muted text-xs">{t('diagnosticsPanel.ignoreMqttHelp')}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2"
+                data-setting-anchor="diagnostics.display.autoTraceroute"
+              >
                 <input
                   type="checkbox"
                   id="autoTraceroute"
@@ -1279,7 +1292,10 @@ export default function DiagnosticsPanel({
                   {lastDiscoveryTs !== null && <> · last: {formatRowTime(lastDiscoveryTs)}</>}
                 </span>
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div
+                className="flex flex-col gap-1.5"
+                data-setting-anchor="diagnostics.display.environmentProfile"
+              >
                 <div className="text-ink-300 text-sm">
                   {t('diagnosticsPanel.environmentProfile')}
                 </div>
@@ -1313,7 +1329,10 @@ export default function DiagnosticsPanel({
                   {envMode === 'canyon' && t('diagnosticsPanel.environmentCanyonHint')}
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div
+                className="flex flex-wrap items-center gap-2"
+                data-setting-anchor="diagnostics.display.distanceOffset"
+              >
                 <label htmlFor="distanceOffsetKm" className="text-ink-400 text-sm">
                   {t('diagnosticsPanel.distanceOffsetKm')}
                 </label>
@@ -1336,7 +1355,10 @@ export default function DiagnosticsPanel({
                   {t('diagnosticsPanel.distanceOffsetHelp')}
                 </span>
               </div>
-              <div className="border-ink-700/50 flex flex-col gap-1.5 border-t pt-2">
+              <div
+                className="border-ink-700/50 flex flex-col gap-1.5 border-t pt-2"
+                data-setting-anchor="diagnostics.display.staleRowsMaxAge"
+              >
                 <div className="text-ink-300 text-sm">
                   {t('diagnosticsPanel.staleRoutingDiagnostics')}
                 </div>
@@ -1368,7 +1390,10 @@ export default function DiagnosticsPanel({
 
           {/* Per-Node MQTT Filters */}
           {showMqttControls && mqttIgnoredNodes.size > 0 && (
-            <div className="bg-deep-black border-ink-800 rounded-xl border p-3">
+            <div
+              className="bg-deep-black border-ink-800 rounded-xl border p-3"
+              data-setting-anchor="diagnostics.mqttFilters.perNode"
+            >
               <h3 className="text-muted mb-2 text-xs font-medium">
                 {t('diagnosticsPanel.perNodeMqttFilters')}
               </h3>
@@ -1441,6 +1466,7 @@ export default function DiagnosticsPanel({
             </h3>
             <input
               type="text"
+              data-setting-anchor="diagnostics.anomalies.search"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);

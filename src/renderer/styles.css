@@ -179,6 +179,32 @@ html[data-reduce-motion='true'] *::after {
   transition-duration: 0.01ms !important;
 }
 
+/*
+ * Settings-search jump target (Ctrl/Cmd+K): revealSettingAnchor() scrolls the setting to
+ * mid-viewport and sets data-setting-flash for 2.4s. An outline keeps the element's own radius
+ * and follows the theme accent. Reduce motion shows a steady ring instead of the fade.
+ */
+@keyframes setting-anchor-flash {
+  0%,
+  55% {
+    outline-color: var(--color-brand-green);
+  }
+  100% {
+    outline-color: transparent;
+  }
+}
+
+[data-setting-anchor][data-setting-flash] {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  animation: setting-anchor-flash 2.4s ease-out;
+}
+
+html[data-reduce-motion='true'] [data-setting-anchor][data-setting-flash] {
+  animation: none !important;
+  outline-color: var(--color-brand-green);
+}
+
 /* Leaflet container needs explicit height */
 .leaflet-container {
   width: 100%;

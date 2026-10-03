@@ -172,6 +172,10 @@ import { useNodeStatusNotifier } from './hooks/useNodeStatusNotifier';
 import { useNowMs } from './hooks/useNowMs';
 import { useOperationalAlerts, useOperationalAlertSettings } from './hooks/useOperationalAlerts';
 import { usePanelLauncherShortcuts } from './hooks/usePanelLauncherShortcuts';
+import {
+  type PendingSettingAnchor,
+  usePendingSettingAnchor,
+} from './hooks/usePendingSettingAnchor';
 import { usePowerRecovery } from './hooks/usePowerRecovery';
 import { useProtocolConnect, useProtocolDisconnect } from './hooks/useProtocolConnection';
 import { useProtocolFacade } from './hooks/useProtocolFacade';
@@ -216,6 +220,7 @@ import {
   TakServerPanel,
   TelemetryPanel,
 } from './lazyTabPanels';
+import { announce } from './lib/a11yAnnouncer';
 import {
   resolvePanelPositionSendHandler,
   resolvePanelRebootHandler,
@@ -277,7 +282,11 @@ import {
 } from './lib/firmwareCheck';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
 import { loadLastConnection } from './lib/lastConnectionStorage';
-import type { LauncherChannelItem, LauncherContactItem } from './lib/launcherDestinations';
+import type {
+  LauncherChannelItem,
+  LauncherContactItem,
+  LauncherSettingItem,
+} from './lib/launcherDestinations';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
 import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
 import {
@@ -340,6 +349,8 @@ import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStar
 import { startReticulumVoiceMemo } from './lib/reticulum/reticulumVoiceMemo';
 import { sendReticulumVoiceMemo } from './lib/reticulum/sendReticulumVoiceMemo';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
+import { buildSettingSearchItems } from './lib/settingsSearch';
+import { SETTING_SEARCH_ENTRIES } from './lib/settingsSearchEntries';
 import { scheduleReticulumVacuumIfNeeded } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
@@ -347,7 +358,7 @@ import {
   nodeRecordsToMeshNodeMap,
   nodeRecordToMeshNode,
 } from './lib/storeRecordAdapters';
-import type { TabSlotId } from './lib/tabSlotIds';
+import { TAB_SLOT_IDS, type TabSlotId } from './lib/tabSlotIds';
 import { applyThemeColors, consumeThemeColorResetNotice, loadThemeColors } from './lib/themeColors';
 import { applyThemeSurface, loadThemeSurfaceId } from './lib/themePresets';
 import type {
@@ -633,6 +644,9 @@ function AppContent() {
   });
   const [pendingDmTarget, setPendingDmTarget] = useState<number | null>(null);
   const [pendingChannelTarget, setPendingChannelTarget] = useState<number | null>(null);
+  const [pendingSettingAnchor, setPendingSettingAnchor] = useState<PendingSettingAnchor | null>(
+    null,
+  );
   const [pendingRoomTarget, setPendingRoomTarget] = useState<number | null>(null);
   const [pendingRepeaterFocusNodeId, setPendingRepeaterFocusNodeId] = useState<number | null>(null);
   const [lastReadRevision, setLastReadRevision] = useState({
@@ -1923,8 +1937,22 @@ function AppContent() {
   const [launcherSnapshot, setLauncherSnapshot] = useState<{
     protocol: MeshProtocol;
     contacts: LauncherContactItem[];
-  }>({ protocol, contacts: [] });
+    settings: LauncherSettingItem[];
+  }>({ protocol, contacts: [], settings: [] });
   const launcherContacts = launcherSnapshot.contacts;
+  // Settings for the active protocol only; connection state never filters them.
+  const buildLauncherSettings = useCallback(
+    (): LauncherSettingItem[] =>
+      buildSettingSearchItems(
+        SETTING_SEARCH_ENTRIES,
+        {
+          capabilities,
+          visibleSlots: new Set(tabIndexToPanelIndex.flatMap((i) => TAB_SLOT_IDS[i] ?? [])),
+        },
+        t,
+      ),
+    [capabilities, tabIndexToPanelIndex, t],
+  );
   const buildLauncherContacts = useCallback((): LauncherContactItem[] => {
     const items: LauncherContactItem[] = [];
     if (capabilities.hasReticulumPeersList) {
@@ -1963,15 +1991,36 @@ function AppContent() {
   ]);
 
   const toggleLauncher = useCallback(() => {
-    if (!launcherOpen) setLauncherSnapshot({ protocol, contacts: buildLauncherContacts() });
+    if (!launcherOpen) {
+      setLauncherSnapshot({
+        protocol,
+        contacts: buildLauncherContacts(),
+        settings: buildLauncherSettings(),
+      });
+    }
     setLauncherOpen(!launcherOpen);
-  }, [launcherOpen, protocol, buildLauncherContacts]);
+  }, [launcherOpen, protocol, buildLauncherContacts, buildLauncherSettings]);
 
   // A protocol switch while the launcher is open rebuilds the list for the new protocol, during
   // render so the new protocol's node maps are the ones read.
   if (launcherOpen && launcherSnapshot.protocol !== protocol) {
-    setLauncherSnapshot({ protocol, contacts: buildLauncherContacts() });
+    setLauncherSnapshot({
+      protocol,
+      contacts: buildLauncherContacts(),
+      settings: buildLauncherSettings(),
+    });
   }
+
+  const openSettingFromLauncher = useCallback(
+    (item: LauncherSettingItem) => {
+      const tabIndex = findTabIndexForSlot(activeTabMappings, item.slot);
+      if (tabIndex < 0) return;
+      setActiveTab(tabIndex);
+      setLauncherOpen(false);
+      setPendingSettingAnchor({ id: item.id, panelIndex: TAB_SLOT_IDS.indexOf(item.slot) });
+    },
+    [activeTabMappings],
+  );
 
   const handleToggleLauncherPin = useCallback(
     (slot: TabSlotId) => {
@@ -2084,6 +2133,23 @@ function AppContent() {
       mainViewportRef.current.scrollTop = 0;
     }
   }, [activeTab]);
+
+  // Must stay below the scroll reset above, or that reset undoes the settings-search jump.
+  usePendingSettingAnchor({
+    anchor: pendingSettingAnchor,
+    onRevealed: (id) => {
+      const label = launcherSnapshot.settings.find((item) => item.id === id)?.label;
+      if (label) announce(t('settingsSearch.jumpedTo', { label }));
+    },
+    onTimedOut: (anchor) => {
+      const tabIndex = tabIndexToPanelIndex.indexOf(anchor.panelIndex);
+      const panel = displayTabLabels[tabIndex];
+      if (panel) announce(t('settingsSearch.openedPanel', { panel }));
+    },
+    onCleared: () => {
+      setPendingSettingAnchor(null);
+    },
+  });
 
   useEffect(() => {
     const viewport = mainViewportRef.current;
@@ -5773,6 +5839,8 @@ function AppContent() {
             if (capabilities.hasReticulumPeersList) selectPeerFrom('list', id);
             else selectNodeFrom('list', Number(id));
           }}
+          settings={launcherSnapshot.settings}
+          onOpenSetting={openSettingFromLauncher}
           header={
             shellCompact && enabledProtocols.length > 1 ? (
               <ProtocolSwitcher

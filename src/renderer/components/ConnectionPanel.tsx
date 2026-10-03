@@ -2039,6 +2039,7 @@ export default function ConnectionPanel({
         title={t('connectionPanel.mqttConnection')}
         actions={
           <Button
+            data-setting-anchor="connection.mqtt.disconnect"
             variant="danger"
             size="sm"
             icon={<Unplug aria-hidden className={ICON_MD} size={16} />}
@@ -2080,7 +2081,7 @@ export default function ConnectionPanel({
             </LabelValue>
           </LabelValueGrid>
           {protocol !== 'meshcore' && mqttProfiles.length > 0 ? (
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.switchProfile" className="space-y-1">
               <p id="conn-meshtastic-live-profile" className="text-muted text-xs">
                 {t('mqttProfiles.switchLabel')}
               </p>
@@ -2140,7 +2141,7 @@ export default function ConnectionPanel({
             </div>
           )}
           {protocol !== 'meshcore' && (
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.meshtasticPreset" className="space-y-1">
               <p id="conn-meshtastic-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
               </p>
@@ -2207,7 +2208,7 @@ export default function ConnectionPanel({
             </div>
           )}
           {protocol === 'meshcore' && (
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.meshcorePreset" className="space-y-1">
               <p id="conn-meshcore-network-preset" className="text-muted text-xs">
                 {t('connectionPanel.networkPreset')}
               </p>
@@ -2263,6 +2264,7 @@ export default function ConnectionPanel({
               )}
               {meshcorePreset === 'meshcoreca' && (
                 <div
+                  data-setting-anchor="connection.mqtt.meshcoreCaBroker"
                   className="flex flex-wrap items-center gap-2 pt-1"
                   role="group"
                   aria-label={t('connectionPanel.meshcoreCaBroker')}
@@ -2312,6 +2314,7 @@ export default function ConnectionPanel({
               )}
               {meshcorePreset === 'letsmesh' && (
                 <div
+                  data-setting-anchor="connection.mqtt.letsMeshRegion"
                   className="flex flex-wrap items-center gap-2 pt-1"
                   role="group"
                   aria-label={t('connectionPanel.letsMeshRegion')}
@@ -2362,7 +2365,7 @@ export default function ConnectionPanel({
             </div>
           )}
           <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-3">
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.server" className="space-y-1">
               <label htmlFor="mqtt-server" className="text-muted text-xs">
                 {t('connectionPanel.server')}
               </label>
@@ -2376,7 +2379,7 @@ export default function ConnectionPanel({
                 className={INPUT_CLASS}
               />
             </div>
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.port" className="space-y-1">
               <label htmlFor="mqtt-port" className="text-muted text-xs">
                 {t('connectionPanel.port')}
               </label>
@@ -2391,7 +2394,7 @@ export default function ConnectionPanel({
               />
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="connection.mqtt.tls" className="flex items-center gap-2">
             <input
               type="checkbox"
               id="mqtt-tls-enabled"
@@ -2409,7 +2412,10 @@ export default function ConnectionPanel({
             </label>
           </div>
           {activeMqttTls && (
-            <div className={`flex items-center gap-2 ${NOTICE_CLASS.warn}`}>
+            <div
+              data-setting-anchor="connection.mqtt.tlsInsecure"
+              className={`flex items-center gap-2 ${NOTICE_CLASS.warn}`}
+            >
               <input
                 type="checkbox"
                 id="mqtt-tls-insecure"
@@ -2424,7 +2430,7 @@ export default function ConnectionPanel({
               </label>
             </div>
           )}
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="connection.mqtt.webSocket" className="flex items-center gap-2">
             <input
               type="checkbox"
               id="mqtt-websocket"
@@ -2470,7 +2476,10 @@ export default function ConnectionPanel({
               </div>
             )}
           {protocol === 'meshcore' && (
-            <div className={`flex items-start gap-2 ${NOTICE_CLASS.info}`}>
+            <div
+              data-setting-anchor="connection.mqtt.meshcorePacketLogger"
+              className={`flex items-start gap-2 ${NOTICE_CLASS.info}`}
+            >
               <input
                 type="checkbox"
                 id="meshcore-packet-logger"
@@ -2488,7 +2497,7 @@ export default function ConnectionPanel({
             </div>
           )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.username" className="space-y-1">
               <label htmlFor="mqtt-username" className="text-muted text-xs">
                 {t('connectionPanel.username')}
               </label>
@@ -2502,7 +2511,7 @@ export default function ConnectionPanel({
                 className={INPUT_CLASS}
               />
             </div>
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.password" className="space-y-1">
               <label htmlFor="mqtt-password" className="text-muted text-xs">
                 {t('connectionPanel.password')}
               </label>
@@ -2535,7 +2544,7 @@ export default function ConnectionPanel({
               </div>
             </div>
           </div>
-          <div className="space-y-1">
+          <div data-setting-anchor="connection.mqtt.topicPrefix" className="space-y-1">
             <div className="flex items-center gap-1.5">
               <label htmlFor="mqtt-topic-prefix" className="text-muted text-xs">
                 {t('connectionPanel.topicPrefix')}
@@ -2590,25 +2599,27 @@ export default function ConnectionPanel({
               </p>
             ) : null}
           </div>
-          <Stepper
-            id="mqtt-max-retries"
-            label={t('connectionPanel.maxRetries')}
-            min={1}
-            max={MQTT_MAX_RECONNECT_ATTEMPTS}
-            value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
-            onChange={(value) => {
-              updateMqtt('maxRetries', clampMqttMaxRetries(value), false);
-            }}
-            hint={
-              protocol === 'meshcore'
-                ? t('connectionPanel.maxRetriesHelp.meshcore')
-                : t('connectionPanel.maxRetriesHelp.meshtastic', {
-                    max: MQTT_MAX_RECONNECT_ATTEMPTS,
-                  })
-            }
-          />
+          <div data-setting-anchor="connection.mqtt.maxRetries">
+            <Stepper
+              id="mqtt-max-retries"
+              label={t('connectionPanel.maxRetries')}
+              min={1}
+              max={MQTT_MAX_RECONNECT_ATTEMPTS}
+              value={activeMqttSettings.maxRetries ?? MQTT_DEFAULT_RECONNECT_ATTEMPTS}
+              onChange={(value) => {
+                updateMqtt('maxRetries', clampMqttMaxRetries(value), false);
+              }}
+              hint={
+                protocol === 'meshcore'
+                  ? t('connectionPanel.maxRetriesHelp.meshcore')
+                  : t('connectionPanel.maxRetriesHelp.meshtastic', {
+                      max: MQTT_MAX_RECONNECT_ATTEMPTS,
+                    })
+              }
+            />
+          </div>
           {protocol !== 'meshcore' && (
-            <div className="space-y-1">
+            <div data-setting-anchor="connection.mqtt.channelPsks" className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <label htmlFor="mqtt-channel-psks" className="text-muted text-xs">
                   {t('connectionPanel.channelPsks')}
@@ -2645,7 +2656,10 @@ export default function ConnectionPanel({
               </p>
             </div>
           )}
-          <div className="flex items-center gap-2">
+          <div
+            data-setting-anchor="connection.mqtt.autoConnect"
+            className="flex items-center gap-2"
+          >
             <input
               type="checkbox"
               id="mqttAutoLaunch"
@@ -2661,6 +2675,7 @@ export default function ConnectionPanel({
           </div>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button
+              data-setting-anchor="connection.mqtt.connect"
               variant="primary"
               onClick={async () => {
                 setMqttError(null);
@@ -3094,6 +3109,7 @@ export default function ConnectionPanel({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button
+              data-setting-anchor="connection.lastConnection.forget"
               variant="ghost"
               size="sm"
               onClick={() => {
@@ -3103,7 +3119,11 @@ export default function ConnectionPanel({
             >
               {t('connectionPanel.forgetDevice')}
             </Button>
-            <Button variant="primary" onClick={handleReconnect}>
+            <Button
+              data-setting-anchor="connection.lastConnection.reconnect"
+              variant="primary"
+              onClick={handleReconnect}
+            >
               {t('connectionPanel.reconnect')}
             </Button>
           </div>
@@ -3135,7 +3155,10 @@ export default function ConnectionPanel({
               </div>
             )}
 
-            <fieldset className="min-w-0 space-y-2 border-0 p-0">
+            <fieldset
+              data-setting-anchor="connection.radio.connectionType"
+              className="min-w-0 space-y-2 border-0 p-0"
+            >
               <legend className={`${FIELD_LABEL_CLASS} mb-2`}>
                 {t('connectionPanel.connectionType')}
               </legend>
@@ -3150,7 +3173,10 @@ export default function ConnectionPanel({
 
             {/* HTTP / TCP address input */}
             {connectionType === 'http' && protocol === 'meshtastic' && (
-              <div className="max-w-md space-y-1">
+              <div
+                data-setting-anchor="connection.radio.httpAddress"
+                className="max-w-md space-y-1"
+              >
                 <label htmlFor="connection-meshtastic-host" className="text-muted text-xs">
                   {t('connectionPanel.deviceAddress')}
                 </label>
@@ -3172,7 +3198,7 @@ export default function ConnectionPanel({
               </div>
             )}
             {connectionType === 'tcp' && protocol === 'meshtastic' && (
-              <div className="max-w-md space-y-1">
+              <div data-setting-anchor="connection.radio.tcpAddress" className="max-w-md space-y-1">
                 <label htmlFor="connection-meshtastic-tcp-host" className="text-muted text-xs">
                   {t('connectionPanel.deviceAddress')}
                 </label>
@@ -3193,7 +3219,10 @@ export default function ConnectionPanel({
             {connectionType === 'http' && protocol === 'meshcore' && (
               <div className="max-w-md space-y-1">
                 <div className="flex gap-2">
-                  <div className="min-w-0 flex-1 space-y-1">
+                  <div
+                    data-setting-anchor="connection.radio.meshcoreHost"
+                    className="min-w-0 flex-1 space-y-1"
+                  >
                     <label htmlFor="connection-meshcore-tcp-host" className="text-muted text-xs">
                       {t('connectionPanel.meshcoreHost')}
                     </label>
@@ -3210,7 +3239,10 @@ export default function ConnectionPanel({
                       aria-label={t('connectionPanel.meshcoreHost')}
                     />
                   </div>
-                  <div className="w-24 space-y-1">
+                  <div
+                    data-setting-anchor="connection.radio.meshcorePort"
+                    className="w-24 space-y-1"
+                  >
                     <label htmlFor="connection-meshcore-tcp-port" className="text-muted text-xs">
                       {t('connectionPanel.meshcorePort')}
                     </label>
@@ -3278,6 +3310,7 @@ export default function ConnectionPanel({
             {/* Connect button: primary unless the last-connection card already offers Reconnect */}
             <div className="pt-1">
               <Button
+                data-setting-anchor="connection.radio.connect"
                 variant={showLastConnection ? 'secondary' : 'primary'}
                 onClick={handleConnect}
                 disabled={

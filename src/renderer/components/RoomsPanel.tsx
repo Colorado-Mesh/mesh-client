@@ -1529,6 +1529,7 @@ export default function RoomsPanel({
         {onLoginAllSaved && roomServers.length > 0 ? (
           <Button
             size="sm"
+            data-setting-anchor="rooms.list.loginAllSaved"
             onClick={handleLoginAllSaved}
             disabled={loginAllSavedDisabled}
             aria-label={t('roomsPanel.loginAllSavedAria')}
@@ -1907,32 +1908,36 @@ export default function RoomsPanel({
             <h4 id="rooms-details-sync-heading" className="text-ink-300 text-xs font-semibold">
               {t('roomsPanel.loginAndSyncHeading')}
             </h4>
-            <Switch
-              checked={autoLoginOnConnect}
-              onChange={(checked) => {
-                void handleAutoLoginOnConnectChange(selectedRoomId, checked);
-              }}
-              disabled={
-                !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
-              }
-              label={t('roomsPanel.autoLoginOnConnect')}
-              description={
-                !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
-                  ? t('roomsPanel.autoLoginRequiresSavedPassword')
-                  : t('roomsPanel.autoLoginOnConnectTooltip')
-              }
-            />
-            <Switch
-              checked={syncEnabled}
-              onChange={(checked) => {
-                setSyncEnabled(checked);
-                setSyncConfigDirty(true);
-              }}
-              label={t('roomsPanel.autoSync')}
-              description={t('roomsPanel.autoSyncTooltip')}
-            />
+            <div data-setting-anchor="rooms.sync.autoLogin">
+              <Switch
+                checked={autoLoginOnConnect}
+                onChange={(checked) => {
+                  void handleAutoLoginOnConnectChange(selectedRoomId, checked);
+                }}
+                disabled={
+                  !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
+                }
+                label={t('roomsPanel.autoLoginOnConnect')}
+                description={
+                  !storedRoomIds.has(selectedRoomId) && !meshcoreIsRoomLoggedIn(selectedRoomId)
+                    ? t('roomsPanel.autoLoginRequiresSavedPassword')
+                    : t('roomsPanel.autoLoginOnConnectTooltip')
+                }
+              />
+            </div>
+            <div data-setting-anchor="rooms.sync.autoSync">
+              <Switch
+                checked={syncEnabled}
+                onChange={(checked) => {
+                  setSyncEnabled(checked);
+                  setSyncConfigDirty(true);
+                }}
+                label={t('roomsPanel.autoSync')}
+                description={t('roomsPanel.autoSyncTooltip')}
+              />
+            </div>
             {syncEnabled && (
-              <label className="flex flex-col gap-1">
+              <label data-setting-anchor="rooms.sync.syncInterval" className="flex flex-col gap-1">
                 <span className={FIELD_LABEL_CLASS}>{t('roomsPanel.syncIntervalLabel')}</span>
                 <select
                   value={syncInterval}

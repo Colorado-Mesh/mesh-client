@@ -87,7 +87,10 @@ export default function ReticulumPnHostingDangerZone({
 
   return (
     <>
-      <details className="rounded-lg border border-orange-700 bg-orange-900/30 px-3 py-2 text-orange-300">
+      <details
+        data-setting-anchor="radio.reticulumPnHosting.settings"
+        className="rounded-lg border border-orange-700 bg-orange-900/30 px-3 py-2 text-orange-300"
+      >
         <summary className="cursor-pointer text-sm font-medium text-orange-200">
           {t('networkPanel.reticulumPnHosting.title')}
         </summary>
@@ -218,7 +221,10 @@ export default function ReticulumPnHostingDangerZone({
           />
         </div>
         <div className="mt-3 flex flex-wrap gap-4 text-xs text-orange-100">
-          <label className="flex items-center gap-2">
+          <label
+            data-setting-anchor="radio.reticulumPnHosting.autopeer"
+            className="flex items-center gap-2"
+          >
             <input
               type="checkbox"
               checked={draft.autopeer}
@@ -254,7 +260,10 @@ export default function ReticulumPnHostingDangerZone({
             />
             {t('networkPanel.reticulumPnHosting.fromStaticOnly')}
           </label>
-          <label className="flex items-center gap-2">
+          <label
+            data-setting-anchor="radio.reticulumPnHosting.authRequired"
+            className="flex items-center gap-2"
+          >
             <input
               type="checkbox"
               checked={draft.auth_required}
@@ -270,7 +279,11 @@ export default function ReticulumPnHostingDangerZone({
         <p className="mt-2 text-xs text-orange-200">
           {t('networkPanel.reticulumPnHosting.enforceUnavailableTip')}
         </p>
-        <label htmlFor="pn-node-name" className="mt-3 block text-xs text-orange-200/90">
+        <label
+          htmlFor="pn-node-name"
+          data-setting-anchor="radio.reticulumPnHosting.nodeName"
+          className="mt-3 block text-xs text-orange-200/90"
+        >
           {t('networkPanel.reticulumPnHosting.nodeName')}
           <input
             id="pn-node-name"
@@ -284,7 +297,11 @@ export default function ReticulumPnHostingDangerZone({
             aria-label={t('networkPanel.reticulumPnHosting.nodeName')}
           />
         </label>
-        <label htmlFor="pn-static-peers" className="mt-3 block text-xs text-orange-200/90">
+        <label
+          htmlFor="pn-static-peers"
+          data-setting-anchor="radio.reticulumPnHosting.staticPeers"
+          className="mt-3 block text-xs text-orange-200/90"
+        >
           {t('networkPanel.reticulumPnHosting.staticPeers')}
           <textarea
             id="pn-static-peers"

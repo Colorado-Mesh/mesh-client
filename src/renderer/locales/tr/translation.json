@@ -6407,7 +6407,6 @@
     },
     "sectionPanelsAria": "{{section}} panelleri",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Bir panele, kişiye veya kanala git ({{shortcut}})",
     "status": {
       "radio": "Radyo: {{status}}",
       "radioWithNode": "Radyo: {{status}}, düğüm {{node}}",
@@ -6415,8 +6414,6 @@
     },
     "launcher": {
       "title": "Tüm paneller",
-      "searchLabel": "Panelleri, kişileri ve kanalları ara",
-      "placeholder": "Bir panele, kişiye veya kanala git",
       "noResults": "Aramayla eşleşen panel yok",
       "otherGroup": "Diğer",
       "pin": "{{label}} sabitle",
@@ -6429,13 +6426,18 @@
       "panelCount_other": "{{count}} panel",
       "channelsGroup": "Kanallar",
       "contactsGroup": "Kişiler",
-      "moreMatches": "Daha fazla eşleşme var. Listeyi daraltmak için yazmaya devam edin."
+      "moreMatches": "Daha fazla eşleşme var. Listeyi daraltmak için yazmaya devam edin.",
+      "settingsGroup": "Ayarlar",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Arama panelleri, kişiler, kanallar ve ayarlar",
+      "placeholder": "Bir panele, kişiye, kanala veya ayara gidin"
     },
     "more": "Diğer",
     "quitConfirmTitle": "Mesh Client'tan çıkılsın mı?",
     "quitConfirmIncidents": "Açık MAYDAY veya URGENT olayları: {{n}}.",
     "quitConfirmOutbox": "Gönderilmeyi bekleyen acil durum mesajları: {{n}}.",
-    "quitConfirmLinks": "Tüm telsiz ve MQTT bağlantıları kesilecek."
+    "quitConfirmLinks": "Tüm telsiz ve MQTT bağlantıları kesilecek.",
+    "openLauncher": "Bir panele, kişiye, kanala veya ayara gidin ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6524,5 +6526,9 @@
     "sourceLocal": "Yerel bir atak müşterisinden",
     "sourceRemote": "Uzak TAK SUNUCUSUNDAN",
     "lastSeen": "Son görülme {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "{{label}} 'a atlandı",
+    "openedPanel": "{{panel}} açıldı. Bu ayar, uygun olduğunda görünür."
   }
 }
