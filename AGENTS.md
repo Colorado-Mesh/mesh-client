@@ -160,6 +160,7 @@ Deep, file-level subsystem detail now lives in [`docs/agents/`](docs/agents/READ
 | EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/agents/emcomm.md`](docs/agents/emcomm.md)                         |
 | Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/agents/offline-maps.md`](docs/agents/offline-maps.md)             |
 | App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                             |
+| Launcher settings search: adding a searchable setting, anchors, registry, guards              | [`docs/agents/settings-search.md`](docs/agents/settings-search.md)       |
 | Symptom → where-to-check index                                                                | [`docs/agents/common-issues.md`](docs/agents/common-issues.md)           |
 
 **Always-remember invariants** (details in the linked files):

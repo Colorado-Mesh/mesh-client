@@ -346,7 +346,10 @@ export default function PacketDistributionPanel({
       {/* ── Top controls ── */}
       <div className="flex flex-wrap items-center gap-3">
         {/* Main view toggle */}
-        <div className="border-ink-700 flex rounded border text-xs">
+        <div
+          className="border-ink-700 flex rounded border text-xs"
+          data-setting-anchor="stats.packets.view"
+        >
           {(
             [
               { value: 'overall', label: t('packetDistribution.overallDistribution') },
@@ -373,6 +376,7 @@ export default function PacketDistributionPanel({
         {/* Source filter — Meshtastic only */}
         {variant === 'meshtastic' && (
           <select
+            data-setting-anchor="stats.packets.sourceFilter"
             value={sourceFilter}
             onChange={(e) => {
               setSourceFilter(e.target.value as SourceFilter);
@@ -387,7 +391,10 @@ export default function PacketDistributionPanel({
 
         {/* Time filter — Overall view only */}
         {mainView === 'overall' && (
-          <div className="border-ink-700 flex rounded border text-xs">
+          <div
+            className="border-ink-700 flex rounded border text-xs"
+            data-setting-anchor="stats.packets.timeRange"
+          >
             {TIME_FILTER_VALUES.map((value) => {
               const timeLabel = {
                 hour: t('packetDistribution.lastHour'),

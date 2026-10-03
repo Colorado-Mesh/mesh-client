@@ -90,7 +90,7 @@ function EnrollForm({ host, hostValid, verifyServer, disabled, onEnroll }: Enrol
   };
 
   return (
-    <div className="space-y-2">
+    <div data-setting-anchor="tak.remote.enroll" className="space-y-2">
       <h5 className="text-ink-300 text-xs font-medium">{t('takServerPanel.remoteEnrollTitle')}</h5>
       <p className="text-ink-400 text-xs">{t('takServerPanel.remoteEnrollHint')}</p>
       <div className="flex flex-wrap items-end gap-2">
@@ -259,7 +259,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <div className="min-w-0 flex-1 basis-56">
+        <div data-setting-anchor="tak.remote.host" className="min-w-0 flex-1 basis-56">
           <label htmlFor={`${id}-host`} className="text-ink-400 mb-1 block text-xs">
             {t('takServerPanel.remoteHostLabel')}
           </label>
@@ -281,7 +281,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             <p className="mt-1 text-xs text-red-400">{t('takServerPanel.remoteHostError')}</p>
           )}
         </div>
-        <div>
+        <div data-setting-anchor="tak.remote.port">
           <label htmlFor={`${id}-port`} className="text-ink-400 mb-1 block text-xs">
             {t('takServerPanel.remotePortLabel')}
           </label>
@@ -305,7 +305,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div data-setting-anchor="tak.remote.useTls" className="flex items-center gap-2">
           <input
             id={`${id}-tls`}
             aria-label={t('takServerPanel.remoteUseTls')}
@@ -327,7 +327,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           </p>
         )}
         {useTls && (
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="tak.remote.verifyServer" className="flex items-center gap-2">
             <input
               id={`${id}-verify`}
               aria-label={t('takServerPanel.remoteVerifyServer')}
@@ -345,7 +345,10 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
           </div>
         )}
         {useTls && verifyServer && (
-          <div className="flex items-center gap-2 pl-6">
+          <div
+            data-setting-anchor="tak.remote.allowNameMismatch"
+            className="flex items-center gap-2 pl-6"
+          >
             <input
               id={`${id}-name-mismatch`}
               aria-label={t('takServerPanel.remoteAllowNameMismatch')}
@@ -373,7 +376,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             {t('takServerPanel.remoteNameMismatchNeedsCa')}
           </p>
         )}
-        <div className="flex items-center gap-2">
+        <div data-setting-anchor="tak.remote.autoConnect" className="flex items-center gap-2">
           <input
             id={`${id}-autoconnect`}
             aria-label={t('takServerPanel.remoteAutoConnect')}
@@ -397,7 +400,10 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
         </h4>
         <CredentialSummary credentials={credentials} />
         <p className="text-ink-400 text-xs">{t('takServerPanel.remoteImportHint')}</p>
-        <div className="flex flex-wrap items-end gap-2">
+        <div
+          data-setting-anchor="tak.remote.importCertificates"
+          className="flex flex-wrap items-end gap-2"
+        >
           <div>
             <label htmlFor={`${id}-password`} className="text-ink-400 mb-1 block text-xs">
               {t('takServerPanel.remotePasswordLabel')}
@@ -447,7 +453,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
         )}
       </div>
 
-      <div className="pt-1">
+      <div data-setting-anchor="tak.remote.connect" className="pt-1">
         {active ? (
           <button
             type="button"

@@ -6401,7 +6401,6 @@
     },
     "sectionPanelsAria": "{{section}}面板",
     "navBadgeDetail": "{{label}}，{{detail}}",
-    "openLauncher": "转到面板、联系人或频道（{{shortcut}}）",
     "status": {
       "radio": "无线电：{{status}}",
       "radioWithNode": "无线电：{{status}}，节点 {{node}}",
@@ -6409,8 +6408,6 @@
     },
     "launcher": {
       "title": "全部面板",
-      "searchLabel": "搜索面板、联系人和频道",
-      "placeholder": "转到面板、联系人或频道",
       "noResults": "没有匹配的面板",
       "otherGroup": "其他",
       "pin": "固定{{label}}",
@@ -6423,13 +6420,18 @@
       "panelCount_other": "{{count}} 个面板",
       "channelsGroup": "频道",
       "contactsGroup": "联系人",
-      "moreMatches": "还有更多匹配项。继续输入以缩小范围。"
+      "moreMatches": "还有更多匹配项。继续输入以缩小范围。",
+      "settingsGroup": "设置",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "搜索面板、联系人、频道和设置",
+      "placeholder": "转到面板、联系人、频道或设置"
     },
     "more": "更多",
     "quitConfirmTitle": "退出 Mesh Client？",
     "quitConfirmIncidents": "未关闭的 MAYDAY 或 URGENT 事件：{{n}}。",
     "quitConfirmOutbox": "等待发送的紧急消息：{{n}}。",
-    "quitConfirmLinks": "所有无线电和 MQTT 连接都将断开。"
+    "quitConfirmLinks": "所有无线电和 MQTT 连接都将断开。",
+    "openLauncher": "前往面板、联系人、频道或设置（ {{shortcut}} ）"
   },
   "ui": {
     "stepper": {
@@ -6518,5 +6520,9 @@
     "sourceLocal": "来自本地ATAK客户",
     "sourceRemote": "从远程TAK服务器",
     "lastSeen": "上次见到{{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "跳至{{label}}",
+    "openedPanel": "已打开{{panel}}。此设置在可用时显示。"
   }
 }

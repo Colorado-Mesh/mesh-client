@@ -292,7 +292,7 @@ export function RrcHubBrowser({
       )}
       <p className="text-muted px-1 text-xs leading-snug">{t('rrc.hubLegend')}</p>
       <div className="border-ink-800 mt-auto space-y-3 border-t pt-3">
-        <label className={`block ${FIELD_LABEL_CLASS}`}>
+        <label data-setting-anchor="rrc.hubs.nickname" className={`block ${FIELD_LABEL_CLASS}`}>
           {t('rrc.nickname')}
           <input
             type="text"
@@ -309,7 +309,7 @@ export function RrcHubBrowser({
             overMaxKey="rrc.nickLimit.overMax"
           />
         </label>
-        <div className="flex gap-2">
+        <div data-setting-anchor="rrc.hubs.connectManual" className="flex gap-2">
           <input
             type="text"
             value={manualHash}

@@ -95,14 +95,17 @@ function ReticulumCollapsibleSection({
   children,
   defaultOpen = false,
   danger = false,
+  anchorId,
 }: {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
   danger?: boolean;
+  anchorId?: string;
 }) {
   return (
     <details
+      data-setting-anchor={anchorId}
       className={`group bg-deep-black/50 rounded-lg border ${danger ? 'border-red-900/50' : 'border-ink-700'}`}
       open={defaultOpen || undefined}
     >
@@ -747,7 +750,10 @@ export function ReticulumNetworkPanel({
 
       <ReticulumCollapsibleSection title={t('networkPanel.reticulumStackSettings.title')}>
         <div className="space-y-2 text-sm">
-          <label className="text-ink-300 flex items-center gap-2">
+          <label
+            data-setting-anchor="radio.reticulumStack.enableTransport"
+            className="text-ink-300 flex items-center gap-2"
+          >
             <input
               type="checkbox"
               checked={stackSettings.enable_transport}
@@ -758,7 +764,10 @@ export function ReticulumNetworkPanel({
             />
             {t('networkPanel.reticulumStackSettings.enableTransport')}
           </label>
-          <label className="text-ink-300 flex items-center gap-2">
+          <label
+            data-setting-anchor="radio.reticulumStack.shareInstance"
+            className="text-ink-300 flex items-center gap-2"
+          >
             <input
               type="checkbox"
               checked={stackSettings.share_instance}
@@ -769,7 +778,10 @@ export function ReticulumNetworkPanel({
             />
             {t('networkPanel.reticulumStackSettings.shareInstance')}
           </label>
-          <label className="text-ink-400 block text-xs">
+          <label
+            data-setting-anchor="radio.reticulumStack.logLevel"
+            className="text-ink-400 block text-xs"
+          >
             {t('networkPanel.reticulumStackSettings.logLevel')}
             <select
               value={stackSettings.loglevel}
@@ -786,7 +798,10 @@ export function ReticulumNetworkPanel({
               ))}
             </select>
           </label>
-          <label className="text-ink-400 block text-xs">
+          <label
+            data-setting-anchor="radio.reticulumStack.pathMediumPreference"
+            className="text-ink-400 block text-xs"
+          >
             {t('networkPanel.reticulumStackSettings.pathMediumPreference')}
             <select
               value={pathMediumPreference}
@@ -816,7 +831,10 @@ export function ReticulumNetworkPanel({
             <p className="text-label text-muted mt-1">
               {t('networkPanel.reticulumStackSettings.discoveryConsumeHint')}
             </p>
-            <label className="text-ink-400 mt-2 block text-xs">
+            <label
+              data-setting-anchor="radio.reticulumStack.autoconnectDiscovered"
+              className="text-ink-400 mt-2 block text-xs"
+            >
               {t('networkPanel.reticulumStackSettings.autoconnectDiscovered')}
               <input
                 type="number"
@@ -839,7 +857,10 @@ export function ReticulumNetworkPanel({
                 {t('networkPanel.reticulumStackSettings.autoconnectDiscoveredHint')}
               </span>
             </label>
-            <label className="text-ink-400 mt-2 block text-xs">
+            <label
+              data-setting-anchor="radio.reticulumStack.requiredDiscoveryValue"
+              className="text-ink-400 mt-2 block text-xs"
+            >
               {t('networkPanel.reticulumStackSettings.requiredDiscoveryValue')}
               <input
                 type="number"
@@ -857,7 +878,10 @@ export function ReticulumNetworkPanel({
                 aria-label={t('networkPanel.reticulumStackSettings.requiredDiscoveryValueAria')}
               />
             </label>
-            <label className="text-ink-400 mt-2 block text-xs">
+            <label
+              data-setting-anchor="radio.reticulumStack.discoverySources"
+              className="text-ink-400 mt-2 block text-xs"
+            >
               {t('networkPanel.reticulumStackSettings.discoverySources')}
               <textarea
                 value={stackSettings.interface_discovery_sources}
@@ -885,7 +909,10 @@ export function ReticulumNetworkPanel({
                 </span>
               )}
             </label>
-            <label className="text-ink-400 mt-2 block text-xs">
+            <label
+              data-setting-anchor="radio.reticulumStack.networkIdentity"
+              className="text-ink-400 mt-2 block text-xs"
+            >
               {t('networkPanel.reticulumStackSettings.networkIdentity')}
               <input
                 type="text"
@@ -916,7 +943,10 @@ export function ReticulumNetworkPanel({
         </div>
       </ReticulumCollapsibleSection>
 
-      <ReticulumCollapsibleSection title={t('networkPanel.reticulumScanImport.title')}>
+      <ReticulumCollapsibleSection
+        title={t('networkPanel.reticulumScanImport.title')}
+        anchorId="radio.reticulumScanImport.qrCode"
+      >
         <p className="text-muted text-xs">{t('networkPanel.reticulumScanImport.hint')}</p>
         <div className="mt-2">
           <p className="text-muted text-label mb-1">{t('qrIngest.pasteImageHint')}</p>
@@ -1037,7 +1067,10 @@ export function ReticulumNetworkPanel({
       </ReticulumCollapsibleSection>
 
       {identityReady && sidecarApiReady ? (
-        <ReticulumCollapsibleSection title={t('reticulumRmapDiscovery.sectionTitle')}>
+        <ReticulumCollapsibleSection
+          title={t('reticulumRmapDiscovery.sectionTitle')}
+          anchorId="radio.reticulumRmap.discovery"
+        >
           <ReticulumRmapDiscoveryControls
             disabled={connecting}
             sidecarApiReady={sidecarApiReady}
@@ -1049,14 +1082,20 @@ export function ReticulumNetworkPanel({
 
       {/* Not gated on sidecarApiReady — the blocklist is local DB state, editable with the stack stopped. */}
       {reticulumBlocklistIdentityId ? (
-        <ReticulumCollapsibleSection title={t('appPanel.reticulumBlocklist.title')}>
+        <ReticulumCollapsibleSection
+          title={t('appPanel.reticulumBlocklist.title')}
+          anchorId="radio.reticulumBlocklist.blockedContacts"
+        >
           <ReticulumBlockedContactsSection identityId={reticulumBlocklistIdentityId} />
         </ReticulumCollapsibleSection>
       ) : null}
 
       {sidecarApiReady ? (
         <>
-          <ReticulumCollapsibleSection title={t('networkPanel.reticulumConfigImport.title')}>
+          <ReticulumCollapsibleSection
+            title={t('networkPanel.reticulumConfigImport.title')}
+            anchorId="radio.reticulumConfigImport.importConfig"
+          >
             <p className="text-muted text-xs">{t('networkPanel.reticulumConfigImport.hint')}</p>
             <textarea
               value={configPaste}
@@ -1108,6 +1147,7 @@ export function ReticulumNetworkPanel({
               </button>
               <button
                 type="button"
+                data-setting-anchor="radio.reticulumConfigImport.validate"
                 disabled={configValidateBusy}
                 onClick={() => {
                   void handleValidateConfig();
@@ -1272,7 +1312,10 @@ function IdentityImportExtras({
           </p>
         </>
       ) : null}
-      <label className="text-ink-400 block text-xs">
+      <label
+        data-setting-anchor="radio.reticulumIdentity.importBackup"
+        className="text-ink-400 block text-xs"
+      >
         {t('connectionPanel.reticulumIdentity.importBackupLabel')}
         <p className="text-muted text-label mt-1">
           {t('connectionPanel.reticulumIdentity.importBackupHint')}
@@ -1322,7 +1365,10 @@ function IdentityImportExtras({
           {t('connectionPanel.reticulumIdentity.importBackupFromFile')}
         </button>
       </div>
-      <label className="text-ink-400 block text-xs">
+      <label
+        data-setting-anchor="radio.reticulumIdentity.importPrivateKey"
+        className="text-ink-400 block text-xs"
+      >
         {t('connectionPanel.reticulumIdentity.importPrivateKeyLabel')}
         <p className="text-muted text-label mt-1">
           {t('connectionPanel.reticulumIdentity.importPrivateKeyHint')}
@@ -1457,7 +1503,10 @@ function IdentitySlotsSection({
   }, [deleteTarget, onError, reload, t]);
 
   return (
-    <div className="border-ink-700/70 mb-3 space-y-2 rounded border p-2">
+    <div
+      data-setting-anchor="radio.reticulumIdentity.slots"
+      className="border-ink-700/70 mb-3 space-y-2 rounded border p-2"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-ink-300 text-xs font-medium">
@@ -1753,7 +1802,10 @@ function IdentityConfiguredView({
           />
         </div>
       ) : null}
-      <label className="text-ink-400 mt-2 block text-xs">
+      <label
+        data-setting-anchor="radio.reticulumIdentity.displayName"
+        className="text-ink-400 mt-2 block text-xs"
+      >
         {t('connectionPanel.reticulumIdentity.displayName')}
         <input
           type="text"
@@ -1817,7 +1869,10 @@ function IdentityConfiguredView({
           {exportPinError}
         </p>
       ) : null}
-      <div className="mt-2 flex flex-wrap gap-2">
+      <div
+        data-setting-anchor="radio.reticulumIdentity.export"
+        className="mt-2 flex flex-wrap gap-2"
+      >
         <button
           type="button"
           disabled={exportDisabled}
@@ -1881,6 +1936,7 @@ function IdentitySetupView({
       </label>
       <button
         type="button"
+        data-setting-anchor="radio.reticulumIdentity.generate"
         disabled={disabled}
         onClick={onGenerate}
         className="rounded-lg bg-orange-700 px-3 py-1.5 text-sm text-white hover:bg-orange-600 disabled:opacity-40"
@@ -1903,7 +1959,10 @@ function IdentitySetupView({
           </label>
         </div>
       ) : null}
-      <label className="text-ink-400 block text-xs">
+      <label
+        data-setting-anchor="radio.reticulumIdentity.importMnemonic"
+        className="text-ink-400 block text-xs"
+      >
         {t('connectionPanel.reticulumIdentity.importLabel')}
         <textarea
           value={importPhrase}

@@ -82,7 +82,10 @@ export default function DiagnosticsPingPanel() {
   };
 
   return (
-    <div className="bg-deep-black border-ink-700 rounded-lg border p-4">
+    <div
+      className="bg-deep-black border-ink-700 rounded-lg border p-4"
+      data-setting-anchor="diagnostics.ping.destination"
+    >
       <h3 className="text-ink-200 text-sm font-medium">{t('diagnosticsPing.title')}</h3>
       <p className="text-muted mt-1 text-xs">{t('diagnosticsPing.reticulumHint')}</p>
       <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -100,7 +103,7 @@ export default function DiagnosticsPingPanel() {
             className={`${INPUT_BOX_CLASS} mt-1 block w-full`}
           />
         </label>
-        <label className="text-ink-400 text-xs">
+        <label className="text-ink-400 text-xs" data-setting-anchor="diagnostics.ping.interval">
           {t('diagnosticsPing.intervalLabel')}
           <input
             type="number"
@@ -136,6 +139,7 @@ export default function DiagnosticsPingPanel() {
         )}
         <button
           type="button"
+          data-setting-anchor="diagnostics.ping.runOnce"
           disabled={running || !hash.trim()}
           className="border-ink-600 text-ink-300 rounded border px-3 py-1.5 text-sm disabled:opacity-40"
           onClick={() => {

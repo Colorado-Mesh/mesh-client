@@ -104,7 +104,10 @@ export default function MeshcoreContactSettingsSection({
   };
 
   return (
-    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+    <details
+      data-setting-anchor="radio.contacts.management"
+      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    >
       <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('meshcoreContactSettings.contactManagement')}</span>
         <DetailsChevron />
@@ -112,6 +115,7 @@ export default function MeshcoreContactSettingsSection({
       <div className="space-y-4 px-4 pb-4">
         <p className="text-muted text-xs">{t('meshcoreContactSettings.intro')}</p>
         <fieldset
+          data-setting-anchor="radio.contacts.autoAddMode"
           className="border-ink-600/80 space-y-3 rounded-lg border p-3"
           disabled={disabled || applying}
         >
@@ -171,6 +175,7 @@ export default function MeshcoreContactSettingsSection({
         </fieldset>
 
         <div
+          data-setting-anchor="radio.contacts.autoAddTypes"
           className={`border-ink-600/60 space-y-2 rounded-lg border p-3 ${autoAddAll ? 'opacity-50' : ''}`}
           aria-disabled={autoAddAll}
         >
@@ -234,7 +239,10 @@ export default function MeshcoreContactSettingsSection({
           ))}
         </div>
 
-        <div className="border-ink-600/60 flex items-center justify-between gap-3 rounded-lg border p-3">
+        <div
+          data-setting-anchor="radio.contacts.overwriteOldest"
+          className="border-ink-600/60 flex items-center justify-between gap-3 rounded-lg border p-3"
+        >
           <div>
             <label htmlFor="meshcore-overwrite-oldest" className="text-ink-200 text-sm">
               {t('meshcoreContactSettings.overwriteOldestTitle')}
@@ -258,7 +266,7 @@ export default function MeshcoreContactSettingsSection({
           />
         </div>
 
-        <div className="space-y-1">
+        <div data-setting-anchor="radio.contacts.maxHops" className="space-y-1">
           <label htmlFor="meshcore-autoadd-max-hops" className="text-ink-200 text-sm">
             {t('meshcoreContactSettings.maxHopsLabel')}
           </label>
@@ -302,7 +310,10 @@ export default function MeshcoreContactSettingsSection({
           <p className="text-ink-400 text-xs font-medium">
             {t('meshcoreContactSettings.contactsListAppHeading')}
           </p>
-          <div className="flex items-center justify-between gap-3">
+          <div
+            data-setting-anchor="radio.contacts.autoOffload"
+            className="flex items-center justify-between gap-3"
+          >
             <div>
               <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.autoOffloadWhenFullLabel')}
@@ -327,7 +338,10 @@ export default function MeshcoreContactSettingsSection({
               {t('meshcoreContactSettings.overwriteOldestEvictsNote')}
             </p>
           )}
-          <div className="flex items-center justify-between gap-3">
+          <div
+            data-setting-anchor="radio.contacts.showRefresh"
+            className="flex items-center justify-between gap-3"
+          >
             <div>
               <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.showRefreshLabel')}
@@ -347,7 +361,10 @@ export default function MeshcoreContactSettingsSection({
               aria-label={t('meshcoreContactSettings.showRefreshControl')}
             />
           </div>
-          <div className="flex items-center justify-between gap-3">
+          <div
+            data-setting-anchor="radio.contacts.showPublicKeys"
+            className="flex items-center justify-between gap-3"
+          >
             <div>
               <span className="text-ink-200 text-sm">
                 {t('meshcoreContactSettings.showPublicKeysLabel')}
@@ -370,7 +387,10 @@ export default function MeshcoreContactSettingsSection({
         </div>
 
         {onClearAllContacts ? (
-          <div className="border-t border-red-900/50 pt-4">
+          <div
+            data-setting-anchor="radio.contacts.clearAll"
+            className="border-t border-red-900/50 pt-4"
+          >
             <p className="text-muted mb-2 text-xs">{t('meshcoreContactSettings.clearAllIntro')}</p>
             <button
               type="button"

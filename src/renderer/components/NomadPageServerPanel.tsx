@@ -301,7 +301,10 @@ export default function NomadPageServerPanel({
 
       <p className="text-muted text-xs">{t('nomadNetwork.serving.folderHint')}</p>
 
-      <div className="text-ink-200 flex flex-col gap-1 text-sm">
+      <div
+        data-setting-anchor="nomadNetwork.serving.contentSource"
+        className="text-ink-200 flex flex-col gap-1 text-sm"
+      >
         <span>{t('nomadNetwork.serving.contentSource')}</span>
         <code className="text-ink-300 truncate font-mono text-xs" title={contentSourceLabel}>
           {contentSourceLabel}
@@ -334,7 +337,10 @@ export default function NomadPageServerPanel({
         </div>
       </div>
 
-      <label className="text-ink-200 flex flex-col gap-1 text-sm">
+      <label
+        data-setting-anchor="nomadNetwork.serving.displayName"
+        className="text-ink-200 flex flex-col gap-1 text-sm"
+      >
         <span>{t('nomadNetwork.serving.displayName')}</span>
         <input
           type="text"
@@ -349,7 +355,7 @@ export default function NomadPageServerPanel({
         />
       </label>
 
-      <div className="flex flex-wrap gap-2">
+      <div data-setting-anchor="nomadNetwork.serving.startStop" className="flex flex-wrap gap-2">
         <button
           type="button"
           disabled={busy || !sidecarRunning || serving || !hasContentSource}
@@ -422,6 +428,7 @@ export default function NomadPageServerPanel({
           <h4 className="text-ink-100 text-sm font-medium">{t('nomadNetwork.serving.myPages')}</h4>
           <button
             type="button"
+            data-setting-anchor="nomadNetwork.serving.newPage"
             disabled={busy || !sidecarRunning || !hasContentSource}
             onClick={newPage}
             aria-label={t('nomadNetwork.serving.newPage')}

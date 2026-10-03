@@ -6401,7 +6401,6 @@
     },
     "sectionPanelsAria": "Paneles de {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Ir a un panel, contacto o canal ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, nodo {{node}}",
@@ -6409,8 +6408,6 @@
     },
     "launcher": {
       "title": "Todos los paneles",
-      "searchLabel": "Buscar paneles, contactos y canales",
-      "placeholder": "Ir a un panel, contacto o canal",
       "noResults": "Ningún panel coincide con la búsqueda",
       "otherGroup": "Otros",
       "pin": "Fijar {{label}}",
@@ -6423,13 +6420,18 @@
       "panelCount_other": "{{count}} paneles",
       "channelsGroup": "Canales",
       "contactsGroup": "Contactos",
-      "moreMatches": "Hay más coincidencias. Sigue escribiendo para acotar la lista."
+      "moreMatches": "Hay más coincidencias. Sigue escribiendo para acotar la lista.",
+      "settingsGroup": "Ajustes",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Paneles de búsqueda, contactos, canales y configuración",
+      "placeholder": "Ir a un panel, contacto, canal o configuración"
     },
     "more": "Más",
     "quitConfirmTitle": "¿Salir de Mesh Client?",
     "quitConfirmIncidents": "Incidentes MAYDAY o URGENT abiertos: {{n}}.",
     "quitConfirmOutbox": "Mensajes de emergencia pendientes de envío: {{n}}.",
-    "quitConfirmLinks": "Se desconectarán todos los enlaces de radio y MQTT."
+    "quitConfirmLinks": "Se desconectarán todos los enlaces de radio y MQTT.",
+    "openLauncher": "Accede a un panel, contacto, canal o configuración ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6518,5 +6520,9 @@
     "sourceLocal": "De un cliente local de ATAK",
     "sourceRemote": "Desde el servidor TAK REMOTO",
     "lastSeen": "Visto por última vez {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Saltó a {{label}}",
+    "openedPanel": "Se abrió {{panel}}. Esta configuración aparece cuando está disponible."
   }
 }

@@ -109,7 +109,10 @@ export function IdentityVaultPanel({ disabled = false, secret = null }: Identity
       : t('identityVault.statusNotConfigured');
 
   return (
-    <div className="border-ink-700 bg-ink-900/40 mt-3 space-y-2 rounded-lg border p-3">
+    <div
+      data-setting-anchor="radio.reticulumIdentity.vaultPasscode"
+      className="border-ink-700 bg-ink-900/40 mt-3 space-y-2 rounded-lg border p-3"
+    >
       <div className="flex items-center justify-between gap-2">
         <h4 className="text-ink-200 text-sm font-medium">{t('identityVault.title')}</h4>
         <span

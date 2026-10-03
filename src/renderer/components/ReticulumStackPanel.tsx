@@ -316,6 +316,7 @@ export function ReticulumStackPanel({
         }}
       />
       <Panel
+        anchorId="connection.reticulumStack.startStop"
         title={t('connectionPanel.reticulumStackTitle')}
         actions={
           sidecarUiRunning ? (
@@ -433,7 +434,10 @@ export function ReticulumStackPanel({
             </>
           ) : null}
           <div className="border-ink-800 space-y-2.5 border-t pt-4">
-            <label className="text-body text-ink-200 flex cursor-pointer items-center gap-2">
+            <label
+              data-setting-anchor="connection.reticulumStack.autostart"
+              className="text-body text-ink-200 flex cursor-pointer items-center gap-2"
+            >
               <input
                 type="checkbox"
                 className={CHECKBOX_CLASS}
@@ -445,7 +449,10 @@ export function ReticulumStackPanel({
               />
               {t('connectionPanel.reticulumAutostart')}
             </label>
-            <label className="text-body text-ink-200 flex cursor-pointer items-center gap-2">
+            <label
+              data-setting-anchor="connection.reticulumStack.autoResendOnAnnounce"
+              className="text-body text-ink-200 flex cursor-pointer items-center gap-2"
+            >
               <input
                 type="checkbox"
                 className={CHECKBOX_CLASS}

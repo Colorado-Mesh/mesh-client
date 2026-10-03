@@ -6401,7 +6401,6 @@
     },
     "sectionPanelsAria": "Panelen van {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Ga naar een paneel, contact of kanaal ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, knooppunt {{node}}",
@@ -6409,8 +6408,6 @@
     },
     "launcher": {
       "title": "Alle panelen",
-      "searchLabel": "Panelen, contacten en kanalen zoeken",
-      "placeholder": "Ga naar een paneel, contact of kanaal",
       "noResults": "Geen panelen gevonden",
       "otherGroup": "Overig",
       "pin": "{{label}} vastzetten",
@@ -6423,13 +6420,18 @@
       "panelCount_other": "{{count}} panelen",
       "channelsGroup": "Kanalen",
       "contactsGroup": "Contacten",
-      "moreMatches": "Er zijn meer resultaten. Typ verder om de lijst te verkleinen."
+      "moreMatches": "Er zijn meer resultaten. Typ verder om de lijst te verkleinen.",
+      "settingsGroup": "Instellingen",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Zoekpanelen, contacten, kanalen en instellingen",
+      "placeholder": "Ga naar een paneel, contact, kanaal of instelling"
     },
     "more": "Meer",
     "quitConfirmTitle": "Mesh Client afsluiten?",
     "quitConfirmIncidents": "Open MAYDAY- of URGENT-incidenten: {{n}}.",
     "quitConfirmOutbox": "Noodberichten die nog wachten op verzending: {{n}}.",
-    "quitConfirmLinks": "Alle radio- en MQTT-verbindingen worden verbroken."
+    "quitConfirmLinks": "Alle radio- en MQTT-verbindingen worden verbroken.",
+    "openLauncher": "Ga naar een paneel, contactpersoon, kanaal of instelling ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6518,5 +6520,9 @@
     "sourceLocal": "Van een lokale ATAK-client",
     "sourceRemote": "Vanaf de externe TAK-server",
     "lastSeen": "Laatst gezien {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Sprong naar {{label}}",
+    "openedPanel": "{{panel}} geopend. Deze instelling verschijnt wanneer deze beschikbaar is."
   }
 }

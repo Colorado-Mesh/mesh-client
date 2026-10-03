@@ -34,7 +34,7 @@ test.describe('tabs', () => {
     const launcher = page.getByRole('dialog', { name: 'All panels' });
     await expect(launcher).toBeVisible();
     await launcher
-      .getByRole('textbox', { name: 'Search panels, contacts and channels' })
+      .getByRole('textbox', { name: 'Search panels, contacts, channels and settings' })
       .fill('sniff');
     await page.keyboard.press('Enter');
     await expect(launcher).toBeHidden();

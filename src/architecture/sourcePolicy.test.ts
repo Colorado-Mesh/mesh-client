@@ -155,6 +155,40 @@ describe('SOURCE_POLICY_RULES (repo)', () => {
     );
   });
 
+  describe('settings-anchor-id-format', () => {
+    const rule = SOURCE_POLICY_RULES.find((r) => r.id === 'settings-anchor-id-format');
+    const isFlagged = (source: string) => {
+      if (!rule?.forbid || !rule.when) throw new Error('settings-anchor-id-format rule missing');
+      return rule.when.test(source) && rule.forbid.test(source);
+    };
+
+    it.each([
+      '<div data-setting-anchor="app.gps.shareLocation">',
+      "<div data-setting-anchor='app.gps.shareLocation'>",
+      '<Panel anchorId="radio.lora">',
+      "<Panel anchorId='nomadNetwork.pages.serve'>",
+      '<Panel anchorId = "app.gps.shareLocation">',
+    ])('accepts %s', (source) => {
+      expect(isFlagged(source)).toBe(false);
+    });
+
+    it.each([
+      '<div data-setting-anchor="app.gps.">',
+      "<div data-setting-anchor='app.gps.'>",
+      '<div data-setting-anchor="app..gps">',
+      "<Panel anchorId='app..gps'>",
+      '<Panel anchorId = "app..gps">',
+      '<div data-setting-anchor= "app.gps.">',
+      '<div data-setting-anchor="app">',
+      '<div data-setting-anchor="app.gps.share.location">',
+      '<div data-setting-anchor="app.Gps.share">',
+      '<div data-setting-anchor="unknown.gps.share">',
+      `<div data-setting-anchor="app.gps.share'>`,
+    ])('rejects %s', (source) => {
+      expect(isFlagged(source)).toBe(true);
+    });
+  });
+
   /** Repo-wide gate: every `SOURCE_POLICY_RULES` include under src/ stays clean. */
   it('reports no violations against the current tree', () => {
     const violations = collectSourcePolicyViolations();

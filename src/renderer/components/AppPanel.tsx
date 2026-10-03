@@ -753,7 +753,10 @@ export default function AppPanel({
           <h3 className="text-muted text-sm font-medium">{t('appPanel.protocolsSection')}</h3>
           <HelpTooltip text={t('appPanel.protocolsEnabledDesc')} />
         </div>
-        <div className="bg-deep-black border-ink-800 space-y-2 rounded-xl border p-4">
+        <div
+          data-setting-anchor="app.protocols.enabled"
+          className="bg-deep-black border-ink-800 space-y-2 rounded-xl border p-4"
+        >
           {REGISTERED_MESH_PROTOCOLS.map((proto) => {
             const enabled = !settings.hiddenProtocols.includes(proto);
             const isLastEnabled =
@@ -794,7 +797,10 @@ export default function AppPanel({
       {onLogPanelVisibleChange && (
         <div className="space-y-2">
           <h3 className="text-muted text-sm font-medium">{t('appPanel.logPanelSection')}</h3>
-          <div className="bg-deep-black border-ink-800 rounded-xl border p-4">
+          <div
+            data-setting-anchor="app.logPanel.showLogPanel"
+            className="bg-deep-black border-ink-800 rounded-xl border p-4"
+          >
             <div className="flex items-center gap-2">
               <input
                 id="log-panel-visible-checkbox"
@@ -827,6 +833,7 @@ export default function AppPanel({
               {t('appPanel.floodAdvertScheduleLabel')}
             </label>
             <select
+              data-setting-anchor="app.floodAdvert.schedule"
               id="flood-advert-interval"
               value={settings.autoFloodAdvertIntervalHours}
               onChange={(e) => {
@@ -845,6 +852,7 @@ export default function AppPanel({
               {t('appPanel.floodAdvertTypeLabel')}
             </label>
             <select
+              data-setting-anchor="app.floodAdvert.type"
               id="flood-advert-type"
               value={settings.autoFloodAdvertType}
               onChange={(e) => {
@@ -865,7 +873,7 @@ export default function AppPanel({
       <div className="space-y-3">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.gpsSection')}</h3>
         <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="app.gps.shareLocation" className="flex items-center gap-2">
             <input
               type="checkbox"
               id="shareMyLocation"
@@ -909,9 +917,11 @@ export default function AppPanel({
           )}
           {!ourPosition && <p className="text-muted text-xs">{t('appPanel.noGpsPositionYet')}</p>}
 
-          <SavedLocationsSection onLocationChanged={handleSavedLocationChanged} />
+          <div data-setting-anchor="app.gps.savedLocations">
+            <SavedLocationsSection onLocationChanged={handleSavedLocationChanged} />
+          </div>
 
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="app.gps.refreshInterval" className="flex items-center gap-2">
             <label htmlFor="apppanel-gps-interval" className="text-ink-300 flex-1 text-sm">
               {t('appPanel.autoRefreshInterval')}
             </label>
@@ -935,7 +945,7 @@ export default function AppPanel({
           {hasStaticPosition && (
             <p className="text-muted text-xs">{t('appPanel.autoRefreshDisabledStatic')}</p>
           )}
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="app.gps.coordinateFormat" className="flex items-center gap-2">
             <label htmlFor="apppanel-coord-format" className="text-ink-300 flex-1 text-sm">
               {t('appPanel.coordinateFormat')}
             </label>
@@ -955,6 +965,7 @@ export default function AppPanel({
             </select>
           </div>
           <button
+            data-setting-anchor="app.gps.refreshNow"
             type="button"
             onClick={() => onRefreshGps?.()}
             disabled={gpsLoading || !settings.shareMyLocation}
@@ -972,7 +983,7 @@ export default function AppPanel({
         <h3 className="text-muted text-sm font-medium">{t('appPanel.mapFilterSection')}</h3>
         <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
           <p className="text-muted text-xs leading-relaxed">{t('appPanel.mapFilterDesc')}</p>
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="app.mapFilter.distantNodes" className="flex items-center gap-2">
             <input
               type="checkbox"
               id="distanceFilter"
@@ -987,7 +998,7 @@ export default function AppPanel({
               {t('appPanel.filterDistantNodesCheckbox')}
             </label>
           </div>
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="app.mapFilter.maxDistance" className="flex items-center gap-2">
             <label htmlFor="apppanel-max-distance" className="text-ink-300 text-sm">
               {t('appPanel.maxDistanceLabel')}
             </label>
@@ -1039,7 +1050,7 @@ export default function AppPanel({
               ) : null;
             })()}
           <p className="text-muted text-xs">{t('appPanel.requiresGpsFix')}</p>
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="app.mapFilter.hideMqttOnly" className="flex items-center gap-2">
             <input
               type="checkbox"
               id="filterMqttOnly"
@@ -1054,7 +1065,10 @@ export default function AppPanel({
               {t('appPanel.hideMqttOnlyNodes')}
             </label>
           </div>
-          <div className="flex items-center gap-2">
+          <div
+            data-setting-anchor="app.mapFilter.movementPaths"
+            className="flex items-center gap-2"
+          >
             <input
               type="checkbox"
               id="showMovementPaths"
@@ -1069,7 +1083,10 @@ export default function AppPanel({
               {t('appPanel.showMovementPaths')}
             </label>
           </div>
-          <div className="flex items-center gap-2">
+          <div
+            data-setting-anchor="app.mapFilter.historyWindow"
+            className="flex items-center gap-2"
+          >
             <label htmlFor="apppanel-history-window" className="text-ink-400 shrink-0 text-sm">
               {t('appPanel.positionHistoryWindowLabel')}
             </label>
@@ -1100,7 +1117,10 @@ export default function AppPanel({
         {protocol === 'meshtastic' && (
           <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
             {/* Auto-prune nodes on startup */}
-            <div className="flex items-center gap-2">
+            <div
+              data-setting-anchor="app.retention.autoPruneNodes"
+              className="flex items-center gap-2"
+            >
               <input
                 type="checkbox"
                 id="autoPrune"
@@ -1137,7 +1157,7 @@ export default function AppPanel({
             </div>
 
             {/* Prune unnamed nodes on startup */}
-            <div className="space-y-1">
+            <div data-setting-anchor="app.retention.pruneUnnamedNodes" className="space-y-1">
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -1160,7 +1180,7 @@ export default function AppPanel({
             </div>
 
             {/* Node cap */}
-            <div className="flex items-center gap-2">
+            <div data-setting-anchor="app.retention.nodeCap" className="flex items-center gap-2">
               <input
                 type="checkbox"
                 id="nodeCap"
@@ -1195,7 +1215,10 @@ export default function AppPanel({
             </div>
 
             {/* Position history prune */}
-            <div className="flex items-center gap-2">
+            <div
+              data-setting-anchor="app.retention.positionHistoryPrune"
+              className="flex items-center gap-2"
+            >
               <input
                 type="checkbox"
                 id="positionHistoryPrune"
@@ -1240,7 +1263,7 @@ export default function AppPanel({
         {protocol === 'meshcore' && (
           <div className="bg-deep-black border-ink-800 space-y-4 rounded-xl border p-4">
             {/* Delete contacts that never advertised */}
-            <div className="space-y-1">
+            <div data-setting-anchor="app.retention.neverAdvertisedContacts" className="space-y-1">
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -1265,7 +1288,10 @@ export default function AppPanel({
             </div>
 
             {/* Auto-prune contacts by age */}
-            <div className="flex items-center gap-2">
+            <div
+              data-setting-anchor="app.retention.autoPruneContacts"
+              className="flex items-center gap-2"
+            >
               <input
                 type="checkbox"
                 id="meshcoreAutoPrune"
@@ -1305,7 +1331,7 @@ export default function AppPanel({
             </div>
 
             {/* Contact cap */}
-            <div className="flex items-center gap-2">
+            <div data-setting-anchor="app.retention.contactCap" className="flex items-center gap-2">
               <input
                 type="checkbox"
                 id="meshcoreContactCap"
@@ -1353,7 +1379,10 @@ export default function AppPanel({
             <p className="text-muted text-xs leading-relaxed">
               {t('appPanel.reticulumDestinationRetentionHint')}
             </p>
-            <div className="flex items-center gap-2">
+            <div
+              data-setting-anchor="app.retention.autoPruneDestinations"
+              className="flex items-center gap-2"
+            >
               <input
                 type="checkbox"
                 id="reticulumAutoPrune"
@@ -1391,7 +1420,10 @@ export default function AppPanel({
               />
               <span className="text-ink-300 text-sm">{t('common.days')}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div
+              data-setting-anchor="app.retention.destinationCap"
+              className="flex items-center gap-2"
+            >
               <input
                 type="checkbox"
                 id="reticulumDestinationCap"
@@ -1442,7 +1474,7 @@ export default function AppPanel({
           <p className="text-muted text-xs leading-relaxed">
             {t('appPanel.messagesLoadLimitIntro')}
           </p>
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="app.retention.messageLimit" className="flex items-center gap-2">
             <input
               type="checkbox"
               id="messageLimit"
@@ -1482,7 +1514,10 @@ export default function AppPanel({
             <span className="text-ink-300 text-sm">{t('common.messages')}</span>
           </div>
           {protocol === 'meshcore' ? (
-            <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
+            <div
+              data-setting-anchor="app.retention.meshcoreMessageCap"
+              className="border-ink-700 flex items-center gap-2 border-t pt-2"
+            >
               <input
                 type="checkbox"
                 id="messageRetentionMeshcore"
@@ -1523,7 +1558,10 @@ export default function AppPanel({
             </div>
           ) : protocol === 'reticulum' ? (
             <>
-              <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
+              <div
+                data-setting-anchor="app.retention.reticulumMessageCap"
+                className="border-ink-700 flex items-center gap-2 border-t pt-2"
+              >
                 <input
                   type="checkbox"
                   id="messageRetentionReticulum"
@@ -1562,7 +1600,10 @@ export default function AppPanel({
                 />
                 <span className="text-ink-300 text-sm">{t('common.messages')}</span>
               </div>
-              <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
+              <div
+                data-setting-anchor="app.retention.rrcMessageCap"
+                className="border-ink-700 flex items-center gap-2 border-t pt-2"
+              >
                 <input
                   type="checkbox"
                   id="messageRetentionRrc"
@@ -1603,7 +1644,10 @@ export default function AppPanel({
               </div>
             </>
           ) : (
-            <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
+            <div
+              data-setting-anchor="app.retention.meshtasticMessageCap"
+              className="border-ink-700 flex items-center gap-2 border-t pt-2"
+            >
               <input
                 type="checkbox"
                 id="messageRetentionMeshtastic"
@@ -1643,7 +1687,10 @@ export default function AppPanel({
               <span className="text-ink-300 text-sm">{t('common.messages')}</span>
             </div>
           )}
-          <div className="border-ink-700 flex items-center gap-2 border-t pt-2">
+          <div
+            data-setting-anchor="app.retention.compactMessages"
+            className="border-ink-700 flex items-center gap-2 border-t pt-2"
+          >
             <input
               type="checkbox"
               id="chatCompactMode"
@@ -1658,7 +1705,10 @@ export default function AppPanel({
               {t('appPanel.compactMessages')}
             </label>
           </div>
-          <div className="flex items-center gap-2">
+          <div
+            data-setting-anchor="app.retention.alwaysShowMessageActions"
+            className="flex items-center gap-2"
+          >
             <input
               type="checkbox"
               id="alwaysShowMessageActions"
@@ -1679,7 +1729,10 @@ export default function AppPanel({
           </div>
           {protocol === 'meshtastic' && (
             <>
-              <div className="flex items-center gap-2 pt-2">
+              <div
+                data-setting-anchor="app.retention.storeForwardHistory"
+                className="flex items-center gap-2 pt-2"
+              >
                 <input
                   type="checkbox"
                   id="storeForwardAutoFetchHistory"
@@ -1708,7 +1761,10 @@ export default function AppPanel({
                 <HelpTooltip text={t('appPanel.storeForwardAutoFetchHistoryHint')} />
               </div>
               {settings.storeForwardAutoFetchHistory && (
-                <div className="flex flex-wrap items-center gap-2 pl-6">
+                <div
+                  data-setting-anchor="app.retention.storeForwardProfile"
+                  className="flex flex-wrap items-center gap-2 pl-6"
+                >
                   <label htmlFor="storeForwardHistoryProfile" className="text-ink-300 text-sm">
                     {t('appPanel.storeForwardHistoryProfileLabel')}
                   </label>
@@ -1740,7 +1796,10 @@ export default function AppPanel({
                   <HelpTooltip text={t('appPanel.storeForwardHistoryProfileHint')} />
                 </div>
               )}
-              <div className="flex items-center gap-2">
+              <div
+                data-setting-anchor="app.retention.shareLocationWaypoint"
+                className="flex items-center gap-2"
+              >
                 <input
                   type="checkbox"
                   id="shareLocationSendWaypoint"
@@ -1769,7 +1828,7 @@ export default function AppPanel({
         <h3 className="text-muted text-sm font-medium">{t('appPanel.supportSection')}</h3>
         <p className="text-muted text-xs">{t('appPanel.supportSectionDesc')}</p>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="space-y-2">
+          <div data-setting-anchor="app.support.exportForGitHub" className="space-y-2">
             <button
               type="button"
               aria-label={t('appPanel.exportForGitHub')}
@@ -1783,7 +1842,7 @@ export default function AppPanel({
             </button>
             <p className="text-muted text-xs">{t('appPanel.exportForGitHubDesc')}</p>
           </div>
-          <div className="space-y-2">
+          <div data-setting-anchor="app.support.exportForDeveloper" className="space-y-2">
             <button
               type="button"
               aria-label={t('appPanel.exportForDeveloper')}
@@ -1806,6 +1865,7 @@ export default function AppPanel({
         <p className="text-muted text-xs">{t('appPanel.dataManagementDesc')}</p>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           <button
+            data-setting-anchor="app.data.exportDatabase"
             type="button"
             aria-label={t('appPanel.exportDatabase')}
             onClick={async () => {
@@ -1831,6 +1891,7 @@ export default function AppPanel({
           </button>
 
           <button
+            data-setting-anchor="app.data.copyDebugSnapshot"
             type="button"
             aria-label={t('appPanel.copyDebugSnapshot')}
             onClick={async () => {
@@ -1852,6 +1913,7 @@ export default function AppPanel({
           </button>
 
           <button
+            data-setting-anchor="app.data.importMerge"
             type="button"
             aria-label={t('appPanel.importMerge')}
             onClick={async () => {
@@ -1894,7 +1956,10 @@ export default function AppPanel({
       {/* Appearance — collapsible; preset-only colors (no text input — Electron macOS menu warnings). */}
       <div className="space-y-2">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.appearanceSection')}</h3>
-        <div className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3">
+        <div
+          data-setting-anchor="app.appearance.reduceMotion"
+          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
+        >
           <input
             type="checkbox"
             id="reduceMotion"
@@ -1910,7 +1975,10 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.reduceMotionDesc')} />
         </div>
-        <div className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3">
+        <div
+          data-setting-anchor="app.appearance.use24HourTime"
+          className="bg-deep-black border-ink-800 flex items-center gap-2 rounded-xl border px-4 py-3"
+        >
           <input
             type="checkbox"
             id="use24HourTime"
@@ -1927,7 +1995,10 @@ export default function AppPanel({
           </label>
           <HelpTooltip text={t('appPanel.use24HourTimeDesc')} />
         </div>
-        <div className="bg-deep-black border-ink-800 flex flex-col gap-2 rounded-xl border px-4 py-3">
+        <div
+          data-setting-anchor="app.appearance.fontSize"
+          className="bg-deep-black border-ink-800 flex flex-col gap-2 rounded-xl border px-4 py-3"
+        >
           <div className="flex items-center gap-2">
             <label htmlFor="fontScale" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.fontSize')}
@@ -1983,13 +2054,18 @@ export default function AppPanel({
             </button>
           </div>
         </div>
-        <ThemePicker
-          colors={themeColors}
-          surfaceId={themeSurfaceId}
-          onSurfaceSelect={handleThemeSurfaceSelect}
-          onAccentSelect={handleThemeAccentSelect}
-        />
-        <details className="group bg-deep-black border-secondary-dark rounded-lg border">
+        <div data-setting-anchor="app.appearance.themePresets">
+          <ThemePicker
+            colors={themeColors}
+            surfaceId={themeSurfaceId}
+            onSurfaceSelect={handleThemeSurfaceSelect}
+            onAccentSelect={handleThemeAccentSelect}
+          />
+        </div>
+        <details
+          data-setting-anchor="app.appearance.colorScheme"
+          className="group bg-deep-black border-secondary-dark rounded-lg border"
+        >
           <summary className="text-ink-200 hover:bg-ink-800/40 flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
             <span>{t('appPanel.colorScheme')}</span>
             <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
@@ -2050,7 +2126,10 @@ export default function AppPanel({
                       );
                     })}
                     {meta.key === 'messageActionsBarBg' && (
-                      <label className="ml-2 flex items-center gap-1.5">
+                      <label
+                        data-setting-anchor="app.appearance.messageActionsBackground"
+                        className="ml-2 flex items-center gap-1.5"
+                      >
                         <input
                           type="checkbox"
                           checked={messageActionsBarBgVisible}
@@ -2071,7 +2150,7 @@ export default function AppPanel({
                 </div>
               );
             })}
-            <div className="flex gap-2">
+            <div data-setting-anchor="app.appearance.saveTheme" className="flex gap-2">
               <button
                 type="button"
                 onClick={handleSaveThemeSnapshot}
@@ -2106,7 +2185,7 @@ export default function AppPanel({
       {/* Notifications */}
       <div className="space-y-2">
         <h3 className="text-muted text-sm font-medium">{t('appPanel.notificationsSection')}</h3>
-        <div className="flex items-center gap-3">
+        <div data-setting-anchor="app.notifications.sound" className="flex items-center gap-3">
           <input
             type="checkbox"
             id="soundNotifications"
@@ -2121,10 +2200,15 @@ export default function AppPanel({
             {t('appPanel.soundNotifications')}
           </label>
         </div>
-        <NotificationSoundSettings />
+        <div data-setting-anchor="app.notifications.sounds">
+          <NotificationSoundSettings />
+        </div>
         <div className="border-ink-700/60 space-y-2 border-t pt-2">
           <h4 className="text-muted text-xs font-medium">{t('appPanel.opsAlertsHeading')}</h4>
-          <div className="flex flex-col gap-1">
+          <div
+            data-setting-anchor="app.notifications.nodeSilenceAlert"
+            className="flex flex-col gap-1"
+          >
             <label htmlFor="nodeSilenceAlertMinutes" className="text-ink-300 text-sm">
               {t('appPanel.nodeSilenceAlertMinutes')}
             </label>
@@ -2147,7 +2231,7 @@ export default function AppPanel({
             />
             <p className="text-muted text-xs">{t('appPanel.nodeSilenceAlertMinutesHint')}</p>
           </div>
-          <div className="flex flex-col gap-1">
+          <div data-setting-anchor="app.notifications.batteryLow" className="flex flex-col gap-1">
             <label htmlFor="nodeBatteryLowThreshold" className="text-ink-300 text-sm">
               {t('appPanel.nodeBatteryLowThreshold')}
             </label>
@@ -2167,7 +2251,7 @@ export default function AppPanel({
               className={`${INPUT_BOX_CLASS} w-40`}
             />
           </div>
-          <div className="flex items-center gap-3">
+          <div data-setting-anchor="app.notifications.linkDown" className="flex items-center gap-3">
             <input
               type="checkbox"
               id="notifyOnLinkDown"
@@ -2184,7 +2268,7 @@ export default function AppPanel({
           </div>
         </div>
         {hasRrcPanel && (
-          <div className="space-y-1">
+          <div data-setting-anchor="app.notifications.rrcUnreadAll" className="space-y-1">
             <div className="flex items-center gap-3">
               <input
                 type="checkbox"
@@ -2238,7 +2322,7 @@ export default function AppPanel({
             </a>
           </div>
         </div>
-        <div className="space-y-1">
+        <div data-setting-anchor="app.mecp.showComposeButton" className="space-y-1">
           <div className="flex items-center gap-3">
             <input
               type="checkbox"
@@ -2259,6 +2343,7 @@ export default function AppPanel({
           </p>
         </div>
         <button
+          data-setting-anchor="app.mecp.exportLog"
           type="button"
           disabled={mecpExportBusy}
           className="border-ink-600 bg-ink-900/60 text-ink-200 hover:bg-ink-800 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
@@ -2299,7 +2384,9 @@ export default function AppPanel({
         >
           {t('mecp.exportLog')}
         </button>
-        <MecpRebroadcastSettings />
+        <div data-setting-anchor="app.mecp.rebroadcast">
+          <MecpRebroadcastSettings />
+        </div>
       </section>
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
@@ -2322,6 +2409,7 @@ export default function AppPanel({
                 {t('appPanel.dangerZoneDiagnosticsDesc')}
               </p>
               <button
+                data-setting-anchor="app.danger.resetDiagnostics"
                 type="button"
                 aria-label={t('appPanel.resetDiagnostics')}
                 onClick={() => {
@@ -2351,6 +2439,7 @@ export default function AppPanel({
                 {t('appPanel.dangerZoneGpsDesc')}
               </p>
               <button
+                data-setting-anchor="app.danger.clearGpsData"
                 type="button"
                 aria-label={t('appPanel.clearGpsData')}
                 onClick={() => {
@@ -2379,6 +2468,7 @@ export default function AppPanel({
                 {t('appPanel.dangerZonePositionHistoryDesc')}
               </p>
               <button
+                data-setting-anchor="app.danger.clearPositionHistory"
                 type="button"
                 aria-label={t('appPanel.clearPositionHistory')}
                 onClick={() => {
@@ -2422,6 +2512,7 @@ export default function AppPanel({
                 />
                 <span className="text-ink-300 text-sm">{t('common.days')}</span>
                 <button
+                  data-setting-anchor="app.danger.deleteOldNodes"
                   type="button"
                   aria-label={t('appPanel.deleteOldNodes')}
                   onClick={() => {
@@ -2445,6 +2536,7 @@ export default function AppPanel({
                 </button>
               </div>
               <button
+                data-setting-anchor="app.danger.pruneMqttOnlyNodes"
                 type="button"
                 aria-label={t('appPanel.pruneMqttOnlyNodes')}
                 onClick={() => {
@@ -2464,6 +2556,7 @@ export default function AppPanel({
                 {t('appPanel.pruneMqttOnlyNodes')}
               </button>
               <button
+                data-setting-anchor="app.danger.pruneUnnamedNodes"
                 type="button"
                 aria-label={t('appPanel.pruneUnnamedNodes')}
                 onClick={() => {
@@ -2483,6 +2576,7 @@ export default function AppPanel({
                 {t('appPanel.pruneUnnamedNodes')}
               </button>
               <button
+                data-setting-anchor="app.danger.pruneNoFixNodes"
                 type="button"
                 aria-label={t('appPanel.pruneNoFixNodes')}
                 onClick={() => {
@@ -2518,6 +2612,7 @@ export default function AppPanel({
                 </div>
               </button>
               <button
+                data-setting-anchor="app.danger.pruneDistantNodes"
                 type="button"
                 aria-label={t('appPanel.pruneDistantNodes')}
                 onClick={() => {
@@ -2572,6 +2667,7 @@ export default function AppPanel({
                 </div>
               </button>
               <button
+                data-setting-anchor="app.danger.pruneOfflineNodes"
                 type="button"
                 aria-label={t('appPanel.pruneOfflineNodes')}
                 onClick={() => {
@@ -2616,6 +2712,7 @@ export default function AppPanel({
                 </div>
               </button>
               <button
+                data-setting-anchor="app.danger.clearAllNodes"
                 type="button"
                 aria-label={t('appPanel.clearAllNodesButton', { count: nodeCount })}
                 onClick={() => {
@@ -2638,6 +2735,7 @@ export default function AppPanel({
               {/* MeshCore contacts cleanup */}
               {protocol === 'meshcore' && (
                 <button
+                  data-setting-anchor="app.danger.deleteContactsWithoutPubkeys"
                   type="button"
                   aria-label={t('appPanel.deleteNodesWithoutPubkeys')}
                   onClick={() => {
@@ -2681,6 +2779,7 @@ export default function AppPanel({
                 </p>
                 <button
                   type="button"
+                  data-setting-anchor="app.danger.clearReticulumContacts"
                   disabled={!reticulumSidecarReady}
                   aria-label={t('appPanel.clearReticulumContactsButton', {
                     count: reticulumContactCount,
@@ -2747,6 +2846,7 @@ export default function AppPanel({
                 </div>
               )}
               <button
+                data-setting-anchor="app.danger.clearMessages"
                 type="button"
                 aria-label={t('appPanel.clearMessagesCount', { count: messageCount })}
                 onClick={() => {
@@ -2820,6 +2920,7 @@ export default function AppPanel({
                   {t('appPanel.dangerZoneMeshcoreHeading')}
                 </div>
                 <button
+                  data-setting-anchor="app.danger.clearAllRepeaters"
                   type="button"
                   aria-label={t('appPanel.clearAllRepeaters')}
                   onClick={() => {
@@ -2845,6 +2946,7 @@ export default function AppPanel({
                 {t('appPanel.dangerZoneEverythingHeading')}
               </div>
               <button
+                data-setting-anchor="app.danger.clearAllLocalData"
                 type="button"
                 aria-label={t('appPanel.clearAllLocalData')}
                 onClick={() => {

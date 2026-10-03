@@ -28,6 +28,7 @@ function TriStateRow({
   noDescription,
   yesLabel,
   noLabel,
+  anchorId,
 }: {
   title: string;
   groupName: string;
@@ -43,6 +44,8 @@ function TriStateRow({
   noDescription: string;
   yesLabel: string;
   noLabel: string;
+  /** Settings-search anchor id (`data-setting-anchor`). */
+  anchorId?: string;
 }) {
   const { t } = useTranslation();
   const permissionPhrase = t(`meshcoreTelemetryPrivacy.${specificPermissionPhraseKey}`);
@@ -59,7 +62,11 @@ function TriStateRow({
   ];
 
   return (
-    <fieldset className="border-ink-600/80 space-y-2 rounded-lg border p-3" disabled={disabled}>
+    <fieldset
+      data-setting-anchor={anchorId}
+      className="border-ink-600/80 space-y-2 rounded-lg border p-3"
+      disabled={disabled}
+    >
       <legend className="text-ink-200 px-1 text-sm font-medium">{title}</legend>
       <div className="space-y-3">
         {options.map((opt) => {
@@ -143,7 +150,10 @@ export default function MeshcoreTelemetryPrivacySection({
   const no = t('common.no');
 
   return (
-    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+    <details
+      data-setting-anchor="radio.telemetryPrivacy.section"
+      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    >
       <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('meshcoreTelemetryPrivacy.summary')}</span>
         <DetailsChevron />
@@ -151,6 +161,7 @@ export default function MeshcoreTelemetryPrivacySection({
       <div className="space-y-4 px-4 pb-4">
         <p className="text-muted text-xs">{t('meshcoreTelemetryPrivacy.description')}</p>
         <TriStateRow
+          anchorId="radio.telemetryPrivacy.allowTelemetry"
           title={t('meshcoreTelemetryPrivacy.allowTelemetryTitle')}
           groupName="meshcore-telem-req"
           value={base}
@@ -165,6 +176,7 @@ export default function MeshcoreTelemetryPrivacySection({
           noLabel={no}
         />
         <TriStateRow
+          anchorId="radio.telemetryPrivacy.location"
           title={t('meshcoreTelemetryPrivacy.includeLocationTitle')}
           groupName="meshcore-telem-loc"
           value={loc}
@@ -179,6 +191,7 @@ export default function MeshcoreTelemetryPrivacySection({
           noLabel={no}
         />
         <TriStateRow
+          anchorId="radio.telemetryPrivacy.environment"
           title={t('meshcoreTelemetryPrivacy.includeEnvironmentTitle')}
           groupName="meshcore-telem-env"
           value={env}

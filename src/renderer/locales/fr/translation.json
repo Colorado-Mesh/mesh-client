@@ -6401,7 +6401,6 @@
     },
     "sectionPanelsAria": "Panneaux de la section {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Aller à un panneau, un contact ou un canal ({{shortcut}})",
     "status": {
       "radio": "Radio : {{status}}",
       "radioWithNode": "Radio : {{status}}, nœud {{node}}",
@@ -6409,8 +6408,6 @@
     },
     "launcher": {
       "title": "Tous les panneaux",
-      "searchLabel": "Rechercher des panneaux, contacts et canaux",
-      "placeholder": "Aller à un panneau, un contact ou un canal",
       "noResults": "Aucun panneau ne correspond à la recherche",
       "otherGroup": "Autres",
       "pin": "Épingler {{label}}",
@@ -6423,13 +6420,18 @@
       "panelCount_other": "{{count}} panneaux",
       "channelsGroup": "Canaux",
       "contactsGroup": "Contacts",
-      "moreMatches": "D'autres résultats correspondent. Continuez à taper pour affiner la liste."
+      "moreMatches": "D'autres résultats correspondent. Continuez à taper pour affiner la liste.",
+      "settingsGroup": "Paramètres",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Rechercher des panneaux, des contacts, des canaux et des paramètres",
+      "placeholder": "Accéder à un panneau, un contact, un canal ou un paramètre"
     },
     "more": "Plus",
     "quitConfirmTitle": "Quitter Mesh Client ?",
     "quitConfirmIncidents": "Incidents MAYDAY ou URGENT ouverts : {{n}}.",
     "quitConfirmOutbox": "Messages d'urgence en attente d'envoi : {{n}}.",
-    "quitConfirmLinks": "Toutes les liaisons radio et MQTT seront déconnectées."
+    "quitConfirmLinks": "Toutes les liaisons radio et MQTT seront déconnectées.",
+    "openLauncher": "Accéder à un panneau, un contact, un canal ou un paramètre ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6518,5 +6520,9 @@
     "sourceLocal": "D'un client ATAK local",
     "sourceRemote": "Depuis le serveur TAK DISTANT",
     "lastSeen": "Dernière vue {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Passé à {{label}}",
+    "openedPanel": "Ouvert {{panel}}. Ce paramètre apparaît lorsqu'il est disponible."
   }
 }
