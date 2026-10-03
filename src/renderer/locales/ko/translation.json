@@ -450,7 +450,11 @@
       "sky": "하늘",
       "classic": "클래식 그린"
     },
-    "pruneNoFixNodesTitle": "위치 없음/제로 섬 노드 정리"
+    "pruneNoFixNodesTitle": "위치 없음/제로 섬 노드 정리",
+    "protocolsSection": "프로토콜",
+    "protocolsEnabledDesc": "사용하지 않는 프로토콜을 끕니다. 비활성화된 프로토콜은 프로토콜 스위처에서 숨겨지고 연결이 끊어지며 자동 연결 및 자동 시작으로 건너뜁니다. 하나의 프로토콜만 활성화되면 스위처가 숨겨집니다.",
+    "protocolEnabled": "{{name}} 활성화",
+    "protocolLastEnabled": "하나 이상의 프로토콜이 활성화된 상태로 유지되어야 합니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",

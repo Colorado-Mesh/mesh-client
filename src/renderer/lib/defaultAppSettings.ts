@@ -1,3 +1,5 @@
+import type { MeshProtocol } from '@/shared/meshProtocol';
+
 /**
  * Canonical defaults for keys stored in localStorage `mesh-client:appSettings`.
  * Used by AppPanel and App startup pruning so behavior matches when keys are absent.
@@ -82,4 +84,9 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   nodeBatteryLowThreshold: 10,
   /** Alert when an RF link drops unexpectedly (not manual, not mid-reconnect). */
   notifyOnLinkDown: true,
+  /**
+   * Protocols the user does not use: hidden from the switcher and skipped by autostart.
+   * Stored as a hidden list so newly registered protocols default to enabled.
+   */
+  hiddenProtocols: [] as MeshProtocol[],
 };

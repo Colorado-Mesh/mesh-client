@@ -450,7 +450,11 @@
       "sky": "Cielo",
       "classic": "Verde classico"
     },
-    "pruneNoFixNodesTitle": "Eliminare i nodi senza posizione / Zero Island"
+    "pruneNoFixNodesTitle": "Eliminare i nodi senza posizione / Zero Island",
+    "protocolsSection": "Protocolli",
+    "protocolsEnabledDesc": "Disattiva i protocolli che non utilizzi. Un protocollo disabilitato viene nascosto dal commutatore di protocollo, disconnesso e saltato dalla connessione automatica e dall'avvio automatico. Con un solo protocollo abilitato, lo switcher è nascosto.",
+    "protocolEnabled": "Abilita {{name}}",
+    "protocolLastEnabled": "Almeno un protocollo deve rimanere abilitato."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",

@@ -458,7 +458,11 @@
       "sky": "Nebe",
       "classic": "Klasická zelená"
     },
-    "pruneNoFixNodesTitle": "Prořezávat uzly bez polohy / Zero Island"
+    "pruneNoFixNodesTitle": "Prořezávat uzly bez polohy / Zero Island",
+    "protocolsSection": "Protokoly",
+    "protocolsEnabledDesc": "Vypněte protokoly, které nepoužíváte. Zakázaný protokol je skrytý před přepínačem protokolu, odpojen a přeskočen automatickým připojením a automatickým spuštěním. Pokud je povolen pouze jeden protokol, je přepínač skrytý.",
+    "protocolEnabled": "Povolit {{name}}",
+    "protocolLastEnabled": "Alespoň jeden protokol musí zůstat povolen."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",

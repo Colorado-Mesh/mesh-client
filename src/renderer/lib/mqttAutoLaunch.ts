@@ -1,4 +1,5 @@
 import { meshcoreMqttNeedsColoradoRegionAck } from './connectionPanelStorageMigrations';
+import { loadHiddenProtocols } from './enabledProtocols';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
   validateLetsMeshManualCredentials,
@@ -42,6 +43,10 @@ export function shouldAutoLaunchMeshcoreMqttAtStartup(): boolean {
 /** Connect MQTT for `prot` when `autoLaunch` is enabled in persisted settings. */
 export async function tryAutoLaunchMqtt(prot: MeshProtocol): Promise<void> {
   if (prot === 'reticulum') return;
+  if (loadHiddenProtocols().includes(prot)) {
+    console.debug(`[App] MQTT auto-launch skipped: ${prot} is disabled in App → Protocols`);
+    return;
+  }
 
   const settings =
     prot === 'meshcore'

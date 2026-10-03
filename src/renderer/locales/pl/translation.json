@@ -466,7 +466,11 @@
       "sky": "Niebo",
       "classic": "Klasyczna zieleń"
     },
-    "pruneNoFixNodesTitle": "Przytnij węzły bez pozycji / Zero Island"
+    "pruneNoFixNodesTitle": "Przytnij węzły bez pozycji / Zero Island",
+    "protocolsSection": "Protokoły",
+    "protocolsEnabledDesc": "Wyłącz protokoły, których nie używasz. Wyłączony protokół jest ukryty przed przełącznikiem protokołu, rozłączony i pomijany przez automatyczne łączenie i automatyczne uruchamianie. Przy włączonym tylko jednym protokole przełącznik jest ukryty.",
+    "protocolEnabled": "Włącz {{name}}",
+    "protocolLastEnabled": "Przynajmniej jeden protokół musi pozostać włączony."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",

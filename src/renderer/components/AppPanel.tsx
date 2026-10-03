@@ -19,6 +19,7 @@ import {
 } from '../lib/appSettingsStorage';
 import { formatCoordPair } from '../lib/coordUtils';
 import { DEFAULT_APP_SETTINGS_SHARED } from '../lib/defaultAppSettings';
+import { enabledProtocolsFrom, sanitizeHiddenProtocols } from '../lib/enabledProtocols';
 import {
   applyFontScale,
   clampFontScale,
@@ -43,6 +44,7 @@ import {
 } from '../lib/messageRetention';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
 import { parseStoredJson } from '../lib/parseStoredJson';
+import { PROTOCOL_THEME } from '../lib/protocolTheme';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { writeReduceMotion } from '../lib/reduceMotionPreference';
 import { getActiveSavedLocation, useSavedLocations } from '../lib/savedLocations';
@@ -73,7 +75,7 @@ import {
   type ThemeSurface,
   type ThemeSurfaceId,
 } from '../lib/themePresets';
-import type { MeshNode, MeshProtocol } from '../lib/types';
+import { type MeshNode, type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
 import { useNodeStore } from '../stores/nodeStore';
@@ -191,6 +193,7 @@ interface AppSettings {
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
+  hiddenProtocols: MeshProtocol[];
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -206,7 +209,12 @@ function loadSettings(): AppSettings {
     getAppSettingsRaw(),
     'AppPanel loadSettings',
   );
-  return parsed ? { ...DEFAULT_SETTINGS, ...parsed } : DEFAULT_SETTINGS;
+  if (!parsed) return DEFAULT_SETTINGS;
+  return {
+    ...DEFAULT_SETTINGS,
+    ...parsed,
+    hiddenProtocols: sanitizeHiddenProtocols(parsed.hiddenProtocols),
+  };
 }
 
 interface Props {
@@ -235,6 +243,8 @@ interface Props {
   onAutoFloodAdvertTypeChange?: (type: 'flood' | 'zeroHop') => void;
   onChatCompactModeChange?: (compact: boolean) => void;
   onAlwaysShowMessageActionsChange?: (alwaysShow: boolean) => void;
+  /** Protocols hidden from the switcher and skipped by autostart (App → Protocols). */
+  onHiddenProtocolsChange?: (hidden: MeshProtocol[]) => void;
   /** Reticulum LXMF identity for DM-only message clear in Danger Zone. */
   reticulumIdentityId?: string | null;
   reticulumSidecarReady?: boolean;
@@ -273,6 +283,7 @@ export default function AppPanel({
   onAutoFloodAdvertTypeChange,
   onChatCompactModeChange,
   onAlwaysShowMessageActionsChange,
+  onHiddenProtocolsChange,
   reticulumIdentityId = null,
   reticulumSidecarReady = false,
 }: Props) {
@@ -492,6 +503,10 @@ export default function AppPanel({
   useEffect(() => {
     onAlwaysShowMessageActionsChange?.(settings.alwaysShowMessageActions);
   }, [settings.alwaysShowMessageActions, onAlwaysShowMessageActionsChange]);
+
+  useEffect(() => {
+    onHiddenProtocolsChange?.(settings.hiddenProtocols);
+  }, [settings.hiddenProtocols, onHiddenProtocolsChange]);
 
   const updateSetting = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -732,6 +747,48 @@ export default function AppPanel({
   return (
     <div className="w-full space-y-6">
       <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-1">
+          <h3 className="text-muted text-sm font-medium">{t('appPanel.protocolsSection')}</h3>
+          <HelpTooltip text={t('appPanel.protocolsEnabledDesc')} />
+        </div>
+        <div className="bg-deep-black border-ink-800 space-y-2 rounded-xl border p-4">
+          {REGISTERED_MESH_PROTOCOLS.map((proto) => {
+            const enabled = !settings.hiddenProtocols.includes(proto);
+            const isLastEnabled =
+              enabled && enabledProtocolsFrom(settings.hiddenProtocols).length === 1;
+            const name = PROTOCOL_THEME[proto].displayName;
+            const inputId = `protocol-enabled-${proto}`;
+            return (
+              <div key={proto} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={inputId}
+                  checked={enabled}
+                  disabled={isLastEnabled}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? settings.hiddenProtocols.filter((p) => p !== proto)
+                      : [...settings.hiddenProtocols, proto];
+                    updateSetting('hiddenProtocols', sanitizeHiddenProtocols(next));
+                  }}
+                  aria-label={t('appPanel.protocolEnabled', { name })}
+                  title={isLastEnabled ? t('appPanel.protocolLastEnabled') : undefined}
+                  className="accent-brand-green disabled:cursor-not-allowed"
+                />
+                <label
+                  htmlFor={inputId}
+                  className={`text-ink-300 text-sm ${isLastEnabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {name}
+                </label>
+                {isLastEnabled && <HelpTooltip text={t('appPanel.protocolLastEnabled')} />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Log panel visibility */}
       {onLogPanelVisibleChange && (

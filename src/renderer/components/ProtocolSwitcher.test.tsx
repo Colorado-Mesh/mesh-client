@@ -62,6 +62,31 @@ describe('ProtocolSwitcher', () => {
     expect(onProtocolChange).toHaveBeenLastCalledWith('meshtastic');
   });
 
+  it('offers only the enabled protocols; arrow keys wrap within them', async () => {
+    const user = userEvent.setup();
+    const onProtocolChange = vi.fn();
+    render(
+      <ProtocolSwitcher
+        protocol="meshtastic"
+        protocols={['meshtastic', 'reticulum']}
+        unreadByProtocol={{ meshtastic: 0, meshcore: 7, reticulum: 0 }}
+        onProtocolChange={onProtocolChange}
+      />,
+    );
+    expect(screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label'))).toEqual([
+      'Switch to Meshtastic',
+      'Switch to Reticulum',
+    ]);
+    screen.getByRole('radio', { name: 'Switch to Meshtastic' }).focus();
+    await user.keyboard('{ArrowUp}');
+    expect(onProtocolChange).toHaveBeenLastCalledWith('reticulum');
+    await user.keyboard('{ArrowDown}');
+    expect(onProtocolChange).toHaveBeenLastCalledWith('meshtastic');
+    await user.keyboard('{End}');
+    expect(onProtocolChange).toHaveBeenLastCalledWith('reticulum');
+    expect(onProtocolChange).not.toHaveBeenCalledWith('meshcore');
+  });
+
   it('names the active protocol under the rail track and uses full names in a row', () => {
     const { rerender, container } = render(
       <ProtocolSwitcher

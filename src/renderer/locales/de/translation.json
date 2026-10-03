@@ -450,7 +450,11 @@
       "sky": "Himmel",
       "classic": "Klassisches Grün"
     },
-    "pruneNoFixNodesTitle": "Knoten ohne Fix / Zero Island entfernen"
+    "pruneNoFixNodesTitle": "Knoten ohne Fix / Zero Island entfernen",
+    "protocolsSection": "Protokolle",
+    "protocolsEnabledDesc": "Deaktivieren Sie Protokolle, die Sie nicht verwenden. Ein deaktiviertes Protokoll wird vom Protokollumschalter ausgeblendet, getrennt und durch automatische Verbindung und Autostart übersprungen. Wenn nur ein Protokoll aktiviert ist, wird der Umschalter ausgeblendet.",
+    "protocolEnabled": "{{name}} aktivieren",
+    "protocolLastEnabled": "Mindestens ein Protokoll muss aktiviert bleiben."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",

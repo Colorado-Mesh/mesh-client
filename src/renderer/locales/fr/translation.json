@@ -450,7 +450,11 @@
       "sky": "Ciel",
       "classic": "Vert classique"
     },
-    "pruneNoFixNodesTitle": "Élaguer les nœuds sans position / Zero Island"
+    "pruneNoFixNodesTitle": "Élaguer les nœuds sans position / Zero Island",
+    "protocolsSection": "Protocoles",
+    "protocolsEnabledDesc": "Désactivez les protocoles que vous n'utilisez pas. Un protocole désactivé est masqué dans le sélecteur de protocole, déconnecté et ignoré par la connexion automatique et le démarrage automatique. Avec un seul protocole activé, le sélecteur est masqué.",
+    "protocolEnabled": "Activer {{name}}",
+    "protocolLastEnabled": "Au moins un protocole doit rester activé."
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",

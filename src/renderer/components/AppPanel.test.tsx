@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
 import AppPanel from './AppPanel';
@@ -616,6 +617,76 @@ describe('AppPanel: Clear All Nodes success toast', () => {
       await screen.findByText('Clear All Nodes (3) completed successfully.'),
     ).toBeInTheDocument();
     expect(window.electronAPI.db.clearNodes).toHaveBeenCalled();
+  });
+});
+
+describe('AppPanel: Protocols section (#1124)', () => {
+  const defaultProps = {
+    protocol: 'meshtastic' as const,
+    nodeCount: 0,
+    messageCount: 0,
+    channels: [] as { index: number; name: string }[],
+    myNodeNum: null as number | null,
+    onLocationFilterChange: vi.fn(),
+  };
+
+  beforeEach(() => {
+    localStorage.removeItem(APP_SETTINGS_STORAGE_KEY);
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValue({});
+  });
+
+  it('enables every protocol by default', () => {
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    for (const name of ['Meshtastic', 'MeshCore', 'Reticulum']) {
+      const box = screen.getByRole('checkbox', { name: `Enable ${name}` });
+      expect(box).toBeChecked();
+      expect(box).toBeEnabled();
+    }
+  });
+
+  it('persists hidden protocols, reports them, and keeps the last one enabled', async () => {
+    const onHiddenProtocolsChange = vi.fn();
+    render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} onHiddenProtocolsChange={onHiddenProtocolsChange} />
+      </ToastProvider>,
+    );
+    expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith([]);
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enable MeshCore' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Enable Reticulum' }));
+
+    await waitFor(() => {
+      expect(onHiddenProtocolsChange).toHaveBeenLastCalledWith(['meshcore', 'reticulum']);
+    });
+    const stored = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as {
+      hiddenProtocols?: string[];
+    };
+    expect(stored.hiddenProtocols).toEqual(['meshcore', 'reticulum']);
+
+    const last = screen.getByRole('checkbox', { name: 'Enable Meshtastic' });
+    expect(last).toBeChecked();
+    expect(last).toBeDisabled();
+  });
+
+  it('has no axe violations with one protocol left enabled', async () => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ hiddenProtocols: ['meshcore', 'reticulum'] }),
+    );
+    const { container } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    await act(async () => {});
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });
 
