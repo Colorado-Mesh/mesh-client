@@ -60,6 +60,11 @@ export const TAK_REMOTE_USER_ERROR_SPECS: readonly TakRemoteUserErrorSpec[] = [
     wire: ['The server certificate has expired'],
   },
   {
+    key: 'takServerPanel.remoteErrors.notTls',
+    en: 'The server is not using TLS; turn off TLS to connect over plain TCP',
+    wire: ['The server is not using TLS; turn off TLS to connect over plain TCP'],
+  },
+  {
     key: 'takServerPanel.remoteErrors.nameMismatch',
     en: 'The server certificate is for a different name; allow a name mismatch if this TAK server is set up that way',
     wire: [
@@ -147,6 +152,41 @@ export const TAK_REMOTE_USER_ERROR_SPECS: readonly TakRemoteUserErrorSpec[] = [
     key: 'takServerPanel.remoteErrors.chooserOpen',
     en: 'Certificate chooser is already open',
     wire: ['Certificate chooser is already open'],
+  },
+  {
+    key: 'takServerPanel.remoteErrors.enrollBadLogin',
+    en: 'The server rejected the username or password',
+    wire: ['The server rejected the username or password'],
+  },
+  {
+    key: 'takServerPanel.remoteErrors.enrollNotOffered',
+    en: 'This server does not offer certificate enrollment on this port',
+    wire: ['This server does not offer certificate enrollment on this port'],
+  },
+  {
+    key: 'takServerPanel.remoteErrors.enrollHttpError',
+    en: 'Certificate enrollment failed (HTTP {{status}})',
+    wire: ['Certificate enrollment failed (HTTP {{status}})'],
+  },
+  {
+    key: 'takServerPanel.remoteErrors.enrollNoCert',
+    en: 'The enrollment response has no certificate',
+    wire: ['The enrollment response has no certificate'],
+  },
+  {
+    key: 'takServerPanel.remoteErrors.enrollTooLarge',
+    en: 'The enrollment response is too large',
+    wire: ['The enrollment response is too large'],
+  },
+  {
+    key: 'takServerPanel.remoteErrors.enrollKeyMismatch',
+    en: 'The server returned a certificate for a different key',
+    wire: ['The server returned a certificate for a different key'],
+  },
+  {
+    key: 'takServerPanel.remoteErrors.enrollBusy',
+    en: 'Wait for the current certificate import to finish',
+    wire: ['Wait for the current certificate import to finish'],
   },
   {
     key: 'takServerPanel.remoteErrors.importInProgress',

@@ -69,11 +69,15 @@ export function useTakServer(): UseTakServerResult {
       setClients((prev) => prev.filter((c) => c.id !== id));
       if (statusRef.current.running) setTakClientLoss(true);
     });
+    const unsubUpdated = window.electronAPI.tak.onClientUpdated((client) => {
+      setClients((prev) => prev.map((c) => (c.id === client.id ? client : c)));
+    });
 
     return () => {
       unsubStatus();
       unsubConnected();
       unsubDisconnected();
+      unsubUpdated();
     };
   }, []);
 

@@ -79,7 +79,9 @@ vi.mock('./tak/remote-credentials', () => ({
   loadTakRemoteCredentials: vi.fn(() => ({ ca: 'ca-pem' })),
 }));
 
+import type { TAKClientInfo, TAKContact, TAKContactsUpdate } from '../shared/tak-types';
 import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
+import { TAK_CONTACT_FLUSH_MS } from './tak/contact-cache';
 import { generateDataPackage } from './tak/data-package';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { saveTakRemoteSettings } from './tak/remote-settings';
@@ -412,6 +414,7 @@ describe('TakServerManager remote relay', () => {
   const SETTINGS = {
     host: 'tak.example.org',
     port: 8089,
+    useTls: true,
     verifyServer: true,
     allowNameMismatch: false,
     autoConnect: true,
@@ -546,5 +549,93 @@ describe('TakServerManager remote relay', () => {
     manager.stop();
     expect(remoteClients[0]?.stop).not.toHaveBeenCalled();
     expect(manager.hasActiveSink()).toBe(true);
+  });
+
+  it('caches remote contacts and drops them when the relay stops', () => {
+    const manager = new TakServerManager();
+    const updates: TAKContactsUpdate[] = [];
+    manager.on('contacts', (u: TAKContactsUpdate) => updates.push(u));
+    manager.startRemote(SETTINGS);
+    remoteClients[0]?.emit('cot', inboundContact('SRV-1', 'remote'));
+    expect(manager.getContacts().map((c) => c.uid)).toEqual(['SRV-1']);
+    vi.advanceTimersByTime(TAK_CONTACT_FLUSH_MS);
+    expect(updates.at(-1)?.upserts.map((c) => c.uid)).toEqual(['SRV-1']);
+
+    manager.stopRemote();
+    expect(manager.getContacts()).toEqual([]);
+    vi.advanceTimersByTime(TAK_CONTACT_FLUSH_MS);
+    expect(updates.at(-1)?.removedUids).toEqual(['SRV-1']);
+  });
+
+  it('ignores contacts from a relay that was replaced', () => {
+    const manager = new TakServerManager();
+    manager.startRemote(SETTINGS);
+    const old = remoteClients[0];
+    manager.startRemote(SETTINGS);
+    old?.emit('cot', inboundContact('LATE', 'remote'));
+    expect(manager.getContacts()).toEqual([]);
+  });
+});
+
+function inboundContact(uid: string, source: 'local' | 'remote'): TAKContact {
+  const now = Date.now();
+  return {
+    uid,
+    type: 'a-f-G-U-C',
+    callsign: uid,
+    lat: 39,
+    lon: -105,
+    source,
+    receivedAt: now,
+    staleAt: now + 60_000,
+  };
+}
+
+describe('TakServerManager inbound CoT from local clients', () => {
+  const SA = (uid: string, callsign: string) =>
+    `<event version="2.0" uid="${uid}" type="a-f-G-U-C" time="2026-10-02T00:00:00Z" ` +
+    `stale="2026-10-02T00:05:00Z"><point lat="39.7" lon="-105"/>` +
+    `<detail><contact callsign="${callsign}"/></detail></event>`;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function connectClient(manager: TakServerManager): tls.TLSSocket {
+    const internals = manager as unknown as { _handleClient: (socket: tls.TLSSocket) => void };
+    const socket = mockTlsSocket();
+    internals._handleClient(socket);
+    return socket;
+  }
+
+  it('caches a client SA as a local contact and labels the client with its callsign', () => {
+    const manager = new TakServerManager();
+    const updated: TAKClientInfo[] = [];
+    manager.on('client-updated', (c: TAKClientInfo) => updated.push(c));
+    const socket = connectClient(manager);
+
+    socket.emit('data', Buffer.from(SA('ANDROID-1', 'VIPER').slice(0, 40)));
+    expect(manager.getContacts()).toEqual([]);
+    socket.emit('data', Buffer.from(SA('ANDROID-1', 'VIPER').slice(40)));
+
+    expect(manager.getContacts()).toMatchObject([
+      { uid: 'ANDROID-1', callsign: 'VIPER', source: 'local' },
+    ]);
+    expect(manager.getConnectedClients()[0]?.callsign).toBe('VIPER');
+    expect(updated).toHaveLength(1);
+  });
+
+  it('keeps the client callsign from its own uid when it shares other units', () => {
+    const manager = new TakServerManager();
+    const socket = connectClient(manager);
+    socket.emit('data', Buffer.from(SA('ANDROID-1', 'VIPER') + SA('OTHER-2', 'GHOST')));
+    expect(manager.getConnectedClients()[0]?.callsign).toBe('VIPER');
+    socket.emit('data', Buffer.from(SA('ANDROID-1', 'VIPER-2')));
+    expect(manager.getConnectedClients()[0]?.callsign).toBe('VIPER-2');
+    expect(manager.getContacts().map((c) => c.uid)).toEqual(['OTHER-2', 'ANDROID-1']);
   });
 });

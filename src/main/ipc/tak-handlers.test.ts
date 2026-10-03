@@ -24,6 +24,12 @@ vi.mock('../tak/remote-credentials', () => ({
   clearTakRemoteCredentials: vi.fn(),
 }));
 
+vi.mock('../tak/enrollment', () => ({
+  enrollTakClientCertificate: vi.fn(() =>
+    Promise.resolve({ ca: 'enrolled-ca', cert: 'enrolled-cert', key: 'enrolled-key' }),
+  ),
+}));
+
 vi.mock('../tak/remote-settings', async (importOriginal) => ({
   ...(await importOriginal<object>()),
   loadTakRemoteSettings: vi.fn(() => null),
@@ -36,6 +42,7 @@ import path from 'node:path';
 
 import { dialog } from 'electron';
 
+import { enrollTakClientCertificate } from '../tak/enrollment';
 import { parseTakCredentialFiles, saveTakRemoteCredentials } from '../tak/remote-credentials';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerTakIpcHandlers } from './tak-handlers';
@@ -63,6 +70,7 @@ describe('tak-handlers', () => {
         'tak:stop',
         'tak:getStatus',
         'tak:getConnectedClients',
+        'tak:getContacts',
         'tak:generateDataPackage',
         'tak:regenerateCertificates',
       ]),
@@ -75,6 +83,26 @@ describe('tak-handlers', () => {
     stopHandler(event);
     expect(assertIpcSender).toHaveBeenCalledWith(event, 'tak:stop');
     expect(stop).toHaveBeenCalled();
+  });
+
+  it('tak:getContacts returns the manager snapshot, or [] before the manager exists', async () => {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    const contacts = [{ uid: 'ANDROID-1' }];
+    let manager: unknown = { getContacts: () => contacts };
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    const handler = handle.mock.calls.find((c) => c[0] === 'tak:getContacts')?.[1] as (
+      event: unknown,
+    ) => unknown;
+    expect(handler({})).toBe(contacts);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:getContacts');
+    manager = null;
+    expect(handler({})).toEqual([]);
   });
 });
 
@@ -177,12 +205,69 @@ describe('remote relay handlers', () => {
     const settings = {
       host: 'tak.example.org',
       port: 8089,
+      useTls: true,
       verifyServer: true,
       allowNameMismatch: false,
       autoConnect: false,
     };
     await get('tak:remoteStart')(event, settings);
     expect(startRemote).toHaveBeenCalledWith(settings);
+  });
+
+  const ENROLL = {
+    host: ' pub.atak.zip ',
+    port: 8446,
+    username: 'kd0abc',
+    password: 'secret',
+    verifyServer: true,
+  };
+
+  it('enrolls, saves the issued credentials, and restarts a running relay', async () => {
+    const restartRemote = vi.fn();
+    const { get } = await register({ restartRemote });
+    await expect(get('tak:remoteEnroll')(event, ENROLL)).resolves.toEqual({
+      caSubjects: ['Test CA'],
+      clientSubject: 'atak-user',
+    });
+    expect(enrollTakClientCertificate).toHaveBeenCalledWith({
+      host: 'pub.atak.zip',
+      port: 8446,
+      username: 'kd0abc',
+      password: 'secret',
+      verifyServer: true,
+      trustedCa: 'ca-pem',
+    });
+    expect(saveTakRemoteCredentials).toHaveBeenCalledWith({
+      ca: 'enrolled-ca',
+      cert: 'enrolled-cert',
+      key: 'enrolled-key',
+    });
+    expect(restartRemote).toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a missing request', undefined],
+    ['a URL host', { ...ENROLL, host: 'https://pub.atak.zip' }],
+    ['port 0', { ...ENROLL, port: 0 }],
+    ['a username with a colon', { ...ENROLL, username: 'a:b' }],
+    ['an empty username', { ...ENROLL, username: '' }],
+    ['an empty password', { ...ENROLL, password: '' }],
+    ['a non-boolean verifyServer', { ...ENROLL, verifyServer: 'yes' }],
+  ])('rejects enrollment with %s', async (_label, request) => {
+    const { get } = await register();
+    await expect(get('tak:remoteEnroll')(event, request)).rejects.toThrow(/tak:remoteEnroll/);
+    expect(enrollTakClientCertificate).not.toHaveBeenCalled();
+  });
+
+  it('refuses to enroll without server verification and leaves credentials untouched', async () => {
+    const restartRemote = vi.fn();
+    const { get } = await register({ restartRemote });
+    await expect(
+      get('tak:remoteEnroll')(event, { ...ENROLL, verifyServer: false }),
+    ).rejects.toThrow(/verification/);
+    expect(enrollTakClientCertificate).not.toHaveBeenCalled();
+    expect(saveTakRemoteCredentials).not.toHaveBeenCalled();
+    expect(restartRemote).not.toHaveBeenCalled();
   });
 
   it('stops a running relay before clearing its credentials', async () => {

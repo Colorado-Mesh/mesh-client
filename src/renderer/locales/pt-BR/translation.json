@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "Fila TX do host para RNode local \"{{name}}\": pacotes aguardando o rádio (pior preenchimento quando vários RNodes). Verde abaixo de 25%, âmbar abaixo de 60%, vermelho a 60% ou mais.",
     "reticulumQueueTooltipGeneric": "Fila TX do host para o RNode local mais movimentado: pacotes aguardando o rádio. Verde abaixo de 25%, âmbar abaixo de 60%, vermelho a 60% ou mais.",
     "reticulumTxBuffering": "Buffer de pacotes de saída para um RNode local (drenagem da fila TX do host).",
-    "reticulumTxBufferingNamed": "Armazenando pacotes de saída em \"{{name}}\" (drenagem da fila TX do host)."
+    "reticulumTxBufferingNamed": "Armazenando pacotes de saída em \"{{name}}\" (drenagem da fila TX do host).",
+    "takRemoteConnected": "conectado remotamente",
+    "takRemoteConnecting": "conexão remota",
+    "takRemoteError": "Erro CSS remoto",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Falha ao salvar a configuração de retenção de mensagens.",
@@ -1625,7 +1630,11 @@
       "stopped": "Parado",
       "clientLost": "Cliente perdido",
       "takPort": "Porta {{port}}",
-      "openTak": "Abrir TAK"
+      "openTak": "Abrir TAK",
+      "remoteConnected": "Conectado remotamente",
+      "remoteConnecting": "Conexão remota",
+      "remoteError": "Erro CSS remoto",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Desconectar rádio e MQTT",
     "disconnectRadioGroup": "Desconectar rádio",
@@ -2421,7 +2430,8 @@
     "measureStartAria": "Comece a medir a distância",
     "measureStopAria": "Pare de medir e limpe",
     "measureHint": "Clique no mapa para adicionar pontos",
-    "measureTotal": "{{km}} km / {{mi}} mi"
+    "measureTotal": "{{km}} km / {{mi}} mi",
+    "layerTakContacts": "Unidades TAK"
   },
   "meshCongestion": {
     "blockTitle": "Por que você está vendo tráfego duplicado",
@@ -5408,8 +5418,26 @@
       "fileTooLarge": "{{name}} é grande demais para um arquivo de certificado",
       "tooManyFiles": "Selecione no máximo {{max}} arquivos de certificado",
       "chooserOpen": "O seletor de certificados já está aberto",
-      "importInProgress": "Aguarde o fim da importação do certificado antes de remover certificados"
-    }
+      "importInProgress": "Aguarde o fim da importação do certificado antes de remover certificados",
+      "notTls": "O servidor não está usando TLS; desligue o TLS para se conectar por TCP simples",
+      "enrollBadLogin": "O servidor rejeitou o nome de usuário ou senha",
+      "enrollNotOffered": "Este servidor não oferece registro de certificado nesta porta",
+      "enrollHttpError": "Falha na inscrição do certificado (HTTP {{status}})",
+      "enrollNoCert": "A resposta de inscrição não tem certificado",
+      "enrollTooLarge": "A resposta de inscrição é muito grande",
+      "enrollKeyMismatch": "O servidor retornou um certificado para uma chave diferente",
+      "enrollBusy": "Aguarde a conclusão da importação do certificado atual"
+    },
+    "remoteUseTls": "Usar TLS (recomendado)",
+    "remotePlainTcpWarning": "O TCP simples não está criptografado: qualquer pessoa no caminho da rede pode ler as posições retransmitidas. Os certificados não são usados e a conexão no lançamento fica desativada.",
+    "remoteEnrollTitle": "Ou obtenha um certificado com um nome de usuário e senha",
+    "remoteEnrollHint": "Os servidores TAK que usam logins emitem um certificado de cliente em sua porta de inscrição (geralmente 8446), como faz o ATAK. A senha é enviada uma vez e não salva.",
+    "remoteEnrollUsername": "Nome de Usuário",
+    "remoteEnrollPassword": "Palavra-passe",
+    "remoteEnrollPort": "Porta de inscrição",
+    "remoteEnroll": "Verificar certificado",
+    "remoteEnrollNeedsHost": "Insira o endereço do servidor acima primeiro.",
+    "remoteEnrollNeedsVerify": "Ative a verificação do certificado do servidor para se inscrever. Para um servidor autoassinado, importe sua CA primeiro."
   },
   "telemetryPanel": {
     "title": "Telemetria",
@@ -6479,5 +6507,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Temperatura (24h)",
     "sparklineHumidity24h": "Umidade (24h)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Amigável",
+    "affiliationHostile": "Hostilidade",
+    "affiliationNeutral": "Neutro",
+    "affiliationUnknown": "Desconhecida",
+    "affiliationPoint": "Ponto no Mapa",
+    "sourceLocal": "De um cliente ATAK local",
+    "sourceRemote": "Do servidor remoto TAK",
+    "lastSeen": "Visto pela última vez {{time}}"
   }
 }

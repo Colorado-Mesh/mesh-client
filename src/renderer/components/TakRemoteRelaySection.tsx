@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { isValidConnectHost } from '@/shared/connectHost';
 import type {
+  TAKEnrollmentRequest,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
   TAKRemoteStatus,
@@ -13,9 +14,14 @@ import { useTakRemoteRelay } from '../hooks/useTakRemoteRelay';
 import { localizeTakRemoteUserError } from '../lib/takRemoteUserError';
 import { INPUT_BOX_CLASS } from './ui/formClasses';
 
+const DEFAULT_TLS_PORT = 8089;
+const DEFAULT_TCP_PORT = 8087;
+const DEFAULT_ENROLLMENT_PORT = 8446;
+
 const DEFAULT_REMOTE_SETTINGS: TAKRemoteSettings = {
   host: '',
-  port: 8089,
+  port: DEFAULT_TLS_PORT,
+  useTls: true,
   verifyServer: true,
   allowNameMismatch: false,
   autoConnect: false,
@@ -52,6 +58,116 @@ function CredentialSummary({ credentials }: { credentials: TAKRemoteCredentialSu
   );
 }
 
+interface EnrollProps {
+  host: string;
+  hostValid: boolean;
+  verifyServer: boolean;
+  disabled: boolean;
+  onEnroll: (request: TAKEnrollmentRequest) => Promise<boolean>;
+}
+
+/** Username/password enrollment for a client certificate, as ATAK's "Enroll for client certificate". */
+function EnrollForm({ host, hostValid, verifyServer, disabled, onEnroll }: EnrollProps) {
+  const { t } = useTranslation();
+  const id = useId();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [port, setPort] = useState(String(DEFAULT_ENROLLMENT_PORT));
+  const portNum = Number(port);
+  const portValid = Number.isInteger(portNum) && portNum >= TCP_PORT_MIN && portNum <= TCP_PORT_MAX;
+  const ready = verifyServer && hostValid && portValid && username.trim() !== '' && password !== '';
+
+  const handleEnroll = async () => {
+    if (!ready) return;
+    await onEnroll({
+      host: host.trim(),
+      port: portNum,
+      username: username.trim(),
+      password,
+      verifyServer,
+    });
+    setPassword('');
+  };
+
+  return (
+    <div className="space-y-2">
+      <h5 className="text-ink-300 text-xs font-medium">{t('takServerPanel.remoteEnrollTitle')}</h5>
+      <p className="text-ink-400 text-xs">{t('takServerPanel.remoteEnrollHint')}</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <div>
+          <label htmlFor={`${id}-user`} className="text-ink-400 mb-1 block text-xs">
+            {t('takServerPanel.remoteEnrollUsername')}
+          </label>
+          <input
+            id={`${id}-user`}
+            aria-label={t('takServerPanel.remoteEnrollUsername')}
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={256}
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+            }}
+            disabled={disabled}
+            className={`${INPUT_BOX_CLASS} w-40`}
+          />
+        </div>
+        <div>
+          <label htmlFor={`${id}-pass`} className="text-ink-400 mb-1 block text-xs">
+            {t('takServerPanel.remoteEnrollPassword')}
+          </label>
+          <input
+            id={`${id}-pass`}
+            aria-label={t('takServerPanel.remoteEnrollPassword')}
+            type="password"
+            autoComplete="off"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+            }}
+            disabled={disabled}
+            className={`${INPUT_BOX_CLASS} w-40`}
+          />
+        </div>
+        <div>
+          <label htmlFor={`${id}-port`} className="text-ink-400 mb-1 block text-xs">
+            {t('takServerPanel.remoteEnrollPort')}
+          </label>
+          <input
+            id={`${id}-port`}
+            aria-label={t('takServerPanel.remoteEnrollPort')}
+            type="number"
+            min={TCP_PORT_MIN}
+            max={TCP_PORT_MAX}
+            value={port}
+            onChange={(e) => {
+              setPort(e.target.value);
+            }}
+            disabled={disabled}
+            className={`${INPUT_BOX_CLASS} w-24`}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleEnroll}
+          aria-label={t('takServerPanel.remoteEnroll')}
+          disabled={disabled || !ready}
+          className="bg-secondary-dark border-ink-600 text-ink-200 hover:border-ink-500 rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          {t('takServerPanel.remoteEnroll')}
+        </button>
+      </div>
+      {!hostValid && (
+        <p className="text-ink-400 text-xs">{t('takServerPanel.remoteEnrollNeedsHost')}</p>
+      )}
+      {!verifyServer && (
+        <p className="text-ink-400 text-xs">{t('takServerPanel.remoteEnrollNeedsVerify')}</p>
+      )}
+    </div>
+  );
+}
+
 interface FormProps {
   initial: TAKRemoteSettings;
   relay: ReturnType<typeof useTakRemoteRelay>;
@@ -62,6 +178,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
   const id = useId();
   const [host, setHost] = useState(initial.host);
   const [port, setPort] = useState(String(initial.port));
+  const [useTls, setUseTls] = useState(initial.useTls);
   const [verifyServer, setVerifyServer] = useState(initial.verifyServer);
   const [allowNameMismatch, setAllowNameMismatch] = useState(initial.allowNameMismatch);
   const [autoConnect, setAutoConnect] = useState(initial.autoConnect);
@@ -74,6 +191,15 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
   const portNum = Number(port);
   const portValid = Number.isInteger(portNum) && portNum >= TCP_PORT_MIN && portNum <= TCP_PORT_MAX;
   const hostValid = isValidConnectHost(host);
+  // An unverified or unencrypted relay is only started by hand, never at launch.
+  const canAutoConnect = useTls && verifyServer;
+
+  const handleUseTlsChange = (next: boolean) => {
+    setUseTls(next);
+    // Follow the TAK default port for the transport unless the user typed their own.
+    if (next && port === String(DEFAULT_TCP_PORT)) setPort(String(DEFAULT_TLS_PORT));
+    if (!next && port === String(DEFAULT_TLS_PORT)) setPort(String(DEFAULT_TCP_PORT));
+  };
 
   const statusLabel =
     status.state === 'connected'
@@ -92,16 +218,24 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
     void relay.connect({
       host: host.trim(),
       port: portNum,
+      useTls,
       verifyServer,
       allowNameMismatch: allowNameMismatch && hasCa,
-      // An unverified relay is only started by hand, never at launch.
-      autoConnect: autoConnect && verifyServer,
+      autoConnect: autoConnect && canAutoConnect,
     });
   };
 
   const handleImport = async () => {
     await relay.importCredentials(password);
     setPassword('');
+  };
+
+  const handleEnroll = async (request: TAKEnrollmentRequest) => {
+    const enrolled = await relay.enroll(request);
+    // Enrolled trust is pinned to the server's own CA, and TAK Server stream certificates are
+    // usually issued for "takserver" rather than the dialed name; ATAK does not check the name.
+    if (enrolled) setAllowNameMismatch(true);
+    return enrolled;
   };
 
   return (
@@ -173,21 +307,44 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <input
-            id={`${id}-verify`}
-            aria-label={t('takServerPanel.remoteVerifyServer')}
+            id={`${id}-tls`}
+            aria-label={t('takServerPanel.remoteUseTls')}
             type="checkbox"
-            checked={verifyServer}
+            checked={useTls}
             onChange={(e) => {
-              setVerifyServer(e.target.checked);
+              handleUseTlsChange(e.target.checked);
             }}
             disabled={active || isBusy}
             className="accent-brand-green disabled:opacity-50"
           />
-          <label htmlFor={`${id}-verify`} className="text-ink-300 cursor-pointer text-sm">
-            {t('takServerPanel.remoteVerifyServer')}
+          <label htmlFor={`${id}-tls`} className="text-ink-300 cursor-pointer text-sm">
+            {t('takServerPanel.remoteUseTls')}
           </label>
         </div>
-        {verifyServer ? (
+        {!useTls && (
+          <p className="pl-6 text-xs text-orange-300">
+            {t('takServerPanel.remotePlainTcpWarning')}
+          </p>
+        )}
+        {useTls && (
+          <div className="flex items-center gap-2">
+            <input
+              id={`${id}-verify`}
+              aria-label={t('takServerPanel.remoteVerifyServer')}
+              type="checkbox"
+              checked={verifyServer}
+              onChange={(e) => {
+                setVerifyServer(e.target.checked);
+              }}
+              disabled={active || isBusy}
+              className="accent-brand-green disabled:opacity-50"
+            />
+            <label htmlFor={`${id}-verify`} className="text-ink-300 cursor-pointer text-sm">
+              {t('takServerPanel.remoteVerifyServer')}
+            </label>
+          </div>
+        )}
+        {useTls && verifyServer && (
           <div className="flex items-center gap-2 pl-6">
             <input
               id={`${id}-name-mismatch`}
@@ -204,13 +361,14 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
               {t('takServerPanel.remoteAllowNameMismatch')}
             </label>
           </div>
-        ) : (
+        )}
+        {useTls && !verifyServer && (
           <p className="text-xs text-orange-300">
             {t('takServerPanel.remoteVerifyOffWarning')}{' '}
             {t('takServerPanel.remoteAutoConnectNeedsVerify')}
           </p>
         )}
-        {verifyServer && !hasCa && (
+        {useTls && verifyServer && !hasCa && (
           <p className="text-ink-400 pl-6 text-xs">
             {t('takServerPanel.remoteNameMismatchNeedsCa')}
           </p>
@@ -220,11 +378,11 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             id={`${id}-autoconnect`}
             aria-label={t('takServerPanel.remoteAutoConnect')}
             type="checkbox"
-            checked={autoConnect && verifyServer}
+            checked={autoConnect && canAutoConnect}
             onChange={(e) => {
               setAutoConnect(e.target.checked);
             }}
-            disabled={active || isBusy || !verifyServer}
+            disabled={active || isBusy || !canAutoConnect}
             className="accent-brand-green disabled:opacity-50"
           />
           <label htmlFor={`${id}-autoconnect`} className="text-ink-300 cursor-pointer text-sm">
@@ -278,6 +436,15 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             </button>
           )}
         </div>
+        {useTls && (
+          <EnrollForm
+            host={host}
+            hostValid={hostValid}
+            verifyServer={verifyServer}
+            disabled={active || isBusy}
+            onEnroll={handleEnroll}
+          />
+        )}
       </div>
 
       <div className="pt-1">

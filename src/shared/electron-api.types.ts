@@ -69,6 +69,9 @@ import type {
 import type { SupportBundleMode } from './support-bundle.types';
 import type {
   TAKClientInfo,
+  TAKContact,
+  TAKContactsUpdate,
+  TAKEnrollmentRequest,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
@@ -1327,6 +1330,12 @@ export interface ElectronAPI {
     onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
     onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
     onClientDisconnected: (cb: (clientId: string) => void) => () => void;
+    /** A connected client's info changed (its callsign, once its first unit event arrives). */
+    onClientUpdated: (cb: (client: TAKClientInfo) => void) => () => void;
+    /** Unexpired CoT contacts received from local ATAK clients and the remote TAK server. */
+    getContacts: () => Promise<TAKContact[]>;
+    /** Batched contact changes, at most about once per second. */
+    onContacts: (cb: (update: TAKContactsUpdate) => void) => () => void;
     /** Start (or restart) the relay to a remote TAK server; saves the settings. */
     remoteStart: (settings: TAKRemoteSettings) => Promise<void>;
     remoteStop: () => Promise<void>;
@@ -1339,6 +1348,11 @@ export interface ElectronAPI {
      * Resolves null when the chooser is cancelled. Key material never reaches the renderer.
      */
     remoteImportCredentials: (password?: string) => Promise<TAKRemoteCredentialSummary | null>;
+    /**
+     * Enroll for a client certificate with a TAK Server username and password (as ATAK does).
+     * The key is generated and kept in main; the password is not stored.
+     */
+    remoteEnroll: (request: TAKEnrollmentRequest) => Promise<TAKRemoteCredentialSummary>;
     remoteClearCredentials: () => Promise<TAKRemoteCredentialSummary>;
     onRemoteStatus: (cb: (status: TAKRemoteStatus) => void) => () => void;
   };

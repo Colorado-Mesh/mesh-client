@@ -182,6 +182,7 @@ import { useRrcStartupAutoConnect } from './hooks/useRrcStartupAutoConnect';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
+import { useTakContacts } from './hooks/useTakContacts';
 import { useTakNodeReplicator } from './hooks/useTakNodeReplicator';
 import { useTakRemoteStatus } from './hooks/useTakRemoteRelay';
 import { useTakServer } from './hooks/useTakServer';
@@ -260,6 +261,7 @@ import {
   reconnectBannerMaxAttempts,
   takHeaderVariant,
 } from './lib/connectionHeaderStatus';
+import { takStatusBarLabels } from './lib/connectionPanelLabels';
 import { DEFAULT_APP_SETTINGS_SHARED } from './lib/defaultAppSettings';
 import { connectionDriver } from './lib/drivers/ConnectionDriver';
 import {
@@ -1148,6 +1150,7 @@ function AppContent() {
   );
   const { status: takStatus, error: takError, takClientLoss } = useTakServer();
   const takRemoteStatus = useTakRemoteStatus();
+  useTakContacts();
   const reticulumSelfNodeId = asNumericNodeId(reticulumRuntime.selfNodeId);
   const reticulumStackUp =
     reticulumRuntime.state.status === 'configured' ||
@@ -3567,7 +3570,12 @@ function AppContent() {
   const deviceLoss = activeConnectionView.state.connectionLoss ?? false;
   const deviceVariant = deviceHeaderVariant(activeConnectionView.state.status, deviceLoss);
   const takServerError = !takStatus.running && !!(takStatus.error || takError);
-  const takVariant = takHeaderVariant(takStatus.running, takServerError, takClientLoss);
+  const takVariant = takHeaderVariant(
+    takStatus.running,
+    takServerError,
+    takClientLoss,
+    takRemoteStatus,
+  );
   const legacyQueue = activeRuntime.queueStatus;
   const activeQueue =
     activeQueueFromStore ??
@@ -3611,6 +3619,7 @@ function AppContent() {
             port: takStatus.port,
             serverError: takServerError,
             clientLoss: takClientLoss,
+            remote: takRemoteStatus,
             onOpen: () => {
               openSlotPanel('TAK');
             },
@@ -3620,23 +3629,18 @@ function AppContent() {
       capabilities.hasTakPanel,
       openSlotPanel,
       takClientLoss,
+      takRemoteStatus,
       takServerError,
       takStatus.port,
       takStatus.running,
     ],
   );
-  const takStatusLabel =
-    takClientLoss && takStatus.running
-      ? t('app.takClientLost')
-      : takStatus.running
-        ? t('app.takRunning')
-        : t('app.takStopped');
-  const takStatusAriaLabel =
-    takClientLoss && takStatus.running
-      ? t('app.takClientLost')
-      : takStatus.running
-        ? t('app.takServerRunning')
-        : t('app.takServerStopped');
+  const { label: takStatusLabel, ariaLabel: takStatusAriaLabel } = takStatusBarLabels(
+    t,
+    takStatus.running,
+    takClientLoss,
+    takRemoteStatus,
+  );
   const mqttStatusLabel =
     activeConnectionView.mqttStatus === 'connected'
       ? t('app.mqttConnected')

@@ -255,6 +255,7 @@ describe('store shape contracts', () => {
           "showMgrsGrid",
           "showNodes",
           "showSensors",
+          "showTakContacts",
           "showWaypoints",
         ]
       `);
@@ -272,6 +273,7 @@ describe('store shape contracts', () => {
           "setShowMgrsGrid",
           "setShowNodes",
           "setShowSensors",
+          "setShowTakContacts",
           "setShowWaypoints",
         ]
       `);

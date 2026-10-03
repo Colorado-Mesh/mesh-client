@@ -190,7 +190,7 @@ import {
   defaultSupportBundleFilename,
   isSupportBundleMode,
 } from './support-bundle';
-import { loadTakRemoteSettings } from './tak/remote-settings';
+import { canAutoConnectTakRemote, loadTakRemoteSettings } from './tak/remote-settings';
 import type { TakServerManager } from './tak-server-manager';
 import { updateUnreadAppBadge } from './unreadAppBadge';
 import { getCheckNowFromMenu, initUpdater } from './updater';
@@ -367,6 +367,14 @@ function attachTakForwarders(manager: TakServerManager): void {
   manager.on('remote-status', (status) => {
     if (mainWindow) mainWindow.webContents.send('tak:remoteStatus', status);
     else console.debug('[main] tak:remoteStatus dropped (mainWindow not ready)');
+  });
+  manager.on('client-updated', (client) => {
+    if (mainWindow) mainWindow.webContents.send('tak:clientUpdated', client);
+    else console.debug('[main] tak:clientUpdated dropped (mainWindow not ready)');
+  });
+  // The renderer re-reads tak:getContacts on mount, so a dropped batch is recovered there.
+  manager.on('contacts', (update) => {
+    if (mainWindow) mainWindow.webContents.send('tak:contacts', update);
   });
 }
 
@@ -6656,11 +6664,12 @@ void app
         );
       }
 
-      // Reconnect the remote TAK relay when it was saved with autoConnect. An unverified relay
-      // is only started by hand, so a hand-edited settings file cannot make it connect at launch.
+      // Reconnect the remote TAK relay when it was saved with autoConnect. An unverified or
+      // unencrypted relay is only started by hand, so a hand-edited settings file cannot make it
+      // connect at launch.
       try {
         const remoteSettings = loadTakRemoteSettings();
-        if (remoteSettings?.autoConnect && remoteSettings.verifyServer) {
+        if (remoteSettings?.autoConnect && canAutoConnectTakRemote(remoteSettings)) {
           void ensureTakServerManager()
             .then((m) => {
               m.startRemote(remoteSettings);

@@ -21,6 +21,7 @@ import {
 const VALID = {
   host: 'tak.example.org',
   port: 8089,
+  useTls: true,
   verifyServer: true,
   allowNameMismatch: false,
   autoConnect: false,
@@ -54,6 +55,7 @@ describe('validateTakRemoteSettings', () => {
     ['a missing verifyServer', { ...VALID, verifyServer: undefined }],
     ['a non-boolean autoConnect', { ...VALID, autoConnect: 'yes' }],
     ['a non-boolean allowNameMismatch', { ...VALID, allowNameMismatch: 1 }],
+    ['a non-boolean useTls', { ...VALID, useTls: 'no' }],
   ])('rejects %s', (_label, settings) => {
     expect(() => {
       validateTakRemoteSettings(settings);
@@ -90,6 +92,18 @@ describe('remote settings persistence', () => {
   it('never saves an unverified relay to connect at launch', () => {
     saveTakRemoteSettings({ ...VALID, verifyServer: false, autoConnect: true });
     expect(loadTakRemoteSettings()).toMatchObject({ verifyServer: false, autoConnect: false });
+  });
+
+  it('never saves a plain TCP relay to connect at launch', () => {
+    saveTakRemoteSettings({ ...VALID, port: 8087, useTls: false, autoConnect: true });
+    expect(loadTakRemoteSettings()).toMatchObject({ useTls: false, autoConnect: false });
+  });
+
+  it('loads settings saved before useTls over TLS', () => {
+    const older: Record<string, unknown> = { ...VALID };
+    delete older.useTls;
+    fs.writeFileSync(settingsFile, JSON.stringify(older));
+    expect(loadTakRemoteSettings()).toEqual(VALID);
   });
 
   it('loads settings saved before allowNameMismatch with the name check on', () => {

@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "Kolejka hosta TX dla lokalnego RNode \"{{name}}\": pakiety oczekujące na radio (najgorsze wypełnienie w przypadku wielu RNodów). Zielony poniżej 25%, bursztynowy poniżej 60%, czerwony 60% lub więcej.",
     "reticulumQueueTooltipGeneric": "Host TX queue for the most busy local RNode: packets waiting for the radio. Zielony poniżej 25%, bursztynowy poniżej 60%, czerwony 60% lub więcej.",
     "reticulumTxBuffering": "Buforowanie pakietów wychodzących do lokalnego RNode (opróżnianie kolejki hosta TX).",
-    "reticulumTxBufferingNamed": "Buforowanie pakietów wychodzących na \"{{name}}\" (opróżnianie kolejki hosta w TX)."
+    "reticulumTxBufferingNamed": "Buforowanie pakietów wychodzących na \"{{name}}\" (opróżnianie kolejki hosta w TX).",
+    "takRemoteConnected": "podłączony zdalnie",
+    "takRemoteConnecting": "zdalne łączenie",
+    "takRemoteError": "Błąd interfejsu API zdalnego.",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Nie udało się zapisać ustawienia przechowywania wiadomości.",
@@ -1659,7 +1664,11 @@
       "stopped": "Zatrzymany",
       "clientLost": "Utracono klienta",
       "takPort": "Port {{port}}",
-      "openTak": "Otwórz TAK"
+      "openTak": "Otwórz TAK",
+      "remoteConnected": "Zdalne połączenie",
+      "remoteConnecting": "Połączenie zdalne",
+      "remoteError": "Błąd interfejsu API zdalnego.",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Rozłącz radio i MQTT",
     "disconnectRadioGroup": "Rozłącz radio",
@@ -2469,7 +2478,8 @@
     "measureStartAria": "Rozpocznij pomiar odległości",
     "measureStopAria": "Zatrzymaj pomiar i wyczyść",
     "measureHint": "Kliknij mapę, aby dodać punkty",
-    "measureTotal": "{{km}} km / {{mi}} mi"
+    "measureTotal": "{{km}} km / {{mi}} mi",
+    "layerTakContacts": "Jednostki TAK"
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",
@@ -5488,8 +5498,26 @@
       "fileTooLarge": "{{name}} jest za duży na plik certyfikatu",
       "tooManyFiles": "Wybierz co najwyżej {{max}} plików certyfikatu",
       "chooserOpen": "Wybór certyfikatu jest już otwarty",
-      "importInProgress": "Poczekaj na zakończenie importu certyfikatu, zanim usuniesz certyfikaty"
-    }
+      "importInProgress": "Poczekaj na zakończenie importu certyfikatu, zanim usuniesz certyfikaty",
+      "notTls": "Serwer nie używa TLS; wyłącz TLS, aby połączyć się przez zwykły TCP",
+      "enrollBadLogin": "Serwer odrzucił nazwę użytkownika lub hasło",
+      "enrollNotOffered": "Ten serwer nie oferuje rejestracji certyfikatów na tym porcie",
+      "enrollHttpError": "Rejestracja certyfikatu nie powiodła się (HTTP {{status}})",
+      "enrollNoCert": "Odpowiedź rejestracyjna nie ma certyfikatu",
+      "enrollTooLarge": "Odpowiedź na rejestrację jest zbyt duża",
+      "enrollKeyMismatch": "Serwer zwrócił certyfikat dla innego klucza",
+      "enrollBusy": "Poczekaj, aż zakończy się import bieżącego certyfikatu"
+    },
+    "remoteUseTls": "Użyj TLS (zalecane)",
+    "remotePlainTcpWarning": "Zwykły TCP jest niezaszyfrowany: każdy na ścieżce sieciowej może odczytać przekazywane pozycje. Certyfikaty nie są używane, a łączenie przy uruchomieniu jest wyłączone.",
+    "remoteEnrollTitle": "Lub uzyskaj certyfikat z nazwą użytkownika i hasłem",
+    "remoteEnrollHint": "TAK Serwery, które używają loginów, wydają certyfikat klienta na swoim porcie rejestracji (zwykle 8446), tak jak robi to atak. Hasło jest wysyłane raz i nie jest zapisywane.",
+    "remoteEnrollUsername": "Nazwa użytkownika",
+    "remoteEnrollPassword": "Hasło",
+    "remoteEnrollPort": "Port rejestracji",
+    "remoteEnroll": "Uzyskaj certyfikat",
+    "remoteEnrollNeedsHost": "Najpierw wprowadź adres serwera powyżej.",
+    "remoteEnrollNeedsVerify": "Włącz weryfikację certyfikatu serwera, aby się zarejestrować. W przypadku serwera z podpisem własnym najpierw zaimportuj jego CA."
   },
   "telemetryPanel": {
     "title": "Telemetria",
@@ -6575,5 +6603,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Temperatura (24h)",
     "sparklineHumidity24h": "Wilgotność (24h)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Przyjazny",
+    "affiliationHostile": "Wrogo nastawieni",
+    "affiliationNeutral": "Neutral",
+    "affiliationUnknown": "Nieznany",
+    "affiliationPoint": "Punkt mapy",
+    "sourceLocal": "Od lokalnego klienta atak",
+    "sourceRemote": "Ze zdalnego serwera TAK",
+    "lastSeen": "Ostatnio widziany {{time}}"
   }
 }

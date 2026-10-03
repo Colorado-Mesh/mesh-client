@@ -1,3 +1,5 @@
+import type { TAKRemoteStatus } from '@/shared/tak-types';
+
 import { rfMaxReconnectAttemptsForTransport } from './rfReconnectShared';
 import type { DeviceState, MQTTStatus } from './types';
 
@@ -65,13 +67,22 @@ export function deviceHeaderVariant(
   return 'idle';
 }
 
+/** Remote TAK relay is failing: retrying after an error, or stopped for good with one. */
+export function isTakRemoteError(remote: Pick<TAKRemoteStatus, 'state' | 'error'>): boolean {
+  return remote.state !== 'connected' && Boolean(remote.error);
+}
+
+/** One TAK status combining the local server and, when given, the remote relay. */
 export function takHeaderVariant(
   running: boolean,
   serverError: boolean,
   clientLoss: boolean,
+  remote?: Pick<TAKRemoteStatus, 'state' | 'error'>,
 ): ConnectionHeaderVariant {
   if (isTakErrorDisconnect(running, serverError, clientLoss)) return 'error';
-  if (running) return 'ok';
+  if (remote && isTakRemoteError(remote)) return 'error';
+  if (remote?.state === 'connecting') return 'warn';
+  if (running || remote?.state === 'connected') return 'ok';
   return 'idle';
 }
 

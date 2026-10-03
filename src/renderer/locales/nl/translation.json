@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "TX-wachtrij voor hosts voor lokale RNode \"{{name}}\": pakketten die wachten op de radio (slechtst gevuld als er meerdere RNodes zijn). Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
     "reticulumQueueTooltipGeneric": "Host TX-wachtrij voor de drukste lokale RNode: pakketten die wachten op de radio. Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
     "reticulumTxBuffering": "Bufferen van uitgaande pakketten naar een lokale RNode (host TX-wachtrij leeglopen).",
-    "reticulumTxBufferingNamed": "Bufferen van uitgaande pakketten op \"{{name}}\" (TX-wachtrij van host loopt leeg)."
+    "reticulumTxBufferingNamed": "Bufferen van uitgaande pakketten op \"{{name}}\" (TX-wachtrij van host loopt leeg).",
+    "takRemoteConnected": "op afstand verbonden",
+    "takRemoteConnecting": "verbinding op afstand",
+    "takRemoteError": "Fout op afstand",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",
@@ -1625,7 +1630,11 @@
       "stopped": "Gestopt",
       "clientLost": "Client verloren",
       "takPort": "Poort {{port}}",
-      "openTak": "TAK openen"
+      "openTak": "TAK openen",
+      "remoteConnected": "Op afstand verbonden",
+      "remoteConnecting": "Verbinding op afstand",
+      "remoteError": "Fout op afstand",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Radio en MQTT loskoppelen",
     "disconnectRadioGroup": "Radio loskoppelen",
@@ -2421,7 +2430,8 @@
     "measureStartAria": "Start meten afstand",
     "measureStopAria": "Stop met meten en wis",
     "measureHint": "Klik op de kaart om punten toe te voegen",
-    "measureTotal": "{{km}} km / {{mi}} mi"
+    "measureTotal": "{{km}} km / {{mi}} mi",
+    "layerTakContacts": "TAK UNITS"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -5408,8 +5418,26 @@
       "fileTooLarge": "{{name}} is te groot voor een certificaatbestand",
       "tooManyFiles": "Selecteer maximaal {{max}} certificaatbestanden",
       "chooserOpen": "De certificaatkiezer is al geopend",
-      "importInProgress": "Wacht tot het importeren van het certificaat klaar is voordat u certificaten verwijdert"
-    }
+      "importInProgress": "Wacht tot het importeren van het certificaat klaar is voordat u certificaten verwijdert",
+      "notTls": "De server gebruikt geen TLS; schakel TLS uit om verbinding te maken via gewone TCP",
+      "enrollBadLogin": "De server heeft de gebruikersnaam of het wachtwoord geweigerd",
+      "enrollNotOffered": "Deze server biedt geen certificaatinschrijving op deze poort",
+      "enrollHttpError": "Inschrijving certificaat mislukt (HTTP {{status}})",
+      "enrollNoCert": "Het inschrijvingsantwoord heeft geen certificaat",
+      "enrollTooLarge": "De inschrijvingsreactie is te groot",
+      "enrollKeyMismatch": "De server heeft een certificaat geretourneerd voor een andere sleutel",
+      "enrollBusy": "Wacht tot de huidige certificaatimport is voltooid"
+    },
+    "remoteUseTls": "Gebruik TLS (aanbevolen)",
+    "remotePlainTcpWarning": "Gewone TCP is onversleuteld: iedereen op het netwerkpad kan de doorgegeven posities lezen. Certificaten worden niet gebruikt en de verbinding bij de lancering blijft uit.",
+    "remoteEnrollTitle": "Of ontvang een certificaat met een gebruikersnaam en wachtwoord",
+    "remoteEnrollHint": "TAK Servers die logins gebruiken, geven een clientcertificaat af op hun inschrijvingspoort (meestal 8446), zoals ATAK doet. Het wachtwoord wordt eenmalig verzonden en niet opgeslagen.",
+    "remoteEnrollUsername": "Gebruikersnaam",
+    "remoteEnrollPassword": "Wachtwoord",
+    "remoteEnrollPort": "Inschrijvingspoort",
+    "remoteEnroll": "Een certificaat verkrijgen",
+    "remoteEnrollNeedsHost": "Voer eerst het bovenstaande serveradres in.",
+    "remoteEnrollNeedsVerify": "Schakel servercertificaatverificatie in om u in te schrijven. Importeer eerst de CA van een zelfondertekende server."
   },
   "telemetryPanel": {
     "title": "Telemetrie",
@@ -6479,5 +6507,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Temperatuur (24 uur)",
     "sparklineHumidity24h": "Luchtvochtigheid (24 uur)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Vriendelijk",
+    "affiliationHostile": "vijandig",
+    "affiliationNeutral": "Neutraal",
+    "affiliationUnknown": "Onbekend",
+    "affiliationPoint": "Kaart punt",
+    "sourceLocal": "Van een lokale ATAK-client",
+    "sourceRemote": "Vanaf de externe TAK-server",
+    "lastSeen": "Laatst gezien {{time}}"
   }
 }

@@ -350,3 +350,6 @@ export const RRC_WHO_REPLY_TIMEOUT_MS = 12 * MS_PER_SECOND;
 
 /** BLE picker: keep live dBm, but wait this long before re-ordering by RSSI so rows do not jump. */
 export const PICKER_RSSI_REORDER_DEBOUNCE_MS = MS_PER_SECOND;
+
+/** TAK map contacts: drop contacts past their CoT stale time between main's update batches. */
+export const TAK_CONTACT_LOCAL_PRUNE_MS = 30 * MS_PER_SECOND;

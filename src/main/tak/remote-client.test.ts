@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { EventEmitter } from 'node:events';
-import type { AddressInfo } from 'node:net';
+import net, { type AddressInfo } from 'node:net';
 import tls from 'node:tls';
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -10,7 +10,7 @@ vi.mock('../log-service', async () => {
   return { sanitizeLogMessage };
 });
 
-import type { TAKRemoteStatus } from '../../shared/tak-types';
+import type { TAKContact, TAKRemoteStatus } from '../../shared/tak-types';
 import { createTakTestPki, type TakTestPki } from '../fixtures/tak-test-pki';
 import {
   describeTakRemoteError,
@@ -103,6 +103,7 @@ describe('TakRemoteClient over loopback TLS', () => {
     const c = new TakRemoteClient({
       host: '127.0.0.1',
       port,
+      useTls: true,
       verifyServer: true,
       allowNameMismatch: false,
       credentials: { ca: pki.ca.certPem, cert: pki.client.certPem, key: pki.client.keyPem },
@@ -190,6 +191,107 @@ describe('TakRemoteClient over loopback TLS', () => {
   });
 });
 
+describe('TakRemoteClient over loopback plain TCP', () => {
+  const clients: TakRemoteClient[] = [];
+  const plainServers: net.Server[] = [];
+  const serverSockets: net.Socket[] = [];
+
+  async function startPlainServer(onSocket: (socket: net.Socket) => void) {
+    const server = net.createServer((socket) => {
+      serverSockets.push(socket);
+      socket.on('error', () => {
+        // client resets during teardown are expected
+      });
+      onSocket(socket);
+    });
+    plainServers.push(server);
+    await new Promise<void>((resolve) => {
+      server.listen(0, '127.0.0.1', resolve);
+    });
+    return (server.address() as AddressInfo).port;
+  }
+
+  function plainClient(port: number, useTls: boolean) {
+    const c = new TakRemoteClient({
+      host: '127.0.0.1',
+      port,
+      useTls,
+      verifyServer: true,
+      allowNameMismatch: false,
+      credentials: { ca: pki.ca.certPem, cert: pki.client.certPem, key: pki.client.keyPem },
+    });
+    clients.push(c);
+    return c;
+  }
+
+  afterEach(async () => {
+    for (const c of clients.splice(0)) c.stop();
+    for (const s of serverSockets.splice(0)) s.destroy();
+    await Promise.all(
+      plainServers.splice(0).map(
+        (s) =>
+          new Promise<void>((resolve) => {
+            s.close(() => {
+              resolve();
+            });
+          }),
+      ),
+    );
+  });
+
+  it('tells the user to turn off TLS when the server speaks plain TCP', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const port = await startPlainServer((socket) => {
+      socket.write('<event uid="SERVER"/>\n');
+    });
+    const c = plainClient(port, true);
+    c.start();
+    const status = await waitForStatus(c, (s) => s.error !== undefined);
+    expect(status.error).toMatch(/not using TLS/);
+  });
+
+  it('streams newline-terminated CoT without TLS and ignores credentials', async () => {
+    const received: string[] = [];
+    const port = await startPlainServer((socket) => {
+      socket.setEncoding('utf-8');
+      socket.on('data', (chunk: string) => {
+        received.push(chunk);
+      });
+    });
+    const c = plainClient(port, false);
+    const connected = new Promise<void>((resolve) => c.once('connected', resolve));
+    c.start();
+    await connected;
+
+    expect(c.getStatus()).toMatchObject({ state: 'connected', host: '127.0.0.1', port });
+    expect(c.write('<event uid="MESH-1"/>')).toBe(true);
+    await vi.waitFor(() => {
+      expect(received.join('')).toBe('<event uid="MESH-1"/>\n');
+    });
+  });
+
+  it('uses the TCP connector, not tls.connect, when TLS is off', () => {
+    const tlsConnect = vi.fn(() => fakeSocket() as unknown as tls.TLSSocket);
+    const tcpConnect = vi.fn(() => fakeSocket() as unknown as net.Socket);
+    const c = new TakRemoteClient(
+      {
+        host: '[::1]',
+        port: 8087,
+        useTls: false,
+        verifyServer: true,
+        allowNameMismatch: false,
+        credentials: {},
+      },
+      tlsConnect,
+      tcpConnect,
+    );
+    c.start();
+    expect(tlsConnect).not.toHaveBeenCalled();
+    expect(tcpConnect).toHaveBeenCalledWith({ host: '::1', port: 8087 });
+    c.stop();
+  });
+});
+
 /** Minimal TLSSocket double for timing-sensitive paths. */
 function fakeSocket() {
   const socket = Object.assign(new EventEmitter(), {
@@ -197,7 +299,6 @@ function fakeSocket() {
     written: [] as string[],
     setTimeout: vi.fn(),
     setKeepAlive: vi.fn(),
-    resume: vi.fn(),
     write(data: string) {
       socket.written.push(data);
       return true;
@@ -226,6 +327,7 @@ describe('TakRemoteClient reconnect and output', () => {
       {
         host: 'tak.example.org',
         port: 8089,
+        useTls: true,
         verifyServer: true,
         allowNameMismatch: false,
         credentials: {},
@@ -320,6 +422,32 @@ describe('TakRemoteClient reconnect and output', () => {
     c.stop();
   });
 
+  it('emits cot for inbound events split across chunks and skips our own echoed nodes', () => {
+    const { c, sockets } = withFakeSockets();
+    const contacts: TAKContact[] = [];
+    c.on('cot', (contact: TAKContact) => contacts.push(contact));
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    const peer =
+      '<event version="2.0" uid="ANDROID-abc" type="a-f-G-U-C" time="2026-10-02T00:00:00Z" ' +
+      'stale="2026-10-02T00:05:00Z"><point lat="39.7" lon="-105.0" hae="1600"/>' +
+      '<detail><contact callsign="VIPER"/></detail></event>';
+    const echo =
+      '<event version="2.0" uid="MESH-42" type="a-f-G-U-C"><point lat="40" lon="-104"/></event>';
+    sockets[0]?.emit('data', Buffer.from(peer.slice(0, 60)));
+    expect(contacts).toHaveLength(0);
+    sockets[0]?.emit('data', Buffer.from(peer.slice(60) + '\n' + echo + '\n'));
+    expect(contacts).toHaveLength(1);
+    expect(contacts[0]).toMatchObject({
+      uid: 'ANDROID-abc',
+      callsign: 'VIPER',
+      lat: 39.7,
+      lon: -105,
+      source: 'remote',
+    });
+    c.stop();
+  });
+
   it.each([
     [true, true, true, true],
     [true, true, false, false],
@@ -335,6 +463,7 @@ describe('TakRemoteClient reconnect and output', () => {
         {
           host: '10.0.0.5',
           port: 8089,
+          useTls: true,
           verifyServer,
           allowNameMismatch,
           credentials: withCa ? { ca: pki.ca.certPem } : {},
@@ -348,6 +477,22 @@ describe('TakRemoteClient reconnect and output', () => {
       c.stop();
     },
   );
+
+  it('keeps the handshake error when EPIPE follows on the dead socket', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { c, sockets } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit(
+      'error',
+      new Error(
+        '1:error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED:x.cc:491:',
+      ),
+    );
+    sockets[0]?.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
+    sockets[0]?.emit('close');
+    expect(c.getStatus().error).toBe('The server requires a client certificate; import one');
+    c.stop();
+  });
 
   it('times out a handshake that never completes', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -370,6 +515,7 @@ describe('describeTakRemoteError', () => {
     ['ENOTFOUND', /not found/],
     ['UNABLE_TO_VERIFY_LEAF_SIGNATURE', /import the server's CA/],
     ['ERR_TLS_CERT_ALTNAME_INVALID', /different name/],
+    ['ERR_SSL_WRONG_VERSION_NUMBER', /turn off TLS/],
   ])('describes %s', (code, text) => {
     expect(describeTakRemoteError(err('raw', code))).toMatch(text);
   });
@@ -385,6 +531,14 @@ describe('describeTakRemoteError', () => {
         err('1:error:0A000418:SSL routines:ssl3_read_bytes:tlsv1 alert unknown ca:x.c:1'),
       ),
     ).toBe('The server rejected the client certificate (tlsv1 alert unknown ca)');
+  });
+
+  it('recognizes BoringSSL (Electron) reason codes', () => {
+    const boringssl =
+      '1357210191904:error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED:../../third_party/boringssl/src/ssl/tls_record.cc:491:SSL alert number 116';
+    expect(describeTakRemoteError(err(boringssl))).toBe(
+      'The server requires a client certificate; import one',
+    );
   });
 
   it('passes other messages through', () => {

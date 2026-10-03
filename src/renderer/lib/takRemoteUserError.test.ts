@@ -16,6 +16,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../../..');
 const MAIN_SOURCES = [
   'src/main/tak/remote-client.ts',
   'src/main/tak/remote-credentials.ts',
+  'src/main/tak/enrollment.ts',
   'src/main/ipc/tak-handlers.ts',
 ];
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import type {
+  TAKEnrollmentRequest,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
   TAKRemoteStatus,
@@ -50,6 +51,8 @@ interface UseTakRemoteRelayResult {
   connect: (settings: TAKRemoteSettings) => Promise<void>;
   disconnect: () => Promise<void>;
   importCredentials: (password: string) => Promise<void>;
+  /** Resolves true when the server issued a certificate. */
+  enroll: (request: TAKEnrollmentRequest) => Promise<boolean>;
   clearCredentials: () => Promise<void>;
 }
 
@@ -119,6 +122,18 @@ export function useTakRemoteRelay(): UseTakRemoteRelayResult {
     [run],
   );
 
+  const enroll = useCallback(
+    async (request: TAKEnrollmentRequest) => {
+      let enrolled = false;
+      await run(async () => {
+        setCredentials(await window.electronAPI.tak.remoteEnroll(request));
+        enrolled = true;
+      });
+      return enrolled;
+    },
+    [run],
+  );
+
   const clearCredentials = useCallback(
     () =>
       run(async () => {
@@ -136,6 +151,7 @@ export function useTakRemoteRelay(): UseTakRemoteRelayResult {
     connect,
     disconnect,
     importCredentials,
+    enroll,
     clearCredentials,
   };
 }

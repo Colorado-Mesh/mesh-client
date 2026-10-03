@@ -19,6 +19,7 @@ interface MapLayerPersisted {
   mapShowIncidents?: unknown;
   mapShowSensors?: unknown;
   mapSensorMetric?: unknown;
+  mapShowTakContacts?: unknown;
 }
 
 export function readPersistedBoolean(value: unknown, defaultValue: boolean): boolean {
@@ -33,6 +34,7 @@ function loadPersisted(): {
   showIncidents: boolean;
   showSensors: boolean;
   sensorMetric: MapSensorMetric;
+  showTakContacts: boolean;
 } {
   const settings = parseStoredJson<MapLayerPersisted>(
     getAppSettingsRaw(),
@@ -51,6 +53,7 @@ function loadPersisted(): {
     sensorMetric: isMapSensorMetric(settings?.mapSensorMetric)
       ? settings.mapSensorMetric
       : 'temperature',
+    showTakContacts: readPersistedBoolean(settings?.mapShowTakContacts, true),
   };
 }
 
@@ -62,6 +65,7 @@ interface MapLayerState {
   showIncidents: boolean;
   showSensors: boolean;
   sensorMetric: MapSensorMetric;
+  showTakContacts: boolean;
   layersPanelOpen: boolean;
   setBasemapId: (id: MapBasemapId) => void;
   setShowNodes: (enabled: boolean) => void;
@@ -70,6 +74,7 @@ interface MapLayerState {
   setShowIncidents: (enabled: boolean) => void;
   setShowSensors: (enabled: boolean) => void;
   setSensorMetric: (metric: MapSensorMetric) => void;
+  setShowTakContacts: (enabled: boolean) => void;
   setLayersPanelOpen: (open: boolean) => void;
   hydrateFromDatabase: () => Promise<void>;
 }
@@ -90,6 +95,7 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   showIncidents: initial.showIncidents,
   showSensors: initial.showSensors,
   sensorMetric: initial.sensorMetric,
+  showTakContacts: initial.showTakContacts,
   layersPanelOpen: false,
   setBasemapId: (basemapId) => {
     mergeAppSetting('mapBasemapId', basemapId, 'mapLayerStore setBasemapId');
@@ -119,6 +125,10 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   setSensorMetric: (sensorMetric) => {
     mergeAppSetting('mapSensorMetric', sensorMetric, 'mapLayerStore setSensorMetric');
     set({ sensorMetric });
+  },
+  setShowTakContacts: (showTakContacts) => {
+    mergeAppSetting('mapShowTakContacts', showTakContacts, 'mapLayerStore setShowTakContacts');
+    set({ showTakContacts });
   },
   setLayersPanelOpen: (layersPanelOpen) => {
     set({ layersPanelOpen });

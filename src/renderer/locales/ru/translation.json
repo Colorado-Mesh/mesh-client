@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "Host TX queue for local RNode \"{{name}}\": пакеты, ожидающие радио (наихудшее заполнение при наличии нескольких RNode). Зеленый до 25%, янтарный до 60%, красный до 60% и более.",
     "reticulumQueueTooltipGeneric": "Очередь TX хоста для самого загруженного локального RNode: пакеты, ожидающие радио. Зеленый до 25%, янтарный до 60%, красный до 60% и более.",
     "reticulumTxBuffering": "Буферизация исходящих пакетов на локальном RNode (истощение очереди TX хоста).",
-    "reticulumTxBufferingNamed": "Буферизация исходящих пакетов на \"{{name}}\" (слив очереди TX хоста)."
+    "reticulumTxBufferingNamed": "Буферизация исходящих пакетов на \"{{name}}\" (слив очереди TX хоста).",
+    "takRemoteConnected": "пульт ДУ подключен",
+    "takRemoteConnecting": "Подключение пульта ДУ",
+    "takRemoteError": "ошибка удалённого подключения",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Не удалось сохранить настройки хранения сообщений.",
@@ -1659,7 +1664,11 @@
       "stopped": "Остановлен",
       "clientLost": "Клиент потерян",
       "takPort": "Порт {{port}}",
-      "openTak": "Открыть TAK"
+      "openTak": "Открыть TAK",
+      "remoteConnected": "пульт ДУ подключен",
+      "remoteConnecting": "Подключение пульта ДУ",
+      "remoteError": "Ошибка удалённого подключения",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Отключить радио и MQTT",
     "disconnectRadioGroup": "Отключить радио",
@@ -2469,7 +2478,8 @@
     "measureStartAria": "Начать измерение расстояния",
     "measureStopAria": "Прекратить измерение и очистить",
     "measureHint": "Нажмите на карту, чтобы добавить точки",
-    "measureTotal": "{{km}} км / {{mi}} миль"
+    "measureTotal": "{{km}} км / {{mi}} миль",
+    "layerTakContacts": "Единицы TAK"
   },
   "meshCongestion": {
     "blockTitle": "Почему вы видите дублирующийся трафик",
@@ -5488,8 +5498,26 @@
       "fileTooLarge": "{{name}} слишком велик для файла сертификата",
       "tooManyFiles": "Выберите не более {{max}} файлов сертификатов",
       "chooserOpen": "Окно выбора сертификата уже открыто",
-      "importInProgress": "Дождитесь окончания импорта сертификата, прежде чем удалять сертификаты"
-    }
+      "importInProgress": "Дождитесь окончания импорта сертификата, прежде чем удалять сертификаты",
+      "notTls": "Сервер не использует TLS; отключите TLS для подключения по простому TCP",
+      "enrollBadLogin": "Сервер отклонил имя пользователя или пароль",
+      "enrollNotOffered": "Этот сервер не предлагает регистрацию сертификатов на этом порту",
+      "enrollHttpError": "Регистрация сертификата не удалась (HTTP {{status}})",
+      "enrollNoCert": "В ответе на регистрацию нет сертификата",
+      "enrollTooLarge": "Ответ на регистрацию слишком велик",
+      "enrollKeyMismatch": "Сервер вернул сертификат для другого ключа",
+      "enrollBusy": "Дождитесь завершения импорта текущего сертификата"
+    },
+    "remoteUseTls": "Использовать TLS (рекомендуется)",
+    "remotePlainTcpWarning": "Обычный TCP не зашифрован: любой на сетевом пути может прочитать ретранслируемые позиции. Сертификаты не используются, а подключение при запуске остается выключенным.",
+    "remoteEnrollTitle": "Или получить сертификат с логином и паролем",
+    "remoteEnrollHint": "Серверы TAK, использующие логины, выдают сертификат клиента на свой порт регистрации (обычно 8446), как это делает ATAK. Пароль отправляется один раз и не сохраняется.",
+    "remoteEnrollUsername": "Имя пользователя",
+    "remoteEnrollPassword": "Пароль",
+    "remoteEnrollPort": "Порт регистрации",
+    "remoteEnroll": "Получить сертификат",
+    "remoteEnrollNeedsHost": "Сначала введите адрес сервера выше.",
+    "remoteEnrollNeedsVerify": "Включите проверку сертификата сервера для регистрации. Для самозаверяющего сервера сначала импортируйте его ЦС."
   },
   "telemetryPanel": {
     "title": "Телеметрия",
@@ -6575,5 +6603,15 @@
     "valuePressure": "{{value}} гПа",
     "sparklineTemperature24h": "ТЕМПЕРАТУРА   -24ч",
     "sparklineHumidity24h": "Влажность (24 часа)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Дружелюбие",
+    "affiliationHostile": "Враждебное",
+    "affiliationNeutral": "Нейтральное",
+    "affiliationUnknown": "Неизвестно",
+    "affiliationPoint": "Координаты",
+    "sourceLocal": "От местного клиента ATAK",
+    "sourceRemote": "С удаленного сервера TAK",
+    "lastSeen": "Последний раз видели {{time}}"
   }
 }

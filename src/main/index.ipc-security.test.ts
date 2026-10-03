@@ -420,6 +420,7 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:stop',
     'tak:getStatus',
     'tak:getConnectedClients',
+    'tak:getContacts',
     'tak:generateDataPackage',
     'tak:regenerateCertificates',
     'tak:pushNodeUpdates',
@@ -429,6 +430,7 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:remoteGetSettings',
     'tak:remoteGetCredentials',
     'tak:remoteImportCredentials',
+    'tak:remoteEnroll',
     'tak:remoteClearCredentials',
   ] as const;
 

@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "Cola de espera de TX de host para el RNode local \"{{name}}\": paquetes en espera de la radio (peor llenado cuando hay varios RNodes). Verde por debajo del 25%, ámbar por debajo del 60%, rojo al 60% o más.",
     "reticulumQueueTooltipGeneric": "Cola de TX de host para el RNode local más ocupado: paquetes que esperan la radio. Verde por debajo del 25%, ámbar por debajo del 60%, rojo al 60% o más.",
     "reticulumTxBuffering": "Almacenar en búfer los paquetes salientes en un RNode local (agotamiento de la cola de TX del host).",
-    "reticulumTxBufferingNamed": "Almacenar en búfer los paquetes salientes en \"{{name}}\" (agotamiento de la cola de TX del host)."
+    "reticulumTxBufferingNamed": "Almacenar en búfer los paquetes salientes en \"{{name}}\" (agotamiento de la cola de TX del host).",
+    "takRemoteConnected": "remoto conectado",
+    "takRemoteConnecting": "conexión remota",
+    "takRemoteError": "Error de API remota.",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Error al guardar la configuración de retención de mensajes.",
@@ -1625,7 +1630,11 @@
       "stopped": "Detenido",
       "clientLost": "Cliente perdido",
       "takPort": "Puerto {{port}}",
-      "openTak": "Abrir TAK"
+      "openTak": "Abrir TAK",
+      "remoteConnected": "Remoto conectado",
+      "remoteConnecting": "Conexión remota",
+      "remoteError": "Error de API remota.",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Desconectar radio y MQTT",
     "disconnectRadioGroup": "Desconectar radio",
@@ -2421,7 +2430,8 @@
     "measureStartAria": "Empezar a medir la distancia",
     "measureStopAria": "Dejar de medir y borrar",
     "measureHint": "Haz clic en el mapa para añadir puntos",
-    "measureTotal": "{{km}} km / {{mi}} mi"
+    "measureTotal": "{{km}} km / {{mi}} mi",
+    "layerTakContacts": "Unidades TAK"
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -5408,8 +5418,26 @@
       "fileTooLarge": "{{name}} es demasiado grande para ser un archivo de certificado",
       "tooManyFiles": "Seleccione como máximo {{max}} archivos de certificado",
       "chooserOpen": "El selector de certificados ya está abierto",
-      "importInProgress": "Espere a que termine la importación del certificado antes de quitar certificados"
-    }
+      "importInProgress": "Espere a que termine la importación del certificado antes de quitar certificados",
+      "notTls": "El servidor no está usando TLS; apague TLS para conectarse a través de TCP simple",
+      "enrollBadLogin": "El servidor ha rechazado el nombre de usuario o la contraseña",
+      "enrollNotOffered": "Este servidor no ofrece inscripción de certificados en este puerto",
+      "enrollHttpError": "Error al inscribir el certificado (HTTP {{status}})",
+      "enrollNoCert": "La respuesta de inscripción no tiene certificado",
+      "enrollTooLarge": "La respuesta de inscripción es demasiado grande",
+      "enrollKeyMismatch": "El servidor devolvió un certificado para una clave diferente",
+      "enrollBusy": "Espere a que finalice la importación del certificado actual"
+    },
+    "remoteUseTls": "Usar TLS (recomendado)",
+    "remotePlainTcpWarning": "El TCP simple no está cifrado: cualquier persona en la ruta de la red puede leer las posiciones retransmitidas. Los certificados no se utilizan y la conexión en el lanzamiento permanece desactivada.",
+    "remoteEnrollTitle": "O consigue un certificado con un nombre de usuario y una contraseña",
+    "remoteEnrollHint": "Los servidores TAK que utilizan inicios de sesión emiten un certificado de cliente en su puerto de inscripción (generalmente 8446), como lo hace ATAK. La contraseña se envía una vez y no se guarda.",
+    "remoteEnrollUsername": "Nombre de usuario",
+    "remoteEnrollPassword": "Contraseña",
+    "remoteEnrollPort": "Puerto de inscripción",
+    "remoteEnroll": "Obtén tu certificado",
+    "remoteEnrollNeedsHost": "Introduzca primero la dirección del servidor anterior.",
+    "remoteEnrollNeedsVerify": "Active la verificación del certificado del servidor para inscribirse. Para un servidor autofirmado, importe primero su CA."
   },
   "telemetryPanel": {
     "title": "Telemetría",
@@ -6479,5 +6507,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Temperatura (24h)",
     "sparklineHumidity24h": "Humedad (24h)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Amistoso",
+    "affiliationHostile": "Hostil",
+    "affiliationNeutral": "Neutro",
+    "affiliationUnknown": "Desconocido",
+    "affiliationPoint": "Punto/Punt del mapa",
+    "sourceLocal": "De un cliente local de ATAK",
+    "sourceRemote": "Desde el servidor TAK REMOTO",
+    "lastSeen": "Visto por última vez {{time}}"
   }
 }

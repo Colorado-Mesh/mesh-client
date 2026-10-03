@@ -10,10 +10,12 @@ import {
 } from '@/renderer/lib/connectionHeaderStatus';
 import {
   connectionPanelMqttStatusLabel,
+  connectionPanelTakRemoteLabel,
   connectionPanelTakStatusLabel,
 } from '@/renderer/lib/connectionPanelLabels';
 import { ICON_LG } from '@/renderer/lib/icons/iconClass';
 import type { MQTTStatus } from '@/renderer/lib/types';
+import type { TAKRemoteStatus } from '@/shared/tak-types';
 
 import { Button } from '../ui/Button';
 import { StatusTile } from '../ui/StatusTile';
@@ -39,6 +41,8 @@ export interface ConnectionTakSummary {
   port?: number;
   serverError: boolean;
   clientLoss: boolean;
+  /** Remote TAK relay; folded into the same tile and dot as the local server. */
+  remote?: Pick<TAKRemoteStatus, 'state' | 'error' | 'host' | 'port'>;
   /** Opens the TAK panel, where the server is configured and started. */
   onOpen?: () => void;
 }
@@ -94,26 +98,37 @@ function MqttTile({ summary }: { summary: ConnectionMqttSummary }) {
 
 function TakTile({ summary }: { summary: ConnectionTakSummary }) {
   const { t } = useTranslation();
+  const { remote } = summary;
   const dot = headerVariantDot(
-    takHeaderVariant(summary.running, summary.serverError, summary.clientLoss),
+    takHeaderVariant(summary.running, summary.serverError, summary.clientLoss, remote),
   );
+  const localStatus = connectionPanelTakStatusLabel(
+    t,
+    summary.running,
+    summary.serverError,
+    summary.clientLoss,
+  );
+  const remoteLabel = remote ? connectionPanelTakRemoteLabel(t, remote) : null;
+  const remoteHost = remote ? `${remote.host}:${remote.port}` : '';
+  const detailParts: string[] = [];
+  if (summary.running && summary.port) {
+    detailParts.push(t('connectionPanel.tiles.takPort', { port: summary.port }));
+  }
+  if (remoteLabel) {
+    detailParts.push(
+      summary.running
+        ? t('connectionPanel.tiles.takRemoteWithHost', { state: remoteLabel, host: remoteHost })
+        : remoteHost,
+    );
+  }
   return (
     <StatusTile
       icon={<Crosshair aria-hidden className={ICON_LG} size={20} />}
       label={t('connectionPanel.tiles.tak')}
-      status={connectionPanelTakStatusLabel(
-        t,
-        summary.running,
-        summary.serverError,
-        summary.clientLoss,
-      )}
+      status={!summary.running && remoteLabel ? remoteLabel : localStatus}
       tone={dot.tone}
       pulse={dot.pulse}
-      detail={
-        summary.running && summary.port
-          ? t('connectionPanel.tiles.takPort', { port: summary.port })
-          : undefined
-      }
+      detail={detailParts.length > 0 ? detailParts.join(' · ') : undefined}
       action={
         summary.onOpen ? (
           <Button size="sm" onClick={summary.onOpen}>
