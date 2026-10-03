@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "本地RNode “{{name}}”的主机TX队列：等待无线电的数据包（多个RNode时最糟糕的填充）。绿色在25%以下，琥珀色在60%以下，红色在60%或以上。",
     "reticulumQueueTooltipGeneric": "最繁忙的本地RNode的主机TX队列：等待无线电的数据包。绿色在25%以下，琥珀色在60%以下，红色在60%或以上。",
     "reticulumTxBuffering": "将出站数据包缓冲到本地RNode （主机TX队列排空）。",
-    "reticulumTxBufferingNamed": "正在缓冲“{{name}}”上的出站数据包（主机TX队列排出）。"
+    "reticulumTxBufferingNamed": "正在缓冲“{{name}}”上的出站数据包（主机TX队列排出）。",
+    "takRemoteConnected": "远程连接",
+    "takRemoteConnecting": "远程连接",
+    "takRemoteError": "远程访问出错",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "无法保存邮件保留设置。",
@@ -1621,7 +1626,11 @@
       "stopped": "已停止",
       "clientLost": "客户端已断开",
       "takPort": "端口 {{port}}",
-      "openTak": "打开 TAK"
+      "openTak": "打开 TAK",
+      "remoteConnected": "远程连接",
+      "remoteConnecting": "远程连接",
+      "remoteError": "远程访问出错",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "断开无线电和 MQTT",
     "disconnectRadioGroup": "断开无线电",
@@ -2417,7 +2426,8 @@
     "measureStartAria": "开始测量距离",
     "measureStopAria": "停止测量并清除",
     "measureHint": "单击地图以添加点",
-    "measureTotal": "{{km}}公里/{{mi}}英里"
+    "measureTotal": "{{km}}公里/{{mi}}英里",
+    "layerTakContacts": "TAK单位"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -6491,5 +6501,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "温度（ 24小时）",
     "sparklineHumidity24h": "湿度（ 24小时）"
+  },
+  "takContacts": {
+    "affiliationFriend": "友好",
+    "affiliationHostile": "敌对",
+    "affiliationNeutral": "中立",
+    "affiliationUnknown": "未知",
+    "affiliationPoint": "地图点",
+    "sourceLocal": "来自本地ATAK客户",
+    "sourceRemote": "从远程TAK服务器",
+    "lastSeen": "上次见到{{time}}"
   }
 }

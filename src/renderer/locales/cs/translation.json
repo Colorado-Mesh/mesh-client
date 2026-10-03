@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "Hostitelská fronta TX pro místní RNode \"{{name}}\": pakety čekající na rádio (nejhorší výplň při více RNode). Zelená pod 25%, oranžová pod 60%, červená 60% a více.",
     "reticulumQueueTooltipGeneric": "Hostitelská fronta TX pro nejrušnější místní RNode: pakety čekající na rádio. Zelená pod 25%, oranžová pod 60%, červená 60% a více.",
     "reticulumTxBuffering": "Vyrovnávání odchozích paketů do místního RNode (vypouštění fronty hostitelského TX).",
-    "reticulumTxBufferingNamed": "Vyrovnávání odchozích paketů na \"{{name}}\" (vypouštění fronty hostitele TX)."
+    "reticulumTxBufferingNamed": "Vyrovnávání odchozích paketů na \"{{name}}\" (vypouštění fronty hostitele TX).",
+    "takRemoteConnected": "Vzdálené připojení",
+    "takRemoteConnecting": "vzdálené připojení",
+    "takRemoteError": "chyba vzdáleného připojení",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Nastavení uchovávání zpráv se nepodařilo uložit.",
@@ -1640,7 +1645,11 @@
       "stopped": "Zastaveno",
       "clientLost": "Klient ztracen",
       "takPort": "Port {{port}}",
-      "openTak": "Otevřít TAK"
+      "openTak": "Otevřít TAK",
+      "remoteConnected": "Vzdálené připojení",
+      "remoteConnecting": "Vzdálené připojení",
+      "remoteError": "Chyba vzdáleného připojení",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Odpojit rádio a MQTT",
     "disconnectRadioGroup": "Odpojit rádio",
@@ -2443,7 +2452,8 @@
     "measureStartAria": "Začněte měřit vzdálenost",
     "measureStopAria": "Zastavit měření a vyčistit",
     "measureHint": "Klikněte na mapu pro přidání bodů",
-    "measureTotal": "{{km}} km / {{mi}} mi"
+    "measureTotal": "{{km}} km / {{mi}} mi",
+    "layerTakContacts": "Jednotky TAK"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -6541,5 +6551,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Teplota (24h)",
     "sparklineHumidity24h": "Vlhkost (24 h)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Přátelský",
+    "affiliationHostile": "nepřátelsky naladěný",
+    "affiliationNeutral": "Neutrální",
+    "affiliationUnknown": "Neznámo",
+    "affiliationPoint": "Bod mapy",
+    "sourceLocal": "Od místního klienta atak",
+    "sourceRemote": "Ze vzdáleného serveru TAK",
+    "lastSeen": "Naposledy viděn/a {{time}}"
   }
 }

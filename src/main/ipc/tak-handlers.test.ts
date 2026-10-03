@@ -70,6 +70,7 @@ describe('tak-handlers', () => {
         'tak:stop',
         'tak:getStatus',
         'tak:getConnectedClients',
+        'tak:getContacts',
         'tak:generateDataPackage',
         'tak:regenerateCertificates',
       ]),
@@ -82,6 +83,26 @@ describe('tak-handlers', () => {
     stopHandler(event);
     expect(assertIpcSender).toHaveBeenCalledWith(event, 'tak:stop');
     expect(stop).toHaveBeenCalled();
+  });
+
+  it('tak:getContacts returns the manager snapshot, or [] before the manager exists', async () => {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    const contacts = [{ uid: 'ANDROID-1' }];
+    let manager: unknown = { getContacts: () => contacts };
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    const handler = handle.mock.calls.find((c) => c[0] === 'tak:getContacts')?.[1] as (
+      event: unknown,
+    ) => unknown;
+    expect(handler({})).toBe(contacts);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:getContacts');
+    manager = null;
+    expect(handler({})).toEqual([]);
   });
 });
 

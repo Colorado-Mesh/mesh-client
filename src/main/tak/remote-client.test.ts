@@ -10,7 +10,7 @@ vi.mock('../log-service', async () => {
   return { sanitizeLogMessage };
 });
 
-import type { TAKRemoteStatus } from '../../shared/tak-types';
+import type { TAKContact, TAKRemoteStatus } from '../../shared/tak-types';
 import { createTakTestPki, type TakTestPki } from '../fixtures/tak-test-pki';
 import {
   describeTakRemoteError,
@@ -299,7 +299,6 @@ function fakeSocket() {
     written: [] as string[],
     setTimeout: vi.fn(),
     setKeepAlive: vi.fn(),
-    resume: vi.fn(),
     write(data: string) {
       socket.written.push(data);
       return true;
@@ -420,6 +419,32 @@ describe('TakRemoteClient reconnect and output', () => {
 
     if (sockets[0]) sockets[0].writableLength = TAK_REMOTE_MAX_BUFFERED_BYTES + 1;
     expect(c.write('<event/>')).toBe(false);
+    c.stop();
+  });
+
+  it('emits cot for inbound events split across chunks and skips our own echoed nodes', () => {
+    const { c, sockets } = withFakeSockets();
+    const contacts: TAKContact[] = [];
+    c.on('cot', (contact: TAKContact) => contacts.push(contact));
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    const peer =
+      '<event version="2.0" uid="ANDROID-abc" type="a-f-G-U-C" time="2026-10-02T00:00:00Z" ' +
+      'stale="2026-10-02T00:05:00Z"><point lat="39.7" lon="-105.0" hae="1600"/>' +
+      '<detail><contact callsign="VIPER"/></detail></event>';
+    const echo =
+      '<event version="2.0" uid="MESH-42" type="a-f-G-U-C"><point lat="40" lon="-104"/></event>';
+    sockets[0]?.emit('data', Buffer.from(peer.slice(0, 60)));
+    expect(contacts).toHaveLength(0);
+    sockets[0]?.emit('data', Buffer.from(peer.slice(60) + '\n' + echo + '\n'));
+    expect(contacts).toHaveLength(1);
+    expect(contacts[0]).toMatchObject({
+      uid: 'ANDROID-abc',
+      callsign: 'VIPER',
+      lat: 39.7,
+      lon: -105,
+      source: 'remote',
+    });
     c.stop();
   });
 

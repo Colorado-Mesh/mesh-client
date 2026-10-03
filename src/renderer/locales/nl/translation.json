@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "TX-wachtrij voor hosts voor lokale RNode \"{{name}}\": pakketten die wachten op de radio (slechtst gevuld als er meerdere RNodes zijn). Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
     "reticulumQueueTooltipGeneric": "Host TX-wachtrij voor de drukste lokale RNode: pakketten die wachten op de radio. Groen onder 25%, amber onder 60%, rood bij 60% of meer.",
     "reticulumTxBuffering": "Bufferen van uitgaande pakketten naar een lokale RNode (host TX-wachtrij leeglopen).",
-    "reticulumTxBufferingNamed": "Bufferen van uitgaande pakketten op \"{{name}}\" (TX-wachtrij van host loopt leeg)."
+    "reticulumTxBufferingNamed": "Bufferen van uitgaande pakketten op \"{{name}}\" (TX-wachtrij van host loopt leeg).",
+    "takRemoteConnected": "op afstand verbonden",
+    "takRemoteConnecting": "verbinding op afstand",
+    "takRemoteError": "Fout op afstand",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Kan de instelling voor het bewaren van berichten niet opslaan.",
@@ -1621,7 +1626,11 @@
       "stopped": "Gestopt",
       "clientLost": "Client verloren",
       "takPort": "Poort {{port}}",
-      "openTak": "TAK openen"
+      "openTak": "TAK openen",
+      "remoteConnected": "Op afstand verbonden",
+      "remoteConnecting": "Verbinding op afstand",
+      "remoteError": "Fout op afstand",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Radio en MQTT loskoppelen",
     "disconnectRadioGroup": "Radio loskoppelen",
@@ -2417,7 +2426,8 @@
     "measureStartAria": "Start meten afstand",
     "measureStopAria": "Stop met meten en wis",
     "measureHint": "Klik op de kaart om punten toe te voegen",
-    "measureTotal": "{{km}} km / {{mi}} mi"
+    "measureTotal": "{{km}} km / {{mi}} mi",
+    "layerTakContacts": "TAK UNITS"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -6491,5 +6501,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Temperatuur (24 uur)",
     "sparklineHumidity24h": "Luchtvochtigheid (24 uur)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Vriendelijk",
+    "affiliationHostile": "vijandig",
+    "affiliationNeutral": "Neutraal",
+    "affiliationUnknown": "Onbekend",
+    "affiliationPoint": "Kaart punt",
+    "sourceLocal": "Van een lokale ATAK-client",
+    "sourceRemote": "Vanaf de externe TAK-server",
+    "lastSeen": "Laatst gezien {{time}}"
   }
 }

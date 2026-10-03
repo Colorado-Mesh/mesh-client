@@ -24,6 +24,11 @@
     "takStopped": "TAK stopped",
     "takServerRunning": "TAK server running",
     "takServerStopped": "TAK server stopped",
+    "takRemoteConnected": "remote connected",
+    "takRemoteConnecting": "remote connecting",
+    "takRemoteError": "remote error",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}",
     "mqttConnected": "MQTT connected",
     "mqttConnecting": "MQTT connecting",
     "mqttError": "MQTT error",
@@ -1624,6 +1629,10 @@
       "stopped": "Stopped",
       "clientLost": "Client lost",
       "takPort": "Port {{port}}",
+      "remoteConnected": "Remote connected",
+      "remoteConnecting": "Remote connecting",
+      "remoteError": "Remote error",
+      "takRemoteWithHost": "{{state}} ({{host}})",
       "openTak": "Open TAK"
     },
     "disconnectAll": "Disconnect radio and MQTT",
@@ -2594,6 +2603,7 @@
     "layerWaypoints": "Waypoints",
     "layerIncidents": "Emergency incidents",
     "layerMgrsGrid": "MGRS grid",
+    "layerTakContacts": "TAK units",
     "incidentMarker": "{{sender}}: {{codes}}",
     "incidentMarkerDrill": "DRILL {{sender}}: {{codes}}",
     "measure": "Measure",
@@ -6055,6 +6065,16 @@
     "graph": "Graph",
     "topology": "Network topology",
     "admin": "Administration"
+  },
+  "takContacts": {
+    "affiliationFriend": "Friendly",
+    "affiliationHostile": "Hostile",
+    "affiliationNeutral": "Neutral",
+    "affiliationUnknown": "Unknown",
+    "affiliationPoint": "Map point",
+    "sourceLocal": "From a local ATAK client",
+    "sourceRemote": "From the remote TAK server",
+    "lastSeen": "Last seen {{time}}"
   },
   "takServerPanel": {
     "title": "TAK Server",

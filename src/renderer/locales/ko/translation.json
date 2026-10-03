@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "로컬 RNode \"{{name}}\" 에 대한 호스트 TX 대기열: 라디오를 기다리는 패킷 (여러 RNode가 있을 때 최악의 채움). 녹색은 25% 미만, 황색은 60% 미만, 빨간색은 60% 이상.",
     "reticulumQueueTooltipGeneric": "가장 바쁜 로컬 RNode의 호스트 TX 대기열: 라디오를 기다리는 패킷. 녹색은 25% 미만, 황색은 60% 미만, 빨간색은 60% 이상.",
     "reticulumTxBuffering": "아웃바운드 패킷을 로컬 RNode에 버퍼링합니다 (호스트 TX 대기열 드레이닝).",
-    "reticulumTxBufferingNamed": "\"{{name}}\" 에서 아웃바운드 패킷 버퍼링 (호스트 TX 대기열 배수)."
+    "reticulumTxBufferingNamed": "\"{{name}}\" 에서 아웃바운드 패킷 버퍼링 (호스트 TX 대기열 배수).",
+    "takRemoteConnected": "원격 연결됨",
+    "takRemoteConnecting": "원격 연결",
+    "takRemoteError": "원격 오류",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "메시지 보관 설정을 저장하지 못했습니다.",
@@ -1621,7 +1626,11 @@
       "stopped": "중지됨",
       "clientLost": "클라이언트 끊김",
       "takPort": "포트 {{port}}",
-      "openTak": "TAK 열기"
+      "openTak": "TAK 열기",
+      "remoteConnected": "원격 연결됨",
+      "remoteConnecting": "원격 연결",
+      "remoteError": "원격 오류",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "무전기와 MQTT 연결 해제",
     "disconnectRadioGroup": "무전기 연결 해제",
@@ -2417,7 +2426,8 @@
     "measureStartAria": "거리 측정 시작",
     "measureStopAria": "측정을 중지하고 지우기",
     "measureHint": "포인트를 추가하려면 지도를 클릭하세요.",
-    "measureTotal": "{{km}} km/{{mi}} mi"
+    "measureTotal": "{{km}} km/{{mi}} mi",
+    "layerTakContacts": "TAK 유닛"
   },
   "meshCongestion": {
     "blockTitle": "중복된 트래픽이 표시되는 이유",
@@ -6491,5 +6501,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "온도 (24시간)",
     "sparklineHumidity24h": "습도 (24시간)"
+  },
+  "takContacts": {
+    "affiliationFriend": "친근한",
+    "affiliationHostile": "머로더",
+    "affiliationNeutral": "중립",
+    "affiliationUnknown": "미상",
+    "affiliationPoint": "지도 지점",
+    "sourceLocal": "현지 ATAK 고객으로부터",
+    "sourceRemote": "원격 TAK 서버에서",
+    "lastSeen": "마지막 확인 {{time}}"
   }
 }

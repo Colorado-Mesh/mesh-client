@@ -47,6 +47,8 @@ import type {
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
 import type {
   TAKClientInfo,
+  TAKContact,
+  TAKContactsUpdate,
   TAKEnrollmentRequest,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
@@ -1236,6 +1238,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
       };
       ipcRenderer.on('tak:clientDisconnected', handler);
       return () => ipcRenderer.off('tak:clientDisconnected', handler);
+    },
+    onClientUpdated: (cb: (client: TAKClientInfo) => void): (() => void) => {
+      const handler = (_: unknown, client: TAKClientInfo) => {
+        cb(client);
+      };
+      ipcRenderer.on('tak:clientUpdated', handler);
+      return () => ipcRenderer.off('tak:clientUpdated', handler);
+    },
+    getContacts: (): Promise<TAKContact[]> => ipcRenderer.invoke('tak:getContacts'),
+    onContacts: (cb: (update: TAKContactsUpdate) => void): (() => void) => {
+      const handler = (_: unknown, update: TAKContactsUpdate) => {
+        cb(update);
+      };
+      ipcRenderer.on('tak:contacts', handler);
+      return () => ipcRenderer.off('tak:contacts', handler);
     },
     remoteStart: (settings: TAKRemoteSettings): Promise<void> =>
       ipcRenderer.invoke('tak:remoteStart', settings),

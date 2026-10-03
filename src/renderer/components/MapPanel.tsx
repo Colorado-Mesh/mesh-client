@@ -67,6 +67,7 @@ import {
   MAP_OVERLAY_PANEL_CLASS,
 } from './map/mapControlClasses';
 import { OfflineMapsSection } from './map/OfflineMapsSection';
+import { TakContactsLayer } from './map/takContactsLayer';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
 import { SELECT_BOX_SM_CLASS } from './ui/formClasses';
@@ -462,11 +463,13 @@ function MapLayerControl({
   showRouteWeights,
   onToggleRouteWeights,
   sensorsSupported,
+  takSupported,
 }: {
   routeWeightsSupported: boolean;
   showRouteWeights: boolean;
   onToggleRouteWeights: (enabled: boolean) => void;
   sensorsSupported: boolean;
+  takSupported: boolean;
 }) {
   const { t } = useTranslation();
   const layersPanelOpen = useMapLayerStore((s) => s.layersPanelOpen);
@@ -485,6 +488,8 @@ function MapLayerControl({
   const setShowSensors = useMapLayerStore((s) => s.setShowSensors);
   const sensorMetric = useMapLayerStore((s) => s.sensorMetric);
   const setSensorMetric = useMapLayerStore((s) => s.setSensorMetric);
+  const showTakContacts = useMapLayerStore((s) => s.showTakContacts);
+  const setShowTakContacts = useMapLayerStore((s) => s.setShowTakContacts);
   const showPaths = usePositionHistoryStore((s) => s.showPaths);
   const setShowPaths = usePositionHistoryStore((s) => s.setShowPaths);
   const anomalyHalosEnabled = useDiagnosticsStore((s) => s.anomalyHalosEnabled);
@@ -549,6 +554,13 @@ function MapLayerControl({
             {layerRow('paths', t('mapPanel.layerPaths'), showPaths, setShowPaths)}
             {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
             {layerRow('incidents', t('mapPanel.layerIncidents'), showIncidents, setShowIncidents)}
+            {takSupported &&
+              layerRow(
+                'takContacts',
+                t('mapPanel.layerTakContacts'),
+                showTakContacts,
+                setShowTakContacts,
+              )}
             {layerRow('mgrsGrid', t('mapPanel.layerMgrsGrid'), showMgrsGrid, setShowMgrsGrid)}
             {sensorsSupported &&
               layerRow('sensors', t('sensorLayer.layer'), showSensors, setShowSensors)}
@@ -662,7 +674,7 @@ export default function MapPanel({
     ].join('|');
   }, []);
   const homeNode = nodes.get(myNodeNum) ?? null;
-  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasEnvironmentTelemetry } =
+  const { nodeStaleThresholdMs, nodeOfflineThresholdMs, hasEnvironmentTelemetry, hasTakPanel } =
     useRadioProvider(protocol);
   const excludeMeshcoreContactTypesInMeshtastic = protocol === 'meshtastic';
 
@@ -692,6 +704,7 @@ export default function MapPanel({
   const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
   const showSensors = useMapLayerStore((s) => s.showSensors);
   const sensorMetric = useMapLayerStore((s) => s.sensorMetric);
+  const showTakContacts = useMapLayerStore((s) => s.showTakContacts);
   const basemap = MAP_BASEMAPS[basemapId];
   const overlayColors = useMemo(() => getMapOverlayColors(basemap.isDark), [basemap.isDark]);
 
@@ -1102,6 +1115,7 @@ export default function MapPanel({
           showRouteWeights={showRouteWeights}
           onToggleRouteWeights={setShowRouteWeights}
           sensorsSupported={hasEnvironmentTelemetry}
+          takSupported={hasTakPanel}
         />
         <button
           type="button"
@@ -1218,6 +1232,7 @@ export default function MapPanel({
             </Marker>
           ))}
         {showIncidents ? <IncidentMarkersLayer /> : null}
+        {hasTakPanel && showTakContacts ? <TakContactsLayer /> : null}
         {hasEnvironmentTelemetry && showSensors ? (
           <EnvironmentSensorLayer
             nodes={nodesWithPosition}

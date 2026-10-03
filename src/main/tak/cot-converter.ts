@@ -15,6 +15,9 @@ const COT_UID_PREFIX: Record<MeshProtocol, string> = {
   reticulum: 'RN-',
 };
 
+/** Every uid prefix this app writes; inbound CoT with one of these is our own node echoed back. */
+export const COT_UID_PREFIXES: readonly string[] = Object.values(COT_UID_PREFIX);
+
 /**
  * Meshtastic nodes advertise a 4-char short name, which fits an ATAK callsign. MeshCore and
  * Reticulum nodes usually leave short_name empty and carry the advert/display name in long_name.

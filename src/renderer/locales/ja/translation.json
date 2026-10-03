@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "ローカルRNode \"{{name}}\"のホストTXキュー：無線を待っているパケット（複数のRNodeの場合は最悪の満杯）。緑25 ％未満、琥珀60 ％未満、赤60 ％以上。",
     "reticulumQueueTooltipGeneric": "最もビジーなローカルRNodeのホストTXキュー：無線を待っているパケット。緑25 ％未満、琥珀60 ％未満、赤60 ％以上。",
     "reticulumTxBuffering": "ローカルRNodeへのアウトバウンドパケットのバッファリング（ホストTXキュー排出）。",
-    "reticulumTxBufferingNamed": "\"{{name}}\"上の発信パケットのバッファリング（ホストTXキュー排出）。"
+    "reticulumTxBufferingNamed": "\"{{name}}\"上の発信パケットのバッファリング（ホストTXキュー排出）。",
+    "takRemoteConnected": "リモート接続済み",
+    "takRemoteConnecting": "リモート接続",
+    "takRemoteError": "リモートAPIエラー。",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}、{{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "メッセージ保持設定の保存に失敗しました。",
@@ -1621,7 +1626,11 @@
       "stopped": "停止中",
       "clientLost": "クライアント切断",
       "takPort": "ポート {{port}}",
-      "openTak": "TAK を開く"
+      "openTak": "TAK を開く",
+      "remoteConnected": "リモート接続済み",
+      "remoteConnecting": "リモート接続",
+      "remoteError": "リモートAPIエラー。",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "無線機と MQTT を切断",
     "disconnectRadioGroup": "無線機を切断",
@@ -2417,7 +2426,8 @@
     "measureStartAria": "距離の測定を開始する",
     "measureStopAria": "測定を停止してクリア",
     "measureHint": "マップをクリックしてポイントを追加します",
-    "measureTotal": "{{km}} km/{{mi}} mi"
+    "measureTotal": "{{km}} km/{{mi}} mi",
+    "layerTakContacts": "TAKユニット"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -6491,5 +6501,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "温度（ 24時間）",
     "sparklineHumidity24h": "湿度（ 24時間）"
+  },
+  "takContacts": {
+    "affiliationFriend": "友好",
+    "affiliationHostile": "敵",
+    "affiliationNeutral": "中立的",
+    "affiliationUnknown": "不明",
+    "affiliationPoint": "マップポイント",
+    "sourceLocal": "現地のATAKクライアントから",
+    "sourceRemote": "リモートTAKサーバーから",
+    "lastSeen": "最終閲覧{{time}}"
   }
 }

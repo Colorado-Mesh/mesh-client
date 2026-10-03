@@ -368,6 +368,14 @@ function attachTakForwarders(manager: TakServerManager): void {
     if (mainWindow) mainWindow.webContents.send('tak:remoteStatus', status);
     else console.debug('[main] tak:remoteStatus dropped (mainWindow not ready)');
   });
+  manager.on('client-updated', (client) => {
+    if (mainWindow) mainWindow.webContents.send('tak:clientUpdated', client);
+    else console.debug('[main] tak:clientUpdated dropped (mainWindow not ready)');
+  });
+  // The renderer re-reads tak:getContacts on mount, so a dropped batch is recovered there.
+  manager.on('contacts', (update) => {
+    if (mainWindow) mainWindow.webContents.send('tak:contacts', update);
+  });
 }
 
 async function ensureTakServerManager(): Promise<TakServerManager> {

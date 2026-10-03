@@ -69,6 +69,8 @@ import type {
 import type { SupportBundleMode } from './support-bundle.types';
 import type {
   TAKClientInfo,
+  TAKContact,
+  TAKContactsUpdate,
   TAKEnrollmentRequest,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
@@ -1328,6 +1330,12 @@ export interface ElectronAPI {
     onStatus: (cb: (status: TAKServerStatus) => void) => () => void;
     onClientConnected: (cb: (client: TAKClientInfo) => void) => () => void;
     onClientDisconnected: (cb: (clientId: string) => void) => () => void;
+    /** A connected client's info changed (its callsign, once its first unit event arrives). */
+    onClientUpdated: (cb: (client: TAKClientInfo) => void) => () => void;
+    /** Unexpired CoT contacts received from local ATAK clients and the remote TAK server. */
+    getContacts: () => Promise<TAKContact[]>;
+    /** Batched contact changes, at most about once per second. */
+    onContacts: (cb: (update: TAKContactsUpdate) => void) => () => void;
     /** Start (or restart) the relay to a remote TAK server; saves the settings. */
     remoteStart: (settings: TAKRemoteSettings) => Promise<void>;
     remoteStop: () => Promise<void>;

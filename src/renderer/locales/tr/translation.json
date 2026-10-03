@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "Yerel RNode \"{{name}}\" için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler (birden fazla RNode olduğunda en kötü doldurma). % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
     "reticulumQueueTooltipGeneric": "En yoğun yerel RNode için ana bilgisayar TX kuyruğu: telsizi bekleyen paketler. % 25 'in altında yeşil, % 60' ın altında sarı, % 60 veya daha fazla kırmızı.",
     "reticulumTxBuffering": "Giden paketlerin yerel bir RNode'a arabelleğe alınması (ana bilgisayar TX kuyruğu boşaltma).",
-    "reticulumTxBufferingNamed": "\"{{name}}\" üzerinde giden paketler arabelleğe alınıyor (ana bilgisayar TX kuyruğu boşaltılıyor)."
+    "reticulumTxBufferingNamed": "\"{{name}}\" üzerinde giden paketler arabelleğe alınıyor (ana bilgisayar TX kuyruğu boşaltılıyor).",
+    "takRemoteConnected": "uzaktan bağlı",
+    "takRemoteConnecting": "uzaktan bağlantı",
+    "takRemoteError": "uzaktan hata",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Mesaj saklama ayarı kaydedilemedi.",
@@ -1621,7 +1626,11 @@
       "stopped": "Durduruldu",
       "clientLost": "İstemci koptu",
       "takPort": "Bağlantı noktası {{port}}",
-      "openTak": "TAK'ı aç"
+      "openTak": "TAK'ı aç",
+      "remoteConnected": "Uzaktan bağlı",
+      "remoteConnecting": "Uzaktan bağlantı",
+      "remoteError": "uzaktan hata",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Radyo ve MQTT bağlantısını kes",
     "disconnectRadioGroup": "Radyo bağlantısını kes",
@@ -2417,7 +2426,8 @@
     "measureStartAria": "Mesafeyi ölçmeye başlayın",
     "measureStopAria": "Ölçümü durdur ve temizle",
     "measureHint": "Puan eklemek için haritaya tıklayın",
-    "measureTotal": "{{km}} km / {{mi}} mil"
+    "measureTotal": "{{km}} km / {{mi}} mil",
+    "layerTakContacts": "TAK ÜNİTELERİ"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -6491,5 +6501,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Sıcaklık (24 saat)",
     "sparklineHumidity24h": "Nem (24s)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Arkadaş canlısı",
+    "affiliationHostile": "Hasım",
+    "affiliationNeutral": "Kararsızım",
+    "affiliationUnknown": "Bilinmiyor",
+    "affiliationPoint": "Harita noktası",
+    "sourceLocal": "Yerel bir atak müşterisinden",
+    "sourceRemote": "Uzak TAK SUNUCUSUNDAN",
+    "lastSeen": "Son görülme {{time}}"
   }
 }

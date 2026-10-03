@@ -45,7 +45,12 @@
     "reticulumQueueTooltip": "Kolejka hosta TX dla lokalnego RNode \"{{name}}\": pakiety oczekujące na radio (najgorsze wypełnienie w przypadku wielu RNodów). Zielony poniżej 25%, bursztynowy poniżej 60%, czerwony 60% lub więcej.",
     "reticulumQueueTooltipGeneric": "Host TX queue for the most busy local RNode: packets waiting for the radio. Zielony poniżej 25%, bursztynowy poniżej 60%, czerwony 60% lub więcej.",
     "reticulumTxBuffering": "Buforowanie pakietów wychodzących do lokalnego RNode (opróżnianie kolejki hosta TX).",
-    "reticulumTxBufferingNamed": "Buforowanie pakietów wychodzących na \"{{name}}\" (opróżnianie kolejki hosta w TX)."
+    "reticulumTxBufferingNamed": "Buforowanie pakietów wychodzących na \"{{name}}\" (opróżnianie kolejki hosta w TX).",
+    "takRemoteConnected": "podłączony zdalnie",
+    "takRemoteConnecting": "zdalne łączenie",
+    "takRemoteError": "Błąd interfejsu API zdalnego.",
+    "takRemoteOnly": "TAK {{remote}}",
+    "takWithRemote": "{{local}}, {{remote}}"
   },
   "appPanel": {
     "failedSaveRetention": "Nie udało się zapisać ustawienia przechowywania wiadomości.",
@@ -1655,7 +1660,11 @@
       "stopped": "Zatrzymany",
       "clientLost": "Utracono klienta",
       "takPort": "Port {{port}}",
-      "openTak": "Otwórz TAK"
+      "openTak": "Otwórz TAK",
+      "remoteConnected": "Zdalne połączenie",
+      "remoteConnecting": "Połączenie zdalne",
+      "remoteError": "Błąd interfejsu API zdalnego.",
+      "takRemoteWithHost": "{{state}} ({{host}})"
     },
     "disconnectAll": "Rozłącz radio i MQTT",
     "disconnectRadioGroup": "Rozłącz radio",
@@ -2465,7 +2474,8 @@
     "measureStartAria": "Rozpocznij pomiar odległości",
     "measureStopAria": "Zatrzymaj pomiar i wyczyść",
     "measureHint": "Kliknij mapę, aby dodać punkty",
-    "measureTotal": "{{km}} km / {{mi}} mi"
+    "measureTotal": "{{km}} km / {{mi}} mi",
+    "layerTakContacts": "Jednostki TAK"
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",
@@ -6587,5 +6597,15 @@
     "valuePressure": "{{value}} hPa",
     "sparklineTemperature24h": "Temperatura (24h)",
     "sparklineHumidity24h": "Wilgotność (24h)"
+  },
+  "takContacts": {
+    "affiliationFriend": "Przyjazny",
+    "affiliationHostile": "Wrogo nastawieni",
+    "affiliationNeutral": "Neutral",
+    "affiliationUnknown": "Nieznany",
+    "affiliationPoint": "Punkt mapy",
+    "sourceLocal": "Od lokalnego klienta atak",
+    "sourceRemote": "Ze zdalnego serwera TAK",
+    "lastSeen": "Ostatnio widziany {{time}}"
   }
 }

@@ -74,6 +74,38 @@ export interface TAKRemoteStatus {
   connectedAt?: number;
 }
 
+/** Where an inbound CoT contact came from: a local ATAK client or the remote TAK server. */
+export type TAKContactSource = 'local' | 'remote';
+
+/** A unit or map point received as CoT from a TAK peer. */
+export interface TAKContact {
+  uid: string;
+  /** CoT type, e.g. `a-f-G-U-C` (friendly ground unit) or `b-m-p-s-m` (spot map point). */
+  type: string;
+  callsign: string;
+  lat: number;
+  lon: number;
+  /** Height above ellipsoid, metres; omitted when the sender reports it as unknown. */
+  hae?: number;
+  group?: string;
+  role?: string;
+  remarks?: string;
+  source: TAKContactSource;
+  /** When main received the event, epoch milliseconds. */
+  receivedAt: number;
+  /**
+   * When the contact goes stale, epoch milliseconds by the main-process clock: the sender's
+   * stale-minus-time window applied to `receivedAt`, so sender clock skew does not matter.
+   */
+  staleAt: number;
+}
+
+/** Batched contact changes streamed to the renderer on `tak:contacts`. */
+export interface TAKContactsUpdate {
+  upserts: TAKContact[];
+  removedUids: string[];
+}
+
 /** Username/password enrollment for a client certificate on a TAK Server's enrollment port. */
 export interface TAKEnrollmentRequest {
   host: string;

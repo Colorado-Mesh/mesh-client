@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { TAKRemoteStatus } from '@/shared/tak-types';
+
 import {
   CONNECTION_HEADER_PULSE_RED_DOT,
   CONNECTION_HEADER_PULSE_RED_ICON,
@@ -111,6 +113,23 @@ describe('connectionHeaderStatus', () => {
     it('tak running ok is green', () => {
       expect(takHeaderVariant(true, false, false)).toBe('ok');
       expect(headerTextClass('ok')).toContain('text-green-400');
+    });
+
+    it.each<[boolean, TAKRemoteStatus['state'], string | undefined, string]>([
+      [false, 'disconnected', undefined, 'idle'],
+      [false, 'connected', undefined, 'ok'],
+      [true, 'connected', undefined, 'ok'],
+      [false, 'connecting', undefined, 'warn'],
+      [true, 'connecting', undefined, 'warn'],
+      [false, 'connecting', 'Connection refused', 'error'],
+      [true, 'disconnected', 'bad certificate', 'error'],
+      [true, 'disconnected', undefined, 'ok'],
+    ])('tak local running %s with remote %s (error %s) is %s', (running, state, error, variant) => {
+      expect(takHeaderVariant(running, false, false, { state, error })).toBe(variant);
+    });
+
+    it('tak local error wins over a connected remote', () => {
+      expect(takHeaderVariant(false, true, false, { state: 'connected' })).toBe('error');
     });
   });
 

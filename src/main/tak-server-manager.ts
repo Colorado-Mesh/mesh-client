@@ -9,6 +9,8 @@ import type { MeshNode } from '../renderer/lib/types';
 import type { MeshProtocol } from '../shared/meshProtocol';
 import type {
   TAKClientInfo,
+  TAKContact,
+  TAKContactsUpdate,
   TAKRemoteSettings,
   TAKRemoteStatus,
   TAKServerStatus,
@@ -21,7 +23,9 @@ import {
   regenerateCerts,
   type TakServerIdentity,
 } from './tak/certificate-manager';
+import { TakContactCache } from './tak/contact-cache';
 import { COT_STALE_MS, meshNodeToCot } from './tak/cot-converter';
+import { CotFramer, parseCotEvent } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import { getLanIp } from './tak/lan-ip';
 import { TakRemoteClient } from './tak/remote-client';
@@ -31,7 +35,9 @@ import { DEFAULT_TAK_REMOTE_PORT, saveTakRemoteSettings } from './tak/remote-set
 interface ConnectedClient {
   socket: tls.TLSSocket;
   info: TAKClientInfo;
-  buffer: string;
+  framer: CotFramer;
+  /** Uid of the unit whose callsign labels this client: its first self-reported unit event. */
+  selfUid?: string;
   idleTimer: ReturnType<typeof setTimeout> | null;
 }
 
@@ -65,6 +71,14 @@ export class TakServerManager extends EventEmitter {
     host: '',
     port: DEFAULT_TAK_REMOTE_PORT,
   };
+  private readonly contacts = new TakContactCache();
+
+  constructor() {
+    super();
+    this.contacts.on('update', (update: TAKContactsUpdate) => {
+      this.emit('contacts', update);
+    });
+  }
 
   private get settingsPath(): string {
     return path.join(app.getPath('userData'), 'tak-settings.json');
@@ -81,6 +95,11 @@ export class TakServerManager extends EventEmitter {
 
   getRemoteStatus(): TAKRemoteStatus {
     return { ...this.remoteStatus };
+  }
+
+  /** Unexpired units and map points received from local ATAK clients and the remote server. */
+  getContacts(): TAKContact[] {
+    return this.contacts.snapshot();
   }
 
   /**
@@ -106,11 +125,17 @@ export class TakServerManager extends EventEmitter {
       this.remoteStatus = status;
       // The client only reports disconnected once it has stopped for good (unusable
       // credentials); stopRemote() detaches it before stopping, so this is that case.
-      if (status.state === 'disconnected' && this.remote === remote) this.remote = null;
+      if (status.state === 'disconnected' && this.remote === remote) {
+        this.remote = null;
+        this.contacts.removeSource('remote');
+      }
       this.emit('remote-status', { ...status });
     });
     remote.on('connected', () => {
       this.forEachFreshCot((cot) => remote.write(cot));
+    });
+    remote.on('cot', (contact: TAKContact) => {
+      if (this.remote === remote) this.contacts.upsert(contact);
     });
     this.remote = remote;
     remote.start();
@@ -127,6 +152,7 @@ export class TakServerManager extends EventEmitter {
     this.remote = null;
     remote.stop();
     remote.removeAllListeners();
+    this.contacts.removeSource('remote');
   }
 
   getConnectedClients(): TAKClientInfo[] {
@@ -202,6 +228,7 @@ export class TakServerManager extends EventEmitter {
 
     this.server.close();
     this.server = null;
+    this.contacts.removeSource('local');
     this._status = { running: false, port: this.settings?.port ?? 8089, clientCount: 0 };
     this.emit('status', this.getStatus());
     console.debug('[TakServer] Stopped');
@@ -363,6 +390,15 @@ export class TakServerManager extends EventEmitter {
     }, TAK_CLIENT_IDLE_MS);
   }
 
+  /** ATAK opens with its own SA (a unit event); later unit events with that uid track renames. */
+  private updateClientCallsign(client: ConnectedClient, contact: TAKContact): void {
+    if (!contact.type.startsWith('a-')) return;
+    client.selfUid ??= contact.uid;
+    if (contact.uid !== client.selfUid || contact.callsign === client.info.callsign) return;
+    client.info = { ...client.info, callsign: contact.callsign };
+    this.emit('client-updated', { ...client.info });
+  }
+
   private _handleClient(socket: tls.TLSSocket): void {
     const address = socket.remoteAddress ?? 'unknown';
     if (this.clients.size >= MAX_TAK_CLIENTS) {
@@ -375,7 +411,7 @@ export class TakServerManager extends EventEmitter {
 
     const id = randomUUID();
     const info: TAKClientInfo = { id, address, connectedAt: Date.now() };
-    const client: ConnectedClient = { socket, info, buffer: '', idleTimer: null };
+    const client: ConnectedClient = { socket, info, framer: new CotFramer(), idleTimer: null };
     this.clients.set(id, client);
 
     this._status = { ...this._status, clientCount: this.clients.size };
@@ -395,15 +431,12 @@ export class TakServerManager extends EventEmitter {
 
     socket.on('data', (chunk: Buffer) => {
       this.resetClientIdleTimer(id, client);
-      client.buffer += chunk.toString('utf-8');
-      // Discard fully-received CoT events (Phase 5: bidirectional processing)
-      const endIdx = client.buffer.lastIndexOf('</event>');
-      if (endIdx >= 0) {
-        client.buffer = client.buffer.slice(endIdx + 8);
-      }
-      // Cap buffer to prevent unbounded growth from malformed data
-      if (client.buffer.length > 64 * 1024) {
-        client.buffer = '';
+      const now = Date.now();
+      for (const frame of client.framer.push(chunk)) {
+        const contact = parseCotEvent(frame, 'local', now);
+        if (!contact) continue;
+        this.contacts.upsert(contact);
+        this.updateClientCallsign(client, contact);
       }
     });
 

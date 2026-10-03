@@ -5,6 +5,7 @@ import tls from 'tls';
 import type { TAKRemoteStatus } from '../../shared/tak-types';
 import { MS_PER_SECOND } from '../../shared/timeConstants';
 import { sanitizeLogMessage } from '../log-service';
+import { CotFramer, parseCotEvent } from './cot-parser';
 import type { TakRemoteCredentials } from './remote-credentials';
 import { tlsConnectHost } from './remote-settings';
 
@@ -86,12 +87,13 @@ export function describeTakRemoteError(err: NodeJS.ErrnoException): string {
 
 /**
  * One TLS (or, when configured, plain TCP) stream to a remote TAK server. Sends
- * newline-terminated CoT (the same format the local server writes) and discards whatever the
- * server sends back. Reconnects with capped exponential backoff until {@link stop} is called; a
+ * newline-terminated CoT (the same format the local server writes) and parses the CoT the server
+ * streams back. Reconnects with capped exponential backoff until {@link stop} is called; a
  * manual stop never reconnects.
  *
- * Emits `status` (TAKRemoteStatus) on every state change and `connected` after each successful
- * connection so the owner can flush its node cache.
+ * Emits `status` (TAKRemoteStatus) on every state change, `connected` after each successful
+ * connection so the owner can flush its node cache, and `cot` (TAKContact) for each mappable
+ * inbound event.
  */
 export class TakRemoteClient extends EventEmitter {
   private socket: net.Socket | null = null;
@@ -201,8 +203,16 @@ export class TakRemoteClient extends EventEmitter {
       console.debug(`[TakRemote] Connected to ${sanitizeLogMessage(host)}:${port}`);
       this.emit('connected');
     });
-    // Servers stream other users' CoT back; read and drop it so their send buffer never fills.
-    socket.resume();
+    // Servers stream other users' CoT back; always read it so their send buffer never fills.
+    const framer = new CotFramer();
+    socket.on('data', (chunk: Buffer) => {
+      if (this.socket !== socket) return;
+      const now = Date.now();
+      for (const frame of framer.push(chunk)) {
+        const contact = parseCotEvent(frame, 'remote', now);
+        if (contact) this.emit('cot', contact);
+      }
+    });
     socket.on('error', (err: NodeJS.ErrnoException) => {
       // A rejected handshake is followed by EPIPE/ECONNRESET on the dead socket; keep the cause.
       const isFollowOn = err.code === 'EPIPE' || err.code === 'ECONNRESET';

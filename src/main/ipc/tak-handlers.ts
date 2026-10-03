@@ -168,6 +168,11 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     return getTakServerManager()?.getConnectedClients() ?? [];
   });
 
+  ipcMain.handle('tak:getContacts', (event) => {
+    assertIpcSender(event, 'tak:getContacts');
+    return getTakServerManager()?.getContacts() ?? [];
+  });
+
   ipcMain.handle('tak:generateDataPackage', async (event) => {
     assertIpcSender(event, 'tak:generateDataPackage');
     try {
