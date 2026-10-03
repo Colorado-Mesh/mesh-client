@@ -869,7 +869,8 @@
     "srNewMessages_few": "{{count}} nowe wiadomości",
     "srNewMessages_many": "{{count}} nowych wiadomości",
     "srNewMessages_other": "{{count}} nowej wiadomości",
-    "unreadMecpMarker": "Nieprzeczytany raport MECP{{severity}}"
+    "unreadMecpMarker": "Nieprzeczytany raport MECP{{severity}}",
+    "floodScopeSaveFailed": "Nie można zapisać zakresu wysyłania. Poprzedni zapisany wybór nadal obowiązuje."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -4404,7 +4405,12 @@
       "shareQr": "QR",
       "shareQrAria": "Pokaż QR kanału MeshCore dla {{name}}",
       "privateChannel": "Kanał prywatny (wprowadź klucz)",
-      "privateKeyHint": "Wprowadź klucz kanału współdzielonego: dokładnie 32 znaki szesnastkowe (16 bajtów), a nie same zera."
+      "privateKeyHint": "Wprowadź klucz kanału współdzielonego: dokładnie 32 znaki szesnastkowe (16 bajtów), a nie same zera.",
+      "scopeLabel": "Wyślij zakres dla tego kanału",
+      "scopeEffective": "Efektywny zakres wysyłania: {{scope}}",
+      "scopeHint": "Zapisano w tej aplikacji dla tego radia i kanału. Wartość domyślna jest zgodna z ustawieniem zakresu radiokomunikacyjnego. Zastąpienia mają tymczasowe zastosowanie do późniejszego wysyłania i przywracania ustawień Radia. Konfiguracja przemiennika określa przekazywanie.",
+      "scopeNeedsIdentity": "Preferencje zakresu są dostępne po wykryciu tożsamości radiowej.",
+      "scopeSaveFailed": "Kanał został zapisany, ale jego zakres wysyłania nie mógł zostać zapisany w tej aplikacji. Spróbuj ponownie zapisać."
     },
     "regions": {
       "UNSET": {

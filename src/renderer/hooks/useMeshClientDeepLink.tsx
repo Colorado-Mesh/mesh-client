@@ -86,7 +86,7 @@ export function MeshClientDeepLinkHost(): ReactElement | null {
           kind: 'meshcoreChannelAdd',
           name: parsed.name,
           secretHex: parsed.secretHex,
-          ...(parsed.regionScope ? { regionScope: parsed.regionScope } : {}),
+          ...(parsed.regionScope !== undefined ? { regionScope: parsed.regionScope } : {}),
         });
         return;
       }

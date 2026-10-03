@@ -835,7 +835,8 @@
     "srNewMessage": "来自{{sender}}的新消息： {{text}}",
     "srNewMessages_one": "{{count}}条新消息",
     "srNewMessages_other": "{{count}}条新消息",
-    "unreadMecpMarker": "未读{{severity}} MECP报告"
+    "unreadMecpMarker": "未读{{severity}} MECP报告",
+    "floodScopeSaveFailed": "无法保存发送范围。之前保存的选项仍然适用。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "显示{{name}}的MeshCore频道二维码",
       "privateChannel": "私人频道（输入密钥）",
-      "privateKeyHint": "输入共享通道密钥：正好 32 个十六进制字符（16 个字节），不能全为零。"
+      "privateKeyHint": "输入共享通道密钥：正好 32 个十六进制字符（16 个字节），不能全为零。",
+      "scopeLabel": "发送此频道的范围",
+      "scopeEffective": "有效发送范围： {{scope}}",
+      "scopeHint": "已为此广播和频道保存在此应用中。默认遵循无线电范围设置。替代临时应用于发送并在之后还原收音机设置。中继器配置决定转发。",
+      "scopeNeedsIdentity": "无线电身份发现后可使用视野镜(Scope)首选项。",
+      "scopeSaveFailed": "频道已保存，但其发送范围无法保存在此应用中。重试保存。"
     },
     "regions": {
       "UNSET": {

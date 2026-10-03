@@ -70,7 +70,9 @@ MeshCore **regions** (on repeaters) and **scopes** (on outbound flood messages) 
 
 - **Radio → Regional flood scope** sets the companion radio-wide default (`meshcoreFloodScopeHashtag` in `app_settings`; reapplied on connect).
 - **Chat** split-Send override chooses Default (follow Radio), **Unscoped** (mesh-wide / clear scope for that channel’s sends), or a named hashtag (e.g. `#metro`, `#us-co`). Default and Unscoped stay distinct choices.
-- Chat remembers the override **per channel view** (`mesh-client:floodScopeOverrides:meshcore`, keyed like drafts by `ch:N`) so a mesh-wide Public channel and a scoped shared-key channel (e.g. metro containment) do not bleed into each other when switching pills.
+- **Radio → Channels** offers the same Default, Unscoped, and named scope choices as Chat Send, and shows the effective send scope. These are app preferences; saving a channel does not change the radio-wide scope.
+- Channel overrides in `mesh-client:floodScopeOverrides:meshcore` bind to the discovered radio public key, slot, and a fingerprint of the channel name and PSK. An unchanged radio/channel retains its choice across reconnects; another radio or changed slot contents starts at Default. Old `ch:N` preferences lack that identity and are ignored for channels; select the intended scope again. DM preferences retain their existing per-view storage.
+- Channel QR export preserves the choice. Default omits scope fields and follows the recipient's Radio setting. Named scopes use the existing `region_scope` field. Explicit Unscoped uses the Mesh Client extension `mesh_client_scope=unscoped`; other clients may ignore that extension. Import prefills the choice for review and saves it only after the channel write succeeds.
 - Channel PSK still controls who can **decode**; region/scope controls which repeaters **forward**. Hierarchy and `region allowf` live on repeater CLI, not in Chat.
 
 ## MeshCore: identity-scoped UI stores

@@ -10,6 +10,7 @@ vi.mock('./meshcoreRepeaterRpcInFlight', () => ({
 }));
 
 import { meshcoreCompanionRepeaterRfBusy } from './meshcoreRepeaterRpcInFlight';
+import { withMockedConsoleWarn } from './vitestConsoleMock';
 
 describe('withMeshcoreFloodScopeOverride', () => {
   it('skips apply when no override', async () => {
@@ -59,4 +60,45 @@ describe('withMeshcoreFloodScopeOverride', () => {
     expect(sawActive).toBe(true);
     expect(isMeshcoreFloodScopeOverrideActive()).toBe(false);
   });
+
+  it('does not send after a rejected apply and releases the mutex for the next send', async () => {
+    const send = vi.fn().mockResolvedValue(undefined);
+    await expect(
+      withMeshcoreFloodScopeOverride(
+        vi.fn().mockRejectedValue(new Error('disconnected')),
+        '#us-co',
+        '#metro',
+        send,
+      ),
+    ).rejects.toThrow('disconnected');
+    expect(send).not.toHaveBeenCalled();
+    expect(isMeshcoreFloodScopeOverrideActive()).toBe(false);
+    await withMeshcoreFloodScopeOverride(
+      vi.fn().mockResolvedValue(undefined),
+      '#us-co',
+      '#metro',
+      send,
+    );
+    expect(send).toHaveBeenCalledOnce();
+  });
+
+  it.each([true, false])(
+    'logs rejected restore and preserves send outcome (failed=%s)',
+    async (failed) => {
+      const apply = vi
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('reconnect'));
+      const send = failed
+        ? vi.fn().mockRejectedValue(new Error('send failed'))
+        : vi.fn().mockResolvedValue(undefined);
+      await withMockedConsoleWarn(async () => {
+        const result = withMeshcoreFloodScopeOverride(apply, '#us-co', '', send);
+        if (failed) await expect(result).rejects.toThrow('send failed');
+        else await expect(result).resolves.toBeUndefined();
+      });
+      expect(apply.mock.calls).toEqual([[''], ['#us-co']]);
+      expect(isMeshcoreFloodScopeOverrideActive()).toBe(false);
+    },
+  );
 });

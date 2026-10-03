@@ -835,7 +835,8 @@
     "srNewMessage": "Nouveau message de {{sender}} : {{text}}",
     "srNewMessages_one": "{{count}} nouveau message",
     "srNewMessages_other": "{{count}} nouveaux messages",
-    "unreadMecpMarker": "Rapport MECP {{severity}} non lu"
+    "unreadMecpMarker": "Rapport MECP {{severity}} non lu",
+    "floodScopeSaveFailed": "Impossible d'enregistrer l'étendue d'envoi. Le choix enregistré précédent s'applique toujours."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "Afficher la chaîne QR MeshCore pour {{name}}",
       "privateChannel": "Canal privé (saisir la clé)",
-      "privateKeyHint": "Saisissez la clé du canal partagé : exactement 32 caractères hexadécimaux (16 octets), pas tous des zéros."
+      "privateKeyHint": "Saisissez la clé du canal partagé : exactement 32 caractères hexadécimaux (16 octets), pas tous des zéros.",
+      "scopeLabel": "Envoyer la portée pour ce canal",
+      "scopeEffective": "Périmètre d'envoi effectif : {{scope}}",
+      "scopeHint": "Enregistré dans cette application pour cette radio et cette chaîne. La valeur par défaut suit le réglage de la portée radio. Les remplacements s'appliquent temporairement aux envois et à la restauration du paramètre Radio par la suite. La configuration du répéteur détermine le transfert.",
+      "scopeNeedsIdentity": "Les préférences de portée sont disponibles après la découverte de l'identité radio.",
+      "scopeSaveFailed": "Canal enregistré, mais son étendue d'envoi n'a pas pu être enregistrée dans cette application. Réessayez d'enregistrer."
     },
     "regions": {
       "UNSET": {

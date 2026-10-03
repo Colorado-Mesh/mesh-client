@@ -835,7 +835,8 @@
     "srNewMessage": "{{sender}} tarafından gönderilen yeni mesaj: {{text}}",
     "srNewMessages_one": "{{count}} yeni mesaj",
     "srNewMessages_other": "{{count}} yeni mesaj",
-    "unreadMecpMarker": "Okunmamış {{severity}} MECP raporu"
+    "unreadMecpMarker": "Okunmamış {{severity}} MECP raporu",
+    "floodScopeSaveFailed": "Gönderme kapsamı kaydedilemedi. Önceki kaydedilen seçenek hala geçerlidir."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "{{name}} için MeshCore kanal QR'sini göster",
       "privateChannel": "Özel kanal (anahtarı girin)",
-      "privateKeyHint": "Paylaşılan kanal anahtarını girin: tamamı sıfır değil, tam olarak 32 onaltılık karakter (16 bayt)."
+      "privateKeyHint": "Paylaşılan kanal anahtarını girin: tamamı sıfır değil, tam olarak 32 onaltılık karakter (16 bayt).",
+      "scopeLabel": "Bu kanal için kapsam gönder",
+      "scopeEffective": "Geçerli gönderme kapsamı: {{scope}}",
+      "scopeHint": "Bu radyo ve kanal için bu uygulamaya kaydedildi. Varsayılan, Radyo kapsamı ayarını takip eder. Geçersiz kılmalar, daha sonra Radyo ayarını göndermek ve geri yüklemek için geçici olarak geçerlidir. Tekrarlayıcı yapılandırması yönlendirmeyi belirler.",
+      "scopeNeedsIdentity": "Radyo kimliği keşfinden sonra kapsam tercihleri mevcuttur.",
+      "scopeSaveFailed": "Kanal kaydedildi, ancak gönderme kapsamı bu uygulamaya kaydedilemedi. Kaydetmeyi Yeniden Dene."
     },
     "regions": {
       "UNSET": {

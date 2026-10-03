@@ -835,7 +835,8 @@
     "srNewMessage": "Pesan baru dari {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} pesan baru",
     "srNewMessages_other": "{{count}} pesan baru",
-    "unreadMecpMarker": "Belum dibaca {{severity}} laporan MECP"
+    "unreadMecpMarker": "Belum dibaca {{severity}} laporan MECP",
+    "floodScopeSaveFailed": "Tidak dapat menyimpan ruang lingkup pengiriman. Pilihan tersimpan sebelumnya masih berlaku."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "Tampilkan QR saluran MeshCore untuk {{name}}",
       "privateChannel": "Saluran pribadi (masukkan kunci)",
-      "privateKeyHint": "Masukkan kunci saluran bersama: tepat 32 karakter heksadesimal (16 byte), tidak semuanya nol."
+      "privateKeyHint": "Masukkan kunci saluran bersama: tepat 32 karakter heksadesimal (16 byte), tidak semuanya nol.",
+      "scopeLabel": "Kirim ruang lingkup untuk saluran ini",
+      "scopeEffective": "Lingkup pengiriman efektif: {{scope}}",
+      "scopeHint": "Disimpan di aplikasi ini untuk radio dan saluran ini. Default mengikuti pengaturan lingkup Radio. Penimpaan berlaku sementara untuk mengirim dan memulihkan pengaturan Radio sesudahnya. Konfigurasi pengulang menentukan penerusan.",
+      "scopeNeedsIdentity": "Preferensi ruang lingkup tersedia setelah penemuan identitas radio.",
+      "scopeSaveFailed": "Saluran disimpan, tetapi ruang lingkup pengiriman tidak dapat disimpan di aplikasi ini. Coba lagi Simpan."
     },
     "regions": {
       "UNSET": {

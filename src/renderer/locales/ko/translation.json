@@ -835,7 +835,8 @@
     "srNewMessage": "{{sender}} 님의 새 메시지: {{text}}",
     "srNewMessages_one": "{{count}} 새 메시지",
     "srNewMessages_other": "{{count}} 새 메시지",
-    "unreadMecpMarker": "읽지 않은 {{severity}} MECP 보고서"
+    "unreadMecpMarker": "읽지 않은 {{severity}} MECP 보고서",
+    "floodScopeSaveFailed": "전송 범위를 저장할 수 없습니다. 이전에 저장된 선택 항목은 그대로 적용됩니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "{{name}} 에 대한 MeshCore 채널 QR 표시",
       "privateChannel": "비공개 채널(키 입력)",
-      "privateKeyHint": "공유 채널 키를 입력하세요. 모두 0이 아닌 정확히 32개의 16진수 문자(16바이트)입니다."
+      "privateKeyHint": "공유 채널 키를 입력하세요. 모두 0이 아닌 정확히 32개의 16진수 문자(16바이트)입니다.",
+      "scopeLabel": "이 채널에 대한 범위 보내기",
+      "scopeEffective": "유효 전송 범위: {{scope}}",
+      "scopeHint": "이 라디오 및 채널을 위해 이 앱에 저장되었습니다. 기본값은 라디오 범위 설정을 따릅니다. 재정의는 이후 라디오 설정을 전송하고 복원하는 데 일시적으로 적용됩니다. 리피터 구성은 전달을 결정합니다.",
+      "scopeNeedsIdentity": "범위 기본 설정은 무선 ID 검색 후 사용할 수 있습니다.",
+      "scopeSaveFailed": "채널이 저장되었지만 전송 범위를 이 앱에 저장할 수 없습니다. 저장을 다시 시도하십시오."
     },
     "regions": {
       "UNSET": {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -10,7 +10,9 @@ import {
   FLOOD_SCOPE_OVERRIDE_UNSCOPED,
   floodScopeOverridesStorageKey,
   loadFloodScopeOverridesInitial,
+  saveFloodScopeOverride,
 } from '@/renderer/lib/chatPanelProtocolStorage';
+import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import { MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS } from '@/renderer/lib/timeConstants';
@@ -1142,6 +1144,46 @@ describe('ChatComposer', () => {
         name: 'Change flood scope for this channel: #metro',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('uses bound channel scope keys when radios switch or slots change without a view change', () => {
+    const radioA = 'meshcore:pk:' + 'a'.repeat(64);
+    const channel = { index: 1, name: 'Metro', secret: new Uint8Array(16).fill(12) };
+    const keyA = meshcoreChannelScopeKey(radioA, channel)!;
+    const keyB = meshcoreChannelScopeKey('meshcore:pk:' + 'b'.repeat(64), channel)!;
+    const reusedKey = meshcoreChannelScopeKey(radioA, {
+      ...channel,
+      secret: new Uint8Array(16).fill(13),
+    })!;
+    saveFloodScopeOverride('meshcore', 'ch:1', '#legacy');
+    saveFloodScopeOverride('meshcore', keyA, '#metro');
+    const props = {
+      protocol: 'meshcore' as const,
+      viewKey: 'ch:1',
+      isConnected: true,
+      allowOutbox: false,
+      showFloodScopeOverride: true,
+      onSendChunk: vi.fn(),
+    };
+    const { rerender } = render(<ChatComposer {...props} floodScopeStorageKey={keyA} />);
+    expect(
+      screen.getByRole('button', { name: 'Change flood scope for this channel: #metro' }),
+    ).toBeInTheDocument();
+    for (const key of [keyB, reusedKey, null]) {
+      rerender(<ChatComposer {...props} floodScopeStorageKey={key} />);
+      expect(
+        screen.getByRole('button', { name: 'Change flood scope for this channel' }),
+      ).toBeInTheDocument();
+    }
+    rerender(<ChatComposer {...props} floodScopeStorageKey={keyA} />);
+    act(() => {
+      saveFloodScopeOverride('meshcore', keyA, FLOOD_SCOPE_OVERRIDE_UNSCOPED);
+    });
+    expect(
+      screen.getByRole('button', { name: 'Change flood scope for this channel: Unscoped' }),
+    ).toBeInTheDocument();
+    rerender(<ChatComposer {...props} viewKey="ch:2" floodScopeStorageKey={keyB} />);
+    expect(loadFloodScopeOverridesInitial('meshcore')[keyA]).toBe(FLOOD_SCOPE_OVERRIDE_UNSCOPED);
   });
 
   it('restores per-channel flood scope from localStorage on mount', () => {

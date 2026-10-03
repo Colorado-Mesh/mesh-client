@@ -835,7 +835,8 @@
     "srNewMessage": "Nieuw bericht van {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} nieuw bericht",
     "srNewMessages_other": "{{count}} nieuwe berichten",
-    "unreadMecpMarker": "Ongelezen {{severity}} MECP-rapport"
+    "unreadMecpMarker": "Ongelezen {{severity}} MECP-rapport",
+    "floodScopeSaveFailed": "Kon het verzendbereik niet opslaan. De vorige opgeslagen keuze is nog steeds van toepassing."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "Toon MeshCore-kanaal QR voor {{name}}",
       "privateChannel": "Privékanaal (sleutel invoeren)",
-      "privateKeyHint": "Voer de gedeelde kanaalsleutel in: exact 32 hexadecimale tekens (16 bytes), niet allemaal nullen."
+      "privateKeyHint": "Voer de gedeelde kanaalsleutel in: exact 32 hexadecimale tekens (16 bytes), niet allemaal nullen.",
+      "scopeLabel": "Bereik verzenden voor dit kanaal",
+      "scopeEffective": "Effectief verzendbereik: {{scope}}",
+      "scopeHint": "Opgeslagen in deze app voor deze radio en dit kanaal. Standaard volgt de instelling Radiobereik. Overschrijvingen zijn tijdelijk van toepassing op verzendingen en herstellen de radio-instelling daarna. Herhalerconfiguratie bepaalt doorsturen.",
+      "scopeNeedsIdentity": "Scope-voorkeuren zijn beschikbaar na ontdekking van radio-identiteit.",
+      "scopeSaveFailed": "Kanaal opgeslagen, maar het verzendbereik kon niet worden opgeslagen in deze app. Probeer opnieuw Opslaan."
     },
     "regions": {
       "UNSET": {

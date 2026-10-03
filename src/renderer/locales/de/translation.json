@@ -835,7 +835,8 @@
     "srNewMessage": "Neue Nachricht von {{sender}}: {{text}}",
     "srNewMessages_one": "{{count}} neue Nachricht",
     "srNewMessages_other": "{{count}} neue Nachrichten",
-    "unreadMecpMarker": "Ungelesen {{severity}} MECP-Bericht"
+    "unreadMecpMarker": "Ungelesen {{severity}} MECP-Bericht",
+    "floodScopeSaveFailed": "Der Sendebereich konnte nicht gespeichert werden. Die zuvor gespeicherte Auswahl gilt weiterhin."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",
@@ -4326,7 +4327,12 @@
       "shareQr": "QR",
       "shareQrAria": "MeshCore-Kanal-QR für {{name}} anzeigen",
       "privateChannel": "Privater Kanal (Schlüssel eingeben)",
-      "privateKeyHint": "Geben Sie den Shared-Channel-Schlüssel ein: genau 32 Hexadezimalzeichen (16 Bytes), nicht nur Nullen."
+      "privateKeyHint": "Geben Sie den Shared-Channel-Schlüssel ein: genau 32 Hexadezimalzeichen (16 Bytes), nicht nur Nullen.",
+      "scopeLabel": "Sendeumfang für diesen Kanal",
+      "scopeEffective": "Gültiger Sendeumfang: {{scope}}",
+      "scopeHint": "In dieser App für dieses Radio und diesen Kanal gespeichert. Die Standardeinstellung folgt der Einstellung des Funkbereichs. Überschreibungen gelten vorübergehend für Sendungen und stellen die Radio-Einstellung danach wieder her. Die Repeater-Konfiguration bestimmt die Weiterleitung.",
+      "scopeNeedsIdentity": "Scope-Einstellungen sind nach der Funkidentitätsermittlung verfügbar.",
+      "scopeSaveFailed": "Der Kanal wurde gespeichert, aber der Sendebereich konnte in dieser App nicht gespeichert werden. Versuchen Sie es erneut."
     },
     "regions": {
       "UNSET": {
