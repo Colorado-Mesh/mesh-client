@@ -61,6 +61,83 @@ describe('syncMeshcoreRoomContactPathBeforeLogin', () => {
     expect(addOrUpdateContact.mock.calls[0]?.[3]).toBe(3);
   });
 
+  it('flags tableFull when the radio rejects the push with ERR_CODE_TABLE_FULL', async () => {
+    const pubKey = makePubKey(0x3a);
+    const nodeId = pubkeyToNodeId(pubKey);
+    const addOrUpdateContact = vi.fn().mockRejectedValue({ errCode: 3 });
+    const node = {
+      long_name: 'Far Room',
+      hw_model: 'Room',
+      hops_away: 2,
+      latitude: null,
+      longitude: null,
+      last_heard: 1,
+    };
+    const result = await syncMeshcoreRoomContactPathBeforeLogin(
+      { getContacts: vi.fn().mockResolvedValue([]), setContactPath: vi.fn(), addOrUpdateContact },
+      nodeId,
+      pubKey,
+      node,
+      new Uint8Array([0x11, 0x22, 0x33, 0x44]),
+      2,
+    );
+    expect(result.synced).toBe(false);
+    expect(result.reason).toBe('sync_failed');
+    expect(result.tableFull).toBe(true);
+  });
+
+  it('keeps tableFull when the fast push is table-full but the fallback push succeeds', async () => {
+    const pubKey = makePubKey(0x3c);
+    const nodeId = pubkeyToNodeId(pubKey);
+    const addOrUpdateContact = vi
+      .fn()
+      .mockRejectedValueOnce({ errCode: 3 })
+      .mockResolvedValueOnce(undefined);
+    const result = await syncMeshcoreRoomContactPathBeforeLogin(
+      { getContacts: vi.fn().mockResolvedValue([]), setContactPath: vi.fn(), addOrUpdateContact },
+      nodeId,
+      pubKey,
+      {
+        long_name: 'Far Room',
+        hw_model: 'Room',
+        hops_away: 2,
+        latitude: null,
+        longitude: null,
+        last_heard: 1,
+      },
+      new Uint8Array([0x11, 0x22, 0x33, 0x44]),
+      2,
+    );
+    expect(addOrUpdateContact).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ synced: true, pathByteLen: 4, reason: 'synced', tableFull: true });
+  });
+
+  it('does not flag tableFull for other push failures', async () => {
+    const pubKey = makePubKey(0x3b);
+    const nodeId = pubkeyToNodeId(pubKey);
+    const result = await syncMeshcoreRoomContactPathBeforeLogin(
+      {
+        getContacts: vi.fn().mockResolvedValue([]),
+        setContactPath: vi.fn(),
+        addOrUpdateContact: vi.fn().mockRejectedValue({ errCode: 4 }),
+      },
+      nodeId,
+      pubKey,
+      {
+        long_name: 'Far Room',
+        hw_model: 'Room',
+        hops_away: 2,
+        latitude: null,
+        longitude: null,
+        last_heard: 1,
+      },
+      new Uint8Array([0x11, 0x22, 0x33, 0x44]),
+      2,
+    );
+    expect(result.reason).toBe('sync_failed');
+    expect(result.tableFull).toBeUndefined();
+  });
+
   it('uses trimmed contact buffer when outPathLen is 0 but bytes exist', async () => {
     const pubKey = makePubKey(0xab);
     const nodeId = pubkeyToNodeId(pubKey);

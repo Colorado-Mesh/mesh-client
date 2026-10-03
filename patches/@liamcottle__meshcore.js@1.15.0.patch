@@ -15,7 +15,7 @@ index 9142fbc9fda24c07082d63ced24117a35b29dc93..2f8cf2d68d1c32c1d7cc489f33527c9a
  
      readCString(maxLength) {
 diff --git a/src/connection/connection.js b/src/connection/connection.js
-index 8d7365431d912bc97d59c2d572d227482e180927..e6d18b6ac0d584a38c860a1ad6b3f13e325da0a7 100644
+index 8d7365431d912bc97d59c2d572d227482e180927..08faaf856bf025f3f85d895fe8bebbf246039352 100644
 --- a/src/connection/connection.js
 +++ b/src/connection/connection.js
 @@ -338,6 +338,14 @@ class Connection extends EventEmitter {
@@ -129,12 +129,14 @@ index 8d7365431d912bc97d59c2d572d227482e180927..e6d18b6ac0d584a38c860a1ad6b3f13e
          });
      }
  
-@@ -586,11 +636,30 @@ class Connection extends EventEmitter {
+@@ -586,11 +636,33 @@ class Connection extends EventEmitter {
      }
  
      onDeviceInfoResponse(bufferReader) {
 +        const firmwareVer = bufferReader.readInt8();
-+        bufferReader.readBytes(6); // max contacts / channels (v3+)
++        // v3+: max_contacts/2 (1), max_group_channels (1), ble_pin (4); reserved before v3
++        const capacityBytes = bufferReader.readBytes(6);
++        const maxContacts = firmwareVer >= 3 && capacityBytes[0] > 0 ? capacityBytes[0] * 2 : null;
 +        const firmware_build_date = bufferReader.readCString(12);
 +        const manufacturerModel = bufferReader.readCString(40);
 +        const remaining = bufferReader.getRemainingBytesCount();
@@ -161,10 +163,37 @@ index 8d7365431d912bc97d59c2d572d227482e180927..e6d18b6ac0d584a38c860a1ad6b3f13e
 +            firmwareVersion: firmwareVersion,
 +            clientRepeat: clientRepeat,
 +            pathHashMode: pathHashMode,
++            maxContacts: maxContacts,
          });
      }
  
-@@ -2318,6 +2387,33 @@ class Connection extends EventEmitter {
+@@ -1230,10 +1302,10 @@ class Connection extends EventEmitter {
+                 }
+ 
+                 // reject promise when we receive err
+-                const onErr = () => {
++                const onErr = (response) => {
+                     this.off(Constants.ResponseCodes.Ok, onOk);
+                     this.off(Constants.ResponseCodes.Err, onErr);
+-                    reject();
++                    reject(response); // { errCode } — mesh-client detects ERR_CODE_TABLE_FULL
+                 }
+ 
+                 // listen for events
+@@ -1354,10 +1426,10 @@ class Connection extends EventEmitter {
+                 }
+ 
+                 // reject promise when we receive err
+-                const onErr = () => {
++                const onErr = (response) => {
+                     this.off(Constants.ResponseCodes.Ok, onOk);
+                     this.off(Constants.ResponseCodes.Err, onErr);
+-                    reject();
++                    reject(response); // { errCode } — mesh-client detects ERR_CODE_TABLE_FULL
+                 }
+ 
+                 // listen for events
+@@ -2318,6 +2390,33 @@ class Connection extends EventEmitter {
          });
      }
  

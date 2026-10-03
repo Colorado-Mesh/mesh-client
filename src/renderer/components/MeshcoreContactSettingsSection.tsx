@@ -322,6 +322,11 @@ export default function MeshcoreContactSettingsSection({
               aria-label={t('meshcoreContactSettings.autoOffloadWhenFull')}
             />
           </div>
+          {meshcoreAutoOffloadWhenFull && overwriteOldest && (
+            <p className="text-muted text-xs" data-testid="meshcore-overwrite-oldest-evicts-note">
+              {t('meshcoreContactSettings.overwriteOldestEvictsNote')}
+            </p>
+          )}
           <div className="flex items-center justify-between gap-3">
             <div>
               <span className="text-ink-200 text-sm">

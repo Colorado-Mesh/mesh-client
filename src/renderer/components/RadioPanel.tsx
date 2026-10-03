@@ -90,8 +90,7 @@ import {
   formatMeshcoreAdvertisedPositionDegrees,
   MESHCORE_CHANNEL_INDEX_MAX,
   MESHCORE_CHANNEL_NAME_MAX_LEN,
-  MESHCORE_CONTACTS_WARNING_THRESHOLD,
-  MESHCORE_MAX_CONTACTS,
+  meshcoreContactThresholds,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreResolvedTxPowerMax,
   meshcoreScaledAdvLatLonToDeg,
@@ -293,11 +292,11 @@ function ContactCountBadge({
         onOffloadContactsFromRadio,
       );
       addToast(t('radioPanel.offloadedContacts', { count: offloadedCount }), 'success');
-      if (reconciledCount !== null && reconciledCount >= MESHCORE_MAX_CONTACTS) {
+      if (reconciledCount !== null && reconciledCount >= summary.max) {
         addToast(t('radioPanel.offloadReconcileStillFull', { count: reconciledCount }), 'error');
       } else if (
         reconciledCount !== null &&
-        reconciledCount >= MESHCORE_CONTACTS_WARNING_THRESHOLD
+        reconciledCount >= meshcoreContactThresholds(summary.max).warning
       ) {
         addToast(
           t('radioPanel.offloadReconcileStillNearFull', { count: reconciledCount }),
@@ -329,10 +328,10 @@ function ContactCountBadge({
       <span
         className={`font-mono text-xs ${isNearCapacity ? 'text-red-400' : 'text-ink-400'}`}
         title={t('radioPanel.contactsOnRadioBadgeTitle', {
-          part: `${contactCount ?? '?'} / ${MESHCORE_MAX_CONTACTS}`,
+          part: `${contactCount ?? '?'} / ${summary.max}`,
         })}
       >
-        {contactCount ?? '?'}/{MESHCORE_MAX_CONTACTS}
+        {contactCount ?? '?'}/{summary.max}
       </span>
       {contactCount !== null &&
         contactCount > 0 &&

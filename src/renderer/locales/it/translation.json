@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Cancella tutti i contatti",
     "autoOffloadWhenFull": "Spegnimento automatico quando la radio è piena",
     "autoOffloadWhenFullLabel": "Spegnimento automatico quando pieno",
-    "autoOffloadWhenFullDesc": "Quando il compagno segnala che la memoria dei contatti è piena, scarica automaticamente i contatti nel database dell'app (come Offload)."
+    "autoOffloadWhenFullDesc": "Quando il compagno segnala che la memoria dei contatti è piena, scarica automaticamente i contatti nel database dell'app (come Offload).",
+    "overwriteOldestEvictsNote": "È attiva anche la sovrascrittura più vecchia. La radio sostituisce i vecchi contatti senza salvarli nell'app; l'auto-offload tenta di eseguire per primo, ma i contatti sostituiti durante la disconnessione dell'app vengono persi."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privacy della telemetria",

@@ -2587,7 +2587,8 @@
     "clearAllContactsButton": "Wyczyść wszystkie kontakty",
     "autoOffloadWhenFull": "Automatyczne odciążanie, gdy radio jest pełne",
     "autoOffloadWhenFullLabel": "Automatyczne odciążanie po zapełnieniu",
-    "autoOffloadWhenFullDesc": "Gdy pamięć kontaktów w raporcie osoby towarzyszącej jest pełna, automatycznie odciąż kontakty do bazy danych aplikacji (tak samo jak w przypadku odciążania)."
+    "autoOffloadWhenFullDesc": "Gdy pamięć kontaktów w raporcie osoby towarzyszącej jest pełna, automatycznie odciąż kontakty do bazy danych aplikacji (tak samo jak w przypadku odciążania).",
+    "overwriteOldestEvictsNote": "Włączone jest również nadpisywanie najstarszych. Radio zastępuje stare kontakty bez zapisywania ich w aplikacji; automatyczne ładowanie próbuje uruchomić się jako pierwsze, ale kontakty zastąpione, gdy aplikacja jest odłączona, są tracone."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Prywatność telemetryczna",

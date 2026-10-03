@@ -112,6 +112,8 @@ export interface MeshCoreConnection {
     firmwareVersion?: string;
     pathHashMode?: 0 | 1 | 2 | null;
     clientRepeat?: number;
+    /** Contact table size (companion v3+; patched meshcore.js), null on older firmware. */
+    maxContacts?: number | null;
   }>;
   tracePath(
     pubKey: Uint8Array,

@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Löschen Sie alle Kontakte",
     "autoOffloadWhenFull": "Automatisches Entladen, wenn das Radio voll ist",
     "autoOffloadWhenFullLabel": "Automatisches Entladen, wenn voll",
-    "autoOffloadWhenFullDesc": "Wenn der Begleiter meldet, dass der Kontaktspeicher voll ist, werden die Kontakte automatisch in die App-Datenbank ausgelagert (wie bei Offload)."
+    "autoOffloadWhenFullDesc": "Wenn der Begleiter meldet, dass der Kontaktspeicher voll ist, werden die Kontakte automatisch in die App-Datenbank ausgelagert (wie bei Offload).",
+    "overwriteOldestEvictsNote": "Die Option Älteste überschreiben ist ebenfalls aktiviert. Das Radio ersetzt alte Kontakte, ohne sie in der App zu speichern; das automatische Entladen versucht, zuerst auszuführen, aber Kontakte, die ersetzt werden, während die App getrennt wird, gehen verloren."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privatsphäre der Telemetrie",

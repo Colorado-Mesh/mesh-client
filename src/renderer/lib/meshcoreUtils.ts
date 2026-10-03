@@ -25,6 +25,50 @@ export const MESHCORE_MAX_CONTACTS = 350;
 export const MESHCORE_CONTACTS_WARNING_THRESHOLD = 320;
 /** Critical threshold when radio contact count is near capacity (must exceed {@link MESHCORE_CONTACTS_WARNING_THRESHOLD}). */
 export const MESHCORE_CONTACTS_CRITICAL_THRESHOLD = 340;
+/**
+ * Free slots kept when auto-offload fires from the app-side count, so offload runs before
+ * firmware overwrite-oldest silently evicts contacts.
+ */
+export const MESHCORE_AUTO_OFFLOAD_MARGIN =
+  MESHCORE_MAX_CONTACTS - MESHCORE_CONTACTS_CRITICAL_THRESHOLD;
+const MESHCORE_CONTACTS_WARNING_MARGIN =
+  MESHCORE_MAX_CONTACTS - MESHCORE_CONTACTS_WARNING_THRESHOLD;
+
+export interface MeshcoreContactThresholds {
+  max: number;
+  warning: number;
+  critical: number;
+}
+
+/**
+ * Warning/critical thresholds for a radio contact table of `max` slots. Margins shrink to
+ * 10% / 20% of the table on small builds so thresholds stay positive and ordered.
+ */
+export function meshcoreContactThresholds(
+  max: number = MESHCORE_MAX_CONTACTS,
+): MeshcoreContactThresholds {
+  const safeMax = Number.isFinite(max) && max > 0 ? Math.floor(max) : MESHCORE_MAX_CONTACTS;
+  const criticalMargin = Math.max(
+    1,
+    Math.min(MESHCORE_AUTO_OFFLOAD_MARGIN, Math.ceil(safeMax * 0.1)),
+  );
+  const warningMargin = Math.max(
+    criticalMargin + 1,
+    Math.min(MESHCORE_CONTACTS_WARNING_MARGIN, Math.ceil(safeMax * 0.2)),
+  );
+  return {
+    max: safeMax,
+    warning: Math.max(0, safeMax - warningMargin),
+    critical: Math.max(0, safeMax - criticalMargin),
+  };
+}
+
+/** Reads `maxContacts` (patched meshcore.js, companion v3+) from a `deviceQuery()` payload. */
+export function meshcoreMaxContactsFromDeviceQuery(info: unknown): number | null {
+  if (info === null || typeof info !== 'object') return null;
+  const v = (info as Record<string, unknown>).maxContacts;
+  return typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null;
+}
 
 /**
  * Fallback TX ceiling when companion `getSelfInfo` omits `maxTxPower` (common on current firmware).

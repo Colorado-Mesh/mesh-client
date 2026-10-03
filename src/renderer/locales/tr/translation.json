@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Tüm kişileri temizle",
     "autoOffloadWhenFull": "Radyo dolduğunda otomatik boşaltma",
     "autoOffloadWhenFullLabel": "Dolu olduğunda otomatik boşaltma",
-    "autoOffloadWhenFullDesc": "Refakatçi kişi depolama alanının dolu olduğunu bildirdiğinde, kişileri otomatik olarak uygulama veritabanına boşaltın (Yük Boşaltma ile aynı)."
+    "autoOffloadWhenFullDesc": "Refakatçi kişi depolama alanının dolu olduğunu bildirdiğinde, kişileri otomatik olarak uygulama veritabanına boşaltın (Yük Boşaltma ile aynı).",
+    "overwriteOldestEvictsNote": "Üzerine yazma en eskisi de açık. Radyo, eski kişileri uygulamaya kaydetmeden değiştirir; önce otomatik yükleme çalışır, ancak uygulama bağlantısı kesildiğinde değiştirilen kişiler kaybolur."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Telemetri gizliliği",

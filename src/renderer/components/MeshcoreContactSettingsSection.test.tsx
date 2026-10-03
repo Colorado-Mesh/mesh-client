@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { MESHCORE_AUTO_ADD_OVERWRITE_OLDEST } from '../lib/meshcoreContactAutoAdd';
 import { enrichMeshCoreSelfInfo } from '../lib/meshcoreTelemetryPrivacy';
 import { renderWithToast } from '../lib/testRenderHelpers';
 import MeshcoreContactSettingsSection from './MeshcoreContactSettingsSection';
@@ -81,6 +82,48 @@ describe('MeshcoreContactSettingsSection', () => {
       expect(onClearAllContacts).toHaveBeenCalledTimes(1);
     });
     confirmSpy.mockRestore();
+  });
+});
+
+describe('MeshcoreContactSettingsSection overwrite-oldest note', () => {
+  function renderSection(opts: { overwriteOldest: boolean; autoOffload: boolean }) {
+    return renderWithToast(
+      <MeshcoreContactSettingsSection
+        selfInfo={minimalSelfInfo(false)}
+        autoadd={{
+          autoaddConfig: opts.overwriteOldest ? MESHCORE_AUTO_ADD_OVERWRITE_OLDEST : 0,
+          autoaddMaxHops: 0,
+        }}
+        disabled={false}
+        applying={false}
+        meshcoreContactsShowPublicKeys={false}
+        onMeshcoreContactsShowPublicKeysChange={vi.fn()}
+        meshcoreContactsShowRefreshControl={false}
+        onMeshcoreContactsShowRefreshControlChange={vi.fn()}
+        meshcoreAutoOffloadWhenFull={opts.autoOffload}
+        onMeshcoreAutoOffloadWhenFullChange={vi.fn()}
+        onApply={vi.fn()}
+      />,
+    );
+  }
+
+  it.each([
+    { overwriteOldest: false, autoOffload: false },
+    { overwriteOldest: true, autoOffload: false },
+    { overwriteOldest: false, autoOffload: true },
+  ])('hides the note when not both on (%o)', (opts) => {
+    renderSection(opts);
+    expect(screen.queryByTestId('meshcore-overwrite-oldest-evicts-note')).not.toBeInTheDocument();
+  });
+
+  it('shows the note when overwrite-oldest and auto-offload are both on, with no axe violations', async () => {
+    const { container } = renderSection({ overwriteOldest: true, autoOffload: true });
+    expect(screen.getByTestId('meshcore-overwrite-oldest-evicts-note')).toHaveTextContent(
+      /Overwrite oldest is also on/,
+    );
+    hydrateAxeThemeColors(container);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });
 

@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Borrar todos los contactos",
     "autoOffloadWhenFull": "Descarga automática cuando la radio está llena",
     "autoOffloadWhenFullLabel": "Descarga automática cuando está lleno",
-    "autoOffloadWhenFullDesc": "Cuando el almacenamiento de contactos de los informes complementarios esté lleno, descargue automáticamente los contactos a la base de datos de la aplicación (igual que Descargar)."
+    "autoOffloadWhenFullDesc": "Cuando el almacenamiento de contactos de los informes complementarios esté lleno, descargue automáticamente los contactos a la base de datos de la aplicación (igual que Descargar).",
+    "overwriteOldestEvictsNote": "Sobrescribir más antiguo también está activado. La radio reemplaza los contactos antiguos sin guardarlos en la aplicación; la descarga automática intenta ejecutarse primero, pero los contactos reemplazados mientras la aplicación está desconectada se pierden."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privacidad de telemetría",

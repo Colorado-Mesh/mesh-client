@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Wis alle contacten",
     "autoOffloadWhenFull": "Auto-offload wanneer de radio vol is",
     "autoOffloadWhenFullLabel": "Auto-offload wanneer vol",
-    "autoOffloadWhenFullDesc": "Wanneer de metgezel meldt dat de contactenopslag vol is, laadt u contacten automatisch af naar de app-database (hetzelfde als Offload)."
+    "autoOffloadWhenFullDesc": "Wanneer de metgezel meldt dat de contactenopslag vol is, laadt u contacten automatisch af naar de app-database (hetzelfde als Offload).",
+    "overwriteOldestEvictsNote": "Overschrijven oudste staat ook aan. De radio vervangt oude contacten zonder ze op te slaan in de app; auto-offload probeert eerst uit te voeren, maar contacten die zijn vervangen terwijl de app is losgekoppeld, gaan verloren."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Telemetrieprivacy",

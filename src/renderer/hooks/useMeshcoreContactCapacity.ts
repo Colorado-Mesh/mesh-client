@@ -3,9 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   clearMeshcoreFirmwareContactsFullLatch,
+  getMeshcoreRadioMaxContacts,
   isMeshcoreFirmwareContactsFullActive,
   subscribeMeshcoreContactCountRefresh,
   subscribeMeshcoreFirmwareContactsFull,
+  subscribeMeshcoreRadioMaxContacts,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
 import {
   isMeshcoreOffloadAbortError,
@@ -15,15 +17,13 @@ import {
   type MeshcoreOffloadProgress,
   throwIfMeshcoreOffloadAborted,
 } from '../lib/meshcoreOffload';
-import {
-  MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
-  MESHCORE_CONTACTS_WARNING_THRESHOLD,
-} from '../lib/meshcoreUtils';
+import { meshcoreContactThresholds } from '../lib/meshcoreUtils';
 
 export type MeshcoreContactCapacityLevel = 'unknown' | 'normal' | 'warning' | 'critical';
 
 export interface MeshcoreContactCapacitySummary {
   count: number | null;
+  max: number;
   level: MeshcoreContactCapacityLevel;
   isWarning: boolean;
   isCritical: boolean;
@@ -43,20 +43,22 @@ export type OffloadContactsFromRadioFn = (
 function summarizeMeshcoreContactCapacity(
   count: number | null,
   firmwareFull: boolean,
+  radioMax: number,
 ): MeshcoreContactCapacitySummary {
+  const { max, warning, critical } = meshcoreContactThresholds(radioMax);
   if (firmwareFull) {
-    return { count, level: 'critical', isWarning: true, isCritical: true };
+    return { count, max, level: 'critical', isWarning: true, isCritical: true };
   }
   if (count === null) {
-    return { count, level: 'unknown', isWarning: false, isCritical: false };
+    return { count, max, level: 'unknown', isWarning: false, isCritical: false };
   }
-  if (count >= MESHCORE_CONTACTS_CRITICAL_THRESHOLD) {
-    return { count, level: 'critical', isWarning: true, isCritical: true };
+  if (count >= critical) {
+    return { count, max, level: 'critical', isWarning: true, isCritical: true };
   }
-  if (count >= MESHCORE_CONTACTS_WARNING_THRESHOLD) {
-    return { count, level: 'warning', isWarning: true, isCritical: false };
+  if (count >= warning) {
+    return { count, max, level: 'warning', isWarning: true, isCritical: false };
   }
-  return { count, level: 'normal', isWarning: false, isCritical: false };
+  return { count, max, level: 'normal', isWarning: false, isCritical: false };
 }
 
 interface UseMeshcoreContactCapacityOptions {
@@ -71,6 +73,7 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
   const [firmwareContactsFull, setFirmwareContactsFull] = useState(() =>
     isMeshcoreFirmwareContactsFullActive(),
   );
+  const [radioMaxContacts, setRadioMaxContacts] = useState(() => getMeshcoreRadioMaxContacts());
   const offloadAbortRef = useRef<AbortController | null>(null);
   const removedFromRadioRef = useRef(0);
 
@@ -203,9 +206,15 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
     });
   }, [refreshCount]);
 
+  useEffect(() => {
+    return subscribeMeshcoreRadioMaxContacts(() => {
+      setRadioMaxContacts(getMeshcoreRadioMaxContacts());
+    });
+  }, []);
+
   const summary = useMemo(
-    () => summarizeMeshcoreContactCapacity(contactCount, firmwareContactsFull),
-    [contactCount, firmwareContactsFull],
+    () => summarizeMeshcoreContactCapacity(contactCount, firmwareContactsFull, radioMaxContacts),
+    [contactCount, firmwareContactsFull, radioMaxContacts],
   );
 
   return {
