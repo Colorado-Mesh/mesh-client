@@ -136,4 +136,14 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     message:
       'Use a lucide-react-motion icon (TriangleAlert, X, Check, Star, MapPin, ...) instead of a text glyph; glyphs render differently per OS',
   },
+  {
+    id: 'settings-anchor-id-format',
+    include: ['src/renderer/components/**/*.tsx'],
+    exclude: ['src/renderer/components/**/*.test.tsx'],
+    when: /data-setting-anchor="|anchorId="/,
+    forbid:
+      /(?:data-setting-anchor|anchorId)="(?!(?:connection|chat|games|rrc|nomadNetwork|remote|nodes|map|radio|modules|admin|rooms|telemetry|security|tak|incident|app|diagnostics|stats|sniffer|rf|graph|topology)\.[a-z][a-zA-Z0-9.]*")/,
+    message:
+      'Setting anchor ids are <slotCamel>.<subsectionCamel>.<settingCamel> and live in the owning panel (see docs/agents/settings-search.md)',
+  },
 ];

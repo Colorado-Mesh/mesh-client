@@ -4,6 +4,8 @@
  * first) and stops scanning as soon as it has them. Nothing here sorts or copies the whole list.
  */
 
+import type { TabSlotId } from './tabSlotIds';
+
 export interface LauncherChannelItem {
   index: number;
   name: string;
@@ -18,6 +20,18 @@ export interface LauncherContactItem {
   /** Second line: short name or id. */
   detail?: string;
   /** Lowercase text to match (name, short name, id). */
+  search: string;
+}
+
+export interface LauncherSettingItem {
+  /** Anchor id; equals the SettingSearchEntry id. */
+  id: string;
+  /** Owning panel slot, so the launcher can jump instead of only switching panels. */
+  slot: TabSlotId;
+  label: string;
+  /** Section crumb, e.g. "Contact management". */
+  detail?: string;
+  /** Lowercase text to match: translated label plus curated keywords. */
   search: string;
 }
 

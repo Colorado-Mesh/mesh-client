@@ -324,7 +324,7 @@ function ContactCountBadge({
   const isNearCapacity = summary.isCritical;
 
   return (
-    <div className="flex items-center gap-2">
+    <div data-setting-anchor="radio.contacts.offloadContacts" className="flex items-center gap-2">
       <span
         className={`font-mono text-xs ${isNearCapacity ? 'text-red-400' : 'text-ink-400'}`}
         title={t('radioPanel.contactsOnRadioBadgeTitle', {
@@ -385,6 +385,7 @@ function ConfigSelect({
   disabled,
   description,
   tooltip,
+  anchorId,
 }: {
   label: string;
   value: number;
@@ -393,9 +394,11 @@ function ConfigSelect({
   disabled: boolean;
   description?: string;
   tooltip?: string;
+  /** Settings-search anchor id (`data-setting-anchor`). */
+  anchorId?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <div className="flex items-center gap-1.5">
         <label className="text-muted text-sm">{label}</label>
         {tooltip && <HelpTooltip text={tooltip} />}
@@ -428,15 +431,18 @@ function ConfigToggle({
   onChange,
   disabled,
   description,
+  anchorId,
 }: {
   label: string;
   checked: boolean;
   onChange: (val: boolean) => void;
   disabled: boolean;
   description?: string;
+  /** Settings-search anchor id (`data-setting-anchor`). */
+  anchorId?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <div className="flex items-center justify-between">
         <label className="text-muted text-sm">{label}</label>
         <button
@@ -472,6 +478,7 @@ export function ConfigNumber({
   unit,
   description,
   tooltip,
+  anchorId,
 }: {
   label: string;
   value: number;
@@ -482,9 +489,11 @@ export function ConfigNumber({
   unit?: string;
   description?: string;
   tooltip?: string;
+  /** Settings-search anchor id (`data-setting-anchor`). */
+  anchorId?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <div className="flex items-center gap-1.5">
         <label className="text-muted text-sm">{label}</label>
         {tooltip && <HelpTooltip text={tooltip} />}
@@ -516,16 +525,19 @@ export function ConfigBluetoothPin({
   onChange,
   disabled,
   description,
+  anchorId,
 }: {
   label: string;
   value: string;
   onChange: (val: string) => void;
   disabled: boolean;
   description?: string;
+  /** Settings-search anchor id (`data-setting-anchor`). */
+  anchorId?: string;
 }) {
   const inputId = useId();
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <label htmlFor={inputId} className="text-muted text-sm">
         {label}
       </label>
@@ -585,6 +597,7 @@ function ConfigSection({
   disabled,
   hideApply = false,
   status = null,
+  anchorId,
 }: {
   title: string;
   children: React.ReactNode;
@@ -594,10 +607,15 @@ function ConfigSection({
   hideApply?: boolean;
   /** Status for this section's own Apply action, shown directly under the button. */
   status?: PanelStatus | null;
+  /** Settings-search anchor id (`data-setting-anchor`). */
+  anchorId?: string;
 }) {
   const { t } = useTranslation();
   return (
-    <details className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+    <details
+      data-setting-anchor={anchorId}
+      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    >
       <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{title}</span>
         <DetailsChevron />
@@ -678,7 +696,7 @@ function WifiPasswordField({
   const [show, setShow] = useState(false);
   const wifiPwdId = useId();
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor="radio.wifi.password" className="space-y-1">
       <label htmlFor={wifiPwdId} className="text-muted text-sm">
         {t('radioPanel.wifiPasswordLabel')}
       </label>
@@ -1537,6 +1555,7 @@ export default function RadioPanel({
         <div className="flex justify-end">
           <button
             type="button"
+            data-setting-anchor="radio.config.importJson"
             onClick={handleImportConfig}
             className="bg-secondary-dark border-ink-600 text-ink-300 hover:bg-ink-700 rounded-lg border px-3 py-1.5 text-sm transition-colors"
           >
@@ -1567,6 +1586,7 @@ export default function RadioPanel({
 
       {/* ═══ Device User / Identity ═══ */}
       <ConfigSection
+        anchorId="radio.user.section"
         title={t('radioPanel.sectionDeviceUser')}
         onApply={async () => {
           if (!onSetOwner) return;
@@ -1602,7 +1622,7 @@ export default function RadioPanel({
         status={sectionStatus('user')}
         disabled={disabled || !onSetOwner || !!shortNameValidationIssue}
       >
-        <div className="space-y-1">
+        <div data-setting-anchor="radio.user.longName" className="space-y-1">
           <label htmlFor="radio-long-name" className="text-muted text-sm">
             {capabilities?.hasCompanionContactManagementConfig
               ? t('radioPanel.meshcoreNameFieldLabel')
@@ -1610,6 +1630,7 @@ export default function RadioPanel({
           </label>
           <input
             id="radio-long-name"
+            data-setting-anchor="radio.user.meshcoreName"
             type="text"
             value={longName}
             onChange={(e) => {
@@ -1632,7 +1653,7 @@ export default function RadioPanel({
         </div>
         {capabilities?.hasChannelConfig && (
           <>
-            <div className="space-y-1">
+            <div data-setting-anchor="radio.user.shortName" className="space-y-1">
               <label htmlFor="radio-short-name" className="text-muted text-sm">
                 {t('radioPanel.shortNameFieldLabel')}
               </label>
@@ -1657,6 +1678,7 @@ export default function RadioPanel({
               ) : null}
             </div>
             <ConfigToggle
+              anchorId="radio.user.licensedHam"
               label={t('radioPanel.licensedHamLabel')}
               checked={isLicensed}
               onChange={setIsLicensed}
@@ -1672,6 +1694,7 @@ export default function RadioPanel({
         /* MeshCore path: direct radio params (freq, bw, sf, cr, txPower) */
         <>
           <ConfigSection
+            anchorId="radio.lora.meshcoreSection"
             title={t('radioPanel.sectionLora')}
             onApply={async () => {
               if (!onApplyLoraParams) return;
@@ -1711,7 +1734,7 @@ export default function RadioPanel({
             status={sectionStatus('lora')}
             disabled={loraDisabled}
           >
-            <div className="space-y-1">
+            <div data-setting-anchor="radio.lora.frequency" className="space-y-1">
               <label htmlFor="radio-freq-mhz" className="text-muted text-sm">
                 {t('radioPanel.frequencyMhzLabel')}
               </label>
@@ -1733,6 +1756,7 @@ export default function RadioPanel({
             </div>
             <div className="border-ink-700 space-y-4 border-l pl-3">
               <ConfigSelect
+                anchorId="radio.lora.meshcoreBandwidth"
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
                 options={[
@@ -1747,6 +1771,7 @@ export default function RadioPanel({
                 tooltip={t('radioPanel.bandwidthTooltip')}
               />
               <ConfigSelect
+                anchorId="radio.lora.meshcoreSpreadFactor"
                 label={t('radioPanel.spreadFactorLabel')}
                 value={spreadFactor}
                 options={Array.from({ length: 6 }, (_, i) => ({
@@ -1758,6 +1783,7 @@ export default function RadioPanel({
                 description={t('radioPanel.spreadFactorDesc')}
               />
               <ConfigSelect
+                anchorId="radio.lora.meshcoreCodingRate"
                 label={t('radioPanel.codingRateLabel')}
                 value={codingRate}
                 options={[
@@ -1773,6 +1799,7 @@ export default function RadioPanel({
             </div>
           </ConfigSection>
           <ConfigSection
+            anchorId="radio.txPower.meshcoreTxPower"
             title={t('radioPanel.sectionTxPower')}
             onApply={async () => {
               if (!onApplyLoraParams) return;
@@ -1838,6 +1865,7 @@ export default function RadioPanel({
           </ConfigSection>
           {onApplyMeshcoreFloodScopeHashtag && (
             <ConfigSection
+              anchorId="radio.floodScope.section"
               title={t('radioPanel.floodScopeTitle')}
               onApply={async () => {
                 setApplyingSection('floodScope');
@@ -1887,6 +1915,7 @@ export default function RadioPanel({
       ) : (
         /* Meshtastic path: region, presets, hop limit */
         <ConfigSection
+          anchorId="radio.lora.section"
           title={t('radioPanel.sectionLora')}
           onApply={() =>
             applyConfig(t('radioPanel.sectionLora'), 'lora', {
@@ -1917,6 +1946,7 @@ export default function RadioPanel({
           disabled={loraDisabled}
         >
           <ConfigSelect
+            anchorId="radio.lora.region"
             label={t('radioPanel.regionLabel')}
             value={region}
             options={regionOptions}
@@ -1925,6 +1955,7 @@ export default function RadioPanel({
           />
           {hasModemPresets && (
             <ConfigToggle
+              anchorId="radio.lora.usePreset"
               label={t('radioPanel.useModemPresetLabel')}
               checked={usePreset}
               onChange={setUsePreset}
@@ -1934,6 +1965,7 @@ export default function RadioPanel({
           )}
           {usePreset ? (
             <ConfigSelect
+              anchorId="radio.lora.modemPreset"
               label={t('radioPanel.modemPresetLabel')}
               value={modemPreset}
               options={modemPresetOptions}
@@ -1943,6 +1975,7 @@ export default function RadioPanel({
           ) : (
             <div className="border-ink-700 space-y-4 border-l pl-3">
               <ConfigSelect
+                anchorId="radio.lora.bandwidth"
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
                 options={[
@@ -1957,6 +1990,7 @@ export default function RadioPanel({
                 tooltip={t('radioPanel.bandwidthTooltip')}
               />
               <ConfigSelect
+                anchorId="radio.lora.spreadFactor"
                 label={t('radioPanel.spreadFactorLabel')}
                 value={spreadFactor}
                 options={Array.from({ length: 6 }, (_, i) => ({
@@ -1968,6 +2002,7 @@ export default function RadioPanel({
                 description={t('radioPanel.spreadFactorDesc')}
               />
               <ConfigSelect
+                anchorId="radio.lora.codingRate"
                 label={t('radioPanel.codingRateLabel')}
                 value={codingRate}
                 options={[
@@ -1981,6 +2016,7 @@ export default function RadioPanel({
                 tooltip={t('radioPanel.codingRateTooltip')}
               />
               <ConfigNumber
+                anchorId="radio.lora.txPower"
                 label={t('radioPanel.txPowerLabel')}
                 value={txPower}
                 onChange={setTxPower}
@@ -1992,6 +2028,7 @@ export default function RadioPanel({
                 tooltip={t('radioPanel.txPowerTooltip')}
               />
               <ConfigToggle
+                anchorId="radio.lora.rxBoostedGain"
                 label={t('radioPanel.sx126xRxBoostedLabel')}
                 checked={rxBoostedGain}
                 onChange={setRxBoostedGain}
@@ -2000,7 +2037,7 @@ export default function RadioPanel({
               />
             </div>
           )}
-          <div className="space-y-1">
+          <div data-setting-anchor="radio.lora.hopLimit" className="space-y-1">
             <label htmlFor="radio-hop-limit" className="text-muted text-sm">
               {t('radioPanel.hopLimitLabel')}
             </label>
@@ -2022,6 +2059,7 @@ export default function RadioPanel({
             <p className="text-muted text-xs">{t('radioPanel.hopLimitDescription')}</p>
           </div>
           <ConfigToggle
+            anchorId="radio.lora.txEnabled"
             label={t('radioPanel.txEnabledLabel')}
             checked={txEnabled}
             onChange={setTxEnabled}
@@ -2029,6 +2067,7 @@ export default function RadioPanel({
             description={t('radioPanel.txEnabledDesc')}
           />
           <ConfigNumber
+            anchorId="radio.lora.channelNum"
             label={t('radioPanel.channelNumLabel')}
             value={channelNum}
             onChange={setChannelNum}
@@ -2038,6 +2077,7 @@ export default function RadioPanel({
             description={t('radioPanel.channelNumDesc')}
           />
           <ConfigNumber
+            anchorId="radio.lora.overrideFrequency"
             label={t('radioPanel.overrideFrequencyLabel')}
             value={overrideFrequency}
             onChange={setOverrideFrequency}
@@ -2047,6 +2087,7 @@ export default function RadioPanel({
             description={t('radioPanel.overrideFrequencyDesc')}
           />
           <ConfigToggle
+            anchorId="radio.lora.ignoreMqtt"
             label={t('radioPanel.ignoreMqttLabel')}
             checked={ignoreMqtt}
             onChange={setIgnoreMqtt}
@@ -2054,6 +2095,7 @@ export default function RadioPanel({
             description={t('radioPanel.ignoreMqttDesc')}
           />
           <ConfigToggle
+            anchorId="radio.lora.okToMqtt"
             label={t('radioPanel.configOkToMqttLabel')}
             checked={configOkToMqtt}
             onChange={setConfigOkToMqtt}
@@ -2061,6 +2103,7 @@ export default function RadioPanel({
             description={t('radioPanel.configOkToMqttDesc')}
           />
           <ConfigToggle
+            anchorId="radio.lora.overrideDutyCycle"
             label={t('radioPanel.overrideDutyCycleLabel')}
             checked={overrideDutyCycle}
             onChange={setOverrideDutyCycle}
@@ -2068,6 +2111,7 @@ export default function RadioPanel({
             description={t('radioPanel.overrideDutyCycleDesc')}
           />
           <ConfigToggle
+            anchorId="radio.lora.paFanDisabled"
             label={t('radioPanel.paFanDisabledLabel')}
             checked={paFanDisabled}
             onChange={setPaFanDisabled}
@@ -2107,6 +2151,7 @@ export default function RadioPanel({
         configTarget?.mode !== 'remote' &&
         (onXmodemUpload || onXmodemDownload) && (
           <ConfigSection
+            anchorId="radio.xmodem.transfer"
             title={t('radioPanel.xmodemSection')}
             applying={false}
             disabled={disabled}
@@ -2169,6 +2214,7 @@ export default function RadioPanel({
       {/* ═══ Device Role ═══ */}
       {capabilities?.hasDeviceRoleConfig !== false && (
         <ConfigSection
+          anchorId="radio.device.section"
           title={t('radioPanel.sectionDeviceRole')}
           onApply={async () => {
             const applied = await applyConfig(t('radioPanel.sectionDeviceRole'), 'device', {
@@ -2216,6 +2262,7 @@ export default function RadioPanel({
             </p>
           )}
           <ConfigSelect
+            anchorId="radio.device.role"
             label={t('radioPanel.roleFieldLabel')}
             value={deviceRole}
             options={deviceRoleOptions}
@@ -2224,6 +2271,7 @@ export default function RadioPanel({
             description={deviceRoleOptions.find((r) => r.value === deviceRole)?.description}
           />
           <ConfigSelect
+            anchorId="radio.device.rebroadcastMode"
             label={t('radioPanel.rebroadcastModeLabel')}
             value={rebroadcastMode}
             options={rebroadcastModeOptions}
@@ -2234,6 +2282,7 @@ export default function RadioPanel({
             }
           />
           <ConfigNumber
+            anchorId="radio.device.nodeInfoInterval"
             label={t('radioPanel.nodeInfoBroadcastSecsLabel')}
             value={nodeInfoBroadcastSecs}
             onChange={setNodeInfoBroadcastSecs}
@@ -2243,6 +2292,7 @@ export default function RadioPanel({
             description={t('radioPanel.nodeInfoBroadcastSecsDesc')}
           />
           <ConfigToggle
+            anchorId="radio.device.doubleTap"
             label={t('radioPanel.doubleTapAsButtonPressLabel')}
             checked={doubleTapAsButtonPress}
             onChange={setDoubleTapAsButtonPress}
@@ -2250,6 +2300,7 @@ export default function RadioPanel({
             description={t('radioPanel.doubleTapAsButtonPressDesc')}
           />
           <ConfigToggle
+            anchorId="radio.device.disableTripleClick"
             label={t('radioPanel.disableTripleClickLabel')}
             checked={disableTripleClick}
             onChange={setDisableTripleClick}
@@ -2257,6 +2308,7 @@ export default function RadioPanel({
             description={t('radioPanel.disableTripleClickDesc')}
           />
           <ConfigToggle
+            anchorId="radio.device.ledHeartbeat"
             label={t('radioPanel.ledHeartbeatDisabledLabel')}
             checked={ledHeartbeatDisabled}
             onChange={setLedHeartbeatDisabled}
@@ -2264,6 +2316,7 @@ export default function RadioPanel({
             description={t('radioPanel.ledHeartbeatDisabledDesc')}
           />
           <ConfigNumber
+            anchorId="radio.device.buttonGpio"
             label={t('radioPanel.buttonGpioLabel')}
             value={buttonGpio}
             onChange={setButtonGpio}
@@ -2272,6 +2325,7 @@ export default function RadioPanel({
             description={t('radioPanel.buttonGpioDesc')}
           />
           <ConfigNumber
+            anchorId="radio.device.buzzerGpio"
             label={t('radioPanel.buzzerGpioLabel')}
             value={buzzerGpio}
             onChange={setBuzzerGpio}
@@ -2279,7 +2333,7 @@ export default function RadioPanel({
             min={0}
             description={t('radioPanel.buzzerGpioDesc')}
           />
-          <div className="space-y-1">
+          <div data-setting-anchor="radio.device.timezone" className="space-y-1">
             <label className="text-muted text-sm">{t('radioPanel.tzdefLabel')}</label>
             <input
               type="text"
@@ -2298,6 +2352,7 @@ export default function RadioPanel({
 
       {/* ═══ Position / GPS ═══ */}
       <ConfigSection
+        anchorId="radio.position.section"
         title={t('radioPanel.sectionPositionGps')}
         onApply={
           capabilities?.hasFullPositionConfig === false
@@ -2328,6 +2383,7 @@ export default function RadioPanel({
         {capabilities?.hasFullPositionConfig !== false && (
           <>
             <ConfigNumber
+              anchorId="radio.position.broadcastInterval"
               label={t('radioPanel.positionBroadcastIntervalLabel')}
               value={positionBroadcastSecs}
               onChange={setPositionBroadcastSecs}
@@ -2338,6 +2394,7 @@ export default function RadioPanel({
               description={t('radioPanel.positionBroadcastIntervalDesc')}
             />
             <ConfigNumber
+              anchorId="radio.position.gpsUpdateInterval"
               label={t('radioPanel.gpsUpdateIntervalLabel')}
               value={gpsUpdateInterval}
               onChange={setGpsUpdateInterval}
@@ -2348,6 +2405,7 @@ export default function RadioPanel({
               description={t('radioPanel.gpsUpdateIntervalDesc')}
             />
             <ConfigSelect
+              anchorId="radio.position.gpsMode"
               label={t('radioPanel.gpsModeLabel')}
               value={gpsMode}
               options={[
@@ -2360,6 +2418,7 @@ export default function RadioPanel({
               description={t('radioPanel.gpsModeDesc')}
             />
             <ConfigNumber
+              anchorId="radio.position.precision"
               label={t('radioPanel.positionPrecisionLabel')}
               value={positionPrecision}
               onChange={setPositionPrecision}
@@ -2369,6 +2428,7 @@ export default function RadioPanel({
               description={t('radioPanel.positionPrecisionDesc')}
             />
             <ConfigToggle
+              anchorId="radio.position.smartBroadcast"
               label={t('radioPanel.smartPositionBroadcastLabel')}
               checked={smartPositionEnabled}
               onChange={setSmartPositionEnabled}
@@ -2378,6 +2438,7 @@ export default function RadioPanel({
             {smartPositionEnabled && (
               <div className="border-ink-700 space-y-4 border-l pl-3">
                 <ConfigNumber
+                  anchorId="radio.position.smartMinDistance"
                   label={t('radioPanel.minDistanceTriggerLabel')}
                   value={smartPositionMinDistance}
                   onChange={setSmartPositionMinDistance}
@@ -2386,6 +2447,7 @@ export default function RadioPanel({
                   unit={t('radioPanel.metersUnit')}
                 />
                 <ConfigNumber
+                  anchorId="radio.position.smartMinInterval"
                   label={t('radioPanel.minIntervalLabel')}
                   value={smartPositionMinInterval}
                   onChange={setSmartPositionMinInterval}
@@ -2396,6 +2458,7 @@ export default function RadioPanel({
               </div>
             )}
             <ConfigToggle
+              anchorId="radio.position.fixedPosition"
               label={t('radioPanel.fixedPositionLabel')}
               checked={fixedPosition}
               onChange={setFixedPosition}
@@ -2407,7 +2470,10 @@ export default function RadioPanel({
         {/* For Meshtastic: lat/lon shown when fixedPosition toggle is on */}
         {/* For MeshCore: lat/lon always shown (fixed position is the only option) */}
         {(fixedPosition || capabilities?.hasFullPositionConfig === false) && (
-          <div className="border-ink-700 space-y-3 border-t pt-2">
+          <div
+            data-setting-anchor="radio.position.sendToDevice"
+            className="border-ink-700 space-y-3 border-t pt-2"
+          >
             {capabilities?.hasFullPositionConfig === false &&
               (() => {
                 const advertised = formatMeshcoreAdvertisedPositionDegrees(
@@ -2549,6 +2615,7 @@ export default function RadioPanel({
       {/* ═══ Power ═══ */}
       {capabilities?.hasPowerConfig !== false && (
         <ConfigSection
+          anchorId="radio.power.section"
           title={t('radioPanel.sectionPower')}
           onApply={() =>
             applyConfig(t('radioPanel.sectionPower'), 'power', {
@@ -2570,6 +2637,7 @@ export default function RadioPanel({
             </p>
           )}
           <ConfigToggle
+            anchorId="radio.power.powerSaving"
             label={t('radioPanel.powerSavingModeLabel')}
             checked={isPowerSaving}
             onChange={setIsPowerSaving}
@@ -2577,6 +2645,7 @@ export default function RadioPanel({
             description={t('radioPanel.powerSavingModeDesc')}
           />
           <ConfigNumber
+            anchorId="radio.power.minWake"
             label={t('radioPanel.minWakeDurationLabel')}
             value={minWakeSecs}
             onChange={setMinWakeSecs}
@@ -2586,6 +2655,7 @@ export default function RadioPanel({
             description={t('radioPanel.minWakeDurationDesc')}
           />
           <ConfigNumber
+            anchorId="radio.power.bluetoothIdle"
             label={t('radioPanel.bluetoothIdleTimeoutLabel')}
             value={waitBluetoothSecs}
             onChange={setWaitBluetoothSecs}
@@ -2595,6 +2665,7 @@ export default function RadioPanel({
             description={t('radioPanel.bluetoothIdleTimeoutDesc')}
           />
           <ConfigNumber
+            anchorId="radio.power.superDeepSleep"
             label={t('radioPanel.superDeepSleepLabel')}
             value={sdsSecs}
             onChange={setSdsSecs}
@@ -2604,6 +2675,7 @@ export default function RadioPanel({
             description={t('radioPanel.superDeepSleepDesc')}
           />
           <ConfigNumber
+            anchorId="radio.power.lightSleep"
             label={t('radioPanel.lightSleepDurationLabel')}
             value={lsSecs}
             onChange={setLsSecs}
@@ -2613,6 +2685,7 @@ export default function RadioPanel({
             description={t('radioPanel.lightSleepDurationDesc')}
           />
           <ConfigNumber
+            anchorId="radio.power.batteryShutdown"
             label={t('radioPanel.batteryShutdownLabel')}
             value={onBatteryShutdownAfterSecs}
             onChange={setOnBatteryShutdownAfterSecs}
@@ -2656,6 +2729,7 @@ export default function RadioPanel({
       {/* ═══ WiFi / Network ═══ */}
       {capabilities?.hasWifiConfig !== false && (
         <ConfigSection
+          anchorId="radio.wifi.section"
           title={t('radioPanel.sectionWifi')}
           onApply={() =>
             applyConfig(t('radioPanel.sectionWifi'), 'network', {
@@ -2676,13 +2750,14 @@ export default function RadioPanel({
             </p>
           )}
           <ConfigToggle
+            anchorId="radio.wifi.enabled"
             label={t('radioPanel.wifiEnabledLabel')}
             checked={wifiEnabled}
             onChange={setWifiEnabled}
             disabled={disabled || applyingSection !== null}
             description={t('radioPanel.wifiEnabledDesc')}
           />
-          <div className="space-y-1">
+          <div data-setting-anchor="radio.wifi.ssid" className="space-y-1">
             <label htmlFor="radio-wifi-ssid" className="text-muted text-sm">
               {t('radioPanel.wifiSsidLabel')}
             </label>
@@ -2704,7 +2779,7 @@ export default function RadioPanel({
             onChange={setWifiPsk}
             disabled={disabled || !wifiEnabled || applyingSection !== null}
           />
-          <div className="space-y-1">
+          <div data-setting-anchor="radio.wifi.ntpServer" className="space-y-1">
             <label htmlFor="radio-ntp-server" className="text-muted text-sm">
               {t('radioPanel.ntpServerLabel')}
             </label>
@@ -2722,6 +2797,7 @@ export default function RadioPanel({
             <p className="text-muted text-xs">{t('radioPanel.ntpHint')}</p>
           </div>
           <ConfigToggle
+            anchorId="radio.wifi.ethernet"
             label={t('radioPanel.ethernetEnabledLabel')}
             checked={ethEnabled}
             onChange={setEthEnabled}
@@ -2734,6 +2810,7 @@ export default function RadioPanel({
       {/* ═══ Display ═══ */}
       {capabilities?.hasDisplayConfig !== false && (
         <ConfigSection
+          anchorId="radio.display.section"
           title={t('radioPanel.sectionDisplay')}
           onApply={() =>
             applyConfig(t('radioPanel.sectionDisplay'), 'display', {
@@ -2760,6 +2837,7 @@ export default function RadioPanel({
             </p>
           )}
           <ConfigNumber
+            anchorId="radio.display.screenOn"
             label={t('radioPanel.screenOnDurationLabel')}
             value={screenOnSecs}
             onChange={setScreenOnSecs}
@@ -2770,6 +2848,7 @@ export default function RadioPanel({
             description={t('radioPanel.screenOnDurationDesc')}
           />
           <ConfigSelect
+            anchorId="radio.display.units"
             label={t('radioPanel.displayUnitsFieldLabel')}
             value={displayUnits}
             options={displayUnitOptions}
@@ -2777,6 +2856,7 @@ export default function RadioPanel({
             disabled={disabled || applyingSection !== null}
           />
           <ConfigNumber
+            anchorId="radio.display.carousel"
             label={t('radioPanel.autoScreenCarouselSecsLabel')}
             value={autoScreenCarouselSecs}
             onChange={setAutoScreenCarouselSecs}
@@ -2787,6 +2867,7 @@ export default function RadioPanel({
             description={t('radioPanel.autoScreenCarouselSecsDesc')}
           />
           <ConfigSelect
+            anchorId="radio.display.oledType"
             label={t('radioPanel.oledTypeLabel')}
             value={oled}
             options={oledTypeOptions}
@@ -2794,6 +2875,7 @@ export default function RadioPanel({
             disabled={disabled || applyingSection !== null}
           />
           <ConfigSelect
+            anchorId="radio.display.mode"
             label={t('radioPanel.displayModeLabel')}
             value={displaymode}
             options={displayModeOptions}
@@ -2801,6 +2883,7 @@ export default function RadioPanel({
             disabled={disabled || applyingSection !== null}
           />
           <ConfigToggle
+            anchorId="radio.display.flipScreen"
             label={t('radioPanel.flipScreenLabel')}
             checked={flipScreen}
             onChange={setFlipScreen}
@@ -2808,12 +2891,14 @@ export default function RadioPanel({
             description={t('radioPanel.flipScreenDesc')}
           />
           <ConfigToggle
+            anchorId="radio.display.headingBold"
             label={t('radioPanel.headingBoldLabel')}
             checked={headingBold}
             onChange={setHeadingBold}
             disabled={disabled || applyingSection !== null}
           />
           <ConfigToggle
+            anchorId="radio.display.wakeOnTap"
             label={t('radioPanel.wakeOnTapOrMotionLabel')}
             checked={wakeOnTapOrMotion}
             onChange={setWakeOnTapOrMotion}
@@ -2821,12 +2906,14 @@ export default function RadioPanel({
             description={t('radioPanel.wakeOnTapOrMotionDesc')}
           />
           <ConfigToggle
+            anchorId="radio.display.use12hClock"
             label={t('radioPanel.use12hClockLabel')}
             checked={use12hClock}
             onChange={setUse12hClock}
             disabled={disabled || applyingSection !== null}
           />
           <ConfigToggle
+            anchorId="radio.display.longNodeName"
             label={t('radioPanel.useLongNodeNameLabel')}
             checked={useLongNodeName}
             onChange={setUseLongNodeName}
@@ -2834,6 +2921,7 @@ export default function RadioPanel({
             description={t('radioPanel.useLongNodeNameDesc')}
           />
           <ConfigToggle
+            anchorId="radio.display.messageBubbles"
             label={t('radioPanel.enableMessageBubblesLabel')}
             checked={enableMessageBubbles}
             onChange={setEnableMessageBubbles}
@@ -2846,6 +2934,7 @@ export default function RadioPanel({
       {/* ═══ Bluetooth ═══ */}
       {capabilities?.hasBluetoothConfig !== false && (
         <ConfigSection
+          anchorId="radio.bluetooth.section"
           title={t('radioPanel.sectionBluetooth')}
           onApply={() => {
             const fixedPin = parseMeshtasticBluetoothPin(btFixedPin);
@@ -2868,6 +2957,7 @@ export default function RadioPanel({
             </p>
           )}
           <ConfigToggle
+            anchorId="radio.bluetooth.enabled"
             label={t('radioPanel.bluetoothEnabled')}
             checked={btEnabled}
             onChange={setBtEnabled}
@@ -2875,6 +2965,7 @@ export default function RadioPanel({
             description={t('radioPanel.bluetoothToggleDesc')}
           />
           <ConfigSelect
+            anchorId="radio.bluetooth.pairingMode"
             label={t('radioPanel.btPairingModeLabel')}
             value={btPairingMode}
             options={btPairingModeOptions}
@@ -2882,6 +2973,7 @@ export default function RadioPanel({
             disabled={disabled || applyingSection !== null || !btEnabled}
           />
           <ConfigBluetoothPin
+            anchorId="radio.bluetooth.pin"
             label={t('radioPanel.pairingPin')}
             value={btFixedPin}
             onChange={setBtFixedPin}
@@ -2905,6 +2997,7 @@ export default function RadioPanel({
             {onSendAdvert && (
               <button
                 type="button"
+                data-setting-anchor="radio.actions.floodAdvert"
                 onClick={() => void handleSendAdvert()}
                 disabled={!isConnected || advertLoading || zeroHopAdvertLoading}
                 className="bg-brand-green/20 text-brand-green border-brand-green/30 hover:bg-brand-green/30 rounded border px-3 py-1 text-xs font-medium transition-colors disabled:opacity-40"
@@ -2920,6 +3013,7 @@ export default function RadioPanel({
             {onSendZeroHopAdvert && (
               <button
                 type="button"
+                data-setting-anchor="radio.actions.zeroHopAdvert"
                 onClick={() => void handleSendZeroHopAdvert()}
                 disabled={!isConnected || zeroHopAdvertLoading || advertLoading}
                 className="rounded border border-teal-700 bg-teal-900/40 px-3 py-1 text-xs font-medium text-teal-300 transition-colors hover:bg-teal-800/50 disabled:opacity-40"
@@ -2935,6 +3029,7 @@ export default function RadioPanel({
             {onSyncClock && (
               <button
                 type="button"
+                data-setting-anchor="radio.actions.syncClock"
                 onClick={() => void handleSyncClock()}
                 disabled={!isConnected || syncClockLoading}
                 className={buttonClassName('secondary', 'sm')}
@@ -2962,7 +3057,10 @@ export default function RadioPanel({
             <h3 className="text-muted text-sm font-medium">
               {t('appPanel.meshcoreOpenWireExperimentalTitle')}
             </h3>
-            <div className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3">
+            <div
+              data-setting-anchor="radio.experimental.openWireCompat"
+              className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3"
+            >
               <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -2996,7 +3094,10 @@ export default function RadioPanel({
             <h3 className="text-muted text-sm font-medium">
               {t('appPanel.meshcorePathHashExperimentalTitle')}
             </h3>
-            <div className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3">
+            <div
+              data-setting-anchor="radio.experimental.pathHashMode"
+              className="space-y-3 rounded-lg border border-orange-700 bg-orange-900/30 px-4 py-3"
+            >
               <label htmlFor="meshcore-path-hash-mode" className="text-sm text-orange-100">
                 {t('appPanel.meshcorePathHashModeLabel')}
               </label>
@@ -3248,7 +3349,7 @@ function ChannelUrlImportExport({
         {t('radioPanel.channelUrl.sectionTitle')}
       </h4>
 
-      <div className="space-y-2">
+      <div data-setting-anchor="radio.channels.shareUrl" className="space-y-2">
         <p className="text-muted text-xs font-medium">{t('radioPanel.channelUrl.exportTitle')}</p>
         <label className="text-ink-300 flex items-center gap-2 text-sm">
           <input
@@ -3332,7 +3433,7 @@ function ChannelUrlImportExport({
         )}
       </div>
 
-      <div className="space-y-2">
+      <div data-setting-anchor="radio.channels.importUrl" className="space-y-2">
         <p className="text-muted text-xs font-medium">{t('radioPanel.channelUrl.importTitle')}</p>
         <QrIngestControl
           disabled={disabled || applying}
@@ -3818,7 +3919,11 @@ function ChannelSection({
   };
 
   return (
-    <details ref={detailsRef} className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+    <details
+      ref={detailsRef}
+      data-setting-anchor="radio.channels.list"
+      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    >
       <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('radioPanel.channels')}</span>
         <DetailsChevron />
@@ -4225,7 +4330,11 @@ function MeshcoreChannelSection({
   );
 
   return (
-    <details ref={detailsRef} className="group bg-deep-black/50 border-ink-700 rounded-lg border">
+    <details
+      ref={detailsRef}
+      data-setting-anchor="radio.channels.meshcoreList"
+      className="group bg-deep-black/50 border-ink-700 rounded-lg border"
+    >
       <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 font-medium transition-colors">
         <span>{t('radioPanel.channelsMeshcore')}</span>
         <DetailsChevron />
@@ -4416,6 +4525,7 @@ function MeshcoreChannelSection({
         {!addingNew && editingIdx === null && (
           <button
             type="button"
+            data-setting-anchor="radio.channels.meshcoreAdd"
             onClick={openAdd}
             disabled={disabled}
             className="text-muted border-ink-600 hover:border-ink-400 hover:text-ink-300 w-full rounded border border-dashed px-3 py-1.5 text-xs transition-colors disabled:opacity-50"

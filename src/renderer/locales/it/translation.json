@@ -6401,7 +6401,6 @@
     },
     "sectionPanelsAria": "Pannelli di {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Vai a un pannello, contatto o canale ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, nodo {{node}}",
@@ -6409,8 +6408,6 @@
     },
     "launcher": {
       "title": "Tutti i pannelli",
-      "searchLabel": "Cerca pannelli, contatti e canali",
-      "placeholder": "Vai a un pannello, contatto o canale",
       "noResults": "Nessun pannello corrisponde alla ricerca",
       "otherGroup": "Altro",
       "pin": "Fissa {{label}}",
@@ -6423,13 +6420,18 @@
       "panelCount_other": "{{count}} pannelli",
       "channelsGroup": "Canali",
       "contactsGroup": "Contatti",
-      "moreMatches": "Ci sono altri risultati. Continua a digitare per restringere l'elenco."
+      "moreMatches": "Ci sono altri risultati. Continua a digitare per restringere l'elenco.",
+      "settingsGroup": "Impostazioni",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Cerca pannelli, contatti, canali e impostazioni",
+      "placeholder": "Vai a un pannello, contatto, canale o impostazione"
     },
     "more": "Altro",
     "quitConfirmTitle": "Uscire da Mesh Client?",
     "quitConfirmIncidents": "Incidenti MAYDAY o URGENT aperti: {{n}}.",
     "quitConfirmOutbox": "Messaggi di emergenza in attesa di invio: {{n}}.",
-    "quitConfirmLinks": "Tutti i collegamenti radio e MQTT verranno disconnessi."
+    "quitConfirmLinks": "Tutti i collegamenti radio e MQTT verranno disconnessi.",
+    "openLauncher": "Vai a un pannello, contatto, canale o impostazione ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6518,5 +6520,9 @@
     "sourceLocal": "Da un client ATAK locale",
     "sourceRemote": "Dal server TAK REMOTO",
     "lastSeen": "Ultimo accesso {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Passato a {{label}}",
+    "openedPanel": "Aperta {{panel}}. Questa impostazione viene visualizzata quando è disponibile."
   }
 }

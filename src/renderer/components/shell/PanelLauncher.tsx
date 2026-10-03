@@ -1,4 +1,4 @@
-import { Hash, Pin, Search, User } from 'lucide-react-motion';
+import { Hash, Pin, Search, SlidersHorizontal, User } from 'lucide-react-motion';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import {
   type LauncherChannelItem,
   type LauncherContactItem,
   type LauncherMatches,
+  type LauncherSettingItem,
 } from '@/renderer/lib/launcherDestinations';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import {
@@ -30,6 +31,7 @@ import {
   isPinToggleShortcut,
   MAX_LAUNCHER_PINS,
 } from '@/renderer/lib/panelLauncher';
+import { findSettingMatches } from '@/renderer/lib/settingsSearch';
 import type { TabSlotId } from '@/renderer/lib/tabSlotIds';
 
 import { Kbd } from '../ui/Kbd';
@@ -59,6 +61,10 @@ export interface PanelLauncherProps {
   contactsLabel?: string;
   onOpenChannel?: (index: number) => void;
   onOpenContact?: (id: string) => void;
+  /** Searchable settings of the active protocol; listed only while the user types. */
+  settings?: readonly LauncherSettingItem[];
+  /** Jump to a setting; the parent closes the launcher and reveals the row. */
+  onOpenSetting?: (item: LauncherSettingItem) => void;
 }
 
 const NO_MATCHES: LauncherMatches<never> = { matches: [], more: false };
@@ -90,7 +96,13 @@ interface LauncherContactTarget {
   id: string;
 }
 
-type LauncherRowTarget = LauncherTabTarget | LauncherChannelTarget | LauncherContactTarget;
+interface LauncherSettingTarget {
+  kind: 'setting';
+  item: LauncherSettingItem;
+}
+
+type LauncherRowTarget =
+  LauncherTabTarget | LauncherChannelTarget | LauncherContactTarget | LauncherSettingTarget;
 
 function launcherRowClass(isActive: boolean, fullWidth: boolean): string {
   return `hover:bg-sidebar-active-bg text-body text-ink-200 flex h-9 min-w-0 items-center gap-2.5 rounded-md px-2 text-left ${LAUNCHER_ROW_FOCUS} ${
@@ -117,6 +129,8 @@ export function PanelLauncher({
   contactsLabel,
   onOpenChannel,
   onOpenContact,
+  settings,
+  onOpenSetting,
 }: PanelLauncherProps) {
   const { t } = useTranslation();
   const titleId = useId();
@@ -196,7 +210,13 @@ export function PanelLauncher({
     () => (contacts && onOpenContact ? findLauncherDestinations(contacts, query) : NO_MATCHES),
     [contacts, onOpenContact, query],
   );
-  const hasDestinations = channelMatches.matches.length + contactMatches.matches.length > 0;
+  const settingMatches: LauncherMatches<LauncherSettingItem> = useMemo(
+    () => (settings && onOpenSetting ? findSettingMatches(settings, query) : NO_MATCHES),
+    [settings, onOpenSetting, query],
+  );
+  const hasDestinations =
+    channelMatches.matches.length + contactMatches.matches.length + settingMatches.matches.length >
+    0;
   // Same order as the rendered `[data-launcher-entry]` buttons.
   const targets: LauncherRowTarget[] = [];
   const panelRowIndex = new Map<number, number>();
@@ -216,12 +236,18 @@ export function PanelLauncher({
     contactRowIndex.set(contact.id, targets.length);
     targets.push({ kind: 'contact', id: contact.id });
   }
+  const settingRowIndex = new Map<string, number>();
+  for (const item of settingMatches.matches) {
+    settingRowIndex.set(item.id, targets.length);
+    targets.push({ kind: 'setting', item });
+  }
   const active = targets.length === 0 ? -1 : Math.min(activeIndex, targets.length - 1);
   const openTarget = (target: LauncherRowTarget | undefined) => {
     if (!target) return;
     if (target.kind === 'tab') onOpenTab(target.tabIndex);
     else if (target.kind === 'channel') onOpenChannel?.(target.index);
-    else onOpenContact?.(target.id);
+    else if (target.kind === 'contact') onOpenContact?.(target.id);
+    else onOpenSetting?.(target.item);
   };
   const pinsFull = pins.length >= MAX_LAUNCHER_PINS;
 
@@ -510,6 +536,52 @@ export function PanelLauncher({
                       {contact.detail && (
                         <span className="text-muted text-meta shrink-0 font-mono">
                           {contact.detail}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              }),
+            )}
+          {settingMatches.matches.length > 0 &&
+            onOpenSetting &&
+            renderDestinationGroup(
+              'settings',
+              t('shell.launcher.settingsGroup'),
+              settingMatches.more,
+              settingMatches.matches.map((item) => {
+                const rowIndex = settingRowIndex.get(item.id) ?? -1;
+                return (
+                  <li key={`s-${item.id}`}>
+                    <button
+                      type="button"
+                      data-launcher-entry=""
+                      aria-label={
+                        item.detail
+                          ? t('shell.launcher.settingRowAria', {
+                              label: item.label,
+                              section: item.detail,
+                            })
+                          : item.label
+                      }
+                      onClick={() => {
+                        onOpenSetting(item);
+                      }}
+                      onFocus={() => {
+                        setActiveIndex(rowIndex);
+                      }}
+                      onKeyDown={handleRowNavKeyDown}
+                      className={launcherRowClass(rowIndex === active, true)}
+                    >
+                      <SlidersHorizontal
+                        aria-hidden
+                        className={`${ICON_MD} text-muted shrink-0`}
+                        size={16}
+                      />
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {item.detail && (
+                        <span className="text-muted text-meta max-w-[45%] shrink-0 truncate">
+                          {item.detail}
                         </span>
                       )}
                     </button>

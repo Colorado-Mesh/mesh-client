@@ -6401,7 +6401,6 @@
     },
     "sectionPanelsAria": "{{section}}のパネル",
     "navBadgeDetail": "{{label}}、{{detail}}",
-    "openLauncher": "パネル、連絡先、チャンネルに移動（{{shortcut}}）",
     "status": {
       "radio": "無線機：{{status}}",
       "radioWithNode": "無線機：{{status}}、ノード {{node}}",
@@ -6409,8 +6408,6 @@
     },
     "launcher": {
       "title": "すべてのパネル",
-      "searchLabel": "パネル、連絡先、チャンネルを検索",
-      "placeholder": "パネル、連絡先、チャンネルに移動",
       "noResults": "一致するパネルはありません",
       "otherGroup": "その他",
       "pin": "{{label}}をピン留め",
@@ -6423,13 +6420,18 @@
       "panelCount_other": "{{count}} 個のパネル",
       "channelsGroup": "チャンネル",
       "contactsGroup": "連絡先",
-      "moreMatches": "他にも一致があります。入力を続けて絞り込んでください。"
+      "moreMatches": "他にも一致があります。入力を続けて絞り込んでください。",
+      "settingsGroup": "設定",
+      "settingRowAria": "{{label}}、{{section}}",
+      "searchLabel": "検索パネル、連絡先、チャンネル、設定",
+      "placeholder": "パネル、連絡先、チャンネル、または設定に移動します"
     },
     "more": "その他",
     "quitConfirmTitle": "Mesh Client を終了しますか？",
     "quitConfirmIncidents": "未解決の MAYDAY または URGENT インシデント: {{n}} 件。",
     "quitConfirmOutbox": "送信待ちの緊急メッセージ: {{n}} 件。",
-    "quitConfirmLinks": "すべての無線および MQTT 接続が切断されます。"
+    "quitConfirmLinks": "すべての無線および MQTT 接続が切断されます。",
+    "openLauncher": "パネル、連絡先、チャンネル、設定に移動します（ {{shortcut}} ）"
   },
   "ui": {
     "stepper": {
@@ -6518,5 +6520,9 @@
     "sourceLocal": "現地のATAKクライアントから",
     "sourceRemote": "リモートTAKサーバーから",
     "lastSeen": "最終閲覧{{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "{{label}}にジャンプしました",
+    "openedPanel": "{{panel}}を開きました。この設定は利用可能な場合に表示されます。"
   }
 }

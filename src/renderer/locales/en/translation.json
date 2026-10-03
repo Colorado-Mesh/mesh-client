@@ -6476,6 +6476,10 @@
     "saveFailed": "Could not save sound settings. Your previous selection is unchanged.",
     "previewFailed": "Could not play this sound. Try another file or reset to the original tone."
   },
+  "settingsSearch": {
+    "jumpedTo": "Jumped to {{label}}",
+    "openedPanel": "Opened {{panel}}. This setting appears when it is available."
+  },
   "shell": {
     "section": {
       "monitor": "Monitor",
@@ -6483,7 +6487,7 @@
     },
     "sectionPanelsAria": "{{section}} panels",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Go to a panel, contact or channel ({{shortcut}})",
+    "openLauncher": "Go to a panel, contact, channel or setting ({{shortcut}})",
     "status": {
       "radio": "Radio: {{status}}",
       "radioWithNode": "Radio: {{status}}, node {{node}}",
@@ -6491,8 +6495,8 @@
     },
     "launcher": {
       "title": "All panels",
-      "searchLabel": "Search panels, contacts and channels",
-      "placeholder": "Go to a panel, contact or channel",
+      "searchLabel": "Search panels, contacts, channels and settings",
+      "placeholder": "Go to a panel, contact, channel or setting",
       "noResults": "No panels match your search",
       "otherGroup": "Other",
       "pin": "Pin {{label}}",
@@ -6505,6 +6509,8 @@
       "panelCount_other": "{{count}} panels",
       "channelsGroup": "Channels",
       "contactsGroup": "Contacts",
+      "settingsGroup": "Settings",
+      "settingRowAria": "{{label}}, {{section}}",
       "moreMatches": "More match. Keep typing to narrow the list."
     },
     "more": "More",

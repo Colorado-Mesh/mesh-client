@@ -30,6 +30,7 @@ import {
   resetStartupDbPruneForTests,
 } from './lib/startupDbPrune';
 import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
+import { TAB_SLOT_IDS } from './lib/tabSlotIds';
 import type { ChatMessage } from './lib/types';
 import { setConnection, useConnectionStore } from './stores/connectionStore';
 import { useIdentityStore } from './stores/identityStore';
@@ -829,7 +830,9 @@ describe('App shell layout', () => {
       fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
       const dialog = screen.getByRole('dialog', { name: 'All panels' });
       fireEvent.change(
-        within(dialog).getByRole('textbox', { name: 'Search panels, contacts and channels' }),
+        within(dialog).getByRole('textbox', {
+          name: 'Search panels, contacts, channels and settings',
+        }),
         { target: { value: 'ridge' } },
       );
       return dialog;
@@ -846,6 +849,34 @@ describe('App shell layout', () => {
     fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
     dialog = openLauncher();
     expect(within(dialog).getByRole('button', { name: /Ridge Owl/ })).toBeInTheDocument();
+  });
+
+  it('jumps from a settings result to its panel and announces it when the row is absent', async () => {
+    renderApp();
+    fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
+    const dialog = screen.getByRole('dialog', { name: 'All panels' });
+    fireEvent.change(
+      within(dialog).getByRole('textbox', {
+        name: 'Search panels, contacts, channels and settings',
+      }),
+      { target: { value: 'reduce motion' } },
+    );
+    const settings = within(dialog).getByRole('region', { name: 'Settings' });
+    fireEvent.click(within(settings).getByRole('button', { name: 'Reduce motion, Appearance' }));
+    expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
+    const appPanelHost = document.getElementById(`panel-${String(TAB_SLOT_IDS.indexOf('App'))}`);
+    expect(appPanelHost).not.toBeNull();
+    expect(appPanelHost?.hidden).toBe(false);
+    // AppPanel is mocked without anchors, so the reveal times out like a row hidden while
+    // disconnected and the jump announces the panel instead.
+    await waitFor(
+      () => {
+        expect(document.getElementById('app-announcer-polite')).toHaveTextContent(
+          'Opened App. This setting appears when it is available.',
+        );
+      },
+      { timeout: 3000 },
+    );
   });
 });
 
@@ -2259,7 +2290,9 @@ describe('App phone layout (bottom bar)', () => {
     fireEvent.click(within(appRail()).getByRole('button', { name: 'More' }));
     const sheet = screen.getByRole('dialog', { name: 'All panels' });
     const search = () =>
-      within(sheet).getByRole('textbox', { name: 'Search panels, contacts and channels' });
+      within(sheet).getByRole('textbox', {
+        name: 'Search panels, contacts, channels and settings',
+      });
     fireEvent.change(search(), { target: { value: 'ridge' } });
     expect(within(sheet).getByRole('button', { name: /Ridge Fox/ })).toBeInTheDocument();
 

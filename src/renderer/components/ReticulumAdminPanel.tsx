@@ -126,7 +126,11 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
       ) : null}
 
       {capabilities.hasRNodeFlasher ? (
-        <details ref={flasherDetailsRef} className="group rounded-lg border border-orange-900">
+        <details
+          ref={flasherDetailsRef}
+          data-setting-anchor="admin.reticulumFlasher.rnodeFlasher"
+          className="group rounded-lg border border-orange-900"
+        >
           <summary className="hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-orange-400 transition-colors">
             <span>{t('flasher.title')}</span>
             <DetailsChevron />
@@ -143,7 +147,10 @@ export function ReticulumAdminPanel({ connecting, onStartStack }: ReticulumAdmin
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-red-400">{t('radioPanel.dangerZone')}</h3>
-        <div className="space-y-2 rounded-lg border border-red-900 p-4">
+        <div
+          data-setting-anchor="admin.reticulumDanger.factoryReset"
+          className="space-y-2 rounded-lg border border-red-900 p-4"
+        >
           <p className="text-xs text-red-400/80">{t('adminPanel.reticulumFactoryReset.hint')}</p>
           <p className="text-xs text-red-400/80">{t('radioPanel.dangerZonePermanent')}</p>
           <button

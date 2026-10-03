@@ -800,6 +800,7 @@ export default function NodeListPanel({
                 void handleRefreshContacts();
               }}
               disabled={refreshLoading}
+              data-setting-anchor="nodes.contacts.refresh"
               aria-label={t('nodeListPanel.refreshContacts')}
               icon={
                 refreshLoading ? (
@@ -819,6 +820,7 @@ export default function NodeListPanel({
                 void handleSendAdvert();
               }}
               disabled={!meshcoreRadioOperational || advertLoading}
+              data-setting-anchor="nodes.contacts.floodAdvert"
               aria-label={t('nodeListPanel.sendFloodAdvert')}
               title={
                 meshcoreRadioOperational ? undefined : t('nodeListPanel.sendFloodAdvertUnavailable')
@@ -838,6 +840,7 @@ export default function NodeListPanel({
             <Button
               size="sm"
               onClick={handleImport}
+              data-setting-anchor="nodes.contacts.import"
               disabled={importLoading}
               icon={
                 importLoading ? (
@@ -864,7 +867,10 @@ export default function NodeListPanel({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="relative w-full max-w-[18rem] min-w-[10rem] flex-1">
+        <div
+          data-setting-anchor="nodes.filters.searchContacts"
+          className="relative w-full max-w-[18rem] min-w-[10rem] flex-1"
+        >
           <Search
             aria-hidden
             className={`${ICON_MD} text-muted pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2`}
@@ -872,6 +878,7 @@ export default function NodeListPanel({
           />
           <input
             type="search"
+            data-setting-anchor="nodes.filters.searchNodes"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -922,6 +929,7 @@ export default function NodeListPanel({
         {listTab === 'all' && contactGroupsEnabled && onManageGroups && (
           <div className="flex min-w-[12rem] items-center gap-1.5">
             <select
+              data-setting-anchor="nodes.filters.contactGroup"
               value={selectedGroupId ?? ''}
               onChange={(e) => {
                 const val = e.target.value;
@@ -957,6 +965,7 @@ export default function NodeListPanel({
             </select>
             <IconButton
               onClick={onManageGroups}
+              data-setting-anchor="nodes.filters.manageGroups"
               aria-label={t('nodeListPanel.manageContactGroups')}
               title={t('nodeListPanel.manageGroups')}
               icon={<Settings aria-hidden className={ICON_MD} size={16} />}
@@ -1004,6 +1013,7 @@ export default function NodeListPanel({
                     void handleOffloadContacts();
                   }}
                   aria-label={t('radioPanel.offloadContacts')}
+                  data-setting-anchor="nodes.contacts.offload"
                 >
                   {t('radioPanel.offloadContacts')}
                 </Button>

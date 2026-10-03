@@ -150,6 +150,7 @@ export function ReticulumAnnounceControls({
         </label>
         <input
           id="reticulum-announce-interval"
+          data-setting-anchor="radio.reticulumAnnounce.interval"
           type="number"
           min={0}
           max={86400}
@@ -175,6 +176,7 @@ export function ReticulumAnnounceControls({
         </button>
         <button
           type="button"
+          data-setting-anchor="radio.reticulumAnnounce.announceNow"
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.announceNow')}
           className="border-brand-green/60 text-brand-green hover:bg-ink-800 rounded border px-2 py-1 text-xs transition-colors disabled:opacity-40"
@@ -186,6 +188,7 @@ export function ReticulumAnnounceControls({
         </button>
         <button
           type="button"
+          data-setting-anchor="radio.reticulumAnnounce.clearAnnounces"
           disabled={controlsDisabled}
           aria-label={t('reticulumIdentity.clearAnnounces')}
           className="border-ink-600 hover:bg-ink-800 rounded border px-2 py-1 text-xs text-orange-300 transition-colors disabled:opacity-40"

@@ -6450,7 +6450,6 @@
     },
     "sectionPanelsAria": "Panely sekce {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Přejít na panel, kontakt nebo kanál ({{shortcut}})",
     "status": {
       "radio": "Rádio: {{status}}",
       "radioWithNode": "Rádio: {{status}}, uzel {{node}}",
@@ -6458,8 +6457,6 @@
     },
     "launcher": {
       "title": "Všechny panely",
-      "searchLabel": "Hledat panely, kontakty a kanály",
-      "placeholder": "Přejít na panel, kontakt nebo kanál",
       "noResults": "Hledání neodpovídá žádný panel",
       "otherGroup": "Ostatní",
       "pin": "Připnout {{label}}",
@@ -6473,13 +6470,18 @@
       "panelCount_other": "{{count}} panelů",
       "channelsGroup": "Kanály",
       "contactsGroup": "Kontakty",
-      "moreMatches": "Další shody. Pokračujte v psaní a seznam se zúží."
+      "moreMatches": "Další shody. Pokračujte v psaní a seznam se zúží.",
+      "settingsGroup": "Nastavení",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Vyhledávací panely, kontakty, kanály a nastavení",
+      "placeholder": "Přejít na panel, kontakt, kanál nebo nastavení"
     },
     "more": "Více",
     "quitConfirmTitle": "Ukončit Mesh Client?",
     "quitConfirmIncidents": "Otevřené incidenty MAYDAY nebo URGENT: {{n}}.",
     "quitConfirmOutbox": "Nouzové zprávy čekající na odeslání: {{n}}.",
-    "quitConfirmLinks": "Všechna rádiová a MQTT spojení se odpojí."
+    "quitConfirmLinks": "Všechna rádiová a MQTT spojení se odpojí.",
+    "openLauncher": "Přejít na panel, kontakt, kanál nebo nastavení ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6568,5 +6570,9 @@
     "sourceLocal": "Od místního klienta atak",
     "sourceRemote": "Ze vzdáleného serveru TAK",
     "lastSeen": "Naposledy viděn/a {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Přeskočeno na {{label}}",
+    "openedPanel": "Otevřeno {{panel}}. Toto nastavení se zobrazí, když je k dispozici."
   }
 }

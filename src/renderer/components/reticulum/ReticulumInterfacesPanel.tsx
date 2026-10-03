@@ -2276,7 +2276,10 @@ function InterfacesSection({
   };
 
   return (
-    <details className="group bg-deep-black/40 border-ink-700 rounded-lg border">
+    <details
+      data-setting-anchor="connection.reticulumInterfaces.list"
+      className="group bg-deep-black/40 border-ink-700 rounded-lg border"
+    >
       <summary className="text-ink-200 hover:bg-ink-800 flex cursor-pointer items-center justify-between rounded-lg px-3 py-3 text-sm font-medium transition-colors">
         <span>{t('connectionPanel.reticulumInterfaces.title')}</span>
         <DetailsChevron />
@@ -2318,6 +2321,7 @@ function InterfacesSection({
           ) : null}
           <button
             type="button"
+            data-setting-anchor="connection.reticulumInterfaces.addDefaultHubs"
             disabled={defaultHubsDisabled}
             onClick={onAddDefaultHubs}
             className="rounded border border-orange-600/70 bg-orange-950/20 px-3 py-1.5 text-xs font-medium text-orange-200 transition-colors hover:bg-orange-950/40 disabled:opacity-40"
@@ -2328,7 +2332,10 @@ function InterfacesSection({
               : t('connectionPanel.reticulumInterfaces.addDefaultHubs')}
           </button>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
+        <div
+          data-setting-anchor="connection.reticulumInterfaces.addInterface"
+          className="flex flex-wrap items-end gap-2"
+        >
           <label className="text-ink-400 text-xs">
             {t('connectionPanel.reticulumInterfaces.type')}
             <select
@@ -2631,7 +2638,10 @@ function InterfacesSection({
             onPassphraseChange={onIfacePassphraseChange}
             onToggleShowPassphrase={onToggleShowAddPassphrase}
           />
-          <label className="text-ink-400 flex items-center gap-2 text-xs">
+          <label
+            data-setting-anchor="connection.reticulumInterfaces.bootstrapOnly"
+            className="text-ink-400 flex items-center gap-2 text-xs"
+          >
             <input
               type="checkbox"
               checked={addBootstrapOnly}

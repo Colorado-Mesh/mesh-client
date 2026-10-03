@@ -84,15 +84,17 @@ function ConfigToggle({
   onChange,
   disabled,
   description,
+  anchorId,
 }: {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled: boolean;
   description?: string;
+  anchorId?: string;
 }) {
   return (
-    <div className="space-y-1">
+    <div data-setting-anchor={anchorId} className="space-y-1">
       <div className="flex items-center justify-between">
         <span className="text-ink-300 text-sm">{label}</span>
         <button
@@ -474,7 +476,7 @@ export default function SecurityPanel({
       {/* ── DM Keys ─────────────────────────────────────────────── */}
       <section className="space-y-4">
         <SectionHeader title={t('securityPanel.sectionDmKeys')} />
-        <div className="space-y-1">
+        <div data-setting-anchor="security.dmKeys.publicKey" className="space-y-1">
           <label htmlFor="security-public-key" className="text-muted text-sm">
             {t('securityPanel.publicKeyLabel')}
           </label>
@@ -513,7 +515,7 @@ export default function SecurityPanel({
         </div>
         {!isRemoteTarget && !isMeshcore && (
           <>
-            <div className="space-y-1">
+            <div data-setting-anchor="security.dmKeys.privateKey" className="space-y-1">
               <label htmlFor="security-private-key" className="text-muted text-sm">
                 {t('securityPanel.privateKeyLabel')}
               </label>
@@ -539,6 +541,7 @@ export default function SecurityPanel({
               <p className="text-muted text-xs">{t('securityPanel.privateKeyHint')}</p>
             </div>
             <button
+              data-setting-anchor="security.dmKeys.regenerateKeys"
               type="button"
               onClick={() => {
                 setPendingRegenerate(true);
@@ -560,7 +563,7 @@ export default function SecurityPanel({
       {!isMeshcore && (
         <>
           {/* ── Admin Keys ──────────────────────────────────────────── */}
-          <section className="space-y-4">
+          <section data-setting-anchor="security.adminKeys.keys" className="space-y-4">
             <SectionHeader title={t('securityPanel.sectionAdminKeys')} />
             <p className="text-muted text-xs">
               {t('securityPanel.adminKeysIntro', { max: MAX_ADMIN_KEYS })}
@@ -629,6 +632,7 @@ export default function SecurityPanel({
           <section className="space-y-4">
             <SectionHeader title={t('securityPanel.sectionAdminSettings')} />
             <ConfigToggle
+              anchorId="security.adminSettings.managedDevice"
               label={t('securityPanel.managedDevice')}
               checked={isManaged}
               onChange={setIsManaged}
@@ -636,6 +640,7 @@ export default function SecurityPanel({
               description={t('securityPanel.managedDeviceDesc')}
             />
             <ConfigToggle
+              anchorId="security.adminSettings.serialConsole"
               label={t('securityPanel.serialConsole')}
               checked={serialEnabled}
               onChange={setSerialEnabled}
@@ -643,6 +648,7 @@ export default function SecurityPanel({
               description={t('securityPanel.serialConsoleDesc')}
             />
             <ConfigToggle
+              anchorId="security.adminSettings.debugLogApi"
               label={t('securityPanel.debugLogApi')}
               checked={debugLogApiEnabled}
               onChange={setDebugLogApiEnabled}
@@ -650,6 +656,7 @@ export default function SecurityPanel({
               description={t('securityPanel.debugLogApiDesc')}
             />
             <ConfigToggle
+              anchorId="security.adminSettings.adminChannel"
               label={t('securityPanel.adminChannel')}
               checked={adminChannelEnabled}
               onChange={setAdminChannelEnabled}
@@ -670,7 +677,7 @@ export default function SecurityPanel({
 
       {/* ── Key Backup / Restore ─────────────────────────────────── */}
       {!isRemoteTarget && (
-        <section className="space-y-4">
+        <section data-setting-anchor="security.keyBackup.backupRestore" className="space-y-4">
           <SectionHeader title={t('securityPanel.sectionKeyBackup')} />
           <KeyBackupRestoreSection
             protocol={isMeshcore ? 'meshcore' : 'meshtastic'}
@@ -696,7 +703,7 @@ export default function SecurityPanel({
 
           {/* Sign Data */}
           {onSignData && (
-            <div className="space-y-2">
+            <div data-setting-anchor="security.crypto.signData" className="space-y-2">
               <label htmlFor="meshcore-sign-input" className="text-muted text-sm">
                 {t('securityPanel.signDataLabel')}
               </label>
@@ -736,7 +743,7 @@ export default function SecurityPanel({
 
           {/* Export Private Key */}
           {onExportPrivateKey && (
-            <div className="space-y-2">
+            <div data-setting-anchor="security.crypto.exportPrivateKey" className="space-y-2">
               <button
                 type="button"
                 onClick={() => {
@@ -765,7 +772,7 @@ export default function SecurityPanel({
 
           {/* Import Private Key */}
           {onImportPrivateKey && (
-            <div className="space-y-2">
+            <div data-setting-anchor="security.crypto.importPrivateKey" className="space-y-2">
               <label htmlFor="meshcore-import-key" className="text-muted text-sm">
                 {t('securityPanel.importPrivateKeyLabel')}
               </label>

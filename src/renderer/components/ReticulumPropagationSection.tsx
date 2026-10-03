@@ -92,7 +92,10 @@ function DiscoveredPropagationList({
   );
 
   return (
-    <div className="border-ink-800 mt-4 border-t pt-3">
+    <div
+      data-setting-anchor="radio.reticulumPropagation.discoveredNodes"
+      className="border-ink-800 mt-4 border-t pt-3"
+    >
       <h4 className="text-ink-300 text-xs font-medium">
         {t('reticulumPropagation.discoveredTitle')}
       </h4>
@@ -480,7 +483,10 @@ export default function ReticulumPropagationSection({
         />
       )}
       <div className="space-y-1">
-        <label className="text-ink-300 flex items-center gap-2 text-xs">
+        <label
+          data-setting-anchor="radio.reticulumPropagation.showChatNotice"
+          className="text-ink-300 flex items-center gap-2 text-xs"
+        >
           <input
             type="checkbox"
             checked={!chatNoticeDismissed}
@@ -715,7 +721,7 @@ export default function ReticulumPropagationSection({
           );
         })}
       </ul>
-      <div className="mt-3 space-y-1">
+      <div data-setting-anchor="radio.reticulumPropagation.mode" className="mt-3 space-y-1">
         <label htmlFor="reticulum-propagation-mode" className="text-muted text-xs">
           {t('reticulumPropagation.modeLabel')}
         </label>
@@ -744,7 +750,10 @@ export default function ReticulumPropagationSection({
           {t(modeHelpKey)}
         </p>
       </div>
-      <div className="mt-3 space-y-1">
+      <div
+        data-setting-anchor="radio.reticulumPropagation.autoSyncInterval"
+        className="mt-3 space-y-1"
+      >
         <label htmlFor="reticulum-propagation-auto-sync" className="text-muted text-xs">
           {t('reticulumPropagation.autoSyncIntervalLabel')}
         </label>
@@ -787,7 +796,10 @@ export default function ReticulumPropagationSection({
           </p>
         ) : null}
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div
+        data-setting-anchor="radio.reticulumPropagation.syncNow"
+        className="mt-3 flex flex-wrap gap-2"
+      >
         <button
           type="button"
           disabled={bottomSyncDisabled}
@@ -833,7 +845,10 @@ export default function ReticulumPropagationSection({
         adding={adding}
         ignoreBusy={ignoreBusy}
       />
-      <div className="mt-3 flex flex-wrap items-end gap-2">
+      <div
+        data-setting-anchor="radio.reticulumPropagation.addNode"
+        className="mt-3 flex flex-wrap items-end gap-2"
+      >
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs">
           <span className="text-muted">{t('reticulumPropagation.addNodeLabel')}</span>
           <input

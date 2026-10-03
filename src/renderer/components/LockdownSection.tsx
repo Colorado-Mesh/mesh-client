@@ -55,7 +55,10 @@ export default function LockdownSection({ isConnected, onSendLockdownAuth }: Pro
   const controlsDisabled = !isConnected || busy;
 
   return (
-    <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
+    <div
+      data-setting-anchor="radio.lockdown.passphrase"
+      className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4"
+    >
       <h3 className="text-ink-300 flex items-center gap-2 text-sm font-medium">
         {locked ? (
           <Lock className="h-4 w-4 text-orange-400" aria-hidden="true" />

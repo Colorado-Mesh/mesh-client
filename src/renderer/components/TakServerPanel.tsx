@@ -164,7 +164,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
         <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.serverSettings')}</h3>
 
         <div className="space-y-3">
-          <div>
+          <div data-setting-anchor="tak.server.port">
             <label htmlFor={`${id}-port`} className="text-ink-400 mb-1 block text-xs">
               {t('takServerPanel.portLabel')}
             </label>
@@ -185,7 +185,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
             )}
           </div>
 
-          <div>
+          <div data-setting-anchor="tak.server.serverName">
             <label htmlFor={`${id}-name`} className="text-ink-400 mb-1 block text-xs">
               {t('takServerPanel.serverNameLabel')}
             </label>
@@ -202,7 +202,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="tak.server.requireCert" className="flex items-center gap-2">
             <input
               id={`${id}-cert`}
               type="checkbox"
@@ -218,7 +218,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
             </label>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div data-setting-anchor="tak.server.autoStart" className="flex items-center gap-2">
             <input
               id={`${id}-autostart`}
               type="checkbox"
@@ -234,7 +234,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
           </div>
         </div>
 
-        <div className="flex gap-2 pt-2">
+        <div data-setting-anchor="tak.server.startStop" className="flex gap-2 pt-2">
           {!status.running ? (
             <button
               type="button"
@@ -326,7 +326,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
       <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
         <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.atakDataPackage')}</h3>
         <p className="text-ink-400 text-xs">{t('takServerPanel.atakDataPackageDesc')}</p>
-        <div className="flex items-center gap-3">
+        <div data-setting-anchor="tak.dataPackage.generate" className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleGeneratePackage}
@@ -349,6 +349,7 @@ export default function TakServerPanel({ atakMessages, capabilities }: Props) {
         <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.certificates')}</h3>
         <p className="text-ink-400 text-xs">{t('takServerPanel.certificatesDesc')}</p>
         <button
+          data-setting-anchor="tak.certificates.regenerate"
           type="button"
           onClick={handleRegenerateCerts}
           disabled={isLoading}

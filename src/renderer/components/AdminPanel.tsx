@@ -111,6 +111,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={localOnlyCommandsDisabled || !onEnterDfu}
+                data-setting-anchor="admin.deviceCommands.enterDfu"
                 className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
                 {t('radioPanel.enterDfuButton')}
@@ -131,6 +132,7 @@ export default function AdminPanel({
                 });
               }}
               disabled={!isConnected}
+              data-setting-anchor="admin.deviceCommands.reboot"
               className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
             >
               {t('radioPanel.rebootButton')}
@@ -149,6 +151,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={localOnlyCommandsDisabled || !onRebootOta}
+                data-setting-anchor="admin.deviceCommands.rebootOta"
                 className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
                 {t('radioPanel.rebootOtaButton')}
@@ -170,6 +173,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={!isConnected}
+                data-setting-anchor="admin.deviceCommands.resetNodeDb"
                 className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
                 {t('radioPanel.resetNodeDbButton')}
@@ -189,6 +193,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={!isConnected}
+                data-setting-anchor="admin.deviceCommands.shutdown"
                 className="rounded-lg border border-orange-800/60 bg-orange-900/30 px-4 py-3 text-sm font-medium text-orange-200 transition-colors hover:bg-orange-900/50 disabled:opacity-50"
               >
                 {t('radioPanel.shutdownButton')}
@@ -218,6 +223,7 @@ export default function AdminPanel({
                   });
                 }}
                 disabled={!isConnected || !onFactoryResetConfig}
+                data-setting-anchor="admin.dangerZone.factoryResetConfig"
                 className={buttonClassName('danger', 'md')}
               >
                 {t('radioPanel.factoryResetConfigButton')}
@@ -236,6 +242,7 @@ export default function AdminPanel({
                 });
               }}
               disabled={!isConnected}
+              data-setting-anchor="admin.dangerZone.factoryReset"
               className={buttonClassName('danger', 'md')}
             >
               {t('radioPanel.factoryResetButton')}

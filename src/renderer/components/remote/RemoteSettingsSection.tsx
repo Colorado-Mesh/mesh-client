@@ -392,7 +392,7 @@ export function RemoteSettingsSection({
         <h3 className="text-ink-300 text-sm font-medium">
           {t('reticulumRemote.settings.inboundTitle')}
         </h3>
-        <div className="flex gap-2">
+        <div data-setting-anchor="remote.inbound.mode" className="flex gap-2">
           {(['off', 'ask'] as RncpInboundMode[]).map((mode) => (
             <button
               key={mode}
@@ -408,7 +408,10 @@ export function RemoteSettingsSection({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div
+          data-setting-anchor="remote.inbound.saveDir"
+          className="flex flex-wrap items-center gap-2"
+        >
           <button
             type="button"
             aria-label={t('reticulumRemote.settings.chooseSaveDirAria')}
@@ -422,7 +425,10 @@ export function RemoteSettingsSection({
           </span>
         </div>
 
-        <label className="text-ink-300 flex items-center gap-2 text-xs">
+        <label
+          data-setting-anchor="remote.inbound.allowFetch"
+          className="text-ink-300 flex items-center gap-2 text-xs"
+        >
           <input
             type="checkbox"
             checked={allowFetch}
@@ -435,7 +441,10 @@ export function RemoteSettingsSection({
           {t('reticulumRemote.settings.allowFetch')}
         </label>
         {allowFetch && (
-          <div className="flex flex-wrap items-center gap-2">
+          <div
+            data-setting-anchor="remote.inbound.fetchJail"
+            className="flex flex-wrap items-center gap-2"
+          >
             <button
               type="button"
               aria-label={t('reticulumRemote.settings.chooseFetchJailAria')}
@@ -451,7 +460,10 @@ export function RemoteSettingsSection({
             </span>
           </div>
         )}
-        <label className="text-ink-300 flex items-center gap-2 text-xs">
+        <label
+          data-setting-anchor="remote.inbound.overwrite"
+          className="text-ink-300 flex items-center gap-2 text-xs"
+        >
           <input
             type="checkbox"
             checked={overwrite}
@@ -468,7 +480,10 @@ export function RemoteSettingsSection({
         </p>
       </section>
 
-      <section className="border-ink-700/60 space-y-2 rounded-lg border p-3">
+      <section
+        data-setting-anchor="remote.access.allowBlockList"
+        className="border-ink-700/60 space-y-2 rounded-lg border p-3"
+      >
         <h3 className="text-ink-300 text-sm font-medium">
           {t('reticulumRemote.settings.allowBlockListTitle')}
         </h3>
@@ -509,7 +524,10 @@ export function RemoteSettingsSection({
         <h3 className="text-ink-300 text-sm font-medium">
           {t('reticulumRemote.settings.reliabilityTitle')}
         </h3>
-        <label className="text-ink-300 flex items-center gap-2 text-xs">
+        <label
+          data-setting-anchor="remote.reliability.autoReconnectShell"
+          className="text-ink-300 flex items-center gap-2 text-xs"
+        >
           <input
             type="checkbox"
             checked={settings.autoReconnectShell}
@@ -521,7 +539,10 @@ export function RemoteSettingsSection({
           />
           {t('reticulumRemote.settings.autoReconnectShell')}
         </label>
-        <label className="text-ink-300 flex items-center gap-2 text-xs">
+        <label
+          data-setting-anchor="remote.reliability.autoRetryTransfer"
+          className="text-ink-300 flex items-center gap-2 text-xs"
+        >
           <input
             type="checkbox"
             checked={settings.autoRetryTransfer}
@@ -571,6 +592,7 @@ export function RemoteSettingsSection({
         </div>
         <button
           type="button"
+          data-setting-anchor="remote.identity.announceReceiveDest"
           aria-label={t('reticulumRemote.settings.announceReceiveDestAria')}
           disabled={!sidecarRunning || !listener?.enabled}
           onClick={() => {

@@ -6495,7 +6495,6 @@
     },
     "sectionPanelsAria": "Панелі розділу {{section}}",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "Перейти до панелі, контакту чи каналу ({{shortcut}})",
     "status": {
       "radio": "Радіо: {{status}}",
       "radioWithNode": "Радіо: {{status}}, вузол {{node}}",
@@ -6503,8 +6502,6 @@
     },
     "launcher": {
       "title": "Усі панелі",
-      "searchLabel": "Пошук панелей, контактів і каналів",
-      "placeholder": "Перейти до панелі, контакту чи каналу",
       "noResults": "Жодна панель не відповідає пошуку",
       "otherGroup": "Інше",
       "pin": "Закріпити {{label}}",
@@ -6519,13 +6516,18 @@
       "panelCount_other": "{{count}} панелі",
       "channelsGroup": "Канали",
       "contactsGroup": "Контакти",
-      "moreMatches": "Є ще збіги. Продовжуйте вводити, щоб звузити список."
+      "moreMatches": "Є ще збіги. Продовжуйте вводити, щоб звузити список.",
+      "settingsGroup": "Налаштування",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "Панелі пошуку, контакти, канали та налаштування",
+      "placeholder": "Перейти до панелі, контакту, каналу або налаштування"
     },
     "more": "Більше",
     "quitConfirmTitle": "Закрити Mesh Client?",
     "quitConfirmIncidents": "Відкриті інциденти MAYDAY або URGENT: {{n}}.",
     "quitConfirmOutbox": "Екстрені повідомлення, що очікують надсилання: {{n}}.",
-    "quitConfirmLinks": "Усі радіо- та MQTT-з’єднання буде розірвано."
+    "quitConfirmLinks": "Усі радіо- та MQTT-з’єднання буде розірвано.",
+    "openLauncher": "Перейти до панелі, контакту, каналу або налаштування ({{shortcut}})"
   },
   "ui": {
     "stepper": {
@@ -6614,5 +6616,9 @@
     "sourceLocal": "Від місцевого клієнта ATAK",
     "sourceRemote": "З віддаленого сервера TAK",
     "lastSeen": "Останній раз бачили {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "Перейдено на {{label}}",
+    "openedPanel": "Відкрито {{panel}}. Це налаштування з'являється, коли воно доступне."
   }
 }

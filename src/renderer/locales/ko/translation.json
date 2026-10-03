@@ -6401,7 +6401,6 @@
     },
     "sectionPanelsAria": "{{section}} 패널",
     "navBadgeDetail": "{{label}}, {{detail}}",
-    "openLauncher": "패널, 연락처 또는 채널로 이동 ({{shortcut}})",
     "status": {
       "radio": "무선: {{status}}",
       "radioWithNode": "무선: {{status}}, 노드 {{node}}",
@@ -6409,8 +6408,6 @@
     },
     "launcher": {
       "title": "모든 패널",
-      "searchLabel": "패널, 연락처, 채널 검색",
-      "placeholder": "패널, 연락처 또는 채널로 이동",
       "noResults": "일치하는 패널이 없습니다",
       "otherGroup": "기타",
       "pin": "{{label}} 고정",
@@ -6423,13 +6420,18 @@
       "panelCount_other": "패널 {{count}}개",
       "channelsGroup": "채널",
       "contactsGroup": "연락처",
-      "moreMatches": "일치 항목이 더 있습니다. 계속 입력해 목록을 좁히세요."
+      "moreMatches": "일치 항목이 더 있습니다. 계속 입력해 목록을 좁히세요.",
+      "settingsGroup": "설정",
+      "settingRowAria": "{{label}}, {{section}}",
+      "searchLabel": "검색 패널, 연락처, 채널 및 설정",
+      "placeholder": "패널, 연락처, 채널 또는 설정으로 이동"
     },
     "more": "더보기",
     "quitConfirmTitle": "Mesh Client를 종료할까요?",
     "quitConfirmIncidents": "열려 있는 MAYDAY 또는 URGENT 사건: {{n}}건.",
     "quitConfirmOutbox": "전송 대기 중인 긴급 메시지: {{n}}건.",
-    "quitConfirmLinks": "모든 무선 및 MQTT 연결이 끊어집니다."
+    "quitConfirmLinks": "모든 무선 및 MQTT 연결이 끊어집니다.",
+    "openLauncher": "패널, 연락처, 채널 또는 설정 ({{shortcut}}) 으로 이동합니다."
   },
   "ui": {
     "stepper": {
@@ -6518,5 +6520,9 @@
     "sourceLocal": "현지 ATAK 고객으로부터",
     "sourceRemote": "원격 TAK 서버에서",
     "lastSeen": "마지막 확인 {{time}}"
+  },
+  "settingsSearch": {
+    "jumpedTo": "{{label}} (으) 로 이동함",
+    "openedPanel": "{{panel}} 을 (를) 열었습니다. 이 설정은 사용 가능할 때 표시됩니다."
   }
 }

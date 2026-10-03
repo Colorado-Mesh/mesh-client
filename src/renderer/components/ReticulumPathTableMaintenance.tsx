@@ -22,7 +22,10 @@ export function ReticulumPathTableMaintenance({
 
   return (
     <>
-      <div className="mt-3 rounded-lg border border-orange-700 bg-orange-900/30 px-3 py-2 text-orange-300">
+      <div
+        data-setting-anchor="radio.reticulumPathTable.clear"
+        className="mt-3 rounded-lg border border-orange-700 bg-orange-900/30 px-3 py-2 text-orange-300"
+      >
         <h4 className="text-sm font-medium text-orange-200">
           {t('networkPanel.reticulumPathTable.title')}
         </h4>

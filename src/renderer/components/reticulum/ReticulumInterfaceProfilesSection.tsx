@@ -79,6 +79,7 @@ export function ReticulumInterfaceProfilesSection({
 
   return (
     <section
+      data-setting-anchor="connection.reticulumInterfaces.profiles"
       className="border-ink-700/80 bg-ink-950/40 space-y-2 rounded border p-2"
       aria-label={t('connectionPanel.reticulumInterfaces.profilesTitle')}
     >

@@ -278,6 +278,7 @@ export default function TelemetryPanel({
             <button
               type="button"
               onClick={onToggleFahrenheit}
+              data-setting-anchor="telemetry.display.temperatureUnit"
               title={t('telemetryPanel.toggleTempUnit')}
               className="bg-ink-700 text-ink-300 hover:bg-ink-600 rounded px-2 py-1 text-xs"
             >
@@ -290,6 +291,7 @@ export default function TelemetryPanel({
             <button
               type="button"
               onClick={handleExportCsv}
+              data-setting-anchor="telemetry.data.exportCsv"
               {...{ [PARENT_HOVER_ATTR]: '' }}
               className="bg-ink-700 text-ink-300 hover:bg-ink-600 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
               title={t('telemetryPanel.exportCsv')}
