@@ -69,6 +69,7 @@ import type {
 import type { SupportBundleMode } from './support-bundle.types';
 import type {
   TAKClientInfo,
+  TAKEnrollmentRequest,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
@@ -1339,6 +1340,11 @@ export interface ElectronAPI {
      * Resolves null when the chooser is cancelled. Key material never reaches the renderer.
      */
     remoteImportCredentials: (password?: string) => Promise<TAKRemoteCredentialSummary | null>;
+    /**
+     * Enroll for a client certificate with a TAK Server username and password (as ATAK does).
+     * The key is generated and kept in main; the password is not stored.
+     */
+    remoteEnroll: (request: TAKEnrollmentRequest) => Promise<TAKRemoteCredentialSummary>;
     remoteClearCredentials: () => Promise<TAKRemoteCredentialSummary>;
     onRemoteStatus: (cb: (status: TAKRemoteStatus) => void) => () => void;
   };

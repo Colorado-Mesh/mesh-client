@@ -429,6 +429,7 @@ describe('GPS/TAK IPC sender validation (source contract)', () => {
     'tak:remoteGetSettings',
     'tak:remoteGetCredentials',
     'tak:remoteImportCredentials',
+    'tak:remoteEnroll',
     'tak:remoteClearCredentials',
   ] as const;
 

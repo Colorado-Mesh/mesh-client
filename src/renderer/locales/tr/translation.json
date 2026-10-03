@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} bir sertifika dosyası olamayacak kadar büyük",
       "tooManyFiles": "En fazla {{max}} sertifika dosyası seçin",
       "chooserOpen": "Sertifika seçici zaten açık",
-      "importInProgress": "Sertifikaları kaldırmadan önce sertifika içe aktarmanın bitmesini bekleyin"
-    }
+      "importInProgress": "Sertifikaları kaldırmadan önce sertifika içe aktarmanın bitmesini bekleyin",
+      "notTls": "Sunucu TLS kullanmıyor; düz TCP üzerinden bağlanmak için TLS'yi kapatın",
+      "enrollBadLogin": "Sunucu kullanıcı adını veya parolayı reddetti",
+      "enrollNotOffered": "Bu sunucu bu bağlantı noktasında sertifika kaydı sunmuyor",
+      "enrollHttpError": "Sertifika kaydı başarısız oldu (HTTP {{status}})",
+      "enrollNoCert": "Kayıt yanıtının sertifikası yok",
+      "enrollTooLarge": "Kayıt yanıtı çok büyük",
+      "enrollKeyMismatch": "Sunucu farklı bir anahtar için bir sertifika döndürdü",
+      "enrollBusy": "Geçerli sertifika içe aktarma işleminin tamamlanmasını bekleyin"
+    },
+    "remoteUseTls": "TLS kullanın (önerilir)",
+    "remotePlainTcpWarning": "Düz TCP şifrelenmemiştir: ağ yolundaki herkes aktarılan konumları okuyabilir. Sertifikalar kullanılmaz ve açılışta bağlantı kapalı kalır.",
+    "remoteEnrollTitle": "Veya kullanıcı adı ve şifre içeren bir sertifika alın",
+    "remoteEnrollHint": "Oturum açanları kullanan TAK Sunucuları, ATAK'ın yaptığı gibi kayıt portlarında (genellikle 8446) bir istemci sertifikası yayınlar. Şifre bir kez gönderilir ve kaydedilmez.",
+    "remoteEnrollUsername": "Kullanıcı adı",
+    "remoteEnrollPassword": "Şifre",
+    "remoteEnrollPort": "Kayıt portu",
+    "remoteEnroll": "Sertifika Al",
+    "remoteEnrollNeedsHost": "Önce yukarıdaki sunucu adresini girin."
   },
   "telemetryPanel": {
     "title": "Telemetri",

@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} est trop volumineux pour un fichier de certificat",
       "tooManyFiles": "Sélectionnez au plus {{max}} fichiers de certificat",
       "chooserOpen": "Le sélecteur de certificats est déjà ouvert",
-      "importInProgress": "Attendez la fin de l'import du certificat avant de retirer des certificats"
-    }
+      "importInProgress": "Attendez la fin de l'import du certificat avant de retirer des certificats",
+      "notTls": "Le serveur n'utilise pas TLS ; désactivez TLS pour vous connecter via TCP simple",
+      "enrollBadLogin": "Le serveur a rejeté le nom d'utilisateur ou le mot de passe",
+      "enrollNotOffered": "Ce serveur n'offre pas d'inscription de certificat sur ce port",
+      "enrollHttpError": "Échec de l'inscription du certificat (HTTP {{status}})",
+      "enrollNoCert": "La réponse d'inscription n'a pas de certificat",
+      "enrollTooLarge": "La réponse d'inscription est trop importante",
+      "enrollKeyMismatch": "Le serveur a renvoyé un certificat pour une clé différente",
+      "enrollBusy": "Attendre la fin de l'importation du certificat actuel"
+    },
+    "remoteUseTls": "Utiliser TLS (recommandé)",
+    "remotePlainTcpWarning": "Le TCP ordinaire n'est pas crypté : n'importe qui sur le chemin du réseau peut lire les positions relayées. Les certificats ne sont pas utilisés et la connexion au lancement reste désactivée.",
+    "remoteEnrollTitle": "Ou obtenez un certificat avec un nom d'utilisateur et un mot de passe",
+    "remoteEnrollHint": "Les serveurs TAK qui utilisent des connexions émettent un certificat client sur leur port d'inscription (généralement 8446), comme le fait ATAK. Le mot de passe est envoyé une fois et n'est pas enregistré.",
+    "remoteEnrollUsername": "Identifiant",
+    "remoteEnrollPassword": "Mot de passe",
+    "remoteEnrollPort": "Port d'inscription",
+    "remoteEnroll": "Obtenir votre certificat",
+    "remoteEnrollNeedsHost": "Saisissez d'abord l'adresse du serveur ci-dessus."
   },
   "telemetryPanel": {
     "title": "Télémétrie",

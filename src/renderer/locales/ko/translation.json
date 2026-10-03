@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}}은(는) 인증서 파일로 쓰기에는 너무 큽니다",
       "tooManyFiles": "인증서 파일은 최대 {{max}}개까지 선택하세요",
       "chooserOpen": "인증서 선택 창이 이미 열려 있습니다",
-      "importInProgress": "인증서를 제거하기 전에 인증서 가져오기가 끝날 때까지 기다리세요"
-    }
+      "importInProgress": "인증서를 제거하기 전에 인증서 가져오기가 끝날 때까지 기다리세요",
+      "notTls": "서버가 TLS를 사용하지 않습니다. 일반 TCP를 통해 연결하려면 TLS를 끄십시오.",
+      "enrollBadLogin": "서버가 사용자 이름 또는 암호를 거부했습니다",
+      "enrollNotOffered": "이 서버는 이 포트에서 인증서 등록을 제공하지 않습니다",
+      "enrollHttpError": "인증서 등록 실패 (HTTP {{status}})",
+      "enrollNoCert": "등록 응답에 인증서가 없습니다",
+      "enrollTooLarge": "등록 응답이 너무 큽니다",
+      "enrollKeyMismatch": "서버가 다른 키에 대한 인증서를 반환했습니다",
+      "enrollBusy": "현재 인증서 가져오기가 완료될 때까지 기다립니다"
+    },
+    "remoteUseTls": "TLS 사용 (권장)",
+    "remotePlainTcpWarning": "일반 TCP는 암호화되지 않습니다. 네트워크 경로의 모든 사용자가 릴레이된 위치를 읽을 수 있습니다. 인증서는 사용되지 않으며, 시작 시 연결이 꺼져 있습니다.",
+    "remoteEnrollTitle": "또는 사용자 이름과 암호가 있는 인증서 받기",
+    "remoteEnrollHint": "로그인을 사용하는 TAK 서버는 ATAK와 마찬가지로 등록 포트 (일반적으로 8446) 에서 클라이언트 인증서를 발급합니다. 암호는 한 번 전송되고 저장되지 않습니다.",
+    "remoteEnrollUsername": "사용자명",
+    "remoteEnrollPassword": "비밀번호",
+    "remoteEnrollPort": "등록 포트",
+    "remoteEnroll": "인증서 받기",
+    "remoteEnrollNeedsHost": "먼저 위의 서버 주소를 입력하십시오."
   },
   "telemetryPanel": {
     "title": "원격 측정",

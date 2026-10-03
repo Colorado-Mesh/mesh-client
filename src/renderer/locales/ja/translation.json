@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} は証明書ファイルとして大きすぎます",
       "tooManyFiles": "証明書ファイルは {{max}} 個まで選択してください",
       "chooserOpen": "証明書の選択ダイアログはすでに開いています",
-      "importInProgress": "証明書を削除する前に、証明書の読み込みが終わるまで待ってください"
-    }
+      "importInProgress": "証明書を削除する前に、証明書の読み込みが終わるまで待ってください",
+      "notTls": "サーバーはTLSを使用していません。プレーンTCP経由で接続するにはTLSをオフにしてください",
+      "enrollBadLogin": "サーバーがユーザー名またはパスワードを拒否しました",
+      "enrollNotOffered": "このサーバーは、このポートで証明書の登録を提供していません",
+      "enrollHttpError": "証明書の登録に失敗しました（ HTTP {{status}} ）",
+      "enrollNoCert": "登録応答に証明書がありません",
+      "enrollTooLarge": "登録応答が大きすぎます",
+      "enrollKeyMismatch": "サーバーが別のキーの証明書を返しました",
+      "enrollBusy": "現在の証明書のインポートが完了するまで待ちます"
+    },
+    "remoteUseTls": "TLSを使用する（推奨）",
+    "remotePlainTcpWarning": "プレーンTCPは暗号化されていません。ネットワークパス上の誰でも中継された位置を読み取ることができます。証明書は使用されず、ローンチ時の接続はオフのままです。",
+    "remoteEnrollTitle": "または、ユーザー名とパスワードを含む証明書を取得します",
+    "remoteEnrollHint": "ログインを使用するTAKサーバーは、ATAKと同様に、登録ポート（通常は8446 ）でクライアント証明書を発行します。パスワードは一度送信され、保存されません。",
+    "remoteEnrollUsername": "ユーザー名",
+    "remoteEnrollPassword": "パスワード",
+    "remoteEnrollPort": "登録ポート",
+    "remoteEnroll": "証明書を取得",
+    "remoteEnrollNeedsHost": "最初に上記のサーバーアドレスを入力してください。"
   },
   "telemetryPanel": {
     "title": "テレメトリー",

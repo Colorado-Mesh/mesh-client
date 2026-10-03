@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} é grande demais para um arquivo de certificado",
       "tooManyFiles": "Selecione no máximo {{max}} arquivos de certificado",
       "chooserOpen": "O seletor de certificados já está aberto",
-      "importInProgress": "Aguarde o fim da importação do certificado antes de remover certificados"
-    }
+      "importInProgress": "Aguarde o fim da importação do certificado antes de remover certificados",
+      "notTls": "O servidor não está usando TLS; desligue o TLS para se conectar por TCP simples",
+      "enrollBadLogin": "O servidor rejeitou o nome de usuário ou senha",
+      "enrollNotOffered": "Este servidor não oferece registro de certificado nesta porta",
+      "enrollHttpError": "Falha na inscrição do certificado (HTTP {{status}})",
+      "enrollNoCert": "A resposta de inscrição não tem certificado",
+      "enrollTooLarge": "A resposta de inscrição é muito grande",
+      "enrollKeyMismatch": "O servidor retornou um certificado para uma chave diferente",
+      "enrollBusy": "Aguarde a conclusão da importação do certificado atual"
+    },
+    "remoteUseTls": "Usar TLS (recomendado)",
+    "remotePlainTcpWarning": "O TCP simples não está criptografado: qualquer pessoa no caminho da rede pode ler as posições retransmitidas. Os certificados não são usados e a conexão no lançamento fica desativada.",
+    "remoteEnrollTitle": "Ou obtenha um certificado com um nome de usuário e senha",
+    "remoteEnrollHint": "Os servidores TAK que usam logins emitem um certificado de cliente em sua porta de inscrição (geralmente 8446), como faz o ATAK. A senha é enviada uma vez e não salva.",
+    "remoteEnrollUsername": "Nome de Usuário",
+    "remoteEnrollPassword": "Palavra-passe",
+    "remoteEnrollPort": "Porta de inscrição",
+    "remoteEnroll": "Verificar certificado",
+    "remoteEnrollNeedsHost": "Insira o endereço do servidor acima primeiro."
   },
   "telemetryPanel": {
     "title": "Telemetria",

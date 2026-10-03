@@ -359,6 +359,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       remoteGetSettings: async () => null,
       remoteGetCredentials: async () => ({ caSubjects: [] }),
       remoteImportCredentials: async () => null,
+      remoteEnroll: async () => ({ caSubjects: [] }),
       remoteClearCredentials: async () => ({ caSubjects: [] }),
       onRemoteStatus: noopUnsub,
     },

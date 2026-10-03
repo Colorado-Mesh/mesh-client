@@ -412,6 +412,7 @@ describe('TakServerManager remote relay', () => {
   const SETTINGS = {
     host: 'tak.example.org',
     port: 8089,
+    useTls: true,
     verifyServer: true,
     allowNameMismatch: false,
     autoConnect: true,

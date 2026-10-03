@@ -97,6 +97,7 @@ export class TakServerManager extends EventEmitter {
     const remote = new TakRemoteClient({
       host: settings.host.trim(),
       port: settings.port,
+      useTls: settings.useTls,
       verifyServer: settings.verifyServer,
       allowNameMismatch: settings.allowNameMismatch,
       credentials,

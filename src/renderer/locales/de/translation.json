@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} ist zu groß für eine Zertifikatsdatei",
       "tooManyFiles": "Wählen Sie höchstens {{max}} Zertifikatsdateien",
       "chooserOpen": "Die Zertifikatsauswahl ist bereits geöffnet",
-      "importInProgress": "Warten Sie, bis der Zertifikatsimport abgeschlossen ist, bevor Sie Zertifikate entfernen"
-    }
+      "importInProgress": "Warten Sie, bis der Zertifikatsimport abgeschlossen ist, bevor Sie Zertifikate entfernen",
+      "notTls": "Der Server verwendet kein TLS; schalten Sie TLS aus, um eine Verbindung über einfaches TCP herzustellen",
+      "enrollBadLogin": "Der Server hat den Benutzernamen oder das Passwort abgelehnt",
+      "enrollNotOffered": "Dieser Server bietet keine Zertifikatsregistrierung für diesen Port",
+      "enrollHttpError": "Zertifikatsregistrierung fehlgeschlagen (HTTP {{status}})",
+      "enrollNoCert": "Die Einschreibungsantwort hat kein Zertifikat",
+      "enrollTooLarge": "Die Einschreibungsantwort ist zu groß",
+      "enrollKeyMismatch": "Der Server gab ein Zertifikat für einen anderen Schlüssel zurück",
+      "enrollBusy": "Warten Sie, bis der aktuelle Zertifikatsimport abgeschlossen ist"
+    },
+    "remoteUseTls": "TLS (empfohlen)",
+    "remotePlainTcpWarning": "Plain TCP ist unverschlüsselt: Jeder auf dem Netzwerkpfad kann die weitergeleiteten Positionen lesen. Zertifikate werden nicht verwendet, und die Verbindung bei der Markteinführung bleibt ausgeschaltet.",
+    "remoteEnrollTitle": "Oder erhalten Sie ein Zertifikat mit Benutzername und Passwort",
+    "remoteEnrollHint": "TAK-SERVER, die Anmeldungen verwenden, stellen ein Clientzertifikat auf ihrem Registrierungsport (in der Regel 8446) aus, wie es ATAK tut. Das Passwort wird einmal gesendet und nicht gespeichert.",
+    "remoteEnrollUsername": "Benutzername",
+    "remoteEnrollPassword": "Passwort",
+    "remoteEnrollPort": "Registrierungsport",
+    "remoteEnroll": "Zertifikat abrufen",
+    "remoteEnrollNeedsHost": "Geben Sie zuerst die Serveradresse oben ein."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

@@ -42,8 +42,13 @@ export interface TAKNodeUpdate {
 /** Remote TAK server (OpenTAKServer, FreeTAKServer, TAK Server) that the relay streams CoT to. */
 export interface TAKRemoteSettings {
   host: string;
-  /** TLS streaming port; TAK servers default to 8089. */
+  /** Streaming port; TAK servers default to 8089 for TLS and 8087 for plain TCP. */
   port: number;
+  /**
+   * Stream over TLS. When false the relay connects over unencrypted TCP and ignores the
+   * certificate settings and imported credentials.
+   */
+  useTls: boolean;
   /**
    * Verify the server certificate: its chain must lead to the imported CA (or the system roots
    * when none is imported) and it must name the configured host.
@@ -67,6 +72,17 @@ export interface TAKRemoteStatus {
   /** Last connection or TLS error, sanitized for display. */
   error?: string;
   connectedAt?: number;
+}
+
+/** Username/password enrollment for a client certificate on a TAK Server's enrollment port. */
+export interface TAKEnrollmentRequest {
+  host: string;
+  /** HTTPS enrollment port; TAK Server defaults to 8446. */
+  port: number;
+  username: string;
+  /** Sent once to the server; never stored. */
+  password: string;
+  verifyServer: boolean;
 }
 
 /** What the renderer may know about stored remote credentials; never key material. */

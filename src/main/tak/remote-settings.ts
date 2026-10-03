@@ -30,6 +30,9 @@ export function validateTakRemoteSettings(
   ) {
     throw new Error(`tak:remoteStart: port must be an integer ${TCP_PORT_MIN}-${TCP_PORT_MAX}`);
   }
+  if (typeof s.useTls !== 'boolean') {
+    throw new Error('tak:remoteStart: useTls must be boolean');
+  }
   if (typeof s.verifyServer !== 'boolean') {
     throw new Error('tak:remoteStart: verifyServer must be boolean');
   }
@@ -39,6 +42,13 @@ export function validateTakRemoteSettings(
   if (typeof s.autoConnect !== 'boolean') {
     throw new Error('tak:remoteStart: autoConnect must be boolean');
   }
+}
+
+/** An unverified or unencrypted relay is only started by hand, never at launch. */
+export function canAutoConnectTakRemote(
+  settings: Pick<TAKRemoteSettings, 'useTls' | 'verifyServer'>,
+): boolean {
+  return settings.useTls && settings.verifyServer;
 }
 
 /** Host as `tls.connect` expects it: trimmed, IPv6 literals without brackets. */
@@ -51,9 +61,11 @@ export function loadTakRemoteSettings(): TAKRemoteSettings | null {
   const file = settingsPath();
   if (!fs.existsSync(file)) return null;
   const raw: unknown = JSON.parse(fs.readFileSync(file, 'utf-8'));
-  // Settings saved before allowNameMismatch existed keep the stricter default.
-  if (raw && typeof raw === 'object' && !('allowNameMismatch' in raw)) {
-    (raw as Record<string, unknown>).allowNameMismatch = false;
+  if (raw && typeof raw === 'object') {
+    const record = raw as Record<string, unknown>;
+    // Settings saved before these fields existed keep the stricter defaults.
+    if (!('allowNameMismatch' in record)) record.allowNameMismatch = false;
+    if (!('useTls' in record)) record.useTls = true;
   }
   validateTakRemoteSettings(raw);
   return raw;
@@ -67,10 +79,10 @@ export function saveTakRemoteSettings(settings: TAKRemoteSettings): void {
   const data: TAKRemoteSettings = {
     host: settings.host.trim(),
     port: settings.port,
+    useTls: settings.useTls,
     verifyServer: settings.verifyServer,
     allowNameMismatch: settings.allowNameMismatch,
-    // An unverified relay is only started by hand, never at launch.
-    autoConnect: settings.autoConnect && settings.verifyServer,
+    autoConnect: settings.autoConnect && canAutoConnectTakRemote(settings),
   };
   const file = settingsPath();
   const tmp = `${file}.tmp`;

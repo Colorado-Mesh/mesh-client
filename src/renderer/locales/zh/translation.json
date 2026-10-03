@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} 作为证书文件过大",
       "tooManyFiles": "最多选择 {{max}} 个证书文件",
       "chooserOpen": "证书选择窗口已打开",
-      "importInProgress": "请等待证书导入完成后再移除证书"
-    }
+      "importInProgress": "请等待证书导入完成后再移除证书",
+      "notTls": "服务器未使用TLS ；关闭TLS以通过普通TCP连接",
+      "enrollBadLogin": "服务器拒绝了用户名或密码",
+      "enrollNotOffered": "此服务器在此端口上不提供证书注册",
+      "enrollHttpError": "证书注册失败（ HTTP {{status}} ）",
+      "enrollNoCert": "注册响应没有证书",
+      "enrollTooLarge": "报名回复过大",
+      "enrollKeyMismatch": "服务器返回了另一个密钥的证书",
+      "enrollBusy": "等待当前证书导入完成"
+    },
+    "remoteUseTls": "使用TLS （推荐）",
+    "remotePlainTcpWarning": "普通TCP是未加密的：网络路径上的任何人都可以读取中继的位置。不使用证书，启动时连接会保持关闭状态。",
+    "remoteEnrollTitle": "或获取包含用户名和密码的证书",
+    "remoteEnrollHint": "使用登录的TAK服务器在其注册端口（通常为8446 ）上颁发客户端证书，就像ATAK一样。密码只发送一次，未保存。",
+    "remoteEnrollUsername": "用户名",
+    "remoteEnrollPassword": "密码",
+    "remoteEnrollPort": "注册端口",
+    "remoteEnroll": "获取证书",
+    "remoteEnrollNeedsHost": "首先输入上面的服务器地址。"
   },
   "telemetryPanel": {
     "title": "遥测",

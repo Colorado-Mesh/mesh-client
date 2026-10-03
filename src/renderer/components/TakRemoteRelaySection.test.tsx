@@ -45,6 +45,7 @@ describe('TakRemoteRelaySection', () => {
     vi.mocked(tak().remoteGetSettings).mockResolvedValue({
       host: 'tak.example.org',
       port: 8443,
+      useTls: true,
       verifyServer: false,
       allowNameMismatch: false,
       autoConnect: true,
@@ -67,10 +68,45 @@ describe('TakRemoteRelaySection', () => {
     expect(tak().remoteStart).toHaveBeenCalledWith({
       host: '192.168.1.20',
       port: 8089,
+      useTls: true,
       verifyServer: true,
       allowNameMismatch: false,
       autoConnect: true,
     });
+  });
+
+  it('connects over plain TCP on 8087 with the TLS options hidden and auto-connect off', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    await user.click(screen.getByLabelText(/connect on application launch/i));
+    await user.click(screen.getByLabelText(/use tls/i));
+
+    expect(screen.getByLabelText('Port')).toHaveValue(8087);
+    expect(screen.queryByLabelText(/verify the server certificate/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/issued for a different name/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/plain tcp is unencrypted/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/connect on application launch/i)).toBeDisabled();
+
+    await user.type(screen.getByLabelText('Server address'), '204.48.30.216');
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
+    expect(tak().remoteStart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: '204.48.30.216',
+        port: 8087,
+        useTls: false,
+        autoConnect: false,
+      }),
+    );
+  });
+
+  it('keeps a custom port when switching transports', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    const port = screen.getByLabelText('Port');
+    await user.clear(port);
+    await user.type(port, '58088');
+    await user.click(screen.getByLabelText(/use tls/i));
+    expect(port).toHaveValue(58088);
   });
 
   it('checks the certificate name unless the ATAK-style mismatch is allowed', async () => {
@@ -185,6 +221,42 @@ describe('TakRemoteRelaySection', () => {
     expect(screen.getByText(/client certificate: kd0abc/i)).toBeInTheDocument();
     expect(screen.getByLabelText('Certificate password')).toHaveValue('');
     expect(screen.getByRole('button', { name: 'Remove Certificates' })).toBeInTheDocument();
+  });
+
+  it('enrolls with a username and password, then allows the TAK "takserver" name', async () => {
+    vi.mocked(tak().remoteEnroll).mockResolvedValue({
+      caSubjects: ['intermediate', 'root'],
+      clientSubject: 'kd0abc',
+      clientExpiresAt: Date.UTC(2027, 5, 1),
+    });
+    const user = userEvent.setup();
+    await renderSection();
+    const button = screen.getByRole('button', { name: 'Get Certificate' });
+    expect(button).toBeDisabled();
+    expect(screen.getByText(/enter the server address above first/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText('Server address'), 'pub.atak.zip');
+    await user.type(screen.getByLabelText('Username'), 'kd0abc');
+    await user.type(screen.getByLabelText('Password'), 'secret');
+    await user.click(button);
+
+    expect(tak().remoteEnroll).toHaveBeenCalledWith({
+      host: 'pub.atak.zip',
+      port: 8446,
+      username: 'kd0abc',
+      password: 'secret',
+      verifyServer: true,
+    });
+    expect(screen.getByLabelText('Password')).toHaveValue('');
+    expect(screen.getByText(/client certificate: kd0abc/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/issued for a different name/i)).toBeChecked();
+  });
+
+  it('hides enrollment for plain TCP', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    await user.click(screen.getByLabelText(/use tls/i));
+    expect(screen.queryByRole('button', { name: 'Get Certificate' })).not.toBeInTheDocument();
   });
 
   it('translates a known relay status error', async () => {

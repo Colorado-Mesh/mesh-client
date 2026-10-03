@@ -115,6 +115,7 @@ describe('useTakRemoteRelay', () => {
       await result.current.connect({
         host: 'tak.example.org',
         port: 8089,
+        useTls: true,
         verifyServer: true,
         allowNameMismatch: false,
         autoConnect: false,

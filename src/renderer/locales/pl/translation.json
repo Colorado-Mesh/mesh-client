@@ -5483,8 +5483,25 @@
       "fileTooLarge": "{{name}} jest za duży na plik certyfikatu",
       "tooManyFiles": "Wybierz co najwyżej {{max}} plików certyfikatu",
       "chooserOpen": "Wybór certyfikatu jest już otwarty",
-      "importInProgress": "Poczekaj na zakończenie importu certyfikatu, zanim usuniesz certyfikaty"
-    }
+      "importInProgress": "Poczekaj na zakończenie importu certyfikatu, zanim usuniesz certyfikaty",
+      "notTls": "Serwer nie używa TLS; wyłącz TLS, aby połączyć się przez zwykły TCP",
+      "enrollBadLogin": "Serwer odrzucił nazwę użytkownika lub hasło",
+      "enrollNotOffered": "Ten serwer nie oferuje rejestracji certyfikatów na tym porcie",
+      "enrollHttpError": "Rejestracja certyfikatu nie powiodła się (HTTP {{status}})",
+      "enrollNoCert": "Odpowiedź rejestracyjna nie ma certyfikatu",
+      "enrollTooLarge": "Odpowiedź na rejestrację jest zbyt duża",
+      "enrollKeyMismatch": "Serwer zwrócił certyfikat dla innego klucza",
+      "enrollBusy": "Poczekaj, aż zakończy się import bieżącego certyfikatu"
+    },
+    "remoteUseTls": "Użyj TLS (zalecane)",
+    "remotePlainTcpWarning": "Zwykły TCP jest niezaszyfrowany: każdy na ścieżce sieciowej może odczytać przekazywane pozycje. Certyfikaty nie są używane, a łączenie przy uruchomieniu jest wyłączone.",
+    "remoteEnrollTitle": "Lub uzyskaj certyfikat z nazwą użytkownika i hasłem",
+    "remoteEnrollHint": "TAK Serwery, które używają loginów, wydają certyfikat klienta na swoim porcie rejestracji (zwykle 8446), tak jak robi to atak. Hasło jest wysyłane raz i nie jest zapisywane.",
+    "remoteEnrollUsername": "Nazwa użytkownika",
+    "remoteEnrollPassword": "Hasło",
+    "remoteEnrollPort": "Port rejestracji",
+    "remoteEnroll": "Uzyskaj certyfikat",
+    "remoteEnrollNeedsHost": "Najpierw wprowadź adres serwera powyżej."
   },
   "telemetryPanel": {
     "title": "Telemetria",

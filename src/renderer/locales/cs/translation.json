@@ -5445,8 +5445,25 @@
       "fileTooLarge": "{{name}} je příliš velký na soubor certifikátu",
       "tooManyFiles": "Vyberte nejvýše {{max}} souborů certifikátu",
       "chooserOpen": "Výběr certifikátu je už otevřený",
-      "importInProgress": "Před odebráním certifikátů počkejte, až import certifikátu skončí"
-    }
+      "importInProgress": "Před odebráním certifikátů počkejte, až import certifikátu skončí",
+      "notTls": "Server nepoužívá TLS; vypněte TLS pro připojení přes prostý TCP",
+      "enrollBadLogin": "Server odmítl uživatelské jméno nebo heslo",
+      "enrollNotOffered": "Tento server nenabízí registraci certifikátů na tomto portu",
+      "enrollHttpError": "Zápis certifikátu se nezdařil (HTTP {{status}})",
+      "enrollNoCert": "Odpověď na zápis nemá žádný certifikát",
+      "enrollTooLarge": "Odpověď na zápis je příliš velká",
+      "enrollKeyMismatch": "Server vrátil certifikát pro jiný klíč",
+      "enrollBusy": "Počkejte na dokončení importu aktuálního certifikátu"
+    },
+    "remoteUseTls": "Použít TLS (doporučeno)",
+    "remotePlainTcpWarning": "Obyčejný TCP je nešifrovaný: kdokoli na síťové cestě může číst přenášené pozice. Certifikáty se nepoužívají a připojení při spuštění zůstává vypnuté.",
+    "remoteEnrollTitle": "Nebo získat certifikát s uživatelským jménem a heslem",
+    "remoteEnrollHint": "Servery TAK, které používají přihlašovací údaje, vydávají klientský certifikát na svém registračním portu (obvykle 8446), jak to dělá ATAK. Heslo je odesláno jednou a není uloženo.",
+    "remoteEnrollUsername": "Uživatelské jméno",
+    "remoteEnrollPassword": "Heslo",
+    "remoteEnrollPort": "Registrační port",
+    "remoteEnroll": "Získat certifikát",
+    "remoteEnrollNeedsHost": "Nejprve zadejte výše uvedenou adresu serveru."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

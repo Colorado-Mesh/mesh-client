@@ -47,6 +47,7 @@ import type {
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
 import type {
   TAKClientInfo,
+  TAKEnrollmentRequest,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
@@ -1246,6 +1247,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('tak:remoteGetCredentials'),
     remoteImportCredentials: (password?: string): Promise<TAKRemoteCredentialSummary | null> =>
       ipcRenderer.invoke('tak:remoteImportCredentials', password),
+    remoteEnroll: (request: TAKEnrollmentRequest): Promise<TAKRemoteCredentialSummary> =>
+      ipcRenderer.invoke('tak:remoteEnroll', request),
     remoteClearCredentials: (): Promise<TAKRemoteCredentialSummary> =>
       ipcRenderer.invoke('tak:remoteClearCredentials'),
     onRemoteStatus: (cb: (status: TAKRemoteStatus) => void): (() => void) => {

@@ -412,6 +412,7 @@ export function createElectronAPIMock(): ElectronAPI {
       remoteGetSettings: vi.fn().mockResolvedValue(null),
       remoteGetCredentials: vi.fn().mockResolvedValue({ caSubjects: [] }),
       remoteImportCredentials: vi.fn().mockResolvedValue(null),
+      remoteEnroll: vi.fn().mockResolvedValue({ caSubjects: [] }),
       remoteClearCredentials: vi.fn().mockResolvedValue({ caSubjects: [] }),
       onRemoteStatus: vi.fn().mockReturnValue(() => {}),
     },

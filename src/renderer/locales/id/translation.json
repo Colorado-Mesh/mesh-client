@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} terlalu besar untuk berkas sertifikat",
       "tooManyFiles": "Pilih paling banyak {{max}} berkas sertifikat",
       "chooserOpen": "Pemilih sertifikat sudah terbuka",
-      "importInProgress": "Tunggu impor sertifikat selesai sebelum menghapus sertifikat"
-    }
+      "importInProgress": "Tunggu impor sertifikat selesai sebelum menghapus sertifikat",
+      "notTls": "Server tidak menggunakan TLS; matikan TLS untuk terhubung melalui TCP biasa",
+      "enrollBadLogin": "Server menolak nama pengguna atau kata sandi",
+      "enrollNotOffered": "Server ini tidak menawarkan pendaftaran sertifikat di port ini",
+      "enrollHttpError": "Pendaftaran sertifikat gagal (HTTP {{status}})",
+      "enrollNoCert": "Tanggapan pendaftaran tidak memiliki sertifikat",
+      "enrollTooLarge": "Respons pendaftaran terlalu besar",
+      "enrollKeyMismatch": "Server mengembalikan sertifikat untuk kunci yang berbeda",
+      "enrollBusy": "Tunggu hingga impor sertifikat saat ini selesai"
+    },
+    "remoteUseTls": "Gunakan TLS (disarankan)",
+    "remotePlainTcpWarning": "TCP biasa tidak terenkripsi: siapa pun di jalur jaringan dapat membaca posisi yang disampaikan. Sertifikat tidak digunakan, dan koneksi saat peluncuran tidak aktif.",
+    "remoteEnrollTitle": "Atau dapatkan sertifikat dengan nama pengguna dan kata sandi",
+    "remoteEnrollHint": "Server TAK yang menggunakan login mengeluarkan sertifikat klien pada port pendaftaran mereka (biasanya 8446), seperti yang dilakukan atak. Kata sandi dikirim satu kali dan tidak disimpan.",
+    "remoteEnrollUsername": "Nama pengguna",
+    "remoteEnrollPassword": "Kata Sandi",
+    "remoteEnrollPort": "Port pendaftaran",
+    "remoteEnroll": "Dapatkan Sertifikat Anda",
+    "remoteEnrollNeedsHost": "Masukkan alamat server di atas terlebih dahulu."
   },
   "telemetryPanel": {
     "title": "Telemetri",

@@ -2,15 +2,19 @@ import { BrowserWindow, dialog, ipcMain } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
+import { isValidConnectHost } from '../../shared/connectHost';
 import {
   TAK_NODE_UPDATE_BATCH_MAX,
+  type TAKEnrollmentRequest,
   type TAKRemoteStatus,
   type TAKServerStatus,
   type TAKSettings,
 } from '../../shared/tak-types';
+import { TCP_PORT_MAX, TCP_PORT_MIN } from '../../shared/tcpPort';
 import { MS_PER_MINUTE } from '../../shared/timeConstants';
 import { createIpcRateLimiter } from '../ipcRateLimit';
 import { sanitizeLogMessage } from '../log-service';
+import { enrollTakClientCertificate } from '../tak/enrollment';
 import { parseTakNodeUpdate } from '../tak/node-update';
 import {
   clearTakRemoteCredentials,
@@ -82,6 +86,40 @@ async function readCredentialFile(filePath: string): Promise<TakCredentialFile> 
     return { name: filePath, data: buffer.subarray(0, bytesRead) };
   } finally {
     await handle.close();
+  }
+}
+
+/** Basic auth cannot carry a colon in the username; TAK usernames never contain one. */
+const TAK_USERNAME_RE = /^[^:\p{Cc}]{1,256}$/u;
+
+function validateTakEnrollmentRequest(request: unknown): asserts request is TAKEnrollmentRequest {
+  if (!request || typeof request !== 'object') {
+    throw new Error('tak:remoteEnroll: request must be an object');
+  }
+  const r = request as Record<string, unknown>;
+  if (typeof r.host !== 'string' || !isValidConnectHost(r.host)) {
+    throw new Error('tak:remoteEnroll: host must be a hostname or IP address');
+  }
+  if (
+    typeof r.port !== 'number' ||
+    !Number.isInteger(r.port) ||
+    r.port < TCP_PORT_MIN ||
+    r.port > TCP_PORT_MAX
+  ) {
+    throw new Error(`tak:remoteEnroll: port must be an integer ${TCP_PORT_MIN}-${TCP_PORT_MAX}`);
+  }
+  if (typeof r.username !== 'string' || !TAK_USERNAME_RE.test(r.username)) {
+    throw new Error('tak:remoteEnroll: username is invalid');
+  }
+  if (
+    typeof r.password !== 'string' ||
+    r.password.length === 0 ||
+    r.password.length > TAK_CREDENTIAL_PASSWORD_MAX_LEN
+  ) {
+    throw new Error('tak:remoteEnroll: password must be a non-empty string');
+  }
+  if (typeof r.verifyServer !== 'boolean') {
+    throw new Error('tak:remoteEnroll: verifyServer must be boolean');
   }
 }
 
@@ -274,11 +312,46 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     }
   });
 
+  const enrollments = createIpcRateLimiter({
+    max: 10,
+    windowMs: MS_PER_MINUTE,
+    label: 'tak:remoteEnroll',
+  });
+  let enrolling = false;
+  ipcMain.handle('tak:remoteEnroll', async (event, request: unknown) => {
+    assertIpcSender(event, 'tak:remoteEnroll');
+    enrollments.checkOrThrow();
+    validateTakEnrollmentRequest(request);
+    if (enrolling || choosingCredentials) {
+      throw new Error('Wait for the current certificate import to finish');
+    }
+    enrolling = true;
+    try {
+      console.debug('[IPC] tak:remoteEnroll');
+      const creds = await enrollTakClientCertificate({
+        host: request.host.trim(),
+        port: request.port,
+        username: request.username,
+        password: request.password,
+        verifyServer: request.verifyServer,
+        trustedCa: loadTakRemoteCredentials().ca,
+      });
+      saveTakRemoteCredentials(creds);
+      getTakServerManager()?.restartRemote();
+      return summarizeTakRemoteCredentials(loadTakRemoteCredentials());
+    } catch (err) {
+      console.error('[IPC] tak:remoteEnroll failed:', errorMessage(err));
+      throw err;
+    } finally {
+      enrolling = false;
+    }
+  });
+
   ipcMain.handle('tak:remoteClearCredentials', (event) => {
     assertIpcSender(event, 'tak:remoteClearCredentials');
     console.debug('[IPC] tak:remoteClearCredentials');
     // An import still in its chooser would write its files after this clear finished.
-    if (choosingCredentials) {
+    if (choosingCredentials || enrolling) {
       throw new Error('Wait for the certificate import to finish before removing certificates');
     }
     // A running relay holds the credentials in memory; stop it so it cannot reconnect with them.

@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import net from 'net';
 import tls from 'tls';
 
 import type { TAKRemoteStatus } from '../../shared/tak-types';
@@ -29,6 +30,8 @@ export const TAK_REMOTE_MAX_BUFFERED_BYTES = 1024 * 1024;
 export interface TakRemoteClientOptions {
   host: string;
   port: number;
+  /** See TAKRemoteSettings.useTls; when false the TLS options and credentials are ignored. */
+  useTls: boolean;
   verifyServer: boolean;
   /** See TAKRemoteSettings.allowNameMismatch; only honored with an imported CA. */
   allowNameMismatch: boolean;
@@ -36,6 +39,7 @@ export interface TakRemoteClientOptions {
 }
 
 type ConnectFn = (options: tls.ConnectionOptions) => tls.TLSSocket;
+type TcpConnectFn = (options: net.NetConnectOpts) => net.Socket;
 
 const UNTRUSTED_SERVER = "The server certificate is not trusted; import the server's CA";
 
@@ -53,6 +57,8 @@ const SOCKET_ERROR_TEXT: Record<string, string> = {
   UNABLE_TO_VERIFY_LEAF_SIGNATURE: UNTRUSTED_SERVER,
   UNABLE_TO_GET_ISSUER_CERT_LOCALLY: UNTRUSTED_SERVER,
   CERT_HAS_EXPIRED: 'The server certificate has expired',
+  ERR_SSL_WRONG_VERSION_NUMBER:
+    'The server is not using TLS; turn off TLS to connect over plain TCP',
   ERR_TLS_CERT_ALTNAME_INVALID:
     'The server certificate is for a different name; allow a name mismatch if this TAK server is set up that way',
 };
@@ -64,27 +70,31 @@ const SOCKET_ERROR_TEXT: Record<string, string> = {
 export function describeTakRemoteError(err: NodeJS.ErrnoException): string {
   const known = err.code ? SOCKET_ERROR_TEXT[err.code] : undefined;
   if (known) return known;
-  const reason = /error:[0-9A-F]+:[^:]*:[^:]*:([^:]+)/i.exec(err.message)?.[1]?.trim();
-  if (!reason) return err.message;
+  const rawReason = /error:[0-9A-F]+:[^:]*:[^:]*:([^:]+)/i.exec(err.message)?.[1]?.trim();
+  if (!rawReason) return err.message;
+  // Electron's BoringSSL reports reasons as TLSV1_ALERT_CERTIFICATE_REQUIRED; OpenSSL as
+  // "tlsv13 alert certificate required".
+  const reason = rawReason.toLowerCase().replace(/_/g, ' ');
   if (reason.includes('certificate required')) {
     return 'The server requires a client certificate; import one';
   }
   if (/alert (bad certificate|unknown ca|certificate unknown|certificate revoked)/.test(reason)) {
     return `The server rejected the client certificate (${reason})`;
   }
-  return reason;
+  return rawReason;
 }
 
 /**
- * One TLS stream to a remote TAK server. Sends newline-terminated CoT (the same format the
- * local server writes) and discards whatever the server sends back. Reconnects with capped
- * exponential backoff until {@link stop} is called; a manual stop never reconnects.
+ * One TLS (or, when configured, plain TCP) stream to a remote TAK server. Sends
+ * newline-terminated CoT (the same format the local server writes) and discards whatever the
+ * server sends back. Reconnects with capped exponential backoff until {@link stop} is called; a
+ * manual stop never reconnects.
  *
  * Emits `status` (TAKRemoteStatus) on every state change and `connected` after each successful
- * handshake so the owner can flush its node cache.
+ * connection so the owner can flush its node cache.
  */
 export class TakRemoteClient extends EventEmitter {
-  private socket: tls.TLSSocket | null = null;
+  private socket: net.Socket | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private failedAttempts = 0;
   private stopped = true;
@@ -93,6 +103,7 @@ export class TakRemoteClient extends EventEmitter {
   constructor(
     private readonly options: TakRemoteClientOptions,
     private readonly connectFn: ConnectFn = tls.connect,
+    private readonly tcpConnectFn: TcpConnectFn = net.connect,
   ) {
     super();
     this.status = { state: 'disconnected', host: options.host, port: options.port };
@@ -139,25 +150,29 @@ export class TakRemoteClient extends EventEmitter {
   }
 
   private open(): void {
-    const { host, port, verifyServer, allowNameMismatch, credentials } = this.options;
+    const { host, port, useTls, verifyServer, allowNameMismatch, credentials } = this.options;
     // The name check is skipped only on request, and only when trust is pinned to an imported
     // CA: TAK servers are often issued a certificate for a name like "takserver" while clients
     // dial an IP, and ATAK does not check the name. Against the system roots it always applies.
     const skipNameCheck = verifyServer && allowNameMismatch && Boolean(credentials.ca);
     this.setStatus({ ...this.status, state: 'connecting', connectedAt: undefined });
-    console.debug(`[TakRemote] Connecting to ${sanitizeLogMessage(host)}:${port}`);
+    console.debug(
+      `[TakRemote] Connecting to ${sanitizeLogMessage(host)}:${port}${useTls ? '' : ' (plain TCP)'}`,
+    );
 
-    let socket: tls.TLSSocket;
+    let socket: net.Socket;
     try {
-      socket = this.connectFn({
-        host: tlsConnectHost(host),
-        port,
-        ca: credentials.ca,
-        cert: credentials.cert,
-        key: credentials.key,
-        rejectUnauthorized: verifyServer,
-        ...(skipNameCheck ? { checkServerIdentity: () => undefined } : {}),
-      });
+      socket = useTls
+        ? this.connectFn({
+            host: tlsConnectHost(host),
+            port,
+            ca: credentials.ca,
+            cert: credentials.cert,
+            key: credentials.key,
+            rejectUnauthorized: verifyServer,
+            ...(skipNameCheck ? { checkServerIdentity: () => undefined } : {}),
+          })
+        : this.tcpConnectFn({ host: tlsConnectHost(host), port });
     } catch (err) {
       // tls.connect throws synchronously on unusable credentials; retrying cannot fix that.
       const error = sanitizeLogMessage(err instanceof Error ? err.message : String(err));
@@ -175,7 +190,7 @@ export class TakRemoteClient extends EventEmitter {
     socket.once('timeout', () => {
       socket.destroy(new Error('connection timed out'));
     });
-    socket.once('secureConnect', () => {
+    socket.once(useTls ? 'secureConnect' : 'connect', () => {
       socket.setTimeout(0);
       socket.setKeepAlive(true, TAK_REMOTE_KEEPALIVE_MS);
       secureAt = Date.now();
@@ -189,7 +204,9 @@ export class TakRemoteClient extends EventEmitter {
     // Servers stream other users' CoT back; read and drop it so their send buffer never fills.
     socket.resume();
     socket.on('error', (err: NodeJS.ErrnoException) => {
-      lastError = sanitizeLogMessage(describeTakRemoteError(err));
+      // A rejected handshake is followed by EPIPE/ECONNRESET on the dead socket; keep the cause.
+      const isFollowOn = err.code === 'EPIPE' || err.code === 'ECONNRESET';
+      if (!(isFollowOn && lastError)) lastError = sanitizeLogMessage(describeTakRemoteError(err));
       console.warn(
         `[TakRemote] ${sanitizeLogMessage(host)}:${port} error: ${sanitizeLogMessage(err.message)}`,
       );
@@ -199,7 +216,8 @@ export class TakRemoteClient extends EventEmitter {
       if (this.socket !== socket) return;
       this.socket = null;
       if (this.stopped) return;
-      const closedAfterHandshake = secureAt > 0 && Date.now() - secureAt < TAK_REMOTE_STABLE_MS;
+      const closedAfterHandshake =
+        useTls && secureAt > 0 && Date.now() - secureAt < TAK_REMOTE_STABLE_MS;
       this.scheduleReconnect(
         lastError ??
           (closedAfterHandshake

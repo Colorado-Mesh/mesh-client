@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} is te groot voor een certificaatbestand",
       "tooManyFiles": "Selecteer maximaal {{max}} certificaatbestanden",
       "chooserOpen": "De certificaatkiezer is al geopend",
-      "importInProgress": "Wacht tot het importeren van het certificaat klaar is voordat u certificaten verwijdert"
-    }
+      "importInProgress": "Wacht tot het importeren van het certificaat klaar is voordat u certificaten verwijdert",
+      "notTls": "De server gebruikt geen TLS; schakel TLS uit om verbinding te maken via gewone TCP",
+      "enrollBadLogin": "De server heeft de gebruikersnaam of het wachtwoord geweigerd",
+      "enrollNotOffered": "Deze server biedt geen certificaatinschrijving op deze poort",
+      "enrollHttpError": "Inschrijving certificaat mislukt (HTTP {{status}})",
+      "enrollNoCert": "Het inschrijvingsantwoord heeft geen certificaat",
+      "enrollTooLarge": "De inschrijvingsreactie is te groot",
+      "enrollKeyMismatch": "De server heeft een certificaat geretourneerd voor een andere sleutel",
+      "enrollBusy": "Wacht tot de huidige certificaatimport is voltooid"
+    },
+    "remoteUseTls": "Gebruik TLS (aanbevolen)",
+    "remotePlainTcpWarning": "Gewone TCP is onversleuteld: iedereen op het netwerkpad kan de doorgegeven posities lezen. Certificaten worden niet gebruikt en de verbinding bij de lancering blijft uit.",
+    "remoteEnrollTitle": "Of ontvang een certificaat met een gebruikersnaam en wachtwoord",
+    "remoteEnrollHint": "TAK Servers die logins gebruiken, geven een clientcertificaat af op hun inschrijvingspoort (meestal 8446), zoals ATAK doet. Het wachtwoord wordt eenmalig verzonden en niet opgeslagen.",
+    "remoteEnrollUsername": "Gebruikersnaam",
+    "remoteEnrollPassword": "Wachtwoord",
+    "remoteEnrollPort": "Inschrijvingspoort",
+    "remoteEnroll": "Een certificaat verkrijgen",
+    "remoteEnrollNeedsHost": "Voer eerst het bovenstaande serveradres in."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

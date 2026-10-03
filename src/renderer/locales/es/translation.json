@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} es demasiado grande para ser un archivo de certificado",
       "tooManyFiles": "Seleccione como máximo {{max}} archivos de certificado",
       "chooserOpen": "El selector de certificados ya está abierto",
-      "importInProgress": "Espere a que termine la importación del certificado antes de quitar certificados"
-    }
+      "importInProgress": "Espere a que termine la importación del certificado antes de quitar certificados",
+      "notTls": "El servidor no está usando TLS; apague TLS para conectarse a través de TCP simple",
+      "enrollBadLogin": "El servidor ha rechazado el nombre de usuario o la contraseña",
+      "enrollNotOffered": "Este servidor no ofrece inscripción de certificados en este puerto",
+      "enrollHttpError": "Error al inscribir el certificado (HTTP {{status}})",
+      "enrollNoCert": "La respuesta de inscripción no tiene certificado",
+      "enrollTooLarge": "La respuesta de inscripción es demasiado grande",
+      "enrollKeyMismatch": "El servidor devolvió un certificado para una clave diferente",
+      "enrollBusy": "Espere a que finalice la importación del certificado actual"
+    },
+    "remoteUseTls": "Usar TLS (recomendado)",
+    "remotePlainTcpWarning": "El TCP simple no está cifrado: cualquier persona en la ruta de la red puede leer las posiciones retransmitidas. Los certificados no se utilizan y la conexión en el lanzamiento permanece desactivada.",
+    "remoteEnrollTitle": "O consigue un certificado con un nombre de usuario y una contraseña",
+    "remoteEnrollHint": "Los servidores TAK que utilizan inicios de sesión emiten un certificado de cliente en su puerto de inscripción (generalmente 8446), como lo hace ATAK. La contraseña se envía una vez y no se guarda.",
+    "remoteEnrollUsername": "Nombre de usuario",
+    "remoteEnrollPassword": "Contraseña",
+    "remoteEnrollPort": "Puerto de inscripción",
+    "remoteEnroll": "Obtén tu certificado",
+    "remoteEnrollNeedsHost": "Introduzca primero la dirección del servidor anterior."
   },
   "telemetryPanel": {
     "title": "Telemetría",

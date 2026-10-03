@@ -5403,8 +5403,25 @@
       "fileTooLarge": "{{name}} è troppo grande per essere un file di certificato",
       "tooManyFiles": "Seleziona al massimo {{max}} file di certificato",
       "chooserOpen": "Il selettore dei certificati è già aperto",
-      "importInProgress": "Attendi la fine dell'importazione del certificato prima di rimuovere i certificati"
-    }
+      "importInProgress": "Attendi la fine dell'importazione del certificato prima di rimuovere i certificati",
+      "notTls": "Il server non utilizza TLS; disattivare TLS per connettersi su TCP semplice",
+      "enrollBadLogin": "Il server ha rifiutato il nome utente o la password",
+      "enrollNotOffered": "Questo server non offre la registrazione dei certificati su questa porta",
+      "enrollHttpError": "Registrazione del certificato non riuscita (HTTP {{status}})",
+      "enrollNoCert": "La risposta di iscrizione non ha certificato",
+      "enrollTooLarge": "La risposta di iscrizione è troppo grande",
+      "enrollKeyMismatch": "Il server ha restituito un certificato per una chiave diversa",
+      "enrollBusy": "Attendi il completamento dell'importazione del certificato corrente"
+    },
+    "remoteUseTls": "Usa TLS (consigliato)",
+    "remotePlainTcpWarning": "Il TCP normale non è crittografato: chiunque sul percorso di rete può leggere le posizioni inoltrate. I certificati non vengono utilizzati e la connessione al lancio rimane disattivata.",
+    "remoteEnrollTitle": "Oppure ottieni un certificato con nome utente e password",
+    "remoteEnrollHint": "I server TAK che utilizzano i login emettono un certificato client sulla loro porta di registrazione (di solito 8446), come fa ATAK. La password viene inviata una sola volta e non viene salvata.",
+    "remoteEnrollUsername": "Username",
+    "remoteEnrollPassword": "Password",
+    "remoteEnrollPort": "Porta di registrazione",
+    "remoteEnroll": "Ottieni certificato",
+    "remoteEnrollNeedsHost": "Inserisci prima l'indirizzo del server sopra."
   },
   "telemetryPanel": {
     "title": "Telemetria",
