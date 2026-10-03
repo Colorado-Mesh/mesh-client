@@ -4028,12 +4028,14 @@ function MeshcoreChannelSection({
   const formRef = useRef<HTMLDivElement>(null);
   const shareQrRef = useRef<HTMLDivElement>(null);
   const previousRadioSignature = useRef(radioSignature);
+  const radioSwitchGeneration = useRef(0);
 
   useEffect(() => {
     const previous = previousRadioSignature.current;
     previousRadioSignature.current = radioSignature;
     // Keep a queued QR draft when first discovering the recipient radio.
     if (!previous?.startsWith('meshcore:pk:') || previous === radioSignature) return;
+    radioSwitchGeneration.current += 1;
     setEditingIdx(null);
     setAddingNew(false);
     setShareQrIdx(null);
@@ -4139,6 +4141,7 @@ function MeshcoreChannelSection({
       addToast(t('radioPanel.meshcoreChannelNameRequired'), 'error');
       return;
     }
+    const operationGeneration = radioSwitchGeneration.current;
     setSaving(true);
     try {
       const secret = hexToBytes(editKeyHex);
@@ -4146,7 +4149,11 @@ function MeshcoreChannelSection({
         editScope === 'custom' ? normalizeMeshcoreFloodScopeHashtag(customScope) : editScope;
       if (editScope === 'custom' && !isValidMeshcoreFloodScopeHashtag(scope)) return;
       await onSetChannel(idx, finalName, secret);
-      if (previousRadioSignature.current !== radioSignature) return;
+      if (radioSwitchGeneration.current !== operationGeneration) return;
+      const identityDiscoveredDuringSave =
+        !canSaveScope && scope === '' && previousRadioSignature.current?.startsWith('meshcore:pk:');
+      if (previousRadioSignature.current !== radioSignature && !identityDiscoveredDuringSave)
+        return;
       const key = meshcoreChannelScopeKey(radioSignature, { index: idx, name: finalName, secret });
       if (key && !saveFloodScopeOverride('meshcore', key, scope)) {
         addToast(t('radioPanel.meshcoreChannel.scopeSaveFailed'), 'error');
@@ -4164,9 +4171,11 @@ function MeshcoreChannelSection({
   }
 
   async function handleDelete(idx: number) {
+    const operationGeneration = radioSwitchGeneration.current;
     setSaving(true);
     try {
       await onDeleteChannel(idx);
+      if (radioSwitchGeneration.current !== operationGeneration) return;
       const key = meshcoreChannelScopeKey(
         radioSignature,
         channels.find((ch) => ch.index === idx),

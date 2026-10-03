@@ -19,6 +19,7 @@ import { ToastProvider } from './Toast';
 const signatures: Record<string, { signature: string }> = {
   radioA: { signature: 'meshcore:pk:' + 'a'.repeat(64) },
   radioB: { signature: 'meshcore:pk:' + 'b'.repeat(64) },
+  undiscovered: { signature: 'meshcore:tcp:localhost' },
 };
 vi.mock('@/renderer/stores/identityStore', () => ({
   useIdentityStore: (selector: (s: { identities: typeof signatures }) => unknown) =>
@@ -197,6 +198,71 @@ describe('MeshCore channel scope settings and QR', () => {
     );
   });
 
+  it.each([
+    { initial: null, intermediate: 'radioA', final: 'radioB' },
+    { initial: 'radioA', intermediate: 'radioB', final: 'radioA' },
+  ])(
+    'discards a pending Save across known-radio switches: $initial → $intermediate → $final',
+    async ({ initial, intermediate, final }) => {
+      const keyB = meshcoreChannelScopeKey(signatures.radioB.signature, channel)!;
+      saveFloodScopeOverride('meshcore', keyA, '#metro');
+      saveFloodScopeOverride('meshcore', keyB, '#other');
+      let finishSave!: () => void;
+      const pendingSave = new Promise<void>((resolve) => {
+        finishSave = resolve;
+      });
+      const save = vi.fn(() => pendingSave);
+      const { rerender } = render(panel({ identityId: initial, onMeshcoreSetChannel: save }));
+      const section = openChannels();
+      fireEvent.click(section.getByRole('button', { name: 'Edit' }));
+      if (initial) {
+        fireEvent.change(section.getByRole('combobox', { name: 'Send scope for this channel' }), {
+          target: { value: '' },
+        });
+      }
+      fireEvent.click(section.getByRole('button', { name: 'Save' }));
+      rerender(panel({ identityId: intermediate, onMeshcoreSetChannel: save }));
+      rerender(panel({ identityId: final, onMeshcoreSetChannel: save }));
+      fireEvent.click(section.getByRole('button', { name: 'Edit' }));
+      await act(async () => {
+        finishSave();
+        await pendingSave;
+      });
+      expect(stored()[keyA]).toBe('#metro');
+      expect(stored()[keyB]).toBe('#other');
+      expect(section.getByRole('combobox', { name: 'Send scope for this channel' })).toHaveValue(
+        final === 'radioB' ? '#other' : '#metro',
+      );
+    },
+  );
+
+  it('keeps the next radio draft and preferences when an old Delete completes', async () => {
+    const keyB = meshcoreChannelScopeKey(signatures.radioB.signature, channel)!;
+    saveFloodScopeOverride('meshcore', keyA, '#metro');
+    saveFloodScopeOverride('meshcore', keyB, '#other');
+    let finishDelete!: () => void;
+    const pendingDelete = new Promise<void>((resolve) => {
+      finishDelete = resolve;
+    });
+    const remove = vi.fn(() => pendingDelete);
+    const { rerender } = render(panel({ onMeshcoreDeleteChannel: remove }));
+    const section = openChannels();
+    fireEvent.click(section.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(section.getByRole('button', { name: 'Confirm' }));
+    rerender(panel({ identityId: 'radioB', onMeshcoreDeleteChannel: remove }));
+    fireEvent.click(section.getByRole('button', { name: 'Edit' }));
+    await act(async () => {
+      finishDelete();
+      await pendingDelete;
+    });
+    expect(remove).toHaveBeenCalledOnce();
+    expect(stored()[keyA]).toBe('#metro');
+    expect(stored()[keyB]).toBe('#other');
+    expect(section.getByRole('combobox', { name: 'Send scope for this channel' })).toHaveValue(
+      '#other',
+    );
+  });
+
   it('keeps saved scope on failed delete and clears it after successful delete', async () => {
     saveFloodScopeOverride('meshcore', keyA, '#metro');
     const remove = vi
@@ -247,6 +313,31 @@ describe('MeshCore channel scope settings and QR', () => {
     );
     expect(section.getByRole('button', { name: 'Save' })).toBeEnabled();
   });
+
+  it.each([null, 'undiscovered'])(
+    'finishes a submitted Default save when %s discovers its radio identity',
+    async (identityId) => {
+      let finishSave!: () => void;
+      const pendingSave = new Promise<void>((resolve) => {
+        finishSave = resolve;
+      });
+      const save = vi.fn(() => pendingSave);
+      const { rerender } = render(panel({ identityId, onMeshcoreSetChannel: save }));
+      const section = openChannels();
+      fireEvent.click(section.getByRole('button', { name: 'Edit' }));
+      expect(section.getByRole('combobox', { name: 'Send scope for this channel' })).toBeDisabled();
+      fireEvent.click(section.getByRole('button', { name: 'Save' }));
+      rerender(panel({ onMeshcoreSetChannel: save }));
+      expect(section.getByRole('textbox', { name: 'Name' })).toHaveValue('Metro');
+      await act(async () => {
+        finishSave();
+        await pendingSave;
+      });
+      expect(save).toHaveBeenCalledOnce();
+      expect(section.queryByRole('combobox', { name: 'Send scope for this channel' })).toBeNull();
+      expect(stored()).toEqual({});
+    },
+  );
 
   it('keeps the draft and reports partial success if storing scope fails, then retries', async () => {
     saveFloodScopeOverride('meshcore', keyA, '#metro');
