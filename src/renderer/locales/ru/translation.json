@@ -513,6 +513,10 @@
     "clearChannelMessagesFailed": "Не удалось очистить {{name}}: {{message}}",
     "removeChannelNeedsRadio": "Доступно после подключения радио",
     "channels": "Каналы",
+    "scrollChannels": "Прокрутите, чтобы увидеть больше каналов",
+    "unreadChannelsAbove": "Непрочитанные выше: {{count}}",
+    "unreadChannelsBelow": "Непрочитанные ниже: {{count}}",
+    "hiddenUnreadChannels": "Непрочитанные каналы",
     "searchMessages": "Поиск сообщений",
     "closeDmTab": "Закрыть вкладку DM",
     "searchMessagesPlaceholder": "Поиск сообщений...",
@@ -3317,7 +3321,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Журнал пакетов проверки дальности"
     },
-    "currentRouteHeading": "Текущий маршрут",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Обратная связь",
     "shareContactQrAria": "Показать контактный QR-код MeshCore для официального импорта приложения",
@@ -3331,7 +3334,9 @@
     "keyManuallyVerified": "Ключ проверен",
     "keyManuallyVerifiedHint": "Открытый ключ этого узла был вручную подтвержден оператором.",
     "keyBadge": "Ключ",
-    "closePane": "Закрыть подробности"
+    "closePane": "Закрыть подробности",
+    "savedPathHeading": "Сохраненный путь",
+    "savedPathHint": "Путь с лучшим рейтингом из сохраненной истории. Он может отличаться от текущего пути отправки радиостанции или пути полученного объявления."
   },
   "nodeInfoBody": {
     "longName": "Длинное имя",

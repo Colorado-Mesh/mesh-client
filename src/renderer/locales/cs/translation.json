@@ -505,6 +505,10 @@
     "clearChannelMessagesFailed": "{{name}} se nepodařilo vymazat: {{message}}",
     "removeChannelNeedsRadio": "Dostupné po připojení rádia",
     "channels": "Kanály",
+    "scrollChannels": "Posunutím zobrazíte další kanály",
+    "unreadChannelsAbove": "Nepřečtené nahoře: {{count}}",
+    "unreadChannelsBelow": "Nepřečtené dole: {{count}}",
+    "hiddenUnreadChannels": "Nepřečtené kanály",
     "searchMessages": "Hledat zprávy",
     "closeDmTab": "Zavřít kartu DM",
     "searchMessagesPlaceholder": "Hledat zprávy...",
@@ -3292,7 +3296,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Protokol testovacího paketu rozsahu"
     },
-    "currentRouteHeading": "Aktuální trasa",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Sdílet kontakt",
     "shareContactQrAria": "Zobrazit QR kód kontaktu MeshCore pro oficiální import aplikace",
@@ -3305,7 +3308,9 @@
     "keyManuallyVerified": "Klíč ověřen",
     "keyManuallyVerifiedHint": "Veřejný klíč tohoto uzlu byl ručně potvrzen operátorem.",
     "keyBadge": "Klíč",
-    "closePane": "Zavřít podrobnosti"
+    "closePane": "Zavřít podrobnosti",
+    "savedPathHeading": "Uložená cesta",
+    "savedPathHint": "Nejlépe hodnocená cesta z uložené historie. Může se lišit od aktuální odesílací cesty rádia nebo od cesty přijatého oznámení."
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

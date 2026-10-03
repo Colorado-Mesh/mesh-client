@@ -203,6 +203,7 @@ import { useTimeFormatStore } from '../stores/timeFormatStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
 import { channelButtonLabel, ChatChannelSwitcher } from './chat/ChatChannelSwitcher';
 import { WeatherFilterSettings } from './chat/WeatherFilterSettings';
+import { WrappingChannelList } from './chat/WrappingChannelList';
 import { ChatComposer, type ChatComposerSendOpts } from './ChatComposer';
 import { ChatDmPaperShareControl, ChatPaperScanControl } from './ChatDmPaperControls';
 import { ChatPayloadText } from './ChatPayloadText';
@@ -267,12 +268,13 @@ function chatToolbarButtonClass(
   }
 }
 
-/** Inline unread count for chips in a scrolling strip (absolute badges would be clipped). */
+/** Inline unread count for conversation chips. */
 function ChipUnreadBadge({ count }: { count: number }) {
   return (
     <span
       aria-hidden="true"
-      className="text-2xs flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white"
+      data-chip-unread
+      className="text-2xs flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-red-600 px-1 leading-none font-semibold text-white"
     >
       {count > 99 ? '99+' : count}
     </span>
@@ -2789,30 +2791,19 @@ function ChatPanel({
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col">
-      {/* Row 1 — Channels (or Reticulum DMs) in one scrolling row + toolbar utilities */}
+      {/* Row 1 — Wrapping channels (or Reticulum DMs) + toolbar utilities */}
       <div
-        className={`mb-2 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
+        className={`mb-2 grid min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)] ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
       >
-        <div className="flex min-w-0 items-center gap-2" data-testid="chat-conversation-row">
+        <div
+          className="flex h-full min-h-0 min-w-0 items-start gap-2"
+          data-testid="chat-conversation-row"
+        >
           {dmOnlyChat ? (
             dmTabPills
           ) : (
             <>
-              <ChatChannelSwitcher
-                channels={channels}
-                unreadCounts={unreadCounts}
-                mecpSeverityByIndex={unreadMecpSeverity.channels}
-                activeIndex={channelViewActive ? channel : null}
-                onSelect={(index) => {
-                  selectChannel(index);
-                  setViewMode((v) => (v === 'weather' ? 'weather' : 'channels'));
-                }}
-              />
-              <ScrollStrip
-                aria-label={t('chatPanel.channels')}
-                activeKey={channelViewActive ? channel : null}
-                className="flex-1"
-              >
+              <WrappingChannelList activeKey={channelViewActive ? channel : null}>
                 {channels.map((ch, chIdx) => {
                   const isActiveChannel = channelViewActive && channel === ch.index;
                   // Weather shows a subset of the channel, so ordinary unread stays visible there.
@@ -2834,6 +2825,7 @@ function ChatPanel({
                       }
                       aria-pressed={isActiveChannel}
                       data-strip-active={isActiveChannel ? 'true' : undefined}
+                      data-channel-unread={unread}
                       onClick={() => {
                         selectChannel(ch.index);
                         setViewMode((v) => (v === 'weather' ? 'weather' : 'channels'));
@@ -2859,20 +2851,22 @@ function ChatPanel({
                             }
                           : undefined
                       }
-                      className={`${chipClass(isActiveChannel)} inline-flex shrink-0 items-center gap-1.5`}
+                      className={`${chipClass(isActiveChannel)} inline-flex h-auto min-h-7 max-w-full items-center gap-1 rounded-full! px-2! py-0.5 text-left`}
                     >
                       {!ch.name.startsWith('#') && (
-                        <span aria-hidden="true" className="text-muted -mr-1 font-mono">
+                        <span aria-hidden="true" className="text-muted shrink-0 font-mono">
                           #
                         </span>
                       )}
-                      {ch.name}
+                      <span className="min-w-0 [overflow-wrap:anywhere] whitespace-normal">
+                        {ch.name}
+                      </span>
                       {unread > 0 && <ChipUnreadBadge count={unread} />}
                       {chMecpSeverity !== undefined && <MecpUnreadIcon severity={chMecpSeverity} />}
                     </button>
                   );
                 })}
-              </ScrollStrip>
+              </WrappingChannelList>
               {meshcoreChannelSources && onSetMeshcoreChannel ? (
                 <MeshcoreChatChannelManager
                   channels={meshcoreChannelSources}
@@ -2963,7 +2957,7 @@ function ChatPanel({
         <div
           role="group"
           aria-label={t('chatPanel.toolbarLabel')}
-          className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 rounded-lg border p-0.5"
+          className="border-secondary-dark bg-deep-black flex shrink-0 items-center gap-0.5 justify-self-end rounded-lg border p-0.5"
         >
           <ChatToolbarTooltipButton
             tooltip={t('chatPanel.jumpToDate')}
@@ -3485,9 +3479,10 @@ function ChatPanel({
       )}
 
       {/* Messages area */}
-      <div className={`relative min-h-0 flex-1 ${viewMode === 'starred' ? 'hidden' : ''}`}>
+      <div className={`relative min-h-12 flex-1 ${viewMode === 'starred' ? 'hidden' : ''}`}>
         <div
           ref={scrollContainerRef}
+          data-chat-scroll-root
           onScroll={handleScroll}
           className="bg-deep-black/50 h-full overflow-y-auto overscroll-contain rounded-xl p-3 [overflow-anchor:none]"
         >
@@ -4378,7 +4373,7 @@ function ChatPanel({
         />
       ) : null}
       <ChatComposer
-        className="mt-1"
+        className="mt-1 shrink-0"
         protocol={protocol}
         viewKey={viewKey}
         isConnected={isConnected}

@@ -1256,15 +1256,16 @@ export default function NodeDetailModal({
             </div>
           )}
 
-          {/* MeshCore: live outbound route (no trace required) */}
+          {/* MeshCore: best-ranked saved path (not necessarily the current radio route) */}
           {protocol === 'meshcore' && !isOurNode && currentRoute && !traceMatchesCurrentRoute && (
             <div className="mt-3 space-y-1">
               <h4 className="text-ink-300 text-xs font-semibold">
-                {t('nodeDetailModal.currentRouteHeading')}
+                {t('nodeDetailModal.savedPathHeading')}
               </h4>
               <div className="bg-secondary-dark rounded p-2">
                 <MeshcoreRouteChain segments={currentRouteSegments} destLabel={node.long_name} />
               </div>
+              <p className="text-muted text-xs">{t('nodeDetailModal.savedPathHint')}</p>
             </div>
           )}
 

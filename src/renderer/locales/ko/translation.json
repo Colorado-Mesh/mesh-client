@@ -497,6 +497,10 @@
     "clearChannelMessagesFailed": "{{name}}을(를) 지우지 못했습니다: {{message}}",
     "removeChannelNeedsRadio": "무전기가 연결되면 사용할 수 있습니다",
     "channels": "채널",
+    "scrollChannels": "스크롤하여 더 많은 채널 보기",
+    "unreadChannelsAbove": "위쪽 안 읽음: {{count}}",
+    "unreadChannelsBelow": "아래쪽 안 읽음: {{count}}",
+    "hiddenUnreadChannels": "안 읽은 채널",
     "searchMessages": "메시지 검색",
     "closeDmTab": "DM 탭 닫기",
     "searchMessagesPlaceholder": "메시지 검색...",
@@ -3263,7 +3267,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "범위 테스트 패킷 로그"
     },
-    "currentRouteHeading": "현재 경로",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "연락처 공유",
     "shareContactQrAria": "공식 앱 가져오기를 위한 MeshCore 연락처 QR 코드 표시",
@@ -3275,7 +3278,9 @@
     "keyManuallyVerified": "키 확인됨",
     "keyManuallyVerifiedHint": "이 노드의 공개 키는 운영자가 수동으로 확인했습니다.",
     "keyBadge": "키",
-    "closePane": "세부 정보 닫기"
+    "closePane": "세부 정보 닫기",
+    "savedPathHeading": "저장된 경로",
+    "savedPathHint": "저장된 기록에서 가장 높은 평가를 받은 경로입니다. 무선 장치의 현재 전송 경로나 수신된 노드 알림의 경로와 다를 수 있습니다."
   },
   "nodeInfoBody": {
     "longName": "긴 이름",

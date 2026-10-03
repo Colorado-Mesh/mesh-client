@@ -513,6 +513,10 @@
     "clearChannelMessagesFailed": "Nie udało się wyczyścić {{name}}: {{message}}",
     "removeChannelNeedsRadio": "Dostępne po podłączeniu radia",
     "channels": "Kanały",
+    "scrollChannels": "Przewiń, aby zobaczyć więcej kanałów",
+    "unreadChannelsAbove": "Nieprzeczytane powyżej: {{count}}",
+    "unreadChannelsBelow": "Nieprzeczytane poniżej: {{count}}",
+    "hiddenUnreadChannels": "Nieprzeczytane kanały",
     "searchMessages": "Wyszukaj wiadomości",
     "closeDmTab": "Zamknij zakładkę DM",
     "searchMessagesPlaceholder": "Wyszukaj wiadomości...",
@@ -3317,7 +3321,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Dziennik pakietów testowych zakresu"
     },
-    "currentRouteHeading": "Aktualna trasa",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Udostępnij kontaktowy QR",
     "shareContactQrAria": "Pokaż kontaktowy kod QR MeshCore do oficjalnego importu aplikacji",
@@ -3331,7 +3334,9 @@
     "keyManuallyVerified": "Klucz zweryfikowany",
     "keyManuallyVerifiedHint": "Klucz publiczny tego węzła został ręcznie potwierdzony przez operatora.",
     "keyBadge": "Klucz",
-    "closePane": "Zamknij szczegóły"
+    "closePane": "Zamknij szczegóły",
+    "savedPathHeading": "Zapisana ścieżka",
+    "savedPathHint": "Najlepiej oceniana ścieżka z zapisanej historii. Może różnić się od bieżącej ścieżki nadawania radia lub ścieżki odebranego ogłoszenia."
   },
   "nodeInfoBody": {
     "longName": "Długie imię",

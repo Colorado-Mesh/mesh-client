@@ -497,6 +497,10 @@
     "clearChannelMessagesFailed": "{{name}} konnte nicht geleert werden: {{message}}",
     "removeChannelNeedsRadio": "Verfügbar, sobald das Funkgerät verbunden ist",
     "channels": "Rinnen",
+    "scrollChannels": "Für weitere Kanäle scrollen",
+    "unreadChannelsAbove": "{{count}} ungelesen oben",
+    "unreadChannelsBelow": "{{count}} ungelesen unten",
+    "hiddenUnreadChannels": "Ungelesene Kanäle",
     "searchMessages": "Nachrichten durchsuchen",
     "closeDmTab": "DM-Tab schließen",
     "searchMessagesPlaceholder": "Nachrichten durchsuchen",
@@ -3263,7 +3267,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Bereichstest-Paketprotokoll"
     },
-    "currentRouteHeading": "Aktuelle Route",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Kontakt teilen",
     "shareContactQrAria": "MeshCore-Kontakt-QR-Code für offiziellen App-Import anzeigen",
@@ -3275,7 +3278,9 @@
     "keyManuallyVerified": "Schlüssel verifiziert",
     "keyManuallyVerifiedHint": "Der öffentliche Schlüssel dieses Knotens wurde manuell von einem Bediener bestätigt.",
     "keyBadge": "Schlüssel",
-    "closePane": "Details schließen"
+    "closePane": "Details schließen",
+    "savedPathHeading": "Gespeicherter Pfad",
+    "savedPathHint": "Am besten bewerteter Pfad im gespeicherten Verlauf. Er kann vom aktuellen Sendepfad des Funkgeräts oder vom Pfad einer empfangenen Ankündigung abweichen."
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
