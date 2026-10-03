@@ -167,6 +167,36 @@ describe('MeshCore channel scope settings and QR', () => {
     expect(stored()[keyA]).toBe('#metro');
   });
 
+  it('does not persist a pending Save after switching radios', async () => {
+    const keyB = meshcoreChannelScopeKey(signatures.radioB.signature, channel)!;
+    saveFloodScopeOverride('meshcore', keyA, '#metro');
+    saveFloodScopeOverride('meshcore', keyB, '#other');
+    let finishSave!: () => void;
+    const pendingSave = new Promise<void>((resolve) => {
+      finishSave = resolve;
+    });
+    const save = vi.fn(() => pendingSave);
+    const { rerender } = render(panel({ onMeshcoreSetChannel: save }));
+    const section = openChannels();
+    fireEvent.click(section.getByRole('button', { name: 'Edit' }));
+    fireEvent.change(section.getByRole('combobox', { name: 'Send scope for this channel' }), {
+      target: { value: FLOOD_SCOPE_OVERRIDE_UNSCOPED },
+    });
+    fireEvent.click(section.getByRole('button', { name: 'Save' }));
+    expect(save).toHaveBeenCalledOnce();
+    rerender(panel({ identityId: 'radioB', onMeshcoreSetChannel: save }));
+    await act(async () => {
+      finishSave();
+      await pendingSave;
+    });
+    expect(stored()[keyA]).toBe('#metro');
+    expect(stored()[keyB]).toBe('#other');
+    fireEvent.click(section.getByRole('button', { name: 'Edit' }));
+    expect(section.getByRole('combobox', { name: 'Send scope for this channel' })).toHaveValue(
+      '#other',
+    );
+  });
+
   it('keeps saved scope on failed delete and clears it after successful delete', async () => {
     saveFloodScopeOverride('meshcore', keyA, '#metro');
     const remove = vi

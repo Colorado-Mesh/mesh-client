@@ -4146,12 +4146,12 @@ function MeshcoreChannelSection({
         editScope === 'custom' ? normalizeMeshcoreFloodScopeHashtag(customScope) : editScope;
       if (editScope === 'custom' && !isValidMeshcoreFloodScopeHashtag(scope)) return;
       await onSetChannel(idx, finalName, secret);
+      if (previousRadioSignature.current !== radioSignature) return;
       const key = meshcoreChannelScopeKey(radioSignature, { index: idx, name: finalName, secret });
       if (key && !saveFloodScopeOverride('meshcore', key, scope)) {
         addToast(t('radioPanel.meshcoreChannel.scopeSaveFailed'), 'error');
         return;
       }
-      if (previousRadioSignature.current !== radioSignature) return;
       setEditingIdx(null);
       setAddingNew(false);
     } catch (e) {
