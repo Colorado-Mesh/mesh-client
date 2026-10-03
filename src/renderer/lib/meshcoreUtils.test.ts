@@ -9,13 +9,16 @@ import {
   isMeshcoreTransportStatusChatLine,
   mergeHwModelOnContactUpdate,
   mergeMeshcoreChatStubNodes,
+  MESHCORE_AUTO_OFFLOAD_MARGIN,
   MESHCORE_CHANNEL_NAME_MAX_LEN,
   MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
   MESHCORE_CONTACTS_WARNING_THRESHOLD,
+  MESHCORE_MAX_CONTACTS,
   meshcoreAppendRepeaterAuthHint,
   meshcoreChatStubNodeIdFromDisplayName,
   meshcoreCompanionRxPathLenToHopCount,
   meshcoreConnectionImpliesUsbPower,
+  meshcoreContactThresholds,
   meshcoreContactToMeshNode,
   meshcoreContactTypeFromHwModel,
   meshcoreDeriveChannelKeyHexFromName,
@@ -23,6 +26,7 @@ import {
   meshcoreInferHopsFromOutPath,
   meshcoreIsPlaceholderNodeLongName,
   meshcoreManufacturerModelFromDeviceQuery,
+  meshcoreMaxContactsFromDeviceQuery,
   meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactAdvNameFromPrevious,
   meshcoreMergeContactHopsAwayFromPrevious,
@@ -49,6 +53,42 @@ describe('MeshCore contact capacity thresholds', () => {
     expect(MESHCORE_CONTACTS_CRITICAL_THRESHOLD).toBeGreaterThan(
       MESHCORE_CONTACTS_WARNING_THRESHOLD,
     );
+  });
+
+  it('meshcoreContactThresholds matches the legacy constants for the default 350 table', () => {
+    expect(meshcoreContactThresholds()).toEqual({
+      max: MESHCORE_MAX_CONTACTS,
+      warning: MESHCORE_CONTACTS_WARNING_THRESHOLD,
+      critical: MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
+    });
+    expect(MESHCORE_MAX_CONTACTS - MESHCORE_AUTO_OFFLOAD_MARGIN).toBe(
+      MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
+    );
+  });
+
+  it.each([100, 50, 10, 2])('keeps 0 <= warning < critical < max for a %i-slot table', (max) => {
+    const t = meshcoreContactThresholds(max);
+    expect(t.max).toBe(max);
+    expect(t.warning).toBeGreaterThanOrEqual(0);
+    expect(t.warning).toBeLessThan(t.critical);
+    expect(t.critical).toBeLessThan(max);
+  });
+
+  it('meshcoreContactThresholds(100) uses 10% / 20% margins', () => {
+    expect(meshcoreContactThresholds(100)).toEqual({ max: 100, warning: 80, critical: 90 });
+  });
+
+  it('falls back to the default table for invalid max', () => {
+    expect(meshcoreContactThresholds(0).max).toBe(MESHCORE_MAX_CONTACTS);
+    expect(meshcoreContactThresholds(Number.NaN).max).toBe(MESHCORE_MAX_CONTACTS);
+  });
+
+  it('meshcoreMaxContactsFromDeviceQuery reads positive integer maxContacts only', () => {
+    expect(meshcoreMaxContactsFromDeviceQuery({ maxContacts: 100 })).toBe(100);
+    expect(meshcoreMaxContactsFromDeviceQuery({ maxContacts: null })).toBeNull();
+    expect(meshcoreMaxContactsFromDeviceQuery({ maxContacts: 0 })).toBeNull();
+    expect(meshcoreMaxContactsFromDeviceQuery({})).toBeNull();
+    expect(meshcoreMaxContactsFromDeviceQuery(null)).toBeNull();
   });
 });
 

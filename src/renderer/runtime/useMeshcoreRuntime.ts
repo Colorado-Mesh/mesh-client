@@ -150,7 +150,12 @@ import { ensureMeshcoreChatSenderInNodeStore } from '../lib/meshcore/meshcoreCha
 import {
   attachMeshcoreContactCapacityPush,
   clearMeshcoreFirmwareContactsFullLatch,
+  getMeshcoreRadioMaxContacts,
+  maybeRequestMeshcoreAutoOffloadForCount,
+  maybeRequestMeshcoreAutoOffloadForError,
   registerMeshcoreContactsFullOffloadRunner,
+  requestMeshcoreAutoOffload,
+  setMeshcoreRadioMaxContacts,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { takeMeshcoreDiscoverSelfCache } from '../lib/meshcore/meshcoreDiscoverSelfCache';
 import { armMeshcoreDmAckPending } from '../lib/meshcore/meshcoreDmAckRuntime';
@@ -405,16 +410,16 @@ import {
   mergeHwModelOnContactUpdate,
   mergeMeshcoreChatStubNodes,
   MESHCORE_CHANNEL_NAME_MAX_LEN,
-  MESHCORE_CONTACTS_WARNING_THRESHOLD,
   MESHCORE_COORD_SCALE,
-  MESHCORE_MAX_CONTACTS,
   MESHCORE_RPC_SNR_RAW_TO_DB,
   meshcoreConnectionImpliesUsbPower,
+  meshcoreContactThresholds,
   meshcoreContactToMeshNode,
   meshcoreIsChatStubNodeId,
   meshcoreIsPlaceholderNodeLongName,
   meshcoreIsSyntheticPlaceholderPubKeyHex,
   meshcoreManufacturerModelFromDeviceQuery,
+  meshcoreMaxContactsFromDeviceQuery,
   meshcoreMergeChannelDisplayNameOntoNode,
   meshcoreMergeContactAdvNameFromPrevious,
   meshcoreMergeContactHopsAwayFromPrevious,
@@ -1918,6 +1923,7 @@ export function useMeshcoreRuntime() {
             setMeshcorePubKeyHexByNodeId(
               mergeMeshcorePubKeyHexFromContacts(contacts, selfInfoRef.current),
             );
+            maybeRequestMeshcoreAutoOffloadForCount(contacts.length);
           },
           onNodes: (newNodes) => {
             setNodes(meshcorePathUpdatedNodesMergeUpdater(newNodes));
@@ -2673,6 +2679,7 @@ export function useMeshcoreRuntime() {
         meshcoreTcpContactsDumpInFlightRef.current = transportType === 'tcp';
         let contactsRaw: MeshCoreContactRaw[] = [];
         let contactsDumpOk = false;
+        let initOnRadioContactCount: number | null = null;
         try {
           contactsRaw = sequentialRadioInit
             ? await awaitUnlessMeshcoreSetupCancelled(
@@ -2732,6 +2739,7 @@ export function useMeshcoreRuntime() {
             contactsRaw.map(meshcoreContactRawFromDevice),
           );
           assertInitConnStillLive();
+          initOnRadioContactCount = contacts.length;
           setMeshcoreContactsForTelemetry(contacts);
           setMeshcorePubKeyHexByNodeId(mergeMeshcorePubKeyHexFromContacts(contacts, info));
           previousNodesBaseline = meshcorePreviousNodesBaselineForBuild();
@@ -3035,6 +3043,7 @@ export function useMeshcoreRuntime() {
               conn.deviceQuery(MESHCORE_DEVICE_QUERY_APP_VER),
             );
             const pathFields = parsePathHashModeFromDeviceQuery(deviceInfo);
+            setMeshcoreRadioMaxContacts(meshcoreMaxContactsFromDeviceQuery(deviceInfo));
             setState((prev) => {
               const next = { ...prev };
               if (deviceInfo?.firmware_build_date) {
@@ -3094,6 +3103,12 @@ export function useMeshcoreRuntime() {
           }
           assertInitConnStillLive();
           maybeAutoLaunchMeshcoreMqttAfterIdentity();
+
+          // After deviceQuery so the radio's real table size is known; after init RPCs so the
+          // offload's removeContact loop does not race the setup sequence.
+          if (initOnRadioContactCount !== null) {
+            maybeRequestMeshcoreAutoOffloadForCount(initOnRadioContactCount);
+          }
 
           // Messages often land during post-init (autoadd / time sync). pyMC TCP may not push
           // event 131, so run one follow-up silent drain after the companion lane is free.
@@ -4625,12 +4640,13 @@ export function useMeshcoreRuntime() {
       }
       await deferMeshcoreDbContactMerge(newNodes, previousNodesBaseline);
 
-      // Warn if approaching contact limit
-      if (contacts.length > MESHCORE_CONTACTS_WARNING_THRESHOLD) {
+      const radioMax = getMeshcoreRadioMaxContacts();
+      if (contacts.length > meshcoreContactThresholds(radioMax).warning) {
         console.warn(
-          `[useMeshcoreRuntime] refreshContacts: radio contacts near limit (${contacts.length}/${MESHCORE_MAX_CONTACTS})`,
+          `[useMeshcoreRuntime] refreshContacts: radio contacts near limit (${contacts.length}/${radioMax})`,
         );
       }
+      maybeRequestMeshcoreAutoOffloadForCount(contacts.length);
     } catch (e) {
       console.error('[useMeshcoreRuntime] refreshContacts error ' + errLikeToLogString(e));
     }
@@ -6439,6 +6455,9 @@ export function useMeshcoreRuntime() {
               loginAbortSignal,
             );
             meshcoreThrowIfRoomLoginAborted(loginAbortSignal);
+            if (pathSync.tableFull) {
+              requestMeshcoreAutoOffload('table_full_error');
+            }
             if (hopsAway > 0 && !pathSync.synced) {
               throw new Error(
                 serializeMeshcoreUserMessage(
@@ -7639,6 +7658,7 @@ export function useMeshcoreRuntime() {
         return true;
       } catch (e: unknown) {
         console.warn('[useMeshcoreRuntime] importContact error ' + errLikeToLogString(e));
+        maybeRequestMeshcoreAutoOffloadForError(e);
         return false;
       }
     },
@@ -7709,6 +7729,9 @@ export function useMeshcoreRuntime() {
         Uint8Array.from(path),
         hops,
       );
+      if (result.tableFull) {
+        requestMeshcoreAutoOffload('table_full_error');
+      }
       return result.synced;
     } catch (e: unknown) {
       console.warn('[useMeshcoreRuntime] setContactPath error ' + errLikeToLogString(e));

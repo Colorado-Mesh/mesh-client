@@ -3,6 +3,7 @@ import { withTimeout } from '@/shared/withTimeout';
 
 import type { MeshCoreContactRaw } from './meshcore/meshcoreHookTypes';
 import { meshcoreContactOutPathBytesForTrace } from './meshcoreRadioContactPath';
+import { isMeshcoreTableFullError } from './meshcoreRadioErr';
 import {
   MESHCORE_COORD_SCALE,
   meshcoreContactTypeFromHwModel,
@@ -158,6 +159,8 @@ export interface MeshcoreRoomLoginPathSyncResult {
   pathByteLen: number;
   reason: 'direct' | 'no_path' | 'synced' | 'sync_failed';
   error?: string;
+  /** A push was rejected with ERR_CODE_TABLE_FULL (radio contact table full). */
+  tableFull?: boolean;
 }
 
 function findRadioContact(
@@ -233,6 +236,7 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
   }
 
   let path = outPathFromMap && outPathFromMap.length > 0 ? outPathFromMap : new Uint8Array(0);
+  let tableFull = false;
 
   if (path.length > 1 && node) {
     const contact = buildContactFromNode(pubKey, node);
@@ -242,6 +246,7 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
     } catch (e: unknown) {
       const error = e instanceof Error ? e.message : String(e);
       console.warn(`[meshcoreRoomLoginPathSync] fast path sync failed ${error}`);
+      tableFull = isMeshcoreTableFullError(e);
     }
   }
 
@@ -261,10 +266,20 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
   }
 
   if (path.length <= 1 && loginHopsAway > 0) {
-    return { synced: false, pathByteLen: path.length, reason: 'no_path' };
+    return {
+      synced: false,
+      pathByteLen: path.length,
+      reason: 'no_path',
+      ...(tableFull && { tableFull: true }),
+    };
   }
   if (path.length === 0) {
-    return { synced: false, pathByteLen: 0, reason: 'no_path' };
+    return {
+      synced: false,
+      pathByteLen: 0,
+      reason: 'no_path',
+      ...(tableFull && { tableFull: true }),
+    };
   }
 
   if (!contact && node) {
@@ -282,7 +297,12 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
   }
 
   if (!contact) {
-    return { synced: false, pathByteLen: path.length, reason: 'no_path' };
+    return {
+      synced: false,
+      pathByteLen: path.length,
+      reason: 'no_path',
+      ...(tableFull && { tableFull: true }),
+    };
   }
 
   try {
@@ -293,6 +313,12 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
       `[meshcoreRoomLoginPathSync] path push failed ${e instanceof Error ? e.message : String(e)}`,
     );
     const error = e instanceof Error ? e.message : String(e);
-    return { synced: false, pathByteLen: path.length, reason: 'sync_failed', error };
+    return {
+      synced: false,
+      pathByteLen: path.length,
+      reason: 'sync_failed',
+      error,
+      ...((tableFull || isMeshcoreTableFullError(e)) && { tableFull: true }),
+    };
   }
 }

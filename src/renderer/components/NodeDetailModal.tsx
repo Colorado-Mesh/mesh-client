@@ -25,6 +25,7 @@ import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemot
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
+import { getMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
 import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
@@ -45,8 +46,7 @@ import {
   isMeshcoreDmExcludedHwModel,
   MESHCORE_CHAT_STUB_ID_MAX,
   MESHCORE_CHAT_STUB_ID_MIN,
-  MESHCORE_CONTACTS_CRITICAL_THRESHOLD,
-  MESHCORE_MAX_CONTACTS,
+  meshcoreContactThresholds,
   meshcoreContactTypeFromHwModel,
   meshcoreTracePathLenToHops,
 } from '../lib/meshcoreUtils';
@@ -476,6 +476,7 @@ export default function NodeDetailModal({
 
   // Fetch on_radio status and contact count for MeshCore
   const [contactPubkey, setContactPubkey] = useState<string | null>(null);
+  const radioContactThresholds = meshcoreContactThresholds(getMeshcoreRadioMaxContacts());
 
   const {
     nodeStaleThresholdMs,
@@ -1101,18 +1102,17 @@ export default function NodeDetailModal({
             )}
             {protocol === 'meshcore' &&
               radioContactCount !== null &&
-              typeof MESHCORE_CONTACTS_CRITICAL_THRESHOLD === 'number' &&
-              radioContactCount >= MESHCORE_CONTACTS_CRITICAL_THRESHOLD && (
+              radioContactCount >= radioContactThresholds.critical && (
                 <span
                   className="text-2xs shrink-0 rounded border border-red-500/30 bg-red-500/20 px-1.5 py-0.5 font-medium text-red-300"
                   title={t('nodeDetailModal.radioCapacityTitle', {
                     current: radioContactCount,
-                    max: MESHCORE_MAX_CONTACTS ?? 'unknown',
+                    max: radioContactThresholds.max,
                   })}
                 >
                   <span className="inline-flex items-center gap-1">
                     <TriangleAlert aria-hidden className="h-3 w-3" size={12} />
-                    {radioContactCount}/{MESHCORE_MAX_CONTACTS ?? 'unknown'}
+                    {radioContactCount}/{radioContactThresholds.max}
                   </span>
                 </span>
               )}

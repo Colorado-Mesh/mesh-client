@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Hapus semua kontak",
     "autoOffloadWhenFull": "Auto - offload saat radio penuh",
     "autoOffloadWhenFullLabel": "Auto - offload saat penuh",
-    "autoOffloadWhenFullDesc": "Ketika pendamping melaporkan penyimpanan kontak penuh, secara otomatis offload kontak ke database aplikasi (sama seperti Offload)."
+    "autoOffloadWhenFullDesc": "Ketika pendamping melaporkan penyimpanan kontak penuh, secara otomatis offload kontak ke database aplikasi (sama seperti Offload).",
+    "overwriteOldestEvictsNote": "Overwrite tertua juga aktif. Radio menggantikan kontak lama tanpa menyimpannya ke aplikasi; pemuatan otomatis mencoba berjalan terlebih dahulu, tetapi kontak diganti saat aplikasi terputus hilang."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privasi telemetri",

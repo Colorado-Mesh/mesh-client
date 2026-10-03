@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Effacer tous les contacts",
     "autoOffloadWhenFull": "Déchargement automatique lorsque la radio est pleine",
     "autoOffloadWhenFullLabel": "Déchargement automatique lorsqu'il est plein",
-    "autoOffloadWhenFullDesc": "Lorsque le compagnon signale que le stockage des contacts est plein, déchargez automatiquement les contacts dans la base de données de l'application (identique au déchargement)."
+    "autoOffloadWhenFullDesc": "Lorsque le compagnon signale que le stockage des contacts est plein, déchargez automatiquement les contacts dans la base de données de l'application (identique au déchargement).",
+    "overwriteOldestEvictsNote": "Écraser le plus ancien est également activé. La radio remplace les anciens contacts sans les enregistrer dans l'application ; le déchargement automatique tente de s'exécuter en premier, mais les contacts remplacés lorsque l'application est déconnectée sont perdus."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Confidentialité de la télémétrie",

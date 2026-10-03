@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "清除所有联系人",
     "autoOffloadWhenFull": "收音机已满时自动卸载",
     "autoOffloadWhenFullLabel": "满时自动卸载",
-    "autoOffloadWhenFullDesc": "当伴侣报告联系人存储空间已满时，自动将联系人卸载到应用程序数据库（与卸载相同）。"
+    "autoOffloadWhenFullDesc": "当伴侣报告联系人存储空间已满时，自动将联系人卸载到应用程序数据库（与卸载相同）。",
+    "overwriteOldestEvictsNote": "覆盖最旧版本也处于打开状态。收音机会替换旧联系人，但不会将其保存到应用程序中；自动卸载会先尝试运行，但在应用程序断开连接时替换的联系人会丢失。"
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "遥测隐私",

@@ -28,4 +28,14 @@ describe('meshcore.js patch — firmware-ahead push codes', () => {
     expect(PATCH).toContain('onContactsFullPush');
     expect(PATCH).toMatch(/this\.emit\(0x90,\s*\{\}/);
   });
+
+  it('parses maxContacts (max_contacts/2 byte, companion v3+) from DeviceInfo', () => {
+    expect(PATCH).toMatch(/firmwareVer >= 3 && capacityBytes\[0\] > 0 \? capacityBytes\[0\] \* 2/);
+    expect(PATCH).toMatch(/\+\s+maxContacts: maxContacts,/);
+  });
+
+  it('rejects importContact / addOrUpdateContact with the Err payload (errCode)', () => {
+    const matches = PATCH.match(/\+\s+reject\(response\); \/\/ \{ errCode \}/g) ?? [];
+    expect(matches.length).toBeGreaterThanOrEqual(2);
+  });
 });

@@ -13,13 +13,21 @@ vi.mock('../../components/Toast', () => ({
 
 import { pushAppToast } from '../../components/Toast';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
+import { packetRouter } from '../drivers/PacketRouter';
+import { isMeshcoreTableFullError } from '../meshcoreRadioErr';
 import { MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS } from '../timeConstants';
 import {
   applyMeshcoreContactDeletedFromRadio,
+  attachMeshcoreContactCapacityPush,
+  getMeshcoreRadioMaxContacts,
   handleMeshcoreContactsFullPush,
   isMeshcoreFirmwareContactsFullActive,
+  maybeRequestMeshcoreAutoOffloadForCount,
+  maybeRequestMeshcoreAutoOffloadForError,
   registerMeshcoreContactsFullOffloadRunner,
+  requestMeshcoreAutoOffload,
   resetMeshcoreContactCapacityPushForTests,
+  setMeshcoreRadioMaxContacts,
   writeMeshcoreAutoOffloadWhenFull,
 } from './meshcoreContactCapacityPush';
 
@@ -110,5 +118,132 @@ describe('meshcoreContactCapacityPush', () => {
     handleMeshcoreContactsFullPush(10_000 + MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS - 1);
     expect(pushAppToast).toHaveBeenCalledTimes(2);
     expect(runner).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['firmware_full', 'count_threshold', 'table_full_error', 'overwrite_eviction'] as const)(
+    'runs the offload runner for reason %s when auto-offload is on',
+    async (reason) => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      const runner = vi.fn().mockResolvedValue(undefined);
+      registerMeshcoreContactsFullOffloadRunner(runner);
+
+      requestMeshcoreAutoOffload(reason, 1_000);
+      await vi.waitFor(() => {
+        expect(runner).toHaveBeenCalledTimes(1);
+      });
+    },
+  );
+
+  it('does not start a second offload while one is in flight', async () => {
+    writeMeshcoreAutoOffloadWhenFull(true);
+    let finish: () => void = () => {};
+    const runner = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    registerMeshcoreContactsFullOffloadRunner(runner);
+
+    requestMeshcoreAutoOffload('count_threshold', 1_000);
+    requestMeshcoreAutoOffload(
+      'overwrite_eviction',
+      1_000 + MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS + 1,
+    );
+    expect(runner).toHaveBeenCalledTimes(1);
+    finish();
+    await vi.waitFor(() => {
+      expect(runner).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('stays silent for count/eviction signals when auto-offload is off', () => {
+    const runner = vi.fn().mockResolvedValue(undefined);
+    registerMeshcoreContactsFullOffloadRunner(runner);
+
+    requestMeshcoreAutoOffload('count_threshold', 1_000);
+    requestMeshcoreAutoOffload('overwrite_eviction', 2_000);
+    expect(runner).not.toHaveBeenCalled();
+    expect(pushAppToast).not.toHaveBeenCalled();
+  });
+
+  it('alarms with Offload CTA for a table-full error when auto-offload is off', () => {
+    registerMeshcoreContactsFullOffloadRunner(vi.fn().mockResolvedValue(undefined));
+
+    expect(maybeRequestMeshcoreAutoOffloadForError({ errCode: 3 }, 1_000)).toBe(true);
+    expect(isMeshcoreFirmwareContactsFullActive()).toBe(true);
+    expect(pushAppToast).toHaveBeenCalledWith(
+      'radioPanel.contactsFullAlarm',
+      'error',
+      20_000,
+      expect.anything(),
+    );
+  });
+
+  it('detects only ERR_CODE_TABLE_FULL errors', () => {
+    expect(isMeshcoreTableFullError({ errCode: 3 })).toBe(true);
+    expect(isMeshcoreTableFullError({ errCode: 2 })).toBe(false);
+    expect(isMeshcoreTableFullError(undefined)).toBe(false);
+    expect(isMeshcoreTableFullError(new Error('table full'))).toBe(false);
+    expect(maybeRequestMeshcoreAutoOffloadForError({ errCode: 4 })).toBe(false);
+  });
+
+  describe('count trigger', () => {
+    it('fires at radio max minus the margin (default 350 → 340)', async () => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      const runner = vi.fn().mockResolvedValue(undefined);
+      registerMeshcoreContactsFullOffloadRunner(runner);
+
+      expect(maybeRequestMeshcoreAutoOffloadForCount(339, 1_000)).toBe(false);
+      expect(maybeRequestMeshcoreAutoOffloadForCount(340, 1_000)).toBe(true);
+      await vi.waitFor(() => {
+        expect(runner).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('uses the radio-reported table size', () => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      registerMeshcoreContactsFullOffloadRunner(vi.fn().mockResolvedValue(undefined));
+      setMeshcoreRadioMaxContacts(100);
+      expect(getMeshcoreRadioMaxContacts()).toBe(100);
+
+      expect(maybeRequestMeshcoreAutoOffloadForCount(89, 1_000)).toBe(false);
+      expect(maybeRequestMeshcoreAutoOffloadForCount(90, 1_000)).toBe(true);
+    });
+
+    it('does nothing when auto-offload is off', () => {
+      const runner = vi.fn().mockResolvedValue(undefined);
+      registerMeshcoreContactsFullOffloadRunner(runner);
+      expect(maybeRequestMeshcoreAutoOffloadForCount(350, 1_000)).toBe(false);
+      expect(runner).not.toHaveBeenCalled();
+    });
+
+    it('ignores invalid radio max values', () => {
+      setMeshcoreRadioMaxContacts(0);
+      expect(getMeshcoreRadioMaxContacts()).toBe(350);
+      setMeshcoreRadioMaxContacts(null);
+      expect(getMeshcoreRadioMaxContacts()).toBe(350);
+    });
+  });
+
+  it('0x8F contact-deleted (overwrite eviction) triggers auto-offload when enabled', async () => {
+    writeMeshcoreAutoOffloadWhenFull(true);
+    const runner = vi.fn().mockResolvedValue(undefined);
+    registerMeshcoreContactsFullOffloadRunner(runner);
+    const detach = attachMeshcoreContactCapacityPush(identityId);
+    try {
+      packetRouter.dispatch(
+        {
+          type: 'meshcore_contact_deleted',
+          payload: { nodeId: 0x01020304, publicKey: new Uint8Array(32).fill(7) },
+        },
+        identityId,
+      );
+      await vi.waitFor(() => {
+        expect(runner).toHaveBeenCalledTimes(1);
+      });
+    } finally {
+      detach();
+    }
   });
 });

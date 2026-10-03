@@ -1,25 +1,54 @@
 /**
- * MeshCore companion pushes for contact capacity:
+ * MeshCore contact capacity:
  * - 0x8F CONTACT_DELETED — one radio eviction; mark that contact off-radio and decrement count
  * - 0x90 CONTACTS_FULL — alarm / optional auto-offload
+ * - App-side triggers (count near the radio limit, ERR_CODE_TABLE_FULL, overwrite eviction)
+ *   share {@link requestMeshcoreAutoOffload} because firmware only sends 0x90 in auto-add mode
+ *   with overwrite-oldest off.
  */
 import { pushAppToast, type ToastAction } from '../../components/Toast';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
 import i18n from '../i18n';
+import { isMeshcoreTableFullError } from '../meshcoreRadioErr';
+import { MESHCORE_MAX_CONTACTS, meshcoreContactThresholds } from '../meshcoreUtils';
 import { MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS } from '../timeConstants';
 import type { IdentityId } from '../types';
 
 export const MESHCORE_AUTO_OFFLOAD_WHEN_FULL_KEY = 'mesh-client:meshcoreAutoOffloadWhenFull';
 
+export type MeshcoreAutoOffloadReason =
+  'firmware_full' | 'count_threshold' | 'table_full_error' | 'overwrite_eviction';
+
 /** Firmware reported contacts-full; capacity UI treats as critical until cleared. */
 let firmwareContactsFullActive = false;
 const firmwareFullListeners = new Set<() => void>();
 const contactCountRefreshListeners = new Set<() => void>();
+const radioMaxContactsListeners = new Set<() => void>();
 
 let lastContactsFullAlarmAt = 0;
 let contactsFullOffloadInFlight = false;
+let radioMaxContacts: number | null = null;
+
+/** Contact table size reported by the companion (device query v3+), or the default. */
+export function getMeshcoreRadioMaxContacts(): number {
+  return radioMaxContacts ?? MESHCORE_MAX_CONTACTS;
+}
+
+export function setMeshcoreRadioMaxContacts(max: number | null): void {
+  const next = max !== null && Number.isInteger(max) && max > 0 ? max : null;
+  if (radioMaxContacts === next) return;
+  radioMaxContacts = next;
+  for (const listener of radioMaxContactsListeners) listener();
+}
+
+export function subscribeMeshcoreRadioMaxContacts(listener: () => void): () => void {
+  radioMaxContactsListeners.add(listener);
+  return () => {
+    radioMaxContactsListeners.delete(listener);
+  };
+}
 
 export type MeshcoreContactsFullOffloadRunner = () => Promise<void>;
 
@@ -142,21 +171,53 @@ async function runContactsFullOffload(): Promise<void> {
   }
 }
 
+export function isMeshcoreAutoOffloadInFlight(): boolean {
+  return contactsFullOffloadInFlight;
+}
+
 /**
- * 0x90: companion contact table full. Latch critical UI; auto-offload or sticky alarm+CTA.
+ * Single entry for every "radio is (nearly) full" signal. With auto-offload on, runs the
+ * registered offload runner; otherwise shows the sticky alarm with an Offload CTA.
+ * In-flight guard + debounce prevent loops when the post-offload contact refresh re-checks.
  */
-export function handleMeshcoreContactsFullPush(now = Date.now()): void {
-  setFirmwareContactsFullActive(true);
+export function requestMeshcoreAutoOffload(
+  reason: MeshcoreAutoOffloadReason,
+  now = Date.now(),
+): void {
+  const autoOffload = readMeshcoreAutoOffloadWhenFull();
+  console.debug(
+    `[meshcoreContactCapacityPush] auto-offload requested reason=${reason} enabled=${autoOffload}`,
+  );
+  if (reason === 'firmware_full' || reason === 'table_full_error') {
+    setFirmwareContactsFullActive(true);
+  }
   notifyMeshcoreContactCountMaybeChanged();
 
-  if (readMeshcoreAutoOffloadWhenFull()) {
-    if (contactsFullOffloadInFlight) return;
-    if (
-      lastContactsFullAlarmAt > 0 &&
-      now - lastContactsFullAlarmAt < MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS
-    )
+  if (contactsFullOffloadInFlight) {
+    console.debug(
+      `[meshcoreContactCapacityPush] auto-offload skipped (in flight) reason=${reason}`,
+    );
+    return;
+  }
+  if (
+    lastContactsFullAlarmAt > 0 &&
+    now - lastContactsFullAlarmAt < MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS
+  ) {
+    console.debug(
+      `[meshcoreContactCapacityPush] auto-offload skipped (debounced) reason=${reason}`,
+    );
+    return;
+  }
+
+  if (autoOffload) {
+    if (!contactsFullOffloadRunner) {
+      console.warn(
+        `[meshcoreContactCapacityPush] auto-offload requested but no runner reason=${reason}`,
+      );
       return;
+    }
     lastContactsFullAlarmAt = now;
+    console.debug(`[meshcoreContactCapacityPush] auto-offload starting reason=${reason}`);
     pushAppToast(i18n.t('radioPanel.contactsFullAutoOffloadStarted'), 'warning', 6000);
     void runContactsFullOffload().catch((e: unknown) => {
       console.warn('[meshcoreContactCapacityPush] auto-offload failed ' + errLikeToLogString(e));
@@ -165,11 +226,9 @@ export function handleMeshcoreContactsFullPush(now = Date.now()): void {
     return;
   }
 
-  if (
-    lastContactsFullAlarmAt > 0 &&
-    now - lastContactsFullAlarmAt < MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS
-  )
-    return;
+  // Count/eviction signals stay silent when auto-offload is off; the capacity badge covers them.
+  if (reason === 'count_threshold' || reason === 'overwrite_eviction') return;
+
   lastContactsFullAlarmAt = now;
 
   const action: ToastAction = {
@@ -184,13 +243,42 @@ export function handleMeshcoreContactsFullPush(now = Date.now()): void {
   pushAppToast(i18n.t('radioPanel.contactsFullAlarm'), 'error', 20_000, { action });
 }
 
+/** 0x90: companion contact table full. */
+export function handleMeshcoreContactsFullPush(now = Date.now()): void {
+  requestMeshcoreAutoOffload('firmware_full', now);
+}
+
+/**
+ * App-side count check (connect, contact sync, new contact). Fires before the table is full so
+ * offload wins over firmware overwrite-oldest. Returns true when a request was made.
+ */
+export function maybeRequestMeshcoreAutoOffloadForCount(
+  onRadioCount: number,
+  now = Date.now(),
+): boolean {
+  if (!readMeshcoreAutoOffloadWhenFull()) return false;
+  const { critical } = meshcoreContactThresholds(getMeshcoreRadioMaxContacts());
+  if (onRadioCount < critical) return false;
+  requestMeshcoreAutoOffload('count_threshold', now);
+  return true;
+}
+
+/** Routes a TABLE_FULL rejection from add/import into auto-offload. Returns true when handled. */
+export function maybeRequestMeshcoreAutoOffloadForError(err: unknown, now = Date.now()): boolean {
+  if (!isMeshcoreTableFullError(err)) return false;
+  requestMeshcoreAutoOffload('table_full_error', now);
+  return true;
+}
+
 export function resetMeshcoreContactCapacityPushForTests(): void {
   firmwareContactsFullActive = false;
   lastContactsFullAlarmAt = 0;
   contactsFullOffloadInFlight = false;
   contactsFullOffloadRunner = null;
+  radioMaxContacts = null;
   firmwareFullListeners.clear();
   contactCountRefreshListeners.clear();
+  radioMaxContactsListeners.clear();
 }
 
 export function attachMeshcoreContactCapacityPush(identityId: IdentityId): () => void {
@@ -207,6 +295,8 @@ function createListener(identityId: IdentityId): PacketRouterListener {
           nodeId: event.payload.nodeId,
           publicKey: event.payload.publicKey,
         });
+        // Firmware only pushes 0x8F for overwrite-oldest: the table is full and evicting.
+        requestMeshcoreAutoOffload('overwrite_eviction');
         break;
       case 'meshcore_contacts_full':
         handleMeshcoreContactsFullPush();

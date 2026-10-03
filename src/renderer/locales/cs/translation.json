@@ -2565,7 +2565,8 @@
     "clearAllContactsButton": "Vymazat všechny kontakty",
     "autoOffloadWhenFull": "Automatické vypnutí, když je rádio plné",
     "autoOffloadWhenFullLabel": "Automatické vyložení po zaplnění",
-    "autoOffloadWhenFullDesc": "Když je úložiště zpráv o kontaktech plné, automaticky odešlete kontakty do databáze aplikace (stejně jako Offload)."
+    "autoOffloadWhenFullDesc": "Když je úložiště zpráv o kontaktech plné, automaticky odešlete kontakty do databáze aplikace (stejně jako Offload).",
+    "overwriteOldestEvictsNote": "Přepsat nejstarší je také zapnuto. Rádio nahradí staré kontakty bez jejich uložení do aplikace; automatické načtení se pokusí spustit jako první, ale kontakty vyměněné během odpojení aplikace se ztratí."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Telemetrické soukromí",

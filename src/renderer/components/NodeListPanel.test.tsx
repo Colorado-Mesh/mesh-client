@@ -92,7 +92,7 @@ vi.mock('../hooks/useMeshcoreContactCapacity', () => ({
     loading: meshcoreContactCapacityState.loading,
     offloadProgress: meshcoreContactCapacityState.offloadProgress,
     cancelOffload: cancelOffloadMock,
-    summary: meshcoreContactCapacityState.summary,
+    summary: { max: 350, ...meshcoreContactCapacityState.summary },
     offloadAndReconcile: offloadAndReconcileMock,
     refreshCount: refreshCountMock,
   }),

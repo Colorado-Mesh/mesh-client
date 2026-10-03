@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "Limpar todos os contatos",
     "autoOffloadWhenFull": "Descarregamento automático quando o rádio está cheio",
     "autoOffloadWhenFullLabel": "Descarregamento automático quando cheio",
-    "autoOffloadWhenFullDesc": "Quando o companheiro relata que o armazenamento de contatos está cheio, descarregue automaticamente os contatos no banco de dados do aplicativo (o mesmo que descarregar)."
+    "autoOffloadWhenFullDesc": "Quando o companheiro relata que o armazenamento de contatos está cheio, descarregue automaticamente os contatos no banco de dados do aplicativo (o mesmo que descarregar).",
+    "overwriteOldestEvictsNote": "Substituir mais antigo também está ativado. O rádio substitui os contatos antigos sem salvá-los no aplicativo; o descarregamento automático tenta ser executado primeiro, mas os contatos substituídos enquanto o aplicativo está desconectado são perdidos."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "Privacidade de telemetria",

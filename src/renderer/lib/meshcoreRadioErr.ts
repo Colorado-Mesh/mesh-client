@@ -8,6 +8,12 @@ export const MESHCORE_RADIO_ERR_BAD_STATE = 4;
 export const MESHCORE_RADIO_ERR_FILE_IO = 5;
 export const MESHCORE_RADIO_ERR_ILLEGAL_ARG = 6;
 
+/** True when `err` is the companion's ERR_CODE_TABLE_FULL rejection (patched meshcore.js `{ errCode }`). */
+export function isMeshcoreTableFullError(err: unknown): boolean {
+  if (err === null || typeof err !== 'object') return false;
+  return (err as { errCode?: unknown }).errCode === MESHCORE_RADIO_ERR_TABLE_FULL;
+}
+
 export function meshcoreRadioErrMessage(errCode: number | null | undefined): DiagnosticTextI18n {
   switch (errCode) {
     case MESHCORE_RADIO_ERR_BAD_STATE:

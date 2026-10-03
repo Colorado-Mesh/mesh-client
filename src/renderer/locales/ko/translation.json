@@ -2539,7 +2539,8 @@
     "clearAllContactsButton": "모든 연락처 지우기",
     "autoOffloadWhenFull": "라디오가 가득 찼을 때 자동 오프로드",
     "autoOffloadWhenFullLabel": "가득 찼을 때 자동 오프로드",
-    "autoOffloadWhenFullDesc": "동반자가 연락처 저장소가 가득 찼다고 보고하면 자동으로 연락처를 앱 데이터베이스로 오프로드합니다 (오프로드와 동일)."
+    "autoOffloadWhenFullDesc": "동반자가 연락처 저장소가 가득 찼다고 보고하면 자동으로 연락처를 앱 데이터베이스로 오프로드합니다 (오프로드와 동일).",
+    "overwriteOldestEvictsNote": "덮어쓰기 오래된 항목도 켜져 있습니다. 라디오는 이전 연락처를 앱에 저장하지 않고 교체합니다. 자동 오프로드가 먼저 실행되려고 시도하지만 앱이 연결 해제되는 동안 교체된 연락처는 손실됩니다."
   },
   "meshcoreTelemetryPrivacy": {
     "summary": "원격 측정 개인 정보 보호",
