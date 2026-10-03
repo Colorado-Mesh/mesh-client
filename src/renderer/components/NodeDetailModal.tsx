@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs, react-hooks/purity */
 import { Copy, KeyRound, PARENT_HOVER_ATTR, Star, TriangleAlert, X } from 'lucide-react-motion';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -25,7 +25,10 @@ import { useMeshcoreRepeaterRemoteAuth } from '../hooks/useMeshcoreRepeaterRemot
 import { formatCoordPair } from '../lib/coordUtils';
 import { downloadBlob } from '../lib/downloadBlob';
 import { meshtasticHwModelDisplay } from '../lib/hardwareModels';
-import { getMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
+import {
+  getMeshcoreRadioMaxContacts,
+  subscribeMeshcoreRadioMaxContacts,
+} from '../lib/meshcore/meshcoreContactCapacityPush';
 import type {
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
@@ -476,7 +479,14 @@ export default function NodeDetailModal({
 
   // Fetch on_radio status and contact count for MeshCore
   const [contactPubkey, setContactPubkey] = useState<string | null>(null);
-  const radioContactThresholds = meshcoreContactThresholds(getMeshcoreRadioMaxContacts());
+  const radioMaxContacts = useSyncExternalStore(
+    subscribeMeshcoreRadioMaxContacts,
+    getMeshcoreRadioMaxContacts,
+  );
+  const radioContactThresholds = useMemo(
+    () => meshcoreContactThresholds(radioMaxContacts),
+    [radioMaxContacts],
+  );
 
   const {
     nodeStaleThresholdMs,

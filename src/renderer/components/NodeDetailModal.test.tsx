@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNode
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { mergeAppSetting } from '../lib/appSettingsStorage';
+import { setMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { meshcoreRepeaterCredentialSettingForNode } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
 import { Z_NESTED_AUTH_OVERLAY, Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
@@ -300,6 +301,27 @@ describe('NodeDetailModal MeshCore actions', () => {
     const nodeModalOverlay = container.querySelector('.fixed');
     expect(nodeModalOverlay).toHaveStyle({ zIndex: String(Z_NODE_DETAIL_MODAL) });
     expect(Z_NESTED_AUTH_OVERLAY).toBeGreaterThan(Z_NODE_DETAIL_MODAL);
+  });
+
+  it('updates the radio capacity badge when the radio contact limit changes while open', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(95);
+    act(() => {
+      setMeshcoreRadioMaxContacts(100);
+    });
+    try {
+      renderMeshcoreModal();
+      expect(await screen.findByText('95/100')).toBeInTheDocument();
+
+      act(() => {
+        setMeshcoreRadioMaxContacts(null);
+      });
+      await waitFor(() => {
+        expect(screen.queryByText('95/100')).not.toBeInTheDocument();
+      });
+      expect(screen.queryByText('95/350')).not.toBeInTheDocument();
+    } finally {
+      setMeshcoreRadioMaxContacts(null);
+    }
   });
 
   it('disables MeshCore RPC buttons when isConnected is false', () => {

@@ -307,7 +307,12 @@ export async function syncMeshcoreRoomContactPathBeforeLogin(
 
   try {
     await pushWithTimeout(contact, path, 'meshcoreRoomLoginPathSyncPush');
-    return { synced: true, pathByteLen: path.length, reason: 'synced' };
+    return {
+      synced: true,
+      pathByteLen: path.length,
+      reason: 'synced',
+      ...(tableFull && { tableFull: true }),
+    };
   } catch (e: unknown) {
     console.warn(
       `[meshcoreRoomLoginPathSync] path push failed ${e instanceof Error ? e.message : String(e)}`,
