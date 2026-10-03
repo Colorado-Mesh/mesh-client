@@ -480,7 +480,13 @@ vi.mock('./hooks/useReticulumPanelActions', async (importOriginal) => {
 vi.mock('./lazyTabPanels', () => ({
   AppPanel: (props: Record<string, unknown>) => {
     lastAppPanelProps.current = props;
-    return <div data-testid="app-panel-mock" />;
+    return (
+      <div data-testid="app-panel-mock">
+        <div data-setting-anchor="app.appearance.reduceMotion">
+          <input type="checkbox" aria-label="Reduce motion" />
+        </div>
+      </div>
+    );
   },
   DiagnosticsPanel: () => null,
   GamesPanel: () => <div data-testid="games-panel-mock">games</div>,
@@ -851,24 +857,47 @@ describe('App shell layout', () => {
     expect(within(dialog).getByRole('button', { name: /Ridge Owl/ })).toBeInTheDocument();
   });
 
-  it('jumps from a settings result to its panel and announces it when the row is absent', async () => {
-    renderApp();
+  function openSettingFromLauncher(query: string, rowName: string): void {
     fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
     const dialog = screen.getByRole('dialog', { name: 'All panels' });
     fireEvent.change(
       within(dialog).getByRole('textbox', {
         name: 'Search panels, contacts, channels and settings',
       }),
-      { target: { value: 'reduce motion' } },
+      { target: { value: query } },
     );
     const settings = within(dialog).getByRole('region', { name: 'Settings' });
-    fireEvent.click(within(settings).getByRole('button', { name: 'Reduce motion, Appearance' }));
+    fireEvent.click(within(settings).getByRole('button', { name: rowName }));
     expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
+  }
+
+  it('jumps from a settings result to its row, focuses it and announces it', async () => {
+    const originalScrollIntoView = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = vi.fn();
+    onTestFinished(() => {
+      Element.prototype.scrollIntoView = originalScrollIntoView;
+    });
+    renderApp();
+    openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');
+    await waitFor(
+      () => {
+        expect(document.getElementById('app-announcer-polite')).toHaveTextContent(
+          'Jumped to Reduce motion',
+        );
+      },
+      { timeout: 3000 },
+    );
+    expect(screen.getByRole('checkbox', { name: 'Reduce motion' })).toHaveFocus();
+  });
+
+  it('jumps from a settings result to its panel and announces it when the row is absent', async () => {
+    renderApp();
+    openSettingFromLauncher('24-hour', 'Use 24-hour time, Appearance');
     const appPanelHost = document.getElementById(`panel-${String(TAB_SLOT_IDS.indexOf('App'))}`);
     expect(appPanelHost).not.toBeNull();
     expect(appPanelHost?.hidden).toBe(false);
-    // AppPanel is mocked without anchors, so the reveal times out like a row hidden while
-    // disconnected and the jump announces the panel instead.
+    // The AppPanel mock renders no anchor for this setting, so the reveal times out like a row
+    // hidden while disconnected and the jump announces the panel instead.
     await waitFor(
       () => {
         expect(document.getElementById('app-announcer-polite')).toHaveTextContent(
