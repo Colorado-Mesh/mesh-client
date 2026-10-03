@@ -1,0 +1,2741 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../accessibility-checklist/">
+      
+      
+        <link rel="next" href="../ci-cd/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>UI Style Guide - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ui-style-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              UI Style Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../diagnostics/" class="md-tabs__link">
+          
+  
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Style Guide
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Style Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#who-we-design-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who we design for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#color" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Color
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Color">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neutrals-ink" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutrals (ink)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protocol-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocol scales
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accent-theme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accent (theme)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-semantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status (semantic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Themes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spacing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spacing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#radius" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Radius
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elevation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elevation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#icons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Icons
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keyboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#motion-and-battery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motion and battery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Copy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic & MeshCore Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-sidecar-ipc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Sidecar IPC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-games-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Games Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notification-sounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notification Sounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Community
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discord
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Website
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../third-party-licenses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Third-party licenses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#who-we-design-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who we design for
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#color" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Color
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Color">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#neutrals-ink" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Neutrals (ink)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#protocol-scales" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protocol scales
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#accent-theme" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accent (theme)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#status-semantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status (semantic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#themes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Themes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Type
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#spacing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spacing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#radius" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Radius
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elevation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elevation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#icons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Icons
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#layout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layout
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#navigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Navigation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keyboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keyboard
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Chat
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#motion-and-battery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Motion and battery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#copy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Copy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accessibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accessibility
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#enforcement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Enforcement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-items" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Open items
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="ui-style-guide">UI style guide</h1>
+<p>Rules for the Mesh Client UI (desktop today, iOS and Android later), written for contributors and for AI coding agents. It combines the Colorado Mesh style guide by ashortgrayble (color scales, type system, radius, elevation) with the v6 redesign from <a href="https://github.com/Colorado-Mesh/mesh-client/issues/1062">issue #1062</a>: Option B navigation (rail, section tabs, status bar) plus Option C's launcher.</p>
+<p>The source of truth for exact values, contrast ratios and rationale is the <a href="https://www.figma.com/design/ZPZsHgPZX8dQTUYzP4uDjZ/Colorado-Mesh?node-id=17-4">Colorado Mesh style guide in Figma</a>. The tokens in <code>src/renderer/styles.css</code> carry its values.</p>
+<p>When a rule here conflicts with an older panel, follow this guide for new or changed UI. Source-policy rules (see <a href="#enforcement">Enforcement</a>) keep the most important ones from regressing.</p>
+<h2 id="who-we-design-for">Who we design for</h2>
+<table>
+<thead>
+<tr>
+<th>Persona</th>
+<th>Uses</th>
+<th>What matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hobbyists (most users)</td>
+<td>Chat above all, on a desktop; ages 16 to 78</td>
+<td>Chat that never loses a message, larger text on demand, obvious features</td>
+</tr>
+<tr>
+<td>Mesh operators</td>
+<td>Diagnostics, map layers, Repeaters, Sniffer</td>
+<td>Dense data that stays fast with very large lists</td>
+</tr>
+<tr>
+<td>Emergency managers</td>
+<td>MECP, Incident, map layers</td>
+<td>Incident always one click away, unambiguous status colors</td>
+</tr>
+<tr>
+<td>Field responders</td>
+<td>Same as managers, on laptops running on battery, offline</td>
+<td>Works with no internet, low motion, readable in daylight</td>
+</tr>
+</tbody>
+</table>
+<p>Impact grows from "it is fun" to "a retiree misses the conversation" to "emergency traffic". Treat anything on the chat or incident path as the last kind.</p>
+<p>Principles:</p>
+<ol>
+<li>Chat first. It is 99% of use once connected; nothing may push it out of reach.</li>
+<li>Every feature is discoverable: from the rail, the section tabs, or the launcher (Ctrl+K / Cmd+K).</li>
+<li>Design for 100,000 items. The app caps most lists at 10,000 by default, users can raise it. Virtualize or cap work, never do O(n) work per keystroke or per render on a hot path.</li>
+<li>Everything can scroll vertically; wide content scrolls horizontally inside its own container, never the page.</li>
+<li>Offline and on battery: no network fonts or assets, no decorative animation when Reduce motion is on.</li>
+<li>Color carries meaning (status, protocol) and is never the only signal: pair it with text, an icon or a shape.</li>
+</ol>
+<h2 id="quick-checklist">Quick checklist</h2>
+<ul>
+<li>Colors come from <a href="#color">tokens and scales</a>. No new hex, no gradients, glows or text shadows. Neutrals are ink.</li>
+<li>Text sizes are rem tokens (<a href="#type">Type</a>); readable text is 12px or larger. No <code>text-[13px]</code>.</li>
+<li>Radius and shadow come from the tokens in <a href="#radius">Radius</a> and <a href="#elevation">Elevation</a>.</li>
+<li>Icons are Lucide (<code>lucide-react-motion</code>); never emoji or text glyphs as icons.</li>
+<li>Every icon-only control has an <code>aria-label</code>; text meets 4.5:1.</li>
+<li>New or changed UI with colored fills has a <code>vitest-axe</code> test that calls <code>hydrateAxeThemeColors()</code>.</li>
+<li>Copy: sentence case, no em or en dashes, no emoji, strings in <code>en/translation.json</code>.</li>
+<li>A new panel has a slot in <code>tabSlotIds.ts</code>, a capability in <code>appTabMappings.ts</code> and a section in <code>navSections.ts</code>.</li>
+<li>Works at 1024x768 and at phone width (390px); same on Linux, macOS and Windows.</li>
+</ul>
+<h2 id="color">Color</h2>
+<p>Everything uses Tailwind utility classes. Theme tokens (below) are CSS variables users can change in App &gt; Appearance &gt; Colors (<code>src/renderer/lib/themeColors.ts</code>); hard-coded hex ignores their choice and is only allowed in canvas drawing and Leaflet marker HTML.</p>
+<p><code>themeColors.ts</code> writes the theme tokens onto <code>:root</code> as inline styles at boot, which overrides the <code>@theme</code> block in <code>styles.css</code>. A changed default must change in both <code>styles.css</code> and <code>DEFAULT_THEME_COLORS</code>; <code>styleTokens.test.ts</code> fails when they drift.</p>
+<h3 id="neutrals-ink">Neutrals (ink)</h3>
+<p>Neutrals come from the Midnight Serenity palette picked during review: Ink Black <code>#11151c</code> (950), Deep Space Blue <code>#212d40</code> (800) and Charcoal Blue <code>#364156</code> (700). The other steps are derived. 900 sits halfway between 950 and 800, and 50 to 600 keep Tailwind slate's lightness per step with the palette's hue, so text contrast stays where it was. The scale is <code>--color-ink-*</code> in <code>styles.css</code>, and a <a href="#themes">theme</a> surface swaps all eleven steps at runtime.</p>
+<p>Use <code>ink-*</code> utilities or the tokens below; <code>slate-*</code>, <code>zinc-*</code> and <code>gray-*</code> are rejected by source policy. Zinc was tried first and read as brown next to the Reticulum yellow.</p>
+<table>
+<thead>
+<tr>
+<th>Token / class</th>
+<th>Default (ink)</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bg-app-bg</code></td>
+<td><code>#11151c</code> (950)</td>
+<td>App background, section header, main viewport</td>
+</tr>
+<tr>
+<td><code>bg-deep-black</code></td>
+<td><code>#19212d</code> (900)</td>
+<td>Rail, status bar, cards, panels, menus, launcher</td>
+</tr>
+<tr>
+<td><code>bg-sidebar-active-bg</code></td>
+<td><code>#212d40</code> (800)</td>
+<td>Active nav item, selected row, hover fill</td>
+</tr>
+<tr>
+<td><code>border-ink-800</code></td>
+<td><code>#212d40</code></td>
+<td>Hairlines between shell parts and inside cards</td>
+</tr>
+<tr>
+<td><code>bg-secondary-dark</code> / <code>border-secondary-dark</code></td>
+<td><code>#364156</code> (700)</td>
+<td>Secondary control fill, field borders, stronger lines</td>
+</tr>
+<tr>
+<td><code>text-muted</code></td>
+<td><code>#93a0b7</code> (400)</td>
+<td>Secondary text, placeholders, inactive icons</td>
+</tr>
+<tr>
+<td><code>text-ink-300</code> / <code>text-ink-200</code></td>
+<td><code>#cdd4e2</code> / <code>#e3e8f0</code></td>
+<td>Body text / primary text</td>
+</tr>
+</tbody>
+</table>
+<p><code>ink-500</code> and darker are never text on dark surfaces (under 4.5:1).</p>
+<h3 id="protocol-scales">Protocol scales</h3>
+<p>Each protocol has a five-step scale, tuned in OKLCH and contrast-checked per step on light and dark backgrounds. Use the token classes (<code>text-meshtastic-500</code>, <code>bg-meshcore-700</code>, <code>border-reticulum-300</code>, and so on). The 500 base step marks the protocol (rail switcher, its name, identity links); the 700 step is the fill under white text (badges).</p>
+<table>
+<thead>
+<tr>
+<th>Protocol</th>
+<th>Token prefix</th>
+<th>100</th>
+<th>300</th>
+<th>500 (base)</th>
+<th>700</th>
+<th>900</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Meshtastic</td>
+<td><code>meshtastic-</code></td>
+<td><code>#d1fae5</code></td>
+<td><code>#a7f3d0</code></td>
+<td><code>#67e8b4</code></td>
+<td><code>#047857</code></td>
+<td><code>#064e3b</code></td>
+</tr>
+<tr>
+<td>MeshCore</td>
+<td><code>meshcore-</code></td>
+<td><code>#cffafe</code></td>
+<td><code>#a5f3fc</code></td>
+<td><code>#00d3f2</code></td>
+<td><code>#0e7490</code></td>
+<td><code>#164e63</code></td>
+</tr>
+<tr>
+<td>Reticulum</td>
+<td><code>reticulum-</code></td>
+<td><code>#fef9c3</code></td>
+<td><code>#fef08a</code></td>
+<td><code>#facc15</code></td>
+<td><code>#a16207</code></td>
+<td><code>#713f12</code></td>
+</tr>
+</tbody>
+</table>
+<p>Reticulum is yellow, not amber, so it never reads as a warning. Protocol classes live in <code>lib/protocolTheme.ts</code> and are fixed: they keep their identity under every theme.</p>
+<h3 id="accent-theme">Accent (theme)</h3>
+<p>The accent tokens follow the selected theme preset; the default preset is Meshtastic.</p>
+<table>
+<thead>
+<tr>
+<th>Token / class</th>
+<th>Default</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text-bright-green</code> / <code>bg-brand-green</code></td>
+<td><code>#67e8b4</code> meshtastic-500</td>
+<td>Accent: active nav, selection, focus ring, links, primary buttons</td>
+</tr>
+<tr>
+<td><code>text-app-bg</code> on <code>bg-brand-green</code></td>
+<td></td>
+<td>Primary button label (dark on accent, about 13:1)</td>
+</tr>
+<tr>
+<td><code>bg-readable-green</code></td>
+<td><code>#047857</code> meshtastic-700</td>
+<td>Fills under white text; must keep 4.5:1 with white (<code>themeColors.test.ts</code>)</td>
+</tr>
+<tr>
+<td><code>--color-chat-outgoing-bg</code> / <code>-border</code></td>
+<td>700 at 22% / 500 at 25%</td>
+<td>Own chat bubbles</td>
+</tr>
+</tbody>
+</table>
+<p>The token names say "green" for history; they hold whatever accent the theme sets.</p>
+<h3 id="status-semantic">Status (semantic)</h3>
+<p>Status colors never double as the accent. The style guide gives each a Light-BG, Main and Dark-Text step. The Main step is a token; the other two are Tailwind steps until the designer's values are in <code>styles.css</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Meaning</th>
+<th>Main token (dots, icons)</th>
+<th>Text on dark surfaces</th>
+<th>Light (tint)</th>
+<th>Dark (fills)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Success, online</td>
+<td><code>status-success</code> <code>#34d399</code></td>
+<td><code>green-400</code></td>
+<td><code>green-900/40</code> or <code>100</code></td>
+<td><code>green-800</code></td>
+</tr>
+<tr>
+<td>Warning, caution, stale</td>
+<td><code>status-warning</code> <code>#f97316</code></td>
+<td><code>orange-400</code></td>
+<td><code>orange-900/40</code> or <code>100</code></td>
+<td><code>orange-800</code></td>
+</tr>
+<tr>
+<td>Error, offline, danger</td>
+<td><code>status-error</code> <code>#ef4444</code></td>
+<td><code>red-400</code></td>
+<td><code>red-900/40</code> or <code>100</code></td>
+<td><code>red-800</code></td>
+</tr>
+<tr>
+<td>Info, neutral status</td>
+<td><code>status-info</code> <code>#818cf8</code></td>
+<td><code>indigo-400</code></td>
+<td><code>indigo-900/40</code> or <code>100</code></td>
+<td><code>indigo-800</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Status dots use <code>StatusDot</code> tones (<code>ok</code>, <code>idle</code>, <code>off</code>, <code>warn</code>, <code>error</code>, <code>info</code>), which read the Main tokens. Use <code>bg-status-*</code> / <code>text-status-*</code> for any other dot or status icon.</li>
+<li>Keep the <code>-400</code> steps for status text: the Main error red is under 4.5:1 on <code>ink-800</code> rows.</li>
+<li>Red means broken; orange means caution or delay (maintainer rule). Unread badges stay <code>bg-red-600</code> with white text, like the macOS dock.</li>
+<li>Inline notices use <code>NOTICE_CLASS</code> in <code>formClasses.ts</code>.</li>
+</ul>
+<p>Allowed exceptions: favourite stars are <code>yellow-400</code>; search highlights are yellow; data scales (battery, SNR, MECP severity, chart series, packet types) keep their own ramps and are labelled.</p>
+<h3 id="themes">Themes</h3>
+<p>App &gt; Appearance &gt; Colors has two one-click choices (<code>lib/themePresets.ts</code>, <code>components/ThemePicker.tsx</code>). Any surface pairs with any accent, and single tokens can still be edited afterwards.</p>
+<ul>
+<li><strong>Surfaces</strong> replace the whole neutral scale (every <code>ink-*</code> class, through <code>--color-ink-*</code> on <code>:root</code>) and the neutral tokens: Midnight (default), Slate, Zinc, Graphite, Deep sea, Dusk, Evergreen and High contrast. Deep sea, Dusk and Evergreen keep Midnight's lightness and chroma per step with another hue, so they stay tinted neutrals rather than colored backgrounds. High contrast brings body text near white and lifts field borders to 3:1 against panels (WCAG 1.4.11).</li>
+<li><strong>Accents</strong> set the accent and the sent-message bubbles: Meshtastic (default), MeshCore, Reticulum, Sky and Classic green (the pre-v6 green). Slate with Classic green is the pre-v6 look.</li>
+</ul>
+<p><code>themePresets.test.ts</code> checks every surface's text pairs and every surface and accent pair against the guards in <code>themeColors.ts</code>, so no combination is ever reset. A light theme needs a sweep of hard-coded dark text first.</p>
+<p>Never use <code>#000000</code> or <code>#ffffff</code> as a surface, gradients, glows, text shadows, or left-border accent stripes on cards and rows.</p>
+<h2 id="type">Type</h2>
+<p>IBM Plex Sans for interface text (headings, body, labels, navigation); IBM Plex Mono for data readouts, signal metrics, IDs, keys, code and tabular numbers. Both are bundled (<code>src/renderer/assets/fonts/plex</code>, OFL-1.1) so the UI renders the same offline; CJK falls back to the system font.</p>
+<p>All sizes are rem, so App &gt; Appearance &gt; Text size scales the whole UI (the root <code>font-size</code> is set by <code>lib/fontScale.ts</code>). Never use px font sizes; source policy rejects <code>text-[13px]</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Style guide role</th>
+<th>Class</th>
+<th>Size / line height</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Display</td>
+<td><code>text-4xl font-light</code></td>
+<td>36 / 40</td>
+<td>Rare; empty-state hero</td>
+</tr>
+<tr>
+<td>H1</td>
+<td><code>text-3xl font-semibold</code></td>
+<td>30 / 36</td>
+<td>Page title (rare inside panels)</td>
+</tr>
+<tr>
+<td>H2</td>
+<td><code>text-2xl font-semibold</code></td>
+<td>24 / 32</td>
+<td>Panel page titles</td>
+</tr>
+<tr>
+<td>H3</td>
+<td><code>text-lg font-medium</code></td>
+<td>18 / 28</td>
+<td>Section titles</td>
+</tr>
+<tr>
+<td>H4</td>
+<td><code>text-title font-semibold</code></td>
+<td>16 / 22</td>
+<td>Pane and card titles</td>
+</tr>
+<tr>
+<td>H5</td>
+<td><code>text-sm font-semibold</code></td>
+<td>14 / 20</td>
+<td>Group headings</td>
+</tr>
+<tr>
+<td>Body</td>
+<td><code>text-body-lg</code></td>
+<td>14 / 20</td>
+<td>Chat messages, paragraphs</td>
+</tr>
+<tr>
+<td>Body (dense)</td>
+<td><code>text-body</code></td>
+<td>13 / 18</td>
+<td>Rows, inputs, menus, most controls</td>
+</tr>
+<tr>
+<td>Control</td>
+<td><code>text-control</code></td>
+<td>13 / 18</td>
+<td>Small buttons, chips</td>
+</tr>
+<tr>
+<td>Caption</td>
+<td><code>text-label</code>, <code>text-xs</code></td>
+<td>12 / 16</td>
+<td>Labels, captions, rail labels</td>
+</tr>
+<tr>
+<td>Data / tabular</td>
+<td><code>font-mono text-meta tabular-nums</code></td>
+<td>12 / 16</td>
+<td>Times, IDs, metrics that update in place</td>
+</tr>
+<tr>
+<td>Badge</td>
+<td><code>text-2xs</code></td>
+<td>11 / 16</td>
+<td>Badge and tag text only</td>
+</tr>
+<tr>
+<td>Count pill</td>
+<td><code>text-3xs</code></td>
+<td>10 / 14</td>
+<td>Numeric count pills only</td>
+</tr>
+</tbody>
+</table>
+<p>Tailwind's own <code>text-2xl</code> to <code>text-4xl</code> sizes are close to the guide's 22, 28 and 36px headings; use them until the designer's heading tokens are final.</p>
+<p>Minimum: 12px for anything a person reads; 13px body for dense data views, 14px for standard content. Line height 1.4 to 1.5 for body, 1.2 to 1.3 for headings. Weights: sans 400, 500, 600; mono 400, 500. Those are the only faces bundled, so anything heavier is synthesized: <code>font-semibold</code> is the top weight for sans and <code>font-medium</code> for mono.</p>
+<h2 id="spacing">Spacing</h2>
+<p>A 4px grid (Tailwind spacing, base 1rem = 16px): <code>0.5</code> 2px (inline icon gaps), <code>1</code> 4px (tight element gaps), <code>1.5</code> 6px (dense list spacing), <code>2</code> 8px (standard gaps), <code>3</code> 12px (compact padding), <code>4</code> 16px (card padding), <code>5</code> 20px, <code>6</code> 24px (section gaps), <code>8</code> 32px (major gaps), <code>12</code> 48px, <code>16</code> 64px (page margins). Main content padding is <code>p-1.5</code> on phones, <code>p-2.5</code> on tablets and <code>p-4</code> on desktop, so chat and the other panels get the space.</p>
+<h2 id="radius">Radius</h2>
+<p>Radius tokens in <code>styles.css</code> (<code>--radius-*</code>), so a family changes in one place. The sizes are Tailwind's stock scale; the Figma names use Tailwind v3's naming, which v4 (this app) shifted by one step, so the roles get their own class names:</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Size</th>
+<th>Figma name</th>
+<th>Stock v4 class</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rounded-none</code></td>
+<td>0</td>
+<td></td>
+<td><code>rounded-none</code></td>
+<td>Tables, inline data</td>
+</tr>
+<tr>
+<td><code>rounded-badge</code></td>
+<td>2px</td>
+<td><code>sm</code></td>
+<td><code>rounded-xs</code></td>
+<td>Badges, chips, tags, segments, menu items</td>
+</tr>
+<tr>
+<td><code>rounded-control</code></td>
+<td>4px</td>
+<td>(default)</td>
+<td><code>rounded-sm</code></td>
+<td>Buttons, inputs, selects, map controls</td>
+</tr>
+<tr>
+<td><code>rounded-card</code></td>
+<td>6px</td>
+<td><code>md</code></td>
+<td><code>rounded-md</code></td>
+<td>Cards, panels, popovers, menus, notices</td>
+</tr>
+<tr>
+<td><code>rounded-modal</code></td>
+<td>8px</td>
+<td><code>lg</code></td>
+<td><code>rounded-lg</code></td>
+<td>Modals, sheets</td>
+</tr>
+<tr>
+<td><code>rounded-container</code></td>
+<td>12px</td>
+<td><code>xl</code></td>
+<td><code>rounded-xl</code></td>
+<td>Page sections, large containers</td>
+</tr>
+<tr>
+<td><code>rounded-full</code></td>
+<td>pill</td>
+<td></td>
+<td><code>rounded-full</code></td>
+<td>Pills, avatars, toggles, dots</td>
+</tr>
+</tbody>
+</table>
+<h2 id="elevation">Elevation</h2>
+<p>The style guide's shadows are tuned for dark surfaces (much heavier than Tailwind's light-mode shadows), so they are their own tokens, not overrides of <code>shadow-sm</code> / <code>shadow-md</code> / <code>shadow-lg</code>. Source policy rejects the stock classes.</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Class</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>none</td>
+<td>Inline elements, table rows</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>shadow-level-1</code></td>
+<td>Cards, list items</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>shadow-level-2</code></td>
+<td>Dropdowns, popovers, menus, map controls</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>shadow-level-3</code></td>
+<td>Modals, dialogs</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>shadow-level-4</code></td>
+<td>Toasts, floating panels</td>
+</tr>
+</tbody>
+</table>
+<p>The values in <code>styles.css</code> are provisional until the Figma shadows are copied in.</p>
+<h2 id="icons">Icons</h2>
+<ul>
+<li>Lucide icons from <code>lucide-react-motion</code>, 14px (<code>h-3.5 w-3.5</code>) inline with 12 to 13px text, 16px (<code>h-4 w-4</code>) in buttons and the rail, 20px for pane actions. Decorative icons get <code>aria-hidden</code>.</li>
+<li>Never emoji or text glyphs as icons (⚠ ✕ ✓ ★ 📍 ← → ↻): they render differently per OS. Source policy flags a JSX line that is only such a glyph.</li>
+<li>Motion icons animate on hover of their parent (<code>PARENT_HOVER_ATTR</code>) and stop under Reduce motion.</li>
+</ul>
+<h2 id="layout">Layout</h2>
+<p>The v6 shell (<code>src/renderer/components/shell/</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Size</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>App rail</td>
+<td>72px wide</td>
+<td>Protocol switcher (one segmented choice with the protocol name), Chat, Network, Map, Monitor, Device; Incident and App pinned at the bottom</td>
+</tr>
+<tr>
+<td>Section header</td>
+<td>52px tall</td>
+<td>Section name, its panels as a segmented tablist, global actions (flood advert, launcher, language, then Disconnect &amp; Quit in red at the far right)</td>
+</tr>
+<tr>
+<td>Status bar</td>
+<td>28px tall</td>
+<td>Radio link, MQTT, TAK and queue on the left; counts and update state on the right</td>
+</tr>
+<tr>
+<td>Launcher</td>
+<td>680px modal</td>
+<td>Every visible panel plus contacts and channels, searchable, with pins</td>
+</tr>
+</tbody>
+</table>
+<p>Phones and narrow windows (under 768px, <code>SHELL_COMPACT_QUERY</code>): the rail becomes a bottom bar with Chat, Network, Map, Incident and More; More opens the launcher as a bottom sheet. Touch targets grow with the <code>pointer-coarse:</code> variant (inputs 40px).</p>
+<p>App &gt; Protocols disables protocols the user does not run (<code>hiddenProtocols</code> in <code>mesh-client:appSettings</code>, all enabled by default; helpers in <code>lib/enabledProtocols.ts</code>). A disabled protocol leaves the switcher, is disconnected, and is skipped by RF auto-connect, Reticulum stack autostart, MQTT auto-launch, inactive-protocol toasts, notification clicks and Reticulum deep links. With one protocol enabled the switcher is not rendered in the rail or the More sheet.</p>
+<p>Where things go:</p>
+<ul>
+<li>Link state and counts belong in the status bar; items there open the owning panel.</li>
+<li>App-wide actions go in the section header; panel actions in the panel's toolbar.</li>
+<li>Panels scroll inside the main viewport. Wide tables scroll horizontally inside their own container.</li>
+<li>Detail panes: on wide windows node and peer details open inline next to the list or the map (<code>DetailPaneHost</code>), and the map shrinks; on narrow windows they open as a modal. Actions lead the pane.</li>
+<li>Conversations (Chat, Rooms, RRC) use <code>chat/ConversationLayout</code>: list column, conversation, optional side panel (narrow or wide), collapsing to one pane at a time on phones.</li>
+</ul>
+<p>Small windows: minimum 900x600 on desktop; test at 1024x768 and 390px. The rail compacts below 720px of height and scrolls; the section tablist scrolls horizontally.</p>
+<h2 id="navigation">Navigation</h2>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Panels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chat</td>
+<td>Chat, Rooms, RRC, Games</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Contacts / Nodes / Peers, Repeaters, Graph, Topology, Remote, TAK</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>Map</td>
+</tr>
+<tr>
+<td>Nomad Network</td>
+<td>Nomad Network (Reticulum only; its own rail entry)</td>
+</tr>
+<tr>
+<td>Monitor</td>
+<td>Diagnostics, Stats, Sniffer, RF</td>
+</tr>
+<tr>
+<td>Device</td>
+<td>Connection, Radio (Network on Reticulum), Modules (Meshtastic), Telemetry, Admin, Security</td>
+</tr>
+<tr>
+<td>Incident</td>
+<td>Incident</td>
+</tr>
+<tr>
+<td>App</td>
+<td>App</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Panel labels do not change when they move into a section. Every panel is reachable from the rail and the launcher.</li>
+<li>Clicking a section reopens the panel last shown in it for the current protocol.</li>
+<li>Gate panels with <code>ProtocolCapabilities</code>, never <code>protocol === '...'</code>. Sections with no visible panel are hidden.</li>
+<li>Adding a panel: slot in <code>TAB_SLOT_IDS</code>, requirement in <code>TAB_CAPABILITY_REQUIREMENTS</code>, section in <code>SECTION_SLOT_ORDER</code> (<code>navSections.ts</code>).</li>
+<li>Badges: unread <code>bg-red-600</code>, pending rncp offers <code>bg-orange-800</code>, both with white text (<code>lib/navBadges.ts</code>); counts cap at <code>99+</code>; the accessible name carries the count.</li>
+</ul>
+<h2 id="keyboard">Keyboard</h2>
+<p>Cmd on macOS and iOS, Ctrl on Windows, Linux and Android (<code>usesCommandModifier</code> / <code>formatShortcut</code> in <code>lib/panelLauncher.ts</code>). Pins are stored in <code>mesh-client:launcherPins</code>, shared by all protocols, four at most. Nothing is pinned by default (<code>DEFAULT_LAUNCHER_PINS</code> is <code>[]</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Shortcut</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ctrl+K (Cmd+K)</td>
+<td>Open or close the launcher</td>
+</tr>
+<tr>
+<td>Ctrl+1 to Ctrl+4 (Cmd)</td>
+<td>Open pinned panel 1 to 4</td>
+</tr>
+<tr>
+<td>Arrow keys, Home, End</td>
+<td>Move within tablists, segmented controls, menus</td>
+</tr>
+<tr>
+<td>Up and Down in the launcher</td>
+<td>Move between results</td>
+</tr>
+<tr>
+<td>Enter in the launcher</td>
+<td>Open the focused or first result</td>
+</tr>
+<tr>
+<td>Ctrl+P (Cmd+P) in the launcher</td>
+<td>Pin or unpin the focused panel</td>
+</tr>
+<tr>
+<td>Esc</td>
+<td>Close the launcher, menu or dialog</td>
+</tr>
+</tbody>
+</table>
+<p>Dialogs trap Tab, close on Esc and return focus to their trigger.</p>
+<h2 id="controls">Controls</h2>
+<p>Use the class strings and primitives; do not restyle native elements per panel.</p>
+<ul>
+<li>Buttons (<code>Button</code>, <code>buttonClassName</code>): <code>rounded-control</code>, 30 or 32px tall, 13px medium label, optional 14 to 16px icon.</li>
+<li>Primary: accent fill with <code>text-app-bg</code>. One per view.</li>
+<li>Secondary: <code>bg-sidebar-active-bg</code> with <code>border-secondary-dark</code>.</li>
+<li>Danger: red outline sized to its label. Never a full-width red bar. A stacked list of destructive actions with a second line uses <code>DANGER_ROW_CLASS</code>.</li>
+<li>Ghost and icon-only (<code>IconButton</code>): transparent, <code>text-muted</code>, <code>aria-label</code> and <code>title</code>.</li>
+<li>A main action with rare variants: <code>SplitButton</code>. Row actions: one <code>MenuButton</code> overflow menu.</li>
+<li>Single choice (filters, modes, protocol): <code>SegmentedControl</code> (<code>role="radiogroup"</code>, arrow keys). Toggle chips with <code>aria-pressed</code>: <code>chipClass()</code>.</li>
+<li>Fields: <code>INPUT_CLASS</code> / <code>SELECT_CLASS</code> / <code>TEXTAREA_CLASS</code> (full width) or the <code>*_BOX_CLASS</code> variants sized by their row (<code>w-24</code>, <code>flex-1</code>); <code>*_BOX_SM_CLASS</code> for dense rows. 32px (28px compact), 40px on touch. Invalid state comes from <code>aria-invalid</code>. Every field has a label (visually hidden is fine).</li>
+<li>On/off settings: <code>Switch</code>. Small integers: <code>Stepper</code>. Read-only values: <code>CopyField</code>.</li>
+<li>Label and value pairs: <code>LabelValueGrid</code> inside their card, about 560px wide at most.</li>
+<li>Cards: <code>Panel</code> (<code>bg-deep-black</code>, <code>border-ink-800</code>, <code>rounded-card</code>, level 1). Settings sections: <code>bg-deep-black rounded-xl border border-ink-800</code>.</li>
+<li>Notices: <code>NOTICE_CLASS.info|warn|error|success</code>.</li>
+<li>Map overlays: <code>MAP_CONTROL_CLASS</code>, <code>MAP_CHIP_CLASS</code>, <code>MAP_OVERLAY_PANEL_CLASS</code> (<code>map/mapControlClasses.ts</code>); Leaflet's own controls are restyled in <code>styles.css</code>.</li>
+<li>Status: <code>StatusDot</code> only where it carries state; pulses on a separate <code>aria-hidden</code> element, never on small text.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Buttons, icon buttons</td>
+<td><code>Button</code>, <code>IconButton</code>, <code>buttonClassName</code> (<code>ui/Button.tsx</code>)</td>
+</tr>
+<tr>
+<td>Split button, overflow menu</td>
+<td><code>SplitButton</code>, <code>MenuButton</code>, <code>Menu</code> (<code>ui/Menu.tsx</code>)</td>
+</tr>
+<tr>
+<td>Single choice</td>
+<td><code>SegmentedControl</code></td>
+</tr>
+<tr>
+<td>Switch, stepper</td>
+<td><code>Switch</code>, <code>Stepper</code></td>
+</tr>
+<tr>
+<td>Card with header</td>
+<td><code>Panel</code></td>
+</tr>
+<tr>
+<td>Link status</td>
+<td><code>StatusTile</code>, <code>StatusDot</code></td>
+</tr>
+<tr>
+<td>Label and value pairs</td>
+<td><code>LabelValueGrid</code>, <code>LabelValue</code></td>
+</tr>
+<tr>
+<td>Copyable value</td>
+<td><code>CopyField</code></td>
+</tr>
+<tr>
+<td>Horizontal strip of chips</td>
+<td><code>ScrollStrip</code></td>
+</tr>
+<tr>
+<td>Shortcut hint</td>
+<td><code>Kbd</code></td>
+</tr>
+<tr>
+<td>Fields, chips, notices</td>
+<td><code>ui/formClasses.ts</code></td>
+</tr>
+<tr>
+<td>Conversation layout</td>
+<td><code>chat/ConversationLayout</code></td>
+</tr>
+<tr>
+<td>Channel or DM switcher (thousands of entries)</td>
+<td><code>chat/ChatChannelSwitcher</code></td>
+</tr>
+</tbody>
+</table>
+<p>Menus render in a portal above modals (<code>Z_POPOVER_MENU</code>), close on Esc or outside click and return focus to the trigger.</p>
+<h2 id="chat">Chat</h2>
+<ul>
+<li>Bubbles: incoming <code>--color-chat-incoming-*</code> (ink-800 at 38%), own messages <code>--color-chat-outgoing-*</code> (accent 700 at 22% with a 300 border at 25%), max width 94% of the row on phones and 80% wider, with no rem cap so wide windows keep long messages on one line.</li>
+<li>Sender initials (<code>lib/senderInitials.ts</code>) or the Reticulum face in a gutter on the first message of a run; the sender line carries name, time and hop or RF metadata.</li>
+<li>The composer is one field with the send button inside the row; the hint about Enter and Shift+Enter hides on touch.</li>
+<li>The channel and DM switchers are searchable and built for thousands of entries.</li>
+<li>Message action colors (bar background, button hover, "Always show message actions") are themeable in App &gt; Appearance &gt; Colors.</li>
+</ul>
+<h2 id="motion-and-battery">Motion and battery</h2>
+<ul>
+<li>App &gt; Appearance &gt; Reduce motion (seeded from the OS setting) stops decorative pulses and shortens transitions app-wide (<code>html[data-reduce-motion='true']</code> in <code>styles.css</code>).</li>
+<li>Status motion that carries meaning (connecting, logging in, sending, MAYDAY / URGENT) keeps moving: give it the <code>motion-status</code> class.</li>
+<li>No network fonts, emoji data or images: they are bundled (<code>assets/fonts/plex</code>, and the English emoji data from <code>emoji-picker-element-data</code> at build time).</li>
+</ul>
+<h2 id="copy">Copy</h2>
+<ul>
+<li>Sentence case for labels, buttons and headings. No uppercase letter-spaced micro labels.</li>
+<li>No em or en dashes; use a comma, period or hyphen. No emoji. At most one middle dot per line.</li>
+<li>Name things the way the rest of the app does (Contacts on MeshCore, Nodes on Meshtastic, Peers on Reticulum).</li>
+<li>Every string goes through <code>t()</code> with an English key in <code>src/renderer/locales/en/translation.json</code>; see <a href="../agents/i18n/"><code>docs/agents/i18n.md</code></a>.</li>
+</ul>
+<h2 id="accessibility">Accessibility</h2>
+<ul>
+<li>Real <code>&lt;button type="button"&gt;</code> and labelled inputs; <code>aria-label</code> on icon-only buttons.</li>
+<li><code>aria-current="page"</code> on the active rail section; section tabs are a <code>tablist</code> with roving <code>tabIndex</code>; single choices are radio groups.</li>
+<li>Text contrast 4.5:1; large text and non-text 3:1. <code>readable-green</code> keeps 4.5:1 under white, the accent keeps 4.5:1 on <code>app-bg</code> (<code>themeColors.ts</code> guards reset overrides that fail).</li>
+<li>Component tests assert <code>toHaveNoViolations()</code> after <code>hydrateAxeThemeColors()</code>; never mock <code>themeColors</code> in axe tests.</li>
+<li>Everything scales with App &gt; Appearance &gt; Text size; test at 150%.</li>
+<li>More in <a href="../accessibility-checklist/"><code>docs/accessibility-checklist.md</code></a>.</li>
+</ul>
+<h2 id="enforcement">Enforcement</h2>
+<p>Source-policy rules in <code>src/architecture/sourcePolicyRules.ts</code> (Vitest, pre-commit):</p>
+<table>
+<thead>
+<tr>
+<th>Rule</th>
+<th>Rejects</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>renderer-font-size-in-rem</code></td>
+<td><code>text-[Npx]</code> font sizes</td>
+</tr>
+<tr>
+<td><code>renderer-ink-neutrals</code></td>
+<td><code>slate-*</code>, <code>zinc-*</code> and <code>gray-*</code> palette classes</td>
+</tr>
+<tr>
+<td><code>renderer-elevation-levels</code></td>
+<td>stock <code>shadow-xs</code> to <code>shadow-2xl</code> classes</td>
+</tr>
+<tr>
+<td><code>renderer-bundled-font-weights</code></td>
+<td><code>font-bold</code>, <code>font-extrabold</code>, <code>font-black</code> (only Plex 400 to 600 ship)</td>
+</tr>
+<tr>
+<td><code>renderer-no-muted-text-on-control-fill</code></td>
+<td>muted text on a resting <code>bg-secondary-dark</code> (under 4.5:1 in every theme)</td>
+</tr>
+<tr>
+<td><code>renderer-no-low-contrast-gray-text</code></td>
+<td><code>text-ink-500</code> (and slate, zinc, gray-500) text</td>
+</tr>
+<tr>
+<td><code>renderer-no-uppercase-micro-labels</code></td>
+<td><code>uppercase</code> with <code>tracking-wide*</code></td>
+</tr>
+<tr>
+<td><code>renderer-icons-not-glyphs</code></td>
+<td>a JSX line that is only ⚠ ✕ ✓ ✗ ★ ☆ 📍 ↻ ⌂ ⌀ ℹ</td>
+</tr>
+<tr>
+<td><code>axe-tests-hydrate-theme-colors</code></td>
+<td>axe tests that skip <code>hydrateAxeThemeColors()</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="open-items">Open items</h2>
+<ul>
+<li>From the designer's Figma: the status Light-BG and Dark-Text steps, and the exact Level 1 to 4 shadows. Protocol scales, status Main colors and type are already exact.</li>
+<li>Neutrals: Midnight Serenity gives three dark steps. The light steps used for text (ink-50 to ink-600) are derived; exact values from the designer drop into <code>--color-ink-*</code>.</li>
+<li>Protocol colors outside <code>protocolTheme.ts</code> (for example some Reticulum panels and data ramps) still use Tailwind's <code>emerald</code> / <code>cyan</code> / <code>yellow</code> classes; move the ones that mark a protocol to the scale tokens.</li>
+<li>Status text still uses Tailwind's <code>-400</code> steps (v4 oklch values) next to the exact Main tokens used by dots.</li>
+<li>The Main success green (<code>#34d399</code>) sits close to the Meshtastic base (<code>#67e8b4</code>); status dots always come with text, so "online" is never color alone.</li>
+<li>The dark end of the Reticulum scale (700 and 900) leans toward orange; worth a look so it never reads as a dark warning.</li>
+<li>Field borders (<code>border-secondary-dark</code> on panels) are about 1.7:1 in every surface except High contrast, under the 3:1 WCAG 1.4.11 asks of a control boundary. Raising them changes the look, so it is a design call.</li>
+<li>A night vision field mode for eyes adjusted to the dark: red color surfaces rather than a whole-window filter (a filter costs CPU and battery on every repaint), with MAYDAY, URGENT and info badges still telling apart by more than brightness.</li>
+<li>A light theme.</li>
+<li>Per-protocol automatic theming (today the protocol accents are opt-in presets).</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
