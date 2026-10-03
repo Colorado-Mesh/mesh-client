@@ -13,10 +13,10 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | Name                       | License type                  | Defined version | Installed version | Link                                                                           |
 | :------------------------- | :---------------------------- | :-------------- | :---------------- | :----------------------------------------------------------------------------- |
 | @bufbuild/protobuf         | (Apache-2.0 AND BSD-3-Clause) | ^2.16.0         | 2.16.0            | git+https://github.com/bufbuild/protobuf-es.git                                |
-| @jsr/meshtastic__protobufs | n/a                           | ^2.8.0          | 2.8.0             | n/a                                                                            |
+| @jsr/meshtastic__protobufs | n/a                           | ^2.8.1          | 2.8.1             | n/a                                                                            |
 | @xterm/addon-fit           | MIT                           | ^0.11.0         | 0.11.0            | git+https://github.com/xtermjs/xterm.js.git#master                             |
 | @xterm/xterm               | MIT                           | ^6.0.0          | 6.0.0             | git+https://github.com/xtermjs/xterm.js.git                                    |
-| @zip.js/zip.js             | BSD-3-Clause                  | ^2.21.0         | 2.21.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
+| @zip.js/zip.js             | BSD-3-Clause                  | ^2.22.0         | 2.22.0            | git+https://github.com/gildas-lormeau/zip.js.git                               |
 | builder-util-runtime       | MIT                           | ^9.7.0          | 9.7.0             | git+https://github.com/electron-userland/electron-builder.git                  |
 | dompurify                  | (MPL-2.0 OR Apache-2.0)       | ^3.4.16         | 3.4.16            | git://github.com/cure53/DOMPurify.git                                          |
 | electron-updater           | MIT                           | ^6.8.9          | 6.8.9             | git+https://github.com/electron-userland/electron-builder.git                  |
@@ -60,7 +60,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | @testing-library/user-event           | MIT             | ^14.6.7         | 14.6.7            | git+https://github.com/testing-library/user-event.git                                |
 | @types/js-md5                         | MIT             | ^0.8.0          | 0.8.0             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/leaflet                        | MIT             | ^1.9.22         | 1.9.22            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
-| @types/node                           | MIT             | ^25.9.8         | 25.9.8            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
+| @types/node                           | MIT             | ^25.9.9         | 25.9.9            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/node-forge                     | MIT             | ^1.3.14         | 1.3.14            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/qrcode                         | MIT             | ^1.5.6          | 1.5.6             | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
 | @types/react                          | MIT             | ^19.3.0         | 19.3.0            | https://github.com/DefinitelyTyped/DefinitelyTyped.git                               |
@@ -83,7 +83,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | eslint-plugin-prettier                | MIT             | ^5.5.6          | 5.5.6             | git+https://github.com/prettier/eslint-plugin-prettier.git                           |
 | eslint-plugin-react                   | MIT             | ^7.37.5         | 7.37.5            | git+https://github.com/jsx-eslint/eslint-plugin-react.git                            |
 | eslint-plugin-react-hooks             | MIT             | ^7.1.1          | 7.1.1             | git+https://github.com/facebook/react.git                                            |
-| eslint-plugin-security                | Apache-2.0      | ^4.1.0          | 4.1.0             | git+https://github.com/eslint-community/eslint-plugin-security.git                   |
+| eslint-plugin-security                | Apache-2.0      | ^4.2.0          | 4.2.0             | git+https://github.com/eslint-community/eslint-plugin-security.git                   |
 | eslint-plugin-simple-import-sort      | MIT             | ^13.0.0         | 13.0.0            | git+https://github.com/lydell/eslint-plugin-simple-import-sort.git                   |
 | fake-indexeddb                        | Apache-2.0      | ^6.2.5          | 6.2.5             | git://github.com/dumbmatter/fakeIndexedDB.git                                        |
 | jsdom                                 | MIT             | ^29.1.1         | 29.1.1            | git+https://github.com/jsdom/jsdom.git                                               |
@@ -100,7 +100,7 @@ Bundled binaries, fonts, and vendored sources are attributed in [Credits](credit
 | tailwindcss                           | MIT             | ^4.3.3          | 4.3.3             | https://github.com/tailwindlabs/tailwindcss.git                                      |
 | typescript                            | Apache-2.0      | ^6.0.3          | 6.0.3             | git+https://github.com/microsoft/TypeScript.git                                      |
 | typescript-eslint                     | MIT             | ^8.71.0         | 8.71.0            | https://github.com/typescript-eslint/typescript-eslint.git                           |
-| vite                                  | MIT             | ^8.3.1          | 8.3.1             | git+https://github.com/vitejs/vite.git                                               |
+| vite                                  | MIT             | ^8.3.2          | 8.3.2             | git+https://github.com/vitejs/vite.git                                               |
 | vitest                                | MIT             | ^4.1.11         | 4.1.11            | git+https://github.com/vitest-dev/vitest.git                                         |
 | vitest-axe                            | MIT             | ^1.0.0-pre.5    | 1.0.0-pre.5       | git+https://github.com/chaance/vitest-axe.git                                        |
 | zustand                               | MIT             | ^5.0.15         | 5.0.15            | git+https://github.com/pmndrs/zustand.git                                            |
