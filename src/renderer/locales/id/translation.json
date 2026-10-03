@@ -502,6 +502,10 @@
     "clearChannelMessagesFailed": "Tidak dapat mengosongkan {{name}}: {{message}}",
     "removeChannelNeedsRadio": "Tersedia setelah radio terhubung",
     "channels": "Saluran",
+    "scrollChannels": "Gulir untuk melihat saluran lainnya",
+    "unreadChannelsAbove": "{{count}} belum dibaca di atas",
+    "unreadChannelsBelow": "{{count}} belum dibaca di bawah",
+    "hiddenUnreadChannels": "Saluran belum dibaca",
     "searchMessages": "Cari pesan",
     "closeDmTab": "Tutup tab DM",
     "searchMessagesPlaceholder": "Telusuri pesan...",
@@ -3273,7 +3277,6 @@
       "lossRatePercent": "{{percent}}%",
       "packetLogAria": "Log paket uji jangkauan"
     },
-    "currentRouteHeading": "Rute saat ini",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Bagikan QR kontak",
     "shareContactQrAria": "Tampilkan kode QR kontak MeshCore untuk impor aplikasi resmi",
@@ -3285,7 +3288,9 @@
     "keyManuallyVerified": "Kunci terverifikasi",
     "keyManuallyVerifiedHint": "Kunci publik simpul ini dikonfirmasi secara manual oleh operator.",
     "keyBadge": "Kunci",
-    "closePane": "Tutup detail"
+    "closePane": "Tutup detail",
+    "savedPathHeading": "Jalur tersimpan",
+    "savedPathHint": "Jalur dengan peringkat terbaik dari riwayat tersimpan. Jalur ini mungkin berbeda dari jalur pengiriman radio saat ini atau jalur pengumuman simpul yang diterima."
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

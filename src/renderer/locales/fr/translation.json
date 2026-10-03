@@ -502,6 +502,10 @@
     "clearChannelMessagesFailed": "Impossible d'effacer {{name}} : {{message}}",
     "removeChannelNeedsRadio": "Disponible une fois la radio connectée",
     "channels": "Canaux",
+    "scrollChannels": "Défiler pour voir plus de canaux",
+    "unreadChannelsAbove": "{{count}} non lus au-dessus",
+    "unreadChannelsBelow": "{{count}} non lus en dessous",
+    "hiddenUnreadChannels": "Canaux non lus",
     "searchMessages": "Rechercher des messages",
     "closeDmTab": "Fermer l'onglet DM",
     "searchMessagesPlaceholder": "Rechercher des messages",
@@ -3273,7 +3277,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Journal des paquets de test de plage"
     },
-    "currentRouteHeading": "Itinéraire actuel",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Partager le contact via",
     "shareContactQrAria": "Afficher le code QR du contact MeshCore pour l'importation officielle de l'application",
@@ -3285,7 +3288,9 @@
     "keyManuallyVerified": "Clé vérifiée",
     "keyManuallyVerifiedHint": "La clé publique de ce nœud a été confirmée manuellement par un opérateur.",
     "keyBadge": "Clé",
-    "closePane": "Fermer les détails"
+    "closePane": "Fermer les détails",
+    "savedPathHeading": "Chemin enregistré",
+    "savedPathHint": "Chemin le mieux classé dans l’historique enregistré. Il peut différer du chemin d’envoi actuel de la radio ou du chemin d’une annonce reçue."
   },
   "nodeInfoBody": {
     "longName": "Nom long",

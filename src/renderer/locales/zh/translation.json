@@ -502,6 +502,10 @@
     "clearChannelMessagesFailed": "无法清除 {{name}}：{{message}}",
     "removeChannelNeedsRadio": "连接电台后可用",
     "channels": "槽钢",
+    "scrollChannels": "滚动查看更多频道",
+    "unreadChannelsAbove": "上方未读：{{count}}",
+    "unreadChannelsBelow": "下方未读：{{count}}",
+    "hiddenUnreadChannels": "未读频道",
     "searchMessages": "搜索消息",
     "closeDmTab": "关闭DM选项卡",
     "searchMessagesPlaceholder": "搜索消息",
@@ -3273,7 +3277,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "测距测试数据包日志"
     },
-    "currentRouteHeading": "当前路线",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "分享联系人",
     "shareContactQrAria": "显示MeshCore联系人二维码以进行官方应用导入",
@@ -3285,7 +3288,9 @@
     "keyManuallyVerified": "密钥已验证",
     "keyManuallyVerifiedHint": "此节点的公钥已由操作员手动确认。",
     "keyBadge": "密钥",
-    "closePane": "关闭详情"
+    "closePane": "关闭详情",
+    "savedPathHeading": "已保存的路径",
+    "savedPathHint": "保存历史记录中评分最高的路径。它可能与无线电的当前发送路径或收到的通告路径不同。"
   },
   "nodeInfoBody": {
     "longName": "长名称",

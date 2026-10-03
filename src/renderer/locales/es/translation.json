@@ -502,6 +502,10 @@
     "clearChannelMessagesFailed": "No se pudo borrar {{name}}: {{message}}",
     "removeChannelNeedsRadio": "Disponible cuando la radio esté conectada",
     "channels": "Canales",
+    "scrollChannels": "Desplázate para ver más canales",
+    "unreadChannelsAbove": "{{count}} sin leer arriba",
+    "unreadChannelsBelow": "{{count}} sin leer abajo",
+    "hiddenUnreadChannels": "Canales sin leer",
     "searchMessages": "Buscar mensajes",
     "closeDmTab": "Cerrar pestaña DM",
     "searchMessagesPlaceholder": "Buscar mensajes...",
@@ -3273,7 +3277,6 @@
       "lossRatePercent": "{{percent}} %",
       "packetLogAria": "Registro de paquetes de prueba de rango"
     },
-    "currentRouteHeading": "Ruta actual",
     "hopNameLabel": "{{name}}",
     "shareContactQr": "Compartir contacto",
     "shareContactQrAria": "Mostrar el código QR de contacto de MeshCore para la importación oficial de la aplicación",
@@ -3285,7 +3288,9 @@
     "keyManuallyVerified": "Clave API verificada",
     "keyManuallyVerifiedHint": "La clave pública de este nodo fue confirmada manualmente por un operador.",
     "keyBadge": "Clave",
-    "closePane": "Cerrar detalles"
+    "closePane": "Cerrar detalles",
+    "savedPathHeading": "Ruta guardada",
+    "savedPathHint": "Ruta mejor clasificada del historial guardado. Puede diferir de la ruta de envío actual de la radio o de la ruta de un anuncio recibido."
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
