@@ -3084,6 +3084,8 @@ export function useMeshcoreRuntime() {
           } catch (e) {
             if (isMeshcoreSetupAbortError(e)) throw e;
             rethrowMeshcoreSetupAbortFromTcpDead(e);
+            // A previous radio's table size must not drive this radio's capacity checks.
+            setMeshcoreRadioMaxContacts(null);
             // catch-no-log-ok deviceQuery optional for firmware string
           }
 

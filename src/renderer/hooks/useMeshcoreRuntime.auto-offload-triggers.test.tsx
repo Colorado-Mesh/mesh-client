@@ -190,6 +190,15 @@ describe('useMeshcoreRuntime auto-offload triggers', () => {
     });
   });
 
+  it('clears the radio max when deviceQuery fails', async () => {
+    deviceQueryMock.mockRejectedValue(new Error('deviceQuery timeout'));
+    await connectConfigured();
+    await waitFor(() => {
+      expect(capacityMocks.setMeshcoreRadioMaxContacts).toHaveBeenCalledWith(null);
+    });
+    expect(capacityMocks.setMeshcoreRadioMaxContacts).not.toHaveBeenCalledWith(100);
+  });
+
   it('checks the on-radio count after refreshContacts', async () => {
     const { result } = await connectConfigured();
     capacityMocks.maybeRequestMeshcoreAutoOffloadForCount.mockClear();
