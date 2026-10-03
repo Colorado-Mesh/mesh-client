@@ -5431,7 +5431,8 @@
     "remoteEnrollPassword": "Password",
     "remoteEnrollPort": "Porta di registrazione",
     "remoteEnroll": "Ottieni certificato",
-    "remoteEnrollNeedsHost": "Inserisci prima l'indirizzo del server sopra."
+    "remoteEnrollNeedsHost": "Inserisci prima l'indirizzo del server sopra.",
+    "remoteEnrollNeedsVerify": "Attiva la verifica del certificato del server per registrarti. Per un server autofirmato, importa prima la sua ca."
   },
   "telemetryPanel": {
     "title": "Telemetria",

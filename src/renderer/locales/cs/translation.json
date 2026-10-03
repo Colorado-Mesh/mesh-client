@@ -5473,7 +5473,8 @@
     "remoteEnrollPassword": "Heslo",
     "remoteEnrollPort": "Registrační port",
     "remoteEnroll": "Získat certifikát",
-    "remoteEnrollNeedsHost": "Nejprve zadejte výše uvedenou adresu serveru."
+    "remoteEnrollNeedsHost": "Nejprve zadejte výše uvedenou adresu serveru.",
+    "remoteEnrollNeedsVerify": "Chcete-li se zaregistrovat, zapněte ověření certifikátu serveru. Pro server s vlastním podpisem nejprve importujte jeho certifikační autoritu."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

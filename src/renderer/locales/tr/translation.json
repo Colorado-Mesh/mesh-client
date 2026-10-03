@@ -5431,7 +5431,8 @@
     "remoteEnrollPassword": "Şifre",
     "remoteEnrollPort": "Kayıt portu",
     "remoteEnroll": "Sertifika Al",
-    "remoteEnrollNeedsHost": "Önce yukarıdaki sunucu adresini girin."
+    "remoteEnrollNeedsHost": "Önce yukarıdaki sunucu adresini girin.",
+    "remoteEnrollNeedsVerify": "Kaydolmak için sunucu sertifikası doğrulamasını açın. Kendinden imzalı bir sunucu için önce CA'sını içe aktarın."
   },
   "telemetryPanel": {
     "title": "Telemetri",

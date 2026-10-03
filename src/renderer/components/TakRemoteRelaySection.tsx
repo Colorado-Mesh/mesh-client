@@ -75,7 +75,7 @@ function EnrollForm({ host, hostValid, verifyServer, disabled, onEnroll }: Enrol
   const [port, setPort] = useState(String(DEFAULT_ENROLLMENT_PORT));
   const portNum = Number(port);
   const portValid = Number.isInteger(portNum) && portNum >= TCP_PORT_MIN && portNum <= TCP_PORT_MAX;
-  const ready = hostValid && portValid && username.trim() !== '' && password !== '';
+  const ready = verifyServer && hostValid && portValid && username.trim() !== '' && password !== '';
 
   const handleEnroll = async () => {
     if (!ready) return;
@@ -160,6 +160,9 @@ function EnrollForm({ host, hostValid, verifyServer, disabled, onEnroll }: Enrol
       </div>
       {!hostValid && (
         <p className="text-ink-400 text-xs">{t('takServerPanel.remoteEnrollNeedsHost')}</p>
+      )}
+      {!verifyServer && (
+        <p className="text-ink-400 text-xs">{t('takServerPanel.remoteEnrollNeedsVerify')}</p>
       )}
     </div>
   );

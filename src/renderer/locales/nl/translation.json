@@ -5431,7 +5431,8 @@
     "remoteEnrollPassword": "Wachtwoord",
     "remoteEnrollPort": "Inschrijvingspoort",
     "remoteEnroll": "Een certificaat verkrijgen",
-    "remoteEnrollNeedsHost": "Voer eerst het bovenstaande serveradres in."
+    "remoteEnrollNeedsHost": "Voer eerst het bovenstaande serveradres in.",
+    "remoteEnrollNeedsVerify": "Schakel servercertificaatverificatie in om u in te schrijven. Importeer eerst de CA van een zelfondertekende server."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

@@ -5431,7 +5431,8 @@
     "remoteEnrollPassword": "Mot de passe",
     "remoteEnrollPort": "Port d'inscription",
     "remoteEnroll": "Obtenir votre certificat",
-    "remoteEnrollNeedsHost": "Saisissez d'abord l'adresse du serveur ci-dessus."
+    "remoteEnrollNeedsHost": "Saisissez d'abord l'adresse du serveur ci-dessus.",
+    "remoteEnrollNeedsVerify": "Activez la vérification du certificat du serveur pour vous inscrire. Pour un serveur auto-signé, importez d'abord son autorité de certification."
   },
   "telemetryPanel": {
     "title": "Télémétrie",

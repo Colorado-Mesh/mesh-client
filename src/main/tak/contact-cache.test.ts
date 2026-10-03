@@ -86,6 +86,44 @@ describe('TakContactCache', () => {
     expect(cache.snapshot().map((c) => c.uid)).toEqual(['L']);
   });
 
+  it('falls back to the other source when the visible source is removed', () => {
+    cache.upsert(contact('U', { source: 'local', lat: 1 }));
+    vi.advanceTimersByTime(10);
+    cache.upsert(contact('U', { source: 'remote', lat: 2 }));
+    vi.advanceTimersByTime(TAK_CONTACT_FLUSH_MS);
+    updates.length = 0;
+
+    cache.removeSource('remote');
+    expect(cache.snapshot()).toMatchObject([{ uid: 'U', source: 'local', lat: 1 }]);
+    vi.advanceTimersByTime(TAK_CONTACT_FLUSH_MS);
+    expect(updates).toEqual([
+      { upserts: [expect.objectContaining({ uid: 'U', source: 'local' })], removedUids: [] },
+    ]);
+
+    cache.removeSource('local');
+    expect(cache.snapshot()).toEqual([]);
+  });
+
+  it('keeps the visible contact when a hidden source is removed', () => {
+    cache.upsert(contact('U', { source: 'remote' }));
+    cache.upsert(contact('U', { source: 'local' }));
+    vi.advanceTimersByTime(TAK_CONTACT_FLUSH_MS);
+    updates.length = 0;
+    cache.removeSource('remote');
+    vi.advanceTimersByTime(TAK_CONTACT_FLUSH_MS);
+    expect(updates).toEqual([]);
+    expect(cache.snapshot()).toMatchObject([{ uid: 'U', source: 'local' }]);
+  });
+
+  it('falls back to a fresher source when the visible contact goes stale', () => {
+    cache.upsert(
+      contact('U', { source: 'local', staleAt: Date.now() + 10 * TAK_CONTACT_PRUNE_MS }),
+    );
+    cache.upsert(contact('U', { source: 'remote', staleAt: Date.now() + 1000 }));
+    vi.setSystemTime(Date.now() + 2000);
+    expect(cache.snapshot()).toMatchObject([{ uid: 'U', source: 'local' }]);
+  });
+
   it('drops a pending upsert when the contact is removed before the flush', () => {
     cache.upsert(contact('R', { source: 'remote' }));
     cache.removeSource('remote');

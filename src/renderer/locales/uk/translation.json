@@ -5511,7 +5511,8 @@
     "remoteEnrollPassword": "Пароль",
     "remoteEnrollPort": "Порт реєстрації",
     "remoteEnroll": "Отримати сертифікат",
-    "remoteEnrollNeedsHost": "Спочатку введіть адресу сервера вище."
+    "remoteEnrollNeedsHost": "Спочатку введіть адресу сервера вище.",
+    "remoteEnrollNeedsVerify": "Увімкніть перевірку сертифіката сервера, щоб зареєструватися. Для самопідписаного сервера спочатку імпортуйте його ЦС."
   },
   "telemetryPanel": {
     "title": "Телеметрія",

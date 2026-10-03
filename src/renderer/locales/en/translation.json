@@ -6148,6 +6148,7 @@
     "remoteEnrollPort": "Enrollment port",
     "remoteEnroll": "Get Certificate",
     "remoteEnrollNeedsHost": "Enter the server address above first.",
+    "remoteEnrollNeedsVerify": "Turn on server certificate verification to enroll. For a self-signed server, import its CA first.",
     "remoteClear": "Remove Certificates",
     "remoteConnect": "Connect",
     "remoteDisconnect": "Disconnect",

@@ -252,6 +252,19 @@ describe('TakRemoteRelaySection', () => {
     expect(screen.getByLabelText(/issued for a different name/i)).toBeChecked();
   });
 
+  it('disables enrollment while server verification is off', async () => {
+    const user = userEvent.setup();
+    await renderSection();
+    await user.type(screen.getByLabelText('Server address'), 'pub.atak.zip');
+    await user.type(screen.getByLabelText('Username'), 'kd0abc');
+    await user.type(screen.getByLabelText('Password'), 'secret');
+    await user.click(screen.getByLabelText(/verify the server certificate/i));
+    expect(screen.getByRole('button', { name: 'Get Certificate' })).toBeDisabled();
+    expect(
+      screen.getByText(/turn on server certificate verification to enroll/i),
+    ).toBeInTheDocument();
+  });
+
   it('hides enrollment for plain TCP', async () => {
     const user = userEvent.setup();
     await renderSection();

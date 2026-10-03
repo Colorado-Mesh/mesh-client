@@ -5431,7 +5431,8 @@
     "remoteEnrollPassword": "비밀번호",
     "remoteEnrollPort": "등록 포트",
     "remoteEnroll": "인증서 받기",
-    "remoteEnrollNeedsHost": "먼저 위의 서버 주소를 입력하십시오."
+    "remoteEnrollNeedsHost": "먼저 위의 서버 주소를 입력하십시오.",
+    "remoteEnrollNeedsVerify": "등록하려면 서버 인증서 인증을 켜세요. 자체 서명된 서버의 경우 CA를 먼저 가져옵니다."
   },
   "telemetryPanel": {
     "title": "원격 측정",

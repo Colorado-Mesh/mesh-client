@@ -5431,7 +5431,8 @@
     "remoteEnrollPassword": "Kata Sandi",
     "remoteEnrollPort": "Port pendaftaran",
     "remoteEnroll": "Dapatkan Sertifikat Anda",
-    "remoteEnrollNeedsHost": "Masukkan alamat server di atas terlebih dahulu."
+    "remoteEnrollNeedsHost": "Masukkan alamat server di atas terlebih dahulu.",
+    "remoteEnrollNeedsVerify": "Aktifkan verifikasi sertifikat server untuk mendaftar. Untuk server yang ditandatangani sendiri, impor CA - nya terlebih dahulu."
   },
   "telemetryPanel": {
     "title": "Telemetri",

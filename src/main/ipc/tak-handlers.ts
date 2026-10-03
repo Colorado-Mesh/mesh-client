@@ -327,6 +327,11 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
     assertIpcSender(event, 'tak:remoteEnroll');
     enrollments.checkOrThrow();
     validateTakEnrollmentRequest(request);
+    // Basic auth to an unverified server hands the password, and the CA we then trust, to anyone
+    // on the path. Self-signed servers enroll after their CA is imported.
+    if (!request.verifyServer) {
+      throw new Error('Turn on server certificate verification to enroll');
+    }
     if (enrolling || choosingCredentials) {
       throw new Error('Wait for the current certificate import to finish');
     }

@@ -259,6 +259,17 @@ describe('remote relay handlers', () => {
     expect(enrollTakClientCertificate).not.toHaveBeenCalled();
   });
 
+  it('refuses to enroll without server verification and leaves credentials untouched', async () => {
+    const restartRemote = vi.fn();
+    const { get } = await register({ restartRemote });
+    await expect(
+      get('tak:remoteEnroll')(event, { ...ENROLL, verifyServer: false }),
+    ).rejects.toThrow(/verification/);
+    expect(enrollTakClientCertificate).not.toHaveBeenCalled();
+    expect(saveTakRemoteCredentials).not.toHaveBeenCalled();
+    expect(restartRemote).not.toHaveBeenCalled();
+  });
+
   it('stops a running relay before clearing its credentials', async () => {
     const stopRemote = vi.fn();
     const { get } = await register({ stopRemote });

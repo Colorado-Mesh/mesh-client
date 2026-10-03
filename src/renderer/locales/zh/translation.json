@@ -5431,7 +5431,8 @@
     "remoteEnrollPassword": "密码",
     "remoteEnrollPort": "注册端口",
     "remoteEnroll": "获取证书",
-    "remoteEnrollNeedsHost": "首先输入上面的服务器地址。"
+    "remoteEnrollNeedsHost": "首先输入上面的服务器地址。",
+    "remoteEnrollNeedsVerify": "启用服务器证书验证以进行注册。对于自签名服务器，请先导入其CA。"
   },
   "telemetryPanel": {
     "title": "遥测",
