@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import {
   ENVIRONMENT_TELEMETRY_DEDUP_WINDOW_MS,
+  ENVIRONMENT_TELEMETRY_MAX_NODES,
   ENVIRONMENT_TELEMETRY_MAX_PER_NODE,
   ENVIRONMENT_TELEMETRY_RETENTION_MS,
   type EnvironmentReading,
@@ -16,9 +17,6 @@ import { isMeshProtocol } from '@/shared/meshProtocol';
 
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 
-/** Hard cap on distinct nodes tracked per protocol in memory. */
-const MAX_NODES_PER_PROTOCOL = 2000;
-
 export interface EnvironmentHistoryPoint {
   t: number;
   reading: EnvironmentReading;
@@ -26,12 +24,15 @@ export interface EnvironmentHistoryPoint {
 }
 
 type NodeSeriesMap = ReadonlyMap<number, readonly EnvironmentHistoryPoint[]>;
+type MutableNodeSeriesMap = Map<number, readonly EnvironmentHistoryPoint[]>;
 
 const EMPTY_SERIES: readonly EnvironmentHistoryPoint[] = [];
 const EMPTY_NODE_MAP: NodeSeriesMap = new Map();
 
+type HistoryMap = Map<MeshProtocol, MutableNodeSeriesMap>;
+
 interface EnvironmentTelemetryState {
-  history: ReadonlyMap<MeshProtocol, NodeSeriesMap>;
+  history: HistoryMap;
   /**
    * Store a reading for one node. Identical readings inside the dedup window are dropped
    * (same packet heard over RF and MQTT). Returns true when the reading was kept.
@@ -46,14 +47,40 @@ interface EnvironmentTelemetryState {
   loadFromDb(): Promise<void>;
 }
 
-function withSeries(
-  history: ReadonlyMap<MeshProtocol, NodeSeriesMap>,
+/**
+ * Drop the expired prefix, keep room for one new point under the per-node cap, and append.
+ * One copy of this node's series — callers publish that array and leave every other series put.
+ */
+function appendBoundedSeries(
+  existing: readonly EnvironmentHistoryPoint[],
+  point: EnvironmentHistoryPoint,
+  now: number,
+): readonly EnvironmentHistoryPoint[] {
+  const cutoff = now - ENVIRONMENT_TELEMETRY_RETENTION_MS;
+  let start = 0;
+  const len = existing.length;
+  while (start < len && existing[start].t < cutoff) start++;
+  const maxKeep = ENVIRONMENT_TELEMETRY_MAX_PER_NODE - 1;
+  if (len - start > maxKeep) start = len - maxKeep;
+  const next = existing.slice(start);
+  next.push(point);
+  return next;
+}
+
+/**
+ * Store `series` for one node. The node map is updated in place so other nodes keep their
+ * series arrays (selectors for those nodes do not change). The protocol map is a shallow copy.
+ */
+function installSeries(
+  history: HistoryMap,
   protocol: MeshProtocol,
   nodeId: number,
   series: readonly EnvironmentHistoryPoint[],
-): Map<MeshProtocol, NodeSeriesMap> {
-  const nodes = new Map(history.get(protocol) ?? EMPTY_NODE_MAP);
-  if (!nodes.has(nodeId) && nodes.size >= MAX_NODES_PER_PROTOCOL) {
+): HistoryMap {
+  let nodes = history.get(protocol);
+  if (!nodes) {
+    nodes = new Map();
+  } else if (!nodes.has(nodeId) && nodes.size >= ENVIRONMENT_TELEMETRY_MAX_NODES) {
     const firstKey = nodes.keys().next().value;
     if (firstKey !== undefined) nodes.delete(firstKey);
   }
@@ -61,6 +88,30 @@ function withSeries(
   const next = new Map(history);
   next.set(protocol, nodes);
   return next;
+}
+
+/**
+ * Per-series cap, then the newest `ENVIRONMENT_TELEMETRY_MAX_NODES` nodes (latest sample,
+ * then lower node id). Kept nodes are inserted oldest-first so later FIFO eviction drops
+ * the stalest node.
+ */
+function capLoadedNodes(nodes: Map<number, EnvironmentHistoryPoint[]>): MutableNodeSeriesMap {
+  for (const series of nodes.values()) {
+    series.sort((a, b) => a.t - b.t);
+    if (series.length > ENVIRONMENT_TELEMETRY_MAX_PER_NODE) {
+      series.splice(0, series.length - ENVIRONMENT_TELEMETRY_MAX_PER_NODE);
+    }
+  }
+  const ranked = [...nodes.entries()];
+  ranked.sort((a, b) => {
+    const dt = (a[1].at(-1)?.t ?? 0) - (b[1].at(-1)?.t ?? 0);
+    if (dt !== 0) return dt;
+    return b[0] - a[0];
+  });
+  if (ranked.length > ENVIRONMENT_TELEMETRY_MAX_NODES) {
+    ranked.splice(0, ranked.length - ENVIRONMENT_TELEMETRY_MAX_NODES);
+  }
+  return new Map<number, readonly EnvironmentHistoryPoint[]>(ranked);
 }
 
 export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((set, get) => ({
@@ -80,13 +131,8 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
     ) {
       return false;
     }
-    const cutoff = now - ENVIRONMENT_TELEMETRY_RETENTION_MS;
-    const series = existing.filter((p) => p.t >= cutoff);
-    series.push({ t: now, reading: clean, source });
-    if (series.length > ENVIRONMENT_TELEMETRY_MAX_PER_NODE) {
-      series.splice(0, series.length - ENVIRONMENT_TELEMETRY_MAX_PER_NODE);
-    }
-    set({ history: withSeries(get().history, protocol, nodeId, series) });
+    const series = appendBoundedSeries(existing, { t: now, reading: clean, source }, now);
+    set({ history: installSeries(get().history, protocol, nodeId, series) });
 
     // Fire-and-forget: persistence must never block or drop the live reading.
     const save = window.electronAPI?.db?.saveEnvironmentTelemetry;
@@ -131,23 +177,24 @@ export const useEnvironmentTelemetryStore = create<EnvironmentTelemetryState>((s
         nodes.set(row.node_id, series);
       }
       // Readings recorded while the DB load was in flight are newer than any row; keep them.
+      // SQL already applies both caps; cap again so a large payload cannot exceed them.
       const live = get().history;
-      const merged = new Map<MeshProtocol, NodeSeriesMap>();
+      const merged: HistoryMap = new Map();
       for (const [protocol, nodes] of loaded) {
         const liveNodes = live.get(protocol);
         for (const [nodeId, series] of nodes) {
-          const lastT = series.at(-1)?.t ?? 0;
+          let lastT = 0;
+          for (const p of series) {
+            if (p.t > lastT) lastT = p.t;
+          }
           for (const p of liveNodes?.get(nodeId) ?? EMPTY_SERIES) {
             if (p.t > lastT) series.push(p);
-          }
-          if (series.length > ENVIRONMENT_TELEMETRY_MAX_PER_NODE) {
-            series.splice(0, series.length - ENVIRONMENT_TELEMETRY_MAX_PER_NODE);
           }
         }
         for (const [nodeId, series] of liveNodes ?? EMPTY_NODE_MAP) {
           if (!nodes.has(nodeId)) nodes.set(nodeId, [...series]);
         }
-        merged.set(protocol, nodes);
+        merged.set(protocol, capLoadedNodes(nodes));
       }
       for (const [protocol, nodes] of live) {
         if (!merged.has(protocol)) merged.set(protocol, nodes);

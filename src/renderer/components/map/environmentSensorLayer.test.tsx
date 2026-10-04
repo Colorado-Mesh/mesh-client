@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -11,6 +11,7 @@ import {
   sensorColorForValue,
 } from '@/renderer/lib/environmentSensorDisplay';
 import type { MeshNode } from '@/renderer/lib/types';
+import * as environmentTelemetryStore from '@/renderer/stores/environmentTelemetryStore';
 import {
   type EnvironmentHistoryPoint,
   useEnvironmentTelemetryStore,
@@ -128,6 +129,8 @@ describe('EnvironmentSensorLayer', () => {
         onNodeClick={onNodeClick}
       />,
     );
+    expect(screen.getAllByTestId('sensor-circle')).toHaveLength(1);
+    expect(screen.queryByTestId('sensor-label-anchor')).toBeNull();
     expect(screen.getByTestId('sensor-label-1').textContent).toBe(
       'sensorLayer.valueTempF:{"value":"68.0"}',
     );
@@ -157,6 +160,49 @@ describe('EnvironmentSensorLayer', () => {
       />,
     );
     expect(container.innerHTML).toBe('');
+  });
+
+  it('re-renders only the marker whose series changed', () => {
+    const now = Date.now();
+    useEnvironmentTelemetryStore.setState({
+      history: new Map([
+        [
+          'meshtastic',
+          new Map<number, EnvironmentHistoryPoint[]>([
+            [1, [{ t: now, reading: { temperature: 10, relativeHumidity: 40 }, source: 'rf' }]],
+            [2, [{ t: now, reading: { temperature: 12 }, source: 'rf' }]],
+          ]),
+        ],
+      ]),
+    });
+    render(
+      <EnvironmentSensorLayer
+        nodes={[node(1, 39.7, -105), node(2, 39.8, -105.1)]}
+        protocol="meshtastic"
+        metric="temperature"
+        useFahrenheit={false}
+      />,
+    );
+    expect(screen.getByTestId('sensor-label-1').textContent).toBe(
+      'sensorLayer.valueTempC:{"value":"10.0"}',
+    );
+    const valueSpy = vi.spyOn(environmentTelemetryStore, 'latestEnvironmentValue');
+    act(() => {
+      useEnvironmentTelemetryStore
+        .getState()
+        .recordReading('meshtastic', 2, { temperature: 15 }, 'rf');
+    });
+    expect(screen.getByTestId('sensor-label-2').textContent).toBe(
+      'sensorLayer.valueTempC:{"value":"15.0"}',
+    );
+    expect(screen.getByTestId('sensor-label-1').textContent).toBe(
+      'sensorLayer.valueTempC:{"value":"10.0"}',
+    );
+    expect(valueSpy).toHaveBeenCalled();
+    for (const call of valueSpy.mock.calls) {
+      expect(call[0].at(-1)?.reading.temperature).toBe(15);
+    }
+    valueSpy.mockRestore();
   });
 });
 

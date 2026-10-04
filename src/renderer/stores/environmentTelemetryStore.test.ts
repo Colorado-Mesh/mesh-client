@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ENVIRONMENT_TELEMETRY_DEDUP_WINDOW_MS,
+  ENVIRONMENT_TELEMETRY_MAX_NODES,
   ENVIRONMENT_TELEMETRY_MAX_PER_NODE,
+  ENVIRONMENT_TELEMETRY_RETENTION_MS,
   type EnvironmentTelemetryRow,
 } from '@/shared/environmentTelemetry';
 
@@ -169,5 +171,103 @@ describe('environmentTelemetryStore', () => {
       25, 30,
     ]);
     expect(selectEnvironmentSeries(s, 'meshcore', 2)).toHaveLength(1);
+  });
+
+  it('replaces only the series that received the sample', () => {
+    vi.useFakeTimers();
+    const store = useEnvironmentTelemetryStore.getState();
+    store.recordReading('meshtastic', 1, { temperature: 1 }, 'rf');
+    vi.advanceTimersByTime(1000);
+    store.recordReading('meshtastic', 2, { temperature: 2 }, 'rf');
+    vi.advanceTimersByTime(1000);
+    store.recordReading('meshcore', 8, { temperature: 4 }, 'rpc');
+    const state = useEnvironmentTelemetryStore.getState();
+    const series1 = selectEnvironmentSeries(state, 'meshtastic', 1);
+    const meshcoreSeries = selectEnvironmentSeries(state, 'meshcore', 8);
+    const meshtasticNodes = selectEnvironmentNodes(state, 'meshtastic');
+    const meshcoreNodes = selectEnvironmentNodes(state, 'meshcore');
+    vi.advanceTimersByTime(1000);
+    expect(store.recordReading('meshtastic', 2, { temperature: 3 }, 'rf')).toBe(true);
+    const next = useEnvironmentTelemetryStore.getState();
+    expect(selectEnvironmentSeries(next, 'meshtastic', 1)).toBe(series1);
+    expect(selectEnvironmentSeries(next, 'meshcore', 8)).toBe(meshcoreSeries);
+    expect(selectEnvironmentNodes(next, 'meshtastic')).toBe(meshtasticNodes);
+    expect(selectEnvironmentNodes(next, 'meshcore')).toBe(meshcoreNodes);
+    expect(
+      selectEnvironmentSeries(next, 'meshtastic', 2).map((p) => p.reading.temperature),
+    ).toEqual([2, 3]);
+  });
+
+  it('drops points older than the retention window when appending', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    const store = useEnvironmentTelemetryStore.getState();
+    store.recordReading('meshtastic', 4, { temperature: 1 }, 'rf');
+    vi.advanceTimersByTime(ENVIRONMENT_TELEMETRY_RETENTION_MS + 1000);
+    store.recordReading('meshtastic', 4, { temperature: 2 }, 'rf');
+    expect(
+      selectEnvironmentSeries(useEnvironmentTelemetryStore.getState(), 'meshtastic', 4).map(
+        (p) => p.reading.temperature,
+      ),
+    ).toEqual([2]);
+  });
+
+  it('caps hydrated points per node and keeps a newer in-flight reading', async () => {
+    const now = Date.now();
+    const rows: EnvironmentTelemetryRow[] = [];
+    for (let i = 0; i < ENVIRONMENT_TELEMETRY_MAX_PER_NODE; i++) {
+      rows.push(
+        row({
+          node_id: 5,
+          recorded_at: now - (ENVIRONMENT_TELEMETRY_MAX_PER_NODE - i) * 1000,
+          co2: i,
+        }),
+      );
+    }
+    let resolve: (rows: EnvironmentTelemetryRow[]) => void = () => {};
+    vi.mocked(window.electronAPI.db.getEnvironmentTelemetry).mockReturnValueOnce(
+      new Promise((r) => {
+        resolve = r;
+      }),
+    );
+    const pending = useEnvironmentTelemetryStore.getState().loadFromDb();
+    useEnvironmentTelemetryStore.getState().recordReading('meshtastic', 5, { co2: 9999 }, 'rf');
+    resolve(rows);
+    await pending;
+    const series = selectEnvironmentSeries(
+      useEnvironmentTelemetryStore.getState(),
+      'meshtastic',
+      5,
+    );
+    expect(series).toHaveLength(ENVIRONMENT_TELEMETRY_MAX_PER_NODE);
+    expect(series[0].reading.co2).toBe(1);
+    expect(series.at(-1)?.reading.co2).toBe(9999);
+  });
+
+  it('hydrates at most the newest nodes per protocol', async () => {
+    const now = Date.now();
+    const rows: EnvironmentTelemetryRow[] = [];
+    for (let id = 1; id <= ENVIRONMENT_TELEMETRY_MAX_NODES + 1; id++) {
+      rows.push(
+        row({
+          node_id: id,
+          recorded_at: now - (ENVIRONMENT_TELEMETRY_MAX_NODES + 1 - id) * 1000,
+          temperature: id,
+        }),
+      );
+    }
+    vi.mocked(window.electronAPI.db.getEnvironmentTelemetry).mockResolvedValueOnce(rows);
+    await useEnvironmentTelemetryStore.getState().loadFromDb();
+    const nodes = selectEnvironmentNodes(useEnvironmentTelemetryStore.getState(), 'meshtastic');
+    expect(nodes.size).toBe(ENVIRONMENT_TELEMETRY_MAX_NODES);
+    expect(nodes.has(1)).toBe(false);
+    expect(nodes.has(ENVIRONMENT_TELEMETRY_MAX_NODES + 1)).toBe(true);
+    expect(
+      selectEnvironmentSeries(
+        useEnvironmentTelemetryStore.getState(),
+        'meshtastic',
+        ENVIRONMENT_TELEMETRY_MAX_NODES + 1,
+      )[0]?.reading.temperature,
+    ).toBe(ENVIRONMENT_TELEMETRY_MAX_NODES + 1);
   });
 });

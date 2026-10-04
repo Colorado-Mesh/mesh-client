@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CircleMarker, Tooltip } from 'react-leaflet';
 
@@ -13,9 +13,10 @@ import {
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { MeshNode } from '@/renderer/lib/types';
 import {
+  type EnvironmentHistoryPoint,
   latestEnvironmentReading,
   latestEnvironmentValue,
-  selectEnvironmentNodes,
+  selectEnvironmentSeries,
   useEnvironmentTelemetryStore,
 } from '@/renderer/stores/environmentTelemetryStore';
 import type { EnvironmentReading } from '@/shared/environmentTelemetry';
@@ -34,28 +35,37 @@ export interface SensorMarker {
  * Positioned nodes with a recent reading for `metric`. `nodes` must already carry the map's
  * resolved display position (MapPanel `nodesWithPosition`), so map filters apply here too.
  */
+function sensorMarkerForNode(
+  node: MeshNode,
+  points: readonly EnvironmentHistoryPoint[] | undefined,
+  metric: MapSensorMetric,
+  protocol: MeshProtocol,
+  now: number,
+): SensorMarker | null {
+  if (node.latitude == null || node.longitude == null || !points) return null;
+  const latest = latestEnvironmentValue(points, metric);
+  if (!latest || now - latest.t > SENSOR_LAYER_MAX_AGE_MS) return null;
+  return {
+    nodeId: node.node_id,
+    name: nodeDisplayName(node, protocol),
+    lat: node.latitude,
+    lon: node.longitude,
+    value: latest.value,
+    reading: latestEnvironmentReading(points),
+  };
+}
+
 export function sensorMarkersFor(
   nodes: readonly MeshNode[],
-  series: ReturnType<typeof selectEnvironmentNodes>,
+  series: ReadonlyMap<number, readonly EnvironmentHistoryPoint[]>,
   metric: MapSensorMetric,
   protocol: MeshProtocol,
   now: number,
 ): SensorMarker[] {
   const out: SensorMarker[] = [];
   for (const node of nodes) {
-    if (node.latitude == null || node.longitude == null) continue;
-    const points = series.get(node.node_id);
-    if (!points) continue;
-    const latest = latestEnvironmentValue(points, metric);
-    if (!latest || now - latest.t > SENSOR_LAYER_MAX_AGE_MS) continue;
-    out.push({
-      nodeId: node.node_id,
-      name: nodeDisplayName(node, protocol),
-      lat: node.latitude,
-      lon: node.longitude,
-      value: latest.value,
-      reading: latestEnvironmentReading(points),
-    });
+    const marker = sensorMarkerForNode(node, series.get(node.node_id), metric, protocol, now);
+    if (marker) out.push(marker);
   }
   return out;
 }
@@ -68,6 +78,65 @@ interface Props {
   onNodeClick?: (nodeId: number) => void;
 }
 
+interface MarkerProps {
+  node: MeshNode;
+  protocol: MeshProtocol;
+  metric: MapSensorMetric;
+  useFahrenheit: boolean;
+  nowMs: number;
+  onNodeClick?: (nodeId: number) => void;
+}
+
+/**
+ * One positioned node. Subscribes to that node's series so a new sample re-renders this marker
+ * only. The selected metric is already listed in the tooltip, so there is no second marker.
+ */
+const EnvironmentSensorMarker = memo(function EnvironmentSensorMarker({
+  node,
+  protocol,
+  metric,
+  useFahrenheit,
+  nowMs,
+  onNodeClick,
+}: MarkerProps) {
+  const { t } = useTranslation();
+  const series = useEnvironmentTelemetryStore((s) =>
+    selectEnvironmentSeries(s, protocol, node.node_id),
+  );
+  const marker = sensorMarkerForNode(node, series, metric, protocol, nowMs);
+  if (!marker) return null;
+  const color = sensorColorForValue(metric, marker.value);
+  return (
+    <CircleMarker
+      center={[marker.lat, marker.lon]}
+      radius={9}
+      pathOptions={{ color, fillColor: color, fillOpacity: 0.55, weight: 2 }}
+      eventHandlers={
+        onNodeClick
+          ? {
+              click: () => {
+                onNodeClick(marker.nodeId);
+              },
+            }
+          : undefined
+      }
+    >
+      <Tooltip direction="top">
+        <div className="font-medium">{marker.name}</div>
+        {MAP_SENSOR_METRICS.map((k) => {
+          const v = marker.reading[k];
+          if (v === undefined) return null;
+          return (
+            <div key={k} data-testid={k === metric ? `sensor-label-${marker.nodeId}` : undefined}>
+              {formatSensorMetric(t, k, v, useFahrenheit)}
+            </div>
+          );
+        })}
+      </Tooltip>
+    </CircleMarker>
+  );
+});
+
 /** Latest temperature / humidity / pressure per positioned node, colored by value band. */
 export function EnvironmentSensorLayer({
   nodes,
@@ -76,60 +145,19 @@ export function EnvironmentSensorLayer({
   useFahrenheit,
   onNodeClick,
 }: Props) {
-  const { t } = useTranslation();
-  const series = useEnvironmentTelemetryStore((s) => selectEnvironmentNodes(s, protocol));
   const nowMs = useNowMs();
-  const markers = useMemo(
-    () => sensorMarkersFor(nodes, series, metric, protocol, nowMs),
-    [nodes, series, metric, protocol, nowMs],
-  );
-  if (markers.length === 0) return null;
   return (
     <>
-      {markers.map((m) => {
-        const color = sensorColorForValue(metric, m.value);
-        return (
-          <CircleMarker
-            key={`sensor-${m.nodeId}`}
-            center={[m.lat, m.lon]}
-            radius={9}
-            pathOptions={{ color, fillColor: color, fillOpacity: 0.55, weight: 2 }}
-            eventHandlers={
-              onNodeClick
-                ? {
-                    click: () => {
-                      onNodeClick(m.nodeId);
-                    },
-                  }
-                : undefined
-            }
-          >
-            <Tooltip direction="top">
-              <div className="font-medium">{m.name}</div>
-              {MAP_SENSOR_METRICS.map((k) => {
-                const v = m.reading[k];
-                return v === undefined ? null : (
-                  <div key={k}>{formatSensorMetric(t, k, v, useFahrenheit)}</div>
-                );
-              })}
-            </Tooltip>
-          </CircleMarker>
-        );
-      })}
-      {markers.map((m) => (
-        <CircleMarker
-          key={`sensor-label-${m.nodeId}`}
-          center={[m.lat, m.lon]}
-          radius={0}
-          interactive={false}
-          pathOptions={{ opacity: 0, fillOpacity: 0 }}
-        >
-          <Tooltip permanent direction="right" offset={[10, 0]}>
-            <span data-testid={`sensor-label-${m.nodeId}`}>
-              {formatSensorMetric(t, metric, m.value, useFahrenheit)}
-            </span>
-          </Tooltip>
-        </CircleMarker>
+      {nodes.map((node) => (
+        <EnvironmentSensorMarker
+          key={node.node_id}
+          node={node}
+          protocol={protocol}
+          metric={metric}
+          useFahrenheit={useFahrenheit}
+          nowMs={nowMs}
+          onNodeClick={onNodeClick}
+        />
       ))}
     </>
   );
