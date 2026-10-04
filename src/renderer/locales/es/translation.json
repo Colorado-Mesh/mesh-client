@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} mensaje nuevo",
     "srNewMessages_other": "{{count}} mensajes nuevos",
     "unreadMecpMarker": "Informe {{severity}} MECP no leído",
-    "floodScopeSaveFailed": "No se ha podido guardar el ámbito de envío. La opción guardada anterior sigue siendo válida."
+    "floodScopeSaveFailed": "No se ha podido guardar el ámbito de envío. La opción guardada anterior sigue siendo válida.",
+    "reactionYouTitle": "{{name}} (usted)",
+    "reactionYouAria": "Tu reacción: {{name}}",
+    "reactionOtherAria": "{{reactor}} reaccionó con {{name}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

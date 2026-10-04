@@ -91,11 +91,6 @@ export const useWeatherFilterStore = create<WeatherFilterState>()((set, get) => 
   },
 }));
 
-/** Current weather matcher config for `protocol` (stable until settings change). */
-export function weatherPostConfigFor(protocol: MeshProtocol): WeatherPostConfig {
-  return useWeatherFilterStore.getState().configs[protocol];
-}
-
 /**
  * True when `msg` is a channel weather post that the user chose to hide from channel views.
  * Unread counts and notifications use this so badges match what Chat shows.

@@ -870,7 +870,10 @@
     "srNewMessages_many": "{{count}} новых сообщений",
     "srNewMessages_other": "{{count}} нового сообщения",
     "unreadMecpMarker": "Непрочитанный отчет {{severity}} MECP",
-    "floodScopeSaveFailed": "Не удалось сохранить область отправки. Предыдущий сохраненный вариант остается в силе."
+    "floodScopeSaveFailed": "Не удалось сохранить область отправки. Предыдущий сохраненный вариант остается в силе.",
+    "reactionYouTitle": "{{name}} (вы)",
+    "reactionYouAria": "Ваша реакция: {{name}}",
+    "reactionOtherAria": "{{reactor}} отреагировал: {{name}}"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

@@ -7,6 +7,7 @@ import {
 } from '@/renderer/lib/nomad/nomadImageCache';
 import {
   clearNomadPageCache,
+  clearNomadPageCacheForHash,
   getNomadPageCache,
   nomadPageCacheSizeForTests,
   setNomadPageCache,
@@ -77,6 +78,43 @@ describe('nomadPageViewerStore loadPage cache', () => {
     const anon = pageFetchDedupeKeyForTests('ABC', '/page/index.mu', undefined, false, false, 'r1');
     const ident = pageFetchDedupeKeyForTests('abc', '/page/index.mu', undefined, false, true, 'r1');
     expect(anon).not.toBe(ident);
+  });
+
+  it('drops a page write when identify is cleared while the fetch is in flight', async () => {
+    vi.useFakeTimers();
+    try {
+      let resolveFetch: (value: {
+        ok: true;
+        content: string;
+        content_type: string;
+      }) => void = () => {};
+      const fetchNomadPage = vi.fn(
+        () =>
+          new Promise<{ ok: true; content: string; content_type: string }>((resolve) => {
+            resolveFetch = resolve;
+          }),
+      );
+      useNomadNetworkStore.setState({ fetchNomadPage });
+      const loadPromise = useNomadPageViewerStore
+        .getState()
+        .loadPage('abc1234567890', '/page/index.mu');
+      await vi.advanceTimersByTimeAsync(NOMAD_PAGE_FETCH_DEBOUNCE_MS);
+      expect(fetchNomadPage).toHaveBeenCalledTimes(1);
+
+      clearNomadPageCacheForHash('abc1234567890');
+      resolveFetch({ ok: true, content: 'stale', content_type: 'micron' });
+      await loadPromise;
+
+      expect(nomadPageCacheSizeForTests()).toBe(0);
+      expect(
+        getNomadPageCache({ hash: 'abc1234567890', path: '/page/index.mu', identify: false }),
+      ).toBeUndefined();
+      expect(
+        getNomadPageCache({ hash: 'abc1234567890', path: '/page/index.mu', identify: true }),
+      ).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('passes identify to the fetch when the node identifies', async () => {

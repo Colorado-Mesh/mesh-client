@@ -53,7 +53,8 @@ export function FirmwareUpdateNotifier({
 }: FirmwareUpdateNotifierProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
-  const toastShownRef = useRef(false);
+  // One latch per protocol. A shared boolean let MeshCore's toast suppress Meshtastic's.
+  const toastShownRef = useRef<Partial<Record<MeshProtocol, boolean>>>({});
   const activeState = selectByProtocol(deviceStateByProtocol, activeProtocol);
   const activeCapabilities = selectByProtocol(capabilitiesByProtocol, activeProtocol);
 
@@ -87,10 +88,10 @@ export function FirmwareUpdateNotifier({
         // trail upstream (MeshCoMod 1.17.0.4 against 1.17.1, #1097) toasted on every launch.
         if (
           updateAvailable &&
-          !toastShownRef.current &&
+          !toastShownRef.current[activeProtocol] &&
           readDismissedFirmwareVersion(activeProtocol) !== release.version
         ) {
-          toastShownRef.current = true;
+          toastShownRef.current[activeProtocol] = true;
           addToast(t('toasts.firmwareAvailable', { version: release.version }), 'warning', 8000, {
             action: {
               label: t('toasts.firmwareDismiss'),
@@ -118,9 +119,9 @@ export function FirmwareUpdateNotifier({
   useEffect(() => {
     if (activeState.status === 'disconnected') {
       onResult({ phase: 'idle' });
-      toastShownRef.current = false;
+      toastShownRef.current[activeProtocol] = false;
     }
-  }, [activeState.status, onResult]);
+  }, [activeProtocol, activeState.status, onResult]);
 
   return null;
 }

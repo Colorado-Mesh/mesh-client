@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} pesan baru",
     "srNewMessages_other": "{{count}} pesan baru",
     "unreadMecpMarker": "Belum dibaca {{severity}} laporan MECP",
-    "floodScopeSaveFailed": "Tidak dapat menyimpan ruang lingkup pengiriman. Pilihan tersimpan sebelumnya masih berlaku."
+    "floodScopeSaveFailed": "Tidak dapat menyimpan ruang lingkup pengiriman. Pilihan tersimpan sebelumnya masih berlaku.",
+    "reactionYouTitle": "{{name}} (Anda)",
+    "reactionYouAria": "Reaksi Anda: {{name}}",
+    "reactionOtherAria": "{{reactor}} bereaksi dengan {{name}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

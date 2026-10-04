@@ -870,7 +870,10 @@
     "srNewMessages_many": "{{count}} нових повідомлень",
     "srNewMessages_other": "{{count}} нового повідомлення",
     "unreadMecpMarker": "Непрочитаний звіт {{severity}} MECP",
-    "floodScopeSaveFailed": "Не вдалося зберегти область надсилання. Попередній збережений вибір все ще застосовується."
+    "floodScopeSaveFailed": "Не вдалося зберегти область надсилання. Попередній збережений вибір все ще застосовується.",
+    "reactionYouTitle": "{{name}} (ви)",
+    "reactionYouAria": "Ваша реакція: {{name}}",
+    "reactionOtherAria": "{{reactor}} відреагував {{name}}"
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

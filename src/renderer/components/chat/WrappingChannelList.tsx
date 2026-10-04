@@ -15,6 +15,11 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
   const contentRef = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState(false);
   const [hiddenUnread, setHiddenUnread] = useState({ above: 0, below: 0 });
+  const activeKeyRef = useRef(activeKey);
+  const measuredSizeRef = useRef('');
+  useLayoutEffect(() => {
+    activeKeyRef.current = activeKey;
+  }, [activeKey]);
 
   const unreadOutside = useCallback(() => {
     const viewport = viewportRef.current;
@@ -61,16 +66,23 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
     [measure],
   );
 
+  // Subscribe once. `children` is a new element on every parent render; re-observing
+  // fires the callback and reveal() scrolls the strip back to the active channel.
   useLayoutEffect(() => {
     measure();
     if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(() => {
+      const nextSize = `${contentRef.current?.scrollHeight ?? 0}:${rootRef.current?.clientHeight ?? 0}:${viewportRef.current?.clientHeight ?? 0}`;
+      const heightChanged = nextSize !== measuredSizeRef.current;
+      measuredSizeRef.current = nextSize;
       measure();
+      if (!heightChanged) return;
+      const content = contentRef.current;
       const focused = document.activeElement;
-      if (focused instanceof HTMLButtonElement && contentRef.current?.contains(focused)) {
+      if (focused instanceof HTMLButtonElement && content?.contains(focused)) {
         reveal(focused);
-      } else if (activeKey != null) {
-        const active = contentRef.current?.querySelector<HTMLElement>('[data-strip-active="true"]');
+      } else if (activeKeyRef.current != null) {
+        const active = content?.querySelector<HTMLElement>('[data-strip-active="true"]');
         if (active) reveal(active);
       }
     });
@@ -80,7 +92,7 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
     return () => {
       observer.disconnect();
     };
-  }, [activeKey, children, measure, reveal]);
+  }, [measure, reveal]);
 
   useLayoutEffect(() => {
     if (activeKey == null) return;

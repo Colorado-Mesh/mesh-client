@@ -870,7 +870,10 @@
     "srNewMessages_many": "{{count}} nowych wiadomości",
     "srNewMessages_other": "{{count}} nowej wiadomości",
     "unreadMecpMarker": "Nieprzeczytany raport MECP{{severity}}",
-    "floodScopeSaveFailed": "Nie można zapisać zakresu wysyłania. Poprzedni zapisany wybór nadal obowiązuje."
+    "floodScopeSaveFailed": "Nie można zapisać zakresu wysyłania. Poprzedni zapisany wybór nadal obowiązuje.",
+    "reactionYouTitle": "{{name}} (Ty)",
+    "reactionYouAria": "Twoja reakcja: {{name}}",
+    "reactionOtherAria": "{{reactor}} zareagował(a): {{name}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

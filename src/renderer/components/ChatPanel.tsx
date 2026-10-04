@@ -4293,11 +4293,14 @@ function ChatPanel({
                               const emojiChar = reactionDisplayGlyph(r.emoji, r.payload);
                               const reactionName = emojiDisplayLabel(r.emoji, r.payload);
                               const titleText = hideReactorLabel
-                                ? `${reactionName} (you)`
+                                ? t('chatPanel.reactionYouTitle', { name: reactionName })
                                 : `${reactorLabel}: ${reactionName}`;
                               const ariaLabel = hideReactorLabel
-                                ? `Your reaction: ${reactionName}`
-                                : `${reactorLabel} reacted with ${reactionName}`;
+                                ? t('chatPanel.reactionYouAria', { name: reactionName })
+                                : t('chatPanel.reactionOtherAria', {
+                                    reactor: reactorLabel,
+                                    name: reactionName,
+                                  });
                               return (
                                 <span
                                   key={

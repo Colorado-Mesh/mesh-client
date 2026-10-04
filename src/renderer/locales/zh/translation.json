@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}}条新消息",
     "srNewMessages_other": "{{count}}条新消息",
     "unreadMecpMarker": "未读{{severity}} MECP报告",
-    "floodScopeSaveFailed": "无法保存发送范围。之前保存的选项仍然适用。"
+    "floodScopeSaveFailed": "无法保存发送范围。之前保存的选项仍然适用。",
+    "reactionYouTitle": "{{name}} （您）",
+    "reactionYouAria": "您的反应： {{name}}",
+    "reactionOtherAria": "{{reactor}} 的反应：{{name}}"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} nova mensagem",
     "srNewMessages_other": "{{count}} novas mensagens",
     "unreadMecpMarker": "Relatório MECP {{severity}} não lido",
-    "floodScopeSaveFailed": "Não foi possível salvar o escopo de envio. A opção salva anterior ainda se aplica."
+    "floodScopeSaveFailed": "Não foi possível salvar o escopo de envio. A opção salva anterior ainda se aplica.",
+    "reactionYouTitle": "{{name}} (você)",
+    "reactionYouAria": "Sua reação: {{name}}",
+    "reactionOtherAria": "{{reactor}} reagiu com {{name}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
