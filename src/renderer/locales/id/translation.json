@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "Tindakan untuk {{name}}",
     "rowBusy": "Sedang memproses {{name}}",
     "menuShownBelow": "Ditampilkan di bawah. Pilih lagi untuk menyembunyikan.",
-    "confirmRemoveAria": "Konfirmasi menghapus {{name}}"
+    "confirmRemoveAria": "Konfirmasi menghapus {{name}}",
+    "radioCliRxGainGet": "Dapatkan peningkatan keuntungan RX",
+    "radioCliRxGainOn": "Aktifkan peningkatan keuntungan RX",
+    "radioCliRxGainOff": "Turn RX boosted gain off",
+    "radioCliFemRxGainGet": "Dapatkan gain FEM RX",
+    "radioCliFemRxGainOn": "Aktifkan perolehan FEM RX",
+    "radioCliFemRxGainOff": "Matikan gain FEM RX",
+    "radioCliFemTxGainGet": "Dapatkan gain FEM TX (Station G3)",
+    "radioCliFemTxGainOn": "Aktifkan gain FEM TX (Station G3)",
+    "radioCliFemTxGainOff": "Matikan gain TX FEM (Station G3)",
+    "radioCliCadGet": "Dapatkan CAD perangkat keras",
+    "radioCliCadOn": "Aktifkan CAD perangkat keras",
+    "radioCliCadOnHint": "Aktifkan CAD perangkat keras. MeshCore meninggalkan CAD secara default karena dapat mengunci radio selama sekitar 4 detik.",
+    "radioCliCadOff": "Nonaktifkan CAD perangkat keras",
+    "radioCliBootReasonGet": "Dapatkan alasan boot dan shutdown",
+    "cliQuickRadio": "Radio"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval pengumuman (detik)",

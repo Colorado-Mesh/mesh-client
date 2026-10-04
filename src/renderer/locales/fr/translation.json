@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "Actions pour {{name}}",
     "rowBusy": "Traitement de {{name}} en cours",
     "menuShownBelow": "Affiché ci-dessous. Choisissez à nouveau pour masquer.",
-    "confirmRemoveAria": "Confirmer la suppression de {{name}}"
+    "confirmRemoveAria": "Confirmer la suppression de {{name}}",
+    "radioCliRxGainGet": "Obtenez un gain boosté par RX",
+    "radioCliRxGainOn": "Activez le gain boosté RX",
+    "radioCliRxGainOff": "Désactiver le gain boosté RX",
+    "radioCliFemRxGainGet": "Obtenez un gain FEM RX",
+    "radioCliFemRxGainOn": "Activer le gain FEM RX",
+    "radioCliFemRxGainOff": "Désactiver le gain FEM RX",
+    "radioCliFemTxGainGet": "Obtenir gain FEM TX (Station G3)",
+    "radioCliFemTxGainOn": "Activer le gain FEM TX (Station G3)",
+    "radioCliFemTxGainOff": "Désactiver le gain FEM TX (Station G3)",
+    "radioCliCadGet": "Obtenir la CAO du matériel",
+    "radioCliCadOn": "Activer la CAO matérielle",
+    "radioCliCadOnHint": "Activez la CAO matérielle. MeshCore laisse la CAO désactivée par défaut car il peut verrouiller la radio pendant environ 4 secondes.",
+    "radioCliCadOff": "Désactiver la CAO du matériel",
+    "radioCliBootReasonGet": "Obtenir la raison du démarrage et de l'arrêt",
+    "cliQuickRadio": "Radio:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalle d'annonce (secondes)",

@@ -4921,7 +4921,22 @@
     "rowActionsMenu": "Дії для {{name}}",
     "rowBusy": "Виконується для {{name}}",
     "menuShownBelow": "Показано нижче. Виберіть ще раз, щоб приховати.",
-    "confirmRemoveAria": "Підтвердити видалення {{name}}"
+    "confirmRemoveAria": "Підтвердити видалення {{name}}",
+    "radioCliRxGainGet": "Отримати збільшений приріст RX",
+    "radioCliRxGainOn": "Увімкнути посилення з підвищенням RX",
+    "radioCliRxGainOff": "Вимкнути посилення з підвищеним доходом RX",
+    "radioCliFemRxGainGet": "Отримати коефіцієнт посилення FEM RX",
+    "radioCliFemRxGainOn": "Увімкніть коефіцієнт посилення FEM RX",
+    "radioCliFemRxGainOff": "Вимкнути коефіцієнт посилення FEM RX",
+    "radioCliFemTxGainGet": "Отримати коефіцієнт посилення FEM TX (станція G3)",
+    "radioCliFemTxGainOn": "Увімкніть підсилення FEM TX (станція G3)",
+    "radioCliFemTxGainOff": "Вимкніть підсилення FEM TX (станція G3)",
+    "radioCliCadGet": "Отримати апаратний САПР",
+    "radioCliCadOn": "Увімкніть апаратний САПР",
+    "radioCliCadOnHint": "Увімкніть апаратний CAD. MeshCore залишає CAD вимкненим за замовчуванням, оскільки він може заблокувати радіоприймач приблизно на 4 секунди.",
+    "radioCliCadOff": "Вимкнути апаратний САПР",
+    "radioCliBootReasonGet": "Отримати причину завантаження та вимкнення",
+    "cliQuickRadio": "Радіозв'язок"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Інтервал оголошення (секунди)",

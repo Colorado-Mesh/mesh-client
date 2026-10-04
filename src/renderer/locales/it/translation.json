@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "Azioni per {{name}}",
     "rowBusy": "Operazione in corso su {{name}}",
     "menuShownBelow": "Mostrato sotto. Sceglilo di nuovo per nasconderlo.",
-    "confirmRemoveAria": "Conferma la rimozione di {{name}}"
+    "confirmRemoveAria": "Conferma la rimozione di {{name}}",
+    "radioCliRxGainGet": "Ottieni un guadagno potenziato RX",
+    "radioCliRxGainOn": "Attiva il guadagno potenziato RX",
+    "radioCliRxGainOff": "Disattiva guadagno potenziato RX",
+    "radioCliFemRxGainGet": "Ottieni guadagno FEM RX",
+    "radioCliFemRxGainOn": "Attiva il guadagno FEM RX",
+    "radioCliFemRxGainOff": "Disattiva guadagno FEM RX",
+    "radioCliFemTxGainGet": "Ottieni guadagno FEM TX (Stazione G3)",
+    "radioCliFemTxGainOn": "Accendere guadagno FEM TX (Stazione G3)",
+    "radioCliFemTxGainOff": "Disattivare il guadagno FEM TX (Stazione G3)",
+    "radioCliCadGet": "Ottieni hardware CAD",
+    "radioCliCadOn": "Attiva CAD hardware",
+    "radioCliCadOnHint": "Attiva CAD hardware. MeshCore lascia il CAD spento per impostazione predefinita perché può bloccare la radio per circa 4 secondi.",
+    "radioCliCadOff": "Disattiva CAD hardware",
+    "radioCliBootReasonGet": "Ottieni motivo di avvio e arresto",
+    "cliQuickRadio": "Radio:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervallo annunci (secondi)",

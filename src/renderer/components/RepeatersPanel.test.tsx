@@ -547,6 +547,64 @@ describe('RepeatersPanel', () => {
     );
   });
 
+  it('keeps path.hash short labels after the label map refactor', async () => {
+    render(
+      <RepeatersPanel {...makeBaseProps()} onSendCliCommand={vi.fn().mockResolvedValue('ok')} />,
+    );
+
+    await chooseRowAction(userEvent, 'CLI interface');
+    expect(screen.getByRole('button', { name: 'Get path hash mode' })).toHaveTextContent(
+      'path.hash',
+    );
+    expect(screen.getByRole('button', { name: 'Set path hash mode 3-byte' })).toHaveTextContent(
+      'hash 2',
+    );
+  });
+
+  it('exposes MeshCore v1.17 radio CLI quick pills on Repeater rows', async () => {
+    render(
+      <RepeatersPanel {...makeBaseProps()} onSendCliCommand={vi.fn().mockResolvedValue('ok')} />,
+    );
+
+    await chooseRowAction(userEvent, 'CLI interface');
+    expect(screen.getByText('Radio:')).toBeInTheDocument();
+    for (const name of [
+      'Get RX boosted gain',
+      'Turn RX boosted gain on',
+      'Turn RX boosted gain off',
+      'Get FEM RX gain',
+      'Turn FEM RX gain on',
+      'Turn FEM RX gain off',
+      'Get FEM TX gain (Station G3)',
+      'Turn FEM TX gain on (Station G3)',
+      'Turn FEM TX gain off (Station G3)',
+      'Get hardware CAD',
+      'Turn hardware CAD on',
+      'Turn hardware CAD off',
+      'Get boot and shutdown reason',
+    ]) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    expect(screen.getByRole('button', { name: 'Turn hardware CAD on' })).toHaveAttribute(
+      'title',
+      expect.stringContaining('about 4 seconds'),
+    );
+  });
+
+  it.each([
+    ['Turn hardware CAD on', 'set cad on'],
+    ['Turn FEM RX gain off', 'set radio.fem.rxgain off'],
+    ['Get boot and shutdown reason', 'get pwrmgt.bootreason'],
+  ])('sends the exact firmware token for %s', async (name, command) => {
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
+
+    await chooseRowAction(userEvent, 'CLI interface');
+    await userEvent.click(screen.getByRole('button', { name }));
+
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, command, undefined);
+  });
+
   it('exposes clock sync and related safe CLI quick pills', async () => {
     const onSendCliCommand = vi.fn().mockResolvedValue('ok');
     render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
@@ -1069,7 +1127,9 @@ describe('RepeatersPanel', () => {
     );
     await chooseRowAction(user, 'CLI interface');
     expect(screen.getByRole('button', { name: 'get acl' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'allow.read.only on' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'allow.read.only on' })).toHaveTextContent('ro on');
+    expect(screen.getByRole('button', { name: 'Get hardware CAD' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Get FEM RX gain' })).toBeInTheDocument();
     expect(screen.getByLabelText('Public key (64 hex)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'advert.zerohop' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'stats-core' })).toBeInTheDocument();

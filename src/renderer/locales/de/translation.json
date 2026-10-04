@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "Aktionen für {{name}}",
     "rowBusy": "Wird für {{name}} ausgeführt",
     "menuShownBelow": "Unten angezeigt. Erneut wählen zum Ausblenden.",
-    "confirmRemoveAria": "Entfernen von {{name}} bestätigen"
+    "confirmRemoveAria": "Entfernen von {{name}} bestätigen",
+    "radioCliRxGainGet": "Erhalte RX-verstärkten Gewinn",
+    "radioCliRxGainOn": "Schalten Sie den RX-verstärkten Gewinn ein",
+    "radioCliRxGainOff": "RX-verstärkte Verstärkung ausschalten",
+    "radioCliFemRxGainGet": "Erhalte FEM RX-Gewinn",
+    "radioCliFemRxGainOn": "Schalten Sie den FEM RX-Gewinn ein",
+    "radioCliFemRxGainOff": "FEM RX-Verstärkung ausschalten",
+    "radioCliFemTxGainGet": "Erhalte FEM-TX-Gewinn (Station G3)",
+    "radioCliFemTxGainOn": "Schalten Sie die FEM-TX-Verstärkung ein (Station G3)",
+    "radioCliFemTxGainOff": "FEM TX-Verstärkung ausschalten (Station G3)",
+    "radioCliCadGet": "Hardware-CAD abrufen",
+    "radioCliCadOn": "Hardware-CAD einschalten",
+    "radioCliCadOnHint": "Hardware-CAD einschalten. MeshCore lässt CAD standardmäßig aus, da es das Radio für etwa 4 Sekunden sperren kann.",
+    "radioCliCadOff": "Hardware-CAD ausschalten",
+    "radioCliBootReasonGet": "Grund für das Starten und Herunterfahren abrufen",
+    "cliQuickRadio": "Radio:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Ankündigungsintervall (Sekunden)",

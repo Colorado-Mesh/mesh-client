@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "{{name}} の操作",
     "rowBusy": "{{name}} を処理中",
     "menuShownBelow": "下に表示中。もう一度選ぶと非表示になります。",
-    "confirmRemoveAria": "{{name}} の削除を確認"
+    "confirmRemoveAria": "{{name}} の削除を確認",
+    "radioCliRxGainGet": "RXブーストゲインをゲット",
+    "radioCliRxGainOn": "RXブーストゲインをオンにする",
+    "radioCliRxGainOff": "RXブーストゲインをオフにする",
+    "radioCliFemRxGainGet": "FEM RXゲインを取得",
+    "radioCliFemRxGainOn": "FEM RXゲインをオンにする",
+    "radioCliFemRxGainOff": "FEM RXゲインをオフにする",
+    "radioCliFemTxGainGet": "FEM TXゲインをゲット（ステーションG 3 ）",
+    "radioCliFemTxGainOn": "FEM TXゲインをオンにする（ステーションG 3 ）",
+    "radioCliFemTxGainOff": "FEM TXゲインをオフにする（ステーションG 3 ）",
+    "radioCliCadGet": "ハードウェアCADを取得する",
+    "radioCliCadOn": "ハードウェアCADをオンにする",
+    "radioCliCadOnHint": "ハードウェアCADをオンにします。MeshCoreは、ラジオを約4秒間ロックできるため、デフォルトでCADをオフにします。",
+    "radioCliCadOff": "ハードウェアCADをオフにする",
+    "radioCliBootReasonGet": "起動とシャットダウンの理由を取得する",
+    "cliQuickRadio": "通信機"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "アナウンス間隔(秒)",

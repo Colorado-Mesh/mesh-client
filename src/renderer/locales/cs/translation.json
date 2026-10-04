@@ -4884,7 +4884,22 @@
     "rowActionsMenu": "Akce pro {{name}}",
     "rowBusy": "Probíhá práce s {{name}}",
     "menuShownBelow": "Zobrazeno níže. Opětovnou volbou skryjete.",
-    "confirmRemoveAria": "Potvrdit odebrání {{name}}"
+    "confirmRemoveAria": "Potvrdit odebrání {{name}}",
+    "radioCliRxGainGet": "Zvýšení zisku RX",
+    "radioCliRxGainOn": "Zapnout zesílení RX",
+    "radioCliRxGainOff": "Vypnout zesílený zisk RX",
+    "radioCliFemRxGainGet": "Získejte zisk FEM RX",
+    "radioCliFemRxGainOn": "Zapněte zesílení FEM RX",
+    "radioCliFemRxGainOff": "Vypnout zisk FEM RX",
+    "radioCliFemTxGainGet": "Získejte zisk FEM TX (stanice G3)",
+    "radioCliFemTxGainOn": "Zapněte FEM TX zisk (stanice G3)",
+    "radioCliFemTxGainOff": "Vypněte zesílení FEM TX (stanice G3)",
+    "radioCliCadGet": "Získat hardwarový CAD",
+    "radioCliCadOn": "Zapnout hardwarový CAD",
+    "radioCliCadOnHint": "Zapněte hardwarový CAD. MeshCore ponechává CAD ve výchozím nastavení vypnutý, protože může uzamknout rádio asi na 4 sekundy.",
+    "radioCliCadOff": "Vypnout hardwarový CAD",
+    "radioCliBootReasonGet": "Získat důvod spuštění a vypnutí",
+    "cliQuickRadio": "Rádio režim:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interval oznamování (sekundy)",

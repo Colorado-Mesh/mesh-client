@@ -4921,7 +4921,22 @@
     "rowActionsMenu": "Działania dla {{name}}",
     "rowBusy": "Trwa praca z {{name}}",
     "menuShownBelow": "Widoczne poniżej. Wybierz ponownie, aby ukryć.",
-    "confirmRemoveAria": "Potwierdź usunięcie {{name}}"
+    "confirmRemoveAria": "Potwierdź usunięcie {{name}}",
+    "radioCliRxGainGet": "Uzyskaj wzmocnienie RX",
+    "radioCliRxGainOn": "Włącz wzmocnienie RX",
+    "radioCliRxGainOff": "Wyłącz wzmocnienie RX",
+    "radioCliFemRxGainGet": "Uzyskaj wzmocnienie FEM RX",
+    "radioCliFemRxGainOn": "Włącz wzmocnienie FEM RX",
+    "radioCliFemRxGainOff": "Wyłącz wzmocnienie FEM RX",
+    "radioCliFemTxGainGet": "Uzyskaj wzmocnienie FEM TX (stacja G3)",
+    "radioCliFemTxGainOn": "Włącz wzmocnienie FEM TX (stacja G3)",
+    "radioCliFemTxGainOff": "Wyłącz wzmocnienie FEM TX (stacja G3)",
+    "radioCliCadGet": "Pobierz sprzęt CAD",
+    "radioCliCadOn": "Włącz sprzęt CAD",
+    "radioCliCadOnHint": "Włącz sprzęt CAD. MeshCore domyślnie pozostawia CAD wyłączonym, ponieważ może zablokować radio na około 4 sekundy.",
+    "radioCliCadOff": "Wyłącz sprzęt CAD",
+    "radioCliBootReasonGet": "Powód uruchomienia i wyłączenia",
+    "cliQuickRadio": "Sprzęt radiowy"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Interwał ogłaszania (sekundy)",

@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "Ações para {{name}}",
     "rowBusy": "Processando {{name}}",
     "menuShownBelow": "Exibido abaixo. Escolha novamente para ocultar.",
-    "confirmRemoveAria": "Confirmar remoção de {{name}}"
+    "confirmRemoveAria": "Confirmar remoção de {{name}}",
+    "radioCliRxGainGet": "Obtenha ganho aumentado de RX",
+    "radioCliRxGainOn": "Gire o ganho aumentado de RX em",
+    "radioCliRxGainOff": "Desligue o ganho impulsionado pelo RX",
+    "radioCliFemRxGainGet": "Obtenha ganho FEM RX",
+    "radioCliFemRxGainOn": "Ativar o ganho FEM RX",
+    "radioCliFemRxGainOff": "Desligue o ganho do FEM RX",
+    "radioCliFemTxGainGet": "Obter ganho FEM TX (Estação G3)",
+    "radioCliFemTxGainOn": "Ligue o ganho FEM TX (Estação G3)",
+    "radioCliFemTxGainOff": "Desligue o ganho FEM TX (Estação G3)",
+    "radioCliCadGet": "Obter CAD de hardware",
+    "radioCliCadOn": "Ativar o CAD de hardware",
+    "radioCliCadOnHint": "Ligue o CAD de hardware. O MeshCore deixa o CAD desligado por padrão porque pode bloquear o rádio por cerca de 4 segundos.",
+    "radioCliCadOff": "Desativar o CAD de hardware",
+    "radioCliBootReasonGet": "Obter motivo de inicialização e desligamento",
+    "cliQuickRadio": "Rádio:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Intervalo de anúncio (segundos)",
