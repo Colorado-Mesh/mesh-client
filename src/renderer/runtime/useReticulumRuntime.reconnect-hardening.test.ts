@@ -51,12 +51,6 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     );
   });
 
-  it('overlapping restartStack callers join only a same-generation in-flight restart', () => {
-    expect(SOURCE).toMatch(
-      /const restartStack = useCallback\(async \(\): Promise<void> => \{[\s\S]*?const generation = resumeGenerationRef\.current;\s*const running = restartInFlightRef\.current;\s*if \(running\?\.generation === generation\) \{\s*return running\.promise;[\s\S]*?const entry = \{ promise, generation \};\s*restartInFlightRef\.current = entry;[\s\S]*?if \(restartInFlightRef\.current === entry\) restartInFlightRef\.current = null;/,
-    );
-  });
-
   it('does not treat connecting as an active session for sidecar stop reconnect', () => {
     expect(SOURCE).toMatch(
       /const wasActive =[\s\S]*?stateRef\.current\.status === 'configured'[\s\S]*?stateRef\.current\.status === 'connected'[\s\S]*?stateRef\.current\.status === 'stale'/,

@@ -123,6 +123,91 @@ describe('useReticulumRuntime soft restart cancellation', () => {
     unmount();
   });
 
+  function deferHydration(): { finish: () => void } {
+    const handle = { finish: () => {} };
+    vi.mocked(refreshReticulumPeersFromSidecar).mockImplementationOnce(
+      () =>
+        new Promise<HydratedContacts>((resolve) => {
+          handle.finish = () => {
+            resolve([]);
+          };
+        }),
+    );
+    return handle;
+  }
+
+  function softRestartPostCount(): number {
+    return vi
+      .mocked(window.electronAPI.reticulum.proxyPost)
+      .mock.calls.filter(([path]) => path === '/api/v1/stack/restart').length;
+  }
+
+  it('shares one soft restart between same-generation callers', async () => {
+    const first = deferHydration();
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    let a!: Promise<void>;
+    let b!: Promise<void>;
+    act(() => {
+      a = result.current.restartStack!();
+      b = result.current.restartStack!();
+    });
+    await waitFor(() => {
+      expect(softRestartPostCount()).toBe(1);
+    });
+    await act(async () => {
+      first.finish();
+      await Promise.all([a, b]);
+    });
+    expect(softRestartPostCount()).toBe(1);
+    expect(result.current.state.status).toBe('configured');
+    unmount();
+  });
+
+  it('starts a new-generation restart after the old flight and keeps it joinable', async () => {
+    const oldFlight = deferHydration();
+    const newFlight = deferHydration();
+    const { result, unmount } = renderHook(() => useReticulumRuntime());
+    let oldRestart!: Promise<void>;
+    act(() => {
+      oldRestart = result.current.restartStack!();
+    });
+    await waitFor(() => {
+      expect(softRestartPostCount()).toBe(1);
+    });
+
+    let newRestart!: Promise<void>;
+    act(() => {
+      result.current.onPowerSuspend?.();
+      newRestart = result.current.restartStack!();
+    });
+    // The new restart must wait for the old flight instead of joining or racing it.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(softRestartPostCount()).toBe(1);
+
+    await act(async () => {
+      oldFlight.finish();
+      await oldRestart;
+    });
+    await waitFor(() => {
+      expect(softRestartPostCount()).toBe(2);
+    });
+
+    // Settling the old flight must not have cleared the newer entry: a same-generation caller joins it.
+    let joined!: Promise<void>;
+    act(() => {
+      joined = result.current.restartStack!();
+    });
+    await act(async () => {
+      newFlight.finish();
+      await Promise.all([newRestart, joined]);
+    });
+    expect(softRestartPostCount()).toBe(2);
+    expect(result.current.state.status).toBe('configured');
+    unmount();
+  });
+
   it('discards suspended hydration and allows the later power-resume connect', async () => {
     let finishHydration!: () => void;
     vi.mocked(refreshReticulumPeersFromSidecar).mockImplementationOnce(
