@@ -197,10 +197,16 @@ describe('normalizeMachineTranslation', () => {
 });
 
 describe('parseKeyPrefixes / matchesKeyPrefix', () => {
-  it('returns null when --prefix is absent or empty', () => {
+  it('returns null when --prefix is absent', () => {
     expect(parseKeyPrefixes(['node', 'x.mjs', '--audit'])).toBeNull();
-    expect(parseKeyPrefixes(['--prefix'])).toBeNull();
-    expect(parseKeyPrefixes(['--prefix='])).toBeNull();
+  });
+
+  it('rejects a missing, empty, or option-like operand instead of widening the run', () => {
+    expect(() => parseKeyPrefixes(['--prefix'])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix='])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix', ' , '])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix', '--audit'])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix=--all'])).toThrow(/--prefix requires/);
   });
 
   it('parses space and equals forms with comma lists', () => {

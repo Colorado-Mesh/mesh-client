@@ -255,11 +255,18 @@ export function parseKeyPrefixes(argv) {
   const raw = argv[idx].startsWith('--prefix=')
     ? argv[idx].slice('--prefix='.length)
     : argv[idx + 1];
-  const prefixes = (raw ?? '')
+  // Fail closed: a missing operand must not silently widen a scoped run to every key.
+  if (raw === undefined || raw.startsWith('-')) {
+    throw new Error('--prefix requires a comma-separated list of key prefixes');
+  }
+  const prefixes = raw
     .split(',')
     .map((p) => p.trim())
     .filter(Boolean);
-  return prefixes.length > 0 ? prefixes : null;
+  if (prefixes.length === 0) {
+    throw new Error('--prefix requires a comma-separated list of key prefixes');
+  }
+  return prefixes;
 }
 
 /**
