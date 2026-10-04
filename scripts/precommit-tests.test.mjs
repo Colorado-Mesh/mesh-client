@@ -50,6 +50,14 @@ describe('precommit-tests manifest-only fast path', () => {
   it('recognizes dependency manifests and the flatpak manifest the pnpm sync re-stages', () => {
     expect(isManifestOnlyCommit(['package.json', 'pnpm-lock.yaml'])).toBe(true);
     expect(isManifestOnlyCommit(['package.json', 'org.coloradomesh.MeshClient.yml'])).toBe(true);
+    expect(
+      isManifestOnlyCommit([
+        'package.json',
+        'pnpm-lock.yaml',
+        'org.coloradomesh.MeshClient.yml',
+        'flatpak/org.coloradomesh.MeshClient.metainfo.xml',
+      ]),
+    ).toBe(true);
     expect(isManifestOnlyCommit(['package.json', 'src/main/index.ts'])).toBe(false);
     expect(isManifestOnlyCommit(['package.json', 'README.md'])).toBe(false);
     expect(isManifestOnlyCommit([])).toBe(false);

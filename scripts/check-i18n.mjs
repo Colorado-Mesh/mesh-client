@@ -34,7 +34,7 @@
  *    single-character dash placeholders (common.emDash, signalMeter.noData, and
  *    any other English value that is only a dash) must match English.
  *
- * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate -- --audit --prefix modulePanel.
+ * Backfill untranslated modulePanel copy: pnpm run i18n:auto-translate --audit --prefix modulePanel
  *
  * Branch-only quality pass (keys new/changed in en vs git HEAD):
  *   pnpm run check:i18n:branch
@@ -61,6 +61,7 @@ import {
   roomsSidebarMarkerCrossKeyIssues,
 } from './check-i18n-quality.mjs';
 import { collectUsedI18nKeys, DYNAMIC_T_PREFIXES } from './i18n-unused-keys.mjs';
+import { isKeepEnglishKey } from './i18n-auto-translate-lib.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const LOCALES_DIR =
@@ -565,10 +566,11 @@ for (const dir of localeDirs) {
 
     // Soft signal: multi-word English prose left byte-identical in a locale.
     // Hard-fail would block commits until every key is translated; warn so
-    // `i18n:auto-translate --audit` gaps stay visible. Verbatim keys are exempt.
+    // `i18n:auto-translate --audit` gaps stay visible. Verbatim and keep-English keys are exempt.
     const untranslatedLeafKey = key.split('.').pop() ?? key;
     if (
       !VERBATIM_KEY_NAMES.has(untranslatedLeafKey) &&
+      !isKeepEnglishKey(key) &&
       val === enVal &&
       enVal.trim().split(/\s+/).length >= 3 &&
       /\b(the|and|or|for|with|from|this|that|are|is|not|you|your)\b/i.test(enVal)

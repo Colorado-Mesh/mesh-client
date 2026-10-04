@@ -6,19 +6,53 @@
 export const MT_PLACEHOLDER_TOKEN_RE = /__\s*PH\s*(\d+)\s*__/gi;
 
 /**
- * Replace i18next {{name}} tokens with opaque __PHn__ markers before MT.
+ * @param {string[]} terms
+ * @returns {RegExp | null}
+ */
+function buildProtectedTermRe(terms) {
+  if (terms.length === 0) return null;
+  const alternation = [...terms]
+    .sort((a, b) => b.length - a.length)
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|');
+  // eslint-disable-next-line security/detect-non-literal-regexp -- Terms are checked-in brand/protocol lists, regex-escaped above.
+  return new RegExp(`(?<![\\w-])(?:${alternation})(?![\\w-])`, 'g');
+}
+
+/**
+ * Replace i18next {{name}} tokens — and any `protectedTerms` (brand / protocol names
+ * check:i18n requires verbatim) — with opaque __PHn__ markers before MT.
  *
  * @param {string} str
+ * @param {string[]} [protectedTerms]
  * @returns {{ stripped: string; placeholders: string[] }}
  */
-export function stripPlaceholders(str) {
+export function stripPlaceholders(str, protectedTerms = []) {
   const placeholders = [];
-  const stripped = str.replace(/\{\{[^}]+\}\}/g, (m) => {
+  const shield = (m) => {
     const idx = placeholders.length;
     placeholders.push(m);
     return `__PH${idx}__`;
-  });
+  };
+  let stripped = str.replace(/\{\{[^}]+\}\}/g, shield);
+  const termRe = buildProtectedTermRe(protectedTerms);
+  if (termRe) stripped = stripped.replace(termRe, shield);
   return { stripped, placeholders };
+}
+
+/** Ukrainian apostrophe words MT splits with spaces (з 'єднання, зв' язку). */
+const UK_SPLIT_APOSTROPHE_RE = /([а-яіїєґА-ЯІЇЄҐ])\s*['\u2019\u02bc]\s*([а-яіїєґА-ЯІЇЄҐ])/g;
+
+/**
+ * Locale-specific cleanup of MT output before it is saved.
+ *
+ * @param {string} text
+ * @param {string} localeDir
+ * @returns {string}
+ */
+export function normalizeMachineTranslation(text, localeDir) {
+  if (localeDir === 'uk') return text.replace(UK_SPLIT_APOSTROPHE_RE, "$1'$2");
+  return text;
 }
 
 /**
@@ -207,6 +241,38 @@ export function filterMissingKeysToTranslate(enKeys, existingFlat, addedEnglishK
       return true;
     }
     return addedEnglishKeysSet.has(k);
+  });
+}
+
+/**
+ * Read `--prefix a.b,c.d` (or `--prefix=a.b,c.d`) from argv. Returns null when absent.
+ * @param {string[]} argv
+ * @returns {string[] | null}
+ */
+export function parseKeyPrefixes(argv) {
+  const idx = argv.findIndex((a) => a === '--prefix' || a.startsWith('--prefix='));
+  if (idx === -1) return null;
+  const raw = argv[idx].startsWith('--prefix=')
+    ? argv[idx].slice('--prefix='.length)
+    : argv[idx + 1];
+  const prefixes = (raw ?? '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return prefixes.length > 0 ? prefixes : null;
+}
+
+/**
+ * True when `key` equals a prefix or sits beneath it at a dot boundary
+ * (`modulePanel` matches `modulePanel.x`, not `modulePanelExtra.x`).
+ * @param {string} key
+ * @param {string[] | null} prefixes
+ */
+export function matchesKeyPrefix(key, prefixes) {
+  if (prefixes === null) return true;
+  return prefixes.some((p) => {
+    const base = p.endsWith('.') ? p.slice(0, -1) : p;
+    return key === base || key.startsWith(`${base}.`);
   });
 }
 
