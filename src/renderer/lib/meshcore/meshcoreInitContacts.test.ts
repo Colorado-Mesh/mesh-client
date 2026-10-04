@@ -104,6 +104,23 @@ describe('fetchMeshcoreContactsForInit', () => {
     expect(listenerCount()).toBe(0);
   });
 
+  it('does not retry after a stall when the setup was cancelled', async () => {
+    const { conn, listenerCount } = makeConn();
+    const onStallRetry = vi.fn();
+    const p = fetchMeshcoreContactsForInit(conn, {
+      totalTimeoutMs: 60_000,
+      idleTimeoutMs: 1_000,
+      onStallRetry,
+      isCancelled: () => true,
+    });
+    const assertion = expect(p).rejects.toThrow(/getContacts stalled/);
+    await vi.advanceTimersByTimeAsync(1_000);
+    await assertion;
+    expect(onStallRetry).not.toHaveBeenCalled();
+    expect(conn.getContacts).toHaveBeenCalledTimes(1);
+    expect(listenerCount()).toBe(0);
+  });
+
   it('propagates getContacts rejection without retrying', async () => {
     const { conn, listenerCount } = makeConn();
     vi.mocked(conn.getContacts).mockRejectedValueOnce(new Error('link closed'));

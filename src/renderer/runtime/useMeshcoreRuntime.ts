@@ -2377,6 +2377,7 @@ export function useMeshcoreRuntime() {
         let parallelContactsPromise: Promise<MeshCoreContactRaw[]> | undefined;
         const initContactsOpts = {
           totalTimeoutMs: MESHCORE_INIT_TIMEOUT_MS,
+          isCancelled: () => meshcoreSetupGenerationRef.current !== setupGen,
           onStallRetry: (info: { contactsBeforeStall: number; idleTimeoutMs: number }) => {
             console.warn(
               `[useMeshcoreRuntime] initConn getContacts stalled after ${info.idleTimeoutMs}ms idle ` +

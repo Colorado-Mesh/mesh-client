@@ -23,6 +23,8 @@ export interface FetchMeshcoreContactsForInitOpts {
   totalTimeoutMs: number;
   idleTimeoutMs?: number;
   onStallRetry?: (info: { contactsBeforeStall: number; idleTimeoutMs: number }) => void;
+  /** When true after a stall, skip the retry so a superseded setup never re-dumps on its old conn. */
+  isCancelled?: () => boolean;
 }
 
 export class MeshcoreContactsStallError extends Error {
@@ -105,7 +107,7 @@ export async function fetchMeshcoreContactsForInit(
   try {
     return await runAttempt(conn, idleTimeoutMs, opts.totalTimeoutMs, deadline);
   } catch (e) {
-    if (!(e instanceof MeshcoreContactsStallError)) throw e;
+    if (!(e instanceof MeshcoreContactsStallError) || opts.isCancelled?.()) throw e;
     opts.onStallRetry?.({ contactsBeforeStall: e.contactsBeforeStall, idleTimeoutMs });
     return await runAttempt(conn, idleTimeoutMs, opts.totalTimeoutMs, deadline);
   }
