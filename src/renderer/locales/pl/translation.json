@@ -6636,5 +6636,13 @@
   "settingsSearch": {
     "jumpedTo": "Przeskoczono do: {{label}}",
     "openedPanel": "Otwarto {{panel}}. To ustawienie pojawia się, gdy jest dostępne."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Odrzuć ogłoszenie",
+    "next": "Pokaż następne ogłoszenie",
+    "position": "{{current}} z {{total}}",
+    "learnMore": "Zobacz",
+    "openLinkAria": "{{label}} (otwiera się w przeglądarce)",
+    "regionLabel": "Komunikat od deweloperów aplikacji"
   }
 }

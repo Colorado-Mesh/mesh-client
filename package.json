@@ -77,6 +77,7 @@
     "check:reticulum-decommissioned-hubs": "node scripts/check-reticulum-decommissioned-hubs.mjs",
     "check:reticulum-interface-modes": "node scripts/check-reticulum-interface-modes.mjs",
     "check:reticulum-sidecar": "bash scripts/check-reticulum-sidecar.sh",
+    "check:service-announcements": "node scripts/check-service-announcements.mjs",
     "check:silent-catches": "node scripts/check-silent-catches.mjs",
     "check:url-hostname-sanitization": "node scripts/check-url-hostname-sanitization.mjs",
     "check:xss-patterns": "node scripts/check-xss-patterns.mjs",

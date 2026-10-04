@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "Saltado para {{label}}",
     "openedPanel": "Aberto {{panel}}. Esta configuração aparece quando está disponível."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Ignorar anúncio",
+    "next": "Mostrar próximo anúncio",
+    "position": "{{current}} de {{total}}",
+    "learnMore": "Saiba mais",
+    "openLinkAria": "{{label}} (abre no seu navegador)",
+    "regionLabel": "Anúncio dos desenvolvedores do aplicativo"
   }
 }

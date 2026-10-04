@@ -146,6 +146,7 @@ import { ReticulumVoiceOverlay } from './components/reticulum/ReticulumVoiceOver
 import { ReticulumPeerDetailErrorBoundary } from './components/ReticulumPeerDetailErrorBoundary';
 import { ReticulumStackAutostartCoordinator } from './components/ReticulumStackAutostartCoordinator';
 import { ReticulumTxBufferingHeaderIndicator } from './components/ReticulumTxBufferingHeaderIndicator';
+import { ServiceAnnouncementStrip } from './components/ServiceAnnouncementStrip';
 import { AppRail } from './components/shell/AppRail';
 import { BottomNav } from './components/shell/BottomNav';
 import { PanelLauncher } from './components/shell/PanelLauncher';
@@ -185,6 +186,7 @@ import type { useReticulumPanelActions } from './hooks/useReticulumPanelActions'
 import { useRrcStartupAutoConnect } from './hooks/useRrcStartupAutoConnect';
 import { useSendMessage } from './hooks/useSendMessage';
 import { useSerialServiceListeners } from './hooks/useSerialServiceListeners';
+import { useServiceAnnouncements } from './hooks/useServiceAnnouncements';
 import { useSpellcheckReplaceSync } from './hooks/useSpellcheckReplaceSync';
 import { useTakContacts } from './hooks/useTakContacts';
 import { useTakNodeReplicator } from './hooks/useTakNodeReplicator';
@@ -872,6 +874,7 @@ function AppContent() {
     hiddenProtocols,
   });
   useRendererHeartbeat();
+  const serviceAnnouncements = useServiceAnnouncements();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
 
@@ -4095,6 +4098,11 @@ function AppContent() {
                 connectionType={activeConnectionView.state.connectionType}
                 reconnectAttempt={activeConnectionView.state.reconnectAttempt}
                 onReconnect={handleReconnect}
+              />
+              <ServiceAnnouncementStrip
+                announcements={serviceAnnouncements.visible}
+                onDismiss={serviceAnnouncements.dismiss}
+                onOpenUrl={serviceAnnouncements.openUrl}
               />
               {/* Telemetry disabled notice */}
               {isOperational &&

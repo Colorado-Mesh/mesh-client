@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "Sprong naar {{label}}",
     "openedPanel": "{{panel}} geopend. Deze instelling verschijnt wanneer deze beschikbaar is."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Aankondiging negeren",
+    "next": "Volgende aankondiging weergeven",
+    "position": "{{current}} van {{total}}",
+    "learnMore": "Meer weten",
+    "openLinkAria": "{{label}} (opent in je browser)",
+    "regionLabel": "Aankondiging van de app-ontwikkelaars"
   }
 }

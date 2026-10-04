@@ -220,6 +220,10 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
       onError: noopUnsub,
       onOffline: noopUnsub,
     },
+    serviceAnnouncements: {
+      fetch: async () => ({ status: 'offline' as const }),
+      openUrl: async () => false,
+    },
     offlineMaps: {
       estimate: async () => ({ tileCount: 0, sizeEstimateBytes: 0, withinCaps: true }),
       download: async () => ({ jobId: 'stub' }),

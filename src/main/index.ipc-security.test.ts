@@ -12,6 +12,10 @@ const SUPPORT_BUNDLE_SOURCE = readFileSync(join(__dirname, 'support-bundle.ts'),
 const TAK_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/tak-handlers.ts'), 'utf-8');
 const GPS_IPC_SOURCE = readFileSync(join(__dirname, 'ipc/gps-handlers.ts'), 'utf-8');
 const TCP_BRIDGE_SOURCE = readFileSync(join(__dirname, 'ipc/tcp-bridge.ts'), 'utf-8');
+const SERVICE_ANNOUNCEMENT_IPC_SOURCE = readFileSync(
+  join(__dirname, 'ipc/service-announcement-handlers.ts'),
+  'utf-8',
+);
 
 function ipcHandlerBody(channel: string, span = 400): string {
   for (const src of [INDEX_SOURCE, TCP_BRIDGE_SOURCE, TAK_IPC_SOURCE, GPS_IPC_SOURCE]) {
@@ -630,6 +634,27 @@ describe('privileged IPC sender validation (source contract)', () => {
       expect(found).toBeGreaterThan(0);
     },
   );
+
+  it.each(['serviceAnnouncements:fetch', 'serviceAnnouncements:open-url'] as const)(
+    '%s calls assertIpcSender',
+    (channel) => {
+      const idx = SERVICE_ANNOUNCEMENT_IPC_SOURCE.indexOf(`ipcMain.handle('${channel}'`);
+      expect(idx).toBeGreaterThan(-1);
+      const body = SERVICE_ANNOUNCEMENT_IPC_SOURCE.slice(idx, idx + 200);
+      expect(body).toContain(`assertIpcSender(event, '${channel}')`);
+    },
+  );
+
+  it('service announcement handlers register once at module scope, not per window', () => {
+    const createWindowIdx = INDEX_SOURCE.indexOf('function createWindow()');
+    const registerIdx = INDEX_SOURCE.indexOf('registerServiceAnnouncementIpcHandlers({ ipcMain })');
+    expect(registerIdx).toBeGreaterThan(-1);
+    expect(
+      INDEX_SOURCE.match(/registerServiceAnnouncementIpcHandlers\(\{ ipcMain \}\)/g),
+    ).toHaveLength(1);
+    const createWindowEnd = INDEX_SOURCE.indexOf('\n}\n', createWindowIdx);
+    expect(registerIdx < createWindowIdx || registerIdx > createWindowEnd).toBe(true);
+  });
 
   it('http fromradio poll uses AbortSignal.timeout', () => {
     expect(INDEX_SOURCE).toContain('HTTP_FETCH_TIMEOUT_MS');

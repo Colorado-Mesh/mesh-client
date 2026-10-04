@@ -35,6 +35,11 @@ const SIDECAR_ROUTE_DOCS_INPUTS = new Set([
   'docs/reticulum-sidecar-ipc.md',
 ]);
 
+/** Validates the staged announcements feed blob; the JSON is fetched remotely, never imported. */
+export const SERVICE_ANNOUNCEMENT_FEED_TEST_PATH =
+  'src/shared/serviceAnnouncementFeed.file.test.ts';
+const SERVICE_ANNOUNCEMENT_FEED_PATH = 'announcements/announcements.json';
+
 const FORCE_FULL_PATTERNS = [
   /^vitest\.config\./,
   /^vitest\.harness(\.|$)/,
@@ -170,6 +175,23 @@ export function appendSidecarRouteDocsTestIfNeeded(stagedPaths, relatedPaths) {
 }
 
 /**
+ * Append the announcements feed validation test when the feed is staged (often a JSON-only commit).
+ * @param {string[]} stagedPaths
+ * @param {string[]} relatedPaths
+ * @returns {string[]}
+ */
+export function appendServiceAnnouncementFeedTestIfNeeded(stagedPaths, relatedPaths) {
+  const needsGuard = stagedPaths.some(
+    (p) => p.replace(/\\/g, '/') === SERVICE_ANNOUNCEMENT_FEED_PATH,
+  );
+  const normalized = relatedPaths.map((p) => p.replace(/\\/g, '/'));
+  if (!needsGuard || normalized.includes(SERVICE_ANNOUNCEMENT_FEED_TEST_PATH)) {
+    return [...normalized].sort();
+  }
+  return [...normalized, SERVICE_ANNOUNCEMENT_FEED_TEST_PATH].sort();
+}
+
+/**
  * @param {string} filePath
  * @returns {boolean}
  */
@@ -258,9 +280,12 @@ export function planPrecommitTests(stagedPaths, { allowManifestOnlySkip = true }
     };
   }
 
-  const relatedPaths = appendSidecarRouteDocsTestIfNeeded(
+  const relatedPaths = appendServiceAnnouncementFeedTestIfNeeded(
     stagedPaths,
-    appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+    appendSidecarRouteDocsTestIfNeeded(
+      stagedPaths,
+      appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+    ),
   );
   if (relatedPaths.length === 0) {
     return { mode: 'skip', relatedPaths: [], projects: [] };

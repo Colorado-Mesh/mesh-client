@@ -6636,5 +6636,13 @@
   "settingsSearch": {
     "jumpedTo": "Переход к {{label}}",
     "openedPanel": "Открыто {{panel}}. Эта настройка появляется, когда она доступна."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Игнорировать это объявление",
+    "next": "Показать следующее объявление",
+    "position": "{{current}} из {{total}}",
+    "learnMore": "Перейти",
+    "openLinkAria": "{{label}} (откроется в браузере)",
+    "regionLabel": "Анонс от разработчиков приложения"
   }
 }

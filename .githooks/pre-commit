@@ -205,6 +205,13 @@ else
   printf 'pre-commit: skip check:reticulum-decommissioned-hubs (no decommissioned-hub paths staged)\n' >&2
 fi
 
+# Warns (non-blocking) when developer announcements shown to every user change; blocks malformed JSON.
+if staged_match '^(announcements/announcements\.json|scripts/check-service-announcements\.mjs)$'; then
+  pnpm run check:service-announcements || fail 'pnpm run check:service-announcements'
+else
+  printf 'pre-commit: skip check:service-announcements (no announcements feed staged)\n' >&2
+fi
+
 if command -v cargo > /dev/null 2>&1; then
   if staged_match '^(reticulum-sidecar/|scripts/check-reticulum-sidecar\.sh|scripts/clone-ratspeak-stack\.sh|scripts/check-rsnomad\.sh)'; then
     pnpm run check:reticulum-sidecar || fail 'pnpm run check:reticulum-sidecar'

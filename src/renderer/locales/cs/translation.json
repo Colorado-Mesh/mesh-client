@@ -6590,5 +6590,13 @@
   "settingsSearch": {
     "jumpedTo": "Přeskočeno na {{label}}",
     "openedPanel": "Otevřeno {{panel}}. Toto nastavení se zobrazí, když je k dispozici."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Zamítnout oznámení",
+    "next": "Zobrazit další oznámení",
+    "position": "{{current}} z {{total}}",
+    "learnMore": "Další informace",
+    "openLinkAria": "{{label}} (otevře se v prohlížeči)",
+    "regionLabel": "Oznámení od vývojářů aplikací"
   }
 }

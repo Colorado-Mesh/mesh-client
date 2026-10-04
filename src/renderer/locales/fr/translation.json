@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "Passé à {{label}}",
     "openedPanel": "Ouvert {{panel}}. Ce paramètre apparaît lorsqu'il est disponible."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Ignorer l'annonce",
+    "next": "Afficher la prochaine annonce",
+    "position": "{{current}} sur {{total}}",
+    "learnMore": "En savoir plus",
+    "openLinkAria": "{{label}} (s'ouvre dans votre navigateur)",
+    "regionLabel": "Annonce des développeurs d'applications"
   }
 }

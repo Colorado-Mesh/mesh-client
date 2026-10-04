@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "{{label}}にジャンプしました",
     "openedPanel": "{{panel}}を開きました。この設定は利用可能な場合に表示されます。"
+  },
+  "serviceAnnouncement": {
+    "dismiss": "お知らせを閉じる",
+    "next": "次のお知らせを表示",
+    "position": "{{total}}の{{current}}",
+    "learnMore": "詳しく知る",
+    "openLinkAria": "{{label}} （ブラウザで開きます）",
+    "regionLabel": "アプリ開発者からのお知らせ"
   }
 }

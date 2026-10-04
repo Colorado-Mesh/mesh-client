@@ -6636,5 +6636,13 @@
   "settingsSearch": {
     "jumpedTo": "Перейдено на {{label}}",
     "openedPanel": "Відкрито {{panel}}. Це налаштування з'являється, коли воно доступне."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Відхилити оголошення",
+    "next": "Показати наступне оголошення",
+    "position": "{{current}} з {{total}}",
+    "learnMore": "Докладніше",
+    "openLinkAria": "{{label}} (відкриється у вашому браузері)",
+    "regionLabel": "Анонс від розробників додатків"
   }
 }

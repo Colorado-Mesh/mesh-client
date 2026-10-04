@@ -143,25 +143,26 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 Deep, file-level subsystem detail now lives in [`docs/agents/`](docs/agents/README.md) so it loads on demand instead of on every prompt. **Open the matching file when a task touches that area.**
 
-| When working on…                                                                              | Read                                                                     |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games              | [`docs/agents/reticulum.md`](docs/agents/reticulum.md)                   |
-| LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence             | [`docs/agents/ble-serial.md`](docs/agents/ble-serial.md)                 |
-| Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                         | [`docs/agents/renderer-hooks.md`](docs/agents/renderer-hooks.md)         |
-| Meshtastic config/admin, channel URLs, Store & Forward, remote admin, GPS                     | [`docs/agents/meshtastic.md`](docs/agents/meshtastic.md)                 |
-| MQTT ingest, channel key mapping, sticky BLE suppress                                         | [`docs/agents/mqtt.md`](docs/agents/mqtt.md)                             |
-| Chat panel, composer, link previews, notifications, dedup, hop badges, relay coverage, export | [`docs/agents/chat.md`](docs/agents/chat.md)                             |
-| MeshCore Repeaters admin (ping/trace/neighbors/CLI/waiting drain)                             | [`docs/agents/meshcore-repeaters.md`](docs/agents/meshcore-repeaters.md) |
-| MeshCore Rooms (BBS) login/post/sync/wire text                                                | [`docs/agents/meshcore-rooms.md`](docs/agents/meshcore-rooms.md)         |
-| Diagnostics engines, rows, tab scoping                                                        | [`docs/agents/diagnostics.md`](docs/agents/diagnostics.md)               |
-| i18n / localization workflow, auto-translate, language selector                               | [`docs/agents/i18n.md`](docs/agents/i18n.md)                             |
-| Connection panel helpers (error hints, rehydrate, storage migrations)                         | [`docs/agents/connection-panel.md`](docs/agents/connection-panel.md)     |
-| MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/agents/mecp.md`](docs/agents/mecp.md)                             |
-| EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/agents/emcomm.md`](docs/agents/emcomm.md)                         |
-| Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/agents/offline-maps.md`](docs/agents/offline-maps.md)             |
-| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                             |
-| Launcher settings search: adding a searchable setting, anchors, registry, guards              | [`docs/agents/settings-search.md`](docs/agents/settings-search.md)       |
-| Symptom → where-to-check index                                                                | [`docs/agents/common-issues.md`](docs/agents/common-issues.md)           |
+| When working on…                                                                              | Read                                                                           |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games              | [`docs/agents/reticulum.md`](docs/agents/reticulum.md)                         |
+| LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence             | [`docs/agents/ble-serial.md`](docs/agents/ble-serial.md)                       |
+| Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                         | [`docs/agents/renderer-hooks.md`](docs/agents/renderer-hooks.md)               |
+| Meshtastic config/admin, channel URLs, Store & Forward, remote admin, GPS                     | [`docs/agents/meshtastic.md`](docs/agents/meshtastic.md)                       |
+| MQTT ingest, channel key mapping, sticky BLE suppress                                         | [`docs/agents/mqtt.md`](docs/agents/mqtt.md)                                   |
+| Chat panel, composer, link previews, notifications, dedup, hop badges, relay coverage, export | [`docs/agents/chat.md`](docs/agents/chat.md)                                   |
+| MeshCore Repeaters admin (ping/trace/neighbors/CLI/waiting drain)                             | [`docs/agents/meshcore-repeaters.md`](docs/agents/meshcore-repeaters.md)       |
+| MeshCore Rooms (BBS) login/post/sync/wire text                                                | [`docs/agents/meshcore-rooms.md`](docs/agents/meshcore-rooms.md)               |
+| Diagnostics engines, rows, tab scoping                                                        | [`docs/agents/diagnostics.md`](docs/agents/diagnostics.md)                     |
+| i18n / localization workflow, auto-translate, language selector                               | [`docs/agents/i18n.md`](docs/agents/i18n.md)                                   |
+| Connection panel helpers (error hints, rehydrate, storage migrations)                         | [`docs/agents/connection-panel.md`](docs/agents/connection-panel.md)           |
+| MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/agents/mecp.md`](docs/agents/mecp.md)                                   |
+| EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/agents/emcomm.md`](docs/agents/emcomm.md)                               |
+| Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/agents/offline-maps.md`](docs/agents/offline-maps.md)                   |
+| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                                   |
+| Launcher settings search: adding a searchable setting, anchors, registry, guards              | [`docs/agents/settings-search.md`](docs/agents/settings-search.md)             |
+| Developer service announcements feed, strip, pre-commit warning                               | [`docs/agents/service-announcements.md`](docs/agents/service-announcements.md) |
+| Symptom → where-to-check index                                                                | [`docs/agents/common-issues.md`](docs/agents/common-issues.md)                 |
 
 **Always-remember invariants** (details in the linked files):
 

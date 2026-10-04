@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "Dilompat ke {{label}}",
     "openedPanel": "Dibuka {{panel}}. Pengaturan ini muncul saat tersedia."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Abaikan pengumuman",
+    "next": "Tampilkan pengumuman berikutnya",
+    "position": "{{current}} dari {{total}}",
+    "learnMore": "Pelajari lebih lanjut",
+    "openLinkAria": "{{label}} (terbuka di browser Anda)",
+    "regionLabel": "Pengumuman dari pengembang aplikasi"
   }
 }
