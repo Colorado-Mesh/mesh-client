@@ -53,12 +53,15 @@ const FORCE_FULL_PATTERNS = [
 
 /**
  * Dependency-manifest paths, plus the Flatpak manifest the pre-commit pnpm sync re-stages
- * alongside them. A commit containing only these cannot change source behavior.
+ * alongside them and the AppStream metainfo `pnpm run release` bumps in the version commit
+ * (after it already ran the full suite). A commit containing only these cannot change
+ * source behavior.
  */
 const MANIFEST_ONLY_PATHS = new Set([
   'package.json',
   'pnpm-lock.yaml',
   'org.coloradomesh.MeshClient.yml',
+  'flatpak/org.coloradomesh.MeshClient.metainfo.xml',
 ]);
 
 /**

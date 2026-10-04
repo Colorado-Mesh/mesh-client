@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   filterMissingKeysToTranslate,
   mapWithConcurrency,
+  matchesKeyPrefix,
   nextDelayAfterRateLimit,
+  normalizeMachineTranslation,
+  parseKeyPrefixes,
   resolveTranslateConcurrency,
   resolveTranslateDelayMs,
   restorePlaceholders,
@@ -23,6 +26,23 @@ describe('stripPlaceholders / restorePlaceholders', () => {
     const en = 'Removing {{current}} of {{total}}…';
     const { placeholders } = stripPlaceholders(en);
     expect(restorePlaceholders('Removing __ PH0 __ of __ PH 1 __…', placeholders)).toBe(en);
+  });
+
+  it('shields protected terms (longest first, whole tokens only) alongside placeholders', () => {
+    const en = 'Quit mesh-client, then start the Nomad Network page for {{name}} on Reticulum.';
+    const { stripped, placeholders } = stripPlaceholders(en, [
+      'Nomad',
+      'Nomad Network',
+      'mesh-client',
+      'Reticulum',
+    ]);
+    expect(stripped).toBe('Quit __PH1__, then start the __PH2__ page for __PH0__ on __PH3__.');
+    expect(
+      restorePlaceholders('Beenden Sie __ PH1 __, __PH2__, __PH0__, __PH3__.', placeholders),
+    ).toBe('Beenden Sie mesh-client, Nomad Network, {{name}}, Reticulum.');
+    expect(stripPlaceholders('Nomadic mesh-clients', ['Nomad', 'mesh-client']).stripped).toBe(
+      'Nomadic mesh-clients',
+    );
   });
 
   it('restores offload partial count placeholder', () => {
@@ -161,6 +181,50 @@ describe('filterMissingKeysToTranslate', () => {
     });
     // Pure technical/brand terms — none should be re-translated
     expect(result).toEqual([]);
+  });
+});
+
+describe('normalizeMachineTranslation', () => {
+  it('rejoins Ukrainian apostrophe words MT split with spaces', () => {
+    expect(normalizeMachineTranslation("від 'єднайте, об' єднує, зв' язку, з’ явиться", 'uk')).toBe(
+      "від'єднайте, об'єднує, зв'язку, з'явиться",
+    );
+  });
+
+  it('leaves other locales untouched', () => {
+    expect(normalizeMachineTranslation("l 'appareil", 'fr')).toBe("l 'appareil");
+  });
+});
+
+describe('parseKeyPrefixes / matchesKeyPrefix', () => {
+  it('returns null when --prefix is absent', () => {
+    expect(parseKeyPrefixes(['node', 'x.mjs', '--audit'])).toBeNull();
+  });
+
+  it('rejects a missing, empty, or option-like operand instead of widening the run', () => {
+    expect(() => parseKeyPrefixes(['--prefix'])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix='])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix', ' , '])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix', '--audit'])).toThrow(/--prefix requires/);
+    expect(() => parseKeyPrefixes(['--prefix=--all'])).toThrow(/--prefix requires/);
+  });
+
+  it('parses space and equals forms with comma lists', () => {
+    expect(parseKeyPrefixes(['--audit', '--prefix', 'modulePanel., a.b ,c'])).toEqual([
+      'modulePanel.',
+      'a.b',
+      'c',
+    ]);
+    expect(parseKeyPrefixes(['--prefix=a.b,c.d'])).toEqual(['a.b', 'c.d']);
+  });
+
+  it('matches exact keys and dot-boundary descendants only', () => {
+    expect(matchesKeyPrefix('anything', null)).toBe(true);
+    expect(matchesKeyPrefix('modulePanel.fields.x', ['modulePanel.'])).toBe(true);
+    expect(matchesKeyPrefix('modulePanel', ['modulePanel'])).toBe(true);
+    expect(matchesKeyPrefix('modulePanelExtra.x', ['modulePanel'])).toBe(false);
+    expect(matchesKeyPrefix('flasher.stackStoppedHint', ['flasher.stackStoppedHint'])).toBe(true);
+    expect(matchesKeyPrefix('flasher.stackStoppedHintX', ['flasher.stackStoppedHint'])).toBe(false);
   });
 });
 

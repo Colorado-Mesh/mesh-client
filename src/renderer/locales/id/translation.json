@@ -1245,7 +1245,7 @@
         "rnodeWifi": "LoRa mesh melalui RNode Wi-Fi (tcp:// host).",
         "blePeer": "Mesh rekan BLE menggunakan alamat rekan benih.",
         "generic": "Antarmuka jaringan Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "sharedInstanceClient": "Terlampir sebagai klien dari instance Reticulum bersama aplikasi lain — hub TCP lokal dari konfigurasi ini tidak dimulai di sini.",
         "i2p": "Backbone I2P melalui router pada mesin ini. Aktifkan jembatan aplikasi SAM (127.0.0.1:7656) — bukan proxy HTTP/https I2PTunnel (4444/4445). Mulai ulang I2P setelah mengaktifkan SAM sehingga bridge mendengarkan, lalu mulai ulang tumpukan Reticulum jika antarmuka ini tetap down.",
         "serial": "Tautan serial umum ke TNC, modem, atau host lain melalui kabel. Atur parameter garis agar sesuai dengan ujung.",
         "ax25kiss": "Radio paket AX.25 melalui TNC KISS. Memerlukan tanda panggil Anda dan SSID (0 -15) yang mengidentifikasi stasiun ini.",
@@ -1405,8 +1405,8 @@
       "fieldTooLong": "Nilai terlalu panjang.",
       "fieldInvalidOption": "Nilai tidak didukung.",
       "profilesTitle": "Interface profiles",
-      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
-      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesHint": "Dinamakan set pengaktifan yang antarmukanya aktif. Beralih profil mengaktifkan anggotanya dan menonaktifkan sisanya.",
+      "profilesEmpty": "Belum ada profil. Simpan set pengaktifan saat ini untuk membuatnya.",
       "profilesDefault": "Default",
       "profilesUnnamed": "(unnamed)",
       "profilesNamePlaceholder": "Profile name",
@@ -1523,7 +1523,7 @@
       "txQueueDropsHint": "Biasanya disebabkan oleh antarmuka TCP mati yang masih diaktifkan. Nonaktifkan hub yang tidak dapat dijangkau untuk menghentikan overflow antrean.",
       "suppressed": "{{count}} garis log sespan serupa baru - baru ini ditekan.",
       "transportSaturated": "Transportasi RNS jenuh ({{count}} permintaan jalur turun)",
-      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "transportSaturatedHint": "Nonaktifkan antarmuka yang mati dan mulai ulang tumpukan. Kurangi lalu lintas Reticulum secara bersamaan.",
       "slowTransportQuery": "Kueri transportasi RNS lambat atau gagal ({{count}}×)",
       "slowTransportQueryHint": "Aktor transportasi sidecar dapat terjepit — nyalakan kembali tumpukan Reticulum.",
       "shareInstanceHint": "Contoh berbagi diaktifkan — sepenuhnya keluar dari aplikasi Reticulum lainnya (MeshChatX, Ratspeak, rnsd mandiri) dan mulai ulang tumpukan ini sebelum mencoba DM lagi.",
@@ -1615,19 +1615,19 @@
     "reticulumAutoResendOnAnnounce": "Coba lagi pesan yang gagal saat rekan mengumumkan",
     "errors": {
       "ble": {
-        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "adapter_missing": "Tidak ada adaptor Bluetooth yang ditemukan. Aktifkan Bluetooth di pengaturan sistem dan coba lagi.",
         "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
-        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "scan_busy": "Pemindaian Bluetooth lainnya sedang berlangsung. Tunggu sebentar dan coba lagi.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
-        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
-        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
-        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
-        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
-        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
-        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
-        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
-        "feature_disabled": "Bluetooth GATT support is not available in this build.",
-        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+        "connect_timeout": "Waktu koneksi Bluetooth habis. Jaga agar radio tetap aktif dan berada di dekat Anda, lalu coba lagi.",
+        "gatt_discover_failed": "Tidak dapat menemukan layanan Bluetooth di perangkat. Pasangkan kembali radio dan coba lagi.",
+        "pairing_required": "Perangkat ini harus dipasangkan terlebih dahulu. Gunakan Hapus & Pasangkan Ulang Perangkat, lalu masukkan PIN yang ditampilkan di radio.",
+        "bond_removed": "Ikatan Bluetooth tidak berlaku lagi. Lupakan perangkat di pengaturan sistem, lalu pasangkan kembali.",
+        "write_failed": "Gagal menulis ke perangkat Bluetooth. Hubungkan kembali dan coba lagi.",
+        "session_not_found": "Sesi Bluetooth tidak lagi tersedia. Putuskan sambungan dan sambungkan kembali.",
+        "notified_read_forbidden": "Karakteristik Bluetooth ini tidak dapat dibaca seperti itu. Hubungkan kembali dan coba lagi.",
+        "feature_disabled": "Dukungan Bluetooth GATT tidak tersedia di build ini.",
+        "sidecar_down": "Layanan Bluetooth tidak berjalan. Tunggu sebentar atau restart mesh-client, lalu coba lagi."
       }
     },
     "tiles": {
@@ -1947,14 +1947,14 @@
         "ghost_interface": "Antarmuka \"{{name}}\" diaktifkan di konfigurasi tetapi tidak dimuat oleh RNS.",
         "missing_auto_interface": "Tidak ada AutoInterface yang diaktifkan — penemuan LAN lokal tidak aktif.",
         "auto_interface_down": "AutoInterface \"{{name}}\" diaktifkan tetapi tidak aktif.",
-        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
-        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
+        "missing_shared_instance": "Berbagi contoh aktif tetapi aplikasi ini tidak menghosting server bersama — tutup aplikasi mesh lainnya atau matikan Bagikan contoh, lalu mulai ulang.",
+        "shared_instance_unexpected": "Server instans bersama aktif tetapi instans Berbagi tidak aktif — mulai ulang tumpukan.",
         "runtime_only_interface": "\"{{name}}\" hanya runtime (tidak disimpan dalam konfigurasi).",
         "rmap_missing_coordinates": "Antarmuka \"{{name}}\" dapat ditemukan tetapi tidak memiliki koordinat peta yang valid.",
         "rmap_no_tcp_hub": "RNode lokal yang dapat ditemukan tidak memiliki hub klien TCP yang diaktifkan untuk jangkauan internet.",
         "rmap_transport_disabled": "Antarmuka yang dapat ditemukan dikonfigurasi tetapi mode transportasi tidak aktif.",
         "rmap_i2p_not_connectable": "Antarmuka I2P \"{{name}}\" dapat ditemukan tetapi terhubung bukan ya.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "shared_instance_client": "Bagikan instance yang dilampirkan sebagai klien aplikasi lain — hub TCP lokal dalam konfigurasi ini tidak dimulai.",
         "rmap_mode_autocorrect": "Antarmuka \"{{name}}\" dapat ditemukan dengan mode non — AP/Gateway — Reticulum akan menjalankannya sebagai Access Point kecuali jika ignore_config_warnings ditetapkan. Edit antarmuka atau mulai ulang tumpukan sehingga mesh-client dapat mencap opt - out.",
         "rmap_missing_reachable_on": "Antarmuka backbone \"{{name}}\" dapat ditemukan tetapi REACHABLE_ON hilang."
       },
@@ -2503,7 +2503,7 @@
       "pingFailed": "Ping gagal",
       "floodScopeBusy": "Penggantian cakupan Flood tidak tersedia saat admin pengulang atau traceroute sedang berlangsung. Coba lagi saat menganggur.",
       "removeContactFailed": "Dihapus secara lokal, tetapi radio menolak removeContact. Kontak dapat muncul kembali setelah penyegaran.",
-      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
+      "bleTimeoutGatt": "Koneksi Bluetooth habis waktu saat membuka MeshCore melalui sespan GATT. Coba lagi, matikan BLE pada perangkat, atau gunakan Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Verifikasi nama pengguna v1_, tanda tangan token, dan audiens JWT vs broker; lihat dokumen/letsmesh-mqtt-auth.md. Gunakan Kustom untuk menempelkan token yang dikeluarkan operator jika diperlukan.",
@@ -3522,7 +3522,7 @@
       "missingIdentity": "Node ini belum memiliki identitas yang diingat. Tunggu pengumuman Nomad, lalu coba lagi.",
       "transportUnavailable": "Transport Reticulum tidak tersedia. Mulai ulang stack dan coba lagi.",
       "sidecarNotRunning": "Sidecar Reticulum tidak berjalan. Mulai stack dari Connection, lalu coba lagi.",
-      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "responseTooLarge": "Node mengembalikan lebih banyak data daripada yang diterima mesh-client untuk permintaan ini.",
       "nomadBusy": "Permintaan halaman atau berkas Nomad lain masih berlangsung. Coba lagi sebentar lagi.",
       "nomadNotServing": "Ini adalah node Nomad Anda, tetapi hosting Halaman Saya tidak berjalan. Buka Halaman Saya, pilih folder, dan mulai melayani untuk melihat pratinjau secara lokal.",
       "networkNotReady": "Menunggu hub atau antarmuka radio online. Coba lagi setelah Koneksi menampilkan antarmuka.",
@@ -3745,7 +3745,7 @@
     "openedDestinationBadge": "Opened",
     "copyAnnouncedHashAria": "Copy {{aspect}} destination hash {{hash}}",
     "hashCopied": "Destination hash copied.",
-    "hashCopyFailed": "Could not copy destination hash.",
+    "hashCopyFailed": "Tidak dapat menyalin hash tujuan.",
     "aspect": {
       "chat": "Chat",
       "voice": "Voice",
@@ -5636,15 +5636,15 @@
     "status": {
       "disconnected": "Disconnected",
       "connecting": "Connecting…",
-      "awaiting_welcome": "Waiting for hub…",
+      "awaiting_welcome": "Menunggu hub…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
     "joinedRooms": "Sudah bergabung",
     "recentRooms": "Terkini",
     "roomKeyOptional": "Kunci ruangan (opsional)",
-    "joinRoomHelp": "Rooms are live groups on this hub. Join by name, try Listed, or type /list and /help.",
-    "listHint": "Tip: /list shows registered public rooms on rrcd hubs. /help for commands.",
+    "joinRoomHelp": "Ruangan adalah grup langsung di hub ini. Bergabunglah berdasarkan nama, coba Terdaftar, atau ketik /list dan /help.",
+    "listHint": "Tip: /list menampilkan ruangan publik terdaftar di hub rrcd. /help untuk perintah.",
     "slash": {
       "helpIntro": "=== Bantuan RRC ===",
       "helpClient": "Perintah klien:",
@@ -5666,7 +5666,7 @@
       "commandSent": "Perintah dikirim: {{cmd}}",
       "helpMsg": "/msg NICK| teks HASH — bisikan PEMBERITAHUAN langsung (rrcd)",
       "usageMsg": "Penggunaan: /msg NICK|HASH TEXT",
-      "msgTargetNotFound": "Could not resolve /msg target to a full identity hash. Join a room or use the full hash."
+      "msgTargetNotFound": "Tidak dapat menyelesaikan target /msg ke hash identitas lengkap. Bergabunglah dengan ruangan atau gunakan hash lengkap."
     },
     "listedRooms": "tercantum",
     "refreshRoomList": "Segarkan daftar ruangan (/list)",
@@ -5802,7 +5802,7 @@
     "meshcoreChannelImported": "Tautan saluran MeshCore diterima — tinjau di tab Radio",
     "meshcoreChannelImportFailed": "Tidak dapat mengimpor saluran MeshCore dari QR",
     "meshcoreChannelPrefill": "Detail saluran diisi dari QR — simpan untuk diterapkan",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "meshcoreChannelNoFreeIndex": "Semua slot saluran MeshCore penuh — hapus satu sebelum mengimpor",
     "paperIngested": "Pesan kertas didekripsi ke dalam Obrolan",
     "paperInvalidUri": "Itu tidak terlihat seperti tautan kertas LXMF yang valid",
     "paperDecryptFailed": "Tidak dapat mendekripsi pesan kertas — apakah ini identitas yang benar?",
@@ -6056,7 +6056,7 @@
       "notRunning": "Suara tidak tersedia sampai tumpukan Reticulum berjalan.",
       "micFailed": "Tidak dapat mengakses mikrofon untuk suara.",
       "muteFailed": "Tidak dapat memperbarui mikrofon bisu pada sesi suara.",
-      "callInProgress": "A voice call is already in progress."
+      "callInProgress": "Panggilan suara sedang berlangsung."
     },
     "connecting": "Menyambung…",
     "elapsedAria": "Waktu berlalu {{time}}",
@@ -6315,7 +6315,7 @@
       "safety": "SAFETY",
       "routine": "ROUTINE"
     },
-    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "incomingToast": "{{severity}} MECP dari {{sender}}",
     "notificationTitle": "MECP alert",
     "exportLog": "Export MECP log",
     "compose": {
@@ -6335,7 +6335,7 @@
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
-      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "hint": "Secara opsional menjembatani MECP yang terdengar pada satu saluran protokol ke saluran protokol lainnya. Mati secara default. Aktifkan Dua Arah untuk juga membalikkan jalur.",
       "add": "Add bridge rule",
       "remove": "Remove bridge rule",
       "enableRule": "Enabled",

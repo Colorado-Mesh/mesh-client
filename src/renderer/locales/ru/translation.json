@@ -1030,7 +1030,7 @@
     "hintMeshtasticHttp2": "Если соединение ненадежное (например, с помощью meshtastic.local), попробуйте вместо этого использовать IP-адрес устройства — mDNS рабочего стола может работать нестабильно.",
     "hintMeshcoreHttp": "Введите имя хоста или IP-адрес вашего сопутствующего радио MeshCore. Он должен быть доступен через порт 5000.",
     "stageLinuxUnpaired": "Сохраненное устройство не подключено к Linux Bluetooth — выберите его ниже, чтобы ввести PIN-код и подключиться.",
-    "liamServerNote": "Liam's server is uplink-only — your node appears on his map but you won't receive messages from it.",
+    "liamServerNote": "Сервер Liam's предназначен только для восходящей связи — ваш узел отображается на его карте, но вы не будете получать от него сообщения.",
     "connectButton": "Соединять",
     "stageSelectDevice": "Выберите свое устройство ниже",
     "stageSelectSerial": "Выберите последовательный порт ниже",
@@ -1055,7 +1055,7 @@
         "accessDeniedLinuxHint": "В Linux добавьте своего пользователя в группу дозвона: sudo usermod -aG Diaout $USER (затем выйдите из системы и снова войдите в систему).",
         "disconnectedHint": "Убедитесь, что USB-кабель подключен и устройство включено.",
         "timeoutHint": "Если порт появился ненадолго, попробуйте переподсоединить USB-кабель.",
-        "portStillOpenHint": "The USB serial port did not release cleanly. Quit mesh-client completely and reopen it, or unplug and replug the USB cable, then connect again."
+        "portStillOpenHint": "Последовательный порт USB не был освобожден корректно. Полностью закройте mesh-client и снова откройте его или отсоедините и снова подключите кабель USB, а затем снова подключитесь."
       },
       "http": {
         "timeoutMdnsWindows": "В Windows для работы meshtastic.local требуется Bonjour (устанавливается вместе с iTunes). Вместо этого используйте IP-адрес устройства.",
@@ -1082,7 +1082,7 @@
         "connectionAttemptFailedLinuxHint": "В Linux вы можете управлять сопряжениями через системные настройки Bluetooth или инструмент bluetoothctl.",
         "meshcoreHandshakeHint": "Убедитесь, что ваше устройство MeshCore находится в режиме Bluetooth Companion и сопряжено с вашим компьютером с помощью PIN-кода. Удалите все существующие сопряжения и выполните повторное сопряжение, если проблемы с подключением не исчезнут.",
         "meshcoreHandshakeWindowsExtra": "В Windows выключите/включите Bluetooth и обновите драйвер адаптера в диспетчере устройств, если отключение сохраняется.",
-        "macWakeRecoveryHint": "After sleep, quit mesh-client (Cmd+Q), toggle Bluetooth off and on in System Settings, wait a few seconds, then Connect again. With two radios, connect MeshCore before Meshtastic.",
+        "macWakeRecoveryHint": "После сна закройте mesh-client (Cmd+Q), выключите и включите Bluetooth в настройках системы, подождите несколько секунд, затем снова подключитесь. При наличии двух радиомодулей подключите MeshCore перед Meshtastic.",
         "dualProtocolContentionHint": "Другой протокол все еще может подключаться по Bluetooth. Подождите несколько секунд и повторите попытку или перейдите на вкладку другого протокола, чтобы проверить статус подключения.",
         "scanBusy": "Выполняется еще одно сканирование Bluetooth. Повторите попытку через минуту.",
         "sameDeviceConflict": "Это устройство Bluetooth уже подключено к {{owner}}.",
@@ -1279,7 +1279,7 @@
         "rnodeWifi": "Сетка LoRa через RNode Wi-Fi (хост tcp://).",
         "blePeer": "Одноранговая сеть BLE с использованием начальных одноранговых адресов.",
         "generic": "Сетевой интерфейс Reticulum.",
-        "sharedInstanceClient": "Attached as a client of another app’s shared Reticulum instance — local TCP hubs from this config are not started here.",
+        "sharedInstanceClient": "Подключен как клиент общего экземпляра Reticulum другого приложения — локальные TCP-концентраторы из этой конфигурации здесь не запускаются.",
         "i2p": "Магистраль I2P через маршрутизатор на этом компьютере. Включите мост приложения SAM (127.0.0.1:7656) — не прокси HTTP/HTTPS I2PTunnel (4444/4445). Перезапустите I2P после включения SAM, чтобы мост прослушивал, а затем перезапустите стек Reticulum, если этот интерфейс не работает.",
         "serial": "Общий последовательный канал связи с TNC, модемом или другим хостом по проводу. Установите параметры линии в соответствии с дальним концом.",
         "ax25kiss": "Пакетное радио AX.25 через KISS TNC. Требуется ваш позывной и SSID (0-15), идентифицирующий эту станцию.",
@@ -1439,8 +1439,8 @@
       "fieldTooLong": "Значение слишком длинное.",
       "fieldInvalidOption": "Неподдерживаемое значение.",
       "profilesTitle": "Interface profiles",
-      "profilesHint": "Named enable-sets for which interfaces are on. Switching a profile enables its members and disables the rest.",
-      "profilesEmpty": "No profiles yet. Save the current enable-set to create one.",
+      "profilesHint": "Именованные наборы включения, для которых включены интерфейсы. Переключение профиля включает его участников и отключает остальных.",
+      "profilesEmpty": "Профилей пока нет. Сохраните текущий набор разрешений, чтобы создать его.",
       "profilesDefault": "Default",
       "profilesUnnamed": "(unnamed)",
       "profilesNamePlaceholder": "Profile name",
@@ -1557,9 +1557,9 @@
       "txQueueDropsHint": "Обычно вызвано мертвым TCP-интерфейсом, который все еще включен. Отключите недоступные концентраторы, чтобы остановить переполнение очереди.",
       "suppressed": "{{count}} аналогичные линии бревна коляски подавлены в последнее время.",
       "transportSaturated": "RNS транспорт насыщенный ({{count}} path-request drops)",
-      "transportSaturatedHint": "Disable dead interfaces and restart the stack. Reduce concurrent Reticulum traffic.",
+      "transportSaturatedHint": "Отключите мертвые интерфейсы и перезапустите стек. Уменьшите одновременный трафик Reticulum.",
       "slowTransportQuery": "Транспортные запросы RNS медленные или сбойные ({{count}}×)",
-      "slowTransportQueryHint": "The sidecar transport actor may be wedged — restart the Reticulum stack.",
+      "slowTransportQueryHint": "Транспортный актер с коляской может застрять — перезапустите стек Reticulum.",
       "shareInstanceHint": "Экземпляр Share включен — полностью закройте другие приложения Reticulum (MeshChatX, Ratspeak, автономный rnsd) и перезапустите этот стек перед повторной попыткой DM.",
       "bleBondRemoved": "{{name}}: Связь Bluetooth устарела (ОС по-прежнему показывает «Сопряжено»)",
       "bleBondRemovedHint": "Автоматический exclusive reconnect не смог восстановить эту связь. Забудьте RNode в «Системные настройки» → Bluetooth, затем Admin → Clear paired / Start pairing и введите новый PIN. До повторного сопряжения предпочитайте USB serial или Wi-Fi (tcp://). LoRa BLE (MeshCore/Meshtastic) остаётся на паузе, пока этот RNode использует Bluetooth.",
@@ -1649,19 +1649,19 @@
     "reticulumAutoResendOnAnnounce": "Повторить неудачные сообщения, когда одноранговый узел объявляет",
     "errors": {
       "ble": {
-        "adapter_missing": "No Bluetooth adapter was found. Enable Bluetooth in system settings and try again.",
+        "adapter_missing": "Bluetooth-адаптер не найден. Включите Bluetooth в настройках системы и повторите попытку.",
         "permission_denied": "Bluetooth permission was denied. Allow mesh-client to use Bluetooth, then try again.",
-        "scan_busy": "Another Bluetooth scan is in progress. Wait a moment and try again.",
+        "scan_busy": "Выполняется еще одно сканирование Bluetooth. Подождите немного и попробуйте еще раз.",
         "mac_conflict": "This Bluetooth device is already connected to another protocol. Disconnect it there first.",
-        "connect_timeout": "Bluetooth connection timed out. Keep the radio awake and nearby, then try again.",
-        "gatt_discover_failed": "Could not discover Bluetooth services on the device. Re-pair the radio and try again.",
-        "pairing_required": "This device must be paired first. Use Remove & Re-pair Device, then enter the PIN shown on the radio.",
-        "bond_removed": "The Bluetooth bond is no longer valid. Forget the device in system settings, then re-pair.",
-        "write_failed": "Failed to write to the Bluetooth device. Reconnect and try again.",
-        "session_not_found": "The Bluetooth session is no longer available. Disconnect and connect again.",
-        "notified_read_forbidden": "This Bluetooth characteristic cannot be read that way. Reconnect and try again.",
-        "feature_disabled": "Bluetooth GATT support is not available in this build.",
-        "sidecar_down": "The Bluetooth service is not running. Wait a moment or restart mesh-client, then try again."
+        "connect_timeout": "Время ожидания соединения Bluetooth истекло. Держите радио включенным и поблизости, а затем повторите попытку.",
+        "gatt_discover_failed": "Не удалось обнаружить службы Bluetooth на устройстве. Выполните повторное сопряжение радио и повторите попытку.",
+        "pairing_required": "Сначала это устройство должно быть сопряжено. Используйте «Удалить и повторно подключить устройство», затем введите PIN-код, показанный на радио.",
+        "bond_removed": "Связь Bluetooth больше не действительна. Забудьте устройство в настройках системы, затем выполните повторное сопряжение.",
+        "write_failed": "Не удалось выполнить запись на устройство Bluetooth. Подключитесь и повторите попытку.",
+        "session_not_found": "Сеанс Bluetooth больше не доступен. Отключите и подключите снова.",
+        "notified_read_forbidden": "Эту характеристику Bluetooth нельзя прочитать таким образом. Подключитесь и повторите попытку.",
+        "feature_disabled": "Поддержка Bluetooth GATT в этой сборке недоступна.",
+        "sidecar_down": "Служба Bluetooth не работает. Подождите немного или перезапустите mesh-client, а затем повторите попытку."
       }
     },
     "tiles": {
@@ -1983,14 +1983,14 @@
         "ghost_interface": "Интерфейс «{{name}}» включен в конфигурации, но не загружается RNS.",
         "missing_auto_interface": "Не включен AutoInterface — обнаружение локальной сети отключено.",
         "auto_interface_down": "Автоинтерфейс «{{name}}» включен, но не работает.",
-        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
-        "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
+        "missing_shared_instance": "Экземпляр общего доступа включен, но это приложение не размещает общий сервер — закройте другие Mesh-приложения или отключите экземпляр общего доступа, а затем перезапустите.",
+        "shared_instance_unexpected": "Сервер общего экземпляра работает, но экземпляр общего доступа отключен — перезапустите стек.",
         "runtime_only_interface": "«{{name}}» используется только во время выполнения (не хранится в конфигурации).",
         "rmap_missing_coordinates": "Интерфейс \"{{name}}\" обнаруживается, но отсутствуют действительные координаты карты.",
         "rmap_no_tcp_hub": "Обнаруживаемый локальный RNode не имеет включенного клиентского концентратора TCP для доступа в Интернет.",
         "rmap_transport_disabled": "Обнаруживаемые интерфейсы настроены, но режим транспортировки выключен.",
         "rmap_i2p_not_connectable": "Интерфейс I2P \"{{name}}\" обнаруживается, но не подключается.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "shared_instance_client": "Общий экземпляр подключен как клиент другого приложения — локальные TCP-концентраторы в этой конфигурации не запускаются.",
         "rmap_mode_autocorrect": "Интерфейс \"{{name}}\" обнаруживается в режиме не-AP/Gateway — Reticulum будет запускать его как точку доступа, если не установлено ignore_config_warnings. Отредактируйте интерфейс или перезапустите стек, чтобы mesh-client мог штамповать отказ.",
         "rmap_missing_reachable_on": "Магистральный интерфейс \"{{name}}\" доступен для обнаружения, но отсутствует REACHABLE_ON."
       },
@@ -2185,7 +2185,7 @@
     "selectSerialPort": "Выберите последовательный порт",
     "noSerialPorts": "Последовательные порты USB не найдены.",
     "noSerialPortsHint": "Подключите плату через USB. Устройства Bluetooth в журнале игнорируются; для прошивки можно использовать только последовательные порты USB.",
-    "stackStoppedHint": "Reticulum stack is stopped — the serial port is free for flashing. Start the stack again on the Connection tab when you are done.",
+    "stackStoppedHint": "Стек Reticulum остановлен — последовательный порт свободен для перепрошивки. Когда закончите, запустите стек снова на вкладке «Соединение».",
     "lastUsedPort": "Последнее использованное",
     "downloadFirmware": "Загрузить прошивку",
     "downloadLatestFirmware": "{{filename}} (последняя версия)",
@@ -2319,11 +2319,11 @@
       },
       "database-chmod": {
         "label": "База данных chmod (не фатальный)",
-        "recommendation": "Database file permission tweak failed (often benign on Windows). If you see real DB errors elsewhere, check antivirus and folder permissions for the mesh-client userData directory."
+        "recommendation": "Не удалось настроить права доступа к файлу базы данных (часто неопасно на Windows). Если вы видите реальные ошибки БД где-то еще, проверьте права антивируса и папки для каталога mesh-client userData."
       },
       "database-writable": {
         "label": "База данных недоступна для записи",
-        "recommendation": "The app cannot write its database folder. Fix permissions on the mesh-client userData directory (see troubleshooting: Database directory is not writable)."
+        "recommendation": "Приложение не может записать свою папку базы данных. Исправьте разрешения для каталога userData mesh-client (см. раздел «Устранение неполадок: каталог базы данных недоступен для записи»)."
       },
       "tak-server": {
         "label": "Проблемы с сервером TAK",
@@ -2551,7 +2551,7 @@
       "pingFailed": "Ping не удался",
       "floodScopeBusy": "Переопределение области флуда недоступно, пока выполняется администрирование ретранслятора или трассировка. Попробуйте еще раз во время простоя.",
       "removeContactFailed": "Удалено локально, но радио отклонило removeContact. Контакт может появиться снова после обновления.",
-      "bleTimeoutGatt": "Bluetooth connection timed out while opening MeshCore over sidecar GATT. Retry, power-cycle BLE on the device, or use Serial/TCP."
+      "bleTimeoutGatt": "Время ожидания соединения Bluetooth истекло при открытии MeshCore через GATT с коляской. Повторите попытку, выключите и включите BLE на устройстве или используйте Serial/TCP."
     },
     "mqttHints": {
       "notAuthorized": "Проверьте имя пользователя v1_, подпись токена и аудиторию JWT по сравнению с брокером; см. документы/letsmesh-mqtt-auth.md. При необходимости используйте Custom, чтобы вставить токен, выданный оператором.",
@@ -3588,7 +3588,7 @@
       "missingIdentity": "Этот узел еще не запомнил личность. Дождитесь объявления Nomad и повторите попытку.",
       "transportUnavailable": "Транспорт Reticulum недоступен. Перезапустите стек и повторите попытку.",
       "sidecarNotRunning": "Sidecar Reticulum не запущен. Запустите стек из Connection и повторите попытку.",
-      "responseTooLarge": "The node returned more data than mesh-client will accept for this request.",
+      "responseTooLarge": "Узел возвратил больше данных, чем mesh-client может принять для этого запроса.",
       "nomadBusy": "Другой запрос страницы или файла Nomad всё ещё выполняется. Попробуйте снова через мгновение.",
       "nomadNotServing": "Это ваш узел Nomad, но хостинг My Pages не работает. Откройте «Мои страницы», выберите папку и начните локальный предварительный просмотр.",
       "networkNotReady": "Ожидание подключения концентратора или радиоинтерфейса к сети. Попробуйте еще раз, как только Connection отобразит интерфейс.",
@@ -3823,7 +3823,7 @@
     "openedDestinationBadge": "Opened",
     "copyAnnouncedHashAria": "Copy {{aspect}} destination hash {{hash}}",
     "hashCopied": "Destination hash copied.",
-    "hashCopyFailed": "Could not copy destination hash.",
+    "hashCopyFailed": "Не удалось скопировать хэш назначения.",
     "aspect": {
       "chat": "Chat",
       "voice": "Voice",
@@ -4243,34 +4243,34 @@
     "offloadReconcileStillNearFull": "Разгрузка завершена, но радио по-прежнему сообщает о высоком использовании контактов ({{count}}/350).",
     "offloadReconcileRefreshFailed": "Разгрузка завершена, но обновление контакта не выполнено. Переподключите и обновите контакты.",
     "txEnabledLabel": "TX Enabled",
-    "txEnabledDesc": "Allow this node to transmit. Disable for receive-only operation.",
+    "txEnabledDesc": "Разрешить этому узлу передачу. Отключите режим только приема.",
     "channelNumLabel": "Channel Number",
-    "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
+    "channelNumDesc": "Выберите канал вручную (0 = автоматически). Должно соответствовать всем узлам в сети.",
     "overrideFrequencyLabel": "Override Frequency",
-    "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "overrideFrequencyDesc": "Переопределить частоту в МГц (0 = использовать регион по умолчанию). Обеспечьте соблюдение местных норм.",
     "ignoreMqttLabel": "Ignore MQTT",
-    "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
+    "ignoreMqttDesc": "Не ретранслируйте пакеты, пришедшие через MQTT. Уменьшает перегрузку сети из-за трафика шлюза.",
     "configOkToMqttLabel": "OK to MQTT",
-    "configOkToMqttDesc": "Signal to gateways that this node's packets may be forwarded to MQTT.",
+    "configOkToMqttDesc": "Сообщите шлюзам, что пакеты этого узла могут быть перенаправлены в MQTT.",
     "overrideDutyCycleLabel": "Override Duty Cycle",
-    "overrideDutyCycleDesc": "Bypass regional duty-cycle limits. For testing only — may be illegal to use on air.",
+    "overrideDutyCycleDesc": "Обход региональных ограничений рабочего цикла. Только для тестирования — использование в эфире может быть незаконным.",
     "paFanDisabledLabel": "Disable PA Fan",
-    "paFanDisabledDesc": "Disable the power amplifier cooling fan (hardware-dependent).",
+    "paFanDisabledDesc": "Отключите вентилятор охлаждения усилителя мощности (зависит от аппаратного обеспечения).",
     "rebroadcastModeLabel": "Rebroadcast Mode",
     "nodeInfoBroadcastSecsLabel": "Node Info Broadcast Interval",
     "nodeInfoBroadcastSecsDesc": "How often to broadcast node info in seconds (0 = firmware default ~15 min).",
     "doubleTapAsButtonPressLabel": "Double-tap as Button Press",
     "doubleTapAsButtonPressDesc": "Treat an accelerometer double-tap as a user button press (hardware-dependent).",
     "disableTripleClickLabel": "Disable Triple-click",
-    "disableTripleClickDesc": "Disable the triple-click action on the user button.",
+    "disableTripleClickDesc": "Отключите действие тройного щелчка на пользовательской кнопке.",
     "ledHeartbeatDisabledLabel": "Disable LED Heartbeat",
-    "ledHeartbeatDisabledDesc": "Stop the LED from blinking to indicate the node is alive.",
+    "ledHeartbeatDisabledDesc": "Остановите мигание светодиода, чтобы указать, что узел активен.",
     "buttonGpioLabel": "Button GPIO",
-    "buttonGpioDesc": "GPIO pin for the user button (0 = hardware default).",
+    "buttonGpioDesc": "Контакт GPIO для пользовательской кнопки (0 = аппаратное значение по умолчанию).",
     "buzzerGpioLabel": "Buzzer GPIO",
-    "buzzerGpioDesc": "GPIO pin for the buzzer (0 = hardware default).",
+    "buzzerGpioDesc": "Контакт GPIO для зуммера (0 = аппаратное значение по умолчанию).",
     "tzdefLabel": "Timezone (POSIX)",
-    "tzdefDesc": "POSIX timezone string e.g. EST5EDT,M3.2.0,M11.1.0. See https://github.com/nayarsystems/posix_tz_db for a reference list.",
+    "tzdefDesc": "Строка часового пояса POSIX, например. EST5EDT,M3.2.0,M11.1.0. Список ссылок см. на https://github.com/nayarsystems/posix_tz_db.",
     "rebroadcastModes": {
       "ALL": {
         "label": "Все",
@@ -4282,7 +4282,7 @@
       },
       "LOCAL_ONLY": {
         "label": "Только для локальных пользователей",
-        "description": "Only rebroadcast packets from nodes heard directly on RF."
+        "description": "Только ретранслируемые пакеты от узлов, услышанные непосредственно по RF."
       },
       "KNOWN_ONLY": {
         "label": "Только известные",
@@ -4301,16 +4301,16 @@
     "autoScreenCarouselSecsDesc": "Seconds between automatic screen page changes. 0 to disable.",
     "oledTypeLabel": "OLED Type",
     "flipScreenLabel": "Flip Screen",
-    "flipScreenDesc": "Rotate the display 180 degrees.",
+    "flipScreenDesc": "Поверните дисплей на 180 градусов.",
     "displayModeLabel": "Display Mode",
     "headingBoldLabel": "Bold Heading",
-    "wakeOnTapOrMotionLabel": "Wake on Tap or Motion",
-    "wakeOnTapOrMotionDesc": "Wake the screen when the device is tapped or moved.",
+    "wakeOnTapOrMotionLabel": "Пробуждение по касанию или движению",
+    "wakeOnTapOrMotionDesc": "Включение экрана при касании или перемещении устройства.",
     "use12hClockLabel": "12-Hour Clock",
     "useLongNodeNameLabel": "Use Long Node Name",
     "useLongNodeNameDesc": "Show full node name instead of short name on screen.",
     "enableMessageBubblesLabel": "Message Bubbles",
-    "enableMessageBubblesDesc": "Show incoming messages in a bubble on the display.",
+    "enableMessageBubblesDesc": "Показывать входящие сообщения в виде пузырьков на дисплее.",
     "oledTypes": {
       "OLED_AUTO": {
         "label": "Auto"
@@ -5718,7 +5718,7 @@
     "status": {
       "disconnected": "Disconnected",
       "connecting": "Connecting…",
-      "awaiting_welcome": "Waiting for hub…",
+      "awaiting_welcome": "Ожидание хаба…",
       "active": "Connected",
       "reconnecting": "Reconnecting…"
     },
@@ -5890,7 +5890,7 @@
     "meshcoreChannelImported": "Получена ссылка на канал MeshCore — обзор на вкладке «Радио»",
     "meshcoreChannelImportFailed": "Не удалось импортировать канал MeshCore из QR",
     "meshcoreChannelPrefill": "Сведения о канале заполнены из QR. Сохраните, чтобы применить",
-    "meshcoreChannelNoFreeIndex": "All MeshCore channel slots are full — delete one before importing",
+    "meshcoreChannelNoFreeIndex": "Все слоты каналов MeshCore заполнены — удалите один перед импортом.",
     "paperIngested": "Бумажное сообщение расшифровано в чат",
     "paperInvalidUri": "Это не похоже на действительную ссылку на бумагу LXMF",
     "paperDecryptFailed": "Не удалось расшифровать бумажное сообщение — это правильная идентификация?",
@@ -6407,7 +6407,7 @@
       "safety": "SAFETY",
       "routine": "ROUTINE"
     },
-    "incomingToast": "{{severity}} MECP from {{sender}}",
+    "incomingToast": "{{severity}} MECP от {{sender}}",
     "notificationTitle": "MECP alert",
     "exportLog": "Export MECP log",
     "compose": {
@@ -6427,7 +6427,7 @@
     },
     "rebroadcast": {
       "title": "MECP RF rebroadcast",
-      "hint": "Optionally bridge MECP heard on one protocol channel to another. Off by default. Enable Bidirectional to also reverse the path.",
+      "hint": "Опционально можно соединить MECP, услышанный на одном канале протокола, с другим. По умолчанию выключено. Включите двунаправленный режим, чтобы также изменить путь.",
       "add": "Add bridge rule",
       "remove": "Remove bridge rule",
       "enableRule": "Enabled",

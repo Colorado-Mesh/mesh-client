@@ -10,6 +10,8 @@
  *   node scripts/i18n-auto-translate.mjs
  *   node scripts/i18n-auto-translate.mjs --all
  *   node scripts/i18n-auto-translate.mjs --audit   (also retranslates values still identical to English)
+ *   node scripts/i18n-auto-translate.mjs --audit --prefix modulePanel,flasher.stackStoppedHint
+ *     (limit any mode to keys equal to or nested under the comma-separated prefixes)
  *   I18N_TRANSLATE_ALL=1 node scripts/i18n-auto-translate.mjs
  *   LIBRETRANSLATE_URL=https://lt.example.com LIBRETRANSLATE_KEY=xxx node scripts/i18n-auto-translate.mjs
  *   MYMEMORY_EMAIL=you@example.com node scripts/i18n-auto-translate.mjs
@@ -33,6 +35,9 @@ import {
   filterMissingKeysToTranslate,
   isKeepEnglishKey,
   mapWithConcurrency,
+  matchesKeyPrefix,
+  normalizeMachineTranslation,
+  parseKeyPrefixes,
   nextDelayAfterRateLimit,
   resolveTranslateConcurrency,
   resolveTranslateDelayMs,
@@ -41,6 +46,9 @@ import {
   setDeepLocaleValue,
   stripPlaceholders,
 } from './i18n-auto-translate-lib.mjs';
+import { PROTECTED_BRANDS, PROTECTED_PROTOCOL_TOKENS } from './check-i18n-quality.mjs';
+
+const PROTECTED_MT_TERMS = [...PROTECTED_BRANDS, ...PROTECTED_PROTOCOL_TOKENS];
 
 /** RFC 6585 / IANA: Too Many Requests (avoid hardcoded status literals for static analysis). */
 const HTTP_STATUS_TOO_MANY_REQUESTS = http2Constants.HTTP_STATUS_TOO_MANY_REQUESTS;
@@ -142,7 +150,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15_000) {
 // ── LibreTranslate backend ────────────────────────────────────────────────────
 
 async function translateLibreTranslate(text, targetLt) {
-  const { stripped, placeholders } = stripPlaceholders(text);
+  const { stripped, placeholders } = stripPlaceholders(text, PROTECTED_MT_TERMS);
   const body = {
     q: stripped,
     source: 'en',
@@ -166,7 +174,7 @@ async function translateLibreTranslate(text, targetLt) {
 // ── MyMemory backend ──────────────────────────────────────────────────────────
 
 async function translateMyMemory(text, targetMm) {
-  const { stripped, placeholders } = stripPlaceholders(text);
+  const { stripped, placeholders } = stripPlaceholders(text, PROTECTED_MT_TERMS);
   const params = new URLSearchParams({
     q: stripped,
     langpair: `en|${targetMm}`,
@@ -211,7 +219,7 @@ async function translateMyMemory(text, targetMm) {
 // ── Google Translate (public endpoint) fallback ───────────────────────────────
 
 async function translateGoogle(text, targetGoogle) {
-  const { stripped, placeholders } = stripPlaceholders(text);
+  const { stripped, placeholders } = stripPlaceholders(text, PROTECTED_MT_TERMS);
   const params = new URLSearchParams({
     client: 'gtx',
     sl: 'en',
@@ -293,11 +301,12 @@ function shortRunMode(translateAllGaps, hasGitBaseline, auditIdentical) {
 async function main() {
   const translateAllGaps = process.argv.includes('--all') || process.env.I18N_TRANSLATE_ALL === '1';
   const auditIdentical = process.argv.includes('--audit') || process.env.I18N_AUDIT === '1';
+  const keyPrefixes = parseKeyPrefixes(process.argv);
 
   const enPath = join(LOCALES_DIR, 'en/translation.json');
   const en = readJson(enPath);
   const enFlat = flatten(en);
-  const enKeys = Object.keys(enFlat);
+  const enKeys = Object.keys(enFlat).filter((k) => matchesKeyPrefix(k, keyPrefixes));
 
   const enAtHead = readJsonFromGit('HEAD:src/renderer/locales/en/translation.json');
   const hasGitBaseline = Boolean(enAtHead);
@@ -424,7 +433,7 @@ async function main() {
       try {
         const translated = isKeepEnglishKey(key)
           ? englishValue
-          : await translate(englishValue, lang);
+          : normalizeMachineTranslation(await translate(englishValue, lang), lang.dir);
         setDeepLocaleValue(target, key, translated);
         count++;
         localeJobDone++;

@@ -40,7 +40,7 @@ if [ "$deps_changed" -eq 1 ]; then
   pnpm install --frozen-lockfile || fail 'pnpm install --frozen-lockfile'
 fi
 
-# Manifest-only commits (dependency bumps) cannot change source, so the repo-wide
+# Manifest-only commits (dependency bumps, release version bumps) cannot change source, so the repo-wide
 # source scanners and Vitest have nothing to say. Typecheck, licenses, audit, and
 # the Flatpak pin still run. PR CI fails closed to the full suite for manifests.
 manifest_only=0
@@ -49,7 +49,7 @@ if [ "$deps_changed" -eq 1 ] && [ -s "$STAGED_LIST" ]; then
   while IFS= read -r f || [ -n "$f" ]; do
     [ -n "$f" ] || continue
     case "$f" in
-      package.json | pnpm-lock.yaml | org.coloradomesh.MeshClient.yml) ;;
+      package.json | pnpm-lock.yaml | org.coloradomesh.MeshClient.yml | flatpak/org.coloradomesh.MeshClient.metainfo.xml) ;;
       *)
         manifest_only=0
         break
