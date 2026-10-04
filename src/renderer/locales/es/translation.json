@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "No se ha podido guardar el ámbito de envío. La opción guardada anterior sigue siendo válida.",
     "reactionYouTitle": "{{name}} (usted)",
     "reactionYouAria": "Tu reacción: {{name}}",
-    "reactionOtherAria": "{{reactor}} reaccionó con {{name}}"
+    "reactionOtherAria": "{{reactor}} reaccionó con {{name}}",
+    "clearChannelMessagesChanged": "{{name}} ya no está en esa ranura de la radio, así que no se aclaró nada.",
+    "clearChannelMessagesRadioChanged": "La radio conectada cambió mientras estaba abierta, por lo que no se borraron los mensajes en {{name}}."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

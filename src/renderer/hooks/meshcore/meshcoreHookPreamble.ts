@@ -144,6 +144,7 @@ export function isMeshcoreRoomChatMessage(msg: {
 
 export function messageToDbRow(
   msg: ChatMessage,
+  radioNodeId?: number | null,
 ): Parameters<typeof window.electronAPI.db.saveMeshcoreMessage>[0] {
   const received_via =
     msg.receivedVia === 'rf' || msg.receivedVia === 'mqtt' || msg.receivedVia === 'both'
@@ -174,6 +175,10 @@ export function messageToDbRow(
     reply_preview_sender: msg.replyPreviewSender ?? null,
     rx_hops: msg.rxHops != null && Number.isFinite(msg.rxHops) ? Math.trunc(msg.rxHops) : null,
     room_server_id: msg.roomServerId ?? null,
+    radio_node_id:
+      radioNodeId != null && Number.isSafeInteger(radioNodeId) && radioNodeId > 0
+        ? radioNodeId >>> 0
+        : null,
   };
 }
 

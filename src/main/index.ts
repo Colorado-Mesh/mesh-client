@@ -663,6 +663,17 @@ function safeMeshcoreChannelIndex(value: unknown): number {
   return Math.trunc(n);
 }
 
+/** 0 means the connected radio is unknown. Positive values are companion node ids. */
+function safeMeshcoreRadioNodeId(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isSafeInteger(n) || n < 0) {
+    throw new Error(
+      'db:clearMeshcoreMessagesByChannel: radioNodeId must be a non-negative integer',
+    );
+  }
+  return n;
+}
+
 function validateSaveMessage(message: unknown): asserts message is Record<string, unknown> & {
   sender_id: number;
   sender_name: string;
@@ -794,6 +805,11 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
     if (!Number.isFinite(rawTo))
       throw new Error('db:saveMeshcoreMessage: to_node must be a finite number');
     m.to_node = rawTo >>> 0;
+  }
+  if (m.radio_node_id != null) {
+    const radio = Number(m.radio_node_id);
+    if (!Number.isSafeInteger(radio) || radio < 0)
+      throw new Error('db:saveMeshcoreMessage: radio_node_id must be a non-negative integer');
   }
 }
 
@@ -5441,6 +5457,11 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
         m.room_server_id != null && Number.isFinite(Number(m.room_server_id))
           ? Math.trunc(Number(m.room_server_id))
           : null,
+      radio_node_id: (() => {
+        if (m.radio_node_id == null) return null;
+        const radio = Number(m.radio_node_id) >>> 0;
+        return radio > 0 ? radio : null;
+      })(),
     };
 
     return persistMeshcoreMessage(db, rowParams);
@@ -5724,23 +5745,27 @@ ipcMain.handle('db:getMeshcoreMessageChannels', (event) => {
   }
 });
 
-ipcMain.handle('db:clearMeshcoreMessagesByChannel', (event, channelIdx: number) => {
-  if (!validateIpcSender(event)) {
-    throw new Error('IPC sender validation failed');
-  }
-  try {
-    const db = getDbForIpc('db:clearMeshcoreMessagesByChannel');
-    if (!db) return { changes: 0 };
-    const ch = safeMeshcoreChannelIndex(channelIdx);
-    const result = clearMeshcoreMessagesByChannel(db, ch);
-    console.debug(
-      `[IPC] db:clearMeshcoreMessagesByChannel: deleted ${result.changes} messages from channel_idx ${ch}`,
-    );
-    return result;
-  } catch (err) {
-    finishDbIpcHandler('db:clearMeshcoreMessagesByChannel', err);
-  }
-});
+ipcMain.handle(
+  'db:clearMeshcoreMessagesByChannel',
+  (event, channelIdx: number, radioNodeId: number) => {
+    if (!validateIpcSender(event)) {
+      throw new Error('IPC sender validation failed');
+    }
+    try {
+      const db = getDbForIpc('db:clearMeshcoreMessagesByChannel');
+      if (!db) return { changes: 0 };
+      const ch = safeMeshcoreChannelIndex(channelIdx);
+      const radio = safeMeshcoreRadioNodeId(radioNodeId);
+      const result = clearMeshcoreMessagesByChannel(db, ch, radio);
+      console.debug(
+        `[IPC] db:clearMeshcoreMessagesByChannel: deleted ${result.changes} messages from channel_idx ${ch} radio_node_id ${radio}`,
+      );
+      return result;
+    } catch (err) {
+      finishDbIpcHandler('db:clearMeshcoreMessagesByChannel', err);
+    }
+  },
+);
 
 ipcMain.handle('db:clearMeshcoreContacts', (event) => {
   if (!validateIpcSender(event)) {

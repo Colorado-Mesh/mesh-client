@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "Não foi possível salvar o escopo de envio. A opção salva anterior ainda se aplica.",
     "reactionYouTitle": "{{name}} (você)",
     "reactionYouAria": "Sua reação: {{name}}",
-    "reactionOtherAria": "{{reactor}} reagiu com {{name}}"
+    "reactionOtherAria": "{{reactor}} reagiu com {{name}}",
+    "clearChannelMessagesChanged": "{{name}} não está mais naquele espaço no rádio, então nada foi liberado.",
+    "clearChannelMessagesRadioChanged": "O rádio ligado mudou enquanto estava aberto, por isso as mensagens em {{name}} não foram apagadas."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -68,6 +68,9 @@ describe('channel scope QR compatibility', () => {
     expect(parsed).toMatchObject({ kind: 'meshcoreChannelAdd', regionScope: 'NA' });
     expect(meshcoreScopeOverrideFromQr('NA')).toBe('#NA');
     expect(meshcoreScopeOverrideFromQr('*')).toBe('#*');
+    expect(meshcoreScopeOverrideFromQr('a'.repeat(31))).toBe(`#${'a'.repeat(31)}`);
+    expect(meshcoreScopeOverrideFromQr('a'.repeat(80))).toBe('');
+    expect(meshcoreScopeOverrideFromQr('#')).toBe('');
   });
 
   it('lets explicit app Unscoped win if a URI contains both fields', () => {

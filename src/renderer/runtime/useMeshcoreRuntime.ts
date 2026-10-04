@@ -1410,7 +1410,7 @@ export function useMeshcoreRuntime() {
         result.message.status === 'sending' && isMeshcoreRoomChatMessage(result.message);
       if (!skipSendingRoomPersist) {
         void window.electronAPI.db
-          .saveMeshcoreMessage(messageToDbRow(result.message))
+          .saveMeshcoreMessage(messageToDbRow(result.message, myNodeNumRef.current))
           .catch((e: unknown) => {
             console.warn('[useMeshcoreRuntime] saveMeshcoreMessage error ' + errLikeToLogString(e));
           });
@@ -1432,7 +1432,7 @@ export function useMeshcoreRuntime() {
             result.message.status === 'sending' && isMeshcoreRoomChatMessage(result.message);
           if (!skipSendingRoomPersist) {
             void window.electronAPI.db
-              .saveMeshcoreMessage(messageToDbRow(result.message))
+              .saveMeshcoreMessage(messageToDbRow(result.message, myNodeNumRef.current))
               .catch((e: unknown) => {
                 console.warn(
                   '[useMeshcoreRuntime] saveMeshcoreMessage (batch) error ' + errLikeToLogString(e),
@@ -6997,7 +6997,7 @@ export function useMeshcoreRuntime() {
           ),
         );
         void window.electronAPI.db
-          .saveMeshcoreMessage(messageToDbRow(acked))
+          .saveMeshcoreMessage(messageToDbRow(acked, myNodeNumRef.current))
           .catch((e: unknown) => {
             console.warn(
               '[useMeshcoreRuntime] saveMeshcoreMessage (room post) error ' + errLikeToLogString(e),
@@ -8319,6 +8319,7 @@ export function useMeshcoreRuntime() {
         }),
         'success',
       );
+      return removedFromRadio;
     });
     return () => registerMeshcoreContactsFullOffloadRunner(null);
   }, [offloadContactsFromRadio, refreshContacts]);

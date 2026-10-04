@@ -500,6 +500,8 @@
     "clearChannelMessagesTitle": "Clear messages in {{name}}?",
     "clearChannelMessagesMessage": "Deletes every saved message in {{name}} from this computer. The channel stays, and new messages keep arriving.",
     "clearChannelMessagesFailed": "Couldn't clear {{name}}: {{message}}",
+    "clearChannelMessagesChanged": "{{name}} is no longer in that slot on the radio, so nothing was cleared.",
+    "clearChannelMessagesRadioChanged": "The connected radio changed while this was open, so messages in {{name}} were not cleared.",
     "removeChannelNeedsRadio": "Available once the radio is connected",
     "floodScopeOverrideLabel": "Flood scope for this chat view",
     "floodScopeOverrideAria": "Per-view flood scope override",

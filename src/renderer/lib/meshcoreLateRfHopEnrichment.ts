@@ -9,6 +9,7 @@ import {
   MESHCORE_ROOM_MESSAGE_CHANNEL,
   messageToDbRow,
 } from '../hooks/meshcore/meshcoreHookPreamble';
+import { getConnection } from '../stores/connectionStore';
 import { upsertMessage, useMessageStore } from '../stores/messageStore';
 import { errLikeToLogString } from './errLikeToLogString';
 import { MESHCORE_CHAT_CORRELATE_WINDOW_MS } from './meshcoreRawPacketCorrelate';
@@ -278,11 +279,13 @@ export function applyMeshcoreLateRfHopEnrichment(
     hopCount: nextRxHops,
     receivedVia: nextReceivedVia,
   });
-  void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(chat)).catch((e: unknown) => {
-    console.warn(
-      '[meshcoreLateRfHopEnrichment] saveMeshcoreMessage failed ' + errLikeToLogString(e),
-    );
-  });
+  void window.electronAPI.db
+    .saveMeshcoreMessage(messageToDbRow(chat, getConnection(identityId)?.myNodeNum))
+    .catch((e: unknown) => {
+      console.warn(
+        '[meshcoreLateRfHopEnrichment] saveMeshcoreMessage failed ' + errLikeToLogString(e),
+      );
+    });
 
   if (corrected) {
     markMeshcoreHopCorrected(target.storeId, input.now ?? Date.now());

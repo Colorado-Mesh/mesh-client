@@ -53,7 +53,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
   it('clears both directions of all DMs, including legacy group-channel sends, preserving groups and rooms', () => {
     const { db } = fixture();
     try {
-      expect(clearMeshcoreMessagesByChannel(db, -1).changes).toBe(5);
+      expect(clearMeshcoreMessagesByChannel(db, -1, 1).changes).toBe(5);
       const remaining = db.prepareOnce('SELECT payload FROM meshcore_messages ORDER BY id').all();
       expect(remaining).toEqual([
         { payload: 'public channel' },
@@ -71,7 +71,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
   it('clearing public history preserves DMs and room rows stored under that old channel', () => {
     const { db } = fixture();
     try {
-      expect(clearMeshcoreMessagesByChannel(db, 0).changes).toBe(3);
+      expect(clearMeshcoreMessagesByChannel(db, 0, 1).changes).toBe(3);
       expect(db.prepareOnce('SELECT COUNT(*) AS n FROM meshcore_messages').get()).toEqual({ n: 8 });
       expect(
         db
@@ -133,7 +133,7 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
           packet_id: 11,
         },
       ]);
-      expect(clearMeshcoreMessagesByChannel(db, -1).changes).toBe(1);
+      expect(clearMeshcoreMessagesByChannel(db, -1, 1).changes).toBe(1);
 
       const anonymousLegacy = db
         .prepareOnce(
@@ -346,6 +346,75 @@ describe.each(['linux', 'darwin', 'win32'])('MeshCore message clearing on %s', (
           )
           .get(),
       ).toEqual({ n: 5 });
+    } finally {
+      db.close();
+    }
+  });
+
+  it('clears this radio and unscoped history, and keeps another radio', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    try {
+      const insert = db.prepareOnce(
+        'INSERT INTO meshcore_messages (sender_id,payload,channel_idx,timestamp,radio_node_id) VALUES (1,?,3,1,?)',
+      );
+      insert.run('unscoped', null);
+      insert.run('this radio', 7);
+      insert.run('other radio', 8);
+      db.prepareOnce(
+        'INSERT INTO meshcore_messages (sender_id,payload,channel_idx,timestamp,radio_node_id) VALUES (1,?,4,1,7)',
+      ).run('other channel');
+      expect(clearMeshcoreMessagesByChannel(db, 3, 7).changes).toBe(2);
+      expect(db.prepareOnce('SELECT payload FROM meshcore_messages ORDER BY id').all()).toEqual([
+        { payload: 'other radio' },
+        { payload: 'other channel' },
+      ]);
+      expect(clearMeshcoreMessagesByChannel(db, 3, 0).changes).toBe(0);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('stamps radio_node_id on insert and does not scope an existing row on update', () => {
+    const db = new NodeSqliteDB(':memory:');
+    runSchemaUpgrade(db);
+    try {
+      const row: MeshcoreMessageRowParams = {
+        sender_id: 1,
+        sender_name: 'A',
+        payload: 'hi',
+        channel_idx: 0,
+        timestamp: 10,
+        local_order: 1,
+        status: 'acked',
+        packet_id: null,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+        received_via: 'rf',
+        rx_packet_fingerprint: null,
+        reply_preview_text: null,
+        reply_preview_sender: null,
+        rx_hops: null,
+        room_server_id: null,
+      };
+      expect(persistMeshcoreMessage(db, row).changes).toBe(1);
+      expect(
+        persistMeshcoreMessage(db, { ...row, payload: 'new', radio_node_id: 42 }).changes,
+      ).toBe(1);
+      expect(
+        persistMeshcoreMessage(db, { ...row, sender_name: 'B', radio_node_id: 42 }).changes,
+      ).toBe(1);
+      expect(
+        db
+          .prepareOnce(
+            'SELECT payload, sender_name, radio_node_id FROM meshcore_messages ORDER BY id',
+          )
+          .all(),
+      ).toEqual([
+        { payload: 'hi', sender_name: 'B', radio_node_id: null },
+        { payload: 'new', sender_name: 'A', radio_node_id: 42 },
+      ]);
     } finally {
       db.close();
     }

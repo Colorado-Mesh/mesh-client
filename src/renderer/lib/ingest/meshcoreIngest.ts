@@ -259,9 +259,11 @@ function handleTextMessage(
       });
     }
     if (inserted && !isEcho) {
-      void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
-        console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
-      });
+      void window.electronAPI.db
+        .saveMeshcoreMessage(messageToDbRow(stored, myNodeNum))
+        .catch((e: unknown) => {
+          console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+        });
     }
     return;
   }
@@ -351,9 +353,11 @@ function handleTextMessage(
     stored.replyPreviewSender !== priorReplyPreviewSender;
   // PacketRouter already inserts plain DMs; they still need their first local order saved.
   if ((inserted || storeUpdated || replyUpgraded || isDm) && !isEcho) {
-    void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(stored)).catch((e: unknown) => {
-      console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
-    });
+    void window.electronAPI.db
+      .saveMeshcoreMessage(messageToDbRow(stored, myNodeNum))
+      .catch((e: unknown) => {
+        console.warn('[meshcoreIngest] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+      });
   }
 }
 

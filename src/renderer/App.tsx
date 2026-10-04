@@ -3051,8 +3051,8 @@ function AppContent() {
 
   // Chat's channel menu clears one MeshCore channel's saved messages, as App settings does.
   const clearMeshcoreChatChannelMessages = useCallback(
-    async (index: number) => {
-      await window.electronAPI.db.clearMeshcoreMessagesByChannel(index);
+    async (index: number, radioNodeId: number) => {
+      await window.electronAPI.db.clearMeshcoreMessagesByChannel(index, radioNodeId);
       refreshMessagesFromDb({
         clearedChannel: index,
         replaceFromDb: true,

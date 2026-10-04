@@ -873,7 +873,9 @@
     "floodScopeSaveFailed": "Не вдалося зберегти область надсилання. Попередній збережений вибір все ще застосовується.",
     "reactionYouTitle": "{{name}} (ви)",
     "reactionYouAria": "Ваша реакція: {{name}}",
-    "reactionOtherAria": "{{reactor}} відреагував {{name}}"
+    "reactionOtherAria": "{{reactor}} відреагував {{name}}",
+    "clearChannelMessagesChanged": "{{name}} більше не знаходиться в цьому слоті на радіо, тому нічого не очищено.",
+    "clearChannelMessagesRadioChanged": "Підключений радіоприймач змінився, коли він був відкритий, тому повідомлення в {{name}} не були очищені."
   },
   "chatPayload": {
     "mention": "Згадайте {{label}}",

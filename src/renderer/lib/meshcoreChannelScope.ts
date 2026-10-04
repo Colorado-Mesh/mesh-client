@@ -5,6 +5,7 @@ import { bytesToHex } from '@/shared/hexBytes';
 import { FLOOD_SCOPE_OVERRIDE_UNSCOPED } from './chatPanelProtocolStorage';
 import type { MeshcoreChatChannelSource } from './meshcoreConfiguredChatChannels';
 import { normalizeMeshcoreFloodScopeHashtag } from './meshcoreFloodScope';
+import { isValidMeshcoreFloodScopeHashtag } from './meshcoreFloodScopePresetsStorage';
 
 /** Bind a preference to the discovered radio and channel contents, never just a reused slot. */
 export function meshcoreChannelScopeKey(
@@ -22,7 +23,7 @@ export function meshcoreScopeOverrideFromQr(regionScope?: string): string {
   if (regionScope === '') return FLOOD_SCOPE_OVERRIDE_UNSCOPED;
   if (!regionScope?.trim()) return '';
   const normalized = normalizeMeshcoreFloodScopeHashtag(regionScope);
-  return normalized === '#' ? '' : normalized;
+  return isValidMeshcoreFloodScopeHashtag(normalized) ? normalized : '';
 }
 
 /** Named scopes use the standard field; explicit Unscoped is a Mesh Client extension. */

@@ -10,6 +10,7 @@ import {
   meshcoreMessageDedupeKey,
   messageToDbRow,
 } from '../hooks/meshcore/meshcoreHookPreamble';
+import { getConnection } from '../stores/connectionStore';
 import type { MessageRecord } from '../stores/messageStore';
 import { deleteMessage, upsertMessage, useMessageStore } from '../stores/messageStore';
 import { errLikeToLogString } from './errLikeToLogString';
@@ -555,10 +556,13 @@ export function syncMeshcoreDisplayReplyRepairs(
     const record = chatMessageToMessageRecord(fixed);
     record.id = recordId;
     upsertMessage(identityId, record);
-    void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(fixed)).catch((e: unknown) => {
-      console.warn(
-        '[meshcoreStoreDedup] syncMeshcoreDisplayReplyRepairs save failed ' + errLikeToLogString(e),
-      );
-    });
+    void window.electronAPI.db
+      .saveMeshcoreMessage(messageToDbRow(fixed, getConnection(identityId)?.myNodeNum))
+      .catch((e: unknown) => {
+        console.warn(
+          '[meshcoreStoreDedup] syncMeshcoreDisplayReplyRepairs save failed ' +
+            errLikeToLogString(e),
+        );
+      });
   }
 }

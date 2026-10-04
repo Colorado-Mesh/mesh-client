@@ -3,11 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   clearMeshcoreFirmwareContactsFullLatch,
+  endMeshcoreOffload,
   getMeshcoreRadioMaxContacts,
+  isMeshcoreAutoOffloadInFlight,
   isMeshcoreFirmwareContactsFullActive,
   subscribeMeshcoreContactCountRefresh,
   subscribeMeshcoreFirmwareContactsFull,
   subscribeMeshcoreRadioMaxContacts,
+  tryBeginMeshcoreOffload,
 } from '../lib/meshcore/meshcoreContactCapacityPush';
 import {
   isMeshcoreOffloadAbortError,
@@ -104,6 +107,9 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
       refreshContacts?: () => Promise<void>,
       offloadFromRadio?: OffloadContactsFromRadioFn,
     ): Promise<OffloadMeshcoreContactsResult> => {
+      if (isMeshcoreAutoOffloadInFlight() || !tryBeginMeshcoreOffload()) {
+        throw new Error('meshcore offload already in progress');
+      }
       offloadAbortRef.current?.abort();
       const controller = new AbortController();
       offloadAbortRef.current = controller;
@@ -184,6 +190,7 @@ export function useMeshcoreContactCapacity(options: UseMeshcoreContactCapacityOp
         }
         setLoading(false);
         setOffloadProgress(null);
+        endMeshcoreOffload();
       }
     },
     [refreshCount],

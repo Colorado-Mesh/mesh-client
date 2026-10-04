@@ -873,7 +873,9 @@
     "floodScopeSaveFailed": "Nie można zapisać zakresu wysyłania. Poprzedni zapisany wybór nadal obowiązuje.",
     "reactionYouTitle": "{{name}} (Ty)",
     "reactionYouAria": "Twoja reakcja: {{name}}",
-    "reactionOtherAria": "{{reactor}} zareagował(a): {{name}}"
+    "reactionOtherAria": "{{reactor}} zareagował(a): {{name}}",
+    "clearChannelMessagesChanged": "{{name}} nie ma już w tym gnieździe w radiu, więc nic nie zostało wyczyszczone.",
+    "clearChannelMessagesRadioChanged": "Podłączone radio zmieniło się, gdy było otwarte, więc wiadomości w {{name}} nie zostały wyczyszczone."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

@@ -8,16 +8,17 @@
 
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { normalizeMeshcoreFloodScopeHashtag } from './meshcoreFloodScope';
+import { MESHCORE_FLOOD_SCOPE_HASHTAG_MAX_LEN } from './meshcoreUtils';
 import { parseStoredJson } from './parseStoredJson';
 
 export const MESHCORE_FLOOD_SCOPE_PRESETS_MAX = 20;
 
 export const MESHCORE_FLOOD_SCOPE_PRESETS_SETTING_KEY = 'meshcoreFloodScopePresets';
 
-/** True when the hashtag is non-empty after normalization (not '' or '#'). */
+/** True when the hashtag is non-empty after normalization and within the app length cap. */
 export function isValidMeshcoreFloodScopeHashtag(input: string): boolean {
   const normalized = normalizeMeshcoreFloodScopeHashtag(input);
-  return normalized.length > 1;
+  return normalized.length > 1 && normalized.length <= MESHCORE_FLOOD_SCOPE_HASHTAG_MAX_LEN;
 }
 
 /**

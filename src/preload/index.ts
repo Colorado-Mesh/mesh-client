@@ -388,8 +388,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:deleteMeshcoreContact', nodeId),
     clearMeshcoreMessages: () => ipcRenderer.invoke('db:clearMeshcoreMessages'),
     getMeshcoreMessageChannels: () => ipcRenderer.invoke('db:getMeshcoreMessageChannels'),
-    clearMeshcoreMessagesByChannel: (channelIdx: number) =>
-      ipcRenderer.invoke('db:clearMeshcoreMessagesByChannel', channelIdx),
+    clearMeshcoreMessagesByChannel: (channelIdx: number, radioNodeId: number) =>
+      ipcRenderer.invoke('db:clearMeshcoreMessagesByChannel', channelIdx, radioNodeId),
     clearMeshcoreContacts: () => ipcRenderer.invoke('db:clearMeshcoreContacts'),
     deleteMeshcoreContactsNeverAdvertised: () =>
       ipcRenderer.invoke('db:deleteMeshcoreContactsNeverAdvertised'),

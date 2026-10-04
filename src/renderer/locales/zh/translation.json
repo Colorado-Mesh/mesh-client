@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "无法保存发送范围。之前保存的选项仍然适用。",
     "reactionYouTitle": "{{name}} （您）",
     "reactionYouAria": "您的反应： {{name}}",
-    "reactionOtherAria": "{{reactor}} 的反应：{{name}}"
+    "reactionOtherAria": "{{reactor}} 的反应：{{name}}",
+    "clearChannelMessagesChanged": "{{name}} 已不在电台的该位置，因此未清除任何消息。",
+    "clearChannelMessagesRadioChanged": "已连接的电台已更换，因此未清除 {{name}} 中的消息。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

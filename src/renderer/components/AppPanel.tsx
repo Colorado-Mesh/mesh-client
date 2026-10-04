@@ -2897,6 +2897,7 @@ export default function AppPanel({
                         } else {
                           await window.electronAPI.db.clearMeshcoreMessagesByChannel(
                             clearChannelTarget,
+                            myNodeNum ?? 0,
                           );
                         }
                       } else if (isAll) {

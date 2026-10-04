@@ -614,7 +614,7 @@ export interface ChatPanelProps {
   /** MeshCore: remove a channel from the connected companion radio (chat asks first). */
   onDeleteMeshcoreChannel?: (index: number) => Promise<void>;
   /** Clear one channel's saved messages (chat asks first). */
-  onClearChannelMessages?: (index: number) => Promise<void>;
+  onClearChannelMessages?: (index: number, radioNodeId: number) => Promise<void>;
   /** MeshCore: companion radio is unavailable for channel writes. */
   meshcoreChannelManagementDisabled?: boolean;
   myNodeNum: number;
@@ -1030,15 +1030,30 @@ function ChatPanel({
   // Clearing messages works on every channel, Public included: the channel itself stays.
   const hasChannelMenu = (index: number) =>
     canRemoveChannel(index) || onClearChannelMessages != null;
-  const [channelToClear, setChannelToClear] = useState<{ index: number; name: string } | null>(
-    null,
-  );
+  const [channelToClear, setChannelToClear] = useState<{
+    index: number;
+    name: string;
+    nodeNum: number;
+  } | null>(null);
   const [clearingChannel, setClearingChannel] = useState(false);
-  const clearChannelMessages = async (target: { index: number; name: string }) => {
+  const clearChannelMessages = async (target: { index: number; name: string; nodeNum: number }) => {
     if (!onClearChannelMessages) return;
+    // The delete goes by slot on whichever radio is connected now. If another radio connected
+    // while the dialog was open, its slot is not the channel the user saw: clear nothing.
+    if (target.nodeNum !== myNodeNum) {
+      setChannelToClear(null);
+      addToast(t('chatPanel.clearChannelMessagesRadioChanged', { name: target.name }), 'warning');
+      return;
+    }
+    // Same radio, but its list changed (a reconnect): the slot may hold a different channel.
+    if (!channels.some((ch) => ch.index === target.index && ch.name === target.name)) {
+      setChannelToClear(null);
+      addToast(t('chatPanel.clearChannelMessagesChanged', { name: target.name }), 'warning');
+      return;
+    }
     setClearingChannel(true);
     try {
-      await onClearChannelMessages(target.index);
+      await onClearChannelMessages(target.index, target.nodeNum);
       setChannelToClear(null);
     } catch (e) {
       console.warn('[ChatPanel] clear channel messages failed ' + errLikeToLogString(e));
@@ -2928,7 +2943,9 @@ function ChatPanel({
                           label: t('chatPanel.clearChannelMessages'),
                           tone: 'danger' as const,
                           onSelect: () => {
-                            if (channelMenu) setChannelToClear(channelMenu);
+                            if (channelMenu) {
+                              setChannelToClear({ ...channelMenu, nodeNum: myNodeNum });
+                            }
                           },
                         },
                       ]
