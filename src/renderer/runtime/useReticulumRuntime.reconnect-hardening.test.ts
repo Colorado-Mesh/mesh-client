@@ -51,9 +51,9 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
     );
   });
 
-  it('overlapping restartStack callers join the in-flight restart instead of failing', () => {
+  it('overlapping restartStack callers join only a same-generation in-flight restart', () => {
     expect(SOURCE).toMatch(
-      /const restartStack = useCallback\(async \(\): Promise<void> => \{[\s\S]*?const running = restartInFlightRef\.current;\s*if \(running\) \{[\s\S]*?return running;[\s\S]*?restartInFlightRef\.current = op;/,
+      /const restartStack = useCallback\(async \(\): Promise<void> => \{[\s\S]*?const generation = resumeGenerationRef\.current;\s*const running = restartInFlightRef\.current;\s*if \(running\?\.generation === generation\) \{\s*return running\.promise;[\s\S]*?const entry = \{ promise, generation \};\s*restartInFlightRef\.current = entry;[\s\S]*?if \(restartInFlightRef\.current === entry\) restartInFlightRef\.current = null;/,
     );
   });
 

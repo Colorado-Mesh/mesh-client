@@ -783,10 +783,7 @@ export class GattSidecarProxy extends EventEmitter {
         { timeoutMs: GATT_HTTP_LONG_TIMEOUT_MS, port: this.port },
       );
     } catch (err) {
-      console.debug(
-        '[GATT] releaseBleCentral failed:',
-        err instanceof Error ? err.message : String(err),
-      );
+      console.debug('[GATT] releaseBleCentral failed:', sanitizeLogMessage(fetchErrorDetail(err)));
     }
   }
 }

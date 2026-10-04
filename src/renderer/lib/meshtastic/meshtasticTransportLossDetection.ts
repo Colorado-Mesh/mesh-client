@@ -41,6 +41,9 @@ export function createSerializedWritableStream(
   }
 
   let chain: Promise<void> = Promise.resolve();
+  // A pending write holds the inner lock, so abort must go through that writer.
+  let activeWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  let aborted = false;
 
   const runExclusive = <T>(fn: () => Promise<T>): Promise<T> => {
     const run = chain.then(fn, fn);
@@ -53,6 +56,9 @@ export function createSerializedWritableStream(
 
   const writeInner = async (chunk: Uint8Array): Promise<void> => {
     await runExclusive(async () => {
+      if (aborted) {
+        throw new DOMException('Transport stream aborted', 'AbortError');
+      }
       let writer: WritableStreamDefaultWriter<Uint8Array>;
       try {
         writer = inner.getWriter();
@@ -62,6 +68,7 @@ export function createSerializedWritableStream(
         }
         throw err;
       }
+      activeWriter = writer;
       try {
         await writer.write(chunk);
       } catch (err) {
@@ -70,6 +77,7 @@ export function createSerializedWritableStream(
         }
         throw err;
       } finally {
+        activeWriter = null;
         try {
           writer.releaseLock();
         } catch {
@@ -99,13 +107,12 @@ export function createSerializedWritableStream(
   };
 
   const abortInner = (reason?: unknown): Promise<void> => {
+    aborted = true;
     try {
-      return Promise.resolve(inner.abort(reason)).catch(() => {
-        // catch-no-log-ok async abort rejection during teardown
-      });
-    } catch {
-      // catch-no-log-ok sync abort throw on closed/errored stream during teardown
-      return Promise.resolve();
+      return Promise.resolve(activeWriter ? activeWriter.abort(reason) : inner.abort(reason));
+    } catch (err) {
+      // catch-no-log-ok surfaced to the abort caller as a rejection
+      return Promise.reject(err instanceof Error ? err : new Error(String(err)));
     }
   };
 

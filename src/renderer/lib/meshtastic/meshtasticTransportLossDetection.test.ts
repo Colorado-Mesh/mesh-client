@@ -383,7 +383,36 @@ describe('meshtasticTransportLossDetection', () => {
     await expect(writer.close()).resolves.toBeUndefined();
   });
 
-  it('createSerializedWritableStream abort soft-fails when inner.abort rejects asynchronously', async () => {
+  it('createSerializedWritableStream abort during a pending write aborts inner and blocks later writes', async () => {
+    const innerAbort = vi.fn();
+    let finishWrite: () => void = () => {};
+    const innerWrite = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishWrite = resolve;
+        }),
+    );
+    const inner = new WritableStream<Uint8Array>({ write: innerWrite, abort: innerAbort });
+    const serialized = createSerializedWritableStream(inner);
+    const writer = serialized.getWriter();
+
+    const pending = writer.write(new Uint8Array([1]));
+    await vi.waitFor(() => {
+      expect(innerWrite).toHaveBeenCalledTimes(1);
+    });
+
+    // Inner is locked by the pending write; abort must not be swallowed as a locked-stream error.
+    const aborting = writer.abort('teardown');
+    finishWrite();
+    await expect(aborting).resolves.toBeUndefined();
+    await pending;
+    expect(innerAbort).toHaveBeenCalledWith('teardown');
+
+    await expect(writer.write(new Uint8Array([2]))).rejects.toMatchObject({ name: 'AbortError' });
+    expect(innerWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it('createSerializedWritableStream abort rejects (without unhandled rejection) when inner.abort fails', async () => {
     const unhandled: unknown[] = [];
     const onUnhandled = (reason: unknown) => {
       unhandled.push(reason);
@@ -399,7 +428,9 @@ describe('meshtasticTransportLossDetection', () => {
       });
       const serialized = createSerializedWritableStream(inner);
       const writer = serialized.getWriter();
-      await expect(writer.abort('teardown')).resolves.toBeUndefined();
+      await expect(writer.abort('teardown')).rejects.toMatchObject({
+        name: 'InvalidStateError',
+      });
       // Allow any stray rejection to surface before asserting.
       await Promise.resolve();
       await Promise.resolve();
