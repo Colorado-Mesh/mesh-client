@@ -14,6 +14,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -88,8 +89,10 @@ import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { getMeshcoreSilentBulkDrainSnapshot } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
 import {
-  loadOwnNodeNumsForPublicKey,
+  getOwnNodeHistorySnapshot,
   meshtasticMqttOwnNodeIds,
+  ownNodeNumsForPublicKey,
+  subscribeOwnNodeHistory,
 } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
@@ -1269,19 +1272,24 @@ function AppContent() {
     meshtasticNodesById?.[
       asNumericNodeId(meshtasticRuntime.selfNodeId) || meshtasticRuntime.lastRfSelfNodeId
     ]?.publicKeyHex;
+  const meshtasticOwnNodeHistory = useSyncExternalStore(
+    subscribeOwnNodeHistory,
+    getOwnNodeHistorySnapshot,
+  );
 
   const meshtasticOwnNodeIdSet = useMemo(() => {
     const ids = meshtasticMqttOwnNodeIds(
       meshtasticRuntime.selfNodeId,
       meshtasticRuntime.virtualNodeId,
       meshtasticRuntime.lastRfSelfNodeId,
-      loadOwnNodeNumsForPublicKey(meshtasticSelfPublicKeyHex),
+      ownNodeNumsForPublicKey(meshtasticOwnNodeHistory, meshtasticSelfPublicKeyHex),
     );
     return new Set(ids.filter((id) => id > 0));
   }, [
     meshtasticRuntime.selfNodeId,
     meshtasticRuntime.virtualNodeId,
     meshtasticRuntime.lastRfSelfNodeId,
+    meshtasticOwnNodeHistory,
     meshtasticSelfPublicKeyHex,
   ]);
 
@@ -1828,12 +1836,13 @@ function AppContent() {
         asNumericNodeId(meshtasticRuntime.selfNodeId),
         meshtasticRuntime.virtualNodeId,
         meshtasticRuntime.lastRfSelfNodeId,
-        loadOwnNodeNumsForPublicKey(meshtasticSelfPublicKeyHex),
+        ownNodeNumsForPublicKey(meshtasticOwnNodeHistory, meshtasticSelfPublicKeyHex),
       ),
     [
       meshtasticRuntime.selfNodeId,
       meshtasticRuntime.virtualNodeId,
       meshtasticRuntime.lastRfSelfNodeId,
+      meshtasticOwnNodeHistory,
       meshtasticSelfPublicKeyHex,
     ],
   );

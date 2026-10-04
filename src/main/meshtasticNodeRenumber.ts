@@ -52,6 +52,10 @@ export function migrateMeshtasticNodeNumInDb(
     .prepare('SELECT public_key, favorited FROM nodes WHERE node_id = ?')
     .get(oldNum) as { public_key: string | null; favorited: number | null } | undefined;
   if (oldRow?.public_key?.toLowerCase() !== publicKeyHex) return NOT_MIGRATED;
+  const newRow = db.prepare('SELECT public_key FROM nodes WHERE node_id = ?').get(newNum) as
+    { public_key: string | null } | undefined;
+  const newRowKey = meshtasticNodePublicKeyHexOrNull(newRow?.public_key);
+  if (newRowKey !== null && newRowKey !== publicKeyHex) return NOT_MIGRATED;
 
   try {
     return db.transaction(() => {
@@ -63,8 +67,7 @@ export function migrateMeshtasticNodeNumInDb(
         .prepare('UPDATE messages SET to_node = ? WHERE to_node = ?')
         .run(newNum, oldNum).changes;
 
-      const newExists = db.prepare('SELECT 1 FROM nodes WHERE node_id = ?').get(newNum) != null;
-      if (newExists) {
+      if (newRow) {
         db.prepare(
           `UPDATE nodes SET
              favorited = MAX(COALESCE(favorited, 0), ?),

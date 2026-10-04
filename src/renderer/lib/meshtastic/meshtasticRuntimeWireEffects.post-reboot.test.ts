@@ -1,12 +1,14 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useDeviceStore } from '../../stores/deviceStore';
 import { MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS } from '../timeConstants';
 import type { ConnectionType, DeviceState } from '../types';
 import {
   resetMeshtasticConfigurePhaseForTests,
   touchMeshtasticConfigureProgress,
 } from './meshtasticConfigurePhase';
+import { MESHTASTIC_REGION_PRESETS_SLICE_KEY } from './meshtasticRegionPresets';
 import { attachMeshtasticRuntimeWireEffects } from './meshtasticRuntimeWireEffects';
 
 /** DeviceConfiguring — see Types.DeviceStatusEnum */
@@ -445,5 +447,45 @@ describe('meshtasticRuntimeWireEffects DeviceDisconnected cancels deferred getMe
     for (const cb of statusSubscribers) cb(DEVICE_DISCONNECTED);
     await vi.advanceTimersByTimeAsync(60_000);
     expect(getMetadata).not.toHaveBeenCalled();
+  });
+});
+
+describe('meshtasticRuntimeWireEffects region presets lifecycle', () => {
+  beforeEach(() => {
+    useDeviceStore.setState({ devices: {} });
+  });
+
+  it('stores regionPresets in the identity slice and clears it on DeviceDisconnected', () => {
+    const { deps } = makeDeps();
+    const subscribers = new Map<string, Set<(value: unknown) => void>>();
+    const device = {
+      events: new Proxy({} as MeshDevice['events'], {
+        get: (_target, prop) => ({
+          subscribe: (cb: (value: unknown) => void) => {
+            const set = subscribers.get(String(prop)) ?? new Set();
+            set.add(cb);
+            subscribers.set(String(prop), set);
+            return () => set.delete(cb);
+          },
+        }),
+      }),
+      setHeartbeatInterval: vi.fn(),
+      heartbeat: vi.fn().mockResolvedValue(undefined),
+    } as unknown as MeshDevice;
+    const emit = (event: string, value: unknown) => {
+      for (const cb of subscribers.get(event) ?? []) cb(value);
+    };
+    const regionSlice = () =>
+      useDeviceStore.getState().devices['id-1'].meshtasticConfigSlices[
+        MESHTASTIC_REGION_PRESETS_SLICE_KEY
+      ];
+
+    attachMeshtasticRuntimeWireEffects(device, 'ble', { driverIdentityId: 'id-1' }, deps);
+    const map = { groups: [], regionGroups: [] };
+    emit('onFromRadio', { payloadVariant: { case: 'regionPresets', value: map } });
+    expect(regionSlice()).toBe(map);
+
+    emit('onDeviceStatus', DEVICE_DISCONNECTED);
+    expect(regionSlice()).toBeUndefined();
   });
 });

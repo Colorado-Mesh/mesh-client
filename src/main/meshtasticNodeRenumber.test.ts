@@ -108,6 +108,18 @@ describe('migrateMeshtasticNodeNumInDb', () => {
     expect(db!.prepare('SELECT sender_id FROM messages').all()).toEqual([{ sender_id: OLD }]);
   });
 
+  it('refuses when the new-number row already belongs to a different key', () => {
+    insertNode(OLD, { publicKey: KEY });
+    insertNode(NEW, { publicKey: 'cd'.repeat(32) });
+    insertMessage(OLD, PEER, 1);
+    expect(migrateMeshtasticNodeNumInDb(db!, OLD, NEW, KEY).migrated).toBe(false);
+    expect(db!.prepare('SELECT node_id FROM nodes ORDER BY node_id').all()).toEqual([
+      { node_id: OLD },
+      { node_id: NEW },
+    ]);
+    expect(db!.prepare('SELECT sender_id FROM messages').all()).toEqual([{ sender_id: OLD }]);
+  });
+
   it('rolls back every change when a step fails partway', () => {
     insertNode(OLD, { publicKey: KEY });
     insertMessage(OLD, PEER, 1);

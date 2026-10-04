@@ -62,7 +62,7 @@ export function loadPersistedLastRfSelfNodeId(): number {
   return parseLastRfSelfNodeIdRaw(settings?.[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY]);
 }
 
-type OwnNodeNumsByPublicKey = Record<string, number[]>;
+export type OwnNodeNumsByPublicKey = Record<string, number[]>;
 
 /** Parse the stored own-node history (JSON or object); drops invalid keys and node numbers. */
 export function parseOwnNodeNumsByPublicKeyRaw(raw: unknown): OwnNodeNumsByPublicKey {
@@ -97,15 +97,44 @@ function loadOwnNodeNumsByPublicKey(): OwnNodeNumsByPublicKey {
   return parseOwnNodeNumsByPublicKeyRaw(settings?.[MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY]);
 }
 
+let ownNodeHistorySnapshot: OwnNodeNumsByPublicKey | null = null;
+const ownNodeHistoryListeners = new Set<() => void>();
+
+function notifyOwnNodeHistoryChanged(): void {
+  ownNodeHistorySnapshot = null;
+  for (const listener of ownNodeHistoryListeners) listener();
+}
+
+/** `useSyncExternalStore` subscribe for own-node history writes and SQLite hydration. */
+export function subscribeOwnNodeHistory(listener: () => void): () => void {
+  ownNodeHistoryListeners.add(listener);
+  return () => {
+    ownNodeHistoryListeners.delete(listener);
+  };
+}
+
+/** Referentially stable own-node history until the next write or hydration. */
+export function getOwnNodeHistorySnapshot(): OwnNodeNumsByPublicKey {
+  ownNodeHistorySnapshot ??= loadOwnNodeNumsByPublicKey();
+  return ownNodeHistorySnapshot;
+}
+
 /**
  * Node numbers the local radio with this public key has used (newest first). Firmware 2.8
  * renumbers a radio without changing its key, so this links its old and new numbers
  * without mixing in other radios.
  */
-export function loadOwnNodeNumsForPublicKey(publicKeyHex: string | undefined): number[] {
+export function ownNodeNumsForPublicKey(
+  history: OwnNodeNumsByPublicKey,
+  publicKeyHex: string | undefined,
+): number[] {
   const key = publicKeyHex?.toLowerCase();
   if (!key || !PUBLIC_KEY_HEX_RE.test(key)) return [];
-  return loadOwnNodeNumsByPublicKey()[key] ?? [];
+  return history[key] ?? [];
+}
+
+export function loadOwnNodeNumsForPublicKey(publicKeyHex: string | undefined): number[] {
+  return ownNodeNumsForPublicKey(loadOwnNodeNumsByPublicKey(), publicKeyHex);
 }
 
 /** Remember that the connected radio with this public key reported `nodeNum` as its own. */
@@ -131,6 +160,7 @@ export function recordOwnMeshtasticNodeNum(
     serialized,
     'meshtasticMqttIdentity record own node num',
   );
+  notifyOwnNodeHistoryChanged();
   void window.electronAPI.appSettings
     .set(MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY, serialized)
     .catch(() => {
@@ -201,6 +231,7 @@ export async function hydrateLastRfSelfNodeIdFromAppSettings(): Promise<number> 
         JSON.stringify(parseOwnNodeNumsByPublicKeyRaw(merged)),
         'meshtasticMqttIdentity hydrate own node history from SQLite',
       );
+      notifyOwnNodeHistoryChanged();
     }
   } catch {
     // catch-no-log-ok IPC unavailable during tests or early boot — localStorage may still have value
