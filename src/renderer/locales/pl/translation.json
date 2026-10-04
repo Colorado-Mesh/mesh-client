@@ -4097,7 +4097,6 @@
     "shortNameFieldLabel": "Nazwa skrócona",
     "meshcoreNameFieldLabel": "Nazwa",
     "longNameHintMeshcore": "Reklamowana nazwa węzła (obsługiwane emoji)",
-    "longNameHintMeshtastic": "Wyświetlana nazwa (maks. 39 znaków)",
     "shortNameHint": "Krótki identyfikator wyświetlany na małych wyświetlaczach (maks. 4 znaki)",
     "licensedHamLabel": "Licencjonowany (operator radiowy Ham)",
     "licensedHamDescription": "Umożliwia dodatkowe częstotliwości licencjonowanym amatorskim operatorom radiowym",
@@ -4631,7 +4630,13 @@
     },
     "contactsFullAlarm": "Pamięć styków radiowych jest pełna. Odciąż kontakty do bazy danych aplikacji, aby zwolnić sloty.",
     "contactsFullAlarmAction": "Rozładowanie",
-    "contactsFullAutoOffloadStarted": "Styki radiowe pełne — uruchamianie automatycznego odciążania…"
+    "contactsFullAutoOffloadStarted": "Styki radiowe pełne — uruchamianie automatycznego odciążania…",
+    "longNameHintMeshtasticBytes": "Wyświetlana nazwa (maks. 24 bajty UTF-8)",
+    "validationLongNameTooLong": "Długa nazwa musi mieścić się w zakresie 24 UTF-8 bajtów",
+    "frequencyOffsetLabel": "Przesunięcie częstotliwości",
+    "frequencyOffsetDesc": "Zaawansowane: przesunięcie w MHz dodane do obliczonej częstotliwości środkowej w celu skorygowania błędu kalibracji kryształu. Pozostawić w pozycji 0, chyba że masz sprzęt testowy.",
+    "enumLicensedOnlySuffix": "(tylko licencjonowane)",
+    "unknownEnumValue": "Nieznane ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Filtruj pakiety",

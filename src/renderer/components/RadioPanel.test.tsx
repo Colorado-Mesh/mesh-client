@@ -228,6 +228,49 @@ describe('RadioPanel Meshtastic Short Name validation', () => {
     expect(await axe(shortNameField!)).toHaveNoViolations();
   });
 
+  it('truncates the Long Name field to 24 UTF-8 bytes', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHTASTIC_CAPABILITIES}
+          onSetOwner={vi.fn().mockResolvedValue(undefined)}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    const longNameInput = screen.getByLabelText('Long Name');
+    fireEvent.change(longNameInput, { target: { value: `${'a'.repeat(22)}🐘` } });
+    expect(longNameInput).toHaveValue('a'.repeat(22));
+    expect(screen.getByText('Display name (max 24 UTF-8 bytes)')).toBeInTheDocument();
+  });
+
+  it('blocks owner apply when the device reports a legacy long name over 24 bytes', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHTASTIC_CAPABILITIES}
+          onSetOwner={vi.fn().mockResolvedValue(undefined)}
+          deviceOwner={{
+            longName: 'Legacy node name longer than 24',
+            shortName: 'LN',
+            isLicensed: false,
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    await openDeviceUserSection(user);
+    expect(await screen.findByText('Long Name must fit within 24 UTF-8 bytes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply Device User / Identity' })).toBeDisabled();
+  });
+
   it('calls onSetOwner with four ASCII Short Name characters', async () => {
     const user = userEvent.setup();
     const onSetOwner = vi.fn().mockResolvedValue(undefined);
@@ -368,6 +411,84 @@ describe('RadioPanel remote target safeguards', () => {
     await user.click(loraDetails!.querySelector('summary')!);
 
     expect(screen.getByRole('button', { name: 'Apply LoRa / Radio' })).toBeDisabled();
+  });
+
+  it('disables local LoRa apply until the LoRa slice is hydrated', async () => {
+    const user = userEvent.setup();
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          meshtasticConfigSlices={{ device: { role: 0 } }}
+        />
+      </ToastProvider>,
+    );
+
+    const loraDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'LoRa / Radio';
+    });
+    expect(loraDetails).toBeTruthy();
+    await user.click(loraDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for LoRa / Radio settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply LoRa / Radio' })).toBeDisabled();
+  });
+
+  it('keeps device-only LoRa fields when applying after hydration', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    const onCommit = vi.fn().mockResolvedValue(undefined);
+    const deviceLora = {
+      region: 3,
+      modemPreset: 9,
+      usePreset: true,
+      hopLimit: 3,
+      frequencyOffset: 0.012,
+      ignoreIncoming: [0x1234],
+      femLnaMode: 1,
+      serialHalOnly: true,
+    };
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          onSetConfig={onSetConfig}
+          onCommit={onCommit}
+          meshtasticConfigSlices={{ lora: deviceLora }}
+        />
+      </ToastProvider>,
+    );
+
+    const loraDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'LoRa / Radio';
+    });
+    await user.click(loraDetails!.querySelector('summary')!);
+    const apply = screen.getByRole('button', { name: 'Apply LoRa / Radio' });
+    expect(apply).toBeEnabled();
+    await user.click(apply);
+
+    await waitFor(() => {
+      expect(onSetConfig).toHaveBeenCalled();
+    });
+    const sent = (
+      onSetConfig.mock.calls[0][0] as {
+        payloadVariant: { value: Record<string, unknown> };
+      }
+    ).payloadVariant.value;
+    expect(sent).toMatchObject({
+      region: 3,
+      modemPreset: 9,
+      frequencyOffset: 0.012,
+      ignoreIncoming: [0x1234],
+      femLnaMode: 1,
+      serialHalOnly: true,
+    });
   });
 
   it('disables Position apply until position config slice is hydrated', async () => {
@@ -646,6 +767,89 @@ describe('RadioPanel modem preset capability gate', () => {
     expect(screen.queryByText('Use modem preset')).not.toBeInTheDocument();
     expect(screen.queryByText('Modem Preset')).not.toBeInTheDocument();
     expect(screen.getByText('Bandwidth')).toBeInTheDocument();
+  });
+});
+
+describe('RadioPanel Meshtastic 2.8 LoRa options', () => {
+  async function openLora(
+    lora: Record<string, unknown>,
+    extraSlices: Record<string, unknown> = {},
+  ) {
+    const user = userEvent.setup();
+    const view = render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          capabilities={MESHTASTIC_CAPABILITIES}
+          meshtasticConfigSlices={{ lora, ...extraSlices }}
+        />
+      </ToastProvider>,
+    );
+    const loraDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'LoRa / Radio';
+    });
+    await user.click(loraDetails!.querySelector('summary')!);
+    return { user, view };
+  }
+  const selectFor = (anchor: string) =>
+    document.querySelector<HTMLSelectElement>(`[data-setting-anchor="${anchor}"] select`)!;
+  const optionValues = (select: HTMLSelectElement) =>
+    [...select.options].map((o) => Number(o.value));
+
+  const regionPresets = {
+    groups: [
+      { presets: [0, 9], defaultPreset: 0, licensedOnly: false },
+      { presets: [14, 15], defaultPreset: 14, licensedOnly: true },
+    ],
+    regionGroups: [
+      { region: 1, groupIndex: 0 },
+      { region: 28, groupIndex: 1 },
+    ],
+  };
+
+  it('offers SF5..SF12 and wire-coded narrow bandwidths in custom mode', async () => {
+    await openLora({ region: 1, usePreset: false, bandwidth: 62, spreadFactor: 5 });
+    const sf = selectFor('radio.lora.spreadFactor');
+    expect(optionValues(sf)).toEqual([5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(sf.value).toBe('5');
+    const bw = selectFor('radio.lora.bandwidth');
+    expect(optionValues(bw)).toContain(21);
+    expect(bw.value).toBe('62');
+    expect(bw.selectedOptions[0]?.textContent).toBe('62.5 kHz');
+  });
+
+  it('shows an Unknown option when the device value is outside the schema list', async () => {
+    await openLora({ region: 1, usePreset: false, bandwidth: 1600, spreadFactor: 11 });
+    const bw = selectFor('radio.lora.bandwidth');
+    expect(bw.value).toBe('1600');
+    expect(bw.selectedOptions[0]?.textContent).toBe('Unknown (1600)');
+    const field = bw.closest('[data-setting-anchor]')!;
+    hydrateAxeThemeColors(field);
+    expect(await axe(field as HTMLElement)).toHaveNoViolations();
+  });
+
+  it('restricts presets to the device region map and marks licensed-only regions', async () => {
+    const { user } = await openLora(
+      { region: 1, modemPreset: 0, usePreset: true },
+      { regionPresets },
+    );
+    expect(optionValues(selectFor('radio.lora.modemPreset'))).toEqual([0, 9]);
+    const region = selectFor('radio.lora.region');
+    expect([...region.options].find((o) => o.value === '28')?.textContent).toContain(
+      '(licensed only)',
+    );
+
+    await user.selectOptions(region, '28');
+    const preset = selectFor('radio.lora.modemPreset');
+    expect(preset.value).toBe('14');
+    expect(optionValues(preset)).toEqual([14, 15]);
+  });
+
+  it('does not restrict presets when the device sends no region map', async () => {
+    await openLora({ region: 1, modemPreset: 0, usePreset: true });
+    expect(optionValues(selectFor('radio.lora.modemPreset')).length).toBeGreaterThan(10);
   });
 });
 

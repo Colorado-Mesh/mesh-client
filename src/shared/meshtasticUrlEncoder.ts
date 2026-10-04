@@ -21,6 +21,11 @@ export interface MeshtasticLoraConfig {
   codingRate?: number;
   txPower?: number;
   sx126xRxBoostedGain?: boolean;
+  frequencyOffset?: number;
+  ignoreIncoming?: number[];
+  /** `Config.LoRaConfig.FEM_LNA_Mode` (DISABLED=0, ENABLED=1, NOT_PRESENT=2). */
+  femLnaMode?: number;
+  serialHalOnly?: boolean;
 }
 
 export const MESHTASTIC_CHANNEL_ROLE = {

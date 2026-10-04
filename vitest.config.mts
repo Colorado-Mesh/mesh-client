@@ -111,6 +111,7 @@ const RENDERER_LOGIC_EXCLUDE = [
   'src/renderer/lib/meshtasticMqttPublish.test.ts',
   'src/renderer/lib/meshtasticMqttSettingsStorage.test.ts',
   'src/renderer/lib/meshtasticRemoteAdminKeyStorage.test.ts',
+  'src/renderer/lib/meshtastic/meshtasticNodeRenumber.test.ts',
   'src/renderer/lib/meshcore/meshcoreLiveContactPersist.test.ts',
   'src/renderer/lib/meshcore/meshcoreContactCapacityPush.test.ts',
   'src/renderer/lib/meshtastic/meshtasticTransportSideEffects.test.ts',

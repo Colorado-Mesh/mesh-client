@@ -57,6 +57,7 @@ import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSid
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
 import { attachMeshtasticNodeSideEffects } from './meshtasticNodeSideEffects';
 import { attachMeshtasticRawPacketSideEffects } from './meshtasticRawPacketSideEffects';
+import { MESHTASTIC_REGION_PRESETS_SLICE_KEY } from './meshtasticRegionPresets';
 import { attachMeshtasticRouterSideEffects } from './meshtasticRouterSideEffects';
 import {
   installMeshtasticSdkRoutingErrorConsoleHook,
@@ -832,6 +833,16 @@ export function attachMeshtasticRuntimeWireEffects(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
       if (recordMeshtasticLockdownStatus(variant.value) === null) {
         console.debug('[useMeshtasticRuntime] unparseable lockdownStatus payload');
+      }
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+    if (variant?.case === 'regionPresets') {
+      const identityId = meshtasticIdentityIdRef.current;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
+      const value: unknown = variant.value;
+      if (identityId && value != null) {
+        setMeshtasticConfigSlice(identityId, MESHTASTIC_REGION_PRESETS_SLICE_KEY, value);
       }
       return;
     }

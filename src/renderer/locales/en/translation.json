@@ -4652,7 +4652,8 @@
     "shortNameFieldLabel": "Short Name",
     "meshcoreNameFieldLabel": "Name",
     "longNameHintMeshcore": "Advertised node name (emoji supported)",
-    "longNameHintMeshtastic": "Display name (max 39 chars)",
+    "longNameHintMeshtasticBytes": "Display name (max 24 UTF-8 bytes)",
+    "validationLongNameTooLong": "Long Name must fit within 24 UTF-8 bytes",
     "shortNameHint": "Short identifier shown on tiny displays (max 4 UTF-8 bytes; most emojis use all 4 bytes)",
     "validationShortNameTooLong": "Short Name must fit within 4 UTF-8 bytes",
     "validationShortNameEmojiTooLarge": "This character is too large for Short Name (max 4 UTF-8 bytes per name)",
@@ -4717,6 +4718,8 @@
     "channelNumDesc": "Manually select the channel (0 = automatic). Must match all nodes on the network.",
     "overrideFrequencyLabel": "Override Frequency",
     "overrideFrequencyDesc": "Override the frequency in MHz (0 = use region default). Ensure compliance with local regulations.",
+    "frequencyOffsetLabel": "Frequency Offset",
+    "frequencyOffsetDesc": "Advanced: offset in MHz added to the calculated center frequency to correct crystal calibration error. Leave at 0 unless you have test equipment.",
     "ignoreMqttLabel": "Ignore MQTT",
     "ignoreMqttDesc": "Do not rebroadcast packets that arrived via MQTT. Reduces mesh congestion from gateway traffic.",
     "configOkToMqttLabel": "OK to MQTT",
@@ -4806,6 +4809,8 @@
       }
     },
     "enumDeprecatedSuffix": "(deprecated)",
+    "enumLicensedOnlySuffix": "(licensed only)",
+    "unknownEnumValue": "Unknown ({{value}})",
     "lockdown": {
       "title": "Firmware Lockdown",
       "description": "A locked radio rejects configuration changes until it is unlocked with its passphrase. Status is reported by the firmware; radios without lockdown support never report one.",

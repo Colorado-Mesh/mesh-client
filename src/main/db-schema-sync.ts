@@ -90,7 +90,8 @@ export const CANONICAL_TABLES_DDL = `
         num_packets_rx INTEGER,
         num_packets_tx INTEGER,
         hops INTEGER,
-        path TEXT
+        path TEXT,
+        public_key TEXT -- Meshtastic PKC public key (64 hex); detects node-number changes
       );
 
       CREATE TABLE IF NOT EXISTS meshcore_contacts (
@@ -344,6 +345,7 @@ export const INDEX_DDLS: readonly string[] = [
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_msg_packet_dedup
         ON messages(sender_id, packet_id)
         WHERE packet_id IS NOT NULL`,
+  'CREATE INDEX IF NOT EXISTS idx_nodes_public_key ON nodes(public_key) WHERE public_key IS NOT NULL',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_ts ON reticulum_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_reticulum_msgs_identity ON reticulum_messages(identity_id, timestamp DESC)',
   'CREATE INDEX IF NOT EXISTS idx_rrc_messages_hub_room ON rrc_messages(hub_hash, room, timestamp)',
@@ -425,6 +427,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     num_packets_tx: 'INTEGER',
     hops: 'INTEGER',
     path: 'TEXT',
+    public_key: 'TEXT',
   },
   meshcore_contacts: {
     public_key: 'TEXT NOT NULL',

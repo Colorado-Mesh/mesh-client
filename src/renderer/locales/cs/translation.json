@@ -4060,7 +4060,6 @@
     "shortNameFieldLabel": "Krátký název",
     "meshcoreNameFieldLabel": "Jméno",
     "longNameHintMeshcore": "Název inzerovaného uzlu (podporováno emodži)",
-    "longNameHintMeshtastic": "Zobrazovaný název (max. 39 znaků)",
     "shortNameHint": "Krátký identifikátor zobrazený na malých displejích (max. 4 znaky)",
     "licensedHamLabel": "Licencovaný (amatérský radiooperátor)",
     "licensedHamDescription": "Umožňuje další frekvence pro licencované amatérské rádiové operátory",
@@ -4594,7 +4593,13 @@
     },
     "contactsFullAlarm": "Úložiště rádiového kontaktu je plné. Přesuňte kontakty do databáze aplikací a získejte volné sloty.",
     "contactsFullAlarmAction": "Offload",
-    "contactsFullAutoOffloadStarted": "Rádiové kontakty jsou plné — spuštění automatického vypnutí..."
+    "contactsFullAutoOffloadStarted": "Rádiové kontakty jsou plné — spuštění automatického vypnutí...",
+    "longNameHintMeshtasticBytes": "Zobrazovaný název (max. 24 bajtů UTF-8)",
+    "validationLongNameTooLong": "Dlouhý název se musí vejít do 24 bajtů UTF-8",
+    "frequencyOffsetLabel": "Frekvenční posun",
+    "frequencyOffsetDesc": "Pokročilé: offset v MHz přidaný k vypočtené středové frekvenci pro opravu chyby kalibrace krystalů. Ponechte v 0, pokud nemáte testovací zařízení.",
+    "enumLicensedOnlySuffix": "(pouze s licencí)",
+    "unknownEnumValue": "Neznámý ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrační balíčky",

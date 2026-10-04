@@ -4,6 +4,8 @@ import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 export type MqttOnlyIdentitySource = 'lastRf' | 'virtual';
 
 export const MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY = 'meshtasticLastRfSelfNodeId';
+export const MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY = 'meshtasticPreviousRfSelfNodeIds';
+const MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_MAX = 8;
 
 /** Parse a stored last-RF node id; returns 0 when missing or out of range. */
 export function parseLastRfSelfNodeIdRaw(raw: unknown): number {
@@ -58,10 +60,61 @@ export function loadPersistedLastRfSelfNodeId(): number {
   return parseLastRfSelfNodeIdRaw(settings?.[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY]);
 }
 
-/** Persist last RF node id when a local radio reports myNodeNum. */
+/** Parse stored previous own node ids (JSON array or array); drops invalid entries. */
+export function parsePreviousRfSelfNodeIdsRaw(raw: unknown): number[] {
+  let value: unknown = raw;
+  if (typeof raw === 'string') {
+    try {
+      value = JSON.parse(raw) as unknown;
+    } catch {
+      // catch-no-log-ok corrupt history is treated as empty
+      return [];
+    }
+  }
+  if (!Array.isArray(value)) return [];
+  const out: number[] = [];
+  for (const entry of value) {
+    const nodeNum = parseLastRfSelfNodeIdRaw(entry);
+    if (nodeNum > 0 && !out.includes(nodeNum)) out.push(nodeNum);
+  }
+  return out.slice(0, MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_MAX);
+}
+
+/** Own node numbers this radio used before its current one (newest first). */
+export function loadPreviousRfSelfNodeIds(): number[] {
+  const settings = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'meshtasticMqttIdentity loadPreviousRfSelfNodeIds',
+  );
+  return parsePreviousRfSelfNodeIdsRaw(settings?.[MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY]);
+}
+
+function persistPreviousRfSelfNodeIds(ids: number[]): void {
+  const serialized = JSON.stringify(ids);
+  mergeAppSetting(
+    MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY,
+    serialized,
+    'meshtasticMqttIdentity persist previous',
+  );
+  void window.electronAPI.appSettings
+    .set(MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY, serialized)
+    .catch(() => {
+      // catch-no-log-ok SQLite persist is best-effort; localStorage already updated
+    });
+}
+
+/**
+ * Persist last RF node id when a local radio reports myNodeNum. When the number changes
+ * (firmware renumber), the prior id is kept in history so old messages still count as own.
+ */
 export function persistLastRfSelfNodeId(nodeNum: number): void {
   if (!Number.isFinite(nodeNum) || nodeNum <= 0) return;
   const normalized = nodeNum >>> 0;
+  const previous = loadPersistedLastRfSelfNodeId();
+  if (previous > 0 && previous !== normalized) {
+    const history = [previous, ...loadPreviousRfSelfNodeIds()].filter((id) => id !== normalized);
+    persistPreviousRfSelfNodeIds(parsePreviousRfSelfNodeIdsRaw(history));
+  }
   mergeAppSetting(
     MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY,
     String(normalized),
@@ -82,10 +135,14 @@ export function meshtasticMqttOwnNodeIds(
   selfNodeId: number,
   virtualNodeId: number,
   lastRfSelfNodeId: number,
+  previousRfSelfNodeIds: readonly number[] = [],
 ): number[] {
   const ids = new Set<number>();
   if (selfNodeId > 0) ids.add(selfNodeId);
   if (lastRfSelfNodeId > 0) ids.add(lastRfSelfNodeId);
+  for (const id of previousRfSelfNodeIds) {
+    if (id > 0) ids.add(id);
+  }
   if (virtualNodeId > 0 && lastRfSelfNodeId === 0) ids.add(virtualNodeId);
   return [...ids];
 }

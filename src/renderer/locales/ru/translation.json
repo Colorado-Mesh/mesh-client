@@ -4097,7 +4097,6 @@
     "shortNameFieldLabel": "Короткое имя",
     "meshcoreNameFieldLabel": "Имя",
     "longNameHintMeshcore": "Объявленное имя узла (поддерживается смайлик)",
-    "longNameHintMeshtastic": "Отображаемое имя (максимум 39 символов)",
     "shortNameHint": "Короткий идентификатор, отображаемый на крошечных дисплеях (максимум 4 символа)",
     "licensedHamLabel": "Лицензия (оператор любительского радио)",
     "licensedHamDescription": "Предоставляет дополнительные частоты для лицензированных радиолюбителей.",
@@ -4631,7 +4630,13 @@
     },
     "contactsFullAlarm": "Хранилище радиоконтактов заполнено. Выгрузите контакты в базу данных приложения, чтобы освободить слоты.",
     "contactsFullAlarmAction": "Разгрузка",
-    "contactsFullAutoOffloadStarted": "Радиоконтакты полны — запуск автозагрузки…"
+    "contactsFullAutoOffloadStarted": "Радиоконтакты полны — запуск автозагрузки…",
+    "longNameHintMeshtasticBytes": "Отображаемое имя (макс. 24 UTF-8 байт)",
+    "validationLongNameTooLong": "Длинное имя должно вписываться в 24 байта UTF-8",
+    "frequencyOffsetLabel": "Смещение частоты",
+    "frequencyOffsetDesc": "Дополнительно: смещение в МГц добавляется к вычисленной центральной частоте для исправления ошибки калибровки кристаллов. Оставьте 0, если у вас нет испытательного оборудования.",
+    "enumLicensedOnlySuffix": "(только по лицензии)",
+    "unknownEnumValue": "Неизвестно ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Фильтровать пакеты",

@@ -25,6 +25,7 @@ import {
   resetMeshtasticConfigurePhaseForTests,
   setMeshtasticConfigurePhase,
 } from './meshtasticConfigurePhase';
+import { resetMeshtasticRenumberIndexForTests } from './meshtasticNodeRenumber';
 import {
   attachMeshtasticNodeSideEffects,
   type MeshtasticNodeSideEffectsDeps,
@@ -257,6 +258,40 @@ describe('attachMeshtasticNodeSideEffects', () => {
       'other-id',
     );
     expect(deps.touchLastData).not.toHaveBeenCalled();
+    detach();
+  });
+
+  it('asks the DB to migrate history when a known public key arrives under a new node number', () => {
+    resetMeshtasticRenumberIndexForTests();
+    const migrate = vi.fn().mockResolvedValue({ migrated: false, messagesUpdated: 0 });
+    window.electronAPI = {
+      db: { saveNode: vi.fn().mockResolvedValue(undefined), migrateMeshtasticNodeNum: migrate },
+    } as unknown as typeof window.electronAPI;
+    const publicKey = new Uint8Array(32).fill(0xab);
+    upsertNodeRecord(
+      IDENTITY,
+      meshNodeToNodeRecord({
+        ...emptyNode(PEER),
+        public_key_hex: 'ab'.repeat(32),
+        last_heard: Date.now() - MS_PER_DAY,
+      }),
+    );
+    const { deps } = makeDeps();
+    const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
+    packetRouter.dispatch(
+      {
+        type: 'node_info',
+        payload: {
+          nodeId: PEER + 1,
+          longName: 'Peer Node',
+          fromUserPacket: true,
+          publicKey,
+          lastHeardAt: Date.now(),
+        },
+      },
+      IDENTITY,
+    );
+    expect(migrate).toHaveBeenCalledWith(PEER, PEER + 1, 'ab'.repeat(32));
     detach();
   });
 

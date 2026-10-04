@@ -448,6 +448,24 @@ describe('publish — MeshPacket.channel wire hash', () => {
     expect(packet?.channel).toBe(computeMeshtasticChannelHash('TGIFMESH', CUSTOM_PSK));
   });
 
+  it('publishNodeInfo() truncates the long name to the 24-byte firmware budget', () => {
+    const manager = new MQTTManager();
+    const publish = wireConnected(manager);
+    manager.publishNodeInfo(
+      0x11223344,
+      'A very long display name that exceeds the budget',
+      'LN',
+      'LongFast',
+      undefined,
+      true,
+    );
+    expect(publish).toHaveBeenCalledTimes(2);
+    const body = JSON.parse(publish.mock.calls[1][1] as string) as {
+      payload?: { longname?: string };
+    };
+    expect(body.payload?.longname).toBe('A very long display name');
+  });
+
   it('publishPosition() and publishWaypoint() also stamp the hash, not the passed slot index', () => {
     const manager = new MQTTManager();
     const publish = wireConnected(manager);

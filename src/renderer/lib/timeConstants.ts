@@ -138,6 +138,12 @@ export const MESHCORE_DM_RF_DEDUP_WINDOW_MS = 2 * MS_PER_MINUTE;
  */
 export const MESHTASTIC_DEDUP_WINDOW_MS = 10 * MS_PER_MINUTE;
 
+/**
+ * A Meshtastic node heard this recently under its old number is still live there, so a
+ * second number with the same public key is a cloned key rather than a renumber.
+ */
+export const MESHTASTIC_RENUMBER_OLD_NODE_QUIET_MS = 5 * MS_PER_MINUTE;
+
 /** PacketRouter tapback optimistic row match before Meshtastic RF echo re-key (temp packet_id → real id).
  * Wider than room post dedup (1 min) because client Date.now vs radio rxTime can skew several minutes. */
 export const MESHTASTIC_TAPBACK_OPTIMISTIC_DEDUP_WINDOW_MS = MESHTASTIC_DEDUP_WINDOW_MS;

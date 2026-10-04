@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "Korte naam",
     "meshcoreNameFieldLabel": "Naam",
     "longNameHintMeshcore": "Geadverteerde knooppuntnaam (emoji ondersteund)",
-    "longNameHintMeshtastic": "Weergavenaam (max. 39 tekens)",
     "shortNameHint": "Korte identificatie weergegeven op kleine displays (max. 4 tekens)",
     "licensedHamLabel": "Gelicentieerd (hamradio-operator)",
     "licensedHamDescription": "Maakt extra frequenties mogelijk voor gelicentieerde amateurradio-operators",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "Opslag radiocontact is vol. Contacten naar de app-database verplaatsen naar vrije slots.",
     "contactsFullAlarmAction": "lossen",
-    "contactsFullAutoOffloadStarted": "Radiocontacten vol — automatisch ontladen wordt gestart..."
+    "contactsFullAutoOffloadStarted": "Radiocontacten vol — automatisch ontladen wordt gestart...",
+    "longNameHintMeshtasticBytes": "Schermnaam (max 24 UTF-8 bytes)",
+    "validationLongNameTooLong": "Lange naam moet binnen 24 UTF-8 bytes passen",
+    "frequencyOffsetLabel": "Frequentie-afwijking",
+    "frequencyOffsetDesc": "Geavanceerd: offset in MHz toegevoegd aan de berekende centrumfrequentie om kristalkalibratiefout te corrigeren. Laat op 0 staan, tenzij je testapparatuur hebt.",
+    "enumLicensedOnlySuffix": "(alleen met licentie)",
+    "unknownEnumValue": "Onbekend ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Pakketten filteren",

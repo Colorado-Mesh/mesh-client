@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "Nome abbreviato",
     "meshcoreNameFieldLabel": "Nome",
     "longNameHintMeshcore": "Nome del nodo pubblicizzato (emoji supportata)",
-    "longNameHintMeshtastic": "Nome visualizzato (max 39 caratteri)",
     "shortNameHint": "Identificatore breve visualizzato su piccoli display (max 4 caratteri)",
     "licensedHamLabel": "Licenza (radioamatore Ham)",
     "licensedHamDescription": "Abilita frequenze aggiuntive per radioamatori con licenza",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "La memoria dei contatti radio è piena. Scarica i contatti nel database dell'app per liberare gli slot.",
     "contactsFullAlarmAction": "Scaricare",
-    "contactsFullAutoOffloadStarted": "Contatti radio pieni — avvio auto-offload in corso..."
+    "contactsFullAutoOffloadStarted": "Contatti radio pieni — avvio auto-offload in corso...",
+    "longNameHintMeshtasticBytes": "Nome visualizzato (max 24 byte UTF-8)",
+    "validationLongNameTooLong": "Il nome lungo deve rientrare entro 24 byte UTF-8",
+    "frequencyOffsetLabel": "Compensazione di frequenza",
+    "frequencyOffsetDesc": "Avanzato: offset in MHz aggiunto alla frequenza centrale calcolata per correggere l'errore di calibrazione del cristallo. Lasciare a 0 a meno che non si disponga di apparecchiature di prova.",
+    "enumLicensedOnlySuffix": "(solo con licenza)",
+    "unknownEnumValue": "Sconosciuto ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Filtra i pacchetti",

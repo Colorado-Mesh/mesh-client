@@ -87,7 +87,10 @@ import { getMeshcoreCompanionRepeaterRfBusySnapshot } from '@/renderer/lib/meshc
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { getMeshcoreSilentBulkDrainSnapshot } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
-import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
+import {
+  loadPreviousRfSelfNodeIds,
+  meshtasticMqttOwnNodeIds,
+} from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { createOnlineRecoveryScheduler } from '@/renderer/lib/onlineRecoveryDebounce';
@@ -1267,6 +1270,7 @@ function AppContent() {
       meshtasticRuntime.selfNodeId,
       meshtasticRuntime.virtualNodeId,
       meshtasticRuntime.lastRfSelfNodeId,
+      loadPreviousRfSelfNodeIds(),
     );
     return new Set(ids.filter((id) => id > 0));
   }, [
@@ -1818,6 +1822,7 @@ function AppContent() {
         asNumericNodeId(meshtasticRuntime.selfNodeId),
         meshtasticRuntime.virtualNodeId,
         meshtasticRuntime.lastRfSelfNodeId,
+        loadPreviousRfSelfNodeIds(),
       ),
     [
       meshtasticRuntime.selfNodeId,

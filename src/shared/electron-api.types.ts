@@ -188,6 +188,14 @@ export interface SavedNode {
   num_packets_tx: number | null;
   hops: number | null;
   path: string | null;
+  /** Meshtastic PKC public key (64 lowercase hex); absent on rows saved before it was stored. */
+  public_key?: string | null;
+}
+
+/** Result of `db:migrateMeshtasticNodeNum` (node renumbered with the same public key). */
+export interface MigrateMeshtasticNodeNumResult {
+  migrated: boolean;
+  messagesUpdated: number;
 }
 
 // ─── Shared sub-types ─────────────────────────────────────────────────────────
@@ -389,6 +397,11 @@ export interface ElectronAPI {
     clearMessages: () => Promise<void>;
     clearNodes: () => Promise<void>;
     deleteNode: (nodeId: number) => Promise<void>;
+    migrateMeshtasticNodeNum: (
+      oldNodeId: number,
+      newNodeId: number,
+      publicKeyHex: string,
+    ) => Promise<MigrateMeshtasticNodeNumResult | undefined>;
     updateMessageStatus: (
       packetId: number,
       status: string,

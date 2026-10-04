@@ -5,8 +5,10 @@ import { APP_SETTINGS_STORAGE_KEY } from '@/renderer/lib/appSettingsStorage';
 import {
   hydrateLastRfSelfNodeIdFromAppSettings,
   loadPersistedLastRfSelfNodeId,
+  loadPreviousRfSelfNodeIds,
   meshtasticMqttOwnNodeIds,
   mqttOnlyIdentitySource,
+  parsePreviousRfSelfNodeIdsRaw,
   persistLastRfSelfNodeId,
   resolveMeshtasticOutboundFromNodeId,
   resolveMqttOnlyFromNodeId,
@@ -159,5 +161,36 @@ describe('last RF persistence', () => {
       string
     >;
     expect(saved.meshtasticLastRfSelfNodeId).toBe('111');
+  });
+
+  it('keeps prior own node numbers when the radio is renumbered', () => {
+    persistLastRfSelfNodeId(0x11111111);
+    persistLastRfSelfNodeId(0x11111111);
+    expect(loadPreviousRfSelfNodeIds()).toEqual([]);
+
+    persistLastRfSelfNodeId(0x22222222);
+    persistLastRfSelfNodeId(0x33333333);
+    expect(loadPersistedLastRfSelfNodeId()).toBe(0x33333333);
+    expect(loadPreviousRfSelfNodeIds()).toEqual([0x22222222, 0x11111111]);
+    expect(window.electronAPI.appSettings.set).toHaveBeenCalledWith(
+      'meshtasticPreviousRfSelfNodeIds',
+      JSON.stringify([0x22222222, 0x11111111]),
+    );
+
+    persistLastRfSelfNodeId(0x11111111);
+    expect(loadPreviousRfSelfNodeIds()).toEqual([0x33333333, 0x22222222]);
+  });
+
+  it('ignores corrupt previous-id history', () => {
+    expect(parsePreviousRfSelfNodeIdsRaw('not json')).toEqual([]);
+    expect(parsePreviousRfSelfNodeIdsRaw('[0, "x", 5, 5, 4294967295]')).toEqual([5]);
+  });
+});
+
+describe('meshtasticMqttOwnNodeIds with previous ids', () => {
+  it('treats previous own node numbers as own', () => {
+    expect(meshtasticMqttOwnNodeIds(0x33, 0x0b2f75f3, 0x33, [0x22, 0x11])).toEqual([
+      0x33, 0x22, 0x11,
+    ]);
   });
 });

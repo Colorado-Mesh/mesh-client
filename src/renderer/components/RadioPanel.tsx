@@ -33,6 +33,13 @@ import {
 } from '@/renderer/lib/meshtastic/meshtasticConfigApply';
 import type { MeshtasticLockdownAuthRequest } from '@/renderer/lib/meshtastic/meshtasticLockdown';
 import {
+  filterMeshtasticPresetsForRegion,
+  MESHTASTIC_REGION_PRESETS_SLICE_KEY,
+  meshtasticPresetAfterRegionChange,
+  meshtasticRegionPresetRule,
+  parseMeshtasticRegionPresetMap,
+} from '@/renderer/lib/meshtastic/meshtasticRegionPresets';
+import {
   DEVICE_ROLE_OPTIONS,
   DISPLAY_UNIT_OPTIONS,
   humanizeEnumName,
@@ -62,6 +69,12 @@ import {
 } from '@/shared/meshtasticBluetoothPin';
 import type { ApplyChannelSetResult } from '@/shared/meshtasticChannelApply';
 import {
+  MESHTASTIC_LONG_NAME_VALIDATION_I18N_KEYS,
+  MeshtasticLongNameValidationError,
+  truncateMeshtasticLongName,
+  validateMeshtasticLongName,
+} from '@/shared/meshtasticLongNameLimits';
+import {
   MESHTASTIC_SHORT_NAME_VALIDATION_I18N_KEYS,
   MeshtasticShortNameValidationError,
   truncateMeshtasticShortName,
@@ -82,7 +95,10 @@ function setOwnerApplyErrorMessage(
   err: unknown,
   t: (key: string, options?: Record<string, unknown>) => string,
 ): string {
-  if (err instanceof MeshtasticShortNameValidationError) {
+  if (
+    err instanceof MeshtasticShortNameValidationError ||
+    err instanceof MeshtasticLongNameValidationError
+  ) {
     return t(err.i18nKey);
   }
   return err instanceof Error ? err.message : t('common.unknown');
@@ -394,6 +410,42 @@ function ContactCountBadge({
   );
 }
 
+/**
+ * `LoRaConfig.bandwidth` is a uint32 kHz code; firmware `bwCodeToKHz` maps the fractional
+ * bandwidths (21 -> 20.8, 31 -> 31.25, 42 -> 41.7, 62 -> 62.5).
+ */
+const MESHTASTIC_BANDWIDTH_OPTIONS = [
+  { value: 21, label: '20.8 kHz' },
+  { value: 31, label: '31.25 kHz' },
+  { value: 42, label: '41.7 kHz' },
+  { value: 62, label: '62.5 kHz' },
+  { value: 125, label: '125 kHz' },
+  { value: 250, label: '250 kHz' },
+  { value: 500, label: '500 kHz' },
+];
+
+/** Firmware accepts SF5..SF12 (RF95 radios fall back to the default for SF5/SF6). */
+const MESHTASTIC_SPREAD_FACTOR_OPTIONS = Array.from({ length: 8 }, (_, i) => ({
+  value: i + 5,
+  label: `SF${i + 5}`,
+}));
+
+/** Curated label for a proto enum wire value, falling back to the humanized name or the number. */
+function enumOptionLabel(
+  options: readonly ProtobufEnumOption[],
+  value: number,
+  i18nGroup: 'regions' | 'modemPresets',
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  const option = options.find((o) => o.value === value);
+  if (!option) return String(value);
+  const key =
+    i18nGroup === 'regions'
+      ? `radioPanel.regions.${option.enumName}.label`
+      : `radioPanel.modemPresets.${option.enumName}.label`;
+  return t(key, { defaultValue: '' }) || humanizeEnumName(option.enumName);
+}
+
 /** Reusable select component */
 function ConfigSelect({
   label,
@@ -415,13 +467,19 @@ function ConfigSelect({
   /** Settings-search anchor id (`data-setting-anchor`). */
   anchorId?: string;
 }) {
+  const { t } = useTranslation();
+  const selectId = useId();
+  const valueKnown = options.some((o) => o.value === value);
   return (
     <div data-setting-anchor={anchorId} className="space-y-1">
       <div className="flex items-center gap-1.5">
-        <label className="text-muted text-sm">{label}</label>
+        <label htmlFor={selectId} className="text-muted text-sm">
+          {label}
+        </label>
         {tooltip && <HelpTooltip text={tooltip} />}
       </div>
       <select
+        id={selectId}
         value={value}
         onChange={(e) => {
           const n = Number(e.target.value);
@@ -431,6 +489,11 @@ function ConfigSelect({
         disabled={disabled}
         className={`${SELECT_BOX_CLASS} w-full`}
       >
+        {!valueKnown && (
+          <option value={value} disabled>
+            {t('radioPanel.unknownEnumValue', { value })}
+          </option>
+        )}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -493,6 +556,7 @@ export function ConfigNumber({
   disabled,
   min,
   max,
+  step,
   unit,
   description,
   tooltip,
@@ -504,6 +568,7 @@ export function ConfigNumber({
   disabled: boolean;
   min?: number;
   max?: number;
+  step?: number;
   unit?: string;
   description?: string;
   tooltip?: string;
@@ -527,6 +592,7 @@ export function ConfigNumber({
           }}
           min={min}
           max={max}
+          step={step}
           disabled={disabled}
           className={`${INPUT_BOX_CLASS} w-28`}
         />
@@ -836,6 +902,12 @@ export default function RadioPanel({
   const shortNameValidationError = shortNameValidationIssue
     ? MESHTASTIC_SHORT_NAME_VALIDATION_I18N_KEYS[shortNameValidationIssue]
     : null;
+  const longNameValidationIssue = capabilities?.hasChannelConfig
+    ? validateMeshtasticLongName(longName)
+    : null;
+  const longNameValidationError = longNameValidationIssue
+    ? MESHTASTIC_LONG_NAME_VALIDATION_I18N_KEYS[longNameValidationIssue]
+    : null;
 
   // ─── LoRa settings ────────────────────────────────────────────
   const [region, setRegion] = useState(1);
@@ -859,6 +931,7 @@ export default function RadioPanel({
   const [channelNum, setChannelNum] = useState(0);
   const [overrideDutyCycle, setOverrideDutyCycle] = useState(false);
   const [overrideFrequency, setOverrideFrequency] = useState(0);
+  const [frequencyOffset, setFrequencyOffset] = useState(0);
   const [paFanDisabled, setPaFanDisabled] = useState(false);
   const [ignoreMqtt, setIgnoreMqtt] = useState(false);
   const [configOkToMqtt, setConfigOkToMqtt] = useState(false);
@@ -1067,6 +1140,7 @@ export default function RadioPanel({
     if (typeof lora.channelNum === 'number') setChannelNum(lora.channelNum);
     if (typeof lora.overrideDutyCycle === 'boolean') setOverrideDutyCycle(lora.overrideDutyCycle);
     if (typeof lora.overrideFrequency === 'number') setOverrideFrequency(lora.overrideFrequency);
+    if (typeof lora.frequencyOffset === 'number') setFrequencyOffset(lora.frequencyOffset);
     if (typeof lora.paFanDisabled === 'boolean') setPaFanDisabled(lora.paFanDisabled);
     if (typeof lora.ignoreMqtt === 'boolean') setIgnoreMqtt(lora.ignoreMqtt);
     if (typeof lora.configOkToMqtt === 'boolean') setConfigOkToMqtt(lora.configOkToMqtt);
@@ -1168,22 +1242,49 @@ export default function RadioPanel({
       })),
     [enumLabel, t],
   );
+  const regionPresetRules = useMemo(
+    () =>
+      parseMeshtasticRegionPresetMap(meshtasticConfigSlices?.[MESHTASTIC_REGION_PRESETS_SLICE_KEY]),
+    [meshtasticConfigSlices],
+  );
+  const regionPresetRule = meshtasticRegionPresetRule(regionPresetRules, region);
   const regionOptions = useMemo(
     () =>
-      REGION_OPTIONS.map((r) => ({
-        value: r.value,
-        label: enumLabel(r, t(`radioPanel.regions.${r.enumName}.label`, { defaultValue: '' })),
-      })),
-    [enumLabel, t],
+      REGION_OPTIONS.map((r) => {
+        const label = enumLabel(
+          r,
+          t(`radioPanel.regions.${r.enumName}.label`, { defaultValue: '' }),
+        );
+        return {
+          value: r.value,
+          label: meshtasticRegionPresetRule(regionPresetRules, r.value)?.licensedOnly
+            ? `${label} ${t('radioPanel.enumLicensedOnlySuffix')}`
+            : label,
+        };
+      }),
+    [enumLabel, regionPresetRules, t],
   );
   const modemPresetOptions = useMemo(
     () =>
-      MODEM_PRESET_OPTIONS.map((p) => ({
-        value: p.value,
-        label: enumLabel(p, t(`radioPanel.modemPresets.${p.enumName}.label`, { defaultValue: '' })),
-      })),
-    [enumLabel, t],
+      filterMeshtasticPresetsForRegion(MODEM_PRESET_OPTIONS, regionPresetRule, modemPreset).map(
+        (p) => ({
+          value: p.value,
+          label: enumLabel(
+            p,
+            t(`radioPanel.modemPresets.${p.enumName}.label`, { defaultValue: '' }),
+          ),
+        }),
+      ),
+    [enumLabel, modemPreset, regionPresetRule, t],
   );
+  const handleRegionChange = (nextRegion: number) => {
+    setRegion(nextRegion);
+    const nextPreset = meshtasticPresetAfterRegionChange(
+      meshtasticRegionPresetRule(regionPresetRules, nextRegion),
+      modemPreset,
+    );
+    if (nextPreset !== null) setModemPreset(nextPreset);
+  };
 
   const oledTypeOptions = useMemo(
     () =>
@@ -1235,6 +1336,11 @@ export default function RadioPanel({
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const loraDisabled =
     disabled || (configTarget?.mode === 'remote' && meshtasticLoraConfig == null);
+  // Applying before the device LoRa slice arrives would write form defaults (US / LongFast).
+  const loraConfigReady = meshtasticConfigSliceHydrated(
+    meshtasticLoraConfig ?? meshtasticConfigSlices?.lora,
+  );
+  const meshtasticLoraDisabled = loraDisabled || !loraConfigReady;
 
   const deviceConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.device);
   const displayConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.display);
@@ -1612,11 +1718,12 @@ export default function RadioPanel({
         title={t('radioPanel.sectionDeviceUser')}
         onApply={async () => {
           if (!onSetOwner) return;
-          if (shortNameValidationIssue) {
+          const ownerValidationError = shortNameValidationError ?? longNameValidationError;
+          if (ownerValidationError) {
             showSectionStatus(
               'user',
               t('radioPanel.applyStatusFailed', {
-                message: t(shortNameValidationError!),
+                message: t(ownerValidationError),
               }),
               'error',
             );
@@ -1642,7 +1749,9 @@ export default function RadioPanel({
         }}
         applying={applyingSection === 'user'}
         status={sectionStatus('user')}
-        disabled={disabled || !onSetOwner || !!shortNameValidationIssue}
+        disabled={
+          disabled || !onSetOwner || !!shortNameValidationIssue || !!longNameValidationIssue
+        }
       >
         <div data-setting-anchor="radio.user.longName" className="space-y-1">
           <label htmlFor="radio-long-name" className="text-muted text-sm">
@@ -1659,19 +1768,32 @@ export default function RadioPanel({
               setLongName(
                 capabilities?.hasCompanionContactManagementConfig
                   ? e.target.value
-                  : e.target.value.slice(0, 39),
+                  : capabilities?.hasChannelConfig
+                    ? truncateMeshtasticLongName(e.target.value)
+                    : e.target.value.slice(0, 39),
               );
             }}
-            maxLength={capabilities?.hasCompanionContactManagementConfig ? undefined : 39}
+            maxLength={
+              capabilities?.hasCompanionContactManagementConfig || capabilities?.hasChannelConfig
+                ? undefined
+                : 39
+            }
             disabled={disabled}
             placeholder={t('radioPanel.yourNamePlaceholder')}
+            aria-invalid={longNameValidationIssue != null}
+            aria-describedby={longNameValidationIssue ? 'radio-long-name-error' : undefined}
             className={`${INPUT_BOX_CLASS} w-full`}
           />
           <p className="text-muted text-xs">
             {capabilities?.hasCompanionContactManagementConfig
               ? t('radioPanel.longNameHintMeshcore')
-              : t('radioPanel.longNameHintMeshtastic')}
+              : t('radioPanel.longNameHintMeshtasticBytes')}
           </p>
+          {longNameValidationError ? (
+            <p id="radio-long-name-error" className="text-xs text-red-400" role="alert">
+              {t(longNameValidationError)}
+            </p>
+          ) : null}
         </div>
         {capabilities?.hasChannelConfig && (
           <>
@@ -1949,6 +2071,7 @@ export default function RadioPanel({
               channelNum,
               overrideDutyCycle,
               overrideFrequency,
+              frequencyOffset,
               paFanDisabled,
               ignoreMqtt,
               configOkToMqtt,
@@ -1965,15 +2088,20 @@ export default function RadioPanel({
           }
           applying={applyingSection === 'lora'}
           status={sectionStatus('lora')}
-          disabled={loraDisabled}
+          disabled={meshtasticLoraDisabled}
         >
+          {!loraConfigReady && isConnected && (
+            <p className="text-xs text-orange-300/90">
+              {t('radioPanel.waitingForConfigSection', { section: t('radioPanel.sectionLora') })}
+            </p>
+          )}
           <ConfigSelect
             anchorId="radio.lora.region"
             label={t('radioPanel.regionLabel')}
             value={region}
             options={regionOptions}
-            onChange={setRegion}
-            disabled={loraDisabled || applyingSection !== null}
+            onChange={handleRegionChange}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
           />
           {hasModemPresets && (
             <ConfigToggle
@@ -1981,7 +2109,7 @@ export default function RadioPanel({
               label={t('radioPanel.useModemPresetLabel')}
               checked={usePreset}
               onChange={setUsePreset}
-              disabled={loraDisabled || applyingSection !== null}
+              disabled={meshtasticLoraDisabled || applyingSection !== null}
               description={t('radioPanel.useModemPresetDesc')}
             />
           )}
@@ -1992,7 +2120,7 @@ export default function RadioPanel({
               value={modemPreset}
               options={modemPresetOptions}
               onChange={setModemPreset}
-              disabled={loraDisabled || applyingSection !== null}
+              disabled={meshtasticLoraDisabled || applyingSection !== null}
             />
           ) : (
             <div className="border-ink-700 space-y-4 border-l pl-3">
@@ -2000,27 +2128,18 @@ export default function RadioPanel({
                 anchorId="radio.lora.bandwidth"
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
-                options={[
-                  { value: 31.25, label: '31.25 kHz' },
-                  { value: 62.5, label: '62.5 kHz' },
-                  { value: 125, label: '125 kHz' },
-                  { value: 250, label: '250 kHz' },
-                  { value: 500, label: '500 kHz' },
-                ]}
+                options={MESHTASTIC_BANDWIDTH_OPTIONS}
                 onChange={setBandwidth}
-                disabled={loraDisabled || applyingSection !== null}
+                disabled={meshtasticLoraDisabled || applyingSection !== null}
                 tooltip={t('radioPanel.bandwidthTooltip')}
               />
               <ConfigSelect
                 anchorId="radio.lora.spreadFactor"
                 label={t('radioPanel.spreadFactorLabel')}
                 value={spreadFactor}
-                options={Array.from({ length: 6 }, (_, i) => ({
-                  value: i + 7,
-                  label: `SF${i + 7}`,
-                }))}
+                options={MESHTASTIC_SPREAD_FACTOR_OPTIONS}
                 onChange={setSpreadFactor}
-                disabled={loraDisabled || applyingSection !== null}
+                disabled={meshtasticLoraDisabled || applyingSection !== null}
                 description={t('radioPanel.spreadFactorDesc')}
               />
               <ConfigSelect
@@ -2034,7 +2153,7 @@ export default function RadioPanel({
                   { value: 8, label: '4/8' },
                 ]}
                 onChange={setCodingRate}
-                disabled={loraDisabled || applyingSection !== null}
+                disabled={meshtasticLoraDisabled || applyingSection !== null}
                 tooltip={t('radioPanel.codingRateTooltip')}
               />
               <ConfigNumber
@@ -2042,7 +2161,7 @@ export default function RadioPanel({
                 label={t('radioPanel.txPowerLabel')}
                 value={txPower}
                 onChange={setTxPower}
-                disabled={loraDisabled || applyingSection !== null}
+                disabled={meshtasticLoraDisabled || applyingSection !== null}
                 min={1}
                 max={30}
                 unit="dBm"
@@ -2054,7 +2173,7 @@ export default function RadioPanel({
                 label={t('radioPanel.sx126xRxBoostedLabel')}
                 checked={rxBoostedGain}
                 onChange={setRxBoostedGain}
-                disabled={loraDisabled || applyingSection !== null}
+                disabled={meshtasticLoraDisabled || applyingSection !== null}
                 description={t('radioPanel.sx126xRxBoostedDesc')}
               />
             </div>
@@ -2073,7 +2192,7 @@ export default function RadioPanel({
                 onChange={(e) => {
                   setHopLimit(Number(e.target.value));
                 }}
-                disabled={loraDisabled || applyingSection !== null}
+                disabled={meshtasticLoraDisabled || applyingSection !== null}
                 className="flex-1 accent-green-500 disabled:opacity-50"
               />
               <span className="text-ink-200 w-6 text-center font-mono text-lg">{hopLimit}</span>
@@ -2085,7 +2204,7 @@ export default function RadioPanel({
             label={t('radioPanel.txEnabledLabel')}
             checked={txEnabled}
             onChange={setTxEnabled}
-            disabled={loraDisabled || applyingSection !== null}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
             description={t('radioPanel.txEnabledDesc')}
           />
           <ConfigNumber
@@ -2093,9 +2212,8 @@ export default function RadioPanel({
             label={t('radioPanel.channelNumLabel')}
             value={channelNum}
             onChange={setChannelNum}
-            disabled={loraDisabled || applyingSection !== null}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
             min={0}
-            max={7}
             description={t('radioPanel.channelNumDesc')}
           />
           <ConfigNumber
@@ -2103,17 +2221,27 @@ export default function RadioPanel({
             label={t('radioPanel.overrideFrequencyLabel')}
             value={overrideFrequency}
             onChange={setOverrideFrequency}
-            disabled={loraDisabled || applyingSection !== null}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
             min={0}
             unit="MHz"
             description={t('radioPanel.overrideFrequencyDesc')}
+          />
+          <ConfigNumber
+            anchorId="radio.lora.frequencyOffset"
+            label={t('radioPanel.frequencyOffsetLabel')}
+            value={frequencyOffset}
+            onChange={setFrequencyOffset}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
+            step={0.001}
+            unit="MHz"
+            description={t('radioPanel.frequencyOffsetDesc')}
           />
           <ConfigToggle
             anchorId="radio.lora.ignoreMqtt"
             label={t('radioPanel.ignoreMqttLabel')}
             checked={ignoreMqtt}
             onChange={setIgnoreMqtt}
-            disabled={loraDisabled || applyingSection !== null}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
             description={t('radioPanel.ignoreMqttDesc')}
           />
           <ConfigToggle
@@ -2121,7 +2249,7 @@ export default function RadioPanel({
             label={t('radioPanel.configOkToMqttLabel')}
             checked={configOkToMqtt}
             onChange={setConfigOkToMqtt}
-            disabled={loraDisabled || applyingSection !== null}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
             description={t('radioPanel.configOkToMqttDesc')}
           />
           <ConfigToggle
@@ -2129,7 +2257,7 @@ export default function RadioPanel({
             label={t('radioPanel.overrideDutyCycleLabel')}
             checked={overrideDutyCycle}
             onChange={setOverrideDutyCycle}
-            disabled={loraDisabled || applyingSection !== null}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
             description={t('radioPanel.overrideDutyCycleDesc')}
           />
           <ConfigToggle
@@ -2137,7 +2265,7 @@ export default function RadioPanel({
             label={t('radioPanel.paFanDisabledLabel')}
             checked={paFanDisabled}
             onChange={setPaFanDisabled}
-            disabled={loraDisabled || applyingSection !== null}
+            disabled={meshtasticLoraDisabled || applyingSection !== null}
             description={t('radioPanel.paFanDisabledDesc')}
           />
         </ConfigSection>
@@ -3518,8 +3646,18 @@ function ChannelUrlImportExport({
               <p className="text-muted">
                 {typeof parsed.loraConfig.region === 'number'
                   ? t('radioPanel.channelUrl.previewLora', {
-                      region: parsed.loraConfig.region,
-                      preset: parsed.loraConfig.modemPreset ?? 0,
+                      region: enumOptionLabel(
+                        REGION_OPTIONS,
+                        parsed.loraConfig.region,
+                        'regions',
+                        t,
+                      ),
+                      preset: enumOptionLabel(
+                        MODEM_PRESET_OPTIONS,
+                        parsed.loraConfig.modemPreset ?? 0,
+                        'modemPresets',
+                        t,
+                      ),
                       usePreset: String(parsed.loraConfig.usePreset ?? true),
                     })
                   : t('radioPanel.channelUrl.previewLoraUnknown')}
