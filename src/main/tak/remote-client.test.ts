@@ -516,6 +516,7 @@ describe('describeTakRemoteError', () => {
     ['UNABLE_TO_VERIFY_LEAF_SIGNATURE', /import the server's CA/],
     ['ERR_TLS_CERT_ALTNAME_INVALID', /different name/],
     ['ERR_SSL_WRONG_VERSION_NUMBER', /turn off TLS/],
+    ['ERR_SSL_PACKET_LENGTH_TOO_LONG', /turn off TLS/],
   ])('describes %s', (code, text) => {
     expect(describeTakRemoteError(err('raw', code))).toMatch(text);
   });
@@ -538,6 +539,14 @@ describe('describeTakRemoteError', () => {
       '1357210191904:error:1000045c:SSL routines:OPENSSL_internal:TLSV1_ALERT_CERTIFICATE_REQUIRED:../../third_party/boringssl/src/ssl/tls_record.cc:491:SSL alert number 116';
     expect(describeTakRemoteError(err(boringssl))).toBe(
       'The server requires a client certificate; import one',
+    );
+  });
+
+  it('treats an OpenSSL 3.5 packet-length reason as plain TCP', () => {
+    const openssl35 =
+      '805A62C801000000:error:0A0000C6:SSL routines:tls_get_more_records:packet length too long:ssl/record/methods/tls_common.c:661:';
+    expect(describeTakRemoteError(err(openssl35))).toBe(
+      'The server is not using TLS; turn off TLS to connect over plain TCP',
     );
   });
 

@@ -26,6 +26,11 @@ export interface TakEnrollmentRequest {
   password: string;
   /** Check the enrollment server's certificate against the system roots and any imported CA. */
   verifyServer: boolean;
+  /**
+   * With an imported CA, accept a server certificate issued for a different name.
+   * Same rule as the relay: only when verification is on and a CA is pinned.
+   */
+  allowNameMismatch?: boolean;
   /** CA already imported for this server; trusted alongside the system roots. */
   trustedCa?: string;
 }
@@ -129,7 +134,7 @@ export async function enrollTakClientCertificate(
   request: TakEnrollmentRequest,
   http: TakEnrollmentHttp = httpsRequest,
 ): Promise<TakRemoteCredentials> {
-  const { host, port, username, password, verifyServer, trustedCa } = request;
+  const { host, port, username, password, verifyServer, allowNameMismatch, trustedCa } = request;
   const authorization = `Basic ${Buffer.from(`${username}:${password}`, 'utf-8').toString('base64')}`;
   const call = async (
     method: 'GET' | 'POST',
@@ -137,6 +142,9 @@ export async function enrollTakClientCertificate(
     extraHeaders: Record<string, string> = {},
     body?: string,
   ): Promise<HttpResponse> => {
+    // Same name-check rule as the relay: skipped only on request, and only when trust is pinned
+    // to an imported CA. rejectUnauthorized stays on so the chain is still verified.
+    const skipNameCheck = verifyServer && Boolean(allowNameMismatch) && Boolean(trustedCa);
     const options: https.RequestOptions = {
       host: tlsConnectHost(host),
       port,
@@ -144,6 +152,7 @@ export async function enrollTakClientCertificate(
       path: requestPath,
       rejectUnauthorized: verifyServer,
       ...(trustedCa ? { ca: [...tls.rootCertificates, trustedCa] } : {}),
+      ...(skipNameCheck ? { checkServerIdentity: () => undefined } : {}),
       headers: { Authorization: authorization, ...extraHeaders },
     };
     try {

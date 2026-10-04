@@ -152,6 +152,25 @@ describe('TAK certificate enrollment over loopback HTTPS', () => {
       }),
     ).rejects.toThrow(/not trusted/);
   });
+
+  it('enrolls when the server certificate CN does not match the dialed host and a mismatch is allowed', async () => {
+    const { port, seen } = await startEnrollmentServer();
+    const request = {
+      host: '127.0.0.1',
+      port,
+      username: 'kd0abc',
+      password: 'secret',
+      verifyServer: true,
+      trustedCa: pki.ca.certPem,
+    };
+    // The fixture server certificate is CN=takserver, with no SAN for 127.0.0.1.
+    await expect(
+      enrollTakClientCertificate({ ...request, allowNameMismatch: false }),
+    ).rejects.toThrow(/different name/);
+    const creds = await enrollTakClientCertificate({ ...request, allowNameMismatch: true });
+    expect(seen.clientUid).toBe('mesh-client-kd0abc');
+    expect(new X509Certificate(creds.cert ?? '').subject).toContain('CN=kd0abc');
+  });
 });
 
 describe('enrollment request options', () => {
@@ -173,10 +192,40 @@ describe('enrollment request options', () => {
     const options = http.mock.calls[0]?.[0];
     expect(options).toMatchObject({ host: 'fd00::5', port: 8446, rejectUnauthorized: true });
     expect(options?.ca).toContain(pki.ca.certPem);
+    expect(options?.checkServerIdentity).toBeUndefined();
     expect(options?.headers).toMatchObject({
       Authorization: `Basic ${Buffer.from('kd0abc:pässword', 'utf-8').toString('base64')}`,
     });
   });
+
+  it.each([
+    [true, true, true, true],
+    [true, true, false, false],
+    [true, false, true, false],
+    [false, true, true, false],
+  ])(
+    'skips the name check only with verification, the opt-out, and a CA (verify=%s allow=%s ca=%s)',
+    async (verifyServer, allowNameMismatch, withCa, skipped) => {
+      const http = vi.fn<TakEnrollmentHttp>(() => Promise.resolve({ status: 403, body: '' }));
+      await expect(
+        enrollTakClientCertificate(
+          {
+            host: 'tak.example.org',
+            port: 8446,
+            username: 'u',
+            password: 'p',
+            verifyServer,
+            allowNameMismatch,
+            ...(withCa ? { trustedCa: pki.ca.certPem } : {}),
+          },
+          http,
+        ),
+      ).rejects.toThrow(/rejected the username/);
+      const options = http.mock.calls[0]?.[0];
+      expect(options?.rejectUnauthorized).toBe(verifyServer);
+      expect(options?.checkServerIdentity !== undefined).toBe(skipped);
+    },
+  );
 
   it.each([
     [404, 'does not offer certificate enrollment'],
