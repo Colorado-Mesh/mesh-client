@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "Kısa Ad",
     "meshcoreNameFieldLabel": "İsim",
     "longNameHintMeshcore": "Reklamı yapılan düğüm adı (emoji desteklenir)",
-    "longNameHintMeshtastic": "Görünen ad (maks. 39 karakter)",
     "shortNameHint": "Küçük ekranlarda gösterilen kısa tanımlayıcı (maks. 4 karakter)",
     "licensedHamLabel": "Lisanslı (Ham Telsiz Operatörü)",
     "licensedHamDescription": "Lisanslı amatör radyo operatörleri için ek frekanslar sağlar",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "Telsiz iletişim deposu dolu. Boş yuvalara kişileri uygulama veritabanına aktarın.",
     "contactsFullAlarmAction": "Bırakma",
-    "contactsFullAutoOffloadStarted": "Radyo kontakları dolu — otomatik boşaltma başlatılıyor…"
+    "contactsFullAutoOffloadStarted": "Radyo kontakları dolu — otomatik boşaltma başlatılıyor…",
+    "longNameHintMeshtasticBytes": "Görünen ad (maks. 24 UTF -8 bayt)",
+    "validationLongNameTooLong": "Uzun Ad 24 UTF -8 bayta sığmalıdır",
+    "frequencyOffsetLabel": "Frekans Kayması",
+    "frequencyOffsetDesc": "Gelişmiş: Kristal kalibrasyon hatasını düzeltmek için hesaplanan merkez frekansına MHz cinsinden ofset eklenir. Test ekipmanınız yoksa 0 'da bırakın.",
+    "enumLicensedOnlySuffix": "(Sadece Lisanslı)",
+    "unknownEnumValue": "Bilinmiyor ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Paketleri filtrele",

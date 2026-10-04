@@ -168,6 +168,10 @@ import {
   persistMeshcoreMessage,
   validateMeshcoreMessageLocalOrder,
 } from './meshcoreMessageChannel';
+import {
+  meshtasticNodePublicKeyHexOrNull,
+  migrateMeshtasticNodeNumInDb,
+} from './meshtasticNodeRenumber';
 import { ensureMicrophoneAccess, isAllowedMicrophonePrivacySettingsUrl } from './microphoneAccess';
 import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
@@ -4100,10 +4104,10 @@ ipcMain.handle('db:saveNode', (event, node) => {
     const db = getDbForIpc('db:saveNode');
     if (!db) return { changes: 0 };
     const stmt = db.prepareOnce(`
-      INSERT INTO nodes (node_id, long_name, short_name, hw_model, snr, rssi, battery, last_heard, latitude, longitude, role, hops_away, via_mqtt, voltage, channel_utilization, air_util_tx, altitude, favorited, source, num_packets_rx_bad, num_rx_dupe, num_packets_rx, num_packets_tx, hops, path)
+      INSERT INTO nodes (node_id, long_name, short_name, hw_model, snr, rssi, battery, last_heard, latitude, longitude, role, hops_away, via_mqtt, voltage, channel_utilization, air_util_tx, altitude, favorited, source, num_packets_rx_bad, num_rx_dupe, num_packets_rx, num_packets_tx, hops, path, public_key)
       VALUES (@node_id, @long_name, @short_name, @hw_model, @snr, @rssi, @battery, @last_heard, @latitude, @longitude, @role, @hops_away, @via_mqtt, @voltage, @channel_utilization, @air_util_tx, @altitude,
         COALESCE((SELECT favorited FROM nodes WHERE node_id = @node_id), 0),
-        @source, @num_packets_rx_bad, @num_rx_dupe, @num_packets_rx, @num_packets_tx, @hops, @path)
+        @source, @num_packets_rx_bad, @num_rx_dupe, @num_packets_rx, @num_packets_tx, @hops, @path, @public_key)
       ON CONFLICT(node_id) DO UPDATE SET
         long_name = COALESCE(NULLIF(excluded.long_name, ''), nodes.long_name),
         short_name = COALESCE(NULLIF(excluded.short_name, ''), nodes.short_name),
@@ -4136,7 +4140,8 @@ ipcMain.handle('db:saveNode', (event, node) => {
           WHEN excluded.hops IS NOT NULL AND (nodes.hops IS NULL OR excluded.hops < nodes.hops) THEN excluded.hops
           ELSE nodes.hops
         END,
-        path = COALESCE(excluded.path, nodes.path)
+        path = COALESCE(excluded.path, nodes.path),
+        public_key = COALESCE(excluded.public_key, nodes.public_key)
     `);
     return stmt.run({
       role: null,
@@ -4159,9 +4164,23 @@ ipcMain.handle('db:saveNode', (event, node) => {
       via_mqtt: node.via_mqtt != null ? (node.via_mqtt ? 1 : 0) : null,
       hops: node.hops ?? node.hops_away ?? null,
       path: node.path != null ? JSON.stringify(node.path) : null,
+      public_key: meshtasticNodePublicKeyHexOrNull(node.public_key_hex),
     });
   } catch (err) {
     finishDbIpcHandler('db:saveNode', err);
+  }
+});
+
+ipcMain.handle('db:migrateMeshtasticNodeNum', (event, oldNum, newNum, key) => {
+  if (!validateIpcSender(event)) {
+    throw new Error('db:migrateMeshtasticNodeNum: unauthorized sender');
+  }
+  try {
+    const db = getDbForIpc('db:migrateMeshtasticNodeNum');
+    if (!db) return { migrated: false, messagesUpdated: 0 };
+    return migrateMeshtasticNodeNumInDb(db, oldNum, newNum, key);
+  } catch (err) {
+    finishDbIpcHandler('db:migrateMeshtasticNodeNum', err);
   }
 });
 

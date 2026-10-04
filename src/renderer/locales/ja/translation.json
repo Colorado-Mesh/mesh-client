@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "ショートネーム",
     "meshcoreNameFieldLabel": "名前",
     "longNameHintMeshcore": "アドバタイズされたノード名 (絵文字をサポート)",
-    "longNameHintMeshtastic": "表示名 (最大 39 文字)",
     "shortNameHint": "小さなディスプレイに表示される短い識別子 (最大 4 文字)",
     "licensedHamLabel": "免許取得（アマチュア無線家）",
     "licensedHamDescription": "認可されたアマチュア無線家向けに追加の周波数を有効にします",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "無線コンタクトストレージがいっぱいです。スロットを空けるために、連絡先をアプリデータベースにオフロードします。",
     "contactsFullAlarmAction": "オフロード",
-    "contactsFullAutoOffloadStarted": "無線連絡先がいっぱいです—自動オフロードを開始しています…"
+    "contactsFullAutoOffloadStarted": "無線連絡先がいっぱいです—自動オフロードを開始しています…",
+    "longNameHintMeshtasticBytes": "表示名（最大24 UTF -8バイト）",
+    "validationLongNameTooLong": "長い名前は24 UTF -8バイト以内でなければなりません",
+    "frequencyOffsetLabel": "頻度オフセット",
+    "frequencyOffsetDesc": "アドバンス：計算された中心周波数にMHz単位のオフセットを追加して、結晶キャリブレーションエラーを修正します。試験装置がない限り、0のままにしておきます。",
+    "enumLicensedOnlySuffix": "（ライセンスのみ）",
+    "unknownEnumValue": "不明（ {{value}} ）"
   },
   "rawPacketLog": {
     "filterPackets": "パケットをフィルタリングする",

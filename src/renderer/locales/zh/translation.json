@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "简称",
     "meshcoreNameFieldLabel": "姓名",
     "longNameHintMeshcore": "广告节点名称（支持表情符号）",
-    "longNameHintMeshtastic": "显示名称（最多39个字符）",
     "shortNameHint": "微型显示器上显示的短标识符（最多4个字符）",
     "licensedHamLabel": "持牌（业余无线电操作员）",
     "licensedHamDescription": "为持牌业余无线电操作员启用其他频率",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "无线电触点存储已满。将联系人卸载到应用程序数据库以释放插槽。",
     "contactsFullAlarmAction": "卸掉",
-    "contactsFullAutoOffloadStarted": "无线电联系人已满—开始自动卸载…"
+    "contactsFullAutoOffloadStarted": "无线电联系人已满—开始自动卸载…",
+    "longNameHintMeshtasticBytes": "显示名称（最多24个UTF-8字节）",
+    "validationLongNameTooLong": "长名称必须在24个UTF-8字节以内",
+    "frequencyOffsetLabel": "频率偏移",
+    "frequencyOffsetDesc": "高级：将偏移量（以MHz为单位）添加到计算的中心频率以校正晶体校准误差。在0离开，除非你有测试设备。",
+    "enumLicensedOnlySuffix": "仅授权",
+    "unknownEnumValue": "未知({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "过滤数据包",

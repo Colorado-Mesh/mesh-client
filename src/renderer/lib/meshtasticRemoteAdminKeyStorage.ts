@@ -172,3 +172,19 @@ export async function setMeshtasticRemoteAdminKeyForNode(
   }
   return map;
 }
+
+/**
+ * Follow a node to its new number after a renumber. A key already stored for the new
+ * number wins; returns true only when a key was moved.
+ */
+export async function moveMeshtasticRemoteAdminKeyToNode(
+  fromNodeNum: number,
+  toNodeNum: number,
+): Promise<boolean> {
+  if (fromNodeNum >>> 0 === toNodeNum >>> 0) return false;
+  const key = getMeshtasticRemoteAdminKeyForNode(fromNodeNum);
+  if (!key || getMeshtasticRemoteAdminKeyForNode(toNodeNum)) return false;
+  await setMeshtasticRemoteAdminKeyForNode(toNodeNum, key);
+  await setMeshtasticRemoteAdminKeyForNode(fromNodeNum, null);
+  return true;
+}

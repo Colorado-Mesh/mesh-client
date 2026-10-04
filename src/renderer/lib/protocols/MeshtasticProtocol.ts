@@ -2,6 +2,7 @@ import { create, fromBinary, toBinary } from '@bufbuild/protobuf';
 import { type MeshDevice } from '@meshtastic/core';
 import { Admin, Channel as ProtobufChannel, Mesh, Portnums } from '@meshtastic/protobufs';
 
+import { assertMeshtasticLongNameValid } from '../../../shared/meshtasticLongNameLimits';
 import { assertMeshtasticShortNameValid } from '../../../shared/meshtasticShortNameLimits';
 import {
   MESHTASTIC_TAPBACK_DATA_EMOJI_FLAG,
@@ -696,6 +697,7 @@ export class MeshtasticProtocol implements Protocol {
 
   async setOwner(handle: unknown, opts: SetOwnerOptions): Promise<void> {
     assertMeshtasticShortNameValid(opts.shortName);
+    assertMeshtasticLongNameValid(opts.longName);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- External SDK value is validated by surrounding boundary logic.
     const user = create(Mesh.UserSchema, {
       longName: opts.longName,

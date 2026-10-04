@@ -96,6 +96,7 @@ export function buildMeshtasticNodeMapFromDbRows(
       heard_via_mqtt_only: n.source === 'mqtt',
       hops: n.hops ?? undefined,
       path: parseNodePath(n.path),
+      ...(typeof n.public_key === 'string' && n.public_key ? { public_key_hex: n.public_key } : {}),
     });
   }
   for (const mc of meshcoreContacts) {

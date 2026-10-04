@@ -32,6 +32,7 @@ export function createElectronAPIMock(): ElectronAPI {
       listMeshtasticDmPeers: vi.fn().mockResolvedValue([]),
       saveNode: vi.fn().mockResolvedValue(undefined),
       saveNodePath: vi.fn().mockResolvedValue(undefined),
+      migrateMeshtasticNodeNum: vi.fn().mockResolvedValue({ migrated: false, messagesUpdated: 0 }),
       getNodes: vi.fn().mockResolvedValue([]),
       clearMessages: vi.fn().mockResolvedValue(undefined),
       clearNodes: vi.fn().mockResolvedValue(undefined),

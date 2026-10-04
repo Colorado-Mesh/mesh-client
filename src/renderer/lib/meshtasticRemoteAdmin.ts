@@ -3,6 +3,8 @@ import type { MeshDevice } from '@meshtastic/core';
 import { Admin, Mesh, Portnums } from '@meshtastic/protobufs';
 
 import { hexToBytesExact } from '@/shared/hexBytes';
+import { assertMeshtasticLongNameValid } from '@/shared/meshtasticLongNameLimits';
+import { assertMeshtasticShortNameValid } from '@/shared/meshtasticShortNameLimits';
 
 import { errLikeToLogString } from './errLikeToLogString';
 import { writeToRadioWithoutQueue } from './meshtasticBacklogUtils';
@@ -1190,6 +1192,11 @@ export class MeshtasticRemoteAdminClient {
   }
 
   async setRemoteOwner(destNodeNum: number, owner: unknown): Promise<void> {
+    if (typeof owner === 'object' && owner !== null) {
+      const { longName, shortName } = owner as { longName?: unknown; shortName?: unknown };
+      if (typeof longName === 'string') assertMeshtasticLongNameValid(longName);
+      if (typeof shortName === 'string') assertMeshtasticShortNameValid(shortName);
+    }
     await this.beginRemoteEdit(destNodeNum);
     await this.sendAdminRequest(
       destNodeNum,

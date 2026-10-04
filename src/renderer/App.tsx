@@ -14,6 +14,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -87,7 +88,12 @@ import { getMeshcoreCompanionRepeaterRfBusySnapshot } from '@/renderer/lib/meshc
 import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { getMeshcoreSilentBulkDrainSnapshot } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
-import { meshtasticMqttOwnNodeIds } from '@/renderer/lib/meshtasticMqttIdentity';
+import {
+  getOwnNodeHistorySnapshot,
+  meshtasticMqttOwnNodeIds,
+  ownNodeNumsForPublicKey,
+  subscribeOwnNodeHistory,
+} from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
 import { Z_NODE_DETAIL_MODAL } from '@/renderer/lib/modalZIndex';
 import { createOnlineRecoveryScheduler } from '@/renderer/lib/onlineRecoveryDebounce';
@@ -1262,17 +1268,29 @@ function AppContent() {
 
   const reticulumLastReadSanitizedRef = useRef(false);
 
+  const meshtasticSelfPublicKeyHex =
+    meshtasticNodesById?.[
+      asNumericNodeId(meshtasticRuntime.selfNodeId) || meshtasticRuntime.lastRfSelfNodeId
+    ]?.publicKeyHex;
+  const meshtasticOwnNodeHistory = useSyncExternalStore(
+    subscribeOwnNodeHistory,
+    getOwnNodeHistorySnapshot,
+  );
+
   const meshtasticOwnNodeIdSet = useMemo(() => {
     const ids = meshtasticMqttOwnNodeIds(
       meshtasticRuntime.selfNodeId,
       meshtasticRuntime.virtualNodeId,
       meshtasticRuntime.lastRfSelfNodeId,
+      ownNodeNumsForPublicKey(meshtasticOwnNodeHistory, meshtasticSelfPublicKeyHex),
     );
     return new Set(ids.filter((id) => id > 0));
   }, [
     meshtasticRuntime.selfNodeId,
     meshtasticRuntime.virtualNodeId,
     meshtasticRuntime.lastRfSelfNodeId,
+    meshtasticOwnNodeHistory,
+    meshtasticSelfPublicKeyHex,
   ]);
 
   const meshtasticOwnNodeIdSetRef = useRef(meshtasticOwnNodeIdSet);
@@ -1818,11 +1836,14 @@ function AppContent() {
         asNumericNodeId(meshtasticRuntime.selfNodeId),
         meshtasticRuntime.virtualNodeId,
         meshtasticRuntime.lastRfSelfNodeId,
+        ownNodeNumsForPublicKey(meshtasticOwnNodeHistory, meshtasticSelfPublicKeyHex),
       ),
     [
       meshtasticRuntime.selfNodeId,
       meshtasticRuntime.virtualNodeId,
       meshtasticRuntime.lastRfSelfNodeId,
+      meshtasticOwnNodeHistory,
+      meshtasticSelfPublicKeyHex,
     ],
   );
   const reticulumOwnNodeIdsForChat = useMemo(

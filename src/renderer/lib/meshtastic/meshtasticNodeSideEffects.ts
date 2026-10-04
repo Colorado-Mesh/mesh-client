@@ -37,6 +37,7 @@ import {
   mergeMeshtasticLivePacketLastHeard,
   mergeMeshtasticUserPacketLastHeard,
 } from '../meshtasticLastHeard';
+import { recordOwnMeshtasticNodeNum } from '../meshtasticMqttIdentity';
 import type { NodeInfoEvent, PositionEvent, TelemetryEvent } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import { recordRadioSelfPosition } from '../radioSelfPosition';
@@ -50,6 +51,7 @@ import type {
   MeshNode,
   TelemetryPoint,
 } from '../types';
+import { maybeMigrateRenumberedMeshtasticNode } from './meshtasticNodeRenumber';
 import { processMeshtasticNodeDiagnostics } from './meshtasticProcessNodeDiagnostics';
 import { cacheTransportDisplayName } from './transportDisplayNameCache';
 
@@ -182,7 +184,9 @@ function handleUserPacketNodeInfo(
     source: 'rf',
   };
   saveNode(identityId, node);
+  maybeMigrateRenumberedMeshtasticNode(identityId, nodeNum, node.public_key_hex, node.last_heard);
   if (nodeNum === deps.getMyNodeNum()) {
+    recordOwnMeshtasticNodeNum(node.public_key_hex, nodeNum);
     deps.setDeviceOwner({
       longName: preferNonEmptyTrimmedString(info.longName, ''),
       shortName: preferNonEmptyTrimmedString(info.shortName, ''),
@@ -282,6 +286,7 @@ function handleNodeDbNodeInfo(
     latitude: positionPatch.latitude,
     longitude: positionPatch.longitude,
     role: info.role ?? storeExisting.role,
+    public_key_hex: meshtasticPublicKeyHex(info.publicKey) ?? storeExisting.public_key_hex,
     hops_away,
     via_mqtt: info.viaMqtt ?? false,
     voltage: info.voltage ?? storeExisting.voltage,
@@ -293,6 +298,8 @@ function handleNodeDbNodeInfo(
     lastPositionWarning: positionPatch.lastPositionWarning,
   };
   saveNode(identityId, node);
+  maybeMigrateRenumberedMeshtasticNode(identityId, nodeNum, node.public_key_hex, node.last_heard);
+  if (isSelf) recordOwnMeshtasticNodeNum(node.public_key_hex, nodeNum);
 
   if (isSelf && info.batteryLevel !== undefined) {
     deps.applyOwnNodeBatteryFromDeviceMetrics(info.batteryLevel);

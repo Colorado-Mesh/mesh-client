@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "Nama Pendek",
     "meshcoreNameFieldLabel": "Nama",
     "longNameHintMeshcore": "Nama node yang diiklankan (didukung emoji)",
-    "longNameHintMeshtastic": "Nama tampilan (maks 39 karakter)",
     "shortNameHint": "Pengidentifikasi pendek ditampilkan pada layar kecil (maks 4 karakter)",
     "licensedHamLabel": "Berlisensi (Operator Radio Ham)",
     "licensedHamDescription": "Mengaktifkan frekuensi tambahan untuk operator radio amatir berlisensi",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "Penyimpanan kontak radio penuh. Offload kontak ke database aplikasi ke slot gratis.",
     "contactsFullAlarmAction": "Offload",
-    "contactsFullAutoOffloadStarted": "Kontak radio penuh — mulai auto - offload…"
+    "contactsFullAutoOffloadStarted": "Kontak radio penuh — mulai auto - offload…",
+    "longNameHintMeshtasticBytes": "Nama tampilan (maks 24 UTF -8 byte)",
+    "validationLongNameTooLong": "Nama Panjang harus sesuai dalam 24 UTF -8 byte",
+    "frequencyOffsetLabel": "Ofset Frekuensi",
+    "frequencyOffsetDesc": "Lanjutan: offset dalam MHz ditambahkan ke frekuensi pusat yang dihitung untuk memperbaiki kesalahan kalibrasi kristal. Berangkat pada 0 kecuali Anda memiliki peralatan uji.",
+    "enumLicensedOnlySuffix": "(hanya berlisensi)",
+    "unknownEnumValue": "Tidak diketahui ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Filter paket",

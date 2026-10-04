@@ -93,6 +93,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearMessages: () => ipcRenderer.invoke('db:clearMessages'),
     clearNodes: () => ipcRenderer.invoke('db:clearNodes'),
     deleteNode: (nodeId: number) => ipcRenderer.invoke('db:deleteNode', nodeId),
+    migrateMeshtasticNodeNum: (oldNodeId: number, newNodeId: number, publicKeyHex: string) =>
+      ipcRenderer.invoke('db:migrateMeshtasticNodeNum', oldNodeId, newNodeId, publicKeyHex),
     updateMessageStatus: (packetId: number, status: string, error?: string, mqttStatus?: string) =>
       ipcRenderer.invoke('db:updateMessageStatus', packetId, status, error, mqttStatus),
     updateMessagePacketId: (oldPacketId: number, newPacketId: number, senderId?: number) =>

@@ -25,6 +25,7 @@ import {
   isMeshtasticDefaultPublicPsk,
   MESHTASTIC_DEFAULT_PUBLIC_PSK_BYTES,
 } from '../shared/meshtasticDefaultPublicPsk';
+import { truncateMeshtasticLongName } from '../shared/meshtasticLongNameLimits';
 import {
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
   MQTT_MAX_RECONNECT_ATTEMPTS,
@@ -1155,7 +1156,7 @@ export class MQTTManager extends EventEmitter {
     const explicitPsk = pskBase64 ? parsePsk(pskBase64) : undefined;
     const user = create(UserSchema, {
       id: formatMeshtasticNodeId(from),
-      longName,
+      longName: truncateMeshtasticLongName(longName),
       shortName,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-assignment -- proto3 enums are open; hardware models newer than our protobufs must pass through
       ...(hwModel !== undefined ? { hwModel } : {}),

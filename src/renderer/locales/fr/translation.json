@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "Nom Court",
     "meshcoreNameFieldLabel": "Nom",
     "longNameHintMeshcore": "Nom du nœud annoncé (emoji pris en charge)",
-    "longNameHintMeshtastic": "Nom affiché (max 39 caractères)",
     "shortNameHint": "Identifiant court affiché sur les minuscules écrans (max 4 caractères)",
     "licensedHamLabel": "Licencié (Ham Radio Operator)",
     "licensedHamDescription": "Permet des fréquences supplémentaires pour les opérateurs radioamateurs agréés",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "Le stockage des contacts radio est plein. Déchargez les contacts vers la base de données de l'application pour libérer des emplacements.",
     "contactsFullAlarmAction": "Décharger",
-    "contactsFullAutoOffloadStarted": "• s’occupent de 1 127 communications radio,"
+    "contactsFullAutoOffloadStarted": "• s’occupent de 1 127 communications radio,",
+    "longNameHintMeshtasticBytes": "Nom d'affichage (max 24 UTF-8 octets)",
+    "validationLongNameTooLong": "Le nom long doit contenir moins de 24 octets UTF-8",
+    "frequencyOffsetLabel": "Décalage de fréquence",
+    "frequencyOffsetDesc": "Avancé : décalage en MHz ajouté à la fréquence centrale calculée pour corriger l'erreur d'étalonnage du cristal. Laisser à 0 sauf si vous avez du matériel de test.",
+    "enumLicensedOnlySuffix": "(licencié uniquement)",
+    "unknownEnumValue": "Inconnu ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Filtrer les paquets",

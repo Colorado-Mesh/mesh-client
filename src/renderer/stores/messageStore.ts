@@ -424,6 +424,29 @@ export function deleteMessage(identityId: IdentityId, messageId: string): void {
   });
 }
 
+/** Rewrite sender/recipient node ids after a node number change; message ids stay stable. */
+export function remapMessageNodeId(
+  identityId: IdentityId,
+  fromNodeId: number,
+  toNodeId: number,
+): void {
+  useMessageStore.setState((s) => {
+    const byIdentity = s.messages[identityId];
+    if (!byIdentity || fromNodeId === toNodeId) return s;
+    let next: Record<string, MessageRecord> | null = null;
+    for (const [id, message] of Object.entries(byIdentity)) {
+      if (message.from !== fromNodeId && message.to !== fromNodeId) continue;
+      next ??= { ...byIdentity };
+      next[id] = {
+        ...message,
+        from: message.from === fromNodeId ? toNodeId : message.from,
+        to: message.to === fromNodeId ? toNodeId : message.to,
+      };
+    }
+    return next ? mergeIdentityMessages(s, identityId, next) : s;
+  });
+}
+
 export function clearMessageIdentity(identityId: IdentityId): void {
   useMessageStore.setState((s) => ({
     messages: omitRecordKey(s.messages, identityId),

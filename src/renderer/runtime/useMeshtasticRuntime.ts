@@ -76,6 +76,7 @@ import {
   findNextFreeChannelSlot,
 } from '@/shared/meshtasticChannelApply';
 import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
+import { assertMeshtasticLongNameValid } from '@/shared/meshtasticLongNameLimits';
 import { assertMeshtasticShortNameValid } from '@/shared/meshtasticShortNameLimits';
 import {
   MESHTASTIC_CHANNEL_ROLE,
@@ -3782,6 +3783,7 @@ export function useMeshtasticRuntime() {
   const setOwner = useCallback(
     async (owner: { longName: string; shortName: string; isLicensed: boolean }) => {
       assertMeshtasticShortNameValid(owner.shortName);
+      assertMeshtasticLongNameValid(owner.longName);
       const dest = configureTargetNodeNumRef.current;
       const client = remoteAdminClientRef.current;
       const user: unknown = createMeshtasticMessage(meshtasticMeshProtobuf.UserSchema, {

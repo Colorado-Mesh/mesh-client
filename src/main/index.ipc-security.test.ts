@@ -542,6 +542,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'meshcore:openJsonFile',
     'db:saveNode',
     'db:saveNodePath',
+    'db:migrateMeshtasticNodeNum',
     'db:getNodes',
     'db:getMessageChannels',
     'db:getNodeNote',

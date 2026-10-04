@@ -4019,7 +4019,6 @@
     "shortNameFieldLabel": "Initialien",
     "meshcoreNameFieldLabel": "Benennung",
     "longNameHintMeshcore": "Name des beworbenen Knotens (Emoji unterstützt)",
-    "longNameHintMeshtastic": "Anzeigename (max. 39 Zeichen)",
     "shortNameHint": "Kurze Kennung, die auf winzigen Displays angezeigt wird (max. 4 Zeichen)",
     "licensedHamLabel": "Lizenziert (Ham Radio Operator)",
     "licensedHamDescription": "Ermöglicht zusätzliche Frequenzen für lizenzierte Amateurfunkbetreiber",
@@ -4553,7 +4552,13 @@
     },
     "contactsFullAlarm": "Der Funkkontaktspeicher ist voll. Kontakte in die App-Datenbank entladen, um Slots freizugeben.",
     "contactsFullAlarmAction": "Offload (Abladen)",
-    "contactsFullAutoOffloadStarted": "Funkkontakte voll — Automatische Entladung wird gestartet..."
+    "contactsFullAutoOffloadStarted": "Funkkontakte voll — Automatische Entladung wird gestartet...",
+    "longNameHintMeshtasticBytes": "Anzeigename (max. 24 UTF-8 Bytes)",
+    "validationLongNameTooLong": "Der lange Name muss innerhalb von 24 UTF-8 Bytes passen",
+    "frequencyOffsetLabel": "Frequenzversatz",
+    "frequencyOffsetDesc": "Erweitert: Offset in MHz wird zur berechneten Mittenfrequenz hinzugefügt, um den Kristallkalibrierungsfehler zu korrigieren. Lassen Sie bei 0 stehen, es sei denn, Sie haben eine Testausrüstung.",
+    "enumLicensedOnlySuffix": "(nur lizenziert)",
+    "unknownEnumValue": "Unbekannt ({{value}})"
   },
   "rawPacketLog": {
     "filterPackets": "Filterpakete",
