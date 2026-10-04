@@ -212,10 +212,11 @@ describe('Persistent app settings IPC (source contract)', () => {
   });
 
   it('allowlists every renderer key persisted via appSettings:set', () => {
-    const allowListBlock = INDEX_SOURCE.slice(
-      INDEX_SOURCE.indexOf('const APP_SETTINGS_ALLOWED_KEYS'),
-      INDEX_SOURCE.indexOf('const APP_SETTINGS_MAX_VALUE_LENGTH'),
-    );
+    const allowListStart = INDEX_SOURCE.indexOf('const APP_SETTINGS_ALLOWED_KEYS');
+    const allowListEnd = INDEX_SOURCE.indexOf('const APP_SETTINGS_MAX_VALUE_LENGTH');
+    expect(allowListStart).toBeGreaterThanOrEqual(0);
+    expect(allowListEnd).toBeGreaterThan(allowListStart);
+    const allowListBlock = INDEX_SOURCE.slice(allowListStart, allowListEnd);
     const rmapSource = readFileSync(
       join(__dirname, '../renderer/lib/reticulum/reticulumRmapDiscovery.ts'),
       'utf-8',
