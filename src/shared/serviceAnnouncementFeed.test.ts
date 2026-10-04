@@ -105,6 +105,10 @@ describe('parseServiceAnnouncementFeed rows', () => {
     ['startsAt date only', { ...valid, startsAt: '2026-10-08' }],
     ['expiresAt RFC 2822', { ...valid, expiresAt: 'Thu, 08 Oct 2026 00:00:00 GMT' }],
     ['expiresAt impossible date', { ...valid, expiresAt: '2026-13-45T00:00:00Z' }],
+    ['startsAt Feb 30 overflow', { ...valid, startsAt: '2026-02-30T00:00:00Z' }],
+    ['startsAt Feb 29 in non-leap year', { ...valid, startsAt: '2025-02-29T00:00Z' }],
+    ['expiresAt Apr 31 overflow', { ...valid, expiresAt: '2026-04-31T12:00:00+02:00' }],
+    ['expiresAt Feb 31 overflow', { ...valid, expiresAt: '2026-02-31T00:00:00Z' }],
     ['expiresAt junk between prefix and zone', { ...valid, expiresAt: '2026-10-08T06:00junkZ' }],
     [
       'expires before starts',
@@ -176,6 +180,7 @@ describe('timestamp zones', () => {
     '2026-10-08T00:00:00-06:00',
     '2026-10-08T06:00Z',
     '2026-10-08T06:00:00.250Z',
+    '2024-02-29T00:00:00Z',
   ])('accepts %s', (startsAt) => {
     expect(okList(feed({ ...valid, startsAt }))[0]?.startsAt).toBe(startsAt);
   });

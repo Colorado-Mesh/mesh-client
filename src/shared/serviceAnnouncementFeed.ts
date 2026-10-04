@@ -22,7 +22,7 @@ export const SERVICE_ANNOUNCEMENT_MAX_LOCALES = 32;
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 const APP_VERSION_PREFIX_RE = /^(\d+)\.(\d+)\.(\d+)/;
-const ISO_DATE_TIME_PREFIX_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const ISO_DATE_TIME_PREFIX_RE = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}/;
 const ISO_ZONE_SUFFIX_RE = /(?:Z|[+-]\d{2}:\d{2})$/;
 const LOCALE_PRIMARY_RE = /^[a-z]{2,3}$/;
 const LOCALE_SUBTAG_RE = /^[A-Za-z0-9]{2,8}$/;
@@ -142,12 +142,21 @@ export function parseHttpsUrl(raw: unknown): string | null {
   }
 }
 
+/** Date.parse rolls `2026-02-30` over to March 2, so confirm the calendar date exists. */
+function isRealCalendarDate(year: number, month: number, day: number): boolean {
+  const d = new Date(0);
+  d.setUTCFullYear(year, month - 1, day);
+  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
+}
+
 function optionalTimestamp(raw: unknown, field: string): FieldResult<string | undefined> {
   if (raw === undefined) return { ok: true, value: undefined };
+  const prefix = typeof raw === 'string' ? ISO_DATE_TIME_PREFIX_RE.exec(raw) : null;
   // A zone-less date-time parses as each client's local time; require Z or ±HH:MM.
   if (
     typeof raw !== 'string' ||
-    !ISO_DATE_TIME_PREFIX_RE.test(raw) ||
+    !prefix ||
+    !isRealCalendarDate(Number(prefix[1]), Number(prefix[2]), Number(prefix[3])) ||
     !ISO_ZONE_SUFFIX_RE.test(raw) ||
     !Number.isFinite(Date.parse(raw))
   ) {
