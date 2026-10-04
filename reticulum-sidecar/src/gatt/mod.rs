@@ -19,6 +19,8 @@ mod btleplug_backend;
 mod isolated;
 #[cfg(feature = "gatt-ble")]
 mod lazy_backend;
+#[cfg(all(feature = "gatt-ble", target_os = "windows"))]
+mod windows_gatt_session;
 
 pub use events::GattSessionEvent;
 pub use manager::{GattBackend, GattManager};

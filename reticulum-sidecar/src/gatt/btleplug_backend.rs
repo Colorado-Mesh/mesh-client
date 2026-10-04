@@ -20,6 +20,8 @@ use uuid::Uuid;
 use super::backend::{BackendConnId, BackendEvent, BleBackend, ScannedDevice};
 use super::error::{GattError, GattErrorCode};
 use super::profile::{self, GattProfile, ble_id_match_key, ble_ids_match, normalize_address};
+#[cfg(target_os = "windows")]
+use super::windows_gatt_session::GattKeepAlive;
 
 fn connect_timeout() -> Duration {
     if cfg!(target_os = "macos") {
@@ -145,36 +147,166 @@ async fn serialized_scan<T>(
     result
 }
 
+/// WinRT `ReadValueAsync` has no deadline of its own; one wedged read must not stall
+/// every later FromRadio drain while writes keep succeeding.
+const FROM_RADIO_READ_TIMEOUT: Duration = Duration::from_secs(5);
+/// Pull FromRadio when no fromNum notification or write has requested a drain for this
+/// long (some Windows stacks stop delivering fromNum after the config replay).
+const FROM_RADIO_POLL_INTERVAL: Duration = Duration::from_secs(2);
+/// Empty reads before a requested drain decides the mailbox is really empty.
+const FROM_RADIO_REQUESTED_EMPTY_STREAK: u8 = 5;
+/// A fallback poll only needs one empty read to confirm there is nothing queued.
+const FROM_RADIO_POLL_EMPTY_STREAK: u8 = 1;
+/// Consecutive drains that read nothing and ended on an error / timeout before the
+/// session reports `read_pump_stalled` so the app reconnects instead of sitting silent.
+const FROM_RADIO_MAX_FAILED_DRAINS: u8 = 3;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum DrainEnd {
+    Empty,
+    ReceiverClosed,
+    ReadError(String),
+    Timeout,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct DrainOutcome {
+    packets: usize,
+    end: DrainEnd,
+}
+
+impl DrainOutcome {
+    fn failed(&self) -> bool {
+        self.packets == 0 && matches!(self.end, DrainEnd::ReadError(_) | DrainEnd::Timeout)
+    }
+}
+
+#[derive(Debug, Default)]
+struct ReadPumpHealth {
+    consecutive_failures: u8,
+}
+
+impl ReadPumpHealth {
+    /// Returns true once the read path counts as stalled.
+    fn record(&mut self, outcome: &DrainOutcome) -> bool {
+        if outcome.failed() {
+            self.consecutive_failures = self.consecutive_failures.saturating_add(1);
+        } else {
+            self.consecutive_failures = 0;
+        }
+        self.consecutive_failures >= FROM_RADIO_MAX_FAILED_DRAINS
+    }
+}
+
 /// Meshtastic FromRadio queue: read until empty, with short empty retries while the
 /// radio finishes filling the mailbox (parity with meshtastic-python / Android).
-async fn drain_meshtastic_from_radio(
-    peripheral: &Peripheral,
-    from_radio: &Characteristic,
+async fn drain_meshtastic_from_radio<F, Fut, E>(
+    mut read: F,
+    max_empty_streak: u8,
     tx: &mpsc::UnboundedSender<BackendEvent>,
-) -> usize {
-    const MAX_EMPTY_STREAK: u8 = 5;
+) -> DrainOutcome
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<Vec<u8>, E>>,
+    E: std::fmt::Display,
+{
     let mut packets = 0usize;
     let mut empty_streak = 0u8;
-    loop {
-        match peripheral.read(from_radio).await {
-            Ok(data) if !data.is_empty() => {
+    let end = loop {
+        match tokio::time::timeout(FROM_RADIO_READ_TIMEOUT, read()).await {
+            Ok(Ok(data)) if !data.is_empty() => {
                 empty_streak = 0;
                 packets = packets.saturating_add(1);
                 if tx.send(BackendEvent::Bytes(data)).is_err() {
-                    break;
+                    break DrainEnd::ReceiverClosed;
                 }
             }
-            Ok(_) => {
+            Ok(Ok(_)) => {
                 empty_streak = empty_streak.saturating_add(1);
-                if empty_streak >= MAX_EMPTY_STREAK {
-                    break;
+                if empty_streak >= max_empty_streak.max(1) {
+                    break DrainEnd::Empty;
                 }
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
-            Err(_) => break,
+            Ok(Err(e)) => break DrainEnd::ReadError(e.to_string()),
+            Err(_) => break DrainEnd::Timeout,
+        }
+    };
+    DrainOutcome { packets, end }
+}
+
+fn log_drain_outcome(outcome: &DrainOutcome, polled: bool, consecutive_failures: u8) {
+    match &outcome.end {
+        DrainEnd::ReadError(e) if outcome.failed() => tracing::warn!(
+            target: "gatt",
+            polled,
+            consecutive_failures,
+            "meshtastic fromRadio read failed: {e}"
+        ),
+        DrainEnd::Timeout if outcome.failed() => tracing::warn!(
+            target: "gatt",
+            polled,
+            consecutive_failures,
+            timeout_ms = u64::try_from(FROM_RADIO_READ_TIMEOUT.as_millis()).unwrap_or(u64::MAX),
+            "meshtastic fromRadio read timed out"
+        ),
+        end => tracing::debug!(
+            target: "gatt",
+            polled,
+            packets = outcome.packets,
+            end = ?end,
+            "meshtastic fromRadio drain"
+        ),
+    }
+}
+
+/// Runs FromRadio drains on request (fromNum notification / write) or on the fallback
+/// poll, returning once the read path is stalled.
+async fn run_meshtastic_read_pump<F, Fut, E>(
+    mut read: F,
+    read_request: &Notify,
+    tx: &mpsc::UnboundedSender<BackendEvent>,
+) where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<Vec<u8>, E>>,
+    E: std::fmt::Display,
+{
+    let mut health = ReadPumpHealth::default();
+    let mut recovered_by_poll = false;
+    loop {
+        let polled = tokio::select! {
+            () = read_request.notified() => false,
+            () = tokio::time::sleep(FROM_RADIO_POLL_INTERVAL) => true,
+        };
+        let empty_streak = if polled {
+            FROM_RADIO_POLL_EMPTY_STREAK
+        } else {
+            FROM_RADIO_REQUESTED_EMPTY_STREAK
+        };
+        let outcome = drain_meshtastic_from_radio(&mut read, empty_streak, tx).await;
+        if outcome.end == DrainEnd::ReceiverClosed {
+            return;
+        }
+        let stalled = health.record(&outcome);
+        log_drain_outcome(&outcome, polled, health.consecutive_failures);
+        if polled && outcome.packets > 0 && !recovered_by_poll {
+            // Data waiting without a fromNum notification: notifications are not arriving.
+            recovered_by_poll = true;
+            tracing::warn!(
+                target: "gatt",
+                packets = outcome.packets,
+                "meshtastic fromRadio data found by fallback poll (fromNum notification missed)"
+            );
+        }
+        if stalled {
+            tracing::warn!(
+                target: "gatt",
+                failed_drains = health.consecutive_failures,
+                "meshtastic fromRadio read pump stalled; reporting disconnect"
+            );
+            return;
         }
     }
-    packets
 }
 
 fn is_usable_mac(addr: &str) -> bool {
@@ -210,6 +342,8 @@ struct OpenConn {
     read_request: Arc<Notify>,
     meshtastic: bool,
     event_task: JoinHandle<()>,
+    #[cfg(target_os = "windows")]
+    _keep_alive: Option<GattKeepAlive>,
 }
 
 pub struct BtleplugBackend {
@@ -570,6 +704,16 @@ impl BleBackend for BtleplugBackend {
                         u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
                     tracing::warn!(target: "gatt", elapsed_ms, profile = %profile, "gatt connect failed: {e}");
                 })?;
+        // OS-specific: only Windows idles a btleplug link without a held GattSession.
+        #[cfg(target_os = "windows")]
+        let keep_alive = if profile == GattProfile::Meshtastic {
+            match peripheral.properties().await.ok().flatten() {
+                Some(props) => GattKeepAlive::open(u64::from(props.address)).await,
+                None => None,
+            }
+        } else {
+            None
+        };
         stage("ready");
 
         let (tx, rx) = mpsc::unbounded_channel();
@@ -596,14 +740,15 @@ impl BleBackend for BtleplugBackend {
                 }
             };
             let drain_reads = async {
-                loop {
-                    reads_for_events.notified().await;
-                    if let Some(ref from_radio) = from_radio_char {
-                        let _ =
-                            drain_meshtastic_from_radio(&peripheral_for_events, from_radio, &tx)
-                                .await;
-                    }
-                }
+                let Some(ref from_radio) = from_radio_char else {
+                    return std::future::pending::<()>().await;
+                };
+                run_meshtastic_read_pump(
+                    || peripheral_for_events.read(from_radio),
+                    &reads_for_events,
+                    &tx,
+                )
+                .await;
             };
             let poll_rssi = async {
                 let mut last = seed_rssi;
@@ -630,7 +775,7 @@ impl BleBackend for BtleplugBackend {
             let reason = tokio::select! {
                 reason = wait_for_disconnect(&mut central_events, &peripheral_id) => reason,
                 () = forward_notifications => "notifications_ended",
-                () = drain_reads => "read_pump_ended",
+                () = drain_reads => "read_pump_stalled",
                 () = poll_rssi => "rssi_poll_ended",
                 () = tx.closed() => return,
             };
@@ -651,6 +796,8 @@ impl BleBackend for BtleplugBackend {
                 read_request,
                 meshtastic: profile == GattProfile::Meshtastic,
                 event_task,
+                #[cfg(target_os = "windows")]
+                _keep_alive: keep_alive,
             },
         );
         Ok((conn, rx, None))
@@ -904,6 +1051,167 @@ mod tests {
         )
         .await;
         assert_eq!(result.unwrap_err().code, GattErrorCode::ConnectTimeout);
+    }
+
+    type ReadResult = Result<Vec<u8>, String>;
+
+    /// Scripted FromRadio reads; `None` hangs forever (a wedged WinRT read).
+    fn scripted_reads(
+        script: Vec<Option<ReadResult>>,
+    ) -> (
+        Arc<std::sync::atomic::AtomicUsize>,
+        impl FnMut() -> Pin<Box<dyn Future<Output = ReadResult> + Send>>,
+    ) {
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let script = Arc::new(script);
+        let counter = Arc::clone(&calls);
+        let read = move || {
+            let i = counter.fetch_add(1, Ordering::SeqCst);
+            let step = script.get(i).cloned().unwrap_or(Some(Ok(Vec::new())));
+            let fut: Pin<Box<dyn Future<Output = ReadResult> + Send>> = match step {
+                Some(result) => Box::pin(async move { result }),
+                None => Box::pin(std::future::pending()),
+            };
+            fut
+        };
+        (calls, read)
+    }
+
+    fn drained_bytes(rx: &mut mpsc::UnboundedReceiver<BackendEvent>) -> Vec<Vec<u8>> {
+        let mut out = Vec::new();
+        while let Ok(ev) = rx.try_recv() {
+            if let BackendEvent::Bytes(b) = ev {
+                out.push(b);
+            }
+        }
+        out
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn drain_forwards_packets_until_the_empty_streak() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let (calls, read) = scripted_reads(vec![
+            Some(Ok(vec![1])),
+            Some(Ok(Vec::new())),
+            Some(Ok(vec![2])),
+        ]);
+        let outcome =
+            drain_meshtastic_from_radio(read, FROM_RADIO_REQUESTED_EMPTY_STREAK, &tx).await;
+        assert_eq!(
+            outcome,
+            DrainOutcome {
+                packets: 2,
+                end: DrainEnd::Empty
+            }
+        );
+        assert_eq!(drained_bytes(&mut rx), vec![vec![1], vec![2]]);
+        // 3 scripted reads + a full fresh empty streak after the second packet.
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            3 + usize::from(FROM_RADIO_REQUESTED_EMPTY_STREAK)
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn poll_drain_stops_after_one_empty_read() {
+        let (tx, _rx) = mpsc::unbounded_channel();
+        let (calls, read) = scripted_reads(vec![]);
+        let outcome = drain_meshtastic_from_radio(read, FROM_RADIO_POLL_EMPTY_STREAK, &tx).await;
+        assert_eq!(outcome.end, DrainEnd::Empty);
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn drain_times_out_a_wedged_read() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let (_, read) = scripted_reads(vec![Some(Ok(vec![7])), None]);
+        let outcome =
+            drain_meshtastic_from_radio(read, FROM_RADIO_REQUESTED_EMPTY_STREAK, &tx).await;
+        assert_eq!(
+            outcome,
+            DrainOutcome {
+                packets: 1,
+                end: DrainEnd::Timeout
+            }
+        );
+        assert!(!outcome.failed(), "data arrived, so the read path is alive");
+        assert_eq!(drained_bytes(&mut rx), vec![vec![7]]);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn drain_reports_read_errors() {
+        let (tx, _rx) = mpsc::unbounded_channel();
+        let (_, read) = scripted_reads(vec![Some(Err("UWP read error".into()))]);
+        let outcome =
+            drain_meshtastic_from_radio(read, FROM_RADIO_REQUESTED_EMPTY_STREAK, &tx).await;
+        assert_eq!(outcome.end, DrainEnd::ReadError("UWP read error".into()));
+        assert!(outcome.failed());
+    }
+
+    #[test]
+    fn read_pump_health_trips_after_consecutive_failures_and_resets_on_success() {
+        let failed = DrainOutcome {
+            packets: 0,
+            end: DrainEnd::Timeout,
+        };
+        let empty = DrainOutcome {
+            packets: 0,
+            end: DrainEnd::Empty,
+        };
+        let mut health = ReadPumpHealth::default();
+        for _ in 1..FROM_RADIO_MAX_FAILED_DRAINS {
+            assert!(!health.record(&failed));
+        }
+        assert!(!health.record(&empty), "an empty mailbox is healthy");
+        for _ in 1..FROM_RADIO_MAX_FAILED_DRAINS {
+            assert!(!health.record(&failed));
+        }
+        assert!(health.record(&failed));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn read_pump_polls_without_notifications() {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let (calls, read) = scripted_reads(vec![Some(Ok(Vec::new())), Some(Ok(vec![9]))]);
+        let request = Notify::new();
+        let pump = run_meshtastic_read_pump(read, &request, &tx);
+        tokio::pin!(pump);
+        assert!(
+            tokio::time::timeout(FROM_RADIO_POLL_INTERVAL * 3, &mut pump)
+                .await
+                .is_err(),
+            "a healthy pump keeps running"
+        );
+        assert!(calls.load(Ordering::SeqCst) >= 2);
+        assert_eq!(drained_bytes(&mut rx), vec![vec![9]]);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn read_pump_ends_when_reads_stay_wedged() {
+        let (tx, _rx) = mpsc::unbounded_channel();
+        let (_, read) = scripted_reads(vec![None; usize::from(FROM_RADIO_MAX_FAILED_DRAINS)]);
+        let request = Notify::new();
+        request.notify_one();
+        let budget = (FROM_RADIO_POLL_INTERVAL + FROM_RADIO_READ_TIMEOUT)
+            * u32::from(FROM_RADIO_MAX_FAILED_DRAINS + 1);
+        tokio::time::timeout(budget, run_meshtastic_read_pump(read, &request, &tx))
+            .await
+            .expect("stalled read pump must return so the session reports a disconnect");
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn read_pump_ends_when_the_receiver_closes() {
+        let (tx, rx) = mpsc::unbounded_channel();
+        drop(rx);
+        let (_, read) = scripted_reads(vec![Some(Ok(vec![1]))]);
+        let request = Notify::new();
+        request.notify_one();
+        tokio::time::timeout(
+            Duration::from_secs(1),
+            run_meshtastic_read_pump(read, &request, &tx),
+        )
+        .await
+        .expect("closed receiver ends the pump");
     }
 
     #[tokio::test]
