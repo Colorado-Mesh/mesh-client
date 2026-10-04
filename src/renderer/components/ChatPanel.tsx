@@ -1017,7 +1017,11 @@ function ChatPanel({
   // MeshCore channels can be removed from chat: right-click a channel chip (or the menu key or
   // Shift+F10 on it), or the x beside it in the + dialog. Public, in slot 0, is never offered.
   const channelMenuAnchorRef = useRef<HTMLElement | null>(null);
-  const [channelMenu, setChannelMenu] = useState<{ index: number; name: string } | null>(null);
+  const [channelMenu, setChannelMenu] = useState<{
+    index: number;
+    name: string;
+    nodeNum: number;
+  } | null>(null);
   // The confirm records which radio listed the channel (nodeNum), since the delete goes by slot.
   const [channelToRemove, setChannelToRemove] = useState<{
     index: number;
@@ -1071,7 +1075,9 @@ function ChatPanel({
   };
   const openChannelMenu = (anchor: HTMLElement, target: { index: number; name: string }) => {
     channelMenuAnchorRef.current = anchor;
-    setChannelMenu({ index: target.index, name: target.name });
+    // Snapshot the radio with the menu. Clear uses this id, so a reconnect while the menu
+    // stays open cannot pair the old channel with the new radio.
+    setChannelMenu({ index: target.index, name: target.name, nodeNum: myNodeNum });
   };
   const askToRemoveChannel = (target: { index: number; name: string }) => {
     setChannelToRemove({ index: target.index, name: target.name, nodeNum: myNodeNum });
@@ -2944,7 +2950,7 @@ function ChatPanel({
                           tone: 'danger' as const,
                           onSelect: () => {
                             if (channelMenu) {
-                              setChannelToClear({ ...channelMenu, nodeNum: myNodeNum });
+                              setChannelToClear(channelMenu);
                             }
                           },
                         },

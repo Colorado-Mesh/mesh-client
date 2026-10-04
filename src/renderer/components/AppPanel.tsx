@@ -258,6 +258,11 @@ interface PendingAction {
   danger?: boolean;
   action: () => Promise<void>;
   messageClearMeta?: MessageClearRefreshOptions;
+  /**
+   * MeshCore per-channel clear only. The radio connected when the dialog opened.
+   * Confirm aborts when it no longer matches, so a switch cannot delete that radio's rows.
+   */
+  meshcoreClearRadio?: { nodeId: number; channelLabel: string };
 }
 
 export default function AppPanel({
@@ -718,7 +723,17 @@ export default function AppPanel({
 
   const handleConfirm = useCallback(async () => {
     if (!pendingAction) return;
-    const { actionId, action, messageClearMeta, title } = pendingAction;
+    const { actionId, action, messageClearMeta, title, meshcoreClearRadio } = pendingAction;
+    if (meshcoreClearRadio != null && meshcoreClearRadio.nodeId !== (myNodeNum ?? 0)) {
+      setPendingAction(null);
+      addToast(
+        t('chatPanel.clearChannelMessagesRadioChanged', {
+          name: meshcoreClearRadio.channelLabel,
+        }),
+        'warning',
+      );
+      return;
+    }
     setPendingAction(null);
     try {
       await action();
@@ -742,7 +757,7 @@ export default function AppPanel({
         'error',
       );
     }
-  }, [pendingAction, addToast, loadMsgChannels, onNodesPruned, onMessagesPruned, t]);
+  }, [pendingAction, myNodeNum, addToast, loadMsgChannels, onNodesPruned, onMessagesPruned, t]);
 
   return (
     <div className="w-full space-y-6">
@@ -2873,6 +2888,8 @@ export default function AppPanel({
                   }
                   const isAll = clearChannelTarget === CLEAR_ALL_CHANNELS_VALUE;
                   const channelName = isAll ? '' : getChannelLabel(clearChannelTarget);
+                  const radioNodeId = myNodeNum ?? 0;
+                  const meshcoreChannelClear = protocol === 'meshcore' && !isAll;
                   executeWithConfirmation({
                     actionId: 'clearMessages',
                     title: t('appPanel.clearMessagesTitle'),
@@ -2890,6 +2907,9 @@ export default function AppPanel({
                           replaceFromDb: true,
                           messagesMode: 'replace',
                         },
+                    meshcoreClearRadio: meshcoreChannelClear
+                      ? { nodeId: radioNodeId, channelLabel: channelName }
+                      : undefined,
                     action: async () => {
                       if (protocol === 'meshcore') {
                         if (isAll) {
@@ -2897,7 +2917,7 @@ export default function AppPanel({
                         } else {
                           await window.electronAPI.db.clearMeshcoreMessagesByChannel(
                             clearChannelTarget,
-                            myNodeNum ?? 0,
+                            radioNodeId,
                           );
                         }
                       } else if (isAll) {

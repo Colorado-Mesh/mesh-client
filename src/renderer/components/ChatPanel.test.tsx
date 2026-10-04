@@ -6175,6 +6175,34 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     ).toBeInTheDocument();
   });
 
+  it('clears nothing if another radio connected while the channel menu was open', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    // The menu stays open across the switch. The new radio still has #test in the same slot.
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} myNodeNum={2} />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+    );
+    expect(onClearChannelMessages).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'The connected radio changed while this was open, so messages in #test were not cleared.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('says so when clearing messages fails', async () => {
     const user = userEvent.setup();
     renderPanel({
