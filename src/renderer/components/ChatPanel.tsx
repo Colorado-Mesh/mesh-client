@@ -614,7 +614,7 @@ export interface ChatPanelProps {
   /** MeshCore: remove a channel from the connected companion radio (chat asks first). */
   onDeleteMeshcoreChannel?: (index: number) => Promise<void>;
   /** Clear one channel's saved messages (chat asks first). */
-  onClearChannelMessages?: (index: number) => Promise<void>;
+  onClearChannelMessages?: (index: number, radioNodeId: number) => Promise<void>;
   /** MeshCore: companion radio is unavailable for channel writes. */
   meshcoreChannelManagementDisabled?: boolean;
   myNodeNum: number;
@@ -1017,7 +1017,11 @@ function ChatPanel({
   // MeshCore channels can be removed from chat: right-click a channel chip (or the menu key or
   // Shift+F10 on it), or the x beside it in the + dialog. Public, in slot 0, is never offered.
   const channelMenuAnchorRef = useRef<HTMLElement | null>(null);
-  const [channelMenu, setChannelMenu] = useState<{ index: number; name: string } | null>(null);
+  const [channelMenu, setChannelMenu] = useState<{
+    index: number;
+    name: string;
+    nodeNum: number;
+  } | null>(null);
   // The confirm records which radio listed the channel (nodeNum), since the delete goes by slot.
   const [channelToRemove, setChannelToRemove] = useState<{
     index: number;
@@ -1030,15 +1034,30 @@ function ChatPanel({
   // Clearing messages works on every channel, Public included: the channel itself stays.
   const hasChannelMenu = (index: number) =>
     canRemoveChannel(index) || onClearChannelMessages != null;
-  const [channelToClear, setChannelToClear] = useState<{ index: number; name: string } | null>(
-    null,
-  );
+  const [channelToClear, setChannelToClear] = useState<{
+    index: number;
+    name: string;
+    nodeNum: number;
+  } | null>(null);
   const [clearingChannel, setClearingChannel] = useState(false);
-  const clearChannelMessages = async (target: { index: number; name: string }) => {
+  const clearChannelMessages = async (target: { index: number; name: string; nodeNum: number }) => {
     if (!onClearChannelMessages) return;
+    // The delete goes by slot on whichever radio is connected now. If another radio connected
+    // while the dialog was open, its slot is not the channel the user saw: clear nothing.
+    if (target.nodeNum !== myNodeNum) {
+      setChannelToClear(null);
+      addToast(t('chatPanel.clearChannelMessagesRadioChanged', { name: target.name }), 'warning');
+      return;
+    }
+    // Same radio, but its list changed (a reconnect): the slot may hold a different channel.
+    if (!channels.some((ch) => ch.index === target.index && ch.name === target.name)) {
+      setChannelToClear(null);
+      addToast(t('chatPanel.clearChannelMessagesChanged', { name: target.name }), 'warning');
+      return;
+    }
     setClearingChannel(true);
     try {
-      await onClearChannelMessages(target.index);
+      await onClearChannelMessages(target.index, target.nodeNum);
       setChannelToClear(null);
     } catch (e) {
       console.warn('[ChatPanel] clear channel messages failed ' + errLikeToLogString(e));
@@ -1056,7 +1075,9 @@ function ChatPanel({
   };
   const openChannelMenu = (anchor: HTMLElement, target: { index: number; name: string }) => {
     channelMenuAnchorRef.current = anchor;
-    setChannelMenu({ index: target.index, name: target.name });
+    // Snapshot the radio with the menu. Clear uses this id, so a reconnect while the menu
+    // stays open cannot pair the old channel with the new radio.
+    setChannelMenu({ index: target.index, name: target.name, nodeNum: myNodeNum });
   };
   const askToRemoveChannel = (target: { index: number; name: string }) => {
     setChannelToRemove({ index: target.index, name: target.name, nodeNum: myNodeNum });
@@ -2928,7 +2949,9 @@ function ChatPanel({
                           label: t('chatPanel.clearChannelMessages'),
                           tone: 'danger' as const,
                           onSelect: () => {
-                            if (channelMenu) setChannelToClear(channelMenu);
+                            if (channelMenu) {
+                              setChannelToClear(channelMenu);
+                            }
                           },
                         },
                       ]

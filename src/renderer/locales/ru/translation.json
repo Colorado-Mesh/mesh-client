@@ -873,7 +873,9 @@
     "floodScopeSaveFailed": "Не удалось сохранить область отправки. Предыдущий сохраненный вариант остается в силе.",
     "reactionYouTitle": "{{name}} (вы)",
     "reactionYouAria": "Ваша реакция: {{name}}",
-    "reactionOtherAria": "{{reactor}} отреагировал: {{name}}"
+    "reactionOtherAria": "{{reactor}} отреагировал: {{name}}",
+    "clearChannelMessagesChanged": "{{name}} больше не находится в этом слоте на радио, поэтому ничего не было очищено.",
+    "clearChannelMessagesRadioChanged": "Подключенная радиостанция изменилась, пока она была открыта, поэтому сообщения в {{name}} не были удалены."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

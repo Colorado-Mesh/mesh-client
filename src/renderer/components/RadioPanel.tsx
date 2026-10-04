@@ -106,6 +106,7 @@ import {
   formatMeshcoreAdvertisedPositionDegrees,
   MESHCORE_CHANNEL_INDEX_MAX,
   MESHCORE_CHANNEL_NAME_MAX_LEN,
+  meshcoreChannelNameFromQr,
   meshcoreContactThresholds,
   meshcoreDeriveChannelKeyHexFromName,
   meshcoreResolvedTxPowerMax,
@@ -4173,6 +4174,11 @@ function MeshcoreChannelSection({
         }>
       ).detail;
       if (!detail?.name || !detail.secretHex) return;
+      const name = meshcoreChannelNameFromQr(detail.name);
+      if (!name) {
+        detail.settle?.('rejected');
+        return;
+      }
       const used = new Set(channels.map((c) => c.index));
       let idx = 0;
       while (used.has(idx) && idx <= MESHCORE_CHANNEL_INDEX_MAX) idx += 1;
@@ -4184,7 +4190,7 @@ function MeshcoreChannelSection({
       setAddingNew(true);
       setEditingIdx(null);
       setNewIdx(String(idx));
-      setEditName(detail.name);
+      setEditName(name);
       setEditKeyHex(detail.secretHex);
       setEditScope(meshcoreScopeOverrideFromQr(detail.regionScope));
       setCustomScope('');

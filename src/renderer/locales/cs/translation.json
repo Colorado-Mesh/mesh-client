@@ -858,7 +858,9 @@
     "floodScopeSaveFailed": "Nelze uložit rozsah odeslání. Předchozí uložená volba stále platí.",
     "reactionYouTitle": "{{name}} (ty)",
     "reactionYouAria": "Tvá reakce: {{name}}",
-    "reactionOtherAria": "{{reactor}} reagoval/a s {{name}}"
+    "reactionOtherAria": "{{reactor}} reagoval/a s {{name}}",
+    "clearChannelMessagesChanged": "{{name}} již není v tomto slotu v rádiu, takže nic nebylo vymazáno.",
+    "clearChannelMessagesRadioChanged": "Připojené rádio se změnilo, když bylo otevřené, takže zprávy v {{name}} nebyly vymazány."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

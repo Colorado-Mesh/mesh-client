@@ -19,8 +19,10 @@ import { MESHCORE_CONTACTS_FULL_ALARM_DEBOUNCE_MS } from '../timeConstants';
 import {
   applyMeshcoreContactDeletedFromRadio,
   attachMeshcoreContactCapacityPush,
+  endMeshcoreOffload,
   getMeshcoreRadioMaxContacts,
   handleMeshcoreContactsFullPush,
+  isMeshcoreAutoOffloadInFlight,
   isMeshcoreFirmwareContactsFullActive,
   maybeRequestMeshcoreAutoOffloadForCount,
   maybeRequestMeshcoreAutoOffloadForError,
@@ -28,6 +30,7 @@ import {
   requestMeshcoreAutoOffload,
   resetMeshcoreContactCapacityPushForTests,
   setMeshcoreRadioMaxContacts,
+  tryBeginMeshcoreOffload,
   writeMeshcoreAutoOffloadWhenFull,
 } from './meshcoreContactCapacityPush';
 
@@ -139,8 +142,10 @@ describe('meshcoreContactCapacityPush', () => {
     let finish: () => void = () => {};
     const runner = vi.fn(
       () =>
-        new Promise<void>((resolve) => {
-          finish = resolve;
+        new Promise<undefined>((resolve) => {
+          finish = () => {
+            resolve(undefined);
+          };
         }),
     );
     registerMeshcoreContactsFullOffloadRunner(runner);
@@ -223,6 +228,60 @@ describe('meshcoreContactCapacityPush', () => {
       expect(getMeshcoreRadioMaxContacts()).toBe(350);
       setMeshcoreRadioMaxContacts(null);
       expect(getMeshcoreRadioMaxContacts()).toBe(350);
+    });
+  });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'keeps the alarm debounce when auto-offload removes nothing on %s',
+    async () => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      const runner = vi.fn().mockResolvedValue(0);
+      registerMeshcoreContactsFullOffloadRunner(runner);
+
+      requestMeshcoreAutoOffload('firmware_full', 1_000);
+      await vi.waitFor(() => {
+        expect(runner).toHaveBeenCalledTimes(1);
+      });
+      expect(isMeshcoreAutoOffloadInFlight()).toBe(false);
+
+      requestMeshcoreAutoOffload('firmware_full', 1_001);
+      expect(runner).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'clears the alarm debounce after auto-offload removes contacts on %s',
+    async () => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      const runner = vi.fn().mockResolvedValue(2);
+      registerMeshcoreContactsFullOffloadRunner(runner);
+
+      requestMeshcoreAutoOffload('count_threshold', 1_000);
+      await vi.waitFor(() => {
+        expect(runner).toHaveBeenCalledTimes(1);
+      });
+
+      requestMeshcoreAutoOffload('count_threshold', 1_001);
+      await vi.waitFor(() => {
+        expect(runner).toHaveBeenCalledTimes(2);
+      });
+    },
+  );
+
+  it('shares the offload lock with a manual begin', async () => {
+    writeMeshcoreAutoOffloadWhenFull(true);
+    const runner = vi.fn().mockResolvedValue(1);
+    registerMeshcoreContactsFullOffloadRunner(runner);
+    expect(tryBeginMeshcoreOffload()).toBe(true);
+    expect(isMeshcoreAutoOffloadInFlight()).toBe(true);
+
+    requestMeshcoreAutoOffload('firmware_full', 1_000);
+    expect(runner).not.toHaveBeenCalled();
+
+    endMeshcoreOffload();
+    requestMeshcoreAutoOffload('firmware_full', 1_000);
+    await vi.waitFor(() => {
+      expect(runner).toHaveBeenCalledTimes(1);
     });
   });
 

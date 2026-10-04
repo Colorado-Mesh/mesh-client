@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "送信スコープを保存できませんでした。前回保存した選択肢は引き続き適用されます。",
     "reactionYouTitle": "{{name}} （あなた）",
     "reactionYouAria": "あなたのリアクション: {{name}}",
-    "reactionOtherAria": "{{reactor}}は{{name}}と反応しました"
+    "reactionOtherAria": "{{reactor}}は{{name}}と反応しました",
+    "clearChannelMessagesChanged": "{{name}}はラジオのそのスロットにはないため、何もクリアされませんでした。",
+    "clearChannelMessagesRadioChanged": "開いている間に接続されているラジオが変わったため、{{name}}のメッセージは消去されませんでした。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

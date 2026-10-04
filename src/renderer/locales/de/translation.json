@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "Der Sendebereich konnte nicht gespeichert werden. Die zuvor gespeicherte Auswahl gilt weiterhin.",
     "reactionYouTitle": "{{name}} (Sie)",
     "reactionYouAria": "Ihre Reaktion: {{name}}",
-    "reactionOtherAria": "{{reactor}} reagierte mit {{name}}"
+    "reactionOtherAria": "{{reactor}} reagierte mit {{name}}",
+    "clearChannelMessagesChanged": "{{name}} ist nicht mehr in diesem Slot im Radio, daher wurde nichts gelöscht.",
+    "clearChannelMessagesRadioChanged": "Das angeschlossene Funkgerät änderte sich, während dieses geöffnet war, sodass Nachrichten in {{name}} nicht gelöscht wurden."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

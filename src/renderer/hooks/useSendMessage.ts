@@ -50,9 +50,11 @@ function persistMeshcoreOutboundRow(
   chat.sender_name = senderName;
   if (packetId != null) chat.packetId = packetId;
   if (record.to !== 0xffffffff) chat.to = record.to;
-  void window.electronAPI.db.saveMeshcoreMessage(messageToDbRow(chat)).catch((e: unknown) => {
-    console.warn('[useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
-  });
+  void window.electronAPI.db
+    .saveMeshcoreMessage(messageToDbRow(chat, myNodeNum))
+    .catch((e: unknown) => {
+      console.warn('[useSendMessage] saveMeshcoreMessage failed ' + errLikeToLogString(e));
+    });
 }
 
 /** Companion `estTimeout` when present; otherwise the hop-ACK floor used when firmware omits one. */

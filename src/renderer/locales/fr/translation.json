@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "Impossible d'enregistrer l'étendue d'envoi. Le choix enregistré précédent s'applique toujours.",
     "reactionYouTitle": "{{name}} (vous)",
     "reactionYouAria": "Votre réaction : {{name}}",
-    "reactionOtherAria": "{{reactor}} a réagi avec {{name}}"
+    "reactionOtherAria": "{{reactor}} a réagi avec {{name}}",
+    "clearChannelMessagesChanged": "{{name}} n'est plus dans cet emplacement sur la radio, donc rien n'a été effacé.",
+    "clearChannelMessagesRadioChanged": "La radio connectée a changé alors qu'elle était ouverte, donc les messages en {{name}} n'ont pas été effacés."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

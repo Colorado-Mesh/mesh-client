@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "전송 범위를 저장할 수 없습니다. 이전에 저장된 선택 항목은 그대로 적용됩니다.",
     "reactionYouTitle": "{{name}} (나)",
     "reactionYouAria": "내 반응: {{name}}",
-    "reactionOtherAria": "{{reactor}} 이 (가) {{name}} 과 (와) 반응했습니다."
+    "reactionOtherAria": "{{reactor}} 이 (가) {{name}} 과 (와) 반응했습니다.",
+    "clearChannelMessagesChanged": "{{name}} 이 (가) 더 이상 라디오의 해당 슬롯에 없으므로 아무것도 지워지지 않았습니다.",
+    "clearChannelMessagesRadioChanged": "연결된 라디오가 열려 있는 동안 변경되어 {{name}} 의 메시지가 지워지지 않았습니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

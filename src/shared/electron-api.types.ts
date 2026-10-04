@@ -623,6 +623,7 @@ export interface ElectronAPI {
       reply_preview_sender?: string | null;
       rx_hops?: number | null;
       room_server_id?: number | null;
+      radio_node_id?: number | null;
     }) => Promise<void>;
     saveMeshcoreContact: (contact: {
       node_id: number;
@@ -689,7 +690,7 @@ export interface ElectronAPI {
     deleteMeshcoreContact: (nodeId: number) => Promise<void>;
     clearMeshcoreMessages: () => Promise<void>;
     getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;
-    clearMeshcoreMessagesByChannel: (channelIdx: number) => Promise<void>;
+    clearMeshcoreMessagesByChannel: (channelIdx: number, radioNodeId: number) => Promise<void>;
     clearMeshcoreContacts: () => Promise<void>;
     deleteMeshcoreContactsNeverAdvertised: () => Promise<void>;
     deleteMeshcoreContactsByAge: (days: number) => Promise<void>;

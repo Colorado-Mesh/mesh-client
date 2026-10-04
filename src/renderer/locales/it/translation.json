@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "Impossibile salvare l'ambito di invio. La scelta salvata in precedenza è ancora valida.",
     "reactionYouTitle": "{{name}} (tu)",
     "reactionYouAria": "La tua reazione: {{name}}",
-    "reactionOtherAria": "{{reactor}} ha reagito con {{name}}"
+    "reactionOtherAria": "{{reactor}} ha reagito con {{name}}",
+    "clearChannelMessagesChanged": "{{name}} non si trova più in quello slot della radio, quindi non è stato cancellato nulla.",
+    "clearChannelMessagesRadioChanged": "La radio collegata è cambiata mentre questa era aperta, quindi i messaggi in {{name}} non sono stati cancellati."
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

@@ -6,9 +6,28 @@ export const MESHCORE_MESSAGE_CHANNEL_SQL = `CASE
   WHEN to_node > 0 AND to_node != 4294967295 THEN -1
   ELSE channel_idx END`;
 
-export function clearMeshcoreMessagesByChannel(db: NodeSqliteDB, channelIndex: number) {
+/**
+ * Delete one channel's messages for this radio.
+ * `radioNodeId` <= 0 means the radio is unknown: only historical rows with no
+ * `radio_node_id` are removed. A positive id also removes those unscoped rows
+ * (they cannot be attributed) and keeps rows stamped for a different radio.
+ */
+export function clearMeshcoreMessagesByChannel(
+  db: NodeSqliteDB,
+  channelIndex: number,
+  radioNodeId: number,
+) {
+  if (radioNodeId > 0) {
+    return db
+      .prepareOnce(
+        `DELETE FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = ? AND (radio_node_id IS NULL OR radio_node_id = ?)`,
+      )
+      .run(channelIndex, radioNodeId);
+  }
   return db
-    .prepareOnce(`DELETE FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = ?`)
+    .prepareOnce(
+      `DELETE FROM meshcore_messages WHERE ${MESHCORE_MESSAGE_CHANNEL_SQL} = ? AND radio_node_id IS NULL`,
+    )
     .run(channelIndex);
 }
 
@@ -36,6 +55,8 @@ export interface MeshcoreMessageRowParams {
   reply_preview_sender: string | null;
   rx_hops: number | null;
   room_server_id: number | null;
+  /** Companion radio that stored this row. Null leaves a historical row unscoped. */
+  radio_node_id?: number | null;
 }
 
 export function persistMeshcoreMessage(db: NodeSqliteDB, rowParams: MeshcoreMessageRowParams) {
@@ -79,11 +100,13 @@ export function persistMeshcoreMessage(db: NodeSqliteDB, rowParams: MeshcoreMess
     }
   }
 
+  const radioNodeId =
+    rowParams.radio_node_id != null && rowParams.radio_node_id > 0 ? rowParams.radio_node_id : null;
   return db
     .prepareOnce(
       'INSERT OR IGNORE INTO meshcore_messages ' +
-        '(sender_id, sender_name, payload, channel_idx, timestamp, local_order, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id) ' +
-        'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @local_order, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id)',
+        '(sender_id, sender_name, payload, channel_idx, timestamp, local_order, status, packet_id, emoji, reply_id, to_node, received_via, rx_packet_fingerprint, reply_preview_text, reply_preview_sender, rx_hops, room_server_id, radio_node_id) ' +
+        'VALUES (@sender_id, @sender_name, @payload, @channel_idx, @timestamp, @local_order, @status, @packet_id, @emoji, @reply_id, @to_node, @received_via, @rx_packet_fingerprint, @reply_preview_text, @reply_preview_sender, @rx_hops, @room_server_id, @radio_node_id)',
     )
-    .run(rowParams);
+    .run({ ...rowParams, radio_node_id: radioNodeId });
 }

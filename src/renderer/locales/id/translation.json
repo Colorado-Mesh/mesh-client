@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "Tidak dapat menyimpan ruang lingkup pengiriman. Pilihan tersimpan sebelumnya masih berlaku.",
     "reactionYouTitle": "{{name}} (Anda)",
     "reactionYouAria": "Reaksi Anda: {{name}}",
-    "reactionOtherAria": "{{reactor}} bereaksi dengan {{name}}"
+    "reactionOtherAria": "{{reactor}} bereaksi dengan {{name}}",
+    "clearChannelMessagesChanged": "{{name}} tidak lagi ada di slot itu di radio, jadi tidak ada yang dihapus.",
+    "clearChannelMessagesRadioChanged": "Radio yang terhubung berubah saat ini terbuka, sehingga pesan dalam {{name}} tidak dihapus."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

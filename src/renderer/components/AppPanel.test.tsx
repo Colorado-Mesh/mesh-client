@@ -729,4 +729,60 @@ describe('AppPanel: clear messages by channel (#1098)', () => {
     ).toBeInTheDocument();
     expect(getChannels).toHaveBeenCalledTimes(2);
   });
+
+  it('clears the selected channel for the radio that was connected when Clear was clicked', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreMessageChannels).mockResolvedValue([{ channel: 3 }]);
+    const clearByChannel = vi.mocked(window.electronAPI.db.clearMeshcoreMessagesByChannel);
+    clearByChannel.mockReset();
+    clearByChannel.mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <AppPanel {...props} myNodeNum={1} isActive />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByText('Destructive actions'));
+    const select = await screen.findByRole('combobox', { name: 'Channel' });
+    fireEvent.change(select, { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Messages (12)' }));
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Clear Channel 3: #test',
+      }),
+    );
+    await waitFor(() => {
+      expect(clearByChannel).toHaveBeenCalledWith(3, 1);
+    });
+  });
+
+  it('clears nothing if another radio connected before the clear was confirmed', async () => {
+    vi.mocked(window.electronAPI.db.getMeshcoreMessageChannels).mockResolvedValue([{ channel: 3 }]);
+    const clearByChannel = vi.mocked(window.electronAPI.db.clearMeshcoreMessagesByChannel);
+    clearByChannel.mockReset();
+    clearByChannel.mockResolvedValue(undefined);
+    const { rerender } = render(
+      <ToastProvider>
+        <AppPanel {...props} myNodeNum={1} isActive />
+      </ToastProvider>,
+    );
+    fireEvent.click(screen.getByText('Destructive actions'));
+    const select = await screen.findByRole('combobox', { name: 'Channel' });
+    fireEvent.change(select, { target: { value: '3' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Messages (12)' }));
+    rerender(
+      <ToastProvider>
+        <AppPanel {...props} myNodeNum={2} isActive />
+      </ToastProvider>,
+    );
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Clear Channel 3: #test',
+      }),
+    );
+    expect(clearByChannel).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'The connected radio changed while this was open, so messages in Channel 3: #test were not cleared.',
+      ),
+    ).toBeInTheDocument();
+  });
 });

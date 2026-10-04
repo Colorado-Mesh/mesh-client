@@ -19,7 +19,7 @@ import { sanitizeLogMessage } from './log-service';
 import { ensureMessageFtsTables } from './messageFts';
 
 /** Bumped when ensureSchema behavior changes in a non-idempotent way (rare). */
-export const CURRENT_SCHEMA_VERSION = 51;
+export const CURRENT_SCHEMA_VERSION = 52;
 
 /** Thrown when on-disk `user_version` exceeds this build's {@link CURRENT_SCHEMA_VERSION}. */
 export class DatabaseSchemaTooNewError extends Error {
@@ -131,7 +131,8 @@ export const CANONICAL_TABLES_DDL = `
         reply_preview_text TEXT,
         reply_preview_sender TEXT,
         rx_hops INTEGER,
-        room_server_id INTEGER
+        room_server_id INTEGER,
+        radio_node_id INTEGER
       );
 
       CREATE TABLE IF NOT EXISTS position_history (
@@ -461,6 +462,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     reply_preview_sender: 'TEXT',
     rx_hops: 'INTEGER',
     room_server_id: 'INTEGER',
+    radio_node_id: 'INTEGER',
   },
   reticulum_messages: {
     identity_id: 'TEXT NOT NULL',
@@ -952,22 +954,28 @@ function repairMeshcoreContactDataQuality(db: NodeSqliteDB): void {
   db.prepare(
     `UPDATE meshcore_contacts SET adv_lon = NULL WHERE adv_lon IS NOT NULL AND (adv_lon < -180 OR adv_lon > 180)`,
   ).run();
+}
 
-  if (tableExists(db, 'meshcore_messages')) {
-    db.prepare(
-      `DELETE FROM meshcore_messages
-       WHERE id IN (
-         SELECT m2.id FROM meshcore_messages m1
-         INNER JOIN meshcore_messages m2 ON m1.id < m2.id
-           AND m1.channel_idx = -1 AND m2.channel_idx = -1
-           AND m1.received_via = 'rf' AND m2.received_via = 'rf'
-           AND m1.sender_id IS NOT NULL AND m1.sender_id = m2.sender_id
-           AND COALESCE(m1.to_node, -1) = COALESCE(m2.to_node, -1)
-           AND m1.payload = m2.payload
-           AND ABS(m2.timestamp - m1.timestamp) <= 120000
-       )`,
-    ).run();
-  }
+/**
+ * v52: one-time repair of duplicate RF direct messages (same sender, recipient, and
+ * payload within 120s). #1117 stores real DMs at channel_idx = -1, so repeating this
+ * on every launch deletes legitimate identical DMs. Run only while user_version < 52.
+ */
+function dedupeMeshcoreRfDirectMessagesOnce(db: NodeSqliteDB): void {
+  if (!tableExists(db, 'meshcore_messages')) return;
+  db.prepare(
+    `DELETE FROM meshcore_messages
+     WHERE id IN (
+       SELECT m2.id FROM meshcore_messages m1
+       INNER JOIN meshcore_messages m2 ON m1.id < m2.id
+         AND m1.channel_idx = -1 AND m2.channel_idx = -1
+         AND m1.received_via = 'rf' AND m2.received_via = 'rf'
+         AND m1.sender_id IS NOT NULL AND m1.sender_id = m2.sender_id
+         AND COALESCE(m1.to_node, -1) = COALESCE(m2.to_node, -1)
+         AND m1.payload = m2.payload
+         AND ABS(m2.timestamp - m1.timestamp) <= 120000
+     )`,
+  ).run();
 }
 
 function ensureIndexes(db: NodeSqliteDB): void {
@@ -1134,6 +1142,10 @@ export function runSchemaUpgrade(db: NodeSqliteDB): void {
     // One-time: legacy last_heard-only rows were Contacts before the History split.
     if (cur < 48) {
       backfillReticulumIsContactFromLastHeard(db);
+    }
+    // One-time: RF DM duplicate sweep. Later identical DMs are real traffic after #1117.
+    if (cur < 52) {
+      dedupeMeshcoreRfDirectMessagesOnce(db);
     }
     structuralUpgrades(db);
     ensureIndexes(db);

@@ -2,6 +2,13 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  isMeshcoreAutoOffloadInFlight,
+  registerMeshcoreContactsFullOffloadRunner,
+  requestMeshcoreAutoOffload,
+  resetMeshcoreContactCapacityPushForTests,
+  writeMeshcoreAutoOffloadWhenFull,
+} from '../lib/meshcore/meshcoreContactCapacityPush';
+import {
   MeshcoreOffloadAbortedError,
   type MeshcoreOffloadFromRadioOptions,
 } from '../lib/meshcoreOffload';
@@ -9,6 +16,8 @@ import { useMeshcoreContactCapacity } from './useMeshcoreContactCapacity';
 
 describe('useMeshcoreContactCapacity', () => {
   beforeEach(() => {
+    resetMeshcoreContactCapacityPushForTests();
+    writeMeshcoreAutoOffloadWhenFull(false);
     vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockReset();
     vi.mocked(window.electronAPI.db.getMeshcoreContactCount).mockResolvedValue(350);
     vi.mocked(window.electronAPI.db.offloadAllMeshcoreContacts).mockReset();
@@ -121,4 +130,49 @@ describe('useMeshcoreContactCapacity', () => {
     expect(result.current.loading).toBe(false);
     expect(window.electronAPI.db.offloadAllMeshcoreContacts).not.toHaveBeenCalled();
   });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'shares one lock with auto-offload on %s',
+    async () => {
+      writeMeshcoreAutoOffloadWhenFull(true);
+      const autoRunner = vi.fn().mockResolvedValue(1);
+      registerMeshcoreContactsFullOffloadRunner(autoRunner);
+      let release: () => void = () => {};
+      const offloadFromRadio = vi.fn(
+        () =>
+          new Promise<number>((resolve) => {
+            release = () => {
+              resolve(1);
+            };
+          }),
+      );
+      const { result } = renderHook(() => useMeshcoreContactCapacity());
+      await waitFor(() => {
+        expect(result.current.contactCount).toBe(350);
+      });
+
+      let first: Promise<unknown> = Promise.resolve();
+      act(() => {
+        first = result.current.offloadAndReconcile(undefined, offloadFromRadio);
+      });
+      await waitFor(() => {
+        expect(isMeshcoreAutoOffloadInFlight()).toBe(true);
+      });
+
+      await act(async () => {
+        await expect(
+          result.current.offloadAndReconcile(undefined, offloadFromRadio),
+        ).rejects.toThrow('meshcore offload already in progress');
+      });
+      requestMeshcoreAutoOffload('firmware_full', 1_000);
+      expect(offloadFromRadio).toHaveBeenCalledTimes(1);
+      expect(autoRunner).not.toHaveBeenCalled();
+
+      await act(async () => {
+        release();
+        await first;
+      });
+      expect(isMeshcoreAutoOffloadInFlight()).toBe(false);
+    },
+  );
 });

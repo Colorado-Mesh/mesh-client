@@ -775,6 +775,18 @@ export const MESHCORE_CHANNEL_INDEX_MAX = 39;
 export const MESHCORE_CHANNEL_NAME_MAX_LEN = 31;
 
 /**
+ * App cap for a flood-scope hashtag, including the leading `#`.
+ * The radio stores only the 16-byte transport key (SHA-256 of the hashtag);
+ * the firmware has no hashtag length. 32 is `#` plus the 31-character channel-name budget.
+ */
+export const MESHCORE_FLOOD_SCOPE_HASHTAG_MAX_LEN = 32;
+
+/** QR channel labels must fit the firmware name before they reach a form field. */
+export function meshcoreChannelNameFromQr(name: string): string {
+  return name.trim().slice(0, MESHCORE_CHANNEL_NAME_MAX_LEN);
+}
+
+/**
  * 128-bit AES key as 32 hex chars: first 16 bytes of SHA-256("#name") per MeshCore #channel convention.
  * The name is normalized with a leading `#` (e.g. `general` → hash `#general`).
  */

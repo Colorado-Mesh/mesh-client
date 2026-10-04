@@ -599,4 +599,50 @@ describe('runSchemaUpgrade', { timeout: 30_000 }, () => {
     expect(emergency.priority).toBe('emergency');
     db.close();
   });
+
+  it.each(['linux', 'darwin', 'win32'])(
+    'sweeps duplicate RF DMs once when upgrading below v52 on %s',
+    () => {
+      const db = new NodeSqliteDB(':memory:');
+      try {
+        runSchemaUpgrade(db);
+        db.pragma('user_version = 51');
+        const insert = db.prepareOnce(
+          `INSERT INTO meshcore_messages
+             (sender_id, payload, channel_idx, timestamp, to_node, received_via)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+        );
+        insert.run(1, 'same', -1, 1_000, 2, 'rf');
+        insert.run(1, 'same', -1, 1_000 + 120_000, 2, 'rf');
+        insert.run(1, 'same', -1, 1_000 + 240_001, 2, 'rf');
+        insert.run(1, 'mqtt twin', -1, 3_000, 2, 'mqtt');
+        insert.run(1, 'mqtt twin', -1, 3_100, 2, 'mqtt');
+        insert.run(1, 'group', 0, 1_000, null, 'rf');
+        insert.run(1, 'group', 0, 1_050, null, 'rf');
+
+        runSchemaUpgrade(db);
+
+        expect(db.prepareOnce('SELECT payload FROM meshcore_messages ORDER BY id').all()).toEqual([
+          { payload: 'same' },
+          { payload: 'same' },
+          { payload: 'mqtt twin' },
+          { payload: 'mqtt twin' },
+          { payload: 'group' },
+          { payload: 'group' },
+        ]);
+        expect(db.pragma('user_version', { simple: true })).toBe(CURRENT_SCHEMA_VERSION);
+
+        insert.run(3, 'again', -1, 5_000, 4, 'rf');
+        insert.run(3, 'again', -1, 5_100, 4, 'rf');
+        runSchemaUpgrade(db);
+        expect(
+          db
+            .prepareOnce("SELECT COUNT(*) AS n FROM meshcore_messages WHERE payload = 'again'")
+            .get(),
+        ).toEqual({ n: 2 });
+      } finally {
+        db.close();
+      }
+    },
+  );
 });

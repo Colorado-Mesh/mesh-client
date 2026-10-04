@@ -496,10 +496,13 @@ describe('MeshCore clear-by-channel validation (source contract)', () => {
   });
 
   it('db:clearMeshcoreMessagesByChannel uses safeMeshcoreChannelIndex', () => {
-    const handlerIdx = INDEX_SOURCE.indexOf("ipcMain.handle('db:clearMeshcoreMessagesByChannel'");
+    const handlerIdx = INDEX_SOURCE.search(
+      /ipcMain\.handle\(\s*'db:clearMeshcoreMessagesByChannel'/,
+    );
     expect(handlerIdx).toBeGreaterThan(-1);
-    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 400);
+    const body = INDEX_SOURCE.slice(handlerIdx, handlerIdx + 500);
     expect(body).toContain('safeMeshcoreChannelIndex(channelIdx)');
+    expect(body).toContain('safeMeshcoreRadioNodeId(radioNodeId)');
   });
 });
 

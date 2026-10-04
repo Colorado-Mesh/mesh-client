@@ -839,7 +839,9 @@
     "floodScopeSaveFailed": "Kon het verzendbereik niet opslaan. De vorige opgeslagen keuze is nog steeds van toepassing.",
     "reactionYouTitle": "{{name}} (jij)",
     "reactionYouAria": "Jouw reactie: {{name}}",
-    "reactionOtherAria": "{{reactor}} reageerde met {{name}}"
+    "reactionOtherAria": "{{reactor}} reageerde met {{name}}",
+    "clearChannelMessagesChanged": "{{name}} zit niet meer in die sleuf op de radio, dus er is niets gewist.",
+    "clearChannelMessagesRadioChanged": "De aangesloten radio is gewijzigd terwijl deze open was, dus berichten in {{name}} zijn niet gewist."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

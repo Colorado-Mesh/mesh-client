@@ -115,6 +115,25 @@ describe('MeshCore channel scope settings and QR', () => {
     },
   );
 
+  it('truncates a long QR channel name and drops an over-long flood scope', () => {
+    render(panel({ onMeshcoreSetChannel: vi.fn() }));
+    const section = openChannels();
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('mesh-client:meshcoreChannelFromQr', {
+          detail: {
+            name: `  ${'N'.repeat(40)}  `,
+            secretHex: 'ab'.repeat(16),
+            regionScope: 's'.repeat(80),
+          },
+        }),
+      );
+    });
+    expect(section.getByLabelText('Name')).toHaveValue('N'.repeat(31));
+    expect(section.getByRole('combobox', { name: 'Send scope for this channel' })).toHaveValue('');
+    expect(section.queryByRole('option', { name: `#${'s'.repeat(80)}` })).toBeNull();
+  });
+
   it('prefills explicit Unscoped through the in-panel QR handler, saving only after success', async () => {
     const save = vi
       .fn()

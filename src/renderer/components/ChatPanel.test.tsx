@@ -6110,8 +6110,97 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     expect(onClearChannelMessages).not.toHaveBeenCalled();
     await user.click(within(dialog).getByRole('button', { name: 'Clear messages' }));
     await waitFor(() => {
-      expect(onClearChannelMessages).toHaveBeenCalledWith(0);
+      expect(onClearChannelMessages).toHaveBeenCalledWith(0, 1);
     });
+  });
+
+  it('clears nothing if the slot name changed while the dialog was open', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    rerender(
+      <ToastProvider>
+        <ChatPanel
+          {...props}
+          onClearChannelMessages={onClearChannelMessages}
+          channels={[
+            { index: 0, name: 'Public' },
+            { index: 3, name: '#weather' },
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+    );
+    expect(onClearChannelMessages).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        '#test is no longer in that slot on the radio, so nothing was cleared.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('clears nothing if another radio connected while the dialog was open', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} myNodeNum={2} />
+      </ToastProvider>,
+    );
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+    );
+    expect(onClearChannelMessages).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'The connected radio changed while this was open, so messages in #test were not cleared.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('clears nothing if another radio connected while the channel menu was open', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    const { rerender } = render(
+      <ToastProvider>
+        <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} />
+      </ToastProvider>,
+    );
+    fireEvent.contextMenu(chip('#test'));
+    // The menu stays open across the switch. The new radio still has #test in the same slot.
+    rerender(
+      <ToastProvider>
+        <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} myNodeNum={2} />
+      </ToastProvider>,
+    );
+    await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+    );
+    expect(onClearChannelMessages).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText(
+        'The connected radio changed while this was open, so messages in #test were not cleared.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('says so when clearing messages fails', async () => {

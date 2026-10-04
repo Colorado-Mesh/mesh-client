@@ -50,7 +50,8 @@ export function subscribeMeshcoreRadioMaxContacts(listener: () => void): () => v
   };
 }
 
-export type MeshcoreContactsFullOffloadRunner = () => Promise<void>;
+/** Resolves to how many contacts left the radio. `undefined` counts as a removal. */
+export type MeshcoreContactsFullOffloadRunner = () => Promise<number | undefined>;
 
 let contactsFullOffloadRunner: MeshcoreContactsFullOffloadRunner | null = null;
 
@@ -154,25 +155,40 @@ export async function applyMeshcoreContactDeletedFromRadio(opts: {
   }
 }
 
+/** True while manual or automatic contact offload holds the shared lock. */
+export function isMeshcoreAutoOffloadInFlight(): boolean {
+  return contactsFullOffloadInFlight;
+}
+
+/** Acquire the shared offload lock. False when manual or auto offload is already running. */
+export function tryBeginMeshcoreOffload(): boolean {
+  if (isMeshcoreAutoOffloadInFlight()) return false;
+  contactsFullOffloadInFlight = true;
+  return true;
+}
+
+export function endMeshcoreOffload(): void {
+  contactsFullOffloadInFlight = false;
+}
+
 async function runContactsFullOffload(): Promise<void> {
-  if (contactsFullOffloadInFlight) return;
   const runner = contactsFullOffloadRunner;
   if (!runner) {
     console.warn('[meshcoreContactCapacityPush] contacts-full offload requested but no runner');
     return;
   }
-  contactsFullOffloadInFlight = true;
+  if (!tryBeginMeshcoreOffload()) return;
   try {
-    await runner();
+    const removed = await runner();
     setFirmwareContactsFullActive(false);
-    lastContactsFullAlarmAt = 0;
+    // Zero removals leave the table full. Keeping the alarm timestamp preserves the debounce
+    // so the next count check does not start another offload immediately.
+    if (removed !== 0) {
+      lastContactsFullAlarmAt = 0;
+    }
   } finally {
-    contactsFullOffloadInFlight = false;
+    endMeshcoreOffload();
   }
-}
-
-export function isMeshcoreAutoOffloadInFlight(): boolean {
-  return contactsFullOffloadInFlight;
 }
 
 /**
@@ -193,7 +209,7 @@ export function requestMeshcoreAutoOffload(
   }
   notifyMeshcoreContactCountMaybeChanged();
 
-  if (contactsFullOffloadInFlight) {
+  if (isMeshcoreAutoOffloadInFlight()) {
     console.debug(
       `[meshcoreContactCapacityPush] auto-offload skipped (in flight) reason=${reason}`,
     );

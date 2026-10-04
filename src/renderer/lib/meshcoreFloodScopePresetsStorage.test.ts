@@ -52,6 +52,10 @@ describe('meshcoreFloodScopePresetsStorage', () => {
     expect(isValidMeshcoreFloodScopeHashtag('  #  ')).toBe(false);
     expect(isValidMeshcoreFloodScopeHashtag('colorado')).toBe(true);
     expect(isValidMeshcoreFloodScopeHashtag('#EU')).toBe(true);
+    expect(isValidMeshcoreFloodScopeHashtag('a'.repeat(31))).toBe(true);
+    expect(isValidMeshcoreFloodScopeHashtag('a'.repeat(32))).toBe(false);
+    expect(isValidMeshcoreFloodScopeHashtag(`#${'a'.repeat(31)}`)).toBe(true);
+    expect(isValidMeshcoreFloodScopeHashtag(`#${'a'.repeat(32)}`)).toBe(false);
   });
 
   it('sanitizes malformed data, normalizes, dedupes, and caps', () => {
