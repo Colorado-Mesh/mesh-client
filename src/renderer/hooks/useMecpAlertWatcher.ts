@@ -79,7 +79,9 @@ function isOwnMessage(
   ownNodeIds: ReadonlySet<number>,
   ownSenderId?: number | null,
 ): boolean {
-  if (msg.status != null) return true;
+  // Persisted rows are stamped 'acked', including other stations.
+  // Only in-flight or failed local sends are own by status.
+  if (msg.status === 'sending' || msg.status === 'failed') return true;
   if (ownSenderId != null && msg.from === ownSenderId) return true;
   if (ownNodeIds.has(msg.from)) return true;
   return false;
