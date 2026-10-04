@@ -571,7 +571,8 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 **Windows-specific:**
 
-- Before connecting to a MeshCore device over BLE, pair it first in **Settings → Bluetooth & devices → Add device**. Without pairing, the connection appears to succeed but no data is exchanged.
+- The app pairs LoRa radios itself on Windows: when you pick a device or click Reconnect, it checks the pairing state and, if the radio is not paired, asks for the PIN (MeshCore: the PIN on the radio's screen; Meshtastic: prefilled `123456`) before connecting. Pairing only in **Settings → Bluetooth & devices** can leave some radios (for example the L1 Pro MeshCore companion) half-paired, which stalls the connection.
+- If the pair-state check times out or pairing fails, the app does not connect and offers **Remove & Re-pair Device**. Use it, or remove every entry for the radio in **Settings → Bluetooth & devices** and try again.
 
 **Linux-specific:**
 
@@ -734,7 +735,7 @@ After sleep or hibernate, mesh-client uses the same resume path as macOS: reconn
 - **Sidecar GATT BLE:** Same immediate-connect-then-scan behavior as macOS (remembered peripheral, then up to **30 seconds** scanning for a new advertisement).
 - **Stuck “reconnecting” banner:** During sleep the UI may show disconnected with connection loss until wake recovery runs. If reconnect never progresses after wake, use **Disconnect & Quit** from the Connection tab or exit the app fully and reconnect manually.
 - **Dual-protocol BLE (Meshtastic + MeshCore):** Auto-reconnect is already staggered Meshtastic-first (see above); manually forcing MeshCore to reconnect before Meshtastic is not necessary and does not match the recovery order. If both protocols are still down after ~30 seconds, use **Connect** on each tab in the same Meshtastic-then-MeshCore order. Concurrent scans from both tabs can return `scan_busy`.
-- **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, confirm the radio is **paired in Settings → Bluetooth & devices** before using **Connect** in mesh-client (MeshCore requires OS-level pairing on Windows).
+- **MeshCore pairing after wake:** If BLE appears connected but the MeshCore handshake or GATT notify never completes, use **Remove & Re-pair Device** on the Connection tab so the app unpairs and pairs the radio again (MeshCore requires a bond on Windows; the app does the pairing itself).
 - **BLE stuck after wake** (`connect_timeout`, peripheral not found, or GATT session errors in the app log): **Exit mesh-client fully**, toggle **Bluetooth off → on** in **Settings → Bluetooth & devices** (or disable/enable the adapter in **Device Manager**), wait a few seconds, reopen the app, then use **Connect**. If disconnects persist, update the Bluetooth driver in Device Manager.
 - **MQTT-only:** Transient errors such as `ENETDOWN` or `ENETUNREACH` after wake should recover automatically.
 - **Renderer hung after wake:** Same as macOS — if you see `[main] renderer unresponsive after system resume (no heartbeat within 30s)` without `[usePowerRecovery]` logs, quit fully and relaunch.
@@ -2069,7 +2070,7 @@ MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conve
 
 **MECP button missing in Chat**
 
-App → MECP → **Show MECP button in Chat** is off by default. Enable it to show MECP compose in Chat. The **Incident** tab still receives inbound MECP without compose enabled.
+App → MECP → **Show MECP button in Chat** is off by default. Enable it to show MECP compose in Chat: a red siren icon button in the composer, left of Send. It is hidden in the **Starred** view, which has no composer. The **Incident** tab still receives inbound MECP without compose enabled.
 
 **What is the Incident tab?**
 

@@ -11,6 +11,9 @@
 [![Publish Docs](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/docs.yml/badge.svg)](https://github.com/Colorado-Mesh/mesh-client/actions/workflows/docs.yml)
 ![Discord](https://img.shields.io/discord/1436156966648152271?label=chat&logo=discord)
 
+> [!NOTE]
+> **Mesh-Client is a 100% volunteer-run project.** It is designed, coded, tested, translated, documented, and supported entirely by unpaid volunteers in their spare time. There is no company or paid staff behind it. Response times on issues and pull requests depend on volunteer availability, and every contribution helps: bug reports, testing on real radios, translations, docs, and code. See [CONTRIBUTING.md](CONTRIBUTING.md) or say hello in [Discord](https://discord.com/invite/McChKR5NpS).
+
 **For everyone, everywhere.** We welcome community participation and collaboration in the development of this project!
 
 Releases and build artifacts are published on [GitHub](https://github.com/Colorado-Mesh/mesh-client); source is also manually mirrored to [gitworkshop](https://gitworkshop.dev/npub1wwaq5gyk7yljly3cwl3wleuk79nz63ukpp2a6lq5x4q9s9r4nrgqjk3dlv/relay.ngit.dev/mesh-client).
@@ -96,7 +99,8 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 
 **Radio & Channel Configuration**
 
-- Edit channels: name, PSK, and role; 18 region presets and 7 modem presets
+- Edit channels: name, PSK, and role; 18 region presets and 7 modem presets. On firmware 2.8+, the modem preset list follows the radio's per-region preset map (allowed presets, region default, licensed-only bands)
+- **Firmware 2.7 / 2.8 parity**: long names are limited to **24 UTF-8 bytes** (emoji count as several bytes); LoRa **Apply** stays disabled until the LoRa config loads from the device; when firmware 2.8 renumbers a node from its public key, chat history and saved remote-admin keys follow it to the new node number (only when the new number matches the key)
 - **Channel URL import/export** (Radio tab): generate, copy, preview, and apply `https://meshtastic.org/e/#…` or `meshtastic://` links (same ChannelSet protobuf format as the Android/web clients); replace all channels or add-only mode
 - Device roles: Client, Router, Tracker, Sensor, TAK, and more
 - **Display**, **Bluetooth**, and **Power** settings on the Radio tab (screen/LED, pairing, sleep, and power limits)
@@ -112,6 +116,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 - **Per-channel MQTT uplink** (RF → MQTT) uses each channel’s real name and PSK when publishing
 - Transport indicator (RF / MQTT / both) on received messages; MQTT messages are shown in chat but not rebroadcast over RF
 - Enter your broker URL, topic, and optional credentials in the MQTT section of the Connection tab; settings persist across sessions
+- **Saved MQTT profiles**: save the current broker settings as a named profile (for example "Chicago"), then switch, rename, or delete profiles from the MQTT card; switching to a profile with a different broker waits until you disconnect and reconnect MQTT
 
 **Module Configuration**
 
@@ -139,12 +144,14 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 - **Channel Utilization History**: 24h CU timeline chart for the connected node in DiagnosticsPanel (fed by LocalStats / device-metrics ingest, not only NodeInfo)
 - Anomaly badges inline in node list; status aura circles on the map; congestion halos toggle; global and per-node MQTT ignore
 - **Environment Profile** segmented control; Standard (3 km), City (1.6× threshold), Canyon (2.6× threshold)
+- **Trusted location only**: distance checks (Impossible hop, Hop goblin, suboptimal route) measure only from a trusted position: this session's radio GPS fix, or a saved location you confirmed this launch (or marked "doesn't move"). With an approximate IP / browser position or an unconfirmed saved location, those checks pause and the Diagnostics panel asks you to set your location
 
 > See [Diagnostics Reference](docs/diagnostics.md) for a full reference on what triggers each finding and how to interpret it.
 
 **Environment Telemetry**
 
 - Push-based environment charts (temperature, humidity, pressure, air quality) from Meshtastic telemetry packets, displayed in the Telemetry tab
+- **Sensor history and map layer**: environment readings from RF, MeshCore remote telemetry, and Meshtastic MQTT are saved to SQLite and shown on the Map as a **Sensors** layer (pick temperature, humidity, or pressure; node popups include sparklines). History loads are capped (newest 2,000 nodes, 500 points per node)
 
 **Packet Redundancy**
 
@@ -172,6 +179,10 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 - **Log panel**: live stream, **Analyze** heuristics, export/delete; Reticulum sidecar lines tagged `[ReticulumSidecar]`
 - **SQLite persistence**: protocol-scoped history and settings; DB export/import/clear in the App tab; **Export for GitHub** (zip: debug snapshot + logs) and **Export for Developer** (includes full SQLite — share privately only)
 - **Updates & tray**: update status in the status bar; system tray unread badge when the window is backgrounded
+- **Launcher settings search**: Ctrl/Cmd+K finds panels and individual settings; choosing a setting opens its panel, expands the section, scrolls to the row, and focuses it
+- **Enable / disable protocols** (App → Protocols): turn off protocols you don't use. A disabled protocol is hidden from the switcher, disconnected, and skipped by auto-connect, autostart, and sleep/wake recovery; with one protocol left, the switcher is hidden
+- **Firmware update toast**: **Don't remind me** silences the toast for that release (per protocol); it returns when a newer release ships
+- **Developer announcements**: a dismissible strip at the top of the window shows short notices from the maintainers (outages, "please update", news), fetched from a JSON file in this repo; plain text only, and nothing shows when offline. See [`docs/agents/service-announcements.md`](docs/agents/service-announcements.md)
 
 ### Shared RF features (Meshtastic & MeshCore)
 
@@ -202,7 +213,8 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 - **Jump to date**: scroll the chat to a specific calendar date
 - **Link previews**: `http`/`https` URLs fetch metadata via main-process IPC — Open Graph for pages, **YouTube oEmbed** for watch/shorts/youtu.be links, and **inline image embeds** for direct raster URLs (`.jpg`, `.png`, etc.). Localhost and private IPs are blocked.
 - **Sound notifications**: audio ping for new messages in non-active channels/DMs; global mute in the toolbar; **per-conversation mute** (bell on channel/DM tabs) stored per protocol. **App → Notifications → Notification tones** configures presets or short imported audio for channel, DM, reply/mention, each MECP severity, and ops alerts (link lost / battery low); MAYDAY/URGENT bypass mute (with a volume floor). See [notification-sounds.md](docs/notification-sounds.md)
-- **Message starring**: star messages from the hover row; **Starred** view lists bookmarks across conversations (newest first, cap 200)
+- **Message starring**: star messages from the hover row; **Starred** view lists bookmarks across conversations (newest first, cap 200). Opening Starred does not mark the previous channel read, and the composer is hidden there
+- **Weather view**: a toolbar toggle shows only weather posts (bot forecasts, °F/°C readings, JSON telemetry) in the selected channel; optionally **hide weather posts in channels** (hidden posts don't badge or beep), add an extra regex pattern, or **Mark as weather sender** from a sender's header. DMs are never filtered
 - **Timestamp tooltip**: hover the short time label for full date and time
 - **@mention autocomplete**: type `@` to open a node-name picker; Tab or Enter to insert; arrow keys to navigate
 - **Export chat**: save the current channel or DM history as a `.txt` file via Save dialog
@@ -218,7 +230,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 **EMCOMM / Incident Command**
 
-- **MECP** (Mesh Emergency Communication Protocol): structured emergency text (`MECP/<severity>/<codes> …`) on Meshtastic, MeshCore, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (`mecp-received.log`), and can optionally bridge Meshtastic↔MeshCore RF channels (**App → MECP RF rebroadcast**, default off). Chat compose is opt-in (**App → MECP → Show MECP button in Chat**, default off). Details for agents: [`docs/agents/mecp.md`](docs/agents/mecp.md).
+- **MECP** (Mesh Emergency Communication Protocol): structured emergency text (`MECP/<severity>/<codes> …`) on Meshtastic, MeshCore, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (`mecp-received.log`), and can optionally bridge Meshtastic↔MeshCore RF channels (**App → MECP RF rebroadcast**, default off). Chat compose is opt-in (**App → MECP → Show MECP button in Chat**, default off); when on, a red siren button sits in the composer next to Send. Chat channel and DM chips show a shield icon, colored by the highest severity, while unread MECP reports are waiting. Details for agents: [`docs/agents/mecp.md`](docs/agents/mecp.md).
 - **Incident** tab (always visible on all three protocols; pinned at the bottom of the rail next to **App** — rarely needed day-to-day, but the red badge counts open MAYDAY/URGENT so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress **beacon** is active. Coordinates come from the report or the sender's last known position and can appear on the Map (**Layers → Emergency incidents**) for Meshtastic, MeshCore, **and Reticulum** (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). **Acknowledge** sends R01 (or **Confirm** / B02 when a beacon is active). **Resolve** closes the row locally. If you sent the distress beacon, **Cancel beacon** also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed but never badge. Details for agents: [`docs/agents/emcomm.md`](docs/agents/emcomm.md).
 - **Emergency outbox**: MECP / MAYDAY sends that can't go out live are queued as emergency priority and keep retrying after reconnect (no 24h age cutoff or attempt limit; a soft cap blocks, never deletes)
 - **ACK honesty**: broadcast acknowledgements are **heard by the network** / best effort — not read receipts
@@ -227,9 +239,10 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 **Map & Position**
 
-- Interactive map with node positions and your current location (device GPS → browser geolocation → IP-based city-level fallback); default **OpenStreetMap** basemap with optional **Carto Dark** and **USGS Topo** (US only; offline-cacheable like the other basemaps)
+- Interactive map with node positions and your current location (device GPS → saved location → browser geolocation → IP-based city-level fallback); default **OpenStreetMap** basemap with optional **Carto Dark** and **USGS Topo** (US only; offline-cacheable like the other basemaps)
 - **Offline maps**: basemap tiles are served through the privileged **`mesh-tiles:`** protocol and cached under app **userData** `tile-cache/` (~1 GiB LRU; viewed tiles cache automatically while online). Use **Layers → Offline maps → Download current view** to pre-fetch a region (estimate + confirm; single-job size capped so downloads are not immediately evicted). Optional **Auto-cache** and **Clear tile cache**. Uncached areas are blank offline; markers and trails still render from local/SQLite state — see [Troubleshooting — Map offline](docs/troubleshooting.md#map-tab-without-internet-offline--no-wan)
-- **Layers** control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos, open **incidents**, **MGRS grid**); basemap preference persists in SQLite and localStorage
+- **Saved locations** (App tab, Diagnostics, or a startup strip): when the radio has no GPS, save named places this computer is used from (Home, EOC). Each launch asks "Still at …?" unless the location is marked "doesn't move". Coordinates can be pasted as decimal, degrees/minutes/seconds with N/S/E/W, MGRS, or a Google / Apple / OpenStreetMap share link. Only this session's radio GPS fix counts as device GPS; MeshCore advert coordinates do not
+- **Layers** control (Map tab, top right): switch basemap, toggle overlays (markers, movement trails, waypoints, diagnostic halos, open **incidents**, **MGRS grid**, **Sensors**, and **TAK units** from ATAK clients and the remote TAK server); basemap preference persists in SQLite and localStorage
 - **Show on map** from the node list pin or node detail; switches to the Map tab and flies to that node
 - **Position trail**: persisted path overlay (configurable 1 h – 7 days); survives restarts via SQLite; senders of open incidents keep their track through retention pruning until the incident is resolved; toggle and window size in App tab; wipe via Danger Zone
 - **SAR tools**: MGRS grid overlay and a distance **measure** tool on the Map tab
@@ -258,12 +271,14 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 - **Show Public Keys**: toggle to display full public keys under contact names
 - **Contact Auto-Add**: configure auto-add mode (on/off), overwrite existing, max hops; apply settings to device
 - **Clear All Contacts**: destructive action with confirmation (Radio tab Danger Zone)
-- **Send Advert**: broadcast your node's presence (flood advert) to the mesh with loading state and toast feedback
+- **Send Advert**: broadcast your node's presence (flood advert) to the mesh with loading state and toast feedback. The header **Flood Advert** is a split button; its chevron opens **Zero-hop Advert**, which reaches only radios in direct range
+- **Auto-offload when full** (Radio tab, contact settings): moves contacts from the radio to the app database when the contact table is nearly full (based on the radio-reported table size), when the radio reports it is full, rejects a contact as full, or evicts one under overwrite-oldest
 - **Manual Contact Approval**: toggle between auto-add (contacts appear automatically when heard) and manual-add (new contacts require approval before appearing); preference is persisted and re-applied on reconnect
 
 **Messaging**
 
-- Channel messaging and **direct messages (DMs)** with delivery ACK tracking (`expectedAckCrc`) and failure timeout; **DM threads can be closed** from the chat UI
+- Channel messaging and **direct messages (DMs)** with delivery ACK tracking (`expectedAckCrc`) and failure timeout; a DM shows delivered only after the hop ACK arrives (channel sends are marked sent when the companion accepts them); **DM threads can be closed** from the chat UI
+- **Remove or clear a channel from Chat**: right-click a channel chip (or use the menu key / Shift+F10) for **Remove channel** and **Clear messages**; the + channel dialog also has a remove button per channel. Public (slot 0) can be cleared but not removed. Both confirm first and do nothing if a different radio is connected by then
 - **Transport badges** on received messages; **RF**, **MQTT**, or **both** (persisted as `received_via` in `meshcore_messages`); MQTT JSON chat can be used when RF is down
 - **Inbound dedup** (`meshcoreStoreDedup.ts`): merges duplicate RF/MQTT echoes, companion TX echoes, and tapback self-echoes so chat and Rooms stay readable
 - **MeshCore Open GIFs**: inbound `g:GIFID` (and Giphy URLs) render inline in chat; outbound send via Radio **MeshCore Open compatibility** toggle (paste URL/ID or **GIF** composer button) — see [parity doc](docs/meshcore-meshtastic-parity.md#meshcore-open-gif-wire-ggifid)
@@ -289,7 +304,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 - **Repeaters panel** (MeshCore-only tab): list **repeaters and room servers** (All / Repeaters / Rooms filter) with on-demand status (noise floor, RSSI/SNR, packet counts, air time, uptime, TX queue); **Path** column shows a per-hop SNR sparkline from the last trace (last trace/path hop data is also stored in local SQLite so sparklines can survive app restarts); per-row **Neighbors** expands an inline neighbor list (same query as node detail, including **Load more**); room rows add **Open room** (jump to Rooms) plus room CLI pills (`get acl`, `allow.read.only`, ACL setperm)
 - **Per-node admin passwords**: optional **Remember** saves credentials per repeater/room in SQLite `app_settings` (`meshcoreRepeaterCredential:<nodeId>` / room admin password); collapsible **Saved passwords** sidebar section with per-node Forget
 - **Waiting-message drain**: header status indicator (queued backlog and active sync on any protocol tab; **paused/deferred** state only on the MeshCore tab) during serial companion backlog drain; **Sync now** for manual catch-up
-- **Repeater CLI**: per-repeater expandable **CLI** interface; command input with Enter to send, scrollable command/response history, Up/Down arrow history navigation, quick-command bar (get name, get radio, neighbors, version, clock, clock sync, clear stats, advert, board, …), flood vs. auto (saved path) routing toggle; responses are correlated to commands via 2-character hex prefix tokens; configurable retries with dynamic timeout; **auto Ping** before the first multi-hop CLI command when no trace exists this session (info toast while establishing route); **destructive-command confirm** modal for reboot/erase/factory-reset patterns
+- **Repeater CLI**: per-repeater expandable **CLI** interface; command input with Enter to send, scrollable command/response history, Up/Down arrow history navigation, quick-command bar (get name, get radio, neighbors, version, clock, clock sync, clear stats, advert, board, …) plus a **Radio** row of MeshCore v1.17+ settings (RX gain, FEM RX/TX gain, CAD, …), flood vs. auto (saved path) routing toggle; responses are correlated to commands via 2-character hex prefix tokens; configurable retries with dynamic timeout; **auto Ping** before the first multi-hop CLI command when no trace exists this session (info toast while establishing route); **destructive-command confirm** modal for reboot/erase/factory-reset patterns
 - **Remote session authentication (optional)**: Password may be required for **CLI** and some **telemetry** paths when firmware ACL demands it. **Status** and **Neighbors** use pubkey-framed companion commands and typically work without login on direct (0-hop) repeaters; the auth modal offers “Continue without password.” Saved passwords persist when **Remember** is checked. Admin RPCs share a serialized companion queue — expect up to ~2 minutes blocked while a ping or multi-hop request runs. Status/Telemetry/Neighbors toast when the radio is disconnected.
 - **Panel toolbar**: **Reboot Device** (shown when the device supports the command); **Send Advert** and **Sync Clock** moved to Radio panel Device Actions section (distinct from the Repeater CLI **`clock sync`** quick pill)
 - **Per-repeater removal**: two-click confirm button on each row; removes from in-memory state and deletes from the SQLite contacts DB
@@ -313,7 +328,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 
 **Transport Notes**
 
-- BLE: waits for sidecar GATT session connect before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices. On **Windows**, **pair the MeshCore device in Settings → Bluetooth & devices** before connecting in the app. A **second connect attempt** may run automatically after some transient GATT discovery or handshake timeouts.
+- BLE: waits for sidecar GATT session connect before issuing commands; includes nudge timeout for stuck `deviceQuery` on some devices. On **Windows**, the app checks the pairing state and pairs the radio itself when needed (it asks for the PIN shown on the MeshCore radio; Meshtastic prefills `123456`); if pairing is stuck, use **Remove & Re-pair Device**. Pairing only in Windows Settings is no longer required and can leave some radios half-paired. A **second connect attempt** may run automatically after some transient GATT discovery or handshake timeouts.
 - Serial: auto-reconnects on startup using a saved port signature so reconnect targets the same physical device when possible
 - TCP: connects to MeshCore companion radio; default port **5000**, configurable per connection
 - **MQTT (JSON v1):** The Connection tab MQTT card includes a **Network Preset** picker (order: **LetsMesh**, **MeshMapper**, **Colorado Mesh**, **Waev**, **Meshat.se**, **MeshCore.CA**, **EastMesh**, **Ripple Networks**, **Custom**). New installs default to **LetsMesh** (WebSocket on port 443, topic prefix `meshcore/test`; broker auth uses `@michaelhart/meshcore-decoder`'s `createAuthToken`; MQTT username `v1_<64-hex public key>`, password token with JWT `aud` matching the **MQTT server hostname**; optional **Packet logger** forwards RX packet summaries to the broker when enabled; see [docs/letsmesh-mqtt-auth.md](docs/letsmesh-mqtt-auth.md)). **LetsMesh**, **MeshMapper**, **Waev**, **Meshat.se**, **MeshCore.CA**, and **EastMesh** share that device-signing JWT flow (WebSocket path `/ws` for LetsMesh/MeshMapper, `/mqtt` for Waev/Meshat.se/MeshCore.CA/EastMesh; **MeshCore.CA** adds a Primary/Backup broker toggle). **Colorado Mesh** is regional (Colorado residents only; WebSocket on port 443, topic prefix `meshcore/DEN`; confirm dialog on select; existing Colorado users get a one-time stay-or-switch prompt). IATA-scoped brokers require topic `meshcore/{IATA}` or `meshcore/test`. **Ripple Networks** (TLS on port 8883, topic prefix `meshcore`, shared credentials, insecure TLS confirm) and **Custom** remain available for other brokers.
@@ -368,7 +383,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **Peers** tab: RNS path-table peers, messaged **History**, saved **Contacts**, and **Favorites** (sub-tabs); LXMFace avatars; virtualized large lists, path probe, **LXST Call**, **LRGP Challenge**, and peer detail modal (Save as contact is manual — messaging alone does not add Contacts)
 - **Map** tab: local RMAP v4 discovery map (Leaflet + OSM basemaps; heard opt-in interfaces with GPS; interface-type filters; reachable vs heard-only sidebar list; publish via Network + Connection); **Global map** link to [rmap.world](https://rmap.world/) — no position trails or waypoints (contrast with Meshtastic/MeshCore Map)
 - **Topology** tab: best-effort graph from the RNS path table (next-hop edges, force layout)
-- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); **My Pages** hosts a static Nomad site (rsNomad `nomad-core`) — **Choose folder** for a watched site root (e.g. sibling `nomad-page` with `pages/*.mu`) or pages directory, set a display name, Start serving (off by default; auto-restores when the stack comes back up); Micron browser with fit-width default + open-width toggle; panel lazy-mounts after first visit
+- **Nomad Network** tab: collapsible favourites/announces list (default **Favourites** sub-tab); **My Pages** hosts a static Nomad site (rsNomad `nomad-core`) — **Choose folder** for a watched site root (e.g. sibling `nomad-page` with `pages/*.mu`) or pages directory, set a display name, Start serving (off by default; auto-restores when the stack comes back up); in-app Micron page editor and per-page **Access** (`.allowed`) lists. Browsing is anonymous by default; a per-node fingerprint toggle opts in to identifying yourself to that site (see [Nomad identify](docs/reticulum.md#nomad-identify-to-this-site)). Micron browser with fit-width default + open-width toggle; panel lazy-mounts after first visit
 
 **Deep links & QR**
 
@@ -526,7 +541,7 @@ Dev builds need the sidecar binary once: `pnpm run reticulum:sidecar:build`. Pac
 After a successful connection, Mesh-Client remembers your last device per protocol. On next launch:
 
 - **Serial**: auto-connects silently in the background (Meshtastic and MeshCore)
-- **Bluetooth (all platforms)**: sidecar GATT auto-scans on launch and reconnects when the last device is discovered (no user gesture required). Pair MeshCore radios in OS Bluetooth settings when prompted.
+- **Bluetooth (all platforms)**: sidecar GATT auto-scans on launch and reconnects when the last device is discovered (no user gesture required). On Windows, unpaired radios are paired in the app (PIN prompt) before connecting.
 - **WiFi / HTTP / TCP**: remembered Meshtastic HTTP/TCP and MeshCore TCP addresses **auto-connect silently on launch** via `ProtocolAutoConnectCoordinator` (stays alive across tab switches). A one-click **Reconnect** card appears only when auto-connect fails or was cancelled by a manual Connect. Manual Connect cancels any in-flight auto-connect first (`cancelProtocolRfAutoConnect`).
 - **MQTT**: auto-reconnects using saved broker settings (Meshtastic protobuf pipeline; MeshCore JSON v1 adapter; select transport when connecting)
 - **Reticulum**: with **Auto-start** enabled, the sidecar starts on launch; otherwise click **Start stack** on the Connection tab after opening the app

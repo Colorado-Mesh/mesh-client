@@ -110,7 +110,7 @@ Implementation reference: trace priming constants and PathUpdated wait helpers i
 
 ## Windows: MeshCore over BLE
 
-Pair the radio in **Settings → Bluetooth & devices** before connecting from the app; WinRT is much more reliable with a bonded device. The client may **retry once** after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in [CONTRIBUTING.md](../CONTRIBUTING.md) (MeshCore internals, BLE) and [README.md](../README.md) (MeshCore Transport Notes).
+WinRT is much more reliable with a bonded device, so the app pairs the radio itself: on select or Reconnect it checks the pairing state and, when unpaired, asks for the PIN on the radio's screen and pairs before connecting (details in [agents/ble-serial.md](agents/ble-serial.md)). Pairing only in **Settings → Bluetooth & devices** is not needed and can leave some radios half-paired; use **Remove & Re-pair Device** if a connect stalls. The client may **retry once** after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in [CONTRIBUTING.md](../CONTRIBUTING.md) (MeshCore internals, BLE) and [README.md](../README.md) (MeshCore Transport Notes).
 
 ## Linux: MeshCore over BLE
 
