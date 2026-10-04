@@ -1,12 +1,21 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mapMeshcoreDbRowsToChatMessages } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import { savedMessageToChatMessage } from '@/renderer/lib/meshtasticDbCacheHydration';
+import { reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
+import {
+  chatMessageToMessageRecord,
+  reticulumDbRowToMessageRecord,
+} from '@/renderer/lib/storeRecordAdapters';
 import { selectOpenIncidentsSorted, useIncidentStore } from '@/renderer/stores/incidentStore';
 import {
   type MessageRecord,
   resetBulkLoadedMessageIdsForTests,
   upsertMessageRecordsForIdentity,
+  useMessageStore,
 } from '@/renderer/stores/messageStore';
+import type { SavedMessage } from '@/shared/electron-api.types';
 
 import { useMecpAlertWatcher } from './useMecpAlertWatcher';
 
@@ -211,6 +220,151 @@ describe('useMecpAlertWatcher', () => {
     await vi.waitFor(() => {
       expect(triggerMecpAlert).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('restores foreign incidents from adapter-stamped acked rows and still seeds own B01/B03', async () => {
+    const ownId = 9;
+    const own = new Set<number>([ownId]);
+    const now = Date.now();
+    const foreignRnHash = '000000000004' + 'ab'.repeat(10);
+    const foreignRnId = reticulumHashToNodeId(foreignRnHash);
+
+    const meshtasticSaved = (
+      row: Pick<SavedMessage, 'id' | 'sender_id' | 'sender_name' | 'payload' | 'to'>,
+    ): MessageRecord =>
+      chatMessageToMessageRecord(
+        savedMessageToChatMessage({
+          packetId: row.id,
+          channel: 0,
+          timestamp: now,
+          status: 'acked',
+          error: null,
+          emoji: null,
+          replyId: null,
+          mqttStatus: null,
+          receivedVia: 'rf',
+          ...row,
+        }),
+      );
+
+    const mtForeign = meshtasticSaved({
+      id: 4101,
+      sender_id: 4,
+      sender_name: 'Ada',
+      payload: 'MECP/0/M01 trapped',
+      to: 0xffffffff,
+    });
+    const ownB01 = meshtasticSaved({
+      id: 4102,
+      sender_id: ownId,
+      sender_name: 'Me',
+      payload: 'MECP/0/B01',
+      to: 15,
+    });
+    const ownB03 = meshtasticSaved({
+      id: 4103,
+      sender_id: ownId,
+      sender_name: 'Me',
+      payload: 'MECP/0/B03',
+      to: 15,
+    });
+    const mcMapped = mapMeshcoreDbRowsToChatMessages([
+      {
+        id: 4201,
+        sender_id: 7,
+        sender_name: 'Bob',
+        payload: 'MECP/1/T04 blocked',
+        channel_idx: 0,
+        timestamp: now,
+        status: 'acked',
+        packet_id: 4201,
+        emoji: null,
+        reply_id: null,
+        to_node: null,
+      },
+    ]).map(chatMessageToMessageRecord);
+    const mcForeign = mcMapped[0];
+    if (mcForeign == null) throw new Error('meshcore adapter dropped the foreign incident');
+    const rnForeign = reticulumDbRowToMessageRecord({
+      sender_id: foreignRnHash,
+      sender_name: 'Cara',
+      payload: 'MECP/2/M01 downed line',
+      timestamp: now,
+      message_hash: 'cd'.repeat(16),
+    });
+
+    expect([mtForeign, ownB01, ownB03, mcForeign, rnForeign].map((m) => m.status)).toEqual([
+      'acked',
+      'acked',
+      'acked',
+      'acked',
+      'acked',
+    ]);
+    expect(rnForeign.from).toBe(foreignRnId);
+    expect(own.has(foreignRnId)).toBe(false);
+
+    const mt = [mtForeign, ownB01, ownB03];
+    const mc = [mcForeign];
+    const rn = [rnForeign];
+    useMessageStore.setState({ messages: {} });
+    upsertMessageRecordsForIdentity('mecp-adapter-seed', [...mt, ...mc, ...rn]);
+
+    const { rerender } = renderHook(
+      ({
+        messages,
+      }: {
+        messages: { mt: MessageRecord[]; mc: MessageRecord[]; rn: MessageRecord[] };
+      }) => {
+        useMecpAlertWatcher(
+          { protocol: 'meshtastic', messages: messages.mt, ownNodeIds: own, ownSenderId: ownId },
+          { protocol: 'meshcore', messages: messages.mc, ownNodeIds: own, ownSenderId: ownId },
+          { protocol: 'reticulum', messages: messages.rn, ownNodeIds: own, ownSenderId: ownId },
+        );
+      },
+      {
+        initialProps: {
+          messages: {
+            mt: [] as MessageRecord[],
+            mc: [] as MessageRecord[],
+            rn: [] as MessageRecord[],
+          },
+        },
+      },
+    );
+    rerender({ messages: { mt, mc, rn } });
+
+    await vi.waitFor(() => {
+      expect(selectOpenIncidentsSorted(useIncidentStore.getState())).toHaveLength(4);
+    });
+    const open = selectOpenIncidentsSorted(useIncidentStore.getState());
+    const foreignMt = open.find((i) => i.messageIds.includes(mtForeign.id));
+    expect(foreignMt).toMatchObject({
+      protocol: 'meshtastic',
+      senderId: '4',
+      senderName: 'Ada',
+      severity: 0,
+    });
+    expect(foreignMt?.localOrigin).toBeUndefined();
+    expect(open.find((i) => i.messageIds.includes(mcForeign.id))).toMatchObject({
+      protocol: 'meshcore',
+      senderId: '7',
+      severity: 1,
+    });
+    expect(open.find((i) => i.messageIds.includes(rnForeign.id))).toMatchObject({
+      protocol: 'reticulum',
+      senderId: String(foreignRnId),
+      senderName: 'Cara',
+      severity: 2,
+    });
+    expect(open.find((i) => i.senderId === String(ownId))).toMatchObject({
+      protocol: 'meshtastic',
+      localOrigin: true,
+      beaconActive: false,
+      beaconCancelToNode: 15,
+      messageIds: [ownB01.id],
+    });
+    expect(triggerMecpAlert).not.toHaveBeenCalled();
+    expect(appendReceived).not.toHaveBeenCalled();
   });
 
   it('seeds an own distress beacon without alerting so the originator can cancel it', () => {
