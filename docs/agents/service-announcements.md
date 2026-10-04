@@ -59,7 +59,7 @@ No toast, dialog, or banner is ever shown for a failed check.
 | `severity`                        | Required. `info` (indigo), `warning` (orange), `critical` (red, announced as an alert).                                   |
 | `title` / `body`                  | Required. Plain text, at most 120 / 1000 characters. `body` keeps newlines.                                               |
 | `url` / `urlLabel`                | Optional. `https:` only, no credentials; label at most 40 characters (defaults to "Learn more").                          |
-| `startsAt` / `expiresAt`          | Optional ISO 8601. Shown from `startsAt` until before `expiresAt`.                                                        |
+| `startsAt` / `expiresAt`          | Optional ISO 8601 with `Z` or `±HH:MM` (zone-less rejected). Shown from `startsAt` until before `expiresAt`.              |
 | `minAppVersion` / `maxAppVersion` | Optional `X.Y.Z`, inclusive. Filters by the running app version.                                                          |
 | `localized`                       | Optional `{ "<lang>": { title?, body?, urlLabel? } }`. Falls back to the English fields per field.                        |
 

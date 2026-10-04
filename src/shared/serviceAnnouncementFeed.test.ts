@@ -101,6 +101,11 @@ describe('parseServiceAnnouncementFeed rows', () => {
     ['url not string', { ...valid, url: 5 }],
     ['startsAt bad', { ...valid, startsAt: 'tomorrow' }],
     ['expiresAt bad', { ...valid, expiresAt: 123 }],
+    ['startsAt without zone', { ...valid, startsAt: '2026-10-08T00:00:00' }],
+    ['startsAt date only', { ...valid, startsAt: '2026-10-08' }],
+    ['expiresAt RFC 2822', { ...valid, expiresAt: 'Thu, 08 Oct 2026 00:00:00 GMT' }],
+    ['expiresAt impossible date', { ...valid, expiresAt: '2026-13-45T00:00:00Z' }],
+    ['expiresAt junk between prefix and zone', { ...valid, expiresAt: '2026-10-08T06:00junkZ' }],
     [
       'expires before starts',
       { ...valid, startsAt: '2026-02-01T00:00:00Z', expiresAt: '2026-01-01T00:00:00Z' },
@@ -162,6 +167,30 @@ describe('parseServiceAnnouncementFeed rows', () => {
     const r = parseServiceAnnouncementFeed(data);
     expect(r.ok && r.announcements).toEqual([]);
     expect(({} as Record<string, unknown>).title).toBeUndefined();
+  });
+});
+
+describe('timestamp zones', () => {
+  it.each([
+    '2026-10-08T06:00:00Z',
+    '2026-10-08T00:00:00-06:00',
+    '2026-10-08T06:00Z',
+    '2026-10-08T06:00:00.250Z',
+  ])('accepts %s', (startsAt) => {
+    expect(okList(feed({ ...valid, startsAt }))[0]?.startsAt).toBe(startsAt);
+  });
+
+  it('treats an offset and its UTC equivalent as the same instant', () => {
+    const list = okList(
+      feed(
+        { ...valid, id: 'utc', expiresAt: '2026-10-08T06:00:00Z' },
+        { ...valid, id: 'offset', expiresAt: '2026-10-08T00:00:00-06:00' },
+      ),
+    );
+    const ids = (nowMs: number) =>
+      filterActiveServiceAnnouncements(list, { nowMs, appVersion: '6.0.0' }).map((a) => a.id);
+    expect(ids(Date.parse('2026-10-08T05:59:59Z'))).toEqual(['utc', 'offset']);
+    expect(ids(Date.parse('2026-10-08T06:00:00Z'))).toEqual([]);
   });
 });
 

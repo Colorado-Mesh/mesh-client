@@ -22,6 +22,8 @@ export const SERVICE_ANNOUNCEMENT_MAX_LOCALES = 32;
 const ID_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const VERSION_RE = /^(\d+)\.(\d+)\.(\d+)$/;
 const APP_VERSION_PREFIX_RE = /^(\d+)\.(\d+)\.(\d+)/;
+const ISO_DATE_TIME_PREFIX_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+const ISO_ZONE_SUFFIX_RE = /(?:Z|[+-]\d{2}:\d{2})$/;
 const LOCALE_PRIMARY_RE = /^[a-z]{2,3}$/;
 const LOCALE_SUBTAG_RE = /^[A-Za-z0-9]{2,8}$/;
 const LOCALE_MAX_SUBTAGS = 3;
@@ -142,8 +144,17 @@ export function parseHttpsUrl(raw: unknown): string | null {
 
 function optionalTimestamp(raw: unknown, field: string): FieldResult<string | undefined> {
   if (raw === undefined) return { ok: true, value: undefined };
-  if (typeof raw !== 'string' || !Number.isFinite(Date.parse(raw))) {
-    return { ok: false, reason: `${field} must be an ISO 8601 timestamp` };
+  // A zone-less date-time parses as each client's local time; require Z or ±HH:MM.
+  if (
+    typeof raw !== 'string' ||
+    !ISO_DATE_TIME_PREFIX_RE.test(raw) ||
+    !ISO_ZONE_SUFFIX_RE.test(raw) ||
+    !Number.isFinite(Date.parse(raw))
+  ) {
+    return {
+      ok: false,
+      reason: `${field} must be an ISO 8601 timestamp with Z or a ±HH:MM offset`,
+    };
   }
   return { ok: true, value: raw };
 }

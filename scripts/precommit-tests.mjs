@@ -35,7 +35,7 @@ const SIDECAR_ROUTE_DOCS_INPUTS = new Set([
   'docs/reticulum-sidecar-ipc.md',
 ]);
 
-/** Validates the committed announcements feed; the JSON is fetched remotely, never imported. */
+/** Validates the staged announcements feed blob; the JSON is fetched remotely, never imported. */
 export const SERVICE_ANNOUNCEMENT_FEED_TEST_PATH =
   'src/shared/serviceAnnouncementFeed.file.test.ts';
 const SERVICE_ANNOUNCEMENT_FEED_PATH = 'announcements/announcements.json';
