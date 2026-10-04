@@ -4,6 +4,7 @@ import {
   clearNomadPageCache,
   clearNomadPageCacheForHash,
   getNomadPageCache,
+  getNomadPageCacheGeneration,
   nomadPageCacheSizeForTests,
   setNomadPageCache,
 } from './nomadPageCache';
@@ -59,6 +60,25 @@ describe('nomadPageCache', () => {
     expect(
       getNomadPageCache({ hash: `128`.padStart(32, 'a'), path: '/page/128.mu' })?.content,
     ).toBe('page-128');
+  });
+
+  it('keeps anonymous and identified pages apart', () => {
+    const hash = 'abc1234567890abcdef1234567890ab';
+    const path = '/page/index.mu';
+    setNomadPageCache({ hash, path, identify: false }, { content: 'anon' });
+    setNomadPageCache({ hash, path, identify: true }, { content: 'named' });
+    expect(getNomadPageCache({ hash, path, identify: false })?.content).toBe('anon');
+    expect(getNomadPageCache({ hash, path, identify: true })?.content).toBe('named');
+    expect(getNomadPageCache({ hash, path })?.content).toBe('anon');
+  });
+
+  it('bumps generation when one node is cleared so in-flight writers can drop', () => {
+    const hash = 'abc1234567890abcdef1234567890ab';
+    setNomadPageCache({ hash, path: '/page/index.mu', identify: true }, { content: 'named' });
+    const before = getNomadPageCacheGeneration();
+    clearNomadPageCacheForHash(hash.toUpperCase());
+    expect(getNomadPageCacheGeneration()).toBe(before + 1);
+    expect(nomadPageCacheSizeForTests()).toBe(0);
   });
 
   it('clears every page for one node only', () => {

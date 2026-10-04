@@ -11,6 +11,7 @@ import { clearNomadImageCache } from '@/renderer/lib/nomad/nomadImageCache';
 import {
   clearNomadPageCache,
   getNomadPageCache,
+  getNomadPageCacheGeneration,
   MAX_NOMAD_PAGE_CACHE_CHARS,
   setNomadPageCache,
 } from '@/renderer/lib/nomad/nomadPageCache';
@@ -122,11 +123,11 @@ async function fetchNomadPageDeduped(
   requestData: NomadPageRequestData | undefined,
   forcePathRefresh: boolean,
   requestId: string | undefined,
+  identify: boolean,
 ): Promise<NomadPageResponse> {
-  const { fetchNomadPage, nodes } = useNomadNetworkStore.getState();
+  const { fetchNomadPage } = useNomadNetworkStore.getState();
   // A reload after toggling identify must not join an in-flight fetch made
   // under the other choice, so the flag is part of the dedupe key.
-  const identify = isNomadNodeIdentifying(nodes, hash);
   const key = pageFetchDedupeKey(hash, path, requestData, forcePathRefresh, identify, requestId);
   const existing = inFlightPageFetches.get(key);
   if (existing) return existing;
@@ -362,6 +363,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     const progressRequestId = String(generation);
     const nodes = useNomadNetworkStore.getState().nodes;
     const node = nodes.get(hash.toLowerCase());
+    const identify = isNomadNodeIdentifying(nodes, hash);
     // Default TCP/MeshChat until the sidecar reports this request's egress — do not
     // use cached local outbound via (BLE RNode would falsely extend hub countdowns).
     let budgetSec = nomadPageLoadingBudgetSec(node?.hops ?? undefined);
@@ -395,6 +397,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
         hash,
         path: normalizedPath,
         requestData: normalizedRequest,
+        identify,
       });
       if (cached) {
         if (get().loadGeneration !== generation) return;
@@ -428,15 +431,20 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     // Do not await a prior fetch — sidecar preempts the old Link query. Leaving the
     // Nomad tab does not bump generation, so background loads keep running.
     let res: NomadPageResponse;
+    let fetchedIdentify: boolean;
+    let pageCacheGeneration: number;
     try {
       const startedAt = Date.now();
       set({ pageLoadingStartedAt: startedAt, pageLoadingBudgetSec: budgetSec });
+      fetchedIdentify = isNomadNodeIdentifying(useNomadNetworkStore.getState().nodes, hash);
+      pageCacheGeneration = getNomadPageCacheGeneration();
       res = await fetchNomadPageDeduped(
         hash,
         normalizedPath,
         normalizedRequest,
         !!options.forcePathRefresh,
         progressRequestId,
+        fetchedIdentify,
       );
       if (get().loadGeneration !== generation) {
         return;
@@ -479,6 +487,7 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
           normalizedRequest,
           true,
           progressRequestId,
+          fetchedIdentify,
         );
         if (get().loadGeneration !== generation) return;
         if (typeof res.egress === 'string' && res.egress.trim()) {
@@ -531,17 +540,22 @@ export const useNomadPageViewerStore = create<NomadPageViewerState>((set, get) =
     }
 
     const { text, truncated } = truncateNomadPageContent(res.content);
-    setNomadPageCache(
-      {
-        hash,
-        path: normalizedPath,
-        requestData: normalizedRequest,
-      },
-      {
-        content: truncated ? text : res.content,
-        content_type: res.content_type,
-      },
-    );
+    // A toggle clears the cache and bumps generation; drop this write so the
+    // response fetched under the previous identify choice cannot refill it.
+    if (pageCacheGeneration === getNomadPageCacheGeneration()) {
+      setNomadPageCache(
+        {
+          hash,
+          path: normalizedPath,
+          requestData: normalizedRequest,
+          identify: fetchedIdentify,
+        },
+        {
+          content: truncated ? text : res.content,
+          content_type: res.content_type,
+        },
+      );
+    }
     set({
       pageLoading: false,
       pageLoadingStartedAt: null,

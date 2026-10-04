@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} 새 메시지",
     "srNewMessages_other": "{{count}} 새 메시지",
     "unreadMecpMarker": "읽지 않은 {{severity}} MECP 보고서",
-    "floodScopeSaveFailed": "전송 범위를 저장할 수 없습니다. 이전에 저장된 선택 항목은 그대로 적용됩니다."
+    "floodScopeSaveFailed": "전송 범위를 저장할 수 없습니다. 이전에 저장된 선택 항목은 그대로 적용됩니다.",
+    "reactionYouTitle": "{{name}} (나)",
+    "reactionYouAria": "내 반응: {{name}}",
+    "reactionOtherAria": "{{reactor}} 이 (가) {{name}} 과 (와) 반응했습니다."
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",

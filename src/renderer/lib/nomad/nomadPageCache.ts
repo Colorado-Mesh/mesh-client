@@ -18,14 +18,24 @@ export interface NomadPageCacheKeyInput {
   path: string;
   /** NomadNet link request vars (`var_*` / `field_*`); part of cache identity. */
   requestData?: NomadPageRequestData;
+  /** True when the page was fetched while identifying to the node. */
+  identify?: boolean;
 }
 
 const cache = new Map<string, NomadPageCacheEntry>();
 
-function cacheKey({ hash, path, requestData }: NomadPageCacheKeyInput): string {
+/** Bumped on every clear so in-flight fetches do not repopulate after an identify toggle. */
+let cacheGeneration = 0;
+
+function cacheKey({ hash, path, requestData, identify }: NomadPageCacheKeyInput): string {
   const cleanHash = hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase();
   const dataKey = serializeNomadPageRequestDataKey(requestData);
-  return `${cleanHash}:${normalizeNomadPagePath(path)}:${dataKey}`;
+  return `${cleanHash}:${normalizeNomadPagePath(path)}:${dataKey}:${identify ? '1' : '0'}`;
+}
+
+/** Snapshot for callers that must ignore results after a clear. */
+export function getNomadPageCacheGeneration(): number {
+  return cacheGeneration;
 }
 
 export function getNomadPageCache(input: NomadPageCacheKeyInput): NomadPageCacheEntry | undefined {
@@ -54,15 +64,20 @@ export function setNomadPageCache(
 /** @internal test helper */
 export function clearNomadPageCache(): void {
   cache.clear();
+  cacheGeneration += 1;
 }
 
-/** Drop every cached page for one node (its identify choice changed). */
+/**
+ * Drop every cached page for one node and invalidate in-flight writers, so a
+ * fetch made under the previous identify choice cannot repopulate the cache.
+ */
 export function clearNomadPageCacheForHash(hash: string): void {
   const prefix = `${hash.replace(/[^a-fA-F0-9]/g, '').toLowerCase()}:`;
   if (prefix === ':') return;
   for (const key of [...cache.keys()]) {
     if (key.startsWith(prefix)) cache.delete(key);
   }
+  cacheGeneration += 1;
 }
 
 /** @internal test helper */

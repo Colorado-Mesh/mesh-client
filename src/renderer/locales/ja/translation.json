@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} NEW MESSAGE",
     "srNewMessages_other": "{{count}}件の新着メッセージ",
     "unreadMecpMarker": "未読{{severity}} MECPレポート",
-    "floodScopeSaveFailed": "送信スコープを保存できませんでした。前回保存した選択肢は引き続き適用されます。"
+    "floodScopeSaveFailed": "送信スコープを保存できませんでした。前回保存した選択肢は引き続き適用されます。",
+    "reactionYouTitle": "{{name}} （あなた）",
+    "reactionYouAria": "あなたのリアクション: {{name}}",
+    "reactionOtherAria": "{{reactor}}は{{name}}と反応しました"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

@@ -324,6 +324,14 @@ const radioEntries: readonly SettingSearchEntry[] = [
     visible: isCompanion,
   },
   {
+    id: 'radio.channels.meshcoreScope',
+    slot: 'Radio',
+    labelKey: 'radioPanel.meshcoreChannel.scopeLabel',
+    sectionKey: 'radioPanel.channelsMeshcore',
+    keywords: ['scope'],
+    visible: isCompanion,
+  },
+  {
     id: 'radio.xmodem.transfer',
     slot: 'Radio',
     labelKey: 'radioPanel.xmodemSection',
@@ -892,6 +900,7 @@ export const radioSurface: SettingsSearchSurface = {
   entries: radioEntries,
   files: [
     { path: 'src/renderer/components/RadioPanel.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/MeshcoreFloodScopeSection.tsx', sweepAllKeys: true },
     { path: 'src/renderer/components/MeshcoreContactSettingsSection.tsx', sweepAllKeys: true },
     { path: 'src/renderer/components/MeshcoreTelemetryPrivacySection.tsx', sweepAllKeys: true },
     { path: 'src/renderer/components/LockdownSection.tsx', sweepAllKeys: true },
@@ -983,6 +992,7 @@ export const radioSurface: SettingsSearchSurface = {
     'radioPanel.clockSynced': 'success toast, not a control',
     'radioPanel.floodAdvertSent': 'success toast, not a control',
     'radioPanel.zeroHopAdvertSent': 'success toast, not a control',
+    'radioPanel.floodScope*': 'options, fields, and status inside the indexed flood scope section',
     'radioPanel.floodScopeApplySuccess': 'success status, not a control',
     'radioPanel.contactManagementUpdated': 'success toast, not a control',
     'radioPanel.telemetryPrivacyUpdated': 'success toast, not a control',

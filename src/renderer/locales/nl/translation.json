@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} nieuw bericht",
     "srNewMessages_other": "{{count}} nieuwe berichten",
     "unreadMecpMarker": "Ongelezen {{severity}} MECP-rapport",
-    "floodScopeSaveFailed": "Kon het verzendbereik niet opslaan. De vorige opgeslagen keuze is nog steeds van toepassing."
+    "floodScopeSaveFailed": "Kon het verzendbereik niet opslaan. De vorige opgeslagen keuze is nog steeds van toepassing.",
+    "reactionYouTitle": "{{name}} (jij)",
+    "reactionYouAria": "Jouw reactie: {{name}}",
+    "reactionOtherAria": "{{reactor}} reageerde met {{name}}"
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

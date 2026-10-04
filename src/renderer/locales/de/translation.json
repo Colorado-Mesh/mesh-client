@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} neue Nachricht",
     "srNewMessages_other": "{{count}} neue Nachrichten",
     "unreadMecpMarker": "Ungelesen {{severity}} MECP-Bericht",
-    "floodScopeSaveFailed": "Der Sendebereich konnte nicht gespeichert werden. Die zuvor gespeicherte Auswahl gilt weiterhin."
+    "floodScopeSaveFailed": "Der Sendebereich konnte nicht gespeichert werden. Die zuvor gespeicherte Auswahl gilt weiterhin.",
+    "reactionYouTitle": "{{name}} (Sie)",
+    "reactionYouAria": "Ihre Reaktion: {{name}}",
+    "reactionOtherAria": "{{reactor}} reagierte mit {{name}}"
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

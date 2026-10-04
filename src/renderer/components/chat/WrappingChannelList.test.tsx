@@ -145,8 +145,15 @@ describe('WrappingChannelList', () => {
       arrangeGeometry(viewport);
       const composer = screen.getByRole('textbox', { name: 'Composer' });
       await user.click(composer);
-      // The selected key stays unchanged while a resize moves its row offscreen.
       viewport.scrollTop = 96;
+      // Unchanged measured height must not scroll the strip back to the selection.
+      act(() => {
+        resize();
+      });
+      expect(viewport.scrollTop).toBe(96);
+      expect(composer).toHaveFocus();
+
+      Object.defineProperty(viewport, 'clientHeight', { configurable: true, value: 39 });
       act(() => {
         resize();
       });

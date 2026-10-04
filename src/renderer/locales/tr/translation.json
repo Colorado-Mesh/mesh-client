@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} yeni mesaj",
     "srNewMessages_other": "{{count}} yeni mesaj",
     "unreadMecpMarker": "Okunmamış {{severity}} MECP raporu",
-    "floodScopeSaveFailed": "Gönderme kapsamı kaydedilemedi. Önceki kaydedilen seçenek hala geçerlidir."
+    "floodScopeSaveFailed": "Gönderme kapsamı kaydedilemedi. Önceki kaydedilen seçenek hala geçerlidir.",
+    "reactionYouTitle": "{{name}} (siz)",
+    "reactionYouAria": "Tepkiniz: {{name}}",
+    "reactionOtherAria": "{{reactor}}, {{name}} ile tepki verdi"
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

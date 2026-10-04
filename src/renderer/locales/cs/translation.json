@@ -855,7 +855,10 @@
     "srNewMessages_many": "{{count}} nových zpráv",
     "srNewMessages_other": "{{count}} nových zpráv",
     "unreadMecpMarker": "Nepřečtená zpráva {{severity}} MECP",
-    "floodScopeSaveFailed": "Nelze uložit rozsah odeslání. Předchozí uložená volba stále platí."
+    "floodScopeSaveFailed": "Nelze uložit rozsah odeslání. Předchozí uložená volba stále platí.",
+    "reactionYouTitle": "{{name}} (ty)",
+    "reactionYouAria": "Tvá reakce: {{name}}",
+    "reactionOtherAria": "{{reactor}} reagoval/a s {{name}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

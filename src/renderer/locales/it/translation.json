@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} nuovo messaggio",
     "srNewMessages_other": "{{count}} nuovi messaggi",
     "unreadMecpMarker": "Report MeCP {{severity}} non letto",
-    "floodScopeSaveFailed": "Impossibile salvare l'ambito di invio. La scelta salvata in precedenza è ancora valida."
+    "floodScopeSaveFailed": "Impossibile salvare l'ambito di invio. La scelta salvata in precedenza è ancora valida.",
+    "reactionYouTitle": "{{name}} (tu)",
+    "reactionYouAria": "La tua reazione: {{name}}",
+    "reactionOtherAria": "{{reactor}} ha reagito con {{name}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",

@@ -836,7 +836,10 @@
     "srNewMessages_one": "{{count}} nouveau message",
     "srNewMessages_other": "{{count}} nouveaux messages",
     "unreadMecpMarker": "Rapport MECP {{severity}} non lu",
-    "floodScopeSaveFailed": "Impossible d'enregistrer l'étendue d'envoi. Le choix enregistré précédent s'applique toujours."
+    "floodScopeSaveFailed": "Impossible d'enregistrer l'étendue d'envoi. Le choix enregistré précédent s'applique toujours.",
+    "reactionYouTitle": "{{name}} (vous)",
+    "reactionYouAria": "Votre réaction : {{name}}",
+    "reactionOtherAria": "{{reactor}} a réagi avec {{name}}"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",

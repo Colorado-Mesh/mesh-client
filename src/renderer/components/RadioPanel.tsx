@@ -4416,7 +4416,7 @@ function MeshcoreChannelSection({
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2" data-setting-anchor="radio.channels.meshcoreScope">
         <label htmlFor="radio-mc-ch-scope" className="text-muted text-xs">
           {t('radioPanel.meshcoreChannel.scopeLabel')}
         </label>
