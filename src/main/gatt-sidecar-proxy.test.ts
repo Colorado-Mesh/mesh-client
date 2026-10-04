@@ -41,7 +41,29 @@ vi.mock('ws', async () => {
   return { default: MockWebSocket };
 });
 
-import { GattSidecarProxy, isPeripheralNotFoundMessage } from './gatt-sidecar-proxy';
+import {
+  fetchErrorDetail,
+  GattSidecarProxy,
+  isPeripheralNotFoundMessage,
+} from './gatt-sidecar-proxy';
+
+describe('fetchErrorDetail', () => {
+  it('appends the undici cause code and message to "fetch failed"', () => {
+    const cause = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:9876'), {
+      code: 'ECONNREFUSED',
+    });
+    expect(fetchErrorDetail(new TypeError('fetch failed', { cause }))).toBe(
+      'fetch failed code=ECONNREFUSED cause=connect ECONNREFUSED 127.0.0.1:9876',
+    );
+  });
+
+  it('returns the plain message when there is no cause', () => {
+    expect(fetchErrorDetail(new Error('The operation was aborted due to timeout'))).toBe(
+      'The operation was aborted due to timeout',
+    );
+    expect(fetchErrorDetail('boom')).toBe('boom');
+  });
+});
 
 describe('GattSidecarProxy', () => {
   let proxy: GattSidecarProxy;
@@ -813,6 +835,56 @@ describe('GattSidecarProxy', () => {
     expect(deletes).toBe(8);
     warn.mockRestore();
     debug.mockRestore();
+  });
+
+  it('while quitting, a refused DELETE releases the reservation without probe or retry', async () => {
+    vi.useFakeTimers();
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    let deletes = 0;
+    let probes = 0;
+    fetchMock.mockImplementation((url, init) => {
+      const href = typeof url === 'string' ? url : '';
+      if (init?.method === 'POST') {
+        return Promise.resolve({
+          status: 200,
+          json: () => Promise.resolve({ ok: true, sessionId: 'quit-session' }),
+        });
+      }
+      if (init?.method === 'DELETE') {
+        deletes += 1;
+        const cause = Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:9876'), {
+          code: 'ECONNREFUSED',
+        });
+        return Promise.reject(new TypeError('fetch failed', { cause }));
+      }
+      if (href.includes('/connected')) probes += 1;
+      return Promise.resolve({ status: 200, json: () => Promise.resolve({ ok: true }) });
+    });
+    await proxy.connect('meshtastic', 'aa:bb:cc:dd:ee:42');
+
+    proxy.setQuitting();
+    await proxy.disconnectAll();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(deletes).toBe(1);
+    expect(probes).toBe(0);
+    expect(proxy.getConnections()).toEqual([]);
+    expect(debug).toHaveBeenCalledWith(
+      '[GATT] disconnect request failed during quit — releasing locally:',
+      expect.stringContaining('code=ECONNREFUSED'),
+    );
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(deletes).toBe(1);
+  });
+
+  it('skips the sidecar bond-recovery clear request while quitting', async () => {
+    proxy.setQuitting();
+    proxy.setRnodeBondRecoveryExclusive(false);
+    await Promise.resolve();
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      expect.stringContaining('/clear-bond-recovery'),
+      expect.anything(),
+    );
   });
 
   it('releases on mid-retry DELETE success before cleanup budget is exhausted', async () => {

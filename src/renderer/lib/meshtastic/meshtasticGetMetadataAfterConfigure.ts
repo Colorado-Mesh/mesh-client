@@ -86,9 +86,11 @@ export function scheduleMeshtasticGetMetadataAfterConfigure(
 ): void {
   cancelMeshtasticGetMetadataAfterConfigure(timerRef);
   const scheduleGeneration = timerRef.scheduleGeneration ?? 0;
-  const subscribe = device.events?.onDeviceMetadataPacket?.subscribe;
-  if (subscribe) {
-    timerRef.unsubscribeMetadata = subscribe(() => {
+  // Call as a method: ste-events dispatchers read `this._subscriptions`, and a detached
+  // `subscribe` throws inside the configComplete status dispatch, killing the decode pipe.
+  const metadataEvent = device.events?.onDeviceMetadataPacket;
+  if (metadataEvent) {
+    timerRef.unsubscribeMetadata = metadataEvent.subscribe(() => {
       if ((timerRef.scheduleGeneration ?? 0) !== scheduleGeneration) return;
       cancelMeshtasticGetMetadataAfterConfigure(timerRef);
     });

@@ -116,7 +116,7 @@ export function createSerializedWritableStream(
   });
 
   return new Proxy(body, {
-    get(target, prop, receiver) {
+    get(target, prop) {
       if (prop === 'getWriter') {
         return () => ({
           get closed(): Promise<void> {
@@ -139,8 +139,15 @@ export function createSerializedWritableStream(
           },
         });
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- External SDK value is validated by surrounding boundary logic.
-      return Reflect.get(target, prop, receiver);
+      // WritableStream methods and getters reject a Proxy receiver ("Illegal invocation"), so the
+      // SDK's disconnect-time toDevice.close() must not reach the native method through the proxy.
+      if (prop === 'close') return () => closeInner();
+      if (prop === 'abort') return (reason?: unknown) => abortInner(reason);
+      const value: unknown = Reflect.get(target, prop, target);
+      if (typeof value === 'function') {
+        return (value as (...args: unknown[]) => unknown).bind(target);
+      }
+      return value;
     },
   });
 }
@@ -182,7 +189,9 @@ export function attachMeshtasticTransportLossWatch(
     onConnectionLost();
   };
 
-  // Patched @meshtastic/core MeshDevice invokes this from _fromDevicePipe.catch (#895 follow-up).
+  // Patched @meshtastic/core MeshDevice invokes this from _fromDevicePipe.catch (#895 follow-up)
+  // for every non-abort failure. Any such failure leaves the session unable to receive, so
+  // reconnect now instead of waiting for the dead-link watchdog (#1142).
   type DeviceWithPipeHook = MeshDevice & {
     onFromDevicePipeError?: (err: unknown) => void;
   };
@@ -190,9 +199,7 @@ export function attachMeshtasticTransportLossWatch(
   const previousPipeHook = deviceWithHook.onFromDevicePipeError;
   deviceWithHook.onFromDevicePipeError = (err: unknown) => {
     previousPipeHook?.(err);
-    if (isMeshtasticTransportLostError(err)) {
-      notify('read-pipe-failure', err);
-    }
+    notify('read-pipe-failure', err);
   };
   cleanups.push(() => {
     if (previousPipeHook) {

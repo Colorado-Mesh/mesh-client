@@ -94,6 +94,51 @@ describe('useMeshtasticRuntime reconnect scheduler (hook-level)', () => {
     });
   }
 
+  it('ignores a GATT disconnect mid-backoff (own teardown) and opens once (#1142)', async () => {
+    const { result } = renderHook(() => useMeshtasticRuntime());
+
+    await act(async () => {
+      await result.current.connect('http', 'http://127.0.0.1');
+    });
+    act(() => {
+      stubDevice.emitDeviceStatus(7); // DeviceConfigured
+    });
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('configured');
+    });
+
+    await act(async () => {
+      result.current.onPowerResume();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(result.current.state.status).toBe('reconnecting');
+    });
+    expect(delaySpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      for (const handler of nobleDisconnectedHandlers) {
+        handler('meshtastic');
+      }
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(consoleDebugSpy).toHaveBeenCalledWith(
+      expect.stringContaining('skip (reconnect owner teardown in progress)'),
+    );
+    expect(consoleDebugSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining('Connection lost during reconnect backoff'),
+    );
+
+    // The original backoff completes into a single open — no restarted cycle.
+    await settleDelay('done');
+    await waitFor(() => {
+      expect(connectSpy).toHaveBeenCalledTimes(2);
+    });
+    expect(delaySpy).toHaveBeenCalledTimes(1);
+  });
+
   it('runs one reconnect open per backoff cycle and flushes deferred mid-backoff loss', async () => {
     const { result } = renderHook(() => useMeshtasticRuntime());
 
@@ -120,12 +165,10 @@ describe('useMeshtasticRuntime reconnect scheduler (hook-level)', () => {
     expect(delaySpy).toHaveBeenCalledTimes(1);
     expect(connectSpy).toHaveBeenCalledTimes(1);
 
-    // Mid-backoff connection-lost (Noble disconnect path → handleConnectionLost) must not open
-    // a parallel transport — deferred until delay settles / scheduleMeshtasticReconnectAttempt.
+    // Mid-backoff connection-lost (power-resume → handleConnectionLost) must not open a parallel
+    // transport — deferred until delay settles / scheduleMeshtasticReconnectAttempt.
     await act(async () => {
-      for (const handler of nobleDisconnectedHandlers) {
-        handler('meshtastic');
-      }
+      result.current.onPowerResume();
       await Promise.resolve();
       await Promise.resolve();
     });
