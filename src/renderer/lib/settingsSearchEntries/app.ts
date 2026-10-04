@@ -609,6 +609,7 @@ export const appSurface: SettingsSearchSurface = {
     'appPanel.daySingular': 'unit word inside a confirmation message',
     'appPanel.deleteNodesWithoutPubkeys': 'accessible name of the indexed no-pubkey cleanup row',
     'appPanel.deletedContactsNoPubkey': 'success toast, not a control',
+    'chatPanel.clearChannelMessagesRadioChanged': 'warning toast, not a control',
     'radioPanel.directMessages': 'channel option label in the Danger Zone clear-messages picker',
     'mecp.section.hint': 'section prose, no control',
     'mecp.section.showComposeButtonHint': 'help text for the indexed MECP compose toggle',
