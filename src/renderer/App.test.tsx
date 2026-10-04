@@ -37,6 +37,7 @@ import {
 import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
 import { TAB_SLOT_IDS } from './lib/tabSlotIds';
 import type { ChatMessage } from './lib/types';
+import { mockConsoleWarn } from './lib/vitestConsoleMock';
 import { setConnection, useConnectionStore } from './stores/connectionStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMessageStore } from './stores/messageStore';
@@ -53,6 +54,17 @@ vi.mock('./lib/chatNotifications', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
   const actual = await importOriginal<typeof import('./lib/chatNotifications')>();
   return { ...actual, playMessageNotification: playMessageNotificationMock };
+});
+
+const { loadSettingSearchEntriesMock } = vi.hoisted(() => ({
+  loadSettingSearchEntriesMock: vi.fn(),
+}));
+
+vi.mock('./lib/settingsSearchEntriesLoader', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('./lib/settingsSearchEntriesLoader')>();
+  loadSettingSearchEntriesMock.mockImplementation(actual.loadSettingSearchEntries);
+  return { loadSettingSearchEntries: loadSettingSearchEntriesMock };
 });
 
 function syncMeshtasticMessagesToStore(messages: ChatMessage[]): void {
@@ -980,7 +992,7 @@ describe('App shell layout', () => {
     expect(within(dialog).getByRole('button', { name: /Ridge Owl/ })).toBeInTheDocument();
   });
 
-  function openSettingFromLauncher(query: string, rowName: string): void {
+  async function openSettingFromLauncher(query: string, rowName: string): Promise<void> {
     fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
     const dialog = screen.getByRole('dialog', { name: 'All panels' });
     fireEvent.change(
@@ -989,7 +1001,8 @@ describe('App shell layout', () => {
       }),
       { target: { value: query } },
     );
-    const settings = within(dialog).getByRole('region', { name: 'Settings' });
+    // The settings registry is a lazy chunk; an open launcher fills in once it resolves.
+    const settings = await within(dialog).findByRole('region', { name: 'Settings' });
     fireEvent.click(within(settings).getByRole('button', { name: rowName }));
     expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
   }
@@ -1001,7 +1014,7 @@ describe('App shell layout', () => {
       Element.prototype.scrollIntoView = originalScrollIntoView;
     });
     renderApp();
-    openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');
+    await openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');
     await waitFor(
       () => {
         expect(document.getElementById('app-announcer-polite')).toHaveTextContent(
@@ -1013,9 +1026,24 @@ describe('App shell layout', () => {
     expect(screen.getByRole('checkbox', { name: 'Reduce motion' })).toHaveFocus();
   });
 
+  it('retries a failed settings registry load when the launcher opens', async () => {
+    const warn = mockConsoleWarn();
+    onTestFinished(warn.restore);
+    loadSettingSearchEntriesMock.mockRejectedValueOnce(new Error('chunk load failed'));
+    renderApp();
+    await waitFor(() => {
+      expect(warn.spy).toHaveBeenCalledWith(
+        '[App] settings search registry failed to load',
+        expect.any(Error),
+      );
+    });
+    await openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');
+    expect(loadSettingSearchEntriesMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
   it('jumps from a settings result to its panel and announces it when the row is absent', async () => {
     renderApp();
-    openSettingFromLauncher('24-hour', 'Use 24-hour time, Appearance');
+    await openSettingFromLauncher('24-hour', 'Use 24-hour time, Appearance');
     const appPanelHost = document.getElementById(`panel-${String(TAB_SLOT_IDS.indexOf('App'))}`);
     expect(appPanelHost).not.toBeNull();
     expect(appPanelHost?.hidden).toBe(false);

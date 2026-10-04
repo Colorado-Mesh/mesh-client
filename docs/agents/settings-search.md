@@ -9,6 +9,7 @@ Agent reference for the **Settings** group in the Ctrl/Cmd+K launcher (`PanelLau
 | Types, build, match, exemption matching | `src/renderer/lib/settingsSearch.ts`                                                        |
 | Registry (one file per surface)         | `src/renderer/lib/settingsSearchEntries/*.ts`, each a `SettingsSearchSurface`               |
 | Merged entries, files, exemptions       | `src/renderer/lib/settingsSearchEntries/index.ts`                                           |
+| Lazy registry loader (own chunk)        | `src/renderer/lib/settingsSearchEntriesLoader.ts`; never import the registry from `App.tsx` |
 | Reveal (details, scroll, flash, focus)  | `src/renderer/lib/settingsAnchor.ts`                                                        |
 | rAF retry hook                          | `src/renderer/hooks/usePendingSettingAnchor.ts`                                             |
 | Launcher group                          | `src/renderer/components/shell/PanelLauncher.tsx` (`settings` / `onOpenSetting`)            |

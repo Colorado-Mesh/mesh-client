@@ -358,8 +358,8 @@ import { skipReticulumStartupAutostartGate } from './lib/reticulum/reticulumStar
 import { startReticulumVoiceMemo } from './lib/reticulum/reticulumVoiceMemo';
 import { sendReticulumVoiceMemo } from './lib/reticulum/sendReticulumVoiceMemo';
 import { logRfReconnectFailure, reconnectRfFromLastConnection } from './lib/rfReconnectHelper';
-import { buildSettingSearchItems } from './lib/settingsSearch';
-import { SETTING_SEARCH_ENTRIES } from './lib/settingsSearchEntries';
+import { buildSettingSearchItems, type SettingSearchEntry } from './lib/settingsSearch';
+import { loadSettingSearchEntries } from './lib/settingsSearchEntriesLoader';
 import { scheduleReticulumVacuumIfNeeded } from './lib/startupDbPrune';
 import { getStoredMeshProtocol, MESH_PROTOCOL_STORAGE_KEY } from './lib/storedMeshProtocol';
 import {
@@ -1966,18 +1966,37 @@ function AppContent() {
     settings: LauncherSettingItem[];
   }>({ protocol, contacts: [], settings: [] });
   const launcherContacts = launcherSnapshot.contacts;
+  const [settingSearchEntries, setSettingSearchEntries] = useState<
+    readonly SettingSearchEntry[] | null
+  >(null);
+  // Loads on mount; a failed chunk load retries the next time the launcher opens.
+  useEffect(() => {
+    if (settingSearchEntries) return;
+    let cancelled = false;
+    loadSettingSearchEntries().then(
+      (entries) => {
+        if (!cancelled) setSettingSearchEntries(entries);
+      },
+      (err: unknown) => {
+        if (!cancelled) console.warn('[App] settings search registry failed to load', err);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [launcherOpen, settingSearchEntries]);
   // Settings for the active protocol only; connection state never filters them.
   const buildLauncherSettings = useCallback(
     (): LauncherSettingItem[] =>
       buildSettingSearchItems(
-        SETTING_SEARCH_ENTRIES,
+        settingSearchEntries ?? [],
         {
           capabilities,
           visibleSlots: new Set(tabIndexToPanelIndex.flatMap((i) => TAB_SLOT_IDS[i] ?? [])),
         },
         t,
       ),
-    [capabilities, tabIndexToPanelIndex, t],
+    [settingSearchEntries, capabilities, tabIndexToPanelIndex, t],
   );
   const buildLauncherContacts = useCallback((): LauncherContactItem[] => {
     const items: LauncherContactItem[] = [];
@@ -2035,6 +2054,14 @@ function AppContent() {
       contacts: buildLauncherContacts(),
       settings: buildLauncherSettings(),
     });
+  }
+  // Opened before the lazy registry arrived: fill in the settings once it does.
+  const [launcherSettingsEntries, setLauncherSettingsEntries] = useState(settingSearchEntries);
+  if (launcherSettingsEntries !== settingSearchEntries) {
+    setLauncherSettingsEntries(settingSearchEntries);
+    if (launcherOpen) {
+      setLauncherSnapshot((prev) => ({ ...prev, settings: buildLauncherSettings() }));
+    }
   }
 
   const openSettingFromLauncher = useCallback(
