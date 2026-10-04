@@ -11,6 +11,13 @@ export interface MeshtasticSessionApi {
   attachRfSession: (driverIdentityId: string, type: ConnectionType) => Promise<void>;
   handleRfConnectFailure: (driverIdentityId?: string, reason?: unknown) => Promise<void>;
   finalizeDriverDisconnect: (opts?: { disconnectDriver?: boolean }) => Promise<void>;
+  /**
+   * Latch the user-disconnect flag wake reconnect already checks.
+   * Returns true when this call is what set it.
+   */
+  latchExplicitDisconnect?: () => boolean;
+  /** Clear a hide-induced user-disconnect latch. Does not open a radio. */
+  clearExplicitDisconnectLatch?: () => void;
   /** Meshtastic chat send (RF and MQTT-only via TransportManager). */
   sendChatMessage: (
     text: string,

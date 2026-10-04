@@ -281,6 +281,7 @@ import {
   MESHTASTIC_FIRMWARE_RELEASES_URL,
 } from './lib/firmwareCheck';
 import { applyFontScale, loadFontScale } from './lib/fontScale';
+import { latchHiddenProtocolStop, releaseHiddenProtocolStop } from './lib/hiddenProtocolStop';
 import { loadLastConnection } from './lib/lastConnectionStorage';
 import type {
   LauncherChannelItem,
@@ -868,6 +869,7 @@ function AppContent() {
         onPowerResume: reticulumRuntime.onPowerResume,
       },
     },
+    hiddenProtocols,
   });
   useRendererHeartbeat();
   useSerialServiceListeners();
@@ -2209,10 +2211,28 @@ function AppContent() {
     allConnectionActionsRef.current = allConnectionActions;
   }, [allConnectionActions]);
   const prevHiddenProtocolsRef = useRef(hiddenProtocols);
+  const hiddenStopLatchedRef = useRef(new Set<MeshProtocol>());
   useEffect(() => {
-    const newlyHidden = newlyHiddenProtocols(prevHiddenProtocolsRef.current, hiddenProtocols);
+    const prevHidden = prevHiddenProtocolsRef.current;
+    const newlyHidden = newlyHiddenProtocols(prevHidden, hiddenProtocols);
+    const newlyShown = prevHidden.filter((protocol) => !hiddenProtocols.includes(protocol));
     prevHiddenProtocolsRef.current = hiddenProtocols;
+    for (const shown of newlyShown) {
+      if (!hiddenStopLatchedRef.current.delete(shown)) continue;
+      releaseHiddenProtocolStop(shown);
+    }
     for (const hidden of newlyHidden) {
+      // Already-disconnected protocols never ran disconnect(), so wake would rehydrate
+      // a remembered session. Latch the same user-stop flag disconnect() sets.
+      if (latchHiddenProtocolStop(hidden)) hiddenStopLatchedRef.current.add(hidden);
+      if (hidden === 'meshcore') {
+        console.debug('[App] disconnecting meshcore MQTT: disabled in App → Protocols');
+        void window.electronAPI.mqtt.disconnect('meshcore').catch((e: unknown) => {
+          console.warn(
+            '[App] MQTT disconnect of disabled meshcore failed ' + errLikeToLogString(e),
+          );
+        });
+      }
       if (
         selectByProtocol(capabilitiesByProtocol, hidden).hasMqttHybrid &&
         meshtasticConnectionView.mqttStatus !== 'disconnected'

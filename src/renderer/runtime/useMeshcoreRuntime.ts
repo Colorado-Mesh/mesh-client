@@ -8260,6 +8260,15 @@ export function useMeshcoreRuntime() {
     };
   }, []);
 
+  const latchExplicitDisconnect = useCallback(() => {
+    const already = meshcoreExplicitDisconnectRef.current;
+    meshcoreExplicitDisconnectRef.current = true;
+    return !already;
+  }, []);
+  const clearExplicitDisconnectLatch = useCallback(() => {
+    meshcoreExplicitDisconnectRef.current = false;
+  }, []);
+
   useEffect(() => {
     registerMeshcoreSession({
       connect,
@@ -8267,6 +8276,8 @@ export function useMeshcoreRuntime() {
       attachRfSession,
       handleRfConnectFailure,
       finalizeDriverDisconnect,
+      latchExplicitDisconnect,
+      clearExplicitDisconnectLatch,
       connectAutomatic,
       getDestinationPubKey: (nodeId) => pubKeyMapRef.current.get(nodeId),
       getSelfName: (nodeId) => {
@@ -8285,6 +8296,8 @@ export function useMeshcoreRuntime() {
     attachRfSession,
     handleRfConnectFailure,
     finalizeDriverDisconnect,
+    latchExplicitDisconnect,
+    clearExplicitDisconnectLatch,
     connectAutomatic,
     ensureTcpLiveForUserTx,
     runMeshcoreUserTxWithLiveTcp,

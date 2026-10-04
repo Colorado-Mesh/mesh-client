@@ -193,7 +193,7 @@ The v6 shell (`src/renderer/components/shell/`):
 
 Phones and narrow windows (under 768px, `SHELL_COMPACT_QUERY`): the rail becomes a bottom bar with Chat, Network, Map, Incident and More; More opens the launcher as a bottom sheet. Touch targets grow with the `pointer-coarse:` variant (inputs 40px).
 
-App > Protocols disables protocols the user does not run (`hiddenProtocols` in `mesh-client:appSettings`, all enabled by default; helpers in `lib/enabledProtocols.ts`). A disabled protocol leaves the switcher, is disconnected, and is skipped by RF auto-connect, Reticulum stack autostart, MQTT auto-launch, inactive-protocol toasts, notification clicks and Reticulum deep links. With one protocol enabled the switcher is not rendered in the rail or the More sheet.
+App > Protocols disables protocols the user does not run (`hiddenProtocols` in `mesh-client:appSettings`, all enabled by default; helpers in `lib/enabledProtocols.ts`). A disabled protocol leaves the switcher, is disconnected, and stays stopped across sleep and wake. It is skipped by RF auto-connect, Reticulum stack autostart, MQTT auto-launch, inactive-protocol toasts, notification clicks and Reticulum deep links. With one protocol enabled the switcher is not rendered in the rail or the More sheet.
 
 Where things go:
 

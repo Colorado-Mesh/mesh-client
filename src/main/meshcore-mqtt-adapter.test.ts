@@ -472,3 +472,38 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
     });
   });
 });
+
+describe('MeshcoreMqttAdapter power resume after a hidden-protocol disconnect', () => {
+  let adapter: MeshcoreMqttAdapter;
+
+  beforeEach(async () => {
+    const mqtt = await import('mqtt');
+    vi.mocked(mqtt.connect).mockClear();
+    adapter = new MeshcoreMqttAdapter();
+  });
+
+  afterEach(() => {
+    adapter.disconnect();
+  });
+
+  it('reconnects a connected session on power resume', async () => {
+    const mqtt = await import('mqtt');
+    const session = adapter as unknown as AdapterPrivate;
+    session.status = 'connected';
+    session.lastSettings = { ...BASE_SETTINGS };
+    adapter.handlePowerResume();
+    expect(mqtt.connect).toHaveBeenCalled();
+  });
+
+  it('keeps an already-connected session down across power resume after disconnect', async () => {
+    const mqtt = await import('mqtt');
+    const session = adapter as unknown as AdapterPrivate;
+    session.status = 'connected';
+    session.lastSettings = { ...BASE_SETTINGS };
+    adapter.disconnect();
+    vi.mocked(mqtt.connect).mockClear();
+    adapter.handlePowerResume();
+    expect(adapter.getStatus()).toBe('disconnected');
+    expect(mqtt.connect).not.toHaveBeenCalled();
+  });
+});

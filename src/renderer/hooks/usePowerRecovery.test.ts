@@ -3,6 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { setSystemSuspended } from '../lib/systemPowerState';
+import type { MeshProtocol } from '../lib/types';
 import {
   DEFAULT_POWER_RESUME_SCHEDULE,
   POWER_RESUME_MESHCORE_STAGGER_MS,
@@ -157,6 +158,36 @@ describe('usePowerRecovery', () => {
       await vi.advanceTimersByTimeAsync(RETICULUM_RESUME_DELAY_MS);
       expect(reticulum.onPowerResume).not.toHaveBeenCalled();
       expect(reticulum.onPowerSuspend).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips wake resume for a protocol disabled in App → Protocols', async () => {
+      const { rerender } = renderHook(
+        ({ hiddenProtocols }: { hiddenProtocols: MeshProtocol[] }) => {
+          usePowerRecovery({
+            callbacksByProtocol: { meshtastic, meshcore, reticulum },
+            hiddenProtocols,
+          });
+        },
+        { initialProps: { hiddenProtocols: ['meshtastic'] as MeshProtocol[] } },
+      );
+      suspendCb!();
+      resumeCb!();
+      await vi.advanceTimersByTimeAsync(RETICULUM_RESUME_DELAY_MS);
+      expect(meshtastic.onPowerResume).not.toHaveBeenCalled();
+      expect(meshcore.onPowerResume).toHaveBeenCalledTimes(1);
+      expect(reticulum.onPowerResume).toHaveBeenCalledTimes(1);
+      expect(window.electronAPI.mqtt.powerResume).toHaveBeenCalledTimes(1);
+
+      meshtastic.onPowerResume.mockClear();
+      meshcore.onPowerResume.mockClear();
+      reticulum.onPowerResume.mockClear();
+      rerender({ hiddenProtocols: [] });
+      resumeCb!();
+      rerender({ hiddenProtocols: ['meshcore'] });
+      await vi.advanceTimersByTimeAsync(RETICULUM_RESUME_DELAY_MS);
+      expect(meshtastic.onPowerResume).toHaveBeenCalledTimes(1);
+      expect(meshcore.onPowerResume).not.toHaveBeenCalled();
+      expect(reticulum.onPowerResume).toHaveBeenCalledTimes(1);
     });
 
     it('reschedules Reticulum resume from the new resume event after a re-suspend', async () => {
