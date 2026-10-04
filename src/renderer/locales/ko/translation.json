@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "{{label}} (으) 로 이동함",
     "openedPanel": "{{panel}} 을 (를) 열었습니다. 이 설정은 사용 가능할 때 표시됩니다."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "공지 무시",
+    "next": "다음 공지 표시",
+    "position": "{{total}} 의 {{current}}",
+    "learnMore": "자세히 알아보기",
+    "openLinkAria": "{{label}} (브라우저에서 열림)",
+    "regionLabel": "앱 개발자의 발표"
   }
 }

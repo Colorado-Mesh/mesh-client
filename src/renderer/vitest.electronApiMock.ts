@@ -235,6 +235,10 @@ export function createElectronAPIMock(): ElectronAPI {
       onError: vi.fn().mockReturnValue(() => {}),
       onOffline: vi.fn().mockReturnValue(() => {}),
     },
+    serviceAnnouncements: {
+      fetch: vi.fn().mockResolvedValue({ status: 'ok', announcements: [] }),
+      openUrl: vi.fn().mockResolvedValue(true),
+    },
     offlineMaps: {
       estimate: vi.fn().mockResolvedValue({ tileCount: 0, sizeEstimateBytes: 0, withinCaps: true }),
       download: vi.fn().mockResolvedValue({ jobId: 'test-job' }),

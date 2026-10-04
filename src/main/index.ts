@@ -135,6 +135,7 @@ import { registerReticulumDbIpcHandlers } from './ipc/reticulum-db-handlers';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './ipc/reticulum-handlers';
 import { registerReticulumIdentityIpcHandlers } from './ipc/reticulum-identity-handlers';
 import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
+import { registerServiceAnnouncementIpcHandlers } from './ipc/service-announcement-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
 import { createIpcRateLimiter } from './ipcRateLimit';
@@ -3621,6 +3622,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
 registerFlasherHandlers();
+registerServiceAnnouncementIpcHandlers({ ipcMain });
 
 // ─── IPC: Force quit (disconnect all, then quit) ────────────────────
 // ─── IPC: Native OS notification ───────────────────────────────────

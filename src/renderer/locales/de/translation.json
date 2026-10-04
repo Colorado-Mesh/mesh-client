@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "Auf {{label}} gesprungen",
     "openedPanel": "{{panel}} geöffnet. Diese Einstellung wird angezeigt, wenn sie verfügbar ist."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Ankündigung verwerfen",
+    "next": "Nächste Ankündigung anzeigen",
+    "position": "{{current}} von {{total}}",
+    "learnMore": "Mehr erfahren",
+    "openLinkAria": "{{label}} (wird in Ihrem Browser geöffnet)",
+    "regionLabel": "Ankündigung der App-Entwickler"
   }
 }

@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "跳至{{label}}",
     "openedPanel": "已打开{{panel}}。此设置在可用时显示。"
+  },
+  "serviceAnnouncement": {
+    "dismiss": "关闭公告",
+    "next": "显示下一条公告",
+    "position": "{{current}}/{{total}}",
+    "learnMore": "瞭解更多",
+    "openLinkAria": "{{label}} （在浏览器中打开）",
+    "regionLabel": "来自应用程序开发人员的公告"
   }
 }

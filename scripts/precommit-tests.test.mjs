@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  appendServiceAnnouncementFeedTestIfNeeded,
   appendSidecarRouteDocsTestIfNeeded,
   expandWithSiblingTests,
   isForceFullSuitePath,
@@ -13,6 +14,7 @@ import {
   planPrecommitTests,
   runPrecommitTests,
   runVitestArgv,
+  SERVICE_ANNOUNCEMENT_FEED_TEST_PATH,
   shouldForceFullSuite,
   SIDECAR_ROUTE_DOCS_TEST_PATH,
 } from './precommit-tests.mjs';
@@ -152,6 +154,25 @@ describe('precommit-tests related planning', () => {
         [SIDECAR_ROUTE_DOCS_TEST_PATH],
       ),
     ).toEqual([SIDECAR_ROUTE_DOCS_TEST_PATH]);
+  });
+});
+
+describe('precommit-tests service announcements feed', () => {
+  it('runs the feed validation test for a JSON-only feed commit', () => {
+    const plan = planPrecommitTests(['announcements/announcements.json']);
+    expect(plan.mode).toBe('related');
+    expect(plan.relatedPaths).toEqual([SERVICE_ANNOUNCEMENT_FEED_TEST_PATH]);
+    expect(plan.projects).toEqual(['main']);
+  });
+
+  it('does not append the test for unrelated staged paths or duplicate it', () => {
+    expect(appendServiceAnnouncementFeedTestIfNeeded(['README.md'], [])).toEqual([]);
+    expect(
+      appendServiceAnnouncementFeedTestIfNeeded(
+        ['announcements/announcements.json'],
+        [SERVICE_ANNOUNCEMENT_FEED_TEST_PATH],
+      ),
+    ).toEqual([SERVICE_ANNOUNCEMENT_FEED_TEST_PATH]);
   });
 });
 

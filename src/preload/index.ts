@@ -45,6 +45,7 @@ import type {
   ReticulumSidecarStatus,
 } from '../shared/reticulum-types';
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
+import type { ServiceAnnouncementFetchResult } from '../shared/serviceAnnouncementFeed';
 import type {
   TAKClientInfo,
   TAKContact,
@@ -939,6 +940,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('update:offline', handler);
       return () => ipcRenderer.off('update:offline', handler);
     },
+  },
+
+  serviceAnnouncements: {
+    fetch: (): Promise<ServiceAnnouncementFetchResult> =>
+      ipcRenderer.invoke('serviceAnnouncements:fetch'),
+    openUrl: (url: string): Promise<boolean> =>
+      ipcRenderer.invoke('serviceAnnouncements:open-url', url),
   },
 
   offlineMaps: {

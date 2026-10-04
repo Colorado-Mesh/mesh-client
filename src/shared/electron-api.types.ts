@@ -66,6 +66,7 @@ import type {
   RrcSetNicknameRequest,
   RrcUpsertHubRequest,
 } from './rrc-types';
+import type { ServiceAnnouncementFetchResult } from './serviceAnnouncementFeed';
 import type { SupportBundleMode } from './support-bundle.types';
 import type {
   TAKClientInfo,
@@ -1047,6 +1048,14 @@ export interface ElectronAPI {
     onDownloaded: (cb: () => void) => () => void;
     onError: (cb: (info: { message: string }) => void) => () => void;
     onOffline: (cb: () => void) => () => void;
+  };
+
+  // ─── Developer service announcements ─────────────────────────────────────────
+  serviceAnnouncements: {
+    /** Never rejects for feed/network problems; `offline` / `error` mean "keep what you have". */
+    fetch: () => Promise<ServiceAnnouncementFetchResult>;
+    /** Opens only an https link present in the last validated feed; false otherwise. */
+    openUrl: (url: string) => Promise<boolean>;
   };
 
   // ─── Offline map tile cache ──────────────────────────────────────────────────

@@ -6492,6 +6492,14 @@
     "saveFailed": "Could not save sound settings. Your previous selection is unchanged.",
     "previewFailed": "Could not play this sound. Try another file or reset to the original tone."
   },
+  "serviceAnnouncement": {
+    "regionLabel": "Announcement from the app developers",
+    "dismiss": "Dismiss announcement",
+    "next": "Show next announcement",
+    "position": "{{current}} of {{total}}",
+    "learnMore": "Learn more",
+    "openLinkAria": "{{label}} (opens in your browser)"
+  },
   "settingsSearch": {
     "jumpedTo": "Jumped to {{label}}",
     "openedPanel": "Opened {{panel}}. This setting appears when it is available."

@@ -6540,5 +6540,13 @@
   "settingsSearch": {
     "jumpedTo": "{{label}} 'a atlandı",
     "openedPanel": "{{panel}} açıldı. Bu ayar, uygun olduğunda görünür."
+  },
+  "serviceAnnouncement": {
+    "dismiss": "Duyuruyu kapat",
+    "next": "Sonraki duyuruyu göster",
+    "position": "{{current}}/{{total}}",
+    "learnMore": "Daha fazla bilgi edin",
+    "openLinkAria": "{{label}} (tarayıcınızda açılır)",
+    "regionLabel": "Uygulama geliştiricilerinden duyuru"
   }
 }
