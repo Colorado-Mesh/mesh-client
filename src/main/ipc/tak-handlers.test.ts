@@ -220,6 +220,7 @@ describe('remote relay handlers', () => {
     username: 'kd0abc',
     password: 'secret',
     verifyServer: true,
+    allowNameMismatch: true,
   };
 
   it('enrolls, saves the issued credentials, and restarts a running relay', async () => {
@@ -235,6 +236,7 @@ describe('remote relay handlers', () => {
       username: 'kd0abc',
       password: 'secret',
       verifyServer: true,
+      allowNameMismatch: true,
       trustedCa: 'ca-pem',
     });
     expect(saveTakRemoteCredentials).toHaveBeenCalledWith({
@@ -253,6 +255,7 @@ describe('remote relay handlers', () => {
     ['an empty username', { ...ENROLL, username: '' }],
     ['an empty password', { ...ENROLL, password: '' }],
     ['a non-boolean verifyServer', { ...ENROLL, verifyServer: 'yes' }],
+    ['a non-boolean allowNameMismatch', { ...ENROLL, allowNameMismatch: 'yes' }],
   ])('rejects enrollment with %s', async (_label, request) => {
     const { get } = await register();
     await expect(get('tak:remoteEnroll')(event, request)).rejects.toThrow(/tak:remoteEnroll/);

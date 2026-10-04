@@ -115,6 +115,11 @@ export interface TAKEnrollmentRequest {
   /** Sent once to the server; never stored. */
   password: string;
   verifyServer: boolean;
+  /**
+   * With an imported CA, accept an enrollment server certificate issued for a different name.
+   * Same rule as {@link TAKRemoteSettings.allowNameMismatch}.
+   */
+  allowNameMismatch: boolean;
 }
 
 /** What the renderer may know about stored remote credentials; never key material. */

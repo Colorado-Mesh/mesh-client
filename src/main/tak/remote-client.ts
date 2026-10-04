@@ -43,6 +43,8 @@ type ConnectFn = (options: tls.ConnectionOptions) => tls.TLSSocket;
 type TcpConnectFn = (options: net.NetConnectOpts) => net.Socket;
 
 const UNTRUSTED_SERVER = "The server certificate is not trusted; import the server's CA";
+/** Plain TCP answered a TLS handshake. OpenSSL 3.0 uses the version code; 3.5 the length code. */
+const NOT_USING_TLS = 'The server is not using TLS; turn off TLS to connect over plain TCP';
 
 /** Plain-language status text for the socket and certificate errors a TAK user can act on. */
 const SOCKET_ERROR_TEXT: Record<string, string> = {
@@ -58,8 +60,8 @@ const SOCKET_ERROR_TEXT: Record<string, string> = {
   UNABLE_TO_VERIFY_LEAF_SIGNATURE: UNTRUSTED_SERVER,
   UNABLE_TO_GET_ISSUER_CERT_LOCALLY: UNTRUSTED_SERVER,
   CERT_HAS_EXPIRED: 'The server certificate has expired',
-  ERR_SSL_WRONG_VERSION_NUMBER:
-    'The server is not using TLS; turn off TLS to connect over plain TCP',
+  ERR_SSL_WRONG_VERSION_NUMBER: NOT_USING_TLS,
+  ERR_SSL_PACKET_LENGTH_TOO_LONG: NOT_USING_TLS,
   ERR_TLS_CERT_ALTNAME_INVALID:
     'The server certificate is for a different name; allow a name mismatch if this TAK server is set up that way',
 };
@@ -76,6 +78,7 @@ export function describeTakRemoteError(err: NodeJS.ErrnoException): string {
   // Electron's BoringSSL reports reasons as TLSV1_ALERT_CERTIFICATE_REQUIRED; OpenSSL as
   // "tlsv13 alert certificate required".
   const reason = rawReason.toLowerCase().replace(/_/g, ' ');
+  if (reason.includes('packet length too long')) return NOT_USING_TLS;
   if (reason.includes('certificate required')) {
     return 'The server requires a client certificate; import one';
   }

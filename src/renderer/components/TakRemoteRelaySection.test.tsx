@@ -246,10 +246,34 @@ describe('TakRemoteRelaySection', () => {
       username: 'kd0abc',
       password: 'secret',
       verifyServer: true,
+      allowNameMismatch: false,
     });
     expect(screen.getByLabelText('Password')).toHaveValue('');
     expect(screen.getByText(/client certificate: kd0abc/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/issued for a different name/i)).toBeChecked();
+  });
+
+  it('sends the name-mismatch opt-out when enrolling against an imported CA', async () => {
+    vi.mocked(tak().remoteGetCredentials).mockResolvedValue({ caSubjects: ['Test TAK CA'] });
+    vi.mocked(tak().remoteEnroll).mockResolvedValue({
+      caSubjects: ['Test TAK CA'],
+      clientSubject: 'kd0abc',
+    });
+    const user = userEvent.setup();
+    await renderSection();
+    await user.type(screen.getByLabelText('Server address'), '10.0.0.5');
+    await user.click(screen.getByLabelText(/issued for a different name/i));
+    await user.type(screen.getByLabelText('Username'), 'kd0abc');
+    await user.type(screen.getByLabelText('Password'), 'secret');
+    await user.click(screen.getByRole('button', { name: 'Get Certificate' }));
+    expect(tak().remoteEnroll).toHaveBeenCalledWith({
+      host: '10.0.0.5',
+      port: 8446,
+      username: 'kd0abc',
+      password: 'secret',
+      verifyServer: true,
+      allowNameMismatch: true,
+    });
   });
 
   it('disables enrollment while server verification is off', async () => {

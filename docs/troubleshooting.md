@@ -1748,6 +1748,8 @@ See [reticulum.md — RNode over Wi-Fi](reticulum.md#rnode-over-wi-fi).
 
 ## TAK (CoT gateway)
 
+The **TAK** tab runs a local CoT server and a remote relay to an OpenTAKServer, FreeTAKServer, or TAK Server. The relay uses TLS or plain TCP; plain TCP is unencrypted and is not saved for launch auto-connect. TAK Servers that use logins issue a client certificate from a username and password on the enrollment port (usually 8446). Inbound CoT from local clients and the remote server shows as contacts on the map. The status bar uses one TAK label that combines the local server and the remote relay (for example, "TAK running, remote connected").
+
 ### EUD reports “TLS certificate invalid” / cannot connect with a mesh-client data package
 
 **Cause**: The data package’s `connection.pref` dials your LAN IP over TLS. Older mesh-client builds issued a server certificate with only CN=`serverName` (e.g. `mesh-client`) and no Subject Alternative Name, so strict EUDs (iTAK, WinTAK, newer ATAK) reject the certificate.

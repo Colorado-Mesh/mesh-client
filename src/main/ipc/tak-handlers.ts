@@ -121,6 +121,9 @@ function validateTakEnrollmentRequest(request: unknown): asserts request is TAKE
   if (typeof r.verifyServer !== 'boolean') {
     throw new Error('tak:remoteEnroll: verifyServer must be boolean');
   }
+  if (typeof r.allowNameMismatch !== 'boolean') {
+    throw new Error('tak:remoteEnroll: allowNameMismatch must be boolean');
+  }
 }
 
 async function readCredentialFiles(filePaths: string[]): Promise<TakCredentialFile[]> {
@@ -344,6 +347,7 @@ export function registerTakIpcHandlers(deps: TakIpcDeps): void {
         username: request.username,
         password: request.password,
         verifyServer: request.verifyServer,
+        allowNameMismatch: request.allowNameMismatch,
         trustedCa: loadTakRemoteCredentials().ca,
       });
       saveTakRemoteCredentials(creds);

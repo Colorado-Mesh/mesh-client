@@ -62,12 +62,21 @@ interface EnrollProps {
   host: string;
   hostValid: boolean;
   verifyServer: boolean;
+  /** Effective opt-out: the checkbox, and only when an imported CA is pinned. */
+  allowNameMismatch: boolean;
   disabled: boolean;
   onEnroll: (request: TAKEnrollmentRequest) => Promise<boolean>;
 }
 
 /** Username/password enrollment for a client certificate, as ATAK's "Enroll for client certificate". */
-function EnrollForm({ host, hostValid, verifyServer, disabled, onEnroll }: EnrollProps) {
+function EnrollForm({
+  host,
+  hostValid,
+  verifyServer,
+  allowNameMismatch,
+  disabled,
+  onEnroll,
+}: EnrollProps) {
   const { t } = useTranslation();
   const id = useId();
   const [username, setUsername] = useState('');
@@ -85,6 +94,7 @@ function EnrollForm({ host, hostValid, verifyServer, disabled, onEnroll }: Enrol
       username: username.trim(),
       password,
       verifyServer,
+      allowNameMismatch,
     });
     setPassword('');
   };
@@ -447,6 +457,7 @@ function RemoteRelayForm({ initial, relay }: FormProps) {
             host={host}
             hostValid={hostValid}
             verifyServer={verifyServer}
+            allowNameMismatch={allowNameMismatch && hasCa}
             disabled={active || isBusy}
             onEnroll={handleEnroll}
           />

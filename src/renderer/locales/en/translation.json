@@ -6128,7 +6128,7 @@
     "durationHourMin": "{{h}}h {{m}}m",
     "atakUndecodable": "Payload not recognized as a TAK packet",
     "remoteTitle": "Remote TAK Server",
-    "remoteDescription": "Stream node positions from every protocol to an OpenTAKServer, FreeTAKServer, or TAK Server over TLS. Works with or without the local server.",
+    "remoteDescription": "Stream node positions from every protocol to an OpenTAKServer, FreeTAKServer, or TAK Server over TLS or plain TCP. Works with or without the local server.",
     "remoteConnected": "Connected to {{host}}:{{port}}",
     "remoteConnecting": "Connecting to {{host}}:{{port}}…",
     "remoteDisconnected": "Not connected",
