@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -6366,5 +6366,125 @@ describe('ChatPanel — weather view', () => {
     );
     const admin = await screen.findByRole('button', { name: /^Admin/ });
     expect(admin.getAttribute('aria-label')).toBe('Admin');
+  });
+});
+
+describe('ChatPanel — starred view', () => {
+  function readLastRead(): Record<string, number> {
+    return JSON.parse(localStorage.getItem(lastReadStorageKey('meshtastic')) ?? '{}') as Record<
+      string,
+      number
+    >;
+  }
+
+  async function flushReadMarkFrames(): Promise<void> {
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      });
+    });
+  }
+
+  it('does not mark the group channel read or aim send at it when leaving a DM for Starred', async () => {
+    const user = userEvent.setup();
+    const ts = 1_781_469_336_193;
+    localStorage.setItem(lastReadStorageKey('meshtastic'), JSON.stringify({ 'ch:0': ts - 5000 }));
+    localStorage.setItem('mesh-client:appSettings', JSON.stringify({ mecpComposeEnabled: true }));
+    const onSend = vi.fn().mockResolvedValue(undefined);
+    const nodes = new Map<number, MeshNode>([
+      [
+        2,
+        {
+          node_id: 2,
+          long_name: 'Alice',
+          short_name: 'Alice',
+          hw_model: '',
+          snr: 0,
+          battery: 0,
+          last_heard: ts,
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    ]);
+    const channelMecp = makeMsg({
+      sender_id: 3,
+      sender_name: 'Bob',
+      payload: 'MECP/0/M01',
+      timestamp: ts - 1000,
+    });
+    const dm = makeMsg({
+      sender_id: 2,
+      sender_name: 'Alice',
+      payload: 'ping',
+      timestamp: ts - 500,
+      to: 1,
+    });
+    const messages = [channelMecp, dm];
+    const panel = (msgs: ChatMessage[], isActive: boolean) => (
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={msgs}
+          nodes={nodes}
+          onSend={onSend}
+          isActive={isActive}
+        />
+      </ToastProvider>
+    );
+    const { rerender } = render(panel(messages, false));
+
+    const dmPlaceholder = i18n.t('chatPanel.composePlaceholderDm', { name: 'Alice' });
+    const channelPlaceholder = i18n.t('chatPanel.composePlaceholderDefault');
+    const channelWithShield = 'General 1, Unread MAYDAY MECP report';
+    await user.click(await screen.findByRole('button', { name: 'Alice' }));
+    expect(await screen.findByPlaceholderText(dmPlaceholder)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open MECP compose' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: channelWithShield })).toBeInTheDocument();
+
+    rerender(panel(messages, true));
+    await user.click(screen.getByRole('button', { name: 'Starred messages' }));
+
+    expect(screen.queryByPlaceholderText(dmPlaceholder)).toBeNull();
+    expect(screen.queryByPlaceholderText(channelPlaceholder)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Send' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Open MECP compose' })).toBeNull();
+    expect(screen.getByText(i18n.t('chatPanel.noStarredMessages'))).toBeInTheDocument();
+    expect(onSend).not.toHaveBeenCalled();
+
+    await flushReadMarkFrames();
+
+    const stored = readLastRead();
+    expect(stored['ch:0']).toBe(ts - 5000);
+    expect(stored['star:0']).toBeUndefined();
+    expect(computeChannelUnreadCounts(messages, stored, new Set([1]), 'meshtastic').get(0)).toBe(1);
+    expect(screen.getByRole('button', { name: channelWithShield })).toBeInTheDocument();
+
+    const withInbound = [
+      ...messages,
+      makeMsg({
+        sender_id: 3,
+        sender_name: 'Bob',
+        payload: 'another channel post',
+        timestamp: ts + 1000,
+      }),
+    ];
+    rerender(panel(withInbound, true));
+    await flushReadMarkFrames();
+
+    const afterInbound = readLastRead();
+    expect(afterInbound['ch:0']).toBe(ts - 5000);
+    expect(afterInbound['star:0']).toBeUndefined();
+    expect(
+      computeChannelUnreadCounts(withInbound, afterInbound, new Set([1]), 'meshtastic').get(0),
+    ).toBe(2);
+    expect(
+      screen.getByRole('button', { name: 'General 2, Unread MAYDAY MECP report' }),
+    ).toBeInTheDocument();
+    expect(onSend).not.toHaveBeenCalled();
   });
 });

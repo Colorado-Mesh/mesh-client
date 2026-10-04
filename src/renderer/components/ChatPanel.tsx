@@ -246,6 +246,9 @@ function chatPanelIsLinux(): boolean {
   return window.electronAPI.getPlatform() === 'linux';
 }
 
+/** Last-read key for the Starred list. Distinct from `ch:` / `dm:` thread watermarks. */
+const STARRED_READ_KEY_PREFIX = 'star:';
+
 /** Toolbar icon button with Electron-friendly HelpTooltip (native `title` does not show). */
 const CHAT_TOOLBAR_BUTTON_BASE =
   'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors';
@@ -1734,9 +1737,14 @@ function ChatPanel({
     [scopeRadioSignature, meshcoreChannelSources, channel],
   );
 
-  // Weather view shows a subset of the channel, so it must not advance the `ch:` watermark
-  // that channel unread counts use.
-  const readKey = viewMode === 'weather' ? `wx:${channel}` : viewKey;
+  // Weather is a subset of the channel, and Starred is a saved-message list. Neither may
+  // advance the `ch:` / `dm:` watermarks that unread counts and MECP shields use.
+  const readKey =
+    viewMode === 'weather'
+      ? `wx:${channel}`
+      : viewMode === 'starred'
+        ? `${STARRED_READ_KEY_PREFIX}${channel}`
+        : viewKey;
 
   const outboxSendFn = useCallback(
     (text: string, ch: number, dest?: number, replyId?: number) =>
@@ -1762,6 +1770,8 @@ function ChatPanel({
   );
 
   const markCurrentViewRead = useCallback(() => {
+    // Starred is not a conversation, so opening it must not stamp a watermark.
+    if (viewMode === 'starred') return;
     if (viewMode === 'dm' && activeDmNode == null) return;
 
     const latest = latestMessageTimestamp(viewMessages);
@@ -1777,7 +1787,8 @@ function ChatPanel({
   }, [readKey]);
 
   // Clear sticky action errors when switching channel/DM/starred or leaving Chat (panel stays mounted).
-  // viewMode is included because starred keeps the same viewKey as the prior channel/DM.
+  // viewMode is included because Starred reuses the channel viewKey (`ch:`); it does not keep
+  // the prior DM's `dm:` key.
   useEffect(() => {
     setChatActionError(null);
   }, [viewKey, viewMode]);
@@ -1788,13 +1799,15 @@ function ChatPanel({
 
   const prevViewKeyForReadRef = useRef<string | null>(null);
   // Mark read when the user switches channel/DM while chat is active — not on tab re-entry alone.
+  // Closing Starred changes readKey back to `ch:` / `dm:` without the user reading that thread.
   useEffect(() => {
     if (!isActive) {
       prevViewKeyForReadRef.current = readKey;
       return;
     }
     const prev = prevViewKeyForReadRef.current;
-    if (prev !== null && prev !== readKey) {
+    const leavingStarred = prev?.startsWith(STARRED_READ_KEY_PREFIX) === true;
+    if (prev !== null && prev !== readKey && !leavingStarred) {
       markCurrentViewRead();
     }
     prevViewKeyForReadRef.current = readKey;
@@ -4366,7 +4379,7 @@ function ChatPanel({
       {protocol === 'reticulum' && hasLxmfPaper ? (
         <ChatPaperScanControl sidecarRunning={reticulumStackLive} />
       ) : null}
-      {mecpComposeEnabled ? (
+      {viewMode !== 'starred' && mecpComposeEnabled ? (
         <MecpComposeModal
           key={mecpComposeSession}
           open={mecpComposeOpen}
@@ -4392,73 +4405,75 @@ function ChatPanel({
           }}
         />
       ) : null}
-      <ChatComposer
-        className="mt-1 shrink-0"
-        protocol={protocol}
-        viewKey={viewKey}
-        isConnected={isConnected}
-        connectionType={connectionType}
-        isMqttOnly={isMqttOnly}
-        isDmMode={isDmMode}
-        disabled={(dmOnlyChat && activeDmNode == null) || reticulumDmMissingLxmf}
-        composerContext={viewMode === 'dm' ? 'dm' : 'channel'}
-        senderDisplayName={composerSelfDisplayName}
-        placeholder={composePlaceholder}
-        replyTo={replyTo}
-        onReplyClear={() => {
-          setReplyTo(null);
-        }}
-        mentionNodes={nodes}
-        outboxChannel={channel}
-        outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
-        queueOutbox={queueOutbox}
-        onSendChunk={handleSendChunk}
-        payloadLimit={composerPayloadLimit}
-        lxmfReplyHashReplies={lxmfReplyHashReplies}
-        showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
-        floodScopeStorageKey={viewMode === 'dm' ? undefined : channelScopeKey}
-        floodScopePresets={meshcoreFloodScopePresets}
-        onRememberFloodScopePreset={onRememberMeshcoreFloodScopePreset}
-        resolveShareLocation={resolveShareLocation}
-        onSendLocationWaypoint={
-          onSendLocationWaypoint
-            ? async (lat, lon) => {
-                await onSendLocationWaypoint(lat, lon, channel === -1 ? 0 : channel);
-              }
-            : undefined
-        }
-        onSendSuccess={() => {
-          setUnreadDividerTimestamp(0);
-        }}
-        textareaRef={composerInputRef}
-        actionSlot={
-          mecpComposeEnabled ? (
-            <ChatToolbarTooltipButton
-              tooltip={t('mecp.compose.open')}
-              aria-label={t('mecp.compose.open')}
-              className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:opacity-50"
-              onClick={() => {
-                setMecpComposeSession((n) => n + 1);
-                setMecpComposeOpen(true);
-              }}
-            >
-              <Siren aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
-            </ChatToolbarTooltipButton>
-          ) : undefined
-        }
-        onVoiceMemo={
-          protocol === 'reticulum' &&
-          hasReticulumVoiceMemo &&
-          isDmMode &&
-          onVoiceMemo != null &&
-          !reticulumDmMissingLxmf
-            ? () => {
-                if (activeDmNode == null) return;
-                onVoiceMemo(activeDmNode);
-              }
-            : undefined
-        }
-      />
+      {viewMode !== 'starred' ? (
+        <ChatComposer
+          className="mt-1 shrink-0"
+          protocol={protocol}
+          viewKey={viewKey}
+          isConnected={isConnected}
+          connectionType={connectionType}
+          isMqttOnly={isMqttOnly}
+          isDmMode={isDmMode}
+          disabled={(dmOnlyChat && activeDmNode == null) || reticulumDmMissingLxmf}
+          composerContext={viewMode === 'dm' ? 'dm' : 'channel'}
+          senderDisplayName={composerSelfDisplayName}
+          placeholder={composePlaceholder}
+          replyTo={replyTo}
+          onReplyClear={() => {
+            setReplyTo(null);
+          }}
+          mentionNodes={nodes}
+          outboxChannel={channel}
+          outboxDestination={viewMode === 'dm' && activeDmNode != null ? activeDmNode : undefined}
+          queueOutbox={queueOutbox}
+          onSendChunk={handleSendChunk}
+          payloadLimit={composerPayloadLimit}
+          lxmfReplyHashReplies={lxmfReplyHashReplies}
+          showFloodScopeOverride={typeof applyMeshcoreFloodScopeHashtag === 'function'}
+          floodScopeStorageKey={viewMode === 'dm' ? undefined : channelScopeKey}
+          floodScopePresets={meshcoreFloodScopePresets}
+          onRememberFloodScopePreset={onRememberMeshcoreFloodScopePreset}
+          resolveShareLocation={resolveShareLocation}
+          onSendLocationWaypoint={
+            onSendLocationWaypoint
+              ? async (lat, lon) => {
+                  await onSendLocationWaypoint(lat, lon, channel === -1 ? 0 : channel);
+                }
+              : undefined
+          }
+          onSendSuccess={() => {
+            setUnreadDividerTimestamp(0);
+          }}
+          textareaRef={composerInputRef}
+          actionSlot={
+            mecpComposeEnabled ? (
+              <ChatToolbarTooltipButton
+                tooltip={t('mecp.compose.open')}
+                aria-label={t('mecp.compose.open')}
+                className="flex h-[2.625rem] min-w-[2.625rem] shrink-0 items-center justify-center rounded-lg border border-red-600/70 bg-red-950/50 px-2.5 text-red-300 transition-colors hover:bg-red-900/60 hover:text-red-200 disabled:opacity-50"
+                onClick={() => {
+                  setMecpComposeSession((n) => n + 1);
+                  setMecpComposeOpen(true);
+                }}
+              >
+                <Siren aria-hidden className="h-4 w-4" trigger={parentIconTrigger} size={16} />
+              </ChatToolbarTooltipButton>
+            ) : undefined
+          }
+          onVoiceMemo={
+            protocol === 'reticulum' &&
+            hasReticulumVoiceMemo &&
+            isDmMode &&
+            onVoiceMemo != null &&
+            !reticulumDmMissingLxmf
+              ? () => {
+                  if (activeDmNode == null) return;
+                  onVoiceMemo(activeDmNode);
+                }
+              : undefined
+          }
+        />
+      ) : null}
 
       {chatActionError?.viewKey === viewKey && (
         <div role="alert" className="mt-2 px-1 text-sm text-red-400">
