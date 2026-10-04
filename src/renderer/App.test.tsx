@@ -980,7 +980,7 @@ describe('App shell layout', () => {
     expect(within(dialog).getByRole('button', { name: /Ridge Owl/ })).toBeInTheDocument();
   });
 
-  function openSettingFromLauncher(query: string, rowName: string): void {
+  async function openSettingFromLauncher(query: string, rowName: string): Promise<void> {
     fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true });
     const dialog = screen.getByRole('dialog', { name: 'All panels' });
     fireEvent.change(
@@ -989,7 +989,8 @@ describe('App shell layout', () => {
       }),
       { target: { value: query } },
     );
-    const settings = within(dialog).getByRole('region', { name: 'Settings' });
+    // The settings registry is a lazy chunk; an open launcher fills in once it resolves.
+    const settings = await within(dialog).findByRole('region', { name: 'Settings' });
     fireEvent.click(within(settings).getByRole('button', { name: rowName }));
     expect(screen.queryByRole('dialog', { name: 'All panels' })).toBeNull();
   }
@@ -1001,7 +1002,7 @@ describe('App shell layout', () => {
       Element.prototype.scrollIntoView = originalScrollIntoView;
     });
     renderApp();
-    openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');
+    await openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');
     await waitFor(
       () => {
         expect(document.getElementById('app-announcer-polite')).toHaveTextContent(
@@ -1015,7 +1016,7 @@ describe('App shell layout', () => {
 
   it('jumps from a settings result to its panel and announces it when the row is absent', async () => {
     renderApp();
-    openSettingFromLauncher('24-hour', 'Use 24-hour time, Appearance');
+    await openSettingFromLauncher('24-hour', 'Use 24-hour time, Appearance');
     const appPanelHost = document.getElementById(`panel-${String(TAB_SLOT_IDS.indexOf('App'))}`);
     expect(appPanelHost).not.toBeNull();
     expect(appPanelHost?.hidden).toBe(false);
