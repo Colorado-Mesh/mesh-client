@@ -37,6 +37,7 @@ import {
 import { chatMessageToMessageRecord } from './lib/storeRecordAdapters';
 import { TAB_SLOT_IDS } from './lib/tabSlotIds';
 import type { ChatMessage } from './lib/types';
+import { mockConsoleWarn } from './lib/vitestConsoleMock';
 import { setConnection, useConnectionStore } from './stores/connectionStore';
 import { useIdentityStore } from './stores/identityStore';
 import { useMessageStore } from './stores/messageStore';
@@ -53,6 +54,17 @@ vi.mock('./lib/chatNotifications', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
   const actual = await importOriginal<typeof import('./lib/chatNotifications')>();
   return { ...actual, playMessageNotification: playMessageNotificationMock };
+});
+
+const { loadSettingSearchEntriesMock } = vi.hoisted(() => ({
+  loadSettingSearchEntriesMock: vi.fn(),
+}));
+
+vi.mock('./lib/settingsSearchEntriesLoader', async (importOriginal) => {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
+  const actual = await importOriginal<typeof import('./lib/settingsSearchEntriesLoader')>();
+  loadSettingSearchEntriesMock.mockImplementation(actual.loadSettingSearchEntries);
+  return { loadSettingSearchEntries: loadSettingSearchEntriesMock };
 });
 
 function syncMeshtasticMessagesToStore(messages: ChatMessage[]): void {
@@ -1012,6 +1024,21 @@ describe('App shell layout', () => {
       { timeout: 3000 },
     );
     expect(screen.getByRole('checkbox', { name: 'Reduce motion' })).toHaveFocus();
+  });
+
+  it('retries a failed settings registry load when the launcher opens', async () => {
+    const warn = mockConsoleWarn();
+    onTestFinished(warn.restore);
+    loadSettingSearchEntriesMock.mockRejectedValueOnce(new Error('chunk load failed'));
+    renderApp();
+    await waitFor(() => {
+      expect(warn.spy).toHaveBeenCalledWith(
+        '[App] settings search registry failed to load',
+        expect.any(Error),
+      );
+    });
+    await openSettingFromLauncher('reduce motion', 'Reduce motion, Appearance');
+    expect(loadSettingSearchEntriesMock.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it('jumps from a settings result to its panel and announces it when the row is absent', async () => {

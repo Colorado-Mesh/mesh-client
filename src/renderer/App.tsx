@@ -1969,20 +1969,22 @@ function AppContent() {
   const [settingSearchEntries, setSettingSearchEntries] = useState<
     readonly SettingSearchEntry[] | null
   >(null);
+  // Loads on mount; a failed chunk load retries the next time the launcher opens.
   useEffect(() => {
+    if (settingSearchEntries) return;
     let cancelled = false;
     loadSettingSearchEntries().then(
       (entries) => {
         if (!cancelled) setSettingSearchEntries(entries);
       },
       (err: unknown) => {
-        console.warn('[App] settings search registry failed to load', err);
+        if (!cancelled) console.warn('[App] settings search registry failed to load', err);
       },
     );
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [launcherOpen, settingSearchEntries]);
   // Settings for the active protocol only; connection state never filters them.
   const buildLauncherSettings = useCallback(
     (): LauncherSettingItem[] =>
