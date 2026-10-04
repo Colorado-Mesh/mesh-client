@@ -3774,6 +3774,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshcoreMqttClientId',
   'meshtasticConfigureTargetNodeNum',
   'meshtasticLastRfSelfNodeId',
+  'meshtasticOwnNodeNumsByPublicKey',
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
   'reduceMotion',
@@ -3786,6 +3787,10 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'reticulumRmapAnnounceIntervalMin',
   'reticulumRmapReachableOn',
   'reticulumRmapHeightMeters',
+  'reticulumRmapDiscoveryLxmfAddress',
+  'reticulumRmapDiscoveryStampValue',
+  'reticulumRmapDiscoveryEncrypt',
+  'reticulumRmapPublishIfac',
   /** Legacy blob; prefer meshtasticRemoteAdminKey:<nodeNum> per-node keys. */
   'meshtasticRemoteAdminKeyByNode',
 ]);
@@ -3804,6 +3809,7 @@ function isAppSettingsKeyAllowed(key: string): boolean {
 
 function appSettingsMaxValueLengthForKey(key: string): number {
   if (key === 'notificationSounds') return 4096;
+  if (key === 'meshtasticOwnNodeNumsByPublicKey') return 4096;
   if (
     key.startsWith(MESHCORE_ROOM_CREDENTIAL_SETTING_PREFIX) ||
     key.startsWith(MESHCORE_REPEATER_CREDENTIAL_SETTING_PREFIX)
