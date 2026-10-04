@@ -211,6 +211,37 @@ describe('Persistent app settings IPC (source contract)', () => {
     expect(INDEX_SOURCE).toContain('isAppSettingsKeyAllowed');
   });
 
+  it('allowlists every renderer key persisted via appSettings:set', () => {
+    const allowListBlock = INDEX_SOURCE.slice(
+      INDEX_SOURCE.indexOf('const APP_SETTINGS_ALLOWED_KEYS'),
+      INDEX_SOURCE.indexOf('const APP_SETTINGS_MAX_VALUE_LENGTH'),
+    );
+    const rmapSource = readFileSync(
+      join(__dirname, '../renderer/lib/reticulum/reticulumRmapDiscovery.ts'),
+      'utf-8',
+    );
+    const rmapKeysBlock = /export const RMAP_SETTINGS_KEYS = \{([\s\S]*?)\}/.exec(rmapSource)?.[1];
+    const rmapKeys = [...(rmapKeysBlock ?? '').matchAll(/:\s*'([^']+)'/g)].map((m) => m[1]);
+    expect(rmapKeys.length).toBeGreaterThanOrEqual(7);
+
+    const identitySource = readFileSync(
+      join(__dirname, '../renderer/lib/meshtasticMqttIdentity.ts'),
+      'utf-8',
+    );
+    const ownNodeKey = /MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY = '([^']+)'/.exec(
+      identitySource,
+    )?.[1];
+    expect(ownNodeKey).toBeDefined();
+
+    for (const key of [...rmapKeys, ownNodeKey]) {
+      expect(allowListBlock).toContain(`'${key}'`);
+    }
+  });
+
+  it('gives own-node public key history a JSON-sized value limit', () => {
+    expect(INDEX_SOURCE).toMatch(/key === 'meshtasticOwnNodeNumsByPublicKey'\) return 4096/);
+  });
+
   it('registers DB-level message prune IPC for both protocols (issue #387)', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('db:pruneMessagesByCount'");
     expect(INDEX_SOURCE).toContain("ipcMain.handle('db:pruneMeshcoreMessagesByCount'");
