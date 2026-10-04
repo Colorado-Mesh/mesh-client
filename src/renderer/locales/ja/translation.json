@@ -1055,7 +1055,8 @@
         "chooserCancelledHint": "キャンセルしなかった場合は、Bluetooth がオンになっていることを確認し (systemctl status bluetooth)、もう一度「接続」をタップします。 Flatpak では、Bluetooth を許可してビルドを再インストールするか、AppImage/.deb/.rpm を使用します。",
         "bluetoothctlMissingHint": "この環境では、OS Bluetooth ペアリング ツールを利用できません (Flatpak で一般的)。公式の AppImage、.deb、または .rpm を使用するか、無線をホスト bluetoothctl とペアリングしてから、接続を再試行します。",
         "stackUnresponsiveGeneric": "以前の接続試行でBluetoothが停止しています。Bluetoothの電源をオフまたはオンにし、必要に応じてラジオを再ペアリングしてから、mesh-clientを再起動します。",
-        "stackUnresponsiveWindowsRePair": "Windows Bluetoothは、通常、無線が適切にペアリングされていないため、以前の接続試行で立ち往生しています。[デバイスの削除と再ペアリング]を押し、ラジオに表示されている暗証番号を入力します。それでも接続が拒否された場合は、mesh-clientを再起動してもう一度お試しください。"
+        "stackUnresponsiveWindowsRePair": "Windows Bluetoothは、通常、無線が適切にペアリングされていないため、以前の接続試行で立ち往生しています。[デバイスの削除と再ペアリング]を押し、ラジオに表示されている暗証番号を入力します。それでも接続が拒否された場合は、mesh-clientを再起動してもう一度お試しください。",
+        "rnodeBondRecoveryHold": "Reticulum RNodeのBluetoothペアリングが壊れているため、MeshtasticとMeshCoreでBluetoothが一時停止しています。最初にRNodeを修正してください。システムのBluetooth設定でこのデバイスを削除してから、Reticulum → Adminから再ペアリングしてください。Bluetoothラジオをすぐに使用するには、Reticulumスタックを停止するか、そのRNodeをUSBまたはWi-Fiに切り替えます。"
       }
     },
     "error": {

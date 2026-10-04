@@ -186,6 +186,16 @@ describe('humanizeBleError', () => {
     expect(result).toContain(`connectionPanel.humanize.ble.${hintKey}`);
   });
 
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'tells the user to fix the RNode when bond recovery holds the adapter on %s',
+    (platform) => {
+      mockPlatform(platform);
+      expect(
+        humanizeBleError(new Error('RNode bond recovery holds the Bluetooth adapter'), t),
+      ).toBe('connectionPanel.humanize.ble.rnodeBondRecoveryHold');
+    },
+  );
+
   it.each([
     ['win32', 'stackUnresponsiveWindowsRePair'],
     ['linux', 'stackUnresponsiveGeneric'],

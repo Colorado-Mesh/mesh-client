@@ -1055,7 +1055,8 @@
         "chooserCancelledHint": "Jika Anda tidak membatalkan, pastikan Bluetooth aktif (status sistemctl bluetooth), lalu ketuk Hubungkan lagi. Di Flatpak, instal ulang build dengan Bluetooth yang diizinkan, atau gunakan AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Alat pemasangan OS Bluetooth tidak tersedia di lingkungan ini (umum di Flatpak). Gunakan AppImage resmi, .deb, atau .rpm, atau pasangkan radio dengan host bluetoothctl, lalu coba lagi Hubungkan.",
         "stackUnresponsiveGeneric": "Bluetooth macet pada upaya koneksi sebelumnya. Matikan dan nyalakan Bluetooth, pasangkan kembali radio jika perlu, lalu mulai ulang mesh-client.",
-        "stackUnresponsiveWindowsRePair": "Bluetooth Windows macet pada upaya koneksi sebelumnya, biasanya karena radio tidak dipasangkan dengan benar. Tekan Lepas & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan di radio. Jika koneksi masih ditolak, restart mesh-client dan coba lagi."
+        "stackUnresponsiveWindowsRePair": "Bluetooth Windows macet pada upaya koneksi sebelumnya, biasanya karena radio tidak dipasangkan dengan benar. Tekan Lepas & Pasangkan Ulang Perangkat dan masukkan PIN yang ditampilkan di radio. Jika koneksi masih ditolak, restart mesh-client dan coba lagi.",
+        "rnodeBondRecoveryHold": "Bluetooth dijeda untuk Meshtastic dan MeshCore karena Reticulum RNode memiliki pasangan Bluetooth yang rusak. Perbaiki RNode terlebih dahulu: lupakan di pengaturan Bluetooth sistem Anda, lalu pasangkan kembali dari Reticulum → Admin. Untuk segera menggunakan radio Bluetooth, hentikan tumpukan Reticulum atau alihkan RNode tersebut ke USB atau Wi-Fi."
       }
     },
     "error": {

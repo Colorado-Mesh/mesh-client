@@ -44,10 +44,16 @@ describe('useReticulumRuntime reconnect hardening (regression)', () => {
 
   it('restartStack awaits in-flight connect before restarting', () => {
     expect(SOURCE).toMatch(
-      /const restartStack = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) \{[\s\S]*?await pending/,
+      /const restartStackOnce = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) \{[\s\S]*?await pending/,
     );
     expect(SOURCE).not.toMatch(
-      /const restartStack = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) \{\s*return;/,
+      /const restartStackOnce = useCallback\(async \(\) => \{[\s\S]*?if \(connectInFlightRef\.current\) \{\s*return;/,
+    );
+  });
+
+  it('overlapping restartStack callers join the in-flight restart instead of failing', () => {
+    expect(SOURCE).toMatch(
+      /const restartStack = useCallback\(async \(\): Promise<void> => \{[\s\S]*?const running = restartInFlightRef\.current;\s*if \(running\) \{[\s\S]*?return running;[\s\S]*?restartInFlightRef\.current = op;/,
     );
   });
 

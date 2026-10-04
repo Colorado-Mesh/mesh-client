@@ -1055,7 +1055,8 @@
         "chooserCancelledHint": "취소하지 않은 경우 Bluetooth가 켜져 있는지(systemctl status bluetooth) 확인한 다음 연결을 다시 탭하세요. Flatpak에서는 Bluetooth가 허용된 빌드를 다시 설치하거나 AppImage/.deb/.rpm을 사용하세요.",
         "bluetoothctlMissingHint": "이 환경에서는 OS Bluetooth 페어링 도구를 사용할 수 없습니다(Flatpak에서 일반적임). 공식 AppImage, .deb 또는 .rpm을 사용하거나 라디오를 호스트 bluetoothctl과 페어링한 다음 연결을 다시 시도하세요.",
         "stackUnresponsiveGeneric": "블루투스가 이전 연결 시도에서 멈췄습니다. 블루투스를 껐다가 켜고 필요한 경우 라디오를 다시 페어링한 다음 mesh-client를 다시 시작하십시오.",
-        "stackUnresponsiveWindowsRePair": "일반적으로 라디오가 제대로 페어링되지 않았기 때문에 이전 연결 시도에서 Windows Bluetooth가 중단됩니다. Remove & Re-pair Device (장치 제거 및 다시 페어링) 를 누르고 라디오에 표시된 PIN을 입력합니다. 그래도 연결이 거부되면 mesh-client를 다시 시작하고 다시 시도하십시오."
+        "stackUnresponsiveWindowsRePair": "일반적으로 라디오가 제대로 페어링되지 않았기 때문에 이전 연결 시도에서 Windows Bluetooth가 중단됩니다. Remove & Re-pair Device (장치 제거 및 다시 페어링) 를 누르고 라디오에 표시된 PIN을 입력합니다. 그래도 연결이 거부되면 mesh-client를 다시 시작하고 다시 시도하십시오.",
+        "rnodeBondRecoveryHold": "Reticulum RNode에 블루투스 페어링이 끊어졌기 때문에 Meshtastic 및 MeshCore에 대해 블루투스가 일시 중지됩니다. RNode를 먼저 수정하십시오: 시스템 블루투스 설정에서 잊어 버린 다음 Reticulum → Admin에서 다시 페어링하십시오. 블루투스 라디오를 즉시 사용하려면 Reticulum 스택을 중지하거나 해당 RNode를 USB 또는 Wi-Fi로 전환하십시오."
       }
     },
     "error": {

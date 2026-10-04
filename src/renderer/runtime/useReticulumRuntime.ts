@@ -317,6 +317,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
   >(null);
   const connectInFlightRef = useRef(false);
   const connectInFlightDoneRef = useRef<Promise<void> | null>(null);
+  const restartInFlightRef = useRef<Promise<void> | null>(null);
   const suppressReconnectRef = useRef(false);
   /** Set on power-suspend when an enabled BLE RNode was configured — wake must not reuseIfRunning. */
   const powerSuspendHadBleRnodeRef = useRef(false);
@@ -2092,7 +2093,7 @@ export function useReticulumRuntime(): ProtocolRuntime {
     syncConnectionStore(INITIAL_STATE);
   }, [syncConnectionStore]);
 
-  const restartStack = useCallback(async () => {
+  const restartStackOnce = useCallback(async () => {
     const generation = resumeGenerationRef.current;
     if (connectInFlightRef.current) {
       const pending = connectInFlightDoneRef.current;
@@ -2186,6 +2187,22 @@ export function useReticulumRuntime(): ProtocolRuntime {
     identityId,
     scheduleLocalInterfaceStatusBurst,
   ]);
+
+  const restartStack = useCallback(async (): Promise<void> => {
+    // Overlapping callers (manual Restart, interface edits, TCP auto-recovery) share one
+    // soft restart instead of the later one failing with "already in progress".
+    const running = restartInFlightRef.current;
+    if (running) {
+      return running;
+    }
+    const op = restartStackOnce();
+    restartInFlightRef.current = op;
+    try {
+      await op;
+    } finally {
+      if (restartInFlightRef.current === op) restartInFlightRef.current = null;
+    }
+  }, [restartStackOnce]);
 
   useEffect(() => {
     connectRef.current = connect;

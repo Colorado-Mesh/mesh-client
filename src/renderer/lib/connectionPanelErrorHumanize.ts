@@ -158,6 +158,11 @@ export function humanizeBleError(err: unknown, t: TFunction): string {
       ? t('connectionPanel.humanize.ble.stackUnresponsiveWindowsRePair')
       : t('connectionPanel.humanize.ble.stackUnresponsiveGeneric');
   }
+  // Main/proxy/renderer all refuse LoRa GATT while a Reticulum RNode heals a bad bond; the
+  // block lasts until the RNode is fixed, so tell the user what to fix instead of "retry".
+  if (/RNode bond recovery/i.test(msg)) {
+    return t('connectionPanel.humanize.ble.rnodeBondRecoveryHold');
+  }
   const gattCode = extractGattBleErrorCode(err) ?? extractGattBleErrorCode(msg);
   if (gattCode) {
     const key = gattBleErrorI18nKey(gattCode);

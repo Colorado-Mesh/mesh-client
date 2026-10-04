@@ -1089,7 +1089,8 @@
         "chooserCancelledHint": "Если вы не отменили отмену, убедитесь, что Bluetooth включен (состояние systemctl bluetooth), затем снова нажмите «Подключиться». В Flatpak переустановите сборку с разрешенным Bluetooth или используйте AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Инструменты сопряжения Bluetooth с ОС недоступны в этой среде (распространены в Flatpak). Используйте официальный AppImage, .deb или .rpm или подключите радиомодуль к хосту bluetoothctl, а затем повторите попытку подключения.",
         "stackUnresponsiveGeneric": "Bluetooth застрял при более ранней попытке подключения. Выключите и включите Bluetooth, при необходимости подключите радио, а затем перезапустите mesh-client.",
-        "stackUnresponsiveWindowsRePair": "Windows Bluetooth застрял при более ранней попытке подключения, как правило, из-за неправильного сопряжения радиоприемника. Нажмите Remove & Re-pair Device и введите PIN-КОД, показанный на радиоприемнике. Если подключение по-прежнему отклонено, перезапустите mesh-client и повторите попытку."
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth застрял при более ранней попытке подключения, как правило, из-за неправильного сопряжения радиоприемника. Нажмите Remove & Re-pair Device и введите PIN-КОД, показанный на радиоприемнике. Если подключение по-прежнему отклонено, перезапустите mesh-client и повторите попытку.",
+        "rnodeBondRecoveryHold": "Bluetooth приостановлен для Meshtastic и MeshCore, потому что у RNode Reticulum нарушено сопряжение Bluetooth. Сначала исправьте RNode: забудьте о нем в настройках Bluetooth системы, а затем повторно сопрягите его с Reticulum → Admin. Чтобы сразу использовать радиоприемники Bluetooth, остановите стек Reticulum или переключите этот RNode на USB или Wi-Fi."
       }
     },
     "error": {
