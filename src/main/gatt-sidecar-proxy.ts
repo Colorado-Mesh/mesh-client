@@ -76,6 +76,14 @@ function profileFromSession(sessionId: string): GattSessionProfile {
   return 'meshtastic';
 }
 
+/** `AbortSignal.timeout` rejects with `TimeoutError` ("aborted due to timeout"). */
+function isHttpTimeoutError(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    (err.name === 'TimeoutError' || /aborted due to timeout/i.test(err.message))
+  );
+}
+
 function unknownMessage(value: unknown, fallback: string): string {
   if (typeof value === 'string' && value) return value;
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
@@ -401,15 +409,25 @@ export class GattSidecarProxy extends EventEmitter {
 
   /** Windows in-app pairing: does the OS hold a bond for this radio? */
   async pairState(address: string): Promise<GattPairStateResult> {
-    const { status, body } = await this.jsonFetch(
-      `/api/v1/gatt/pair-state?address=${encodeURIComponent(address)}`,
-      undefined,
-      { timeoutMs: GATT_HTTP_PAIR_STATE_TIMEOUT_MS },
-    );
-    if (status >= 200 && status < 300 && body.ok === true && typeof body.paired === 'boolean') {
-      return { ok: true, paired: body.paired };
+    try {
+      const { status, body } = await this.jsonFetch(
+        `/api/v1/gatt/pair-state?address=${encodeURIComponent(address)}`,
+        undefined,
+        { timeoutMs: GATT_HTTP_PAIR_STATE_TIMEOUT_MS },
+      );
+      if (status >= 200 && status < 300 && body.ok === true && typeof body.paired === 'boolean') {
+        return { ok: true, paired: body.paired };
+      }
+      return this.pairFailure(body, 'pair state failed');
+    } catch (err) {
+      // A hung pair-state call is the same wedge as a hung connect. Surface it as
+      // connect_timeout so the panel can stop instead of calling connect.
+      if (isHttpTimeoutError(err)) {
+        console.warn('[GATT] pair-state timed out');
+        return { ok: false, code: 'connect_timeout', error: 'pair state timed out' };
+      }
+      throw err;
     }
-    return this.pairFailure(body, 'pair state failed');
   }
 
   /** Windows in-app pairing with a user-entered PIN. The PIN is never logged. */

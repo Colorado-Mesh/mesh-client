@@ -1063,7 +1063,11 @@
       "pinPairingFailed": "PIN eşleştirme başarısız oldu: {{msg}}",
       "pinAcceptedNext": "PIN kabul edildi. Eşleştirme tamamlandı. Bağlan'a basın ve bağlantıyı tamamlamak için cihazınızı seçin.",
       "connectionFailed": "Bağlantı başarısız oldu",
-      "windowsPinRejected": "Windows bu PIN'İ reddetti. Radyonun ekranında gösterilen PIN'İ kontrol edin ve tekrar deneyin (ekransız radyolar ürün yazılımının sabit PIN'ini kullanır)."
+      "windowsPinRejected": "Windows bu PIN'İ reddetti. Radyonun ekranında gösterilen PIN'İ kontrol edin ve tekrar deneyin (ekransız radyolar ürün yazılımının sabit PIN'ini kullanır).",
+      "windowsPairStateBlocked": "Bu radyonun eşleştirilip eşleştirilmediği kontrol edilemedi. Windows Bluetooth'un donmaması için bağlantı durduruldu. Cihazı Kaldır ve Yeniden Eşleştir'i kullanın.",
+      "windowsPairingUnsupported": "Uygulama içi Bluetooth eşleştirmesi bu bilgisayarda mevcut değildir.",
+      "windowsPairingInvalidProfile": "Bu Bluetooth profili uygulamada eşleştirilemez.",
+      "windowsPairingInvalidAddress": "Bluetooth adresi veya eşleştirme PIN'İ geçerli değil."
     },
     "cancelMqttConnect": "İptal etmek",
     "ripplePresetConfirm": "Ripple ön ayarı, paylaşılan topluluk kimlik bilgilerini kullanır ve TLS sertifika doğrulamasını devre dışı bırakır. Bunu yalnızca güvenilir bir ağda kullanın. Devam edilsin mi?",

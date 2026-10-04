@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import type { TFunction } from 'i18next';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -8,6 +9,7 @@ import {
   shouldOfferWindowsRePair,
   unpairWindowsBle,
   WindowsBlePairingError,
+  windowsPairingFailureMessage,
 } from './windowsBlePairing';
 
 describe('windowsBlePairing', () => {
@@ -35,6 +37,77 @@ describe('windowsBlePairing', () => {
     await expect(getWindowsBlePairState('ef:4f:4f:1c:23:73')).resolves.toBe('unknown');
     pairState.mockRejectedValueOnce(new Error('sidecar down'));
     await expect(getWindowsBlePairState('ef:4f:4f:1c:23:73')).resolves.toBe('unknown');
+    pairState.mockResolvedValueOnce({
+      ok: false,
+      code: 'internal',
+      error: 'fetch failed',
+    });
+    await expect(getWindowsBlePairState('ef:4f:4f:1c:23:73')).resolves.toBe('unknown');
+  });
+
+  it.each([
+    ['connect_timeout', 'pair state timed out'],
+    ['connect_timeout', 'windows pair-state timed out'],
+    ['connect_timeout', 'Windows could not find the radio (timeout)'],
+    ['internal', 'windows IsPaired: The device is unreachable'],
+    ['internal', 'windows pair-state task failed: join error'],
+  ])('blocks connect when pair state fails with %s (%s)', async (code, error) => {
+    vi.mocked(window.electronAPI.gattPairState).mockResolvedValueOnce({
+      ok: false,
+      code,
+      error,
+    });
+    await expect(getWindowsBlePairState('ef:4f:4f:1c:23:73')).resolves.toBe('blocked');
+  });
+
+  it('maps Gatt pairing codes to locale keys and leaves sidecar English out', () => {
+    const t = ((key: string) => key) as TFunction;
+    const sidecarEnglish = 'Windows pairing failed (status=NotReadyToPair)';
+    expect(
+      windowsPairingFailureMessage(
+        new WindowsBlePairingError('pairing_required', sidecarEnglish),
+        t,
+      ),
+    ).toBe('connectionPanel.errors.ble.pairing_required');
+    expect(
+      windowsPairingFailureMessage(
+        new WindowsBlePairingError(
+          'authentication_failed',
+          'Windows rejected the pairing PIN (status=AuthenticationFailure)',
+        ),
+        t,
+      ),
+    ).toBe('connectionPanel.error.windowsPinRejected');
+    expect(
+      windowsPairingFailureMessage(
+        new WindowsBlePairingError('connect_timeout', 'windows pair timed out'),
+        t,
+      ),
+    ).toBe('connectionPanel.errors.ble.connect_timeout');
+    expect(
+      windowsPairingFailureMessage(
+        new WindowsBlePairingError('internal', 'windows IsPaired: exploded'),
+        t,
+      ),
+    ).toBe('connectionPanel.stagePairingFailed');
+    expect(
+      windowsPairingFailureMessage(
+        new WindowsBlePairingError('unsupported', 'only implemented on Windows'),
+        t,
+      ),
+    ).toBe('connectionPanel.error.windowsPairingUnsupported');
+    expect(
+      windowsPairingFailureMessage(
+        new WindowsBlePairingError('invalid_address', 'pairing PIN must be 4 to 6 digits'),
+        t,
+      ),
+    ).toBe('connectionPanel.error.windowsPairingInvalidAddress');
+    expect(
+      windowsPairingFailureMessage(new WindowsBlePairingError('invalid_profile', 'bad profile'), t),
+    ).toBe('connectionPanel.error.windowsPairingInvalidProfile');
+    expect(
+      windowsPairingFailureMessage(new WindowsBlePairingError('mac_conflict', 'held'), t),
+    ).toBe('connectionPanel.errors.ble.mac_conflict');
   });
 
   it('throws coded errors for pair / unpair failures', async () => {

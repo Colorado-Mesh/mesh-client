@@ -1063,7 +1063,11 @@
       "pinPairingFailed": "Error al emparejar el PIN: {{msg}}",
       "pinAcceptedNext": "PIN aceptado. Emparejamiento completado. Presione Conectar y seleccione su dispositivo para finalizar la conexión.",
       "connectionFailed": "La conexión falló",
-      "windowsPinRejected": "Windows rechazó ese PIN. Compruebe el PIN que se muestra en la pantalla de la radio e inténtelo de nuevo (las radios sin pantalla utilizan el PIN fijo del firmware)."
+      "windowsPinRejected": "Windows rechazó ese PIN. Compruebe el PIN que se muestra en la pantalla de la radio e inténtelo de nuevo (las radios sin pantalla utilizan el PIN fijo del firmware).",
+      "windowsPairStateBlocked": "No se ha podido comprobar si esta radio está emparejada. La conexión se detuvo para que el Bluetooth de Windows no se congele. Utilice Quitar y reparar el dispositivo.",
+      "windowsPairingUnsupported": "El emparejamiento Bluetooth en la aplicación no está disponible en este ordenador.",
+      "windowsPairingInvalidProfile": "Este perfil de Bluetooth no se puede emparejar en la aplicación.",
+      "windowsPairingInvalidAddress": "La dirección Bluetooth o el PIN de emparejamiento no son válidos."
     },
     "cancelMqttConnect": "Cancelar",
     "ripplePresetConfirm": "El ajuste preestablecido de Ripple utiliza credenciales comunitarias compartidas y desactiva la verificación del certificado TLS. Utilice esto solo en una red de confianza. ¿Continuar?",

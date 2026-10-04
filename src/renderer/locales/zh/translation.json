@@ -1063,7 +1063,11 @@
       "pinPairingFailed": "PIN 配对失败：{{msg}}",
       "pinAcceptedNext": "PIN 码已接受。配对完成。按“连接”并选择您的设备以完成连接。",
       "connectionFailed": "连接失败",
-      "windowsPinRejected": "Windows拒绝了该PIN。检查收音机屏幕上显示的PIN ，然后重试（没有屏幕的收音机使用固件的固定PIN ）。"
+      "windowsPinRejected": "Windows拒绝了该PIN。检查收音机屏幕上显示的PIN ，然后重试（没有屏幕的收音机使用固件的固定PIN ）。",
+      "windowsPairStateBlocked": "无法检查此收音机是否已配对。连接已停止，因此Windows蓝牙不会冻结。使用“删除并修复设备”。",
+      "windowsPairingUnsupported": "应用内蓝牙配对在此计算机上不可用。",
+      "windowsPairingInvalidProfile": "此蓝牙配置文件无法在应用中配对。",
+      "windowsPairingInvalidAddress": "蓝牙地址或配对PIN无效。"
     },
     "cancelMqttConnect": "取消",
     "ripplePresetConfirm": "Ripple预设使用共享社区凭据并禁用TLS证书验证。仅在受信任的网络上使用此功能。是否继续？",

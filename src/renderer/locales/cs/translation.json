@@ -1081,7 +1081,11 @@
       "pinPairingFailed": "Párování PIN se nezdařilo: {{msg}}",
       "pinAcceptedNext": "PIN přijat. Párování dokončeno. Stiskněte Připojit a dokončete připojení výběrem zařízení.",
       "connectionFailed": "Připojení se nezdařilo",
-      "windowsPinRejected": "Systém Windows tento PIN odmítl. Zkontrolujte PIN zobrazený na obrazovce rádia a zkuste to znovu (rádia bez obrazovky používají pevný PIN firmwaru)."
+      "windowsPinRejected": "Systém Windows tento PIN odmítl. Zkontrolujte PIN zobrazený na obrazovce rádia a zkuste to znovu (rádia bez obrazovky používají pevný PIN firmwaru).",
+      "windowsPairStateBlocked": "Nelze zkontrolovat, zda je toto rádio spárováno. Připojování bylo zastaveno, takže Bluetooth systému Windows nezmrzne. Použijte Odebrat a znovu spárovat zařízení.",
+      "windowsPairingUnsupported": "Párování Bluetooth v aplikaci není v tomto počítači k dispozici.",
+      "windowsPairingInvalidProfile": "Tento profil Bluetooth nelze spárovat v aplikaci.",
+      "windowsPairingInvalidAddress": "Adresa Bluetooth nebo KÓD PIN pro párování není platný."
     },
     "cancelMqttConnect": "Zrušit",
     "ripplePresetConfirm": "Přednastavení Ripple používá sdílené přihlašovací údaje komunity a zakazuje ověření certifikátu TLS. Použít pouze v důvěryhodné síti. Pokračovat?",

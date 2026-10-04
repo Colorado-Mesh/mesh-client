@@ -1063,7 +1063,11 @@
       "pinPairingFailed": "Gagal memasangkan PIN: {{msg}}",
       "pinAcceptedNext": "PIN diterima. Penyandingan selesai. Tekan Hubungkan dan pilih perangkat Anda untuk menyelesaikan koneksi.",
       "connectionFailed": "Koneksi gagal",
-      "windowsPinRejected": "Windows menolak PIN tersebut. Periksa PIN yang ditampilkan di layar radio dan coba lagi (radio tanpa layar menggunakan PIN tetap firmware)."
+      "windowsPinRejected": "Windows menolak PIN tersebut. Periksa PIN yang ditampilkan di layar radio dan coba lagi (radio tanpa layar menggunakan PIN tetap firmware).",
+      "windowsPairStateBlocked": "Tidak dapat memeriksa apakah radio ini dipasangkan. Koneksi dihentikan sehingga Bluetooth Windows tidak membeku. Gunakan Hapus & Pasangkan Ulang Perangkat.",
+      "windowsPairingUnsupported": "Pemasangan Bluetooth dalam aplikasi tidak tersedia di komputer ini.",
+      "windowsPairingInvalidProfile": "Profil Bluetooth ini tidak dapat dipasangkan di aplikasi.",
+      "windowsPairingInvalidAddress": "Alamat Bluetooth atau PIN pasangan tidak valid."
     },
     "cancelMqttConnect": "Membatalkan",
     "ripplePresetConfirm": "Preset Ripple menggunakan kredensial komunitas bersama dan menonaktifkan verifikasi sertifikat TLS. Hanya gunakan ini di jaringan tepercaya. Lanjutkan?",

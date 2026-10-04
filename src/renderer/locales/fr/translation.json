@@ -1062,7 +1062,11 @@
       "pinPairingFailed": "Échec de l'association du code PIN : {{msg}}",
       "pinAcceptedNext": "Code PIN accepté. Appairage terminé. Appuyez sur Connecter et sélectionnez votre appareil pour terminer la connexion.",
       "connectionFailed": "La connexion a échoué",
-      "windowsPinRejected": "Windows a rejeté ce CODE PIN. Vérifiez le CODE PIN affiché sur l'écran de la radio et réessayez (les radios sans écran utilisent le CODE PIN fixe du micrologiciel)."
+      "windowsPinRejected": "Windows a rejeté ce CODE PIN. Vérifiez le CODE PIN affiché sur l'écran de la radio et réessayez (les radios sans écran utilisent le CODE PIN fixe du micrologiciel).",
+      "windowsPairStateBlocked": "Impossible de vérifier si cette radio est jumelée. La connexion a été arrêtée afin que Windows Bluetooth ne se bloque pas. Utilisez Supprimer et réassocier l'appareil.",
+      "windowsPairingUnsupported": "Le jumelage Bluetooth intégré à l'application n'est pas disponible sur cet ordinateur.",
+      "windowsPairingInvalidProfile": "Ce profil Bluetooth ne peut pas être jumelé dans l'application.",
+      "windowsPairingInvalidAddress": "L'adresse Bluetooth ou le CODE PIN de jumelage n'est pas valide."
     },
     "cancelMqttConnect": "Annuler",
     "ripplePresetConfirm": "Le préréglage Ripple utilise les informations d'identification de la communauté partagée et désactive la vérification du certificat TLS. Utilisez-le uniquement sur un réseau de confiance. Continuer ?",
