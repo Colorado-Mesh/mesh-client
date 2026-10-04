@@ -2,6 +2,8 @@
 
 Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus EMCOMM support via **MECP** and **TAK**.
 
+**Mesh-Client is a 100% volunteer-run project.** It is designed, coded, tested, translated, documented, and supported entirely by unpaid volunteers in their spare time; there is no company or paid staff behind it. Response times depend on volunteer availability, and every contribution helps: bug reports, testing on real radios, translations, docs, and code. See [Contributing](contributing.md) or join the [Discord](https://discord.com/invite/McChKR5NpS).
+
 This page is the docs landing view. The full repository README (badges, feature reference, usage) lives on [GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).
 
 ---

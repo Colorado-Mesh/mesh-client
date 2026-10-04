@@ -319,7 +319,17 @@ Selected in DiagnosticsPanel settings via a segmented control.
 | City     | 1.6×                | 3 hops        | Dense urban environment with buildings blocking RF       |
 | Canyon   | 2.6×                | 4 hops        | Mountainous or canyon terrain with significant multipath |
 
-**Low-accuracy GPS:** When your position is derived from IP geolocation (city-level only), distance thresholds are doubled automatically in addition to any profile multiplier. A yellow banner appears in the diagnostics panel indicating reduced accuracy.
+**Trusted location required:** Distance checks (Impossible hop, Hop goblin, and the close-in suboptimal-route variant) measure only from a **trusted** position:
+
+| Your position comes from                                         | Trust         | Distance checks |
+| ---------------------------------------------------------------- | ------------- | --------------- |
+| This session's radio GPS fix                                     | Trusted       | Run             |
+| A saved location confirmed this launch, or marked "doesn't move" | Trusted       | Run             |
+| A saved location not yet confirmed this launch                   | Needs confirm | Paused          |
+| Browser / IP geolocation (city-level)                            | Approximate   | Paused          |
+| Nothing                                                          | Unknown       | Paused          |
+
+While paused, the Diagnostics panel shows a location card ("Distance checks … are paused until your location is set") with the same set / confirm / switch controls as the startup strip and **App → Saved locations**. MeshCore advert coordinates and old static positions written into the self node do not count as radio GPS. Other routing and RF findings keep running.
 
 ---
 

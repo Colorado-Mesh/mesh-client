@@ -41,7 +41,7 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 ## Send path
 
 - App → MECP → **Show MECP button in Chat** (default **off**) gates the Chat MECP compose control
-- When enabled: Chat **MECP** button → `MecpComposeModal` (defaults: ROUTINE + Drill category, no codes selected) → encode → `sendEmergencyText` ([`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts)) → live `handleSendChunk` / `useSendMessage` (follows open DM/channel)
+- When enabled: red **Siren** icon button in the composer action row (`ChatComposer` `actionSlot`, next to share-location, left of Send; hidden in Starred) → `MecpComposeModal` (defaults: ROUTINE + Drill category, no codes selected) → encode → `sendEmergencyText` ([`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts)) → live `handleSendChunk` / `useSendMessage` (follows open DM/channel)
 - **Emergency outbox:** when offline / MQTT-only MeshCore, or when the live send throws, the report is queued in the chat outbox with `priority: 'emergency'` — no 24h drain cutoff, no 5-attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See [emcomm.md — WS2](emcomm.md#ws2--emergency-priority-outbox)
 - Attach GPS uses the app share-location waterfall (`resolveShareLocation`), not raw `navigator.geolocation` alone
 - Meshtastic outbound uses normal text (`TEXT_MESSAGE_APP`), not ALERT_APP
