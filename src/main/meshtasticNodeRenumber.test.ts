@@ -4,6 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { meshtasticNodeNumFromPublicKeyHex } from '../shared/meshtasticNodeNumFromPublicKey';
 import { NodeSqliteDB } from './db-compat';
 import { runSchemaUpgrade } from './db-schema-sync';
 import {
@@ -13,7 +14,7 @@ import {
 
 const KEY = 'ab'.repeat(32);
 const OLD = 0x11111111;
-const NEW = 0x22222222;
+const NEW = meshtasticNodeNumFromPublicKeyHex(KEY)!;
 const PEER = 0x33333333;
 
 describe('meshtasticNodePublicKeyHexOrNull', () => {
@@ -102,6 +103,8 @@ describe('migrateMeshtasticNodeNumInDb', () => {
       false,
     );
     expect(migrateMeshtasticNodeNumInDb(db!, OLD, NEW, '0'.repeat(64)).migrated).toBe(false);
+    db!.prepare('UPDATE nodes SET public_key = ? WHERE node_id = ?').run(KEY, OLD);
+    expect(migrateMeshtasticNodeNumInDb(db!, OLD, NEW + 1, KEY).migrated).toBe(false);
     expect(db!.prepare('SELECT sender_id FROM messages').all()).toEqual([{ sender_id: OLD }]);
   });
 

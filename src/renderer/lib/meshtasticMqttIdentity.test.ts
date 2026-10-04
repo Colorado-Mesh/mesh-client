@@ -4,15 +4,19 @@ import { APP_SETTINGS_STORAGE_KEY } from '@/renderer/lib/appSettingsStorage';
 
 import {
   hydrateLastRfSelfNodeIdFromAppSettings,
+  loadOwnNodeNumsForPublicKey,
   loadPersistedLastRfSelfNodeId,
-  loadPreviousRfSelfNodeIds,
   meshtasticMqttOwnNodeIds,
   mqttOnlyIdentitySource,
-  parsePreviousRfSelfNodeIdsRaw,
+  parseOwnNodeNumsByPublicKeyRaw,
   persistLastRfSelfNodeId,
+  recordOwnMeshtasticNodeNum,
   resolveMeshtasticOutboundFromNodeId,
   resolveMqttOnlyFromNodeId,
 } from './meshtasticMqttIdentity';
+
+const KEY_A = 'aa'.repeat(32);
+const KEY_B = 'bb'.repeat(32);
 
 describe('resolveMqttOnlyFromNodeId', () => {
   it('prefers last RF node id when set', () => {
@@ -163,31 +167,46 @@ describe('last RF persistence', () => {
     expect(saved.meshtasticLastRfSelfNodeId).toBe('111');
   });
 
-  it('keeps prior own node numbers when the radio is renumbered', () => {
-    persistLastRfSelfNodeId(0x11111111);
-    persistLastRfSelfNodeId(0x11111111);
-    expect(loadPreviousRfSelfNodeIds()).toEqual([]);
-
-    persistLastRfSelfNodeId(0x22222222);
-    persistLastRfSelfNodeId(0x33333333);
-    expect(loadPersistedLastRfSelfNodeId()).toBe(0x33333333);
-    expect(loadPreviousRfSelfNodeIds()).toEqual([0x22222222, 0x11111111]);
+  it('keeps own node numbers per radio public key across a renumber', () => {
+    recordOwnMeshtasticNodeNum(KEY_A, 0x11111111);
+    recordOwnMeshtasticNodeNum(KEY_A, 0x11111111);
+    recordOwnMeshtasticNodeNum(KEY_A, 0x22222222);
+    expect(loadOwnNodeNumsForPublicKey(KEY_A.toUpperCase())).toEqual([0x22222222, 0x11111111]);
     expect(window.electronAPI.appSettings.set).toHaveBeenCalledWith(
-      'meshtasticPreviousRfSelfNodeIds',
-      JSON.stringify([0x22222222, 0x11111111]),
+      'meshtasticOwnNodeNumsByPublicKey',
+      JSON.stringify({ [KEY_A]: [0x22222222, 0x11111111] }),
     );
-
-    persistLastRfSelfNodeId(0x11111111);
-    expect(loadPreviousRfSelfNodeIds()).toEqual([0x33333333, 0x22222222]);
   });
 
-  it('ignores corrupt previous-id history', () => {
-    expect(parsePreviousRfSelfNodeIdsRaw('not json')).toEqual([]);
-    expect(parsePreviousRfSelfNodeIdsRaw('[0, "x", 5, 5, 4294967295]')).toEqual([5]);
+  it('does not mix in numbers from a different radio', () => {
+    recordOwnMeshtasticNodeNum(KEY_A, 0x11111111);
+    recordOwnMeshtasticNodeNum(KEY_B, 0x33333333);
+    persistLastRfSelfNodeId(0x11111111);
+    persistLastRfSelfNodeId(0x33333333);
+    expect(loadOwnNodeNumsForPublicKey(KEY_B)).toEqual([0x33333333]);
+    expect(loadOwnNodeNumsForPublicKey(undefined)).toEqual([]);
+  });
+
+  it('ignores corrupt or zero-key history', () => {
+    recordOwnMeshtasticNodeNum('0'.repeat(64), 0x11111111);
+    expect(loadOwnNodeNumsForPublicKey('0'.repeat(64))).toEqual([]);
+    expect(parseOwnNodeNumsByPublicKeyRaw('not json')).toEqual({});
+    expect(
+      parseOwnNodeNumsByPublicKeyRaw({ bad: [1], [KEY_A]: [0, 'x', 5, 5, 4294967295] }),
+    ).toEqual({ [KEY_A]: [5] });
+  });
+
+  it('restores own-node history from SQLite when localStorage is empty', async () => {
+    vi.mocked(window.electronAPI.appSettings.getAll).mockResolvedValueOnce({
+      meshtasticOwnNodeNumsByPublicKey: JSON.stringify({ [KEY_A]: [0x22222222, 0x11111111] }),
+    });
+    expect(loadOwnNodeNumsForPublicKey(KEY_A)).toEqual([]);
+    await hydrateLastRfSelfNodeIdFromAppSettings();
+    expect(loadOwnNodeNumsForPublicKey(KEY_A)).toEqual([0x22222222, 0x11111111]);
   });
 });
 
-describe('meshtasticMqttOwnNodeIds with previous ids', () => {
+describe('meshtasticMqttOwnNodeIds with own-key history', () => {
   it('treats previous own node numbers as own', () => {
     expect(meshtasticMqttOwnNodeIds(0x33, 0x0b2f75f3, 0x33, [0x22, 0x11])).toEqual([
       0x33, 0x22, 0x11,

@@ -4,8 +4,10 @@ import { parseStoredJson } from '@/renderer/lib/parseStoredJson';
 export type MqttOnlyIdentitySource = 'lastRf' | 'virtual';
 
 export const MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY = 'meshtasticLastRfSelfNodeId';
-export const MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY = 'meshtasticPreviousRfSelfNodeIds';
-const MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_MAX = 8;
+export const MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY = 'meshtasticOwnNodeNumsByPublicKey';
+const MESHTASTIC_OWN_NODE_NUMS_PER_KEY_MAX = 8;
+const PUBLIC_KEY_HEX_RE = /^[0-9a-f]{64}$/;
+const ZERO_PUBLIC_KEY_HEX = '0'.repeat(64);
 
 /** Parse a stored last-RF node id; returns 0 when missing or out of range. */
 export function parseLastRfSelfNodeIdRaw(raw: unknown): number {
@@ -60,61 +62,86 @@ export function loadPersistedLastRfSelfNodeId(): number {
   return parseLastRfSelfNodeIdRaw(settings?.[MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY]);
 }
 
-/** Parse stored previous own node ids (JSON array or array); drops invalid entries. */
-export function parsePreviousRfSelfNodeIdsRaw(raw: unknown): number[] {
+type OwnNodeNumsByPublicKey = Record<string, number[]>;
+
+/** Parse the stored own-node history (JSON or object); drops invalid keys and node numbers. */
+export function parseOwnNodeNumsByPublicKeyRaw(raw: unknown): OwnNodeNumsByPublicKey {
   let value: unknown = raw;
   if (typeof raw === 'string') {
     try {
       value = JSON.parse(raw) as unknown;
     } catch {
       // catch-no-log-ok corrupt history is treated as empty
-      return [];
+      return {};
     }
   }
-  if (!Array.isArray(value)) return [];
-  const out: number[] = [];
-  for (const entry of value) {
-    const nodeNum = parseLastRfSelfNodeIdRaw(entry);
-    if (nodeNum > 0 && !out.includes(nodeNum)) out.push(nodeNum);
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: OwnNodeNumsByPublicKey = {};
+  for (const [key, nums] of Object.entries(value as Record<string, unknown>)) {
+    if (!PUBLIC_KEY_HEX_RE.test(key) || !Array.isArray(nums)) continue;
+    const parsed: number[] = [];
+    for (const entry of nums) {
+      const nodeNum = parseLastRfSelfNodeIdRaw(entry);
+      if (nodeNum > 0 && !parsed.includes(nodeNum)) parsed.push(nodeNum);
+    }
+    if (parsed.length > 0) out[key] = parsed.slice(0, MESHTASTIC_OWN_NODE_NUMS_PER_KEY_MAX);
   }
-  return out.slice(0, MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_MAX);
+  return out;
 }
 
-/** Own node numbers this radio used before its current one (newest first). */
-export function loadPreviousRfSelfNodeIds(): number[] {
+function loadOwnNodeNumsByPublicKey(): OwnNodeNumsByPublicKey {
   const settings = parseStoredJson<Record<string, unknown>>(
     getAppSettingsRaw(),
-    'meshtasticMqttIdentity loadPreviousRfSelfNodeIds',
+    'meshtasticMqttIdentity loadOwnNodeNumsByPublicKey',
   );
-  return parsePreviousRfSelfNodeIdsRaw(settings?.[MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY]);
+  return parseOwnNodeNumsByPublicKeyRaw(settings?.[MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY]);
 }
 
-function persistPreviousRfSelfNodeIds(ids: number[]): void {
-  const serialized = JSON.stringify(ids);
+/**
+ * Node numbers the local radio with this public key has used (newest first). Firmware 2.8
+ * renumbers a radio without changing its key, so this links its old and new numbers
+ * without mixing in other radios.
+ */
+export function loadOwnNodeNumsForPublicKey(publicKeyHex: string | undefined): number[] {
+  const key = publicKeyHex?.toLowerCase();
+  if (!key || !PUBLIC_KEY_HEX_RE.test(key)) return [];
+  return loadOwnNodeNumsByPublicKey()[key] ?? [];
+}
+
+/** Remember that the connected radio with this public key reported `nodeNum` as its own. */
+export function recordOwnMeshtasticNodeNum(
+  publicKeyHex: string | undefined,
+  nodeNum: number,
+): void {
+  const key = publicKeyHex?.toLowerCase();
+  const normalized = parseLastRfSelfNodeIdRaw(nodeNum);
+  if (!key || !PUBLIC_KEY_HEX_RE.test(key) || key === ZERO_PUBLIC_KEY_HEX || normalized === 0) {
+    return;
+  }
+  const history = loadOwnNodeNumsByPublicKey();
+  const existing = history[key] ?? [];
+  if (existing[0] === normalized) return;
+  const next = parseOwnNodeNumsByPublicKeyRaw({
+    ...history,
+    [key]: [normalized, ...existing.filter((id) => id !== normalized)],
+  });
+  const serialized = JSON.stringify(next);
   mergeAppSetting(
-    MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY,
+    MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY,
     serialized,
-    'meshtasticMqttIdentity persist previous',
+    'meshtasticMqttIdentity record own node num',
   );
   void window.electronAPI.appSettings
-    .set(MESHTASTIC_PREVIOUS_RF_SELF_NODE_IDS_KEY, serialized)
+    .set(MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY, serialized)
     .catch(() => {
       // catch-no-log-ok SQLite persist is best-effort; localStorage already updated
     });
 }
 
-/**
- * Persist last RF node id when a local radio reports myNodeNum. When the number changes
- * (firmware renumber), the prior id is kept in history so old messages still count as own.
- */
+/** Persist last RF node id when a local radio reports myNodeNum. */
 export function persistLastRfSelfNodeId(nodeNum: number): void {
   if (!Number.isFinite(nodeNum) || nodeNum <= 0) return;
   const normalized = nodeNum >>> 0;
-  const previous = loadPersistedLastRfSelfNodeId();
-  if (previous > 0 && previous !== normalized) {
-    const history = [previous, ...loadPreviousRfSelfNodeIds()].filter((id) => id !== normalized);
-    persistPreviousRfSelfNodeIds(parsePreviousRfSelfNodeIdsRaw(history));
-  }
   mergeAppSetting(
     MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY,
     String(normalized),
@@ -135,12 +162,12 @@ export function meshtasticMqttOwnNodeIds(
   selfNodeId: number,
   virtualNodeId: number,
   lastRfSelfNodeId: number,
-  previousRfSelfNodeIds: readonly number[] = [],
+  ownNodeNumsForSelfKey: readonly number[] = [],
 ): number[] {
   const ids = new Set<number>();
   if (selfNodeId > 0) ids.add(selfNodeId);
   if (lastRfSelfNodeId > 0) ids.add(lastRfSelfNodeId);
-  for (const id of previousRfSelfNodeIds) {
+  for (const id of ownNodeNumsForSelfKey) {
     if (id > 0) ids.add(id);
   }
   if (virtualNodeId > 0 && lastRfSelfNodeId === 0) ids.add(virtualNodeId);
@@ -148,8 +175,8 @@ export function meshtasticMqttOwnNodeIds(
 }
 
 /**
- * Merge SQLite-backed last RF node id into localStorage on startup so MQTT-only
- * can use the real radio id after app restart.
+ * Merge SQLite-backed last RF node id and own-node history into localStorage on startup
+ * so MQTT-only can use the real radio id after app restart.
  */
 export async function hydrateLastRfSelfNodeIdFromAppSettings(): Promise<number> {
   try {
@@ -160,6 +187,19 @@ export async function hydrateLastRfSelfNodeIdFromAppSettings(): Promise<number> 
         MESHTASTIC_LAST_RF_SELF_NODE_ID_KEY,
         String(nodeNum),
         'meshtasticMqttIdentity hydrate from SQLite',
+      );
+    }
+    const stored = parseOwnNodeNumsByPublicKeyRaw(all[MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY]);
+    if (Object.keys(stored).length > 0) {
+      const local = loadOwnNodeNumsByPublicKey();
+      const merged: OwnNodeNumsByPublicKey = { ...stored };
+      for (const [key, nums] of Object.entries(local)) {
+        merged[key] = [...nums, ...(stored[key] ?? []).filter((id) => !nums.includes(id))];
+      }
+      mergeAppSetting(
+        MESHTASTIC_OWN_NODE_NUMS_BY_PUBLIC_KEY_KEY,
+        JSON.stringify(parseOwnNodeNumsByPublicKeyRaw(merged)),
+        'meshtasticMqttIdentity hydrate own node history from SQLite',
       );
     }
   } catch {

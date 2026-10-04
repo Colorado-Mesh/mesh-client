@@ -1,3 +1,5 @@
+import { meshtasticNodeNumFromPublicKeyHex } from '@/shared/meshtasticNodeNumFromPublicKey';
+
 import { remapMessageNodeId } from '../../stores/messageStore';
 import {
   type NodeRecord,
@@ -49,7 +51,8 @@ function rebuildIndex(identityId: IdentityId, excludeNodeNum: number): Map<strin
 
 /**
  * Returns the node number this public key previously used when it now arrives under
- * `nodeNum`, or null. A stale replay of the old number (radio NodeDB still holding it)
+ * `nodeNum`, or null. Only a firmware 2.8 renumber qualifies: `nodeNum` must equal
+ * crc32(public key). A stale replay of the old number (radio NodeDB still holding it)
  * never wins over the newer number.
  */
 export function findRenumberedMeshtasticNode(
@@ -77,6 +80,12 @@ export function findRenumberedMeshtasticNode(
   const oldLastHeardMs = old?.lastHeardAt ?? 0;
   if (incomingLastHeardMs <= oldLastHeardMs) return null;
   index.set(key, nodeNum);
+  if (meshtasticNodeNumFromPublicKeyHex(key) !== nodeNum) {
+    console.debug(
+      `[meshtasticNodeRenumber] !${nodeNum.toString(16)} is not crc32 of its public key; not merging !${previous.toString(16)}`,
+    );
+    return null;
+  }
   if (oldLastHeardMs > nowMs - MESHTASTIC_RENUMBER_OLD_NODE_QUIET_MS) {
     console.warn(
       `[meshtasticNodeRenumber] public key seen on !${nodeNum.toString(16)} while !${previous.toString(16)} is still active; not merging`,

@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { meshtasticNodeNumFromPublicKeyHex } from '@/shared/meshtasticNodeNumFromPublicKey';
+
 import { setConnection } from '../../stores/connectionStore';
 import { useDiagnosticsStore } from '../../stores/diagnosticsStore';
 import {
@@ -276,13 +278,14 @@ describe('attachMeshtasticNodeSideEffects', () => {
         last_heard: Date.now() - MS_PER_DAY,
       }),
     );
+    const renumbered = meshtasticNodeNumFromPublicKeyHex('ab'.repeat(32))!;
     const { deps } = makeDeps();
     const detach = attachMeshtasticNodeSideEffects(IDENTITY, deps);
     packetRouter.dispatch(
       {
         type: 'node_info',
         payload: {
-          nodeId: PEER + 1,
+          nodeId: renumbered,
           longName: 'Peer Node',
           fromUserPacket: true,
           publicKey,
@@ -291,7 +294,7 @@ describe('attachMeshtasticNodeSideEffects', () => {
       },
       IDENTITY,
     );
-    expect(migrate).toHaveBeenCalledWith(PEER, PEER + 1, 'ab'.repeat(32));
+    expect(migrate).toHaveBeenCalledWith(PEER, renumbered, 'ab'.repeat(32));
     detach();
   });
 

@@ -88,7 +88,7 @@ import { totalRoomsUnreadCount } from '@/renderer/lib/meshcoreRoomsUnread';
 import { getMeshcoreSilentBulkDrainSnapshot } from '@/renderer/lib/meshcoreWaitingMessagesDrain';
 import { meshcoreWaitingMessagesVisibleForProtocol } from '@/renderer/lib/meshcoreWaitingMessagesStatusText';
 import {
-  loadPreviousRfSelfNodeIds,
+  loadOwnNodeNumsForPublicKey,
   meshtasticMqttOwnNodeIds,
 } from '@/renderer/lib/meshtasticMqttIdentity';
 import { remoteConfigChannelRetryRoute } from '@/renderer/lib/meshtasticRemoteAdminSnapshot';
@@ -1265,18 +1265,24 @@ function AppContent() {
 
   const reticulumLastReadSanitizedRef = useRef(false);
 
+  const meshtasticSelfPublicKeyHex =
+    meshtasticNodesById?.[
+      asNumericNodeId(meshtasticRuntime.selfNodeId) || meshtasticRuntime.lastRfSelfNodeId
+    ]?.publicKeyHex;
+
   const meshtasticOwnNodeIdSet = useMemo(() => {
     const ids = meshtasticMqttOwnNodeIds(
       meshtasticRuntime.selfNodeId,
       meshtasticRuntime.virtualNodeId,
       meshtasticRuntime.lastRfSelfNodeId,
-      loadPreviousRfSelfNodeIds(),
+      loadOwnNodeNumsForPublicKey(meshtasticSelfPublicKeyHex),
     );
     return new Set(ids.filter((id) => id > 0));
   }, [
     meshtasticRuntime.selfNodeId,
     meshtasticRuntime.virtualNodeId,
     meshtasticRuntime.lastRfSelfNodeId,
+    meshtasticSelfPublicKeyHex,
   ]);
 
   const meshtasticOwnNodeIdSetRef = useRef(meshtasticOwnNodeIdSet);
@@ -1822,12 +1828,13 @@ function AppContent() {
         asNumericNodeId(meshtasticRuntime.selfNodeId),
         meshtasticRuntime.virtualNodeId,
         meshtasticRuntime.lastRfSelfNodeId,
-        loadPreviousRfSelfNodeIds(),
+        loadOwnNodeNumsForPublicKey(meshtasticSelfPublicKeyHex),
       ),
     [
       meshtasticRuntime.selfNodeId,
       meshtasticRuntime.virtualNodeId,
       meshtasticRuntime.lastRfSelfNodeId,
+      meshtasticSelfPublicKeyHex,
     ],
   );
   const reticulumOwnNodeIdsForChat = useMemo(

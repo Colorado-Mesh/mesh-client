@@ -518,6 +518,13 @@ export function attachMeshtasticRuntimeWireEffects(
       setWaypoints(new Map());
       setModuleConfigs({});
       setSecurityConfig(null);
+      if (meshtasticIdentityIdRef.current) {
+        setMeshtasticConfigSlice(
+          meshtasticIdentityIdRef.current,
+          MESHTASTIC_REGION_PRESETS_SLICE_KEY,
+          undefined,
+        );
+      }
       setLoraConfig(null);
       setConfigureTargetNodeNumState(null);
       configureTargetNodeNumRef.current = null;

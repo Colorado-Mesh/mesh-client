@@ -1,4 +1,5 @@
 import type { MigrateMeshtasticNodeNumResult } from '../shared/electron-api.types';
+import { meshtasticNodeNumFromPublicKeyHex } from '../shared/meshtasticNodeNumFromPublicKey';
 import { MESHTASTIC_BROADCAST_NODE_NUM } from '../shared/nodeNameUtils';
 import type { NodeSqliteDB } from './db-compat';
 import { sanitizeLogMessage } from './log-service';
@@ -26,7 +27,8 @@ const NOT_MIGRATED: MigrateMeshtasticNodeNumResult = { migrated: false, messages
 /**
  * Firmware 2.8 derives the node number from the public key, so a firmware upgrade (or
  * re-key) can move a known node to a new number. Move that node's history onto the new
- * number when the stored row for `oldNum` carries the same public key.
+ * number only when `newNum` is crc32 of the key and the stored row for `oldNum` carries
+ * the same public key.
  *
  * Runs in one transaction: any failure rolls back and leaves both rows untouched.
  * Unique-index collisions (same packet already stored under the new number) keep the
@@ -44,6 +46,7 @@ export function migrateMeshtasticNodeNumInDb(
   if (oldNum === null || newNum === null || publicKeyHex === null || oldNum === newNum) {
     return NOT_MIGRATED;
   }
+  if (meshtasticNodeNumFromPublicKeyHex(publicKeyHex) !== newNum) return NOT_MIGRATED;
 
   const oldRow = db
     .prepare('SELECT public_key, favorited FROM nodes WHERE node_id = ?')

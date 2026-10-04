@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { meshtasticNodeNumFromPublicKeyHex } from '@/shared/meshtasticNodeNumFromPublicKey';
+
 import { addMessage, useMessageStore } from '../../stores/messageStore';
 import { upsertNodeRecord, useNodeStore } from '../../stores/nodeStore';
 import {
@@ -17,7 +19,7 @@ import {
 const ID = 'identity-mt' as IdentityId;
 const KEY = 'ab'.repeat(32);
 const OLD = 0x11111111;
-const NEW = 0x22222222;
+const NEW = meshtasticNodeNumFromPublicKeyHex(KEY)!;
 const NOW = 1_800_000_000_000;
 const QUIET = NOW - MESHTASTIC_RENUMBER_OLD_NODE_QUIET_MS - 1;
 const ADMIN_KEY = btoa(String.fromCharCode(...new Uint8Array(32).fill(7)));
@@ -39,6 +41,13 @@ describe('findRenumberedMeshtasticNode', () => {
     expect(findRenumberedMeshtasticNode(ID, NEW, undefined, NOW, NOW)).toBeNull();
     expect(findRenumberedMeshtasticNode(ID, NEW, '0'.repeat(64), NOW, NOW)).toBeNull();
     expect(findRenumberedMeshtasticNode(ID, NEW, KEY, NOW, NOW)).toBeNull();
+  });
+
+  it('does not merge when the new number is not crc32 of the public key', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    upsertNodeRecord(ID, { nodeId: OLD, publicKeyHex: KEY, lastHeardAt: QUIET });
+    expect(findRenumberedMeshtasticNode(ID, NEW + 1, KEY, NOW, NOW)).toBeNull();
+    debug.mockRestore();
   });
 
   it('does not merge a cloned key that is still active on the old number', () => {

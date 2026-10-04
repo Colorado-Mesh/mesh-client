@@ -37,6 +37,7 @@ import {
   mergeMeshtasticLivePacketLastHeard,
   mergeMeshtasticUserPacketLastHeard,
 } from '../meshtasticLastHeard';
+import { recordOwnMeshtasticNodeNum } from '../meshtasticMqttIdentity';
 import type { NodeInfoEvent, PositionEvent, TelemetryEvent } from '../protocols/Protocol';
 import { MESHTASTIC_CAPABILITIES } from '../radio/BaseRadioProvider';
 import { recordRadioSelfPosition } from '../radioSelfPosition';
@@ -185,6 +186,7 @@ function handleUserPacketNodeInfo(
   saveNode(identityId, node);
   maybeMigrateRenumberedMeshtasticNode(identityId, nodeNum, node.public_key_hex, node.last_heard);
   if (nodeNum === deps.getMyNodeNum()) {
+    recordOwnMeshtasticNodeNum(node.public_key_hex, nodeNum);
     deps.setDeviceOwner({
       longName: preferNonEmptyTrimmedString(info.longName, ''),
       shortName: preferNonEmptyTrimmedString(info.shortName, ''),
@@ -297,6 +299,7 @@ function handleNodeDbNodeInfo(
   };
   saveNode(identityId, node);
   maybeMigrateRenumberedMeshtasticNode(identityId, nodeNum, node.public_key_hex, node.last_heard);
+  if (isSelf) recordOwnMeshtasticNodeNum(node.public_key_hex, nodeNum);
 
   if (isSelf && info.batteryLevel !== undefined) {
     deps.applyOwnNodeBatteryFromDeviceMetrics(info.batteryLevel);
