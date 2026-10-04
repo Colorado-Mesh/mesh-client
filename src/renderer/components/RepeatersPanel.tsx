@@ -106,6 +106,70 @@ const SHARED_CLI_QUICK_COMMANDS = [
 
 const ROOM_CLI_QUICK_COMMANDS = ['get acl', 'allow.read.only on', 'allow.read.only off'] as const;
 
+/** MeshCore v1.17+ CommonCLI radio tokens; boards without the hardware reply `Error: unsupported`. */
+const RADIO_CLI_QUICK_COMMANDS = [
+  'get radio.rxgain',
+  'set radio.rxgain on',
+  'set radio.rxgain off',
+  'get radio.fem.rxgain',
+  'set radio.fem.rxgain on',
+  'set radio.fem.rxgain off',
+  'get radio.fem.txgain',
+  'set radio.fem.txgain on',
+  'set radio.fem.txgain off',
+  'get cad',
+  'set cad on',
+  'set cad off',
+  'get pwrmgt.bootreason',
+] as const;
+
+interface CliQuickCommandLabel {
+  short: string;
+  ariaKey?: string;
+  titleKey?: string;
+}
+
+const CLI_QUICK_COMMAND_LABELS: Partial<Record<string, CliQuickCommandLabel>> = {
+  'get path.hash.mode': { short: 'path.hash', ariaKey: 'repeatersPanel.pathHashCliGet' },
+  'set path.hash.mode 0': { short: 'hash 0', ariaKey: 'repeatersPanel.pathHashCliSet0' },
+  'set path.hash.mode 1': { short: 'hash 1', ariaKey: 'repeatersPanel.pathHashCliSet1' },
+  'set path.hash.mode 2': { short: 'hash 2', ariaKey: 'repeatersPanel.pathHashCliSet2' },
+  'allow.read.only on': { short: 'ro on' },
+  'allow.read.only off': { short: 'ro off' },
+  'get radio.rxgain': { short: 'rxgain', ariaKey: 'repeatersPanel.radioCliRxGainGet' },
+  'set radio.rxgain on': { short: 'rxgain on', ariaKey: 'repeatersPanel.radioCliRxGainOn' },
+  'set radio.rxgain off': { short: 'rxgain off', ariaKey: 'repeatersPanel.radioCliRxGainOff' },
+  'get radio.fem.rxgain': { short: 'fem.rx', ariaKey: 'repeatersPanel.radioCliFemRxGainGet' },
+  'set radio.fem.rxgain on': {
+    short: 'fem.rx on',
+    ariaKey: 'repeatersPanel.radioCliFemRxGainOn',
+  },
+  'set radio.fem.rxgain off': {
+    short: 'fem.rx off',
+    ariaKey: 'repeatersPanel.radioCliFemRxGainOff',
+  },
+  'get radio.fem.txgain': { short: 'fem.tx', ariaKey: 'repeatersPanel.radioCliFemTxGainGet' },
+  'set radio.fem.txgain on': {
+    short: 'fem.tx on',
+    ariaKey: 'repeatersPanel.radioCliFemTxGainOn',
+  },
+  'set radio.fem.txgain off': {
+    short: 'fem.tx off',
+    ariaKey: 'repeatersPanel.radioCliFemTxGainOff',
+  },
+  'get cad': { short: 'cad', ariaKey: 'repeatersPanel.radioCliCadGet' },
+  'set cad on': {
+    short: 'cad on',
+    ariaKey: 'repeatersPanel.radioCliCadOn',
+    titleKey: 'repeatersPanel.radioCliCadOnHint',
+  },
+  'set cad off': { short: 'cad off', ariaKey: 'repeatersPanel.radioCliCadOff' },
+  'get pwrmgt.bootreason': {
+    short: 'bootreason',
+    ariaKey: 'repeatersPanel.radioCliBootReasonGet',
+  },
+};
+
 interface Props {
   nodes: Map<number, MeshNode>;
   meshcoreNodeStatus: Map<number, MeshCoreRepeaterStatus>;
@@ -1106,6 +1170,24 @@ export default function RepeatersPanel({
                   const cliErrorText = cliErrorRaw
                     ? translateMeshcoreUserMessage(t, cliErrorRaw)
                     : undefined;
+                  const renderCliQuickPill = (cmd: string) => {
+                    const label = CLI_QUICK_COMMAND_LABELS[cmd];
+                    const ariaLabel = label?.ariaKey ? t(label.ariaKey) : cmd;
+                    const title = label?.titleKey ? t(label.titleKey) : ariaLabel;
+                    return (
+                      <button
+                        key={cmd}
+                        type="button"
+                        onClick={() => void handleCliQuickCommand(node.node_id, cmd)}
+                        disabled={!isConnected || isCliLoading}
+                        title={title}
+                        aria-label={ariaLabel}
+                        className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark text-meta text-ink-300 h-6 rounded-md border px-2 font-mono disabled:opacity-40"
+                      >
+                        {label?.short ?? cmd}
+                      </button>
+                    );
+                  };
                   const neighborData = meshcoreNeighbors?.get(node.node_id);
                   const telemetryData = meshcoreTelemetry?.get(node.node_id);
                   const telemetryErrorRaw = meshcoreTelemetryErrors?.get(node.node_id);
@@ -1754,42 +1836,13 @@ export default function RepeatersPanel({
                                 {[
                                   ...SHARED_CLI_QUICK_COMMANDS,
                                   ...(node.hw_model === 'Room' ? ROOM_CLI_QUICK_COMMANDS : []),
-                                ].map((cmd) => {
-                                  const pathHashLabelKey =
-                                    cmd === 'get path.hash.mode'
-                                      ? 'repeatersPanel.pathHashCliGet'
-                                      : cmd === 'set path.hash.mode 0'
-                                        ? 'repeatersPanel.pathHashCliSet0'
-                                        : cmd === 'set path.hash.mode 1'
-                                          ? 'repeatersPanel.pathHashCliSet1'
-                                          : cmd === 'set path.hash.mode 2'
-                                            ? 'repeatersPanel.pathHashCliSet2'
-                                            : null;
-                                  const ariaLabel = pathHashLabelKey ? t(pathHashLabelKey) : cmd;
-                                  const shortLabel =
-                                    cmd === 'get path.hash.mode'
-                                      ? 'path.hash'
-                                      : cmd.startsWith('set path.hash.mode')
-                                        ? cmd.replace('set path.hash.mode ', 'hash ')
-                                        : cmd === 'allow.read.only on'
-                                          ? 'ro on'
-                                          : cmd === 'allow.read.only off'
-                                            ? 'ro off'
-                                            : cmd;
-                                  return (
-                                    <button
-                                      key={cmd}
-                                      type="button"
-                                      onClick={() => void handleCliQuickCommand(node.node_id, cmd)}
-                                      disabled={!isConnected || isCliLoading}
-                                      title={ariaLabel}
-                                      aria-label={ariaLabel}
-                                      className="bg-sidebar-active-bg border-secondary-dark hover:bg-secondary-dark text-meta text-ink-300 h-6 rounded-md border px-2 font-mono disabled:opacity-40"
-                                    >
-                                      {shortLabel}
-                                    </button>
-                                  );
-                                })}
+                                ].map(renderCliQuickPill)}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                <span className="text-muted mr-1 text-xs">
+                                  {t('repeatersPanel.cliQuickRadio')}
+                                </span>
+                                {RADIO_CLI_QUICK_COMMANDS.map(renderCliQuickPill)}
                               </div>
                               {node.hw_model === 'Room' ? (
                                 <MeshcoreRoomAclControls

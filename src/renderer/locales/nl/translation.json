@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "Acties voor {{name}}",
     "rowBusy": "Bezig met {{name}}",
     "menuShownBelow": "Hieronder weergegeven. Kies opnieuw om te verbergen.",
-    "confirmRemoveAria": "Verwijderen van {{name}} bevestigen"
+    "confirmRemoveAria": "Verwijderen van {{name}} bevestigen",
+    "radioCliRxGainGet": "Krijg RX boosted gain",
+    "radioCliRxGainOn": "Zet RX boosted gain aan",
+    "radioCliRxGainOff": "Zet RX boosted gain uit",
+    "radioCliFemRxGainGet": "Verkrijg FEM-RX-versterking",
+    "radioCliFemRxGainOn": "FEM RX-versterking inschakelen",
+    "radioCliFemRxGainOff": "FEM RX-versterking uitschakelen",
+    "radioCliFemTxGainGet": "Krijg FEM TX-versterking (Station G3)",
+    "radioCliFemTxGainOn": "Zet FEM TX gain aan (Station G3)",
+    "radioCliFemTxGainOff": "Zet FEM TX gain uit (Station G3)",
+    "radioCliCadGet": "Verkrijg hardware CAD",
+    "radioCliCadOn": "Zet hardware CAD aan",
+    "radioCliCadOnHint": "Zet hardware CAD aan. MeshCore laat CAD standaard uit omdat het de radio ongeveer 4 seconden kan vergrendelen.",
+    "radioCliCadOff": "Zet hardware CAD uit",
+    "radioCliBootReasonGet": "Reden voor opstarten en afsluiten",
+    "cliQuickRadio": "Radio"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Aankondigingsinterval (seconden)",

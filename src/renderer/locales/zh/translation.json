@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "{{name}} 的操作",
     "rowBusy": "正在处理 {{name}}",
     "menuShownBelow": "显示在下方。再次选择可隐藏。",
-    "confirmRemoveAria": "确认移除 {{name}}"
+    "confirmRemoveAria": "确认移除 {{name}}",
+    "radioCliRxGainGet": "获取RX提升增益",
+    "radioCliRxGainOn": "打开RX增强增益",
+    "radioCliRxGainOff": "关闭RX增强增益",
+    "radioCliFemRxGainGet": "获取FEM RX增益",
+    "radioCliFemRxGainOn": "打开FEM RX增益",
+    "radioCliFemRxGainOff": "关闭FEM RX增益",
+    "radioCliFemTxGainGet": "获取FEM TX增益（ G3站）",
+    "radioCliFemTxGainOn": "打开FEM TX增益（ G3站）",
+    "radioCliFemTxGainOff": "关闭FEM TX增益（ G3站）",
+    "radioCliCadGet": "获取硬件CAD",
+    "radioCliCadOn": "开启硬件CAD",
+    "radioCliCadOnHint": "打开硬件CAD。MeshCore默认情况下会关闭CAD ，因为它可以锁定收音机约4秒钟。",
+    "radioCliCadOff": "关闭硬件CAD",
+    "radioCliBootReasonGet": "获取启动和关闭原因",
+    "cliQuickRadio": "广播："
   },
   "reticulumIdentity": {
     "announceIntervalSec": "公告间隔（秒）",

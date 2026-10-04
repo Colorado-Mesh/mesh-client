@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "{{name}} için işlemler",
     "rowBusy": "{{name}} üzerinde çalışılıyor",
     "menuShownBelow": "Aşağıda gösteriliyor. Gizlemek için yeniden seçin.",
-    "confirmRemoveAria": "{{name}} kaldırmayı onayla"
+    "confirmRemoveAria": "{{name}} kaldırmayı onayla",
+    "radioCliRxGainGet": "RX artırılmış kazanç elde edin",
+    "radioCliRxGainOn": "RX artırılmış kazancı açın",
+    "radioCliRxGainOff": "RX artırılmış kazancı kapat",
+    "radioCliFemRxGainGet": "FEM RX kazancı elde edin",
+    "radioCliFemRxGainOn": "FEM RX kazanımını açın",
+    "radioCliFemRxGainOff": "FEM RX kazanımını kapat",
+    "radioCliFemTxGainGet": "FEM TX kazancı elde edin (İstasyon G3)",
+    "radioCliFemTxGainOn": "FEM TX kazanımını açın (İstasyon G3)",
+    "radioCliFemTxGainOff": "FEM TX kazanımını kapatın (İstasyon G3)",
+    "radioCliCadGet": "Donanım Cad al",
+    "radioCliCadOn": "Donanım Cad özelliğini açın",
+    "radioCliCadOnHint": "Donanım Cad özelliğini açın. MeshCore, radyoyu yaklaşık 4 saniye boyunca kilitleyebildiği için Cad'i varsayılan olarak kapalı bırakır.",
+    "radioCliCadOff": "Donanım Cad özelliğini kapatın",
+    "radioCliBootReasonGet": "Önyükleme ve kapatma nedenini öğrenin",
+    "cliQuickRadio": "Radyo"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Anons aralığı (saniye)",

@@ -4921,7 +4921,22 @@
     "rowActionsMenu": "Действия для {{name}}",
     "rowBusy": "Выполняется для {{name}}",
     "menuShownBelow": "Показано ниже. Выберите снова, чтобы скрыть.",
-    "confirmRemoveAria": "Подтвердить удаление {{name}}"
+    "confirmRemoveAria": "Подтвердить удаление {{name}}",
+    "radioCliRxGainGet": "Получить усиленный прирост RX",
+    "radioCliRxGainOn": "Включите усиленный прирост RX",
+    "radioCliRxGainOff": "Выключить усиленное усиление RX",
+    "radioCliFemRxGainGet": "Получить коэффициент усиления FEM RX",
+    "radioCliFemRxGainOn": "Включите усиление FEM RX",
+    "radioCliFemRxGainOff": "Выключить усиление FEM RX",
+    "radioCliFemTxGainGet": "Получить коэффициент усиления FEM TX (станция G3)",
+    "radioCliFemTxGainOn": "Включите усиление FEM TX (станция G3)",
+    "radioCliFemTxGainOff": "Выключить усиление FEM TX (станция G3)",
+    "radioCliCadGet": "Получить аппаратный САПР",
+    "radioCliCadOn": "Включите аппаратный САПР",
+    "radioCliCadOnHint": "Включите аппаратный САПР. MeshCore по умолчанию отключает САПР, поскольку он может заблокировать радиоприемник примерно на 4 секунды.",
+    "radioCliCadOff": "Выключите аппаратный САПР",
+    "radioCliBootReasonGet": "Получить причину загрузки и выключения",
+    "cliQuickRadio": "Радио:"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "Интервал объявления (секунды)",

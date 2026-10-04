@@ -4843,7 +4843,22 @@
     "rowActionsMenu": "{{name}} 작업",
     "rowBusy": "{{name}} 처리 중",
     "menuShownBelow": "아래에 표시됨. 다시 선택하면 숨겨집니다.",
-    "confirmRemoveAria": "{{name}} 제거 확인"
+    "confirmRemoveAria": "{{name}} 제거 확인",
+    "radioCliRxGainGet": "RX 부스트 획득",
+    "radioCliRxGainOn": "RX 부스트 이득 켜기",
+    "radioCliRxGainOff": "RX 부스트 게인 끄기",
+    "radioCliFemRxGainGet": "FEM RX 게인 받기",
+    "radioCliFemRxGainOn": "FEM RX 게인 켜기",
+    "radioCliFemRxGainOff": "FEM RX 게인 끄기",
+    "radioCliFemTxGainGet": "FEM TX 게인 획득 (스테이션 G3)",
+    "radioCliFemTxGainOn": "FEM TX 게인 켜기 (스테이션 G3)",
+    "radioCliFemTxGainOff": "FEM TX 게인 끄기 (스테이션 G3)",
+    "radioCliCadGet": "하드웨어 CAD 받기",
+    "radioCliCadOn": "하드웨어 CAD 켜기",
+    "radioCliCadOnHint": "하드웨어 CAD를 켭니다. MeshCore는 약 4초 동안 라디오를 잠글 수 있기 때문에 기본적으로 CAD를 사용하지 않습니다.",
+    "radioCliCadOff": "하드웨어 CAD 끄기",
+    "radioCliBootReasonGet": "부팅 및 종료 이유 가져오기",
+    "cliQuickRadio": "라디오 :"
   },
   "reticulumIdentity": {
     "announceIntervalSec": "발표 간격 (초)",
