@@ -106,7 +106,7 @@ pub enum PairingCeremony {
 }
 
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-pub fn pairing_ceremony(kind: i32) -> PairingCeremony {
+pub fn pairing_ceremony(kind: u32) -> PairingCeremony {
     match kind {
         4 => PairingCeremony::ProvidePin,  // ProvidePin
         1 => PairingCeremony::ConfirmOnly, // ConfirmOnly
