@@ -1063,7 +1063,11 @@
       "pinPairingFailed": "PIN のペアリングに失敗しました: {{msg}}",
       "pinAcceptedNext": "PIN が受け入れられました。ペアリング完了。 「接続」を押してデバイスを選択し、接続を完了します。",
       "connectionFailed": "接続に失敗しました",
-      "windowsPinRejected": "WindowsはそのPINを拒否しました。ラジオ画面に表示されているピンを確認して、もう一度やり直してください（画面のないラジオは、ファームウェアの固定ピンを使用してください）。"
+      "windowsPinRejected": "WindowsはそのPINを拒否しました。ラジオ画面に表示されているピンを確認して、もう一度やり直してください（画面のないラジオは、ファームウェアの固定ピンを使用してください）。",
+      "windowsPairStateBlocked": "このラジオがペアリングされているかどうかを確認できませんでした。Windows Bluetoothがフリーズしないように、接続が停止しました。[デバイスの削除と再ペアリング]を使用します。",
+      "windowsPairingUnsupported": "アプリ内Bluetoothペアリングはこのコンピューターでは利用できません。",
+      "windowsPairingInvalidProfile": "このBluetoothプロファイルをアプリでペアリングすることはできません。",
+      "windowsPairingInvalidAddress": "BluetoothアドレスまたはペアリングPINが無効です。"
     },
     "cancelMqttConnect": "キャンセル",
     "ripplePresetConfirm": "Rippleプリセットは、共有コミュニティ資格情報を使用し、TLS証明書の検証を無効にします。これは信頼できるネットワークでのみ使用します。続行しますか？",

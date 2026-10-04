@@ -1095,7 +1095,11 @@
       "pinPairingFailed": "Parowanie PIN-u nie powiodło się: {{msg}}",
       "pinAcceptedNext": "PIN zaakceptowany. Parowanie zakończone. Naciśnij Połącz i wybierz urządzenie, aby zakończyć połączenie.",
       "connectionFailed": "Połączenie nie powiodło się",
-      "windowsPinRejected": "Windows odrzucił ten PIN. Sprawdź KOD PIN pokazany na ekranie radia i spróbuj ponownie (radia bez ekranu używają stałego KODU PIN oprogramowania sprzętowego)."
+      "windowsPinRejected": "Windows odrzucił ten PIN. Sprawdź KOD PIN pokazany na ekranie radia i spróbuj ponownie (radia bez ekranu używają stałego KODU PIN oprogramowania sprzętowego).",
+      "windowsPairStateBlocked": "Nie można sprawdzić, czy to radio jest sparowane. Połączenie zostało zatrzymane, aby Bluetooth w systemie Windows nie zawieszał się. Użyj funkcji Usuń i ponownie sparuj urządzenie.",
+      "windowsPairingUnsupported": "Parowanie Bluetooth w aplikacji nie jest dostępne na tym komputerze.",
+      "windowsPairingInvalidProfile": "Tego profilu Bluetooth nie można sparować w aplikacji.",
+      "windowsPairingInvalidAddress": "Adres Bluetooth lub PIN parowania są nieprawidłowe."
     },
     "cancelMqttConnect": "Anulować",
     "ripplePresetConfirm": "Ustawienie wstępne Ripple wykorzystuje udostępnione poświadczenia społeczności i wyłącza weryfikację certyfikatu TLS. Używaj tego tylko w zaufanej sieci. Kontynuować?",

@@ -7,9 +7,12 @@
  * Connection panel.
  */
 
-import { isBlePairingError } from './bleConnectErrors';
+import type { TFunction } from 'i18next';
 
-export type WindowsBlePairState = 'paired' | 'unpaired' | 'unknown';
+import { gattBleErrorI18nKey, isBlePairingError } from './bleConnectErrors';
+
+/** `blocked` means a timeout or WinRT error; connecting from there wedges btleplug. */
+export type WindowsBlePairState = 'paired' | 'unpaired' | 'unknown' | 'blocked';
 
 /** Thrown when pairing fails; `code` mirrors the sidecar GATT error taxonomy. */
 export class WindowsBlePairingError extends Error {
@@ -22,7 +25,17 @@ export class WindowsBlePairingError extends Error {
   }
 }
 
-/** `unknown` (sidecar down, unsupported, WinRT error) means "just try connecting". */
+/**
+ * A pair-state timeout (HTTP budget or sidecar `connect_timeout`) or a WinRT
+ * failure (`internal` messages from `windows_pairing`) must not fall through to connect.
+ * Sidecar-down and `unsupported` stay `unknown`.
+ */
+export function isWindowsPairStateHardFailure(code: string, error: string): boolean {
+  if (code === 'connect_timeout') return true;
+  return code === 'internal' && /^windows\b/i.test(error.trim());
+}
+
+/** `unknown` (sidecar down, unsupported) may still connect. `blocked` must not. */
 export async function getWindowsBlePairState(peripheralId: string): Promise<WindowsBlePairState> {
   try {
     const result = await window.electronAPI.gattPairState(peripheralId);
@@ -30,12 +43,36 @@ export async function getWindowsBlePairState(peripheralId: string): Promise<Wind
     console.debug(
       `[windowsBlePairing] pair state unavailable code=${result.code} error=${result.error}`,
     );
+    if (isWindowsPairStateHardFailure(result.code, result.error)) return 'blocked';
   } catch (err) {
     console.debug(
       '[windowsBlePairing] pair state threw ' + (err instanceof Error ? err.message : String(err)),
     );
   }
   return 'unknown';
+}
+
+/**
+ * Locale text for a Windows pairing failure. Gatt error codes reuse
+ * `connectionPanel.errors.ble.*` when that key exists. The sidecar's English
+ * stays on the Error for the log and is not interpolated into the UI.
+ */
+export function windowsPairingFailureMessage(err: unknown, t: TFunction): string {
+  if (err instanceof WindowsBlePairingError) {
+    if (err.code === 'authentication_failed') {
+      return t('connectionPanel.error.windowsPinRejected');
+    }
+    const existing = gattBleErrorI18nKey(err.code);
+    if (existing) return t(existing);
+    if (err.code === 'unsupported') return t('connectionPanel.error.windowsPairingUnsupported');
+    if (err.code === 'invalid_profile') {
+      return t('connectionPanel.error.windowsPairingInvalidProfile');
+    }
+    if (err.code === 'invalid_address') {
+      return t('connectionPanel.error.windowsPairingInvalidAddress');
+    }
+  }
+  return t('connectionPanel.stagePairingFailed');
 }
 
 export async function pairWindowsBle(peripheralId: string, pin: string): Promise<void> {

@@ -1607,6 +1607,10 @@
       "pinPairingFailed": "PIN pairing failed: {{msg}}",
       "pinAcceptedNext": "PIN accepted. Pairing completed. Press Connect and select your device to finish connecting.",
       "windowsPinRejected": "Windows rejected that PIN. Check the PIN shown on the radio's screen and try again (radios without a screen use the firmware's fixed PIN).",
+      "windowsPairStateBlocked": "Could not check whether this radio is paired. Connecting was stopped so Windows Bluetooth does not freeze. Use Remove & Re-pair Device.",
+      "windowsPairingUnsupported": "In-app Bluetooth pairing is not available on this computer.",
+      "windowsPairingInvalidProfile": "This Bluetooth profile cannot be paired in the app.",
+      "windowsPairingInvalidAddress": "The Bluetooth address or pairing PIN is not valid.",
       "connectionFailed": "Connection failed"
     },
     "errors": {

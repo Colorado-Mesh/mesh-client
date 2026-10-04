@@ -5,6 +5,9 @@
 //! WinRT. Chrome's Web Bluetooth pairs in-app via `DeviceInformationCustomPairing`
 //! + `ProvidePin`; this module does the same with a PIN typed in mesh-client.
 //!
+//! `ConfirmOnly` is accepted. `ConfirmPinMatch` (numeric comparison) is rejected
+//! until the UI can show the code.
+//!
 //! Calls run on `spawn_blocking` (windows 0.58 `IAsyncOperation` needs `.get()`),
 //! never on the isolated btleplug runtime, so a wedged connect cannot block repair.
 //! Other platforms return `Unsupported`: Linux pairs via bluetoothctl in Electron
@@ -90,6 +93,26 @@ const fn pairing_status_name(code: i32) -> &'static str {
 /// `ProtectionLevelCouldNotBeMet`: retry at `Encryption` for radios without MITM pairing.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 const STATUS_PROTECTION_LEVEL_NOT_MET: i32 = 11;
+
+/// WinRT `DevicePairingKinds` ceremony this app will finish without showing a code.
+/// `ConfirmPinMatch` (8, numeric comparison) is [`PairingCeremony::Reject`] until the UI
+/// can display the code. Leaving the request unanswered makes WinRT report `RejectedByHandler`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+pub enum PairingCeremony {
+    ProvidePin,
+    ConfirmOnly,
+    Reject,
+}
+
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+pub fn pairing_ceremony(kind: i32) -> PairingCeremony {
+    match kind {
+        4 => PairingCeremony::ProvidePin,  // ProvidePin
+        1 => PairingCeremony::ConfirmOnly, // ConfirmOnly
+        _ => PairingCeremony::Reject,      // ConfirmPinMatch (8) and anything else
+    }
+}
 
 /// Map a WinRT `DevicePairingResultStatus` to the GATT error taxonomy.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
@@ -181,7 +204,12 @@ pub async fn pair_state(address: &str) -> Result<PairState, GattError> {
     let addr = require_address(address)?;
     #[cfg(target_os = "windows")]
     {
-        run_blocking("pair-state", STATE_TIMEOUT, move || imp::pair_state(addr)).await
+        // Same per-address permit as pair/unpair so a WinRT pair-state call cannot
+        // overlap a pairing call that is still running after its timeout.
+        run_exclusive(addr, "pair-state", STATE_TIMEOUT, (), move || {
+            imp::pair_state(addr)
+        })
+        .await
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -325,10 +353,11 @@ mod imp {
                 };
                 let kind = args.PairingKind()?;
                 tracing::info!(target: "gatt", pairing_kind = kind.0, "gatt: windows pairing requested");
-                if kind == DevicePairingKinds::ProvidePin {
-                    args.AcceptWithPin(&pin_h)
-                } else {
-                    args.Accept()
+                match super::pairing_ceremony(kind.0) {
+                    super::PairingCeremony::ProvidePin => args.AcceptWithPin(&pin_h),
+                    super::PairingCeremony::ConfirmOnly => args.Accept(),
+                    // ConfirmPinMatch is numeric comparison. Do not Accept until the UI shows the code.
+                    super::PairingCeremony::Reject => Ok(()),
                 }
             },
         );
@@ -393,6 +422,18 @@ mod tests {
         assert!(validate_pin("1234567").is_err());
         assert!(validate_pin("12a456").is_err());
         assert!(validate_pin("").is_err());
+    }
+
+    #[test]
+    fn accepts_only_provide_pin_and_confirm_only() {
+        assert_eq!(pairing_ceremony(4), PairingCeremony::ProvidePin);
+        assert_eq!(pairing_ceremony(1), PairingCeremony::ConfirmOnly);
+        assert_eq!(
+            pairing_ceremony(8),
+            PairingCeremony::Reject,
+            "ConfirmPinMatch (numeric comparison) stays rejected until the UI shows the code"
+        );
+        assert_eq!(pairing_ceremony(2), PairingCeremony::Reject);
     }
 
     #[test]

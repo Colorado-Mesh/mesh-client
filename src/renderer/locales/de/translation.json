@@ -1061,7 +1061,11 @@
       "pinPairingFailed": "PIN-Kopplung fehlgeschlagen: {{msg}}",
       "pinAcceptedNext": "PIN akzeptiert. Kopplung abgeschlossen. Drücken Sie auf „Verbinden“ und wählen Sie Ihr Gerät aus, um die Verbindung abzuschließen.",
       "connectionFailed": "Verbindung fehlgeschlagen",
-      "windowsPinRejected": "Windows hat diese PIN abgelehnt. Überprüfen Sie die auf dem Bildschirm des Radios angezeigte PIN und versuchen Sie es erneut (Radios ohne Bildschirm verwenden die feste PIN der Firmware)."
+      "windowsPinRejected": "Windows hat diese PIN abgelehnt. Überprüfen Sie die auf dem Bildschirm des Radios angezeigte PIN und versuchen Sie es erneut (Radios ohne Bildschirm verwenden die feste PIN der Firmware).",
+      "windowsPairStateBlocked": "Es konnte nicht überprüft werden, ob dieses Funkgerät gekoppelt ist. Die Verbindung wurde gestoppt, damit Windows Bluetooth nicht einfriert. Gerät entfernen und erneut koppeln.",
+      "windowsPairingUnsupported": "In-App-Bluetooth-Kopplung ist auf diesem Computer nicht verfügbar.",
+      "windowsPairingInvalidProfile": "Dieses Bluetooth-Profil kann in der App nicht gekoppelt werden.",
+      "windowsPairingInvalidAddress": "Die Bluetooth-Adresse oder die PAIRING-PIN ist ungültig."
     },
     "cancelMqttConnect": "Abbrechen",
     "ripplePresetConfirm": "Die Ripple-Voreinstellung verwendet gemeinsam genutzte Community-Anmeldeinformationen und deaktiviert die TLS-Zertifikatüberprüfung. Nur in einem vertrauenswürdigen Netzwerk verwenden. Fortfahren?",

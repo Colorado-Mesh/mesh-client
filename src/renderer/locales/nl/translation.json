@@ -1062,7 +1062,11 @@
       "pinPairingFailed": "PIN-koppeling mislukt: {{msg}}",
       "pinAcceptedNext": "Pincode geaccepteerd. Koppelen voltooid. Druk op Verbinden en selecteer uw apparaat om de verbinding te voltooien.",
       "connectionFailed": "Verbinding mislukt",
-      "windowsPinRejected": "Windows heeft die PINCODE geweigerd. Controleer de PINCODE op het scherm van de radio en probeer het opnieuw (radio's zonder scherm gebruiken de vaste PINCODE van de firmware)."
+      "windowsPinRejected": "Windows heeft die PINCODE geweigerd. Controleer de PINCODE op het scherm van de radio en probeer het opnieuw (radio's zonder scherm gebruiken de vaste PINCODE van de firmware).",
+      "windowsPairStateBlocked": "Kan niet controleren of deze radio is gekoppeld. De verbinding is gestopt, zodat Windows Bluetooth niet bevriest. Gebruik Apparaat verwijderen en opnieuw koppelen.",
+      "windowsPairingUnsupported": "In-app Bluetooth-koppeling is niet beschikbaar op deze computer.",
+      "windowsPairingInvalidProfile": "Dit Bluetooth-profiel kan niet worden gekoppeld in de app.",
+      "windowsPairingInvalidAddress": "Het Bluetooth-adres of de KOPPELINGSPINCODE is niet geldig."
     },
     "cancelMqttConnect": "Annuleren",
     "ripplePresetConfirm": "De Ripple-voorinstelling gebruikt gedeelde gemeenschapsreferenties en schakelt TLS-certificaatverificatie uit. Gebruik dit alleen op een vertrouwd netwerk. Doorgaan?",

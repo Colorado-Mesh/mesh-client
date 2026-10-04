@@ -151,10 +151,10 @@ import type {
 } from '../lib/types';
 import {
   getWindowsBlePairState,
-  isWindowsPinRejected,
   pairWindowsBle,
   shouldOfferWindowsRePair,
   unpairWindowsBle,
+  windowsPairingFailureMessage,
 } from '../lib/windowsBlePairing';
 import { useDeviceStore } from '../stores/deviceStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
@@ -950,12 +950,19 @@ export default function ConnectionPanel({
   }, [protocol]);
 
   useEffect(() => {
+    // ConnectionPanel is one instance for every protocol. A Windows Reconnect that is
+    // still awaiting pair-state must not leave this panel stuck on Connecting.
     pendingPairBleDeviceRef.current = null;
     manualBleScanActiveRef.current = false;
+    isAutoConnectingRef.current = false;
+    setIsAutoConnecting(false);
+    setConnecting(false);
+    setConnectionStage('');
     return () => {
       pendingPairBleDeviceRef.current = null;
       manualBleScanActiveRef.current = false;
       windowsReconnectAttemptRef.current = null;
+      isAutoConnectingRef.current = false;
     };
   }, [protocol]);
 
@@ -1145,6 +1152,27 @@ export default function ConnectionPanel({
     [onConnect, clearMeshcoreBleSelectionOnMissingServices, isLinux, isWindows, t],
   );
 
+  /**
+   * Windows: pair-state timed out or WinRT failed. Do not connect — that call wedges btleplug.
+   * Offer Remove & Re-pair instead.
+   */
+  const showWindowsPairStateBlocked = useCallback(
+    (deviceId: string) => {
+      pendingPairBleDeviceRef.current = null;
+      lastSelectedBleMacRef.current = deviceId;
+      isAutoConnectingRef.current = false;
+      setIsAutoConnecting(false);
+      setShowPinPrompt(false);
+      setShowBlePicker(false);
+      setManualPairingFallback(false);
+      setShowRePairButton(true);
+      setConnecting(false);
+      setConnectionStage('connectionPanel.stagePairingFailed');
+      setError(t('connectionPanel.error.windowsPairStateBlocked'));
+    },
+    [t],
+  );
+
   /** Windows: show the in-app PIN prompt for a radio the OS has no bond for. */
   const promptWindowsPairing = useCallback(
     (deviceId: string) => {
@@ -1185,12 +1213,7 @@ export default function ConnectionPanel({
       } catch (err) {
         if (pendingPairBleDeviceRef.current !== pendingDevice) return;
         console.warn('[ConnectionPanel] Windows in-app pairing failed: ' + errLikeToLogString(err));
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(
-          isWindowsPinRejected(err)
-            ? t('connectionPanel.error.windowsPinRejected')
-            : t('connectionPanel.error.pairingFailed', { msg }),
-        );
+        setError(windowsPairingFailureMessage(err, t));
         setManualPairingFallback(false);
         setShowPinPrompt(true);
         setConnectionStage('connectionPanel.stageEnterPinWindows');
@@ -1523,6 +1546,10 @@ export default function ConnectionPanel({
             promptWindowsPairing(deviceId);
             return;
           }
+          if (pairState === 'blocked') {
+            showWindowsPairStateBlocked(deviceId);
+            return;
+          }
           pendingPairBleDeviceRef.current = null;
           await connectSelectedBleDevice(deviceId);
         })();
@@ -1536,6 +1563,7 @@ export default function ConnectionPanel({
       isWindows,
       connectSelectedBleDevice,
       promptWindowsPairing,
+      showWindowsPairStateBlocked,
       protocol,
       capabilities.hasGattBleScanning,
     ],
@@ -1598,8 +1626,21 @@ export default function ConnectionPanel({
           const attempt = {};
           windowsReconnectAttemptRef.current = attempt;
           const pairState = await getWindowsBlePairState(bleDeviceId);
-          // Cancel, manual connect, or a newer Reconnect superseded this attempt mid-await.
+          // Cancel, manual connect, protocol change, or a newer Reconnect superseded this attempt.
           if (windowsReconnectAttemptRef.current !== attempt || !isAutoConnectingRef.current) {
+            // Flags were set just before this await. A newer Reconnect or a manual scan
+            // already owns them; clearing would stick that attempt. Otherwise this
+            // return left Connecting on (the panel is not remounted on protocol change).
+            const supersededByNewerReconnect =
+              isAutoConnectingRef.current &&
+              windowsReconnectAttemptRef.current !== null &&
+              windowsReconnectAttemptRef.current !== attempt;
+            if (!supersededByNewerReconnect && !manualBleScanActiveRef.current) {
+              isAutoConnectingRef.current = false;
+              setIsAutoConnecting(false);
+              setConnecting(false);
+              setConnectionStage('');
+            }
             return;
           }
           windowsReconnectAttemptRef.current = null;
@@ -1607,6 +1648,10 @@ export default function ConnectionPanel({
             isAutoConnectingRef.current = false;
             setIsAutoConnecting(false);
             promptWindowsPairing(bleDeviceId);
+            return;
+          }
+          if (pairState === 'blocked') {
+            showWindowsPairStateBlocked(bleDeviceId);
             return;
           }
         }
@@ -1717,6 +1762,7 @@ export default function ConnectionPanel({
     isWindows,
     capabilities.hasGattBleScanning,
     promptWindowsPairing,
+    showWindowsPairStateBlocked,
     clearMeshcoreBleSelectionOnMissingServices,
     t,
   ]);

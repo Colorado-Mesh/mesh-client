@@ -358,13 +358,145 @@ describe('ConnectionPanel manual GATT selection', () => {
           expect(window.electronAPI.gattPairState).toHaveBeenCalled();
         });
         if (teardown === 'unmount') view.unmount();
-        else view.rerender(<ConnectionPanel {...props} protocol="meshtastic" />);
+        else {
+          view.rerender(<ConnectionPanel {...props} protocol="meshtastic" />);
+          await waitFor(() => {
+            expect(screen.queryByText('Auto-connecting…')).not.toBeInTheDocument();
+            expect(screen.queryByText('Checking Bluetooth pairing…')).not.toBeInTheDocument();
+          });
+        }
         resolvePairState({ ok: true, paired: true });
         await new Promise((r) => setTimeout(r, 0));
         expect(onConnect).not.toHaveBeenCalled();
         expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+        expect(screen.queryByText('Auto-connecting…')).not.toBeInTheDocument();
+        expect(screen.queryByText('Checking Bluetooth pairing…')).not.toBeInTheDocument();
       },
     );
+
+    it.each([
+      ['connect_timeout', 'pair state timed out'],
+      ['internal', 'windows IsPaired: The device is unreachable'],
+    ] as const)(
+      'does not connect when selecting a radio and pair state fails with %s',
+      async (code, error) => {
+        const user = userEvent.setup();
+        vi.mocked(window.electronAPI.gattPairState).mockResolvedValue({ ok: false, code, error });
+        const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
+        await selectRadio(user);
+        expect(
+          await screen.findByRole('button', { name: 'Remove & Re-pair Device' }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText(/Could not check whether this radio is paired/),
+        ).toBeInTheDocument();
+        expect(onConnect).not.toHaveBeenCalled();
+        expect(window.electronAPI.startGattScanning).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('Reconnect does not connect when pair state times out', async () => {
+      const user = userEvent.setup();
+      localStorage.setItem(
+        'mesh-client:lastConnection:meshcore',
+        JSON.stringify({ type: 'ble', bleDeviceId: device.deviceId }),
+      );
+      vi.mocked(window.electronAPI.gattPairState).mockResolvedValue({
+        ok: false,
+        code: 'connect_timeout',
+        error: 'windows pair-state timed out',
+      });
+      const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
+      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      expect(
+        await screen.findByRole('button', { name: 'Remove & Re-pair Device' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Auto-connecting…')).not.toBeInTheDocument();
+      expect(onConnect).not.toHaveBeenCalled();
+      expect(window.electronAPI.startGattScanning).not.toHaveBeenCalled();
+    });
+
+    it('a Reconnect on the new protocol survives the superseded pair-state result', async () => {
+      const user = userEvent.setup();
+      const meshcoreId = device.deviceId;
+      const meshtasticId = '11:22:33:44:55:66';
+      localStorage.setItem(
+        'mesh-client:lastConnection:meshcore',
+        JSON.stringify({ type: 'ble', bleDeviceId: meshcoreId }),
+      );
+      localStorage.setItem(
+        'mesh-client:lastConnection:meshtastic',
+        JSON.stringify({ type: 'ble', bleDeviceId: meshtasticId }),
+      );
+      let resolveFirst: (value: { ok: true; paired: boolean }) => void = () => {};
+      let resolveSecond: (value: { ok: true; paired: boolean }) => void = () => {};
+      vi.mocked(window.electronAPI.gattPairState)
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveFirst = resolve;
+            }),
+        )
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveSecond = resolve;
+            }),
+        );
+      const onConnect = vi.fn().mockResolvedValue(undefined);
+      const props = {
+        state: disconnectedState,
+        mqttStatus: 'disconnected' as const,
+        onConnect,
+        onAutoConnect: vi.fn().mockResolvedValue(undefined),
+        onDisconnect: vi.fn().mockResolvedValue(undefined),
+      };
+      const view = render(<ConnectionPanel {...props} protocol="meshcore" />);
+      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      expect(await screen.findByText('Checking Bluetooth pairing…')).toBeInTheDocument();
+      view.rerender(<ConnectionPanel {...props} protocol="meshtastic" />);
+      await waitFor(() => {
+        expect(screen.queryByText('Auto-connecting…')).not.toBeInTheDocument();
+        expect(screen.queryByText('Checking Bluetooth pairing…')).not.toBeInTheDocument();
+      });
+      await user.click(await screen.findByRole('button', { name: /^Reconnect$/i }));
+      expect(await screen.findByText('Checking Bluetooth pairing…')).toBeInTheDocument();
+      await act(async () => {
+        resolveFirst({ ok: true, paired: true });
+        await Promise.resolve();
+      });
+      expect(onConnect).not.toHaveBeenCalled();
+      expect(screen.getByText('Auto-connecting…')).toBeInTheDocument();
+      expect(screen.getByText('Checking Bluetooth pairing…')).toBeInTheDocument();
+      await act(async () => {
+        resolveSecond({ ok: true, paired: true });
+        await Promise.resolve();
+      });
+      await waitFor(() => {
+        expect(onConnect).toHaveBeenCalledExactlyOnceWith('ble', undefined, meshtasticId);
+      });
+    });
+
+    it('shows a translated pairing error and keeps the sidecar English in the log', async () => {
+      const user = userEvent.setup();
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.mocked(window.electronAPI.gattPairState).mockResolvedValue({ ok: true, paired: false });
+      vi.mocked(window.electronAPI.gattPair).mockResolvedValue({
+        ok: false,
+        code: 'pairing_required',
+        error: 'Windows pairing failed (status=NotReadyToPair)',
+      });
+      const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
+      await selectRadio(user);
+      await user.type(await screen.findByPlaceholderText('PIN'), '654321');
+      await user.click(screen.getByRole('button', { name: 'Submit' }));
+      expect(await screen.findByText(/This device must be paired first/)).toBeInTheDocument();
+      expect(screen.queryByText(/NotReadyToPair/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Windows pairing failed \(status=/)).not.toBeInTheDocument();
+      expect(onConnect).not.toHaveBeenCalled();
+      expect(warn.mock.calls.some((args) => String(args[0]).includes('NotReadyToPair'))).toBe(true);
+      warn.mockRestore();
+    });
 
     it('Reconnect prompts for a PIN instead of a doomed connect when the bond is gone', async () => {
       const user = userEvent.setup();

@@ -92,6 +92,22 @@ describe('GattSidecarProxy', () => {
       );
     });
 
+    it('pairState maps the HTTP timeout to connect_timeout', async () => {
+      fetchMock.mockRejectedValue(
+        new DOMException('The operation was aborted due to timeout', 'TimeoutError'),
+      );
+      await expect(proxy.pairState('ef:4f:4f:1c:23:73')).resolves.toEqual({
+        ok: false,
+        code: 'connect_timeout',
+        error: 'pair state timed out',
+      });
+    });
+
+    it('pairState rethrows non-timeout fetch failures', async () => {
+      fetchMock.mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:9876'));
+      await expect(proxy.pairState('ef:4f:4f:1c:23:73')).rejects.toThrow(/ECONNREFUSED/);
+    });
+
     it('pairState surfaces sidecar code and error', async () => {
       fetchMock.mockResolvedValue({
         status: 200,

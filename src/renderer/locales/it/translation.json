@@ -1061,7 +1061,11 @@
       "pinPairingFailed": "Associazione PIN non riuscita: {{msg}}",
       "pinAcceptedNext": "PIN accettato. Associazione completata. Premi Connetti e seleziona il tuo dispositivo per completare la connessione.",
       "connectionFailed": "Connessione non riuscita",
-      "windowsPinRejected": "Windows ha rifiutato quel PIN. Controllare il PIN visualizzato sullo schermo della radio e riprovare (le radio senza schermo utilizzano il PIN fisso del firmware)."
+      "windowsPinRejected": "Windows ha rifiutato quel PIN. Controllare il PIN visualizzato sullo schermo della radio e riprovare (le radio senza schermo utilizzano il PIN fisso del firmware).",
+      "windowsPairStateBlocked": "Impossibile verificare se questa radio è accoppiata. La connessione è stata interrotta in modo che il Bluetooth di Windows non si blocchi. Usa Rimuovere e riassociare il dispositivo.",
+      "windowsPairingUnsupported": "L'accoppiamento Bluetooth in-app non è disponibile su questo computer.",
+      "windowsPairingInvalidProfile": "Questo profilo Bluetooth non può essere associato nell'app.",
+      "windowsPairingInvalidAddress": "L'indirizzo Bluetooth o il PIN di associazione non sono validi."
     },
     "cancelMqttConnect": "Cancellare",
     "ripplePresetConfirm": "Il preset Ripple utilizza le credenziali della community condivise e disabilita la verifica del certificato TLS. Utilizzarlo solo su una rete attendibile. Continuare?",
