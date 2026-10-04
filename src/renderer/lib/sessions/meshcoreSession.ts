@@ -20,6 +20,13 @@ export interface MeshcoreSessionApi {
     driverIdentityId?: string,
   ) => Promise<void>;
   finalizeDriverDisconnect: (opts?: { disconnectDriver?: boolean }) => Promise<void>;
+  /**
+   * Latch the user-disconnect flag wake reconnect already checks.
+   * Returns true when this call is what set it.
+   */
+  latchExplicitDisconnect?: () => boolean;
+  /** Clear a hide-induced user-disconnect latch. Does not open a radio. */
+  clearExplicitDisconnectLatch?: () => void;
   connectAutomatic: (
     type: 'ble' | 'serial' | 'http',
     httpAddress?: string,

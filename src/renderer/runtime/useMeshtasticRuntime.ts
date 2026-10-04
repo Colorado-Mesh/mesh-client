@@ -4677,12 +4677,23 @@ export function useMeshtasticRuntime() {
     return () => registerMeshtasticSerialDisconnectTarget(null);
   }, []);
 
+  const latchExplicitDisconnect = useCallback(() => {
+    const already = meshtasticExplicitDisconnectRef.current;
+    meshtasticExplicitDisconnectRef.current = true;
+    return !already;
+  }, []);
+  const clearExplicitDisconnectLatch = useCallback(() => {
+    meshtasticExplicitDisconnectRef.current = false;
+  }, []);
+
   useEffect(() => {
     registerMeshtasticSession({
       prepareRfConnect,
       attachRfSession,
       handleRfConnectFailure,
       finalizeDriverDisconnect,
+      latchExplicitDisconnect,
+      clearExplicitDisconnectLatch,
       connectAutomatic,
       sendChatMessage: sendMessage,
     });
@@ -4692,6 +4703,8 @@ export function useMeshtasticRuntime() {
     attachRfSession,
     handleRfConnectFailure,
     finalizeDriverDisconnect,
+    latchExplicitDisconnect,
+    clearExplicitDisconnectLatch,
     connectAutomatic,
     sendMessage,
   ]);

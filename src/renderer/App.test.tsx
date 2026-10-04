@@ -22,6 +22,11 @@ import {
   RETICULUM_CAPABILITIES,
 } from './lib/radio/BaseRadioProvider';
 import * as providerFactory from './lib/radio/providerFactory';
+import {
+  isReticulumManualStackStopSuppress,
+  resetReticulumManualStackStopSuppressForTests,
+  setReticulumManualStackStopSuppress,
+} from './lib/reticulum/reticulumManualStackStopSuppress';
 import { type MeshcoreSessionApi, registerMeshcoreSession } from './lib/sessions/meshcoreSession';
 import { registerMeshtasticSession } from './lib/sessions/meshtasticSession';
 import { getReticulumSession } from './lib/sessions/reticulumSession';
@@ -779,6 +784,124 @@ describe('App shell layout', () => {
     await waitFor(() => {
       expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshtastic');
     });
+  });
+
+  it('disconnects an already-connected MeshCore MQTT session when MeshCore is hidden', async () => {
+    ensureOfflineProtocolIdentities();
+    setConnection(OFFLINE_MESHCORE_IDENTITY_ID, {
+      status: 'disconnected',
+      connectionType: null,
+      mqttStatus: 'connected',
+      myNodeNum: 0,
+    });
+    const latchMeshcore = vi.fn(() => true);
+    registerMeshcoreSession({
+      connect: vi.fn().mockResolvedValue(undefined),
+      prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+      attachRfSession: vi.fn().mockResolvedValue(undefined),
+      handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+      finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
+      connectAutomatic: vi.fn().mockResolvedValue(undefined),
+      latchExplicitDisconnect: latchMeshcore,
+    });
+    vi.mocked(window.electronAPI.mqtt.disconnect).mockClear();
+    renderApp();
+    openPanel('App');
+    await waitFor(() => {
+      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
+    });
+
+    act(() => {
+      (lastAppPanelProps.current?.onHiddenProtocolsChange as (hidden: string[]) => void)([
+        'meshcore',
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(window.electronAPI.mqtt.disconnect).toHaveBeenCalledWith('meshcore');
+    });
+    expect(latchMeshcore).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI.mqtt.disconnect).not.toHaveBeenCalledWith('meshtastic');
+  });
+
+  it('latches an already-disconnected protocol and releases that latch when it is shown again', async () => {
+    resetReticulumManualStackStopSuppressForTests();
+    onTestFinished(() => {
+      resetReticulumManualStackStopSuppressForTests();
+    });
+    const latchMeshtastic = vi.fn(() => true);
+    const clearMeshtastic = vi.fn();
+    registerMeshtasticSession({
+      prepareRfConnect: vi.fn().mockResolvedValue(undefined),
+      attachRfSession: vi.fn().mockResolvedValue(undefined),
+      handleRfConnectFailure: vi.fn().mockResolvedValue(undefined),
+      finalizeDriverDisconnect: vi.fn().mockResolvedValue(undefined),
+      connectAutomatic: vi.fn().mockResolvedValue(undefined),
+      sendChatMessage: vi.fn(),
+      latchExplicitDisconnect: latchMeshtastic,
+      clearExplicitDisconnectLatch: clearMeshtastic,
+    });
+    renderApp();
+    openPanel('App');
+    await waitFor(() => {
+      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
+    });
+    const setHidden = lastAppPanelProps.current?.onHiddenProtocolsChange as (
+      hidden: string[],
+    ) => void;
+
+    act(() => {
+      setHidden(['meshtastic']);
+    });
+    await waitFor(() => {
+      expect(latchMeshtastic).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      setHidden([]);
+    });
+    await waitFor(() => {
+      expect(clearMeshtastic).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      setHidden(['reticulum']);
+    });
+    await waitFor(() => {
+      expect(isReticulumManualStackStopSuppress()).toBe(true);
+    });
+
+    act(() => {
+      setHidden([]);
+    });
+    await waitFor(() => {
+      expect(isReticulumManualStackStopSuppress()).toBe(false);
+    });
+  });
+
+  it('leaves a Reticulum Stop latched when the protocol is hidden and shown again', async () => {
+    resetReticulumManualStackStopSuppressForTests();
+    setReticulumManualStackStopSuppress(true);
+    onTestFinished(() => {
+      resetReticulumManualStackStopSuppressForTests();
+    });
+    renderApp();
+    openPanel('App');
+    await waitFor(() => {
+      expect(lastAppPanelProps.current?.onHiddenProtocolsChange).toEqual(expect.any(Function));
+    });
+    const setHidden = lastAppPanelProps.current?.onHiddenProtocolsChange as (
+      hidden: string[],
+    ) => void;
+
+    act(() => {
+      setHidden(['reticulum']);
+    });
+    act(() => {
+      setHidden([]);
+    });
+
+    expect(isReticulumManualStackStopSuppress()).toBe(true);
   });
 
   it('switches sections from the rail and remembers the last panel per section', () => {

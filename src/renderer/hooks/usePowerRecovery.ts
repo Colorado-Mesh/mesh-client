@@ -34,6 +34,8 @@ export const DEFAULT_POWER_RESUME_SCHEDULE: readonly {
 export interface UsePowerRecoveryOptions {
   callbacksByProtocol: Record<MeshProtocol, PowerRecoveryCallbacks>;
   resumeSchedule?: readonly { protocol: MeshProtocol; delayMs: number }[];
+  /** Protocols turned off in App → Protocols. Wake must not resume them. */
+  hiddenProtocols?: readonly MeshProtocol[];
 }
 
 interface LegacyPowerRecoveryOptions {
@@ -63,11 +65,15 @@ export function usePowerRecovery(
       ? options.resumeSchedule
       : DEFAULT_POWER_RESUME_SCHEDULE;
 
+  const hiddenProtocols: readonly MeshProtocol[] =
+    'callbacksByProtocol' in options ? (options.hiddenProtocols ?? []) : [];
   const callbacksRef = useRef(callbacksByProtocol);
+  const hiddenRef = useRef(hiddenProtocols);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     callbacksRef.current = callbacksByProtocol;
+    hiddenRef.current = hiddenProtocols;
   });
 
   useEffect(() => {
@@ -102,6 +108,10 @@ export function usePowerRecovery(
         const cb = callbacksRef.current[protocol];
         if (!cb) continue;
         const timer = setTimeout(() => {
+          if (hiddenRef.current.includes(protocol)) {
+            console.debug(`[usePowerRecovery] resume recovery skipped (${protocol} disabled)`);
+            return;
+          }
           console.debug(`[usePowerRecovery] resume recovery (${protocol})`);
           cb.onPowerResume();
         }, delayMs);
