@@ -47,6 +47,8 @@ export function isEnvironmentTelemetrySource(value: unknown): value is Environme
 export const ENVIRONMENT_TELEMETRY_RETENTION_MS = 7 * MS_PER_DAY;
 /** Newest rows kept per (protocol, node) in SQLite and in memory. */
 export const ENVIRONMENT_TELEMETRY_MAX_PER_NODE = 500;
+/** Distinct nodes kept per protocol in memory and when hydrating history. */
+export const ENVIRONMENT_TELEMETRY_MAX_NODES = 2000;
 /** Identical readings for one node inside this window are treated as RF/MQTT duplicates. */
 export const ENVIRONMENT_TELEMETRY_DEDUP_WINDOW_MS = 60 * MS_PER_SECOND;
 

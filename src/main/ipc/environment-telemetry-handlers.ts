@@ -1,6 +1,7 @@
 import type { IpcMain } from 'electron';
 
 import {
+  ENVIRONMENT_TELEMETRY_MAX_NODES,
   ENVIRONMENT_TELEMETRY_MAX_PER_NODE,
   ENVIRONMENT_TELEMETRY_RETENTION_MS,
   isEnvironmentTelemetrySource,
@@ -69,7 +70,12 @@ export function registerEnvironmentTelemetryIpcHandlers({
       const db = getDbForIpc('db:getEnvironmentTelemetry');
       if (!db) return [];
       const since = typeof sinceMs === 'number' && Number.isFinite(sinceMs) ? sinceMs : 0;
-      return selectEnvironmentTelemetrySinceOn(db, since);
+      return selectEnvironmentTelemetrySinceOn(
+        db,
+        since,
+        ENVIRONMENT_TELEMETRY_MAX_PER_NODE,
+        ENVIRONMENT_TELEMETRY_MAX_NODES,
+      );
     } catch (err) {
       return finishDbIpcReadHandler('db:getEnvironmentTelemetry', err, []);
     }
