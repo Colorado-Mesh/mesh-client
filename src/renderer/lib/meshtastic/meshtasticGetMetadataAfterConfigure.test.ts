@@ -110,4 +110,83 @@ describe('meshtasticGetMetadataAfterConfigure', () => {
     await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS * 2);
     expect(getMetadata).toHaveBeenCalledTimes(2);
   });
+
+  describe('DeviceMetadata packet counts as success', () => {
+    function makeEvents() {
+      const handlers = new Set<(packet: unknown) => void>();
+      const unsubscribe = vi.fn();
+      const events = {
+        onDeviceMetadataPacket: {
+          subscribe: vi.fn((cb: (packet: unknown) => void) => {
+            handlers.add(cb);
+            return () => {
+              unsubscribe();
+              handlers.delete(cb);
+            };
+          }),
+        },
+      };
+      const dispatch = () => {
+        for (const cb of [...handlers]) cb({ data: {} });
+      };
+      return { events, dispatch, unsubscribe, handlerCount: () => handlers.size };
+    }
+
+    it('skips retry and failure log when metadata arrives before the ACK timeout', async () => {
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      let rejectFirst!: (e: Error) => void;
+      const getMetadata = vi.fn().mockReturnValueOnce(
+        new Promise<unknown>((_resolve, reject) => {
+          rejectFirst = reject;
+        }),
+      );
+      const { events, dispatch, handlerCount } = makeEvents();
+      const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+      scheduleMeshtasticGetMetadataAfterConfigure({ getMetadata, events }, 1, timerRef);
+      await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS);
+      expect(getMetadata).toHaveBeenCalledTimes(1);
+
+      dispatch();
+      expect(handlerCount()).toBe(0);
+      rejectFirst(new Error('Packet 1 of type packet timed out'));
+      await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS * 2);
+
+      expect(getMetadata).toHaveBeenCalledTimes(1);
+      expect(debugSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('getMetadata after configure failed'),
+      );
+      debugSpy.mockRestore();
+    });
+
+    it('still retries when no metadata packet arrives', async () => {
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      const getMetadata = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Packet 1 of type packet timed out'))
+        .mockResolvedValueOnce(undefined);
+      const { events } = makeEvents();
+      const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+      scheduleMeshtasticGetMetadataAfterConfigure({ getMetadata, events }, 1, timerRef);
+      await vi.advanceTimersByTimeAsync(
+        MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS +
+          MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS,
+      );
+      expect(getMetadata).toHaveBeenCalledTimes(2);
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('getMetadata after configure failed'),
+      );
+      debugSpy.mockRestore();
+    });
+
+    it('cancel unsubscribes from metadata packets', () => {
+      const getMetadata = vi.fn().mockResolvedValue(undefined);
+      const { events, unsubscribe, handlerCount } = makeEvents();
+      const timerRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+      scheduleMeshtasticGetMetadataAfterConfigure({ getMetadata, events }, 1, timerRef);
+      expect(handlerCount()).toBe(1);
+      cancelMeshtasticGetMetadataAfterConfigure(timerRef);
+      expect(unsubscribe).toHaveBeenCalledTimes(1);
+      expect(handlerCount()).toBe(0);
+    });
+  });
 });

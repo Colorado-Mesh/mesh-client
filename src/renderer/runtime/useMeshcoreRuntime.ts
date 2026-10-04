@@ -178,6 +178,7 @@ import type {
   MeshcoreTraceResultEntry,
   RxPacketEntry,
 } from '../lib/meshcore/meshcoreHookTypes';
+import { fetchMeshcoreContactsForInit } from '../lib/meshcore/meshcoreInitContacts';
 import {
   rememberedMeshcoreLiveAdvertName,
   rememberMeshcoreLiveAdvertName,
@@ -2374,6 +2375,15 @@ export function useMeshcoreRuntime() {
         let getContactsStart = getSelfInfoStart;
         let parallelSelfInfoPromise: ReturnType<MeshCoreConnection['getSelfInfo']> | undefined;
         let parallelContactsPromise: Promise<MeshCoreContactRaw[]> | undefined;
+        const initContactsOpts = {
+          totalTimeoutMs: MESHCORE_INIT_TIMEOUT_MS,
+          onStallRetry: (info: { contactsBeforeStall: number; idleTimeoutMs: number }) => {
+            console.warn(
+              `[useMeshcoreRuntime] initConn getContacts stalled after ${info.idleTimeoutMs}ms idle ` +
+                `(${info.contactsBeforeStall} contacts) — retrying on same link`,
+            );
+          },
+        };
         if (!sequentialRadioInit) {
           parallelSelfInfoPromise = awaitUnlessMeshcoreSetupCancelled(
             setupGen,
@@ -2387,7 +2397,7 @@ export function useMeshcoreRuntime() {
               if (meshcoreConnectTypeRef.current === 'ble') {
                 await awaitDualNobleBleMeshtasticSettle();
               }
-              return withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts');
+              return fetchMeshcoreContactsForInit(conn, initContactsOpts);
             })(),
           );
           observeMeshcoreSetupAbort(parallelContactsPromise);
@@ -2684,7 +2694,7 @@ export function useMeshcoreRuntime() {
           contactsRaw = sequentialRadioInit
             ? await awaitUnlessMeshcoreSetupCancelled(
                 setupGen,
-                withTimeout(conn.getContacts(), MESHCORE_INIT_TIMEOUT_MS, 'getContacts'),
+                fetchMeshcoreContactsForInit(conn, initContactsOpts),
               )
             : await parallelContactsPromise!;
           contactsDumpOk = true;

@@ -227,6 +227,9 @@ export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_TIMEOUT_MS = 15 * MS_PER_SECON
 /** Max wait for proactive MsgWaiting drain before post-connect self telemetry runs. */
 export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS = 30 * MS_PER_SECOND;
 
+/** initConn contact dump: max gap between Contact frames before one same-link getContacts retry. */
+export const MESHCORE_INIT_CONTACTS_IDLE_TIMEOUT_MS = 20 * MS_PER_SECOND;
+
 /** Defer first getMetadata after configure (NodeDB flood can starve the admin packet). */
 export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS = 12 * MS_PER_SECOND;
 
