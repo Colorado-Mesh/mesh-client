@@ -1055,7 +1055,8 @@
         "chooserCancelledHint": "İptal etmediyseniz Bluetooth'un açık olduğundan emin olun (systemctl durumu bluetooth) ve ardından tekrar Bağlan'a dokunun. Flatpak'te, Bluetooth'a izin verilen bir yapıyı yeniden yükleyin veya AppImage/.deb/.rpm dosyasını kullanın.",
         "bluetoothctlMissingHint": "İşletim Sistemi Bluetooth eşleştirme araçları bu ortamda kullanılamaz (Flatpak'ta yaygındır). Resmi AppImage, .deb veya .rpm'yi kullanın veya radyoyu ana bilgisayar bluetoothctl ile eşleştirin ve ardından Bağlanmayı yeniden deneyin.",
         "stackUnresponsiveGeneric": "Bluetooth daha önceki bir bağlantı denemesinde takıldı. Bluetooth'u kapatıp açın, gerekirse radyoyu yeniden eşleştirin, ardından mesh-client'ı yeniden başlatın.",
-        "stackUnresponsiveWindowsRePair": "Windows Bluetooth, genellikle radyo düzgün bir şekilde eşleştirilmediğinden önceki bir bağlantı girişiminde takıldı. Cihazı Kaldır ve Yeniden Eşleştir düğmesine basın ve radyoda gösterilen PIN KODUNU girin. Bağlantı hala reddediliyorsa, mesh-client uygulamasını yeniden başlatın ve tekrar deneyin."
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth, genellikle radyo düzgün bir şekilde eşleştirilmediğinden önceki bir bağlantı girişiminde takıldı. Cihazı Kaldır ve Yeniden Eşleştir düğmesine basın ve radyoda gösterilen PIN KODUNU girin. Bağlantı hala reddediliyorsa, mesh-client uygulamasını yeniden başlatın ve tekrar deneyin.",
+        "rnodeBondRecoveryHold": "Reticulum RNode'un Bluetooth eşleştirmesi bozuk olduğundan Meshtastic ve MeshCore için Bluetooth duraklatıldı. Önce RNode'u düzeltin: sisteminizin Bluetooth ayarlarında unutun, ardından Reticulum → Admin'den yeniden eşleştirin. Bluetooth radyolarını hemen kullanmak için Reticulum yığınını durdurun veya o RNode'u USB veya Wi-Fi'ye geçirin."
       }
     },
     "error": {

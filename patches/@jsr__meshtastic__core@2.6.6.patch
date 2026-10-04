@@ -1,5 +1,5 @@
 diff --git a/src/meshDevice.js b/src/meshDevice.js
-index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..7cb760e509e23b72626eab5833359f602b308b3a 100755
+index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..5e7232784cd634d46057cb40748577e05df58603 100755
 --- a/src/meshDevice.js
 +++ b/src/meshDevice.js
 @@ -20,6 +20,8 @@ export class MeshDevice {
@@ -64,8 +64,62 @@ index 8c58dc7d43f91d1a7c0759f2172950f1c987dd95..7cb760e509e23b72626eab5833359f60
      await this.transport.disconnect();
    }
    /**
+@@ -472,9 +509,17 @@ export class MeshDevice {
+           break;
+         }
+       default:
+-        throw new Error(`Unhandled case ${meshPacket.payloadVariant.case}`);
++        // mesh-client: an unknown variant must not throw — this runs inside the
++        // fromDevice decode pipe, and a throw stops all inbound data (#1142).
++        this.warnUnhandledOnce(`payloadVariant:${meshPacket.payloadVariant.case}`, `⚠️ Unhandled MeshPacket payload variant: ${meshPacket.payloadVariant.case}`);
+     }
+   }
++  /** mesh-client: log each unknown variant / portnum once per device (#1142). */ warnUnhandledOnce(key, message) {
++    this._warnedUnhandled ??= new Set();
++    if (this._warnedUnhandled.has(key)) return;
++    this._warnedUnhandled.add(key);
++    this.log.warn(Emitter[Emitter.HandleMeshPacket], message);
++  }
+   handleDecodedPacket(dataPacket, meshPacket) {
+     let adminMessage;
+     let routingPacket;
+@@ -550,7 +595,9 @@ export class MeshDevice {
+               }
+             default:
+               {
+-                throw new Error(`Unhandled case ${routingPacket.variant.case}`);
++                // mesh-client: do not throw inside the decode pipe (#1142).
++                this.warnUnhandledOnce(`routing:${routingPacket.variant.case}`, `⚠️ Unhandled Routing variant: ${routingPacket.variant.case}`);
++                break;
+               }
+           }
+           break;
+@@ -751,8 +798,22 @@ export class MeshDevice {
+           });
+           break;
+         }
++      // mesh-client: firmware 2.8 ports core has no event for. The raw packet already
++      // went out on onMeshPacket, so these are expected and silent (#1142).
++      case Protobuf.Portnums.PortNum.STORE_FORWARD_PLUSPLUS_APP:
++      case Protobuf.Portnums.PortNum.NODE_STATUS_APP:
++      case Protobuf.Portnums.PortNum.MESH_BEACON_APP:
++      case Protobuf.Portnums.PortNum.PAGING_APP:
++      case Protobuf.Portnums.PortNum.POWERSTRESS_APP:
++      case Protobuf.Portnums.PortNum.LORAWAN_BRIDGE:
++      case Protobuf.Portnums.PortNum.RETICULUM_TUNNEL_APP:
++        {
++          this.log.trace(Emitter[Emitter.HandleMeshPacket], `📦 Ignoring ${Protobuf.Portnums.PortNum[dataPacket.portnum]} packet`);
++          break;
++        }
+       default:
+-        throw new Error(`Unhandled case ${dataPacket.portnum}`);
++        // mesh-client: do not throw inside the decode pipe (#1142).
++        this.warnUnhandledOnce(`portnum:${dataPacket.portnum}`, `⚠️ Unhandled portnum: ${dataPacket.portnum}`);
+     }
+   }
+ }
 diff --git a/src/meshDevice.ts b/src/meshDevice.ts
-index ddca80fc9134fa56ac273b17387e62af087c95c6..b9cdc7d703496cea5ed2037c1f19ecbcf3a09144 100755
+index ddca80fc9134fa56ac273b17387e62af087c95c6..10c542e4422063e9740e2f8294ad46bf6bed4602 100755
 --- a/src/meshDevice.ts
 +++ b/src/meshDevice.ts
 @@ -41,6 +41,10 @@ export class MeshDevice {
@@ -148,6 +202,77 @@ index ddca80fc9134fa56ac273b17387e62af087c95c6..b9cdc7d703496cea5ed2037c1f19ecbc
      await this.transport.disconnect();
    }
  
+@@ -849,10 +904,25 @@ export class MeshDevice {
+       }
+ 
+       default:
+-        throw new Error(`Unhandled case ${meshPacket.payloadVariant.case}`);
++        // mesh-client: an unknown variant must not throw — this runs inside the
++        // fromDevice decode pipe, and a throw stops all inbound data (#1142).
++        this.warnUnhandledOnce(
++          `payloadVariant:${meshPacket.payloadVariant.case}`,
++          `⚠️ Unhandled MeshPacket payload variant: ${meshPacket.payloadVariant.case}`,
++        );
+     }
+   }
+ 
++  private _warnedUnhandled: Set<string> | undefined;
++
++  /** mesh-client: log each unknown variant / portnum once per device (#1142). */
++  private warnUnhandledOnce(key: string, message: string): void {
++    this._warnedUnhandled ??= new Set();
++    if (this._warnedUnhandled.has(key)) return;
++    this._warnedUnhandled.add(key);
++    this.log.warn(Emitter[Emitter.HandleMeshPacket], message);
++  }
++
+   private handleDecodedPacket(
+     dataPacket: Protobuf.Mesh.Data,
+     meshPacket: Protobuf.Mesh.MeshPacket,
+@@ -943,7 +1013,12 @@ export class MeshDevice {
+           }
+ 
+           default: {
+-            throw new Error(`Unhandled case ${routingPacket.variant.case}`);
++            // mesh-client: do not throw inside the decode pipe (#1142).
++            this.warnUnhandledOnce(
++              `routing:${routingPacket.variant.case}`,
++              `⚠️ Unhandled Routing variant: ${routingPacket.variant.case}`,
++            );
++            break;
+           }
+         }
+         break;
+@@ -1173,8 +1248,28 @@ export class MeshDevice {
+         break;
+       }
+ 
++      // mesh-client: firmware 2.8 ports core has no event for. The raw packet already
++      // went out on onMeshPacket, so these are expected and silent (#1142).
++      case Protobuf.Portnums.PortNum.STORE_FORWARD_PLUSPLUS_APP:
++      case Protobuf.Portnums.PortNum.NODE_STATUS_APP:
++      case Protobuf.Portnums.PortNum.MESH_BEACON_APP:
++      case Protobuf.Portnums.PortNum.PAGING_APP:
++      case Protobuf.Portnums.PortNum.POWERSTRESS_APP:
++      case Protobuf.Portnums.PortNum.LORAWAN_BRIDGE:
++      case Protobuf.Portnums.PortNum.RETICULUM_TUNNEL_APP: {
++        this.log.trace(
++          Emitter[Emitter.HandleMeshPacket],
++          `📦 Ignoring ${Protobuf.Portnums.PortNum[dataPacket.portnum]} packet`,
++        );
++        break;
++      }
++
+       default:
+-        throw new Error(`Unhandled case ${dataPacket.portnum}`);
++        // mesh-client: do not throw inside the decode pipe (#1142).
++        this.warnUnhandledOnce(
++          `portnum:${dataPacket.portnum}`,
++          `⚠️ Unhandled portnum: ${dataPacket.portnum}`,
++        );
+     }
+   }
+ }
 diff --git a/src/utils/queue.js b/src/utils/queue.js
 index d6082a6401e15eeb3e8873820b64341c961ac35f..73457e9e6fbde50800af427bb82b53b59049a7df 100755
 --- a/src/utils/queue.js
@@ -220,10 +345,28 @@ index 9c0d192d0a22c1a158e70f4dc3b74460ea7bd22b..7d63cb22ad5c6a8cde8823b9925e93b6
        }
      } finally {
 diff --git a/src/utils/transform/decodePacket.js b/src/utils/transform/decodePacket.js
-index b1cb39a13ac3f7fb5a368b04755d73a5c2f32743..78a812eaca5079a599e81e618399a247688a7786 100755
+index b1cb39a13ac3f7fb5a368b04755d73a5c2f32743..81203345927ce5b70a495516ac15c7250085eb14 100755
 --- a/src/utils/transform/decodePacket.js
 +++ b/src/utils/transform/decodePacket.js
-@@ -71,8 +71,11 @@ export const decodePacket = (device)=>new WritableStream({
+@@ -1,7 +1,17 @@
+ import { fromBinary } from "@bufbuild/protobuf";
+ import { Constants, Protobuf, Types } from "../../../mod.js";
++// mesh-client: one bad or unexpected frame (or a throwing event subscriber) must not
++// error this WritableStream — that ends pipeTo and drops all later inbound data (#1142).
+ export const decodePacket = (device)=>new WritableStream({
+     write (chunk) {
++      try {
++        decodeChunk(device, chunk);
++      } catch (err) {
++        device.log.error(Types.Emitter[Types.Emitter.HandleFromRadio], `⚠️ Dropped FromRadio frame: ${err instanceof Error ? err.message : String(err)}`);
++      }
++    }
++  });
++function decodeChunk(device, chunk) {
+       switch(chunk.type){
+         case "debug":
+           {
+@@ -71,8 +81,11 @@ export const decodePacket = (device)=>new WritableStream({
                  }
                case "configCompleteId":
                  {
@@ -235,7 +378,7 @@ index b1cb39a13ac3f7fb5a368b04755d73a5c2f32743..78a812eaca5079a599e81e618399a247
                    }
                    device.log.info(Types.Emitter[Types.Emitter.HandleFromRadio], `⚙️ Valid config id received from device: ${device.configId}`);
                    device.updateDeviceStatus(Types.DeviceStatusEnum.DeviceConfigured);
-@@ -133,6 +136,15 @@ export const decodePacket = (device)=>new WritableStream({
+@@ -133,6 +146,16 @@ export const decodePacket = (device)=>new WritableStream({
                  {
                    break;
                  }
@@ -245,17 +388,51 @@ index b1cb39a13ac3f7fb5a368b04755d73a5c2f32743..78a812eaca5079a599e81e618399a247
 +              case "clientNotification":
 +              case "deviceuiConfig":
 +              case "lockdownStatus":
++              case "regionPresets":
 +                {
 +                  break;
 +                }
                default:
                  {
                    device.log.warn(Types.Emitter[Types.Emitter.HandleFromRadio], `⚠️ Unhandled payload variant: ${decodedMessage.payloadVariant.case}`);
+@@ -140,6 +163,5 @@ export const decodePacket = (device)=>new WritableStream({
+             }
+           }
+       }
+-    }
+-  });
++}
+ //# sourceMappingURL=decodePacket.js.map
+\ No newline at end of file
 diff --git a/src/utils/transform/decodePacket.ts b/src/utils/transform/decodePacket.ts
-index ff5ccb00f5b9b1f80f0126a0fb6e757fd19ddc6b..2597e6af6783de19390ece201bd678a02fc930e1 100755
+index ff5ccb00f5b9b1f80f0126a0fb6e757fd19ddc6b..463cd35b1948754390cceb6176d1dd118693dc7c 100755
 --- a/src/utils/transform/decodePacket.ts
 +++ b/src/utils/transform/decodePacket.ts
-@@ -104,11 +104,14 @@ export const decodePacket = (device: MeshDevice) =>
+@@ -3,9 +3,23 @@ import type { MeshDevice } from "../../../mod.js";
+ import { Constants, Protobuf, Types } from "../../../mod.js";
+ import type { DeviceOutput } from "../../types.ts";
+ 
++// mesh-client: one bad or unexpected frame (or a throwing event subscriber) must not
++// error this WritableStream — that ends pipeTo and drops all later inbound data (#1142).
+ export const decodePacket = (device: MeshDevice) =>
+   new WritableStream<DeviceOutput>({
+     write(chunk) {
++      try {
++        decodeChunk(device, chunk);
++      } catch (err) {
++        device.log.error(
++          Types.Emitter[Types.Emitter.HandleFromRadio],
++          `⚠️ Dropped FromRadio frame: ${err instanceof Error ? err.message : String(err)}`,
++        );
++      }
++    },
++  });
++
++function decodeChunk(device: MeshDevice, chunk: DeviceOutput): void {
+       switch (chunk.type) {
+         case "debug": {
+           break;
+@@ -104,11 +118,14 @@ export const decodePacket = (device: MeshDevice) =>
              }
  
              case "configCompleteId": {
@@ -270,7 +447,7 @@ index ff5ccb00f5b9b1f80f0126a0fb6e757fd19ddc6b..2597e6af6783de19390ece201bd678a0
                }
  
                device.log.info(
-@@ -209,6 +212,15 @@ export const decodePacket = (device: MeshDevice) =>
+@@ -209,6 +226,16 @@ export const decodePacket = (device: MeshDevice) =>
                break;
              }
  
@@ -279,10 +456,18 @@ index ff5ccb00f5b9b1f80f0126a0fb6e757fd19ddc6b..2597e6af6783de19390ece201bd678a0
 +            case "fileInfo":
 +            case "clientNotification":
 +            case "deviceuiConfig":
-+            case "lockdownStatus": {
++            case "lockdownStatus":
++            case "regionPresets": {
 +              break;
 +            }
 +
              default: {
                device.log.warn(
                  Types.Emitter[Types.Emitter.HandleFromRadio],
+@@ -218,5 +245,4 @@ export const decodePacket = (device: MeshDevice) =>
+           }
+         }
+       }
+-    },
+-  });
++}

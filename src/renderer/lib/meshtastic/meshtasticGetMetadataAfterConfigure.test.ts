@@ -1,3 +1,4 @@
+import { MeshDevice, type Types } from '@meshtastic/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -8,6 +9,7 @@ import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import {
   cancelMeshtasticGetMetadataAfterConfigure,
+  type GetMetadataAfterConfigureTimerRef,
   scheduleMeshtasticGetMetadataAfterConfigure,
 } from './meshtasticGetMetadataAfterConfigure';
 
@@ -109,6 +111,32 @@ describe('meshtasticGetMetadataAfterConfigure', () => {
     expect(getMetadata).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_RETRY_MS * 2);
     expect(getMetadata).toHaveBeenCalledTimes(2);
+  });
+
+  it('subscribes on a real @meshtastic/core dispatcher without losing `this` (#1142)', async () => {
+    const transport = {
+      fromDevice: new ReadableStream(),
+      toDevice: new WritableStream<Uint8Array>(),
+    } as unknown as Types.Transport;
+    const device = new MeshDevice(transport);
+    const getMetadata = vi.fn().mockResolvedValue(undefined);
+    const timerRef: GetMetadataAfterConfigureTimerRef = { current: null };
+
+    expect(() => {
+      scheduleMeshtasticGetMetadataAfterConfigure(
+        { getMetadata, events: device.events },
+        1,
+        timerRef,
+      );
+    }).not.toThrow();
+    expect(device.events.onDeviceMetadataPacket.count).toBe(1);
+
+    device.events.onDeviceMetadataPacket.dispatch(
+      {} as Parameters<typeof device.events.onDeviceMetadataPacket.dispatch>[0],
+    );
+    expect(device.events.onDeviceMetadataPacket.count).toBe(0);
+    await vi.advanceTimersByTimeAsync(MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS);
+    expect(getMetadata).not.toHaveBeenCalled();
   });
 
   describe('DeviceMetadata packet counts as success', () => {

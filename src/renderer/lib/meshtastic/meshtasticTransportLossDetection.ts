@@ -41,6 +41,9 @@ export function createSerializedWritableStream(
   }
 
   let chain: Promise<void> = Promise.resolve();
+  // A pending write holds the inner lock, so abort must go through that writer.
+  let activeWriter: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  let aborted = false;
 
   const runExclusive = <T>(fn: () => Promise<T>): Promise<T> => {
     const run = chain.then(fn, fn);
@@ -53,6 +56,9 @@ export function createSerializedWritableStream(
 
   const writeInner = async (chunk: Uint8Array): Promise<void> => {
     await runExclusive(async () => {
+      if (aborted) {
+        throw new DOMException('Transport stream aborted', 'AbortError');
+      }
       let writer: WritableStreamDefaultWriter<Uint8Array>;
       try {
         writer = inner.getWriter();
@@ -62,6 +68,7 @@ export function createSerializedWritableStream(
         }
         throw err;
       }
+      activeWriter = writer;
       try {
         await writer.write(chunk);
       } catch (err) {
@@ -70,6 +77,7 @@ export function createSerializedWritableStream(
         }
         throw err;
       } finally {
+        activeWriter = null;
         try {
           writer.releaseLock();
         } catch {
@@ -99,13 +107,12 @@ export function createSerializedWritableStream(
   };
 
   const abortInner = (reason?: unknown): Promise<void> => {
+    aborted = true;
     try {
-      return Promise.resolve(inner.abort(reason)).catch(() => {
-        // catch-no-log-ok async abort rejection during teardown
-      });
-    } catch {
-      // catch-no-log-ok sync abort throw on closed/errored stream during teardown
-      return Promise.resolve();
+      return Promise.resolve(activeWriter ? activeWriter.abort(reason) : inner.abort(reason));
+    } catch (err) {
+      // catch-no-log-ok surfaced to the abort caller as a rejection
+      return Promise.reject(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
@@ -116,7 +123,7 @@ export function createSerializedWritableStream(
   });
 
   return new Proxy(body, {
-    get(target, prop, receiver) {
+    get(target, prop) {
       if (prop === 'getWriter') {
         return () => ({
           get closed(): Promise<void> {
@@ -139,8 +146,15 @@ export function createSerializedWritableStream(
           },
         });
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return -- External SDK value is validated by surrounding boundary logic.
-      return Reflect.get(target, prop, receiver);
+      // WritableStream methods and getters reject a Proxy receiver ("Illegal invocation"), so the
+      // SDK's disconnect-time toDevice.close() must not reach the native method through the proxy.
+      if (prop === 'close') return () => closeInner();
+      if (prop === 'abort') return (reason?: unknown) => abortInner(reason);
+      const value: unknown = Reflect.get(target, prop, target);
+      if (typeof value === 'function') {
+        return (value as (...args: unknown[]) => unknown).bind(target);
+      }
+      return value;
     },
   });
 }
@@ -182,7 +196,9 @@ export function attachMeshtasticTransportLossWatch(
     onConnectionLost();
   };
 
-  // Patched @meshtastic/core MeshDevice invokes this from _fromDevicePipe.catch (#895 follow-up).
+  // Patched @meshtastic/core MeshDevice invokes this from _fromDevicePipe.catch (#895 follow-up)
+  // for every non-abort failure. Any such failure leaves the session unable to receive, so
+  // reconnect now instead of waiting for the dead-link watchdog (#1142).
   type DeviceWithPipeHook = MeshDevice & {
     onFromDevicePipeError?: (err: unknown) => void;
   };
@@ -190,9 +206,7 @@ export function attachMeshtasticTransportLossWatch(
   const previousPipeHook = deviceWithHook.onFromDevicePipeError;
   deviceWithHook.onFromDevicePipeError = (err: unknown) => {
     previousPipeHook?.(err);
-    if (isMeshtasticTransportLostError(err)) {
-      notify('read-pipe-failure', err);
-    }
+    notify('read-pipe-failure', err);
   };
   cleanups.push(() => {
     if (previousPipeHook) {

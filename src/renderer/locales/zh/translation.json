@@ -1055,7 +1055,8 @@
         "chooserCancelledHint": "如果您没有取消，请确保蓝牙已打开（systemctl status bluetooth），然后再次点击“连接”。在 Flatpak 上，重新安装允许蓝牙的版本，或使用 AppImage/.deb/.rpm。",
         "bluetoothctlMissingHint": "操作系统蓝牙配对工具在此环境中不可用（在 Flatpak 中常见）。使用官方 AppImage、.deb 或 .rpm，或将无线电与主机 bluetoothctl 配对，然后重试连接。",
         "stackUnresponsiveGeneric": "蓝牙在较早的连接尝试中被卡住。关闭和打开蓝牙，根据需要重新配对收音机，然后重新启动 mesh-client。",
-        "stackUnresponsiveWindowsRePair": "Windows蓝牙在较早的连接尝试中被卡住，通常是因为无线电未正确配对。按下“删除并重新配对设备” ，然后输入收音机上显示的PIN码。如果仍然拒绝连接，请重新启动mesh-client并重试。"
+        "stackUnresponsiveWindowsRePair": "Windows蓝牙在较早的连接尝试中被卡住，通常是因为无线电未正确配对。按下“删除并重新配对设备” ，然后输入收音机上显示的PIN码。如果仍然拒绝连接，请重新启动mesh-client并重试。",
+        "rnodeBondRecoveryHold": "Meshtastic和MeshCore的蓝牙已暂停，因为Reticulum RNode的蓝牙配对已损坏。首先修复RNode ：在系统蓝牙设置中忘记它，然后从Reticulum → Admin重新配对。要立即使用蓝牙无线电，请停止Reticulum堆栈或将该RNode切换到USB或Wi-Fi。"
       }
     },
     "error": {

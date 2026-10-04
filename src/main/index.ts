@@ -429,6 +429,7 @@ async function quitMainProcess(opts: { relaunch?: boolean } = {}): Promise<void>
   quitMainInFlight = true;
   isQuitting = true;
   isConnected = false;
+  gattSidecarProxy.setQuitting();
   // Drop exclusive hold locally without HTTP so quit never ensurePort()-respawns sidecar.
   gattSidecarProxy.setRnodeBondRecoveryExclusive(false);
   try {
@@ -6821,6 +6822,7 @@ app.on('before-quit', (event) => {
 
   // Latch before async teardown so late gatt:to-radio / MQTT IPC ignore dead-sidecar races.
   isQuitting = true;
+  gattSidecarProxy.setQuitting();
   event.preventDefault();
   void (async () => {
     try {

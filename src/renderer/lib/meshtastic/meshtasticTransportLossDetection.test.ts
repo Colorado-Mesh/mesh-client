@@ -191,7 +191,7 @@ describe('meshtasticTransportLossDetection', () => {
     expect(onLost).toHaveBeenCalledTimes(1);
   });
 
-  it('invokes previous onFromDevicePipeError for non-transport-lost errors without notifying', () => {
+  it('invokes previous onFromDevicePipeError and notifies for non-transport-lost errors', () => {
     const previous = vi.fn();
     const onLost = vi.fn();
     const err = new Error('Packet does not exist');
@@ -205,20 +205,23 @@ describe('meshtasticTransportLossDetection', () => {
     device.onFromDevicePipeError?.(err);
 
     expect(previous).toHaveBeenCalledWith(err);
-    expect(onLost).not.toHaveBeenCalled();
+    expect(onLost).toHaveBeenCalledTimes(1);
   });
 
-  it('ignores non-transport-lost fromDevice pipe errors', () => {
-    const onLost = vi.fn();
-    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
-    const device = {
-      transport: { toDevice: inner },
-    } as unknown as MeshDevice & { onFromDevicePipeError?: (err: unknown) => void };
+  it.each(['serial', 'ble', 'http', 'tcp'] as const)(
+    'reconnects on any fromDevice pipe failure over %s (decode error ends inbound, #1142)',
+    (type) => {
+      const onLost = vi.fn();
+      const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+      const device = {
+        transport: { toDevice: inner },
+      } as unknown as MeshDevice & { onFromDevicePipeError?: (err: unknown) => void };
 
-    attachMeshtasticTransportLossWatch(device, 'serial', onLost);
-    device.onFromDevicePipeError?.(new Error('Packet does not exist'));
-    expect(onLost).not.toHaveBeenCalled();
-  });
+      attachMeshtasticTransportLossWatch(device, type, onLost);
+      device.onFromDevicePipeError?.(new Error('Unhandled case 36'));
+      expect(onLost).toHaveBeenCalledTimes(1);
+    },
+  );
 
   it('clears onFromDevicePipeError hook on cleanup', () => {
     const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
@@ -338,6 +341,40 @@ describe('meshtasticTransportLossDetection', () => {
     await expect(writer.close()).resolves.toBeUndefined();
   });
 
+  it('createSerializedWritableStream close() on the stream itself closes inner (no Illegal invocation)', async () => {
+    const innerClose = vi.fn();
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn(), close: innerClose });
+    const serialized = createSerializedWritableStream(inner);
+    await expect(serialized.close()).resolves.toBeUndefined();
+    expect(innerClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('createSerializedWritableStream abort() on the stream itself aborts inner', async () => {
+    const innerAbort = vi.fn();
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn(), abort: innerAbort });
+    const serialized = createSerializedWritableStream(inner);
+    await expect(serialized.abort('teardown')).resolves.toBeUndefined();
+    expect(innerAbort).toHaveBeenCalledWith('teardown');
+  });
+
+  it('createSerializedWritableStream exposes native getters without a Proxy receiver', () => {
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
+    const serialized = createSerializedWritableStream(inner);
+    expect(serialized.locked).toBe(false);
+  });
+
+  it('device.disconnect-style toDevice.close() works after loss-watch wraps toDevice', async () => {
+    const innerClose = vi.fn();
+    const inner = new WritableStream<Uint8Array>({ write: vi.fn(), close: innerClose });
+    const device = {
+      transport: { toDevice: inner },
+    } as unknown as MeshDevice;
+
+    attachMeshtasticTransportLossWatch(device, 'ble', vi.fn());
+    await expect(device.transport.toDevice.close()).resolves.toBeUndefined();
+    expect(innerClose).toHaveBeenCalledTimes(1);
+  });
+
   it('createSerializedWritableStream close soft-fails when inner is already closed', async () => {
     const inner = new WritableStream<Uint8Array>({ write: vi.fn() });
     await inner.close();
@@ -346,7 +383,36 @@ describe('meshtasticTransportLossDetection', () => {
     await expect(writer.close()).resolves.toBeUndefined();
   });
 
-  it('createSerializedWritableStream abort soft-fails when inner.abort rejects asynchronously', async () => {
+  it('createSerializedWritableStream abort during a pending write aborts inner and blocks later writes', async () => {
+    const innerAbort = vi.fn();
+    let finishWrite: () => void = () => {};
+    const innerWrite = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishWrite = resolve;
+        }),
+    );
+    const inner = new WritableStream<Uint8Array>({ write: innerWrite, abort: innerAbort });
+    const serialized = createSerializedWritableStream(inner);
+    const writer = serialized.getWriter();
+
+    const pending = writer.write(new Uint8Array([1]));
+    await vi.waitFor(() => {
+      expect(innerWrite).toHaveBeenCalledTimes(1);
+    });
+
+    // Inner is locked by the pending write; abort must not be swallowed as a locked-stream error.
+    const aborting = writer.abort('teardown');
+    finishWrite();
+    await expect(aborting).resolves.toBeUndefined();
+    await pending;
+    expect(innerAbort).toHaveBeenCalledWith('teardown');
+
+    await expect(writer.write(new Uint8Array([2]))).rejects.toMatchObject({ name: 'AbortError' });
+    expect(innerWrite).toHaveBeenCalledTimes(1);
+  });
+
+  it('createSerializedWritableStream abort rejects (without unhandled rejection) when inner.abort fails', async () => {
     const unhandled: unknown[] = [];
     const onUnhandled = (reason: unknown) => {
       unhandled.push(reason);
@@ -362,7 +428,9 @@ describe('meshtasticTransportLossDetection', () => {
       });
       const serialized = createSerializedWritableStream(inner);
       const writer = serialized.getWriter();
-      await expect(writer.abort('teardown')).resolves.toBeUndefined();
+      await expect(writer.abort('teardown')).rejects.toMatchObject({
+        name: 'InvalidStateError',
+      });
       // Allow any stray rejection to surface before asserting.
       await Promise.resolve();
       await Promise.resolve();

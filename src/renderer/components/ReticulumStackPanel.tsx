@@ -256,6 +256,17 @@ export function ReticulumStackPanel({
     onRecover: handleRestartStack,
   });
 
+  // A failed restart is only actionable while the stack is down; once it is running again
+  // (later restart, Start, or auto-recovery) the old failure is stale.
+  const stackReady = sidecarUiRunning && !connecting;
+  const [prevStackReady, setPrevStackReady] = useState(stackReady);
+  if (prevStackReady !== stackReady) {
+    setPrevStackReady(stackReady);
+    if (stackReady && restartError) {
+      setRestartError(null);
+    }
+  }
+
   const stackStatusIdentityLabel = resolveReticulumSelfHeaderLabel({
     identityDisplayName: identity?.display_name,
     lxmfHash: identity?.lxmf_hash ?? null,

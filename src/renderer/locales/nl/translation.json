@@ -1054,7 +1054,8 @@
         "chooserCancelledHint": "Als u niet hebt geannuleerd, zorg er dan voor dat Bluetooth is ingeschakeld (systemctl-status bluetooth) en tik vervolgens opnieuw op Verbinden. Installeer op Flatpak een build opnieuw waarbij Bluetooth is toegestaan, of gebruik AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "OS Bluetooth-koppelingstools zijn niet beschikbaar in deze omgeving (gebruikelijk in Flatpak). Gebruik de officiële AppImage, .deb of .rpm, of koppel de radio met host bluetoothctl en probeer Connect opnieuw.",
         "stackUnresponsiveGeneric": "Bluetooth zit vast bij een eerdere verbindingspoging. Schakel Bluetooth uit en in, koppel de radio indien nodig opnieuw en start de mesh-client opnieuw.",
-        "stackUnresponsiveWindowsRePair": "Windows Bluetooth zit vast bij een eerdere verbindingspoging, meestal omdat de radio niet goed is gekoppeld. Druk op Apparaat verwijderen en opnieuw koppelen en voer de PINCODE in die op de radio wordt weergegeven. Als de verbinding nog steeds wordt geweigerd, start u de mesh-client opnieuw op en probeert u het opnieuw."
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth zit vast bij een eerdere verbindingspoging, meestal omdat de radio niet goed is gekoppeld. Druk op Apparaat verwijderen en opnieuw koppelen en voer de PINCODE in die op de radio wordt weergegeven. Als de verbinding nog steeds wordt geweigerd, start u de mesh-client opnieuw op en probeert u het opnieuw.",
+        "rnodeBondRecoveryHold": "Bluetooth is gepauzeerd voor Meshtastic en MeshCore omdat een Reticulum RNode een verbroken Bluetooth-koppeling heeft. Repareer eerst de RNode: vergeet het in de Bluetooth-instellingen van uw systeem en koppel het vervolgens opnieuw via Reticulum → Admin. Om Bluetooth-radio's meteen te gebruiken, stopt u de Reticulum-stack of schakelt u die RNode om naar USB of Wi-Fi."
       }
     },
     "error": {

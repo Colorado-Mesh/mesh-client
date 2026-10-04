@@ -2507,6 +2507,14 @@ export function useMeshtasticRuntime() {
         );
         return;
       }
+      // Reconnect owner is tearing down / backing off: this GATT drop is its own safeDisconnect,
+      // not a new link loss — re-entering handleConnectionLost would restart the cycle (#1142).
+      if (isReconnectingRef.current && !reconnectConnectInFlightRef.current) {
+        console.debug(
+          '[useMeshtasticRuntime] Noble BLE disconnected — skip (reconnect owner teardown in progress)',
+        );
+        return;
+      }
       if (!connectionParamsRef.current) {
         if (meshtasticExplicitDisconnectRef.current) {
           console.debug(

@@ -167,6 +167,21 @@ describe('useMeshtasticRuntime reconnect hardening (regression)', () => {
     );
   });
 
+  it('ignores GATT disconnect from its own reconnect teardown/backoff (#1142)', () => {
+    const start = SOURCE.indexOf('window.electronAPI.onGattDisconnected(');
+    expect(start).toBeGreaterThan(-1);
+    const body = extractBalancedBlock(SOURCE, SOURCE.indexOf('{', start));
+    const skipIdx = body.indexOf(
+      'if (isReconnectingRef.current && !reconnectConnectInFlightRef.current)',
+    );
+    const lostIdx = body.indexOf('handleConnectionLostRef.current()');
+    expect(skipIdx).toBeGreaterThan(-1);
+    expect(lostIdx).toBeGreaterThan(skipIdx);
+    expect(body.slice(skipIdx, lostIdx)).toMatch(
+      /reconnect owner teardown in progress[\s\S]*?return;/,
+    );
+  });
+
   it('reconnect open uses connectInFlight single-flight guards (MeshCore parity)', () => {
     const reconnectBody = extractUseCallbackBody(SOURCE, 'attemptReconnect');
     expect(reconnectBody).toContain('connectInFlight:');

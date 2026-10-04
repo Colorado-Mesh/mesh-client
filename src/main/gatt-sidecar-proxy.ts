@@ -84,6 +84,22 @@ function isHttpTimeoutError(err: unknown): boolean {
   );
 }
 
+/**
+ * undici reports every network failure as `TypeError: fetch failed`; the actionable code
+ * (ECONNREFUSED, UND_ERR_SOCKET, …) only lives on `err.cause`.
+ */
+export function fetchErrorDetail(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  const cause = err instanceof Error ? err.cause : undefined;
+  if (!cause || typeof cause !== 'object') return message;
+  const code = (cause as { code?: unknown }).code;
+  const causeMessage = cause instanceof Error ? cause.message : '';
+  const parts = [message];
+  if (typeof code === 'string' && code) parts.push(`code=${code}`);
+  if (causeMessage && causeMessage !== message) parts.push(`cause=${causeMessage}`);
+  return parts.join(' ');
+}
+
 function unknownMessage(value: unknown, fallback: string): string {
   if (typeof value === 'string' && value) return value;
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
@@ -115,6 +131,12 @@ export class GattSidecarProxy extends EventEmitter {
   /** While true, LoRa GATT scan/connect are blocked so RNode owns CoreBluetooth alone. */
   private rnodeBondRecoveryExclusive = false;
   private rnodeBondRecoveryExclusiveTimer: ReturnType<typeof setTimeout> | null = null;
+  /** App quit latch: remote cleanup failures release locally instead of probing/retrying. */
+  private quitting = false;
+
+  setQuitting(): void {
+    this.quitting = true;
+  }
 
   /** Wire ensure callback (starts sidecar for BLE-light, returns HTTP port). */
   setEnsureSidecar(fn: () => Promise<number>): void {
@@ -155,7 +177,7 @@ export class GattSidecarProxy extends EventEmitter {
    * respawn reticulum mid-exit (Disconnect & Quit appears to hang).
    */
   private async clearSidecarBondRecoveryHold(): Promise<void> {
-    if (this.port <= 0) {
+    if (this.port <= 0 || this.quitting) {
       return;
     }
     try {
@@ -167,7 +189,7 @@ export class GattSidecarProxy extends EventEmitter {
     } catch (err) {
       console.debug(
         '[GATT] clearSidecarBondRecoveryHold failed:',
-        err instanceof Error ? err.message : String(err),
+        sanitizeLogMessage(fetchErrorDetail(err)),
       );
     }
   }
@@ -615,10 +637,17 @@ export class GattSidecarProxy extends EventEmitter {
         return;
       }
     } catch (e) {
-      console.debug(
-        '[GATT] disconnect request failed:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
+      if (this.quitting) {
+        // Sidecar is going down with the app; probing/retrying only adds quit-time noise and
+        // the OS releases the BLE link when the sidecar process exits.
+        console.debug(
+          '[GATT] disconnect request failed during quit — releasing locally:',
+          sanitizeLogMessage(fetchErrorDetail(e)),
+        );
+        this.releaseReservation(id);
+        return;
+      }
+      console.debug('[GATT] disconnect request failed:', sanitizeLogMessage(fetchErrorDetail(e)));
     }
     if (!this.reservations.has(id)) return;
     try {
@@ -632,10 +661,7 @@ export class GattSidecarProxy extends EventEmitter {
         return;
       }
     } catch (e) {
-      console.debug(
-        '[GATT] disconnect probe failed:',
-        sanitizeLogMessage(e instanceof Error ? e.message : String(e)),
-      );
+      console.debug('[GATT] disconnect probe failed:', sanitizeLogMessage(fetchErrorDetail(e)));
     }
     if (!this.reservations.has(id)) return;
     // Dead peripheral (power loss): DELETE/probe can hang. Cap retries so the
@@ -757,10 +783,7 @@ export class GattSidecarProxy extends EventEmitter {
         { timeoutMs: GATT_HTTP_LONG_TIMEOUT_MS, port: this.port },
       );
     } catch (err) {
-      console.debug(
-        '[GATT] releaseBleCentral failed:',
-        err instanceof Error ? err.message : String(err),
-      );
+      console.debug('[GATT] releaseBleCentral failed:', sanitizeLogMessage(fetchErrorDetail(err)));
     }
   }
 }

@@ -1054,7 +1054,8 @@
         "chooserCancelledHint": "Si vous n'avez pas annulé, assurez-vous que Bluetooth est activé (état du système Bluetooth), puis appuyez à nouveau sur Connecter. Sur Flatpak, réinstallez une version avec Bluetooth autorisé ou utilisez AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Les outils de couplage Bluetooth du système d'exploitation ne sont pas disponibles dans cet environnement (courant dans Flatpak). Utilisez l'AppImage officielle, .deb ou .rpm, ou associez la radio à l'hôte bluetoothctl, puis réessayez de vous connecter.",
         "stackUnresponsiveGeneric": "Bluetooth est bloqué sur une tentative de connexion antérieure. Désactivez et allumez le Bluetooth, réappareillez la radio si nécessaire, puis redémarrez mesh-client.",
-        "stackUnresponsiveWindowsRePair": "Windows Bluetooth est bloqué sur une tentative de connexion antérieure, généralement parce que la radio n'est pas correctement couplée. Appuyez sur Remove & Re-pair Device et entrez le CODE PIN affiché sur la radio. Si la connexion est toujours refusée, redémarrez mesh-client et réessayez."
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth est bloqué sur une tentative de connexion antérieure, généralement parce que la radio n'est pas correctement couplée. Appuyez sur Remove & Re-pair Device et entrez le CODE PIN affiché sur la radio. Si la connexion est toujours refusée, redémarrez mesh-client et réessayez.",
+        "rnodeBondRecoveryHold": "Bluetooth est mis en pause pour Meshtastic et MeshCore parce qu'un RNode Reticulum a un couplage Bluetooth cassé. Réparez d'abord le RNode : oubliez-le dans les paramètres Bluetooth de votre système, puis réappareillez-le à partir de Reticulum → Admin. Pour utiliser immédiatement les radios Bluetooth, arrêtez la pile Reticulum ou basculez ce RNode sur USB ou Wi-Fi."
       }
     },
     "error": {

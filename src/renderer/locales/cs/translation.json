@@ -1073,7 +1073,8 @@
         "chooserCancelledHint": "Pokud jste to nezrušili, ujistěte se, že je Bluetooth zapnuto (systemctl status bluetooth), potom znovu klepněte na Připojit. Na Flatpak přeinstalujte sestavení s povoleným Bluetooth nebo použijte AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "Nástroje pro párování OS Bluetooth nejsou v tomto prostředí dostupné (běžné ve Flatpak). Použijte oficiální AppImage, .deb nebo .rpm, nebo spárujte rádio s hostitelským bluetoothctl a poté znovu zkuste Connect.",
         "stackUnresponsiveGeneric": "Bluetooth se zasekl při dřívějším pokusu o připojení. Vypněte a zapněte Bluetooth, v případě potřeby rádio znovu spárujte a poté restartujte mesh-client.",
-        "stackUnresponsiveWindowsRePair": "Systém Windows Bluetooth se zasekl při dřívějším pokusu o připojení, obvykle proto, že rádio není správně spárováno. Stiskněte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený v rádiu. Pokud je připojení stále odmítnuto, restartujte mesh-client a zkuste to znovu."
+        "stackUnresponsiveWindowsRePair": "Systém Windows Bluetooth se zasekl při dřívějším pokusu o připojení, obvykle proto, že rádio není správně spárováno. Stiskněte Odebrat a znovu spárovat zařízení a zadejte PIN zobrazený v rádiu. Pokud je připojení stále odmítnuto, restartujte mesh-client a zkuste to znovu.",
+        "rnodeBondRecoveryHold": "Bluetooth je pozastaveno pro Meshtastic a MeshCore, protože Reticulum RNode má přerušené párování Bluetooth. Nejprve opravte RNode: zapomeňte na něj v nastavení Bluetooth systému a poté jej znovu spárujte s → administrátorem Reticulum. Chcete-li okamžitě používat rádia Bluetooth, zastavte zásobník Reticulum nebo přepněte tento RNode na USB nebo Wi-Fi."
       }
     },
     "error": {
