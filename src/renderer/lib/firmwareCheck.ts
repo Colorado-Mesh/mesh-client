@@ -60,16 +60,30 @@ export function meshCoreFirmwareUpdateAvailable(
   return deviceDate < release.publishedAt;
 }
 
+export class FirmwareCheckTimeoutError extends Error {
+  constructor(ms: number) {
+    super(`firmware check timed out after ${ms}ms`);
+    this.name = 'FirmwareCheckTimeoutError';
+  }
+}
+
+export function isFirmwareCheckTimeoutError(err: unknown): err is FirmwareCheckTimeoutError {
+  return err instanceof FirmwareCheckTimeoutError;
+}
+
 async function fetchWithAbortTimeout(url: string): Promise<Response> {
   const ac = new AbortController();
   const timer = setTimeout(() => {
-    ac.abort();
+    ac.abort(new FirmwareCheckTimeoutError(FIRMWARE_CHECK_TIMEOUT_MS));
   }, FIRMWARE_CHECK_TIMEOUT_MS);
   try {
     return await fetch(url, {
       signal: ac.signal,
       headers: { Accept: 'application/vnd.github+json' },
     });
+  } catch (e) {
+    if (ac.signal.aborted) throw new FirmwareCheckTimeoutError(FIRMWARE_CHECK_TIMEOUT_MS);
+    throw e;
   } finally {
     clearTimeout(timer);
   }

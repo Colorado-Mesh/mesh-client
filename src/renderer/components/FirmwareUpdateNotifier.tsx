@@ -6,6 +6,7 @@ import {
   fetchLatestMeshCoreRelease,
   fetchLatestMeshtasticRelease,
   type FirmwareCheckResult,
+  isFirmwareCheckTimeoutError,
   meshCoreFirmwareUpdateAvailable,
   semverGt,
 } from '@/renderer/lib/firmwareCheck';
@@ -104,7 +105,8 @@ export function FirmwareUpdateNotifier({
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        console.warn(
+        const log = isFirmwareCheckTimeoutError(err) ? console.debug : console.warn;
+        log(
           '[FirmwareUpdateNotifier] check failed:',
           err instanceof Error ? err.message : String(err),
         );

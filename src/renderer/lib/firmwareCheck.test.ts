@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchLatestMeshCoreRelease,
   fetchLatestMeshtasticRelease,
+  isFirmwareCheckTimeoutError,
   meshCoreFirmwareUpdateAvailable,
   normalizeMeshCoreVersionTag,
   parseMeshCoreBuildDate,
@@ -93,7 +94,8 @@ describe('fetchLatestMeshtasticRelease', () => {
     const promise = fetchLatestMeshtasticRelease();
     void promise.catch(() => {}); // prevent unhandled rejection before assertion runs
     await vi.advanceTimersByTimeAsync(11_000);
-    await expect(promise).rejects.toThrow();
+    await expect(promise).rejects.toThrow('firmware check timed out after 10000ms');
+    await expect(promise).rejects.toSatisfy(isFirmwareCheckTimeoutError);
     vi.useRealTimers();
   });
 });
