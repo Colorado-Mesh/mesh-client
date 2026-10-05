@@ -1847,6 +1847,18 @@ export default function RoomsPanel({
                   {t('roomsPanel.stopAutoLogin')}
                 </Button>
               )}
+              {selectedRoomSecretsSummary.hasCredential &&
+                !selectedRoomSecretsSummary.autoLoginOnConnect && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      void handleAutoLoginOnConnectChange(selectedRoomId, true);
+                    }}
+                    aria-label={t('roomsPanel.enableAutoLoginAria')}
+                  >
+                    {t('roomsPanel.enableAutoLogin')}
+                  </Button>
+                )}
               {selectedRoomSecretsSummary.hasCredential && (
                 <Button
                   size="sm"

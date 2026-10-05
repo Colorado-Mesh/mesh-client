@@ -5351,7 +5351,9 @@
     "details": "Відомості про кімнату",
     "hideDetails": "Сховати відомості про кімнату",
     "moreActions": "Інші дії з кімнатою",
-    "loginAndSyncHeading": "Вхід і синхронізація"
+    "loginAndSyncHeading": "Вхід і синхронізація",
+    "enableAutoLogin": "Увімкнути автоматичний вхід",
+    "enableAutoLoginAria": "Увійдіть в цю кімнату автоматично, коли радіо підключиться"
   },
   "securityPanel": {
     "keyRegenRequested": "Запит на регенерацію ключа. Пристрій генеруватиме нові ключі.",

@@ -5827,6 +5827,8 @@
     "forgetSavedPasswordConfirmBody": "Removes the stored guest/admin password for this room and turns off auto-login and auto-sync. You will need to enter the password again to log in.",
     "stopAutoLogin": "Stop auto-login",
     "stopAutoLoginAria": "Stop automatic login for this room when the radio connects",
+    "enableAutoLogin": "Enable auto-login",
+    "enableAutoLoginAria": "Log in to this room automatically when the radio connects",
     "sidebarLegendTitle": "Room status markers",
     "legendNotSaved": "No saved password",
     "legendSaved": "Password saved",

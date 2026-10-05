@@ -5271,7 +5271,9 @@
     "details": "Ruimtedetails",
     "hideDetails": "Ruimtedetails verbergen",
     "moreActions": "Meer ruimteacties",
-    "loginAndSyncHeading": "Inloggen en synchroniseren"
+    "loginAndSyncHeading": "Inloggen en synchroniseren",
+    "enableAutoLogin": "Automatisch aanmelden activeren",
+    "enableAutoLoginAria": "Automatisch inloggen voor deze ruimte wanneer de radio verbinding maakt"
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",

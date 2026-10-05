@@ -30,7 +30,10 @@ import {
   meshcoreClearRoomSession,
 } from '@/renderer/lib/meshcoreRoomSession';
 import { computeRoomUnreadCounts } from '@/renderer/lib/meshcoreRoomsUnread';
-import { getMeshcoreRoomSyncConfig } from '@/renderer/lib/meshcoreRoomSyncStorage';
+import {
+  getMeshcoreRoomSyncConfig,
+  meshcoreRoomSyncSettingForNode,
+} from '@/renderer/lib/meshcoreRoomSyncStorage';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 
 import * as chatScrollUtils from '../lib/chatScrollUtils';
@@ -852,6 +855,38 @@ describe('RoomsPanel', () => {
       expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
     });
     expect(screen.getByText('roomsPanel.statusPasswordSaved')).toBeInTheDocument();
+    expect(
+      screen.getAllByRole('button', { name: 'roomsPanel.stopAutoLoginAria' }).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it('login overlay can re-enable auto-login when saved credential has it turned off', async () => {
+    const room = makeRoom(0x1023, 'Enable Auto Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(room.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test enable auto',
+    );
+    mergeAppSetting(
+      meshcoreRoomSyncSettingForNode(room.node_id),
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test enable auto sync',
+    );
+
+    renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+
+    await waitFor(() => {
+      expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('button', { name: 'roomsPanel.stopAutoLoginAria' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.enableAutoLoginAria' }));
+
+    await waitFor(() => {
+      expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(true);
+    });
     expect(
       screen.getAllByRole('button', { name: 'roomsPanel.stopAutoLoginAria' }).length,
     ).toBeGreaterThan(0);

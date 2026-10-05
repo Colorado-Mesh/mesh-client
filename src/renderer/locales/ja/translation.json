@@ -5271,7 +5271,9 @@
     "details": "ルームの詳細",
     "hideDetails": "ルームの詳細を隠す",
     "moreActions": "その他のルーム操作",
-    "loginAndSyncHeading": "ログインと同期"
+    "loginAndSyncHeading": "ログインと同期",
+    "enableAutoLogin": "自動ログインを有効にする",
+    "enableAutoLoginAria": "ラジオ接続時にこのルームへ自動的にログイン"
   },
   "securityPanel": {
     "keyRegenRequested": "キーの再生成が要求されました。デバイスは新しいキーを生成します。",

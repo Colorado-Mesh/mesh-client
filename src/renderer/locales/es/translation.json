@@ -5271,7 +5271,9 @@
     "details": "Detalles de la sala",
     "hideDetails": "Ocultar detalles de la sala",
     "moreActions": "Más acciones de la sala",
-    "loginAndSyncHeading": "Inicio de sesión y sincronización"
+    "loginAndSyncHeading": "Inicio de sesión y sincronización",
+    "enableAutoLogin": "Habilitar el inicio de sesión automático",
+    "enableAutoLoginAria": "Inicie sesión en esta sala automáticamente cuando se conecte la radio"
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",

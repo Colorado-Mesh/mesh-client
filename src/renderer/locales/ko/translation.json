@@ -5271,7 +5271,9 @@
     "details": "룸 세부 정보",
     "hideDetails": "룸 세부 정보 숨기기",
     "moreActions": "추가 룸 작업",
-    "loginAndSyncHeading": "로그인 및 동기화"
+    "loginAndSyncHeading": "로그인 및 동기화",
+    "enableAutoLogin": "자동 로그인 사용",
+    "enableAutoLoginAria": "라디오가 연결되면 이 룸에 자동으로 로그인"
   },
   "securityPanel": {
     "keyRegenRequested": "키 재생성을 요청했습니다. 장치가 새 키를 생성합니다.",

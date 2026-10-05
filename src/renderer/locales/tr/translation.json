@@ -5271,7 +5271,9 @@
     "details": "Oda ayrıntıları",
     "hideDetails": "Oda ayrıntılarını gizle",
     "moreActions": "Diğer oda işlemleri",
-    "loginAndSyncHeading": "Oturum açma ve eşitleme"
+    "loginAndSyncHeading": "Oturum açma ve eşitleme",
+    "enableAutoLogin": "Otomatik girişi etkinleştir",
+    "enableAutoLoginAria": "Radyo bağlandığında bu odaya otomatik olarak giriş yapın"
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",

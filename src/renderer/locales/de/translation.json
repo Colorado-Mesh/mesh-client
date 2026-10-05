@@ -5271,7 +5271,9 @@
     "details": "Raumdetails",
     "hideDetails": "Raumdetails ausblenden",
     "moreActions": "Weitere Raumaktionen",
-    "loginAndSyncHeading": "Anmeldung und Synchronisierung"
+    "loginAndSyncHeading": "Anmeldung und Synchronisierung",
+    "enableAutoLogin": "Auto-Login aktivieren",
+    "enableAutoLoginAria": "Melden Sie sich automatisch in diesem Raum an, wenn das Radio eine Verbindung herstellt"
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",

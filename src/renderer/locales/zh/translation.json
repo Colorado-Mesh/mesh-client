@@ -5271,7 +5271,9 @@
     "details": "房间详情",
     "hideDetails": "隐藏房间详情",
     "moreActions": "更多房间操作",
-    "loginAndSyncHeading": "登录与同步"
+    "loginAndSyncHeading": "登录与同步",
+    "enableAutoLogin": "启用自动登录",
+    "enableAutoLoginAria": "收音机连接时自动登录此房间"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",
