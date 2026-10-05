@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 
+import { isMeshtasticBroadcastNodeNum } from '@/shared/nodeNameUtils';
 import type { ReticulumDeliveryMethod } from '@/shared/reticulumDeliveryMethod';
 
 import {
@@ -8,6 +9,8 @@ import {
 } from '../lib/meshcore/heardRepeatTracker';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
 import type { IdentityId } from '../lib/types';
+import { getIdentity } from './identityStore';
+import { getLiveChannelKeys } from './liveChannelKeyStore';
 import { omitRecordKey } from './storeUtils';
 
 export type MessageStatus = 'sending' | 'acked' | 'failed';
@@ -72,6 +75,10 @@ export interface MessageRecord {
   reticulumAudioDurationSec?: number;
   /** Message was replayed from a Store & Forward server (Meshtastic only). */
   viaStoreForward?: boolean;
+  /** Group-channel identity key (`channelIdentityKey.ts`); null-ish for DMs or legacy rows. */
+  channelKey?: string;
+  /** Radio (local node number) that recorded this message, when known. */
+  radioNodeId?: number;
 }
 
 interface MessageStoreState {
@@ -117,6 +124,8 @@ const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'reticulumAudioMode',
   'reticulumAudioDurationSec',
   'viaStoreForward',
+  'channelKey',
+  'radioNodeId',
 ];
 
 function messageRecordFieldsEqual(a: MessageRecord, b: MessageRecord): boolean {
@@ -138,11 +147,56 @@ function mergeIdentityMessages(
   };
 }
 
+function isGroupChannelRecord(message: MessageRecord): boolean {
+  return (
+    message.channelIndex >= 0 &&
+    message.roomServerId == null &&
+    (message.to === 0 || isMeshtasticBroadcastNodeNum(message.to))
+  );
+}
+
+/**
+ * Live inserts (not DB hydration) were observed on the connected radio: attach its node number
+ * and the channel identity for that slot so history follows the channel across radios.
+ */
+function stampLiveChannelIdentity(identityId: IdentityId, message: MessageRecord): MessageRecord {
+  if (message.channelKey != null || message.radioNodeId != null) return message;
+  const protocol = getIdentity(identityId)?.protocol.type;
+  if (protocol !== 'meshtastic' && protocol !== 'meshcore') return message;
+  const live = getLiveChannelKeys(protocol);
+  if (!live) return message;
+  const channelKey = isGroupChannelRecord(message) ? live.keyByIndex[message.channelIndex] : null;
+  if (live.radioNodeId == null && !channelKey) return message;
+  return {
+    ...message,
+    ...(live.radioNodeId != null ? { radioNodeId: live.radioNodeId } : {}),
+    ...(channelKey ? { channelKey } : {}),
+  };
+}
+
+/** A full-record replace keeps the channel identity the existing row already carried. */
+function carryChannelIdentity(existing: MessageRecord, incoming: MessageRecord): MessageRecord {
+  if (
+    (incoming.channelKey != null || existing.channelKey == null) &&
+    (incoming.radioNodeId != null || existing.radioNodeId == null)
+  ) {
+    return incoming;
+  }
+  return {
+    ...incoming,
+    channelKey: incoming.channelKey ?? existing.channelKey,
+    radioNodeId: incoming.radioNodeId ?? existing.radioNodeId,
+  };
+}
+
 /** Insert or replace the full record when fields differ (no merge). Use upsertMessage for partial updates. */
-export function addMessage(identityId: IdentityId, message: MessageRecord): void {
+export function addMessage(identityId: IdentityId, incoming: MessageRecord): void {
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
-    const existing = byIdentity[message.id];
+    const existing = byIdentity[incoming.id];
+    const message = existing
+      ? carryChannelIdentity(existing, incoming)
+      : stampLiveChannelIdentity(identityId, incoming);
     if (existing === message || (existing && messageRecordFieldsEqual(existing, message))) {
       return s;
     }
@@ -159,7 +213,9 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
-    const merged = existing ? { ...existing, ...message } : message;
+    const merged = existing
+      ? { ...existing, ...message }
+      : stampLiveChannelIdentity(identityId, message);
     if (existing?.localOrder != null) merged.localOrder = existing.localOrder;
     if (existing && merged.to === 0 && existing.to != null && existing.to !== 0) {
       merged.to = existing.to;

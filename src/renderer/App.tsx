@@ -27,6 +27,10 @@ import {
 import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
+  buildMeshcoreChannelKeyByIndex,
+  buildMeshtasticChannelKeyByIndex,
+} from '@/renderer/lib/channelIdentity';
+import {
   type ChatNotificationTarget,
   focusRrcNotificationTarget,
   notifyInactiveChat,
@@ -112,6 +116,7 @@ import {
   chatChannelsFromRuntimeChannels,
   traceRouteHopLabels,
 } from '@/renderer/lib/protocolRuntimeAdapters';
+import { remapChannelMessagesToLiveSlots } from '@/renderer/lib/remapChannelMessagesToLiveSlots';
 import { requestReticulumAdminBluetoothFocus } from '@/renderer/lib/reticulum/reticulumAdminBluetoothFocus';
 import { useReticulumRawPacketPoll } from '@/renderer/lib/reticulum/useReticulumRawPacketPoll';
 import { persistReticulumSelfLxmfHash } from '@/renderer/lib/reticulumLastSelfLxmfHash';
@@ -169,6 +174,7 @@ import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
+import { useLiveChannelKeysSync } from './hooks/useLiveChannelKeysSync';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { MeshClientDeepLinkHost } from './hooks/useMeshClientDeepLink';
 import { useMeshcoreDistanceFilterHint } from './hooks/useMeshcoreDistanceFilterHint';
@@ -390,6 +396,7 @@ import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { useIdentityStore } from './stores/identityStore';
+import { getLiveChannelKey } from './stores/liveChannelKeyStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
@@ -919,11 +926,40 @@ function AppContent() {
   const meshtasticStoreMessages = useMessages(meshtasticIdentityId);
   const meshcoreStoreMessages = useMessages(meshcoreIdentityId);
   const reticulumStoreMessages = useMessages(reticulumIdentityId);
-  const meshtasticUiMessages = useMemo(
-    () => repairMeshtasticReplyPreviews(messageRecordsToChatMessages(meshtasticStoreMessages)),
-    [meshtasticStoreMessages],
+  const meshtasticChannelKeyByIndex = useMemo(
+    () => buildMeshtasticChannelKeyByIndex(meshtasticRuntime.channelConfigs),
+    [meshtasticRuntime.channelConfigs],
   );
-  const meshcoreUiMessages = useMemo(() => {
+  const meshcoreChannelKeyByIndex = useMemo(
+    () => buildMeshcoreChannelKeyByIndex(meshcoreRuntime.channels),
+    [meshcoreRuntime.channels],
+  );
+  const meshtasticRadioNodeId = meshtasticRuntime.state.myNodeNum;
+  const meshcoreRadioNodeId = meshcoreRuntime.state.myNodeNum;
+  useLiveChannelKeysSync({
+    protocol: 'meshtastic',
+    identityId: meshtasticIdentityId,
+    radioNodeId: meshtasticRadioNodeId,
+    keyByIndex: meshtasticChannelKeyByIndex,
+  });
+  useLiveChannelKeysSync({
+    protocol: 'meshcore',
+    identityId: meshcoreIdentityId,
+    radioNodeId: meshcoreRadioNodeId,
+    keyByIndex: meshcoreChannelKeyByIndex,
+  });
+  const meshtasticUiMessages = useMemo(
+    () =>
+      remapChannelMessagesToLiveSlots(
+        repairMeshtasticReplyPreviews(messageRecordsToChatMessages(meshtasticStoreMessages)),
+        {
+          keyByIndex: meshtasticChannelKeyByIndex,
+          radioNodeId: meshtasticRadioNodeId > 0 ? meshtasticRadioNodeId : null,
+        },
+      ),
+    [meshtasticStoreMessages, meshtasticChannelKeyByIndex, meshtasticRadioNodeId],
+  );
+  const meshcoreRepairedMessages = useMemo(() => {
     const mapped = meshcoreChatMessagesForDisplay(
       messageRecordsToChatMessages(meshcoreStoreMessages),
     );
@@ -933,6 +969,14 @@ function AppContent() {
     );
     return repairMeshcoreHydratedMessages(mapped, roomIds, meshcoreRuntime.selfNodeId);
   }, [meshcoreStoreMessages, meshcoreNodesById, meshcoreRuntime.selfNodeId]);
+  const meshcoreUiMessages = useMemo(
+    () =>
+      remapChannelMessagesToLiveSlots(meshcoreRepairedMessages, {
+        keyByIndex: meshcoreChannelKeyByIndex,
+        radioNodeId: meshcoreRadioNodeId > 0 ? meshcoreRadioNodeId : null,
+      }),
+    [meshcoreRepairedMessages, meshcoreChannelKeyByIndex, meshcoreRadioNodeId],
+  );
 
   useEffect(() => {
     if (!meshcoreIdentityId) return;
@@ -940,13 +984,13 @@ function AppContent() {
       syncMeshcoreDisplayReplyRepairs(
         meshcoreIdentityId,
         meshcoreStoreMessages,
-        meshcoreUiMessages,
+        meshcoreRepairedMessages,
       );
     }, 500);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [meshcoreIdentityId, meshcoreStoreMessages, meshcoreUiMessages]);
+  }, [meshcoreIdentityId, meshcoreStoreMessages, meshcoreRepairedMessages]);
   const meshtasticUiNodes = useMemo(() => {
     if (!meshtasticNodesById) return new Map<number, MeshNode>();
     return nodeRecordsToMeshNodeMap(Object.values(meshtasticNodesById));
@@ -3106,7 +3150,11 @@ function AppContent() {
   // Chat's channel menu clears one MeshCore channel's saved messages, as App settings does.
   const clearMeshcoreChatChannelMessages = useCallback(
     async (index: number, radioNodeId: number) => {
-      await window.electronAPI.db.clearMeshcoreMessagesByChannel(index, radioNodeId);
+      await window.electronAPI.db.clearMeshcoreMessagesByChannel(
+        index,
+        radioNodeId,
+        getLiveChannelKey('meshcore', index) ?? undefined,
+      );
       refreshMessagesFromDb({
         clearedChannel: index,
         replaceFromDb: true,

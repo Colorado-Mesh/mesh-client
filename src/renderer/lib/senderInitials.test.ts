@@ -8,7 +8,6 @@ describe('senderInitials', () => {
     ['Longmont Base', 'LB'],
     ['Packrat', 'PA'],
     ['NV0N -Joey 🛜', 'NJ'],
-    ['🛜 Mesa HQ', 'MH'],
     ['w5abc', 'W5'],
     ['Ørjan Østby', 'ØØ'],
     ['Иван Петров', 'ИП'],
@@ -19,6 +18,23 @@ describe('senderInitials', () => {
 
   it('keeps an emoji-only name as its first emoji', () => {
     expect(senderInitials('🛜📡', 1)).toBe('🛜');
+  });
+
+  it.each([
+    ['🐻MEGABEAR β', '🐻'],
+    ['🛜 Mesa HQ', '🛜'],
+    ['  📡 Relay', '📡'],
+    ['❤️ Heart Node', '❤️'],
+    ['👍🏽 Thumbs', '👍🏽'],
+    ['👨‍👩‍👧 Family', '👨‍👩‍👧'],
+    ['🇺🇸 Base', '🇺🇸'],
+  ])('uses the leading emoji of %s', (name, expected) => {
+    expect(senderInitials(name, 1)).toBe(expected);
+  });
+
+  it('does not treat a leading digit or keycap as an emoji', () => {
+    expect(senderInitials('1st Responder', 1)).toBe('1R');
+    expect(senderInitials('#️⃣ Hash Node', 1)).toBe('HN');
   });
 
   it('falls back to the node id without a name', () => {

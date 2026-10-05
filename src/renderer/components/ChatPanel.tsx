@@ -3633,11 +3633,11 @@ function ChatPanel({
                   daySeparator === null &&
                   prevMsg !== null &&
                   prevMsg.sender_id === msg.sender_id;
-                const isFollowedByContinuation =
-                  compactMode &&
+                const nextIsSameSender =
                   nextMsg !== null &&
                   nextMsg.sender_id === msg.sender_id &&
                   !daySeparatorIndices.has(i + 1);
+                const isFollowedByContinuation = compactMode && nextIsSameSender;
                 const showContinuationTime =
                   isContinuation &&
                   prevMsg !== null &&
@@ -3653,7 +3653,15 @@ function ChatPanel({
                     key={vi.key}
                     data-index={vi.index}
                     ref={messageVirtualizer.measureElement}
-                    className={`absolute top-0 left-0 w-full ${compactMode ? 'pb-0.5' : 'pb-1'}`}
+                    className={`absolute top-0 left-0 w-full ${
+                      nextIsSameSender
+                        ? compactMode
+                          ? 'pb-0.5'
+                          : 'pb-1'
+                        : compactMode
+                          ? 'pb-2'
+                          : 'pb-3'
+                    }`}
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
                     <div className={isContinuation ? '!mt-0' : undefined}>

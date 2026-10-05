@@ -5721,6 +5721,28 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     }
   });
 
+  it('adds extra space where the sender changes', async () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, payload: 'alice one', timestamp: now }),
+            makeMsg({ sender_id: 2, payload: 'alice two', timestamp: now + 1 }),
+            makeMsg({ sender_id: 3, payload: 'bob one', timestamp: now + 2 }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'from me', timestamp: now + 3 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const row = (text: string) => screen.getByText(text).closest('[data-index]');
+    await screen.findByText('bob one');
+    expect(row('alice one')?.className).toContain('pb-1');
+    expect(row('alice two')?.className).toContain('pb-3');
+    expect(row('bob one')?.className).toContain('pb-3');
+  });
+
   it('shows sender initials beside incoming messages only, once per run in compact mode', async () => {
     const now = Date.now();
     const { container } = render(
@@ -5748,6 +5770,21 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     expect(avatars[0]).toHaveAttribute('aria-hidden', 'true');
     const own = screen.getByText('mine').closest('[data-chat-message-key]');
     expect(own?.querySelector('[data-chat-avatar]')).toBeNull();
+  });
+
+  it('shows the leading emoji of a sender name in the avatar instead of initials', async () => {
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[makeMsg({ sender_id: 2, sender_name: '🐻MEGABEAR β', payload: 'hi' })]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('hi');
+    const avatar = container.querySelector('[data-chat-avatar="sender"]');
+    expect(avatar).toHaveTextContent('🐻');
+    expect(avatar).not.toHaveTextContent('MB');
   });
 
   it('lets incoming and own bubbles use 80% of a wide window, with no rem cap', async () => {

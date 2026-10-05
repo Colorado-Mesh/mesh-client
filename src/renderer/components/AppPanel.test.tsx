@@ -6,6 +6,10 @@ import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
 import { FONT_SCALE_STORAGE_KEY } from '../lib/fontScale';
 import { MESSAGE_RETENTION_KEYS } from '../lib/messageRetention';
+import {
+  resetLiveChannelKeyStoreForTests,
+  setLiveChannelKeys,
+} from '../stores/liveChannelKeyStore';
 import AppPanel from './AppPanel';
 import { ToastProvider } from './Toast';
 
@@ -750,8 +754,37 @@ describe('AppPanel: clear messages by channel (#1098)', () => {
       }),
     );
     await waitFor(() => {
-      expect(clearByChannel).toHaveBeenCalledWith(3, 1);
+      expect(clearByChannel).toHaveBeenCalledWith(3, 1, undefined);
     });
+  });
+
+  it('clears by live channel identity key when the slot key is known', async () => {
+    setLiveChannelKeys('meshcore', { radioNodeId: 1, keyByIndex: { 3: 'abcdef0123456789' } });
+    vi.mocked(window.electronAPI.db.getMeshcoreMessageChannels).mockResolvedValue([{ channel: 3 }]);
+    const clearByChannel = vi.mocked(window.electronAPI.db.clearMeshcoreMessagesByChannel);
+    clearByChannel.mockReset();
+    clearByChannel.mockResolvedValue(undefined);
+    try {
+      render(
+        <ToastProvider>
+          <AppPanel {...props} myNodeNum={1} isActive />
+        </ToastProvider>,
+      );
+      fireEvent.click(screen.getByText('Destructive actions'));
+      const select = await screen.findByRole('combobox', { name: 'Channel' });
+      fireEvent.change(select, { target: { value: '3' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Clear Messages (12)' }));
+      fireEvent.click(
+        within(screen.getByRole('alertdialog')).getByRole('button', {
+          name: 'Clear Channel 3: #test',
+        }),
+      );
+      await waitFor(() => {
+        expect(clearByChannel).toHaveBeenCalledWith(3, 1, 'abcdef0123456789');
+      });
+    } finally {
+      resetLiveChannelKeyStoreForTests();
+    }
   });
 
   it('clears nothing if another radio connected before the clear was confirmed', async () => {
@@ -784,5 +817,38 @@ describe('AppPanel: clear messages by channel (#1098)', () => {
         'The connected radio changed while this was open, so messages in Channel 3: #test were not cleared.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('clears nothing if the slot channel key changed before the clear was confirmed', async () => {
+    setLiveChannelKeys('meshcore', { radioNodeId: 1, keyByIndex: { 3: 'abcdef0123456789' } });
+    vi.mocked(window.electronAPI.db.getMeshcoreMessageChannels).mockResolvedValue([{ channel: 3 }]);
+    const clearByChannel = vi.mocked(window.electronAPI.db.clearMeshcoreMessagesByChannel);
+    clearByChannel.mockReset();
+    clearByChannel.mockResolvedValue(undefined);
+    try {
+      render(
+        <ToastProvider>
+          <AppPanel {...props} myNodeNum={1} isActive />
+        </ToastProvider>,
+      );
+      fireEvent.click(screen.getByText('Destructive actions'));
+      const select = await screen.findByRole('combobox', { name: 'Channel' });
+      fireEvent.change(select, { target: { value: '3' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Clear Messages (12)' }));
+      setLiveChannelKeys('meshcore', { radioNodeId: 1, keyByIndex: { 3: '0123456789abcdef' } });
+      fireEvent.click(
+        within(screen.getByRole('alertdialog')).getByRole('button', {
+          name: 'Clear Channel 3: #test',
+        }),
+      );
+      expect(clearByChannel).not.toHaveBeenCalled();
+      expect(
+        await screen.findByText(
+          'Channel 3: #test is no longer in that slot on the radio, so nothing was cleared.',
+        ),
+      ).toBeInTheDocument();
+    } finally {
+      resetLiveChannelKeyStoreForTests();
+    }
   });
 });

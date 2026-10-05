@@ -143,8 +143,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     pruneReticulumIdentityActivityByAge: (days: number) =>
       ipcRenderer.invoke('db:pruneReticulumIdentityActivityByAge', days),
     deleteNodesBatch: (nodeIds: number[]) => ipcRenderer.invoke('db:deleteNodesBatch', nodeIds),
-    clearMessagesByChannel: (channel: number) =>
-      ipcRenderer.invoke('db:clearMessagesByChannel', channel),
+    clearMessagesByChannel: (channel: number, radioNodeId?: number, channelKey?: string) =>
+      ipcRenderer.invoke('db:clearMessagesByChannel', channel, radioNodeId, channelKey),
+    backfillChannelKeys: (
+      protocol: 'meshtastic' | 'meshcore',
+      radioNodeId: number,
+      entries: { index: number; key: string }[],
+    ) => ipcRenderer.invoke('db:backfillChannelKeys', protocol, radioNodeId, entries),
     getMessageChannels: () => ipcRenderer.invoke('db:getMessageChannels'),
     setNodeFavorited: (nodeId: number, favorited: boolean) =>
       ipcRenderer.invoke('db:setNodeFavorited', nodeId, favorited),
@@ -391,8 +396,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('db:deleteMeshcoreContact', nodeId),
     clearMeshcoreMessages: () => ipcRenderer.invoke('db:clearMeshcoreMessages'),
     getMeshcoreMessageChannels: () => ipcRenderer.invoke('db:getMeshcoreMessageChannels'),
-    clearMeshcoreMessagesByChannel: (channelIdx: number, radioNodeId: number) =>
-      ipcRenderer.invoke('db:clearMeshcoreMessagesByChannel', channelIdx, radioNodeId),
+    clearMeshcoreMessagesByChannel: (
+      channelIdx: number,
+      radioNodeId: number,
+      channelKey?: string,
+    ) =>
+      ipcRenderer.invoke('db:clearMeshcoreMessagesByChannel', channelIdx, radioNodeId, channelKey),
     clearMeshcoreContacts: () => ipcRenderer.invoke('db:clearMeshcoreContacts'),
     deleteMeshcoreContactsNeverAdvertised: () =>
       ipcRenderer.invoke('db:deleteMeshcoreContactsNeverAdvertised'),

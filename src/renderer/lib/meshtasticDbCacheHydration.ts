@@ -1,5 +1,6 @@
 import type { SavedMessage } from '@/shared/electron-api.types';
 
+import { isChannelIdentityKey } from '../../shared/channelIdentityKey';
 import { MESHTASTIC_ORPHAN_SENDING_WINDOW_MS } from '../../shared/meshtasticOrphanSendingWindow';
 import { meshtasticShortNameAfterClearingDefault } from '../../shared/nodeNameUtils';
 import { sanitizeUnicodeReactionScalar } from '../../shared/reactionEmoji';
@@ -209,6 +210,8 @@ export function savedMessageToChatMessage(m: SavedMessage): ChatMessage {
     receivedVia: (m.receivedVia as ChatMessage['receivedVia']) ?? undefined,
     viaStoreForward: m.viaStoreForward,
     rxHops: m.rxHops ?? undefined,
+    ...(isChannelIdentityKey(m.channelKey) ? { channelKey: m.channelKey } : {}),
+    ...(m.radioNodeId != null && m.radioNodeId > 0 ? { radioNodeId: m.radioNodeId } : {}),
   };
 }
 

@@ -133,6 +133,8 @@ export function messageRecordToChatMessage(record: MessageRecord): ChatMessage {
     ...(rxHops != null ? { rxHops } : {}),
     ...(record.viaStoreForward ? { viaStoreForward: true } : {}),
     ...(record.roomServerId != null ? { roomServerId: record.roomServerId } : {}),
+    ...(record.channelKey ? { channelKey: record.channelKey } : {}),
+    ...(record.radioNodeId != null ? { radioNodeId: record.radioNodeId } : {}),
     ...(record.reticulumDeliveryMethod
       ? { reticulumDeliveryMethod: record.reticulumDeliveryMethod }
       : {}),
@@ -439,6 +441,8 @@ export function chatMessageToMessageRecord(msg: ChatMessage): MessageRecord {
     ...(msg.reticulum_sender_hash ? { reticulumSenderHash: msg.reticulum_sender_hash } : {}),
     ...(msg.reticulum_reply_to_hash ? { reticulumReplyToHash: msg.reticulum_reply_to_hash } : {}),
     ...(msg.roomServerId != null ? { roomServerId: msg.roomServerId } : {}),
+    ...(msg.channelKey ? { channelKey: msg.channelKey } : {}),
+    ...(msg.radioNodeId != null ? { radioNodeId: msg.radioNodeId } : {}),
   };
 }
 

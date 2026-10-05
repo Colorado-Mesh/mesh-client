@@ -63,7 +63,7 @@ export const DEFAULT_THEME_COLORS: Record<ThemeColorKey, string> = {
   secondaryDark: '#364156',
   muted: '#93a0b7',
   chatIncomingBg: '#212d40',
-  chatIncomingBorder: '#212d40',
+  chatIncomingBorder: '#364156',
   chatOutgoingBg: '#047857',
   chatOutgoingBorder: '#67e8b4',
   messageActionsBarBg: '#19212d',
@@ -184,7 +184,7 @@ export const THEME_TOKEN_META: ThemeTokenMeta[] = [
  * (the alpha is part of the design, not the setting). Must match styles.css.
  */
 const THEME_TOKEN_ALPHA: Partial<Record<ThemeColorKey, number>> = {
-  chatIncomingBg: 0.38,
+  chatIncomingBg: 0.85,
   chatOutgoingBg: 0.22,
   chatOutgoingBorder: 0.25,
 };
