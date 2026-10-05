@@ -1481,7 +1481,6 @@
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
-    "meshtasticSilentAfterConfigure": "라디오에 연결되었지만 설정 후 메시 트래픽 전송이 중지되었습니다. 자동으로 다시 연결됩니다. 이 문제가 계속 발생하면 라디오의 네트워크 연결을 확인하거나 다시 시작하십시오."
     "stageAutoConnectingBle": "{{deviceName}}에 연결 중…",
     "reticulumStats": {
       "interfaces": "{{count}} 인터페이스",
@@ -1683,7 +1682,8 @@
     "lastConnectionLabel": "마지막 연결",
     "meshcoreBleWindowsInAppPairingHint": "Windows에서 여기에서 라디오를 선택하고 화면에 표시된 PIN을 입력합니다. mesh-client와 페어링하므로 Windows 설정에서 페어링할 필요가 없습니다. 먼저 휴대폰에서 MeshCore 앱을 닫으세요. 라디오는 한 번에 하나의 블루투스 연결만 허용합니다.",
     "stageEnterPinWindows": "라디오에 표시된 PIN을 입력하여 Windows와 페어링합니다.",
-    "stagePairingWindows": "Windows와 페어링 중..."
+    "stagePairingWindows": "Windows와 페어링 중...",
+    "meshtasticSilentAfterConfigure": "라디오에 연결되었지만 설정 후 메시 트래픽 전송이 중지되었습니다. 자동으로 다시 연결됩니다. 이 문제가 계속 발생하면 라디오의 네트워크 연결을 확인하거나 다시 시작하십시오."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "멤버를 로드하지 못했습니다: {{message}}",

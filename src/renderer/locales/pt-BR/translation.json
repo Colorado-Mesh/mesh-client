@@ -1481,7 +1481,6 @@
     },
     "autoConnectingTo": "Conectando-se automaticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconexão em andamento…",
-    "meshtasticSilentAfterConfigure": "Conectado ao rádio, mas parou de enviar tráfego de malha após a configuração. Reconectando automaticamente. Se isso continuar acontecendo, verifique a conexão de rede do rádio ou reinicie-a."
     "stageAutoConnectingBle": "Conectando-se a {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "Interfaces {{count}}",
@@ -1683,7 +1682,8 @@
     "lastConnectionLabel": "Última conexão",
     "meshcoreBleWindowsInAppPairingHint": "No Windows, selecione o rádio aqui e insira o PIN mostrado na tela. O mesh-client o emparelha para você, para que você não precise emparelhá-lo nas Configurações do Windows. Feche o aplicativo MeshCore no seu telefone primeiro; o rádio aceita apenas uma conexão Bluetooth de cada vez.",
     "stageEnterPinWindows": "Insira o PIN mostrado no seu rádio para emparelhá-lo com o Windows",
-    "stagePairingWindows": "Emparelhando com o Windows..."
+    "stagePairingWindows": "Emparelhando com o Windows...",
+    "meshtasticSilentAfterConfigure": "Conectado ao rádio, mas parou de enviar tráfego de malha após a configuração. Reconectando automaticamente. Se isso continuar acontecendo, verifique a conexão de rede do rádio ou reinicie-a."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Falha ao carregar membros: {{message}}",

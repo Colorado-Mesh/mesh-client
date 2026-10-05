@@ -1481,7 +1481,6 @@
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
-    "meshtasticSilentAfterConfigure": "Radyoya bağlandı, ancak kurulumdan sonra ağ trafiği göndermeyi durdurdu. Otomatik olarak yeniden bağlanıyor. Bu devam ederse, radyonun ağ bağlantısını kontrol edin veya yeniden başlatın."
     "stageAutoConnectingBle": "{{deviceName}}'a bağlanılıyor…",
     "reticulumStats": {
       "interfaces": "{{count}} arayüzler",
@@ -1683,7 +1682,8 @@
     "lastConnectionLabel": "Son bağlantı",
     "meshcoreBleWindowsInAppPairingHint": "Windows'ta, radyoyu buradan seçin ve ekranında gösterilen PIN'İ girin. mesh-client sizin için eşleştirir, böylece Windows Ayarları'nda eşleştirmeniz gerekmez. Önce telefonunuzdaki MeshCore uygulamasını kapatın; radyo aynı anda yalnızca bir Bluetooth bağlantısını kabul eder.",
     "stageEnterPinWindows": "Windows ile eşleştirmek için radyonuzda gösterilen PIN KODUNU GİRİN",
-    "stagePairingWindows": "Windows ile eşleştiriliyor…"
+    "stagePairingWindows": "Windows ile eşleştiriliyor…",
+    "meshtasticSilentAfterConfigure": "Radyoya bağlandı, ancak kurulumdan sonra ağ trafiği göndermeyi durdurdu. Otomatik olarak yeniden bağlanıyor. Bu devam ederse, radyonun ağ bağlantısını kontrol edin veya yeniden başlatın."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Üyeler yüklenemedi: {{message}}",

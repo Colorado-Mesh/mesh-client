@@ -1481,7 +1481,6 @@
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
-    "meshtasticSilentAfterConfigure": "Terhubung ke radio, tetapi berhenti mengirim lalu lintas mesh setelah penyiapan. Menghubungkan kembali secara otomatis. Jika ini terus terjadi, periksa koneksi jaringan radio atau mulai ulang."
     "stageAutoConnectingBle": "Menghubungkan ke {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} antarmuka",
@@ -1683,7 +1682,8 @@
     "lastConnectionLabel": "Koneksi terakhir",
     "meshcoreBleWindowsInAppPairingHint": "Di Windows, pilih radio di sini dan masukkan PIN yang ditampilkan di layarnya. mesh-client memasangkannya untuk Anda, jadi Anda tidak perlu memasangkannya di Pengaturan Windows. Tutup aplikasi MeshCore di ponsel Anda terlebih dahulu; radio hanya menerima satu koneksi Bluetooth pada satu waktu.",
     "stageEnterPinWindows": "Masukkan PIN yang ditampilkan di radio Anda untuk memasangkannya dengan Windows",
-    "stagePairingWindows": "Memasangkan dengan Windows…"
+    "stagePairingWindows": "Memasangkan dengan Windows…",
+    "meshtasticSilentAfterConfigure": "Terhubung ke radio, tetapi berhenti mengirim lalu lintas mesh setelah penyiapan. Menghubungkan kembali secara otomatis. Jika ini terus terjadi, periksa koneksi jaringan radio atau mulai ulang."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Gagal memuat anggota: {{message}}",

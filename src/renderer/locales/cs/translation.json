@@ -1501,7 +1501,6 @@
     },
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
-    "meshtasticSilentAfterConfigure": "Připojeno k rádiu, ale po nastavení přestalo odesílat síťový provoz. Automatické opětovné připojení. Pokud k tomu dochází i nadále, zkontrolujte síťové připojení rádia nebo jej restartujte."
     "stageAutoConnectingBle": "Připojení k {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} rozhraní",
@@ -1704,7 +1703,8 @@
     "lastConnectionLabel": "Poslední připojení",
     "meshcoreBleWindowsInAppPairingHint": "V systému Windows zde vyberte rádio a zadejte KÓD PIN zobrazený na obrazovce. mesh-client jej spáruje za vás, takže jej nemusíte spárovat v nastavení systému Windows. Nejprve zavřete aplikaci MeshCore v telefonu; rádio přijímá pouze jedno připojení Bluetooth najednou.",
     "stageEnterPinWindows": "Pro spárování s Windows zadejte PIN zobrazený v rádiu",
-    "stagePairingWindows": "Párování s Windows..."
+    "stagePairingWindows": "Párování s Windows...",
+    "meshtasticSilentAfterConfigure": "Připojeno k rádiu, ale po nastavení přestalo odesílat síťový provoz. Automatické opětovné připojení. Pokud k tomu dochází i nadále, zkontrolujte síťové připojení rádia nebo jej restartujte."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Nepodařilo se načíst členy: {{message}}",
