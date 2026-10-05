@@ -573,6 +573,7 @@ The **outer Flatpak bubblewrap sandbox** still isolates the app when Chromium ru
 
 - The app pairs LoRa radios itself on Windows: when you pick a device or click Reconnect, it checks the pairing state and, if the radio is not paired, asks for the PIN (MeshCore: the PIN on the radio's screen; Meshtastic: prefilled `123456`) before connecting. Pairing only in **Settings → Bluetooth & devices** can leave some radios (for example the L1 Pro MeshCore companion) half-paired, which stalls the connection.
 - If the pair-state check times out or pairing fails, the app does not connect and offers **Remove & Re-pair Device**. Use it, or remove every entry for the radio in **Settings → Bluetooth & devices** and try again.
+- **Paired, Windows shows the radio as "Connected", but mesh-client will not connect:** a MeshCore companion stops advertising while any central holds its link (the Windows pairing link, or another app such as the MeshCore desktop app), so a scan cannot find it. When the scan misses a radio, the app connects to it by Bluetooth address instead. The log line `peripheral not advertising — connecting by address (windows)` includes `os_connected`, which shows whether Windows still holds a link. If the connection still fails, close other apps that use the radio (MeshCore desktop or phone app), power-cycle the radio, and connect again.
 
 **Linux-specific:**
 

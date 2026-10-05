@@ -7,6 +7,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+#[cfg(target_os = "windows")]
+use btleplug_win as btleplug;
+
 use btleplug::api::{
     Central, CentralEvent, CentralState, CharPropFlags, Characteristic, Manager as _,
     Peripheral as _, ScanFilter, WriteType,
@@ -314,6 +317,19 @@ fn is_usable_mac(addr: &str) -> bool {
     hex.len() == 12 && hex != "000000000000"
 }
 
+/// Only WinRT can open a peripheral by MAC without an advertisement (btleplug
+/// `add_peripheral`); CoreBluetooth ids are UUIDs.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn should_try_address_fallback(os_is_windows: bool, address: &str) -> bool {
+    os_is_windows && is_usable_mac(address)
+}
+
+/// Windows idles a btleplug link without a held `GattSession`; both LoRa pipes need it.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn wants_windows_keep_alive(profile: GattProfile) -> bool {
+    matches!(profile, GattProfile::Meshtastic | GattProfile::Meshcore)
+}
+
 /// Prefer a real MAC when CoreBluetooth/WinRT exposes one; otherwise compact peripheral UUID hex
 /// (matches Noble `lastBleDevice` ids on macOS).
 fn connect_address_for(
@@ -512,7 +528,45 @@ impl BtleplugBackend {
         // Ignore empty Ok; surface hard scan failures so callers do not spin on stale "scan first".
         let scanned = self.scan_unfiltered(8).await?;
         self.remember_scanned_rssi(&scanned);
-        self.find_peripheral(address).await
+        match self.find_peripheral(address).await {
+            #[cfg(target_os = "windows")]
+            Err(scan_miss) if should_try_address_fallback(true, address) => {
+                self.address_fallback(address, scan_miss).await
+            }
+            result => result,
+        }
+    }
+
+    /// OS-specific: a bonded or OS-connected radio stops advertising (MeshCore companions
+    /// do while any central holds the link), so the scan misses it. WinRT can still open
+    /// it by address, as Chrome Web Bluetooth does.
+    #[cfg(target_os = "windows")]
+    async fn address_fallback(
+        &self,
+        address: &str,
+        scan_miss: GattError,
+    ) -> Result<Peripheral, GattError> {
+        use btleplug::api::BDAddr;
+
+        let Some(bdaddr) = super::windows_pairing::ble_address_u64(address)
+            .and_then(|raw| BDAddr::try_from(raw).ok())
+        else {
+            return Err(scan_miss);
+        };
+        let os_connected = super::windows_pairing::os_connected(address).await;
+        tracing::info!(
+            target: "gatt",
+            address,
+            ?os_connected,
+            "peripheral not advertising — connecting by address (windows)"
+        );
+        match self.adapter.add_peripheral(&bdaddr.into()).await {
+            Ok(p) => Ok(p),
+            Err(e) => {
+                tracing::warn!(target: "gatt", address, "windows add_peripheral failed: {e}");
+                Err(scan_miss)
+            }
+        }
     }
 
     fn remember_scanned_rssi(&self, devices: &[ScannedDevice]) {
@@ -706,7 +760,7 @@ impl BleBackend for BtleplugBackend {
                 })?;
         // OS-specific: only Windows idles a btleplug link without a held GattSession.
         #[cfg(target_os = "windows")]
-        let keep_alive = if profile == GattProfile::Meshtastic {
+        let keep_alive = if wants_windows_keep_alive(profile) {
             match peripheral.properties().await.ok().flatten() {
                 Some(props) => GattKeepAlive::open(u64::from(props.address)).await,
                 None => None,
@@ -888,6 +942,26 @@ impl BleBackend for BtleplugBackend {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn address_fallback_only_for_windows_macs() {
+        assert!(should_try_address_fallback(true, "ef4f4f1c2373"));
+        assert!(should_try_address_fallback(true, "EF:4F:4F:1C:23:73"));
+        assert!(!should_try_address_fallback(false, "ef4f4f1c2373"));
+        assert!(
+            !should_try_address_fallback(true, "6e400001b5a3f393e0a9e50e24dcca9e"),
+            "CoreBluetooth UUIDs are not MACs"
+        );
+        assert!(!should_try_address_fallback(true, "000000000000"));
+    }
+
+    #[test]
+    fn windows_keep_alive_covers_both_lora_pipes() {
+        assert!(wants_windows_keep_alive(GattProfile::Meshtastic));
+        assert!(wants_windows_keep_alive(GattProfile::Meshcore));
+        assert!(!wants_windows_keep_alive(GattProfile::Rnode));
+        assert!(!wants_windows_keep_alive(GattProfile::Peer));
+    }
 
     #[test]
     fn classifies_auth_setup_errors_as_pairing_required() {

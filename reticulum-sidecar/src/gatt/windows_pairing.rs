@@ -218,6 +218,24 @@ pub async fn pair_state(address: &str) -> Result<PairState, GattError> {
     }
 }
 
+/// Diagnostic only: whether Windows reports an LE link to `address` (this app, another
+/// app, or a leftover pairing link). `None` when WinRT cannot answer in time.
+#[cfg(target_os = "windows")]
+pub async fn os_connected(address: &str) -> Option<bool> {
+    let addr = ble_address_u64(address)?;
+    match run_blocking("connection-status", STATE_TIMEOUT, move || {
+        imp::connection_status(addr)
+    })
+    .await
+    {
+        Ok(connected) => Some(connected),
+        Err(e) => {
+            tracing::debug!(target: "gatt", "gatt: windows connection status unavailable: {e}");
+            None
+        }
+    }
+}
+
 /// `hold` is dropped only once the WinRT call returns (even after a timeout).
 #[cfg_attr(not(target_os = "windows"), allow(clippy::unused_async))]
 pub async fn pair_with_pin<H: Send + 'static>(
@@ -269,7 +287,7 @@ fn unsupported() -> GattError {
 
 #[cfg(target_os = "windows")]
 mod imp {
-    use windows::Devices::Bluetooth::BluetoothLEDevice;
+    use windows::Devices::Bluetooth::{BluetoothConnectionStatus, BluetoothLEDevice};
     use windows::Devices::Enumeration::{
         DeviceInformationCustomPairing, DeviceInformationPairing, DevicePairingKinds,
         DevicePairingProtectionLevel, DevicePairingRequestedEventArgs, DeviceUnpairingResultStatus,
@@ -311,6 +329,14 @@ mod imp {
         let paired = pairing.IsPaired().map_err(win_err("IsPaired"))?;
         tracing::info!(target: "gatt", paired, "gatt: windows pair state");
         Ok(PairState { paired })
+    }
+
+    pub fn connection_status(addr: u64) -> Result<bool, GattError> {
+        let (device, _pairing) = open(addr)?;
+        let status = device
+            .ConnectionStatus()
+            .map_err(win_err("ConnectionStatus"))?;
+        Ok(status == BluetoothConnectionStatus::Connected)
     }
 
     fn pair_once(
