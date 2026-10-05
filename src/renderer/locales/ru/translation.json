@@ -887,7 +887,37 @@
     },
     "directImage": "Изображение: {{name}}",
     "directImageOpen": "Открыть изображение",
-    "reticulumAttachmentImage": "Вложенное изображение: {{name}}"
+    "reticulumAttachmentImage": "Вложенное изображение: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Запрос на получение файла",
+      "receiveDestShare": "Общий пункт назначения файлов",
+      "openSettings": "Открыть настройки удаленного входящего файла",
+      "openSettingsShort": "Настройки"
+    },
+    "droneReport": {
+      "title": "Удаленный идентификатор дрона",
+      "tileAlt": "Плитка карты обнаружения дронов",
+      "rssi": "RSSI {{rssi}} дБм",
+      "mac": "MAC {{mac}}",
+      "drone": "Дрон",
+      "pilot": "Пилот",
+      "openDrone": "Открытая локация для дронов",
+      "openPilot": "Открытая пилотная локация",
+      "pilotDistance": "Пилот {{distance}} с дрона",
+      "noPosition": "Позиция не указана"
+    },
+    "signalReport": {
+      "label": "Отчет о сигнале",
+      "direct": "Прямой",
+      "snr": "SNR {{snr}} дБ",
+      "rssi": "RSSI {{rssi}} дБм",
+      "noise": "Шум {{noise}} дБм",
+      "path": "Путь: {{path}}",
+      "hops_one": "{{count}} переход",
+      "hops_few": "{{count}} перехода",
+      "hops_many": "{{count}} переходов",
+      "hops_other": "{{count}} перехода"
+    }
   },
   "common": {
     "close": "Закрывать",
@@ -5837,7 +5867,30 @@
     "showList": "Показать комнаты и хабы",
     "backToList": "Назад к комнатам и хабам",
     "hideMembers": "Скрыть участников",
-    "listColumnAria": "Комнаты и хабы"
+    "listColumnAria": "Комнаты и хабы",
+    "hubSession": {
+      "summary_one": "{{count}} уведомление хаба",
+      "summary_other": "{{count}} уведомления хаба",
+      "topic": "тема: {{topic}}",
+      "members_one": "{{count}} участник",
+      "members_other": "{{count}} участника",
+      "linkTimeouts_one": "{{count}} тайм-аут соединения",
+      "linkTimeouts_other": "{{count}} тайм-аута соединения",
+      "expand_one": "Показать {{count}} уведомление хаба",
+      "expand_other": "Показать {{count}} уведомления хаба",
+      "collapse_one": "Скрыть {{count}} уведомление хаба",
+      "collapse_other": "Скрыть {{count}} уведомления хаба",
+      "summary_few": "{{count}} уведомления хаба",
+      "summary_many": "{{count}} уведомлений хаба",
+      "members_few": "{{count}} участника",
+      "members_many": "{{count}} участников",
+      "linkTimeouts_few": "{{count}} тайм-аута соединения",
+      "linkTimeouts_many": "{{count}} тайм-аутов соединения",
+      "expand_few": "Показать {{count}} уведомления хаба",
+      "expand_many": "Показать {{count}} уведомлений хаба",
+      "collapse_few": "Скрыть {{count}} уведомления хаба",
+      "collapse_many": "Скрыть {{count}} уведомлений хаба"
+    }
   },
   "signalMeter": {
     "rssi": "РССИ",

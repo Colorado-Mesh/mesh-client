@@ -4,15 +4,23 @@ import { useEffect, useLayoutEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ChatInlineImage } from '@/renderer/components/chat/ChatInlineImage';
+import {
+  DroneReportCard,
+  RncpControlChip,
+  SignalReportChip,
+} from '@/renderer/components/chat/ChatStructuredPayloads';
 import { buildStaticTileUrl, parseLocationMessage } from '@/renderer/lib/chatLocationUtils';
 import { isSafeChatUrl, parseChatMentionSegments } from '@/renderer/lib/chatMentionSegments';
+import { parseDroneReport } from '@/renderer/lib/droneReportParse';
 import { meshTilesAvailable } from '@/renderer/lib/mapBasemapUtils';
 import {
   meshcoreGiphyMediaUrl,
   meshcoreGiphyPageUrl,
   parseMeshcoreGifId,
 } from '@/renderer/lib/meshcoreGifWire';
+import { parseSignalReport } from '@/renderer/lib/signalReportParse';
 import { isLikelyDirectImageUrl } from '@/shared/chatDirectImageUrl';
+import { classifyRncpControlBody, stripRncpSentinels } from '@/shared/rncpRequestEnable';
 
 function highlightCaseInsensitive(text: string, query: string): ReactNode {
   const q = query.trim();
@@ -274,25 +282,39 @@ export function ChatPayloadText({
       </div>
     );
   }
-  const location = parseLocationMessage(text);
-  if (location) {
-    return (
-      <div>
-        <LocationCard
-          lat={location.lat}
-          lon={location.lon}
-          mapUrl={location.mapUrl}
-          query={query}
-          onContentResize={onContentResize}
-        />
-      </div>
-    );
+  const rncpKind = classifyRncpControlBody(text);
+  if (!rncpKind) {
+    const droneReport = parseDroneReport(text);
+    if (droneReport) {
+      return (
+        <div>
+          <DroneReportCard report={droneReport} onContentResize={onContentResize} />
+        </div>
+      );
+    }
+    const location = parseLocationMessage(text);
+    if (location) {
+      return (
+        <div>
+          <LocationCard
+            lat={location.lat}
+            lon={location.lon}
+            mapUrl={location.mapUrl}
+            query={query}
+            onContentResize={onContentResize}
+          />
+        </div>
+      );
+    }
   }
-  const segments = parseChatMentionSegments(text);
+  const displayText = rncpKind ? stripRncpSentinels(text) : text;
+  const signalReport = rncpKind ? null : parseSignalReport(text);
+  const segments = parseChatMentionSegments(displayText);
   const urlSegments = segments.filter((seg) => seg.kind === 'url');
 
   return (
     <div>
+      {rncpKind && <RncpControlChip kind={rncpKind} />}
       <div>
         {segments.map((seg, i) =>
           seg.kind === 'mention' ? (
@@ -330,6 +352,7 @@ export function ChatPayloadText({
           ),
         )}
       </div>
+      {signalReport && <SignalReportChip report={signalReport} />}
       {loadLinkPreviews && urlSegments.length > 0 && (
         <div className="space-y-2">
           {urlSegments.map((seg) => (

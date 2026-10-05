@@ -160,6 +160,49 @@ function parseOsmMlatMlon(url: string): { lat: number; lon: number } | null {
   return { lat, lon };
 }
 
+function parseHttpUrl(url: string): URL | null {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed : null;
+  } catch {
+    // catch-no-log-ok not a URL; caller treats as no coordinates
+    return null;
+  }
+}
+
+/** `lat,lon` pair (comma-separated, exact numbers, in range). */
+function parseCoordPair(value: string | null): { lat: number; lon: number } | null {
+  if (!value) return null;
+  const comma = value.indexOf(',');
+  if (comma < 0) return null;
+  const latToken = value.slice(0, comma).trim();
+  const lonToken = value.slice(comma + 1).trim();
+  if (!isExactNumberToken(latToken) || !isExactNumberToken(lonToken)) return null;
+  const lat = Number.parseFloat(latToken);
+  const lon = Number.parseFloat(lonToken);
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+  return { lat, lon };
+}
+
+/** Google Maps `?q=lat,lon` link (Mesh-Mapper and other sensor bots). */
+export function parseGoogleMapsQueryCoords(url: string): { lat: number; lon: number } | null {
+  const parsed = parseHttpUrl(url);
+  if (!parsed) return null;
+  const host = parsed.hostname.toLowerCase();
+  const isGoogleMaps =
+    host === 'maps.google.com' ||
+    ((host === 'google.com' || host === 'www.google.com') && parsed.pathname.startsWith('/maps'));
+  if (!isGoogleMaps) return null;
+  return parseCoordPair(parsed.searchParams.get('q'));
+}
+
+/** Apple Maps `?ll=lat,lon` link. */
+export function parseAppleMapsLlCoords(url: string): { lat: number; lon: number } | null {
+  const parsed = parseHttpUrl(url);
+  if (parsed?.hostname.toLowerCase() !== 'maps.apple.com') return null;
+  return parseCoordPair(parsed.searchParams.get('ll'));
+}
+
 /** Standard Web Mercator tiling math for static tile URL. */
 export function latLonToTile(lat: number, lon: number, zoom = 14): WebMercatorTile {
   return sharedLatLonToTile(lat, lon, zoom);

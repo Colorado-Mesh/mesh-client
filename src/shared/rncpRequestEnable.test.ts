@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   buildRncpReceiveDestShareBody,
   buildRncpRequestEnableMessageBody,
+  classifyRncpControlBody,
   lxmfBodyContainsRncpRequestEnable,
   parseRncpReceiveDestShare,
   RNCP_RECEIVE_DEST_SHARE_PREFIX,
   RNCP_REQUEST_ENABLE_SENTINEL,
+  stripRncpSentinels,
 } from './rncpRequestEnable';
 
 describe('rncpRequestEnable', () => {
@@ -37,5 +39,27 @@ describe('rncpRequestEnable', () => {
 
   it('buildRncpReceiveDestShareBody rejects invalid hashes', () => {
     expect(() => buildRncpReceiveDestShareBody('x', 'nope')).toThrow('invalid_rncp_receive_hash');
+  });
+
+  it('classifies control bodies and ignores ordinary chat', () => {
+    const hash = 'cd'.repeat(16);
+    expect(classifyRncpControlBody(buildRncpRequestEnableMessageBody('Please enable.'))).toBe(
+      'requestEnable',
+    );
+    expect(classifyRncpControlBody(buildRncpReceiveDestShareBody('Here.', hash))).toBe(
+      'receiveDestShare',
+    );
+    expect(classifyRncpControlBody('mesh-client is great')).toBeNull();
+    expect(classifyRncpControlBody(`${RNCP_RECEIVE_DEST_SHARE_PREFIX}short`)).toBeNull();
+    expect(classifyRncpControlBody(null)).toBeNull();
+  });
+
+  it('strips sentinel lines but keeps instructions and the plain hash', () => {
+    const hash = 'ef'.repeat(16);
+    expect(stripRncpSentinels(buildRncpRequestEnableMessageBody('Please enable.'))).toBe(
+      'Please enable.',
+    );
+    expect(stripRncpSentinels(buildRncpReceiveDestShareBody('Here.', hash))).toBe(`Here.\n${hash}`);
+    expect(stripRncpSentinels(`a\r\n\r\n${RNCP_REQUEST_ENABLE_SENTINEL}`)).toBe('a');
   });
 });

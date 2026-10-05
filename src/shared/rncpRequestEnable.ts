@@ -43,6 +43,32 @@ export function buildRncpReceiveDestShareBody(instructions: string, receiveHash:
   return `${trimmed}\n${hash}\n\n${RNCP_RECEIVE_DEST_SHARE_PREFIX}${hash}`;
 }
 
+export type RncpControlKind = 'requestEnable' | 'receiveDestShare';
+
+/** Which mesh-client rncp control message this LXMF body is, if any. */
+export function classifyRncpControlBody(body: string | null | undefined): RncpControlKind | null {
+  if (!body) return null;
+  if (parseRncpReceiveDestShare(body)) return 'receiveDestShare';
+  if (lxmfBodyContainsRncpRequestEnable(body)) return 'requestEnable';
+  return null;
+}
+
+function isRncpSentinelLine(line: string): boolean {
+  const trimmed = line.trim();
+  return (
+    trimmed === RNCP_REQUEST_ENABLE_SENTINEL || trimmed.startsWith(RNCP_RECEIVE_DEST_SHARE_PREFIX)
+  );
+}
+
+/** Body with mesh-client sentinel lines removed (human instructions and plain hash kept). */
+export function stripRncpSentinels(body: string): string {
+  return body
+    .split(/\r?\n/)
+    .filter((line) => !isRncpSentinelLine(line))
+    .join('\n')
+    .trimEnd();
+}
+
 /**
  * Parse a peer's shared rncp.receive destination from an LXMF body, if present.
  * Returns lowercase 32-hex or null.

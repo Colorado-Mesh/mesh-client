@@ -853,7 +853,35 @@
     },
     "directImage": "图片： {{name}}",
     "directImageOpen": "打开图像",
-    "reticulumAttachmentImage": "附件图片： {{name}}"
+    "reticulumAttachmentImage": "附件图片： {{name}}",
+    "rncpControl": {
+      "requestEnable": "文件接收请求",
+      "receiveDestShare": "共享文件接收目的地",
+      "openSettings": "打开远程入站文件设置",
+      "openSettingsShort": "设置"
+    },
+    "droneReport": {
+      "title": "无人机远程ID",
+      "tileAlt": "无人机检测地图图块",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "无人机",
+      "pilot": "飞行员",
+      "openDrone": "开放无人机位置",
+      "openPilot": "开放试点地点",
+      "pilotDistance": "无人机飞行员 {{distance}}",
+      "noPosition": "没有报告位置"
+    },
+    "signalReport": {
+      "label": "信号报告",
+      "direct": "直接的",
+      "snr": "信噪比{{snr}}分贝",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "噪声 {{noise}} dBm",
+      "path": "路径：{{path}}",
+      "hops_one": "{{count}}跳",
+      "hops_other": "{{count}}跳"
+    }
   },
   "common": {
     "close": "关闭",
@@ -5749,7 +5777,20 @@
     "showList": "显示房间和中心",
     "backToList": "返回房间和中心",
     "hideMembers": "隐藏成员",
-    "listColumnAria": "房间和中心"
+    "listColumnAria": "房间和中心",
+    "hubSession": {
+      "summary_one": "{{count}} 中心通知",
+      "summary_other": "{{count}} 中心通知",
+      "topic": "主题：{{topic}}",
+      "members_one": "{{count}} 成员",
+      "members_other": "{{count}} 成员",
+      "linkTimeouts_one": "{{count}} 链接超时",
+      "linkTimeouts_other": "{{count}} 链接超时",
+      "expand_one": "显示 {{count}} 中心通知",
+      "expand_other": "显示 {{count}} 中心通知",
+      "collapse_one": "隐藏 {{count}} 中心通知",
+      "collapse_other": "隐藏 {{count}} 中心通知"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

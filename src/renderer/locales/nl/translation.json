@@ -853,7 +853,35 @@
     },
     "directImage": "Afbeelding: {{name}}",
     "directImageOpen": "Afbeelding openen",
-    "reticulumAttachmentImage": "Bijgevoegde afbeelding: {{name}}"
+    "reticulumAttachmentImage": "Bijgevoegde afbeelding: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Verzoek om bestand te ontvangen",
+      "receiveDestShare": "Gedeelde bestemming voor bestandsontvangst",
+      "openSettings": "Open Instellingen voor externe inkomende bestanden",
+      "openSettingsShort": "Instellingen"
+    },
+    "droneReport": {
+      "title": "Drone-ID op afstand",
+      "tileAlt": "Kaarttegel voor dronedetectie",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Drone",
+      "pilot": "Piloot",
+      "openDrone": "Open dronelocatie",
+      "openPilot": "Pilotlocatie openen",
+      "pilotDistance": "Piloot {{distance}} van drone",
+      "noPosition": "Geen positie gerapporteerd"
+    },
+    "signalReport": {
+      "label": "Signaalrapport",
+      "direct": "Direct",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Ruis {{noise}} dBm",
+      "path": "Pad: {{path}}",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hops"
+    }
   },
   "common": {
     "close": "Dichtbij",
@@ -5749,7 +5777,20 @@
     "showList": "Kamers en hubs tonen",
     "backToList": "Terug naar kamers en hubs",
     "hideMembers": "Leden verbergen",
-    "listColumnAria": "Kamers en hubs"
+    "listColumnAria": "Kamers en hubs",
+    "hubSession": {
+      "summary_one": "{{count}} hub-kennisgeving",
+      "summary_other": "{{count}} hub-kennisgevingen",
+      "topic": "onderwerp: {{topic}}",
+      "members_one": "{{count}} lid",
+      "members_other": "{{count}} leden",
+      "linkTimeouts_one": "{{count}} time-out voor link",
+      "linkTimeouts_other": "{{count}} linktime-outs",
+      "expand_one": "Toon {{count}} hubmelding",
+      "expand_other": "Toon {{count}} hub-kennisgevingen",
+      "collapse_one": "Verberg {{count}} hubmelding",
+      "collapse_other": "Verberg {{count}} hub-meldingen"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

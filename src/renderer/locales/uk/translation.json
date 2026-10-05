@@ -887,7 +887,37 @@
     },
     "directImage": "Зображення: {{name}}",
     "directImageOpen": "Відкрити зображення",
-    "reticulumAttachmentImage": "Додане зображення: {{name}}"
+    "reticulumAttachmentImage": "Додане зображення: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Запит на отримання файлу",
+      "receiveDestShare": "Спільне призначення для отримання файлів",
+      "openSettings": "Відкрийте параметри віддаленого вхідного файлу",
+      "openSettingsShort": "Налаштування"
+    },
+    "droneReport": {
+      "title": "ID пульта дрона",
+      "tileAlt": "Плитка карти виявлення дронів",
+      "rssi": "RSSI {{rssi}} дБм",
+      "mac": "MAC {{mac}}",
+      "drone": "Дрон",
+      "pilot": "Пілот",
+      "openDrone": "Відкрита локація дрона",
+      "openPilot": "Відкрита пілотна локація",
+      "pilotDistance": "Пілот {{distance}} з дрона",
+      "noPosition": "Про позицію не повідомляється"
+    },
+    "signalReport": {
+      "label": "Сигнальний звіт",
+      "direct": "Прямий",
+      "snr": "SNR {{snr}} дБ",
+      "rssi": "RSSI {{rssi}} дБм",
+      "noise": "Шум {{noise}} дБм",
+      "path": "Шлях: {{path}}",
+      "hops_one": "{{count}} перехід",
+      "hops_few": "{{count}} переходи",
+      "hops_many": "{{count}} переходів",
+      "hops_other": "{{count}} переходу"
+    }
   },
   "common": {
     "close": "Закрити",
@@ -5837,7 +5867,30 @@
     "showList": "Показати кімнати й хаби",
     "backToList": "Назад до кімнат і хабів",
     "hideMembers": "Приховати учасників",
-    "listColumnAria": "Кімнати й хаби"
+    "listColumnAria": "Кімнати й хаби",
+    "hubSession": {
+      "summary_one": "{{count}} повідомлення хаба",
+      "summary_other": "{{count}} повідомлення хаба",
+      "topic": "тема: {{topic}}",
+      "members_one": "{{count}} учасник",
+      "members_other": "{{count}} учасника",
+      "linkTimeouts_one": "{{count}} тайм-аут з’єднання",
+      "linkTimeouts_other": "{{count}} тайм-аута з’єднання",
+      "expand_one": "Показати {{count}} повідомлення хаба",
+      "expand_other": "Показати {{count}} повідомлення хаба",
+      "collapse_one": "Приховати {{count}} повідомлення хаба",
+      "collapse_other": "Приховати {{count}} повідомлення хаба",
+      "summary_few": "{{count}} повідомлення хаба",
+      "summary_many": "{{count}} повідомлень хаба",
+      "members_few": "{{count}} учасники",
+      "members_many": "{{count}} учасників",
+      "linkTimeouts_few": "{{count}} тайм-аути з’єднання",
+      "linkTimeouts_many": "{{count}} тайм-аутів з’єднання",
+      "expand_few": "Показати {{count}} повідомлення хаба",
+      "expand_many": "Показати {{count}} повідомлень хаба",
+      "collapse_few": "Приховати {{count}} повідомлення хаба",
+      "collapse_many": "Приховати {{count}} повідомлень хаба"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

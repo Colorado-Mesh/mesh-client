@@ -872,7 +872,37 @@
     },
     "directImage": "Obrázek: {{name}}",
     "directImageOpen": "Otevřít obrázek",
-    "reticulumAttachmentImage": "Přiložený obrázek: {{name}}"
+    "reticulumAttachmentImage": "Přiložený obrázek: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Žádost o příjem souboru",
+      "receiveDestShare": "Cíl pro příjem sdílených souborů",
+      "openSettings": "Otevřete Nastavení vzdáleného příchozího souboru",
+      "openSettingsShort": "Nastavení"
+    },
+    "droneReport": {
+      "title": "ID vzdáleného dronu",
+      "tileAlt": "Detekce mapy dronu",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Trubec",
+      "pilot": "Pilot",
+      "openDrone": "Otevřené umístění dronu",
+      "openPilot": "Otevřete místo pilota",
+      "pilotDistance": "Pilot {{distance}} z dronu",
+      "noPosition": "Nebyla hlášena žádná pozice"
+    },
+    "signalReport": {
+      "label": "Zpráva o signálu",
+      "direct": "Přímo",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Hlučnost {{noise}} dBm",
+      "path": "Cesta: {{path}}",
+      "hops_one": "{{count}} skok",
+      "hops_few": "{{count}} skoky",
+      "hops_many": "{{count}} skoků",
+      "hops_other": "{{count}} skoků"
+    }
   },
   "common": {
     "close": "Blízko",
@@ -5795,7 +5825,30 @@
     "showList": "Zobrazit místnosti a huby",
     "backToList": "Zpět na místnosti a huby",
     "hideMembers": "Skrýt členy",
-    "listColumnAria": "Místnosti a huby"
+    "listColumnAria": "Místnosti a huby",
+    "hubSession": {
+      "summary_one": "{{count}} oznámení hubu",
+      "summary_other": "{{count}} oznámení hubu",
+      "topic": "téma: {{topic}}",
+      "members_one": "{{count}} člen",
+      "members_other": "{{count}} členů",
+      "linkTimeouts_one": "{{count}} vypršení spojení",
+      "linkTimeouts_other": "{{count}} vypršení spojení",
+      "expand_one": "Zobrazit {{count}} oznámení hubu",
+      "expand_other": "Zobrazit {{count}} oznámení hubu",
+      "collapse_one": "Skrýt {{count}} oznámení hubu",
+      "collapse_other": "Skrýt {{count}} oznámení hubu",
+      "summary_few": "{{count}} oznámení hubu",
+      "summary_many": "{{count}} oznámení hubu",
+      "members_few": "{{count}} členové",
+      "members_many": "{{count}} členů",
+      "linkTimeouts_few": "{{count}} vypršení spojení",
+      "linkTimeouts_many": "{{count}} vypršení spojení",
+      "expand_few": "Zobrazit {{count}} oznámení hubu",
+      "expand_many": "Zobrazit {{count}} oznámení hubu",
+      "collapse_few": "Skrýt {{count}} oznámení hubu",
+      "collapse_many": "Skrýt {{count}} oznámení hubu"
+    }
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",

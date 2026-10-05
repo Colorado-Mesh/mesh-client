@@ -853,7 +853,35 @@
     },
     "directImage": "Resim: {{name}}",
     "directImageOpen": "Resim aç",
-    "reticulumAttachmentImage": "Ekli resim: {{name}}"
+    "reticulumAttachmentImage": "Ekli resim: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Dosya alma isteği",
+      "receiveDestShare": "Paylaşılan dosya alma hedefi",
+      "openSettings": "Uzak gelen dosya ayarlarını aç",
+      "openSettingsShort": "Ayarlar"
+    },
+    "droneReport": {
+      "title": "Drone Uzaktan Kimliği",
+      "tileAlt": "Drone algılama haritası döşemesi",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Dron",
+      "pilot": "Pilot",
+      "openDrone": "Drone konumunu aç",
+      "openPilot": "Pilot konumunu aç",
+      "pilotDistance": "Drone'dan {{distance}} pilotu",
+      "noPosition": "Konum bildirilmedi"
+    },
+    "signalReport": {
+      "label": "Sinyal raporu",
+      "direct": "Doğrudan",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Gürültü {{noise}} dBm",
+      "path": "Yol: {{path}}",
+      "hops_one": "{{count}} atlama",
+      "hops_other": "{{count}} atlama"
+    }
   },
   "common": {
     "close": "Kapalı",
@@ -5749,7 +5777,20 @@
     "showList": "Odaları ve hub'ları göster",
     "backToList": "Odalara ve hub'lara dön",
     "hideMembers": "Üyeleri gizle",
-    "listColumnAria": "Odalar ve hub'lar"
+    "listColumnAria": "Odalar ve hub'lar",
+    "hubSession": {
+      "summary_one": "{{count}} merkez bildirimi",
+      "summary_other": "{{count}} merkez bildirimleri",
+      "topic": "konu: {{topic}}",
+      "members_one": "{{count}} üye",
+      "members_other": "{{count}} üyeler",
+      "linkTimeouts_one": "{{count}} bağlantı zaman aşımı",
+      "linkTimeouts_other": "{{count}} bağlantı zaman aşımları",
+      "expand_one": "{{count}} merkez bildirimini göster",
+      "expand_other": "{{count}} hub bildirimlerini göster",
+      "collapse_one": "{{count}} hub bildirimini gizle",
+      "collapse_other": "{{count}} hub bildirimlerini gizle"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { installDevElectronApiStubIfNeeded } from '@/renderer/lib/devElectronApiStub';
+import { subscribeOpenSettingRequests } from '@/renderer/lib/openSettingRequest';
 
 import { ChatPayloadText } from './ChatPayloadText';
 
@@ -204,6 +205,106 @@ describe('ChatPayloadText', () => {
       expect(screen.getByRole('img', { name: 'Image: abc123' })).toBeInTheDocument();
     });
     expect(screen.queryByText('cdn.example.com')).not.toBeInTheDocument();
+  });
+
+  describe('Mesh-Mapper drone reports', () => {
+    const DRONE =
+      'Drone: 60:60:1f:f6:d8:bc RSSI:-85 https://maps.google.com/?q=40.453457,-105.084724\r\n' +
+      'Pilot: https://maps.google.com/?q=40.453606,-105.086326\r\n';
+
+    it('renders a drone card with OSM links and no link-preview fetch', () => {
+      render(<ChatPayloadText text={DRONE} query="" />);
+      expect(screen.getByTestId('drone-report-card')).toBeInTheDocument();
+      expect(screen.getByText('MAC 60:60:1F:F6:D8:BC')).toBeInTheDocument();
+      expect(screen.getByText('RSSI -85 dBm')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Open drone location' })).toHaveAttribute(
+        'href',
+        'https://www.openstreetmap.org/?mlat=40.453457&mlon=-105.084724',
+      );
+      expect(screen.getByRole('link', { name: 'Open pilot location' })).toBeInTheDocument();
+      expect(screen.getByText(/^Pilot .* from drone$/)).toBeInTheDocument();
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = render(<ChatPayloadText text={DRONE} query="" />);
+      hydrateAxeThemeColors(document.documentElement);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
+  describe('ping-bot signal reports', () => {
+    it('adds a chip to a MeshMonitor auto-ack and keeps the text', () => {
+      render(<ChatPayloadText text="🤖 Copy, 4 hops at 12:51" query="" />);
+      expect(screen.getByText('🤖 Copy, 4 hops at 12:51')).toBeInTheDocument();
+      const chip = screen.getByRole('group', { name: 'Signal report' });
+      expect(chip).toHaveTextContent('4 hops');
+    });
+
+    it('shows SNR, RSSI and path tooltip for meshcore-bot acks', () => {
+      render(
+        <ChatPayloadText
+          text="ack @[bob] | 01,5f (2 hops) | SNR: 15 dB | RSSI: -120 dBm | Received at: 21:25:45"
+          query=""
+        />,
+      );
+      const chip = screen.getByRole('group', { name: 'Signal report' });
+      expect(chip).toHaveTextContent('2 hops');
+      expect(chip).toHaveTextContent('SNR 15 dB');
+      expect(chip).toHaveTextContent('RSSI -120 dBm');
+      expect(chip).toHaveAttribute('title', 'Path: 01,5f');
+      expect(screen.getByLabelText('Mention bob')).toBeInTheDocument();
+    });
+
+    it('leaves ordinary hop chat alone', () => {
+      render(<ChatPayloadText text="3 hops to Firestone" query="" />);
+      expect(screen.queryByTestId('signal-report-chip')).toBeNull();
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = render(
+        <ChatPayloadText
+          text="Sig @[alice]: heard you at SNR -7.5 | last RSSI -92 dBm, noise -105 dBm"
+          query=""
+        />,
+      );
+      hydrateAxeThemeColors(document.documentElement);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
+  describe('rncp control messages', () => {
+    const REQUEST =
+      'Please enable file receiving (rncp) if you use mesh-client: Remote → Settings → Inbound file offers.\n\nmesh-client:request-rncp-receive:v1';
+    const HASH = '613023503ca443dfa4099c09dc6f973d';
+    const SHARE = `File receiving is enabled. Here is my rncp receive destination.\n${HASH}\n\nmesh-client:rncp-receive-dest:v1:${HASH}`;
+
+    it('hides the request sentinel and shows a chip that opens Remote settings', () => {
+      const listener = vi.fn();
+      const unsubscribe = subscribeOpenSettingRequests(listener);
+      render(<ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} />);
+      expect(screen.getByText('File-receive request')).toBeInTheDocument();
+      expect(screen.getByText(/Please enable file receiving/)).toBeInTheDocument();
+      expect(screen.queryByText(/mesh-client:request-rncp-receive/)).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Open Remote inbound file settings' }));
+      expect(listener).toHaveBeenCalledWith({ slot: 'Remote', id: 'remote.inbound.mode' });
+      unsubscribe();
+    });
+
+    it('keeps the plain hash line on a destination share', () => {
+      render(<ChatPayloadText text={SHARE} query="" loadLinkPreviews={false} />);
+      expect(screen.getByText('Shared file-receive destination')).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(HASH))).toBeInTheDocument();
+      expect(screen.queryByText(/mesh-client:rncp-receive-dest/)).toBeNull();
+    });
+
+    it('has no axe violations', async () => {
+      const { container } = render(
+        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} />,
+      );
+      hydrateAxeThemeColors(document.documentElement);
+      expect(await axe(container)).toHaveNoViolations();
+    });
   });
 
   it('skips link preview fetch when loadLinkPreviews is false', async () => {

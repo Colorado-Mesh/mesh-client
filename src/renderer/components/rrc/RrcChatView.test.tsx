@@ -894,3 +894,53 @@ describe('RrcChatView stick-to-bottom', () => {
     });
   });
 });
+
+describe('RrcChatView hub notice grouping', () => {
+  const HUB = 'cc'.repeat(16);
+  const hubNotice = (id: string, body: string): RrcChatMessage =>
+    makeMsg({ id, body, kind: 'notice', nickname: null, sender_hash: HUB });
+  const burst = [
+    makeMsg({ id: 'c1', body: 'Morning!', nickname: 'Zeva' }),
+    hubNotice('h1', 'Welcome to the Colorado Mesh RRC hub.'),
+    hubNotice('h2', 'room #general: registered; mode=+r; topic=Everyone is welcome!'),
+    hubNotice('h3', 'members in #general: alice (0123456789ab), bob (ba9876543210)'),
+    makeMsg({ id: 'c2', body: 'hi', nickname: 'alice' }),
+  ];
+
+  beforeEach(() => {
+    mockIsAtEnd = true;
+    mockScrollToEnd.mockClear();
+  });
+
+  it('collapses a reconnect burst into one expandable row', () => {
+    render(<RrcChatView {...baseProps} messages={burst} />);
+    expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(2);
+    expect(screen.getAllByTestId('rrc-notice-group')).toHaveLength(1);
+    expect(screen.queryByText(/Welcome to the Colorado Mesh/)).toBeNull();
+
+    const toggle = screen.getByRole('button', { name: 'rrc.hubSession.expand' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+
+    expect(screen.getByRole('button', { name: 'rrc.hubSession.collapse' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(5);
+    expect(screen.getByText(/Welcome to the Colorado Mesh/)).toBeInTheDocument();
+  });
+
+  it('keeps a lone hub notice inline', () => {
+    render(<RrcChatView {...baseProps} messages={[burst[0], burst[2], burst[4]]} />);
+    expect(screen.queryByTestId('rrc-notice-group')).toBeNull();
+    expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(3);
+  });
+
+  it('has no axe violations collapsed or expanded', async () => {
+    const { container } = render(<RrcChatView {...baseProps} messages={burst} />);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+    fireEvent.click(screen.getByRole('button', { name: 'rrc.hubSession.expand' }));
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});

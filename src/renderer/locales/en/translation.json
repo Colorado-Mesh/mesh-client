@@ -853,6 +853,34 @@
     "locationCard": {
       "alt": "Shared location map tile",
       "openMaps": "Open in Maps"
+    },
+    "rncpControl": {
+      "requestEnable": "File-receive request",
+      "receiveDestShare": "Shared file-receive destination",
+      "openSettings": "Open Remote inbound file settings",
+      "openSettingsShort": "Settings"
+    },
+    "droneReport": {
+      "title": "Drone Remote ID",
+      "tileAlt": "Drone detection map tile",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Drone",
+      "pilot": "Pilot",
+      "openDrone": "Open drone location",
+      "openPilot": "Open pilot location",
+      "pilotDistance": "Pilot {{distance}} from drone",
+      "noPosition": "No position reported"
+    },
+    "signalReport": {
+      "label": "Signal report",
+      "direct": "Direct",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hops",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Noise {{noise}} dBm",
+      "path": "Path: {{path}}"
     }
   },
   "common": {
@@ -5915,6 +5943,19 @@
     "msgNick": "Message {{name}}",
     "noMembers": "No full member list from hub (busy rooms may exceed link size). Names appear as people join or chat.",
     "whoReplyMissing": "No member list from the hub for {{room}} (reply may exceed link size). Names will appear as people join or chat.",
+    "hubSession": {
+      "summary_one": "{{count}} hub notice",
+      "summary_other": "{{count}} hub notices",
+      "topic": "topic: {{topic}}",
+      "members_one": "{{count}} member",
+      "members_other": "{{count}} members",
+      "linkTimeouts_one": "{{count}} link timeout",
+      "linkTimeouts_other": "{{count}} link timeouts",
+      "expand_one": "Show {{count}} hub notice",
+      "expand_other": "Show {{count}} hub notices",
+      "collapse_one": "Hide {{count}} hub notice",
+      "collapse_other": "Hide {{count}} hub notices"
+    },
     "copyMessage": "Copy message",
     "jumpToLatest": "Jump to Latest",
     "messagePlaceholder": "Message or /command…",
