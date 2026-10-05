@@ -853,7 +853,35 @@
     },
     "directImage": "Image : {{name}}",
     "directImageOpen": "Ouvrir l’image",
-    "reticulumAttachmentImage": "Image jointe : {{name}}"
+    "reticulumAttachmentImage": "Image jointe : {{name}}",
+    "rncpControl": {
+      "requestEnable": "Demande de réception de fichier",
+      "receiveDestShare": "Destination de réception de fichiers partagés",
+      "openSettings": "Ouvrir les paramètres des fichiers entrants à distance",
+      "openSettingsShort": "Paramètres"
+    },
+    "droneReport": {
+      "title": "ID à distance du drone",
+      "tileAlt": "Tuile de carte de détection de drones",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Drone",
+      "pilot": "Pilote",
+      "openDrone": "Emplacement du drone ouvert",
+      "openPilot": "Emplacement pilote ouvert",
+      "pilotDistance": "Pilotez {{distance}} depuis un drone",
+      "noPosition": "Aucun poste signalé"
+    },
+    "signalReport": {
+      "label": "Rapport de signalisation",
+      "direct": "Direct",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Bruit {{noise}} dBm",
+      "path": "Chemin : {{path}}",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} sauts"
+    }
   },
   "common": {
     "close": "Fermer",
@@ -5749,7 +5777,20 @@
     "showList": "Afficher les salons et les hubs",
     "backToList": "Retour aux salons et hubs",
     "hideMembers": "Masquer les membres",
-    "listColumnAria": "Salons et hubs"
+    "listColumnAria": "Salons et hubs",
+    "hubSession": {
+      "summary_one": "{{count}} avis du hub",
+      "summary_other": "{{count}} avis du hub",
+      "topic": "sujet : {{topic}}",
+      "members_one": "Membre {{count}}",
+      "members_other": "Membres {{count}}",
+      "linkTimeouts_one": "{{count}} expiration de lien",
+      "linkTimeouts_other": "{{count}} expirations de lien",
+      "expand_one": "Afficher {{count}} avis du hub",
+      "expand_other": "Afficher {{count}} avis du hub",
+      "collapse_one": "Masquer {{count}} avis du hub",
+      "collapse_other": "Masquer {{count}} avis du hub"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

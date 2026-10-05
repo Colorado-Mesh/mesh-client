@@ -853,7 +853,35 @@
     },
     "directImage": "Imagen: {{name}}",
     "directImageOpen": "Abrir imagen",
-    "reticulumAttachmentImage": "Imagen adjunta: {{name}}"
+    "reticulumAttachmentImage": "Imagen adjunta: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Solicitud de recepción de archivo",
+      "receiveDestShare": "Destino de recepción de archivos compartidos",
+      "openSettings": "Abrir configuración de archivos entrantes remotos",
+      "openSettingsShort": "Ajustes"
+    },
+    "droneReport": {
+      "title": "Identificación remota de drones",
+      "tileAlt": "Mosaico de mapa de detección de drones",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Zumbido",
+      "pilot": "Piloto",
+      "openDrone": "Ubicación abierta de drones",
+      "openPilot": "Ubicación piloto abierta",
+      "pilotDistance": "Piloto {{distance}} desde dron",
+      "noPosition": "No se informó ninguna posición"
+    },
+    "signalReport": {
+      "label": "Informe de señal",
+      "direct": "Directo",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Ruido {{noise}} dBm",
+      "path": "Ruta: {{path}}",
+      "hops_one": "{{count}} salto",
+      "hops_other": "{{count}} saltos"
+    }
   },
   "common": {
     "close": "Cerrar",
@@ -5749,7 +5777,20 @@
     "showList": "Mostrar salas y hubs",
     "backToList": "Volver a salas y hubs",
     "hideMembers": "Ocultar miembros",
-    "listColumnAria": "Salas y hubs"
+    "listColumnAria": "Salas y hubs",
+    "hubSession": {
+      "summary_one": "Aviso del centro {{count}}",
+      "summary_other": "{{count}} avisos del centro",
+      "topic": "Tema: {{topic}}",
+      "members_one": "{{count}} miembro",
+      "members_other": "{{count}} miembros",
+      "linkTimeouts_one": "{{count}} tiempo de espera del enlace",
+      "linkTimeouts_other": "{{count}} tiempos de espera del enlace",
+      "expand_one": "Mostrar aviso del centro {{count}}",
+      "expand_other": "Mostrar avisos del centro {{count}}",
+      "collapse_one": "Ocultar aviso del centro {{count}}",
+      "collapse_other": "Ocultar avisos del centro {{count}}"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

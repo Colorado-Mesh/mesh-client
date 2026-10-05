@@ -853,7 +853,35 @@
     },
     "directImage": "Gambar: {{name}}",
     "directImageOpen": "Buka Gambar",
-    "reticulumAttachmentImage": "Gambar terlampir: {{name}}"
+    "reticulumAttachmentImage": "Gambar terlampir: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Permintaan penerimaan file",
+      "receiveDestShare": "Tujuan penerimaan file bersama",
+      "openSettings": "Buka pengaturan file masuk jarak jauh",
+      "openSettingsShort": "Pengaturan"
+    },
+    "droneReport": {
+      "title": "ID Jarak Jauh Drone",
+      "tileAlt": "Ubin peta deteksi drone",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Dengung",
+      "pilot": "Pilot",
+      "openDrone": "Buka lokasi drone",
+      "openPilot": "Buka lokasi percontohan",
+      "pilotDistance": "Pilot {{distance}} dari drone",
+      "noPosition": "Tidak ada posisi yang dilaporkan"
+    },
+    "signalReport": {
+      "label": "Laporan sinyal",
+      "direct": "Langsung",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Kebisingan {{noise}} dBm",
+      "path": "Jalur: {{path}}",
+      "hops_one": "{{count}} hop",
+      "hops_other": "{{count}} hop"
+    }
   },
   "common": {
     "close": "Menutup",
@@ -5749,7 +5777,20 @@
     "showList": "Tampilkan ruang dan hub",
     "backToList": "Kembali ke ruang dan hub",
     "hideMembers": "Sembunyikan anggota",
-    "listColumnAria": "Ruang dan hub"
+    "listColumnAria": "Ruang dan hub",
+    "hubSession": {
+      "summary_one": "{{count}} pemberitahuan hub",
+      "summary_other": "{{count}} pemberitahuan hub",
+      "topic": "topik: {{topic}}",
+      "members_one": "{{count}} anggota",
+      "members_other": "{{count}} anggota",
+      "linkTimeouts_one": "{{count}} batas waktu tautan habis",
+      "linkTimeouts_other": "{{count}} batas waktu tautan habis",
+      "expand_one": "Tampilkan pemberitahuan hub {{count}}",
+      "expand_other": "Tampilkan pemberitahuan hub {{count}}",
+      "collapse_one": "Sembunyikan pemberitahuan hub {{count}}",
+      "collapse_other": "Sembunyikan pemberitahuan hub {{count}}"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

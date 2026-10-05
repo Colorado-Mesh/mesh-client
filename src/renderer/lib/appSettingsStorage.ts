@@ -66,6 +66,15 @@ export function getStoreForwardHistoryProfile(): StoreForwardHistoryProfile {
   return DEFAULT_APP_SETTINGS_SHARED.storeForwardHistoryProfile;
 }
 
+/** App → distance unit (miles or km). */
+export function getDistanceUnit(): 'miles' | 'km' {
+  const parsed = parseStoredJson<{ distanceUnit?: unknown }>(
+    getAppSettingsRaw(),
+    'getDistanceUnit',
+  );
+  return parsed?.distanceUnit === 'km' ? 'km' : DEFAULT_APP_SETTINGS_SHARED.distanceUnit;
+}
+
 /** Whether mesh-client may look up host GPS and send the user's location on any protocol. */
 export function isShareMyLocationEnabled(): boolean {
   const parsed = parseStoredJson<{ shareMyLocation?: boolean }>(

@@ -330,6 +330,7 @@ import { OPEN_NOMAD_PAGE_EVENT, type OpenNomadPageDetail } from './lib/nomad/ope
 import { loadNotificationSoundSettings } from './lib/notificationSoundSettings';
 import { ensureOfflineProtocolIdentities } from './lib/offlineProtocolIdentities';
 import { OPEN_RRC_HUB_EVENT } from './lib/openRrcHubFromLink';
+import { subscribeOpenSettingRequests } from './lib/openSettingRequest';
 import {
   formatShortcut,
   readLauncherPins,
@@ -2065,7 +2066,7 @@ function AppContent() {
   }
 
   const openSettingFromLauncher = useCallback(
-    (item: LauncherSettingItem) => {
+    (item: Pick<LauncherSettingItem, 'id' | 'slot'>) => {
       const tabIndex = findTabIndexForSlot(activeTabMappings, item.slot);
       if (tabIndex < 0) return;
       setActiveTab(tabIndex);
@@ -2074,6 +2075,8 @@ function AppContent() {
     },
     [activeTabMappings],
   );
+
+  useEffect(() => subscribeOpenSettingRequests(openSettingFromLauncher), [openSettingFromLauncher]);
 
   const handleToggleLauncherPin = useCallback(
     (slot: TabSlotId) => {

@@ -887,7 +887,37 @@
     },
     "directImage": "Zdjęcie: {{name}}",
     "directImageOpen": "Otwórz obraz",
-    "reticulumAttachmentImage": "Załączone zdjęcie: {{name}}"
+    "reticulumAttachmentImage": "Załączone zdjęcie: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Żądanie odbioru pliku",
+      "receiveDestShare": "Udostępnione miejsce docelowe odbioru plików",
+      "openSettings": "Otwórz ustawienia zdalnego pliku przychodzącego",
+      "openSettingsShort": "Ustawienia"
+    },
+    "droneReport": {
+      "title": "Zdalny identyfikator drona",
+      "tileAlt": "Kafelek mapy wykrywania dronów",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Warkot",
+      "pilot": "Pilot",
+      "openDrone": "Otwórz lokalizację drona",
+      "openPilot": "Otwórz lokalizację pilotażową",
+      "pilotDistance": "Pilot {{distance}} z drona",
+      "noPosition": "Nie zgłoszono żadnego stanowiska"
+    },
+    "signalReport": {
+      "label": "Raport sygnałowy",
+      "direct": "Bezpośredni",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Hałas {{noise}} dBm",
+      "path": "Ścieżka: {{path}}",
+      "hops_one": "{{count}} przeskok",
+      "hops_few": "{{count}} przeskoki",
+      "hops_many": "{{count}} przeskoków",
+      "hops_other": "{{count}} przeskoku"
+    }
   },
   "common": {
     "close": "Zamknij",
@@ -5837,7 +5867,30 @@
     "showList": "Pokaż pokoje i huby",
     "backToList": "Wróć do pokojów i hubów",
     "hideMembers": "Ukryj członków",
-    "listColumnAria": "Pokoje i huby"
+    "listColumnAria": "Pokoje i huby",
+    "hubSession": {
+      "summary_one": "{{count}} komunikat huba",
+      "summary_other": "{{count}} komunikatu huba",
+      "topic": "temat: {{topic}}",
+      "members_one": "{{count}} członek",
+      "members_other": "{{count}} członka",
+      "linkTimeouts_one": "{{count}} przekroczenie czasu łącza",
+      "linkTimeouts_other": "{{count}} przekroczenia czasu łącza",
+      "expand_one": "Pokaż {{count}} komunikat huba",
+      "expand_other": "Pokaż {{count}} komunikatu huba",
+      "collapse_one": "Ukryj {{count}} komunikat huba",
+      "collapse_other": "Ukryj {{count}} komunikatu huba",
+      "summary_few": "{{count}} komunikaty huba",
+      "summary_many": "{{count}} komunikatów huba",
+      "members_few": "{{count}} członkowie",
+      "members_many": "{{count}} członków",
+      "linkTimeouts_few": "{{count}} przekroczenia czasu łącza",
+      "linkTimeouts_many": "{{count}} przekroczeń czasu łącza",
+      "expand_few": "Pokaż {{count}} komunikaty huba",
+      "expand_many": "Pokaż {{count}} komunikatów huba",
+      "collapse_few": "Ukryj {{count}} komunikaty huba",
+      "collapse_many": "Ukryj {{count}} komunikatów huba"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

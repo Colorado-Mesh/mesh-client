@@ -853,7 +853,35 @@
     },
     "directImage": "이미지: {{name}}",
     "directImageOpen": "이미지 열기",
-    "reticulumAttachmentImage": "첨부 이미지: {{name}}"
+    "reticulumAttachmentImage": "첨부 이미지: {{name}}",
+    "rncpControl": {
+      "requestEnable": "파일 수신 요청",
+      "receiveDestShare": "공유 파일 수신 대상",
+      "openSettings": "원격 인바운드 파일 설정 열기",
+      "openSettingsShort": "설정"
+    },
+    "droneReport": {
+      "title": "드론 원격 ID",
+      "tileAlt": "드론 감지 지도 타일",
+      "rssi": "RSSI {{rssi}}dBm",
+      "mac": "맥 {{mac}}",
+      "drone": "무인 비행기",
+      "pilot": "조종사",
+      "openDrone": "드론 위치 공개",
+      "openPilot": "파일럿 위치 열기",
+      "pilotDistance": "드론의 조종사 {{distance}}",
+      "noPosition": "보고된 입장이 없습니다"
+    },
+    "signalReport": {
+      "label": "신호보고",
+      "direct": "직접",
+      "snr": "SNR {{snr}}dB",
+      "rssi": "RSSI {{rssi}}dBm",
+      "noise": "소음 {{noise}}dBm",
+      "path": "경로: {{path}}",
+      "hops_one": "{{count}} 홉",
+      "hops_other": "{{count}} 홉"
+    }
   },
   "common": {
     "close": "닫다",
@@ -5749,7 +5777,20 @@
     "showList": "방과 허브 보기",
     "backToList": "방과 허브로 돌아가기",
     "hideMembers": "멤버 숨기기",
-    "listColumnAria": "방과 허브"
+    "listColumnAria": "방과 허브",
+    "hubSession": {
+      "summary_one": "{{count}} 허브 공지",
+      "summary_other": "{{count}} 허브 공지",
+      "topic": "주제: {{topic}}",
+      "members_one": "{{count}} 회원",
+      "members_other": "{{count}} 회원",
+      "linkTimeouts_one": "{{count}} 링크 시간 초과",
+      "linkTimeouts_other": "{{count}} 링크 시간 초과",
+      "expand_one": "{{count}} 허브 알림 표시",
+      "expand_other": "{{count}} 허브 알림 표시",
+      "collapse_one": "{{count}} 허브 알림 숨기기",
+      "collapse_other": "{{count}} 허브 알림 숨기기"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

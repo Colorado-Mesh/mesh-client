@@ -853,7 +853,35 @@
     },
     "directImage": "Immagine: {{name}}",
     "directImageOpen": "Apri immagine",
-    "reticulumAttachmentImage": "Immagine allegata: {{name}}"
+    "reticulumAttachmentImage": "Immagine allegata: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Richiesta di ricezione file",
+      "receiveDestShare": "Destinazione di ricezione file condivisa",
+      "openSettings": "Apri le impostazioni del file in entrata remoto",
+      "openSettingsShort": "Impostazioni"
+    },
+    "droneReport": {
+      "title": "ID remoto del drone",
+      "tileAlt": "Riquadro della mappa di rilevamento dei droni",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Drone",
+      "pilot": "Pilota",
+      "openDrone": "Apri la posizione del drone",
+      "openPilot": "Apertura della posizione pilota",
+      "pilotDistance": "Pilota {{distance}} dal drone",
+      "noPosition": "Nessuna posizione segnalata"
+    },
+    "signalReport": {
+      "label": "Rapporto sul segnale",
+      "direct": "Diretto",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Rumore {{noise}} dBm",
+      "path": "Percorso: {{path}}",
+      "hops_one": "{{count}} salto",
+      "hops_other": "{{count}} salti"
+    }
   },
   "common": {
     "close": "Chiudi",
@@ -5749,7 +5777,20 @@
     "showList": "Mostra stanze e hub",
     "backToList": "Torna a stanze e hub",
     "hideMembers": "Nascondi membri",
-    "listColumnAria": "Stanze e hub"
+    "listColumnAria": "Stanze e hub",
+    "hubSession": {
+      "summary_one": "Avviso sull'hub {{count}}",
+      "summary_other": "{{count}} avvisi sull'hub",
+      "topic": "argomento: {{topic}}",
+      "members_one": "{{count}} membro",
+      "members_other": "{{count}} membri",
+      "linkTimeouts_one": "{{count}} timeout del collegamento",
+      "linkTimeouts_other": "{{count}} timeout del collegamento",
+      "expand_one": "Mostra avviso hub {{count}}",
+      "expand_other": "Mostra gli avvisi dell'hub {{count}}",
+      "collapse_one": "Nascondi avviso hub {{count}}",
+      "collapse_other": "Nascondi gli avvisi dell'hub {{count}}"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

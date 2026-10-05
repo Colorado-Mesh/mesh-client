@@ -853,7 +853,35 @@
     },
     "directImage": "Bild: {{name}}",
     "directImageOpen": "Bild öffnen",
-    "reticulumAttachmentImage": "Angehängtes Bild: {{name}}"
+    "reticulumAttachmentImage": "Angehängtes Bild: {{name}}",
+    "rncpControl": {
+      "requestEnable": "Dateiempfangsanforderung",
+      "receiveDestShare": "Gemeinsames Dateiempfangsziel",
+      "openSettings": "Öffnen Sie die Einstellungen für Remote-Eingangsdateien",
+      "openSettingsShort": "Einstellungen"
+    },
+    "droneReport": {
+      "title": "Drohnen-Remote-ID",
+      "tileAlt": "Kartenkachel zur Drohnenerkennung",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "Drohne",
+      "pilot": "Pilot",
+      "openDrone": "Drohnenstandort öffnen",
+      "openPilot": "Offener Pilotstandort",
+      "pilotDistance": "Pilot {{distance}} von der Drohne",
+      "noPosition": "Keine Position gemeldet"
+    },
+    "signalReport": {
+      "label": "Signalbericht",
+      "direct": "Direkt",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "Lärm {{noise}} dBm",
+      "path": "Pfad: {{path}}",
+      "hops_one": "{{count}} Hop",
+      "hops_other": "{{count}} Hops"
+    }
   },
   "common": {
     "close": "Schließen",
@@ -5749,7 +5777,20 @@
     "showList": "Räume und Hubs anzeigen",
     "backToList": "Zurück zu Räumen und Hubs",
     "hideMembers": "Mitglieder ausblenden",
-    "listColumnAria": "Räume und Hubs"
+    "listColumnAria": "Räume und Hubs",
+    "hubSession": {
+      "summary_one": "{{count}} Hub-Hinweis",
+      "summary_other": "{{count}} Hub-Benachrichtigungen",
+      "topic": "Thema: {{topic}}",
+      "members_one": "{{count}}-Mitglied",
+      "members_other": "{{count}} Mitglieder",
+      "linkTimeouts_one": "{{count}} Link-Timeout",
+      "linkTimeouts_other": "{{count}} Link-Timeouts",
+      "expand_one": "{{count}} Hub-Hinweis anzeigen",
+      "expand_other": "{{count}} Hub-Benachrichtigungen anzeigen",
+      "collapse_one": "{{count}}-Hub-Hinweis ausblenden",
+      "collapse_other": "{{count}}-Hub-Benachrichtigungen ausblenden"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

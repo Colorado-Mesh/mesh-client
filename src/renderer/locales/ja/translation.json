@@ -853,7 +853,35 @@
     },
     "directImage": "画像： {{name}}",
     "directImageOpen": "画像を開く",
-    "reticulumAttachmentImage": "添付画像： {{name}}"
+    "reticulumAttachmentImage": "添付画像： {{name}}",
+    "rncpControl": {
+      "requestEnable": "ファイル受信リクエスト",
+      "receiveDestShare": "共有ファイル受信先",
+      "openSettings": "リモート受信ファイル設定を開く",
+      "openSettingsShort": "設定"
+    },
+    "droneReport": {
+      "title": "ドローンリモートID",
+      "tileAlt": "ドローン検出マップタイル",
+      "rssi": "RSSI {{rssi}} dBm",
+      "mac": "MAC {{mac}}",
+      "drone": "ドローン",
+      "pilot": "パイロット",
+      "openDrone": "ドローンの位置を公開",
+      "openPilot": "パイロットロケーションをオープンする",
+      "pilotDistance": "ドローンから{{distance}}を操縦する",
+      "noPosition": "ポジションは報告されていません"
+    },
+    "signalReport": {
+      "label": "信号レポート",
+      "direct": "直接",
+      "snr": "SNR {{snr}} dB",
+      "rssi": "RSSI {{rssi}} dBm",
+      "noise": "騒音 {{noise}} dBm",
+      "path": "パス: {{path}}",
+      "hops_one": "{{count}} ホップ",
+      "hops_other": "{{count}} ホップ"
+    }
   },
   "common": {
     "close": "近い",
@@ -5749,7 +5777,20 @@
     "showList": "ルームとハブを表示",
     "backToList": "ルームとハブに戻る",
     "hideMembers": "メンバーを隠す",
-    "listColumnAria": "ルームとハブ"
+    "listColumnAria": "ルームとハブ",
+    "hubSession": {
+      "summary_one": "{{count}} ハブの通知",
+      "summary_other": "{{count}} ハブの通知",
+      "topic": "トピック: {{topic}}",
+      "members_one": "{{count}} メンバー",
+      "members_other": "{{count}} メンバー",
+      "linkTimeouts_one": "{{count}} リンクタイムアウト",
+      "linkTimeouts_other": "{{count}} リンクのタイムアウト",
+      "expand_one": "{{count}} ハブ通知を表示",
+      "expand_other": "{{count}} ハブ通知を表示",
+      "collapse_one": "{{count}} ハブ通知を非表示にする",
+      "collapse_other": "{{count}} ハブ通知を非表示にする"
+    }
   },
   "signalMeter": {
     "rssi": "RSSI",

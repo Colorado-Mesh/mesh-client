@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as RoomsPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, Copy } from 'lucide-react-motion';
+import { ArrowDown, ChevronRight, Copy } from 'lucide-react-motion';
 import {
   type ReactNode,
   useCallback,
@@ -43,6 +43,14 @@ import {
   listRrcNickCompleteCandidates,
   rrcMemberNickLabels,
 } from '@/renderer/lib/rrcNickComplete';
+import {
+  groupRrcNoticeRows,
+  isRrcNoticeGroupExpanded,
+  pruneRrcExpandedNoticeIds,
+  type RrcDisplayRow,
+  type RrcNoticeGroup,
+  toggleRrcNoticeGroupExpansion,
+} from '@/renderer/lib/rrcNoticeGrouping';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage, RrcRoomMember } from '@/shared/rrc-types';
 
@@ -69,9 +77,21 @@ export function estimateRrcRowHeight(msg: RrcChatMessage | null | undefined): nu
   return Math.round(lines * RRC_ROW_LINE_PX * scale + RRC_ROW_GAP_PX);
 }
 
-function rrcMessageVirtualizerKey(msg: RrcChatMessage | null | undefined, index: number): string {
-  if (!msg) return `rrc-slot-${index}`;
-  return msg.id || `rrc-slot-${index}`;
+function estimateRrcDisplayRowHeight(
+  row: RrcDisplayRow | undefined,
+  expandedNoticeIds: ReadonlySet<string>,
+): number {
+  if (!row) return estimateRrcRowHeight(null);
+  if (row.type === 'message') return estimateRrcRowHeight(row.msg);
+  const summary = estimateRrcRowHeight(null);
+  if (!isRrcNoticeGroupExpanded(row.group, expandedNoticeIds)) return summary;
+  return row.group.messages.reduce((sum, msg) => sum + estimateRrcRowHeight(msg), summary);
+}
+
+function rrcDisplayRowVirtualizerKey(row: RrcDisplayRow | undefined, index: number): string {
+  if (!row) return `rrc-slot-${index}`;
+  if (row.type === 'group') return `rrc-group-${row.group.id}`;
+  return row.msg.id || `rrc-slot-${index}`;
 }
 
 const EMPTY_RRC_MEMBERS: readonly RrcRoomMember[] = Object.freeze([]);
@@ -241,6 +261,52 @@ function NickSpan({ nick }: { nick: string }) {
   return <span className={`font-semibold ${rrcNickColorClass(nick)}`}>{nick}</span>;
 }
 
+function RrcNoticeGroupSummary({
+  group,
+  expanded,
+  time,
+  onToggle,
+}: Readonly<{
+  group: RrcNoticeGroup;
+  expanded: boolean;
+  time: string | null;
+  onToggle: (group: RrcNoticeGroup) => void;
+}>) {
+  const { t } = useTranslation();
+  const count = group.messages.length;
+  const details: string[] = [t('rrc.hubSession.summary', { count })];
+  if (group.topic) details.push(t('rrc.hubSession.topic', { topic: group.topic }));
+  if (group.memberCount != null) {
+    details.push(t('rrc.hubSession.members', { count: group.memberCount }));
+  }
+  if (group.linkTimeoutCount > 0) {
+    details.push(t('rrc.hubSession.linkTimeouts', { count: group.linkTimeoutCount }));
+  }
+  return (
+    <div className="flex items-start gap-1 leading-snug">
+      {time && <span className="text-muted shrink-0 text-[0.625rem]">[{time}]</span>}
+      <button
+        type="button"
+        aria-expanded={expanded}
+        aria-label={
+          expanded ? t('rrc.hubSession.collapse', { count }) : t('rrc.hubSession.expand', { count })
+        }
+        onClick={() => {
+          onToggle(group);
+        }}
+        className="hover:text-ink-200 flex min-w-0 flex-1 items-start gap-1 rounded text-left"
+      >
+        <ChevronRight
+          aria-hidden
+          size={12}
+          className={`mt-0.5 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`}
+        />
+        <span className="min-w-0 truncate">{details.join(' · ')}</span>
+      </button>
+    </div>
+  );
+}
+
 export interface RrcChatViewProps {
   connected: boolean;
   /** Focused hub hash — stream identity with activeRoom (hub switch must re-pin). */
@@ -340,6 +406,18 @@ export function RrcChatView({
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   const visibleMessages = useMemo(() => messages.filter(shouldDisplayRrcChatMessage), [messages]);
+  const displayRows = useMemo(() => groupRrcNoticeRows(visibleMessages), [visibleMessages]);
+  const [expandedNoticeIds, setExpandedNoticeIds] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
+  const [expansionPrunedFor, setExpansionPrunedFor] = useState(displayRows);
+  if (expansionPrunedFor !== displayRows) {
+    setExpansionPrunedFor(displayRows);
+    setExpandedNoticeIds((prev) => pruneRrcExpandedNoticeIds(prev, displayRows));
+  }
+  const toggleGroupExpanded = useCallback((group: RrcNoticeGroup) => {
+    setExpandedNoticeIds((prev) => toggleRrcNoticeGroupExpansion(prev, group));
+  }, []);
 
   const nickLabels = useMemo(() => rrcMemberNickLabels(members), [members]);
 
@@ -365,8 +443,8 @@ export function RrcChatView({
   const payloadLimit = resolveRrcMsgBodyLimit(maxMsgBodyBytes);
 
   const estimateSize = useCallback(
-    (index: number) => estimateRrcRowHeight(visibleMessages[index]),
-    [visibleMessages],
+    (index: number) => estimateRrcDisplayRowHeight(displayRows[index], expandedNoticeIds),
+    [displayRows, expandedNoticeIds],
   );
 
   const measureElement = useMemo(
@@ -375,12 +453,12 @@ export function RrcChatView({
   );
 
   const messageVirtualizer = useVirtualizer({
-    count: visibleMessages.length,
+    count: displayRows.length,
     getScrollElement: () => scrollContainerRef.current,
     estimateSize,
     measureElement,
     overscan: 10,
-    getItemKey: (index) => rrcMessageVirtualizerKey(visibleMessages[index], index),
+    getItemKey: (index) => rrcDisplayRowVirtualizerKey(displayRows[index], index),
     anchorTo: 'end',
     followOnAppend: true,
     scrollEndThreshold: CHAT_SCROLL_END_THRESHOLD,
@@ -556,6 +634,89 @@ export function RrcChatView({
     });
   }, [updateScrollButtonVisibility]);
 
+  const formatLineTime = (msg: RrcChatMessage | undefined): string | null =>
+    showTimestamps && msg
+      ? formatDisplayTime(msg.timestamp, { withSeconds: true, use24Hour: use24HourTime })
+      : null;
+
+  const renderLineParts = (msg: RrcChatMessage): { lineClass: string; inner: ReactNode } => {
+    const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
+    const time = formatLineTime(msg);
+    const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
+    // Inbound whispers are wire NOTICE; outbound are msg; legacy → system → self nick.
+    const selfNick = nickname.trim();
+    const lineNick = whisperEcho ? selfNick || formatHash(msg.sender_hash ?? '') || 'me' : nick;
+    const whisperAsRoomMsg =
+      Boolean(whisperEcho) ||
+      (isRrcWhisperRoom(activeRoom) &&
+        (msg.kind === 'notice' || msg.kind === 'msg') &&
+        Boolean(nick));
+    const lineClass = whisperAsRoomMsg
+      ? 'text-ink-100'
+      : msg.kind === 'notice' || msg.kind === 'system'
+        ? 'text-ink-400'
+        : msg.kind === 'action'
+          ? 'text-cyan-200/90 italic'
+          : msg.kind === 'error'
+            ? 'text-red-300'
+            : 'text-ink-100';
+    const rawBody = whisperEcho ? whisperEcho.text : msg.body;
+    const plainBody = highlightRrcSelfMentions(rawBody, nickname, inlineOpts);
+    const body =
+      msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg ? (
+        <RrcFormattedBody text={rawBody} fallback={plainBody} onOpenDm={onOpenDm} />
+      ) : (
+        plainBody
+      );
+
+    const inner = (
+      <div className="group flex items-start gap-1 leading-snug">
+        {time && <span className="text-muted shrink-0 text-[0.625rem]">[{time}]</span>}
+        <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
+          {msg.kind === 'action' ? (
+            <>
+              * <NickSpan nick={nick} /> {body}
+            </>
+          ) : whisperAsRoomMsg || msg.kind === 'msg' ? (
+            <>
+              <span className={`font-semibold ${rrcNickColorClass(lineNick)}`}>
+                &lt;{lineNick}&gt;
+              </span>{' '}
+              {body}
+            </>
+          ) : msg.kind === 'notice' || msg.kind === 'system' || msg.kind === 'error' ? (
+            <>
+              {msg.kind === 'notice' && nick ? (
+                <span className={rrcNickColorClass(nick)}>-{nick}- </span>
+              ) : (
+                <span className="text-muted">* </span>
+              )}
+              {body}
+            </>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className={`message-action text-muted shrink-0 rounded p-0.5 text-xs ${
+            alwaysShowMessageActions
+              ? 'opacity-100'
+              : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+          }`}
+          aria-label={t('rrc.copyMessage')}
+          title={t('rrc.copyMessage')}
+          onClick={() => {
+            void navigator.clipboard.writeText(msg.body).catch((e: unknown) => {
+              console.debug('[RrcChatView] clipboard ' + String(e));
+            });
+          }}
+        >
+          <Copy size={11} />
+        </button>
+      </div>
+    );
+    return { lineClass, inner };
+  };
+
   if (!connected) {
     return (
       <div className="text-ink-400 flex flex-1 items-center justify-center p-6 text-sm">
@@ -586,100 +747,55 @@ export function RrcChatView({
               style={{ height: `${messageVirtualizer.getTotalSize()}px` }}
             >
               {messageVirtualizer.getVirtualItems().map((vi) => {
-                const msg = visibleMessages[vi.index];
-                if (!msg) return null;
-                const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
-                const time = showTimestamps
-                  ? formatDisplayTime(msg.timestamp, {
-                      withSeconds: true,
-                      use24Hour: use24HourTime,
-                    })
-                  : null;
-                const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
-                // Inbound whispers are wire NOTICE; outbound are msg; legacy → system → self nick.
-                const selfNick = nickname.trim();
-                const lineNick = whisperEcho
-                  ? selfNick || formatHash(msg.sender_hash ?? '') || 'me'
-                  : nick;
-                const whisperAsRoomMsg =
-                  Boolean(whisperEcho) ||
-                  (isRrcWhisperRoom(activeRoom) &&
-                    (msg.kind === 'notice' || msg.kind === 'msg') &&
-                    Boolean(nick));
-                const lineClass = whisperAsRoomMsg
-                  ? 'text-ink-100'
-                  : msg.kind === 'notice' || msg.kind === 'system'
-                    ? 'text-ink-400'
-                    : msg.kind === 'action'
-                      ? 'text-cyan-200/90 italic'
-                      : msg.kind === 'error'
-                        ? 'text-red-300'
-                        : 'text-ink-100';
-                const rawBody = whisperEcho ? whisperEcho.text : msg.body;
-                const plainBody = highlightRrcSelfMentions(rawBody, nickname, inlineOpts);
-                const body =
-                  msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg ? (
-                    <RrcFormattedBody text={rawBody} fallback={plainBody} onOpenDm={onOpenDm} />
-                  ) : (
-                    plainBody
+                const row = displayRows[vi.index];
+                if (!row) return null;
+                if (row.type === 'group') {
+                  const expanded = isRrcNoticeGroupExpanded(row.group, expandedNoticeIds);
+                  return (
+                    <div
+                      key={vi.key}
+                      data-index={vi.index}
+                      data-testid="rrc-notice-group"
+                      ref={messageVirtualizer.measureElement}
+                      className="text-ink-400 absolute top-0 left-0 w-full"
+                      style={{ transform: `translateY(${vi.start}px)` }}
+                    >
+                      <RrcNoticeGroupSummary
+                        group={row.group}
+                        expanded={expanded}
+                        time={formatLineTime(row.group.messages[row.group.messages.length - 1])}
+                        onToggle={toggleGroupExpanded}
+                      />
+                      {expanded && (
+                        <div className="border-ink-700 ml-3 border-l pl-2">
+                          {row.group.messages.map((msg) => {
+                            const line = renderLineParts(msg);
+                            return (
+                              <div
+                                key={msg.id}
+                                data-testid="rrc-chat-line"
+                                className={line.lineClass}
+                              >
+                                {line.inner}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
-
+                }
+                const line = renderLineParts(row.msg);
                 return (
                   <div
                     key={vi.key}
                     data-index={vi.index}
                     data-testid="rrc-chat-line"
                     ref={messageVirtualizer.measureElement}
-                    className={`absolute top-0 left-0 w-full ${lineClass}`}
+                    className={`absolute top-0 left-0 w-full ${line.lineClass}`}
                     style={{ transform: `translateY(${vi.start}px)` }}
                   >
-                    <div className="group flex items-start gap-1 leading-snug">
-                      {time && (
-                        <span className="text-muted shrink-0 text-[0.625rem]">[{time}]</span>
-                      )}
-                      <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
-                        {msg.kind === 'action' ? (
-                          <>
-                            * <NickSpan nick={nick} /> {body}
-                          </>
-                        ) : whisperAsRoomMsg || msg.kind === 'msg' ? (
-                          <>
-                            <span className={`font-semibold ${rrcNickColorClass(lineNick)}`}>
-                              &lt;{lineNick}&gt;
-                            </span>{' '}
-                            {body}
-                          </>
-                        ) : msg.kind === 'notice' ||
-                          msg.kind === 'system' ||
-                          msg.kind === 'error' ? (
-                          <>
-                            {msg.kind === 'notice' && nick ? (
-                              <span className={rrcNickColorClass(nick)}>-{nick}- </span>
-                            ) : (
-                              <span className="text-muted">* </span>
-                            )}
-                            {body}
-                          </>
-                        ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        className={`message-action text-muted shrink-0 rounded p-0.5 text-xs ${
-                          alwaysShowMessageActions
-                            ? 'opacity-100'
-                            : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
-                        }`}
-                        aria-label={t('rrc.copyMessage')}
-                        title={t('rrc.copyMessage')}
-                        onClick={() => {
-                          void navigator.clipboard.writeText(msg.body).catch((e: unknown) => {
-                            console.debug('[RrcChatView] clipboard ' + String(e));
-                          });
-                        }}
-                      >
-                        <Copy size={11} />
-                      </button>
-                    </div>
+                    {line.inner}
                   </div>
                 );
               })}
