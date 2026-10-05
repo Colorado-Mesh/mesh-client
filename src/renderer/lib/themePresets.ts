@@ -210,7 +210,7 @@ const SURFACE_TOKEN_STEPS = {
   secondaryDark: 700,
   muted: 400,
   chatIncomingBg: 800,
-  chatIncomingBorder: 800,
+  chatIncomingBorder: 700,
   messageActionsBarBg: 900,
   messageActionButtonHover: 400,
 } as const satisfies Partial<Record<ThemeColorKey, InkStep>>;

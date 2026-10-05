@@ -148,8 +148,8 @@
     monospace;
   /* Chat incoming (channel): opaque border + rgba fill so the edge never
      color-mixes to a light/white ring on Chromium/Electron. */
-  --color-chat-incoming-bg: rgb(33 45 64 / 0.38);
-  --color-chat-incoming-border: #212d40;
+  --color-chat-incoming-bg: rgb(33 45 64 / 0.85);
+  --color-chat-incoming-border: #364156;
   /* Own messages: readable (meshtastic-700) fill at 22%, accent (meshtastic-500) border at 25%. */
   --color-chat-outgoing-bg: rgb(4 120 87 / 0.22);
   --color-chat-outgoing-border: rgb(103 232 180 / 0.25);
