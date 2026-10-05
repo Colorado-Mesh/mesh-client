@@ -56,6 +56,7 @@ import type { ModulePortEvent, PaxCounterPoint } from './meshtasticModuleEvents'
 import { attachMeshtasticModulePortSideEffects } from './meshtasticModulePortSideEffects';
 import type { MeshtasticMqttClientProxyBridge } from './meshtasticMqttClientProxy';
 import { attachMeshtasticNodeSideEffects } from './meshtasticNodeSideEffects';
+import type { MeshtasticPostConfigureSilenceTracker } from './meshtasticPostConfigureSilence';
 import { attachMeshtasticRawPacketSideEffects } from './meshtasticRawPacketSideEffects';
 import { MESHTASTIC_REGION_PRESETS_SLICE_KEY } from './meshtasticRegionPresets';
 import { attachMeshtasticRouterSideEffects } from './meshtasticRouterSideEffects';
@@ -149,6 +150,7 @@ export interface MeshtasticRuntimeWireEffectsDeps {
   unsubscribesRef: RefObject<(() => void)[]>;
   virtualNodeIdRef: RefObject<number>;
   touchLastData: () => void;
+  postConfigureSilence?: MeshtasticPostConfigureSilenceTracker;
   applyOwnNodeBatteryFromDeviceMetrics: (batteryLevel: number) => void;
   getNodeName: (nodeNum: number) => string;
   updateNodes: (updater: (prev: Map<number, MeshNode>) => Map<number, MeshNode>) => void;
@@ -452,6 +454,7 @@ export function attachMeshtasticRuntimeWireEffects(
       setMeshtasticConfigurePhase(false);
       meshtasticIngestSessionRef.current?.setConfiguring(false);
       lastDataReceivedRef.current = Date.now();
+      deps.postConfigureSilence?.markConfigured();
       startWatchdog();
       void refreshOurPositionRef.current().catch((e: unknown) => {
         console.debug(

@@ -177,8 +177,20 @@ export function createChatScrollAdjustPredicate(deps: ChatScrollAdjustDeps) {
   return (
     item: VirtualItem,
     _delta: number,
-    instance: Pick<Virtualizer<HTMLDivElement, Element>, 'scrollDirection' | 'isAtEnd'>,
+    instance: Pick<
+      Virtualizer<HTMLDivElement, Element>,
+      'scrollDirection' | 'isAtEnd' | 'itemSizeCache' | 'scrollOffset' | 'scrollAdjustments'
+    >,
   ): boolean => {
+    // First measurement of a row above the fold: the estimate→actual delta must be
+    // compensated in either direction, or content shifts under the reader while
+    // scrolling up into unmeasured history.
+    if (
+      !instance.itemSizeCache.has(item.key) &&
+      item.start < (instance.scrollOffset ?? 0) + instance.scrollAdjustments
+    ) {
+      return true;
+    }
     if (instance.scrollDirection === 'backward') return false;
     // Pin ref updates in React onScroll, after virtualizer flushSync during resizeItem.
     if (!instance.isAtEnd()) return false;

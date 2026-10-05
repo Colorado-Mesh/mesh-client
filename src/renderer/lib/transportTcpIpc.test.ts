@@ -66,6 +66,32 @@ describe('TransportTcpIpc', () => {
     reader.releaseLock();
   });
 
+  it('getLinkStats counts raw bytes and decoded frames separately', async () => {
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(5_000);
+    const transport = new TransportTcpIpc('192.168.200.4', 4403);
+    expect(transport.getLinkStats()).toEqual({
+      rawBytes: 0,
+      lastRawAt: null,
+      frames: 0,
+      lastFrameAt: null,
+    });
+
+    const reader = transport.fromDevice.getReader();
+    onDataCallback?.(new Uint8Array([0x94, 0xc3, 0, 2, 0xaa, 0xbb]));
+    await reader.read();
+    onDataCallback?.(new Uint8Array([0x94, 0xc3, 0, 4, 0x01]));
+    await Promise.resolve();
+
+    expect(transport.getLinkStats()).toEqual({
+      rawBytes: 11,
+      lastRawAt: 5_000,
+      frames: 1,
+      lastFrameAt: 5_000,
+    });
+    reader.releaseLock();
+    nowSpy.mockRestore();
+  });
+
   it('onDisconnected closes the fromDevice stream', async () => {
     const transport = new TransportTcpIpc('192.168.200.4', 4403);
     const reader = transport.fromDevice.getReader();

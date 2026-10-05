@@ -471,3 +471,266 @@ index ff5ccb00f5b9b1f80f0126a0fb6e757fd19ddc6b..463cd35b1948754390cceb6176d1dd11
 -    },
 -  });
 +}
+diff --git a/src/utils/transform/fromDevice.js b/src/utils/transform/fromDevice.js
+index e451fa6db2a2c16ffb5a2f6b49e4c6f4245e89ae..480cd37267544550ff76aaec88911e5e27effd90 100755
+--- a/src/utils/transform/fromDevice.js
++++ b/src/utils/transform/fromDevice.js
+@@ -1,48 +1,69 @@
++// mesh-client: rewritten stream framer — see fromDevice.ts for rationale. The length header
++// is authoritative; payload bytes are never scanned for the 0x94 0xC3 magic.
++const MAX_FRAME_PAYLOAD_BYTES = 512;
++const FRAME_HEADER_BYTES = 4;
++const START1 = 0x94;
++const START2 = 0xc3;
++const RESYNC_LOG_INTERVAL_MS = 10_000;
+ export const fromDeviceStream = ()=>{
+-  let byteBuffer = new Uint8Array([]);
++  let byteBuffer = new Uint8Array(0);
+   const textDecoder = new TextDecoder();
++  let resyncCount = 0;
++  let lastResyncLogAt = 0;
++  const noteResync = (reason)=>{
++    resyncCount += 1;
++    const now = Date.now();
++    if (now - lastResyncLogAt >= RESYNC_LOG_INTERVAL_MS) {
++      lastResyncLogAt = now;
++      console.debug(`[fromDeviceStream] resync (${reason}); total resyncs=${resyncCount}`);
++    }
++  };
+   return new TransformStream({
+     transform (chunk, controller) {
+-      // onReleaseEvent.subscribe(() => {
+-      //   controller.terminate();
+-      // });
+-      byteBuffer = new Uint8Array([
+-        ...byteBuffer,
+-        ...chunk
+-      ]);
+-      let processingExhausted = false;
+-      while(byteBuffer.length !== 0 && !processingExhausted){
+-        const framingIndex = byteBuffer.findIndex((byte)=>byte === 0x94);
+-        const framingByte2 = byteBuffer[framingIndex + 1];
+-        if (framingByte2 === 0xc3) {
+-          if (byteBuffer.subarray(0, framingIndex).length) {
+-            controller.enqueue({
+-              type: "debug",
+-              data: textDecoder.decode(byteBuffer.subarray(0, framingIndex))
+-            });
+-            byteBuffer = byteBuffer.subarray(framingIndex);
+-          }
+-          const msb = byteBuffer[2];
+-          const lsb = byteBuffer[3];
+-          if (msb !== undefined && lsb !== undefined && byteBuffer.length >= 4 + (msb << 8) + lsb) {
+-            const packet = byteBuffer.subarray(4, 4 + (msb << 8) + lsb);
+-            const malformedDetectorIndex = packet.findIndex((byte)=>byte === 0x94);
+-            if (malformedDetectorIndex !== -1 && packet[malformedDetectorIndex + 1] === 0xc3) {
+-              console.warn(`⚠️ Malformed packet found, discarding: ${byteBuffer.subarray(0, malformedDetectorIndex - 1).toString()}`);
+-              byteBuffer = byteBuffer.subarray(malformedDetectorIndex);
+-            } else {
+-              byteBuffer = byteBuffer.subarray(3 + (msb << 8) + lsb + 1);
+-              controller.enqueue({
+-                type: "packet",
+-                data: packet
+-              });
+-            }
+-          } else {
+-            /** Only partioal message in buffer, wait for the rest */ processingExhausted = true;
+-          }
+-        } else {
+-          /** Message not complete, only 1 byte in buffer */ processingExhausted = true;
++      if (chunk.length > 0) {
++        const merged = new Uint8Array(byteBuffer.length + chunk.length);
++        merged.set(byteBuffer, 0);
++        merged.set(chunk, byteBuffer.length);
++        byteBuffer = merged;
++      }
++      while(byteBuffer.length > 0){
++        const start = byteBuffer.indexOf(START1);
++        if (start === -1) {
++          controller.enqueue({
++            type: "debug",
++            data: textDecoder.decode(byteBuffer)
++          });
++          byteBuffer = new Uint8Array(0);
++          break;
++        }
++        if (start > 0) {
++          controller.enqueue({
++            type: "debug",
++            data: textDecoder.decode(byteBuffer.subarray(0, start))
++          });
++          byteBuffer = byteBuffer.subarray(start);
++        }
++        if (byteBuffer.length < 2) break;
++        if (byteBuffer[1] !== START2) {
++          noteResync("stray start byte");
++          byteBuffer = byteBuffer.subarray(1);
++          continue;
++        }
++        if (byteBuffer.length < FRAME_HEADER_BYTES) break;
++        const length = byteBuffer[2] << 8 | byteBuffer[3];
++        if (length > MAX_FRAME_PAYLOAD_BYTES) {
++          noteResync(`oversize length ${length}`);
++          byteBuffer = byteBuffer.subarray(1);
++          continue;
+         }
++        const frameEnd = FRAME_HEADER_BYTES + length;
++        if (byteBuffer.length < frameEnd) break;
++        const packet = byteBuffer.slice(FRAME_HEADER_BYTES, frameEnd);
++        byteBuffer = byteBuffer.subarray(frameEnd);
++        controller.enqueue({
++          type: "packet",
++          data: packet
++        });
+       }
+     }
+   });
+diff --git a/src/utils/transform/fromDevice.ts b/src/utils/transform/fromDevice.ts
+index 832d73565bf3010478d7e84a237cb239e61e2d3a..735721df7b3bf688de41279406730c60ee81db80 100755
+--- a/src/utils/transform/fromDevice.ts
++++ b/src/utils/transform/fromDevice.ts
+@@ -1,70 +1,88 @@
+ import type { DeviceOutput } from "../../types.ts";
+ 
++// mesh-client: rewritten stream framer. The upstream version scanned each payload for the
++// 0x94 0xC3 magic and discarded valid frames that happened to contain it, resynced 4 bytes
++// off (payload index used as buffer index), stalled forever on a stray 0x94 not followed by
++// 0xC3, and accepted any 16-bit length. Together those wedged TCP/serial links until the
++// watchdog reconnected. The length header is authoritative (same as firmware StreamAPI and
++// the Python StreamInterface); payload bytes are never inspected.
++
++/** Firmware MAX_TO_FROM_RADIO_SIZE; larger headers are noise and trigger a resync. */
++const MAX_FRAME_PAYLOAD_BYTES = 512;
++const FRAME_HEADER_BYTES = 4;
++const START1 = 0x94;
++const START2 = 0xc3;
++const RESYNC_LOG_INTERVAL_MS = 10_000;
++
+ export const fromDeviceStream: () => TransformStream<Uint8Array, DeviceOutput> =
+-  (
+-    // onReleaseEvent: SimpleEventDispatcher<boolean>,
+-  ) => {
+-    let byteBuffer = new Uint8Array([]);
++  () => {
++    let byteBuffer = new Uint8Array(0);
+     const textDecoder = new TextDecoder();
++    let resyncCount = 0;
++    let lastResyncLogAt = 0;
++
++    const noteResync = (reason: string): void => {
++      resyncCount += 1;
++      const now = Date.now();
++      if (now - lastResyncLogAt >= RESYNC_LOG_INTERVAL_MS) {
++        lastResyncLogAt = now;
++        console.debug(
++          `[fromDeviceStream] resync (${reason}); total resyncs=${resyncCount}`,
++        );
++      }
++    };
++
+     return new TransformStream<Uint8Array, DeviceOutput>({
+       transform(chunk: Uint8Array, controller): void {
+-        // onReleaseEvent.subscribe(() => {
+-        //   controller.terminate();
+-        // });
+-        byteBuffer = new Uint8Array([...byteBuffer, ...chunk]);
+-        let processingExhausted = false;
+-        while (byteBuffer.length !== 0 && !processingExhausted) {
+-          const framingIndex = byteBuffer.findIndex((byte) => byte === 0x94);
+-          const framingByte2 = byteBuffer[framingIndex + 1];
+-          if (framingByte2 === 0xc3) {
+-            if (byteBuffer.subarray(0, framingIndex).length) {
+-              controller.enqueue({
+-                type: "debug",
+-                data: textDecoder.decode(byteBuffer.subarray(0, framingIndex)),
+-              });
+-              byteBuffer = byteBuffer.subarray(framingIndex);
+-            }
++        if (chunk.length > 0) {
++          const merged = new Uint8Array(byteBuffer.length + chunk.length);
++          merged.set(byteBuffer, 0);
++          merged.set(chunk, byteBuffer.length);
++          byteBuffer = merged;
++        }
+ 
+-            const msb = byteBuffer[2];
+-            const lsb = byteBuffer[3];
++        while (byteBuffer.length > 0) {
++          const start = byteBuffer.indexOf(START1);
++          if (start === -1) {
++            controller.enqueue({
++              type: "debug",
++              data: textDecoder.decode(byteBuffer),
++            });
++            byteBuffer = new Uint8Array(0);
++            break;
++          }
++          if (start > 0) {
++            controller.enqueue({
++              type: "debug",
++              data: textDecoder.decode(byteBuffer.subarray(0, start)),
++            });
++            byteBuffer = byteBuffer.subarray(start);
++          }
+ 
+-            if (
+-              msb !== undefined &&
+-              lsb !== undefined &&
+-              byteBuffer.length >= 4 + (msb << 8) + lsb
+-            ) {
+-              const packet = byteBuffer.subarray(4, 4 + (msb << 8) + lsb);
++          if (byteBuffer.length < 2) break;
++          if (byteBuffer[1] !== START2) {
++            noteResync("stray start byte");
++            byteBuffer = byteBuffer.subarray(1);
++            continue;
++          }
+ 
+-              const malformedDetectorIndex = packet.findIndex(
+-                (byte) => byte === 0x94,
+-              );
+-              if (
+-                malformedDetectorIndex !== -1 &&
+-                packet[malformedDetectorIndex + 1] === 0xc3
+-              ) {
+-                console.warn(
+-                  `⚠️ Malformed packet found, discarding: ${byteBuffer
+-                    .subarray(0, malformedDetectorIndex - 1)
+-                    .toString()}`,
+-                );
++          if (byteBuffer.length < FRAME_HEADER_BYTES) break;
++          const length = ((byteBuffer[2] ?? 0) << 8) | (byteBuffer[3] ?? 0);
++          if (length > MAX_FRAME_PAYLOAD_BYTES) {
++            noteResync(`oversize length ${length}`);
++            byteBuffer = byteBuffer.subarray(1);
++            continue;
++          }
+ 
+-                byteBuffer = byteBuffer.subarray(malformedDetectorIndex);
+-              } else {
+-                byteBuffer = byteBuffer.subarray(3 + (msb << 8) + lsb + 1);
++          const frameEnd = FRAME_HEADER_BYTES + length;
++          if (byteBuffer.length < frameEnd) break;
+ 
+-                controller.enqueue({
+-                  type: "packet",
+-                  data: packet,
+-                });
+-              }
+-            } else {
+-              /** Only partioal message in buffer, wait for the rest */
+-              processingExhausted = true;
+-            }
+-          } else {
+-            /** Message not complete, only 1 byte in buffer */
+-            processingExhausted = true;
+-          }
++          const packet = byteBuffer.slice(FRAME_HEADER_BYTES, frameEnd);
++          byteBuffer = byteBuffer.subarray(frameEnd);
++          controller.enqueue({
++            type: "packet",
++            data: packet,
++          });
+         }
+       },
+     });

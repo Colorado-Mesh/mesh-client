@@ -1,6 +1,16 @@
 import type { Types } from '@meshtastic/core';
 import { Utils } from '@meshtastic/core';
 
+/** Inbound byte/frame counters for watchdog diagnostics (radio silent vs decoder stuck). */
+export interface MeshtasticLinkStats {
+  rawBytes: number;
+  /** `Date.now()` of the last raw chunk, or null before any data. */
+  lastRawAt: number | null;
+  frames: number;
+  /** `Date.now()` of the last decoded `packet` output, or null before any frame. */
+  lastFrameAt: number | null;
+}
+
 /**
  * IPC-backed Transport implementation for Meshtastic's native TCP streaming API (port 4403).
  * The raw socket lives in the Electron main process; this class only carries framed bytes
@@ -18,6 +28,12 @@ export class TransportTcpIpc implements Types.Transport {
   private _fromRadioUnsub: (() => void) | null = null;
   private _disconnectUnsub: (() => void) | null = null;
   private readonly _framerWriter: WritableStreamDefaultWriter<Uint8Array>;
+  private readonly _stats: MeshtasticLinkStats = {
+    rawBytes: 0,
+    lastRawAt: null,
+    frames: 0,
+    lastFrameAt: null,
+  };
 
   public readonly toDevice: WritableStream<Uint8Array>;
   public readonly fromDevice: ReadableStream<Types.DeviceOutput>;
@@ -30,10 +46,23 @@ export class TransportTcpIpc implements Types.Transport {
     // Utils.toDeviceStream which is a shared singleton TransformStream unsafe to reuse
     // across reconnects (see patches/@jsr__meshtastic__transport-web-serial@0.2.5.patch).
     const framer = Utils.fromDeviceStream();
-    this.fromDevice = framer.readable;
+    const stats = this._stats;
+    this.fromDevice = framer.readable.pipeThrough(
+      new TransformStream<Types.DeviceOutput, Types.DeviceOutput>({
+        transform(output, controller) {
+          if (output.type === 'packet') {
+            stats.frames += 1;
+            stats.lastFrameAt = Date.now();
+          }
+          controller.enqueue(output);
+        },
+      }),
+    );
     this._framerWriter = framer.writable.getWriter();
 
     this._fromRadioUnsub = window.electronAPI.meshtastic.tcp.onData((bytes) => {
+      stats.rawBytes += bytes.length;
+      stats.lastRawAt = Date.now();
       void this._framerWriter.write(bytes).catch(() => {
         // catch-no-log-ok framer writer closed during teardown race
       });
@@ -52,6 +81,10 @@ export class TransportTcpIpc implements Types.Transport {
         this._teardownListeners();
       },
     });
+  }
+
+  getLinkStats(): MeshtasticLinkStats {
+    return { ...this._stats };
   }
 
   async connect(): Promise<void> {

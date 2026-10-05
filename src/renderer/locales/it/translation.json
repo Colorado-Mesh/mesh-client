@@ -1682,7 +1682,8 @@
     "lastConnectionLabel": "Ultima connessione",
     "meshcoreBleWindowsInAppPairingHint": "Su Windows, seleziona la radio qui e inserisci il PIN mostrato sullo schermo. mesh-client lo accoppia per te, quindi non è necessario accoppiarlo in Impostazioni di Windows. Chiudi prima l'app MeshCore sul telefono; la radio accetta solo una connessione Bluetooth alla volta.",
     "stageEnterPinWindows": "Inserisci il PIN visualizzato sulla radio per associarlo a Windows",
-    "stagePairingWindows": "Accoppiamento con Windows..."
+    "stagePairingWindows": "Accoppiamento con Windows...",
+    "meshtasticSilentAfterConfigure": "Connesso alla radio, ma ha smesso di inviare traffico mesh dopo la configurazione. Riconnettersi automaticamente. Se questo continua ad accadere, controllare la connessione di rete della radio o riavviarla."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Impossibile caricare i membri: {{message}}",

@@ -29,6 +29,7 @@ import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconT
 import { ReticulumSidecarInterfaceIssueTracker } from './reticulumSidecarIssueTracker';
 import {
   logReticulumSidecarStderrLine,
+  normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
   ReticulumSidecarStderrDedupe,
   shouldForwardReticulumSidecarStdout,
@@ -56,6 +57,8 @@ export function sidecarChildEnv(): NodeJS.ProcessEnv {
     LANG: process.env.LANG,
     LC_ALL: process.env.LC_ALL,
     RUST_LOG: resolveSidecarRustLog(),
+    // Main parses tracing level/target from stdout; colored output hides them.
+    NO_COLOR: '1',
   };
   if (process.platform === 'win32') {
     env.APPDATA = process.env.APPDATA;
@@ -518,7 +521,7 @@ export class ReticulumSidecarManager extends EventEmitter {
 
     let stdoutBuffer = '';
     const processStdoutLine = (line: string): void => {
-      const text = sanitizeLogMessage(line.trim());
+      const text = normalizeReticulumSidecarOutputLine(line);
       if (!text) return;
       this.recordSidecarOutputLine(text);
       if (!shouldForwardReticulumSidecarStdout(text)) return;
@@ -536,7 +539,7 @@ export class ReticulumSidecarManager extends EventEmitter {
       stdoutBuffer = '';
     });
     proc.stderr?.on('data', (chunk: Buffer) => {
-      const text = sanitizeLogMessage(chunk.toString('utf8').trim());
+      const text = normalizeReticulumSidecarOutputLine(chunk.toString('utf8'));
       this.recordSidecarOutputLine(text);
       logReticulumSidecarStderrLine(
         text,

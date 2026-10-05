@@ -1718,7 +1718,8 @@
     "lastConnectionLabel": "Останнє з'єднання",
     "meshcoreBleWindowsInAppPairingHint": "У Windows виберіть радіо тут і введіть PIN-КОД, показаний на екрані. mesh-client з'єднує його для вас, тому вам не потрібно з'єднувати його в налаштуваннях Windows. Спочатку закрийте програму MeshCore на телефоні; радіоприймач одночасно приймає лише одне з'єднання Bluetooth.",
     "stageEnterPinWindows": "Введіть PIN-КОД, який відображається на радіо, щоб з'єднати його з Windows",
-    "stagePairingWindows": "З'єднання з Windows…"
+    "stagePairingWindows": "З'єднання з Windows…",
+    "meshtasticSilentAfterConfigure": "Підключено до радіоприймача, але він припинив надсилати мережевий трафік після налаштування. Повторне підключення автоматично. Якщо це продовжуватиметься, перевірте підключення радіостанції до мережі або перезапустіть її."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Не вдалося завантажити учасників: {{message}}",

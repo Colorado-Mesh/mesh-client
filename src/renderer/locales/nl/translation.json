@@ -1682,7 +1682,8 @@
     "lastConnectionLabel": "Laatste verbinding",
     "meshcoreBleWindowsInAppPairingHint": "Op Windows selecteert u hier de radio en voert u de PINCODE in die op het scherm wordt weergegeven. mesh-client koppelt deze voor u, zodat u deze niet hoeft te koppelen in Windows-instellingen. Sluit eerst de MeshCore-app op je telefoon; de radio accepteert slechts één Bluetooth-verbinding tegelijk.",
     "stageEnterPinWindows": "Voer de PINCODE in die op uw radio wordt weergegeven om deze met Windows te koppelen",
-    "stagePairingWindows": "Koppelen met Windows..."
+    "stagePairingWindows": "Koppelen met Windows...",
+    "meshtasticSilentAfterConfigure": "Verbonden met de radio, maar het stopte met het verzenden van mesh-verkeer na de installatie. Automatisch opnieuw verbinding maken. Als dit blijft gebeuren, controleer dan de netwerkverbinding van de radio of start deze opnieuw op."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Kan leden niet laden: {{message}}",

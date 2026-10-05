@@ -1,5 +1,17 @@
 import { MS_PER_SECOND } from '../shared/timeConstants';
 import type { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
+import { sanitizeLogMessage } from './sanitize-log-message';
+
+// eslint-disable-next-line no-control-regex
+const ANSI_CSI_SEQUENCE = /\u001b\[[0-9;?]*[A-Za-z]/g;
+
+/**
+ * Strip ANSI color codes before sanitizing: sanitize turns ESC into a space, leaving
+ * `[32m` fragments that hide the tracing level/target from the forward filter.
+ */
+export function normalizeReticulumSidecarOutputLine(raw: string): string {
+  return sanitizeLogMessage(raw.replace(ANSI_CSI_SEQUENCE, ''));
+}
 
 /** Sidecar stderr lines matching Reticulum AutoInterface beacon TX failures. */
 const AUTO_BEACON_TX_FAILED_MARKER = 'auto: beacon TX failed';

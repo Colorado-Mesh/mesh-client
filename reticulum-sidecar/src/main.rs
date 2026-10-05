@@ -115,7 +115,10 @@ fn run_validate_config(config_dir: &Path, json: bool) -> ExitCode {
 
 #[tokio::main]
 async fn main() -> ExitCode {
+    // stdout is a pipe to Electron main, which parses the level/target tokens; ANSI codes
+    // break that parse (tracing-subscriber does not detect non-TTY writers).
     tracing_subscriber::fmt()
+        .with_ansi(false)
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),

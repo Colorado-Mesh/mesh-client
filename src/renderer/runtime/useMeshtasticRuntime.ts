@@ -95,6 +95,7 @@ import {
   meshtasticWireUint32AllowZero,
   sanitizeUnicodeReactionScalar,
 } from '../../shared/reactionEmoji';
+import { pushAppToast } from '../components/Toast';
 import {
   getAppSettingsRaw,
   mergeAppSetting,
@@ -131,6 +132,7 @@ import {
   replaceNodesMapInIdentityStore,
   syncNodesMapToIdentityStore,
 } from '../lib/hydrateIdentityStoresFromDb';
+import i18n from '../lib/i18n';
 import { getIdentityIdForProtocol } from '../lib/identityByProtocol';
 import { sameIdentityRefreshSession } from '../lib/identityHydrationCoordinator';
 import {
@@ -154,6 +156,7 @@ import {
   isMeshtasticBroadcastDestination,
   markMeshtasticBroadcastPending,
 } from '../lib/meshtastic/meshtasticHeardRepeat';
+import { formatMeshtasticLinkStats } from '../lib/meshtastic/meshtasticLinkStats';
 import { meshtasticLoraConfigToProtobuf } from '../lib/meshtastic/meshtasticLocalLoraConfig';
 import type { ModulePortEvent, PaxCounterPoint } from '../lib/meshtastic/meshtasticModuleEvents';
 import { createDebouncedMqttChannelKeysPush } from '../lib/meshtastic/meshtasticMqttChannelKeysDebounce';
@@ -173,6 +176,7 @@ import {
   endMeshtasticNonChatOutbound,
   registerMeshtasticNonChatWirePacketId,
 } from '../lib/meshtastic/meshtasticOutboundCoordination';
+import { createMeshtasticPostConfigureSilenceTracker } from '../lib/meshtastic/meshtasticPostConfigureSilence';
 import {
   attachMeshtasticRuntimeWireEffects,
   type MeshtasticRuntimeWireEffectsDeps,
@@ -349,6 +353,7 @@ const BLE_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const HTTP_STALE_THRESHOLD_MS = 90_000; // 90s — show warning
 const HTTP_DEAD_THRESHOLD_MS = 180_000; // 3min — trigger reconnect
 const WATCHDOG_INTERVAL_MS = 15_000; // Check every 15s
+const MESHTASTIC_SILENT_AFTER_CONFIGURE_TOAST_MS = 12_000;
 
 function persistMeshtasticNode(node: MeshNode): void {
   void window.electronAPI.db.saveNode(node).catch((e: unknown) => {
@@ -437,6 +442,7 @@ export function useMeshtasticRuntime() {
 
   // ─── Connection watchdog refs ─────────────────────────────────
   const lastDataReceivedRef = useRef<number>(Date.now());
+  const [postConfigureSilence] = useState(createMeshtasticPostConfigureSilenceTracker);
   const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const reconnectAttemptRef = useRef<number>(0);
   const connectionParamsRef = useRef<{
@@ -928,6 +934,7 @@ export function useMeshtasticRuntime() {
   // ─── Mark data as freshly received ────────────────────────────
   const touchLastData = useCallback(() => {
     lastDataReceivedRef.current = Date.now();
+    postConfigureSilence.markData();
     // If we were in "stale" state, recover to "configured"
     setState((s) => {
       if (s.status === 'stale') {
@@ -936,7 +943,7 @@ export function useMeshtasticRuntime() {
       }
       return s;
     });
-  }, []);
+  }, [postConfigureSilence]);
 
   /** Meshtastic `DeviceMetrics.batteryLevel`: 0–100; values above 100 mean USB powered (protobuf). */
   const applyOwnNodeBatteryFromDeviceMetrics = useCallback((batteryLevel: number) => {
@@ -1107,12 +1114,23 @@ export function useMeshtasticRuntime() {
       const { stale, dead } = getThresholds();
       const transport = connectionParamsRef.current?.type ?? 'unknown';
       if (elapsed > dead) {
+        const linkStats = formatMeshtasticLinkStats(deviceRef.current?.transport);
         console.warn(
-          `[useMeshtasticRuntime] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect`,
+          `[useMeshtasticRuntime] watchdog: ${transport} dead for ${elapsed}ms, triggering reconnect${linkStats}`,
         );
+        if (postConfigureSilence.noteDead()) {
+          pushAppToast(
+            i18n.t('connectionPanel.meshtasticSilentAfterConfigure'),
+            'warning',
+            MESHTASTIC_SILENT_AFTER_CONFIGURE_TOAST_MS,
+          );
+        }
         handleConnectionLostRef.current();
       } else if (elapsed > stale) {
-        console.warn(`[useMeshtasticRuntime] watchdog: ${transport} stale for ${elapsed}ms`);
+        const linkStats = formatMeshtasticLinkStats(deviceRef.current?.transport);
+        console.warn(
+          `[useMeshtasticRuntime] watchdog: ${transport} stale for ${elapsed}ms${linkStats}`,
+        );
         setState((s) => {
           if (s.status === 'configured' || s.status === 'connected') {
             return { ...s, status: 'stale', lastDataReceived: lastDataReceivedRef.current };
@@ -1121,7 +1139,7 @@ export function useMeshtasticRuntime() {
         });
       }
     }, WATCHDOG_INTERVAL_MS);
-  }, [getThresholds]);
+  }, [getThresholds, postConfigureSilence]);
 
   useEffect(() => {
     moduleConfigsRef.current = moduleConfigs;
@@ -2022,6 +2040,7 @@ export function useMeshtasticRuntime() {
       unsubscribesRef,
       virtualNodeIdRef,
       touchLastData,
+      postConfigureSilence,
       applyOwnNodeBatteryFromDeviceMetrics,
       getNodeName,
       updateNodes,
@@ -2091,6 +2110,7 @@ export function useMeshtasticRuntime() {
       ensureNodeExists,
       clearConfigureTimeout,
       applyMeshtasticForeignLoraFromLog,
+      postConfigureSilence,
     ],
   );
 
@@ -2660,6 +2680,7 @@ export function useMeshtasticRuntime() {
         serialPort: null,
       };
       meshtasticExplicitDisconnectRef.current = false;
+      postConfigureSilence.reset();
       reconnectAttemptRef.current = 0;
       isReconnectingRef.current = false;
       // Supersede any in-flight reconnect open so configure-timeout gating does not stick.
@@ -2681,7 +2702,13 @@ export function useMeshtasticRuntime() {
         batteryCharging: undefined,
       }));
     },
-    [clearConfigureTimeout, cleanupSubscriptions, stopWatchdog, clearPostCommitRebootRecovery],
+    [
+      clearConfigureTimeout,
+      cleanupSubscriptions,
+      stopWatchdog,
+      clearPostCommitRebootRecovery,
+      postConfigureSilence,
+    ],
   );
 
   const applyMeshtasticNodesToUi = useCallback(
@@ -3011,8 +3038,9 @@ export function useMeshtasticRuntime() {
 
   const disconnect = useCallback(async () => {
     meshtasticExplicitDisconnectRef.current = true;
+    postConfigureSilence.reset();
     await finalizeDriverDisconnect({ disconnectDriver: true });
-  }, [finalizeDriverDisconnect]);
+  }, [finalizeDriverDisconnect, postConfigureSilence]);
 
   // ─── TransportManager status handler ─────────────────────────────────────
   // Defined as useCallback so it's stable; stored in a ref so TransportManager

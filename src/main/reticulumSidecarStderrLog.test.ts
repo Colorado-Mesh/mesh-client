@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   logReticulumSidecarStderrLine,
+  normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
   ReticulumSidecarStderrDedupe,
   shouldForwardReticulumSidecarStdout,
@@ -72,6 +73,34 @@ describe('shouldForwardReticulumSidecarStdout', () => {
         'INFO reticulum_sidecar::stack::lxmf_delivery: Propagation sync: announce settle',
       ),
     ).toBe(false);
+  });
+});
+
+describe('normalizeReticulumSidecarOutputLine', () => {
+  // tracing-subscriber default fmt with ANSI: dimmed timestamp, colored level, dimmed target.
+  const coloredInfo =
+    '\u001b[2m2026-10-05T16:51:03.401234Z\u001b[0m \u001b[32m INFO\u001b[0m \u001b[2mgatt\u001b[0m\u001b[2m:\u001b[0m gatt connect stage \u001b[3mstage\u001b[0m\u001b[2m=\u001b[0m"connect" \u001b[3melapsed_ms\u001b[0m\u001b[2m=\u001b[0m12';
+  const coloredWarn =
+    '\u001b[2m2026-10-05T16:51:44.401234Z\u001b[0m \u001b[33m WARN\u001b[0m \u001b[2mgatt\u001b[0m\u001b[2m:\u001b[0m gatt: backend call exceeded budget — Bluetooth stack unresponsive';
+
+  it('keeps colored gatt INFO and WARN lines forwardable', () => {
+    const info = normalizeReticulumSidecarOutputLine(coloredInfo);
+    expect(info).toBe(
+      '2026-10-05T16:51:03.401234Z INFO gatt: gatt connect stage stage="connect" elapsed_ms=12',
+    );
+    expect(shouldForwardReticulumSidecarStdout(info)).toBe(true);
+    expect(
+      shouldForwardReticulumSidecarStdout(normalizeReticulumSidecarOutputLine(coloredWarn)),
+    ).toBe(true);
+  });
+
+  it('sanitizing alone (old path) hides the level from the forward filter', () => {
+    const sanitizedOnly = coloredWarn.replace(/[\x00-\x1F\x7F]+/g, ' '); // eslint-disable-line no-control-regex
+    expect(shouldForwardReticulumSidecarStdout(sanitizedOnly)).toBe(false);
+  });
+
+  it('still strips control characters and newlines', () => {
+    expect(normalizeReticulumSidecarOutputLine('  WARN a\nb\u0007c  ')).toBe('WARN a b c');
   });
 });
 

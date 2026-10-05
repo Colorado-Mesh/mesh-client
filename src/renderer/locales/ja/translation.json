@@ -1682,7 +1682,8 @@
     "lastConnectionLabel": "前回の接続",
     "meshcoreBleWindowsInAppPairingHint": "Windowsでは、ここでラジオを選択し、画面に表示されているPINを入力します。mesh-clientがペアリングするため、Windows設定でペアリングする必要はありません。最初にスマートフォンのMeshCoreアプリを閉じます。ラジオは一度に1つのBluetooth接続のみを受け入れます。",
     "stageEnterPinWindows": "ラジオに表示されている暗証番号を入力して、Windowsとペアリングします",
-    "stagePairingWindows": "Windowsとペアリングしています…"
+    "stagePairingWindows": "Windowsとペアリングしています…",
+    "meshtasticSilentAfterConfigure": "無線に接続されていますが、セットアップ後にメッシュトラフィックの送信が停止しました。自動的に再接続しています。これが続く場合は、ラジオのネットワーク接続を確認するか、再起動してください。"
   },
   "contactGroupsModal": {
     "failedLoadMembers": "メンバーのロードに失敗しました: {{message}}",

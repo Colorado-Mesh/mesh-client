@@ -1682,7 +1682,8 @@
     "lastConnectionLabel": "Dernière connexion",
     "meshcoreBleWindowsInAppPairingHint": "Sous Windows, sélectionnez la radio ici et entrez le CODE PIN affiché sur son écran. mesh-client le couple pour vous, de sorte que vous n'avez pas besoin de le jumeler dans les paramètres Windows. Fermez d'abord l'application MeshCore sur votre téléphone ; la radio n'accepte qu'une seule connexion Bluetooth à la fois.",
     "stageEnterPinWindows": "Saisissez le CODE PIN affiché sur votre radio pour l'associer à Windows",
-    "stagePairingWindows": "Jumelage avec Windows…"
+    "stagePairingWindows": "Jumelage avec Windows…",
+    "meshtasticSilentAfterConfigure": "Connecté à la radio, mais il a cessé d'envoyer du trafic maillé après la configuration. Se reconnecter automatiquement. Si cela continue, vérifiez la connexion réseau de la radio ou redémarrez-la."
   },
   "contactGroupsModal": {
     "failedLoadMembers": "Échec du chargement des membres : {{message}}",

@@ -71,13 +71,55 @@ describe('createChatScrollAdjustPredicate', () => {
     return createChatScrollAdjustPredicate({ unreadStartIndexRef, isPinnedToBottomRef });
   }
 
-  function mockInstance(scrollDirection: 'forward' | 'backward' | null, atEnd: boolean) {
-    return { scrollDirection, isAtEnd: () => atEnd };
+  function mockInstance(
+    scrollDirection: 'forward' | 'backward' | null,
+    atEnd: boolean,
+    opts: { measured?: boolean; scrollOffset?: number } = {},
+  ) {
+    return {
+      scrollDirection,
+      isAtEnd: () => atEnd,
+      itemSizeCache: new Map<string, number>(opts.measured === false ? [] : [[item.key, 96]]),
+      scrollOffset: opts.scrollOffset ?? 0,
+      scrollAdjustments: 0,
+    };
   }
 
   it('returns false when scrolling backward', () => {
     const adjust = makePredicate();
     expect(adjust(item, 0, mockInstance('backward', true) as never)).toBe(false);
+  });
+
+  it.each(['backward', 'forward', null] as const)(
+    'compensates first measurement of a row above the fold (direction %s)',
+    (dir) => {
+      const adjust = makePredicate({ isPinned: false });
+      expect(
+        adjust(
+          item,
+          -37,
+          mockInstance(dir, false, { measured: false, scrollOffset: 1000 }) as never,
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it('does not compensate a re-measured row above the fold while scrolling backward', () => {
+    const adjust = makePredicate({ isPinned: false });
+    expect(
+      adjust(item, -37, mockInstance('backward', false, { scrollOffset: 1000 }) as never),
+    ).toBe(false);
+  });
+
+  it('does not compensate first measurement of a row below the fold while scrolling backward', () => {
+    const adjust = makePredicate({ isPinned: false });
+    expect(
+      adjust(
+        item,
+        -37,
+        mockInstance('backward', false, { measured: false, scrollOffset: 0 }) as never,
+      ),
+    ).toBe(false);
   });
 
   it('returns false when virtualizer is no longer at end (stale pin ref)', () => {
