@@ -23,7 +23,7 @@ const ADAPTER_INIT_BUDGET: Duration = Duration::from_secs(3);
 const ADAPTER_STATE_BUDGET: Duration = Duration::from_secs(5);
 /// Scan sleep plus bounded pre/post `stop_scan` and peripheral enumeration.
 const SCAN_OVERHEAD_BUDGET: Duration = Duration::from_secs(15);
-/// Backend connect deadline is 35s plus a bounded 5s cleanup; stays under the proxy's 45s.
+/// Backend connect deadline plus its bounded cleanup, with slack; stays under the proxy's 45s.
 const CONNECT_BUDGET: Duration = Duration::from_secs(41);
 const WRITE_BUDGET: Duration = Duration::from_secs(10);
 /// Backend disconnect is bounded at 5s internally.
@@ -261,5 +261,21 @@ mod tests {
             panic!("must refuse create while bond recovery hold is set");
         };
         assert_eq!(err.code, GattErrorCode::ScanBusy);
+    }
+
+    /// A normal no-response connect must finish (deadline + cleanup) with slack left in
+    /// the isolated budget, so it reports a plain timeout instead of latching "stuck".
+    #[test]
+    fn connect_deadline_and_cleanup_fit_inside_budget() {
+        use super::super::btleplug_backend::{CONNECT_DEADLINE, SETUP_CLEANUP_TIMEOUT};
+        let worst_case = CONNECT_DEADLINE + SETUP_CLEANUP_TIMEOUT;
+        assert!(
+            worst_case + Duration::from_secs(3) <= CONNECT_BUDGET,
+            "deadline {CONNECT_DEADLINE:?} + cleanup {SETUP_CLEANUP_TIMEOUT:?} leaves under 3s before {CONNECT_BUDGET:?}"
+        );
+        assert!(
+            CONNECT_BUDGET < Duration::from_secs(45),
+            "proxy HTTP budget"
+        );
     }
 }

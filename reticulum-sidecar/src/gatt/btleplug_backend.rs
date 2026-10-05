@@ -26,6 +26,12 @@ use super::profile::{self, GattProfile, ble_id_match_key, ble_ids_match, normali
 #[cfg(target_os = "windows")]
 use super::windows_gatt_session::GattKeepAlive;
 
+/// Lookup + connect + GATT setup. Deadline plus `SETUP_CLEANUP_TIMEOUT` must leave slack
+/// under the isolated `CONNECT_BUDGET` (41s): overrunning it reports "Bluetooth stack
+/// unresponsive" and latches new connects, which an ordinary no-response radio must not do.
+pub(super) const CONNECT_DEADLINE: Duration = Duration::from_secs(32);
+pub(super) const SETUP_CLEANUP_TIMEOUT: Duration = Duration::from_secs(5);
+
 fn connect_timeout() -> Duration {
     if cfg!(target_os = "macos") {
         Duration::from_secs(15)
@@ -99,7 +105,7 @@ async fn setup_with_cleanup<T>(
 ) -> Result<T, GattError> {
     let result = setup.await;
     if result.is_err() {
-        match tokio::time::timeout(Duration::from_secs(5), disconnect).await {
+        match tokio::time::timeout(SETUP_CLEANUP_TIMEOUT, disconnect).await {
             Ok(Ok(())) => {}
             Ok(Err(e)) => tracing::warn!("gatt: failed setup disconnect: {e}"),
             Err(_) => tracing::warn!("gatt: failed setup disconnect timed out"),
@@ -320,8 +326,35 @@ fn is_usable_mac(addr: &str) -> bool {
 /// Only WinRT can open a peripheral by MAC without an advertisement (btleplug
 /// `add_peripheral`); CoreBluetooth ids are UUIDs.
 #[cfg_attr(not(target_os = "windows"), allow(dead_code))]
-fn should_try_address_fallback(os_is_windows: bool, address: &str) -> bool {
+fn should_probe_os_link(os_is_windows: bool, address: &str) -> bool {
     os_is_windows && is_usable_mac(address)
+}
+
+/// `add_peripheral` accepts any MAC, so an absent radio would burn the whole connect
+/// deadline. Only a radio Windows reports as connected (held by the pairing link or
+/// another app, so it stopped advertising) is worth opening by address; a present,
+/// unconnected radio advertises and the scan already finds it.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+fn should_try_address_fallback(
+    os_is_windows: bool,
+    address: &str,
+    os_connected: Option<bool>,
+) -> bool {
+    should_probe_os_link(os_is_windows, address) && os_connected == Some(true)
+}
+
+/// How long a scan miss waits for the OS link probe that ran alongside the scan.
+#[cfg(target_os = "windows")]
+const OS_LINK_PROBE_GRACE: Duration = Duration::from_secs(1);
+
+#[cfg(target_os = "windows")]
+struct AbortOnDrop<T>(JoinHandle<T>);
+
+#[cfg(target_os = "windows")]
+impl<T> Drop for AbortOnDrop<T> {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 /// Windows idles a btleplug link without a held `GattSession`; both LoRa pipes need it.
@@ -525,35 +558,63 @@ impl BtleplugBackend {
             profile = %profile,
             "peripheral not cached — unfiltered scan before connect"
         );
+        // OS-specific: the WinRT link-status lookup can block for seconds, so it runs in
+        // parallel with the scan instead of delaying the address fallback after it.
+        #[cfg(target_os = "windows")]
+        let os_link_probe = should_probe_os_link(true, address).then(|| {
+            let addr = address.to_owned();
+            AbortOnDrop(tokio::spawn(async move {
+                super::windows_pairing::os_connected(&addr).await
+            }))
+        });
         // Ignore empty Ok; surface hard scan failures so callers do not spin on stale "scan first".
         let scanned = self.scan_unfiltered(8).await?;
         self.remember_scanned_rssi(&scanned);
         match self.find_peripheral(address).await {
             #[cfg(target_os = "windows")]
-            Err(scan_miss) if should_try_address_fallback(true, address) => {
-                self.address_fallback(address, scan_miss).await
+            Err(scan_miss) if os_link_probe.is_some() => {
+                self.address_fallback(address, scan_miss, os_link_probe)
+                    .await
             }
             result => result,
         }
     }
 
-    /// OS-specific: a bonded or OS-connected radio stops advertising (MeshCore companions
-    /// do while any central holds the link), so the scan misses it. WinRT can still open
-    /// it by address, as Chrome Web Bluetooth does.
+    /// OS-specific: an OS-connected radio stops advertising (MeshCore companions do while
+    /// any central holds the link), so the scan misses it. WinRT can still open it by
+    /// address, as Chrome Web Bluetooth does.
     #[cfg(target_os = "windows")]
     async fn address_fallback(
         &self,
         address: &str,
         scan_miss: GattError,
+        os_link_probe: Option<AbortOnDrop<Option<bool>>>,
     ) -> Result<Peripheral, GattError> {
         use btleplug::api::BDAddr;
 
+        let os_connected = match os_link_probe {
+            Some(mut probe) => {
+                match tokio::time::timeout(OS_LINK_PROBE_GRACE, &mut probe.0).await {
+                    Ok(Ok(connected)) => connected,
+                    _ => None,
+                }
+            }
+            None => None,
+        };
+        if !should_try_address_fallback(true, address, os_connected) {
+            tracing::info!(
+                target: "gatt",
+                address,
+                ?os_connected,
+                "peripheral not advertising and not OS-connected — skipping address fallback (windows)"
+            );
+            return Err(scan_miss);
+        }
         let Some(bdaddr) = super::windows_pairing::ble_address_u64(address)
             .and_then(|raw| BDAddr::try_from(raw).ok())
         else {
             return Err(scan_miss);
         };
-        let os_connected = super::windows_pairing::os_connected(address).await;
         tracing::info!(
             target: "gatt",
             address,
@@ -629,9 +690,8 @@ impl BleBackend for BtleplugBackend {
         GattError,
     > {
         let key = normalize_address(address)?;
-        // The proxy's 45s HTTP budget also has to cover the bounded 5s cleanup.
         let started = tokio::time::Instant::now();
-        let deadline = started + Duration::from_secs(35);
+        let deadline = started + CONNECT_DEADLINE;
         let stage = |name: &'static str| {
             let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);
             tracing::info!(target: "gatt", stage = name, elapsed_ms, profile = %profile, "gatt connect stage");
@@ -944,15 +1004,42 @@ mod tests {
     use super::*;
 
     #[test]
-    fn address_fallback_only_for_windows_macs() {
-        assert!(should_try_address_fallback(true, "ef4f4f1c2373"));
-        assert!(should_try_address_fallback(true, "EF:4F:4F:1C:23:73"));
-        assert!(!should_try_address_fallback(false, "ef4f4f1c2373"));
+    fn os_link_probe_only_for_windows_macs() {
+        assert!(should_probe_os_link(true, "ef4f4f1c2373"));
+        assert!(should_probe_os_link(true, "EF:4F:4F:1C:23:73"));
+        assert!(!should_probe_os_link(false, "ef4f4f1c2373"));
         assert!(
-            !should_try_address_fallback(true, "6e400001b5a3f393e0a9e50e24dcca9e"),
+            !should_probe_os_link(true, "6e400001b5a3f393e0a9e50e24dcca9e"),
             "CoreBluetooth UUIDs are not MACs"
         );
-        assert!(!should_try_address_fallback(true, "000000000000"));
+        assert!(!should_probe_os_link(true, "000000000000"));
+    }
+
+    #[test]
+    fn address_fallback_requires_an_os_connected_radio() {
+        assert!(should_try_address_fallback(
+            true,
+            "EF:4F:4F:1C:23:73",
+            Some(true)
+        ));
+        assert!(
+            !should_try_address_fallback(true, "d7baee7fb118", Some(false)),
+            "absent / unconnected radio keeps the fast scan-miss error"
+        );
+        assert!(
+            !should_try_address_fallback(true, "d7baee7fb118", None),
+            "unknown link state (probe timed out) does not fall back"
+        );
+        assert!(!should_try_address_fallback(
+            false,
+            "ef4f4f1c2373",
+            Some(true)
+        ));
+        assert!(!should_try_address_fallback(
+            true,
+            "6e400001b5a3f393e0a9e50e24dcca9e",
+            Some(true)
+        ));
     }
 
     #[test]
