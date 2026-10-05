@@ -115,16 +115,27 @@ describe('RawPacketLogPanel scroll pinning', () => {
     expect(lastVirtualizerOptions?.followOnAppend).toBe(true);
     expect(lastVirtualizerOptions?.scrollEndThreshold).toBe(VIRTUALIZER_SCROLL_END_THRESHOLD);
     const adjust = lastVirtualizerInstance?.shouldAdjustScrollPositionOnItemSizeChange as (
-      item: { index: number },
+      item: { index: number; key: string; start: number },
       delta: number,
       instance: {
         scrollDirection: 'forward' | 'backward' | null;
         isAtEnd: () => boolean;
+        itemSizeCache: Map<string, number>;
+        scrollOffset: number;
+        scrollAdjustments: number;
       },
     ) => boolean;
     expect(adjust).toBeTypeOf('function');
-    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => true })).toBe(true);
-    expect(adjust({ index: 0 }, 0, { scrollDirection: 'forward', isAtEnd: () => false })).toBe(
+    const row = { index: 0, key: 'k0', start: 0 };
+    const measured = {
+      itemSizeCache: new Map([['k0', 96]]),
+      scrollOffset: 0,
+      scrollAdjustments: 0,
+    };
+    expect(adjust(row, 0, { scrollDirection: 'forward', isAtEnd: () => true, ...measured })).toBe(
+      true,
+    );
+    expect(adjust(row, 0, { scrollDirection: 'forward', isAtEnd: () => false, ...measured })).toBe(
       false,
     );
   });
