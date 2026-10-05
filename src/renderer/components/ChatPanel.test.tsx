@@ -5743,7 +5743,7 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     expect(row('bob one')?.className).toContain('pb-3');
   });
 
-  it('does not render a sender initials avatar beside incoming messages', async () => {
+  it('shows sender initials beside incoming messages only, once per run in compact mode', async () => {
     const now = Date.now();
     const { container } = render(
       <ToastProvider>
@@ -5764,44 +5764,27 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
       </ToastProvider>,
     );
     await screen.findByText('second');
-    expect(container.querySelector('[data-chat-avatar]')).toBeNull();
-    expect(screen.queryByText('TD')).not.toBeInTheDocument();
+    const avatars = Array.from(container.querySelectorAll('[data-chat-avatar]'));
+    expect(avatars.map((el) => el.getAttribute('data-chat-avatar'))).toEqual(['sender', 'spacer']);
+    expect(avatars[0]).toHaveTextContent('TD');
+    expect(avatars[0]).toHaveAttribute('aria-hidden', 'true');
+    const own = screen.getByText('mine').closest('[data-chat-message-key]');
+    expect(own?.querySelector('[data-chat-avatar]')).toBeNull();
   });
 
-  it('shows the Reticulum face beside incoming messages once per run in compact mode', async () => {
-    const now = Date.now();
-    const peerHash = '8fd7a9361aca00000000000000000000';
-    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+  it('shows the leading emoji of a sender name in the avatar instead of initials', async () => {
     const { container } = render(
       <ToastProvider>
         <ChatPanel
           {...baseProps}
-          protocol="reticulum"
-          compactMode
-          messages={[
-            makeMsg({
-              sender_id: peerId,
-              sender_name: 'Trail Dave',
-              payload: 'first',
-              reticulum_sender_hash: peerHash,
-              timestamp: now,
-            }),
-            makeMsg({
-              sender_id: peerId,
-              sender_name: 'Trail Dave',
-              payload: 'second',
-              reticulum_sender_hash: peerHash,
-              timestamp: now + 1_000,
-            }),
-          ]}
+          messages={[makeMsg({ sender_id: 2, sender_name: '🐻MEGABEAR β', payload: 'hi' })]}
         />
       </ToastProvider>,
     );
-    await screen.findByText('second');
-    const avatars = Array.from(container.querySelectorAll('[data-chat-avatar]'));
-    expect(avatars.map((el) => el.getAttribute('data-chat-avatar'))).toEqual(['sender', 'spacer']);
-    expect(avatars[0]).toHaveAttribute('aria-hidden', 'true');
-    expect(avatars[0]).not.toHaveTextContent('TD');
+    await screen.findByText('hi');
+    const avatar = container.querySelector('[data-chat-avatar="sender"]');
+    expect(avatar).toHaveTextContent('🐻');
+    expect(avatar).not.toHaveTextContent('MB');
   });
 
   it('lets incoming and own bubbles use 80% of a wide window, with no rem cap', async () => {
