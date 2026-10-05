@@ -5721,7 +5721,7 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     }
   });
 
-  it('shows sender initials beside incoming messages only, once per run in compact mode', async () => {
+  it('does not render a sender initials avatar beside incoming messages', async () => {
     const now = Date.now();
     const { container } = render(
       <ToastProvider>
@@ -5742,12 +5742,44 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
       </ToastProvider>,
     );
     await screen.findByText('second');
+    expect(container.querySelector('[data-chat-avatar]')).toBeNull();
+    expect(screen.queryByText('TD')).not.toBeInTheDocument();
+  });
+
+  it('shows the Reticulum face beside incoming messages once per run in compact mode', async () => {
+    const now = Date.now();
+    const peerHash = '8fd7a9361aca00000000000000000000';
+    const peerId = parseInt(peerHash.slice(0, 12), 16) >>> 0;
+    const { container } = render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          protocol="reticulum"
+          compactMode
+          messages={[
+            makeMsg({
+              sender_id: peerId,
+              sender_name: 'Trail Dave',
+              payload: 'first',
+              reticulum_sender_hash: peerHash,
+              timestamp: now,
+            }),
+            makeMsg({
+              sender_id: peerId,
+              sender_name: 'Trail Dave',
+              payload: 'second',
+              reticulum_sender_hash: peerHash,
+              timestamp: now + 1_000,
+            }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    await screen.findByText('second');
     const avatars = Array.from(container.querySelectorAll('[data-chat-avatar]'));
     expect(avatars.map((el) => el.getAttribute('data-chat-avatar'))).toEqual(['sender', 'spacer']);
-    expect(avatars[0]).toHaveTextContent('TD');
     expect(avatars[0]).toHaveAttribute('aria-hidden', 'true');
-    const own = screen.getByText('mine').closest('[data-chat-message-key]');
-    expect(own?.querySelector('[data-chat-avatar]')).toBeNull();
+    expect(avatars[0]).not.toHaveTextContent('TD');
   });
 
   it('lets incoming and own bubbles use 80% of a wide window, with no rem cap', async () => {

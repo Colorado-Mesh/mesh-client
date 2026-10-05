@@ -96,7 +96,6 @@ import {
   RETICULUM_DM_HEADER_ACTION_CLASS,
   RETICULUM_DM_HEADER_STATUS_CLASS,
 } from '@/renderer/lib/reticulumDmHeaderActions';
-import { senderInitials } from '@/renderer/lib/senderInitials';
 import { CHAT_SR_ANNOUNCE_WINDOW_MS } from '@/renderer/lib/timeConstants';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
@@ -3583,7 +3582,7 @@ function ChatPanel({
                     ? t('common.unknown')
                     : rawSenderName;
                 // Reticulum peers have an LXMF face; it sits in the avatar gutter (incoming) or the
-                // header (own messages). Other protocols use initials in the gutter.
+                // header (own messages). Other protocols have no avatar gutter.
                 const senderFaceHash =
                   protocol === 'reticulum'
                     ? resolveReticulumDmFaceHash(
@@ -3674,15 +3673,15 @@ function ChatPanel({
                             isOwn ? 'flex-row-reverse' : 'flex-row'
                           }`}
                         >
-                          {/* Sender avatar (Option A): initials or the Reticulum face, once per
-                              run of messages; continuations keep the gutter so text lines up. */}
-                          {!isOwn && (
+                          {/* Sender avatar: the Reticulum face, once per run of messages;
+                              continuations keep the gutter so text lines up. */}
+                          {!isOwn && senderFaceHash && (
                             <div
                               aria-hidden="true"
                               data-chat-avatar={isContinuation ? 'spacer' : 'sender'}
                               className="mr-1 flex w-6 shrink-0 justify-center self-start"
                             >
-                              {isContinuation ? null : senderFaceHash ? (
+                              {isContinuation ? null : (
                                 <ReticulumProfileIconSlot
                                   iconName={senderAppearance?.icon_name}
                                   iconColor={senderAppearance?.icon_color}
@@ -3690,10 +3689,6 @@ function ChatPanel({
                                   size={24}
                                   className="shrink-0"
                                 />
-                              ) : (
-                                <span className="bg-sidebar-active-bg text-label text-ink-300 flex h-6 w-6 items-center justify-center rounded-full font-semibold">
-                                  {senderInitials(displaySenderName, msg.sender_id)}
-                                </span>
                               )}
                             </div>
                           )}
