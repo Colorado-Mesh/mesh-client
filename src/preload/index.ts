@@ -149,9 +149,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       protocol: 'meshtastic' | 'meshcore',
       radioNodeId: number,
       entries: { index: number; key: string }[],
-      claimUnscoped: boolean,
-    ) =>
-      ipcRenderer.invoke('db:backfillChannelKeys', protocol, radioNodeId, entries, claimUnscoped),
+    ) => ipcRenderer.invoke('db:backfillChannelKeys', protocol, radioNodeId, entries),
     getMessageChannels: () => ipcRenderer.invoke('db:getMessageChannels'),
     setNodeFavorited: (nodeId: number, favorited: boolean) =>
       ipcRenderer.invoke('db:setNodeFavorited', nodeId, favorited),

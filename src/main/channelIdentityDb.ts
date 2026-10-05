@@ -14,11 +14,6 @@ export interface ChannelKeyBackfillEntry {
   key: string;
 }
 
-export interface ChannelKeyBackfillOptions {
-  /** Also claim rows with no radio (pre-`radio_node_id` history) for this radio. */
-  claimUnscoped: boolean;
-}
-
 /** Group-channel rows only (DMs and room posts never carry a channel key). */
 const MESHTASTIC_BROADCAST_SQL = '(to_node IS NULL OR to_node = 0 OR to_node = 4294967295)';
 
@@ -32,32 +27,47 @@ function tableSql(protocol: ChannelIdentityProtocol): { table: string; channelSq
 }
 
 /**
- * Stamp unkeyed group-channel rows recorded by `radioNodeId` with the key now in that slot.
- * With `claimUnscoped`, rows that have no radio at all are attributed to this radio too.
+ * Group-channel rows saved before radio tracking have no radio. They were recorded on whichever
+ * radio was connected when tracking began, i.e. the radio of the first tracked row, so they are
+ * attributed to it. Rows inserted after that point are never touched (MQTT-only rows keep null).
+ */
+function adoptUntrackedChannelRows(db: NodeSqliteDB, table: string, channelSql: string): number {
+  const anchor = db
+    .prepareOnce(
+      `SELECT id, radio_node_id AS radio FROM ${table} WHERE radio_node_id IS NOT NULL ` +
+        'ORDER BY id LIMIT 1',
+    )
+    .get() as { id: number; radio: number } | undefined;
+  if (!anchor) return 0;
+  const result = db
+    .prepareOnce(
+      `UPDATE ${table} SET radio_node_id = ? ` +
+        `WHERE radio_node_id IS NULL AND id < ? AND ${channelSql} >= 0`,
+    )
+    .run(anchor.radio, anchor.id);
+  return Number(result.changes);
+}
+
+/**
+ * Stamp unkeyed group-channel rows recorded by `radioNodeId` with the key now in that slot. Rows
+ * from other radios are left unkeyed until that radio connects and reports its own slot layout.
  */
 export function backfillChannelKeys(
   db: NodeSqliteDB,
   protocol: ChannelIdentityProtocol,
   radioNodeId: number,
   entries: readonly ChannelKeyBackfillEntry[],
-  opts: ChannelKeyBackfillOptions,
 ): { changes: number } {
   const { table, channelSql } = tableSql(protocol);
   const scoped = db.prepareOnce(
     `UPDATE ${table} SET channel_key = ? ` +
       `WHERE channel_key IS NULL AND radio_node_id = ? AND ${channelSql} = ?`,
   );
-  const unscoped = db.prepareOnce(
-    `UPDATE ${table} SET channel_key = ?, radio_node_id = ? ` +
-      `WHERE channel_key IS NULL AND radio_node_id IS NULL AND ${channelSql} = ?`,
-  );
   let changes = 0;
   db.transaction(() => {
+    changes += adoptUntrackedChannelRows(db, table, channelSql);
     for (const { index, key } of entries) {
       changes += Number(scoped.run(key, radioNodeId, index).changes);
-      if (opts.claimUnscoped) {
-        changes += Number(unscoped.run(key, radioNodeId, index).changes);
-      }
     }
   })();
   return { changes };

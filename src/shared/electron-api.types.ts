@@ -486,7 +486,6 @@ export interface ElectronAPI {
       protocol: 'meshtastic' | 'meshcore',
       radioNodeId: number,
       entries: { index: number; key: string }[],
-      claimUnscoped: boolean,
     ) => Promise<{ changes: number }>;
     getMessageChannels: () => Promise<{ channel: number }[]>;
     setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<void>;

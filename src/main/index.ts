@@ -4503,7 +4503,7 @@ ipcMain.handle('db:deleteNodesBatch', (event, nodeIds: number[]) => {
 
 ipcMain.handle(
   'db:backfillChannelKeys',
-  (event, protocol: unknown, radioNodeId: unknown, entries: unknown, claimUnscoped: unknown) => {
+  (event, protocol: unknown, radioNodeId: unknown, entries: unknown) => {
     assertIpcSender(event, 'db:backfillChannelKeys');
     try {
       if (protocol !== 'meshtastic' && protocol !== 'meshcore') {
@@ -4530,9 +4530,7 @@ ipcMain.handle(
       }
       const db = getDbForIpc('db:backfillChannelKeys');
       if (!db) return { changes: 0 };
-      const result = backfillChannelKeys(db, protocol, radio, safeEntries, {
-        claimUnscoped: claimUnscoped === true,
-      });
+      const result = backfillChannelKeys(db, protocol, radio, safeEntries);
       if (result.changes > 0) {
         console.debug(
           `[IPC] db:backfillChannelKeys: stamped ${result.changes} ${protocol} rows for radio ${radio}`,

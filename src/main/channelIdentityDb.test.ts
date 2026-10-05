@@ -70,16 +70,10 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
         { payload: 'dm', channel: -1, radio: RADIO_NEW, to: 5 },
         { payload: 'legacy', channel: 1, radio: null },
       ]);
-      const result = backfillChannelKeys(
-        db,
-        'meshcore',
-        RADIO_NEW,
-        [
-          { index: 1, key: KEY_EMERGENCY },
-          { index: 2, key: KEY_REACH },
-        ],
-        { claimUnscoped: false },
-      );
+      const result = backfillChannelKeys(db, 'meshcore', RADIO_NEW, [
+        { index: 1, key: KEY_EMERGENCY },
+        { index: 2, key: KEY_REACH },
+      ]);
       expect(result.changes).toBe(2);
       const keys = meshcoreKeys(db);
       expect(keys['old radio slot 1']).toEqual({ key: null, radio: RADIO_OLD });
@@ -93,20 +87,45 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
     }
   });
 
-  it('claims unscoped legacy rows for this radio when asked', () => {
+  it('attributes pre-tracking rows to the first tracked radio, not to whichever radio connects', () => {
     const db = openDb();
     try {
-      insertMeshcore(db, [{ payload: 'legacy', channel: 1, radio: null }]);
-      backfillChannelKeys(db, 'meshcore', RADIO_NEW, [{ index: 1, key: KEY_EMERGENCY }], {
-        claimUnscoped: true,
-      });
-      expect(meshcoreKeys(db).legacy).toEqual({ key: KEY_EMERGENCY, radio: RADIO_NEW });
+      insertMeshcore(db, [
+        { payload: 'legacy reach slot 1', channel: 1, radio: null },
+        { payload: 'legacy dm', channel: -1, radio: null, to: 5 },
+        { payload: 'first tracked', channel: 1, radio: RADIO_OLD },
+        { payload: 'mqtt later', channel: 1, radio: null },
+      ]);
+
+      backfillChannelKeys(db, 'meshcore', RADIO_NEW, [{ index: 1, key: KEY_EMERGENCY }]);
+      let keys = meshcoreKeys(db);
+      expect(keys['legacy reach slot 1']).toEqual({ key: null, radio: RADIO_OLD });
+      expect(keys['legacy dm']).toEqual({ key: null, radio: null });
+      expect(keys['mqtt later']).toEqual({ key: null, radio: null });
+
+      backfillChannelKeys(db, 'meshcore', RADIO_OLD, [{ index: 1, key: KEY_REACH }]);
+      keys = meshcoreKeys(db);
+      expect(keys['legacy reach slot 1']).toEqual({ key: KEY_REACH, radio: RADIO_OLD });
+      expect(keys['first tracked']).toEqual({ key: KEY_REACH, radio: RADIO_OLD });
     } finally {
       db.close();
     }
   });
 
-  it('backfills Meshtastic broadcast rows but never DMs', () => {
+  it('leaves pre-tracking rows alone until some radio has saved a tracked row', () => {
+    const db = openDb();
+    try {
+      insertMeshcore(db, [{ payload: 'legacy', channel: 1, radio: null }]);
+      expect(
+        backfillChannelKeys(db, 'meshcore', RADIO_NEW, [{ index: 1, key: KEY_EMERGENCY }]).changes,
+      ).toBe(0);
+      expect(meshcoreKeys(db).legacy).toEqual({ key: null, radio: null });
+    } finally {
+      db.close();
+    }
+  });
+
+  it('adopts and backfills Meshtastic broadcast rows but never DMs', () => {
     const db = openDb();
     try {
       const insert = db.prepareOnce(
@@ -115,9 +134,8 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
       insert.run('a', 'broadcast', 1, null, null);
       insert.run('a', 'broadcast sentinel', 1, 0xffffffff, null);
       insert.run('a', 'dm', 1, 42, null);
-      backfillChannelKeys(db, 'meshtastic', RADIO_NEW, [{ index: 1, key: KEY_EMERGENCY }], {
-        claimUnscoped: true,
-      });
+      insert.run('a', 'first tracked', 1, null, RADIO_NEW);
+      backfillChannelKeys(db, 'meshtastic', RADIO_NEW, [{ index: 1, key: KEY_EMERGENCY }]);
       const rows = db
         .prepareOnce('SELECT payload, channel_key, radio_node_id FROM messages ORDER BY id')
         .all();
@@ -125,6 +143,7 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
         { payload: 'broadcast', channel_key: KEY_EMERGENCY, radio_node_id: RADIO_NEW },
         { payload: 'broadcast sentinel', channel_key: KEY_EMERGENCY, radio_node_id: RADIO_NEW },
         { payload: 'dm', channel_key: null, radio_node_id: null },
+        { payload: 'first tracked', channel_key: KEY_EMERGENCY, radio_node_id: RADIO_NEW },
       ]);
     } finally {
       db.close();

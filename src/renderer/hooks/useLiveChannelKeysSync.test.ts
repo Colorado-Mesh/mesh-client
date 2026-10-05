@@ -47,15 +47,10 @@ describe('useLiveChannelKeysSync', () => {
         messagesMode: 'upsert',
       });
     });
-    expect(backfill).toHaveBeenCalledWith(
-      'meshcore',
-      222,
-      [
-        { index: 1, key: KEY_A },
-        { index: 2, key: KEY_B },
-      ],
-      true,
-    );
+    expect(backfill).toHaveBeenCalledWith('meshcore', 222, [
+      { index: 1, key: KEY_A },
+      { index: 2, key: KEY_B },
+    ]);
   });
 
   it('clears the live map and skips backfill when nothing is known', () => {
