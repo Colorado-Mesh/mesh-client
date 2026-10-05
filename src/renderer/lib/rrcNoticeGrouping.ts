@@ -117,3 +117,47 @@ export function groupRrcNoticeRows(messages: readonly RrcChatMessage[]): RrcDisp
   flush();
   return rows;
 }
+
+/**
+ * Expansion is keyed by member message ids (not group id) so it survives the
+ * first row being trimmed from the window or a run splitting and re-forming.
+ */
+export function isRrcNoticeGroupExpanded(
+  group: RrcNoticeGroup,
+  expandedMessageIds: ReadonlySet<string>,
+): boolean {
+  return group.messages.some((msg) => expandedMessageIds.has(msg.id));
+}
+
+export function toggleRrcNoticeGroupExpansion(
+  expandedMessageIds: ReadonlySet<string>,
+  group: RrcNoticeGroup,
+): ReadonlySet<string> {
+  const next = new Set(expandedMessageIds);
+  if (isRrcNoticeGroupExpanded(group, expandedMessageIds)) {
+    for (const msg of group.messages) next.delete(msg.id);
+  } else {
+    for (const msg of group.messages) next.add(msg.id);
+  }
+  return next;
+}
+
+/** Drop markers for messages no longer inside a group; returns the same set when unchanged. */
+export function pruneRrcExpandedNoticeIds(
+  expandedMessageIds: ReadonlySet<string>,
+  rows: readonly RrcDisplayRow[],
+): ReadonlySet<string> {
+  if (expandedMessageIds.size === 0) return expandedMessageIds;
+  const grouped = new Set<string>();
+  for (const row of rows) {
+    if (row.type !== 'group') continue;
+    for (const msg of row.group.messages) grouped.add(msg.id);
+  }
+  let changed = false;
+  const next = new Set<string>();
+  for (const id of expandedMessageIds) {
+    if (grouped.has(id)) next.add(id);
+    else changed = true;
+  }
+  return changed ? next : expandedMessageIds;
+}

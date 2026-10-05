@@ -282,7 +282,9 @@ describe('ChatPayloadText', () => {
     it('hides the request sentinel and shows a chip that opens Remote settings', () => {
       const listener = vi.fn();
       const unsubscribe = subscribeOpenSettingRequests(listener);
-      render(<ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} />);
+      render(
+        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} rncpControlEnabled />,
+      );
       expect(screen.getByText('File-receive request')).toBeInTheDocument();
       expect(screen.getByText(/Please enable file receiving/)).toBeInTheDocument();
       expect(screen.queryByText(/mesh-client:request-rncp-receive/)).toBeNull();
@@ -292,15 +294,24 @@ describe('ChatPayloadText', () => {
     });
 
     it('keeps the plain hash line on a destination share', () => {
-      render(<ChatPayloadText text={SHARE} query="" loadLinkPreviews={false} />);
+      render(<ChatPayloadText text={SHARE} query="" loadLinkPreviews={false} rncpControlEnabled />);
       expect(screen.getByText('Shared file-receive destination')).toBeInTheDocument();
       expect(screen.getByText(new RegExp(HASH))).toBeInTheDocument();
       expect(screen.queryByText(/mesh-client:rncp-receive-dest/)).toBeNull();
     });
 
+    it('shows the message unchanged without a chip when rncp is unsupported', () => {
+      render(<ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} />);
+      expect(screen.queryByText('File-receive request')).toBeNull();
+      expect(
+        screen.queryByRole('button', { name: 'Open Remote inbound file settings' }),
+      ).toBeNull();
+      expect(screen.getByText(/mesh-client:request-rncp-receive:v1/)).toBeInTheDocument();
+    });
+
     it('has no axe violations', async () => {
       const { container } = render(
-        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} />,
+        <ChatPayloadText text={REQUEST} query="" loadLinkPreviews={false} rncpControlEnabled />,
       );
       hydrateAxeThemeColors(document.documentElement);
       expect(await axe(container)).toHaveNoViolations();

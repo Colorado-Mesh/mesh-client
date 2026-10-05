@@ -3991,6 +3991,7 @@ function ChatPanel({
                                   // Always fetch: gating on !showScrollButton hid image embeds
                                   // while reading history (the usual place users look for them).
                                   loadLinkPreviews
+                                  rncpControlEnabled={capabilities.hasRncpTransfer}
                                   onContentResize={() => {
                                     scheduleMessageRowRemeasure(i);
                                   }}

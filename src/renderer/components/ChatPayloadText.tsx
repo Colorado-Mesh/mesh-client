@@ -260,6 +260,8 @@ export interface ChatPayloadTextProps {
   loadLinkPreviews?: boolean;
   /** Fired when async link-preview content mounts and row height may have grown. */
   onContentResize?: () => void;
+  /** Active protocol supports rncp; otherwise rncp sentinel text is shown verbatim. */
+  rncpControlEnabled?: boolean;
 }
 
 /**
@@ -272,6 +274,7 @@ export function ChatPayloadText({
   query,
   loadLinkPreviews = true,
   onContentResize,
+  rncpControlEnabled = false,
 }: ChatPayloadTextProps) {
   const { t } = useTranslation();
   const gifId = parseMeshcoreGifId(text);
@@ -282,7 +285,7 @@ export function ChatPayloadText({
       </div>
     );
   }
-  const rncpKind = classifyRncpControlBody(text);
+  const rncpKind = rncpControlEnabled ? classifyRncpControlBody(text) : null;
   if (!rncpKind) {
     const droneReport = parseDroneReport(text);
     if (droneReport) {

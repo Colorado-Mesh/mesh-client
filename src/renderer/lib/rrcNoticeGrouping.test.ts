@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
-import { groupRrcNoticeRows, isRrcHubSessionBanner } from './rrcNoticeGrouping';
+import {
+  groupRrcNoticeRows,
+  isRrcHubSessionBanner,
+  isRrcNoticeGroupExpanded,
+  pruneRrcExpandedNoticeIds,
+  type RrcDisplayRow,
+  type RrcNoticeGroup,
+  toggleRrcNoticeGroupExpansion,
+} from './rrcNoticeGrouping';
 
 const HUB = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
 let seq = 0;
@@ -110,5 +118,44 @@ describe('groupRrcNoticeRows', () => {
     const after = groupRrcNoticeRows([...base, notice(WHO)]);
     expect(before[0].type === 'group' && before[0].group.id).toBe(first.id);
     expect(after[0].type === 'group' && after[0].group.id).toBe(first.id);
+  });
+});
+
+describe('notice group expansion', () => {
+  function firstGroup(rows: RrcDisplayRow[]): RrcNoticeGroup {
+    const row = rows.find((r) => r.type === 'group');
+    if (row?.type !== 'group') throw new Error('expected a group');
+    return row.group;
+  }
+
+  it('toggles by member message ids', () => {
+    const group = firstGroup(groupRrcNoticeRows([notice(WELCOME), notice(JOIN_ACK)]));
+    const expanded = toggleRrcNoticeGroupExpansion(new Set(), group);
+    expect(isRrcNoticeGroupExpanded(group, expanded)).toBe(true);
+    const collapsed = toggleRrcNoticeGroupExpansion(expanded, group);
+    expect(isRrcNoticeGroupExpanded(group, collapsed)).toBe(false);
+    expect(collapsed.size).toBe(0);
+  });
+
+  it('stays expanded when the first message is trimmed from the window', () => {
+    const msgs = [notice(WELCOME), notice(JOIN_ACK), notice(WHO)];
+    const expanded = toggleRrcNoticeGroupExpansion(new Set(), firstGroup(groupRrcNoticeRows(msgs)));
+    const trimmedRows = groupRrcNoticeRows(msgs.slice(1));
+    const pruned = pruneRrcExpandedNoticeIds(expanded, trimmedRows);
+    expect(isRrcNoticeGroupExpanded(firstGroup(trimmedRows), pruned)).toBe(true);
+    expect(pruned.has(msgs[0].id)).toBe(false);
+  });
+
+  it('prunes markers once messages are no longer grouped', () => {
+    const msgs = [notice(WELCOME), notice(JOIN_ACK)];
+    const expanded = toggleRrcNoticeGroupExpansion(new Set(), firstGroup(groupRrcNoticeRows(msgs)));
+    const pruned = pruneRrcExpandedNoticeIds(expanded, groupRrcNoticeRows(msgs.slice(1)));
+    expect(pruned.size).toBe(0);
+  });
+
+  it('returns the same set when nothing is pruned', () => {
+    const rows = groupRrcNoticeRows([notice(WELCOME), notice(JOIN_ACK)]);
+    const expanded = toggleRrcNoticeGroupExpansion(new Set(), firstGroup(rows));
+    expect(pruneRrcExpandedNoticeIds(expanded, rows)).toBe(expanded);
   });
 });

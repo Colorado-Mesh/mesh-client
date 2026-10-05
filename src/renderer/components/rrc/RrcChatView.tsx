@@ -45,8 +45,11 @@ import {
 } from '@/renderer/lib/rrcNickComplete';
 import {
   groupRrcNoticeRows,
+  isRrcNoticeGroupExpanded,
+  pruneRrcExpandedNoticeIds,
   type RrcDisplayRow,
   type RrcNoticeGroup,
+  toggleRrcNoticeGroupExpansion,
 } from '@/renderer/lib/rrcNoticeGrouping';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage, RrcRoomMember } from '@/shared/rrc-types';
@@ -76,12 +79,12 @@ export function estimateRrcRowHeight(msg: RrcChatMessage | null | undefined): nu
 
 function estimateRrcDisplayRowHeight(
   row: RrcDisplayRow | undefined,
-  expandedGroupIds: ReadonlySet<string>,
+  expandedNoticeIds: ReadonlySet<string>,
 ): number {
   if (!row) return estimateRrcRowHeight(null);
   if (row.type === 'message') return estimateRrcRowHeight(row.msg);
   const summary = estimateRrcRowHeight(null);
-  if (!expandedGroupIds.has(row.group.id)) return summary;
+  if (!isRrcNoticeGroupExpanded(row.group, expandedNoticeIds)) return summary;
   return row.group.messages.reduce((sum, msg) => sum + estimateRrcRowHeight(msg), summary);
 }
 
@@ -267,7 +270,7 @@ function RrcNoticeGroupSummary({
   group: RrcNoticeGroup;
   expanded: boolean;
   time: string | null;
-  onToggle: (groupId: string) => void;
+  onToggle: (group: RrcNoticeGroup) => void;
 }>) {
   const { t } = useTranslation();
   const count = group.messages.length;
@@ -289,7 +292,7 @@ function RrcNoticeGroupSummary({
           expanded ? t('rrc.hubSession.collapse', { count }) : t('rrc.hubSession.expand', { count })
         }
         onClick={() => {
-          onToggle(group.id);
+          onToggle(group);
         }}
         className="hover:text-ink-200 flex min-w-0 flex-1 items-start gap-1 rounded text-left"
       >
@@ -404,16 +407,16 @@ export function RrcChatView({
 
   const visibleMessages = useMemo(() => messages.filter(shouldDisplayRrcChatMessage), [messages]);
   const displayRows = useMemo(() => groupRrcNoticeRows(visibleMessages), [visibleMessages]);
-  const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlySet<string>>(
+  const [expandedNoticeIds, setExpandedNoticeIds] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );
-  const toggleGroupExpanded = useCallback((groupId: string) => {
-    setExpandedGroupIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
+  const [expansionPrunedFor, setExpansionPrunedFor] = useState(displayRows);
+  if (expansionPrunedFor !== displayRows) {
+    setExpansionPrunedFor(displayRows);
+    setExpandedNoticeIds((prev) => pruneRrcExpandedNoticeIds(prev, displayRows));
+  }
+  const toggleGroupExpanded = useCallback((group: RrcNoticeGroup) => {
+    setExpandedNoticeIds((prev) => toggleRrcNoticeGroupExpansion(prev, group));
   }, []);
 
   const nickLabels = useMemo(() => rrcMemberNickLabels(members), [members]);
@@ -440,8 +443,8 @@ export function RrcChatView({
   const payloadLimit = resolveRrcMsgBodyLimit(maxMsgBodyBytes);
 
   const estimateSize = useCallback(
-    (index: number) => estimateRrcDisplayRowHeight(displayRows[index], expandedGroupIds),
-    [displayRows, expandedGroupIds],
+    (index: number) => estimateRrcDisplayRowHeight(displayRows[index], expandedNoticeIds),
+    [displayRows, expandedNoticeIds],
   );
 
   const measureElement = useMemo(
@@ -747,7 +750,7 @@ export function RrcChatView({
                 const row = displayRows[vi.index];
                 if (!row) return null;
                 if (row.type === 'group') {
-                  const expanded = expandedGroupIds.has(row.group.id);
+                  const expanded = isRrcNoticeGroupExpanded(row.group, expandedNoticeIds);
                   return (
                     <div
                       key={vi.key}
