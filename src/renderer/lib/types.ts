@@ -444,6 +444,10 @@ export interface ChatMessage {
   viaStoreForward?: boolean;
   /** MeshCore room server BBS post (not a DM). */
   roomServerId?: number;
+  /** Group-channel identity key (`channelIdentityKey.ts`); remaps history to the live radio slot. */
+  channelKey?: string;
+  /** Radio (local node number) that recorded this message, when known. */
+  radioNodeId?: number;
 }
 
 export interface TelemetryPoint {

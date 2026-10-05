@@ -58,6 +58,7 @@ export function createElectronAPIMock(): ElectronAPI {
       pruneReticulumIdentityActivityByAge: vi.fn().mockResolvedValue({ changes: 0 }),
       deleteNodesBatch: vi.fn().mockResolvedValue(0),
       clearMessagesByChannel: vi.fn().mockResolvedValue(undefined),
+      backfillChannelKeys: vi.fn().mockResolvedValue({ changes: 0 }),
       getMessageChannels: vi.fn().mockResolvedValue([]),
       setNodeFavorited: vi.fn().mockResolvedValue(undefined),
       getNodeNote: vi.fn().mockResolvedValue(null),

@@ -7,6 +7,7 @@
 import { getConnection } from '../../stores/connectionStore';
 import { upsertMessage, useMessageStore } from '../../stores/messageStore';
 import { useNodeStore } from '../../stores/nodeStore';
+import { withMeshtasticChannelIdentity } from '../channelIdentity';
 import { persistDbWrite } from '../dbPersistRetry';
 import { packetRouter, type PacketRouterListener } from '../drivers/PacketRouter';
 import { errLikeToLogString } from '../errLikeToLogString';
@@ -106,7 +107,7 @@ function handleTextMessage(
       return;
     }
     persistDbWrite('meshtastic ingest echo message', () =>
-      window.electronAPI.db.saveMessage(incoming),
+      window.electronAPI.db.saveMessage(withMeshtasticChannelIdentity(incoming)),
     );
     return;
   }
@@ -173,7 +174,9 @@ function handleTextMessage(
     }
   }
 
-  persistDbWrite('meshtastic ingest message', () => window.electronAPI.db.saveMessage(incoming));
+  persistDbWrite('meshtastic ingest message', () =>
+    window.electronAPI.db.saveMessage(withMeshtasticChannelIdentity(incoming)),
+  );
 }
 
 function createListener(

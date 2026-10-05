@@ -62,7 +62,9 @@ export const CANONICAL_TABLES_DDL = `
         reply_preview_text TEXT,
         reply_preview_sender TEXT,
         rx_hops INTEGER,
-        via_store_forward INTEGER DEFAULT 0
+        via_store_forward INTEGER DEFAULT 0,
+        radio_node_id INTEGER,
+        channel_key TEXT
       );
 
       CREATE TABLE IF NOT EXISTS nodes (
@@ -133,7 +135,8 @@ export const CANONICAL_TABLES_DDL = `
         reply_preview_sender TEXT,
         rx_hops INTEGER,
         room_server_id INTEGER,
-        radio_node_id INTEGER
+        radio_node_id INTEGER,
+        channel_key TEXT
       );
 
       CREATE TABLE IF NOT EXISTS position_history (
@@ -339,6 +342,7 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_messages_channel_ts ON messages(channel, timestamp DESC)',
   'CREATE INDEX IF NOT EXISTS idx_messages_packet_id ON messages(packet_id)',
+  'CREATE INDEX IF NOT EXISTS idx_messages_radio_channel_key ON messages(radio_node_id, channel_key)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_reaction_dedup
         ON messages(sender_id, reply_id, emoji)
         WHERE emoji IS NOT NULL AND reply_id IS NOT NULL`,
@@ -355,6 +359,7 @@ export const INDEX_DDLS: readonly string[] = [
   'CREATE INDEX IF NOT EXISTS idx_reticulum_dest_last_heard ON reticulum_destinations(last_heard)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_ts ON meshcore_messages(timestamp)',
   'CREATE INDEX IF NOT EXISTS idx_mc_msgs_channel_id ON meshcore_messages(channel_idx, id DESC)',
+  'CREATE INDEX IF NOT EXISTS idx_mc_msgs_radio_channel_key ON meshcore_messages(radio_node_id, channel_key)',
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_mc_msg_dedup
         ON meshcore_messages(sender_id, timestamp, channel_idx, payload, COALESCE(to_node, -1))
         WHERE sender_id IS NOT NULL`,
@@ -401,6 +406,8 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     reply_preview_sender: 'TEXT',
     rx_hops: 'INTEGER',
     via_store_forward: 'INTEGER DEFAULT 0',
+    radio_node_id: 'INTEGER',
+    channel_key: 'TEXT',
   },
   nodes: {
     long_name: 'TEXT',
@@ -466,6 +473,7 @@ export const DESIRED_COLUMNS: Readonly<Record<string, Readonly<Record<string, st
     rx_hops: 'INTEGER',
     room_server_id: 'INTEGER',
     radio_node_id: 'INTEGER',
+    channel_key: 'TEXT',
   },
   reticulum_messages: {
     identity_id: 'TEXT NOT NULL',

@@ -160,6 +160,10 @@ export interface SavedMessage {
   receivedVia: string | null;
   viaStoreForward?: boolean;
   rxHops?: number | null;
+  /** Radio that stored the row (null for pre-scoping history). */
+  radioNodeId?: number | null;
+  /** Channel identity key (`channelIdentityKey.ts`); null for DMs or unkeyed history. */
+  channelKey?: string | null;
 }
 
 export interface SavedNode {
@@ -383,6 +387,8 @@ export interface ElectronAPI {
       receivedVia?: string;
       viaStoreForward?: boolean;
       rxHops?: number;
+      radioNodeId?: number;
+      channelKey?: string;
     }) => Promise<void>;
 
     getMessages: (channel?: number, limit?: number) => Promise<SavedMessage[]>;
@@ -469,7 +475,19 @@ export interface ElectronAPI {
     pruneReticulumIdentityActivityByAge: (days: number) => Promise<DbPruneResult>;
     deleteNodesNeverHeard: () => Promise<number>;
     deleteNodesBatch: (nodeIds: number[]) => Promise<number>;
-    clearMessagesByChannel: (channel: number) => Promise<void>;
+    /** With `channelKey`, also removes that channel's history recorded in other slots. */
+    clearMessagesByChannel: (
+      channel: number,
+      radioNodeId?: number,
+      channelKey?: string,
+    ) => Promise<void>;
+    /** Stamp unkeyed group-channel rows for `radioNodeId` with its current slot → key mapping. */
+    backfillChannelKeys: (
+      protocol: 'meshtastic' | 'meshcore',
+      radioNodeId: number,
+      entries: { index: number; key: string }[],
+      claimUnscoped: boolean,
+    ) => Promise<{ changes: number }>;
     getMessageChannels: () => Promise<{ channel: number }[]>;
     setNodeFavorited: (nodeId: number, favorited: boolean) => Promise<void>;
     getNodeNote: (nodeId: number) => Promise<string | null>;
@@ -638,6 +656,7 @@ export interface ElectronAPI {
       rx_hops?: number | null;
       room_server_id?: number | null;
       radio_node_id?: number | null;
+      channel_key?: string | null;
     }) => Promise<void>;
     saveMeshcoreContact: (contact: {
       node_id: number;
@@ -704,7 +723,11 @@ export interface ElectronAPI {
     deleteMeshcoreContact: (nodeId: number) => Promise<void>;
     clearMeshcoreMessages: () => Promise<void>;
     getMeshcoreMessageChannels: () => Promise<{ channel: number }[]>;
-    clearMeshcoreMessagesByChannel: (channelIdx: number, radioNodeId: number) => Promise<void>;
+    clearMeshcoreMessagesByChannel: (
+      channelIdx: number,
+      radioNodeId: number,
+      channelKey?: string,
+    ) => Promise<void>;
     clearMeshcoreContacts: () => Promise<void>;
     deleteMeshcoreContactsNeverAdvertised: () => Promise<void>;
     deleteMeshcoreContactsByAge: (days: number) => Promise<void>;

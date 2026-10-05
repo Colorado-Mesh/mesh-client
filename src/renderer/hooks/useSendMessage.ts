@@ -7,6 +7,7 @@ import {
   messageToDbRow,
 } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isMeshcoreOpenWireCompatEnabled } from '../lib/appSettingsStorage';
+import { withMeshtasticChannelIdentity } from '../lib/channelIdentity';
 import { connectionDriver } from '../lib/drivers/ConnectionDriver';
 import { errLikeToLogString } from '../lib/errLikeToLogString';
 import {
@@ -285,7 +286,7 @@ export function useSendMessage(
 
       if (isMeshtastic) {
         void window.electronAPI.db
-          .saveMessage(messageRecordToChatMessage(record))
+          .saveMessage(withMeshtasticChannelIdentity(messageRecordToChatMessage(record)))
           .catch((e: unknown) => {
             console.debug('[useSendMessage] saveMessage failed ' + errLikeToLogString(e));
           });

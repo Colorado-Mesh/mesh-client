@@ -1,9 +1,11 @@
 import { sanitizeLogMessage } from '@/main/sanitize-log-message';
 import { meshcoreMessageChannelIndex } from '@/shared/meshcoreMessageChannel';
 
+import { isChannelIdentityKey } from '../../../shared/channelIdentityKey';
 import { isValidLatLon } from '../../../shared/geoCoords';
 import { meshcoreContactDisplayName } from '../../../shared/meshcoreContactSanitize';
 import { withTimeout } from '../../../shared/withTimeout';
+import { resolveChannelKeyForPersist } from '../../lib/channelIdentity';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../../lib/chatInMemoryBuffer';
 import { errLikeToLogString } from '../../lib/errLikeToLogString';
 import type {
@@ -157,11 +159,12 @@ export function messageToDbRow(
       sender_id = meshcoreChatStubNodeIdFromDisplayName(name);
     }
   }
+  const channel_idx = meshcoreMessageChannelIndex(msg.channel, msg.to, msg.roomServerId);
   return {
     sender_id,
     sender_name: msg.sender_name ?? null,
     payload: msg.payload,
-    channel_idx: meshcoreMessageChannelIndex(msg.channel, msg.to, msg.roomServerId),
+    channel_idx,
     local_order: msg.localOrder ?? null,
     timestamp: effectiveMessageTimestampMs(msg.timestamp),
     status: msg.status ?? 'acked',
@@ -179,6 +182,7 @@ export function messageToDbRow(
       radioNodeId != null && Number.isSafeInteger(radioNodeId) && radioNodeId > 0
         ? radioNodeId >>> 0
         : null,
+    channel_key: resolveChannelKeyForPersist('meshcore', msg, channel_idx, radioNodeId),
   };
 }
 
@@ -875,6 +879,8 @@ export interface MeshcoreMessageDbRow {
   reply_preview_sender?: string | null;
   rx_hops?: number | null;
   room_server_id?: number | null;
+  radio_node_id?: number | null;
+  channel_key?: string | null;
 }
 
 /**
@@ -1186,6 +1192,8 @@ export function mapMeshcoreDbRowsToChatMessages(rows: MeshcoreMessageDbRow[]): C
         typeof r.reply_preview_sender === 'string' ? r.reply_preview_sender : undefined,
       rxHops: coerceOptionalDbInt(r.rx_hops),
       roomServerId: coerceOptionalDbInt(r.room_server_id),
+      ...(isChannelIdentityKey(r.channel_key) ? { channelKey: r.channel_key } : {}),
+      ...(r.radio_node_id != null && r.radio_node_id > 0 ? { radioNodeId: r.radio_node_id } : {}),
     });
   }
   return meshcoreChatMessagesForDisplay(

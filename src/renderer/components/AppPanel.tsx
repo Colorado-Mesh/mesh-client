@@ -78,6 +78,7 @@ import {
 import { type MeshNode, type MeshProtocol, REGISTERED_MESH_PROTOCOLS } from '../lib/types';
 import { useCoordFormatStore } from '../stores/coordFormatStore';
 import { useDiagnosticsStore } from '../stores/diagnosticsStore';
+import { getLiveChannelKey } from '../stores/liveChannelKeyStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
@@ -2918,12 +2919,17 @@ export default function AppPanel({
                           await window.electronAPI.db.clearMeshcoreMessagesByChannel(
                             clearChannelTarget,
                             radioNodeId,
+                            getLiveChannelKey('meshcore', clearChannelTarget) ?? undefined,
                           );
                         }
                       } else if (isAll) {
                         await window.electronAPI.db.clearMessages();
                       } else {
-                        await window.electronAPI.db.clearMessagesByChannel(clearChannelTarget);
+                        await window.electronAPI.db.clearMessagesByChannel(
+                          clearChannelTarget,
+                          radioNodeId,
+                          getLiveChannelKey('meshtastic', clearChannelTarget) ?? undefined,
+                        );
                       }
                     },
                   });

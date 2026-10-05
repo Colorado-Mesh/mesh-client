@@ -34,6 +34,7 @@ import {
   MESHTASTIC_REMOTE_ADMIN_KEY_SETTING_PREFIX,
 } from '../shared/appSettingsKeyPrefixes';
 import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
+import { isChannelIdentityKey } from '../shared/channelIdentityKey';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
 import { parseConnectHostPort } from '../shared/connectHost';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
@@ -64,6 +65,11 @@ import {
 } from './ble-coexistence-coordinator';
 import { formatBluetoothctlSpawnError } from './bluetoothctlSpawnError';
 import { ensureCameraAccess, isAllowedCameraPrivacySettingsUrl } from './cameraAccess';
+import {
+  backfillChannelKeys,
+  type ChannelKeyBackfillEntry,
+  clearChannelMessagesByKey,
+} from './channelIdentityDb';
 import {
   assertChatExportMessageSizes,
   formatChatExportLinesWithTotalCap,
@@ -733,6 +739,13 @@ function validateSaveMessage(message: unknown): asserts message is Record<string
     if (!Number.isInteger(h) || h < 0)
       throw new Error('db:saveMessage: rxHops must be a non-negative integer');
   }
+  if (m.radioNodeId != null) {
+    const radio = Number(m.radioNodeId);
+    if (!Number.isSafeInteger(radio) || radio < 0)
+      throw new Error('db:saveMessage: radioNodeId must be a non-negative integer');
+  }
+  if (m.channelKey != null && !isChannelIdentityKey(m.channelKey))
+    throw new Error('db:saveMessage: channelKey must be a channel identity key');
 }
 
 function validateSaveNode(
@@ -817,6 +830,8 @@ function validateSaveMeshcoreMessage(msg: unknown): asserts msg is Record<string
     if (!Number.isSafeInteger(radio) || radio < 0)
       throw new Error('db:saveMeshcoreMessage: radio_node_id must be a non-negative integer');
   }
+  if (m.channel_key != null && !isChannelIdentityKey(m.channel_key))
+    throw new Error('db:saveMeshcoreMessage: channel_key must be a channel identity key');
 }
 
 function validateSaveMeshcoreContact(contact: unknown): asserts contact is Record<
@@ -3994,9 +4009,10 @@ ipcMain.handle('db:saveMessage', (event, message) => {
     const db = getDbForIpc('db:saveMessage');
     if (!db) return { changes: 0 };
     const stmt = db.prepareOnce(`
-      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender, rx_hops, via_store_forward)
-      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender, @rx_hops, @via_store_forward)
+      INSERT OR IGNORE INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, status, error, emoji, reply_id, to_node, mqtt_status, received_via, reply_preview_text, reply_preview_sender, rx_hops, via_store_forward, radio_node_id, channel_key)
+      VALUES (@sender_id, @sender_name, @payload, @channel, @timestamp, @packet_id, @status, @error, @emoji, @reply_id, @to_node, @mqtt_status, @received_via, @reply_preview_text, @reply_preview_sender, @rx_hops, @via_store_forward, @radio_node_id, @channel_key)
     `);
+    const radioNodeId = message.radioNodeId != null ? Number(message.radioNodeId) >>> 0 : 0;
     const validReceivedVia = ['rf', 'mqtt', 'both'];
     return stmt.run({
       sender_id: safeNonNegativeInt(message.sender_id),
@@ -4024,6 +4040,8 @@ ipcMain.handle('db:saveMessage', (event, message) => {
           ? Math.trunc(message.rxHops)
           : null,
       via_store_forward: message.viaStoreForward ? 1 : 0,
+      radio_node_id: radioNodeId > 0 ? radioNodeId : null,
+      channel_key: isChannelIdentityKey(message.channelKey) ? message.channelKey : null,
     });
   } catch (err) {
     finishDbIpcHandler('db:saveMessage', err);
@@ -4040,7 +4058,8 @@ ipcMain.handle('db:getMessages', (event, channel?: number, limit = 200) => {
          packet_id AS packetId, status, error, emoji, reply_id AS replyId, to_node,
          mqtt_status AS mqttStatus, received_via AS receivedVia,
          reply_preview_text AS replyPreviewText, reply_preview_sender AS replyPreviewSender,
-         rx_hops AS rxHops, via_store_forward AS viaStoreForward`;
+         rx_hops AS rxHops, via_store_forward AS viaStoreForward,
+         radio_node_id AS radioNodeId, channel_key AS channelKey`;
     let rows: Record<string, unknown>[];
     if (channel != null) {
       const ch = safeNonNegativeInt(channel);
@@ -4482,23 +4501,78 @@ ipcMain.handle('db:deleteNodesBatch', (event, nodeIds: number[]) => {
   }
 });
 
-ipcMain.handle('db:clearMessagesByChannel', (event, channel: number) => {
-  if (!validateIpcSender(event)) {
-    throw new Error('IPC sender validation failed');
-  }
-  try {
-    const db = getDbForIpc('db:clearMessagesByChannel');
-    if (!db) return { changes: 0 };
-    const ch = safeNonNegativeInt(channel);
-    const result = db.prepareOnce('DELETE FROM messages WHERE channel = ?').run(ch);
-    console.debug(
-      `[IPC] db:clearMessagesByChannel: deleted ${result.changes} messages from channel ${ch}`,
-    );
-    return result;
-  } catch (err) {
-    finishDbIpcHandler('db:clearMessagesByChannel', err);
-  }
-});
+ipcMain.handle(
+  'db:backfillChannelKeys',
+  (event, protocol: unknown, radioNodeId: unknown, entries: unknown, claimUnscoped: unknown) => {
+    assertIpcSender(event, 'db:backfillChannelKeys');
+    try {
+      if (protocol !== 'meshtastic' && protocol !== 'meshcore') {
+        throw new Error('db:backfillChannelKeys: protocol must be meshtastic or meshcore');
+      }
+      const radio = Number(radioNodeId);
+      if (!Number.isSafeInteger(radio) || radio <= 0) {
+        throw new Error('db:backfillChannelKeys: radioNodeId must be a positive integer');
+      }
+      if (!Array.isArray(entries) || entries.length > 256) {
+        throw new Error('db:backfillChannelKeys: entries must be an array (max 256)');
+      }
+      const safeEntries: ChannelKeyBackfillEntry[] = [];
+      for (const raw of entries as unknown[]) {
+        const rec = raw as { index?: unknown; key?: unknown } | null;
+        const index = Number(rec?.index);
+        if (!Number.isInteger(index) || index < 0 || index > 255) {
+          throw new Error('db:backfillChannelKeys: entry index must be 0..255');
+        }
+        if (!isChannelIdentityKey(rec?.key)) {
+          throw new Error('db:backfillChannelKeys: entry key must be a channel identity key');
+        }
+        safeEntries.push({ index, key: rec.key });
+      }
+      const db = getDbForIpc('db:backfillChannelKeys');
+      if (!db) return { changes: 0 };
+      const result = backfillChannelKeys(db, protocol, radio, safeEntries, {
+        claimUnscoped: claimUnscoped === true,
+      });
+      if (result.changes > 0) {
+        console.debug(
+          `[IPC] db:backfillChannelKeys: stamped ${result.changes} ${protocol} rows for radio ${radio}`,
+        );
+      }
+      return result;
+    } catch (err) {
+      finishDbIpcHandler('db:backfillChannelKeys', err);
+    }
+  },
+);
+
+ipcMain.handle(
+  'db:clearMessagesByChannel',
+  (event, channel: number, radioNodeId?: unknown, channelKey?: unknown) => {
+    if (!validateIpcSender(event)) {
+      throw new Error('IPC sender validation failed');
+    }
+    try {
+      const db = getDbForIpc('db:clearMessagesByChannel');
+      if (!db) return { changes: 0 };
+      const ch = safeNonNegativeInt(channel);
+      if (isChannelIdentityKey(channelKey)) {
+        const radio = radioNodeId != null ? safeMeshcoreRadioNodeId(radioNodeId) : 0;
+        const keyed = clearChannelMessagesByKey(db, 'meshtastic', ch, radio, channelKey);
+        console.debug(
+          `[IPC] db:clearMessagesByChannel: deleted ${keyed.changes} messages for channel ${ch} by key`,
+        );
+        return keyed;
+      }
+      const result = db.prepareOnce('DELETE FROM messages WHERE channel = ?').run(ch);
+      console.debug(
+        `[IPC] db:clearMessagesByChannel: deleted ${result.changes} messages from channel ${ch}`,
+      );
+      return result;
+    } catch (err) {
+      finishDbIpcHandler('db:clearMessagesByChannel', err);
+    }
+  },
+);
 
 ipcMain.handle('db:getMessageChannels', (event) => {
   try {
@@ -5490,6 +5564,7 @@ ipcMain.handle('db:saveMeshcoreMessage', (event, message) => {
         const radio = Number(m.radio_node_id) >>> 0;
         return radio > 0 ? radio : null;
       })(),
+      channel_key: isChannelIdentityKey(m.channel_key) ? m.channel_key : null,
     };
 
     return persistMeshcoreMessage(db, rowParams);
@@ -5775,7 +5850,7 @@ ipcMain.handle('db:getMeshcoreMessageChannels', (event) => {
 
 ipcMain.handle(
   'db:clearMeshcoreMessagesByChannel',
-  (event, channelIdx: number, radioNodeId: number) => {
+  (event, channelIdx: number, radioNodeId: number, channelKey?: unknown) => {
     if (!validateIpcSender(event)) {
       throw new Error('IPC sender validation failed');
     }
@@ -5784,7 +5859,10 @@ ipcMain.handle(
       if (!db) return { changes: 0 };
       const ch = safeMeshcoreChannelIndex(channelIdx);
       const radio = safeMeshcoreRadioNodeId(radioNodeId);
-      const result = clearMeshcoreMessagesByChannel(db, ch, radio);
+      const result =
+        ch >= 0 && isChannelIdentityKey(channelKey)
+          ? clearChannelMessagesByKey(db, 'meshcore', ch, radio, channelKey)
+          : clearMeshcoreMessagesByChannel(db, ch, radio);
       console.debug(
         `[IPC] db:clearMeshcoreMessagesByChannel: deleted ${result.changes} messages from channel_idx ${ch} radio_node_id ${radio}`,
       );

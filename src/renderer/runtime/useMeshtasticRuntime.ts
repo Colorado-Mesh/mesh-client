@@ -107,6 +107,7 @@ import {
   shouldSkipBleReconnectAfterExhaustion,
 } from '../lib/bleReconnectExhaustLatch';
 import { verifyGattRfLink } from '../lib/bleReconnectHelper';
+import { withMeshtasticChannelIdentity } from '../lib/channelIdentity';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from '../lib/chatInMemoryBuffer';
 import {
   getBlePeripheralIdFromMeshTransport,
@@ -362,9 +363,11 @@ function persistMeshtasticNode(node: MeshNode): void {
 }
 
 function persistMeshtasticMessage(message: ChatMessage): void {
-  void window.electronAPI.db.saveMessage(message).catch((e: unknown) => {
-    console.warn('[useMeshtasticRuntime] saveMessage failed ' + errLikeToLogString(e));
-  });
+  void window.electronAPI.db
+    .saveMessage(withMeshtasticChannelIdentity(message))
+    .catch((e: unknown) => {
+      console.warn('[useMeshtasticRuntime] saveMessage failed ' + errLikeToLogString(e));
+    });
 }
 
 function getOrCreateVirtualNodeId(): number {

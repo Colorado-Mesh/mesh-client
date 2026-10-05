@@ -14,6 +14,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 
 import { addMessage } from '../../stores/messageStore';
+import { withMeshtasticChannelIdentity } from '../channelIdentity';
 import { persistDbWrite } from '../dbPersistRetry';
 import { attachTypedPacketListener } from '../drivers/attachTypedPacketListener';
 import { createPacketDedupeRegistry } from '../drivers/packetDedupeRegistry';
@@ -92,7 +93,7 @@ function appendReplayedHistoryText(identityId: IdentityId, chat: ChatMessage): v
   addMessage(identityId, chatMessageToMessageRecord(chat));
   persistDbWrite('Meshtastic Store & Forward message', async () => {
     try {
-      await window.electronAPI.db.saveMessage(chat);
+      await window.electronAPI.db.saveMessage(withMeshtasticChannelIdentity(chat));
     } catch (error) {
       console.warn(
         '[meshtasticStoreForwardSideEffects] saveMessage failed ' + errLikeToLogString(error),
