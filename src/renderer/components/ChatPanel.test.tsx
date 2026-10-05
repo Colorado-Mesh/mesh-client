@@ -5721,6 +5721,28 @@ describe('ChatPanel — Option B bubbles and toolbar', () => {
     }
   });
 
+  it('adds extra space where the sender changes', async () => {
+    const now = Date.now();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          messages={[
+            makeMsg({ sender_id: 2, payload: 'alice one', timestamp: now }),
+            makeMsg({ sender_id: 2, payload: 'alice two', timestamp: now + 1 }),
+            makeMsg({ sender_id: 3, payload: 'bob one', timestamp: now + 2 }),
+            makeMsg({ sender_id: 1, sender_name: 'Me', payload: 'from me', timestamp: now + 3 }),
+          ]}
+        />
+      </ToastProvider>,
+    );
+    const row = (text: string) => screen.getByText(text).closest('[data-index]');
+    await screen.findByText('bob one');
+    expect(row('alice one')?.className).toContain('pb-1');
+    expect(row('alice two')?.className).toContain('pb-3');
+    expect(row('bob one')?.className).toContain('pb-3');
+  });
+
   it('does not render a sender initials avatar beside incoming messages', async () => {
     const now = Date.now();
     const { container } = render(
