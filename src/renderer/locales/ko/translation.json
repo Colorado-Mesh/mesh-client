@@ -1481,6 +1481,7 @@
     },
     "autoConnectingTo": "{{deviceName}}에 자동 연결 중…",
     "autoReconnectInProgress": "자동 재연결 진행 중…",
+    "meshtasticSilentAfterConfigure": "라디오에 연결되었지만 설정 후 메시 트래픽 전송이 중지되었습니다. 자동으로 다시 연결됩니다. 이 문제가 계속 발생하면 라디오의 네트워크 연결을 확인하거나 다시 시작하십시오."
     "stageAutoConnectingBle": "{{deviceName}}에 연결 중…",
     "reticulumStats": {
       "interfaces": "{{count}} 인터페이스",

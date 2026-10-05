@@ -1501,6 +1501,7 @@
     },
     "autoConnectingTo": "Automatické připojení k {{deviceName}}…",
     "autoReconnectInProgress": "Probíhá automatické opětovné připojení…",
+    "meshtasticSilentAfterConfigure": "Připojeno k rádiu, ale po nastavení přestalo odesílat síťový provoz. Automatické opětovné připojení. Pokud k tomu dochází i nadále, zkontrolujte síťové připojení rádia nebo jej restartujte."
     "stageAutoConnectingBle": "Připojení k {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} rozhraní",

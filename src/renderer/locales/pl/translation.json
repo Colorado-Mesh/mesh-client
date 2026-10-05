@@ -1515,6 +1515,7 @@
     },
     "autoConnectingTo": "Automatyczne łączenie z {{deviceName}}…",
     "autoReconnectInProgress": "Automatyczne ponowne łączenie w toku…",
+    "meshtasticSilentAfterConfigure": "Podłączony do radia, ale po skonfigurowaniu przestał wysyłać ruch siatki. Automatyczne ponowne łączenie. Jeśli to się powtarza, sprawdź połączenie sieciowe radia lub uruchom je ponownie."
     "stageAutoConnectingBle": "Łączenie z {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "Interfejsy {{count}}",

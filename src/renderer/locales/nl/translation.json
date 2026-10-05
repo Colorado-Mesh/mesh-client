@@ -1480,6 +1480,7 @@
     },
     "autoConnectingTo": "Automatisch verbinden met {{deviceName}}…",
     "autoReconnectInProgress": "Automatisch opnieuw verbinden bezig…",
+    "meshtasticSilentAfterConfigure": "Verbonden met de radio, maar het stopte met het verzenden van mesh-verkeer na de installatie. Automatisch opnieuw verbinding maken. Als dit blijft gebeuren, controleer dan de netwerkverbinding van de radio of start deze opnieuw op."
     "stageAutoConnectingBle": "Verbinding maken met {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} interfaces",

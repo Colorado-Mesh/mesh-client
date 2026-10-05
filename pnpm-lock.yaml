@@ -30,7 +30,7 @@ overrides:
   ws: ^8.21.0
 
 patchedDependencies:
-  '@jsr/meshtastic__core@2.6.6': 97fc292a901f038a6bf3706290e2c960abf603847bee6114b150a89ae2893b6b
+  '@jsr/meshtastic__core@2.6.6': 573e03448b0c90c6940c14cb863c03b58bb54abe4c5e4200d3c89b1f50525bef
   '@jsr/meshtastic__transport-web-serial@0.2.5': 27a2418bae8605e0e5ab6f1fcfd391abd9dc3110433da5754e934f38475dab74
   '@liamcottle/meshcore.js@1.15.0': 685cdeaa61e9bf3e50770ce7db162376ed19f84013d62935955803b9d1235409
   app-builder-lib@26.15.3: 31b6515261c0293b0461ee1fb6771aff53487406edc56e942bc7095b86ac42cf
@@ -137,7 +137,7 @@ importers:
         version: 1.15.0(patch_hash=685cdeaa61e9bf3e50770ce7db162376ed19f84013d62935955803b9d1235409)(supports-color@8.1.1)
       '@meshtastic/core':
         specifier: npm:@jsr/meshtastic__core@^2.6.6
-        version: '@jsr/meshtastic__core@2.6.6(patch_hash=97fc292a901f038a6bf3706290e2c960abf603847bee6114b150a89ae2893b6b)(buffer@6.0.3)'
+        version: '@jsr/meshtastic__core@2.6.6(patch_hash=573e03448b0c90c6940c14cb863c03b58bb54abe4c5e4200d3c89b1f50525bef)(buffer@6.0.3)'
       '@meshtastic/transport-http':
         specifier: npm:@jsr/meshtastic__transport-http@^0.2.1
         version: '@jsr/meshtastic__transport-http@0.2.1(buffer@6.0.3)'
@@ -4971,7 +4971,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@jsr/meshtastic__core@2.6.6(patch_hash=97fc292a901f038a6bf3706290e2c960abf603847bee6114b150a89ae2893b6b)(buffer@6.0.3)':
+  '@jsr/meshtastic__core@2.6.6(patch_hash=573e03448b0c90c6940c14cb863c03b58bb54abe4c5e4200d3c89b1f50525bef)(buffer@6.0.3)':
     dependencies:
       '@bufbuild/protobuf': 2.16.0
       '@jsr/meshtastic__protobufs': 2.8.1
@@ -4987,13 +4987,13 @@ snapshots:
 
   '@jsr/meshtastic__transport-http@0.2.1(buffer@6.0.3)':
     dependencies:
-      '@jsr/meshtastic__core': 2.6.6(patch_hash=97fc292a901f038a6bf3706290e2c960abf603847bee6114b150a89ae2893b6b)(buffer@6.0.3)
+      '@jsr/meshtastic__core': 2.6.6(patch_hash=573e03448b0c90c6940c14cb863c03b58bb54abe4c5e4200d3c89b1f50525bef)(buffer@6.0.3)
     transitivePeerDependencies:
       - buffer
 
   '@jsr/meshtastic__transport-web-serial@0.2.5(patch_hash=27a2418bae8605e0e5ab6f1fcfd391abd9dc3110433da5754e934f38475dab74)(buffer@6.0.3)':
     dependencies:
-      '@meshtastic/core': '@jsr/meshtastic__core@2.6.6(patch_hash=97fc292a901f038a6bf3706290e2c960abf603847bee6114b150a89ae2893b6b)(buffer@6.0.3)'
+      '@meshtastic/core': '@jsr/meshtastic__core@2.6.6(patch_hash=573e03448b0c90c6940c14cb863c03b58bb54abe4c5e4200d3c89b1f50525bef)(buffer@6.0.3)'
     transitivePeerDependencies:
       - buffer
 

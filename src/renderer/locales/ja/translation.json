@@ -1481,6 +1481,7 @@
     },
     "autoConnectingTo": "{{deviceName}} に自動接続中…",
     "autoReconnectInProgress": "自動再接続中です…",
+    "meshtasticSilentAfterConfigure": "無線に接続されていますが、セットアップ後にメッシュトラフィックの送信が停止しました。自動的に再接続しています。これが続く場合は、ラジオのネットワーク接続を確認するか、再起動してください。"
     "stageAutoConnectingBle": "{{deviceName}} に接続中…",
     "reticulumStats": {
       "interfaces": "{{count}}インターフェース",

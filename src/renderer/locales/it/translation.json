@@ -1479,6 +1479,7 @@
     },
     "autoConnectingTo": "Connessione automatica a {{deviceName}}…",
     "autoReconnectInProgress": "Riconnessione automatica in corso…",
+    "meshtasticSilentAfterConfigure": "Connesso alla radio, ma ha smesso di inviare traffico mesh dopo la configurazione. Riconnettersi automaticamente. Se questo continua ad accadere, controllare la connessione di rete della radio o riavviarla."
     "stageAutoConnectingBle": "Connessione a {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} interfacce",

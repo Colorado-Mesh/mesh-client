@@ -1481,6 +1481,7 @@
     },
     "autoConnectingTo": "{{deviceName}}'a otomatik bağlanılıyor…",
     "autoReconnectInProgress": "Otomatik yeniden bağlanma işlemi devam ediyor…",
+    "meshtasticSilentAfterConfigure": "Radyoya bağlandı, ancak kurulumdan sonra ağ trafiği göndermeyi durdurdu. Otomatik olarak yeniden bağlanıyor. Bu devam ederse, radyonun ağ bağlantısını kontrol edin veya yeniden başlatın."
     "stageAutoConnectingBle": "{{deviceName}}'a bağlanılıyor…",
     "reticulumStats": {
       "interfaces": "{{count}} arayüzler",

@@ -1481,6 +1481,7 @@
     },
     "autoConnectingTo": "Conectando automáticamente a {{deviceName}}…",
     "autoReconnectInProgress": "Reconexión automática en curso…",
+    "meshtasticSilentAfterConfigure": "Se conectó a la radio, pero dejó de enviar tráfico de malla después de la configuración. Reconexión automática. Si esto sigue ocurriendo, compruebe la conexión de red de la radio o reiníciela."
     "stageAutoConnectingBle": "Conectando a {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} interfaces",

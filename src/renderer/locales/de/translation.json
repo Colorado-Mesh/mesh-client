@@ -1479,6 +1479,7 @@
     },
     "autoConnectingTo": "Automatische Verbindung mit {{deviceName}}…",
     "autoReconnectInProgress": "Automatische Wiederverbindung läuft…",
+    "meshtasticSilentAfterConfigure": "Mit dem Funkgerät verbunden, aber es hat nach der Einrichtung aufgehört, Mesh-Datenverkehr zu senden. Automatische Wiederverbindung. Wenn dies weiterhin geschieht, überprüfen Sie die Netzwerkverbindung des Radios oder starten Sie es neu."
     "stageAutoConnectingBle": "Verbindung zu {{deviceName}} wird hergestellt…",
     "reticulumStats": {
       "interfaces": "{{count}} Schnittstellen",

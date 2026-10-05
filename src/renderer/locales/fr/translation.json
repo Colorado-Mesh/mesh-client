@@ -1480,6 +1480,7 @@
     },
     "autoConnectingTo": "Connexion automatique à {{deviceName}}…",
     "autoReconnectInProgress": "Reconnexion automatique en cours…",
+    "meshtasticSilentAfterConfigure": "Connecté à la radio, mais il a cessé d'envoyer du trafic maillé après la configuration. Se reconnecter automatiquement. Si cela continue, vérifiez la connexion réseau de la radio ou redémarrez-la."
     "stageAutoConnectingBle": "Connexion à {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} interfaces",

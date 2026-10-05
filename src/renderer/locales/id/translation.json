@@ -1481,6 +1481,7 @@
     },
     "autoConnectingTo": "Menghubungkan otomatis ke {{deviceName}}…",
     "autoReconnectInProgress": "Sambungan ulang otomatis sedang berlangsung…",
+    "meshtasticSilentAfterConfigure": "Terhubung ke radio, tetapi berhenti mengirim lalu lintas mesh setelah penyiapan. Menghubungkan kembali secara otomatis. Jika ini terus terjadi, periksa koneksi jaringan radio atau mulai ulang."
     "stageAutoConnectingBle": "Menghubungkan ke {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}} antarmuka",

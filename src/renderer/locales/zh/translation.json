@@ -1481,6 +1481,7 @@
     },
     "autoConnectingTo": "正在自动连接到 {{deviceName}}…",
     "autoReconnectInProgress": "正在自动重新连接…",
+    "meshtasticSilentAfterConfigure": "已连接到无线电，但设置后停止发送网格流量。正在自动重新连接。如果这种情况持续发生，请检查收音机的网络连接或重新启动它。"
     "stageAutoConnectingBle": "正在连接到 {{deviceName}}…",
     "reticulumStats": {
       "interfaces": "{{count}}接口",

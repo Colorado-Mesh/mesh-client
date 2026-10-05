@@ -976,6 +976,7 @@
     "autoConnecting": "Auto-connecting…",
     "autoConnectingTo": "Auto-connecting to {{deviceName}}…",
     "autoReconnectInProgress": "Auto-reconnect in progress…",
+    "meshtasticSilentAfterConfigure": "Connected to the radio, but it stopped sending mesh traffic after setup. Reconnecting automatically. If this keeps happening, check the radio's network connection or restart it.",
     "connecting": "Connecting…",
     "stayOnTab": "For best results, stay on this tab until the device has finished connecting.",
     "selectBluetoothDevice": "Select Bluetooth Device",
