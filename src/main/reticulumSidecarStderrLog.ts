@@ -16,6 +16,10 @@ export function normalizeReticulumSidecarOutputLine(raw: string): string {
 /** Sidecar stderr lines matching Reticulum AutoInterface beacon TX failures. */
 const AUTO_BEACON_TX_FAILED_MARKER = 'auto: beacon TX failed';
 
+export function isReticulumSidecarAutoBeaconTxFailure(text: string): boolean {
+  return text.includes(AUTO_BEACON_TX_FAILED_MARKER);
+}
+
 const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 
 /** Default tracing filter for sidecar child processes (overridable via env). */
@@ -29,9 +33,10 @@ export const SIDECAR_DEFAULT_RUST_LOG =
   'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info,rrc=info,gatt=info,rns_interface::tcp=info';
 
 /**
- * Whether a sidecar stdout line should be written to the app log.
+ * Whether a normalized sidecar tracing line should be written to the app log.
  * Tracing INFO/DEBUG packet routing floods the rotating log; keep WARN/ERROR, plus
  * PN triage targets that RUST_LOG elevates to INFO (`propagation-sync`, etc.).
+ * Callers strip CSI first via `normalizeReticulumSidecarOutputLine`.
  */
 const SIDECAR_STDOUT_INFO_FORWARD_MARKERS = [
   'propagation-sync',
@@ -44,36 +49,15 @@ const SIDECAR_STDOUT_INFO_FORWARD_MARKERS = [
 
 export function shouldForwardReticulumSidecarStdout(text: string): boolean {
   const fields = text.trimStart().split(/\s+/);
-  let index = fields[0] && Number.isFinite(Date.parse(fields[0])) ? 1 : 0;
-  let severity = fields[index] ?? '';
-  while (severity.startsWith('\u001b[')) {
-    const end = severity.indexOf('m', 2);
-    if (end < 0) return false;
-    severity = severity.slice(end + 1);
-    if (!severity) {
-      index += 1;
-      severity = fields[index] ?? '';
-    }
-  }
-  if (
-    severity === 'WARN' ||
-    severity.startsWith('WARN\u001b[') ||
-    severity === 'ERROR' ||
-    severity.startsWith('ERROR\u001b[')
-  ) {
+  const index = fields[0] && Number.isFinite(Date.parse(fields[0])) ? 1 : 0;
+  const severity = fields[index] ?? '';
+  if (severity === 'WARN' || severity === 'ERROR') {
     return true;
   }
   // INFO for PN / RRC / GATT triage only (matches SIDECAR_DEFAULT_RUST_LOG targets).
-  const isInfo = severity === 'INFO' || severity.startsWith('INFO\u001b[');
-  if (!isInfo) return false;
+  if (severity !== 'INFO') return false;
   // Match markers against the tracing target token only — not message text / other fields.
-  let target = fields[index + 1] ?? '';
-  while (target.startsWith('\u001b[')) {
-    const end = target.indexOf('m', 2);
-    if (end < 0) return false;
-    target = target.slice(end + 1);
-  }
-  target = target.replace(/:$/, '').toLowerCase();
+  let target = (fields[index + 1] ?? '').replace(/:$/, '').toLowerCase();
   if (target.startsWith('target=')) {
     target = target.slice('target='.length);
   }
@@ -106,7 +90,7 @@ export class ReticulumSidecarStderrDedupe {
   private beaconFailSuppressed = 0;
 
   decide(text: string, nowMs = Date.now()): ReticulumSidecarStderrLogDecision {
-    if (!text.includes(AUTO_BEACON_TX_FAILED_MARKER)) {
+    if (!isReticulumSidecarAutoBeaconTxFailure(text)) {
       return { level: 'warn', message: text };
     }
     if (
@@ -188,7 +172,7 @@ export function logReticulumSidecarStderrLine(
 ): void {
   const at = nowMs ?? Date.now();
   const decision = dedupe.decide(text, at);
-  const suppressed = decision.level === 'debug' && text.includes(AUTO_BEACON_TX_FAILED_MARKER);
+  const suppressed = decision.level === 'debug' && isReticulumSidecarAutoBeaconTxFailure(text);
   tracker?.recordFailure(text, suppressed, at);
   if (decision.level === 'warn') {
     sinks.warn(decision.message);

@@ -28,6 +28,7 @@ import { ensureDevSidecarBinary, resolveSidecarBinaryPath } from './reticulum-si
 import { ReticulumSidecarAutoBeaconTracker } from './reticulumSidecarAutoBeaconTracker';
 import { ReticulumSidecarInterfaceIssueTracker } from './reticulumSidecarIssueTracker';
 import {
+  isReticulumSidecarAutoBeaconTxFailure,
   logReticulumSidecarStderrLine,
   normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
@@ -58,7 +59,7 @@ export function sidecarChildEnv(): NodeJS.ProcessEnv {
     LANG: process.env.LANG,
     LC_ALL: process.env.LC_ALL,
     RUST_LOG: resolveSidecarRustLog(),
-    // Main parses tracing level/target from stdout; colored output hides them.
+    // tracing-subscriber fmt() writes stderr. Keep level/target tokens uncolored.
     NO_COLOR: '1',
   };
   if (process.platform === 'win32') {
@@ -524,11 +525,28 @@ export class ReticulumSidecarManager extends EventEmitter {
     this.bleOnly = bleOnly;
     this.tcpReadErrorDedupe.reset();
 
-    let stdoutBuffer = '';
-    const processStdoutLine = (line: string): void => {
+    // tracing-subscriber fmt() writes stderr (no with_writer). validate-config JSON
+    // owns stdout, so both pipes share this line filter and the TCP read-error dedupe.
+    const processOutputLine = (line: string): void => {
       const text = normalizeReticulumSidecarOutputLine(line);
       if (!text) return;
       this.recordSidecarOutputLine(text);
+      if (isReticulumSidecarAutoBeaconTxFailure(text)) {
+        logReticulumSidecarStderrLine(
+          text,
+          this.stderrDedupe,
+          {
+            warn: (message) => {
+              console.warn('[ReticulumSidecar]', message);
+            },
+            debug: (message) => {
+              console.debug('[ReticulumSidecar]', message);
+            },
+          },
+          this.autoBeaconTracker,
+        );
+        return;
+      }
       if (!shouldForwardReticulumSidecarStdout(text)) return;
       const decision = this.tcpReadErrorDedupe.decide(text);
       if (decision.level === 'debug') {
@@ -538,33 +556,22 @@ export class ReticulumSidecarManager extends EventEmitter {
       // WARN/ERROR and PN-triage INFO must reach mesh-client.log (debug is filtered in packaged).
       console.warn('[ReticulumSidecar]', decision.message);
     };
-    proc.stdout?.on('data', (chunk: Buffer) => {
-      stdoutBuffer += chunk.toString('utf8');
-      const lines = stdoutBuffer.split(/\r?\n/);
-      stdoutBuffer = lines.pop() ?? '';
-      for (const line of lines) processStdoutLine(line);
-    });
-    proc.stdout?.on('end', () => {
-      if (stdoutBuffer) processStdoutLine(stdoutBuffer);
-      stdoutBuffer = '';
-    });
-    proc.stderr?.on('data', (chunk: Buffer) => {
-      const text = normalizeReticulumSidecarOutputLine(chunk.toString('utf8'));
-      this.recordSidecarOutputLine(text);
-      logReticulumSidecarStderrLine(
-        text,
-        this.stderrDedupe,
-        {
-          warn: (message) => {
-            console.warn('[ReticulumSidecar]', message);
-          },
-          debug: (message) => {
-            console.debug('[ReticulumSidecar]', message);
-          },
-        },
-        this.autoBeaconTracker,
-      );
-    });
+    const bindOutputLines = (stream: typeof proc.stdout): void => {
+      if (!stream) return;
+      let buffer = '';
+      stream.on('data', (chunk: Buffer) => {
+        buffer += chunk.toString('utf8');
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop() ?? '';
+        for (const line of lines) processOutputLine(line);
+      });
+      stream.on('end', () => {
+        if (buffer) processOutputLine(buffer);
+        buffer = '';
+      });
+    };
+    bindOutputLines(proc.stdout);
+    bindOutputLines(proc.stderr);
     proc.on('exit', (code, signal) => {
       console.debug(`[ReticulumSidecar] exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
       this.teardownWs();
