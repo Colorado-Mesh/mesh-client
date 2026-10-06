@@ -171,6 +171,7 @@ import { useAllProtocolConnectionActions } from './hooks/useAllProtocolConnectio
 import { useAllProtocolPanelActions } from './hooks/useAllProtocolPanelActions';
 import { useAppStartupDbPrune } from './hooks/useAppStartupDbPrune';
 import { useAppTrayUnreadSync } from './hooks/useAppTrayUnreadSync';
+import { useChatMacroShortcuts } from './hooks/useChatMacroShortcuts';
 import { useConnectionView } from './hooks/useConnectionView';
 import { useContactGroups } from './hooks/useContactGroups';
 import { useProtocolDbRefresh } from './hooks/useDbRefresh';
@@ -2167,6 +2168,7 @@ function AppContent() {
     onToggleLauncher: toggleLauncher,
     onPinnedShortcut: openPinnedPanel,
   });
+  useChatMacroShortcuts();
 
   // Live wire_packet WS frames are disabled (they starved LXMF). Poll while Sniffer/Stats is open.
   useReticulumRawPacketPoll({
