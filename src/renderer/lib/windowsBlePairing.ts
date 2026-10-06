@@ -9,6 +9,8 @@
 
 import type { TFunction } from 'i18next';
 
+import { bleIdMatchKey } from '@/shared/normalizeBleMac';
+
 import { gattBleErrorI18nKey, isBlePairingError } from './bleConnectErrors';
 
 /** `blocked` means a timeout or WinRT error; connecting from there wedges btleplug. */
@@ -50,6 +52,70 @@ export async function getWindowsBlePairState(peripheralId: string): Promise<Wind
     );
   }
   return 'unknown';
+}
+
+/** Auto-reconnect must not open GATT for these pair-state results. */
+export type WindowsBleReconnectSkip = 'blocked' | 'unpaired';
+
+export interface WindowsBleReconnectSkipDetail {
+  peripheralId: string;
+  state: WindowsBleReconnectSkip;
+}
+
+const pendingReconnectSkips = new Map<string, WindowsBleReconnectSkipDetail>();
+const reconnectSkipListeners = new Set<(detail: WindowsBleReconnectSkipDetail) => void>();
+
+export function subscribeWindowsBleReconnectSkip(
+  listener: (detail: WindowsBleReconnectSkipDetail) => void,
+): () => void {
+  reconnectSkipListeners.add(listener);
+  return () => {
+    reconnectSkipListeners.delete(listener);
+  };
+}
+
+export function peekWindowsBleReconnectSkip(
+  peripheralId: string,
+): WindowsBleReconnectSkipDetail | null {
+  return pendingReconnectSkips.get(bleIdMatchKey(peripheralId)) ?? null;
+}
+
+export function clearWindowsBleReconnectSkip(peripheralId: string): void {
+  pendingReconnectSkips.delete(bleIdMatchKey(peripheralId));
+}
+
+/** Test isolation so one case cannot leak a remembered skip into the next. */
+export function resetWindowsBleReconnectSkipState(): void {
+  pendingReconnectSkips.clear();
+}
+
+function publishWindowsBleReconnectSkip(detail: WindowsBleReconnectSkipDetail): void {
+  pendingReconnectSkips.set(bleIdMatchKey(detail.peripheralId), detail);
+  for (const listener of reconnectSkipListeners) {
+    try {
+      listener(detail);
+    } catch (err) {
+      console.debug(
+        '[windowsBlePairing] reconnect skip listener ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
+    }
+  }
+}
+
+/**
+ * Windows auto-reconnect must not enter a WinRT connect when the bond is missing or the
+ * pair-state call itself failed. `paired` and `unknown` still connect. A skip is remembered
+ * so the connection panel can show the existing unpaired or blocked state.
+ */
+export async function windowsBleAutoReconnectSkip(
+  peripheralId: string,
+): Promise<WindowsBleReconnectSkip | null> {
+  if (window.electronAPI.getPlatform() !== 'win32') return null;
+  const state = await getWindowsBlePairState(peripheralId);
+  if (state !== 'blocked' && state !== 'unpaired') return null;
+  publishWindowsBleReconnectSkip({ peripheralId, state });
+  return state;
 }
 
 /**

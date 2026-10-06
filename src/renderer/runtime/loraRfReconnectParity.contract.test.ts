@@ -53,6 +53,7 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
 
       const reconnectBody = extractUseCallbackBody(source, attemptName);
       expect(reconnectBody).toContain('runLoraRfReconnectAttempt');
+      expect(reconnectBody).toContain('getBlePeripheralId:');
       expect(reconnectBody).toContain('scheduleAttempt:');
       expect(reconnectBody).toContain(scheduleRef);
       // Shared finally flush must schedule via scheduleAttempt — never re-enter lost-handler.
@@ -63,6 +64,7 @@ describe('LoRa RF reconnect parity (MeshCore ↔ Meshtastic)', () => {
   );
 
   it('shared attempt runner owns budget + deferred finally flush for both protocols', () => {
+    expect(ATTEMPT_RUNNER).toContain('windowsBleAutoReconnectSkip');
     expect(ATTEMPT_RUNNER).toContain('raceWithDeadline');
     expect(ATTEMPT_RUNNER).toContain('BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(ATTEMPT_RUNNER).toContain('delayUnlessSuspended');

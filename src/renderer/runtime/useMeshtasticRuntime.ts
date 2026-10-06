@@ -2250,6 +2250,7 @@ export function useMeshtasticRuntime() {
       getParams: () => connectionParamsRef.current,
       getTransportType: (p) => p.type,
       isBle: (p) => p.type === 'ble',
+      getBlePeripheralId: (p) => (p.type === 'ble' ? p.blePeripheralId : undefined),
       isExplicitDisconnect: () => meshtasticExplicitDisconnectRef.current,
       isReconnecting: {
         get: () => isReconnectingRef.current,

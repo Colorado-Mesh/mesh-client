@@ -220,10 +220,13 @@ pub async fn pair_state(address: &str) -> Result<PairState, GattError> {
 
 /// Diagnostic only: whether Windows reports an LE link to `address` (this app, another
 /// app, or a leftover pairing link). `None` when WinRT cannot answer in time.
+///
+/// Uses the same per-address permit as pair / pair-state so a status probe cannot overlap
+/// an in-flight WinRT pairing call on this address.
 #[cfg(target_os = "windows")]
 pub async fn os_connected(address: &str) -> Option<bool> {
     let addr = ble_address_u64(address)?;
-    match run_blocking("connection-status", STATE_TIMEOUT, move || {
+    match run_exclusive(addr, "connection-status", STATE_TIMEOUT, (), move || {
         imp::connection_status(addr)
     })
     .await
