@@ -1076,7 +1076,7 @@
         "connectionAttemptFailedLinuxHint": "Linux'ta eşleştirmeleri sistem Bluetooth ayarları veya 'bluetoothctl' aracı aracılığıyla yönetebilirsiniz.",
         "meshcoreHandshakeHint": "MeshCore cihazınızın Bluetooth Companion modunda olduğundan ve bir PIN kullanarak bilgisayarınızla eşleştirildiğinden emin olun. Bağlantı sorunları devam ederse mevcut tüm eşleştirmeleri kaldırın ve yeniden eşleştirin.",
         "meshcoreHandshakeWindowsExtra": "Windows'ta Bluetooth'u kapatıp açın ve bağlantı kesilmeleri devam ederse Aygıt Yöneticisi'nde adaptör sürücüsünü güncelleyin.",
-        "macWakeRecoveryHint": "Uykudan sonra mesh-client'ten çıkın (Cmd+Q), Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar bağlanın. İki radyoyla MeshCore'u Meshtastic'ten önce bağlayın.",
+        "macWakeRecoveryHint": "Bilgisayarınız uyku modundan uyandıktan sonra mesh-client'ten çıkın (Cmd+Q), Sistem Ayarlarında Bluetooth'u kapatıp açın, birkaç saniye bekleyin ve ardından tekrar bağlanın. İki radyoyla MeshCore'u Meshtastic'ten önce bağlayın.",
         "dualProtocolContentionHint": "Diğer protokol hala Bluetooth üzerinden bağlanıyor olabilir. Birkaç saniye bekleyin ve tekrar deneyin veya bağlantı durumunu kontrol etmek için diğer protokol sekmesine geçin.",
         "scanBusy": "Başka bir Bluetooth taraması sürüyor. Birazdan tekrar deneyin.",
         "sameDeviceConflict": "Bu Bluetooth cihazı zaten {{owner}}'a bağlı.",

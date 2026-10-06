@@ -1075,7 +1075,7 @@
         "connectionAttemptFailedLinuxHint": "Sous Linux, vous pouvez gérer les appairages via les paramètres Bluetooth du système ou l'outil « bluetoothctl ».",
         "meshcoreHandshakeHint": "Assurez-vous que votre appareil MeshCore est en mode Bluetooth Companion et couplé à votre ordinateur à l'aide d'un code PIN. Supprimez tout couplage existant et ré-appairez si les problèmes de connexion persistent.",
         "meshcoreHandshakeWindowsExtra": "Sous Windows, activez/désactivez Bluetooth et mettez à jour le pilote de l'adaptateur dans le Gestionnaire de périphériques si les déconnexions persistent.",
-        "macWakeRecoveryHint": "Après avoir dormi, quittez mesh-client (Cmd+Q), activez et désactivez Bluetooth dans les paramètres système, attendez quelques secondes, puis connectez-vous à nouveau. Avec deux radios, connectez MeshCore avant Meshtastic.",
+        "macWakeRecoveryHint": "Après le réveil de votre ordinateur, quittez mesh-client (Cmd+Q), activez et désactivez Bluetooth dans les paramètres système, attendez quelques secondes, puis connectez-vous à nouveau. Avec deux radios, connectez MeshCore avant Meshtastic.",
         "dualProtocolContentionHint": "L'autre protocole peut toujours se connecter via Bluetooth. Attendez quelques secondes et réessayez, ou passez à l'autre onglet de protocole pour vérifier son état de connexion.",
         "scanBusy": "Une autre analyse Bluetooth est en cours. Réessayez dans un instant.",
         "sameDeviceConflict": "Cet appareil Bluetooth est déjà connecté à {{owner}}.",

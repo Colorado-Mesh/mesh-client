@@ -2096,6 +2096,23 @@ describe('protectedBrandIssues', () => {
     );
     expectIssue(issues, 'Brand "mesh-client" missing');
   });
+
+  it('flags title-cased Mesh-Client when English uses mesh-client', () => {
+    const issues = protectedBrandIssues(
+      'Quit mesh-client completely and reopen it.',
+      'Beenden Sie den Mesh-Client vollständig.',
+    );
+    expectIssue(issues, 'Brand "mesh-client" missing');
+  });
+
+  it('passes lowercase mesh-client', () => {
+    expect(
+      protectedBrandIssues(
+        'Quit mesh-client completely and reopen it.',
+        'Beenden Sie mesh-client vollständig.',
+      ),
+    ).toEqual([]);
+  });
 });
 
 describe('protectedProtocolTokenIssues', () => {

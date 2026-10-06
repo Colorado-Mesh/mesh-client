@@ -18,6 +18,7 @@ Deep, file-level subsystem detail for AI assistants, split out of [`AGENTS.md`](
 | MECP emergency reports, siren alerts, audit log, ALERT_APP, RF rebroadcast                                | [mecp.md](mecp.md)                                   |
 | EMCOMM Incident Command, safety invariants (S1–S14), emergency outbox, ACK/beacon, ops alerts, SAR/export | [emcomm.md](emcomm.md)                               |
 | Offline maps (`mesh-tiles:`), tile cache, region download, quiet update offline                           | [offline-maps.md](offline-maps.md)                   |
+| Weather forecast map (parsed chat forecasts drawn on the Map)                                             | WeatherForecastLayer.tsx (docs/agents note)          |
 | App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules                     | [../style-guide.md](../style-guide.md)               |
 | Launcher settings search (registry, `data-setting-anchor`, reveal, guards)                                | [settings-search.md](settings-search.md)             |
 | Developer service announcements feed (`announcements/announcements.json`), strip, pre-commit warning      | [service-announcements.md](service-announcements.md) |

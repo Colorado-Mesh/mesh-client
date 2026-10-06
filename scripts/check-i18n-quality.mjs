@@ -2290,7 +2290,7 @@ const BRAND_WORD_RES = new Map([
   ['Nomad Network', /Nomad Network/g],
   ['Nomad', /\bNomad\b/g],
   ['Micron', /\bMicron\b/g],
-  ['mesh-client', /mesh-client/gi],
+  ['mesh-client', /mesh-client/g],
   ['Giphy', /\bGiphy\b/g],
   ['GitHub', /\bGitHub\b/g],
   ['RNode', /\bRNode\b/g],

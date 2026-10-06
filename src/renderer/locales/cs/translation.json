@@ -1096,7 +1096,7 @@
         "connectionAttemptFailedLinuxHint": "V systému Linux můžete spravovat párování pomocí systémového nastavení Bluetooth nebo nástroje „bluetoothctl“.",
         "meshcoreHandshakeHint": "Ujistěte se, že je vaše zařízení MeshCore v režimu Bluetooth Companion a je spárováno s počítačem pomocí kódu PIN. Pokud problémy s připojením přetrvávají, odstraňte veškeré stávající párování a znovu spárujte.",
         "meshcoreHandshakeWindowsExtra": "V systému Windows vypněte/zapněte Bluetooth a aktualizujte ovladač adaptéru ve Správci zařízení, pokud odpojení přetrvávají.",
-        "macWakeRecoveryHint": "Po spánku ukončete mesh-client (Cmd+Q), vypněte a zapněte Bluetooth v Nastavení systému, počkejte několik sekund a poté se znovu připojte. Se dvěma vysílačkami připojte MeshCore před Meshtastic.",
+        "macWakeRecoveryHint": "Po probuzení počítače ze spánku ukončete mesh-client (Cmd+Q), vypněte a zapněte Bluetooth v Nastavení systému, počkejte několik sekund a poté se znovu připojte. Se dvěma vysílačkami připojte MeshCore před Meshtastic.",
         "dualProtocolContentionHint": "Druhý protokol se může stále připojovat přes Bluetooth. Počkejte několik sekund a zkuste to znovu, nebo přepněte na kartu druhého protokolu a zkontrolujte jeho stav připojení.",
         "scanBusy": "Probíhá další skenování Bluetooth. Zkuste to znovu za chvíli.",
         "sameDeviceConflict": "Toto zařízení Bluetooth je již připojeno k {{owner}}.",

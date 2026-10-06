@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
+import { appChunkBudgetPlugin } from './scripts/app-chunk-budget.mjs';
+
 /** Emscripten glue fetches `orlp-ed25519.wasm` relative to the page; it is not inlined by Vite. */
 const ORLP_WASM_NAME = 'orlp-ed25519.wasm';
 const ORLP_WASM_SRC = path.resolve(
@@ -45,7 +47,7 @@ function meshcoreOrlpWasmPlugin(): import('vite').Plugin {
   };
 }
 export default defineConfig({
-  plugins: [tailwindcss(), react(), meshcoreOrlpWasmPlugin()],
+  plugins: [tailwindcss(), react(), meshcoreOrlpWasmPlugin(), appChunkBudgetPlugin()],
   worker: {
     format: 'es',
   },
@@ -77,7 +79,8 @@ export default defineConfig({
     sourcemap: false,
     // Production: omit source maps (smaller bundle). For crash symbolication use
     // sourcemap: 'hidden' and exclude *.map from electron-builder artifacts.
-    // Advisory only — Electron renderer; not a public web cold-load budget.
+    // Advisory for non-App chunks. The App entry fails the build above 1000 kB
+    // (appChunkBudgetPlugin). Electron renderer; not a public web cold-load budget.
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       // All Node built-ins are redirected to browser-safe stubs via resolve.alias below.

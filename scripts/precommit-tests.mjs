@@ -49,6 +49,16 @@ export const SETTINGS_SEARCH_GUARD_TEST_PATHS = [
   'src/renderer/lib/settingsSearchAnchors.test.ts',
   'src/renderer/lib/settingsSearchCoverage.test.ts',
 ];
+/**
+ * The loader test is not imported by App.tsx, so `vitest related` misses it when App or the
+ * loader changes.
+ */
+export const SETTINGS_SEARCH_ENTRIES_LOADER_TEST_PATH =
+  'src/renderer/lib/settingsSearchEntriesLoader.test.ts';
+const SETTINGS_SEARCH_ENTRIES_LOADER_INPUTS = new Set([
+  'src/renderer/App.tsx',
+  'src/renderer/lib/settingsSearchEntriesLoader.ts',
+]);
 const SETTINGS_SEARCH_COMPONENT_RE = /^src\/renderer\/components\/.+\.tsx$/;
 const ENGLISH_LOCALE_PATH = 'src/renderer/locales/en/translation.json';
 
@@ -225,6 +235,21 @@ export function appendSettingsSearchGuardTestsIfNeeded(stagedPaths, relatedPaths
 }
 
 /**
+ * Append the settings-search loader test when App.tsx or the loader is staged.
+ * @param {string[]} stagedPaths
+ * @param {string[]} relatedPaths
+ * @returns {string[]}
+ */
+export function appendSettingsSearchEntriesLoaderTestIfNeeded(stagedPaths, relatedPaths) {
+  const needsLoaderTest = stagedPaths.some((p) =>
+    SETTINGS_SEARCH_ENTRIES_LOADER_INPUTS.has(p.replace(/\\/g, '/')),
+  );
+  const out = new Set(relatedPaths.map((p) => p.replace(/\\/g, '/')));
+  if (needsLoaderTest) out.add(SETTINGS_SEARCH_ENTRIES_LOADER_TEST_PATH);
+  return [...out].sort();
+}
+
+/**
  * @param {string} filePath
  * @returns {boolean}
  */
@@ -313,13 +338,16 @@ export function planPrecommitTests(stagedPaths, { allowManifestOnlySkip = true }
     };
   }
 
-  const relatedPaths = appendSettingsSearchGuardTestsIfNeeded(
+  const relatedPaths = appendSettingsSearchEntriesLoaderTestIfNeeded(
     stagedPaths,
-    appendServiceAnnouncementFeedTestIfNeeded(
+    appendSettingsSearchGuardTestsIfNeeded(
       stagedPaths,
-      appendSidecarRouteDocsTestIfNeeded(
+      appendServiceAnnouncementFeedTestIfNeeded(
         stagedPaths,
-        appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+        appendSidecarRouteDocsTestIfNeeded(
+          stagedPaths,
+          appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+        ),
       ),
     ),
   );

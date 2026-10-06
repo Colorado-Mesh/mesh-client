@@ -15,6 +15,10 @@ describe('vite build config', () => {
     expect(VITE_CONFIG).toMatch(/chunkSizeWarningLimit:\s*1000/);
   });
 
+  it('fails the renderer build when the App entry chunk exceeds 1000 kB', () => {
+    expect(VITE_CONFIG).toMatch(/appChunkBudgetPlugin\(\)/);
+  });
+
   it('uses import.meta.dirname for native ESM configLoader compatibility', () => {
     expect(VITE_CONFIG).not.toMatch(/__dirname/);
     expect(VITE_CONFIG).toMatch(/import\.meta\.dirname/);

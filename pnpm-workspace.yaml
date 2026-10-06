@@ -127,11 +127,6 @@ auditConfig:
     # verifies RSA signatures with node-forge. Remove once a patched release lands
     # (`pnpm run update` / `check:audit-ignores` warns when it does).
     - GHSA-86w9-cpqp-85rv
-    # http-cache-semantics GHSA-ch52-4w7c-c8xp (<=4.2.0, no patched release): max-stale
-    # can serve cross-user cached responses. Only reached via electron-builder →
-    # @electron/get → got at build time to download Electron binaries for a single user;
-    # never shipped in the app and no shared cache. Remove once a patched release lands.
-    - GHSA-ch52-4w7c-c8xp
     # braces GHSA-vfj7-8cjw-p6xm (<=3.0.3, no patched release): stack exhaustion on deeply
     # nested patterns. Only reached via markdownlint-cli2 (dev lint) expanding repo-owned
     # globs; never shipped in the app. Remove once a patched release lands.

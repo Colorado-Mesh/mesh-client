@@ -159,6 +159,7 @@ Deep, file-level subsystem detail now lives in [`docs/agents/`](docs/agents/READ
 | MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/agents/mecp.md`](docs/agents/mecp.md)                                   |
 | EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/agents/emcomm.md`](docs/agents/emcomm.md)                               |
 | Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/agents/offline-maps.md`](docs/agents/offline-maps.md)                   |
+| Weather forecast map (parsed chat forecasts drawn on the Map)                                 | `WeatherForecastLayer.tsx` (layer note in docs/agents)                         |
 | App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                                   |
 | Launcher settings search: adding a searchable setting, anchors, registry, guards              | [`docs/agents/settings-search.md`](docs/agents/settings-search.md)             |
 | Developer service announcements feed, strip, pre-commit warning                               | [`docs/agents/service-announcements.md`](docs/agents/service-announcements.md) |
