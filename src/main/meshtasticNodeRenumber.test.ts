@@ -60,6 +60,30 @@ describe('migrateMeshtasticNodeNumInDb', () => {
       .run(senderId, packetId, packetId, toNode);
   }
 
+  it('rewrites radio_node_id so unkeyed channel rows stay with this radio', () => {
+    insertNode(OLD, { publicKey: KEY });
+    db!
+      .prepare(
+        `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, to_node, radio_node_id)
+       VALUES (?, 'x', 'heard', 0, 1, 3, NULL, ?)`,
+      )
+      .run(PEER, OLD);
+    db!
+      .prepare(
+        `INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, packet_id, to_node, radio_node_id)
+       VALUES (?, 'x', 'other radio', 0, 2, 4, NULL, ?)`,
+      )
+      .run(PEER, PEER);
+
+    expect(migrateMeshtasticNodeNumInDb(db!, OLD, NEW, KEY).migrated).toBe(true);
+    expect(
+      db!.prepare('SELECT payload, radio_node_id FROM messages ORDER BY packet_id').all(),
+    ).toEqual([
+      { payload: 'heard', radio_node_id: NEW },
+      { payload: 'other radio', radio_node_id: PEER },
+    ]);
+  });
+
   it('moves DMs, favorite, and notes onto the new number and drops the old row', () => {
     insertNode(OLD, { publicKey: KEY, favorited: 1 });
     insertMessage(OLD, PEER, 1);

@@ -6,6 +6,7 @@ import { resetLiveChannelKeyStoreForTests, setLiveChannelKeys } from './liveChan
 import {
   addMessage,
   type MessageRecord,
+  remapMessageNodeId,
   upsertMessage,
   upsertMessageRecordsForIdentity,
   useMessageStore,
@@ -70,6 +71,18 @@ describe.each(['meshcore', 'meshtastic'] as const)(
       upsertMessageRecordsForIdentity(ID, [record('db')]);
       expect(stored('db')?.channelKey).toBeUndefined();
       expect(stored('db')?.radioNodeId).toBeUndefined();
+    });
+
+    it('rewrites radioNodeId when the recording radio renumbers', () => {
+      const oldNum = 111;
+      const newNum = 222;
+      upsertMessageRecordsForIdentity(ID, [
+        record('heard', { from: 5, radioNodeId: oldNum }),
+        record('sent', { from: oldNum, to: 9, radioNodeId: 9 }),
+      ]);
+      remapMessageNodeId(ID, oldNum, newNum);
+      expect(stored('heard')).toMatchObject({ from: 5, radioNodeId: newNum });
+      expect(stored('sent')).toMatchObject({ from: newNum, to: 9, radioNodeId: 9 });
     });
 
     it('keeps an existing identity when a full replace omits it', () => {

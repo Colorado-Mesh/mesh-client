@@ -69,6 +69,7 @@ import {
   backfillChannelKeys,
   type ChannelKeyBackfillEntry,
   clearChannelMessagesByKey,
+  clearMeshtasticMessagesByChannel,
 } from './channelIdentityDb';
 import {
   assertChatExportMessageSizes,
@@ -4555,17 +4556,10 @@ ipcMain.handle(
       const db = getDbForIpc('db:clearMessagesByChannel');
       if (!db) return { changes: 0 };
       const ch = safeNonNegativeInt(channel);
-      if (isChannelIdentityKey(channelKey)) {
-        const radio = radioNodeId != null ? safeMeshcoreRadioNodeId(radioNodeId) : 0;
-        const keyed = clearChannelMessagesByKey(db, 'meshtastic', ch, radio, channelKey);
-        console.debug(
-          `[IPC] db:clearMessagesByChannel: deleted ${keyed.changes} messages for channel ${ch} by key`,
-        );
-        return keyed;
-      }
-      const result = db.prepareOnce('DELETE FROM messages WHERE channel = ?').run(ch);
+      const radio = radioNodeId != null ? safeMeshcoreRadioNodeId(radioNodeId) : 0;
+      const result = clearMeshtasticMessagesByChannel(db, ch, radio, channelKey);
       console.debug(
-        `[IPC] db:clearMessagesByChannel: deleted ${result.changes} messages from channel ${ch}`,
+        `[IPC] db:clearMessagesByChannel: deleted ${result.changes} messages for channel ${ch}`,
       );
       return result;
     } catch (err) {

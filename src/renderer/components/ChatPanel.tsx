@@ -100,6 +100,7 @@ import { senderInitials } from '@/renderer/lib/senderInitials';
 import { CHAT_SR_ANNOUNCE_WINDOW_MS } from '@/renderer/lib/timeConstants';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { useIdentityStore } from '@/renderer/stores/identityStore';
+import { getLiveChannelKey } from '@/renderer/stores/liveChannelKeyStore';
 import type { ChatExportMessage } from '@/shared/electron-api.types';
 import { formatIsoDate, formatIsoDateTime } from '@/shared/formatIsoDate';
 import {
@@ -613,8 +614,12 @@ export interface ChatPanelProps {
   onSetMeshcoreChannel?: (index: number, name: string, secret: Uint8Array) => Promise<void>;
   /** MeshCore: remove a channel from the connected companion radio (chat asks first). */
   onDeleteMeshcoreChannel?: (index: number) => Promise<void>;
-  /** Clear one channel's saved messages (chat asks first). */
-  onClearChannelMessages?: (index: number, radioNodeId: number) => Promise<void>;
+  /** Clear one channel's saved messages (chat asks first). `channelKey` is snapshotted at dialog open. */
+  onClearChannelMessages?: (
+    index: number,
+    radioNodeId: number,
+    channelKey?: string,
+  ) => Promise<void>;
   /** MeshCore: companion radio is unavailable for channel writes. */
   meshcoreChannelManagementDisabled?: boolean;
   myNodeNum: number;
@@ -1038,9 +1043,15 @@ function ChatPanel({
     index: number;
     name: string;
     nodeNum: number;
+    channelKey: string | null;
   } | null>(null);
   const [clearingChannel, setClearingChannel] = useState(false);
-  const clearChannelMessages = async (target: { index: number; name: string; nodeNum: number }) => {
+  const clearChannelMessages = async (target: {
+    index: number;
+    name: string;
+    nodeNum: number;
+    channelKey: string | null;
+  }) => {
     if (!onClearChannelMessages) return;
     // The delete goes by slot on whichever radio is connected now. If another radio connected
     // while the dialog was open, its slot is not the channel the user saw: clear nothing.
@@ -1049,15 +1060,19 @@ function ChatPanel({
       addToast(t('chatPanel.clearChannelMessagesRadioChanged', { name: target.name }), 'warning');
       return;
     }
-    // Same radio, but its list changed (a reconnect): the slot may hold a different channel.
-    if (!channels.some((ch) => ch.index === target.index && ch.name === target.name)) {
+    // Same radio, but its list or secret changed: the slot may hold a different channel.
+    const keyChanged = getLiveChannelKey('meshcore', target.index) !== target.channelKey;
+    if (
+      keyChanged ||
+      !channels.some((ch) => ch.index === target.index && ch.name === target.name)
+    ) {
       setChannelToClear(null);
       addToast(t('chatPanel.clearChannelMessagesChanged', { name: target.name }), 'warning');
       return;
     }
     setClearingChannel(true);
     try {
-      await onClearChannelMessages(target.index, target.nodeNum);
+      await onClearChannelMessages(target.index, target.nodeNum, target.channelKey ?? undefined);
       setChannelToClear(null);
     } catch (e) {
       console.warn('[ChatPanel] clear channel messages failed ' + errLikeToLogString(e));
@@ -2950,7 +2965,10 @@ function ChatPanel({
                           tone: 'danger' as const,
                           onSelect: () => {
                             if (channelMenu) {
-                              setChannelToClear(channelMenu);
+                              setChannelToClear({
+                                ...channelMenu,
+                                channelKey: getLiveChannelKey('meshcore', channelMenu.index),
+                              });
                             }
                           },
                         },

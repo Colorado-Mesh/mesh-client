@@ -18,6 +18,10 @@ import i18n from '../lib/i18n';
 import { ensureLocaleLoaded } from '../lib/localeResources';
 import { messageRecordsToChatMessages } from '../lib/storeRecordAdapters';
 import type { ChatMessage, MeshNode } from '../lib/types';
+import {
+  resetLiveChannelKeyStoreForTests,
+  setLiveChannelKeys,
+} from '../stores/liveChannelKeyStore';
 import type { MessageRecord } from '../stores/messageStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useWeatherFilterStore } from '../stores/weatherFilterStore';
@@ -6158,8 +6162,55 @@ describe('ChatPanel removing a MeshCore channel (#1077)', () => {
     expect(onClearChannelMessages).not.toHaveBeenCalled();
     await user.click(within(dialog).getByRole('button', { name: 'Clear messages' }));
     await waitFor(() => {
-      expect(onClearChannelMessages).toHaveBeenCalledWith(0, 1);
+      expect(onClearChannelMessages).toHaveBeenCalledWith(0, 1, undefined);
     });
+  });
+
+  it('clears nothing if the channel secret changed while the dialog was open', async () => {
+    const user = userEvent.setup();
+    const props = baseProps();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    setLiveChannelKeys('meshcore', { radioNodeId: 1, keyByIndex: { 3: 'abcdef0123456789' } });
+    try {
+      render(
+        <ToastProvider>
+          <ChatPanel {...props} onClearChannelMessages={onClearChannelMessages} />
+        </ToastProvider>,
+      );
+      fireEvent.contextMenu(chip('#test'));
+      await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+      setLiveChannelKeys('meshcore', { radioNodeId: 1, keyByIndex: { 3: '0123456789abcdef' } });
+      await user.click(
+        within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+      );
+      expect(onClearChannelMessages).not.toHaveBeenCalled();
+      expect(
+        await screen.findByText(
+          '#test is no longer in that slot on the radio, so nothing was cleared.',
+        ),
+      ).toBeInTheDocument();
+    } finally {
+      resetLiveChannelKeyStoreForTests();
+    }
+  });
+
+  it('passes the channel key captured when the dialog opened', async () => {
+    const user = userEvent.setup();
+    const onClearChannelMessages = vi.fn().mockResolvedValue(undefined);
+    setLiveChannelKeys('meshcore', { radioNodeId: 1, keyByIndex: { 3: 'abcdef0123456789' } });
+    try {
+      renderPanel({ onClearChannelMessages } as Partial<ReturnType<typeof baseProps>>);
+      fireEvent.contextMenu(chip('#test'));
+      await user.click(screen.getByRole('menuitem', { name: 'Clear messages' }));
+      await user.click(
+        within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Clear messages' }),
+      );
+      await waitFor(() => {
+        expect(onClearChannelMessages).toHaveBeenCalledWith(3, 1, 'abcdef0123456789');
+      });
+    } finally {
+      resetLiveChannelKeyStoreForTests();
+    }
   });
 
   it('clears nothing if the slot name changed while the dialog was open', async () => {
