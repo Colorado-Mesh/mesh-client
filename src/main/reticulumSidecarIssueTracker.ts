@@ -313,6 +313,11 @@ export class ReticulumSidecarInterfaceIssueTracker {
     }
   }
 
+  /** Interface name latched from a `reconnecting in … name=` line for this sidecar `interface_id`. */
+  interfaceNameForId(interfaceId: number): string | undefined {
+    return this.interfaceIdToName.get(interfaceId);
+  }
+
   /** Rate-limit repetitive TCP connect lines logged at debug level. */
   recordSuppressedLine(count = 1): void {
     this.suppressedCount += count;

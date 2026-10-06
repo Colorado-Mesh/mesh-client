@@ -32,6 +32,7 @@ import {
   normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
   ReticulumSidecarStderrDedupe,
+  ReticulumSidecarTcpReadErrorDedupe,
   shouldForwardReticulumSidecarStdout,
 } from './reticulumSidecarStderrLog';
 import { startSidecarWatchdog } from './reticulumSidecarWatchdog';
@@ -201,6 +202,9 @@ export class ReticulumSidecarManager extends EventEmitter {
   private readonly stderrDedupe = new ReticulumSidecarStderrDedupe();
   private readonly autoBeaconTracker = new ReticulumSidecarAutoBeaconTracker();
   private readonly interfaceIssueTracker = new ReticulumSidecarInterfaceIssueTracker();
+  private readonly tcpReadErrorDedupe = new ReticulumSidecarTcpReadErrorDedupe((interfaceId) =>
+    this.interfaceIssueTracker.interfaceNameForId(interfaceId),
+  );
   private readonly stackSessionTracker = new ReticulumStackSessionTracker(
     path.join(app.getPath('userData'), 'reticulum', 'stack-sessions.json'),
   );
@@ -518,6 +522,7 @@ export class ReticulumSidecarManager extends EventEmitter {
     });
     this.proc = proc;
     this.bleOnly = bleOnly;
+    this.tcpReadErrorDedupe.reset();
 
     let stdoutBuffer = '';
     const processStdoutLine = (line: string): void => {
@@ -525,8 +530,13 @@ export class ReticulumSidecarManager extends EventEmitter {
       if (!text) return;
       this.recordSidecarOutputLine(text);
       if (!shouldForwardReticulumSidecarStdout(text)) return;
+      const decision = this.tcpReadErrorDedupe.decide(text);
+      if (decision.level === 'debug') {
+        console.debug('[ReticulumSidecar]', decision.message);
+        return;
+      }
       // WARN/ERROR and PN-triage INFO must reach mesh-client.log (debug is filtered in packaged).
-      console.warn('[ReticulumSidecar]', text);
+      console.warn('[ReticulumSidecar]', decision.message);
     };
     proc.stdout?.on('data', (chunk: Buffer) => {
       stdoutBuffer += chunk.toString('utf8');

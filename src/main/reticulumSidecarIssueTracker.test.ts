@@ -194,6 +194,21 @@ describe('ReticulumSidecarInterfaceIssueTracker', () => {
     expect(alert?.tcpReadEof).toEqual(['RMAP World']);
   });
 
+  it('exposes the latched name for a sidecar interface_id (real tracing format)', () => {
+    tracker.retainInterfaces(new Set(['RMAP World']));
+    expect(tracker.interfaceNameForId(4)).toBeUndefined();
+    tracker.recordLine(
+      '2026-10-05T23:54:35.152482Z WARN rns_interface::tcp: TCP read error interface_id=4 error=Connection reset by peer (os error 54)',
+      1_000,
+    );
+    tracker.recordLine(
+      '2026-10-05T23:54:35.152600Z INFO rns_interface::tcp: reconnecting in 5s name=RMAP World',
+      1_010,
+    );
+    expect(tracker.interfaceNameForId(4)).toBe('RMAP World');
+    expect(tracker.getAlert(1_500)?.tcpResetByPeer).toEqual(['RMAP World']);
+  });
+
   it('tracks link timeouts, transport saturation, and slow transport queries', () => {
     tracker.recordLine(LINK_TIMEOUT_LINE, 1_000);
     tracker.recordLine(LINK_TIMEOUT_LINE, 1_500);
