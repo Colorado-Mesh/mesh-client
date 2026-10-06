@@ -33,7 +33,7 @@
       "reconnecting": "Ankommen"
     },
     "takClientLost": "TAK-CLIENT VERLOREN",
-    "title": "Mesh-Client",
+    "title": "mesh-client",
     "brandName": "Colorado Mesh",
     "queueBadge": "F: {{used}}/{{max}}",
     "telemetryDisabled": "Telemetrie ist auf diesem Gerät deaktiviert. Die Aktivierung von Gerätemetriken hilft dem Mesh und dieser App (Diagnose, Akku, Signal). Aktivieren Sie es auf der Registerkarte „Radio“.",
@@ -41,7 +41,7 @@
     "footerDiscordTitle": "Colorado Mesh Discord",
     "footerGithubTitle": "Colorado Mesh auf GitHub",
     "footerWebsiteTitle": "Colorado Mesh-Website",
-    "loadingApp": "Mesh-Client wird geladen",
+    "loadingApp": "mesh-client wird geladen",
     "reticulumQueueTooltip": "Host-TX-Warteschlange für lokalen RNode \"{{name}}\": Pakete, die auf das Funkgerät warten (am schlechtesten gefüllt, wenn mehrere RNodes vorhanden sind). Grün unter 25 %, Bernstein unter 60 %, Rot bei 60 % oder mehr.",
     "reticulumQueueTooltipGeneric": "Host-TX-Warteschlange für den verkehrsreichsten lokalen RNode: Pakete warten auf das Funkgerät. Grün unter 25 %, Bernstein unter 60 %, Rot bei 60 % oder mehr.",
     "reticulumTxBuffering": "Puffern ausgehender Pakete an einen lokalen RNode (Host TX Queue Draining).",
@@ -186,7 +186,7 @@
     "reduceMotion": "Bewegung reduzieren",
     "reduceMotionDesc": "Deaktiviert animierte Symbole und dekorative Effekte. Lade-Spinner und Verbindungsstatusanzeigen sind immer noch animiert.",
     "roomMessages": "Raumnachrichten",
-    "importSchemaTooNew": "Diese Datenbankdatei erfordert einen neueren Mesh-Client (Schema {{dbVersion}}). Dieser Build unterstützt Schema {{appVersion}} oder älter. Installieren Sie die neueste Version und versuchen Sie es erneut.",
+    "importSchemaTooNew": "Diese Datenbankdatei erfordert einen neueren mesh-client (Schema {{dbVersion}}). Dieser Build unterstützt Schema {{appVersion}} oder älter. Installieren Sie die neueste Version und versuchen Sie es erneut.",
     "floodAdvertTypeLabel": "Advert-Typ",
     "floodAdvertTypeFlood": "Flood (Multi-Hop)",
     "floodAdvertTypeZeroHop": "Zero-Hop (nur direkte Nachbarn)",
@@ -1047,7 +1047,7 @@
         "accessDeniedLinuxHint": "Fügen Sie unter Linux Ihren Benutzer zur Dialout-Gruppe hinzu: sudo usermod -aG dialout $USER (dann abmelden und wieder anmelden)",
         "disconnectedHint": "Stellen Sie sicher, dass das USB-Kabel angeschlossen und das Gerät eingeschaltet ist.",
         "timeoutHint": "Wenn der Anschluss kurzzeitig angezeigt wird, versuchen Sie, das USB-Kabel erneut anzuschließen.",
-        "portStillOpenHint": "Die serielle USB-Schnittstelle wurde nicht sauber freigegeben. Beenden Sie den Mesh-Client vollständig und öffnen Sie ihn erneut, oder ziehen Sie den Stecker und stecken Sie das USB-Kabel erneut ein und schließen Sie es erneut an."
+        "portStillOpenHint": "Die serielle USB-Schnittstelle wurde nicht sauber freigegeben. Beenden Sie den mesh-client vollständig und öffnen Sie ihn erneut, oder ziehen Sie den Stecker und stecken Sie das USB-Kabel erneut ein und schließen Sie es erneut an."
       },
       "http": {
         "timeoutMdnsWindows": "Unter Windows erfordert meshtastic.local Bonjour (installiert mit iTunes). Verwenden Sie stattdessen die IP-Adresse des Geräts.",
@@ -1074,14 +1074,14 @@
         "connectionAttemptFailedLinuxHint": "Unter Linux können Sie Kopplungen über die Bluetooth-Einstellungen des Systems oder das Tool „bluetoothctl“ verwalten.",
         "meshcoreHandshakeHint": "Stellen Sie sicher, dass sich Ihr MeshCore-Gerät im Bluetooth Companion-Modus befindet und über eine PIN mit Ihrem Computer gekoppelt ist. Entfernen Sie alle vorhandenen Kopplungen und koppeln Sie sie erneut, wenn die Verbindungsprobleme weiterhin bestehen.",
         "meshcoreHandshakeWindowsExtra": "Schalten Sie unter Windows Bluetooth aus/ein und aktualisieren Sie den Adaptertreiber im Geräte-Manager, wenn weiterhin Verbindungsabbrüche bestehen.",
-        "macWakeRecoveryHint": "Beenden Sie nach dem Schlafengehen den Mesh-Client (Cmd+Q), schalten Sie Bluetooth in den Systemeinstellungen aus und ein, warten Sie einige Sekunden und stellen Sie dann erneut eine Verbindung her. Verbinden Sie MeshCore mit zwei Funkgeräten vor Meshtastic.",
+        "macWakeRecoveryHint": "Nachdem Ihr Computer aus dem Schlafmodus aufgewacht ist, beenden Sie mesh-client (Cmd+Q), schalten Sie Bluetooth in den Systemeinstellungen aus und ein, warten Sie einige Sekunden und stellen Sie dann erneut eine Verbindung her. Verbinden Sie bei zwei Funkgeräten MeshCore vor Meshtastic.",
         "dualProtocolContentionHint": "Das andere Protokoll verbindet sich möglicherweise immer noch über Bluetooth. Warten Sie ein paar Sekunden und versuchen Sie es erneut, oder wechseln Sie zur anderen Protokollregisterkarte, um den Verbindungsstatus zu überprüfen.",
         "scanBusy": "Ein weiterer Bluetooth-Scan wird durchgeführt. Versuchen Sie es gleich noch einmal.",
         "sameDeviceConflict": "Dieses Bluetooth-Gerät ist bereits mit {{owner}} verbunden.",
         "chooserCancelledHint": "Wenn Sie nicht abgebrochen haben, stellen Sie sicher, dass Bluetooth aktiviert ist (systemctl status bluetooth), und tippen Sie dann erneut auf „Verbinden“. Installieren Sie auf Flatpak einen Build mit erlaubtem Bluetooth neu oder verwenden Sie AppImage/.deb/.rpm.",
         "bluetoothctlMissingHint": "OS-Bluetooth-Pairing-Tools sind in dieser Umgebung nicht verfügbar (üblich in Flatpak). Verwenden Sie das offizielle AppImage, .deb oder .rpm, oder koppeln Sie das Radio mit dem Host-Bluetoothctl und versuchen Sie dann erneut, Connect durchzuführen.",
-        "stackUnresponsiveGeneric": "Bluetooth bleibt bei einem früheren Verbindungsversuch hängen. Schalten Sie Bluetooth aus und ein, koppeln Sie das Radio bei Bedarf neu und starten Sie dann den Mesh-Client neu.",
-        "stackUnresponsiveWindowsRePair": "Windows Bluetooth bleibt bei einem früheren Verbindungsversuch hängen, in der Regel, weil das Funkgerät nicht richtig gekoppelt ist. Drücken Sie auf Gerät entfernen und neu koppeln und geben Sie die im Radio angezeigte PIN ein. Wenn die Verbindung immer noch verweigert wird, starten Sie den Mesh-Client neu und versuchen Sie es erneut.",
+        "stackUnresponsiveGeneric": "Bluetooth bleibt bei einem früheren Verbindungsversuch hängen. Schalten Sie Bluetooth aus und ein, koppeln Sie das Radio bei Bedarf neu und starten Sie dann den mesh-client neu.",
+        "stackUnresponsiveWindowsRePair": "Windows Bluetooth bleibt bei einem früheren Verbindungsversuch hängen, in der Regel, weil das Funkgerät nicht richtig gekoppelt ist. Drücken Sie auf Gerät entfernen und neu koppeln und geben Sie die im Radio angezeigte PIN ein. Wenn die Verbindung immer noch verweigert wird, starten Sie den mesh-client neu und versuchen Sie es erneut.",
         "rnodeBondRecoveryHold": "Bluetooth ist für Meshtastic und MeshCore pausiert, da ein Reticulum RNode eine defekte Bluetooth-Kopplung aufweist. Reparieren Sie zuerst den RNode: Vergessen Sie ihn in den Bluetooth-Einstellungen Ihres Systems und koppeln Sie ihn dann erneut über den → Reticulum-Administrator. Um Bluetooth-Funkgeräte sofort zu verwenden, stoppen Sie den Reticulum-Stack oder schalten Sie diesen RNode auf USB oder WLAN um."
       }
     },
@@ -1400,7 +1400,7 @@
       "effectiveModeBadge": "Gültig ab: {{mode}}",
       "effectiveModeAria": "Effektiver Laufzeitmodus {{mode}}. Der konfigurierte Modus unterscheidet sich von dem, was Reticulum ausführt.",
       "effectiveModeTooltip": "Reticulum hat diese auffindbare Schnittstelle zum Access Point (oder einem anderen zulässigen Modus) neu geschrieben, da auffindbar Gateway, Intern oder Access Point erfordert, es sei denn, ignore_config_warnings ist eingestellt. Starten Sie den Stack neu, nachdem der mesh-client abgestempelt hat, dass die Abmeldung wirksam wird, damit Full (oder Ihr konfigurierter Modus) wirksam wird.",
-      "flowControlBleHint": "Bei Bluetooth sendet das Funkgerät oft nie cmd_READY. Der Mesh-Client beschleunigt TX immer noch (wartet kurz auf READY und fährt dann fort), sodass die Flusssteuerung die Überlastung reduziert, ohne die Warteschlange einzufrieren.",
+      "flowControlBleHint": "Bei Bluetooth sendet das Funkgerät oft nie cmd_READY. Der mesh-client beschleunigt TX immer noch (wartet kurz auf READY und fährt dann fort), sodass die Flusssteuerung die Überlastung reduziert, ohne die Warteschlange einzufrieren.",
       "advancedFields": "Erweiterte Einstellungen",
       "field": {
         "port": "Port",
@@ -1655,7 +1655,7 @@
         "session_not_found": "Die Bluetooth-Sitzung ist nicht mehr verfügbar. Trennen Sie die Verbindung und schließen Sie sie erneut an.",
         "notified_read_forbidden": "Diese Bluetooth-Eigenschaft kann nicht auf diese Weise gelesen werden. Verbinden Sie sich erneut und versuchen Sie es erneut.",
         "feature_disabled": "Bluetooth GATT-Unterstützung ist in diesem Build nicht verfügbar.",
-        "sidecar_down": "Der Bluetooth-Dienst wird nicht ausgeführt. Warten Sie einen Moment oder starten Sie den Mesh-Client neu und versuchen Sie es dann erneut."
+        "sidecar_down": "Der Bluetooth-Dienst wird nicht ausgeführt. Warten Sie einen Moment oder starten Sie den mesh-client neu und versuchen Sie es dann erneut."
       }
     },
     "tiles": {
@@ -2846,7 +2846,7 @@
       "remoteHardwareEnabledDesc": "Ermöglicht entfernten Knoten, GPIO-Pins auf diesem Gerät zu lesen und zu schreiben.",
       "remoteHardwareAllowUndefinedPins": "Zugriff auf undefinierte Pins erlauben",
       "remoteHardwareAllowUndefinedPinsDesc": "Lese-/Schreibzugriff auf Pins erlauben, die nicht in der verfügbaren Pin-Konfiguration aufgeführt sind.",
-      "mqttProxyGatewayHint": "Bei aktiviertem Proxy vermittelt der Mesh-Client den Datenverkehr über MqttClientProxyMessage. Aktivieren Sie den kanalbezogenen Downlink auf der Registerkarte Radio für→das MQTT-RF-Relais.",
+      "mqttProxyGatewayHint": "Bei aktiviertem Proxy vermittelt mesh-client den Datenverkehr über MqttClientProxyMessage. Aktivieren Sie den kanalbezogenen Downlink auf der Registerkarte Radio für das MQTT→RF-Relais.",
       "mapReportPublishInterval": "MAP-Berichtsintervall (Sekunden)",
       "mapReportPublishIntervalDesc": "0 verwendet Firmware-Standard. Wie oft das Gerät Kartenberichte veröffentlicht, wenn die Kartenberichterstattung aktiviert ist.",
       "mapReportPositionPrecision": "Positionsgenauigkeit des Kartenberichts",
@@ -3041,7 +3041,7 @@
       "pathMediumPreferenceSaved": "Pfad Medium Präferenz gespeichert.",
       "pathMediumPreferenceSaveFailed": "Pfad-Medium-Präferenz konnte nicht gespeichert werden.",
       "discoveryConsumeTitle": "Schnittstellen entdeckt (konsumieren)",
-      "discoveryConsumeHint": "Zuhören ist immer möglich. Die automatische Verbindung bleibt deaktiviert (0), es sei denn, Sie entscheiden sich dafür — entdeckte Backbone-/TCP-Server werden von rsReticulum und nicht vom Mesh-Client gewählt.",
+      "discoveryConsumeHint": "Zuhören ist immer möglich. Die automatische Verbindung bleibt deaktiviert (0), es sei denn, Sie entscheiden sich dafür — entdeckte Backbone-/TCP-Server werden von rsReticulum und nicht vom mesh-client gewählt.",
       "autoconnectDiscovered": "Autoconnect-Limit",
       "autoconnectDiscoveredAria": "Maximal entdeckte Schnittstellen für die automatische Verbindung",
       "autoconnectDiscoveredHint": "0 = Niemals automatisch wählen. Werte über 0 lassen Reticulum kurzlebige Backbone-Clients von Discovery Announces aufrufen.",
@@ -5577,7 +5577,7 @@
     "restartTitle": "Neustart und Installation",
     "retryCheck": "Aktualisierungsprüfung wiederholen",
     "updateError": "Fehler bei der Aktualisierung",
-    "menuToastUpToDateTitle": "Mesh-Client",
+    "menuToastUpToDateTitle": "mesh-client",
     "menuToastUpToDateBody": "Sie haben die neueste Version.",
     "menuToastAvailableTitle": "Update verfügbar",
     "menuToastAvailableBody": "Version {{version}} liegt vor.",
@@ -6012,7 +6012,7 @@
       "enabled": "Der Dateiempfang ist aktiviert.",
       "enableFailed": "Dateiempfang konnte nicht aktiviert werden: {{error}}",
       "saveDirRequired": "Wählen Sie einen Speicherordner aus, um den Empfang zu aktivieren.",
-      "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der Mesh-Client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann.",
+      "shareDestWarning": "Wenn Sie diese Option aktivieren, sendet der mesh-client Ihr RNCP-Empfangsziel an diesen Peer, damit dieser den Dateiversand automatisch ausfüllen kann.",
       "lxmfBody": "Bitte aktivieren Sie den Empfang von RNCP-Dateien und antworten Sie mit Ihrem RNCP-Empfangsziel-Hash.",
       "lxmfShareBody": "Der Dateiempfang ist aktiviert. Mein RNCP-Empfangsziel-Hash:",
       "identityUnknown": "„Eingehende Anfragen“ ist aktiviert, aber der Identitäts-Hash dieses Peers ist noch nicht bekannt, sodass er nicht zu „Immer zulassen“ hinzugefügt wurde. Sie werden weiterhin vor jeder Datei gefragt; Versuchen Sie „Immer zulassen“ erneut, nachdem ein Pfad oder eine Ankündigung eintrifft."

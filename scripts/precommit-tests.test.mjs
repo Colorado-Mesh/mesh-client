@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   appendServiceAnnouncementFeedTestIfNeeded,
+  appendSettingsSearchEntriesLoaderTestIfNeeded,
   appendSettingsSearchGuardTestsIfNeeded,
   appendSidecarRouteDocsTestIfNeeded,
   expandWithSiblingTests,
@@ -16,6 +17,7 @@ import {
   runPrecommitTests,
   runVitestArgv,
   SERVICE_ANNOUNCEMENT_FEED_TEST_PATH,
+  SETTINGS_SEARCH_ENTRIES_LOADER_TEST_PATH,
   SETTINGS_SEARCH_GUARD_TEST_PATHS,
   shouldForceFullSuite,
   SIDECAR_ROUTE_DOCS_TEST_PATH,
@@ -210,6 +212,27 @@ describe('precommit-tests settings-search guards', () => {
     expect(plan.mode).toBe('related');
     expect(plan.relatedPaths).toEqual([...SETTINGS_SEARCH_GUARD_TEST_PATHS].sort());
     expect(plan.projects).toContain('renderer-logic');
+  });
+
+  it('runs the loader test when App.tsx or the loader changes', () => {
+    const fromApp = planPrecommitTests(['src/renderer/App.tsx']);
+    expect(fromApp.mode).toBe('related');
+    expect(fromApp.relatedPaths).toContain(SETTINGS_SEARCH_ENTRIES_LOADER_TEST_PATH);
+
+    const fromLoader = planPrecommitTests(['src/renderer/lib/settingsSearchEntriesLoader.ts']);
+    expect(fromLoader.relatedPaths).toContain(SETTINGS_SEARCH_ENTRIES_LOADER_TEST_PATH);
+    expect(
+      fromLoader.relatedPaths.filter((p) => p === SETTINGS_SEARCH_ENTRIES_LOADER_TEST_PATH),
+    ).toHaveLength(1);
+  });
+
+  it('does not append the loader test for unrelated paths', () => {
+    expect(
+      appendSettingsSearchEntriesLoaderTestIfNeeded(
+        ['src/renderer/lib/foo.ts'],
+        ['src/renderer/lib/foo.ts'],
+      ),
+    ).toEqual(['src/renderer/lib/foo.ts']);
   });
 
   it('does not append the guards for unrelated paths or duplicate them', () => {

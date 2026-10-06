@@ -2846,7 +2846,7 @@
       "remoteHardwareEnabledDesc": "Staat externe knooppunten toe GPIO-pinnen op dit apparaat te lezen en schrijven.",
       "remoteHardwareAllowUndefinedPins": "Toegang tot ongedefinieerde pinnen toestaan",
       "remoteHardwareAllowUndefinedPinsDesc": "Staat het lezen/schrijven toe van pinnen die niet in de beschikbare pinconfiguratie staan.",
-      "mqttProxyGatewayHint": "Met proxy ingeschakeld, overbrugt mesh-client brokerverkeer via MqttClientProxyMessage. Schakel de downlink per kanaal in op het tabblad Radio voor→ MQTT RF-relais.",
+      "mqttProxyGatewayHint": "Met proxy ingeschakeld, overbrugt mesh-client brokerverkeer via MqttClientProxyMessage. Schakel de downlink per kanaal in op het tabblad Radio voor het MQTT→RF-relais.",
       "mapReportPublishInterval": "Rapportinterval in kaart brengen (seconden)",
       "mapReportPublishIntervalDesc": "0 gebruikt de standaardfirmware. Hoe vaak het apparaat kaartrapporten publiceert wanneer kaartrapportage is ingeschakeld.",
       "mapReportPositionPrecision": "Positieprecisie van kaartrapport",

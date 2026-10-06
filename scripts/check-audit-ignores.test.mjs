@@ -4,7 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { evaluateIgnoredAdvisory, parseIgnoredGhsas } from './check-audit-ignores.mjs';
+import {
+  evaluateIgnoredAdvisory,
+  lockedVersionsByPackage,
+  parseIgnoredGhsas,
+  versionInVulnerableRange,
+} from './check-audit-ignores.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -103,5 +108,83 @@ describe('evaluateIgnoredAdvisory', () => {
 
   it('skips when the lookup failed', () => {
     expect(evaluateIgnoredAdvisory('GHSA-x', null)).toMatchObject({ status: 'skipped' });
+  });
+
+  it('flags an ignore as removable when no locked version is in the vulnerable range', () => {
+    const locked = new Map([['http-cache-semantics', ['4.3.0']]]);
+    expect(
+      evaluateIgnoredAdvisory(
+        'GHSA-ch52-4w7c-c8xp',
+        {
+          withdrawn_at: null,
+          vulnerabilities: [
+            {
+              package: { ecosystem: 'npm', name: 'http-cache-semantics' },
+              vulnerable_version_range: '<= 4.2.0',
+              first_patched_version: null,
+            },
+          ],
+        },
+        locked,
+      ),
+    ).toMatchObject({
+      status: 'removable',
+      reason: 'no locked version is in the vulnerable range',
+    });
+  });
+
+  it('keeps the ignore when a locked version is still inside the range', () => {
+    const locked = new Map([['node-forge', ['1.4.0']]]);
+    expect(
+      evaluateIgnoredAdvisory(
+        'GHSA-x',
+        { withdrawn_at: null, vulnerabilities: [vuln(null)] },
+        locked,
+      ),
+    ).toMatchObject({ status: 'unpatched' });
+  });
+
+  it('keeps the ignore when the vulnerable range cannot be parsed', () => {
+    const locked = new Map([['node-forge', ['1.4.0']]]);
+    expect(
+      evaluateIgnoredAdvisory(
+        'GHSA-x',
+        {
+          withdrawn_at: null,
+          vulnerabilities: [
+            {
+              package: { ecosystem: 'npm', name: 'node-forge' },
+              vulnerable_version_range: 'not-a-range',
+              first_patched_version: null,
+            },
+          ],
+        },
+        locked,
+      ),
+    ).toMatchObject({ status: 'unpatched' });
+  });
+});
+
+describe('lockedVersionsByPackage', () => {
+  it('does not treat a scoped suffix as the unsuffixed package', () => {
+    const text = [
+      "  '@types/http-cache-semantics@4.2.0':",
+      '  http-cache-semantics@4.3.0:',
+      '  http-cache-semantics@4.3.0: {}',
+      '  foo@1.2.3(bar@9.9.9):',
+      '      http-cache-semantics: 4.3.0',
+    ].join('\n');
+    const map = lockedVersionsByPackage(text);
+    expect(map.get('http-cache-semantics')).toEqual(['4.3.0']);
+    expect(map.get('@types/http-cache-semantics')).toEqual(['4.2.0']);
+    expect(map.get('foo')).toEqual(['1.2.3']);
+    expect(map.has('bar')).toBe(false);
+  });
+
+  it('sees only http-cache-semantics 4.3.0 in the repo lockfile', () => {
+    const lock = fs.readFileSync(path.join(ROOT, 'pnpm-lock.yaml'), 'utf8');
+    expect(lockedVersionsByPackage(lock).get('http-cache-semantics')).toEqual(['4.3.0']);
+    expect(versionInVulnerableRange('4.3.0', '<= 4.2.0')).toBe(false);
+    expect(versionInVulnerableRange('1.4.0', '<= 1.4.0')).toBe(true);
   });
 });
