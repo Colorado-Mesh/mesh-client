@@ -118,7 +118,7 @@ describe('WeatherForecastIngestor', () => {
       snapshot([
         msg('a', OTHER, AURORA_POST),
         msg('b', BOT, AURORA_POST, 0, { to: 0x9999 }),
-        msg('c', BOT, AURORA_POST, -25 * 60 * 60 * 1000),
+        msg('c', BOT, AURORA_POST, -13 * 60 * 60 * 1000),
       ]),
     ]);
     expect(resolvePlace).not.toHaveBeenCalled();
