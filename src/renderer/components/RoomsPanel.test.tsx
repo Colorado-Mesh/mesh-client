@@ -935,6 +935,75 @@ describe('RoomsPanel', () => {
     }
   });
 
+  it('a failed auto-login save for one room does not reset the newly selected room switch', async () => {
+    meshcoreClearAllRoomSessions();
+    const roomA = makeRoom(0x1025, 'Switch Room A');
+    const roomB = makeRoom(0x1026, 'Switch Room B');
+    const nodes = new Map<number, MeshNode>([
+      [roomA.node_id, roomA],
+      [roomB.node_id, roomB],
+    ]);
+    for (const [room, autoLoginOnConnect] of [
+      [roomA, false],
+      [roomB, true],
+    ] as const) {
+      mergeAppSetting(
+        meshcoreRoomCredentialSettingForNode(room.node_id),
+        JSON.stringify({ guestPassword: 'hello' }),
+        'RoomsPanel.test switch race cred',
+      );
+      mergeAppSetting(
+        meshcoreRoomSyncSettingForNode(room.node_id),
+        JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect }),
+        'RoomsPanel.test switch race sync',
+      );
+      meshcoreApplyRoomSession(room.node_id, {
+        guestPassword: 'hello',
+        adminPassword: '',
+        role: 'readwrite',
+      });
+    }
+    let rejectSave: (e: Error) => void = () => {};
+    const setSpy = vi.spyOn(window.electronAPI.appSettings, 'set').mockImplementationOnce(
+      () =>
+        new Promise<{ changes: number }>((_resolve, reject) => {
+          rejectSave = reject;
+        }),
+    );
+    const warn = mockConsoleWarn();
+    try {
+      renderRoomsPanel(nodes, { initialRoomTarget: roomA.node_id });
+      if (!screen.queryByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })) {
+        fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.details' }));
+      }
+      const switchA = screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' });
+      expect(switchA).toHaveAttribute('aria-checked', 'false');
+      fireEvent.click(switchA);
+
+      fireEvent.click(screen.getByRole('button', { name: /Switch Room B/i }));
+      await waitFor(() => {
+        expect(
+          screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' }),
+        ).toHaveAttribute('aria-checked', 'true');
+      });
+
+      rejectSave(new Error('disk full'));
+      await waitFor(() => {
+        expect(warn.spy).toHaveBeenCalledWith(
+          expect.stringContaining('[RoomsPanel] save auto-login failed'),
+        );
+      });
+      expect(screen.getByRole('switch', { name: 'roomsPanel.autoLoginOnConnect' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
+      expect(getMeshcoreRoomSyncConfig(roomA.node_id).autoLoginOnConnect).toBe(false);
+    } finally {
+      warn.restore();
+      setSpy.mockRestore();
+    }
+  });
+
   it('does not auto-login on room select when saved credentials exist', async () => {
     const room = makeRoom(0x100e, 'Saved Creds Room');
     const nodes = new Map<number, MeshNode>([[room.node_id, room]]);

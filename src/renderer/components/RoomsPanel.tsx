@@ -290,6 +290,10 @@ export default function RoomsPanel({
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
     () => initialRoomTarget ?? null,
   );
+  const selectedRoomIdRef = useRef(selectedRoomId);
+  useEffect(() => {
+    selectedRoomIdRef.current = selectedRoomId;
+  }, [selectedRoomId]);
   const [loginPassword, setLoginPassword] = useState('');
   /** Tracks in-flight login promises before the shared queue snapshot updates (tests / fast paths). */
   const [localLoginRoomIds, setLocalLoginRoomIds] = useState<Set<number>>(() => new Set());
@@ -833,10 +837,12 @@ export default function RoomsPanel({
           });
           clearMeshcoreRoomAutoLoginFailure(nodeId);
         }
-        setSyncConfigDirty(false);
+        if (selectedRoomIdRef.current === nodeId) setSyncConfigDirty(false);
       } catch (e: unknown) {
         console.warn('[RoomsPanel] save auto-login failed ' + errLikeToLogString(e));
-        setAutoLoginOnConnect(getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect ?? false);
+        if (selectedRoomIdRef.current === nodeId) {
+          setAutoLoginOnConnect(getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect ?? false);
+        }
         addToast(t('roomsPanel.autoLoginSaveFailed'), 'error');
       }
       refreshStoredRooms();
