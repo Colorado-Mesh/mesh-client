@@ -16,9 +16,13 @@ export const CHAT_MACRO_MIN_VISIBLE = 6;
 
 /** Approximate button width per size in rem; drives how many fit before "More". */
 const BUTTON_WIDTH_REM: Record<ChatMacroSize, number> = { small: 5.5, medium: 6.5, large: 7 };
-const CONTROL_WIDTH_REM: Record<ChatMacroSize, number> = { small: 1.75, medium: 2.25, large: 3 };
+export const CONTROL_WIDTH_REM: Record<ChatMacroSize, number> = {
+  small: 1.75,
+  medium: 2.25,
+  large: 3,
+};
 /** Key badge plus padding once the label has truncated away, plus the gap. */
-const MIN_BUTTON_WIDTH_REM = 2.75;
+export const MIN_BUTTON_WIDTH_REM = 2.75;
 
 const BUTTON_HEIGHT_CLASS: Record<ChatMacroSize, string> = {
   small: 'h-5 text-label',

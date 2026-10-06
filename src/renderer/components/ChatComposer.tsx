@@ -37,7 +37,11 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
-import { isChatMacroSlotEmpty, useChatMacrosStore } from '@/renderer/stores/chatMacrosStore';
+import {
+  isChatMacroSlotEmpty,
+  resolveChatMacroSize,
+  useChatMacrosStore,
+} from '@/renderer/stores/chatMacrosStore';
 import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 import { touch } from '@/shared/touch';
@@ -306,6 +310,9 @@ export function ChatComposer({
     memoPhase === 'starting' ||
     memoPhase === 'stopping' ||
     memoPhase === 'ready';
+  const macroToolbarInline = useChatMacrosStore(
+    (s) => showMacros && !s.collapsed && resolveChatMacroSize(s.size) === 'small',
+  );
 
   const [input, setInput] = useState('');
   const scopeKey = floodScopeStorageKey === undefined ? viewKey : floodScopeStorageKey;
@@ -1814,10 +1821,13 @@ export function ChatComposer({
       </div>
 
       <div className="mt-1 flex min-w-0 items-center gap-2">
-        <div className="min-w-0 flex-1">
+        {/* The inline Small toolbar takes the leftover width; the hint keeps only its text width. */}
+        <div className={macroToolbarInline ? 'min-w-0' : 'min-w-0 flex-1'}>
           {!showCounter && (
             // Keyboard hint (Option B). Touch keyboards send with their own key, so it is hidden there.
-            <p className="text-label text-muted pointer-coarse:hidden">
+            <p
+              className={`text-label text-muted pointer-coarse:hidden ${macroToolbarInline ? 'truncate' : ''}`}
+            >
               {t('chatPanel.composeHint')}
             </p>
           )}
