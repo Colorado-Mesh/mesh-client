@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MS_PER_HOUR } from '@/shared/timeConstants';
+
 import {
   MAX_WEATHER_FORECASTS,
   selectActiveForecasts,
@@ -43,6 +45,12 @@ describe('weatherForecastStore', () => {
     expect(upsertForecast(entry('a', NOW - 1000, { summary: 'new' }), NOW)).toBe(true);
     expect(upsertForecast(entry('a', NOW - 5000, { summary: 'old' }), NOW)).toBe(false);
     expect(useWeatherForecastStore.getState().entries.a.summary).toBe('new');
+  });
+
+  it('expires forecasts after 12 hours', () => {
+    const { upsertForecast } = useWeatherForecastStore.getState();
+    expect(upsertForecast(entry('fresh', NOW - 11 * MS_PER_HOUR), NOW)).toBe(true);
+    expect(upsertForecast(entry('stale', NOW - 13 * MS_PER_HOUR), NOW)).toBe(false);
   });
 
   it('rejects and prunes expired forecasts', () => {

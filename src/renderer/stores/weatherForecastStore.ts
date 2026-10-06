@@ -8,7 +8,7 @@ import type { MeshProtocol } from '@/shared/meshProtocol';
 import { MS_PER_HOUR } from '@/shared/timeConstants';
 
 /** Forecasts older than this drop off the map. */
-export const WEATHER_FORECAST_MAX_AGE_MS = 24 * MS_PER_HOUR;
+export const WEATHER_FORECAST_MAX_AGE_MS = 12 * MS_PER_HOUR;
 export const MAX_WEATHER_FORECASTS = 300;
 const MAX_SEGMENTS_PER_FORECAST = 12;
 
