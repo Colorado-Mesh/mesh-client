@@ -2471,7 +2471,8 @@
     "measureStopAria": "Messen beenden und löschen",
     "measureHint": "Klicken Sie auf die Karte, um Punkte hinzuzufügen",
     "measureTotal": "{{km}} km / {{mi}} mi",
-    "layerTakContacts": "TAK-Einheiten"
+    "layerTakContacts": "TAK-Einheiten",
+    "layerWeatherForecasts": "Wetterprognosen"
   },
   "meshCongestion": {
     "blockTitle": "Warum Sie doppelten Traffic sehen",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "Ungültiges Muster; nur die integrierten Muster verwenden.",
     "markSender": "Als Wetterabsender markieren",
     "unmarkSender": "Wettersender entfernen",
-    "viewAria": "Wetteransicht (Wetterbeiträge in diesem Kanal: {{posts}})"
+    "viewAria": "Wetteransicht (Wetterbeiträge in diesem Kanal: {{posts}})",
+    "onlinePlaceLookup": "Online nach prognostizierten Unterkünften suchen",
+    "onlinePlaceLookupHint": "Wenn die Stadt einer Prognose nicht in der integrierten Liste enthalten ist, senden Sie ihren Namen an Open-Meteo, um sie auf der Karte zu finden."
   },
   "sensorLayer": {
     "layer": "Sensorik",
@@ -6644,5 +6647,24 @@
     "footerClose": "Schließen",
     "footerOsKeys": "Ihr Betriebssystem kann einige F-Tasten behalten",
     "footerAutoSave": "PIN wird automatisch gespeichert."
+  },
+  "weatherForecast": {
+    "areaAria": "Prognose für {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Prognose für {{place}}, {{period}}",
+    "nearRequester": "Near {{name}}",
+    "nearRequesterUnknown": "In der Nähe des Knotens, der gefragt hat",
+    "nearSender": "Near {{name}}",
+    "unknownSender": "flag new",
+    "highLow": "Hoch {{high}}° / Niedrig {{low}}°",
+    "alerts": "Wirksame Wetterwarnungen",
+    "issued": "Ausgestellt {{when}}",
+    "positionApprox": "Ort nicht gefunden; wird in der Nähe des Absenders angezeigt",
+    "positionRequester": "Angezeigt an dem Knoten, der danach gefragt hat",
+    "via": "über {{sender}} am {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

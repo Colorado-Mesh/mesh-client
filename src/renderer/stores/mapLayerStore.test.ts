@@ -59,6 +59,17 @@ describe('mapLayerStore', () => {
     expect(parsed.mapSensorMetric).toBe('barometricPressure');
   });
 
+  it('shows weather forecasts by default and persists the toggle', () => {
+    expect(useMapLayerStore.getState().showWeatherForecasts).toBe(true);
+    useMapLayerStore.getState().setShowWeatherForecasts(false);
+    expect(useMapLayerStore.getState().showWeatherForecasts).toBe(false);
+    const parsed = JSON.parse(localStorage.getItem(APP_SETTINGS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.mapShowWeatherForecasts).toBe(false);
+  });
+
   it('readPersistedBoolean ignores non-boolean strings', () => {
     expect(readPersistedBoolean('false', true)).toBe(true);
     expect(readPersistedBoolean(false, true)).toBe(false);

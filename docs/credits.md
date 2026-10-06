@@ -53,11 +53,12 @@ Application source (Electron main / preload / renderer) is **GPL-3.0-or-later**;
 
 ### Vendored
 
-| Source / file                                                                             | License   | Role                                                                    |
-| ----------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------- |
-| `micron-parser-js`                                                                        | MIT       | Nomad Micron (.mu) → HTML (RFnexus)                                     |
-| `src/renderer/lib/mecp/engine/` ([xiang-dev-1/MECP](https://github.com/xiang-dev-1/MECP)) | GPLv3     | MECP encode/decode engine                                               |
-| `src/renderer/lib/mecp/languages/*.json`                                                  | CC BY 4.0 | MECP localized code/category strings (see upstream `LICENSE-LANGUAGES`) |
+| Source / file                                                                             | License   | Role                                                                                      |
+| ----------------------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------- |
+| `micron-parser-js`                                                                        | MIT       | Nomad Micron (.mu) → HTML (RFnexus)                                                       |
+| `src/renderer/lib/mecp/engine/` ([xiang-dev-1/MECP](https://github.com/xiang-dev-1/MECP)) | GPLv3     | MECP encode/decode engine                                                                 |
+| `src/renderer/lib/mecp/languages/*.json`                                                  | CC BY 4.0 | MECP localized code/category strings (see upstream `LICENSE-LANGUAGES`)                   |
+| `resources/geo/cities15000.tsv` ([GeoNames](https://www.geonames.org/))                   | CC BY 4.0 | Offline place lookup for weather forecasts on the map (`scripts/build-geo-gazetteer.mjs`) |
 
 ## Third-party licenses
 

@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { APP_SETTINGS_STORAGE_KEY } from '../lib/appSettingsStorage';
+import {
+  APP_SETTINGS_STORAGE_KEY,
+  isWeatherOnlinePlaceLookupEnabled,
+} from '../lib/appSettingsStorage';
 import { loadWeatherMarkedSenders } from '../lib/chatPanelProtocolStorage';
 import {
   computeChannelUnreadCounts,
@@ -45,6 +48,15 @@ describe('weatherFilterStore', () => {
     expect(parsed.weatherFilterHideInChannels).toBe(true);
     expect(parsed.weatherFilterPattern).toBe('^WX');
     expect(useWeatherFilterStore.getState().patternInvalid).toBe(false);
+  });
+
+  it('keeps online place lookup off by default and persists the toggle', () => {
+    expect(useWeatherFilterStore.getState().onlinePlaceLookup).toBe(false);
+    expect(isWeatherOnlinePlaceLookupEnabled()).toBe(false);
+    useWeatherFilterStore.getState().setOnlinePlaceLookup(true);
+    expect(useWeatherFilterStore.getState().onlinePlaceLookup).toBe(true);
+    expect(isWeatherOnlinePlaceLookupEnabled()).toBe(true);
+    useWeatherFilterStore.getState().setOnlinePlaceLookup(false);
   });
 
   it('flags an invalid pattern and ignores it', () => {

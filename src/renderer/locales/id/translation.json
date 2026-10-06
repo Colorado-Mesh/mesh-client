@@ -2471,7 +2471,8 @@
     "measureStopAria": "Berhenti mengukur dan bersihkan",
     "measureHint": "Klik peta untuk menambahkan poin",
     "measureTotal": "{{km}} km / {{mi}} mi",
-    "layerTakContacts": "Unit TAK"
+    "layerTakContacts": "Unit TAK",
+    "layerWeatherForecasts": "Prakiraan cuaca"
   },
   "meshCongestion": {
     "blockTitle": "Mengapa Anda melihat lalu lintas duplikat",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "Pola tidak valid; hanya menggunakan pola bawaan.",
     "markSender": "Tandai sebagai pengirim cuaca",
     "unmarkSender": "Batal tandai pengirim cuaca",
-    "viewAria": "Tampilan cuaca (postingan cuaca di saluran ini: {{posts}})"
+    "viewAria": "Tampilan cuaca (postingan cuaca di saluran ini: {{posts}})",
+    "onlinePlaceLookup": "Cari tempat prakiraan secara online",
+    "onlinePlaceLookupHint": "Ketika kota prakiraan tidak ada dalam daftar bawaan, kirimkan namanya ke Open - Meteo untuk menemukannya di peta."
   },
   "sensorLayer": {
     "layer": "Sensor",
@@ -6644,5 +6647,24 @@
     "footerClose": "Tutup",
     "footerOsKeys": "OS Anda mungkin menyimpan beberapa tombol F",
     "footerAutoSave": "Simpan secara otomatis"
+  },
+  "weatherForecast": {
+    "areaAria": "Prakiraan untuk {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Prakiraan untuk {{place}}, {{period}}",
+    "nearRequester": "Dekat {{name}}",
+    "nearRequesterUnknown": "Di dekat simpul yang bertanya",
+    "nearSender": "Dekat {{name}}",
+    "unknownSender": "Pengirim tidak dikenal",
+    "highLow": "Tinggi {{high}}° / Rendah {{low}}°",
+    "alerts": "Peringatan cuaca berlaku",
+    "issued": "Diterbitkan {{when}}",
+    "positionApprox": "Tempat tidak ditemukan; ditampilkan di dekat pengirim",
+    "positionRequester": "Ditampilkan di simpul yang memintanya",
+    "via": "via {{sender}} pada {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

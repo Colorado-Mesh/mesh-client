@@ -10,6 +10,7 @@ import type { PathRecord } from '../lib/pathHistoryTypes';
 import { useMapLayerStore } from '../stores/mapLayerStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
+import { useWeatherForecastStore } from '../stores/weatherForecastStore';
 import MapPanel from './MapPanel';
 
 const {
@@ -657,6 +658,50 @@ describe('MapPanel layer controls', () => {
     await user.selectOptions(select, 'dark');
     expect(useMapLayerStore.getState().basemapId).toBe('dark');
     expect(MAP_BASEMAPS.dark.isDark).toBe(true);
+  });
+
+  it('draws weather forecasts from any protocol and forwards sender clicks', () => {
+    useMapLayerStore.setState({ showWeatherForecasts: true });
+    useWeatherForecastStore.getState().upsertForecast({
+      key: 'place:aurora|co',
+      placeLabel: 'Aurora, CO 80013',
+      lat: 39.73,
+      lon: -104.83,
+      population: 359407,
+      positionSource: 'gazetteer',
+      profileId: 'nwsPipe',
+      period: 'Tonight',
+      tempValue: 59,
+      tempUnit: 'F',
+      summary: 'Tonight: 59°F Mostly Clear',
+      segments: ['Tonight: 59°F Mostly Clear'],
+      hasAlerts: false,
+      receivedAt: Date.now() - 1000,
+      protocol: 'meshcore',
+      senderId: 77,
+      messageId: 'wx1',
+    });
+    const onForecastSenderClick = vi.fn();
+    render(
+      <MapPanel
+        nodes={new Map()}
+        myNodeNum={1}
+        locationFilter={defaultFilter}
+        ourPosition={null}
+        protocol="meshtastic"
+        onForecastSenderClick={onForecastSenderClick}
+      />,
+    );
+    const calls = circleMock.mock.calls as unknown as [
+      { center: [number, number]; eventHandlers?: { click?: () => void } },
+    ][];
+    const forecastCircle = calls.find(([props]) => props.center[0] === 39.73)?.[0];
+    expect(forecastCircle).toBeDefined();
+    act(() => {
+      forecastCircle?.eventHandlers?.click?.();
+    });
+    expect(onForecastSenderClick).toHaveBeenCalledWith('meshcore', 77);
+    useWeatherForecastStore.getState().clearForecasts();
   });
 
   it('hides node markers when showNodes is false', () => {

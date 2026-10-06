@@ -1,25 +1,13 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import 'leaflet/dist/leaflet.css';
-
 import L from 'leaflet';
 import { ExternalLink, Globe, MapPin, RefreshCw } from 'lucide-react-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { Marker, Popup, useMap } from 'react-leaflet';
 
-import {
-  incidentMarkersFrom,
-  IncidentMarkersLayer,
-} from '@/renderer/components/map/emcommMapLayers';
-import {
-  ensureMapStyles,
-  flyMapToBounds,
-  LocateMeControl,
-  MapBasemapControl,
-  MapResizeInvalidator,
-  MapViewportSaver,
-} from '@/renderer/components/map/leafletMapControls';
+import { incidentMarkersFrom } from '@/renderer/components/map/emcommMapLayers';
 import { MAP_CHIP_CLASS } from '@/renderer/components/map/mapControlClasses';
+import { MeshMapShell } from '@/renderer/components/map/MeshMapShell';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
@@ -27,8 +15,6 @@ import {
   DEFAULT_MAP_BASEMAP_ID,
   getMapOverlayColors,
   MAP_BASEMAPS,
-  MAP_MAX_ZOOM,
-  meshTilesAvailable,
 } from '@/renderer/lib/mapBasemapUtils';
 import {
   joinRmapDiscoveryWithPeers,
@@ -74,33 +60,6 @@ function MapFlyToController({ target }: { target: MapFlyTarget | null }) {
     if (!Number.isFinite(target.lat) || !Number.isFinite(target.lon)) return;
     map.flyTo([target.lat, target.lon], target.zoom, { duration: 0.5 });
   }, [map, target]);
-  return null;
-}
-
-function FitBoundsOnMarkers({
-  markers,
-  selfLat,
-  selfLon,
-  shouldFitOnMount,
-}: {
-  markers: { latitude: number; longitude: number }[];
-  selfLat?: number | null;
-  selfLon?: number | null;
-  shouldFitOnMount: boolean;
-}) {
-  const map = useMap();
-  const hasPerformedInitialFitRef = useRef(false);
-
-  useEffect(() => {
-    if (!shouldFitOnMount || hasPerformedInitialFitRef.current) return;
-    hasPerformedInitialFitRef.current = true;
-    const points: L.LatLngExpression[] = markers.map((m) => [m.latitude, m.longitude]);
-    if (selfLat != null && selfLon != null) {
-      points.push([selfLat, selfLon]);
-    }
-    flyMapToBounds(map, points);
-  }, [map, markers, selfLat, selfLon, shouldFitOnMount]);
-
   return null;
 }
 
@@ -169,10 +128,6 @@ export default function ReticulumMapPanel({
     center: savedViewport?.center ?? DEFAULT_CENTER,
     zoom: savedViewport?.zoom ?? DEFAULT_ZOOM,
   }));
-
-  useEffect(() => {
-    ensureMapStyles();
-  }, []);
 
   const locateMe = useCallback(async () => {
     const coords = readStoredStaticGps();
@@ -326,14 +281,16 @@ export default function ReticulumMapPanel({
   const reachableCount = useMemo(() => listRows.filter((row) => row.reachable).length, [listRows]);
   const heardOnlyCount = listRows.length - reachableCount;
 
-  const fitMarkers = useMemo(() => {
-    if (filteredMarkers.length > 0) return filteredMarkers;
-    if (!hasIncidentMarkers) return [];
-    return openIncidentMarkers.map((inc) => ({
-      latitude: inc.lat,
-      longitude: inc.lon,
-    }));
-  }, [filteredMarkers, hasIncidentMarkers, openIncidentMarkers]);
+  const fitPoints = useMemo<[number, number][]>(() => {
+    const points: [number, number][] =
+      filteredMarkers.length > 0
+        ? filteredMarkers.map((m) => [m.latitude, m.longitude])
+        : hasIncidentMarkers
+          ? openIncidentMarkers.map((inc) => [inc.lat, inc.lon])
+          : [];
+    if (selfCoords) points.push([selfCoords.lat, selfCoords.lon]);
+    return points;
+  }, [filteredMarkers, hasIncidentMarkers, openIncidentMarkers, selfCoords]);
 
   return (
     <div className="flex h-full min-h-[500px] flex-col gap-3">
@@ -411,12 +368,17 @@ export default function ReticulumMapPanel({
       ) : null}
 
       <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[1fr_280px]">
-        {/* `isolate` keeps Leaflet's panes and the z-[1000] controls under any dialog. */}
-        <div
-          className="border-ink-700/50 relative isolate min-h-[420px] overflow-hidden rounded-lg border"
-          aria-label={t('reticulumMap.title')}
-        >
-          <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
+        <MeshMapShell
+          ariaLabel={t('reticulumMap.title')}
+          frameClassName="min-h-[420px]"
+          initialCenter={initialViewport.center}
+          initialZoom={initialViewport.zoom}
+          defaultCenter={DEFAULT_CENTER}
+          defaultZoom={DEFAULT_ZOOM}
+          fit={{ mode: 'bounds', points: fitPoints, shouldFitOnMount }}
+          hasAnyPositions={hasMapPositions}
+          onLocateMe={locateMe}
+          controlsBefore={
             <div className={MAP_CHIP_CLASS}>
               <span
                 className="text-ink-200 flex items-center gap-1"
@@ -439,127 +401,96 @@ export default function ReticulumMapPanel({
                 {heardOnlyCount}
               </span>
             </div>
-            <MapBasemapControl />
-          </div>
-
-          <MapContainer
-            center={initialViewport.center}
-            zoom={initialViewport.zoom}
-            maxZoom={MAP_MAX_ZOOM}
-            className="absolute inset-0"
-            preferCanvas
-            scrollWheelZoom
-          >
-            {meshTilesAvailable() && (
-              <TileLayer
-                key={basemapId}
-                url={basemap.url}
-                attribution={basemap.attribution}
-                maxNativeZoom={basemap.maxNativeZoom}
-                keepBuffer={1}
-                updateWhenIdle
-              />
-            )}
-            <MapResizeInvalidator active />
-            <MapViewportSaver hasAnyPositions={hasMapPositions} />
-            <LocateMeControl onLocateMe={locateMe} />
-            <MapFlyToController target={flyTarget} />
-            <FitBoundsOnMarkers
-              markers={fitMarkers}
-              selfLat={selfCoords?.lat}
-              selfLon={selfCoords?.lon}
-              shouldFitOnMount={shouldFitOnMount}
-            />
-            {selfCoords ? (
-              <Marker
-                position={[selfCoords.lat, selfCoords.lon]}
-                icon={buildMarkerIcon(overlayColors.online)}
-              >
-                <Popup>{t('reticulumMap.selfMarker')}</Popup>
-              </Marker>
-            ) : null}
-            {filteredMarkers.map((row) => (
-              <Marker
-                key={row.discovery_hash}
-                position={[row.latitude, row.longitude]}
-                icon={buildMarkerIcon(markerColor(row.reachable, basemap.isDark))}
-                eventHandlers={{
-                  click: () => {
-                    if (row.peerDetailHash) {
-                      onPeerClick?.(row.peerDetailHash);
-                    }
-                  },
-                }}
-              >
-                <Popup>
-                  <div className="text-sm">
-                    <div className="font-semibold">{row.discovery_name}</div>
-                    <div className="text-xs">{row.interface_type}</div>
-                    {formatRmapDiscoveredEndpoint(row) ? (
-                      <div className="text-ink-700 mt-1 font-mono text-xs">
-                        {formatRmapDiscoveredEndpoint(row)}
-                      </div>
-                    ) : null}
-                    <div className="text-ink-600 mt-1 text-xs">
-                      {t('reticulumMap.stampStatus', {
-                        stamp: row.stamp_value,
-                        status: row.status,
-                        hops: row.hops,
-                      })}
-                    </div>
-                    {row.reachable ? (
-                      <div className="mt-1 text-xs text-green-700">
-                        {t('reticulumMap.reachable')}
-                      </div>
-                    ) : (
-                      <div className="text-ink-600 mt-1 text-xs">{t('reticulumMap.heardOnly')}</div>
-                    )}
-                    <div className="text-ink-600 mt-1 text-xs">
-                      {t('reticulumMap.lastHeard', {
-                        time: formatDisplayDateTime(row.last_heard * 1000, {
-                          use24Hour: use24HourTime,
-                        }),
-                      })}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-            {showIncidents ? <IncidentMarkersLayer /> : null}
-          </MapContainer>
-
-          {emptyReason ? (
-            <div className="bg-ink-950/40 pointer-events-none absolute inset-0 z-[500] flex items-center justify-center p-6">
-              <div className="border-ink-700 bg-ink-900/90 pointer-events-auto max-w-md rounded-lg border border-dashed p-6 text-center">
-                <MapPin className="text-muted mx-auto h-8 w-8" aria-hidden />
-                <p className="text-ink-300 mt-2 text-sm">
-                  {t(`reticulumMap.empty.${emptyReason}`)}
-                </p>
-                {emptyReason === 'noDiscoveries' ? (
-                  <p className="text-muted mt-2 text-xs">{t('reticulumMap.empty.hint')}</p>
-                ) : null}
-                {emptyReason === 'stackOff' && onOpenRmapSettings ? (
-                  <button
-                    type="button"
-                    className="mt-3 text-xs text-cyan-400 underline"
-                    onClick={onOpenRmapSettings}
-                  >
-                    {t('reticulumMap.openPublishSettings')}
-                  </button>
-                ) : null}
-                {!selfCoords && onOpenAppGpsSettings ? (
-                  <button
-                    type="button"
-                    className="mt-3 text-xs text-cyan-400 underline"
-                    onClick={onOpenAppGpsSettings}
-                  >
-                    {t('reticulumRmapDiscovery.openAppGps')}
-                  </button>
-                ) : null}
+          }
+          beforeTiles={<MapFlyToController target={flyTarget} />}
+          overlay={
+            emptyReason ? (
+              <div className="bg-ink-950/40 pointer-events-none absolute inset-0 z-[500] flex items-center justify-center p-6">
+                <div className="border-ink-700 bg-ink-900/90 pointer-events-auto max-w-md rounded-lg border border-dashed p-6 text-center">
+                  <MapPin className="text-muted mx-auto h-8 w-8" aria-hidden />
+                  <p className="text-ink-300 mt-2 text-sm">
+                    {t(`reticulumMap.empty.${emptyReason}`)}
+                  </p>
+                  {emptyReason === 'noDiscoveries' ? (
+                    <p className="text-muted mt-2 text-xs">{t('reticulumMap.empty.hint')}</p>
+                  ) : null}
+                  {emptyReason === 'stackOff' && onOpenRmapSettings ? (
+                    <button
+                      type="button"
+                      className="mt-3 text-xs text-cyan-400 underline"
+                      onClick={onOpenRmapSettings}
+                    >
+                      {t('reticulumMap.openPublishSettings')}
+                    </button>
+                  ) : null}
+                  {!selfCoords && onOpenAppGpsSettings ? (
+                    <button
+                      type="button"
+                      className="mt-3 text-xs text-cyan-400 underline"
+                      onClick={onOpenAppGpsSettings}
+                    >
+                      {t('reticulumRmapDiscovery.openAppGps')}
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            ) : null
+          }
+        >
+          {selfCoords ? (
+            <Marker
+              position={[selfCoords.lat, selfCoords.lon]}
+              icon={buildMarkerIcon(overlayColors.online)}
+            >
+              <Popup>{t('reticulumMap.selfMarker')}</Popup>
+            </Marker>
           ) : null}
-        </div>
+          {filteredMarkers.map((row) => (
+            <Marker
+              key={row.discovery_hash}
+              position={[row.latitude, row.longitude]}
+              icon={buildMarkerIcon(markerColor(row.reachable, basemap.isDark))}
+              eventHandlers={{
+                click: () => {
+                  if (row.peerDetailHash) {
+                    onPeerClick?.(row.peerDetailHash);
+                  }
+                },
+              }}
+            >
+              <Popup>
+                <div className="text-sm">
+                  <div className="font-semibold">{row.discovery_name}</div>
+                  <div className="text-xs">{row.interface_type}</div>
+                  {formatRmapDiscoveredEndpoint(row) ? (
+                    <div className="text-ink-700 mt-1 font-mono text-xs">
+                      {formatRmapDiscoveredEndpoint(row)}
+                    </div>
+                  ) : null}
+                  <div className="text-ink-600 mt-1 text-xs">
+                    {t('reticulumMap.stampStatus', {
+                      stamp: row.stamp_value,
+                      status: row.status,
+                      hops: row.hops,
+                    })}
+                  </div>
+                  {row.reachable ? (
+                    <div className="mt-1 text-xs text-green-700">{t('reticulumMap.reachable')}</div>
+                  ) : (
+                    <div className="text-ink-600 mt-1 text-xs">{t('reticulumMap.heardOnly')}</div>
+                  )}
+                  <div className="text-ink-600 mt-1 text-xs">
+                    {t('reticulumMap.lastHeard', {
+                      time: formatDisplayDateTime(row.last_heard * 1000, {
+                        use24Hour: use24HourTime,
+                      }),
+                    })}
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MeshMapShell>
 
         <aside className="border-ink-700 bg-ink-900/50 relative flex min-h-0 flex-col overflow-hidden rounded-lg border">
           <h3 className="text-2xs border-ink-700 text-ink-400 shrink-0 border-b px-2 py-1.5 font-semibold">

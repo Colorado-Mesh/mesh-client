@@ -15,6 +15,7 @@ import type {
   GamesSessionDetailResponse,
   GamesStatusResponse,
 } from './games-types';
+import type { GeoResolvedPlace, GeoResolvePlaceRequest } from './geoPlace';
 import type { MeshProtocol } from './meshProtocol';
 import type { NotificationSoundsApi } from './notificationSounds';
 import type { OfflineMapBasemapId } from './offlineMaps/basemapRegistry';
@@ -1290,6 +1291,11 @@ export interface ElectronAPI {
       onData: (cb: (bytes: Uint8Array) => void) => () => void;
       onDisconnected: (cb: () => void) => () => void;
     };
+  };
+
+  // ─── Place lookup (weather forecast map layer) ──────────────────────────────
+  geo: {
+    resolvePlace: (request: GeoResolvePlaceRequest) => Promise<GeoResolvedPlace | null>;
   };
 
   // ─── GPS / position export ───────────────────────────────────────────────────

@@ -2471,7 +2471,8 @@
     "measureStopAria": "測定を停止してクリア",
     "measureHint": "マップをクリックしてポイントを追加します",
     "measureTotal": "{{km}} km/{{mi}} mi",
-    "layerTakContacts": "TAKユニット"
+    "layerTakContacts": "TAKユニット",
+    "layerWeatherForecasts": "天気予報"
   },
   "meshCongestion": {
     "blockTitle": "重複したトラフィックが表示される理由",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "無効なパターン。組み込みパターンのみを使用しています。",
     "markSender": "天気予報送信者としてマーク",
     "unmarkSender": "天気予報送信者のマークを外す",
-    "viewAria": "天気ビュー（このチャンネルの天気情報： {{posts}} ）"
+    "viewAria": "天気ビュー（このチャンネルの天気情報： {{posts}} ）",
+    "onlinePlaceLookup": "オンラインで予測される場所を調べる",
+    "onlinePlaceLookupHint": "予測の町が組み込みリストにない場合は、その町の名前をOpen - Meteoに送信して、地図上でそれを見つけます。"
   },
   "sensorLayer": {
     "layer": "センサー",
@@ -6644,5 +6647,24 @@
     "footerClose": "閉じる",
     "footerOsKeys": "お使いのOSにはいくつかのFキーが残っている場合があります",
     "footerAutoSave": "PINは自動的に保存されます。"
+  },
+  "weatherForecast": {
+    "areaAria": "{{place}}、{{period}}の予測： {{temp}}",
+    "areaAriaNoTemp": "{{place}}、{{period}}の予測",
+    "nearRequester": "{{name}}付近",
+    "nearRequesterUnknown": "尋ねたノードの近く",
+    "nearSender": "{{name}}付近",
+    "unknownSender": "不明な送信者",
+    "highLow": "高{{high}} °/低{{low}} °",
+    "alerts": "気象アラートが有効になっています",
+    "issued": "発行{{when}}",
+    "positionApprox": "場所が見つかりません。送信者の近くに表示されます",
+    "positionRequester": "要求したノードに表示されます",
+    "via": "via {{sender}} on {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

@@ -33,6 +33,7 @@ import type {
   EnvironmentTelemetrySource,
 } from '../shared/environmentTelemetry';
 import type { FirmwareBackupSaveResult } from '../shared/firmwareBackup';
+import type { GeoResolvedPlace, GeoResolvePlaceRequest } from '../shared/geoPlace';
 import type {
   NotificationSoundEvent,
   NotificationSoundImport,
@@ -1534,6 +1535,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     unlock: (passcode: string) => ipcRenderer.invoke('vault:unlock', passcode),
     lock: () => ipcRenderer.invoke('vault:lock'),
     status: () => ipcRenderer.invoke('vault:status'),
+  },
+
+  geo: {
+    resolvePlace: (request: GeoResolvePlaceRequest) =>
+      ipcRenderer.invoke('geo:resolvePlace', request) as Promise<GeoResolvedPlace | null>,
   },
 
   // ─── Chat export ─────────────────────────────────────────────────

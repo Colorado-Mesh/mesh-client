@@ -31,6 +31,10 @@ extraResources:
       - '**/*'
   - from: resources/icons/linux/256x256.png
     to: 256x256.png
+  - from: resources/geo
+    to: geo
+    filter:
+      - '*.tsv'
   - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template.png
     to: macos-menubar-icon-Template.png
   - from: resources/icons/mac/macos-menubar-icon-Template/macos-menubar-icon-Template@2x.png

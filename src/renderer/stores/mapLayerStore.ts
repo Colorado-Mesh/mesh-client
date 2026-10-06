@@ -20,6 +20,7 @@ interface MapLayerPersisted {
   mapShowSensors?: unknown;
   mapSensorMetric?: unknown;
   mapShowTakContacts?: unknown;
+  mapShowWeatherForecasts?: unknown;
 }
 
 export function readPersistedBoolean(value: unknown, defaultValue: boolean): boolean {
@@ -35,6 +36,7 @@ function loadPersisted(): {
   showSensors: boolean;
   sensorMetric: MapSensorMetric;
   showTakContacts: boolean;
+  showWeatherForecasts: boolean;
 } {
   const settings = parseStoredJson<MapLayerPersisted>(
     getAppSettingsRaw(),
@@ -54,6 +56,7 @@ function loadPersisted(): {
       ? settings.mapSensorMetric
       : 'temperature',
     showTakContacts: readPersistedBoolean(settings?.mapShowTakContacts, true),
+    showWeatherForecasts: readPersistedBoolean(settings?.mapShowWeatherForecasts, true),
   };
 }
 
@@ -66,6 +69,7 @@ interface MapLayerState {
   showSensors: boolean;
   sensorMetric: MapSensorMetric;
   showTakContacts: boolean;
+  showWeatherForecasts: boolean;
   layersPanelOpen: boolean;
   setBasemapId: (id: MapBasemapId) => void;
   setShowNodes: (enabled: boolean) => void;
@@ -75,6 +79,7 @@ interface MapLayerState {
   setShowSensors: (enabled: boolean) => void;
   setSensorMetric: (metric: MapSensorMetric) => void;
   setShowTakContacts: (enabled: boolean) => void;
+  setShowWeatherForecasts: (enabled: boolean) => void;
   setLayersPanelOpen: (open: boolean) => void;
   hydrateFromDatabase: () => Promise<void>;
 }
@@ -96,6 +101,7 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   showSensors: initial.showSensors,
   sensorMetric: initial.sensorMetric,
   showTakContacts: initial.showTakContacts,
+  showWeatherForecasts: initial.showWeatherForecasts,
   layersPanelOpen: false,
   setBasemapId: (basemapId) => {
     mergeAppSetting('mapBasemapId', basemapId, 'mapLayerStore setBasemapId');
@@ -129,6 +135,14 @@ export const useMapLayerStore = create<MapLayerState>((set, get) => ({
   setShowTakContacts: (showTakContacts) => {
     mergeAppSetting('mapShowTakContacts', showTakContacts, 'mapLayerStore setShowTakContacts');
     set({ showTakContacts });
+  },
+  setShowWeatherForecasts: (showWeatherForecasts) => {
+    mergeAppSetting(
+      'mapShowWeatherForecasts',
+      showWeatherForecasts,
+      'mapLayerStore setShowWeatherForecasts',
+    );
+    set({ showWeatherForecasts });
   },
   setLayersPanelOpen: (layersPanelOpen) => {
     set({ layersPanelOpen });

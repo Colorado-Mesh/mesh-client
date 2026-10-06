@@ -147,7 +147,9 @@ function mergeIdentityMessages(
   };
 }
 
-function isGroupChannelRecord(message: MessageRecord): boolean {
+export function isGroupChannelRecord(
+  message: Pick<MessageRecord, 'channelIndex' | 'roomServerId' | 'to'>,
+): boolean {
   return (
     message.channelIndex >= 0 &&
     message.roomServerId == null &&

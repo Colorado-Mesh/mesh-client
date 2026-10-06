@@ -134,6 +134,7 @@ import { isValidHttpHostname } from './httpHostValidation';
 import { registerEnvironmentTelemetryIpcHandlers } from './ipc/environment-telemetry-handlers';
 import { registerFlasherHandlers } from './ipc/flasher-handlers';
 import { registerGattPairingIpcHandlers } from './ipc/gatt-pairing-handlers';
+import { registerGeoIpcHandlers } from './ipc/geo-handlers';
 import { registerGpsIpcHandlers } from './ipc/gps-handlers';
 import { registerNotificationSoundHandlers } from './ipc/notification-sound-handlers';
 import { registerOfflineMapsIpcHandlers } from './ipc/offline-maps-handlers';
@@ -3638,6 +3639,7 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
   }
 });
 
+registerGeoIpcHandlers();
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
 registerFlasherHandlers();

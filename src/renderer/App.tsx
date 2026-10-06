@@ -205,6 +205,7 @@ import { useTakContacts } from './hooks/useTakContacts';
 import { useTakNodeReplicator } from './hooks/useTakNodeReplicator';
 import { useTakRemoteStatus } from './hooks/useTakRemoteRelay';
 import { useTakServer } from './hooks/useTakServer';
+import { useWeatherForecastIngest } from './hooks/useWeatherForecastIngest';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
 import {
@@ -889,6 +890,7 @@ function AppContent() {
     hiddenProtocols,
   });
   useRendererHeartbeat();
+  useWeatherForecastIngest();
   const serviceAnnouncements = useServiceAnnouncements();
   useSerialServiceListeners();
   useSpellcheckReplaceSync();
@@ -4895,6 +4897,14 @@ function AppContent() {
                                       }
                                       onNodeClick={(nodeId) => {
                                         selectNodeFrom('map', nodeId);
+                                      }}
+                                      onForecastSenderClick={(senderProtocol, senderId) => {
+                                        if (
+                                          senderProtocol === protocol ||
+                                          meshcoreUiNodes.has(senderId)
+                                        ) {
+                                          selectNodeFrom('map', senderId);
+                                        }
                                       }}
                                       protocol={protocol}
                                       useFahrenheit={useFahrenheit}

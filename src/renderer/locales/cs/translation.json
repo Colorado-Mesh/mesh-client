@@ -2499,7 +2499,8 @@
     "measureStopAria": "Zastavit měření a vyčistit",
     "measureHint": "Klikněte na mapu pro přidání bodů",
     "measureTotal": "{{km}} km / {{mi}} mi",
-    "layerTakContacts": "Jednotky TAK"
+    "layerTakContacts": "Jednotky TAK",
+    "layerWeatherForecasts": "Předpověď počasí"
   },
   "meshCongestion": {
     "blockTitle": "Proč vidíte duplicitní provoz",
@@ -6639,7 +6640,9 @@
     "patternInvalid": "Neplatný vzor; pouze pomocí vestavěných vzorů.",
     "markSender": "Označit jako odesílatele počasí",
     "unmarkSender": "Odznačit odesílatele počasí",
-    "viewAria": "Zobrazení počasí (příspěvky počasí v tomto kanálu: {{posts}})"
+    "viewAria": "Zobrazení počasí (příspěvky počasí v tomto kanálu: {{posts}})",
+    "onlinePlaceLookup": "Vyhledej si předpovědi míst online",
+    "onlinePlaceLookupHint": "Pokud není město předpovědi ve vestavěném seznamu, odešlete jeho jméno do Open-Meteo, abyste ho našli na mapě."
   },
   "sensorLayer": {
     "layer": "Snímače",
@@ -6706,5 +6709,24 @@
     "footerClose": "Zavřít",
     "footerOsKeys": "Váš operační systém si může ponechat některé klávesy F-key",
     "footerAutoSave": "PIN se ukládá automaticky."
+  },
+  "weatherForecast": {
+    "areaAria": "Předpověď pro {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Předpověď pro {{place}}, {{period}}",
+    "nearRequester": "Poblíž {{name}}",
+    "nearRequesterUnknown": "V blízkosti uzlu, který se zeptal",
+    "nearSender": "Poblíž {{name}}",
+    "unknownSender": "Neznámý odesilatel",
+    "highLow": "Vysoká {{high}}° / Nízká {{low}}°",
+    "alerts": "Platná upozornění na počasí",
+    "issued": "Vydáno {{when}}",
+    "positionApprox": "Místo nenalezeno; zobrazeno u odesílatele",
+    "positionRequester": "Zobrazeno v uzlu, který o to požádal",
+    "via": "přes {{sender}} dne {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

@@ -257,6 +257,7 @@ describe('store shape contracts', () => {
           "showSensors",
           "showTakContacts",
           "showWaypoints",
+          "showWeatherForecasts",
         ]
       `);
     });
@@ -275,6 +276,7 @@ describe('store shape contracts', () => {
           "setShowSensors",
           "setShowTakContacts",
           "setShowWaypoints",
+          "setShowWeatherForecasts",
         ]
       `);
     });

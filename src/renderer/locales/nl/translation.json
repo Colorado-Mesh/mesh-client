@@ -2471,7 +2471,8 @@
     "measureStopAria": "Stop met meten en wis",
     "measureHint": "Klik op de kaart om punten toe te voegen",
     "measureTotal": "{{km}} km / {{mi}} mi",
-    "layerTakContacts": "TAK UNITS"
+    "layerTakContacts": "TAK UNITS",
+    "layerWeatherForecasts": "Weersvoorspellingen"
   },
   "meshCongestion": {
     "blockTitle": "Waarom u dubbel verkeer ziet",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "Ongeldig patroon; alleen met behulp van de ingebouwde patronen.",
     "markSender": "Markeren als weersafzender",
     "unmarkSender": "Weerzender markeren ongedaan maken",
-    "viewAria": "Weerbericht (weerberichten in dit kanaal: {{posts}})"
+    "viewAria": "Weerbericht (weerberichten in dit kanaal: {{posts}})",
+    "onlinePlaceLookup": "Voorspelde plaatsen online opzoeken",
+    "onlinePlaceLookupHint": "Wanneer de stad van een prognose niet in de ingebouwde lijst staat, stuurt u de naam naar Open-Meteo om deze op de kaart te vinden."
   },
   "sensorLayer": {
     "layer": "Sensoren",
@@ -6644,5 +6647,24 @@
     "footerClose": "Sluiten",
     "footerOsKeys": "Uw besturingssysteem kan enkele F-toetsen behouden",
     "footerAutoSave": "PIN-code wordt automatisch opgeslagen."
+  },
+  "weatherForecast": {
+    "areaAria": "Voorspelling voor {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Prognose voor {{place}}, {{period}}",
+    "nearRequester": "In de buurt van {{name}}",
+    "nearRequesterUnknown": "In de buurt van het knooppunt dat vroeg",
+    "nearSender": "In de buurt van {{name}}",
+    "unknownSender": "onbekende afzender",
+    "highLow": "Hoog {{high}}° / Laag {{low}}°",
+    "alerts": "Weerswaarschuwingen van kracht",
+    "issued": "Uitgegeven {{when}}",
+    "positionApprox": "Plaats niet gevonden; getoond in de buurt van de afzender",
+    "positionRequester": "Weergegeven op het knooppunt dat erom vroeg",
+    "via": "via {{sender}} op {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }
