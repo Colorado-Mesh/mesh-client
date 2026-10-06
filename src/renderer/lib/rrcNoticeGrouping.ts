@@ -30,11 +30,33 @@ export interface RrcNoticeGroup {
 export type RrcDisplayRow =
   { type: 'message'; msg: RrcChatMessage } | { type: 'group'; group: RrcNoticeGroup };
 
-type HubNoticeMessage = Pick<RrcChatMessage, 'kind' | 'body' | 'nickname' | 'dst_hash'>;
+type HubNoticeMessage = Pick<
+  RrcChatMessage,
+  'kind' | 'body' | 'nickname' | 'dst_hash' | 'sender_hash'
+>;
+
+/**
+ * Hub reconnect greeting ("Welcome to <hub>.").
+ * Other welcome lines, such as "Welcome, you are muted", stay as their own rows.
+ */
+const HUB_GREETING_LINE = /^welcome to\b/i;
+
+/** Empty sender, or the connected hub. Other hashes are peers, even with no nick. */
+function senderIsConnectedHub(
+  senderHash: string | null | undefined,
+  hubHash: string | null | undefined,
+): boolean {
+  const sender = senderHash?.trim() ?? '';
+  if (!sender) return true;
+  const hub = hubHash?.trim() ?? '';
+  if (!hub) return false;
+  return sender.toLowerCase() === hub.toLowerCase();
+}
 
 /** Hub-originated (not a whisper) notice/system/error row. */
-function isHubAuthoredNotice(msg: HubNoticeMessage): boolean {
+function isHubAuthoredNotice(msg: HubNoticeMessage, hubHash: string | null | undefined): boolean {
   if (msg.kind !== 'notice' && msg.kind !== 'system' && msg.kind !== 'error') return false;
+  if (!senderIsConnectedHub(msg.sender_hash, hubHash)) return false;
   // Hub notices carry the hub's sender_hash but no nick; whispers carry a nick and/or K_DST.
   return !msg.nickname?.trim() && !msg.dst_hash?.trim();
 }
@@ -44,23 +66,30 @@ function isLinkProofTimeout(msg: HubNoticeMessage): boolean {
 }
 
 /** True for hub session banners replayed on every (re)connect. */
-export function isRrcHubSessionBanner(msg: HubNoticeMessage): boolean {
-  if (!isHubAuthoredNotice(msg)) return false;
+export function isRrcHubSessionBanner(
+  msg: HubNoticeMessage,
+  hubHash: string | null | undefined,
+): boolean {
+  if (!isHubAuthoredNotice(msg, hubHash)) return false;
   if (isLinkProofTimeout(msg)) return true;
   if (msg.kind !== 'notice') return false;
   const text = msg.body.trim();
   if (!text) return false;
-  if (/^welcome\b/i.test(text)) return true;
+  if (HUB_GREETING_LINE.test(text)) return true;
   if (isRrcJoinInfoNotice(text)) return true;
   if (parseRrcWhoNotice(text)) return true;
   return parseRrcListNotice(msg.body) !== null;
 }
 
-function canJoinRun(prev: RrcChatMessage, next: RrcChatMessage): boolean {
-  if (isRrcHubSessionBanner(prev) && isRrcHubSessionBanner(next)) return true;
+function canJoinRun(
+  prev: RrcChatMessage,
+  next: RrcChatMessage,
+  hubHash: string | null | undefined,
+): boolean {
+  if (isRrcHubSessionBanner(prev, hubHash) && isRrcHubSessionBanner(next, hubHash)) return true;
   return (
-    isHubAuthoredNotice(prev) &&
-    isHubAuthoredNotice(next) &&
+    isHubAuthoredNotice(prev, hubHash) &&
+    isHubAuthoredNotice(next, hubHash) &&
     prev.kind === next.kind &&
     prev.body.trim() === next.body.trim()
   );
@@ -88,7 +117,10 @@ function summarizeRun(run: RrcChatMessage[]): RrcNoticeGroup {
  * Collapse runs of consecutive hub session banners (and identical repeated
  * hub notices) into groups. Order is preserved; chat rows are never grouped.
  */
-export function groupRrcNoticeRows(messages: readonly RrcChatMessage[]): RrcDisplayRow[] {
+export function groupRrcNoticeRows(
+  messages: readonly RrcChatMessage[],
+  hubHash: string | null | undefined,
+): RrcDisplayRow[] {
   const rows: RrcDisplayRow[] = [];
   let run: RrcChatMessage[] = [];
 
@@ -103,12 +135,12 @@ export function groupRrcNoticeRows(messages: readonly RrcChatMessage[]): RrcDisp
 
   for (const msg of messages) {
     const prev = run.length > 0 ? run[run.length - 1] : undefined;
-    if (prev && canJoinRun(prev, msg)) {
+    if (prev && canJoinRun(prev, msg, hubHash)) {
       run.push(msg);
       continue;
     }
     flush();
-    if (isHubAuthoredNotice(msg)) {
+    if (isHubAuthoredNotice(msg, hubHash)) {
       run.push(msg);
     } else {
       rows.push({ type: 'message', msg });

@@ -6856,14 +6856,32 @@ export function useMeshcoreRuntime() {
     });
   };
 
+  const [roomAutoLoginIds, setRoomAutoLoginIds] = useState(() =>
+    listMeshcoreRoomAutoLoginOnConnectNodeIds().sort((a, b) => a - b),
+  );
+
+  useEffect(() => {
+    const syncRoomAutoLoginIds = () => {
+      const next = listMeshcoreRoomAutoLoginOnConnectNodeIds().sort((a, b) => a - b);
+      setRoomAutoLoginIds((prev) => {
+        if (prev.length === next.length && prev.every((id, i) => id === next[i])) return prev;
+        return next;
+      });
+    };
+    window.addEventListener('mesh-client:appSettings', syncRoomAutoLoginIds);
+    return () => {
+      window.removeEventListener('mesh-client:appSettings', syncRoomAutoLoginIds);
+    };
+  }, []);
+
   const roomAutoLoginReadyKey = useMemo(
     () =>
       meshcoreRoomAutoLoginReadyKey(
-        listMeshcoreRoomAutoLoginOnConnectNodeIds(),
+        roomAutoLoginIds,
         (id) => nodes.get(id)?.hw_model === 'Room',
         (id) => Boolean(pubKeyMapRef.current.get(id) ?? nodes.get(id)?.public_key_hex),
       ),
-    [nodes],
+    [nodes, roomAutoLoginIds],
   );
 
   useEffect(() => {

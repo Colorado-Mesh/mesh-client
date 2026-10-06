@@ -406,7 +406,10 @@ export function RrcChatView({
   const [showScrollButton, setShowScrollButton] = useState(false);
 
   const visibleMessages = useMemo(() => messages.filter(shouldDisplayRrcChatMessage), [messages]);
-  const displayRows = useMemo(() => groupRrcNoticeRows(visibleMessages), [visibleMessages]);
+  const displayRows = useMemo(
+    () => groupRrcNoticeRows(visibleMessages, hubDestHash),
+    [visibleMessages, hubDestHash],
+  );
   const [expandedNoticeIds, setExpandedNoticeIds] = useState<ReadonlySet<string>>(
     () => new Set<string>(),
   );

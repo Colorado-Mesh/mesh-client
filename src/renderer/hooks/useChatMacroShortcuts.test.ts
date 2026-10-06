@@ -38,7 +38,7 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
   });
 
   it('applies the macro on the visible composer and claims the key', () => {
-    const apply = vi.fn();
+    const apply = vi.fn(() => true);
     registerMacroComposer('a', { isActive: () => true, apply });
     renderHook(() => {
       useChatMacroShortcuts();
@@ -95,10 +95,71 @@ describe.each(['linux', 'darwin', 'win32'])('useChatMacroShortcuts (%s)', (platf
   });
 
   it('does not preventDefault when no composer is visible', () => {
-    registerMacroComposer('a', { isActive: () => false, apply: vi.fn() });
+    registerMacroComposer('a', { isActive: () => false, apply: vi.fn(() => true) });
     renderHook(() => {
       useChatMacroShortcuts();
     });
     expect(press('F5').defaultPrevented).toBe(false);
+  });
+
+  it('does not preventDefault for an empty slot', () => {
+    const apply = vi.fn(() => false);
+    registerMacroComposer('a', { isActive: () => true, apply });
+    renderHook(() => {
+      useChatMacroShortcuts();
+    });
+    const e = press('F4');
+    expect(apply).toHaveBeenCalledWith(3);
+    expect(e.defaultPrevented).toBe(false);
+  });
+
+  it.each(['input', 'textarea', 'select'])(
+    'does not preventDefault while focus is in another %s',
+    (tag) => {
+      const apply = vi.fn(() => true);
+      const field = document.createElement(tag);
+      document.body.appendChild(field);
+      registerMacroComposer('a', { isActive: () => true, apply });
+      renderHook(() => {
+        useChatMacroShortcuts();
+      });
+      const e = new KeyboardEvent('keydown', { key: 'F2', bubbles: true, cancelable: true });
+      field.dispatchEvent(e);
+      expect(apply).not.toHaveBeenCalled();
+      expect(e.defaultPrevented).toBe(false);
+    },
+  );
+
+  it('does not preventDefault while focus is in another contenteditable', () => {
+    const apply = vi.fn(() => true);
+    const field = document.createElement('div');
+    field.contentEditable = 'true';
+    document.body.appendChild(field);
+    registerMacroComposer('a', { isActive: () => true, apply });
+    renderHook(() => {
+      useChatMacroShortcuts();
+    });
+    const e = new KeyboardEvent('keydown', { key: 'F2', bubbles: true, cancelable: true });
+    field.dispatchEvent(e);
+    expect(apply).not.toHaveBeenCalled();
+    expect(e.defaultPrevented).toBe(false);
+  });
+
+  it('still claims the key when the composer field itself is focused', () => {
+    const textarea = document.createElement('textarea');
+    document.body.appendChild(textarea);
+    const apply = vi.fn(() => true);
+    registerMacroComposer('a', {
+      isActive: () => true,
+      apply,
+      isComposerField: (target) => target === textarea,
+    });
+    renderHook(() => {
+      useChatMacroShortcuts();
+    });
+    const e = new KeyboardEvent('keydown', { key: 'F1', bubbles: true, cancelable: true });
+    textarea.dispatchEvent(e);
+    expect(apply).toHaveBeenCalledWith(0);
+    expect(e.defaultPrevented).toBe(true);
   });
 });
