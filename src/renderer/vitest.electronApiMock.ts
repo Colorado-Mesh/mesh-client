@@ -590,6 +590,9 @@ export function createElectronAPIMock(): ElectronAPI {
     deepLink: {
       onOpenUrl: vi.fn().mockReturnValue(() => {}),
     },
+    geo: {
+      resolvePlace: vi.fn().mockResolvedValue(null),
+    },
     gps: {
       exportGpx: vi.fn().mockResolvedValue({ success: false, reason: 'cancelled' }),
     },

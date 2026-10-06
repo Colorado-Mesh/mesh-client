@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
-import { getWeatherFilterSettings, mergeAppSetting } from '../lib/appSettingsStorage';
+import {
+  getWeatherFilterSettings,
+  isWeatherOnlinePlaceLookupEnabled,
+  mergeAppSetting,
+} from '../lib/appSettingsStorage';
 import {
   loadWeatherMarkedSenders,
   saveWeatherMarkedSenders,
@@ -21,9 +25,12 @@ interface WeatherFilterState {
   /** True when `pattern` is non-empty but too long or not a valid regex (ignored). */
   patternInvalid: boolean;
   configs: Readonly<Record<MeshProtocol, WeatherPostConfig>>;
+  /** Forecast places missing from the offline gazetteer may be looked up online. */
+  onlinePlaceLookup: boolean;
   setHideInChannels: (hide: boolean) => void;
   setPattern: (pattern: string) => void;
   setSenderMarked: (protocol: MeshProtocol, senderId: number, marked: boolean) => void;
+  setOnlinePlaceLookup: (enabled: boolean) => void;
 }
 
 function buildConfigs(
@@ -51,6 +58,7 @@ function initialState() {
     pattern,
     patternInvalid: compiled === 'invalid',
     configs: buildConfigs(compiled === 'invalid' ? null : compiled, senders),
+    onlinePlaceLookup: storageAvailable ? isWeatherOnlinePlaceLookupEnabled() : false,
   };
 }
 
@@ -88,6 +96,14 @@ export const useWeatherFilterStore = create<WeatherFilterState>()((set, get) => 
     set({
       configs: { ...configs, [protocol]: { ...configs[protocol], markedSenders: next } },
     });
+  },
+  setOnlinePlaceLookup: (onlinePlaceLookup) => {
+    mergeAppSetting(
+      'weatherOnlinePlaceLookup',
+      onlinePlaceLookup,
+      'weatherFilterStore onlinePlaceLookup',
+    );
+    set({ onlinePlaceLookup });
   },
 }));
 

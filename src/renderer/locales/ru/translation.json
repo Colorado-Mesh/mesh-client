@@ -2521,7 +2521,8 @@
     "measureStopAria": "Прекратить измерение и очистить",
     "measureHint": "Нажмите на карту, чтобы добавить точки",
     "measureTotal": "{{km}} км / {{mi}} миль",
-    "layerTakContacts": "Единицы TAK"
+    "layerTakContacts": "Единицы TAK",
+    "layerWeatherForecasts": "Прогноз погоды"
   },
   "meshCongestion": {
     "blockTitle": "Почему вы видите дублирующийся трафик",
@@ -6685,7 +6686,9 @@
     "patternInvalid": "Недопустимый шаблон; использование только встроенных шаблонов.",
     "markSender": "Отметить как отправителя погоды",
     "unmarkSender": "Снять отметку отправителя погоды",
-    "viewAria": "Прогноз погоды (сообщения о погоде в этом канале: {{posts}})"
+    "viewAria": "Прогноз погоды (сообщения о погоде в этом канале: {{posts}})",
+    "onlinePlaceLookup": "Поиск прогнозных мест в Интернете",
+    "onlinePlaceLookupHint": "Если город прогноза отсутствует во встроенном списке, отправьте его название в Open-Meteo, чтобы найти его на карте."
   },
   "sensorLayer": {
     "layer": "Датчики",
@@ -6752,5 +6755,24 @@
     "footerClose": "Закрыть",
     "footerOsKeys": "Ваша ОС может сохранить некоторые клавиши F",
     "footerAutoSave": "PIN сохраняется автоматически."
+  },
+  "weatherForecast": {
+    "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Прогноз на {{place}}, {{period}}",
+    "nearRequester": "Около {{name}}",
+    "nearRequesterUnknown": "Рядом с узлом, который запросил",
+    "nearSender": "Около {{name}}",
+    "unknownSender": "Непознати пошиљалац",
+    "highLow": "Высокий {{high}}° / Низкий {{low}}°",
+    "alerts": "Действуют оповещения о погоде",
+    "issued": "Выдан {{when}}",
+    "positionApprox": "Место не найдено; показано рядом с отправителем",
+    "positionRequester": "Отображается на узле, который запросил его",
+    "via": "через {{sender}} {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

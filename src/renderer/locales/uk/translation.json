@@ -2521,7 +2521,8 @@
     "measureStopAria": "Припинити вимірювання та очистити",
     "measureHint": "Натисніть карту, щоб додати бали",
     "measureTotal": "{{km}} км / {{mi}} миль",
-    "layerTakContacts": "Одиниці TAK"
+    "layerTakContacts": "Одиниці TAK",
+    "layerWeatherForecasts": "Прогнози погоди"
   },
   "meshCongestion": {
     "blockTitle": "Чому ви бачите повторюваний трафік",
@@ -6685,7 +6686,9 @@
     "patternInvalid": "Недійсний шаблон; використовуються лише вбудовані шаблони.",
     "markSender": "Позначити як відправника погоди",
     "unmarkSender": "Зняти позначку з відправника погоди",
-    "viewAria": "Вид на погоду (дописи про погоду в цьому каналі: {{posts}})"
+    "viewAria": "Вид на погоду (дописи про погоду в цьому каналі: {{posts}})",
+    "onlinePlaceLookup": "Пошук прогнозних місць в Інтернеті",
+    "onlinePlaceLookupHint": "Якщо прогнозованого міста немає у вбудованому списку, надішліть його назву до Open-Meteo, щоб знайти його на карті."
   },
   "sensorLayer": {
     "layer": "Датчики",
@@ -6752,5 +6755,24 @@
     "footerClose": "Закрити",
     "footerOsKeys": "У вашій ОС можуть зберігатися деякі F-клавіші",
     "footerAutoSave": "PIN-код зберігається автоматично."
+  },
+  "weatherForecast": {
+    "areaAria": "Прогноз на {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Прогноз на {{place}}, {{period}}",
+    "nearRequester": "Поблизу {{name}}",
+    "nearRequesterUnknown": "Біля вузла, який запитував",
+    "nearSender": "Поблизу {{name}}",
+    "unknownSender": "Невідомий відправникflag new",
+    "highLow": "Високий {{high}}° / Низький {{low}}°",
+    "alerts": "Погодні сповіщення діють",
+    "issued": "Видано {{when}}",
+    "positionApprox": "Місце не знайдено; показано біля відправника",
+    "positionRequester": "Показано на вузлі, який просив про це",
+    "via": "через {{sender}} {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

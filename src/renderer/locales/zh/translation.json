@@ -2471,7 +2471,8 @@
     "measureStopAria": "停止测量并清除",
     "measureHint": "单击地图以添加点",
     "measureTotal": "{{km}}公里/{{mi}}英里",
-    "layerTakContacts": "TAK单位"
+    "layerTakContacts": "TAK单位",
+    "layerWeatherForecasts": "天气预报"
   },
   "meshCongestion": {
     "blockTitle": "为什么您会看到重复的流量",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "模式无效；仅使用内置模式。",
     "markSender": "标记为天气发件人",
     "unmarkSender": "取消标记天气发送者",
-    "viewAria": "天气视图（此频道中的天气帖子： {{posts}} ）"
+    "viewAria": "天气视图（此频道中的天气帖子： {{posts}} ）",
+    "onlinePlaceLookup": "在线查找预测地点",
+    "onlinePlaceLookupHint": "当预测的城镇不在内置列表中时，将其名称发送到Open-Meteo以在地图上找到它。"
   },
   "sensorLayer": {
     "layer": "传感器",
@@ -6644,5 +6647,24 @@
     "footerClose": "关闭",
     "footerOsKeys": "您的操作系统可能会保留一些F键",
     "footerAutoSave": "PIN自动保存。"
+  },
+  "weatherForecast": {
+    "areaAria": "{{place}} ， {{period}}的预测： {{temp}}",
+    "areaAriaNoTemp": "{{place}} ， {{period}}的预测",
+    "nearRequester": "在{{name}}附近",
+    "nearRequesterUnknown": "在询问的节点附近",
+    "nearSender": "在{{name}}附近",
+    "unknownSender": "未知的发送方",
+    "highLow": "高{{high}} °/低{{low}} °",
+    "alerts": "天气警报已生效",
+    "issued": "已签发{{when}}",
+    "positionApprox": "未找到地点；显示在发件人附近",
+    "positionRequester": "显示在请求它的节点上",
+    "via": "via {{sender}} on {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

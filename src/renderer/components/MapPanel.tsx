@@ -4,7 +4,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 
 import L from 'leaflet';
-import { Download, Layers } from 'lucide-react-motion';
+import { Download } from 'lucide-react-motion';
 import {
   Fragment,
   memo,
@@ -16,7 +16,7 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Circle, MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
+import { Circle, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
 import type { LocationFilter } from '../App';
@@ -33,13 +33,7 @@ import {
 import { isMapSensorMetric } from '../lib/environmentSensorDisplay';
 import { escapeSvgAttr } from '../lib/escapeSvg';
 import type { OurPosition } from '../lib/gpsSource';
-import {
-  getMapOverlayColors,
-  isValidMapBasemapId,
-  MAP_BASEMAPS,
-  MAP_MAX_ZOOM,
-  meshTilesAvailable,
-} from '../lib/mapBasemapUtils';
+import { getMapOverlayColors, MAP_BASEMAPS } from '../lib/mapBasemapUtils';
 import { meshcoreHwModelIsContactTypeLabel } from '../lib/meshcoreUtils';
 import { NODE_BADGE_PATHS } from '../lib/nodeIcons';
 import { getNodeStatus, haversineDistanceKm } from '../lib/nodeStatus';
@@ -53,20 +47,11 @@ import { useMapLayerStore } from '../stores/mapLayerStore';
 import { useMapViewportStore } from '../stores/mapViewportStore';
 import { getWeightedPaths, usePathHistoryStore } from '../stores/pathHistoryStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
-import { IncidentMarkersLayer, MeasureControl, MgrsGridLayer } from './map/emcommMapLayers';
 import { EnvironmentSensorLayer } from './map/environmentSensorLayer';
-import {
-  ensureLoRaMapPanelStyles,
-  LocateMeControl,
-  MapResizeInvalidator,
-  MapViewportSaver,
-} from './map/leafletMapControls';
-import {
-  MAP_CHIP_CLASS,
-  MAP_CONTROL_CLASS,
-  MAP_OVERLAY_PANEL_CLASS,
-} from './map/mapControlClasses';
-import { OfflineMapsSection } from './map/OfflineMapsSection';
+import { ensureLoRaMapPanelStyles } from './map/leafletMapControls';
+import { MAP_CHIP_CLASS, MAP_CONTROL_CLASS } from './map/mapControlClasses';
+import { MapLayerRow } from './map/MapLayerControl';
+import { MeshMapShell } from './map/MeshMapShell';
 import { TakContactsLayer } from './map/takContactsLayer';
 import { useToast } from './Toast';
 import { buttonClassName } from './ui/Button';
@@ -376,35 +361,6 @@ const MapMarker = memo(
 const DEFAULT_CENTER: [number, number] = [40.185, -105.073];
 const DEFAULT_ZOOM = 10;
 
-// ─── MapFitter ────────────────────────────────────────────────────────────────
-
-function MapFitter({
-  positions,
-  ourPosition,
-  shouldFitOnMount,
-}: {
-  positions: [number, number][];
-  ourPosition?: OurPosition | null;
-  shouldFitOnMount: boolean;
-}) {
-  const map = useMap();
-  const hasPerformedInitialFitRef = useRef(false);
-  useEffect(() => {
-    if (!shouldFitOnMount) return;
-    if (!hasPerformedInitialFitRef.current) {
-      hasPerformedInitialFitRef.current = true;
-      const center: [number, number] =
-        positions.length > 0
-          ? positions[0]
-          : ourPosition
-            ? [ourPosition.lat, ourPosition.lon]
-            : DEFAULT_CENTER;
-      map.setView(center, DEFAULT_ZOOM);
-    }
-  }, [positions, ourPosition, map, shouldFitOnMount]);
-  return null;
-}
-
 // ─── PathPolyline ─────────────────────────────────────────────────────────────
 
 function PathPolyline({
@@ -439,26 +395,7 @@ function PathPolyline({
   );
 }
 
-function MapFocusController() {
-  const map = useMap();
-  const pendingFocus = useMapViewportStore((s) => s.pendingFocus);
-  const clearPendingFocus = useMapViewportStore((s) => s.clearPendingFocus);
-
-  useEffect(() => {
-    if (!pendingFocus) return;
-    const { lat, lon, zoom = 14 } = pendingFocus;
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-      clearPendingFocus();
-      return;
-    }
-    map.flyTo([lat, lon], zoom, { duration: 0.5 });
-    clearPendingFocus();
-  }, [pendingFocus, map, clearPendingFocus]);
-
-  return null;
-}
-
-function MapLayerControl({
+function LoRaMapLayerRows({
   routeWeightsSupported,
   showRouteWeights,
   onToggleRouteWeights,
@@ -472,18 +409,10 @@ function MapLayerControl({
   takSupported: boolean;
 }) {
   const { t } = useTranslation();
-  const layersPanelOpen = useMapLayerStore((s) => s.layersPanelOpen);
-  const setLayersPanelOpen = useMapLayerStore((s) => s.setLayersPanelOpen);
-  const basemapId = useMapLayerStore((s) => s.basemapId);
-  const setBasemapId = useMapLayerStore((s) => s.setBasemapId);
   const showNodes = useMapLayerStore((s) => s.showNodes);
   const setShowNodes = useMapLayerStore((s) => s.setShowNodes);
   const showWaypoints = useMapLayerStore((s) => s.showWaypoints);
   const setShowWaypoints = useMapLayerStore((s) => s.setShowWaypoints);
-  const showIncidents = useMapLayerStore((s) => s.showIncidents);
-  const setShowIncidents = useMapLayerStore((s) => s.setShowIncidents);
-  const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
-  const setShowMgrsGrid = useMapLayerStore((s) => s.setShowMgrsGrid);
   const showSensors = useMapLayerStore((s) => s.showSensors);
   const setShowSensors = useMapLayerStore((s) => s.setShowSensors);
   const sensorMetric = useMapLayerStore((s) => s.sensorMetric);
@@ -497,112 +426,62 @@ function MapLayerControl({
   const congestionHalosEnabled = useDiagnosticsStore((s) => s.congestionHalosEnabled);
   const setCongestionHalosEnabled = useDiagnosticsStore((s) => s.setCongestionHalosEnabled);
 
-  const layerRow = (
-    id: string,
-    label: string,
-    checked: boolean,
-    onChange: (v: boolean) => void,
-  ) => (
-    <label key={id} className="text-muted flex cursor-pointer items-center gap-2 text-xs">
-      <input
-        type="checkbox"
-        className="accent-brand-green"
-        checked={checked}
-        onChange={(e) => {
-          onChange(e.target.checked);
-        }}
-      />
-      {label}
-    </label>
-  );
-
   return (
-    <div className="flex flex-col items-end gap-2">
-      <button
-        type="button"
-        aria-label={t('mapPanel.layerControlsAria')}
-        aria-expanded={layersPanelOpen}
-        className={MAP_CONTROL_CLASS}
-        onClick={() => {
-          setLayersPanelOpen(!layersPanelOpen);
-        }}
-      >
-        <Layers aria-hidden className="h-3.5 w-3.5" />
-        {t('mapPanel.layerControls')}
-      </button>
-      {layersPanelOpen && (
-        <div className={MAP_OVERLAY_PANEL_CLASS}>
-          <div className="space-y-1">
-            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.basemapHeading')}</div>
-            <select
-              aria-label={t('mapPanel.basemapSelectAria')}
-              className={`${SELECT_BOX_SM_CLASS} w-full`}
-              value={basemapId}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (isValidMapBasemapId(v)) setBasemapId(v);
-              }}
-            >
-              <option value="dark">{t('mapPanel.basemapDark')}</option>
-              <option value="osm">{t('mapPanel.basemapOsm')}</option>
-              <option value="usgs-topo">{t('mapPanel.basemapUsgsTopo')}</option>
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <div className="text-2xs text-ink-400 font-medium">{t('mapPanel.layersHeading')}</div>
-            {layerRow('nodes', t('mapPanel.layerNodes'), showNodes, setShowNodes)}
-            {layerRow('paths', t('mapPanel.layerPaths'), showPaths, setShowPaths)}
-            {layerRow('waypoints', t('mapPanel.layerWaypoints'), showWaypoints, setShowWaypoints)}
-            {layerRow('incidents', t('mapPanel.layerIncidents'), showIncidents, setShowIncidents)}
-            {takSupported &&
-              layerRow(
-                'takContacts',
-                t('mapPanel.layerTakContacts'),
-                showTakContacts,
-                setShowTakContacts,
-              )}
-            {layerRow('mgrsGrid', t('mapPanel.layerMgrsGrid'), showMgrsGrid, setShowMgrsGrid)}
-            {sensorsSupported &&
-              layerRow('sensors', t('sensorLayer.layer'), showSensors, setShowSensors)}
-            {sensorsSupported && showSensors && (
-              <select
-                aria-label={t('sensorLayer.metricSelectAria')}
-                className={`${SELECT_BOX_SM_CLASS} w-full`}
-                value={sensorMetric}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (isMapSensorMetric(v)) setSensorMetric(v);
-                }}
-              >
-                <option value="temperature">{t('sensorLayer.metricTemperature')}</option>
-                <option value="relativeHumidity">{t('sensorLayer.metricHumidity')}</option>
-                <option value="barometricPressure">{t('sensorLayer.metricPressure')}</option>
-              </select>
-            )}
-            {routeWeightsSupported &&
-              layerRow(
-                'routeWeights',
-                t('mapPanel.layerRouteWeights'),
-                showRouteWeights,
-                onToggleRouteWeights,
-              )}
-            {layerRow(
-              'anomalyHalos',
-              t('mapPanel.layerAnomalyHalos'),
-              anomalyHalosEnabled,
-              setAnomalyHalosEnabled,
-            )}
-            {layerRow(
-              'congestionHalos',
-              t('mapPanel.layerCongestionHalos'),
-              congestionHalosEnabled,
-              setCongestionHalosEnabled,
-            )}
-          </div>
-          <OfflineMapsSection />
-        </div>
-      )}
-    </div>
+    <>
+      <MapLayerRow label={t('mapPanel.layerNodes')} checked={showNodes} onChange={setShowNodes} />
+      <MapLayerRow label={t('mapPanel.layerPaths')} checked={showPaths} onChange={setShowPaths} />
+      <MapLayerRow
+        label={t('mapPanel.layerWaypoints')}
+        checked={showWaypoints}
+        onChange={setShowWaypoints}
+      />
+      {takSupported ? (
+        <MapLayerRow
+          label={t('mapPanel.layerTakContacts')}
+          checked={showTakContacts}
+          onChange={setShowTakContacts}
+        />
+      ) : null}
+      {sensorsSupported ? (
+        <MapLayerRow
+          label={t('sensorLayer.layer')}
+          checked={showSensors}
+          onChange={setShowSensors}
+        />
+      ) : null}
+      {sensorsSupported && showSensors ? (
+        <select
+          aria-label={t('sensorLayer.metricSelectAria')}
+          className={`${SELECT_BOX_SM_CLASS} w-full`}
+          value={sensorMetric}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (isMapSensorMetric(v)) setSensorMetric(v);
+          }}
+        >
+          <option value="temperature">{t('sensorLayer.metricTemperature')}</option>
+          <option value="relativeHumidity">{t('sensorLayer.metricHumidity')}</option>
+          <option value="barometricPressure">{t('sensorLayer.metricPressure')}</option>
+        </select>
+      ) : null}
+      {routeWeightsSupported ? (
+        <MapLayerRow
+          label={t('mapPanel.layerRouteWeights')}
+          checked={showRouteWeights}
+          onChange={onToggleRouteWeights}
+        />
+      ) : null}
+      <MapLayerRow
+        label={t('mapPanel.layerAnomalyHalos')}
+        checked={anomalyHalosEnabled}
+        onChange={setAnomalyHalosEnabled}
+      />
+      <MapLayerRow
+        label={t('mapPanel.layerCongestionHalos')}
+        checked={congestionHalosEnabled}
+        onChange={setCongestionHalosEnabled}
+      />
+    </>
   );
 }
 
@@ -622,6 +501,8 @@ interface Props {
   ) => Promise<void>;
   onDeleteWaypoint?: (id: number) => Promise<void>;
   onNodeClick?: (nodeId: number) => void;
+  /** Opens the node that posted a weather forecast (may be on another protocol). */
+  onForecastSenderClick?: (protocol: MeshProtocol, senderId: number) => void;
   protocol?: MeshProtocol;
   useFahrenheit?: boolean;
 }
@@ -635,6 +516,7 @@ export default function MapPanel({
   waypoints,
   onDeleteWaypoint,
   onNodeClick,
+  onForecastSenderClick,
   protocol = 'meshtastic',
   useFahrenheit = false,
 }: Props) {
@@ -700,8 +582,6 @@ export default function MapPanel({
   const basemapId = useMapLayerStore((s) => s.basemapId);
   const showNodes = useMapLayerStore((s) => s.showNodes);
   const showWaypoints = useMapLayerStore((s) => s.showWaypoints);
-  const showIncidents = useMapLayerStore((s) => s.showIncidents);
-  const showMgrsGrid = useMapLayerStore((s) => s.showMgrsGrid);
   const showSensors = useMapLayerStore((s) => s.showSensors);
   const sensorMetric = useMapLayerStore((s) => s.sensorMetric);
   const showTakContacts = useMapLayerStore((s) => s.showTakContacts);
@@ -1084,15 +964,29 @@ export default function MapPanel({
     [overlayColors.online, basemap.isDark],
   );
 
-  // `isolate` keeps Leaflet's panes (z 400 to 1000) and the z-[1000] controls inside the map, so a
-  // dialog opened over this tab draws above them.
+  const ourFallbackPoint = useMemo<[number, number] | null>(
+    () => (ourPosition ? [ourPosition.lat, ourPosition.lon] : null),
+    [ourPosition],
+  );
+
   return (
-    <div
-      className="border-ink-700/50 relative isolate h-full min-h-[500px] overflow-hidden rounded-lg border"
-      aria-label={t('mapPanel.networkMap')}
-    >
-      {/* Status legend + layer controls — top right, below Leaflet zoom (+/-) on the left */}
-      <div className="absolute top-3 right-3 z-[1000] flex flex-col items-end gap-2">
+    <MeshMapShell
+      ariaLabel={t('mapPanel.networkMap')}
+      frameClassName="h-full min-h-[500px]"
+      initialCenter={initialViewport.center}
+      initialZoom={initialViewport.zoom}
+      defaultCenter={DEFAULT_CENTER}
+      defaultZoom={DEFAULT_ZOOM}
+      fit={{
+        mode: 'firstPoint',
+        points: positions,
+        fallbackPoint: ourFallbackPoint,
+        shouldFitOnMount,
+      }}
+      hasAnyPositions={positions.length > 0 || !!ourPosition}
+      onLocateMe={onLocateMe}
+      onForecastSenderClick={onForecastSenderClick}
+      controlsBefore={
         <div className={MAP_CHIP_CLASS}>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
@@ -1110,13 +1004,8 @@ export default function MapPanel({
             {statusCounts.offline}
           </span>
         </div>
-        <MapLayerControl
-          routeWeightsSupported={routeWeightsSupported}
-          showRouteWeights={showRouteWeights}
-          onToggleRouteWeights={setShowRouteWeights}
-          sensorsSupported={hasEnvironmentTelemetry}
-          takSupported={hasTakPanel}
-        />
+      }
+      controlsAfter={
         <button
           type="button"
           onClick={() => void handleExportGpx()}
@@ -1127,130 +1016,110 @@ export default function MapPanel({
           <Download aria-hidden className="h-3.5 w-3.5" />
           {t('gpxExport.button')}
         </button>
-      </div>
-
-      <MapContainer
-        center={initialViewport.center}
-        zoom={initialViewport.zoom}
-        maxZoom={MAP_MAX_ZOOM}
-        className="absolute inset-0"
-        preferCanvas
-      >
-        <MapResizeInvalidator active />
-        <DiagnosticPanes />
-        <MapViewportSaver hasAnyPositions={positions.length > 0 || !!ourPosition} />
-        <MapFocusController />
-        <MapFitter
-          positions={positions}
-          ourPosition={ourPosition}
-          shouldFitOnMount={shouldFitOnMount}
+      }
+      layerRows={
+        <LoRaMapLayerRows
+          routeWeightsSupported={routeWeightsSupported}
+          showRouteWeights={showRouteWeights}
+          onToggleRouteWeights={setShowRouteWeights}
+          sensorsSupported={hasEnvironmentTelemetry}
+          takSupported={hasTakPanel}
         />
-        <LocateMeControl onLocateMe={onLocateMe} />
-        <MeasureControl />
-        {meshTilesAvailable() && (
-          <TileLayer
-            key={basemapId}
-            url={basemap.url}
-            attribution={basemap.attribution}
-            maxNativeZoom={basemap.maxNativeZoom}
-            keepBuffer={1}
-            updateWhenIdle
-          />
-        )}
-        {showMgrsGrid ? <MgrsGridLayer /> : null}
-        {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
-          <PathPolyline
-            key={`path-${nodeId}`}
-            nodeId={nodeId}
-            pathPositions={pathPositions}
-            pathOptions={pathOptions}
-            onNodeClick={onNodeClick}
-          />
-        ))}
-        {routeWeightPolylines}
-        {showNodes && (anomalyHalosEnabled || congestionHalosEnabled)
-          ? nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
-              <NodeHalo
-                key={`halo-${node.node_id}`}
-                node={node}
-                anomaly={anomaly}
-                anomalyHalosEnabled={anomalyHalosEnabled}
-                congestionHalosEnabled={congestionHalosEnabled}
-                haloCenterOffset={haloCenterOffset}
-              />
-            ))
-          : null}
-        {showNodes && (
-          <MarkerClusterGroup
-            showCoverageOnHover={false}
-            chunkedLoading
-            maxClusterRadius={denseMapMarkers ? 80 : 60}
-            disableClusteringAtZoom={denseMapMarkers ? 12 : 9}
-            iconCreateFunction={iconCreateFunction}
-          >
-            {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
-              <MapMarker
-                key={node.node_id}
-                node={node}
-                anomaly={anomaly}
-                nodeRenderSignature={toNodeRenderSignature(node)}
-                homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
-                anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
-                isSelf={node.node_id === myNodeNum}
-                protocol={protocol}
-                onNodeClick={onNodeClick}
-                congestionHalosEnabled={congestionHalosEnabled}
-                isDarkBasemap={basemap.isDark}
-              />
-            ))}
-          </MarkerClusterGroup>
-        )}
-        {showWaypoints &&
-          waypoints &&
-          [...waypoints.values()].map((wp) => (
-            <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
-              <Popup>
-                <div className="space-y-1 p-2">
-                  <div className="text-ink-100 text-sm font-medium">
-                    {wp.name || t('mapPanel.waypointDefaultName')}
-                  </div>
-                  {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
-                  <div className="text-muted font-mono text-xs">
-                    {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
-                  </div>
-                  {onDeleteWaypoint && (
-                    <button
-                      type="button"
-                      onClick={() => onDeleteWaypoint(wp.id)}
-                      className={buttonClassName('danger', 'sm', 'mt-1')}
-                    >
-                      {t('mapPanel.waypointDelete')}
-                    </button>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        {showIncidents ? <IncidentMarkersLayer /> : null}
-        {hasTakPanel && showTakContacts ? <TakContactsLayer /> : null}
-        {hasEnvironmentTelemetry && showSensors ? (
-          <EnvironmentSensorLayer
-            nodes={nodesWithPosition}
-            protocol={protocol}
-            metric={sensorMetric}
-            useFahrenheit={useFahrenheit}
-            onNodeClick={onNodeClick}
-          />
-        ) : null}
-      </MapContainer>
-
-      {nodesToRender.length === 0 && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="bg-deep-black/80 text-muted rounded-lg px-4 py-2 text-sm">
-            {t('mapPanel.noGpsNodes')}
+      }
+      beforeTiles={<DiagnosticPanes />}
+      overlay={
+        nodesToRender.length === 0 ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="bg-deep-black/80 text-muted rounded-lg px-4 py-2 text-sm">
+              {t('mapPanel.noGpsNodes')}
+            </div>
           </div>
-        </div>
+        ) : null
+      }
+    >
+      {movingNodePaths.map(({ nodeId, positions: pathPositions, pathOptions }) => (
+        <PathPolyline
+          key={`path-${nodeId}`}
+          nodeId={nodeId}
+          pathPositions={pathPositions}
+          pathOptions={pathOptions}
+          onNodeClick={onNodeClick}
+        />
+      ))}
+      {routeWeightPolylines}
+      {showNodes && (anomalyHalosEnabled || congestionHalosEnabled)
+        ? nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly, haloCenterOffset }) => (
+            <NodeHalo
+              key={`halo-${node.node_id}`}
+              node={node}
+              anomaly={anomaly}
+              anomalyHalosEnabled={anomalyHalosEnabled}
+              congestionHalosEnabled={congestionHalosEnabled}
+              haloCenterOffset={haloCenterOffset}
+            />
+          ))
+        : null}
+      {showNodes && (
+        <MarkerClusterGroup
+          showCoverageOnHover={false}
+          chunkedLoading
+          maxClusterRadius={denseMapMarkers ? 80 : 60}
+          disableClusteringAtZoom={denseMapMarkers ? 12 : 9}
+          iconCreateFunction={iconCreateFunction}
+        >
+          {nodesWithStatusAndHaloOffsetForRender.map(({ node, anomaly }) => (
+            <MapMarker
+              key={node.node_id}
+              node={node}
+              anomaly={anomaly}
+              nodeRenderSignature={toNodeRenderSignature(node)}
+              homeNodeRenderSignature={homeNode ? toNodeRenderSignature(homeNode) : 'none'}
+              anomalyRenderSignature={toAnomalyRenderSignature(anomaly)}
+              isSelf={node.node_id === myNodeNum}
+              protocol={protocol}
+              onNodeClick={onNodeClick}
+              congestionHalosEnabled={congestionHalosEnabled}
+              isDarkBasemap={basemap.isDark}
+            />
+          ))}
+        </MarkerClusterGroup>
       )}
-    </div>
+      {showWaypoints &&
+        waypoints &&
+        [...waypoints.values()].map((wp) => (
+          <Marker key={wp.id} position={[wp.latitude, wp.longitude]} icon={WAYPOINT_MARKER_ICON}>
+            <Popup>
+              <div className="space-y-1 p-2">
+                <div className="text-ink-100 text-sm font-medium">
+                  {wp.name || t('mapPanel.waypointDefaultName')}
+                </div>
+                {wp.description && <div className="text-ink-400 text-xs">{wp.description}</div>}
+                <div className="text-muted font-mono text-xs">
+                  {formatCoordPair(wp.latitude, wp.longitude, coordinateFormat)}
+                </div>
+                {onDeleteWaypoint && (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteWaypoint(wp.id)}
+                    className={buttonClassName('danger', 'sm', 'mt-1')}
+                  >
+                    {t('mapPanel.waypointDelete')}
+                  </button>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+      {hasTakPanel && showTakContacts ? <TakContactsLayer /> : null}
+      {hasEnvironmentTelemetry && showSensors ? (
+        <EnvironmentSensorLayer
+          nodes={nodesWithPosition}
+          protocol={protocol}
+          metric={sensorMetric}
+          useFahrenheit={useFahrenheit}
+          onNodeClick={onNodeClick}
+        />
+      ) : null}
+    </MeshMapShell>
   );
 }

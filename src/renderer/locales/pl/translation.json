@@ -2521,7 +2521,8 @@
     "measureStopAria": "Zatrzymaj pomiar i wyczyść",
     "measureHint": "Kliknij mapę, aby dodać punkty",
     "measureTotal": "{{km}} km / {{mi}} mi",
-    "layerTakContacts": "Jednostki TAK"
+    "layerTakContacts": "Jednostki TAK",
+    "layerWeatherForecasts": "Prognozy pogody"
   },
   "meshCongestion": {
     "blockTitle": "Dlaczego widzisz zduplikowany ruch",
@@ -6685,7 +6686,9 @@
     "patternInvalid": "Nieprawidłowy wzór; używając tylko wbudowanych wzorów.",
     "markSender": "Oznacz jako nadawcę pogody",
     "unmarkSender": "Odznacz nadawcę pogody",
-    "viewAria": "Widok pogody (posty pogodowe na tym kanale: {{posts}})"
+    "viewAria": "Widok pogody (posty pogodowe na tym kanale: {{posts}})",
+    "onlinePlaceLookup": "Wyszukaj prognozowane miejsca online",
+    "onlinePlaceLookupHint": "Gdy miasto prognozy nie znajduje się na wbudowanej liście, wyślij jego nazwę do Open-Meteo, aby znaleźć je na mapie."
   },
   "sensorLayer": {
     "layer": "Czujniki",
@@ -6752,5 +6755,24 @@
     "footerClose": "Zamknięty",
     "footerOsKeys": "Twój system operacyjny może zachować kilka klawiszy funkcyjnych",
     "footerAutoSave": "PIN zostanie zapisany automatycznie."
+  },
+  "weatherForecast": {
+    "areaAria": "Prognoza dla {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Prognoza dla {{place}}, {{period}}",
+    "nearRequester": "W pobliżu: {{name}}",
+    "nearRequesterUnknown": "W pobliżu węzła, który poprosił",
+    "nearSender": "W pobliżu: {{name}}",
+    "unknownSender": "Nieznany nadawca",
+    "highLow": "Wysoki {{high}}° / Niski {{low}}°",
+    "alerts": "Obowiązują alerty pogodowe",
+    "issued": "Wystawiono: {{when}}",
+    "positionApprox": "Nie znaleziono miejsca; wyświetlane w pobliżu nadawcy",
+    "positionRequester": "Wyświetlane w węźle, który o to poprosił",
+    "via": "przez {{sender}} w dniu {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

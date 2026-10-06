@@ -136,6 +136,17 @@ export function getWeatherFilterSettings(): WeatherFilterSettings {
   };
 }
 
+/** Whether forecast places missing offline may be looked up online (App → Weather; default off). */
+export function isWeatherOnlinePlaceLookupEnabled(): boolean {
+  const parsed = parseStoredJson<{ weatherOnlinePlaceLookup?: unknown }>(
+    getAppSettingsRaw(),
+    'isWeatherOnlinePlaceLookupEnabled',
+  );
+  return typeof parsed?.weatherOnlinePlaceLookup === 'boolean'
+    ? parsed.weatherOnlinePlaceLookup
+    : DEFAULT_APP_SETTINGS_SHARED.weatherOnlinePlaceLookup;
+}
+
 export interface OperationalAlertSettings {
   /** null = protocol capability defaults. */
   nodeSilenceAlertMinutes: number | null;

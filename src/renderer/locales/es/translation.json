@@ -2471,7 +2471,8 @@
     "measureStopAria": "Dejar de medir y borrar",
     "measureHint": "Haz clic en el mapa para añadir puntos",
     "measureTotal": "{{km}} km / {{mi}} mi",
-    "layerTakContacts": "Unidades TAK"
+    "layerTakContacts": "Unidades TAK",
+    "layerWeatherForecasts": "Previsiones del tiempo"
   },
   "meshCongestion": {
     "blockTitle": "Por qué ves tráfico duplicado",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "Patrón no válido; utilizando solo los patrones incorporados.",
     "markSender": "Marcar como remitente meteorológico",
     "unmarkSender": "Desmarcar remitente meteorológico",
-    "viewAria": "Vista meteorológica (publicaciones meteorológicas en este canal: {{posts}})"
+    "viewAria": "Vista meteorológica (publicaciones meteorológicas en este canal: {{posts}})",
+    "onlinePlaceLookup": "Buscar lugares pronosticados en línea",
+    "onlinePlaceLookupHint": "Cuando la ciudad de un pronóstico no esté en la lista incorporada, envíe su nombre a Open-Meteo para encontrarlo en el mapa."
   },
   "sensorLayer": {
     "layer": "Sensores",
@@ -6644,5 +6647,24 @@
     "footerClose": "Cerrar",
     "footerOsKeys": "Su sistema operativo puede mantener algunas teclas F",
     "footerAutoSave": "El juego se guarda automáticamente"
+  },
+  "weatherForecast": {
+    "areaAria": "Pronóstico para {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Pronóstico para {{place}}, {{period}}",
+    "nearRequester": "Cerca de {{name}}",
+    "nearRequesterUnknown": "Cerca del nodo que preguntó",
+    "nearSender": "Cerca de {{name}}",
+    "unknownSender": "Remitente desconocido",
+    "highLow": "Alta {{high}}° / Baja {{low}}°",
+    "alerts": "Alertas meteorológicas en vigor",
+    "issued": "Emitido {{when}}",
+    "positionApprox": "Lugar no encontrado; se muestra cerca del remitente",
+    "positionRequester": "Se muestra en el nodo que lo solicitó",
+    "via": "a través de {{sender}} el {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

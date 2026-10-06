@@ -62,7 +62,6 @@ vi.mock('@/renderer/lib/reticulum/reticulumSidecarReads', () => ({
 vi.mock('@/renderer/components/map/leafletMapControls', () => ({
   ensureMapStyles: vi.fn(),
   LocateMeControl: () => null,
-  MapBasemapControl: () => <div data-testid="map-basemap-control" />,
   MapResizeInvalidator: () => null,
   MapViewportSaver: () => null,
   flyMapToBounds: vi.fn(),
@@ -70,6 +69,8 @@ vi.mock('@/renderer/components/map/leafletMapControls', () => ({
 
 vi.mock('@/renderer/components/map/emcommMapLayers', () => ({
   IncidentMarkersLayer: () => <div data-testid="incident-markers-layer" />,
+  MeasureControl: () => null,
+  MgrsGridLayer: () => <div data-testid="mgrs-grid-layer" />,
   incidentMarkersFrom: (
     incidents: Record<string, { status: string; lat?: number; lon?: number }>,
   ) =>
@@ -153,9 +154,29 @@ describe('ReticulumMapPanel', () => {
     expect(link).toHaveAttribute('href', 'https://rmap.world/');
   });
 
-  it('renders basemap controls with the map', () => {
+  it('renders the shared layers panel with global layer toggles', () => {
+    useMapLayerStore.setState({ layersPanelOpen: false, showMgrsGrid: false });
     render(<ReticulumMapPanel stackConfigured={false} />);
-    expect(screen.getByTestId('map-basemap-control')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'mapPanel.layerControlsAria' }));
+    expect(
+      screen.getByRole('combobox', { name: 'mapPanel.basemapSelectAria' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('mgrs-grid-layer')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'mapPanel.layerMgrsGrid' }));
+    expect(useMapLayerStore.getState().showMgrsGrid).toBe(true);
+    expect(screen.getByTestId('mgrs-grid-layer')).toBeInTheDocument();
+    expect(
+      screen.getByRole('checkbox', { name: 'mapPanel.layerWeatherForecasts' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: 'mapPanel.layerNodes' })).not.toBeInTheDocument();
+  });
+
+  it('has no axe violations with the layers panel open', async () => {
+    useMapLayerStore.setState({ layersPanelOpen: true });
+    const { container } = render(<ReticulumMapPanel stackConfigured={false} />);
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+    useMapLayerStore.setState({ layersPanelOpen: false });
   });
 
   it('renders markers when discoveries exist', () => {

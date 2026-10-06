@@ -2471,7 +2471,8 @@
     "measureStopAria": "Ölçümü durdur ve temizle",
     "measureHint": "Puan eklemek için haritaya tıklayın",
     "measureTotal": "{{km}} km / {{mi}} mil",
-    "layerTakContacts": "TAK ÜNİTELERİ"
+    "layerTakContacts": "TAK ÜNİTELERİ",
+    "layerWeatherForecasts": "Hava durumu tahminleri"
   },
   "meshCongestion": {
     "blockTitle": "Neden yinelenen trafik görüyorsunuz?",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "Geçersiz desen; yalnızca yerleşik desenler kullanılıyor.",
     "markSender": "Hava durumu göndericisi olarak işaretle",
     "unmarkSender": "Hava durumu göndericisinin işaretini kaldır",
-    "viewAria": "Hava durumu görünümü (bu kanaldaki hava durumu gönderileri: {{posts}})"
+    "viewAria": "Hava durumu görünümü (bu kanaldaki hava durumu gönderileri: {{posts}})",
+    "onlinePlaceLookup": "Tahmini yerleri çevrim içi arayın",
+    "onlinePlaceLookupHint": "Bir tahminin kasabası yerleşik listede olmadığında, haritada bulmak için adını Open - Meteo'ya gönderin."
   },
   "sensorLayer": {
     "layer": "Sensörleri",
@@ -6644,5 +6647,24 @@
     "footerClose": "Kapat",
     "footerOsKeys": "İşletim sisteminizde bazı F - tuşları olabilir",
     "footerAutoSave": "PIN otomatik olarak kaydeder."
+  },
+  "weatherForecast": {
+    "areaAria": "{{place}}, {{period}} için tahmin: {{temp}}",
+    "areaAriaNoTemp": "{{place}}, {{period}} için tahmin",
+    "nearRequester": "{{name}} yakınlarında",
+    "nearRequesterUnknown": "Soran düğümün yakınında",
+    "nearSender": "{{name}} yakınlarında",
+    "unknownSender": "Bilinmeyen Göndericiflag new",
+    "highLow": "Yüksek {{high}}°/ Düşük {{low}}°",
+    "alerts": "Yürürlükteki hava durumu uyarıları",
+    "issued": "Veriliş tarihi: {{when}}",
+    "positionApprox": "Yer bulunamadı; gönderenin yanında gösterilir",
+    "positionRequester": "Bunu isteyen düğümde gösterilir",
+    "via": "{{protocol}} tarihinde {{sender}} aracılığıyla",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

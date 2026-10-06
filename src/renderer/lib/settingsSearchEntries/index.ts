@@ -9,9 +9,11 @@ import { batch2Surfaces } from './batch2';
 import { batch3Surfaces } from './batch3';
 import { batch4Surfaces } from './batch4';
 import { batch5Surfaces } from './batch5';
+import { chatSurface } from './chat';
 
 export const SETTINGS_SEARCH_SURFACES: readonly SettingsSearchSurface[] = [
   appSurface,
+  chatSurface,
   ...batch1Surfaces,
   ...batch2Surfaces,
   ...batch3Surfaces,

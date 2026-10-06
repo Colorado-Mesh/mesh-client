@@ -2471,7 +2471,8 @@
     "measureStopAria": "Arrêter la mesure et effacer",
     "measureHint": "Cliquez sur la carte pour ajouter des points",
     "measureTotal": "{{km}} km / {{mi}} mi",
-    "layerTakContacts": "Unités TAK"
+    "layerTakContacts": "Unités TAK",
+    "layerWeatherForecasts": "Prévisions météorologiques"
   },
   "meshCongestion": {
     "blockTitle": "Pourquoi voyez-vous du trafic en double ?",
@@ -6577,7 +6578,9 @@
     "patternInvalid": "Motif non valide ; en utilisant uniquement les motifs intégrés.",
     "markSender": "Marquer comme expéditeur météo",
     "unmarkSender": "Masquer l'expéditeur météo",
-    "viewAria": "Vue météo (postes météo dans ce canal : {{posts}})"
+    "viewAria": "Vue météo (postes météo dans ce canal : {{posts}})",
+    "onlinePlaceLookup": "Rechercher des prévisions de places en ligne",
+    "onlinePlaceLookupHint": "Lorsque la ville d'une prévision ne figure pas dans la liste intégrée, envoyez son nom à Open-Meteo pour la trouver sur la carte."
   },
   "sensorLayer": {
     "layer": "Capteurs",
@@ -6644,5 +6647,24 @@
     "footerClose": "Fermer",
     "footerOsKeys": "Votre système d'exploitation peut conserver certaines touches F",
     "footerAutoSave": "Le code PIN s’enregistre automatiquement."
+  },
+  "weatherForecast": {
+    "areaAria": "Prévisions pour {{place}}, {{period}} : {{temp}}",
+    "areaAriaNoTemp": "Prévisions pour {{place}}, {{period}}",
+    "nearRequester": "Près de {{name}}",
+    "nearRequesterUnknown": "Près du nœud qui a demandé",
+    "nearSender": "Près de {{name}}",
+    "unknownSender": "Expéditeur inconnu.",
+    "highLow": "Haut {{high}}° / Bas {{low}}°",
+    "alerts": "les alertes météo, si elles sont en vigueur;",
+    "issued": "Émis {{when}}",
+    "positionApprox": "Lieu introuvable ; affiché près de l'expéditeur",
+    "positionRequester": "Affiché au nœud qui l'a demandé",
+    "via": "via {{sender}} le {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   }
 }

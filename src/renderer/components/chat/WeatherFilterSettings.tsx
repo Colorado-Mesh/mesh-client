@@ -12,6 +12,8 @@ export function WeatherFilterSettings() {
   const setHideInChannels = useWeatherFilterStore((s) => s.setHideInChannels);
   const pattern = useWeatherFilterStore((s) => s.pattern);
   const setPattern = useWeatherFilterStore((s) => s.setPattern);
+  const onlinePlaceLookup = useWeatherFilterStore((s) => s.onlinePlaceLookup);
+  const setOnlinePlaceLookup = useWeatherFilterStore((s) => s.setOnlinePlaceLookup);
   const [draft, setDraft] = useState(pattern);
   const draftInvalid = compileWeatherPattern(draft) === 'invalid';
 
@@ -24,7 +26,10 @@ export function WeatherFilterSettings() {
       className="mb-2 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1"
       data-testid="weather-filter-settings"
     >
-      <label className="text-muted flex cursor-pointer items-center gap-2 text-xs">
+      <label
+        className="text-muted flex cursor-pointer items-center gap-2 text-xs"
+        data-setting-anchor="chat.weather.hideInChannels"
+      >
         <input
           type="checkbox"
           className={CHECKBOX_CLASS}
@@ -35,7 +40,29 @@ export function WeatherFilterSettings() {
         />
         {t('weatherFilter.hideInChannels')}
       </label>
-      <div className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md">
+      <label
+        className="text-muted flex cursor-pointer items-center gap-2 text-xs"
+        title={t('weatherFilter.onlinePlaceLookupHint')}
+        data-setting-anchor="chat.weather.onlinePlaceLookup"
+      >
+        <input
+          type="checkbox"
+          className={CHECKBOX_CLASS}
+          checked={onlinePlaceLookup}
+          aria-describedby="weather-online-lookup-hint"
+          onChange={(e) => {
+            setOnlinePlaceLookup(e.target.checked);
+          }}
+        />
+        {t('weatherFilter.onlinePlaceLookup')}
+      </label>
+      <span id="weather-online-lookup-hint" className="sr-only">
+        {t('weatherFilter.onlinePlaceLookupHint')}
+      </span>
+      <div
+        className="flex min-w-0 flex-1 items-center gap-2 sm:max-w-md"
+        data-setting-anchor="chat.weather.pattern"
+      >
         <input
           type="text"
           className={`${INPUT_BOX_SM_CLASS} min-w-0 flex-1 font-mono`}

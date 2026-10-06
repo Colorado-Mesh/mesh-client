@@ -42,6 +42,8 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   weatherFilterHideInChannels: false,
   /** Extra case-insensitive regex for weather posts (empty = defaults only). */
   weatherFilterPattern: '',
+  /** Look up forecast places missing from the offline gazetteer via Open-Meteo (sends the place name). */
+  weatherOnlinePlaceLookup: false,
   /** When true, chat/room message action bars (copy/reply/react/etc.) stay visible instead of hover-only. */
   alwaysShowMessageActions: false,
   /** When true, disables non-essential UI motion (animated icons, decorative pulses). */

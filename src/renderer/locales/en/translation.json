@@ -2645,7 +2645,28 @@
     "patternAria": "Extra weather post pattern",
     "patternInvalid": "Invalid pattern; using the built-in patterns only.",
     "markSender": "Mark as weather sender",
-    "unmarkSender": "Unmark weather sender"
+    "unmarkSender": "Unmark weather sender",
+    "onlinePlaceLookup": "Look up forecast places online",
+    "onlinePlaceLookupHint": "When a forecast's town is not in the built-in list, send its name to Open-Meteo to find it on the map."
+  },
+  "weatherForecast": {
+    "areaAria": "Forecast for {{place}}, {{period}}: {{temp}}",
+    "areaAriaNoTemp": "Forecast for {{place}}, {{period}}",
+    "nearRequester": "Near {{name}}",
+    "nearRequesterUnknown": "Near the node that asked",
+    "nearSender": "Near {{name}}",
+    "unknownSender": "Unknown sender",
+    "highLow": "High {{high}}° / Low {{low}}°",
+    "alerts": "Weather alerts in effect",
+    "issued": "Issued {{when}}",
+    "positionApprox": "Place not found; shown near the sender",
+    "positionRequester": "Shown at the node that asked for it",
+    "via": "via {{sender}} on {{protocol}}",
+    "protocol": {
+      "meshtastic": "Meshtastic",
+      "meshcore": "MeshCore",
+      "reticulum": "Reticulum"
+    }
   },
   "sensorLayer": {
     "layer": "Sensors",
@@ -2678,6 +2699,7 @@
     "layerWaypoints": "Waypoints",
     "layerIncidents": "Emergency incidents",
     "layerMgrsGrid": "MGRS grid",
+    "layerWeatherForecasts": "Weather forecasts",
     "layerTakContacts": "TAK units",
     "incidentMarker": "{{sender}}: {{codes}}",
     "incidentMarkerDrill": "DRILL {{sender}}: {{codes}}",
