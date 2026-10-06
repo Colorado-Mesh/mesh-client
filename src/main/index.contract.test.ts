@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { readdirSync, readFileSync } from 'fs';
+import { dirname, join, normalize } from 'path';
 import { describe, expect, it } from 'vitest';
 
 const INDEX_SOURCE = readFileSync(join(__dirname, 'index.ts'), 'utf-8');
@@ -190,6 +190,312 @@ describe('MeshCore DB IPC (source contract)', () => {
   });
 });
 
+const RENDERER_ROOT = join(__dirname, '../renderer');
+const SRC_ROOT = join(__dirname, '..');
+
+function listRendererSources(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      out.push(...listRendererSources(full));
+      continue;
+    }
+    if (!entry.isFile() || !/\.tsx?$/.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) {
+      continue;
+    }
+    out.push(normalize(full));
+  }
+  return out;
+}
+
+function readBalanced(
+  source: string,
+  openIndex: number,
+  open: string,
+  close: string,
+): string | null {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = openIndex; i < source.length; i++) {
+    const c = source[i];
+    if (quote) {
+      if (c === '\\') {
+        i += 1;
+        continue;
+      }
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') {
+      quote = c;
+      continue;
+    }
+    if (c === open) depth += 1;
+    else if (c === close) {
+      depth -= 1;
+      if (depth === 0) return source.slice(openIndex + 1, i);
+    }
+  }
+  return null;
+}
+
+function readFirstArg(source: string, start: number): string {
+  let i = start;
+  while (i < source.length && /\s/.test(source[i] ?? '')) i += 1;
+  const begin = i;
+  let depth = 0;
+  let quote: string | null = null;
+  for (; i < source.length; i++) {
+    const c = source[i];
+    if (quote) {
+      if (c === '\\') {
+        i += 1;
+        continue;
+      }
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') {
+      quote = c;
+      continue;
+    }
+    if (c === '(' || c === '[' || c === '{') depth += 1;
+    else if (c === ')' || c === ']' || c === '}') {
+      if (depth === 0) return source.slice(begin, i).trim();
+      depth -= 1;
+    } else if (c === ',' && depth === 0) {
+      return source.slice(begin, i).trim();
+    }
+  }
+  return source.slice(begin).trim();
+}
+
+function appSettingsSetArgExprs(source: string): string[] {
+  const args: string[] = [];
+  const re = /electronAPI\.appSettings\s*\.set\s*\(/g;
+  for (const match of source.matchAll(re)) {
+    const arg = readFirstArg(source, (match.index ?? 0) + match[0].length);
+    if (arg) args.push(arg);
+  }
+  return args;
+}
+
+function isIdentChar(ch: string): boolean {
+  return (
+    (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch === '_'
+  );
+}
+
+function isIdent(value: string): boolean {
+  if (value.length === 0) return false;
+  for (const ch of value) {
+    if (!isIdentChar(ch)) return false;
+  }
+  return true;
+}
+
+/** Index just after `=` for `const`/`let name =`, skipping identifier prefixes. */
+function constAssignmentValueStarts(source: string, name: string): number[] {
+  const starts: number[] = [];
+  for (const keyword of ['const', 'let']) {
+    const needle = `${keyword} ${name}`;
+    let from = 0;
+    while (from < source.length) {
+      const at = source.indexOf(needle, from);
+      if (at < 0) break;
+      const before = at === 0 ? '' : (source[at - 1] ?? '');
+      if (before && isIdentChar(before)) {
+        from = at + needle.length;
+        continue;
+      }
+      let i = at + needle.length;
+      if (isIdentChar(source[i] ?? '')) {
+        from = at + needle.length;
+        continue;
+      }
+      while (i < source.length && /\s/.test(source[i] ?? '')) i += 1;
+      if (source[i] !== '=') {
+        from = at + needle.length;
+        continue;
+      }
+      i += 1;
+      while (i < source.length && /\s/.test(source[i] ?? '')) i += 1;
+      starts.push(i);
+      from = i;
+    }
+  }
+  return starts;
+}
+
+function readQuoted(source: string, start: number): string | null {
+  const quote = source[start];
+  if (quote !== "'" && quote !== '"') return null;
+  const end = source.indexOf(quote, start + 1);
+  if (end < 0) return null;
+  return source.slice(start + 1, end);
+}
+
+function stringConstValue(source: string, name: string): string | null {
+  for (const start of constAssignmentValueStarts(source, name)) {
+    const value = readQuoted(source, start);
+    if (value != null) return value;
+  }
+  return null;
+}
+
+function objectConstValues(source: string, name: string): Record<string, string> | null {
+  for (const start of constAssignmentValueStarts(source, name)) {
+    if (source[start] !== '{') continue;
+    const body = readBalanced(source, start, '{', '}');
+    if (body == null) return null;
+    const values: Record<string, string> = {};
+    for (const prop of body.matchAll(/([A-Za-z0-9_]+)\s*:\s*(['"])([^'"\\]*)\2/g)) {
+      const key = prop[1];
+      const value = prop[3];
+      if (key && value != null) values[key] = value;
+    }
+    return values;
+  }
+  return null;
+}
+
+function importedValueBindings(source: string): Map<string, { from: string; exported: string }> {
+  const bindings = new Map<string, { from: string; exported: string }>();
+  for (const match of source.matchAll(/import\s+\{([^}]+)\}\s+from\s+['"]([^'"]+)['"]/g)) {
+    const specifiers = match[1];
+    const from = match[2];
+    if (!specifiers || !from) continue;
+    for (const part of specifiers.split(',')) {
+      const piece = part.trim();
+      if (!piece || piece.startsWith('type ')) continue;
+      const parts = piece.split(/\s+/).filter(Boolean);
+      const exported = parts[0];
+      const local = parts.length === 3 && parts[1] === 'as' ? parts[2] : exported;
+      if (!exported || !local || !isIdent(exported) || !isIdent(local)) continue;
+      if (parts.length !== 1 && !(parts.length === 3 && parts[1] === 'as')) continue;
+      bindings.set(local, { from, exported });
+    }
+  }
+  return bindings;
+}
+
+function localInitializers(source: string, name: string): string[] {
+  const out: string[] = [];
+  for (const start of constAssignmentValueStarts(source, name)) {
+    let stop = source.length;
+    const semi = source.indexOf(';', start);
+    const nl = source.indexOf('\n', start);
+    if (semi >= 0) stop = Math.min(stop, semi);
+    if (nl >= 0) stop = Math.min(stop, nl);
+    const init = source.slice(start, stop).trim();
+    if (init) out.push(init);
+  }
+  return out;
+}
+
+function resolveModule(
+  fromFile: string,
+  spec: string,
+  sources: ReadonlyMap<string, string>,
+): string | null {
+  const base = spec.startsWith('@/')
+    ? join(SRC_ROOT, spec.slice(2))
+    : spec.startsWith('.')
+      ? join(dirname(fromFile), spec)
+      : null;
+  if (!base) return null;
+  for (const candidate of [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts')]) {
+    const normalized = normalize(candidate);
+    if (sources.has(normalized)) return normalized;
+  }
+  return null;
+}
+
+function lookupStringConst(
+  name: string,
+  source: string,
+  file: string,
+  sources: ReadonlyMap<string, string>,
+): string | null {
+  const local = stringConstValue(source, name);
+  if (local != null) return local;
+  const imported = importedValueBindings(source).get(name);
+  if (!imported) return null;
+  const otherPath = resolveModule(file, imported.from, sources);
+  const other = otherPath ? sources.get(otherPath) : undefined;
+  return other ? stringConstValue(other, imported.exported) : null;
+}
+
+function lookupObjectConst(
+  name: string,
+  source: string,
+  file: string,
+  sources: ReadonlyMap<string, string>,
+): Record<string, string> | null {
+  const local = objectConstValues(source, name);
+  if (local && Object.keys(local).length > 0) return local;
+  const imported = importedValueBindings(source).get(name);
+  if (!imported) return null;
+  const otherPath = resolveModule(file, imported.from, sources);
+  const other = otherPath ? sources.get(otherPath) : undefined;
+  return other ? objectConstValues(other, imported.exported) : null;
+}
+
+function resolveAppSettingsKeyExpr(
+  expr: string,
+  source: string,
+  file: string,
+  sources: ReadonlyMap<string, string>,
+  depth = 0,
+): string[] {
+  if (depth > 6) return [];
+  const trimmed = expr.trim().replace(/;$/, '');
+  const literal = /^(['"])([^'"\\]*)\1$/.exec(trimmed);
+  if (literal?.[2] != null) return [literal[2]];
+
+  const member = /^([A-Za-z0-9_]+)\.([A-Za-z0-9_]+)$/.exec(trimmed);
+  if (member?.[1] && member[2]) {
+    const value = lookupObjectConst(member[1], source, file, sources)?.[member[2]];
+    return value != null ? [value] : [];
+  }
+
+  const indexed = /^([A-Za-z0-9_]+)\[(.+)\]$/.exec(trimmed);
+  if (indexed?.[1]) {
+    const values = lookupObjectConst(indexed[1], source, file, sources);
+    if (!values) return [];
+    const indexLiteral = /^(['"])([^'"\\]*)\1$/.exec(indexed[2]?.trim() ?? '');
+    if (indexLiteral?.[2] != null) {
+      const value = values[indexLiteral[2]];
+      return value != null ? [value] : [];
+    }
+    return Object.values(values);
+  }
+
+  if (!/^[A-Za-z0-9_]+$/.test(trimmed)) return [];
+  const direct = lookupStringConst(trimmed, source, file, sources);
+  if (direct != null) return [direct];
+  const resolved = localInitializers(source, trimmed).flatMap((init) =>
+    init === trimmed ? [] : resolveAppSettingsKeyExpr(init, source, file, sources, depth + 1),
+  );
+  return [...new Set(resolved)];
+}
+
+/** String-literal keys the renderer passes to `electronAPI.appSettings.set`. */
+function collectRendererAppSettingsSetKeys(): string[] {
+  const files = listRendererSources(RENDERER_ROOT);
+  const sources = new Map(files.map((file) => [file, readFileSync(file, 'utf-8')]));
+  const keys = new Set<string>();
+  for (const [file, source] of sources) {
+    for (const arg of appSettingsSetArgExprs(source)) {
+      for (const key of resolveAppSettingsKeyExpr(arg, source, file, sources)) {
+        if (key) keys.add(key);
+      }
+    }
+  }
+  return [...keys].sort();
+}
+
 describe('Persistent app settings IPC (source contract)', () => {
   it('registers appSettings:get and appSettings:set with allow-listed keys', () => {
     expect(INDEX_SOURCE).toContain("ipcMain.handle('appSettings:get'");
@@ -237,6 +543,47 @@ describe('Persistent app settings IPC (source contract)', () => {
     for (const key of [...rmapKeys, ownNodeKey]) {
       expect(allowListBlock).toContain(`'${key}'`);
     }
+
+    const prefixSource = readFileSync(
+      join(__dirname, '../shared/appSettingsKeyPrefixes.ts'),
+      'utf-8',
+    );
+    const prefixes = [...prefixSource.matchAll(/export const ([A-Z0-9_]+) = '([^']+)'/g)].flatMap(
+      (match) => {
+        const name = match[1];
+        const value = match[2];
+        if (!name || !value || !INDEX_SOURCE.includes(`key.startsWith(${name})`)) return [];
+        return [value];
+      },
+    );
+    const rendererKeys = collectRendererAppSettingsSetKeys();
+    expect(rendererKeys).toEqual(
+      expect.arrayContaining([
+        'storeForwardHistoryProfile',
+        'locale',
+        'mapBasemapId',
+        'notificationSounds',
+        'reduceMotion',
+        'use24HourTime',
+        'storeForwardAutoFetchHistory',
+        'reticulumAutostart',
+        'reticulumAutoResendOnAnnounce',
+        'meshtasticConfigureTargetNodeNum',
+        'meshtasticLastRfSelfNodeId',
+        'meshtasticOwnNodeNumsByPublicKey',
+        'meshcoreLastSelfNodeId',
+        'reticulumLastSelfLxmfHash',
+        'meshtasticMessageRetentionEnabled',
+        'rrcMessageRetentionCount',
+        'reticulumRmapPublishIfac',
+      ]),
+    );
+    const missing = rendererKeys.filter(
+      (key) =>
+        !allowListBlock.includes(`'${key}'`) &&
+        !prefixes.some((prefix) => key.startsWith(prefix) && key.length > prefix.length),
+    );
+    expect(missing).toEqual([]);
   });
 
   it('gives own-node public key history a JSON-sized value limit', () => {

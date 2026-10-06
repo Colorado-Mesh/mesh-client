@@ -1,3 +1,5 @@
+import { gzipSync } from 'node:zlib';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('electron', () => ({
@@ -7,7 +9,10 @@ vi.mock('electron', () => ({
 }));
 vi.mock('../validate-ipc-sender', () => ({ assertIpcSender: vi.fn() }));
 
-import { SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES } from '../../shared/serviceAnnouncementFeed';
+import {
+  SERVICE_ANNOUNCEMENT_FEED_URL,
+  SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES,
+} from '../../shared/serviceAnnouncementFeed';
 import { assertIpcSender } from '../validate-ipc-sender';
 import {
   createServiceAnnouncementFetcher,
@@ -35,7 +40,7 @@ function setup(fetchImpl: typeof fetch, opts: { online?: boolean; version?: stri
     fetchImpl,
     isOnline: () => opts.online ?? true,
     appVersion: () => opts.version ?? '6.0.0',
-    feedUrl: 'https://feed.test/announcements.json',
+    feedUrl: SERVICE_ANNOUNCEMENT_FEED_URL,
   });
 }
 
@@ -164,6 +169,58 @@ describe('createServiceAnnouncementFetcher', () => {
     const fetcher = setup(fetchImpl);
     await Promise.all([fetcher.check(), fetcher.check()]);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a gzip body that inflates past the feed cap', async () => {
+    const payload = JSON.stringify({
+      schema: 1,
+      announcements: [row],
+      pad: 'A'.repeat(SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES),
+    });
+    const gzipped = gzipSync(Buffer.from(payload));
+    expect(gzipped.byteLength).toBeLessThanOrEqual(SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES);
+    const fetcher = setup(vi.fn<typeof fetch>().mockResolvedValue(new Response(gzipped)));
+    expect(await fetcher.check()).toEqual({ status: 'error' });
+    expect(fetcher.isKnownUrl('https://example.com/notes')).toBe(false);
+  });
+
+  it.each([
+    ['off-host', 'https://evil.example/announcements.json'],
+    [
+      'cleartext github host',
+      'http://raw.githubusercontent.com/Colorado-Mesh/mesh-client/main/announcements/announcements.json',
+    ],
+  ])('ignores an %s response', async (_label, finalUrl) => {
+    const res = response(feedText(row));
+    Object.defineProperty(res, 'url', { value: finalUrl });
+    const fetchImpl = vi.fn<typeof fetch>((_input, init) => {
+      expect(init?.redirect).toBe('error');
+      return Promise.resolve(res);
+    });
+    const fetcher = setup(fetchImpl);
+    expect(await fetcher.check()).toEqual({ status: 'error' });
+    expect(fetcher.isKnownUrl('https://example.com/notes')).toBe(false);
+    const logged = vi.mocked(console.warn).mock.calls.flat().join(' ');
+    expect(logged).not.toContain('evil.example');
+  });
+
+  it('accepts a feed whose final URL is https://raw.githubusercontent.com', async () => {
+    const res = response(feedText(row));
+    Object.defineProperty(res, 'url', { value: SERVICE_ANNOUNCEMENT_FEED_URL });
+    const fetchImpl = vi.fn<typeof fetch>((_input, init) => {
+      expect(init?.redirect).toBe('error');
+      return Promise.resolve(res);
+    });
+    const result = await setup(fetchImpl).check();
+    expect(result.status === 'ok' && result.announcements.map((a) => a.id)).toEqual(['maint']);
+  });
+
+  it('treats a redirect rejection as an error and does not throw', async () => {
+    const fetchImpl = vi.fn<typeof fetch>((_input, init) => {
+      expect(init?.redirect).toBe('error');
+      return Promise.reject(new TypeError('redirect mode is set to error'));
+    });
+    expect(await setup(fetchImpl).check()).toEqual({ status: 'error' });
   });
 
   it('never rejects even if the body read throws a non-network error', async () => {

@@ -1,3 +1,5 @@
+import { gunzipSync } from 'node:zlib';
+
 import type { GithubReleaseRow } from '@/shared/githubReleaseVersion';
 import { GITHUB_RELEASES_FETCH_TIMEOUT_MS } from '@/shared/timeConstants';
 
@@ -15,13 +17,52 @@ function isGzipBody(bytes: Uint8Array): boolean {
   return bytes.length >= 2 && bytes[0] === GZIP_MAGIC_0 && bytes[1] === GZIP_MAGIC_1;
 }
 
+export interface DecodeGithubApiBodyOptions {
+  /**
+   * Reject plain or decompressed output larger than this many bytes.
+   * Omit it for the releases fetch, which stays uncapped.
+   */
+  maxOutputBytes?: number;
+}
+
+function outputCapError(maxOutputBytes: number): Error {
+  return new Error(`GitHub API body exceeds ${String(maxOutputBytes)} bytes`);
+}
+
+function isGzipOutputCapError(error: unknown): boolean {
+  return (
+    error instanceof RangeError ||
+    (typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'ERR_BUFFER_TOO_LARGE')
+  );
+}
+
 /**
  * Decode a GitHub API response body to text, gunzipping when the runtime left
  * Content-Encoding applied (seen with Electron main `fetch` → invalid JSON).
+ * Pass `maxOutputBytes` to stop a small gzip body from inflating without a limit.
  */
-export async function decodeGithubApiBody(bytes: Uint8Array): Promise<string> {
+export async function decodeGithubApiBody(
+  bytes: Uint8Array,
+  options?: DecodeGithubApiBodyOptions,
+): Promise<string> {
+  const maxOutputBytes = options?.maxOutputBytes;
   if (!isGzipBody(bytes)) {
+    if (maxOutputBytes != null && bytes.byteLength > maxOutputBytes) {
+      throw outputCapError(maxOutputBytes);
+    }
     return new TextDecoder('utf-8').decode(bytes);
+  }
+  if (maxOutputBytes != null) {
+    try {
+      const inflated = gunzipSync(bytes, { maxOutputLength: maxOutputBytes });
+      return new TextDecoder('utf-8').decode(inflated);
+    } catch (error: unknown) {
+      if (isGzipOutputCapError(error)) throw outputCapError(maxOutputBytes);
+      throw error;
+    }
   }
   if (typeof DecompressionStream === 'undefined') {
     throw new Error('GitHub API returned gzip but DecompressionStream is unavailable');
