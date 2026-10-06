@@ -6,6 +6,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { SENSOR_COLOR_NEUTRAL, sensorColorForValue } from '@/renderer/lib/environmentSensorDisplay';
+import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import {
   FORECAST_AREA_DEFAULT_RADIUS_M,
   FORECAST_AREA_MAX_RADIUS_M,
@@ -152,6 +153,28 @@ describe('WeatherForecastLayer', () => {
     expect(area.dataset.dashed).toBe('yes');
     expect(Number(area.dataset.radius)).toBe(FORECAST_AREA_DEFAULT_RADIUS_M);
     expect(screen.getByText('weatherForecast.positionApprox')).toBeTruthy();
+  });
+
+  it('shows the issued time when the Issued line is complete', () => {
+    useWeatherForecastStore.getState().upsertForecast(entry('place:aurora|co'));
+    render(<WeatherForecastLayer />);
+    expect(screen.getByText('weatherForecast.issued:{"when":"10/05 12:46 MDT"}')).toBeTruthy();
+  });
+
+  it('shows the received time instead of a cut-off issued date', () => {
+    const receivedAt = Date.now() - 60_000;
+    useWeatherForecastStore
+      .getState()
+      .upsertForecast(
+        entry('place:brighton|co', { issuedAt: '10/05', issuedTruncated: true, receivedAt }),
+      );
+    render(<WeatherForecastLayer />);
+    expect(
+      screen.getByText(
+        `weatherForecast.received:${JSON.stringify({ when: formatDisplayDateTime(receivedAt) })}`,
+      ),
+    ).toBeTruthy();
+    expect(screen.queryByText(/weatherForecast\.issued/)).toBeNull();
   });
 
   it('labels requester-located forecasts by the node that asked', () => {

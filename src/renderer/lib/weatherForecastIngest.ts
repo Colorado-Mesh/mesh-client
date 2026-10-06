@@ -12,6 +12,7 @@ import {
 import { resolveNodeMapPosition } from './coordUtils';
 import { errLikeToLogString } from './errLikeToLogString';
 import {
+  completeTruncatedIssued,
   isWeatherRequestCommand,
   normalizePlaceKey,
   type ParsedWeatherForecast,
@@ -46,10 +47,13 @@ export interface WeatherForecastIngestDeps {
   resolvePlace: (request: GeoResolvePlaceRequest) => Promise<GeoResolvedPlace | null>;
   upsert: (entry: WeatherForecastEntry) => void;
   appendSegments: (key: string, messageId: string, segments: readonly string[]) => void;
+  completeIssued: (key: string, messageId: string, issuedAt: string) => void;
 }
 
 interface HeadPost {
   timestamp: number;
+  /** Set while the head's `Issued` line is cut off; holds the partial value (may be empty). */
+  truncatedIssued?: { partial?: string };
   /** Resolves to the store key and head message id once the head post is placed. */
   placed: Promise<{ key: string; messageId: string } | null>;
 }
@@ -154,8 +158,15 @@ export class WeatherForecastIngestor {
       !parsed?.place;
     if (isContinuation) {
       const lines = continuationLines(text);
+      const issued =
+        head.truncatedIssued && lines.length > 0
+          ? completeTruncatedIssued(head.truncatedIssued.partial, lines[0])
+          : null;
+      if (issued) head.truncatedIssued = undefined;
       return head.placed.then((placed) => {
-        if (placed) this.deps.appendSegments(placed.key, placed.messageId, lines);
+        if (!placed) return;
+        if (issued) this.deps.completeIssued(placed.key, placed.messageId, issued);
+        this.deps.appendSegments(placed.key, placed.messageId, issued ? lines.slice(1) : lines);
       });
     }
     if (!parsed) return null;
@@ -163,7 +174,11 @@ export class WeatherForecastIngestor {
       console.warn('[weatherForecastIngest] place failed ' + errLikeToLogString(err));
       return null;
     });
-    this.heads.set(senderKey, { timestamp: msg.timestamp, placed });
+    this.heads.set(senderKey, {
+      timestamp: msg.timestamp,
+      placed,
+      truncatedIssued: parsed.issuedTruncated ? { partial: parsed.issuedAt } : undefined,
+    });
     return placed;
   }
 
@@ -230,6 +245,7 @@ export class WeatherForecastIngestor {
       summary: parsed.summary,
       segments: parsed.segments,
       issuedAt: parsed.issuedAt,
+      issuedTruncated: parsed.issuedTruncated,
       hasAlerts: parsed.hasAlerts,
       receivedAt: msg.timestamp,
       protocol: snapshot.protocol,

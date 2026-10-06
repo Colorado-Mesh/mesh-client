@@ -42,6 +42,11 @@ export interface ParsedWeatherForecast {
   /** All forecast lines / periods, for the tooltip. */
   segments: string[];
   issuedAt?: string;
+  /**
+   * The `Issued` line was cut off at the end of a `[1/N]` post (date only, or nothing), with
+   * the rest in a continuation part that MeshCore repeaters usually drop.
+   */
+  issuedTruncated?: boolean;
   hasAlerts: boolean;
 }
 
@@ -162,22 +167,35 @@ function parseDegreeTemp(
 
 const NWS_HEADER_RE = /^(?<place>.+?)\s*\|\s*NWS forecast\b/i;
 const NWS_PERIOD_RE = /^(?<period>[^:|]{1,40}):\s*(?<rest>.+)$/;
-const ISSUED_RE = /^Issued\s+(.+?)\.?$/i;
+const ISSUED_RE = /^Issued\b\s*(.*?)\.?$/i;
+const CLOCK_TIME_RE = /\b\d{1,2}:\d{2}\b/;
+const ISSUED_DATE_TIME_RE = /^\d{1,2}\/\d{1,2}\s+\d{1,2}:\d{2}\b/;
+const ISSUED_TIME_ONLY_RE = /^\d{1,2}:\d{2}\b/;
 
-function parseNwsPipe(lines: string[]): ParsedWeatherForecast | null {
+function parseNwsPipe(
+  lines: string[],
+  part: StrippedBotText['part'],
+): ParsedWeatherForecast | null {
   const header = NWS_HEADER_RE.exec(lines[0]);
   if (!header?.groups) return null;
   const place = parsePlaceLabel(header.groups.place);
   if (!place) return null;
   let issuedAt: string | undefined;
+  let issuedTruncated = false;
   const segments: string[] = [];
-  for (const line of lines.slice(1)) {
+  const body = lines.slice(1);
+  for (const [i, line] of body.entries()) {
     const issued = ISSUED_RE.exec(line);
-    if (issued) {
-      issuedAt = issued[1].trim();
+    if (!issued) {
+      segments.push(line);
       continue;
     }
-    segments.push(line);
+    issuedAt = issued[1].trim() || undefined;
+    issuedTruncated =
+      part != null &&
+      part.index < part.total &&
+      i === body.length - 1 &&
+      !CLOCK_TIME_RE.test(issuedAt ?? '');
   }
   const firstPeriod = segments.length > 0 ? NWS_PERIOD_RE.exec(segments[0]) : null;
   const temp = firstPeriod ? parseDegreeTemp(firstPeriod.groups!.rest) : null;
@@ -190,8 +208,25 @@ function parseNwsPipe(lines: string[]): ParsedWeatherForecast | null {
     summary: segments[0] ? stripEmoji(segments[0]) : '',
     segments,
     issuedAt,
+    ...(issuedTruncated ? { issuedTruncated } : {}),
     hasAlerts: false,
   };
+}
+
+/**
+ * Completes a cut-off `Issued` value from the first line of a continuation part, e.g.
+ * `10/05` + `10/05 20:52 MDT`, or `10/05` + `20:52 MDT`. Null when the line is not the rest.
+ */
+export function completeTruncatedIssued(
+  partial: string | undefined,
+  continuationLine: string,
+): string | null {
+  const line = continuationLine.trim();
+  if (ISSUED_DATE_TIME_RE.test(line)) {
+    return !partial || line.startsWith(partial) ? line : null;
+  }
+  if (partial && ISSUED_TIME_ONLY_RE.test(line)) return `${partial} ${line}`;
+  return null;
 }
 
 // ─── meshingAroundMeteo ─────────────────────────────────────────────────────
@@ -293,7 +328,7 @@ function parseMeshingAroundNoaa(lines: string[]): ParsedWeatherForecast | null {
  * (unrecognized formats are not plotted).
  */
 export function parseWeatherForecastPost(raw: string): ParsedWeatherForecast | null {
-  const { text } = stripBotPrefixes(raw);
+  const { text, part } = stripBotPrefixes(raw);
   if (!text) return null;
   const lines = text
     .split(/\r?\n/)
@@ -301,7 +336,7 @@ export function parseWeatherForecastPost(raw: string): ParsedWeatherForecast | n
     .filter(Boolean);
   if (lines.length === 0) return null;
   return (
-    parseNwsPipe(lines) ??
+    parseNwsPipe(lines, part) ??
     parseMeshingAroundMeteo(lines) ??
     parseMeshcoreBot(text) ??
     parseMeshingAroundNoaa(lines)

@@ -37,6 +37,8 @@ export interface WeatherForecastEntry {
   summary: string;
   segments: string[];
   issuedAt?: string;
+  /** `issuedAt` is cut off (date only or missing); show the received time instead. */
+  issuedTruncated?: boolean;
   hasAlerts: boolean;
   receivedAt: number;
   protocol: MeshProtocol;
@@ -51,6 +53,8 @@ interface WeatherForecastState {
   /** Insert or replace; an older post never overwrites a newer one for the same key. */
   upsertForecast: (entry: WeatherForecastEntry, now?: number) => boolean;
   appendSegments: (key: string, messageId: string, segments: readonly string[]) => void;
+  /** Fill in a cut-off `issuedAt` from a continuation part of the same post. */
+  completeIssued: (key: string, messageId: string, issuedAt: string) => void;
   clearForecasts: () => void;
 }
 
@@ -84,6 +88,13 @@ export const useWeatherForecastStore = create<WeatherForecastState>()((set, get)
     if (existing?.messageId !== messageId || segments.length === 0) return;
     const merged = [...existing.segments, ...segments].slice(0, MAX_SEGMENTS_PER_FORECAST);
     set((s) => ({ entries: { ...s.entries, [key]: { ...existing, segments: merged } } }));
+  },
+  completeIssued: (key, messageId, issuedAt) => {
+    const existing = get().entries[key];
+    if (existing?.messageId !== messageId) return;
+    set((s) => ({
+      entries: { ...s.entries, [key]: { ...existing, issuedAt, issuedTruncated: false } },
+    }));
   },
   clearForecasts: () => {
     set({ entries: {} });

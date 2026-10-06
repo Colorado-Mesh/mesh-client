@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  completeTruncatedIssued,
   forecastTempCelsius,
   isWeatherRequestCommand,
   normalizePlaceKey,
@@ -83,7 +84,46 @@ describe('parseWeatherForecastPost: nwsPipe (user examples)', () => {
       tempValue: 88,
       tempUnit: 'F',
       issuedAt: '10/05',
+      issuedTruncated: true,
     });
+  });
+
+  it('flags a bare Issued line cut off at the end of a [1/N] post', () => {
+    const p = parseWeatherForecastPost(
+      '[1/2] @[TL-Tag] Colorado Springs, CO 80905 | NWS forecast\nTonight: 55°F Mostly Clear | NW 0 to 5 mph | precip 0%\nIssued',
+    );
+    expect(p?.issuedAt).toBeUndefined();
+    expect(p?.issuedTruncated).toBe(true);
+    expect(p?.segments).toEqual(['Tonight: 55°F Mostly Clear | NW 0 to 5 mph | precip 0%']);
+  });
+
+  it('does not flag complete or single-part Issued lines', () => {
+    const complete = parseWeatherForecastPost(
+      '[1/2] Aurora, CO 80013 | NWS forecast\nTonight: 59°F Clear\nIssued 10/05 12:46 MDT',
+    );
+    expect(complete?.issuedTruncated).toBeUndefined();
+    const single = parseWeatherForecastPost(
+      'Aurora, CO 80013 | NWS forecast\nTonight: 59°F Clear\nIssued 10/05',
+    );
+    expect(single).toMatchObject({ issuedAt: '10/05' });
+    expect(single?.issuedTruncated).toBeUndefined();
+  });
+});
+
+describe('completeTruncatedIssued', () => {
+  it('takes a continuation that repeats the date with a time', () => {
+    expect(completeTruncatedIssued('10/05', '10/05 20:52 MDT')).toBe('10/05 20:52 MDT');
+    expect(completeTruncatedIssued(undefined, '10/05 20:52 MDT')).toBe('10/05 20:52 MDT');
+  });
+
+  it('appends a time-only continuation to the partial date', () => {
+    expect(completeTruncatedIssued('10/05', '20:52 MDT')).toBe('10/05 20:52 MDT');
+  });
+
+  it('rejects lines that are not the rest of the Issued value', () => {
+    expect(completeTruncatedIssued('10/05', 'Tonight: 55°F Clear')).toBeNull();
+    expect(completeTruncatedIssued('10/05', '10/06 08:00 MDT')).toBeNull();
+    expect(completeTruncatedIssued(undefined, '20:52 MDT')).toBeNull();
   });
 });
 
