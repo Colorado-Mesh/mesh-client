@@ -23,8 +23,10 @@ const BEACON_FAIL_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
 // propagation-retrieve at info for pn_hash / establish / failover lines; per-message
 // inbound delivery records stay debug-only with redacted from_prefix in live.rs.
 // `gatt` INFO carries LoRa BLE connect stage timings (which step hung on Windows).
+// `rns_interface::tcp` INFO (`reconnecting in … name=`) is not forwarded to the app log;
+// the interface issue tracker needs it to map `interface_id` to a hub name.
 export const SIDECAR_DEFAULT_RUST_LOG =
-  'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info,rrc=info,gatt=info';
+  'warn,propagation-sync=info,propagation-retrieve=info,propagation-deposit=info,lxmf-outbound=info,rrc=info,gatt=info,rns_interface::tcp=info';
 
 /**
  * Whether a sidecar stdout line should be written to the app log.
@@ -127,6 +129,53 @@ export class ReticulumSidecarStderrDedupe {
   resetForTests(): void {
     this.lastBeaconFailWarnAt = null;
     this.beaconFailSuppressed = 0;
+  }
+}
+
+const TCP_READ_ERROR_MARKER = 'TCP read error';
+const TCP_READ_ERROR_WARN_INTERVAL_MS = 60 * MS_PER_SECOND;
+const INTERFACE_ID_RE = /interface_id\s*=\s*(\d+)/i;
+
+interface TcpReadErrorWindow {
+  lastWarnAt: number;
+  suppressed: number;
+}
+
+/**
+ * Rate-limits `TCP read error` lines per sidecar `interface_id`. A hub that accepts then
+ * resets every connection makes rsReticulum retry every ~5s without backing off.
+ */
+export class ReticulumSidecarTcpReadErrorDedupe {
+  private windows = new Map<number, TcpReadErrorWindow>();
+
+  constructor(private readonly resolveName?: (interfaceId: number) => string | undefined) {}
+
+  decide(text: string, nowMs = Date.now()): ReticulumSidecarStderrLogDecision {
+    if (!text.includes(TCP_READ_ERROR_MARKER)) {
+      return { level: 'warn', message: text };
+    }
+    const idMatch = INTERFACE_ID_RE.exec(text);
+    const interfaceId = idMatch?.[1] ? Number.parseInt(idMatch[1], 10) : null;
+    if (interfaceId == null || !Number.isFinite(interfaceId)) {
+      return { level: 'warn', message: text };
+    }
+    const window = this.windows.get(interfaceId);
+    if (window && nowMs - window.lastWarnAt < TCP_READ_ERROR_WARN_INTERVAL_MS) {
+      window.suppressed += 1;
+      return { level: 'debug', message: text };
+    }
+    const name = this.resolveName?.(interfaceId);
+    let message = name ? `${text} name=${name}` : text;
+    if (window && window.suppressed > 0) {
+      message += ` (suppressed ${window.suppressed} similar TCP read errors for interface_id=${interfaceId})`;
+    }
+    this.windows.set(interfaceId, { lastWarnAt: nowMs, suppressed: 0 });
+    return { level: 'warn', message };
+  }
+
+  /** Sidecar `interface_id`s are per process; call on each spawn. */
+  reset(): void {
+    this.windows.clear();
   }
 }
 

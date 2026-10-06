@@ -271,6 +271,42 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
+  it('rate-limits repeated TCP read errors for one interface and names the hub', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    proc.kill.mockImplementation(() => {
+      proc.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValue(proc);
+
+    const manager = new ReticulumSidecarManager();
+    try {
+      await manager.start();
+      const stdout = (proc as unknown as { stdout: EventEmitter }).stdout;
+      const rst =
+        'WARN rns_interface::tcp: TCP read error interface_id=4 error=Connection reset by peer (os error 54)';
+      const reconnect = 'INFO rns_interface::tcp: reconnecting in 5s name=RMAP World';
+      stdout.emit('data', Buffer.from(`${rst}\n${reconnect}\n${rst}\n${reconnect}\n${rst}\n`));
+
+      const rstWarns = warnSpy.mock.calls.filter(([, msg]) =>
+        String(msg).includes('TCP read error'),
+      );
+      expect(rstWarns).toEqual([['[ReticulumSidecar]', rst]]);
+      expect(warnSpy).not.toHaveBeenCalledWith('[ReticulumSidecar]', reconnect);
+      expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', rst);
+      expect(manager.getStatus().interfaceIssueAlert?.tcpResetByPeer).toEqual(['RMAP World']);
+    } finally {
+      await manager.stop();
+      warnSpy.mockRestore();
+      debugSpy.mockRestore();
+      existsSpy.mockRestore();
+      mkdirSpy.mockRestore();
+    }
+  });
+
   function getIssueTracker(manager: ReticulumSidecarManager): {
     recordLine: (line: string, nowMs?: number) => void;
   } {

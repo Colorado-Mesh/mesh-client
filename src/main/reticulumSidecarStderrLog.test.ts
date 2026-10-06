@@ -5,9 +5,15 @@ import {
   normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
   ReticulumSidecarStderrDedupe,
+  ReticulumSidecarTcpReadErrorDedupe,
   shouldForwardReticulumSidecarStdout,
   SIDECAR_DEFAULT_RUST_LOG,
 } from './reticulumSidecarStderrLog';
+
+const TCP_RST_ID4 =
+  '2026-10-05T23:54:35.152482Z WARN rns_interface::tcp: TCP read error interface_id=4 error=Connection reset by peer (os error 54)';
+const TCP_RST_ID5 =
+  '2026-10-05T23:54:36.000000Z WARN rns_interface::tcp: TCP read error interface_id=5 error=Connection reset by peer (os error 54)';
 
 describe('shouldForwardReticulumSidecarStdout', () => {
   it('forwards WARN and ERROR tracing lines', () => {
@@ -62,6 +68,20 @@ describe('shouldForwardReticulumSidecarStdout', () => {
     ).toBe(true);
   });
 
+  it('keeps rns_interface::tcp INFO out of the app log but forwards its WARN', () => {
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        '2026-10-05T23:54:35.152600Z INFO rns_interface::tcp: reconnecting in 5s name=RMAP World',
+      ),
+    ).toBe(false);
+    expect(
+      shouldForwardReticulumSidecarStdout(
+        '2026-10-05T23:54:35.152482Z INFO rns_interface::tcp: TCP read: EOF interface_id=4',
+      ),
+    ).toBe(false);
+    expect(shouldForwardReticulumSidecarStdout(TCP_RST_ID4)).toBe(true);
+  });
+
   it('does not forward INFO when PN markers appear only in message text', () => {
     expect(
       shouldForwardReticulumSidecarStdout(
@@ -109,6 +129,7 @@ describe('resolveSidecarRustLog', () => {
     expect(resolveSidecarRustLog({})).toBe(SIDECAR_DEFAULT_RUST_LOG);
     expect(SIDECAR_DEFAULT_RUST_LOG).toContain('rrc=info');
     expect(SIDECAR_DEFAULT_RUST_LOG).toContain('gatt=info');
+    expect(SIDECAR_DEFAULT_RUST_LOG).toContain('rns_interface::tcp=info');
   });
 
   it('honors MESH_CLIENT_RUST_LOG over RUST_LOG', () => {
@@ -162,5 +183,52 @@ describe('ReticulumSidecarStderrDedupe', () => {
     );
     expect(warn).toHaveBeenCalledTimes(1);
     expect(debug).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ReticulumSidecarTcpReadErrorDedupe', () => {
+  it('passes non-TCP-read-error lines through as warn unchanged', () => {
+    const dedupe = new ReticulumSidecarTcpReadErrorDedupe();
+    const line = '2026-10-05T23:52:41Z WARN lxmf-outbound: no preferred propagation destination';
+    expect(dedupe.decide(line, 0)).toEqual({ level: 'warn', message: line });
+    expect(dedupe.decide(line, 1)).toEqual({ level: 'warn', message: line });
+  });
+
+  it('warns once per minute per interface_id with a suppressed-count summary', () => {
+    const dedupe = new ReticulumSidecarTcpReadErrorDedupe();
+    expect(dedupe.decide(TCP_RST_ID4, 0)).toEqual({ level: 'warn', message: TCP_RST_ID4 });
+    expect(dedupe.decide(TCP_RST_ID4, 5_500).level).toBe('debug');
+    expect(dedupe.decide(TCP_RST_ID4, 11_000).level).toBe('debug');
+    const summary = dedupe.decide(TCP_RST_ID4, 60_000);
+    expect(summary.level).toBe('warn');
+    expect(summary.message).toContain('(suppressed 2 similar TCP read errors for interface_id=4)');
+    expect(dedupe.decide(TCP_RST_ID4, 65_000).level).toBe('debug');
+  });
+
+  it('rate-limits separate interface_ids independently', () => {
+    const dedupe = new ReticulumSidecarTcpReadErrorDedupe();
+    expect(dedupe.decide(TCP_RST_ID4, 0).level).toBe('warn');
+    expect(dedupe.decide(TCP_RST_ID5, 1_000).level).toBe('warn');
+    expect(dedupe.decide(TCP_RST_ID4, 2_000).level).toBe('debug');
+    expect(dedupe.decide(TCP_RST_ID5, 3_000).level).toBe('debug');
+  });
+
+  it('adds the resolved interface name to warn lines', () => {
+    const names = new Map<number, string>();
+    const dedupe = new ReticulumSidecarTcpReadErrorDedupe((id) => names.get(id));
+    expect(dedupe.decide(TCP_RST_ID4, 0).message).toBe(TCP_RST_ID4);
+    names.set(4, 'RMAP World');
+    dedupe.decide(TCP_RST_ID4, 5_500);
+    const summary = dedupe.decide(TCP_RST_ID4, 60_000);
+    expect(summary.message).toBe(
+      `${TCP_RST_ID4} name=RMAP World (suppressed 1 similar TCP read errors for interface_id=4)`,
+    );
+  });
+
+  it('reset() starts a fresh window (interface ids are per sidecar process)', () => {
+    const dedupe = new ReticulumSidecarTcpReadErrorDedupe();
+    dedupe.decide(TCP_RST_ID4, 0);
+    dedupe.reset();
+    expect(dedupe.decide(TCP_RST_ID4, 1_000)).toEqual({ level: 'warn', message: TCP_RST_ID4 });
   });
 });
