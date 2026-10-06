@@ -104,6 +104,27 @@ describe('ChatMacroBar', () => {
     });
   });
 
+  it('keeps the macro in the box when Send now is refused by the MeshCore byte limit', async () => {
+    useChatMacrosStore.getState().setSlotText(0, 'é'.repeat(120));
+    useChatMacrosStore.getState().setSendMode('sendNow');
+    useChatMacrosStore.getState().setCollapsed(false);
+    const onSendChunk = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ChatComposer
+        protocol="meshcore"
+        viewKey="ch:0"
+        isConnected
+        allowOutbox={false}
+        onSendChunk={onSendChunk}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^F1:/ }));
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toHaveValue('é'.repeat(120));
+    });
+    expect(onSendChunk).not.toHaveBeenCalled();
+  });
+
   it('falls back to inserting in Send now mode when a draft is already typed', () => {
     seedMacros();
     useChatMacrosStore.getState().setSendMode('sendNow');
@@ -126,7 +147,9 @@ describe('ChatMacroBar', () => {
   it('puts overflow macros in a More menu on narrow widths', () => {
     expect(computeVisibleMacroCount(0, 'large', 16)).toBe(12);
     expect(computeVisibleMacroCount(2000, 'large', 16)).toBe(12);
-    expect(computeVisibleMacroCount(400, 'large', 16)).toBe(6);
+    expect(computeVisibleMacroCount(500, 'large', 16)).toBe(6);
+    expect(computeVisibleMacroCount(300, 'large', 16)).toBe(3);
+    expect(computeVisibleMacroCount(100, 'large', 16)).toBe(0);
     const mid = computeVisibleMacroCount(1100, 'large', 16);
     expect(mid).toBeGreaterThan(6);
     expect(mid).toBeLessThan(12);

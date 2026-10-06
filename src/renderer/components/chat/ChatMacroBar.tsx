@@ -17,6 +17,8 @@ export const CHAT_MACRO_MIN_VISIBLE = 6;
 /** Approximate button width per size in rem; drives how many fit before "More". */
 const BUTTON_WIDTH_REM: Record<ChatMacroSize, number> = { small: 5.5, medium: 6.5, large: 7 };
 const CONTROL_WIDTH_REM: Record<ChatMacroSize, number> = { small: 1.75, medium: 2.25, large: 3 };
+/** Key badge plus padding once the label has truncated away, plus the gap. */
+const MIN_BUTTON_WIDTH_REM = 2.75;
 
 const BUTTON_HEIGHT_CLASS: Record<ChatMacroSize, string> = {
   small: 'h-5 text-label',
@@ -33,7 +35,10 @@ export function chatMacroKeyName(index: number): string {
   return `F${index + 1}`;
 }
 
-/** How many macro buttons fit in `widthPx`; never fewer than the design minimum. */
+/**
+ * How many macro buttons fit in `widthPx`. Aims for the design minimum (labels truncate to make
+ * room), but only as many as fit at their narrowest, so tiny toolbars never overflow.
+ */
 export function computeVisibleMacroCount(
   widthPx: number,
   size: ChatMacroSize,
@@ -44,8 +49,11 @@ export function computeVisibleMacroCount(
   const control = CONTROL_WIDTH_REM[size] * remPx;
   const all = Math.floor((widthPx - control * 2) / button);
   if (all >= CHAT_MACRO_SLOT_COUNT) return CHAT_MACRO_SLOT_COUNT;
-  const withMore = Math.floor((widthPx - control * 3) / button);
-  return Math.max(CHAT_MACRO_MIN_VISIBLE, Math.min(withMore, CHAT_MACRO_SLOT_COUNT));
+  const withMoreWidth = widthPx - control * 3;
+  const withMore = Math.floor(withMoreWidth / button);
+  const fitAtNarrowest = Math.floor(withMoreWidth / (MIN_BUTTON_WIDTH_REM * remPx));
+  const target = Math.max(withMore, Math.min(CHAT_MACRO_MIN_VISIBLE, fitAtNarrowest));
+  return Math.max(0, Math.min(target, CHAT_MACRO_SLOT_COUNT));
 }
 
 function rootRemPx(): number {
