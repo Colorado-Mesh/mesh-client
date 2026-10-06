@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   appendServiceAnnouncementFeedTestIfNeeded,
+  appendSettingsSearchGuardTestsIfNeeded,
   appendSidecarRouteDocsTestIfNeeded,
   expandWithSiblingTests,
   isForceFullSuitePath,
@@ -15,6 +16,7 @@ import {
   runPrecommitTests,
   runVitestArgv,
   SERVICE_ANNOUNCEMENT_FEED_TEST_PATH,
+  SETTINGS_SEARCH_GUARD_TEST_PATHS,
   shouldForceFullSuite,
   SIDECAR_ROUTE_DOCS_TEST_PATH,
 } from './precommit-tests.mjs';
@@ -181,6 +183,48 @@ describe('precommit-tests service announcements feed', () => {
         [SERVICE_ANNOUNCEMENT_FEED_TEST_PATH],
       ),
     ).toEqual([SERVICE_ANNOUNCEMENT_FEED_TEST_PATH]);
+  });
+});
+
+describe('precommit-tests settings-search guards', () => {
+  it('runs the guards when a swept component changes without touching the registry', () => {
+    const plan = planPrecommitTests([
+      'src/renderer/components/RoomsPanel.tsx',
+      'src/renderer/lib/meshcoreRoomSyncStorage.ts',
+    ]);
+    expect(plan.mode).toBe('related');
+    for (const testPath of SETTINGS_SEARCH_GUARD_TEST_PATHS) {
+      expect(plan.relatedPaths).toContain(testPath);
+    }
+    expect(plan.projects).toContain('renderer-logic');
+  });
+
+  it('runs the guards for a nested component', () => {
+    expect(
+      appendSettingsSearchGuardTestsIfNeeded(['src/renderer/components/rrc/RrcHubBrowser.tsx'], []),
+    ).toEqual([...SETTINGS_SEARCH_GUARD_TEST_PATHS].sort());
+  });
+
+  it('runs the guards when only the English locale is staged', () => {
+    const plan = planPrecommitTests(['src/renderer/locales/en/translation.json']);
+    expect(plan.mode).toBe('related');
+    expect(plan.relatedPaths).toEqual([...SETTINGS_SEARCH_GUARD_TEST_PATHS].sort());
+    expect(plan.projects).toContain('renderer-logic');
+  });
+
+  it('does not append the guards for unrelated paths or duplicate them', () => {
+    expect(
+      appendSettingsSearchGuardTestsIfNeeded(
+        ['src/renderer/lib/foo.ts', 'src/renderer/locales/de/translation.json'],
+        ['src/renderer/lib/foo.ts'],
+      ),
+    ).toEqual(['src/renderer/lib/foo.ts']);
+    expect(
+      appendSettingsSearchGuardTestsIfNeeded(
+        ['src/renderer/components/AppPanel.tsx'],
+        [...SETTINGS_SEARCH_GUARD_TEST_PATHS],
+      ),
+    ).toEqual([...SETTINGS_SEARCH_GUARD_TEST_PATHS].sort());
   });
 });
 
