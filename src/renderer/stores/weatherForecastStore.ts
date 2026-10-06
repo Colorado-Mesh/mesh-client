@@ -40,6 +40,7 @@ export interface WeatherForecastEntry {
   /** `issuedAt` is cut off (date only or missing); show the received time instead. */
   issuedTruncated?: boolean;
   hasAlerts: boolean;
+  /** Local time the forecast was first ingested. Drives the Received label and the 12-hour expiry. */
   receivedAt: number;
   protocol: MeshProtocol;
   senderId: number;
@@ -55,6 +56,8 @@ interface WeatherForecastState {
   appendSegments: (key: string, messageId: string, segments: readonly string[]) => void;
   /** Fill in a cut-off `issuedAt` from a continuation part of the same post. */
   completeIssued: (key: string, messageId: string, issuedAt: string) => void;
+  /** Drop every forecast from one sender. Used when that bot is unmarked. */
+  removeSenderForecasts: (protocol: MeshProtocol, senderId: number) => void;
   clearForecasts: () => void;
 }
 
@@ -95,6 +98,19 @@ export const useWeatherForecastStore = create<WeatherForecastState>()((set, get)
     set((s) => ({
       entries: { ...s.entries, [key]: { ...existing, issuedAt, issuedTruncated: false } },
     }));
+  },
+  removeSenderForecasts: (protocol, senderId) => {
+    const entries = get().entries;
+    const next: Record<string, WeatherForecastEntry> = {};
+    let removed = false;
+    for (const entry of Object.values(entries)) {
+      if (entry.protocol === protocol && entry.senderId === senderId) {
+        removed = true;
+        continue;
+      }
+      next[entry.key] = entry;
+    }
+    if (removed) set({ entries: next });
   },
   clearForecasts: () => {
     set({ entries: {} });

@@ -92,4 +92,39 @@ describe('useWeatherForecastIngest', () => {
     });
     useWeatherFilterStore.getState().setOnlinePlaceLookup(false);
   });
+
+  it('places a dropped forecast after a node position arrives', async () => {
+    vi.mocked(window.electronAPI.geo.resolvePlace).mockResolvedValue(null);
+    useWeatherFilterStore.getState().setSenderMarked('meshtastic', BOT, true);
+    upsertMessage(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+      id: 'late-pos',
+      from: BOT,
+      to: 0xffffffff,
+      payload: POST,
+      channelIndex: 0,
+      timestamp: Date.now() - 1000,
+    });
+    renderHook(() => {
+      useWeatherForecastIngest();
+    });
+    await waitFor(() => {
+      expect(window.electronAPI.geo.resolvePlace).toHaveBeenCalled();
+    });
+    expect(useWeatherForecastStore.getState().entries['place:aurora|co']).toBeUndefined();
+
+    act(() => {
+      upsertNodeRecord(OFFLINE_MESHTASTIC_IDENTITY_ID, {
+        nodeId: BOT,
+        latitude: 39.9,
+        longitude: -105,
+      });
+    });
+    await waitFor(() => {
+      expect(useWeatherForecastStore.getState().entries['place:aurora|co']).toMatchObject({
+        lat: 39.9,
+        lon: -105,
+        positionSource: 'senderApprox',
+      });
+    });
+  });
 });

@@ -2,10 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import type { GeoResolvedPlace } from '../../shared/geoPlace';
+import { MS_PER_HOUR } from '../../shared/timeConstants';
 import { sanitizeLogMessage } from '../log-service';
 
 export const PLACE_CACHE_FILENAME = 'geo-place-cache.json';
 export const PLACE_CACHE_MAX_ENTRIES = 2000;
+/** Online hits older than a forecast's lifetime are ignored. */
+export const PLACE_CACHE_TTL_MS = 12 * MS_PER_HOUR;
 
 interface CachedPlace {
   lat: number;
@@ -65,9 +68,14 @@ export class PlaceCache {
     return entries;
   }
 
-  get(key: string): GeoResolvedPlace | null {
-    const hit = this.load().get(key);
+  get(key: string, now = Date.now()): GeoResolvedPlace | null {
+    const entries = this.load();
+    const hit = entries.get(key);
     if (!hit) return null;
+    if (now - hit.savedAt > PLACE_CACHE_TTL_MS) {
+      entries.delete(key);
+      return null;
+    }
     return {
       lat: hit.lat,
       lon: hit.lon,

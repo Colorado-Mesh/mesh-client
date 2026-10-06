@@ -1,4 +1,4 @@
-import { sanitizeLogMessage } from '../log-service';
+import { sanitizeLogMessage } from '../sanitize-log-message';
 import { pickBestCandidate } from './gazetteer';
 
 export const OPEN_METEO_GEOCODE_URL = 'https://geocoding-api.open-meteo.com/v1/search';
@@ -21,10 +21,18 @@ interface OpenMeteoResult {
   country_code?: unknown;
 }
 
-let lastRequestAt = 0;
+let nextAllowedAt = 0;
+let chain: Promise<unknown> = Promise.resolve();
 
 export function resetOpenMeteoRateLimitForTests(): void {
-  lastRequestAt = 0;
+  nextAllowedAt = 0;
+  chain = Promise.resolve();
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function toCandidate(r: OpenMeteoResult): (OnlineGeocodeResult & { population?: number }) | null {
@@ -43,7 +51,8 @@ function toCandidate(r: OpenMeteoResult): (OnlineGeocodeResult & { population?: 
 
 /**
  * Geocode a place via Open-Meteo (GeoNames-backed, no key). `name, qualifier` uses Open-Meteo's
- * admin1/country qualifier syntax. Rate-limited to one request per second; failures return null.
+ * admin1/country qualifier syntax. Calls are serialized to one request per second; a rate-limit
+ * wait is not a miss. Failures return null.
  */
 export async function geocodeOpenMeteo(
   name: string,
@@ -52,8 +61,27 @@ export async function geocodeOpenMeteo(
   fetchImpl: typeof fetch = fetch,
   now: () => number = Date.now,
 ): Promise<OnlineGeocodeResult | null> {
-  if (now() - lastRequestAt < MIN_INTERVAL_MS) return null;
-  lastRequestAt = now();
+  const run = async (): Promise<OnlineGeocodeResult | null> => {
+    const start = now();
+    const wait = Math.max(0, nextAllowedAt - start);
+    nextAllowedAt = Math.max(nextAllowedAt, start) + MIN_INTERVAL_MS;
+    if (wait > 0) await sleep(wait);
+    return requestOpenMeteo(name, qualifiers, near, fetchImpl);
+  };
+  const task = chain.then(run, run);
+  chain = task.then(
+    () => undefined,
+    () => undefined,
+  );
+  return task;
+}
+
+async function requestOpenMeteo(
+  name: string,
+  qualifiers: readonly string[],
+  near: { lat: number; lon: number } | undefined,
+  fetchImpl: typeof fetch,
+): Promise<OnlineGeocodeResult | null> {
   const query = qualifiers.length > 0 ? `${name}, ${qualifiers[0]}` : name;
   const url = `${OPEN_METEO_GEOCODE_URL}?${new URLSearchParams({
     name: query,

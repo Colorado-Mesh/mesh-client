@@ -79,6 +79,12 @@ export function useWeatherForecastIngest(): void {
       useMessageStore.subscribe((s, prev) => {
         if (s.messages !== prev.messages) schedule();
       }),
+      useNodeStore.subscribe((s, prev) => {
+        if (s.nodes !== prev.nodes) schedule();
+      }),
+      usePositionHistoryStore.subscribe((s, prev) => {
+        if (s.history !== prev.history) schedule();
+      }),
       useIdentityStore.subscribe((s, prev) => {
         if (s.identities !== prev.identities || s.activeIdentityId !== prev.activeIdentityId) {
           schedule();

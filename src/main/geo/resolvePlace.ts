@@ -12,8 +12,18 @@ import {
 import { geocodeOpenMeteo } from './openMeteoGeocode';
 import type { PlaceCache } from './placeCache';
 
-export function placeCacheKey(name: string, qualifiers: readonly string[]): string {
-  return [name, ...qualifiers].map(normalizePlaceToken).join('|');
+/**
+ * Cache key for an online place hit. `near` is a ~1° cell so a nearby radio and a distant one
+ * do not share a result.
+ */
+export function placeCacheKey(
+  name: string,
+  qualifiers: readonly string[],
+  near?: { lat: number; lon: number },
+): string {
+  const base = [name, ...qualifiers].map(normalizePlaceToken).join('|');
+  if (!near) return base;
+  return `${base}|${Math.round(near.lat)}|${Math.round(near.lon)}`;
 }
 
 export interface PlaceResolverDeps {
@@ -23,9 +33,9 @@ export interface PlaceResolverDeps {
 }
 
 /**
- * Resolves forecast place names: online-lookup cache, then the bundled GeoNames table (loaded
- * lazily on first use), then Open-Meteo when `allowOnline`. A missing / unreadable gazetteer is
- * logged once and treated as empty so online lookup still works.
+ * Resolves forecast place names: the bundled GeoNames table (loaded lazily on first use), then
+ * the online-lookup cache, then Open-Meteo when `allowOnline`. A missing / unreadable gazetteer
+ * is logged once and treated as empty so online lookup still works.
  */
 export class PlaceResolver {
   private index: GazetteerIndex | null = null;
@@ -52,11 +62,6 @@ export class PlaceResolver {
       request.nearLat != null && request.nearLon != null
         ? { lat: request.nearLat, lon: request.nearLon }
         : undefined;
-    const key = placeCacheKey(request.name, qualifiers);
-
-    const cached = this.deps.cache.get(key);
-    if (cached) return cached;
-
     const offline = searchGazetteer(this.gazetteer(), request.name, qualifiers, near);
     if (offline) {
       return {
@@ -67,6 +72,10 @@ export class PlaceResolver {
         source: 'gazetteer',
       };
     }
+
+    const key = placeCacheKey(request.name, qualifiers, near);
+    const cached = this.deps.cache.get(key);
+    if (cached) return cached;
 
     if (!request.allowOnline) return null;
     const online = await (this.deps.geocodeOnline ?? geocodeOpenMeteo)(

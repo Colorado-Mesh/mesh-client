@@ -26,6 +26,10 @@ Agent reference for wilderness / no-WAN basemap caching. Human QA: [troubleshoot
 - **Manifest:** atomic write (temp + rename); serialized `mutateManifest`; in-memory byte/source counts (single-flight `ensureStats`); full tree scan only when over budget for eviction (shared in-flight pass down to ~90% low-water); debounced source-stat persist.
 - **IPC validation:** finite lat/lon (lat ∈ [-90,90], \|lon\| ≤ 360), finite zooms; reject inverted north/south.
 
+## LoRa weather forecasts
+
+Forecast circles are a separate map layer (`WeatherForecastLayer`), drawn on every map. They are not part of the tile cache. Marked Meshtastic and MeshCore weather bots are parsed in the renderer; place names are resolved with the bundled gazetteer and, when that misses, Open-Meteo. Each forecast stays for 12 hours from local receive time (`WEATHER_FORECAST_MAX_AGE_MS`), then drops off.
+
 ## Update footer (related)
 
 Quiet offline update checks live in `src/main/updater.ts` + App subscriptions. Network-class failures use `isNetworkClassFailure` (walks nested `cause` / `code`). UI keeps **ready** (update already downloaded) when going offline; otherwise shows muted offline. Main `update:offline` while `navigator.onLine` still schedules the 60s online-recovery check.
