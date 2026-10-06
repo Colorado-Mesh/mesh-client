@@ -25,6 +25,7 @@ import {
   useEmergencyOutboxDrain,
 } from '@/renderer/hooks/useEmergencyOutboxDrain';
 import { useMecpAlertWatcher } from '@/renderer/hooks/useMecpAlertWatcher';
+import { useRetainedChannelRemapContext } from '@/renderer/hooks/useRetainedChannelRemapContext';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
 import {
   buildMeshcoreChannelKeyByIndex,
@@ -398,7 +399,6 @@ import { useMeshtasticRuntime } from './runtime/useMeshtasticRuntime';
 import { useReticulumRuntime } from './runtime/useReticulumRuntime';
 import { useDiagnosticsStore } from './stores/diagnosticsStore';
 import { useIdentityStore } from './stores/identityStore';
-import { getLiveChannelKey } from './stores/liveChannelKeyStore';
 import { useMapLayerStore } from './stores/mapLayerStore';
 import { useMapViewportStore } from './stores/mapViewportStore';
 import { useNodeStore } from './stores/nodeStore';
@@ -939,6 +939,14 @@ function AppContent() {
   );
   const meshtasticRadioNodeId = meshtasticRuntime.state.myNodeNum;
   const meshcoreRadioNodeId = meshcoreRuntime.state.myNodeNum;
+  const meshtasticRemapCtx = useRetainedChannelRemapContext(
+    meshtasticChannelKeyByIndex,
+    meshtasticRadioNodeId > 0 ? meshtasticRadioNodeId : null,
+  );
+  const meshcoreRemapCtx = useRetainedChannelRemapContext(
+    meshcoreChannelKeyByIndex,
+    meshcoreRadioNodeId > 0 ? meshcoreRadioNodeId : null,
+  );
   useLiveChannelKeysSync({
     protocol: 'meshtastic',
     identityId: meshtasticIdentityId,
@@ -955,12 +963,9 @@ function AppContent() {
     () =>
       remapChannelMessagesToLiveSlots(
         repairMeshtasticReplyPreviews(messageRecordsToChatMessages(meshtasticStoreMessages)),
-        {
-          keyByIndex: meshtasticChannelKeyByIndex,
-          radioNodeId: meshtasticRadioNodeId > 0 ? meshtasticRadioNodeId : null,
-        },
+        meshtasticRemapCtx,
       ),
-    [meshtasticStoreMessages, meshtasticChannelKeyByIndex, meshtasticRadioNodeId],
+    [meshtasticStoreMessages, meshtasticRemapCtx],
   );
   const meshcoreRepairedMessages = useMemo(() => {
     const mapped = meshcoreChatMessagesForDisplay(
@@ -973,12 +978,8 @@ function AppContent() {
     return repairMeshcoreHydratedMessages(mapped, roomIds, meshcoreRuntime.selfNodeId);
   }, [meshcoreStoreMessages, meshcoreNodesById, meshcoreRuntime.selfNodeId]);
   const meshcoreUiMessages = useMemo(
-    () =>
-      remapChannelMessagesToLiveSlots(meshcoreRepairedMessages, {
-        keyByIndex: meshcoreChannelKeyByIndex,
-        radioNodeId: meshcoreRadioNodeId > 0 ? meshcoreRadioNodeId : null,
-      }),
-    [meshcoreRepairedMessages, meshcoreChannelKeyByIndex, meshcoreRadioNodeId],
+    () => remapChannelMessagesToLiveSlots(meshcoreRepairedMessages, meshcoreRemapCtx),
+    [meshcoreRepairedMessages, meshcoreRemapCtx],
   );
 
   useEffect(() => {
@@ -3153,12 +3154,8 @@ function AppContent() {
 
   // Chat's channel menu clears one MeshCore channel's saved messages, as App settings does.
   const clearMeshcoreChatChannelMessages = useCallback(
-    async (index: number, radioNodeId: number) => {
-      await window.electronAPI.db.clearMeshcoreMessagesByChannel(
-        index,
-        radioNodeId,
-        getLiveChannelKey('meshcore', index) ?? undefined,
-      );
+    async (index: number, radioNodeId: number, channelKey?: string) => {
+      await window.electronAPI.db.clearMeshcoreMessagesByChannel(index, radioNodeId, channelKey);
       refreshMessagesFromDb({
         clearedChannel: index,
         replaceFromDb: true,

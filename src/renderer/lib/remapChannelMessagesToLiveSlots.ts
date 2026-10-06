@@ -12,6 +12,41 @@ function isGroupChannelMessage(m: ChatMessage): boolean {
   return m.channel >= 0 && m.roomServerId == null && isMeshtasticChannelMessage(m);
 }
 
+function hasSlotMap(ctx: ChannelRemapContext | null): ctx is ChannelRemapContext {
+  return ctx != null && Object.keys(ctx.keyByIndex).length > 0;
+}
+
+/**
+ * A cleared channel list is not a new publish. Keep the last radio's slot map until the next
+ * radio publishes one, so history stays filtered while disconnected.
+ */
+export function retainChannelRemapContext(
+  previous: ChannelRemapContext | null,
+  next: ChannelRemapContext,
+): ChannelRemapContext {
+  if (hasSlotMap(next)) return next;
+  if (hasSlotMap(previous)) return previous;
+  return next;
+}
+
+function collapseDuplicateGroupRows(rows: ChatMessage[]): ChatMessage[] {
+  const seen = new Set<string>();
+  let dropped = false;
+  const collapsed: ChatMessage[] = [];
+  for (const m of rows) {
+    if (m.channelKey && isGroupChannelMessage(m)) {
+      const key = JSON.stringify([m.sender_id, m.timestamp, m.payload, m.channelKey]);
+      if (seen.has(key)) {
+        dropped = true;
+        continue;
+      }
+      seen.add(key);
+    }
+    collapsed.push(m);
+  }
+  return dropped ? collapsed : rows;
+}
+
 /**
  * Show persisted group-channel history under whichever slot holds the same channel on the
  * connected radio (slot indices differ between radios). DMs and room posts pass through.
@@ -20,7 +55,9 @@ function isGroupChannelMessage(m: ChatMessage): boolean {
  * - Keyed row whose channel is not on this radio: hidden (kept in SQLite).
  * - Unkeyed row from this radio, or with no radio (legacy): stays in its stored slot.
  * - Unkeyed row from a different radio: hidden, since its slot layout is unknown.
- * - No live channel list (offline / still loading): rows pass through unchanged.
+ * - No slot map on this call: rows pass through unchanged. Callers keep the last published map
+ *   via `retainChannelRemapContext` when the channel list clears.
+ * - Group rows that share sender, timestamp, payload, and channel key collapse to one.
  */
 export function remapChannelMessagesToLiveSlots(
   messages: ChatMessage[],
@@ -62,5 +99,5 @@ export function remapChannelMessagesToLiveSlots(
     }
     out.push(m);
   }
-  return changed ? out : messages;
+  return collapseDuplicateGroupRows(changed ? out : messages);
 }

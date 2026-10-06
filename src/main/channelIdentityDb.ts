@@ -1,11 +1,14 @@
 /**
- * SQLite helpers for channel identity keys (`src/shared/channelIdentityKey.ts`): stamping legacy
- * unkeyed rows with the connected radio's slot mapping, and key-aware channel clears.
+ * SQLite helpers for channel identity keys (`src/shared/channelIdentityKey.ts`): stamping this
+ * radio's unkeyed group-channel rows, and key-aware channel clears.
+ *
+ * Null-radio history stays unkeyed. Assigning it to the first tracked radio misfiles rows when
+ * two radios were used or after a radio swap, and a later keyed clear would delete them.
  *
  * Failure point: each helper runs inside one transaction; a thrown statement rolls back the batch
  * and the caller's IPC handler logs it via finishDbIpcHandler.
  */
-import type { ChannelIdentityProtocol } from '../shared/channelIdentityKey';
+import { type ChannelIdentityProtocol, isChannelIdentityKey } from '../shared/channelIdentityKey';
 import type { NodeSqliteDB } from './db-compat';
 import { MESHCORE_MESSAGE_CHANNEL_SQL } from './meshcoreMessageChannel';
 
@@ -27,30 +30,8 @@ function tableSql(protocol: ChannelIdentityProtocol): { table: string; channelSq
 }
 
 /**
- * Group-channel rows saved before radio tracking have no radio. They were recorded on whichever
- * radio was connected when tracking began, i.e. the radio of the first tracked row, so they are
- * attributed to it. Rows inserted after that point are never touched (MQTT-only rows keep null).
- */
-function adoptUntrackedChannelRows(db: NodeSqliteDB, table: string, channelSql: string): number {
-  const anchor = db
-    .prepareOnce(
-      `SELECT id, radio_node_id AS radio FROM ${table} WHERE radio_node_id IS NOT NULL ` +
-        'ORDER BY id LIMIT 1',
-    )
-    .get() as { id: number; radio: number } | undefined;
-  if (!anchor) return 0;
-  const result = db
-    .prepareOnce(
-      `UPDATE ${table} SET radio_node_id = ? ` +
-        `WHERE radio_node_id IS NULL AND id < ? AND ${channelSql} >= 0`,
-    )
-    .run(anchor.radio, anchor.id);
-  return Number(result.changes);
-}
-
-/**
- * Stamp unkeyed group-channel rows recorded by `radioNodeId` with the key now in that slot. Rows
- * from other radios are left unkeyed until that radio connects and reports its own slot layout.
+ * Stamp unkeyed group-channel rows whose `radio_node_id` is already `radioNodeId` with the key
+ * now in that slot. Rows from other radios, and rows with no radio, stay unkeyed.
  */
 export function backfillChannelKeys(
   db: NodeSqliteDB,
@@ -65,12 +46,25 @@ export function backfillChannelKeys(
   );
   let changes = 0;
   db.transaction(() => {
-    changes += adoptUntrackedChannelRows(db, table, channelSql);
     for (const { index, key } of entries) {
       changes += Number(scoped.run(key, radioNodeId, index).changes);
     }
   })();
   return { changes };
+}
+
+/**
+ * Meshtastic per-channel clear. DMs are stored with a channel index, so a missing key deletes
+ * nothing rather than every row in that slot.
+ */
+export function clearMeshtasticMessagesByChannel(
+  db: NodeSqliteDB,
+  channelIndex: number,
+  radioNodeId: number,
+  channelKey: unknown,
+): { changes: number } {
+  if (!isChannelIdentityKey(channelKey)) return { changes: 0 };
+  return clearChannelMessagesByKey(db, 'meshtastic', channelIndex, radioNodeId, channelKey);
 }
 
 /**

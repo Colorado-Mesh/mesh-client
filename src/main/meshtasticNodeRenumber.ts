@@ -66,6 +66,10 @@ export function migrateMeshtasticNodeNumInDb(
       const toMoved = db
         .prepare('UPDATE messages SET to_node = ? WHERE to_node = ?')
         .run(newNum, oldNum).changes;
+      db.prepare('UPDATE messages SET radio_node_id = ? WHERE radio_node_id = ?').run(
+        newNum,
+        oldNum,
+      );
 
       if (newRow) {
         db.prepare(

@@ -3493,6 +3493,8 @@ export function useMeshcoreRuntime() {
         );
         setNodes(new Map());
       }
+      // Channel chips clear on disconnect. History filtering keeps this radio's slot map
+      // (useRetainedChannelRemapContext) until the next radio publishes one.
       setChannels([]);
       setSelfInfo(null);
       clearRadioSelfPosition('meshcore');

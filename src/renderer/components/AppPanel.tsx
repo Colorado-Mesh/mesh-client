@@ -735,9 +735,12 @@ export default function AppPanel({
     const { actionId, action, messageClearMeta, title, channelClearGuard } = pendingAction;
     if (channelClearGuard != null) {
       const radioChanged = channelClearGuard.nodeId !== (myNodeNum ?? 0);
-      const keyChanged =
-        getLiveChannelKey(channelClearGuard.protocol, channelClearGuard.channelIndex) !==
-        channelClearGuard.channelKey;
+      const liveKey = getLiveChannelKey(channelClearGuard.protocol, channelClearGuard.channelIndex);
+      // Meshtastic DMs share `messages.channel`. null === null must not confirm a clear that
+      // has no channel key. MeshCore's no-key path stays scoped to one radio.
+      const meshtasticKeyMissing =
+        channelClearGuard.protocol === 'meshtastic' && channelClearGuard.channelKey == null;
+      const keyChanged = liveKey !== channelClearGuard.channelKey || meshtasticKeyMissing;
       if (radioChanged || keyChanged) {
         setPendingAction(null);
         const name = channelClearGuard.channelLabel;

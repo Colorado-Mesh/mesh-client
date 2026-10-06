@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { remapChannelMessagesToLiveSlots } from './remapChannelMessagesToLiveSlots';
+import {
+  remapChannelMessagesToLiveSlots,
+  retainChannelRemapContext,
+} from './remapChannelMessagesToLiveSlots';
 import type { ChatMessage } from './types';
 
 const KEY_EMERGENCY = 'aaaaaaaaaaaaaaaa';
@@ -83,6 +86,57 @@ describe('remapChannelMessagesToLiveSlots', () => {
       NEW_RADIO_CTX,
     );
     expect(out[0]?.channel).toBe(2);
+  });
+
+  it('keeps filtering after the channel list clears until the next radio publishes a map', () => {
+    const hidden = msg('other radio', { channelKey: KEY_GONE, radioNodeId: RADIO_OLD });
+    const cleared = retainChannelRemapContext(NEW_RADIO_CTX, {
+      keyByIndex: {},
+      radioNodeId: null,
+    });
+    expect(remapChannelMessagesToLiveSlots([hidden], cleared)).toEqual([]);
+    const published = retainChannelRemapContext(cleared, {
+      keyByIndex: { 1: KEY_GONE },
+      radioNodeId: RADIO_OLD,
+    });
+    expect(remapChannelMessagesToLiveSlots([hidden], published)[0]?.channel).toBe(1);
+  });
+
+  it('collapses the same group message heard in two slots on two radios', () => {
+    const oldSlot = msg('same', {
+      sender_id: 7,
+      timestamp: 50,
+      channel: 1,
+      channelKey: KEY_REACH,
+      radioNodeId: RADIO_OLD,
+    });
+    const newSlot = msg('same', {
+      sender_id: 7,
+      timestamp: 50,
+      channel: 4,
+      channelKey: KEY_REACH,
+      radioNodeId: RADIO_NEW,
+    });
+    const other = msg('other', {
+      sender_id: 7,
+      timestamp: 50,
+      channel: 1,
+      channelKey: KEY_REACH,
+      radioNodeId: RADIO_OLD,
+    });
+    const dm = msg('same', {
+      sender_id: 7,
+      timestamp: 50,
+      channel: -1,
+      to: 5,
+      channelKey: KEY_REACH,
+    });
+    const out = remapChannelMessagesToLiveSlots([oldSlot, newSlot, other, dm], NEW_RADIO_CTX);
+    expect(out.map((m) => [m.payload, m.channel, m.to])).toEqual([
+      ['same', 2, undefined],
+      ['other', 2, undefined],
+      ['same', -1, 5],
+    ]);
   });
 
   it('passes everything through when no live channel list is loaded', () => {

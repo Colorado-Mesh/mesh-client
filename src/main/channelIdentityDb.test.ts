@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 
-import { backfillChannelKeys, clearChannelMessagesByKey } from './channelIdentityDb';
+import {
+  backfillChannelKeys,
+  clearChannelMessagesByKey,
+  clearMeshtasticMessagesByChannel,
+} from './channelIdentityDb';
 import { NodeSqliteDB } from './db-compat';
 import { runSchemaUpgrade } from './db-schema-sync';
 import { persistMeshcoreMessage } from './meshcoreMessageChannel';
@@ -87,7 +91,7 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
     }
   });
 
-  it('attributes pre-tracking rows to the first tracked radio, not to whichever radio connects', () => {
+  it('leaves pre-tracking rows unkeyed when a later radio connects', () => {
     const db = openDb();
     try {
       insertMeshcore(db, [
@@ -99,20 +103,43 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
 
       backfillChannelKeys(db, 'meshcore', RADIO_NEW, [{ index: 1, key: KEY_EMERGENCY }]);
       let keys = meshcoreKeys(db);
-      expect(keys['legacy reach slot 1']).toEqual({ key: null, radio: RADIO_OLD });
+      expect(keys['legacy reach slot 1']).toEqual({ key: null, radio: null });
       expect(keys['legacy dm']).toEqual({ key: null, radio: null });
+      expect(keys['first tracked']).toEqual({ key: null, radio: RADIO_OLD });
       expect(keys['mqtt later']).toEqual({ key: null, radio: null });
 
       backfillChannelKeys(db, 'meshcore', RADIO_OLD, [{ index: 1, key: KEY_REACH }]);
       keys = meshcoreKeys(db);
-      expect(keys['legacy reach slot 1']).toEqual({ key: KEY_REACH, radio: RADIO_OLD });
+      expect(keys['legacy reach slot 1']).toEqual({ key: null, radio: null });
       expect(keys['first tracked']).toEqual({ key: KEY_REACH, radio: RADIO_OLD });
+      expect(keys['mqtt later']).toEqual({ key: null, radio: null });
     } finally {
       db.close();
     }
   });
 
-  it('leaves pre-tracking rows alone until some radio has saved a tracked row', () => {
+  it('never gives pre-tracking rows from two radios one shared key', () => {
+    const db = openDb();
+    try {
+      insertMeshcore(db, [
+        { payload: 'pre a', channel: 1, radio: null },
+        { payload: 'pre b', channel: 1, radio: null },
+        { payload: 'tracked old', channel: 1, radio: RADIO_OLD },
+        { payload: 'tracked new', channel: 1, radio: RADIO_NEW },
+      ]);
+      backfillChannelKeys(db, 'meshcore', RADIO_OLD, [{ index: 1, key: KEY_REACH }]);
+      backfillChannelKeys(db, 'meshcore', RADIO_NEW, [{ index: 1, key: KEY_EMERGENCY }]);
+      const keys = meshcoreKeys(db);
+      expect(keys['pre a']).toEqual({ key: null, radio: null });
+      expect(keys['pre b']).toEqual({ key: null, radio: null });
+      expect(keys['tracked old']).toEqual({ key: KEY_REACH, radio: RADIO_OLD });
+      expect(keys['tracked new']).toEqual({ key: KEY_EMERGENCY, radio: RADIO_NEW });
+    } finally {
+      db.close();
+    }
+  });
+
+  it('leaves pre-tracking rows unkeyed when nothing has been tracked yet', () => {
     const db = openDb();
     try {
       insertMeshcore(db, [{ payload: 'legacy', channel: 1, radio: null }]);
@@ -125,7 +152,7 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
     }
   });
 
-  it('adopts and backfills Meshtastic broadcast rows but never DMs', () => {
+  it('backfills Meshtastic broadcast rows for this radio but never DMs or null-radio rows', () => {
     const db = openDb();
     try {
       const insert = db.prepareOnce(
@@ -140,11 +167,33 @@ describe.each(['linux', 'darwin', 'win32'])('channel identity DB helpers on %s',
         .prepareOnce('SELECT payload, channel_key, radio_node_id FROM messages ORDER BY id')
         .all();
       expect(rows).toEqual([
-        { payload: 'broadcast', channel_key: KEY_EMERGENCY, radio_node_id: RADIO_NEW },
-        { payload: 'broadcast sentinel', channel_key: KEY_EMERGENCY, radio_node_id: RADIO_NEW },
+        { payload: 'broadcast', channel_key: null, radio_node_id: null },
+        { payload: 'broadcast sentinel', channel_key: null, radio_node_id: null },
         { payload: 'dm', channel_key: null, radio_node_id: null },
         { payload: 'first tracked', channel_key: KEY_EMERGENCY, radio_node_id: RADIO_NEW },
       ]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it('a null-key Meshtastic clear never deletes DMs stored on that channel index', () => {
+    const db = openDb();
+    try {
+      const insert = db.prepareOnce(
+        'INSERT INTO messages (sender_id, sender_name, payload, channel, timestamp, to_node, radio_node_id, channel_key) VALUES (1, ?, ?, ?, 1, ?, ?, ?)',
+      );
+      insert.run('a', 'dm', 1, 42, RADIO_NEW, null);
+      insert.run('a', 'broadcast', 1, null, RADIO_NEW, KEY_EMERGENCY);
+      expect(clearMeshtasticMessagesByChannel(db, 1, RADIO_NEW, null).changes).toBe(0);
+      expect(clearMeshtasticMessagesByChannel(db, 1, RADIO_NEW, undefined).changes).toBe(0);
+      const payloads = () =>
+        (
+          db.prepareOnce('SELECT payload FROM messages ORDER BY id').all() as { payload: string }[]
+        ).map((r) => r.payload);
+      expect(payloads()).toEqual(['dm', 'broadcast']);
+      clearMeshtasticMessagesByChannel(db, 1, RADIO_NEW, KEY_EMERGENCY);
+      expect(payloads()).toEqual(['dm']);
     } finally {
       db.close();
     }
