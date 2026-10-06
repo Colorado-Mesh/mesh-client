@@ -5273,7 +5273,8 @@
     "moreActions": "Weitere Raumaktionen",
     "loginAndSyncHeading": "Anmeldung und Synchronisierung",
     "enableAutoLogin": "Auto-Login aktivieren",
-    "enableAutoLoginAria": "Melden Sie sich automatisch in diesem Raum an, wenn das Radio eine Verbindung herstellt"
+    "enableAutoLoginAria": "Melden Sie sich automatisch in diesem Raum an, wenn das Radio eine Verbindung herstellt",
+    "autoLoginSaveFailed": "Die Auto-Login-Einstellung konnte nicht gespeichert werden. Ihre vorherige Einstellung ist unverändert."
   },
   "securityPanel": {
     "keyRegenRequested": "Schlüsselregeneration angefordert. Das Gerät generiert neue Schlüssel.",

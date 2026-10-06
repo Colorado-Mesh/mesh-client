@@ -98,10 +98,16 @@ export async function setMeshcoreRoomSyncConfig(
   };
   const settingKey = meshcoreRoomSyncSettingForNode(nodeId);
   const payload = JSON.stringify(next);
+  const prevRaw = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'meshcoreRoomSyncStorage set prev',
+  )?.[settingKey];
   mergeAppSetting(settingKey, payload, 'meshcoreRoomSyncStorage set');
   try {
     await window.electronAPI.appSettings.set(settingKey, payload);
   } catch (e: unknown) {
+    // Undefined drops the key on JSON.stringify, restoring "never persisted".
+    mergeAppSetting(settingKey, prevRaw, 'meshcoreRoomSyncStorage set rollback');
     console.warn('[meshcoreRoomSyncStorage] persist sync config failed ' + errLikeToLogString(e));
     throw e instanceof Error ? e : new Error(String(e));
   }

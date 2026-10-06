@@ -35,6 +35,7 @@ import {
   meshcoreRoomSyncSettingForNode,
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
+import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
 import * as chatScrollUtils from '../lib/chatScrollUtils';
 import RoomsPanel from './RoomsPanel';
@@ -890,6 +891,48 @@ describe('RoomsPanel', () => {
     expect(
       screen.getAllByRole('button', { name: 'roomsPanel.stopAutoLoginAria' }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it('login overlay keeps auto-login off when enabling it fails to persist', async () => {
+    const room = makeRoom(0x1024, 'Enable Auto Fail Room');
+    const nodes = new Map<number, MeshNode>([[room.node_id, room]]);
+    mergeAppSetting(
+      meshcoreRoomCredentialSettingForNode(room.node_id),
+      JSON.stringify({ guestPassword: 'hello' }),
+      'RoomsPanel.test enable auto fail',
+    );
+    mergeAppSetting(
+      meshcoreRoomSyncSettingForNode(room.node_id),
+      JSON.stringify({ enabled: false, intervalMinutes: 60, autoLoginOnConnect: false }),
+      'RoomsPanel.test enable auto fail sync',
+    );
+    const setSpy = vi
+      .spyOn(window.electronAPI.appSettings, 'set')
+      .mockRejectedValue(new Error('disk full'));
+    const warn = mockConsoleWarn();
+    try {
+      renderRoomsPanel(nodes, { initialRoomTarget: room.node_id });
+      await waitFor(() => {
+        expect(screen.getByText('roomsPanel.loginTitle')).toBeInTheDocument();
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'roomsPanel.enableAutoLoginAria' }));
+
+      await waitFor(() => {
+        expect(warn.spy).toHaveBeenCalledWith(
+          expect.stringContaining('[RoomsPanel] save auto-login failed'),
+        );
+      });
+      expect(getMeshcoreRoomSyncConfig(room.node_id).autoLoginOnConnect).toBe(false);
+      expect(
+        screen.getByRole('button', { name: 'roomsPanel.enableAutoLoginAria' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'roomsPanel.stopAutoLoginAria' }),
+      ).not.toBeInTheDocument();
+    } finally {
+      warn.restore();
+      setSpy.mockRestore();
+    }
   });
 
   it('does not auto-login on room select when saved credentials exist', async () => {

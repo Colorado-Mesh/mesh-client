@@ -5273,7 +5273,8 @@
     "moreActions": "Tindakan ruangan lainnya",
     "loginAndSyncHeading": "Masuk dan sinkronisasi",
     "enableAutoLogin": "Aktifkan masuk otomatis",
-    "enableAutoLoginAria": "Masuk ke ruangan ini secara otomatis saat radio terhubung"
+    "enableAutoLoginAria": "Masuk ke ruangan ini secara otomatis saat radio terhubung",
+    "autoLoginSaveFailed": "Tidak dapat menyimpan pengaturan masuk otomatis. Pengaturan Anda sebelumnya tidak berubah."
   },
   "securityPanel": {
     "keyRegenRequested": "Regenerasi kunci diminta. Perangkat akan menghasilkan kunci baru.",

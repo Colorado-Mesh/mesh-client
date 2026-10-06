@@ -5273,7 +5273,8 @@
     "moreActions": "Meer ruimteacties",
     "loginAndSyncHeading": "Inloggen en synchroniseren",
     "enableAutoLogin": "Automatisch aanmelden activeren",
-    "enableAutoLoginAria": "Automatisch inloggen voor deze ruimte wanneer de radio verbinding maakt"
+    "enableAutoLoginAria": "Automatisch inloggen voor deze ruimte wanneer de radio verbinding maakt",
+    "autoLoginSaveFailed": "Kon de instelling voor automatisch inloggen niet opslaan. Uw vorige instelling is ongewijzigd."
   },
   "securityPanel": {
     "keyRegenRequested": "Sleutelregeneratie aangevraagd. Apparaat genereert nieuwe sleutels.",

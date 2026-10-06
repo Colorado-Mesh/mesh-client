@@ -5316,7 +5316,8 @@
     "moreActions": "Další akce místnosti",
     "loginAndSyncHeading": "Přihlášení a synchronizace",
     "enableAutoLogin": "Povolit automatické přihlášení",
-    "enableAutoLoginAria": "Přihlaste se do této místnosti automaticky, jakmile se rádio připojí"
+    "enableAutoLoginAria": "Přihlaste se do této místnosti automaticky, jakmile se rádio připojí",
+    "autoLoginSaveFailed": "Nastavení automatického přihlášení se nepodařilo uložit. Tvé předchozí nastavení se nezměnilo."
   },
   "securityPanel": {
     "keyRegenRequested": "Požadována regenerace klíče. Zařízení vygeneruje nové klíče.",

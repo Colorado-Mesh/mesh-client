@@ -5829,6 +5829,7 @@
     "stopAutoLoginAria": "Stop automatic login for this room when the radio connects",
     "enableAutoLogin": "Enable auto-login",
     "enableAutoLoginAria": "Log in to this room automatically when the radio connects",
+    "autoLoginSaveFailed": "Could not save the auto-login setting. Your previous setting is unchanged.",
     "sidebarLegendTitle": "Room status markers",
     "legendNotSaved": "No saved password",
     "legendSaved": "Password saved",

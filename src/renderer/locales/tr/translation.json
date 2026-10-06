@@ -5273,7 +5273,8 @@
     "moreActions": "Diğer oda işlemleri",
     "loginAndSyncHeading": "Oturum açma ve eşitleme",
     "enableAutoLogin": "Otomatik girişi etkinleştir",
-    "enableAutoLoginAria": "Radyo bağlandığında bu odaya otomatik olarak giriş yapın"
+    "enableAutoLoginAria": "Radyo bağlandığında bu odaya otomatik olarak giriş yapın",
+    "autoLoginSaveFailed": "Otomatik giriş ayarı kaydedilemedi. Önceki ayarınız değiştirilmedi."
   },
   "securityPanel": {
     "keyRegenRequested": "Anahtarın yenilenmesi talep edildi. Cihaz yeni anahtarlar oluşturacaktır.",

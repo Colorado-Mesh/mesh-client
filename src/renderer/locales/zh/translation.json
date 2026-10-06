@@ -5273,7 +5273,8 @@
     "moreActions": "更多房间操作",
     "loginAndSyncHeading": "登录与同步",
     "enableAutoLogin": "启用自动登录",
-    "enableAutoLoginAria": "收音机连接时自动登录此房间"
+    "enableAutoLoginAria": "收音机连接时自动登录此房间",
+    "autoLoginSaveFailed": "无法保存自动登录设置。您之前的设置保持不变。"
   },
   "securityPanel": {
     "keyRegenRequested": "已请求密钥重新生成。设备将生成新密钥。",

@@ -5273,7 +5273,8 @@
     "moreActions": "Más acciones de la sala",
     "loginAndSyncHeading": "Inicio de sesión y sincronización",
     "enableAutoLogin": "Habilitar el inicio de sesión automático",
-    "enableAutoLoginAria": "Inicie sesión en esta sala automáticamente cuando se conecte la radio"
+    "enableAutoLoginAria": "Inicie sesión en esta sala automáticamente cuando se conecte la radio",
+    "autoLoginSaveFailed": "No se ha podido guardar la configuración de inicio de sesión automático. Su configuración anterior no ha cambiado."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneración de claves solicitada. El dispositivo generará nuevas claves.",

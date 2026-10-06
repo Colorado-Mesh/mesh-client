@@ -125,6 +125,7 @@ import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ConfirmModal } from './ConfirmModal';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { useToast } from './Toast';
 import { Button, IconButton } from './ui/Button';
 import {
   CHECKBOX_CLASS,
@@ -283,6 +284,7 @@ export default function RoomsPanel({
   alwaysShowMessageActions = false,
 }: Props) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const { inactive: appWindowInactive } = useAppWindowActivity();
   const parentIconTrigger = useParentIconTrigger();
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
@@ -820,20 +822,26 @@ export default function RoomsPanel({
     async (nodeId: number, enabled: boolean) => {
       setAutoLoginOnConnect(enabled);
       const prev = getMeshcoreRoomSyncConfig(nodeId);
-      if (!enabled) {
-        await disableMeshcoreRoomAutoLogin(nodeId);
-      } else {
-        clearMeshcoreRoomAutoLoginFailure(nodeId);
-        await setMeshcoreRoomSyncConfig(nodeId, {
-          enabled: prev.enabled,
-          intervalMinutes: prev.intervalMinutes,
-          autoLoginOnConnect: true,
-        });
+      try {
+        if (!enabled) {
+          await disableMeshcoreRoomAutoLogin(nodeId);
+        } else {
+          await setMeshcoreRoomSyncConfig(nodeId, {
+            enabled: prev.enabled,
+            intervalMinutes: prev.intervalMinutes,
+            autoLoginOnConnect: true,
+          });
+          clearMeshcoreRoomAutoLoginFailure(nodeId);
+        }
+        setSyncConfigDirty(false);
+      } catch (e: unknown) {
+        console.warn('[RoomsPanel] save auto-login failed ' + errLikeToLogString(e));
+        setAutoLoginOnConnect(getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect ?? false);
+        addToast(t('roomsPanel.autoLoginSaveFailed'), 'error');
       }
-      setSyncConfigDirty(false);
       refreshStoredRooms();
     },
-    [refreshStoredRooms],
+    [addToast, refreshStoredRooms, t],
   );
 
   const handleSelectRoom = useCallback(

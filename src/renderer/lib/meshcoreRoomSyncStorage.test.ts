@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { getAppSettingsRaw, mergeAppSetting } from './appSettingsStorage';
 import { meshcoreRoomCredentialSettingForNode } from './meshcoreRoomCredentialStorage';
@@ -8,6 +8,7 @@ import {
   meshcoreRoomSyncSettingForNode,
   setMeshcoreRoomSyncConfig,
 } from './meshcoreRoomSyncStorage';
+import { mockConsoleWarn } from './vitestConsoleMock';
 
 describe('meshcoreRoomSyncStorage', () => {
   beforeEach(() => {
@@ -42,6 +43,60 @@ describe('meshcoreRoomSyncStorage', () => {
       'meshcoreRoomSyncStorage.test cred',
     );
     expect(listMeshcoreRoomAutoLoginOnConnectNodeIds()).toEqual([42]);
+  });
+
+  it('rolls back the local sync config when persisting fails', async () => {
+    const key = meshcoreRoomSyncSettingForNode(31);
+    const before = JSON.stringify({
+      enabled: false,
+      intervalMinutes: 60,
+      lastSyncAt: null,
+      autoLoginOnConnect: false,
+    });
+    mergeAppSetting(key, before, 'meshcoreRoomSyncStorage.test rollback');
+    const setSpy = vi
+      .spyOn(window.electronAPI.appSettings, 'set')
+      .mockRejectedValueOnce(new Error('disk full'));
+    const warn = mockConsoleWarn();
+    try {
+      await expect(
+        setMeshcoreRoomSyncConfig(31, {
+          enabled: false,
+          intervalMinutes: 60,
+          autoLoginOnConnect: true,
+        }),
+      ).rejects.toThrow('disk full');
+      expect(getMeshcoreRoomSyncConfig(31).autoLoginOnConnect).toBe(false);
+      expect((JSON.parse(getAppSettingsRaw() ?? '{}') as Record<string, unknown>)[key]).toBe(
+        before,
+      );
+    } finally {
+      warn.restore();
+      setSpy.mockRestore();
+    }
+  });
+
+  it('removes a never-persisted sync config key when persisting fails', async () => {
+    const key = meshcoreRoomSyncSettingForNode(32);
+    const setSpy = vi
+      .spyOn(window.electronAPI.appSettings, 'set')
+      .mockRejectedValueOnce(new Error('disk full'));
+    const warn = mockConsoleWarn();
+    try {
+      await expect(
+        setMeshcoreRoomSyncConfig(32, {
+          enabled: true,
+          intervalMinutes: 60,
+          autoLoginOnConnect: true,
+        }),
+      ).rejects.toThrow('disk full');
+      expect(
+        Object.prototype.hasOwnProperty.call(JSON.parse(getAppSettingsRaw() ?? '{}'), key),
+      ).toBe(false);
+    } finally {
+      warn.restore();
+      setSpy.mockRestore();
+    }
   });
 
   it('parses autoLoginOnConnect from stored JSON', () => {
