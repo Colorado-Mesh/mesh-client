@@ -3794,6 +3794,7 @@ const APP_SETTINGS_ALLOWED_KEYS: ReadonlySet<string> = new Set([
   'meshtasticOwnNodeNumsByPublicKey',
   'meshcoreLastSelfNodeId',
   'storeForwardAutoFetchHistory',
+  'storeForwardHistoryProfile',
   'reduceMotion',
   'use24HourTime',
   'notificationSounds',

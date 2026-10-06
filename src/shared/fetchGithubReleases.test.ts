@@ -42,6 +42,24 @@ describe('decodeGithubApiBody / parseGithubReleasesJson', () => {
     expect(await parseGithubReleasesJson(new Uint8Array(gzipped))).toEqual(rows);
   });
 
+  it('rejects gzip output above maxOutputBytes and still gunzips under the cap', async () => {
+    const under = 'ok'.repeat(100);
+    const over = 'Z'.repeat(70 * 1024);
+    const cap = 64 * 1024;
+    await expect(
+      decodeGithubApiBody(new Uint8Array(gzipSync(Buffer.from(under))), { maxOutputBytes: cap }),
+    ).resolves.toBe(under);
+    await expect(
+      decodeGithubApiBody(new Uint8Array(gzipSync(Buffer.from(over))), { maxOutputBytes: cap }),
+    ).rejects.toThrow(/exceeds 65536 bytes/);
+  });
+
+  it('leaves the releases fetch uncapped when maxOutputBytes is omitted', async () => {
+    const payload = 'Z'.repeat(70 * 1024);
+    const decoded = await decodeGithubApiBody(new Uint8Array(gzipSync(Buffer.from(payload))));
+    expect(decoded).toBe(payload);
+  });
+
   it('rejects non-JSON after decode with a clear error', async () => {
     const bytes = new TextEncoder().encode('not-json');
     await expect(parseGithubReleasesJson(bytes)).rejects.toThrow(/non-JSON body/);

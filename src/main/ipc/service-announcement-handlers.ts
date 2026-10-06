@@ -19,6 +19,20 @@ import { assertIpcSender } from '../validate-ipc-sender';
 const LOG_TAG = '[serviceAnnouncements]';
 const ETAG_MAX = 256;
 const MAX_LOGGED_REJECTIONS = 5;
+const TRUSTED_FEED_HOST = 'raw.githubusercontent.com';
+
+/** Final response URL, or the request URL when the runtime left `Response.url` empty. */
+function isTrustedFeedResponse(responseUrl: string, requestUrl: string): boolean {
+  const candidate = responseUrl.trim() !== '' ? responseUrl : requestUrl;
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    // catch-no-log-ok invalid URL is rejected by the caller
+    return false;
+  }
+  return parsed.protocol === 'https:' && parsed.hostname === TRUSTED_FEED_HOST;
+}
 
 export interface ServiceAnnouncementFetcherDeps {
   fetchImpl?: typeof fetch;
@@ -86,11 +100,17 @@ export function createServiceAnnouncementFetcher(
     try {
       res = await fetchImpl(feedUrl, {
         headers,
+        redirect: 'error',
         signal: AbortSignal.timeout(SERVICE_ANNOUNCEMENT_FETCH_TIMEOUT_MS),
       });
     } catch (e: unknown) {
       // catch-no-log-ok failure() logs debug/warn
       return failure(e, 'fetch');
+    }
+
+    if (!isTrustedFeedResponse(res.url, feedUrl)) {
+      console.warn(`${LOG_TAG} ignored feed response from an untrusted URL`);
+      return { status: 'error' };
     }
 
     if (res.status === 304) {
@@ -120,7 +140,9 @@ export function createServiceAnnouncementFetcher(
         console.warn(`${LOG_TAG} feed too large (${String(bytes.byteLength)} bytes)`);
         return { status: 'error' };
       }
-      text = await decodeGithubApiBody(bytes);
+      text = await decodeGithubApiBody(bytes, {
+        maxOutputBytes: SERVICE_ANNOUNCEMENT_MAX_FEED_BYTES,
+      });
     } catch (e: unknown) {
       // catch-no-log-ok failure() logs debug/warn
       return failure(e, 'read body');
