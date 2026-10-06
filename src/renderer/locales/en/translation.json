@@ -4749,6 +4749,17 @@
     "frequencyMhzLabel": "Frequency (MHz)",
     "bandwidthLabel": "Bandwidth",
     "bandwidthTooltip": "Channel width in kHz. Narrower = longer range and less interference but slower data rate. All nodes on the network must use the same bandwidth.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Spread Factor",
     "spreadFactorDesc": "Higher = more range but slower airtime. Default: SF12.",
     "codingRateLabel": "Coding Rate",

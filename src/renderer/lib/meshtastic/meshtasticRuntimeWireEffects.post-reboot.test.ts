@@ -1,7 +1,7 @@
 import type { MeshDevice } from '@meshtastic/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useDeviceStore } from '../../stores/deviceStore';
+import { setMeshtasticConfigSlice, useDeviceStore } from '../../stores/deviceStore';
 import { MESHTASTIC_BLE_CONFIGURE_TIMEOUT_MS } from '../timeConstants';
 import type { ConnectionType, DeviceState } from '../types';
 import {
@@ -484,8 +484,10 @@ describe('meshtasticRuntimeWireEffects region presets lifecycle', () => {
     const map = { groups: [], regionGroups: [] };
     emit('onFromRadio', { payloadVariant: { case: 'regionPresets', value: map } });
     expect(regionSlice()).toBe(map);
+    setMeshtasticConfigSlice('id-1', 'lora', { region: 1, modemPreset: 0, usePreset: true });
 
     emit('onDeviceStatus', DEVICE_DISCONNECTED);
     expect(regionSlice()).toBeUndefined();
+    expect(useDeviceStore.getState().devices['id-1'].meshtasticConfigSlices.lora).toBeUndefined();
   });
 });

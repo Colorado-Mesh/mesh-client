@@ -4059,6 +4059,17 @@
     "frequencyMhzLabel": "Frekans (MHz)",
     "bandwidthLabel": "Bant genişliği",
     "bandwidthTooltip": "kHz cinsinden kanal genişliği. Dar = daha uzun menzil ve daha az parazit ancak daha yavaş veri hızı. Ağdaki tüm düğümlerin aynı bant genişliğini kullanması gerekir.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Yayılma Faktörü",
     "spreadFactorDesc": "Daha yüksek = daha fazla menzil ancak daha yavaş yayın süresi. Varsayılan: SF12.",
     "codingRateLabel": "Kodlama Oranı",

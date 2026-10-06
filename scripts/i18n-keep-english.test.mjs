@@ -13,6 +13,8 @@ describe('isKeepEnglishKey', () => {
     'radioPanel.modemPresets.SHORT_FAST.label',
     'radioPanel.oledTypes.OLED_SH1106.label',
     'radioPanel.displayUnits.METRIC.label',
+    'radioPanel.spreadFactors.SF5.label',
+    'radioPanel.bandwidthKhz',
     'radioPanel.deviceRoles.ROUTER.label',
     'radioPanel.deviceRoles.TAK.description',
     'radioPanel.deviceRoles.TAK_TRACKER.description',

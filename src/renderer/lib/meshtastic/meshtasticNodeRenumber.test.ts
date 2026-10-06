@@ -58,6 +58,23 @@ describe('findRenumberedMeshtasticNode', () => {
     warn.mockRestore();
   });
 
+  it('migrates after the quiet window when the first sighting was refused', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    upsertNodeRecord(ID, { nodeId: OLD, publicKeyHex: KEY, lastHeardAt: NOW - 1000 });
+    expect(findRenumberedMeshtasticNode(ID, NEW, KEY, NOW, NOW)).toBeNull();
+    const later = NOW + MESHTASTIC_RENUMBER_OLD_NODE_QUIET_MS;
+    expect(findRenumberedMeshtasticNode(ID, NEW, KEY, later, later)).toBe(OLD);
+    warn.mockRestore();
+  });
+
+  it('does not latch a non-crc32 sighting, so a later valid number still migrates', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    upsertNodeRecord(ID, { nodeId: OLD, publicKeyHex: KEY, lastHeardAt: QUIET });
+    expect(findRenumberedMeshtasticNode(ID, NEW + 1, KEY, NOW, NOW)).toBeNull();
+    expect(findRenumberedMeshtasticNode(ID, NEW, KEY, NOW, NOW)).toBe(OLD);
+    debug.mockRestore();
+  });
+
   it('never moves back to the old number on a stale NodeDB replay', () => {
     upsertNodeRecord(ID, { nodeId: NEW, publicKeyHex: KEY, lastHeardAt: QUIET });
     upsertNodeRecord(ID, { nodeId: OLD, publicKeyHex: KEY, lastHeardAt: QUIET - 10_000 });

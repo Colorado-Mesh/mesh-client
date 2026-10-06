@@ -168,6 +168,7 @@ export const KEEP_ENGLISH_KEY_PREFIXES = [
   'radioPanel.modemPresets.',
   'radioPanel.oledTypes.',
   'radioPanel.displayUnits.',
+  'radioPanel.spreadFactors.',
 ];
 
 /**
@@ -176,6 +177,7 @@ export const KEEP_ENGLISH_KEY_PREFIXES = [
  * stay English while the accompanying descriptions are still translated.
  */
 const KEEP_ENGLISH_KEY_PATTERNS = [
+  /^radioPanel\.bandwidthKhz$/,
   /^radioPanel\.deviceRoles\.[A-Z0-9_]+\.label$/,
   // TAK role blurbs are short and brand-dominated; every engine renders the brand
   // as the Turkish/Polish word "tak" or transliterates it away.

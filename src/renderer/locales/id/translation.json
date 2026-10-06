@@ -4059,6 +4059,17 @@
     "frequencyMhzLabel": "Frekuensi (MHz)",
     "bandwidthLabel": "Bandwidth",
     "bandwidthTooltip": "Lebar saluran dalam kHz. Lebih sempit = jangkauan lebih jauh dan lebih sedikit interferensi namun kecepatan data lebih lambat. Semua node pada jaringan harus menggunakan bandwidth yang sama.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Faktor Penyebaran",
     "spreadFactorDesc": "Lebih tinggi = lebih banyak jangkauan tetapi waktu tayang lebih lambat. Bawaan: SF12.",
     "codingRateLabel": "Tingkat Pengkodean",
