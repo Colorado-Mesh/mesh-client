@@ -4059,6 +4059,17 @@
     "frequencyMhzLabel": "Frequentie (MHz)",
     "bandwidthLabel": "Bandbreedte",
     "bandwidthTooltip": "Kanaalbreedte in kHz. Smaller = groter bereik en minder interferentie, maar lagere datasnelheid. Alle knooppunten in het netwerk moeten dezelfde bandbreedte gebruiken.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Spreidingsfactor",
     "spreadFactorDesc": "Hoger = meer bereik maar langzamere zendtijd. Standaard: SF12.",
     "codingRateLabel": "Coderingssnelheid",

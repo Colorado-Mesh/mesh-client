@@ -415,20 +415,26 @@ function ContactCountBadge({
  * bandwidths (21 -> 20.8, 31 -> 31.25, 42 -> 41.7, 62 -> 62.5).
  */
 const MESHTASTIC_BANDWIDTH_OPTIONS = [
-  { value: 21, label: '20.8 kHz' },
-  { value: 31, label: '31.25 kHz' },
-  { value: 42, label: '41.7 kHz' },
-  { value: 62, label: '62.5 kHz' },
-  { value: 125, label: '125 kHz' },
-  { value: 250, label: '250 kHz' },
-  { value: 500, label: '500 kHz' },
-];
+  { value: 21, khz: '20.8' },
+  { value: 31, khz: '31.25' },
+  { value: 42, khz: '41.7' },
+  { value: 62, khz: '62.5' },
+  { value: 125, khz: '125' },
+  { value: 250, khz: '250' },
+  { value: 500, khz: '500' },
+] as const;
 
 /** Firmware accepts SF5..SF12 (RF95 radios fall back to the default for SF5/SF6). */
-const MESHTASTIC_SPREAD_FACTOR_OPTIONS = Array.from({ length: 8 }, (_, i) => ({
-  value: i + 5,
-  label: `SF${i + 5}`,
-}));
+const MESHTASTIC_SPREAD_FACTOR_LABEL_KEYS = [
+  'radioPanel.spreadFactors.SF5.label',
+  'radioPanel.spreadFactors.SF6.label',
+  'radioPanel.spreadFactors.SF7.label',
+  'radioPanel.spreadFactors.SF8.label',
+  'radioPanel.spreadFactors.SF9.label',
+  'radioPanel.spreadFactors.SF10.label',
+  'radioPanel.spreadFactors.SF11.label',
+  'radioPanel.spreadFactors.SF12.label',
+] as const;
 
 /** Curated label for a proto enum wire value, falling back to the humanized name or the number. */
 function enumOptionLabel(
@@ -1277,6 +1283,22 @@ export default function RadioPanel({
       ),
     [enumLabel, modemPreset, regionPresetRule, t],
   );
+  const meshtasticBandwidthOptions = useMemo(
+    () =>
+      MESHTASTIC_BANDWIDTH_OPTIONS.map((option) => ({
+        value: option.value,
+        label: t('radioPanel.bandwidthKhz', { value: option.khz }),
+      })),
+    [t],
+  );
+  const meshtasticSpreadFactorOptions = useMemo(
+    () =>
+      MESHTASTIC_SPREAD_FACTOR_LABEL_KEYS.map((key, index) => ({
+        value: index + 5,
+        label: t(key),
+      })),
+    [t],
+  );
   const handleRegionChange = (nextRegion: number) => {
     setRegion(nextRegion);
     const nextPreset = meshtasticPresetAfterRegionChange(
@@ -1336,10 +1358,9 @@ export default function RadioPanel({
   const disabled = !isConnected || (configTarget?.mode === 'remote' && !configTarget.isReady);
   const loraDisabled =
     disabled || (configTarget?.mode === 'remote' && meshtasticLoraConfig == null);
-  // Applying before the device LoRa slice arrives would write form defaults (US / LongFast).
-  const loraConfigReady = meshtasticConfigSliceHydrated(
-    meshtasticLoraConfig ?? meshtasticConfigSlices?.lora,
-  );
+  // Applying before this session's LoRa config arrives would write form defaults
+  // (US / LongFast). A `lora` slice left from the previous connection is not live.
+  const loraConfigReady = meshtasticConfigSliceHydrated(meshtasticLoraConfig);
   const meshtasticLoraDisabled = loraDisabled || !loraConfigReady;
 
   const deviceConfigReady = meshtasticConfigSliceHydrated(meshtasticConfigSlices?.device);
@@ -1398,6 +1419,9 @@ export default function RadioPanel({
     configValue: Record<string, unknown>,
   ): Promise<boolean> => {
     if (!isConnected) return false;
+    if (configCase === 'lora' && !meshtasticConfigSliceHydrated(meshtasticLoraConfig)) {
+      return false;
+    }
     clearMeshtasticClientNotification();
     setApplyingSection(configCase);
     showSectionStatus(
@@ -2128,7 +2152,7 @@ export default function RadioPanel({
                 anchorId="radio.lora.bandwidth"
                 label={t('radioPanel.bandwidthLabel')}
                 value={bandwidth}
-                options={MESHTASTIC_BANDWIDTH_OPTIONS}
+                options={meshtasticBandwidthOptions}
                 onChange={setBandwidth}
                 disabled={meshtasticLoraDisabled || applyingSection !== null}
                 tooltip={t('radioPanel.bandwidthTooltip')}
@@ -2137,7 +2161,7 @@ export default function RadioPanel({
                 anchorId="radio.lora.spreadFactor"
                 label={t('radioPanel.spreadFactorLabel')}
                 value={spreadFactor}
-                options={MESHTASTIC_SPREAD_FACTOR_OPTIONS}
+                options={meshtasticSpreadFactorOptions}
                 onChange={setSpreadFactor}
                 disabled={meshtasticLoraDisabled || applyingSection !== null}
                 description={t('radioPanel.spreadFactorDesc')}

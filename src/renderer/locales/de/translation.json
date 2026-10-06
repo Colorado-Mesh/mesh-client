@@ -4059,6 +4059,17 @@
     "frequencyMhzLabel": "Frequenz (MHz)",
     "bandwidthLabel": "Datenrate",
     "bandwidthTooltip": "Kanalbreite in kHz. Schmaler = größere Reichweite und weniger Störungen, aber langsamere Datenrate. Alle Knoten im Netzwerk müssen die gleiche Bandbreite verwenden.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Spread-Faktor:",
     "spreadFactorDesc": "Höher = mehr Reichweite, aber langsamere Sendezeit. Standard: SF12.",
     "codingRateLabel": "Codierungsrate",

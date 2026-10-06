@@ -4139,6 +4139,17 @@
     "frequencyMhzLabel": "Częstotliwość (MHz)",
     "bandwidthLabel": "Przepustowość",
     "bandwidthTooltip": "Szerokość kanału w kHz. Węższy = większy zasięg i mniej zakłóceń, ale wolniejsza szybkość transmisji danych. Wszystkie węzły w sieci muszą korzystać z tej samej przepustowości.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Współczynnik spreadu",
     "spreadFactorDesc": "Wyższy = większy zasięg, ale wolniejszy czas antenowy. Domyślnie: SF12.",
     "codingRateLabel": "Szybkość kodowania",

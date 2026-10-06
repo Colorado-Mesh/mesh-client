@@ -4102,6 +4102,17 @@
     "frequencyMhzLabel": "Frekvence (MHz)",
     "bandwidthLabel": "Šířka pásma",
     "bandwidthTooltip": "Šířka kanálu v kHz. Užší = delší dosah a menší rušení, ale nižší rychlost přenosu dat. Všechny uzly v síti musí používat stejnou šířku pásma.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Faktor rozpětí",
     "spreadFactorDesc": "Vyšší = větší dosah, ale pomalejší vysílací čas. Výchozí: SF12.",
     "codingRateLabel": "Rychlost kódování",

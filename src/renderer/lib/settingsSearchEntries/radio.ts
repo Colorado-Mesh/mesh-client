@@ -1008,6 +1008,7 @@ export const radioSurface: SettingsSearchSurface = {
     'radioPanel.waitingForConfigSection': 'loading status text inside a section',
     'radioPanel.sectionGroupDevice': 'group heading above the device sections; each is indexed',
     'radioPanel.secondsUnit': 'unit label beside a number field',
+    'radioPanel.bandwidthKhz': 'unit label on option values of the indexed bandwidth select',
     'radioPanel.metersUnit': 'unit label beside a number field',
     'radioPanel.txPowerDeviceCurrent': 'status text under the indexed TX power field',
     'radioPanel.advertisedPositionLabel': 'status text in the indexed position row',

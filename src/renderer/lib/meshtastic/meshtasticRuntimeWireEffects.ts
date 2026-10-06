@@ -527,6 +527,7 @@ export function attachMeshtasticRuntimeWireEffects(
           MESHTASTIC_REGION_PRESETS_SLICE_KEY,
           undefined,
         );
+        setMeshtasticConfigSlice(meshtasticIdentityIdRef.current, 'lora', undefined);
       }
       setLoraConfig(null);
       setConfigureTargetNodeNumState(null);

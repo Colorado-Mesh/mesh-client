@@ -4059,6 +4059,17 @@
     "frequencyMhzLabel": "Frequenza (MHz)",
     "bandwidthLabel": "Ampiezza di banda",
     "bandwidthTooltip": "Larghezza del canale in kHz. Più stretto = intervallo più lungo e meno interferenze, ma velocità di trasmissione dati più lenta. Tutti i nodi della rete devono utilizzare la stessa larghezza di banda.",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "Fattore di spread",
     "spreadFactorDesc": "Più alto = più autonomia ma tempo di trasmissione più lento. Valore predefinito: SF12.",
     "codingRateLabel": "Velocità di codifica",

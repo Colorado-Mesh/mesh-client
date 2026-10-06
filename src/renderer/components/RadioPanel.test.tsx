@@ -9,7 +9,11 @@ import {
   MESHTASTIC_CAPABILITIES,
   RETICULUM_CAPABILITIES,
 } from '@/renderer/lib/radio/BaseRadioProvider';
-import { generateConfigUrl, MESHTASTIC_CHANNEL_ROLE } from '@/shared/meshtasticUrlEncoder';
+import {
+  generateConfigUrl,
+  MESHTASTIC_CHANNEL_ROLE,
+  type MeshtasticLoraConfig,
+} from '@/shared/meshtasticUrlEncoder';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import RadioPanel, { ConfigNumber } from './RadioPanel';
@@ -459,6 +463,7 @@ describe('RadioPanel remote target safeguards', () => {
           isConnected
           onSetConfig={onSetConfig}
           onCommit={onCommit}
+          meshtasticLoraConfig={deviceLora}
           meshtasticConfigSlices={{ lora: deviceLora }}
         />
       </ToastProvider>,
@@ -489,6 +494,38 @@ describe('RadioPanel remote target safeguards', () => {
       femLnaMode: 1,
       serialHalOnly: true,
     });
+  });
+
+  it('does not apply LoRa from a leftover slice when live LoRa config is absent', async () => {
+    const user = userEvent.setup();
+    const onSetConfig = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ToastProvider>
+        <RadioPanel
+          {...defaultProps}
+          isConnected
+          onSetConfig={onSetConfig}
+          onCommit={vi.fn().mockResolvedValue(undefined)}
+          meshtasticLoraConfig={null}
+          meshtasticConfigSlices={{
+            lora: { region: 9, modemPreset: 3, usePreset: true, hopLimit: 7 },
+          }}
+        />
+      </ToastProvider>,
+    );
+
+    const loraDetails = [...document.querySelectorAll('details')].find((d) => {
+      const span = d.querySelector(':scope > summary > span');
+      return span?.textContent?.trim() === 'LoRa / Radio';
+    });
+    expect(loraDetails).toBeTruthy();
+    await user.click(loraDetails!.querySelector('summary')!);
+
+    expect(
+      screen.getByText('Waiting for LoRa / Radio settings from the device…'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Apply LoRa / Radio' })).toBeDisabled();
+    expect(onSetConfig).not.toHaveBeenCalled();
   });
 
   it('disables Position apply until position config slice is hydrated', async () => {
@@ -774,6 +811,7 @@ describe('RadioPanel Meshtastic 2.8 LoRa options', () => {
   async function openLora(
     lora: Record<string, unknown>,
     extraSlices: Record<string, unknown> = {},
+    liveConfig = false,
   ) {
     const user = userEvent.setup();
     const view = render(
@@ -782,6 +820,7 @@ describe('RadioPanel Meshtastic 2.8 LoRa options', () => {
           {...defaultProps}
           isConnected
           capabilities={MESHTASTIC_CAPABILITIES}
+          meshtasticLoraConfig={liveConfig ? (lora as MeshtasticLoraConfig) : null}
           meshtasticConfigSlices={{ lora, ...extraSlices }}
         />
       </ToastProvider>,
@@ -834,6 +873,7 @@ describe('RadioPanel Meshtastic 2.8 LoRa options', () => {
     const { user } = await openLora(
       { region: 1, modemPreset: 0, usePreset: true },
       { regionPresets },
+      true,
     );
     expect(optionValues(selectFor('radio.lora.modemPreset'))).toEqual([0, 9]);
     const region = selectFor('radio.lora.region');

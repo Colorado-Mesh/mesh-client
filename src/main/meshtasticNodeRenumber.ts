@@ -83,23 +83,22 @@ export function migrateMeshtasticNodeNumInDb(
         db.prepare('UPDATE nodes SET node_id = ? WHERE node_id = ?').run(newNum, oldNum);
       }
 
-      db.prepare('UPDATE OR IGNORE node_notes SET node_id = ? WHERE node_id = ?').run(
-        newNum,
-        oldNum,
-      );
-      db.prepare('DELETE FROM node_notes WHERE node_id = ?').run(oldNum);
-      db.prepare('UPDATE position_history SET node_id = ? WHERE node_id = ?').run(newNum, oldNum);
+      // position_history and node_notes have no protocol column and are also written
+      // for MeshCore. contact_groups / contact_group_members are MeshCore-only.
+      const meshcoreOwnsId = db
+        .prepare('SELECT 1 FROM meshcore_contacts WHERE node_id = ? OR node_id = ?')
+        .get(oldNum, newNum);
+      if (meshcoreOwnsId == null) {
+        db.prepare('UPDATE OR IGNORE node_notes SET node_id = ? WHERE node_id = ?').run(
+          newNum,
+          oldNum,
+        );
+        db.prepare('DELETE FROM node_notes WHERE node_id = ?').run(oldNum);
+        db.prepare('UPDATE position_history SET node_id = ? WHERE node_id = ?').run(newNum, oldNum);
+      }
       db.prepare(
         "UPDATE node_environment_telemetry SET node_id = ? WHERE node_id = ? AND protocol = 'meshtastic'",
       ).run(newNum, oldNum);
-      db.prepare(
-        'UPDATE OR IGNORE contact_group_members SET contact_node_id = ? WHERE contact_node_id = ?',
-      ).run(newNum, oldNum);
-      db.prepare('DELETE FROM contact_group_members WHERE contact_node_id = ?').run(oldNum);
-      db.prepare('UPDATE contact_groups SET self_node_id = ? WHERE self_node_id = ?').run(
-        newNum,
-        oldNum,
-      );
 
       return { migrated: true, messagesUpdated: Number(moved) + Number(toMoved) };
     })();

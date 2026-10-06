@@ -89,6 +89,19 @@ describe('migrateMeshtasticNodeNumInDb', () => {
     insertMessage(OLD, PEER, 1);
     insertMessage(PEER, OLD, 2);
     db!.prepare('INSERT INTO node_notes (node_id, notes) VALUES (?, ?)').run(OLD, 'note');
+    db!
+      .prepare(
+        'INSERT INTO position_history (node_id, latitude, longitude, recorded_at) VALUES (?, ?, ?, ?)',
+      )
+      .run(OLD, 40, -105, 1);
+    const groupId = Number(
+      db!
+        .prepare('INSERT INTO contact_groups (self_node_id, name) VALUES (?, ?)')
+        .run(OLD, 'friends').lastInsertRowid,
+    );
+    db!
+      .prepare('INSERT INTO contact_group_members (group_id, contact_node_id) VALUES (?, ?)')
+      .run(groupId, OLD);
 
     const result = migrateMeshtasticNodeNumInDb(db!, OLD, NEW, KEY);
 
@@ -103,6 +116,48 @@ describe('migrateMeshtasticNodeNumInDb', () => {
       ],
     );
     expect(db!.prepare('SELECT node_id FROM node_notes').all()).toEqual([{ node_id: NEW }]);
+    expect(db!.prepare('SELECT node_id FROM position_history').all()).toEqual([{ node_id: NEW }]);
+    expect(db!.prepare('SELECT self_node_id FROM contact_groups').all()).toEqual([
+      { self_node_id: OLD },
+    ]);
+    expect(db!.prepare('SELECT contact_node_id FROM contact_group_members').all()).toEqual([
+      { contact_node_id: OLD },
+    ]);
+  });
+
+  it('leaves notes and positions when the node id is a MeshCore contact', () => {
+    insertNode(OLD, { publicKey: KEY });
+    db!
+      .prepare('INSERT INTO meshcore_contacts (node_id, public_key) VALUES (?, ?)')
+      .run(OLD, 'cd'.repeat(32));
+    db!.prepare('INSERT INTO node_notes (node_id, notes) VALUES (?, ?)').run(OLD, 'shared');
+    db!
+      .prepare(
+        'INSERT INTO position_history (node_id, latitude, longitude, recorded_at) VALUES (?, ?, ?, ?)',
+      )
+      .run(OLD, 1, 2, 3);
+
+    expect(migrateMeshtasticNodeNumInDb(db!, OLD, NEW, KEY).migrated).toBe(true);
+    expect(db!.prepare('SELECT node_id FROM node_notes').all()).toEqual([{ node_id: OLD }]);
+    expect(db!.prepare('SELECT node_id FROM position_history').all()).toEqual([{ node_id: OLD }]);
+    expect(db!.prepare('SELECT node_id FROM nodes').all()).toEqual([{ node_id: NEW }]);
+  });
+
+  it('does not retag notes or positions onto a MeshCore contact id', () => {
+    insertNode(OLD, { publicKey: KEY });
+    db!
+      .prepare('INSERT INTO meshcore_contacts (node_id, public_key) VALUES (?, ?)')
+      .run(NEW, 'ef'.repeat(32));
+    db!.prepare('INSERT INTO node_notes (node_id, notes) VALUES (?, ?)').run(OLD, 'lora');
+    db!
+      .prepare(
+        'INSERT INTO position_history (node_id, latitude, longitude, recorded_at) VALUES (?, ?, ?, ?)',
+      )
+      .run(OLD, 3, 4, 5);
+
+    expect(migrateMeshtasticNodeNumInDb(db!, OLD, NEW, KEY).migrated).toBe(true);
+    expect(db!.prepare('SELECT node_id FROM node_notes').all()).toEqual([{ node_id: OLD }]);
+    expect(db!.prepare('SELECT node_id FROM position_history').all()).toEqual([{ node_id: OLD }]);
   });
 
   it('merges into an existing new-number row and drops duplicate packets', () => {

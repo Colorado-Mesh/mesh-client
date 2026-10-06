@@ -79,7 +79,9 @@ export function findRenumberedMeshtasticNode(
   }
   const oldLastHeardMs = old?.lastHeardAt ?? 0;
   if (incomingLastHeardMs <= oldLastHeardMs) return null;
-  index.set(key, nodeNum);
+  // Leave the index on the old number when this sighting is refused. Latching the
+  // new number here makes the next packet look like `previous === nodeNum` and
+  // skips the migration for the rest of the session.
   if (meshtasticNodeNumFromPublicKeyHex(key) !== nodeNum) {
     console.debug(
       `[meshtasticNodeRenumber] !${nodeNum.toString(16)} is not crc32 of its public key; not merging !${previous.toString(16)}`,
@@ -92,6 +94,7 @@ export function findRenumberedMeshtasticNode(
     );
     return null;
   }
+  index.set(key, nodeNum);
   return previous;
 }
 

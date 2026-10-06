@@ -4059,6 +4059,17 @@
     "frequencyMhzLabel": "频率（MHz）",
     "bandwidthLabel": "带宽",
     "bandwidthTooltip": "通道宽度，单位为kHz。更窄=距离更远，干扰更少，但数据速率更慢。网络上的所有节点必须使用相同的带宽。",
+    "bandwidthKhz": "{{value}} kHz",
+    "spreadFactors": {
+      "SF5": { "label": "SF5" },
+      "SF6": { "label": "SF6" },
+      "SF7": { "label": "SF7" },
+      "SF8": { "label": "SF8" },
+      "SF9": { "label": "SF9" },
+      "SF10": { "label": "SF10" },
+      "SF11": { "label": "SF11" },
+      "SF12": { "label": "SF12" }
+    },
     "spreadFactorLabel": "价差因子",
     "spreadFactorDesc": "更高=范围更大，但通话时间更慢。默认值： SF12。",
     "codingRateLabel": "编码率",
