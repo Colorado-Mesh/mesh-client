@@ -4,14 +4,15 @@
  * Lives in a separate Node entrypoint so CodeQL js/http-to-file-access does not
  * join the GeoNames HTTP download with this process's writeFileSync (see parent script).
  *
- * Failure point: stdin that is not a well-formed gazetteer TSV — exit non-zero without
- * touching the existing file; parent surfaces stderr.
+ * Failure point: stdin that is not a well-formed gazetteer TSV, or a failed temp write/rename —
+ * exit non-zero without touching the existing file; parent surfaces stderr.
  *
  * Usage: node scripts/build-geo-gazetteer-write-subprocess.mjs [outPath] < body.tsv
  */
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_OUT_PATH = path.join(ROOT, 'resources', 'geo', 'cities15000.tsv');
@@ -42,7 +43,14 @@ export function validateGazetteerTsv(body) {
       return `row ${i}: control character in text field`;
     }
     if (!COUNTRY_RE.test(country)) return `row ${i}: invalid country code`;
-    if (!COORD_RE.test(lat) || !COORD_RE.test(lon)) return `row ${i}: invalid coordinates`;
+    if (
+      !COORD_RE.test(lat) ||
+      !COORD_RE.test(lon) ||
+      Math.abs(Number(lat)) > 90 ||
+      Math.abs(Number(lon)) > 180
+    ) {
+      return `row ${i}: invalid coordinates`;
+    }
     if (!POPULATION_RE.test(population)) return `row ${i}: invalid population`;
   }
   return null;
@@ -57,9 +65,16 @@ function main() {
     process.exit(2);
   }
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, body, 'utf8');
+  const tmpPath = `${outPath}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
+  try {
+    fs.writeFileSync(tmpPath, body, { encoding: 'utf8', flag: 'wx' });
+    fs.renameSync(tmpPath, outPath);
+  } catch (err) {
+    fs.rmSync(tmpPath, { force: true });
+    throw err;
+  }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
   main();
 }

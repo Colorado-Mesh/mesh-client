@@ -26,6 +26,8 @@ describe('validateGazetteerTsv', () => {
     ['wrong field count', `${GAZETTEER_HEADER}\nBrighton\tUS\n`],
     ['bad country', VALID.replace('\tUS\t', '\tusa\t')],
     ['bad coordinate', VALID.replace('39.9853', '39.98')],
+    ['latitude out of range', VALID.replace('39.9853', '90.0001')],
+    ['longitude out of range', VALID.replace('-104.8205', '-180.0001')],
     ['bad population', VALID.replace('37585', '-1')],
     ['control char', VALID.replace('Brighton', 'Bri\u0001ghton')],
   ])('rejects %s', (_label, body) => {
@@ -54,6 +56,20 @@ describe('build-geo-gazetteer-write-subprocess', () => {
     });
     expect(bad.status).toBe(2);
     expect(bad.stderr).toContain('unexpected header');
+    expect(fs.readFileSync(out, 'utf8')).toBe(VALID);
+    expect(fs.readdirSync(path.dirname(out))).toEqual(['cities15000.tsv']);
+  });
+
+  it('runs when the script path contains spaces and #', () => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-gazetteer-'));
+    const scriptDir = path.join(dir, 'with space #hash');
+    fs.mkdirSync(scriptDir);
+    const script = path.join(scriptDir, 'writer.mjs');
+    fs.copyFileSync(SCRIPT, script);
+    const out = path.join(dir, 'out.tsv');
+
+    const res = spawnSync(process.execPath, [script, out], { input: VALID, encoding: 'utf8' });
+    expect(res.status).toBe(0);
     expect(fs.readFileSync(out, 'utf8')).toBe(VALID);
   });
 });
