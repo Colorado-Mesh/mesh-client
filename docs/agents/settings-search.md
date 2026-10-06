@@ -49,6 +49,8 @@ Do **not** put literal anchors inside a component that more than one panel rende
 | D     | `settings-anchor-id-format` in `sourcePolicyRules.ts` | Literal anchor ids start with a known slot prefix and use lower-camel segments                     |
 | —     | `src/renderer/lib/settingsSearch.test.ts`             | Ranking, cap, per-protocol gating with real capabilities, id format, label keys exist in English   |
 
+Guards A–C read component sources as text, so `vitest related` cannot reach them. `scripts/precommit-tests.mjs` (also used by PR CI) appends the three settings-search tests whenever a `src/renderer/components/**/*.tsx` file or the English locale changes.
+
 ## Exemption patterns
 
 Exemptions are scoped: a surface's `exempt` map only covers the files that surface sweeps (plus the shared `common.*`), so a broad pattern for one panel cannot hide a gap in another. Keys are exact i18n keys or globs where `*` matches any run of characters. Every pattern starts with a literal namespace (`appPanel.*Hint`, never `*Hint`) and carries a non-empty reason (toast, hint, aria variant, dialog copy, option value). Prefer a pattern only when it describes a real category; use exact keys for one-offs.

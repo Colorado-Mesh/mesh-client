@@ -78,6 +78,7 @@ export const roomsSurface: SettingsSearchSurface = {
     'roomsPanel.post*': 'room post composer and counts',
     'roomsPanel.jumpTo*': 'room post view navigation',
     'roomsPanel.stopAutoLogin': 'per-room action to stop a pending auto-login',
+    'roomsPanel.enableAutoLogin': 'per-room action to re-enable auto-login for a saved room',
     'roomsPanel.autoLoginRequiresSavedPassword': 'disabled reason of the indexed auto-login',
     'roomsPanel.saveSyncConfig': 'save button for the indexed sync settings',
     'roomsPanel.rememberPassword': 'per-room login card checkbox',

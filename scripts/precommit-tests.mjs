@@ -40,6 +40,18 @@ export const SERVICE_ANNOUNCEMENT_FEED_TEST_PATH =
   'src/shared/serviceAnnouncementFeed.file.test.ts';
 const SERVICE_ANNOUNCEMENT_FEED_PATH = 'announcements/announcements.json';
 
+/**
+ * Settings-search guards read component sources as text (anchors, swept `t()` keys) and check
+ * label keys against the English locale, so `vitest related` cannot reach them from those inputs.
+ */
+export const SETTINGS_SEARCH_GUARD_TEST_PATHS = [
+  'src/renderer/lib/settingsSearch.test.ts',
+  'src/renderer/lib/settingsSearchAnchors.test.ts',
+  'src/renderer/lib/settingsSearchCoverage.test.ts',
+];
+const SETTINGS_SEARCH_COMPONENT_RE = /^src\/renderer\/components\/.+\.tsx$/;
+const ENGLISH_LOCALE_PATH = 'src/renderer/locales/en/translation.json';
+
 const FORCE_FULL_PATTERNS = [
   /^vitest\.config\./,
   /^vitest\.harness(\.|$)/,
@@ -195,6 +207,24 @@ export function appendServiceAnnouncementFeedTestIfNeeded(stagedPaths, relatedPa
 }
 
 /**
+ * Append the settings-search guards when a component or the English locale is staged.
+ * @param {string[]} stagedPaths
+ * @param {string[]} relatedPaths
+ * @returns {string[]}
+ */
+export function appendSettingsSearchGuardTestsIfNeeded(stagedPaths, relatedPaths) {
+  const needsGuard = stagedPaths.some((p) => {
+    const normalized = p.replace(/\\/g, '/');
+    return SETTINGS_SEARCH_COMPONENT_RE.test(normalized) || normalized === ENGLISH_LOCALE_PATH;
+  });
+  const out = new Set(relatedPaths.map((p) => p.replace(/\\/g, '/')));
+  if (needsGuard) {
+    for (const testPath of SETTINGS_SEARCH_GUARD_TEST_PATHS) out.add(testPath);
+  }
+  return [...out].sort();
+}
+
+/**
  * @param {string} filePath
  * @returns {boolean}
  */
@@ -283,11 +313,14 @@ export function planPrecommitTests(stagedPaths, { allowManifestOnlySkip = true }
     };
   }
 
-  const relatedPaths = appendServiceAnnouncementFeedTestIfNeeded(
+  const relatedPaths = appendSettingsSearchGuardTestsIfNeeded(
     stagedPaths,
-    appendSidecarRouteDocsTestIfNeeded(
+    appendServiceAnnouncementFeedTestIfNeeded(
       stagedPaths,
-      appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+      appendSidecarRouteDocsTestIfNeeded(
+        stagedPaths,
+        appendSourcePolicyTestIfNeeded(expandWithSiblingTests(stagedPaths)),
+      ),
     ),
   );
   if (relatedPaths.length === 0) {
