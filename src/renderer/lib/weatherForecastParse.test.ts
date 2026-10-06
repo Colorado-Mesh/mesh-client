@@ -236,9 +236,12 @@ describe('helpers', () => {
 
   it('detects meshing-around weather requests', () => {
     expect(isWeatherRequestCommand('wx')).toBe(true);
-    expect(isWeatherRequestCommand('WXC please')).toBe(true);
+    expect(isWeatherRequestCommand('wx 39.73,-104.83')).toBe(true);
+    expect(isWeatherRequestCommand('weather 39.73, -104.83')).toBe(true);
     expect(isWeatherRequestCommand('@[bot] weather')).toBe(true);
+    expect(isWeatherRequestCommand('WXC please')).toBe(false);
     expect(isWeatherRequestCommand('wxa')).toBe(false);
+    expect(isWeatherRequestCommand('weather looks bad')).toBe(false);
     expect(isWeatherRequestCommand('the weather is nice')).toBe(false);
   });
 });

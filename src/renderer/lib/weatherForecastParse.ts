@@ -351,9 +351,38 @@ export function forecastTempCelsius(
   return forecast.tempUnit === 'C' ? forecast.tempValue : ((forecast.tempValue - 32) * 5) / 9;
 }
 
-const REQUESTER_COMMAND_RE = /^\s*(?:wx|wxc|weather)\b/i;
+const REQUESTER_COMMAND_RE = /^(?:wx|wxc|weather)$/i;
 
-/** True when `text` is a meshing-around weather request (`wx`, `wxc`, `weather`). */
+/** Decimal degrees, optional sign, up to three integer digits. No nested quantifiers. */
+function isCoordToken(token: string): boolean {
+  let i = 0;
+  const sign = token.charCodeAt(0);
+  if (sign === 43 || sign === 45) i = 1;
+  let digits = 0;
+  while (i < token.length && token.charCodeAt(i) >= 48 && token.charCodeAt(i) <= 57) {
+    digits += 1;
+    i += 1;
+  }
+  if (digits < 1 || digits > 3) return false;
+  if (i === token.length) return true;
+  if (token.charCodeAt(i) !== 46) return false;
+  i += 1;
+  const fracStart = i;
+  while (i < token.length && token.charCodeAt(i) >= 48 && token.charCodeAt(i) <= 57) i += 1;
+  return i > fracStart && i === token.length;
+}
+
+/**
+ * True when the whole payload is a meshing-around weather request (`wx`, `wxc`, `weather`),
+ * optionally followed by a lat,lon pair.
+ */
 export function isWeatherRequestCommand(text: string): boolean {
-  return REQUESTER_COMMAND_RE.test(stripBotPrefixes(text).text);
+  const body = stripBotPrefixes(text).text;
+  if (REQUESTER_COMMAND_RE.test(body)) return true;
+  const parts = body.split(/\s+/);
+  const command = parts[0];
+  if (parts.length < 2 || !REQUESTER_COMMAND_RE.test(command)) return false;
+  const comma = parts.slice(1).join(' ').split(',');
+  if (comma.length === 2) return isCoordToken(comma[0].trim()) && isCoordToken(comma[1].trim());
+  return parts.length === 3 && isCoordToken(parts[1]) && isCoordToken(parts[2]);
 }

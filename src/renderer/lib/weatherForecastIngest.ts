@@ -52,10 +52,28 @@ export interface WeatherForecastIngestDeps {
 
 interface HeadPost {
   timestamp: number;
+  /** Local time the head was registered, for the continuation window. */
+  storedAt: number;
   /** Set while the head's `Issued` line is cut off; holds the partial value (may be empty). */
   truncatedIssued?: { partial?: string };
   /** Resolves to the store key and head message id once the head post is placed. */
   placed: Promise<{ key: string; messageId: string } | null>;
+}
+
+interface HeldContinuation {
+  id: string;
+  timestamp: number;
+  lines: string[];
+  heldAt: number;
+}
+
+function messageKey(protocol: string, messageId: string): string {
+  return `${protocol}:${messageId}`;
+}
+
+/** One in-flight multipart forecast per sender and `[n/N]` total. */
+function headKey(protocol: string, senderId: number, total: number): string {
+  return `${protocol}:${senderId}:${total}`;
 }
 
 function nodePosition(snapshot: ForecastProtocolSnapshot, nodeId: number): LatLon | null {
@@ -70,7 +88,10 @@ function nodeName(snapshot: ForecastProtocolSnapshot, msg: MessageRecord): strin
 
 function sameChannel(a: MessageRecord, b: MessageRecord): boolean {
   if (a.channelIndex !== b.channelIndex) return false;
-  return !a.channelKey || !b.channelKey || a.channelKey === b.channelKey;
+  const aKey = a.channelKey ?? null;
+  const bKey = b.channelKey ?? null;
+  if (aKey == null && bKey == null) return true;
+  return aKey != null && aKey === bKey;
 }
 
 /** Latest `wx` / `weather` command on the same channel shortly before the bot reply. */
@@ -101,18 +122,24 @@ function continuationLines(text: string): string[] {
 }
 
 /**
- * Turns marked-sender channel posts into map forecasts. Each message is handled once; place
- * lookups are async, and multipart continuations wait for their head post.
+ * Turns marked-sender channel posts into map forecasts. A message is marked seen only after a
+ * successful placement (or when it is not a forecast). Place lookups are async, and a multipart
+ * continuation stays unmarked until its part 1 arrives or the continuation window ends.
  */
 export class WeatherForecastIngestor {
   private readonly seen = new Set<string>();
-  private readonly heads = new Map<string, HeadPost>();
+  private readonly inflight = new Map<string, Promise<void>>();
+  /** Recent part-1 posts, keyed by sender and part total. */
+  private readonly heads = new Map<string, HeadPost[]>();
+  /** Part 2+ posts waiting for their part 1. Not marked seen. */
+  private readonly held = new Map<string, HeldContinuation[]>();
 
   constructor(private readonly deps: WeatherForecastIngestDeps) {}
 
   /** Process unseen marked-sender posts; resolves when their placements finish. */
   scan(snapshots: readonly ForecastProtocolSnapshot[]): Promise<void> {
     const now = this.deps.now();
+    this.expireHeld(now);
     const pending: Promise<unknown>[] = [];
     for (const snapshot of snapshots) {
       if (snapshot.markedSenders.size === 0 || !snapshot.messages) continue;
@@ -122,12 +149,22 @@ export class WeatherForecastIngestor {
             snapshot.markedSenders.has(m.from) &&
             now - m.timestamp <= WEATHER_FORECAST_MAX_AGE_MS &&
             isGroupChannelRecord(m) &&
-            !this.seen.has(`${snapshot.protocol}:${m.id}`),
+            !this.seen.has(messageKey(snapshot.protocol, m.id)),
         )
         .sort((a, b) => a.timestamp - b.timestamp);
       for (const msg of candidates) {
-        this.markSeen(`${snapshot.protocol}:${msg.id}`);
-        const work = this.ingestMessage(snapshot, msg);
+        const id = messageKey(snapshot.protocol, msg.id);
+        const inflight = this.inflight.get(id);
+        if (inflight) {
+          pending.push(
+            inflight.then(() => {
+              if (this.seen.has(id)) return undefined;
+              return this.ingestMessage(snapshot, msg, now) ?? undefined;
+            }),
+          );
+          continue;
+        }
+        const work = this.ingestMessage(snapshot, msg, now);
         if (work) pending.push(work);
       }
     }
@@ -142,44 +179,181 @@ export class WeatherForecastIngestor {
     this.seen.add(id);
   }
 
-  private ingestMessage(
+  private track(id: string, run: Promise<void>): Promise<void> {
+    const tracked = run.finally(() => {
+      if (this.inflight.get(id) === tracked) this.inflight.delete(id);
+    });
+    this.inflight.set(id, tracked);
+    return tracked;
+  }
+
+  private expireHeld(now: number): void {
+    for (const [key, list] of this.held) {
+      const keep: HeldContinuation[] = [];
+      for (const cont of list) {
+        if (now - cont.heldAt > WEATHER_CONTINUATION_WINDOW_MS) this.markSeen(cont.id);
+        else keep.push(cont);
+      }
+      if (keep.length === 0) this.held.delete(key);
+      else if (keep.length !== list.length) this.held.set(key, keep);
+    }
+  }
+
+  private matchHead(heads: readonly HeadPost[], contTs: number, now: number): HeadPost | null {
+    let best: HeadPost | null = null;
+    for (const head of heads) {
+      if (now - head.storedAt > WEATHER_CONTINUATION_WINDOW_MS) continue;
+      const delta = contTs - head.timestamp;
+      if (delta < 0 || delta > WEATHER_CONTINUATION_WINDOW_MS) continue;
+      if (!best || head.timestamp >= best.timestamp) best = head;
+    }
+    return best;
+  }
+
+  private rememberHeld(key: string, cont: HeldContinuation): void {
+    const list = this.held.get(key);
+    if (list) {
+      if (!list.some((c) => c.id === cont.id)) list.push(cont);
+      return;
+    }
+    this.held.set(key, [cont]);
+  }
+
+  private removeHeld(key: string, id: string): void {
+    const list = this.held.get(key);
+    if (!list) return;
+    const keep = list.filter((c) => c.id !== id);
+    if (keep.length === 0) this.held.delete(key);
+    else this.held.set(key, keep);
+  }
+
+  private applyContinuation(head: HeadPost, cont: HeldContinuation): Promise<void> {
+    const issued =
+      head.truncatedIssued && cont.lines.length > 0
+        ? completeTruncatedIssued(head.truncatedIssued.partial, cont.lines[0])
+        : null;
+    return head.placed.then((placed) => {
+      if (!placed) return;
+      if (issued) {
+        head.truncatedIssued = undefined;
+        this.deps.completeIssued(placed.key, placed.messageId, issued);
+      }
+      this.deps.appendSegments(
+        placed.key,
+        placed.messageId,
+        issued ? cont.lines.slice(1) : cont.lines,
+      );
+      this.markSeen(cont.id);
+    });
+  }
+
+  private flushHeld(key: string, head: HeadPost, now: number): Promise<void>[] {
+    const waiting = this.held.get(key);
+    if (!waiting) return [];
+    const keep: HeldContinuation[] = [];
+    const runs: Promise<void>[] = [];
+    for (const cont of waiting) {
+      if (this.matchHead([head], cont.timestamp, now)) {
+        runs.push(this.track(cont.id, this.applyContinuation(head, cont)));
+      } else {
+        keep.push(cont);
+      }
+    }
+    if (keep.length === 0) this.held.delete(key);
+    else this.held.set(key, keep);
+    return runs;
+  }
+
+  private ingestContinuation(
     snapshot: ForecastProtocolSnapshot,
     msg: MessageRecord,
-  ): Promise<unknown> | null {
-    const senderKey = `${snapshot.protocol}:${msg.from}`;
-    const parsed = parseWeatherForecastPost(msg.payload);
-    const { text, part } = stripBotPrefixes(msg.payload);
-    const head = this.heads.get(senderKey);
-    const isContinuation =
-      part != null &&
-      part.index >= 2 &&
-      head != null &&
-      msg.timestamp - head.timestamp <= WEATHER_CONTINUATION_WINDOW_MS &&
-      !parsed?.place;
-    if (isContinuation) {
-      const lines = continuationLines(text);
-      const issued =
-        head.truncatedIssued && lines.length > 0
-          ? completeTruncatedIssued(head.truncatedIssued.partial, lines[0])
-          : null;
-      if (issued) head.truncatedIssued = undefined;
-      return head.placed.then((placed) => {
-        if (!placed) return;
-        if (issued) this.deps.completeIssued(placed.key, placed.messageId, issued);
-        this.deps.appendSegments(placed.key, placed.messageId, issued ? lines.slice(1) : lines);
-      });
+    id: string,
+    text: string,
+    total: number,
+    now: number,
+  ): Promise<void> | null {
+    const key = headKey(snapshot.protocol, msg.from, total);
+    const cont: HeldContinuation = {
+      id,
+      timestamp: msg.timestamp,
+      lines: continuationLines(text),
+      heldAt: now,
+    };
+    const head = this.matchHead(this.heads.get(key) ?? [], msg.timestamp, now);
+    if (head) {
+      this.removeHeld(key, id);
+      return this.track(id, this.applyContinuation(head, cont));
     }
-    if (!parsed) return null;
+    this.rememberHeld(key, cont);
+    return null;
+  }
+
+  private ingestForecast(
+    snapshot: ForecastProtocolSnapshot,
+    msg: MessageRecord,
+    id: string,
+    parsed: ParsedWeatherForecast,
+    part: { index: number; total: number } | undefined,
+    now: number,
+  ): Promise<void> {
     const placed = this.placeForecast(snapshot, msg, parsed).catch((err: unknown) => {
       console.warn('[weatherForecastIngest] place failed ' + errLikeToLogString(err));
       return null;
     });
-    this.heads.set(senderKey, {
+    const flushed =
+      part?.index === 1 && part.total >= 2
+        ? this.registerHead(snapshot, msg, part.total, placed, parsed, now)
+        : [];
+    return this.track(
+      id,
+      Promise.all([
+        placed.then((result) => {
+          if (result) this.markSeen(id);
+        }),
+        ...flushed,
+      ]).then(() => undefined),
+    );
+  }
+
+  private registerHead(
+    snapshot: ForecastProtocolSnapshot,
+    msg: MessageRecord,
+    total: number,
+    placed: Promise<{ key: string; messageId: string } | null>,
+    parsed: ParsedWeatherForecast,
+    now: number,
+  ): Promise<void>[] {
+    const key = headKey(snapshot.protocol, msg.from, total);
+    const head: HeadPost = {
       timestamp: msg.timestamp,
+      storedAt: now,
       placed,
       truncatedIssued: parsed.issuedTruncated ? { partial: parsed.issuedAt } : undefined,
-    });
-    return placed;
+    };
+    const list = (this.heads.get(key) ?? []).filter(
+      (h) => now - h.storedAt <= WEATHER_CONTINUATION_WINDOW_MS,
+    );
+    list.push(head);
+    this.heads.set(key, list);
+    return this.flushHeld(key, head, now);
+  }
+
+  private ingestMessage(
+    snapshot: ForecastProtocolSnapshot,
+    msg: MessageRecord,
+    now: number,
+  ): Promise<void> | null {
+    const id = messageKey(snapshot.protocol, msg.id);
+    const { text, part } = stripBotPrefixes(msg.payload);
+    const parsed = parseWeatherForecastPost(msg.payload);
+    if (part != null && part.index >= 2 && part.index <= part.total && !parsed?.place) {
+      return this.ingestContinuation(snapshot, msg, id, text, part.total, now);
+    }
+    if (!parsed) {
+      this.markSeen(id);
+      return null;
+    }
+    return this.ingestForecast(snapshot, msg, id, parsed, part, now);
   }
 
   private async placeForecast(
@@ -247,7 +421,7 @@ export class WeatherForecastIngestor {
       issuedAt: parsed.issuedAt,
       issuedTruncated: parsed.issuedTruncated,
       hasAlerts: parsed.hasAlerts,
-      receivedAt: msg.timestamp,
+      receivedAt: this.deps.now(),
       protocol: snapshot.protocol,
       senderId: msg.from,
       senderName: nodeName(snapshot, msg),

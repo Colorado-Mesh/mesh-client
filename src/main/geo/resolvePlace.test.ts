@@ -80,7 +80,46 @@ describe('PlaceResolver', () => {
     expect(geocodeOnline).toHaveBeenCalledWith('Smallville', ['KS'], { lat: 38, lon: -97 });
     await expect(resolver.resolve(request)).resolves.toMatchObject({ source: 'cache', lat: 1 });
     expect(geocodeOnline).toHaveBeenCalledTimes(1);
-    expect(cache.get(placeCacheKey('smallville', ['ks']))).not.toBeNull();
+    expect(cache.get(placeCacheKey('smallville', ['ks'], { lat: 38, lon: -97 }))).not.toBeNull();
+    await resolver.resolve({ ...request, nearLat: 38.2, nearLon: -97.4 });
+    expect(geocodeOnline).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers the gazetteer over a cached online hit for the same place', async () => {
+    const cache = PlaceCache.inDirectory(dir);
+    cache.set(placeCacheKey('aurora', ['co'], { lat: 40, lon: -105 }), {
+      lat: 1,
+      lon: 2,
+      label: 'Wrong',
+    });
+    const geocodeOnline = vi.fn();
+    const resolver = new PlaceResolver({ gazetteerPath, cache, geocodeOnline });
+    await expect(
+      resolver.resolve({
+        name: 'Aurora',
+        qualifiers: ['CO'],
+        nearLat: 39.7,
+        nearLon: -104.9,
+        allowOnline: true,
+      }),
+    ).resolves.toMatchObject({ source: 'gazetteer', lat: 39.7294 });
+    expect(geocodeOnline).not.toHaveBeenCalled();
+  });
+
+  it('does not reuse an online hit from a different area', async () => {
+    const geocodeOnline = vi
+      .fn()
+      .mockResolvedValueOnce({ lat: 1, lon: 2, label: 'Near' })
+      .mockResolvedValueOnce({ lat: 3, lon: 4, label: 'Far' });
+    const resolver = new PlaceResolver({
+      gazetteerPath,
+      cache: PlaceCache.inDirectory(dir),
+      geocodeOnline,
+    });
+    const base = { name: 'Smallville', qualifiers: ['KS'], allowOnline: true };
+    await resolver.resolve({ ...base, nearLat: 38, nearLon: -97 });
+    await resolver.resolve({ ...base, nearLat: 51, nearLon: -0.1 });
+    expect(geocodeOnline).toHaveBeenCalledTimes(2);
   });
 
   it('keeps working when the gazetteer file is missing', async () => {
@@ -140,20 +179,36 @@ describe('geocodeOpenMeteo', () => {
     expect(url.searchParams.get('name')).toBe('Brighton, CO');
   });
 
-  it('returns null on HTTP errors and when rate-limited', async () => {
+  it('returns null on HTTP errors and waits out the rate limit', async () => {
+    vi.useFakeTimers();
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({}, false, 503));
-    let t = 10_000;
-    const now = () => t;
-    await expect(
-      geocodeOpenMeteo('X', [], undefined, fetchImpl as unknown as typeof fetch, now),
-    ).resolves.toBeNull();
-    t += 100;
-    await expect(
-      geocodeOpenMeteo('X', [], undefined, fetchImpl as unknown as typeof fetch, now),
-    ).resolves.toBeNull();
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    warn.mockRestore();
+    try {
+      const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({}, false, 503));
+      const now = () => 10_000;
+      await expect(
+        geocodeOpenMeteo('X', [], undefined, fetchImpl as unknown as typeof fetch, now),
+      ).resolves.toBeNull();
+      let settled = false;
+      const second = geocodeOpenMeteo(
+        'Y',
+        [],
+        undefined,
+        fetchImpl as unknown as typeof fetch,
+        now,
+      ).then((value) => {
+        settled = true;
+        return value;
+      });
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1000);
+      await expect(second).resolves.toBeNull();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    } finally {
+      warn.mockRestore();
+      vi.useRealTimers();
+    }
   });
 });
 

@@ -12,6 +12,7 @@ import {
 } from '../lib/chatUnreadCounts';
 import type { ChatMessage } from '../lib/types';
 import { isHiddenWeatherPost, useWeatherFilterStore } from './weatherFilterStore';
+import { useWeatherForecastStore, type WeatherForecastEntry } from './weatherForecastStore';
 
 const OWN = new Set([1]);
 
@@ -112,6 +113,40 @@ describe('weatherFilterStore', () => {
     expect(pickAudibleNotification([reply], 'meshtastic', new Set(), OWN, undefined, all)).toBe(
       null,
     );
+  });
+
+  it('drops that sender forecasts when the sender is unmarked', () => {
+    const forecast = (
+      key: string,
+      protocol: WeatherForecastEntry['protocol'],
+      senderId: number,
+    ): WeatherForecastEntry => ({
+      key,
+      lat: 1,
+      lon: 2,
+      positionSource: 'senderApprox',
+      profileId: 'nwsPipe',
+      period: 'Tonight',
+      summary: 'Clear',
+      segments: ['Tonight: 59°F Clear'],
+      hasAlerts: false,
+      receivedAt: Date.now(),
+      protocol,
+      senderId,
+      messageId: key,
+    });
+    const { upsertForecast } = useWeatherForecastStore.getState();
+    upsertForecast(forecast('place:bot', 'meshcore', 42));
+    upsertForecast(forecast('place:other', 'meshcore', 7));
+    upsertForecast(forecast('place:other-protocol', 'meshtastic', 42));
+    useWeatherFilterStore.getState().setSenderMarked('meshcore', 42, true);
+    expect(useWeatherForecastStore.getState().entries['place:bot']).toBeDefined();
+    useWeatherFilterStore.getState().setSenderMarked('meshcore', 42, false);
+    const entries = useWeatherForecastStore.getState().entries;
+    expect(entries['place:bot']).toBeUndefined();
+    expect(entries['place:other']).toBeDefined();
+    expect(entries['place:other-protocol']).toBeDefined();
+    useWeatherForecastStore.getState().clearForecasts();
   });
 
   it('treats a marked sender as weather on that protocol only', () => {

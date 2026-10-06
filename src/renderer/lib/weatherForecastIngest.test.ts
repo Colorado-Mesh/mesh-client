@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { geocodeOpenMeteo, resetOpenMeteoRateLimitForTests } from '@/main/geo/openMeteoGeocode';
 import type { GeoResolvedPlace } from '@/shared/geoPlace';
 
 import type { MessageRecord } from '../stores/messageStore';
@@ -111,6 +112,7 @@ describe('WeatherForecastIngestor', () => {
       senderId: BOT,
       senderName: 'WX Bot',
       messageId: 'm1',
+      receivedAt: NOW,
     });
   });
 
@@ -231,5 +233,148 @@ describe('WeatherForecastIngestor', () => {
     expect(upserts).toHaveLength(0);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
+  });
+
+  it('retries a dropped forecast after a position arrives', async () => {
+    const { ingestor, upserts } = setup(null);
+    const post = msg('m1', BOT, AURORA_POST);
+    await ingestor.scan([snapshot([post])]);
+    expect(upserts).toHaveLength(0);
+    await ingestor.scan([snapshot([post], [node(BOT, 39.9, -105)])]);
+    expect(upserts).toHaveLength(1);
+    expect(upserts[0]).toMatchObject({ lat: 39.9, lon: -105, positionSource: 'senderApprox' });
+  });
+
+  it('retries a forecast after place lookup throws', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { ingestor, upserts, resolvePlace } = setup(AURORA_PLACE);
+    resolvePlace.mockRejectedValueOnce(new Error('ipc down'));
+    const snap = snapshot([msg('m1', BOT, AURORA_POST)]);
+    await ingestor.scan([snap]);
+    expect(upserts).toHaveLength(0);
+    await ingestor.scan([snap]);
+    expect(upserts).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it('does not treat a sentence starting with weather as a request', async () => {
+    const { ingestor, upserts } = setup();
+    await ingestor.scan([
+      snapshot(
+        [msg('q', ASKER, 'weather looks bad', -30_000), msg('r', BOT, METEO_POST)],
+        [node(BOT, 39.9, -105), node(ASKER, 40.01, -105.27, 'Asker')],
+      ),
+    ]);
+    expect(upserts[0]).toMatchObject({ lat: 39.9, positionSource: 'senderApprox' });
+  });
+
+  it('requires both channel keys when either message has one', async () => {
+    const { ingestor, upserts } = setup();
+    await ingestor.scan([
+      snapshot(
+        [msg('q', ASKER, 'wx', -30_000, { channelKey: 'LongFast' }), msg('r', BOT, METEO_POST)],
+        [node(BOT, 39.9, -105), node(ASKER, 40.01, -105.27, 'Asker')],
+      ),
+    ]);
+    expect(upserts[0]).toMatchObject({ lat: 39.9, positionSource: 'senderApprox' });
+  });
+
+  it('keeps a continuation that arrives before part 1', async () => {
+    const { ingestor, upserts, appendSegments } = setup({
+      ...AURORA_PLACE,
+      label: 'Brighton, Colorado, US',
+    });
+    const part2 = msg('c', BOT, '[2/2] Tonight: 55°F Clear | calm\nIssued 10/05.', 5_000);
+    await ingestor.scan([snapshot([part2])]);
+    expect(upserts).toHaveLength(0);
+    expect(appendSegments).not.toHaveBeenCalled();
+    await ingestor.scan([snapshot([msg('h', BOT, BRIGHTON_POST), part2])]);
+    expect(upserts).toHaveLength(1);
+    expect(appendSegments).toHaveBeenCalledWith('place:brighton|co', 'h', [
+      'Tonight: 55°F Clear | calm',
+      'Issued 10/05.',
+    ]);
+  });
+
+  it('does not attach a continuation to a newer forecast from the same sender', async () => {
+    const { ingestor, appendSegments } = setup(AURORA_PLACE);
+    const older = msg('a', BOT, BRIGHTON_POST);
+    const newer = msg('b', BOT, `[1/2] ${AURORA_POST}`, 20_000);
+    const continuation = msg('c', BOT, '[2/2] Tonight: 55°F Clear | calm', 5_000);
+    await ingestor.scan([snapshot([older, newer])]);
+    await ingestor.scan([snapshot([older, newer, continuation])]);
+    expect(appendSegments).toHaveBeenCalledWith('place:brighton|co', 'a', [
+      'Tonight: 55°F Clear | calm',
+    ]);
+    expect(appendSegments).not.toHaveBeenCalledWith('place:aurora|co', 'b', expect.anything());
+  });
+
+  it('places every town when Open-Meteo rate-limits one scan', async () => {
+    vi.useFakeTimers();
+    resetOpenMeteoRateLimitForTests();
+    const fetchImpl = vi.fn((input: RequestInfo | URL) => {
+      const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      const name = new URL(raw).searchParams.get('name') ?? '';
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({
+            results: [
+              {
+                latitude: 39 + name.length,
+                longitude: -104,
+                name,
+                admin1: 'Colorado',
+                country_code: 'US',
+                population: 1000,
+              },
+            ],
+          }),
+      } as Response);
+    });
+    const upserts: WeatherForecastEntry[] = [];
+    const ingestor = new WeatherForecastIngestor({
+      now: () => NOW,
+      allowOnline: () => true,
+      resolvePlace: async (request) => {
+        const hit = await geocodeOpenMeteo(
+          request.name,
+          request.qualifiers ?? [],
+          request.nearLat != null && request.nearLon != null
+            ? { lat: request.nearLat, lon: request.nearLon }
+            : undefined,
+          fetchImpl,
+        );
+        return hit ? { ...hit, source: 'online' as const } : null;
+      },
+      upsert: (entry) => {
+        upserts.push(entry);
+      },
+      appendSegments: vi.fn(),
+      completeIssued: vi.fn(),
+    });
+    const places = ['Aurora, CO 80013', 'Brighton, CO 80602', 'Denver, CO 80202'];
+    try {
+      const done = ingestor.scan([
+        snapshot(
+          places.map((place, i) =>
+            msg(
+              `t${i}`,
+              BOT,
+              `${place} | NWS forecast\nTonight: 50°F Clear | calm | precip 1%\nIssued 10/05 12:46 MDT`,
+            ),
+          ),
+        ),
+      ]);
+      await vi.runAllTimersAsync();
+      await done;
+      expect(fetchImpl).toHaveBeenCalledTimes(places.length);
+      expect(upserts.map((entry) => entry.placeLabel).sort()).toEqual([...places].sort());
+      expect(upserts.every((entry) => entry.positionSource === 'online')).toBe(true);
+    } finally {
+      vi.useRealTimers();
+      resetOpenMeteoRateLimitForTests();
+    }
   });
 });

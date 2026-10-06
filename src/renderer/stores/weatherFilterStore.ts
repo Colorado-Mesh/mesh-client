@@ -16,6 +16,7 @@ import {
   isWeatherPost,
   type WeatherPostConfig,
 } from '../lib/weatherPosts';
+import { useWeatherForecastStore } from './weatherForecastStore';
 
 const PROTOCOLS: readonly MeshProtocol[] = ['meshtastic', 'meshcore', 'reticulum'];
 
@@ -96,6 +97,7 @@ export const useWeatherFilterStore = create<WeatherFilterState>()((set, get) => 
     set({
       configs: { ...configs, [protocol]: { ...configs[protocol], markedSenders: next } },
     });
+    if (!marked) useWeatherForecastStore.getState().removeSenderForecasts(protocol, senderId);
   },
   setOnlinePlaceLookup: (onlinePlaceLookup) => {
     mergeAppSetting(

@@ -2,6 +2,7 @@ import L from 'leaflet';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Circle, Marker, Tooltip } from 'react-leaflet';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useNowMs } from '@/renderer/hooks/useNowMs';
 import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
@@ -159,21 +160,40 @@ const ForecastArea = memo(function ForecastArea({
   );
 });
 
+function activeForecastKeys(
+  entries: Record<string, WeatherForecastEntry>,
+  nowMs: number,
+): string[] {
+  if (nowMs > 0) return selectActiveForecasts(entries, nowMs).map((entry) => entry.key);
+  return Object.keys(entries);
+}
+
+/**
+ * One forecast circle. Subscribes to that entry so a sibling update does not re-render this marker.
+ */
+const ForecastMarker = memo(function ForecastMarker({
+  forecastKey,
+  onSenderClick,
+}: {
+  forecastKey: string;
+  onSenderClick?: WeatherForecastLayerProps['onSenderClick'];
+}) {
+  const entry = useWeatherForecastStore((s) => s.entries[forecastKey]);
+  if (!entry) return null;
+  return <ForecastArea entry={entry} onSenderClick={onSenderClick} />;
+});
+
 /**
  * Forecasts from marked weather senders on Meshtastic and MeshCore, drawn as translucent areas
  * colored by temperature. Shared by every map.
  */
 export function WeatherForecastLayer({ onSenderClick }: WeatherForecastLayerProps) {
-  const entries = useWeatherForecastStore((s) => s.entries);
   const nowMs = useNowMs();
-  const forecasts = useMemo(
-    () => (nowMs > 0 ? selectActiveForecasts(entries, nowMs) : Object.values(entries)),
-    [entries, nowMs],
-  );
+  const keys = useWeatherForecastStore(useShallow((s) => activeForecastKeys(s.entries, nowMs)));
   return (
     <>
-      {forecasts.map((entry) => (
-        <ForecastArea key={entry.key} entry={entry} onSenderClick={onSenderClick} />
+      {keys.map((forecastKey) => (
+        <ForecastMarker key={forecastKey} forecastKey={forecastKey} onSenderClick={onSenderClick} />
       ))}
     </>
   );
