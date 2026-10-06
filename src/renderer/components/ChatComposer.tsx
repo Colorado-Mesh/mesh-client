@@ -27,11 +27,17 @@ import { useTranslation } from 'react-i18next';
 
 import { useFloodScopeOverride } from '@/renderer/hooks/useFloodScopeOverride';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
+import {
+  isElementOnScreen,
+  noteMacroComposerFocused,
+  registerMacroComposer,
+} from '@/renderer/lib/chatMacroKeys';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { useIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { nodeDisplayName } from '@/renderer/lib/nodeLongNameOrHex';
 import type { ChatMessage, MeshNode, MeshProtocol } from '@/renderer/lib/types';
+import { isChatMacroSlotEmpty, useChatMacrosStore } from '@/renderer/stores/chatMacrosStore';
 import { useReticulumVoiceMemoStore } from '@/renderer/stores/reticulumVoiceMemoStore';
 import type { OutboxEntry, OutboxEntryInput } from '@/shared/electron-api.types';
 import { touch } from '@/shared/touch';
@@ -71,6 +77,8 @@ import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { insertRrcNickMention, nextRrcNickCompleteIndex } from '../lib/rrcNickComplete';
 import { MESHCORE_FAST_SEND_WARN_INTERVAL_MS } from '../lib/timeConstants';
+import { ChatMacroBar } from './chat/ChatMacroBar';
+import { EditMacrosDialog } from './chat/EditMacrosDialog';
 import { HelpTooltip } from './HelpTooltip';
 import MentionAutocomplete, {
   buildMentionCandidates,
@@ -237,6 +245,8 @@ export interface ChatComposerProps {
    * When `token` changes, replace the composer input (e.g. RRC nicklist → `/msg nick `).
    */
   composeSeed?: { text: string; token: number } | null;
+  /** F1–F12 macro bar and shortcuts (default on). */
+  showMacros?: boolean;
 }
 
 export function ChatComposer({
@@ -278,6 +288,7 @@ export function ChatComposer({
   shouldSuppressLimits,
   mentionAdapter,
   composeSeed,
+  showMacros = true,
 }: ChatComposerProps) {
   const { t } = useTranslation();
   const { addToast } = useToast();
@@ -844,6 +855,79 @@ export function ChatComposer({
     suppressLimits,
   ]);
 
+  const macroComposerId = useId();
+  const [macroDialogFocus, setMacroDialogFocus] = useState<number | null>(null);
+  /** Macro text waiting for the `input` state update before Send now fires. */
+  const pendingMacroSendRef = useRef<string | null>(null);
+  const canTypeInComposer = !disabled && (isConnected || allowOutbox);
+
+  const applyMacro = useCallback(
+    (index: number) => {
+      const macros = useChatMacrosStore.getState();
+      const slot = macros.slots[index];
+      if (isChatMacroSlotEmpty(slot) || !canTypeInComposer) return;
+      const text = slot.text.trim();
+      const current = inputValueRef.current;
+      const textarea = inputRef.current;
+
+      // Send now only when the box is empty, so a half-written draft is never sent or lost.
+      if (macros.sendMode === 'sendNow' && !current.trim() && !sending) {
+        if (!suppressLimits && text.length > maxInputLength) return;
+        macros.markUsed(index);
+        pendingMacroSendRef.current = text;
+        setInput(text);
+        setChatActionError(null);
+        return;
+      }
+
+      const focused = textarea != null && document.activeElement === textarea;
+      const start = focused ? (textarea.selectionStart ?? current.length) : current.length;
+      const end = focused ? (textarea.selectionEnd ?? current.length) : current.length;
+      const before = current.slice(0, start);
+      const insert = before && !/\s$/.test(before) ? ` ${text}` : text;
+      const next = before + insert + current.slice(end);
+      if (!suppressLimits && next.length > maxInputLength) return;
+      macros.markUsed(index);
+      setInput(next);
+      setChatActionError(null);
+      setMentionQuery(null);
+      requestAnimationFrame(() => {
+        const caret = start + insert.length;
+        textarea?.focus();
+        textarea?.setSelectionRange(caret, caret);
+      });
+    },
+    [canTypeInComposer, maxInputLength, sending, suppressLimits],
+  );
+
+  useEffect(() => {
+    const pending = pendingMacroSendRef.current;
+    if (pending === null || input !== pending) return;
+    pendingMacroSendRef.current = null;
+    void handleSend();
+  }, [input, handleSend]);
+
+  const applyMacroRef = useRef(applyMacro);
+  applyMacroRef.current = applyMacro;
+
+  useEffect(() => {
+    if (!showMacros) return;
+    return registerMacroComposer(macroComposerId, {
+      isActive: () => isElementOnScreen(inputRef.current),
+      apply: (index) => {
+        applyMacroRef.current(index);
+      },
+    });
+  }, [macroComposerId, showMacros]);
+
+  const openMacroDialog = useCallback((focusIndex: number) => {
+    setMacroDialogFocus(focusIndex);
+  }, []);
+
+  const closeMacroDialog = useCallback(() => {
+    setMacroDialogFocus(null);
+  }, []);
+
   const sendGifWire = useCallback(
     async (wireText: string) => {
       if (sending || disabled) return;
@@ -1407,6 +1491,9 @@ export function ChatComposer({
               }
             }}
             onKeyDown={handleKeyDown}
+            onFocus={() => {
+              noteMacroComposerFocused(macroComposerId);
+            }}
             spellCheck
             lang={
               typeof navigator !== 'undefined' && navigator.language
@@ -1726,48 +1813,67 @@ export function ChatComposer({
         )}
       </div>
 
-      {!showCounter && (
-        // Keyboard hint (Option B). Touch keyboards send with their own key, so it is hidden there.
-        <p className="text-label text-muted mt-1 pointer-coarse:hidden">
-          {t('chatPanel.composeHint')}
-        </p>
-      )}
-      {showCounter && (
-        <div className="mt-1 flex items-center justify-end gap-1 text-right text-xs">
-          <span
-            className={
-              limitStatus.phase === 'overMax'
-                ? 'text-red-400'
-                : limitStatus.phase === 'split' || counterAtLimit
-                  ? 'text-orange-400'
-                  : 'text-muted'
-            }
-          >
-            {counterMainText}
-          </span>
-          {limitStatus.phase === 'split' && (
-            <HelpTooltip text={t('chatPanel.composeLimit.splitHint')}>
-              <span
-                role="img"
-                className="text-muted inline-flex cursor-help select-none"
-                aria-label={t('chatPanel.composeLimit.splitHint')}
-              >
-                <Info aria-hidden className="h-3.5 w-3.5" size={14} />
-              </span>
-            </HelpTooltip>
+      <div className="mt-1 flex min-w-0 items-center gap-2">
+        <div className="min-w-0 flex-1">
+          {!showCounter && (
+            // Keyboard hint (Option B). Touch keyboards send with their own key, so it is hidden there.
+            <p className="text-label text-muted pointer-coarse:hidden">
+              {t('chatPanel.composeHint')}
+            </p>
           )}
-          {singlePacketProtocol && limitStatus.phase === 'warn' && (
-            <HelpTooltip text={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}>
+          {showCounter && (
+            <div className="flex items-center justify-end gap-1 text-right text-xs">
               <span
-                role="img"
-                className="text-muted inline-flex cursor-help select-none"
-                aria-label={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}
+                className={
+                  limitStatus.phase === 'overMax'
+                    ? 'text-red-400'
+                    : limitStatus.phase === 'split' || counterAtLimit
+                      ? 'text-orange-400'
+                      : 'text-muted'
+                }
               >
-                <Info aria-hidden className="h-3.5 w-3.5" size={14} />
+                {counterMainText}
               </span>
-            </HelpTooltip>
+              {limitStatus.phase === 'split' && (
+                <HelpTooltip text={t('chatPanel.composeLimit.splitHint')}>
+                  <span
+                    role="img"
+                    className="text-muted inline-flex cursor-help select-none"
+                    aria-label={t('chatPanel.composeLimit.splitHint')}
+                  >
+                    <Info aria-hidden className="h-3.5 w-3.5" size={14} />
+                  </span>
+                </HelpTooltip>
+              )}
+              {singlePacketProtocol && limitStatus.phase === 'warn' && (
+                <HelpTooltip text={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}>
+                  <span
+                    role="img"
+                    className="text-muted inline-flex cursor-help select-none"
+                    aria-label={t('chatPanel.composeLimit.meshcoreSingleNotice.hint')}
+                  >
+                    <Info aria-hidden className="h-3.5 w-3.5" size={14} />
+                  </span>
+                </HelpTooltip>
+              )}
+            </div>
           )}
         </div>
+        {showMacros && (
+          <ChatMacroBar placement="inline" onApply={applyMacro} onEdit={openMacroDialog} />
+        )}
+      </div>
+      {showMacros && <ChatMacroBar placement="row" onApply={applyMacro} onEdit={openMacroDialog} />}
+      {showMacros && macroDialogFocus !== null && (
+        <EditMacrosDialog
+          protocol={protocol}
+          payloadLimit={payloadLimit}
+          composerContext={composerContext}
+          senderDisplayName={senderDisplayName}
+          useWireByteCount={useWireByteCount}
+          initialFocusIndex={macroDialogFocus}
+          onClose={closeMacroDialog}
+        />
       )}
 
       {singlePacketProtocol && limitStatus.phase === 'overMax' && (
