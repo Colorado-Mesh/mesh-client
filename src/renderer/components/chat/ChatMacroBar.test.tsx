@@ -155,6 +155,15 @@ describe('ChatMacroBar', () => {
     expect(mid).toBeLessThan(12);
   });
 
+  it('keeps all twelve Small macros visible while they fit at their narrowest', () => {
+    expect(computeVisibleMacroCount(800, 'small', 16)).toBe(12);
+    expect(computeVisibleMacroCount(600, 'small', 16)).toBe(12);
+    expect(computeVisibleMacroCount(800, 'large', 16)).toBeLessThan(12);
+    const tight = computeVisibleMacroCount(400, 'small', 16);
+    expect(tight).toBeGreaterThan(0);
+    expect(tight).toBeLessThan(12);
+  });
+
   it('has no axe violations collapsed and expanded with a highlighted macro', async () => {
     seedMacros();
     const { container } = renderComposer();
