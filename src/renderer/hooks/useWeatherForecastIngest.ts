@@ -62,6 +62,7 @@ export function useWeatherForecastIngest(): void {
         store.upsertForecast(entry);
       },
       appendSegments: store.appendSegments,
+      completeIssued: store.completeIssued,
     });
     let timer: ReturnType<typeof setTimeout> | null = null;
     const runScan = () => {

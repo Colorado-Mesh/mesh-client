@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Circle, Marker, Tooltip } from 'react-leaflet';
 
 import { useNowMs } from '@/renderer/hooks/useNowMs';
+import { formatDisplayDateTime } from '@/renderer/lib/formatDisplayTime';
 import {
   forecastAreaColor,
   forecastAreaRadiusMeters,
   forecastDisplayTemp,
 } from '@/renderer/lib/weatherForecastArea';
+import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import {
   selectActiveForecasts,
   useWeatherForecastStore,
@@ -50,6 +52,7 @@ const ForecastArea = memo(function ForecastArea({
   onSenderClick?: WeatherForecastLayerProps['onSenderClick'];
 }) {
   const { t } = useTranslation();
+  const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const title = useForecastTitle(entry);
   const color = forecastAreaColor(entry);
   const temp = forecastDisplayTemp(entry);
@@ -107,7 +110,13 @@ const ForecastArea = memo(function ForecastArea({
         </div>
       ) : null}
       {entry.hasAlerts ? <div>{t('weatherForecast.alerts')}</div> : null}
-      {entry.issuedAt ? (
+      {entry.issuedTruncated ? (
+        <div className="opacity-80">
+          {t('weatherForecast.received', {
+            when: formatDisplayDateTime(entry.receivedAt, { use24Hour: use24HourTime }),
+          })}
+        </div>
+      ) : entry.issuedAt ? (
         <div className="opacity-80">{t('weatherForecast.issued', { when: entry.issuedAt })}</div>
       ) : null}
       {entry.positionSource === 'senderApprox' ? (

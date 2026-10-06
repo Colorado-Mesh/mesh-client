@@ -85,6 +85,19 @@ describe('weatherForecastStore', () => {
     ]);
   });
 
+  it('completes a cut-off issued time only for the matching head message', () => {
+    const { upsertForecast, completeIssued } = useWeatherForecastStore.getState();
+    const head = entry('a', NOW - 1000, { issuedAt: '10/05', issuedTruncated: true });
+    upsertForecast(head, NOW);
+    completeIssued('a', 'other', '10/05 09:00 MDT');
+    expect(useWeatherForecastStore.getState().entries.a.issuedAt).toBe('10/05');
+    completeIssued('a', head.messageId, '10/05 14:52 MDT');
+    expect(useWeatherForecastStore.getState().entries.a).toMatchObject({
+      issuedAt: '10/05 14:52 MDT',
+      issuedTruncated: false,
+    });
+  });
+
   it('selects live forecasts newest first', () => {
     const entries = {
       a: entry('a', NOW - 2000),

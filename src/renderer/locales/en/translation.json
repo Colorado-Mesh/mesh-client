@@ -2659,6 +2659,7 @@
     "highLow": "High {{high}}° / Low {{low}}°",
     "alerts": "Weather alerts in effect",
     "issued": "Issued {{when}}",
+    "received": "Received {{when}}",
     "positionApprox": "Place not found; shown near the sender",
     "positionRequester": "Shown at the node that asked for it",
     "via": "via {{sender}} on {{protocol}}",

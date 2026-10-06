@@ -6727,6 +6727,7 @@
       "meshtastic": "Meshtastic",
       "meshcore": "MeshCore",
       "reticulum": "Reticulum"
-    }
+    },
+    "received": "Přijato {{when}}"
   }
 }

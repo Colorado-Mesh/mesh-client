@@ -64,14 +64,16 @@ function setup(resolved: GeoResolvedPlace | null = null, allowOnline = false) {
   const upserts: WeatherForecastEntry[] = [];
   const resolvePlace = vi.fn().mockResolvedValue(resolved);
   const appendSegments = vi.fn();
+  const completeIssued = vi.fn();
   const ingestor = new WeatherForecastIngestor({
     now: () => NOW,
     allowOnline: () => allowOnline,
     resolvePlace,
     upsert: (e) => upserts.push(e),
     appendSegments,
+    completeIssued,
   });
-  return { ingestor, upserts, resolvePlace, appendSegments };
+  return { ingestor, upserts, resolvePlace, appendSegments, completeIssued };
 }
 
 const AURORA_PLACE: GeoResolvedPlace = {
@@ -203,6 +205,22 @@ describe('WeatherForecastIngestor', () => {
       'Tonight: 55°F Clear | calm',
       'Issued 10/05.',
     ]);
+  });
+
+  it('keeps a cut-off Issued line flagged when the continuation never arrives', async () => {
+    const { ingestor, upserts, completeIssued } = setup(AURORA_PLACE);
+    await ingestor.scan([snapshot([msg('h', BOT, BRIGHTON_POST)])]);
+    expect(upserts[0]).toMatchObject({ issuedAt: '10/05', issuedTruncated: true });
+    expect(completeIssued).not.toHaveBeenCalled();
+  });
+
+  it('completes a cut-off Issued line from the continuation part', async () => {
+    const { ingestor, appendSegments, completeIssued } = setup(AURORA_PLACE);
+    await ingestor.scan([
+      snapshot([msg('h', BOT, BRIGHTON_POST), msg('c', BOT, '[2/2] 10/05 14:52 MDT', 3_000)]),
+    ]);
+    expect(completeIssued).toHaveBeenCalledWith('place:brighton|co', 'h', '10/05 14:52 MDT');
+    expect(appendSegments).toHaveBeenCalledWith('place:brighton|co', 'h', []);
   });
 
   it('logs and skips when place resolution throws', async () => {
