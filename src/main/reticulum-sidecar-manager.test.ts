@@ -283,24 +283,28 @@ describe('ReticulumSidecarManager', () => {
     spawnMock.mockReturnValue(proc);
 
     const manager = new ReticulumSidecarManager();
-    await manager.start();
-    const stdout = (proc as unknown as { stdout: EventEmitter }).stdout;
-    const rst =
-      'WARN rns_interface::tcp: TCP read error interface_id=4 error=Connection reset by peer (os error 54)';
-    const reconnect = 'INFO rns_interface::tcp: reconnecting in 5s name=RMAP World';
-    stdout.emit('data', Buffer.from(`${rst}\n${reconnect}\n${rst}\n${reconnect}\n${rst}\n`));
+    try {
+      await manager.start();
+      const stdout = (proc as unknown as { stdout: EventEmitter }).stdout;
+      const rst =
+        'WARN rns_interface::tcp: TCP read error interface_id=4 error=Connection reset by peer (os error 54)';
+      const reconnect = 'INFO rns_interface::tcp: reconnecting in 5s name=RMAP World';
+      stdout.emit('data', Buffer.from(`${rst}\n${reconnect}\n${rst}\n${reconnect}\n${rst}\n`));
 
-    const rstWarns = warnSpy.mock.calls.filter(([, msg]) => String(msg).includes('TCP read error'));
-    expect(rstWarns).toEqual([['[ReticulumSidecar]', rst]]);
-    expect(warnSpy).not.toHaveBeenCalledWith('[ReticulumSidecar]', reconnect);
-    expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', rst);
-    expect(manager.getStatus().interfaceIssueAlert?.tcpResetByPeer).toEqual(['RMAP World']);
-
-    await manager.stop();
-    warnSpy.mockRestore();
-    debugSpy.mockRestore();
-    existsSpy.mockRestore();
-    mkdirSpy.mockRestore();
+      const rstWarns = warnSpy.mock.calls.filter(([, msg]) =>
+        String(msg).includes('TCP read error'),
+      );
+      expect(rstWarns).toEqual([['[ReticulumSidecar]', rst]]);
+      expect(warnSpy).not.toHaveBeenCalledWith('[ReticulumSidecar]', reconnect);
+      expect(debugSpy).toHaveBeenCalledWith('[ReticulumSidecar]', rst);
+      expect(manager.getStatus().interfaceIssueAlert?.tcpResetByPeer).toEqual(['RMAP World']);
+    } finally {
+      await manager.stop();
+      warnSpy.mockRestore();
+      debugSpy.mockRestore();
+      existsSpy.mockRestore();
+      mkdirSpy.mockRestore();
+    }
   });
 
   function getIssueTracker(manager: ReticulumSidecarManager): {
