@@ -5351,7 +5351,10 @@
     "details": "Szczegóły pokoju",
     "hideDetails": "Ukryj szczegóły pokoju",
     "moreActions": "Więcej działań pokoju",
-    "loginAndSyncHeading": "Logowanie i synchronizacja"
+    "loginAndSyncHeading": "Logowanie i synchronizacja",
+    "enableAutoLogin": "Włącz automatyczne logowanie",
+    "enableAutoLoginAria": "Zaloguj się do tego pokoju automatycznie po podłączeniu radia",
+    "autoLoginSaveFailed": "Nie można zapisać ustawienia automatycznego logowania. Twoje poprzednie ustawienie pozostaje niezmienione."
   },
   "securityPanel": {
     "keyRegenRequested": "Wymagana regeneracja kluczy. Urządzenie wygeneruje nowe klucze.",

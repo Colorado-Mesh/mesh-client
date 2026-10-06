@@ -82,6 +82,8 @@ export function getMeshcoreRoomSyncConfig(nodeId: number): MeshcoreRoomSyncConfi
   };
 }
 
+const syncConfigWriteSeq = new Map<string, number>();
+
 export async function setMeshcoreRoomSyncConfig(
   nodeId: number,
   config: Pick<MeshcoreRoomSyncConfig, 'enabled' | 'intervalMinutes' | 'autoLoginOnConnect'>,
@@ -98,10 +100,21 @@ export async function setMeshcoreRoomSyncConfig(
   };
   const settingKey = meshcoreRoomSyncSettingForNode(nodeId);
   const payload = JSON.stringify(next);
+  const prevRaw = parseStoredJson<Record<string, unknown>>(
+    getAppSettingsRaw(),
+    'meshcoreRoomSyncStorage set prev',
+  )?.[settingKey];
+  const writeSeq = (syncConfigWriteSeq.get(settingKey) ?? 0) + 1;
+  syncConfigWriteSeq.set(settingKey, writeSeq);
   mergeAppSetting(settingKey, payload, 'meshcoreRoomSyncStorage set');
   try {
     await window.electronAPI.appSettings.set(settingKey, payload);
   } catch (e: unknown) {
+    // A newer write owns the local entry; rolling back would clobber it.
+    if (syncConfigWriteSeq.get(settingKey) === writeSeq) {
+      // Undefined drops the key on JSON.stringify, restoring "never persisted".
+      mergeAppSetting(settingKey, prevRaw, 'meshcoreRoomSyncStorage set rollback');
+    }
     console.warn('[meshcoreRoomSyncStorage] persist sync config failed ' + errLikeToLogString(e));
     throw e instanceof Error ? e : new Error(String(e));
   }
@@ -113,6 +126,7 @@ export async function touchMeshcoreRoomLastSyncAt(nodeId: number, atMs: number):
   const next: MeshcoreRoomSyncConfig = { ...prev, lastSyncAt: atMs };
   const settingKey = meshcoreRoomSyncSettingForNode(nodeId);
   const payload = JSON.stringify(next);
+  syncConfigWriteSeq.set(settingKey, (syncConfigWriteSeq.get(settingKey) ?? 0) + 1);
   mergeAppSetting(settingKey, payload, 'meshcoreRoomSyncStorage touch sync');
   try {
     await window.electronAPI.appSettings.set(settingKey, payload);

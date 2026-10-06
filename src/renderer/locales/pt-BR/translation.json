@@ -5271,7 +5271,10 @@
     "details": "Detalhes da sala",
     "hideDetails": "Ocultar detalhes da sala",
     "moreActions": "Mais ações da sala",
-    "loginAndSyncHeading": "Login e sincronização"
+    "loginAndSyncHeading": "Login e sincronização",
+    "enableAutoLogin": "Habilitar login automático",
+    "enableAutoLoginAria": "Faça login nesta sala automaticamente quando o rádio se conectar",
+    "autoLoginSaveFailed": "Não foi possível salvar a configuração de login automático. Sua configuração anterior permanece inalterada."
   },
   "securityPanel": {
     "keyRegenRequested": "Regeneração de chave solicitada. O dispositivo gerará novas chaves.",

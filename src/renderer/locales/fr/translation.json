@@ -5271,7 +5271,10 @@
     "details": "Détails de la salle",
     "hideDetails": "Masquer les détails de la salle",
     "moreActions": "Autres actions de la salle",
-    "loginAndSyncHeading": "Connexion et synchronisation"
+    "loginAndSyncHeading": "Connexion et synchronisation",
+    "enableAutoLogin": "Activer la connexion automatique",
+    "enableAutoLoginAria": "Connectez-vous automatiquement à cette pièce lorsque la radio se connecte",
+    "autoLoginSaveFailed": "Impossible d'enregistrer le paramètre de connexion automatique. Vos paramètres précédents sont inchangés."
   },
   "securityPanel": {
     "keyRegenRequested": "Régénération de clé demandée. L'appareil générera de nouvelles clés.",

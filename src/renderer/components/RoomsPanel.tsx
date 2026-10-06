@@ -125,6 +125,7 @@ import { ChatComposer } from './ChatComposer';
 import { ChatPayloadText } from './ChatPayloadText';
 import { ConfirmModal } from './ConfirmModal';
 import { MessageStatusBadge } from './MessageStatusBadge';
+import { useToast } from './Toast';
 import { Button, IconButton } from './ui/Button';
 import {
   CHECKBOX_CLASS,
@@ -283,11 +284,16 @@ export default function RoomsPanel({
   alwaysShowMessageActions = false,
 }: Props) {
   const { t } = useTranslation();
+  const { addToast } = useToast();
   const { inactive: appWindowInactive } = useAppWindowActivity();
   const parentIconTrigger = useParentIconTrigger();
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(
     () => initialRoomTarget ?? null,
   );
+  const selectedRoomIdRef = useRef(selectedRoomId);
+  useEffect(() => {
+    selectedRoomIdRef.current = selectedRoomId;
+  }, [selectedRoomId]);
   const [loginPassword, setLoginPassword] = useState('');
   /** Tracks in-flight login promises before the shared queue snapshot updates (tests / fast paths). */
   const [localLoginRoomIds, setLocalLoginRoomIds] = useState<Set<number>>(() => new Set());
@@ -820,20 +826,28 @@ export default function RoomsPanel({
     async (nodeId: number, enabled: boolean) => {
       setAutoLoginOnConnect(enabled);
       const prev = getMeshcoreRoomSyncConfig(nodeId);
-      if (!enabled) {
-        await disableMeshcoreRoomAutoLogin(nodeId);
-      } else {
-        clearMeshcoreRoomAutoLoginFailure(nodeId);
-        await setMeshcoreRoomSyncConfig(nodeId, {
-          enabled: prev.enabled,
-          intervalMinutes: prev.intervalMinutes,
-          autoLoginOnConnect: true,
-        });
+      try {
+        if (!enabled) {
+          await disableMeshcoreRoomAutoLogin(nodeId);
+        } else {
+          await setMeshcoreRoomSyncConfig(nodeId, {
+            enabled: prev.enabled,
+            intervalMinutes: prev.intervalMinutes,
+            autoLoginOnConnect: true,
+          });
+          clearMeshcoreRoomAutoLoginFailure(nodeId);
+        }
+        if (selectedRoomIdRef.current === nodeId) setSyncConfigDirty(false);
+      } catch (e: unknown) {
+        console.warn('[RoomsPanel] save auto-login failed ' + errLikeToLogString(e));
+        if (selectedRoomIdRef.current === nodeId) {
+          setAutoLoginOnConnect(getMeshcoreRoomSyncConfig(nodeId).autoLoginOnConnect ?? false);
+        }
+        addToast(t('roomsPanel.autoLoginSaveFailed'), 'error');
       }
-      setSyncConfigDirty(false);
       refreshStoredRooms();
     },
-    [refreshStoredRooms],
+    [addToast, refreshStoredRooms, t],
   );
 
   const handleSelectRoom = useCallback(
@@ -1847,6 +1861,18 @@ export default function RoomsPanel({
                   {t('roomsPanel.stopAutoLogin')}
                 </Button>
               )}
+              {selectedRoomSecretsSummary.hasCredential &&
+                !selectedRoomSecretsSummary.autoLoginOnConnect && (
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      void handleAutoLoginOnConnectChange(selectedRoomId, true);
+                    }}
+                    aria-label={t('roomsPanel.enableAutoLoginAria')}
+                  >
+                    {t('roomsPanel.enableAutoLogin')}
+                  </Button>
+                )}
               {selectedRoomSecretsSummary.hasCredential && (
                 <Button
                   size="sm"

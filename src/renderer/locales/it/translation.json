@@ -5271,7 +5271,10 @@
     "details": "Dettagli della stanza",
     "hideDetails": "Nascondi dettagli della stanza",
     "moreActions": "Altre azioni della stanza",
-    "loginAndSyncHeading": "Accesso e sincronizzazione"
+    "loginAndSyncHeading": "Accesso e sincronizzazione",
+    "enableAutoLogin": "Abilita accesso automatico",
+    "enableAutoLoginAria": "Accedi automaticamente a questa stanza quando la radio si connette",
+    "autoLoginSaveFailed": "Impossibile salvare l'impostazione di accesso automatico. L'impostazione precedente è invariata."
   },
   "securityPanel": {
     "keyRegenRequested": "Rigenerazione chiave richiesta. Il dispositivo genererà nuove chiavi.",
