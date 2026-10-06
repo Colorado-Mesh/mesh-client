@@ -3537,6 +3537,7 @@ export function useMeshcoreRuntime() {
       getParams: () => meshcoreConnectionParamsRef.current,
       getTransportType: (p) => p.rfType,
       isBle: (p) => p.rfType === 'ble',
+      getBlePeripheralId: (p) => (p.rfType === 'ble' ? p.blePeripheralId : undefined),
       isExplicitDisconnect: () => meshcoreExplicitDisconnectRef.current,
       isReconnecting: {
         get: () => meshcoreIsReconnectingRef.current,

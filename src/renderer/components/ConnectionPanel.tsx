@@ -24,7 +24,11 @@ import {
 } from '@/shared/meshtasticMqttReconnect';
 import { mqttUsesTls } from '@/shared/mqttTls';
 import { formatMeshtasticNodeId } from '@/shared/nodeNameUtils';
-import { type BlePickerIdentity, resolveBlePickerIdentity } from '@/shared/normalizeBleMac';
+import {
+  bleIdsMatch,
+  type BlePickerIdentity,
+  resolveBlePickerIdentity,
+} from '@/shared/normalizeBleMac';
 import { clampTcpPort, parseTcpPortFromString } from '@/shared/tcpPort';
 
 import { useActiveMeshIdentity } from '../hooks/useActiveMeshIdentity';
@@ -150,9 +154,12 @@ import type {
   SerialPortInfo,
 } from '../lib/types';
 import {
+  clearWindowsBleReconnectSkip,
   getWindowsBlePairState,
   pairWindowsBle,
+  peekWindowsBleReconnectSkip,
   shouldOfferWindowsRePair,
+  subscribeWindowsBleReconnectSkip,
   unpairWindowsBle,
   windowsPairingFailureMessage,
 } from '../lib/windowsBlePairing';
@@ -1186,6 +1193,45 @@ export default function ConnectionPanel({
     },
     [protocol],
   );
+
+  const surfaceWindowsAutoReconnectSkip = useCallback(
+    (deviceId: string, state: 'blocked' | 'unpaired') => {
+      setConnectionType('ble');
+      if (state === 'unpaired') {
+        isAutoConnectingRef.current = false;
+        setIsAutoConnecting(false);
+        setConnecting(false);
+        promptWindowsPairing(deviceId);
+        return;
+      }
+      showWindowsPairStateBlocked(deviceId);
+    },
+    [promptWindowsPairing, showWindowsPairStateBlocked],
+  );
+
+  useEffect(() => {
+    if (!isWindows || !capabilities.hasGattBleScanning) return;
+    const rememberedBleId = (): string | null => {
+      const last = loadLastConnection(protocol);
+      if (last?.type !== 'ble') return null;
+      return last.bleDeviceId ?? loadLastBleDevice(protocol);
+    };
+    const apply = (peripheralId: string, state: 'blocked' | 'unpaired'): void => {
+      const lastId = rememberedBleId();
+      if (!lastId || !bleIdsMatch(lastId, peripheralId)) return;
+      clearWindowsBleReconnectSkip(peripheralId);
+      surfaceWindowsAutoReconnectSkip(peripheralId, state);
+    };
+    const unsubscribe = subscribeWindowsBleReconnectSkip((detail) => {
+      apply(detail.peripheralId, detail.state);
+    });
+    const lastId = rememberedBleId();
+    if (lastId) {
+      const pending = peekWindowsBleReconnectSkip(lastId);
+      if (pending) apply(pending.peripheralId, pending.state);
+    }
+    return unsubscribe;
+  }, [isWindows, capabilities.hasGattBleScanning, protocol, surfaceWindowsAutoReconnectSkip]);
 
   /** Windows: pair in-app with the PIN, then connect. Wrong PIN keeps the prompt open. */
   const pairWindowsThenConnect = useCallback(

@@ -16,6 +16,7 @@ import type { RfReconnectController } from './rfReconnectController';
 import { rfMaxReconnectAttemptsForTransport } from './rfReconnectShared';
 import { delayUnlessSuspended } from './systemPowerState';
 import { BLE_RECONNECT_ATTEMPT_BUDGET_MS } from './timeConstants';
+import { windowsBleAutoReconnectSkip } from './windowsBlePairing';
 
 export type LoraRfReconnectOverlapCheck = 'beforeOpening' | 'afterOpening';
 
@@ -46,6 +47,8 @@ export interface LoraRfReconnectAttemptDeps<TParams> {
   /** Transport key for attempt budget (`ble` / `serial` / `tcp` / …). */
   getTransportType: (params: TParams) => string;
   isBle: (params: TParams) => boolean;
+  /** Windows BLE auto-reconnect reads this before open. Other transports may omit it. */
+  getBlePeripheralId?: (params: TParams) => string | null | undefined;
 
   isExplicitDisconnect: () => boolean;
   isReconnecting: LoraRfReconnectBoolRef;
@@ -178,6 +181,33 @@ export async function runLoraRfReconnectAttempt<TParams>(
       deps.setDisconnectedUi({ connectionLoss: true });
     }
     return;
+  }
+
+  if (deps.isBle(params)) {
+    const peripheralId = deps.getBlePeripheralId?.(params)?.trim() ?? '';
+    if (peripheralId.length > 0) {
+      const skip = await windowsBleAutoReconnectSkip(peripheralId);
+      if (skip) {
+        // A stale or missing bond must not enter the WinRT connect. Stop this cycle and let
+        // the panel show the existing unpaired / blocked state.
+        console.debug(`[${deps.logTag}] reconnect: skip BLE open — Windows pair state ${skip}`);
+        deps.attemptCounter.set(0);
+        deps.isReconnecting.set(false);
+        deps.controller.endAttempt({ keepReconnecting: false });
+        deps.setDisconnectedUi({ connectionLoss: true });
+        return;
+      }
+      if (!deps.isReconnecting.get() || deps.generation.get() !== generation) {
+        const flushed = flushDeferredOrEnd(deps, {
+          keepReconnecting: deps.isReconnecting.get(),
+        });
+        if (flushed === 'flushed') return;
+        if (!deps.isReconnecting.get()) {
+          deps.setDisconnectedUi({ connectionLoss: true });
+        }
+        return;
+      }
+    }
   }
 
   const skipOverlappingOpen = (): boolean => {

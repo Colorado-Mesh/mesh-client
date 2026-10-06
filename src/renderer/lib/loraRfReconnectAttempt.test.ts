@@ -9,6 +9,7 @@ import { createRfReconnectController } from './rfReconnectController';
 import { loadRendererLibSource } from './sourceContractTestHelpers';
 import { setSystemSuspended } from './systemPowerState';
 import { BLE_RECONNECT_ATTEMPT_BUDGET_MS } from './timeConstants';
+import { resetWindowsBleReconnectSkipState } from './windowsBlePairing';
 
 vi.mock('./bleReconnectHelper', async (importOriginal) => {
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- vi.importOriginal needs typeof import()
@@ -21,6 +22,7 @@ vi.mock('./bleReconnectHelper', async (importOriginal) => {
 
 interface TestParams {
   type: 'ble' | 'serial' | 'tcp';
+  blePeripheralId?: string;
 }
 
 function boolRef(initial = false) {
@@ -97,6 +99,7 @@ describe('runLoraRfReconnectAttempt', () => {
     });
     controller.onLinkLost();
     generation.set(controller.generation);
+    resetWindowsBleReconnectSkipState();
     vi.spyOn(console, 'debug').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.mocked(raceWithDeadline).mockImplementation((work) => Promise.resolve(work));
@@ -106,6 +109,7 @@ describe('runLoraRfReconnectAttempt', () => {
     setSystemSuspended(false);
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   function buildDeps(
@@ -142,6 +146,13 @@ describe('runLoraRfReconnectAttempt', () => {
     // Advance past exponential backoff (attempt 1 → 2000ms).
     await vi.advanceTimersByTimeAsync(2_500);
     await promise;
+  }
+
+  function stubBlePlatform(platform: 'win32' | 'linux' | 'darwin') {
+    const gattPairState = vi.fn();
+    const getPlatform = vi.fn().mockReturnValue(platform);
+    vi.stubGlobal('window', { electronAPI: { gattPairState, getPlatform } });
+    return { gattPairState };
   }
 
   it('clears reconnecting and calls onMissingParams when params are null', async () => {
@@ -315,11 +326,77 @@ describe('runLoraRfReconnectAttempt', () => {
     expect(ctx.generation).toBe(1);
     expect(typeof ctx.lateTransport.cleanup).toBe('function');
   });
+
+  it.each(['unpaired', 'blocked'] as const)(
+    'skips a Windows BLE open when pair state is %s',
+    async (skipState) => {
+      params = { type: 'ble', blePeripheralId: 'aa:bb:cc:dd:ee:ff' };
+      const { gattPairState } = stubBlePlatform('win32');
+      gattPairState.mockResolvedValue(
+        skipState === 'unpaired'
+          ? { ok: true, paired: false }
+          : { ok: false, code: 'connect_timeout', error: 'windows pair-state timed out' },
+      );
+      await runAttempt({
+        getBlePeripheralId: (p) => (p.type === 'ble' ? p.blePeripheralId : undefined),
+      });
+      expect(gattPairState).toHaveBeenCalledWith('aa:bb:cc:dd:ee:ff');
+      expect(runOpenAndAttach).not.toHaveBeenCalled();
+      expect(scheduleAttempt).not.toHaveBeenCalled();
+      expect(isReconnecting.get()).toBe(false);
+      expect(setDisconnectedUi).toHaveBeenCalledWith({ connectionLoss: true });
+      expect(controller.isReconnecting).toBe(false);
+      expect(controller.attemptActive).toBe(false);
+    },
+  );
+
+  it('still opens a Windows BLE reconnect when the radio is paired or pair state is unknown', async () => {
+    params = { type: 'ble', blePeripheralId: 'aa:bb:cc:dd:ee:ff' };
+    const { gattPairState } = stubBlePlatform('win32');
+    gattPairState.mockResolvedValue({ ok: true, paired: true });
+    await runAttempt({
+      getBlePeripheralId: (p) => (p.type === 'ble' ? p.blePeripheralId : undefined),
+    });
+    expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
+    expect(setDisconnectedUi).not.toHaveBeenCalled();
+
+    runOpenAndAttach.mockClear();
+    setDisconnectedUi.mockClear();
+    controller.onLinkLost();
+    generation.set(controller.generation);
+    isReconnecting.set(true);
+    attemptCounter.set(0);
+    gattPairState.mockResolvedValue({
+      ok: false,
+      code: 'unsupported',
+      error: 'mock',
+    });
+    await runAttempt({
+      getBlePeripheralId: (p) => (p.type === 'ble' ? p.blePeripheralId : undefined),
+    });
+    expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
+    expect(setDisconnectedUi).not.toHaveBeenCalled();
+  });
+
+  it.each(['linux', 'darwin'] as const)(
+    'does not query Windows pair state on %s auto-reconnect',
+    async (platform) => {
+      params = { type: 'ble', blePeripheralId: 'aa:bb:cc:dd:ee:ff' };
+      const { gattPairState } = stubBlePlatform(platform);
+      gattPairState.mockResolvedValue({ ok: true, paired: false });
+      await runAttempt({
+        getBlePeripheralId: (p) => (p.type === 'ble' ? p.blePeripheralId : undefined),
+      });
+      expect(gattPairState).not.toHaveBeenCalled();
+      expect(runOpenAndAttach).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 describe('loraRfReconnectAttempt source contracts', () => {
   it('owns raceWithDeadline budget and finally schedule flush', () => {
     const source = loadRendererLibSource('loraRfReconnectAttempt.ts');
+    expect(source).toContain('windowsBleAutoReconnectSkip');
     expect(source).toContain('raceWithDeadline');
     expect(source).toContain('BLE_RECONNECT_ATTEMPT_BUDGET_MS');
     expect(source).toContain('Reconnect attempt timed out after');

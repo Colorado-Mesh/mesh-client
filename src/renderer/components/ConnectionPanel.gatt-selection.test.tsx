@@ -5,6 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GattBleDevice } from '@/shared/electron-api.types';
 
 import type { DeviceState } from '../lib/types';
+import {
+  resetWindowsBleReconnectSkipState,
+  windowsBleAutoReconnectSkip,
+} from '../lib/windowsBlePairing';
 import ConnectionPanel from './ConnectionPanel';
 
 const disconnectedState: DeviceState = {
@@ -42,6 +46,7 @@ describe('ConnectionPanel manual GATT selection', () => {
 
   afterEach(() => {
     localStorage.clear();
+    resetWindowsBleReconnectSkipState();
     vi.mocked(window.electronAPI.getPlatform).mockReturnValue('linux');
   });
 
@@ -496,6 +501,42 @@ describe('ConnectionPanel manual GATT selection', () => {
       expect(onConnect).not.toHaveBeenCalled();
       expect(warn.mock.calls.some((args) => String(args[0]).includes('NotReadyToPair'))).toBe(true);
       warn.mockRestore();
+    });
+
+    it('shows the PIN prompt when Windows auto-reconnect skips an unpaired radio', async () => {
+      localStorage.setItem(
+        'mesh-client:lastConnection:meshcore',
+        JSON.stringify({ type: 'ble', bleDeviceId: device.deviceId }),
+      );
+      vi.mocked(window.electronAPI.gattPairState).mockResolvedValue({ ok: true, paired: false });
+      const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
+      await act(async () => {
+        await windowsBleAutoReconnectSkip(device.deviceId);
+      });
+      expect(await screen.findByPlaceholderText('PIN')).toBeInTheDocument();
+      expect(onConnect).not.toHaveBeenCalled();
+      expect(window.electronAPI.gattPair).not.toHaveBeenCalled();
+    });
+
+    it('offers Remove & Re-pair when Windows auto-reconnect skips a blocked pair state', async () => {
+      localStorage.setItem(
+        'mesh-client:lastConnection:meshcore',
+        JSON.stringify({ type: 'ble', bleDeviceId: device.deviceId }),
+      );
+      vi.mocked(window.electronAPI.gattPairState).mockResolvedValue({
+        ok: false,
+        code: 'connect_timeout',
+        error: 'windows pair-state timed out',
+      });
+      const onConnect = renderPanel('meshcore', vi.fn().mockResolvedValue(undefined));
+      await act(async () => {
+        await windowsBleAutoReconnectSkip(device.deviceId);
+      });
+      expect(
+        await screen.findByRole('button', { name: 'Remove & Re-pair Device' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Could not check whether this radio is paired/)).toBeInTheDocument();
+      expect(onConnect).not.toHaveBeenCalled();
     });
 
     it('Reconnect prompts for a PIN instead of a doomed connect when the bond is gone', async () => {
