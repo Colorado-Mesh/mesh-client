@@ -47,8 +47,16 @@ export function computeVisibleMacroCount(
   if (widthPx <= 0) return CHAT_MACRO_SLOT_COUNT;
   const button = BUTTON_WIDTH_REM[size] * remPx;
   const control = CONTROL_WIDTH_REM[size] * remPx;
-  const all = Math.floor((widthPx - control * 2) / button);
+  const allWidth = widthPx - control * 2;
+  const all = Math.floor(allWidth / button);
   if (all >= CHAT_MACRO_SLOT_COUNT) return CHAT_MACRO_SLOT_COUNT;
+  // Small buttons are content-sized and truncate, so keep every key visible while they still fit.
+  if (
+    size === 'small' &&
+    Math.floor(allWidth / (MIN_BUTTON_WIDTH_REM * remPx)) >= CHAT_MACRO_SLOT_COUNT
+  ) {
+    return CHAT_MACRO_SLOT_COUNT;
+  }
   const withMoreWidth = widthPx - control * 3;
   const withMore = Math.floor(withMoreWidth / button);
   const fitAtNarrowest = Math.floor(withMoreWidth / (MIN_BUTTON_WIDTH_REM * remPx));
