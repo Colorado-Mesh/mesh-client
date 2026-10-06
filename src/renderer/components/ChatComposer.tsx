@@ -862,22 +862,22 @@ export function ChatComposer({
   const canTypeInComposer = !disabled && (isConnected || allowOutbox);
 
   const applyMacro = useCallback(
-    (index: number) => {
+    (index: number): boolean => {
       const macros = useChatMacrosStore.getState();
       const slot = macros.slots[index];
-      if (isChatMacroSlotEmpty(slot) || !canTypeInComposer) return;
+      if (isChatMacroSlotEmpty(slot) || !canTypeInComposer) return false;
       const text = slot.text.trim();
       const current = inputValueRef.current;
       const textarea = inputRef.current;
 
       // Send now only when the box is empty, so a half-written draft is never sent or lost.
       if (macros.sendMode === 'sendNow' && !current.trim() && !sending) {
-        if (!suppressLimits && text.length > maxInputLength) return;
+        if (!suppressLimits && text.length > maxInputLength) return false;
         macros.markUsed(index);
         pendingMacroSendRef.current = text;
         setInput(text);
         setChatActionError(null);
-        return;
+        return true;
       }
 
       const focused = textarea != null && document.activeElement === textarea;
@@ -886,7 +886,7 @@ export function ChatComposer({
       const before = current.slice(0, start);
       const insert = before && !/\s$/.test(before) ? ` ${text}` : text;
       const next = before + insert + current.slice(end);
-      if (!suppressLimits && next.length > maxInputLength) return;
+      if (!suppressLimits && next.length > maxInputLength) return false;
       macros.markUsed(index);
       setInput(next);
       setChatActionError(null);
@@ -896,6 +896,7 @@ export function ChatComposer({
         textarea?.focus();
         textarea?.setSelectionRange(caret, caret);
       });
+      return true;
     },
     [canTypeInComposer, maxInputLength, sending, suppressLimits],
   );
@@ -914,9 +915,8 @@ export function ChatComposer({
     if (!showMacros) return;
     return registerMacroComposer(macroComposerId, {
       isActive: () => isElementOnScreen(inputRef.current),
-      apply: (index) => {
-        applyMacroRef.current(index);
-      },
+      isComposerField: (target) => target === inputRef.current,
+      apply: (index) => applyMacroRef.current(index),
     });
   }, [macroComposerId, showMacros]);
 

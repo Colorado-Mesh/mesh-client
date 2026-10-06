@@ -592,7 +592,7 @@ describe('RepeatersPanel', () => {
   });
 
   it.each([
-    ['Turn hardware CAD on', 'set cad on'],
+    ['Turn hardware CAD off', 'set cad off'],
     ['Turn FEM RX gain off', 'set radio.fem.rxgain off'],
     ['Get boot and shutdown reason', 'get pwrmgt.bootreason'],
   ])('sends the exact firmware token for %s', async (name, command) => {
@@ -632,6 +632,26 @@ describe('RepeatersPanel', () => {
         expect.stringMatching(/clock is ahead of this computer/i),
         'info',
       );
+    });
+  });
+
+  it.each([
+    ['Turn hardware CAD on', 'set cad on'],
+    ['Turn FEM TX gain on (Station G3)', 'set radio.fem.txgain on'],
+    ['Turn FEM TX gain off (Station G3)', 'set radio.fem.txgain off'],
+  ])('confirms %s before sending', async (name, command) => {
+    const onSendCliCommand = vi.fn().mockResolvedValue('ok');
+    render(<RepeatersPanel {...makeBaseProps()} onSendCliCommand={onSendCliCommand} />);
+
+    await chooseRowAction(userEvent, 'CLI interface');
+    await userEvent.click(screen.getByRole('button', { name }));
+
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Run command' }));
+    expect(onSendCliCommand).toHaveBeenCalledWith(repeater.node_id, command, {
+      confirmedDanger: true,
     });
   });
 

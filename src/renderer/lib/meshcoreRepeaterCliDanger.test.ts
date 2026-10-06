@@ -22,5 +22,16 @@ describe('meshcoreRepeaterCliDanger', () => {
     expect(isMeshcoreRepeaterCliDangerCommand('ver')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('clock')).toBe(false);
     expect(isMeshcoreRepeaterCliDangerCommand('advert')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('get cad')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('set cad off')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('set radio.fem.rxgain off')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('get radio.fem.txgain')).toBe(false);
+  });
+
+  it('confirms CAD lock and FEM TX gain sets', () => {
+    expect(isMeshcoreRepeaterCliDangerCommand('set cad on')).toBe(true);
+    expect(isMeshcoreRepeaterCliDangerCommand('Set CAD On')).toBe(true);
+    expect(isMeshcoreRepeaterCliDangerCommand('set radio.fem.txgain on')).toBe(true);
+    expect(isMeshcoreRepeaterCliDangerCommand('set radio.fem.txgain off')).toBe(true);
   });
 });

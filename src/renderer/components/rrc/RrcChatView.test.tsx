@@ -913,7 +913,7 @@ describe('RrcChatView hub notice grouping', () => {
   });
 
   it('collapses a reconnect burst into one expandable row', () => {
-    render(<RrcChatView {...baseProps} messages={burst} />);
+    render(<RrcChatView {...baseProps} hubDestHash={HUB} messages={burst} />);
     expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(2);
     expect(screen.getAllByTestId('rrc-notice-group')).toHaveLength(1);
     expect(screen.queryByText(/Welcome to the Colorado Mesh/)).toBeNull();
@@ -931,13 +931,15 @@ describe('RrcChatView hub notice grouping', () => {
   });
 
   it('keeps a lone hub notice inline', () => {
-    render(<RrcChatView {...baseProps} messages={[burst[0], burst[2], burst[4]]} />);
+    render(
+      <RrcChatView {...baseProps} hubDestHash={HUB} messages={[burst[0], burst[2], burst[4]]} />,
+    );
     expect(screen.queryByTestId('rrc-notice-group')).toBeNull();
     expect(screen.getAllByTestId('rrc-chat-line')).toHaveLength(3);
   });
 
   it('has no axe violations collapsed or expanded', async () => {
-    const { container } = render(<RrcChatView {...baseProps} messages={burst} />);
+    const { container } = render(<RrcChatView {...baseProps} hubDestHash={HUB} messages={burst} />);
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
     fireEvent.click(screen.getByRole('button', { name: 'rrc.hubSession.expand' }));

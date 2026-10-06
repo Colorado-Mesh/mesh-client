@@ -3,7 +3,10 @@ import { CHAT_MACRO_SLOT_COUNT } from '@/renderer/stores/chatMacrosStore';
 export interface MacroComposerTarget {
   /** True while this composer is on screen (its panel is the visible one). */
   isActive: () => boolean;
-  apply: (index: number) => void;
+  /** Applies the slot. True only when a non-empty slot was written or sent. */
+  apply: (index: number) => boolean;
+  /** True when `target` is this composer's own field. */
+  isComposerField?: (target: EventTarget | null) => boolean;
 }
 
 const targets = new Map<string, MacroComposerTarget>();
