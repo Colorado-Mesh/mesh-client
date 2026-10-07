@@ -46,10 +46,14 @@ export function isMainProcessBleTimeoutMessage(message: string): boolean {
   return MAIN_PROCESS_BLE_TIMEOUT_RE.test(message);
 }
 
+/** Sidecar GATT `connect_timeout: …` (e.g. BlueZ D-Bus "Timeout waiting for reply"). */
+const SIDECAR_GATT_CONNECT_TIMEOUT_RE = /\bconnect_timeout\s*:/;
+
 export function classifyMeshcoreBleTimeoutStage(message: string): MeshcoreBleTimeoutStage {
   if (/MeshCore BLE IPC open timed out/i.test(message)) return 'ipc-open';
   if (/MeshCore BLE protocol handshake timed out/i.test(message)) return 'protocol-handshake';
   if (isMainProcessBleTimeoutMessage(message)) return 'ipc-open';
+  if (SIDECAR_GATT_CONNECT_TIMEOUT_RE.test(message)) return 'ipc-open';
   return 'unknown';
 }
 

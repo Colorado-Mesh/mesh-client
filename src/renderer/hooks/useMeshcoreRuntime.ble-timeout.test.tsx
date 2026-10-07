@@ -235,6 +235,31 @@ describe('useMeshcoreRuntime BLE GATT timeout handling', () => {
     );
   });
 
+  it('retries and surfaces timeout guidance when sidecar GATT reports connect_timeout', async () => {
+    // Linux BlueZ: Device1.Connect gets no D-Bus reply within 30s.
+    vi.mocked(window.electronAPI.connectGatt).mockRejectedValue(
+      new Error('connect_timeout: Timeout waiting for reply'),
+    );
+
+    const { result } = renderHook(() => useMeshcoreRuntime());
+
+    await expect(
+      act(async () => {
+        await result.current.connect('ble', undefined, 'ble-device-bluez');
+      }),
+    ).rejects.toThrow('meshcore.errors.bleTimeoutGatt');
+
+    expect(window.electronAPI.connectGatt).toHaveBeenCalledTimes(2);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /\[MeshCoreTransport\] GATT BLE attempt 2\/2 failed: connect_timeout: Timeout waiting for reply/,
+      ),
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      '[useMeshcoreRuntime] connect error {"userMessage":"meshcore.errors.bleTimeoutGatt","raw":"connect_timeout: Timeout waiting for reply","bleTimeoutStage":"ipc-open"}',
+    );
+  });
+
   it('stringifies object-shaped non-timeout BLE errors', async () => {
     vi.mocked(window.electronAPI.connectGatt).mockRejectedValue({
       code: 'BLE_CUSTOM',
