@@ -1,117 +1,97 @@
+---
+hide:
+  - navigation
+---
+
 # Mesh-Client
 
-Cross-platform **Electron** desktop client for **Meshtastic**, **MeshCore**, and **Reticulum (LXMF)** on **macOS**, **Linux**, and **Windows** with **BLE**, **USB serial**, **Wi-Fi/TCP**, **MQTT**, local **SQLite** history, **routing diagnostics**, **16-language UI**, plus EMCOMM support via **MECP** and **TAK**.
+**One desktop app for Meshtastic, MeshCore, and Reticulum mesh networks** on macOS, Linux, and Windows. Connect over Bluetooth, USB serial, Wi-Fi/TCP, or MQTT, keep your full message history locally, and see what your mesh is actually doing with built-in routing diagnostics.
 
-**Mesh-Client is a 100% volunteer-run project.** It is designed, coded, tested, translated, documented, and supported entirely by unpaid volunteers in their spare time; there is no company or paid staff behind it. Response times depend on volunteer availability, and every contribution helps: bug reports, testing on real radios, translations, docs, and code. See [Contributing](contributing.md) or join the [Discord](https://discord.com/invite/McChKR5NpS).
+[Download Mesh-Client](https://github.com/Colorado-Mesh/mesh-client/releases/latest){ .md-button .md-button--primary }
+[Install guide](install.md){ .md-button }
+[All features](features.md){ .md-button }
 
-This page is the docs landing view. The full repository README (badges, feature reference, usage) lives on [GitHub](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md).
+<div class="mesh-hero" markdown>
 
----
+![Mesh-Client chat view](images/chat.png)
 
-## Why
+</div>
 
-Mesh-Client provides one desktop workflow for **Meshtastic**, **MeshCore**, and **Reticulum** (LXMF via AGPL sidecar) with persistent local storage and protocol-specific diagnostic tooling.
+> [!NOTE]
+> **Volunteer-run.** Mesh-Client is designed, coded, tested, translated, documented, and supported entirely by unpaid volunteers. There is no company or paid staff behind it. Bug reports, testing on real radios, translations, docs, and code all help. See [Contributing](contributing.md) or join the [Discord](https://discord.com/invite/McChKR5NpS).
 
-Key outcomes:
+## Pick your mesh
 
-- True message persistence with SQLite-backed history.
-- Unified interface across Meshtastic, MeshCore, and Reticulum (rail protocol switcher, MT / MC / RN: Meshtastic green, MeshCore cyan, Reticulum yellow).
-- Advanced mesh visibility via diagnostics, map/topology overlays, and routing insights.
-- EMCOMM: MECP emergency reports, Incident Command, and TAK (CoT) on all three protocols.
-- Offline-ready maps (`mesh-tiles:` cache + region download) and configurable chat/MECP notification tones.
-- Multi-language support (16 languages) with offline static bundles.
-- Cross-platform desktop support for macOS, Linux, and Windows.
+<div class="grid" markdown>
 
-**Protocol scope:** Mesh-Client focuses on RF mesh (LoRa and related). Additional protocols are in scope when they support that RF mesh path. Internet-only stacks are out of scope; ham protocols are fine when they meet the RF-mesh bar. Mesh-Client is for everyone, everywhere—not gated or targeted specifically at licensed amateurs. Protocols that already ship may still use internet transports _alongside_ RF. See [README — Why](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md#why).
+<div class="card protocol-meshtastic" markdown>
 
----
+### Meshtastic
 
-## Visuals
+Connect a Meshtastic radio over BLE, USB serial, HTTP, or TCP, or join over MQTT. Channels, DMs, remote admin, telemetry, Store & Forward, and routing diagnostics.
 
-![Nodes](images/nodes.png)
+[Meshtastic features](features.md#meshtastic-features) · [Troubleshooting](troubleshooting.md)
+
+</div>
+
+<div class="card protocol-meshcore" markdown>
+
+### MeshCore
+
+Companion radios over BLE, USB serial, or TCP. Contacts, channels, Rooms (BBS), repeater admin (status, neighbors, trace, CLI), and MQTT chat ingest.
+
+[MeshCore features](features.md#meshcore-features) · [Troubleshooting](troubleshooting-meshcore.md)
+
+</div>
+
+<div class="card protocol-reticulum" markdown>
+
+### Reticulum
+
+A bundled Reticulum stack with TCP, I2P, Auto, and RNode interfaces. LXMF direct messages, RRC hub chat, Nomad Network pages, propagation nodes, Remote shell and file copy, and games.
+
+[First-time setup](reticulum-setup-guide.md) · [User guide](reticulum.md) · [Troubleshooting](troubleshooting-reticulum.md)
+
+</div>
+
+</div>
+
+## Highlights
+
+- **Persistent history:** every message, node, and contact is stored in a local SQLite database, so nothing disappears when you reconnect.
+- **Routing diagnostics:** spot problem relays, hidden terminals, noisy channels, and unstable paths. See [Diagnostics](diagnostics.md).
+- **Maps that work offline:** download map regions ahead of time for field use. See [Troubleshooting: Map tab without internet](troubleshooting.md#map-tab-without-internet-offline--no-wan).
+- **Emergency communications:** MECP emergency reports, Incident Command, and TAK (Cursor-on-Target) on all three protocols. See the [EMCOMM guide](emcomm.md).
+- **Your language:** the interface is available in 16 languages and works fully offline. See [Localization](localization.md).
+
+<div class="grid" markdown>
+
+![Nodes list](images/nodes.png)
+
 ![Map](images/map.png)
-![Diagnostics](images/diagnostics.png)
-![Stats](images/stats.png)
 
-![Chat](images/chat.png)
-![Connection](images/connection.png)
+![Diagnostics](images/diagnostics.png)
+
+![Node detail](images/node-detail.png)
+
 ![Repeaters](images/repeaters.png)
-![Node Detail](images/node-detail.png)
+
 ![MECP emergency compose](images/MECP.png)
 
-![Peers](images/peers.png)
+![Reticulum peers](images/peers.png)
+
 ![Nomad Network](images/nomad.png)
-![RF](images/RF.png)
-![Graph](images/graph.png)
-![Sniffer](images/sniffer.png)
-![Language selector](images/language-selection.png)
 
----
+</div>
 
-## Quick Start
+## Get help
 
-Pre-built binaries are available in [GitHub Releases](https://github.com/Colorado-Mesh/mesh-client/releases).
+- **Something not working?** Start with [Troubleshooting](troubleshooting.md), or the [MeshCore](troubleshooting-meshcore.md) and [Reticulum](troubleshooting-reticulum.md) pages.
+- **Reporting a bug:** use **App → Export for GitHub** and attach the file. See [Reporting bugs](troubleshooting.md#reporting-bugs-export-for-github-app-tab).
+- **Unfamiliar term?** Check the [Glossary](glossary.md).
+- **Talk to people:** the [Colorado Mesh Discord](https://discord.com/invite/McChKR5NpS) or [GitHub issues](https://github.com/Colorado-Mesh/mesh-client/issues).
 
-**macOS:** prefer the **`.dmg`**. If you use the **`.zip`**, extract with **[Keka](https://www.keka.io/en/)** or `ditto -xk` — not **7-Zip** (can break framework symlinks and crash at launch). See [Troubleshooting — Squirrel.framework](troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract).
-
-Arch Linux users may also find a **third-party** AUR package ([`mesh-client`](https://aur.archlinux.org/packages/mesh-client)) — not maintained by Colorado Mesh; prefer GitHub Releases for official builds.
-
-For development setup, scripts, test harness, and git hooks, see [Development Guide](development-environment.md).
-
-Also useful:
-
-- [Troubleshooting](troubleshooting.md)
-- [Contributing](contributing.md)
-
-**Reticulum tab:** packaged builds include the `mesh-client-reticulum` sidecar. Dev builds need Rust and `pnpm run reticulum:sidecar:build` — see [Reticulum in mesh-client](reticulum.md) and [Reticulum sidecar (optional)](development-environment.md#reticulum-sidecar-optional).
-
----
-
-## Docs Guide
-
-- **Engineering**
-  - [Development Guide](development-environment.md) — prerequisites, all `pnpm` scripts, pre-commit hook, i18n workflow
-  - [Accessibility Checklist](accessibility-checklist.md)
-  - [Contributing](contributing.md)
-  - Renderer hook/runtime/store boundaries — [docs/agents/renderer-hooks.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/renderer-hooks.md) and [ARCHITECTURE.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/ARCHITECTURE.md)
-  - Agent subsystem reference (deep, on-demand) — [docs/agents/](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/README.md)
-- **Meshtastic & MeshCore**
-  - [Feature Parity](meshcore-meshtastic-parity.md) (includes **Rooms** BBS and shared **ChatComposer**)
-  - [MQTT Auth](letsmesh-mqtt-auth.md)
-  - Room login/posts — [Troubleshooting](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
-- **Reticulum**
-  - [Reticulum in mesh-client](reticulum.md) (sidecar, interfaces, LXMF chat, **RRC**, **Remote** rnsh/rncp, **Nomad My Pages**, propagation)
-  - [First-time Reticulum setup](reticulum-setup-guide.md)
-  - [Sidecar IPC contract](reticulum-sidecar-ipc.md)
-  - [Reticulum Games parity](reticulum-games-parity.md) — Ratspeak Games tab checklist
-  - [Nomad hosting interop](nomad-hosting-interop.md)
-  - [Reticulum troubleshooting](troubleshooting.md#reticulum) (sidecar, interfaces, Nomad, Remote transfer, RNode Wi‑Fi)
-  - BLE scan busy when a Reticulum BLE RNode holds the adapter — [Troubleshooting](troubleshooting.md#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble)
-  - Sidecar build / start failures — [Troubleshooting](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
-- **EMCOMM & field ops**
-  - MECP compose, alerts, audit, RF bridge — [Troubleshooting — MECP](troubleshooting.md#mecp-emergency-reports) · agent ref [mecp.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/mecp.md)
-  - Incident Command, emergency outbox, ACK/beacon — agent ref [emcomm.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/emcomm.md)
-  - Offline maps (`mesh-tiles:`, region download, USGS Topo) — [Troubleshooting — Map offline](troubleshooting.md#map-tab-without-internet-offline--no-wan) · agent ref [offline-maps.md](https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/offline-maps.md)
-  - TAK (CoT gateway) — [Troubleshooting — TAK](troubleshooting.md#tak-cot-gateway)
-- **Support**
-  - [Diagnostics](diagnostics.md) — LoRa routing/RF (Meshtastic & MeshCore), foreign LoRa overhear (Meshtastic & MeshCore tabs), Reticulum interface audit; protocol-scoped row filtering
-  - [Notification sounds](notification-sounds.md) — chat, MECP, and ops tone defaults + App → Notifications customization
-  - [Log analysis](log-analysis.md) — Log panel **Analyze** heuristics and support reports
-  - [Key backup and cryptography](key-backup-and-crypto.md) (per-node full key pair backup; MT → MC migration)
-  - [Troubleshooting](troubleshooting.md)
-  - Export for GitHub / stuck Chat — [Troubleshooting](troubleshooting.md#reporting-bugs-export-for-github-app-tab)
-  - [Localization & Languages](localization.md)
-  - [Meshtastic: mesh vs local client telemetry](meshtastic-telemetry-local-client.md)
-- **Project**
-  - [License](license.md)
-  - [Credits](credits.md)
-  - [Third-party licenses](third-party-licenses.md)
-  - [CI/CD](ci-cd.md) — workflows, local `act` runs, packaging
-  - [Release process](release-process.md)
-
----
-
-## Frequently Asked Questions
+## Frequently asked questions
 
 ### Is there a way to add a hashtag channel?
 
@@ -119,4 +99,12 @@ Yes. When adding or editing a channel in the **Radio** tab, click **"Derive from
 
 ### How do I use Reticulum?
 
-Select **RN** (Reticulum, yellow) at the top of the rail → **Connection** → **Start stack** → **Network** to create or import identity → add **Interfaces** (TCP, Auto, or RNode). Chat is **DM-only** over LXMF. See [reticulum.md](reticulum.md) for RNode Wi‑Fi, propagation nodes, and sidecar build steps.
+Select **RN** (Reticulum, yellow) at the top of the rail, open **Connection**, choose **Start stack**, then use **Network** to create or import an identity and add **Interfaces** (TCP, Auto, or RNode). Chat is **DM-only** over LXMF. See the [Reticulum setup guide](reticulum-setup-guide.md) for a walkthrough.
+
+### macOS says the app is damaged or crashes at launch after unzipping
+
+Prefer the **`.dmg`**. If you use the **`.zip`**, extract it with **[Keka](https://www.keka.io/en/)** or `ditto -xk`, not 7-Zip. See [Troubleshooting: Squirrel.framework](troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract).
+
+## Protocol scope
+
+Mesh-Client focuses on RF mesh (LoRa and related). Additional protocols are in scope when they support that RF mesh path; internet-only stacks are out of scope. Mesh-Client is for everyone, everywhere, not only licensed amateurs. See [README: Why](https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md#why).

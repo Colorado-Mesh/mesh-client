@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import type { GattBleDevice, SerialPort } from '@/shared/electron-api.types';
+import type { MeshProtocol } from '@/shared/meshProtocol';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import type { FirmwareCheckResult } from '../lib/firmwareCheck';
@@ -925,6 +926,7 @@ const configuredState: DeviceState = {
 function renderWithFirmware(
   firmwareCheckState?: FirmwareCheckResult,
   onOpenFirmwareReleases?: () => void,
+  protocol: MeshProtocol = 'meshtastic',
 ) {
   return render(
     <ConnectionPanel
@@ -933,7 +935,7 @@ function renderWithFirmware(
       onAutoConnect={vi.fn().mockResolvedValue(undefined)}
       onDisconnect={vi.fn().mockResolvedValue(undefined)}
       mqttStatus="disconnected"
-      protocol="meshtastic"
+      protocol={protocol}
       firmwareCheckState={firmwareCheckState}
       onOpenFirmwareReleases={onOpenFirmwareReleases}
     />,
@@ -1005,10 +1007,18 @@ describe('ConnectionPanel status i18n and pulse', () => {
     expect(screen.getByText('Bluetooth')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute(
       'href',
-      'https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md',
+      'https://colorado-mesh.github.io/mesh-client/troubleshooting/',
     );
     expect(screen.queryByText('configured')).not.toBeInTheDocument();
     expect(screen.queryByText('ble')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['meshtastic', 'https://colorado-mesh.github.io/mesh-client/troubleshooting/'],
+    ['meshcore', 'https://colorado-mesh.github.io/mesh-client/troubleshooting-meshcore/'],
+  ] as const)('links %s Docs to its troubleshooting page on the docs site', (protocol, href) => {
+    renderWithFirmware(undefined, undefined, protocol);
+    expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute('href', href);
   });
 
   it('pulses the reconnecting radio status dot, not the status text', () => {

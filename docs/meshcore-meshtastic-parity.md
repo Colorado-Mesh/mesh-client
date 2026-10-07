@@ -83,11 +83,11 @@ Live Chat and Nodes read **identity-scoped** `nodeStore` / `messageStore` (keyed
 
 **Rooms** tab scroll layout matches **Chat**: outer scroll container, unread divider, jump-to-unread button, and persisted last-read via `meshcoreRoomsUnread` / localStorage. Uses [`chatScrollUtils.ts`](../src/renderer/lib/chatScrollUtils.ts) (`getDistFromChatBottom`).
 
-Operational troubleshooting: [troubleshooting.md](troubleshooting.md#meshcore-room-server-login-posts-and-windows-10).
+Operational troubleshooting: [troubleshooting.md](troubleshooting-meshcore.md#meshcore-room-server-login-posts-and-windows-10).
 
 ## MeshCore: Trace Route and Ping trace
 
-**Trace Route** (node detail) and **Ping trace** (Repeaters panel) use the firmware `tracePath` flow. Remote nodes often answer only when they have **your** node in **their** contact list. Heard-only or one-way peers may produce no response until the client times out. See [troubleshooting.md](troubleshooting.md#meshcore-trace-route-or-ping-trace-times-out).
+**Trace Route** (node detail) and **Ping trace** (Repeaters panel) use the firmware `tracePath` flow. Remote nodes often answer only when they have **your** node in **their** contact list. Heard-only or one-way peers may produce no response until the client times out. See [troubleshooting.md](troubleshooting-meshcore.md#meshcore-trace-route-or-ping-trace-times-out).
 
 ### Serialized traceroutes (protocol requirement)
 
@@ -102,7 +102,7 @@ mesh-client enforces this in two layers:
 
 **Practical guidance:** Run **one ping at a time** when possible; let it finish (Hops column updates) before starting Status on the same repeater. Queued pings may take up to **180s** each (including 0-hop direct retry). Status/Neighbors/Telemetry use **120s** flat timeouts.
 
-**Multi-hop route priming:** When outbound path bytes are missing but the UI shows multi-hop, ping/trace first runs a **passive** priming pass (wait for PathUpdated 129 and refresh contacts, hop-scaled **15s + 5s × hops**, capped at **45s**). If that still yields no usable hash-segment path and hops ≥ 2, mesh-client may run up to **two** **flood-advert** rounds as a fallback (listener registered **before** each advert). **Path synthesis:** **1-hop** — `[relayPrefix, destPrefix]` via a known 0-hop repeater; **2-hop** — prepend relay byte to a stored 2-byte path; **3+** — only stored paths with enough segments (no blind pubkey guessing). Multi-hop cached full destination pubkeys are discarded. One-way contacts may still time out with no TraceData — see [troubleshooting.md](troubleshooting.md#meshcore-trace-route-or-ping-trace-times-out).
+**Multi-hop route priming:** When outbound path bytes are missing but the UI shows multi-hop, ping/trace first runs a **passive** priming pass (wait for PathUpdated 129 and refresh contacts, hop-scaled **15s + 5s × hops**, capped at **45s**). If that still yields no usable hash-segment path and hops ≥ 2, mesh-client may run up to **two** **flood-advert** rounds as a fallback (listener registered **before** each advert). **Path synthesis:** **1-hop** — `[relayPrefix, destPrefix]` via a known 0-hop repeater; **2-hop** — prepend relay byte to a stored 2-byte path; **3+** — only stored paths with enough segments (no blind pubkey guessing). Multi-hop cached full destination pubkeys are discarded. One-way contacts may still time out with no TraceData — see [troubleshooting.md](troubleshooting-meshcore.md#meshcore-trace-route-or-ping-trace-times-out).
 
 **Repeater admin RPC wire shape:** Status and Telemetry use pubkey-framed companion commands (`meshcoreRepeaterStatusRpc.ts`, `meshcoreRepeaterTelemetryRpc.ts`). Neighbors uses `runMeshcoreRepeaterBinaryRequest` with queued send and **paged** GetNeighbours (`count` + `offset`; append into `meshcoreNeighbors` via `mergeMeshcoreNeighborPage`). Status/Telemetry/Neighbors throw on disconnect so UI toasts fire. Login is optional for CLI/telemetry when a password is saved; Status/Neighbors typically work without login on direct (0-hop) repeaters.
 
@@ -152,7 +152,7 @@ Outbound tapbacks use [`formatMeshcoreWireTapbackPrefix`](../src/renderer/lib/me
 | **Meshtastic**   | Unaffected — protobuf tapbacks (`replyId` + emoji flag), not MeshCore text lines.                                                                                                                                                                                                                                                                    |
 | **Dedup**        | mesh-client merges tapback RF/MQTT echoes ([`meshcoreStoreDedup.ts`](../src/renderer/lib/meshcoreStoreDedup.ts), 60 s window). Default outbound uses keyless `@[Name] …`; Open compat may send keyed/`r:`/`g:` wire on the same channel.                                                                                                             |
 
-Inbound: parse `r:HASH:INDEX` (MeshCore Open), keyed `@[Name#key] body` or emoji, and keyless `@[Name] body` / emoji from other clients. See [troubleshooting.md — MeshCore reply misquote / duplicate chat messages](troubleshooting.md#meshcore-reply-misquote--duplicate-chat-messages).
+Inbound: parse `r:HASH:INDEX` (MeshCore Open), keyed `@[Name#key] body` or emoji, and keyless `@[Name] body` / emoji from other clients. See [troubleshooting.md — MeshCore reply misquote / duplicate chat messages](troubleshooting-meshcore.md#meshcore-reply-misquote--duplicate-chat-messages).
 
 ## MeshCore MQTT JSON envelope (v1)
 

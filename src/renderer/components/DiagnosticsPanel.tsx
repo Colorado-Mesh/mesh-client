@@ -24,6 +24,7 @@ import {
   useDiagnosticsStore,
 } from '@/renderer/stores/diagnosticsStore';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
+import { DIAGNOSTICS_DOCS_URL } from '@/shared/docsSite';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { formatMeshtasticNodeId, meshtasticNodeIdMatchesHexQuery } from '@/shared/nodeNameUtils';
 import { MS_PER_DAY } from '@/shared/timeConstants';
@@ -872,7 +873,7 @@ export default function DiagnosticsPanel({
             {t('diagnosticsPanel.exportJson')}
           </button>
           <a
-            href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/diagnostics.md"
+            href={DIAGNOSTICS_DOCS_URL}
             target="_blank"
             rel="noreferrer"
             className="text-muted hover:text-brand-green text-xs transition-colors"

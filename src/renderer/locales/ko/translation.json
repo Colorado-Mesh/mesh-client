@@ -841,7 +841,8 @@
     "reactionYouAria": "내 반응: {{name}}",
     "reactionOtherAria": "{{reactor}} 이 (가) {{name}} 과 (와) 반응했습니다.",
     "clearChannelMessagesChanged": "{{name}} 이 (가) 더 이상 라디오의 해당 슬롯에 없으므로 아무것도 지워지지 않았습니다.",
-    "clearChannelMessagesRadioChanged": "연결된 라디오가 열려 있는 동안 변경되어 {{name}} 의 메시지가 지워지지 않았습니다."
+    "clearChannelMessagesRadioChanged": "연결된 라디오가 열려 있는 동안 변경되어 {{name}} 의 메시지가 지워지지 않았습니다.",
+    "viewSenderDetails": "{{name}} 에 대한 세부 정보 보기"
   },
   "chatPayload": {
     "mention": "{{label}}을(를) 언급하세요",
@@ -4061,14 +4062,30 @@
     "bandwidthTooltip": "채널 폭(kHz)입니다. 더 좁음 = 범위가 더 길고 간섭이 적지만 데이터 속도가 느립니다. 네트워크의 모든 노드는 동일한 대역폭을 사용해야 합니다.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "확산 인자",
     "spreadFactorDesc": "높을수록 범위는 더 넓어지지만 방송 시간은 더 느려집니다. 기본값: SF12.",

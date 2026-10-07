@@ -875,7 +875,8 @@
     "reactionYouAria": "Twoja reakcja: {{name}}",
     "reactionOtherAria": "{{reactor}} zareagował(a): {{name}}",
     "clearChannelMessagesChanged": "{{name}} nie ma już w tym gnieździe w radiu, więc nic nie zostało wyczyszczone.",
-    "clearChannelMessagesRadioChanged": "Podłączone radio zmieniło się, gdy było otwarte, więc wiadomości w {{name}} nie zostały wyczyszczone."
+    "clearChannelMessagesRadioChanged": "Podłączone radio zmieniło się, gdy było otwarte, więc wiadomości w {{name}} nie zostały wyczyszczone.",
+    "viewSenderDetails": "Zobacz szczegóły: {{name}}"
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",
@@ -4141,14 +4142,30 @@
     "bandwidthTooltip": "Szerokość kanału w kHz. Węższy = większy zasięg i mniej zakłóceń, ale wolniejsza szybkość transmisji danych. Wszystkie węzły w sieci muszą korzystać z tej samej przepustowości.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "Współczynnik spreadu",
     "spreadFactorDesc": "Wyższy = większy zasięg, ale wolniejszy czas antenowy. Domyślnie: SF12.",

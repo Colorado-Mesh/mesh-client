@@ -3767,6 +3767,25 @@ describe('ChatPanel — sender filter', () => {
     expect(screen.getByText('from alice')).toBeInTheDocument();
     expect(screen.getByText('from bob')).toBeInTheDocument();
   });
+
+  it('sender name tooltip describes opening details, not filtering', async () => {
+    const user = userEvent.setup();
+    const onNodeClick = vi.fn();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          {...baseProps}
+          onNodeClick={onNodeClick}
+          messages={[makeMsg({ sender_id: 3, sender_name: 'Bob', payload: 'from bob' })]}
+        />
+      </ToastProvider>,
+    );
+    const nameBtn = screen.getByTitle(/^View details for .*Bob/);
+    expect(nameBtn.tagName).toBe('BUTTON');
+    expect(screen.queryAllByTitle('Filter by sender')).not.toContain(nameBtn);
+    await user.click(nameBtn);
+    expect(onNodeClick).toHaveBeenCalledWith(3);
+  });
 });
 
 describe('ChatPanel — draft persistence', () => {

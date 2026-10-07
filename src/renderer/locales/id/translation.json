@@ -841,7 +841,8 @@
     "reactionYouAria": "Reaksi Anda: {{name}}",
     "reactionOtherAria": "{{reactor}} bereaksi dengan {{name}}",
     "clearChannelMessagesChanged": "{{name}} tidak lagi ada di slot itu di radio, jadi tidak ada yang dihapus.",
-    "clearChannelMessagesRadioChanged": "Radio yang terhubung berubah saat ini terbuka, sehingga pesan dalam {{name}} tidak dihapus."
+    "clearChannelMessagesRadioChanged": "Radio yang terhubung berubah saat ini terbuka, sehingga pesan dalam {{name}} tidak dihapus.",
+    "viewSenderDetails": "Lihat detail untuk {{name}}"
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",
@@ -4061,14 +4062,30 @@
     "bandwidthTooltip": "Lebar saluran dalam kHz. Lebih sempit = jangkauan lebih jauh dan lebih sedikit interferensi namun kecepatan data lebih lambat. Semua node pada jaringan harus menggunakan bandwidth yang sama.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "Faktor Penyebaran",
     "spreadFactorDesc": "Lebih tinggi = lebih banyak jangkauan tetapi waktu tayang lebih lambat. Bawaan: SF12.",

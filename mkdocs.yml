@@ -1,31 +1,126 @@
 site_name: Colorado Mesh Client
+site_url: https://colorado-mesh.github.io/mesh-client/
+site_description: >-
+  Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.
 repo_url: https://github.com/Colorado-Mesh/mesh-client
+repo_name: Colorado-Mesh/mesh-client
 edit_uri: edit/main/docs/
+copyright: Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+
+# Agent-facing reference (docs/agents/) stays on GitHub only.
+exclude_docs: |
+  agents/
+  requirements.txt
+
+hooks:
+  - scripts/mkdocs_hooks.py
+
+validation:
+  omitted_files: warn
+  absolute_links: info
+  unrecognized_links: warn
+  anchors: warn
 
 theme:
   name: material
   language: en
+  logo: assets/logo.png
+  favicon: assets/favicon.png
   palette:
-    - scheme: default
-      primary: indigo
-      accent: blue
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
     - scheme: slate
-      primary: indigo
-      accent: blue
+      primary: custom
+      accent: custom
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
   features:
+    - navigation.instant
     - navigation.tabs
     - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - toc.follow
     - search.suggest
     - search.highlight
+    - search.share
+    - content.code.copy
+    - content.action.edit
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Colorado-Mesh/mesh-client
+      name: GitHub
+    - icon: fontawesome/brands/discord
+      link: https://discord.com/invite/McChKR5NpS
+      name: Discord
+    - icon: material/web
+      link: https://coloradomesh.org/
+      name: Colorado Mesh
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      type: date
+      fallback_to_build_date: true
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - def_list
+  - footnotes
+  - github-callouts
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
 
 nav:
   - Home: index.md
+  - Install: install.md
+  - Features: features.md
+  - User Guide:
+      - Reticulum Setup Guide: reticulum-setup-guide.md
+      - Reticulum: reticulum.md
+      - EMCOMM (MECP & Incident Command): emcomm.md
+      - Key Backup & Crypto: key-backup-and-crypto.md
+      - Meshtastic Telemetry: meshtastic-telemetry-local-client.md
+      - Notification Sounds: notification-sounds.md
+      - Localization: localization.md
+      - Glossary: glossary.md
+  - Support:
+      - Troubleshooting: troubleshooting.md
+      - MeshCore Troubleshooting: troubleshooting-meshcore.md
+      - Reticulum Troubleshooting: troubleshooting-reticulum.md
+      - Diagnostics: diagnostics.md
+      - Log Analysis: log-analysis.md
+      - Community: https://coloradomesh.org/
   - Engineering:
       - Development Guide: development-environment.md
       - Contributing: contributing.md
@@ -33,24 +128,13 @@ nav:
       - UI Style Guide: style-guide.md
       - CI/CD: ci-cd.md
       - Release Process: release-process.md
-      - Localization: localization.md
-      - Key Backup & Crypto: key-backup-and-crypto.md
-      - Meshtastic Telemetry: meshtastic-telemetry-local-client.md
-      - Nomad Hosting Interop: nomad-hosting-interop.md
+      - Service Announcements: service-announcements.md
       - Meshtastic & MeshCore Parity: meshcore-meshtastic-parity.md
-      - Reticulum: reticulum.md
-      - Reticulum Setup Guide: reticulum-setup-guide.md
+      - Reticulum Development: reticulum-development.md
       - Reticulum Sidecar IPC: reticulum-sidecar-ipc.md
       - Reticulum Games Parity: reticulum-games-parity.md
+      - Nomad Hosting Interop: nomad-hosting-interop.md
       - LetsMesh MQTT Auth: letsmesh-mqtt-auth.md
-  - Support:
-      - Diagnostics: diagnostics.md
-      - Troubleshooting: troubleshooting.md
-      - Notification Sounds: notification-sounds.md
-      - Log Analysis: log-analysis.md
-      - Community:
-          - Discord: https://discord.com/invite/McChKR5NpS
-          - Website: https://coloradomesh.org/
   - Project:
       - License: license.md
       - Credits: credits.md

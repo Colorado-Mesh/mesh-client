@@ -3,3 +3,5 @@ mkdocs-material>=9.7.7
 idna>=3.15
 urllib3>=2.8.0
 pymdown-extensions>=11.0.1
+mkdocs-git-revision-date-localized-plugin>=1.4.0
+markdown-callouts>=0.4.0

@@ -3777,7 +3777,13 @@ function ChatPanel({
                                             ? 'text-bright-green underline'
                                             : 'text-bright-green'
                                       }`}
-                                      title={t('chatPanel.filterBySender')}
+                                      title={
+                                        protocol === 'reticulum' && onPeerClick && !senderFaceHash
+                                          ? undefined
+                                          : t('chatPanel.viewSenderDetails', {
+                                              name: displaySenderName,
+                                            })
+                                      }
                                     >
                                       {displaySenderName}
                                     </button>

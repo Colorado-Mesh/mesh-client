@@ -175,14 +175,16 @@ After merges to `main` that change `package.json`, `pnpm-lock.yaml`, the generat
 
 ## Docs (`docs.yml`)
 
-Deploys documentation to GitHub Pages on every push to `main`:
+Builds the documentation site with `mkdocs build --strict` on pull requests that touch `docs/**`, `README.md`, `CONTRIBUTING.md`, `mkdocs.yml`, or the MkDocs scripts. On every push to `main` it builds the site the same way and deploys it to GitHub Pages:
 
-1. Checkout code
-2. Setup Python 3.x
+1. Check out the code with full history (`fetch-depth: 0`) so the git-revision-date plugin can show "last updated" dates
+2. Set up Node 22 and Python 3.x
 3. Install MkDocs dependencies (`docs/requirements.txt`)
-4. Copy `README.md` → `docs/index.md` and `CONTRIBUTING.md` → `docs/contributing.md`
-5. Rewrite doc links for MkDocs
-6. Deploy with `mkdocs gh-deploy --force`
+4. Run `node scripts/prepare-mkdocs.mjs`, which generates `docs/contributing.md` from `CONTRIBUTING.md`, plus `docs/install.md` and `docs/features.md` from the `<!-- docs-site:… -->` markers in `README.md`. It also rewrites repository-relative links for the site. These generated pages are gitignored.
+5. Run `mkdocs build --strict`
+6. Deploy with `mkdocs gh-deploy --force` (push to `main` only)
+
+The landing page `docs/index.md` is written by hand and is not copied from the README. `docs/agents/` is excluded from the site (`exclude_docs` in `mkdocs.yml`). Locally, `pnpm run docs:build` and `pnpm run docs:serve` run the same prepare step first.
 
 ---
 

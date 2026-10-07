@@ -860,7 +860,8 @@
     "reactionYouAria": "Tvá reakce: {{name}}",
     "reactionOtherAria": "{{reactor}} reagoval/a s {{name}}",
     "clearChannelMessagesChanged": "{{name}} již není v tomto slotu v rádiu, takže nic nebylo vymazáno.",
-    "clearChannelMessagesRadioChanged": "Připojené rádio se změnilo, když bylo otevřené, takže zprávy v {{name}} nebyly vymazány."
+    "clearChannelMessagesRadioChanged": "Připojené rádio se změnilo, když bylo otevřené, takže zprávy v {{name}} nebyly vymazány.",
+    "viewSenderDetails": "Zobrazit podrobnosti pro {{name}}"
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",
@@ -4104,14 +4105,30 @@
     "bandwidthTooltip": "Šířka kanálu v kHz. Užší = delší dosah a menší rušení, ale nižší rychlost přenosu dat. Všechny uzly v síti musí používat stejnou šířku pásma.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "Faktor rozpětí",
     "spreadFactorDesc": "Vyšší = větší dosah, ale pomalejší vysílací čas. Výchozí: SF12.",

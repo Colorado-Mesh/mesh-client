@@ -7,37 +7,55 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'mkdocs.yml'
+      - 'scripts/prepare-mkdocs.mjs'
+      - 'scripts/run-mkdocs.mjs'
+      - 'scripts/mkdocs_hooks.py'
+      - '.github/workflows/docs.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  deploy:
+  build:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
       - uses: actions/setup-python@v6
         with:
           python-version: 3.x
       - run: pip install -r docs/requirements.txt
-      - run: cp README.md docs/index.md
-      - run: cp CONTRIBUTING.md docs/contributing.md
-      - name: Rewrite synced doc links for MkDocs root
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
+      - run: node scripts/prepare-mkdocs.mjs
+      - run: mkdocs build --strict
 
-          def rewrite(path: Path) -> None:
-              text = path.read_text(encoding="utf-8")
-
-              # Convert repo docs-relative links to MkDocs page-relative links.
-              text = re.sub(r"\]\(docs/([^)]+)\)", r"](\1)", text)
-              text = re.sub(r'src="docs/([^"]+)"', r'src="\1"', text)
-
-              path.write_text(text, encoding="utf-8")
-
-          rewrite(Path("docs/index.md"))
-          rewrite(Path("docs/contributing.md"))
-          PY
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+      - run: pip install -r docs/requirements.txt
+      - run: node scripts/prepare-mkdocs.mjs
+      - run: mkdocs build --strict
       - run: mkdocs gh-deploy --force

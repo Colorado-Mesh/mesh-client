@@ -37,6 +37,7 @@ import { APP_ABOUT_TAGLINE } from '../shared/appTagline';
 import { isChannelIdentityKey } from '../shared/channelIdentityKey';
 import { clampQueryLimit } from '../shared/clampQueryLimit';
 import { parseConnectHostPort } from '../shared/connectHost';
+import { docsSitePageUrl } from '../shared/docsSite';
 import { NODES_LAST_HEARD_SEC_SQL, normalizeLastHeardToUnixSec } from '../shared/lastHeardUnits';
 import { findLxmUrlInArgv, isForwardableMeshClientOpenUrl } from '../shared/meshClientDeepLink';
 import {
@@ -1330,7 +1331,7 @@ function applyAboutPanelOptions(): void {
     '',
     APP_ABOUT_TAGLINE,
     '',
-    'Reticulum support uses a bundled AGPL-3.0-or-later sidecar (mesh-client-reticulum). See docs/reticulum.md and docs/license.md.',
+    `Reticulum support uses a bundled AGPL-3.0-or-later sidecar (mesh-client-reticulum). See ${docsSitePageUrl('reticulum')} and ${docsSitePageUrl('license')}.`,
     '',
     'Reticulum stack inspiration: Ratspeak (https://github.com/ratspeak/Ratspeak)',
     '',

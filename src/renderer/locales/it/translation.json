@@ -841,7 +841,8 @@
     "reactionYouAria": "La tua reazione: {{name}}",
     "reactionOtherAria": "{{reactor}} ha reagito con {{name}}",
     "clearChannelMessagesChanged": "{{name}} non si trova più in quello slot della radio, quindi non è stato cancellato nulla.",
-    "clearChannelMessagesRadioChanged": "La radio collegata è cambiata mentre questa era aperta, quindi i messaggi in {{name}} non sono stati cancellati."
+    "clearChannelMessagesRadioChanged": "La radio collegata è cambiata mentre questa era aperta, quindi i messaggi in {{name}} non sono stati cancellati.",
+    "viewSenderDetails": "Visualizza i dettagli per {{name}}"
   },
   "chatPayload": {
     "mention": "Menziona {{label}}",
@@ -4061,14 +4062,30 @@
     "bandwidthTooltip": "Larghezza del canale in kHz. Più stretto = intervallo più lungo e meno interferenze, ma velocità di trasmissione dati più lenta. Tutti i nodi della rete devono utilizzare la stessa larghezza di banda.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "Fattore di spread",
     "spreadFactorDesc": "Più alto = più autonomia ma tempo di trasmissione più lento. Valore predefinito: SF12.",

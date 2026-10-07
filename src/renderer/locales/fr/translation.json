@@ -841,7 +841,8 @@
     "reactionYouAria": "Votre réaction : {{name}}",
     "reactionOtherAria": "{{reactor}} a réagi avec {{name}}",
     "clearChannelMessagesChanged": "{{name}} n'est plus dans cet emplacement sur la radio, donc rien n'a été effacé.",
-    "clearChannelMessagesRadioChanged": "La radio connectée a changé alors qu'elle était ouverte, donc les messages en {{name}} n'ont pas été effacés."
+    "clearChannelMessagesRadioChanged": "La radio connectée a changé alors qu'elle était ouverte, donc les messages en {{name}} n'ont pas été effacés.",
+    "viewSenderDetails": "Afficher les détails pour {{name}}"
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
@@ -4061,14 +4062,30 @@
     "bandwidthTooltip": "Largeur du canal en kHz. Plus étroit = portée plus longue et moins d'interférences, mais débit de données plus lent. Tous les nœuds du réseau doivent utiliser la même bande passante.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "facteur de zone",
     "spreadFactorDesc": "Plus élevé = plus d'autonomie mais temps d'antenne plus lent. Par défaut : SF12.",

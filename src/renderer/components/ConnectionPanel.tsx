@@ -17,6 +17,7 @@ import { cancelProtocolRfAutoConnect } from '@/renderer/lib/protocolRfAutoConnec
 import { useRadioProvider } from '@/renderer/lib/radio/providerFactory';
 import type { RfConnectAutomaticFn, RfConnectFn } from '@/renderer/lib/rfConnectionTypes';
 import { isPairingRelatedError } from '@/shared/blePairingError';
+import { troubleshootingDocsUrl } from '@/shared/docsSite';
 import {
   clampMqttMaxRetries,
   MQTT_DEFAULT_RECONNECT_ATTEMPTS,
@@ -2974,7 +2975,7 @@ export default function ConnectionPanel({
 
   const docsLink = (
     <a
-      href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md"
+      href={troubleshootingDocsUrl(protocol)}
       target="_blank"
       rel="noreferrer"
       className="hover:text-bright-green text-muted text-xs transition-colors"

@@ -108,6 +108,26 @@ describe('DiagnosticsPanel accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it('links Docs to the diagnostics page on the docs site', () => {
+    diagnosticsStoreState.diagnosticRows = [];
+    diagnosticsStoreState.packetStats = new Map();
+    render(
+      <DiagnosticsPanel
+        nodes={new Map()}
+        myNodeNum={0}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        isConnected={false}
+        traceRouteResults={new Map()}
+        getFullNodeLabel={vi.fn().mockReturnValue('Unknown')}
+        protocol="meshtastic"
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Docs ↗' })).toHaveAttribute(
+      'href',
+      'https://colorado-mesh.github.io/mesh-client/diagnostics/',
+    );
+  });
+
   it('renders distance offset input with default 0', () => {
     diagnosticsStoreState.diagnosticRows = [];
     render(

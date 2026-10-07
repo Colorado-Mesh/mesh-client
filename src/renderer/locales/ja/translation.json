@@ -841,7 +841,8 @@
     "reactionYouAria": "あなたのリアクション: {{name}}",
     "reactionOtherAria": "{{reactor}}は{{name}}と反応しました",
     "clearChannelMessagesChanged": "{{name}}はラジオのそのスロットにはないため、何もクリアされませんでした。",
-    "clearChannelMessagesRadioChanged": "開いている間に接続されているラジオが変わったため、{{name}}のメッセージは消去されませんでした。"
+    "clearChannelMessagesRadioChanged": "開いている間に接続されているラジオが変わったため、{{name}}のメッセージは消去されませんでした。",
+    "viewSenderDetails": "{{name}}の詳細を見る"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",
@@ -4061,14 +4062,30 @@
     "bandwidthTooltip": "チャンネル幅（kHz）。狭い = 範囲が長くなり、干渉は少なくなりますが、データ速度は遅くなります。ネットワーク上のすべてのノードは同じ帯域幅を使用する必要があります。",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "スプレッドファクター",
     "spreadFactorDesc": "高い = 射程は長くなりますが、滞空時間は遅くなります。デフォルト: SF12。",
