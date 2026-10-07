@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/reticulum-games-parity/">
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/emcomm/">
       
       
-        <link rel="prev" href="../reticulum-sidecar-ipc/">
+        <link rel="prev" href="../reticulum/">
       
       
-        <link rel="next" href="../nomad-hosting-interop/">
+        <link rel="next" href="../key-backup-and-crypto/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Reticulum Games Parity - Colorado Mesh Client</title>
+        <title>EMCOMM (MECP & Incident Command) - Colorado Mesh Client</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#reticulum-games--ratspeak-parity-checklist" class="md-skip">
+        <a href="#emcomm-mecp-and-incident-command" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Reticulum Games Parity
+              EMCOMM (MECP & Incident Command)
             
           </span>
         </div>
@@ -286,10 +286,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../reticulum-setup-guide/" class="md-tabs__link">
           
   
@@ -330,12 +332,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../development-environment/" class="md-tabs__link">
           
   
@@ -501,8 +501,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -526,19 +528,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -556,7 +561,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -627,10 +632,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../emcomm/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM (MECP & Incident Command)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -646,6 +678,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#mecp-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MECP reports
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sending-a-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sending a report
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#incident-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Incident tab
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Incident tab">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#acknowledge-confirm-resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acknowledge, confirm, resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#durable-audit-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Durable audit log
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rf-rebroadcast-bridge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RF rebroadcast (bridge)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational alerts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exports
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-tools-for-search-and-rescue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map tools for search and rescue
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1043,10 +1200,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1080,22 +1235,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -1113,7 +1265,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1408,37 +1560,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reticulum Games Parity
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../reticulum-games-parity/" class="md-nav__link">
         
   
   
@@ -1454,70 +1579,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#commands--api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Commands / API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ui" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        UI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#wire-interop" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Wire interop
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remaining-follow-ups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Remaining follow-ups
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1764,10 +1825,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#commands--api" class="md-nav__link">
+  <a href="#mecp-reports" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Commands / API
+        MECP reports
       
     </span>
   </a>
@@ -1775,10 +1836,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ui" class="md-nav__link">
+  <a href="#sending-a-report" class="md-nav__link">
     <span class="md-ellipsis">
       
-        UI
+        Sending a report
       
     </span>
   </a>
@@ -1786,10 +1847,38 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#wire-interop" class="md-nav__link">
+  <a href="#incident-tab" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Wire interop
+        Incident tab
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Incident tab">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#acknowledge-confirm-resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Acknowledge, confirm, resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#durable-audit-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Durable audit log
       
     </span>
   </a>
@@ -1797,10 +1886,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#remaining-follow-ups" class="md-nav__link">
+  <a href="#rf-rebroadcast-bridge" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Remaining follow-ups
+        RF rebroadcast (bridge)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operational-alerts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Operational alerts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exports" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exports
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#map-tools-for-search-and-rescue" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Map tools for search and rescue
       
     </span>
   </a>
@@ -1824,7 +1946,7 @@
 
 
   
-    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/reticulum-games-parity.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/emcomm.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1832,212 +1954,119 @@
   
 
 
-<h1 id="reticulum-games--ratspeak-parity-checklist">Reticulum Games — Ratspeak parity checklist<a class="headerlink" href="#reticulum-games--ratspeak-parity-checklist" title="Permanent link">&para;</a></h1>
-<p>Living matrix for <a href="https://github.com/Colorado-Mesh/mesh-client/issues/773">issue #773</a>. Wire protocol is <a href="https://github.com/ratspeak/lrgp-rs">lrgp-rs</a> (LRGP v1). Product surface reference is Ratspeak:</p>
+<h1 id="emcomm-mecp-and-incident-command">EMCOMM: MECP and Incident Command<a class="headerlink" href="#emcomm-mecp-and-incident-command" title="Permanent link">&para;</a></h1>
+<p>Mesh-Client supports emergency communications (EMCOMM) on Meshtastic, MeshCore, and Reticulum. This guide is for operators: how emergency reports are sent and received, what the <strong>Incident</strong> tab shows, and which settings matter. For problems, see <a href="../troubleshooting/#mecp-emergency-reports">Troubleshooting — MECP</a>.</p>
+<h2 id="mecp-reports">MECP reports<a class="headerlink" href="#mecp-reports" title="Permanent link">&para;</a></h2>
+<p>MECP (<a href="https://mecp.radio/">Mesh Emergency Communication Protocol</a>) is structured emergency text sent as ordinary chat:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>MECP/&lt;severity&gt;/&lt;codes&gt; [freetext]
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Meaning</th>
+<th>Alert</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>MAYDAY</td>
+<td>Siren tone and emergency toast; <strong>ignores mute</strong>, even in a focused chat</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>URGENT</td>
+<td>EAS-style tone and toast; <strong>ignores mute</strong></td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>SAFETY</td>
+<td>Short tone when not muted</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td>ROUTINE</td>
+<td>Short tone when not muted</td>
+</tr>
+</tbody>
+</table>
 <ul>
-<li><code>crates/ratspeak-tauri/src/commands/games.rs</code></li>
-<li><code>dashboard/static/js/games_tab.js</code></li>
+<li>Codes are a letter plus two digits (for example <code>M01</code>). Labels come from the MECP language packs, so codes display in your language.</li>
+<li>A report is at most <strong>200 bytes</strong> (UTF-8).</li>
+<li>Drill codes (<code>D01</code>, <code>D02</code>) mark a report as a drill: it is listed but never plays an alert tone or toast and never adds an unread alert badge. Open MAYDAY and URGENT drills still count toward the <strong>Incident</strong> tab badge.</li>
+<li>Tones and volume are configurable per severity in <strong>App → Notifications → Notification tones</strong>. MAYDAY and URGENT keep their mute bypass and a 10% volume floor. See <a href="../notification-sounds/">Notification sounds</a>.</li>
+<li>Chat channel and DM chips show a shield icon, colored by the most severe unread MECP report in that conversation.</li>
 </ul>
-<p>Update this file when Games PRs land. <code>pnpm run update</code> warns only when a <strong>published</strong> Ratspeak GitHub Release is newer than the <code>reviewed-ref</code> pin on the <code>games-parity</code> entry in <code>scripts/update.sh</code> (bump that pin after review). Tags, <code>main</code>, and RCs without a GitHub Release are ignored.</p>
-<p><strong>Last review:</strong> 2026-09-25 (Ratspeak v1.0.33 — large-file/photo attachment fixes, Bluetooth Peer transfer timeouts, discovery on busy links, first-message delivery; <strong>no Games API or <code>games_tab.js</code> delta</strong> vs v1.0.32. Four in a Row UI remains <code>done</code>; wire-interop rows still <code>todo</code> until a live gold test). Prior: 2026-09-22 (Ratspeak v1.0.32 — Android sharing / Network Ownership / voice + LoRa routing; no Games API delta; <code>games_tab.js</code> only adds <code>openGameSession(sessionId, isCurrent)</code> stale-open cancellation).</p>
-<p>Status: <code>done</code> | <code>partial</code> | <code>wontfix</code> | <code>todo</code></p>
-<h2 id="commands--api">Commands / API<a class="headerlink" href="#commands--api" title="Permanent link">&para;</a></h2>
+<h2 id="sending-a-report">Sending a report<a class="headerlink" href="#sending-a-report" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Turn on <strong>App → MECP → Show MECP button in Chat</strong> (off by default).</li>
+<li>In Chat, open the conversation to send to, then click the red <strong>siren</strong> button next to Send.</li>
+<li>Choose severity and codes, add free text and optionally your position, and send.</li>
+</ol>
+<p>If the radio is offline, MQTT-only, or the send fails, the report goes into the <strong>emergency outbox</strong>. Emergency reports keep retrying after reconnect with no age cutoff or attempt limit. A soft cap of 20 queued emergency reports blocks the least urgent extras, but never deletes anything and never blocks a MAYDAY.</p>
+<h2 id="incident-tab">Incident tab<a class="headerlink" href="#incident-tab" title="Permanent link">&para;</a></h2>
+<p>The <strong>Incident</strong> tab is always visible on all three protocols, at the bottom of the rail next to <strong>App</strong>. Its red badge counts open MAYDAY and URGENT reports (drills included), so you notice them even if you rarely open the tab.</p>
+<p>Each row shows severity, sender, MECP codes, free text, ACK count, which protocols heard the report, and whether a distress <strong>beacon</strong> is active. The same report heard on several protocols (for example bridged from Meshtastic to MeshCore) appears once.</p>
+<p>Coordinates come from the report itself or the sender's last known position, and appear on the Map under <strong>Layers → Emergency incidents</strong> (Meshtastic, MeshCore, and Reticulum maps).</p>
+<h3 id="acknowledge-confirm-resolve">Acknowledge, confirm, resolve<a class="headerlink" href="#acknowledge-confirm-resolve" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
-<th>Ratspeak command</th>
-<th>mesh-client</th>
-<th>Status</th>
-<th>Notes</th>
+<th>Button</th>
+<th>What it sends</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>send_game_action</code></td>
-<td><code>POST /api/v1/games/action</code> + <code>reticulum:gamesAction</code></td>
-<td>done</td>
-<td>Direct-preferred send</td>
+<td><strong>Acknowledge</strong></td>
+<td>An <code>R01</code> ACK echoing the report's codes</td>
 </tr>
 <tr>
-<td><code>get_available_games</code></td>
-<td><code>GET /api/v1/games/apps</code></td>
-<td>done</td>
-<td></td>
+<td><strong>Confirm</strong></td>
+<td>A <code>B02</code> beacon ACK (shown instead of Acknowledge while someone's beacon is active), asking them to reduce beacon rate</td>
 </tr>
 <tr>
-<td><code>get_all_game_sessions</code></td>
-<td><code>GET /api/v1/games/sessions</code></td>
-<td>done</td>
-<td>optional <code>?peer=</code></td>
+<td><strong>Resolve</strong></td>
+<td>Nothing; closes the row locally</td>
 </tr>
 <tr>
-<td><code>get_active_games</code></td>
-<td><code>GET /api/v1/games/sessions?peer=</code></td>
-<td>done</td>
-<td>peer filter</td>
-</tr>
-<tr>
-<td><code>get_game_session_detail</code></td>
-<td><code>GET /api/v1/games/sessions/:id</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td><code>mark_game_read</code></td>
-<td><code>POST …/read</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td><code>delete_game_session</code></td>
-<td><code>DELETE …/:id</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td><code>resend_last_game_action</code></td>
-<td><code>POST …/resend</code></td>
-<td>done</td>
-<td>same envelope/nonce; overlay DB survives restart</td>
+<td><strong>Cancel beacon</strong></td>
+<td>A <code>B03</code> "I am OK" on the beacon's protocol and channel, then resolves the row. Shown only for beacons <strong>you</strong> sent</td>
 </tr>
 </tbody>
 </table>
-<h2 id="ui">UI<a class="headerlink" href="#ui" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Ratspeak UI</th>
-<th>mesh-client</th>
-<th>Status</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Games tab</td>
-<td>Left-rail Games (<code>Gamepad2</code>)</td>
-<td>done</td>
-<td>Reticulum-only via <code>hasLrgpGames</code></td>
-</tr>
-<tr>
-<td>Session list filters</td>
-<td>GamesPanel filters</td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Unread badge</td>
-<td>session unread + Games tab badge</td>
-<td>done</td>
-<td>tab and rail red pill via <code>gamesUnread</code></td>
-</tr>
-<tr>
-<td>TTT board</td>
-<td><code>TicTacToeBoard</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Chess board</td>
-<td><code>ChessBoard</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Challenge from contacts</td>
-<td>Peers / Chat DM Challenge</td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Draw / resign</td>
-<td>session actions</td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Delivery state / resend</td>
-<td>session <code>delivery_state</code> + Resend</td>
-<td>done</td>
-<td>LXMF outbound bridge; chips; Resend on <code>failed</code></td>
-</tr>
-<tr>
-<td>Notification route <code>lrgp:&lt;session&gt;</code></td>
-<td><code>lrgp:</code> + <code>lxm://game/&lt;id&gt;</code> → Games tab</td>
-<td>done</td>
-<td><code>MeshClientDeepLinkHost</code> + <code>openReticulumGameSession</code></td>
-</tr>
-<tr>
-<td>Optimistic rollback UI</td>
-<td>client backup + restore</td>
-<td>done</td>
-<td>TTT + Chess optimistic paint; WS/<code>action_result</code> rollback</td>
-</tr>
-<tr>
-<td>Chess promotion picker</td>
-<td><code>ChessBoard</code> chooser</td>
-<td>done</td>
-<td>q/r/b/n filtered by <code>legal_moves</code></td>
-</tr>
-<tr>
-<td>Threefold / 50-move claims</td>
-<td>Claim buttons → <code>draw_offer</code> <code>{ r }</code></td>
-<td>done</td>
-<td><code>3fr</code> / <code>50m</code> when <code>draw_offer_reason</code> set</td>
-</tr>
-<tr>
-<td>Win celebration</td>
-<td><code>burstConfetti</code> on local win</td>
-<td>done</td>
-<td><code>confettiBurst.ts</code> canvas burst; once per <code>session_id</code>; reduce-motion aware</td>
-</tr>
-<tr>
-<td>Four in a Row</td>
-<td><code>FourInARowBoard</code></td>
-<td>done</td>
-<td>7×6 gravity board; column click sends <code>{ c }</code>; optimistic drop + win/draw detection; winning line highlighted</td>
-</tr>
-</tbody>
-</table>
-<h2 id="wire-interop">Wire interop<a class="headerlink" href="#wire-interop" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Scenario</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>mesh-client ↔ mesh-client TTT</td>
-<td>done</td>
-</tr>
-<tr>
-<td>mesh-client ↔ mesh-client Chess</td>
-<td>done</td>
-</tr>
-<tr>
-<td>mesh-client ↔ Ratspeak TTT</td>
-<td>done</td>
-</tr>
-<tr>
-<td>mesh-client ↔ Ratspeak Chess</td>
-<td>done</td>
-</tr>
-<tr>
-<td>mesh-client ↔ mesh-client Four in a Row</td>
-<td>todo</td>
-</tr>
-<tr>
-<td>mesh-client ↔ Ratspeak Four in a Row</td>
-<td>todo</td>
-</tr>
-</tbody>
-</table>
-<p>Manual gold test: two clients on a TCP hub — challenge → accept → play → resign/draw.</p>
-<h2 id="remaining-follow-ups">Remaining follow-ups<a class="headerlink" href="#remaining-follow-ups" title="Permanent link">&para;</a></h2>
-<p>None for the delivery / envelope / optimistic / Chess promotion+claim track. Envelope bytes live in sidecar companion <code>games_outbound.db</code> (not <code>lrgp-rs</code> <code>LrgpStore</code> schema).</p>
-<p>Four in a Row ships with unit + axe coverage, but the two wire-interop rows above are still <strong>unverified on a live mesh</strong> — run the manual gold test against Ratspeak before marking them <code>done</code>. The board follows <code>lrgp-rs</code> <code>SPEC.md</code> appendix C: 42 cells row-major (<code>row * 7 + column</code>), markers <code>A</code> (challenger, first) / <code>B</code>, local outgoing payload exactly <code>{ c }</code> with the sidecar deriving <code>n</code>, landing row/cell, and terminal claims.</p>
+<p>ACKs are sent on the protocol where the report was heard (preferring your active tab). They are <strong>heard-by-network, best effort</strong>: an ACK count means ACK copies were overheard on the mesh, not that the person in distress read anything. Treat it as "the network has it", never as a read receipt.</p>
+<p>You can't cancel someone else's beacon: <code>B03</code> means "I am OK", so only the originator can send it.</p>
+<h2 id="durable-audit-log">Durable audit log<a class="headerlink" href="#durable-audit-log" title="Permanent link">&para;</a></h2>
+<p>Every inbound MECP report is appended to <code>mecp-received.log</code> in the app data folder (separate from the session app log, rotated to <code>mecp-received.log.1</code>). Export it from <strong>App → MECP → Export MECP log</strong>. It is also included in support bundles.</p>
+<h2 id="rf-rebroadcast-bridge">RF rebroadcast (bridge)<a class="headerlink" href="#rf-rebroadcast-bridge" title="Permanent link">&para;</a></h2>
+<p><strong>App → MECP</strong> can bridge MECP reports between a Meshtastic channel and a MeshCore channel. It is <strong>off</strong> by default.</p>
+<ul>
+<li>Each rule has endpoint <strong>A</strong> and endpoint <strong>B</strong> (channel indices 0–7). Reports go <strong>A → B</strong> by default; turn on <strong>Bidirectional</strong> to also send <strong>B → A</strong>.</li>
+<li>Only reports heard over RF are bridged (not MQTT-only), and never your own reports, history, or drills. A loop guard prevents ping-ponging the same report.</li>
+<li>After each bridged report, a short plain-text notice follows: <code>MECP from &lt;sender&gt; via &lt;Meshtastic|MeshCore&gt; (&lt;channel name&gt;)</code>.</li>
+</ul>
+<h2 id="operational-alerts">Operational alerts<a class="headerlink" href="#operational-alerts" title="Permanent link">&para;</a></h2>
+<p><strong>App → Notifications</strong> has ops alerts for nodes you mark as watched:</p>
+<ul>
+<li><strong>Silence:</strong> a watched node has not been heard for the configured minutes, with an escalation at twice that time. Nodes never heard are not "silent".</li>
+<li><strong>Battery low:</strong> a watched node's reported battery drops below the threshold (default 10%). Fires once, then re-arms after it recovers 5 points.</li>
+<li><strong>Link down:</strong> your Meshtastic or MeshCore radio link drops unexpectedly. Never fires on a manual disconnect or while reconnecting. Reticulum is not included (it runs as a separate stack, not an RF link).</li>
+</ul>
+<h2 id="exports">Exports<a class="headerlink" href="#exports" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Nodes:</strong> NodeList → <strong>Export JSON</strong> (topology) or <strong>Export CSV</strong>.</li>
+<li><strong>Diagnostics:</strong> Diagnostics → <strong>Export JSON</strong> (visible rows for the active protocol).</li>
+<li><strong>MECP audit log:</strong> App → MECP → <strong>Export MECP log</strong>.</li>
+</ul>
+<h2 id="map-tools-for-search-and-rescue">Map tools for search and rescue<a class="headerlink" href="#map-tools-for-search-and-rescue" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>MGRS grid:</strong> Map → <strong>Layers → MGRS grid</strong> (off by default). Grid precision adapts to the zoom level; labels appear when few enough squares are visible.</li>
+<li><strong>Measure:</strong> the Map measure control draws a polyline and shows its length.</li>
+<li><strong>USGS Topo</strong> basemap (US only) is available and can be cached for offline use like the other basemaps. See <a href="../troubleshooting/#map-tab-without-internet-offline--no-wan">Troubleshooting — Map tab without internet</a>.</li>
+<li>Position history for senders of open or acknowledged incidents is kept even when normal history pruning runs, so their tracks stay available until the incident is resolved.</li>
+</ul>
 
 
 
@@ -2058,7 +2087,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 28, 2026 15:59:15 UTC">September 28, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
   </span>
 
     

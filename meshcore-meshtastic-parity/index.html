@@ -6,19 +6,23 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
       
       
       
-        <link rel="prev" href="../nomad-hosting-interop/">
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/meshcore-meshtastic-parity/">
       
       
-        <link rel="next" href="../reticulum/">
+        <link rel="prev" href="../service-announcements/">
+      
+      
+        <link rel="next" href="../reticulum-development/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -49,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -65,7 +71,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -90,8 +96,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,20 +126,20 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
   
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
   
@@ -164,6 +169,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
           
@@ -196,7 +206,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    Colorado-Mesh/mesh-client
   </div>
 </a>
       </div>
@@ -238,17 +248,55 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../install/" class="md-tabs__link">
+        
+  
+  
     
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../features/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Features
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
   
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../development-environment/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../reticulum-setup-guide/" class="md-tabs__link">
           
   
   
-  Engineering
+    
+  
+  User Guide
 
         </a>
       </li>
@@ -264,11 +312,37 @@
     
     
       <li class="md-tabs__item">
-        <a href="../diagnostics/" class="md-tabs__link">
+        <a href="../troubleshooting/" class="md-tabs__link">
           
   
   
+    
+  
   Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Engineering
 
         </a>
       </li>
@@ -287,6 +361,8 @@
         <a href="../license/" class="md-tabs__link">
           
   
+  
+    
   
   Project
 
@@ -320,8 +396,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     Colorado Mesh Client
@@ -334,7 +409,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    Colorado-Mesh/mesh-client
   </div>
 </a>
     </div>
@@ -372,11 +447,635 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM (MECP & Incident Command)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notification-sounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notification Sounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -393,10 +1092,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -414,8 +1113,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -600,98 +1299,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../localization/" class="md-nav__link">
+      <a href="../service-announcements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Localization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../key-backup-and-crypto/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Key Backup & Crypto
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Meshtastic Telemetry
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../nomad-hosting-interop/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Nomad Hosting Interop
+    Service Announcements
   
 
     
@@ -1058,42 +1673,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../reticulum/" class="md-nav__link">
+      <a href="../reticulum-development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Reticulum
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reticulum-setup-guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reticulum Setup Guide
+    Reticulum Development
   
 
     
@@ -1170,6 +1757,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
         
   
@@ -1206,169 +1821,13 @@
   
     
     
-    
-    
-      
       
         
       
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
+        
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Support
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Support
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../diagnostics/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Diagnostics
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Troubleshooting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notification-sounds/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Notification Sounds
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../log-analysis/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Log Analysis
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
+      
     
     
     
@@ -1382,133 +1841,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Community
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Community
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Discord
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://coloradomesh.org/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Website
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1526,8 +1862,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -1942,16 +2278,21 @@
 
 
   
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/meshcore-meshtastic-parity.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
-<h1 id="meshtastic-vs-meshcore-feature-parity">Meshtastic vs MeshCore feature parity</h1>
+<h1 id="meshtastic-vs-meshcore-feature-parity">Meshtastic vs MeshCore feature parity<a class="headerlink" href="#meshtastic-vs-meshcore-feature-parity" title="Permanent link">&para;</a></h1>
 <p>This document summarizes which client features are <strong>Meshtastic-only</strong>, <strong>MeshCore-only</strong>, or <strong>shared</strong> between the two LoRa companion-radio stacks, and whether gaps are <strong>app wiring</strong>, <strong>post-MQTT</strong>, or <strong>blocked by protocol</strong>.</p>
 <p><strong>Reticulum</strong> is the third protocol (yellow <strong>RN</strong> on the rail switcher, AGPL Rust sidecar, LXMF DMs). It is documented separately in <a href="../reticulum/">reticulum.md</a> and <a href="../reticulum-sidecar-ipc/">reticulum-sidecar-ipc.md</a> — not in the matrix below.</p>
-<p>See also <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a> (multi-protocol architecture).</p>
-<h2 id="capability-flags">Capability flags</h2>
-<p>Shared UI gates use <code>ProtocolCapabilities</code> in <a href="../src/renderer/lib/radio/BaseRadioProvider.ts"><code>src/renderer/lib/radio/BaseRadioProvider.ts</code></a>. Prefer new gates there instead of <code>protocol === 'meshcore'</code> string checks.</p>
-<h2 id="feature-matrix">Feature matrix</h2>
+<p>See also <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a> (multi-protocol architecture).</p>
+<h2 id="capability-flags">Capability flags<a class="headerlink" href="#capability-flags" title="Permanent link">&para;</a></h2>
+<p>Shared UI gates use <code>ProtocolCapabilities</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/radio/BaseRadioProvider.ts"><code>src/renderer/lib/radio/BaseRadioProvider.ts</code></a>. Prefer new gates there instead of <code>protocol === 'meshcore'</code> string checks.</p>
+<h2 id="feature-matrix">Feature matrix<a class="headerlink" href="#feature-matrix" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -1988,20 +2329,20 @@
 </tr>
 <tr>
 <td>MQTT wire format</td>
-<td><code>ServiceEnvelope</code> / <code>MeshPacket</code> (<a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>)</td>
-<td>JSON <strong>v1</strong> chat on <code>{topicPrefix}/meshcore/chat</code> (non-LetsMesh / private brokers); <strong>LetsMesh</strong>: optional meshcoretomqtt-style <strong>packet</strong> JSON on <code>{topicPrefix}/meshcore/packets</code> (<a href="../src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a>); chat parser in <a href="../src/shared/meshcoreMqttEnvelope.ts"><code>meshcoreMqttEnvelope.ts</code></a></td>
+<td><code>ServiceEnvelope</code> / <code>MeshPacket</code> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>)</td>
+<td>JSON <strong>v1</strong> chat on <code>{topicPrefix}/meshcore/chat</code> (non-LetsMesh / private brokers); <strong>LetsMesh</strong>: optional meshcoretomqtt-style <strong>packet</strong> JSON on <code>{topicPrefix}/meshcore/packets</code> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a>); chat parser in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/shared/meshcoreMqttEnvelope.ts"><code>meshcoreMqttEnvelope.ts</code></a></td>
 <td>Adapter vs protobuf</td>
 </tr>
 <tr>
 <td>MQTT channel crypto / uplink</td>
-<td>AES-128/256-CTR, <code>channelPsks</code>, TLS (<a href="../src/shared/mqttTls.ts"><code>mqttTls.ts</code></a>), per-channel publish (<a href="../src/renderer/lib/meshtasticMqttPublish.ts"><code>meshtasticMqttPublish.ts</code></a>); <a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a></td>
+<td>AES-128/256-CTR, <code>channelPsks</code>, TLS (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/shared/mqttTls.ts"><code>mqttTls.ts</code></a>), per-channel publish (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtasticMqttPublish.ts"><code>meshtasticMqttPublish.ts</code></a>); <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a></td>
 <td>JSON v1 path unchanged</td>
 <td><strong>App</strong> (Meshtastic wire)</td>
 </tr>
 <tr>
 <td>Node list hops / MQTT columns</td>
 <td><code>hops_away</code>, <code>via_mqtt</code> from device</td>
-<td>Contact model; node-list <code>hops_away</code> derives from contact <code>outPathLen</code> (<code>meshcoreInferHopsFromOutPath</code>); per-message chat hop pills instead use the companion <code>pathLen</code> on RX events 7/8 (<code>meshcoreCompanionRxPathLenToHopCount</code>) — see <a href="../agents/chat/">docs/agents/chat.md</a> §Hop badges</td>
+<td>Contact model; node-list <code>hops_away</code> derives from contact <code>outPathLen</code> (<code>meshcoreInferHopsFromOutPath</code>); per-message chat hop pills instead use the companion <code>pathLen</code> on RX events 7/8 (<code>meshcoreCompanionRxPathLenToHopCount</code>) — see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/chat.md">docs/agents/chat.md</a> §Hop badges</td>
 <td><strong>App</strong> (implemented)</td>
 </tr>
 <tr>
@@ -2036,7 +2377,7 @@
 </tr>
 <tr>
 <td>Channel URL sync</td>
-<td>Radio tab import/export via <a href="../src/shared/meshtasticUrlEncoder.ts"><code>meshtasticUrlEncoder.ts</code></a> + <a href="../src/shared/meshtasticChannelApply.ts"><code>meshtasticChannelApply.ts</code></a> (<code>https://meshtastic.org/e/#…</code>, <code>meshtastic://</code>)</td>
+<td>Radio tab import/export via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/shared/meshtasticUrlEncoder.ts"><code>meshtasticUrlEncoder.ts</code></a> + <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/shared/meshtasticChannelApply.ts"><code>meshtasticChannelApply.ts</code></a> (<code>https://meshtastic.org/e/#…</code>, <code>meshtastic://</code>)</td>
 <td>Not available</td>
 <td><strong>App</strong> (Meshtastic-only)</td>
 </tr>
@@ -2066,7 +2407,7 @@
 </tr>
 <tr>
 <td>Chat transport badges / history</td>
-<td><code>received_via</code> (<code>rf</code> / <code>mqtt</code> / <code>both</code>) plus <code>via_store_forward</code> for S&amp;F replays; router heartbeat triggers <code>CLIENT_HISTORY</code> via <a href="../src/renderer/lib/meshtasticBacklogUtils.ts"><code>meshtasticBacklogUtils.ts</code></a></td>
+<td><code>received_via</code> (<code>rf</code> / <code>mqtt</code> / <code>both</code>) plus <code>via_store_forward</code> for S&amp;F replays; router heartbeat triggers <code>CLIENT_HISTORY</code> via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtasticBacklogUtils.ts"><code>meshtasticBacklogUtils.ts</code></a></td>
 <td><code>meshcore_messages.received_via</code> (<code>rf</code> / <code>mqtt</code> / <code>both</code>)</td>
 <td><strong>App</strong> (implemented)</td>
 </tr>
@@ -2085,19 +2426,19 @@
 <tr>
 <td>Emoji reactions / tapbacks</td>
 <td><code>reactions.ts</code> decodes protobuf tapbacks (<code>emoji</code> flag + UTF-8 payload, legacy index 1–12); <code>ChatPanel</code> quick picker + <code>sendReaction</code></td>
-<td>Default outbound keyless <code>@[Name] emoji</code> / <code>@[Name] body</code>; optional <strong>MeshCore Open compatibility</strong> (Radio toggle) enables keyed replies, <code>r:HASH:INDEX</code>, and <code>g:GIFID</code> send — <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundTapbackWire</code></a>, <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundSendText</code></a>, <a href="../src/renderer/lib/meshcoreOpenReaction.ts"><code>meshcoreOpenReaction.ts</code></a>, <a href="../src/renderer/lib/meshcoreGifWire.ts"><code>meshcoreGifWire.ts</code></a>; inbound keyed/keyless + Open wire always parsed; emoji-only replies promoted via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>meshcorePromoteEmojiOnlyReplyToTapback</code></a>; echo dedup in <a href="../src/renderer/lib/meshcoreStoreDedup.ts"><code>meshcoreStoreDedup.ts</code></a></td>
+<td>Default outbound keyless <code>@[Name] emoji</code> / <code>@[Name] body</code>; optional <strong>MeshCore Open compatibility</strong> (Radio toggle) enables keyed replies, <code>r:HASH:INDEX</code>, and <code>g:GIFID</code> send — <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundTapbackWire</code></a>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundSendText</code></a>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreOpenReaction.ts"><code>meshcoreOpenReaction.ts</code></a>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreGifWire.ts"><code>meshcoreGifWire.ts</code></a>; inbound keyed/keyless + Open wire always parsed; emoji-only replies promoted via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>meshcorePromoteEmojiOnlyReplyToTapback</code></a>; echo dedup in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreStoreDedup.ts"><code>meshcoreStoreDedup.ts</code></a></td>
 <td><strong>App</strong> (shared UI, protocol-specific wire)</td>
 </tr>
 <tr>
 <td>MeshCore Open wire (experimental)</td>
 <td>N/A</td>
-<td>Radio toggle <code>meshcoreOpenWireCompatEnabled</code> (<a href="../src/renderer/lib/defaultAppSettings.ts"><code>defaultAppSettings.ts</code></a>): keyed replies, <code>r:</code> reactions, <code>g:</code> GIF send; default off (companion keyless wire)</td>
+<td>Radio toggle <code>meshcoreOpenWireCompatEnabled</code> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/defaultAppSettings.ts"><code>defaultAppSettings.ts</code></a>): keyed replies, <code>r:</code> reactions, <code>g:</code> GIF send; default off (companion keyless wire)</td>
 <td><strong>App</strong> (MeshCore-only)</td>
 </tr>
 <tr>
 <td>Chat composer</td>
-<td><code>ChatComposer.tsx</code> in <code>ChatPanel</code>; long text auto-splits into <code>[i/N]</code> chunks (up to 9, <a href="../src/renderer/lib/chatComposerLimits.ts"><code>getMaxChunks</code></a>)</td>
-<td>Same <code>ChatComposer</code> in <code>ChatPanel</code> and <code>RoomsPanel</code>, but <strong>single-packet</strong>: <code>getMaxChunks('meshcore') === 1</code>, so over-limit text is <strong>blocked</strong> with an explanatory notice (no multi-part split — busy repeaters drop parts, <a href="https://github.com/meshcore-dev/MeshCore/issues/1502">meshcore-dev/MeshCore#1502</a> / <a href="https://github.com/meshcore-dev/MeshCore/issues/2820">#2820</a>). Non-blocking fast-send advisory (<a href="../src/renderer/lib/meshcoreSendRateNotice.ts"><code>meshcoreSendRateNotice.ts</code></a>) when sending within ~5s. Inbound multi-part still merged.</td>
+<td><code>ChatComposer.tsx</code> in <code>ChatPanel</code>; long text auto-splits into <code>[i/N]</code> chunks (up to 9, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/chatComposerLimits.ts"><code>getMaxChunks</code></a>)</td>
+<td>Same <code>ChatComposer</code> in <code>ChatPanel</code> and <code>RoomsPanel</code>, but <strong>single-packet</strong>: <code>getMaxChunks('meshcore') === 1</code>, so over-limit text is <strong>blocked</strong> with an explanatory notice (no multi-part split — busy repeaters drop parts, <a href="https://github.com/meshcore-dev/MeshCore/issues/1502">meshcore-dev/MeshCore#1502</a> / <a href="https://github.com/meshcore-dev/MeshCore/issues/2820">#2820</a>). Non-blocking fast-send advisory (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreSendRateNotice.ts"><code>meshcoreSendRateNotice.ts</code></a>) when sending within ~5s. Inbound multi-part still merged.</td>
 <td><strong>App</strong> (shared UI; MeshCore single-packet parity gap)</td>
 </tr>
 <tr>
@@ -2126,7 +2467,7 @@
 </tr>
 <tr>
 <td>PKC remote admin</td>
-<td><code>ConfigureNodeSelector</code>, <a href="../src/renderer/lib/meshtasticRemoteAdmin.ts"><code>meshtasticRemoteAdmin.ts</code></a>, <a href="../src/renderer/lib/meshtasticRemoteAdminKeyStorage.ts"><code>meshtasticRemoteAdminKeyStorage.ts</code></a>; local radio (2.5+)</td>
+<td><code>ConfigureNodeSelector</code>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtasticRemoteAdmin.ts"><code>meshtasticRemoteAdmin.ts</code></a>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtasticRemoteAdminKeyStorage.ts"><code>meshtasticRemoteAdminKeyStorage.ts</code></a>; local radio (2.5+)</td>
 <td>Not available</td>
 <td><strong>App</strong> (Meshtastic-only)</td>
 </tr>
@@ -2145,31 +2486,31 @@
 <tr>
 <td>Room servers (BBS)</td>
 <td>Not applicable</td>
-<td><strong>Rooms</strong> tab: login/post; optional <strong>Remember password</strong> (<code>app_settings</code>); <strong>Auto-sync</strong> periodic re-login while radio connected (<a href="../src/renderer/lib/meshcoreRoomSyncScheduler.ts"><code>meshcoreRoomSyncScheduler.ts</code></a>, <a href="../src/renderer/runtime/useMeshcoreRuntime.ts"><code>useMeshcoreRuntime.ts</code></a>); room admin CLI / ACL setperm on <strong>Repeaters</strong> (room rows); RF-only (not MQTT)</td>
+<td><strong>Rooms</strong> tab: login/post; optional <strong>Remember password</strong> (<code>app_settings</code>); <strong>Auto-sync</strong> periodic re-login while radio connected (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRoomSyncScheduler.ts"><code>meshcoreRoomSyncScheduler.ts</code></a>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/runtime/useMeshcoreRuntime.ts"><code>useMeshcoreRuntime.ts</code></a>); room admin CLI / ACL setperm on <strong>Repeaters</strong> (room rows); RF-only (not MQTT)</td>
 <td><strong>App</strong> (MeshCore-only)</td>
 </tr>
 <tr>
 <td>Repeater admin passwords</td>
 <td>Not applicable</td>
-<td>Per-repeater <strong>Remember</strong> (<code>meshcoreRepeaterCredential:&lt;nodeId&gt;</code> in <code>app_settings</code>); shared factory <a href="../src/renderer/lib/meshcorePerNodeCredentialStorage.ts"><code>meshcorePerNodeCredentialStorage.ts</code></a> with <a href="../src/renderer/lib/meshcoreRepeaterCredentialStorage.ts"><code>meshcoreRepeaterCredentialStorage.ts</code></a> / <a href="../src/renderer/lib/meshcoreRoomCredentialStorage.ts"><code>meshcoreRoomCredentialStorage.ts</code></a>; <a href="../src/renderer/hooks/useMeshcoreRepeaterRemoteAuth.tsx"><code>useMeshcoreRepeaterRemoteAuth.tsx</code></a>, <a href="../src/renderer/components/MeshcoreRepeaterPasswordControls.tsx"><code>MeshcoreRepeaterPasswordControls.tsx</code></a>; Repeaters sidebar <strong>Saved admin passwords</strong> + Forget</td>
+<td>Per-repeater <strong>Remember</strong> (<code>meshcoreRepeaterCredential:&lt;nodeId&gt;</code> in <code>app_settings</code>); shared factory <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcorePerNodeCredentialStorage.ts"><code>meshcorePerNodeCredentialStorage.ts</code></a> with <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRepeaterCredentialStorage.ts"><code>meshcoreRepeaterCredentialStorage.ts</code></a> / <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRoomCredentialStorage.ts"><code>meshcoreRoomCredentialStorage.ts</code></a>; <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/hooks/useMeshcoreRepeaterRemoteAuth.tsx"><code>useMeshcoreRepeaterRemoteAuth.tsx</code></a>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MeshcoreRepeaterPasswordControls.tsx"><code>MeshcoreRepeaterPasswordControls.tsx</code></a>; Repeaters sidebar <strong>Saved admin passwords</strong> + Forget</td>
 <td><strong>App</strong> (MeshCore-only)</td>
 </tr>
 <tr>
 <td>MsgWaiting background drain</td>
 <td>Not applicable</td>
-<td>Event 131 silent drain (<a href="../src/renderer/lib/meshcoreWaitingMessagesDrain.ts"><code>meshcoreWaitingMessagesDrain.ts</code></a>): bulk <code>getWaitingMessages</code> first (header <strong>X / Y</strong>), <code>syncNextMessage</code> fallback on timeout without disconnect (<strong>Fetched N…</strong>); <strong>header status indicator</strong> (queued backlog and active sync on any protocol tab; <strong>paused/deferred</strong> only on MeshCore tab); manual <strong>Sync now</strong> with determinate progress</td>
+<td>Event 131 silent drain (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreWaitingMessagesDrain.ts"><code>meshcoreWaitingMessagesDrain.ts</code></a>): bulk <code>getWaitingMessages</code> first (header <strong>X / Y</strong>), <code>syncNextMessage</code> fallback on timeout without disconnect (<strong>Fetched N…</strong>); <strong>header status indicator</strong> (queued backlog and active sync on any protocol tab; <strong>paused/deferred</strong> only on MeshCore tab); manual <strong>Sync now</strong> with determinate progress</td>
 <td><strong>App</strong> (MeshCore-only)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="meshcore-room-servers">MeshCore: Room servers</h2>
+<h2 id="meshcore-room-servers">MeshCore: Room servers<a class="headerlink" href="#meshcore-room-servers" title="Permanent link">&para;</a></h2>
 <p>Room servers (<code>hw_model === 'Room'</code>, contact type 3) are BBS nodes on the mesh. The companion radio must be connected over <strong>RF</strong> (BLE, serial, or TCP); <strong>MQTT does not carry room login/post</strong>.</p>
-<p><strong>Login:</strong> Blank guest Login sends <strong>zero password bytes</strong> (read-only when <code>allow.read.only</code> is on; same wire as <strong>Continue read-only</strong>). <strong><code>hello</code></strong> is the default read/write guest password. Admin login uses the configured password. LoginSuccess ACL is the companion v7+ <code>permissions</code> byte (PERM_ACL_*); <code>reserved</code> is only the legacy admin/guest hint (do not treat as ACL). Login RPC, queue, and path sync live under <code>src/renderer/lib/meshcoreRoom*.ts</code> (e.g. <a href="../src/renderer/lib/meshcoreRoomLoginRpc.ts"><code>meshcoreRoomLoginRpc.ts</code></a>, <a href="../src/renderer/lib/meshcoreRoomLoginQueue.ts"><code>meshcoreRoomLoginQueue.ts</code></a>); timeouts are shorter on TCP and 0-hop paths (<a href="../src/renderer/lib/timeConstants.ts"><code>timeConstants.ts</code></a>).</p>
+<p><strong>Login:</strong> Blank guest Login sends <strong>zero password bytes</strong> (read-only when <code>allow.read.only</code> is on; same wire as <strong>Continue read-only</strong>). <strong><code>hello</code></strong> is the default read/write guest password. Admin login uses the configured password. LoginSuccess ACL is the companion v7+ <code>permissions</code> byte (PERM_ACL_*); <code>reserved</code> is only the legacy admin/guest hint (do not treat as ACL). Login RPC, queue, and path sync live under <code>src/renderer/lib/meshcoreRoom*.ts</code> (e.g. <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRoomLoginRpc.ts"><code>meshcoreRoomLoginRpc.ts</code></a>, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRoomLoginQueue.ts"><code>meshcoreRoomLoginQueue.ts</code></a>); timeouts are shorter on TCP and 0-hop paths (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/timeConstants.ts"><code>timeConstants.ts</code></a>).</p>
 <p><strong>Posts:</strong> Outbound room posts use plain UTF-8 (<code>TXT_TYPE_PLAIN</code>) after login and are <strong>single-packet</strong> — mesh-client does not emit multi-part <code>[i/N]</code> room posts; over-limit text is blocked in the composer (same rationale as chat/DM). Inbound <strong>SignedPlain</strong> pushes include a four-byte author prefix; the <strong>Rooms</strong> UI strips it, and inbound multi-part from other clients is still merged for display. Posts appear in the <strong>Rooms</strong> tab (channel <code>-2</code>), not Chat channel pills.</p>
-<p><strong>Sync:</strong> After login, the room server pushes posts newer than the companion <code>sync_since</code> watermark (ring buffer, typically ~32). mesh-client resets that watermark when the device has no local last-post time yet, then drains waiting messages. <strong>Auto-sync</strong> re-logs in on a timer while the radio stays connected (minimum 60 minutes per room, <a href="../src/renderer/lib/meshcoreRoomSyncScheduler.ts"><code>meshcoreRoomSyncScheduler.ts</code></a>). Saved passwords: SQLite <code>app_settings</code> (same pattern as Meshtastic remote admin keys). Session clears on disconnect.</p>
-<p><strong>Unread:</strong> Room BBS traffic increments the <strong>Rooms</strong> tab badge (<a href="../src/renderer/lib/meshcoreRoomsUnread.ts"><code>meshcoreRoomsUnread.ts</code></a>) and system-tray unread when backgrounded; it does not increment the <strong>Chat</strong> tab badge.</p>
-<p><strong>Dedup:</strong> <a href="../src/renderer/lib/meshcoreStoreDedup.ts"><code>meshcoreStoreDedup.ts</code></a> merges duplicate RF/MQTT and tapback echoes for chat and rooms (cross-transport and channel RF <strong>5 min</strong>; room/tapback <strong>60 s</strong>).</p>
-<h2 id="meshcore-regional-flood-scope">MeshCore: regional flood scope</h2>
+<p><strong>Sync:</strong> After login, the room server pushes posts newer than the companion <code>sync_since</code> watermark (ring buffer, typically ~32). mesh-client resets that watermark when the device has no local last-post time yet, then drains waiting messages. <strong>Auto-sync</strong> re-logs in on a timer while the radio stays connected (minimum 60 minutes per room, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRoomSyncScheduler.ts"><code>meshcoreRoomSyncScheduler.ts</code></a>). Saved passwords: SQLite <code>app_settings</code> (same pattern as Meshtastic remote admin keys). Session clears on disconnect.</p>
+<p><strong>Unread:</strong> Room BBS traffic increments the <strong>Rooms</strong> tab badge (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRoomsUnread.ts"><code>meshcoreRoomsUnread.ts</code></a>) and system-tray unread when backgrounded; it does not increment the <strong>Chat</strong> tab badge.</p>
+<p><strong>Dedup:</strong> <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreStoreDedup.ts"><code>meshcoreStoreDedup.ts</code></a> merges duplicate RF/MQTT and tapback echoes for chat and rooms (cross-transport and channel RF <strong>5 min</strong>; room/tapback <strong>60 s</strong>).</p>
+<h2 id="meshcore-regional-flood-scope">MeshCore: regional flood scope<a class="headerlink" href="#meshcore-regional-flood-scope" title="Permanent link">&para;</a></h2>
 <p>MeshCore <strong>regions</strong> (on repeaters) and <strong>scopes</strong> (on outbound flood messages) limit how far flooded traffic is forwarded. Community naming, exact matching, hierarchy (<code>region put child parent</code>), and the wildcard <code>*</code> for unscoped traffic are documented by <a href="https://www.regionmesh.com/meshcore-region-configuration/">RegionMesh — MeshCore region configuration</a>.</p>
 <p><strong>In mesh-client:</strong></p>
 <ul>
@@ -2180,14 +2521,14 @@
 <li>Channel QR export preserves the choice. Default omits scope fields and follows the recipient's Radio setting. Named scopes use the existing <code>region_scope</code> field. Explicit Unscoped uses the Mesh Client extension <code>mesh_client_scope=unscoped</code>; other clients may ignore that extension. Import prefills the choice for review and saves it only after the channel write succeeds.</li>
 <li>Channel PSK still controls who can <strong>decode</strong>; region/scope controls which repeaters <strong>forward</strong>. Hierarchy and <code>region allowf</code> live on repeater CLI, not in Chat.</li>
 </ul>
-<h2 id="meshcore-identity-scoped-ui-stores">MeshCore: identity-scoped UI stores</h2>
-<p>Live Chat and Nodes read <strong>identity-scoped</strong> <code>nodeStore</code> / <code>messageStore</code> (keyed by <code>identityId</code>) via <code>identityStoreReads</code> (<code>getIdentityNode</code> / <code>getIdentityChatMessages</code>). DM/trace pubkeys live in <code>meshcorePubKeyRegistry</code> (mirrored into runtime maps for send/RPC; Nodes also keep <code>meshcorePubKeyHexByNodeId</code> for offline short ids). Nodes table shows <strong>Node health</strong> (not a MeshCore ID column) and pubkey short id (<code>!</code> + 8 hex) with a key icon. Hydration: <a href="../src/renderer/lib/hydrateIdentityStoresFromDb.ts"><code>hydrateIdentityStoresFromDb.ts</code></a>. <strong>Chat-driven <code>last_heard</code></strong> (<code>meshcoreIngest</code>, <code>ensureMeshcoreChatSenderInNodeStore</code>) updates node freshness on text traffic, not only adverts.</p>
-<h2 id="meshcore-rooms-scroll-ux">MeshCore: Rooms scroll UX</h2>
-<p><strong>Rooms</strong> tab scroll layout matches <strong>Chat</strong>: outer scroll container, unread divider, jump-to-unread button, and persisted last-read via <code>meshcoreRoomsUnread</code> / localStorage. Uses <a href="../src/renderer/lib/chatScrollUtils.ts"><code>chatScrollUtils.ts</code></a> (<code>getDistFromChatBottom</code>).</p>
-<p>Operational troubleshooting: <a href="../troubleshooting/#meshcore-room-server-login-posts-and-windows-10">troubleshooting.md</a>.</p>
-<h2 id="meshcore-trace-route-and-ping-trace">MeshCore: Trace Route and Ping trace</h2>
-<p><strong>Trace Route</strong> (node detail) and <strong>Ping trace</strong> (Repeaters panel) use the firmware <code>tracePath</code> flow. Remote nodes often answer only when they have <strong>your</strong> node in <strong>their</strong> contact list. Heard-only or one-way peers may produce no response until the client times out. See <a href="../troubleshooting/#meshcore-trace-route-or-ping-trace-times-out">troubleshooting.md</a>.</p>
-<h3 id="serialized-traceroutes-protocol-requirement">Serialized traceroutes (protocol requirement)</h3>
+<h2 id="meshcore-identity-scoped-ui-stores">MeshCore: identity-scoped UI stores<a class="headerlink" href="#meshcore-identity-scoped-ui-stores" title="Permanent link">&para;</a></h2>
+<p>Live Chat and Nodes read <strong>identity-scoped</strong> <code>nodeStore</code> / <code>messageStore</code> (keyed by <code>identityId</code>) via <code>identityStoreReads</code> (<code>getIdentityNode</code> / <code>getIdentityChatMessages</code>). DM/trace pubkeys live in <code>meshcorePubKeyRegistry</code> (mirrored into runtime maps for send/RPC; Nodes also keep <code>meshcorePubKeyHexByNodeId</code> for offline short ids). Nodes table shows <strong>Node health</strong> (not a MeshCore ID column) and pubkey short id (<code>!</code> + 8 hex) with a key icon. Hydration: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/hydrateIdentityStoresFromDb.ts"><code>hydrateIdentityStoresFromDb.ts</code></a>. <strong>Chat-driven <code>last_heard</code></strong> (<code>meshcoreIngest</code>, <code>ensureMeshcoreChatSenderInNodeStore</code>) updates node freshness on text traffic, not only adverts.</p>
+<h2 id="meshcore-rooms-scroll-ux">MeshCore: Rooms scroll UX<a class="headerlink" href="#meshcore-rooms-scroll-ux" title="Permanent link">&para;</a></h2>
+<p><strong>Rooms</strong> tab scroll layout matches <strong>Chat</strong>: outer scroll container, unread divider, jump-to-unread button, and persisted last-read via <code>meshcoreRoomsUnread</code> / localStorage. Uses <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/chatScrollUtils.ts"><code>chatScrollUtils.ts</code></a> (<code>getDistFromChatBottom</code>).</p>
+<p>Operational troubleshooting: <a href="../troubleshooting-meshcore/#meshcore-room-server-login-posts-and-windows-10">troubleshooting.md</a>.</p>
+<h2 id="meshcore-trace-route-and-ping-trace">MeshCore: Trace Route and Ping trace<a class="headerlink" href="#meshcore-trace-route-and-ping-trace" title="Permanent link">&para;</a></h2>
+<p><strong>Trace Route</strong> (node detail) and <strong>Ping trace</strong> (Repeaters panel) use the firmware <code>tracePath</code> flow. Remote nodes often answer only when they have <strong>your</strong> node in <strong>their</strong> contact list. Heard-only or one-way peers may produce no response until the client times out. See <a href="../troubleshooting-meshcore/#meshcore-trace-route-or-ping-trace-times-out">troubleshooting.md</a>.</p>
+<h3 id="serialized-traceroutes-protocol-requirement">Serialized traceroutes (protocol requirement)<a class="headerlink" href="#serialized-traceroutes-protocol-requirement" title="Permanent link">&para;</a></h3>
 <p>MeshCore companion firmware handles <strong>one <code>SendTracePath</code> / TraceData cycle at a time</strong> on a given RF link. Parallel traceroutes are <strong>not permitted</strong> — the radio will not reliably accept overlapping trace commands.</p>
 <p>mesh-client enforces this in two layers:</p>
 <ol>
@@ -2197,26 +2538,26 @@
 <li><strong>0-hop ping</strong> — first attempt uses 1-byte pubkey prefix; failure triggers cancel + full-pubkey direct retry (0-hop only). Multi-hop requires hash-segment outPath (≥2 bytes).</li>
 </ol>
 <p><strong>Practical guidance:</strong> Run <strong>one ping at a time</strong> when possible; let it finish (Hops column updates) before starting Status on the same repeater. Queued pings may take up to <strong>180s</strong> each (including 0-hop direct retry). Status/Neighbors/Telemetry use <strong>120s</strong> flat timeouts.</p>
-<p><strong>Multi-hop route priming:</strong> When outbound path bytes are missing but the UI shows multi-hop, ping/trace first runs a <strong>passive</strong> priming pass (wait for PathUpdated 129 and refresh contacts, hop-scaled <strong>15s + 5s × hops</strong>, capped at <strong>45s</strong>). If that still yields no usable hash-segment path and hops ≥ 2, mesh-client may run up to <strong>two</strong> <strong>flood-advert</strong> rounds as a fallback (listener registered <strong>before</strong> each advert). <strong>Path synthesis:</strong> <strong>1-hop</strong> — <code>[relayPrefix, destPrefix]</code> via a known 0-hop repeater; <strong>2-hop</strong> — prepend relay byte to a stored 2-byte path; <strong>3+</strong> — only stored paths with enough segments (no blind pubkey guessing). Multi-hop cached full destination pubkeys are discarded. One-way contacts may still time out with no TraceData — see <a href="../troubleshooting/#meshcore-trace-route-or-ping-trace-times-out">troubleshooting.md</a>.</p>
+<p><strong>Multi-hop route priming:</strong> When outbound path bytes are missing but the UI shows multi-hop, ping/trace first runs a <strong>passive</strong> priming pass (wait for PathUpdated 129 and refresh contacts, hop-scaled <strong>15s + 5s × hops</strong>, capped at <strong>45s</strong>). If that still yields no usable hash-segment path and hops ≥ 2, mesh-client may run up to <strong>two</strong> <strong>flood-advert</strong> rounds as a fallback (listener registered <strong>before</strong> each advert). <strong>Path synthesis:</strong> <strong>1-hop</strong> — <code>[relayPrefix, destPrefix]</code> via a known 0-hop repeater; <strong>2-hop</strong> — prepend relay byte to a stored 2-byte path; <strong>3+</strong> — only stored paths with enough segments (no blind pubkey guessing). Multi-hop cached full destination pubkeys are discarded. One-way contacts may still time out with no TraceData — see <a href="../troubleshooting-meshcore/#meshcore-trace-route-or-ping-trace-times-out">troubleshooting.md</a>.</p>
 <p><strong>Repeater admin RPC wire shape:</strong> Status and Telemetry use pubkey-framed companion commands (<code>meshcoreRepeaterStatusRpc.ts</code>, <code>meshcoreRepeaterTelemetryRpc.ts</code>). Neighbors uses <code>runMeshcoreRepeaterBinaryRequest</code> with queued send and <strong>paged</strong> GetNeighbours (<code>count</code> + <code>offset</code>; append into <code>meshcoreNeighbors</code> via <code>mergeMeshcoreNeighborPage</code>). Status/Telemetry/Neighbors throw on disconnect so UI toasts fire. Login is optional for CLI/telemetry when a password is saved; Status/Neighbors typically work without login on direct (0-hop) repeaters.</p>
-<p>Implementation reference: trace priming constants and PathUpdated wait helpers in <a href="../src/renderer/hooks/meshcore/meshcoreHookPreamble.ts"><code>meshcoreHookPreamble.ts</code></a>; flood-advert priming rounds in <a href="../src/renderer/lib/meshcoreTraceRoutePrime.ts"><code>meshcoreTraceRoutePrime.ts</code></a>; <code>startMeshcoreTracePathMultiplexed</code> in <a href="../src/renderer/lib/meshcoreTracePathMultiplex.ts"><code>meshcoreTracePathMultiplex.ts</code></a>; pubkey-framed Status/Telemetry via <a href="../src/renderer/lib/meshcoreRepeaterPrefixPushRpc.ts"><code>meshcoreRepeaterPrefixPushRpc.ts</code></a>; <code>traceRoute</code> / ping in <a href="../src/renderer/runtime/useMeshcoreRuntime.ts"><code>useMeshcoreRuntime.ts</code></a>.</p>
-<h2 id="windows-meshcore-over-ble">Windows: MeshCore over BLE</h2>
-<p>WinRT is much more reliable with a bonded device, so the app pairs the radio itself: on select or Reconnect it checks the pairing state and, when unpaired, asks for the PIN on the radio's screen and pairs before connecting (details in <a href="../agents/ble-serial/">agents/ble-serial.md</a>). Pairing only in <strong>Settings → Bluetooth &amp; devices</strong> is not needed and can leave some radios half-paired; use <strong>Remove &amp; Re-pair Device</strong> if a connect stalls. The client may <strong>retry once</strong> after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a> (MeshCore internals, BLE) and <a href="../README.md">README.md</a> (MeshCore Transport Notes).</p>
-<h2 id="linux-meshcore-over-ble">Linux: MeshCore over BLE</h2>
+<p>Implementation reference: trace priming constants and PathUpdated wait helpers in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/hooks/meshcore/meshcoreHookPreamble.ts"><code>meshcoreHookPreamble.ts</code></a>; flood-advert priming rounds in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreTraceRoutePrime.ts"><code>meshcoreTraceRoutePrime.ts</code></a>; <code>startMeshcoreTracePathMultiplexed</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreTracePathMultiplex.ts"><code>meshcoreTracePathMultiplex.ts</code></a>; pubkey-framed Status/Telemetry via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreRepeaterPrefixPushRpc.ts"><code>meshcoreRepeaterPrefixPushRpc.ts</code></a>; <code>traceRoute</code> / ping in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/runtime/useMeshcoreRuntime.ts"><code>useMeshcoreRuntime.ts</code></a>.</p>
+<h2 id="windows-meshcore-over-ble">Windows: MeshCore over BLE<a class="headerlink" href="#windows-meshcore-over-ble" title="Permanent link">&para;</a></h2>
+<p>WinRT is much more reliable with a bonded device, so the app pairs the radio itself: on select or Reconnect it checks the pairing state and, when unpaired, asks for the PIN on the radio's screen and pairs before connecting (details in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/agents/ble-serial.md">agents/ble-serial.md</a>). Pairing only in <strong>Settings → Bluetooth &amp; devices</strong> is not needed and can leave some radios half-paired; use <strong>Remove &amp; Re-pair Device</strong> if a connect stalls. The client may <strong>retry once</strong> after transient GATT discovery failures, and canceling mid-connect should not surface a misleading long-running channel timeout. User-facing copy lives in the Connection tab on Windows; contributor details are in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a> (MeshCore internals, BLE) and <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/README.md">README.md</a> (MeshCore Transport Notes).</p>
+<h2 id="linux-meshcore-over-ble">Linux: MeshCore over BLE<a class="headerlink" href="#linux-meshcore-over-ble" title="Permanent link">&para;</a></h2>
 <p>Linux MeshCore BLE uses the reticulum-sidecar <strong>btleplug</strong> GATT stack (the same path as macOS and Windows). After you pick a device in the in-app scanner, the client reads <strong><code>bluetoothctl info &lt;MAC&gt;</code></strong>. If the radio is <strong>not</strong> paired in BlueZ, the UI asks for the <strong>PIN shown on the device</strong> and runs <strong><code>bluetoothctl pair</code></strong> before the sidecar GATT connect. See <a href="../development-environment/#linux-bluetooth-ble">development-environment.md</a> and <a href="../troubleshooting/#ble-known-issues">troubleshooting.md</a>.</p>
-<h2 id="chat-mention-tokens">Chat mention tokens</h2>
-<p>Meshtastic and MeshCore use the literal form <code>@[Display Name]</code> in channel payloads for <strong>thread replies</strong>, legacy <strong>emoji tapbacks</strong>, <strong>path / hop summaries</strong>, and <strong>inline references</strong>. The client may keep the raw string in storage when a reply parent cannot be matched; the <strong>Chat</strong> tab still parses these segments for <strong>display</strong> only: brackets are hidden and the name is shown as a compact inline label (<a href="../src/renderer/components/ChatPayloadText.tsx"><code>ChatPayloadText.tsx</code></a>, used from <a href="../src/renderer/components/ChatPanel.tsx"><code>ChatPanel.tsx</code></a>; parser in <a href="../src/renderer/lib/chatMentionSegments.ts"><code>chatMentionSegments.ts</code></a>). Threading / <code>replyId</code> behavior is unchanged; this is purely presentational.</p>
-<h2 id="meshcore-open-gif-wire-ggifid">MeshCore Open: GIF wire (<code>g:GIFID</code>)</h2>
-<p>MeshCore Open sends GIFs as compact wire text <code>g:{giphyId}</code> (Giphy CDN). mesh-client renders these inline in chat via <a href="../src/renderer/lib/meshcoreGifWire.ts"><code>meshcoreGifWire.ts</code></a> and <a href="../src/renderer/components/ChatPayloadText.tsx"><code>ChatPayloadText.tsx</code></a>. Full Giphy media/page URLs are also recognized. <strong>Outbound GIF send</strong> (paste URL/ID or <strong>GIF</strong> button in Chat composer) is available when <strong>MeshCore Open compatibility</strong> is enabled in <strong>Radio → MeshCore Open wire (experimental)</strong>.</p>
-<h2 id="meshcore-emoji-reactions-tapbacks">MeshCore: emoji reactions (tapbacks)</h2>
+<h2 id="chat-mention-tokens">Chat mention tokens<a class="headerlink" href="#chat-mention-tokens" title="Permanent link">&para;</a></h2>
+<p>Meshtastic and MeshCore use the literal form <code>@[Display Name]</code> in channel payloads for <strong>thread replies</strong>, legacy <strong>emoji tapbacks</strong>, <strong>path / hop summaries</strong>, and <strong>inline references</strong>. The client may keep the raw string in storage when a reply parent cannot be matched; the <strong>Chat</strong> tab still parses these segments for <strong>display</strong> only: brackets are hidden and the name is shown as a compact inline label (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/ChatPayloadText.tsx"><code>ChatPayloadText.tsx</code></a>, used from <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/ChatPanel.tsx"><code>ChatPanel.tsx</code></a>; parser in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/chatMentionSegments.ts"><code>chatMentionSegments.ts</code></a>). Threading / <code>replyId</code> behavior is unchanged; this is purely presentational.</p>
+<h2 id="meshcore-open-gif-wire-ggifid">MeshCore Open: GIF wire (<code>g:GIFID</code>)<a class="headerlink" href="#meshcore-open-gif-wire-ggifid" title="Permanent link">&para;</a></h2>
+<p>MeshCore Open sends GIFs as compact wire text <code>g:{giphyId}</code> (Giphy CDN). mesh-client renders these inline in chat via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreGifWire.ts"><code>meshcoreGifWire.ts</code></a> and <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/ChatPayloadText.tsx"><code>ChatPayloadText.tsx</code></a>. Full Giphy media/page URLs are also recognized. <strong>Outbound GIF send</strong> (paste URL/ID or <strong>GIF</strong> button in Chat composer) is available when <strong>MeshCore Open compatibility</strong> is enabled in <strong>Radio → MeshCore Open wire (experimental)</strong>.</p>
+<h2 id="meshcore-emoji-reactions-tapbacks">MeshCore: emoji reactions (tapbacks)<a class="headerlink" href="#meshcore-emoji-reactions-tapbacks" title="Permanent link">&para;</a></h2>
 <p><strong>UI:</strong> MeshCore Chat uses the same reaction picker as Meshtastic — native macOS/Windows emoji panel (<code>showEmojiPanel()</code>) or Linux <code>emoji-picker-element</code> — plus 12 quick reactions on hover. Tapbacks render as reaction badges on the parent message (<code>emoji</code> + <code>replyId</code> on the stored row), not as reply bubbles.</p>
 <p><strong>Wire (MeshCore companion):</strong> Tapbacks and text replies use the same keyless bracket prefix (official companion shape):</p>
-<pre><code class="language-text">@[Display Name] emoji
-@[Display Name] message
-</code></pre>
-<p>Outbound tapbacks use <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>formatMeshcoreWireTapbackPrefix</code></a> + emoji via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundTapbackWire</code></a> in <a href="../src/renderer/runtime/useMeshcoreRuntime.ts"><code>useMeshcoreRuntime</code></a> <code>sendReaction</code>. Text replies use the same keyless prefix via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundSendText</code></a> (<a href="../src/renderer/hooks/useSendMessage.ts"><code>useSendMessage</code></a> / <code>useMeshcoreRuntime</code> <code>sendMessage</code>); plain body when the parent is not in store. Display names are sanitized via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>sanitizeMeshcoreWireName</code></a>.</p>
-<p><strong>Local model:</strong> Stored rows use clean <code>payload</code> plus <code>replyId</code> / quote preview when applicable — never the bracket wire string. Inbound replies with a single-emoji body are classified as tapbacks via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>meshcorePromoteEmojiOnlyReplyToTapback</code></a> (live ingest, repair, and display hydration).</p>
-<p><strong>MeshCore Open (<code>r:HASH:INDEX</code>):</strong> Parsed inbound for display. Outbound <code>r:</code> reactions are sent when <strong>MeshCore Open compatibility</strong> is enabled in Radio settings (fallback to keyless <code>@[Name] emoji</code> when the picker emoji is not in the Open index table). See <a href="../src/renderer/lib/meshcoreOpenReaction.ts"><code>meshcoreOpenReaction.ts</code></a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>@[Display Name] emoji
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>@[Display Name] message
+</code></pre></div>
+<p>Outbound tapbacks use <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>formatMeshcoreWireTapbackPrefix</code></a> + emoji via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundTapbackWire</code></a> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/runtime/useMeshcoreRuntime.ts"><code>useMeshcoreRuntime</code></a> <code>sendReaction</code>. Text replies use the same keyless prefix via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundSendText</code></a> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/hooks/useSendMessage.ts"><code>useSendMessage</code></a> / <code>useMeshcoreRuntime</code> <code>sendMessage</code>); plain body when the parent is not in store. Display names are sanitized via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>sanitizeMeshcoreWireName</code></a>.</p>
+<p><strong>Local model:</strong> Stored rows use clean <code>payload</code> plus <code>replyId</code> / quote preview when applicable — never the bracket wire string. Inbound replies with a single-emoji body are classified as tapbacks via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>meshcorePromoteEmojiOnlyReplyToTapback</code></a> (live ingest, repair, and display hydration).</p>
+<p><strong>MeshCore Open (<code>r:HASH:INDEX</code>):</strong> Parsed inbound for display. Outbound <code>r:</code> reactions are sent when <strong>MeshCore Open compatibility</strong> is enabled in Radio settings (fallback to keyless <code>@[Name] emoji</code> when the picker emoji is not in the Open index table). See <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreOpenReaction.ts"><code>meshcoreOpenReaction.ts</code></a>.</p>
 <p><strong>MeshCore Open compatibility (Radio toggle, default off):</strong> Enables keyed outbound text replies (<code>@[Name#replyKey] body</code>), <code>r:</code> reactions, and <code>g:</code> GIF send for meshes with MeshCore Open clients. Default wire remains official companion keyless <code>@[Name] …</code> for replies and tapbacks.</p>
 <p><strong>Limitations:</strong></p>
 <table>
@@ -2233,7 +2574,7 @@
 </tr>
 <tr>
 <td><strong>Text replies</strong></td>
-<td>Default outbound keyless <code>@[Name] body</code> via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundSendText</code></a>; with Open compat, keyed <code>@[Name#key] body</code>. Plain body when parent not in store. Inbound keyed <code>@[Name#key]</code> (seconds or ms) resolved via <a href="../src/renderer/lib/meshcoreChannelText.ts"><code>meshcoreMessageMatchesReplyKey</code></a>.</td>
+<td>Default outbound keyless <code>@[Name] body</code> via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>buildMeshcoreOutboundSendText</code></a>; with Open compat, keyed <code>@[Name#key] body</code>. Plain body when parent not in store. Inbound keyed <code>@[Name#key]</code> (seconds or ms) resolved via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreChannelText.ts"><code>meshcoreMessageMatchesReplyKey</code></a>.</td>
 </tr>
 <tr>
 <td><strong>Meshtastic</strong></td>
@@ -2241,25 +2582,25 @@
 </tr>
 <tr>
 <td><strong>Dedup</strong></td>
-<td>mesh-client merges tapback RF/MQTT echoes (<a href="../src/renderer/lib/meshcoreStoreDedup.ts"><code>meshcoreStoreDedup.ts</code></a>, 60 s window). Default outbound uses keyless <code>@[Name] …</code>; Open compat may send keyed/<code>r:</code>/<code>g:</code> wire on the same channel.</td>
+<td>mesh-client merges tapback RF/MQTT echoes (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreStoreDedup.ts"><code>meshcoreStoreDedup.ts</code></a>, 60 s window). Default outbound uses keyless <code>@[Name] …</code>; Open compat may send keyed/<code>r:</code>/<code>g:</code> wire on the same channel.</td>
 </tr>
 </tbody>
 </table>
-<p>Inbound: parse <code>r:HASH:INDEX</code> (MeshCore Open), keyed <code>@[Name#key] body</code> or emoji, and keyless <code>@[Name] body</code> / emoji from other clients. See <a href="../troubleshooting/#meshcore-reply-misquote--duplicate-chat-messages">troubleshooting.md — MeshCore reply misquote / duplicate chat messages</a>.</p>
-<h2 id="meshcore-mqtt-json-envelope-v1">MeshCore MQTT JSON envelope (v1)</h2>
+<p>Inbound: parse <code>r:HASH:INDEX</code> (MeshCore Open), keyed <code>@[Name#key] body</code> or emoji, and keyless <code>@[Name] body</code> / emoji from other clients. See <a href="../troubleshooting-meshcore/#meshcore-reply-misquote--duplicate-chat-messages">troubleshooting.md — MeshCore reply misquote / duplicate chat messages</a>.</p>
+<h2 id="meshcore-mqtt-json-envelope-v1">MeshCore MQTT JSON envelope (v1)<a class="headerlink" href="#meshcore-mqtt-json-envelope-v1" title="Permanent link">&para;</a></h2>
 <p>Interim broker format until a binary/official MeshCore MQTT layout ships:</p>
-<pre><code class="language-json">{
-  &quot;v&quot;: 1,
-  &quot;text&quot;: &quot;message body&quot;,
-  &quot;channelIdx&quot;: 0,
-  &quot;senderName&quot;: &quot;optional&quot;,
-  &quot;senderNodeId&quot;: 305419896,
-  &quot;timestamp&quot;: 1700000000000
-}
-</code></pre>
-<p>Subscribes under <code>{topicPrefix}/#</code>. Outbound optional publish uses <code>mqtt:publishMeshcore</code> → <code>{topicPrefix}/meshcore/chat</code> (JSON same shape). <strong>LetsMesh public brokers</strong> do not use that path for MQTT-only chat without a radio; optional <strong>Packet logger</strong> (<code>mqtt:publishMeshcorePacketLog</code>) publishes RX packet summaries to <code>{topicPrefix}/meshcore/packets</code> using meshcoretomqtt-shaped JSON; implemented in <a href="../src/main/meshcore-mqtt-adapter.ts"><code>MeshcoreMqttAdapter.publishPacketLog</code></a> (see <a href="../letsmesh-mqtt-auth/">letsmesh-mqtt-auth.md</a> § Packet logger). Debug logging is sampled to suppress repeated decode failures and noise (traceroute, empty-type JSON).</p>
-<h2 id="meshtastic-mqtt-network-presets">Meshtastic MQTT network presets</h2>
-<p>In <strong>Meshtastic</strong> mode, <a href="../src/renderer/components/ConnectionPanel.tsx"><code>ConnectionPanel.tsx</code></a> shows a <strong>Network Preset</strong> picker (shared <a href="../src/renderer/components/MqttNetworkPresetSelect.tsx"><code>MqttNetworkPresetSelect</code></a>) with <strong>Official</strong>, <strong>Liam's</strong>, and <strong>Custom</strong> options. They populate <code>MQTTSettings</code> used by <a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">"v"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"message body"</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">"channelIdx"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span><span class="nt">"senderName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"optional"</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">"senderNodeId"</span><span class="p">:</span><span class="w"> </span><span class="mi">305419896</span><span class="p">,</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="mi">1700000000000</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">}</span>
+</code></pre></div>
+<p>Subscribes under <code>{topicPrefix}/#</code>. Outbound optional publish uses <code>mqtt:publishMeshcore</code> → <code>{topicPrefix}/meshcore/chat</code> (JSON same shape). <strong>LetsMesh public brokers</strong> do not use that path for MQTT-only chat without a radio; optional <strong>Packet logger</strong> (<code>mqtt:publishMeshcorePacketLog</code>) publishes RX packet summaries to <code>{topicPrefix}/meshcore/packets</code> using meshcoretomqtt-shaped JSON; implemented in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/meshcore-mqtt-adapter.ts"><code>MeshcoreMqttAdapter.publishPacketLog</code></a> (see <a href="../letsmesh-mqtt-auth/">letsmesh-mqtt-auth.md</a> § Packet logger). Debug logging is sampled to suppress repeated decode failures and noise (traceroute, empty-type JSON).</p>
+<h2 id="meshtastic-mqtt-network-presets">Meshtastic MQTT network presets<a class="headerlink" href="#meshtastic-mqtt-network-presets" title="Permanent link">&para;</a></h2>
+<p>In <strong>Meshtastic</strong> mode, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/ConnectionPanel.tsx"><code>ConnectionPanel.tsx</code></a> shows a <strong>Network Preset</strong> picker (shared <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MqttNetworkPresetSelect.tsx"><code>MqttNetworkPresetSelect</code></a>) with <strong>Official</strong>, <strong>Liam's</strong>, and <strong>Custom</strong> options. They populate <code>MQTTSettings</code> used by <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>.</p>
 <table>
 <thead>
 <tr>
@@ -2290,18 +2631,18 @@
 </tr>
 </tbody>
 </table>
-<p>Topic prefix defaults to <code>msh/US/</code>; users can edit fields after choosing a preset. Defined in <a href="../src/renderer/lib/meshtasticMqttTlsMigration.ts"><code>meshtasticMqttTlsMigration.ts</code></a>.</p>
-<h3 id="private-brokers-meshtastic">Private brokers (Meshtastic)</h3>
+<p>Topic prefix defaults to <code>msh/US/</code>; users can edit fields after choosing a preset. Defined in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtasticMqttTlsMigration.ts"><code>meshtasticMqttTlsMigration.ts</code></a>.</p>
+<h3 id="private-brokers-meshtastic">Private brokers (Meshtastic)<a class="headerlink" href="#private-brokers-meshtastic" title="Permanent link">&para;</a></h3>
 <p>For ham or private MQTT brokers (typically <strong>Custom</strong> preset), the Connection tab adds:</p>
 <ul>
-<li><strong>Channel PSKs</strong>: AES-128 (16-byte) or AES-256 (32-byte) base64 keys, one per line; optional <code>ChannelName=base64</code> or <code>ChannelName@index=base64</code> for MQTT-only channels when your local slot differs from the topic name (multiple lines per name allowed). LongFast default is always tried. Keys from the Radio tab sync when the radio is connected; custom named keys are preserved when sync would only send the default public PSK. Line parsing: <a href="../src/shared/meshtasticChannelPskLine.ts"><code>meshtasticChannelPskLine.ts</code></a>.</li>
-<li><strong>MQTT-only sender id</strong>: <a href="../src/renderer/lib/meshtasticMqttIdentity.ts"><code>meshtasticMqttIdentity.ts</code></a> uses last RF <code>myNodeNum</code> when known, else a stable virtual id for chat/MQTT publish without a radio.</li>
-<li><strong>Enable TLS (mqtts / wss)</strong>: explicit TLS toggle via <a href="../src/shared/mqttTls.ts"><code>mqttTls.ts</code></a> (port 8883/443 no longer required to imply TLS). <strong>Allow insecure TLS</strong> for self-signed or non–public CA chains.</li>
-<li><strong>Per-channel uplink</strong>: outbound RF → MQTT uses each channel’s name and PSK via <a href="../src/renderer/lib/meshtasticMqttPublish.ts"><code>meshtasticMqttPublish.ts</code></a>.</li>
-<li><strong>Inbound text channel</strong>: MQTT downlink text prefers the topic channel name mapped through <code>channelNameToIndex</code> (receiver-local slot) in <a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>; <code>MeshPacket.channel</code> is sender-local and used only as fallback when topic is absent (sampled log when topic and packet disagree).</li>
+<li><strong>Channel PSKs</strong>: AES-128 (16-byte) or AES-256 (32-byte) base64 keys, one per line; optional <code>ChannelName=base64</code> or <code>ChannelName@index=base64</code> for MQTT-only channels when your local slot differs from the topic name (multiple lines per name allowed). LongFast default is always tried. Keys from the Radio tab sync when the radio is connected; custom named keys are preserved when sync would only send the default public PSK. Line parsing: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/shared/meshtasticChannelPskLine.ts"><code>meshtasticChannelPskLine.ts</code></a>.</li>
+<li><strong>MQTT-only sender id</strong>: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtasticMqttIdentity.ts"><code>meshtasticMqttIdentity.ts</code></a> uses last RF <code>myNodeNum</code> when known, else a stable virtual id for chat/MQTT publish without a radio.</li>
+<li><strong>Enable TLS (mqtts / wss)</strong>: explicit TLS toggle via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/shared/mqttTls.ts"><code>mqttTls.ts</code></a> (port 8883/443 no longer required to imply TLS). <strong>Allow insecure TLS</strong> for self-signed or non–public CA chains.</li>
+<li><strong>Per-channel uplink</strong>: outbound RF → MQTT uses each channel’s name and PSK via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtasticMqttPublish.ts"><code>meshtasticMqttPublish.ts</code></a>.</li>
+<li><strong>Inbound text channel</strong>: MQTT downlink text prefers the topic channel name mapped through <code>channelNameToIndex</code> (receiver-local slot) in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a>; <code>MeshPacket.channel</code> is sender-local and used only as fallback when topic is absent (sampled log when topic and packet disagree).</li>
 </ul>
-<h2 id="meshcore-mqtt-network-presets">MeshCore MQTT network presets</h2>
-<p>In <strong>MeshCore</strong> mode only, <a href="../src/renderer/components/ConnectionPanel.tsx"><code>ConnectionPanel.tsx</code></a> shows a <strong>Network Preset</strong> picker (shared <a href="../src/renderer/components/MqttNetworkPresetSelect.tsx"><code>MqttNetworkPresetSelect</code></a>) with, in order: <strong>LetsMesh</strong>, <strong>MeshMapper</strong>, <strong>Colorado Mesh</strong>, <strong>Waev</strong>, <strong>Meshat.se</strong>, <strong>MeshCore.CA</strong>, <strong>EastMesh</strong>, <strong>Ripple Networks</strong>, <strong>Custom</strong>. New installs default to <strong>LetsMesh</strong>. They populate the same <code>MQTTSettings</code> the main process uses for <a href="../src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a> (with <code>mqttTransportProtocol: 'meshcore'</code>). Preset fields live in <a href="../src/renderer/lib/meshcoreMqttPresets.ts"><code>meshcoreMqttPresets.ts</code></a>.</p>
+<h2 id="meshcore-mqtt-network-presets">MeshCore MQTT network presets<a class="headerlink" href="#meshcore-mqtt-network-presets" title="Permanent link">&para;</a></h2>
+<p>In <strong>MeshCore</strong> mode only, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/ConnectionPanel.tsx"><code>ConnectionPanel.tsx</code></a> shows a <strong>Network Preset</strong> picker (shared <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MqttNetworkPresetSelect.tsx"><code>MqttNetworkPresetSelect</code></a>) with, in order: <strong>LetsMesh</strong>, <strong>MeshMapper</strong>, <strong>Colorado Mesh</strong>, <strong>Waev</strong>, <strong>Meshat.se</strong>, <strong>MeshCore.CA</strong>, <strong>EastMesh</strong>, <strong>Ripple Networks</strong>, <strong>Custom</strong>. New installs default to <strong>LetsMesh</strong>. They populate the same <code>MQTTSettings</code> the main process uses for <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a> (with <code>mqttTransportProtocol: 'meshcore'</code>). Preset fields live in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreMqttPresets.ts"><code>meshcoreMqttPresets.ts</code></a>.</p>
 <table>
 <thead>
 <tr>
@@ -2368,13 +2709,13 @@
 </tr>
 </tbody>
 </table>
-<p>Topic prefixes for the device-signing presets (LetsMesh / MeshMapper / Colorado / Waev / Meshat.se / MeshCore.CA / EastMesh — and Custom when pointed at those hosts) must be <code>meshcore/{IATA}</code> (3 letters) or <code>meshcore/test</code> — validated in <a href="../src/renderer/lib/meshcoreMqttTopicPrefix.ts"><code>meshcoreMqttTopicPrefix.ts</code></a>. Users can still edit fields after choosing a preset. On upgrade, <a href="../src/renderer/lib/connectionPanelStorageMigrations.ts"><code>connectionPanelStorageMigrations.ts</code></a> migrates stale Colorado Mesh port <strong>1883</strong> → <strong>443</strong>, bare topic <code>meshcore</code> → IATA, repairs invalid IATA shapes, seeds LetsMesh for new installs, and reconciles preset-owned fields before MQTT auto-launch (also runs from <a href="../src/renderer/main.tsx"><code>main.tsx</code></a> before React mount).</p>
-<h2 id="log-filtering">Log filtering</h2>
-<p>MQTT log messages are prefixed for easy filtering: <strong><code>[Meshtastic MQTT]</code></strong> in <a href="../src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a> and <strong><code>[MeshCore MQTT]</code></strong> in <a href="../src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a>. The Log panel filter and analyzer patterns recognize these tags.</p>
-<h2 id="maintenance">Maintenance</h2>
-<p>When MeshCore firmware/SDK defines official MQTT topics and payloads, replace or extend <a href="../src/main/meshcore-mqtt-adapter.ts"><code>MeshcoreMqttAdapter</code></a> and update this document.</p>
-<h2 id="meshcore-mqtt-authentication">MeshCore MQTT Authentication</h2>
-<h3 id="device-signing-jwt-authentication">Device-signing JWT authentication</h3>
+<p>Topic prefixes for the device-signing presets (LetsMesh / MeshMapper / Colorado / Waev / Meshat.se / MeshCore.CA / EastMesh — and Custom when pointed at those hosts) must be <code>meshcore/{IATA}</code> (3 letters) or <code>meshcore/test</code> — validated in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshcoreMqttTopicPrefix.ts"><code>meshcoreMqttTopicPrefix.ts</code></a>. Users can still edit fields after choosing a preset. On upgrade, <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/connectionPanelStorageMigrations.ts"><code>connectionPanelStorageMigrations.ts</code></a> migrates stale Colorado Mesh port <strong>1883</strong> → <strong>443</strong>, bare topic <code>meshcore</code> → IATA, repairs invalid IATA shapes, seeds LetsMesh for new installs, and reconciles preset-owned fields before MQTT auto-launch (also runs from <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/main.tsx"><code>main.tsx</code></a> before React mount).</p>
+<h2 id="log-filtering">Log filtering<a class="headerlink" href="#log-filtering" title="Permanent link">&para;</a></h2>
+<p>MQTT log messages are prefixed for easy filtering: <strong><code>[Meshtastic MQTT]</code></strong> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/mqtt-manager.ts"><code>mqtt-manager.ts</code></a> and <strong><code>[MeshCore MQTT]</code></strong> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/meshcore-mqtt-adapter.ts"><code>meshcore-mqtt-adapter.ts</code></a>. The Log panel filter and analyzer patterns recognize these tags.</p>
+<h2 id="maintenance">Maintenance<a class="headerlink" href="#maintenance" title="Permanent link">&para;</a></h2>
+<p>When MeshCore firmware/SDK defines official MQTT topics and payloads, replace or extend <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/main/meshcore-mqtt-adapter.ts"><code>MeshcoreMqttAdapter</code></a> and update this document.</p>
+<h2 id="meshcore-mqtt-authentication">MeshCore MQTT Authentication<a class="headerlink" href="#meshcore-mqtt-authentication" title="Permanent link">&para;</a></h2>
+<h3 id="device-signing-jwt-authentication">Device-signing JWT authentication<a class="headerlink" href="#device-signing-jwt-authentication" title="Permanent link">&para;</a></h3>
 <p>The <strong>LetsMesh</strong>, <strong>MeshMapper</strong>, <strong>Colorado Mesh</strong>, <strong>Waev</strong>, <strong>Meshat.se</strong>, <strong>MeshCore.CA</strong>, and <strong>EastMesh</strong> presets all use WebSocket (<code>wss</code>) with the same device-signed JWT authentication (Custom settings pointed at those hosts use it too). The implementation matches <a href="https://github.com/michaelhart/meshcore-mqtt-broker">meshcore-mqtt-broker</a>:</p>
 <ul>
 <li><strong>MQTT username</strong>: <code>v1_&lt;64-hex public key&gt;</code> (uppercase hex)</li>
@@ -2384,12 +2725,12 @@
 <li><code>exp</code>: Expiration timestamp</li>
 <li>JWT <code>aud</code> (audience): The <strong>broker hostname you connect to</strong> (same as the Server field), via <code>letsMeshJwtAudience()</code></li>
 </ul>
-<p>The JWT audience always matches the connect hostname — e.g. <code>mqtt-us-v1.letsmesh.net</code>, <code>mqtt.waev.app</code>, <code>mqtt1.meshcore.ca</code>. The broker allowlist and each broker's WebSocket path (<code>/ws</code> for LetsMesh/MeshMapper/Colorado, <code>/mqtt</code> for Waev/Meshat.se/MeshCore.CA/EastMesh) live together in <a href="../src/renderer/lib/letsMeshJwt.ts"><code>letsMeshJwt.ts</code></a> (<code>DEVICE_SIGNING_HOST_WS_PATHS</code>); connect/deviation guards enforce port 443, TLS, and the expected <code>wsPath</code> in <a href="../src/renderer/lib/letsMeshConnectionGuards.ts"><code>letsMeshConnectionGuards.ts</code></a>.</p>
+<p>The JWT audience always matches the connect hostname — e.g. <code>mqtt-us-v1.letsmesh.net</code>, <code>mqtt.waev.app</code>, <code>mqtt1.meshcore.ca</code>. The broker allowlist and each broker's WebSocket path (<code>/ws</code> for LetsMesh/MeshMapper/Colorado, <code>/mqtt</code> for Waev/Meshat.se/MeshCore.CA/EastMesh) live together in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/letsMeshJwt.ts"><code>letsMeshJwt.ts</code></a> (<code>DEVICE_SIGNING_HOST_WS_PATHS</code>); connect/deviation guards enforce port 443, TLS, and the expected <code>wsPath</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/letsMeshConnectionGuards.ts"><code>letsMeshConnectionGuards.ts</code></a>.</p>
 <p>Signing uses cached <strong>private key</strong> material from either a <strong>Radio</strong>-tab MeshCore JSON import or <strong>automatic persistence</strong> after a successful MeshCore radio session (same storage shape as import).</p>
-<p>On upgrade, the legacy MeshMapper host <code>mqtt.meshmapper.cc</code> is rewritten to <code>mqtt.meshmapper.net</code> (TLS on <code>.cc</code> fails with alert 80) by <a href="../src/renderer/lib/connectionPanelStorageMigrations.ts"><code>connectionPanelStorageMigrations.ts</code></a>.</p>
-<h3 id="configuration">Configuration</h3>
-<p>Import a MeshCore config JSON file (Radio tab) when you need credentials before connecting a radio, or to replace missing data; otherwise connecting the MeshCore radio first fills the same cache. The implementation is in <a href="../src/renderer/lib/letsMeshJwt.ts"><code>letsMeshJwt.ts</code></a>.</p>
-<h3 id="packet-logger-optional">Packet logger (optional)</h3>
+<p>On upgrade, the legacy MeshMapper host <code>mqtt.meshmapper.cc</code> is rewritten to <code>mqtt.meshmapper.net</code> (TLS on <code>.cc</code> fails with alert 80) by <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/connectionPanelStorageMigrations.ts"><code>connectionPanelStorageMigrations.ts</code></a>.</p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>Import a MeshCore config JSON file (Radio tab) when you need credentials before connecting a radio, or to replace missing data; otherwise connecting the MeshCore radio first fills the same cache. The implementation is in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/letsMeshJwt.ts"><code>letsMeshJwt.ts</code></a>.</p>
+<h3 id="packet-logger-optional">Packet logger (optional)<a class="headerlink" href="#packet-logger-optional" title="Permanent link">&para;</a></h3>
 <p>The optional <strong>Packet logger</strong> publishes RX packet summaries to <code>meshcore/packets</code> under the topic prefix using meshcoretomqtt-shaped JSON. See <a href="../letsmesh-mqtt-auth/"><code>letsmesh-mqtt-auth.md</code></a> for details.</p>
 
 
@@ -2398,6 +2739,27 @@
 
 
 
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
 
 
 
@@ -2411,6 +2773,12 @@
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
       </main>
       
         <footer class="md-footer">
@@ -2419,10 +2787,43 @@
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
       Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Colorado-Mesh/mesh-client" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://discord.com/invite/McChKR5NpS" target="_blank" rel="noopener" title="Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://coloradomesh.org/" target="_blank" rel="noopener" title="Colorado Mesh" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2m-5.15 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M14.34 14H9.66c-.1-.66-.16-1.32-.16-2s.06-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2M12 19.96c-.83-1.2-1.5-2.53-1.91-3.96h3.82c-.41 1.43-1.08 2.76-1.91 3.96M8 8H5.08A7.92 7.92 0 0 1 9.4 4.44C8.8 5.55 8.35 6.75 8 8m-2.92 8H8c.35 1.25.8 2.45 1.4 3.56A8 8 0 0 1 5.08 16m-.82-2C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2M12 4.03c.83 1.2 1.5 2.54 1.91 3.97h-3.82c.41-1.43 1.08-2.77 1.91-3.97M18.92 8h-2.95a15.7 15.7 0 0 0-1.38-3.56c1.84.63 3.37 1.9 4.33 3.56M12 2C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>
     </a>
   
 </div>
@@ -2440,7 +2841,7 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>

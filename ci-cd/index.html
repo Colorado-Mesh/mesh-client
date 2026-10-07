@@ -6,7 +6,11 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
       
+      
+      
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/ci-cd/">
       
       
         <link rel="prev" href="../style-guide/">
@@ -18,7 +22,7 @@
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -49,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -65,7 +71,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -90,8 +96,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,20 +126,20 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
   
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
   
@@ -164,6 +169,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
           
@@ -196,7 +206,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    Colorado-Mesh/mesh-client
   </div>
 </a>
       </div>
@@ -238,17 +248,55 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../install/" class="md-tabs__link">
+        
+  
+  
     
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../features/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Features
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
   
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../development-environment/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../reticulum-setup-guide/" class="md-tabs__link">
           
   
   
-  Engineering
+    
+  
+  User Guide
 
         </a>
       </li>
@@ -264,11 +312,37 @@
     
     
       <li class="md-tabs__item">
-        <a href="../diagnostics/" class="md-tabs__link">
+        <a href="../troubleshooting/" class="md-tabs__link">
           
   
   
+    
+  
   Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Engineering
 
         </a>
       </li>
@@ -287,6 +361,8 @@
         <a href="../license/" class="md-tabs__link">
           
   
+  
+    
   
   Project
 
@@ -320,8 +396,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     Colorado Mesh Client
@@ -334,7 +409,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    Colorado-Mesh/mesh-client
   </div>
 </a>
     </div>
@@ -372,11 +447,635 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM (MECP & Incident Command)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notification-sounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notification Sounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -393,10 +1092,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -414,8 +1113,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -843,7 +1542,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#applying-updating-the-ruleset" class="md-nav__link">
+  <a href="#applying--updating-the-ruleset" class="md-nav__link">
     <span class="md-ellipsis">
       
         Applying / updating the ruleset
@@ -931,7 +1630,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#packaging-smoke-builds-buildyaml-flatpakyaml-releaseyaml" class="md-nav__link">
+  <a href="#packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml" class="md-nav__link">
     <span class="md-ellipsis">
       
         Packaging smoke builds (build.yaml / flatpak.yaml / release.yaml)
@@ -954,7 +1653,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#test-build-installer-filenames-runn" class="md-nav__link">
+  <a href="#test-build-installer-filenames--runn" class="md-nav__link">
     <span class="md-ellipsis">
       
         Test-build installer filenames (-run{N})
@@ -1035,98 +1734,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../localization/" class="md-nav__link">
+      <a href="../service-announcements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Localization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../key-backup-and-crypto/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Key Backup & Crypto
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Meshtastic Telemetry
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../nomad-hosting-interop/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Nomad Hosting Interop
+    Service Announcements
   
 
     
@@ -1175,42 +1790,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../reticulum/" class="md-nav__link">
+      <a href="../reticulum-development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Reticulum
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reticulum-setup-guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reticulum Setup Guide
+    Reticulum Development
   
 
     
@@ -1287,6 +1874,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
         
   
@@ -1323,169 +1938,13 @@
   
     
     
-    
-    
-      
       
         
       
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
+        
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Support
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Support
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../diagnostics/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Diagnostics
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Troubleshooting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notification-sounds/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Notification Sounds
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../log-analysis/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Log Analysis
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
+      
     
     
     
@@ -1499,133 +1958,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Community
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Community
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Discord
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://coloradomesh.org/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Website
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1643,8 +1979,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2011,7 +2347,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#applying-updating-the-ruleset" class="md-nav__link">
+  <a href="#applying--updating-the-ruleset" class="md-nav__link">
     <span class="md-ellipsis">
       
         Applying / updating the ruleset
@@ -2099,7 +2435,7 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#packaging-smoke-builds-buildyaml-flatpakyaml-releaseyaml" class="md-nav__link">
+  <a href="#packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml" class="md-nav__link">
     <span class="md-ellipsis">
       
         Packaging smoke builds (build.yaml / flatpak.yaml / release.yaml)
@@ -2122,7 +2458,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#test-build-installer-filenames-runn" class="md-nav__link">
+  <a href="#test-build-installer-filenames--runn" class="md-nav__link">
     <span class="md-ellipsis">
       
         Test-build installer filenames (-run{N})
@@ -2176,13 +2512,18 @@
 
 
   
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/ci-cd.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
-<h1 id="cicd-workflows">CI/CD Workflows</h1>
+<h1 id="cicd-workflows">CI/CD Workflows<a class="headerlink" href="#cicd-workflows" title="Permanent link">&para;</a></h1>
 <p>Mesh-Client uses GitHub Actions for continuous integration and deployment.</p>
 <hr />
-<h2 id="workflows">Workflows</h2>
+<h2 id="workflows">Workflows<a class="headerlink" href="#workflows" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -2250,7 +2591,7 @@
 </tbody>
 </table>
 <hr />
-<h2 id="ci-build-ciyaml">CI Build (<code>ci.yaml</code>)</h2>
+<h2 id="ci-build-ciyaml">CI Build (<code>ci.yaml</code>)<a class="headerlink" href="#ci-build-ciyaml" title="Permanent link">&para;</a></h2>
 <p>Runs on every push, pull request, and merge-queue <code>merge_group</code> for <code>main</code> (and <code>workflow_dispatch</code>). Independent lanes start concurrently; only Flatpak waits for change detection:</p>
 <ul>
 <li><strong>Code quality:</strong> format, markdownlint, license allowlist, actionlint, dependency audit, and yamllint</li>
@@ -2262,7 +2603,7 @@
 </ul>
 <p>Each Node lane uses the same pinned Node 22/pnpm setup action and frozen install. The final <code>Build &amp; Test</code> job aggregates every lane so the existing required check name remains stable. Superseded runs for the same pull request or ref are cancelled.</p>
 <hr />
-<h2 id="buttonmash-buttonmashyaml">Buttonmash (<code>buttonmash.yaml</code>)</h2>
+<h2 id="buttonmash-buttonmashyaml">Buttonmash (<code>buttonmash.yaml</code>)<a class="headerlink" href="#buttonmash-buttonmashyaml" title="Permanent link">&para;</a></h2>
 <p>Runs a bounded, deterministic Buttonmash crawl on pull requests, merge-queue refs, and manual
 dispatches. The job starts the Vite renderer in plain-browser development mode, which installs the
 repository's no-op <code>electronAPI</code> stub. This exercises the UI shell and browser-safe panel behavior
@@ -2279,9 +2620,9 @@ only restore that sound's default; every other Reset and Delete control stays bl
 <code>guardrails.blockMedia</code> is off so the run draws text in the bundled IBM Plex fonts the app serves
 from its own origin; Buttonmash blocks font and media requests by default. The action and time
 budgets live in
-<a href="../buttonmash.config.json"><code>buttonmash.config.json</code></a>.</p>
+<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/buttonmash.config.json"><code>buttonmash.config.json</code></a>.</p>
 <hr />
-<h2 id="tests-testsyaml">Tests (<code>tests.yaml</code>)</h2>
+<h2 id="tests-testsyaml">Tests (<code>tests.yaml</code>)<a class="headerlink" href="#tests-testsyaml" title="Permanent link">&para;</a></h2>
 <p>Runs on every push, pull request, and merge-queue <code>merge_group</code> for <code>main</code>:</p>
 <ol>
 <li><strong>Detect scope:</strong> compare a pull request head with its true merge base and reuse the local staged-test planner to select related paths and Vitest projects.</li>
@@ -2296,7 +2637,7 @@ budgets live in
 <p>The three <code>Coverage (...)</code> job names and <code>Merge coverage</code> remain stable for the repository ruleset, including when a project or the whole test matrix has no relevant PR work. Superseded runs for the same pull request or ref are cancelled.</p>
 <p>Static analysis on PRs is <strong>CodeQL</strong> (security) plus ESLint, Clippy, and pre-commit <code>check:*</code> scanners. AI PR review is <strong>CodeRabbit</strong> (see <a href="#coderabbit">CodeRabbit</a> below). SonarQube Cloud is not used.</p>
 <p>Test results are available as a downloadable artifact from the workflow run.</p>
-<h3 id="electron-e2e-e2eyaml">Electron E2E (<code>e2e.yaml</code>)</h3>
+<h3 id="electron-e2e-e2eyaml">Electron E2E (<code>e2e.yaml</code>)<a class="headerlink" href="#electron-e2e-e2eyaml" title="Permanent link">&para;</a></h3>
 <p>Not a PR gate. Runs on a <strong>daily schedule</strong> (default branch only) and on <strong>manual</strong> <code>workflow_dispatch</code>:</p>
 <ol>
 <li>Checkout (<code>persist-credentials: false</code>), setup pnpm + Node 22, <code>node scripts/check-environment.mjs --skip-node-modules</code>, <code>pnpm install --frozen-lockfile</code>, then <code>pnpm run check:environment</code> (<code>PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1</code>)</li>
@@ -2306,7 +2647,7 @@ budgets live in
 <li>On failure, upload <code>test-results/</code> + <code>playwright-report/</code> (7-day retention)</li>
 </ol>
 <p>Local: <code>pnpm run test:e2e:build</code>. See <a href="../development-environment/#playwright-electron-e2e">development-environment.md</a>.</p>
-<h3 id="reticulum-sidecar-reticulum-sidecaryaml">Reticulum sidecar (<code>reticulum-sidecar.yaml</code>)</h3>
+<h3 id="reticulum-sidecar-reticulum-sidecaryaml">Reticulum sidecar (<code>reticulum-sidecar.yaml</code>)<a class="headerlink" href="#reticulum-sidecar-reticulum-sidecaryaml" title="Permanent link">&para;</a></h3>
 <p>Path-filtered on <code>reticulum-sidecar/**</code> and related scripts:</p>
 <ol>
 <li><strong><code>lint</code> job (ubuntu-latest)</strong> — <code>cargo fmt --check</code> + <code>cargo clippy</code> with <code>rns-stack,rns-ble,rns-rnode-tcp</code> (<code>-D warnings</code>)</li>
@@ -2316,8 +2657,8 @@ budgets live in
 <p>CI and local <strong>dev</strong> clones float the <code>.rsstack/</code> workspace via <code>scripts/clone-ratspeak-stack.sh</code> to <code>origin/main</code> (overlays must apply; optional <code>RS_RETICULUM_REF</code> / <code>RS_LXMF_REF</code> / <code>RS_NOMAD_REF</code> / <code>RS_LXST_REF</code> / <code>RS_LRGP_REF</code> for bisect only — CI never pins Ratspeak SHAs). Open upstream feature PRs needed before they land on <code>main</code> (e.g. <a href="https://github.com/ratspeak/rsReticulum/pull/26">rsReticulum#26</a> ReplyFile, <a href="https://github.com/ratspeak/rsLXMF/pull/7">rsLXMF#7</a> multi-file attachments) are carried as overlays under <code>reticulum-sidecar/patches/</code> and tracked by <code>RATSPEAK_PATCH_ENTRIES</code> in <code>scripts/update.sh</code>. <strong>Release</strong> packaging (<code>scripts/build-reticulum-sidecar-release.mjs</code>) runs the same clone and records the resolved commit SHAs for all five crates in <code>.rsstack/RESOLVED_SHAS.txt</code> so artifacts retain the exact source revisions used — set <code>RS_*_REF</code> only when a release must not float.</p>
 <p>Local parity: <code>pnpm run reticulum:sidecar:clippy:full</code>, <code>pnpm run check:reticulum-sidecar</code> (pre-commit full-feature). See <a href="../development-environment/#reticulum-sidecar-optional">development-environment.md</a>.</p>
 <hr />
-<h2 id="coderabbit">CodeRabbit</h2>
-<p>PR review comments come from <a href="https://docs.coderabbit.ai/">CodeRabbit</a> via <a href="../.coderabbit.yaml"><code>.coderabbit.yaml</code></a> (quiet profile, path filters, auto-pause after two reviewed commits).</p>
+<h2 id="coderabbit">CodeRabbit<a class="headerlink" href="#coderabbit" title="Permanent link">&para;</a></h2>
+<p>PR review comments come from <a href="https://docs.coderabbit.ai/">CodeRabbit</a> via <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.coderabbit.yaml"><code>.coderabbit.yaml</code></a> (quiet profile, path filters, auto-pause after two reviewed commits).</p>
 <ul>
 <li>Prefer opening as a <strong>draft</strong> until the feature diff is ready, then mark ready for review.</li>
 <li>Free plan: about <strong>1 PR review per developer per hour</strong>; each auto-incremental push counts. After auto-pause, request another pass with <code>@coderabbitai review</code>.</li>
@@ -2325,7 +2666,7 @@ budgets live in
 <li>Check remaining allowance with <code>@coderabbitai rate limit</code>.</li>
 </ul>
 <hr />
-<h2 id="release-releaseyaml">Release (<code>release.yaml</code>)</h2>
+<h2 id="release-releaseyaml">Release (<code>release.yaml</code>)<a class="headerlink" href="#release-releaseyaml" title="Permanent link">&para;</a></h2>
 <p>Triggered by pushing a version tag (e.g., <code>v1.2.3</code>):</p>
 <ol>
 <li><strong><code>schema-release-compare</code></strong> — first job; compares this SHA’s <code>CURRENT_SCHEMA_VERSION</code> to the last <strong>published</strong> GitHub Release (paginated Releases API; highest semver among non-draft/non-prerelease rows; recovers <code>vX.Y.Z</code> from release <strong>name</strong> only when <code>tag_name</code> is missing or <code>untagged-*</code>), writes the Actions step summary, and uploads a schema readme artifact. Job outputs feed installer notices and the draft release body.</li>
@@ -2342,7 +2683,7 @@ budgets live in
 <p>Linux packaging smoke (<code>verify-linux-packaging.mjs</code>) asserts <code>.deb</code> <strong>Description</strong> metadata is ASCII-only. See <a href="../release-process/">Release Process</a>.</p>
 <p>See <a href="../release-process/">Release Process</a> for the maintainer workflow.</p>
 <hr />
-<h2 id="flatpak-flatpakyaml">Flatpak (<code>flatpak.yaml</code>)</h2>
+<h2 id="flatpak-flatpakyaml">Flatpak (<code>flatpak.yaml</code>)<a class="headerlink" href="#flatpak-flatpakyaml" title="Permanent link">&para;</a></h2>
 <p>Builds Flatpak bundles using <a href="https://github.com/flatpak/flatpak-github-actions"><code>flatpak/flatpak-github-actions</code></a>.</p>
 <p><strong>Triggers:</strong> version tags (<code>v*</code>) and manual <code>workflow_dispatch</code> (<strong>Build Flatpak (no release)</strong>).</p>
 <p>A matrix builds <strong>x86_64</strong> and <strong>aarch64</strong> in parallel. Both use the same privileged <code>ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08</code> container (Flathub remote, <code>flatpak-builder</code>, and system-scope runtime installs). <strong>x86_64</strong> runs on <code>ubuntu-latest</code>; <strong>aarch64</strong> runs on <code>ubuntu-24.04-arm</code> (native ARM runners — not QEMU on bare Ubuntu).</p>
@@ -2356,7 +2697,7 @@ budgets live in
 <p>On <strong>version tag pushes</strong>, a <code>publish</code> job waits for the Electron <code>prepare-github-release</code> draft (<code>ci-wait-github-draft-release.mjs</code>), then attaches both <strong>clean-named</strong> bundles with <code>ci-upload-release-assets.mjs</code> (never creates a release). aarch64 is the primary ARM Linux install path (release <code>build.yaml</code> only produces x86_64 AppImage/deb/rpm).</p>
 <p><code>flatpak/generated-sources.json</code> is generated automatically in CI by <code>flatpak-node-generator</code> before each build — it does not need to be committed to the repo. For local builds, generate it manually; see <a href="../development-environment/">development-environment.md</a> for steps. If submitting to Flathub's dedicated submission repo, the file must be committed there.</p>
 <hr />
-<h2 id="third-party-licenses-third-party-licensesyaml">Third-party licenses (<code>third-party-licenses.yaml</code>)</h2>
+<h2 id="third-party-licenses-third-party-licensesyaml">Third-party licenses (<code>third-party-licenses.yaml</code>)<a class="headerlink" href="#third-party-licenses-third-party-licensesyaml" title="Permanent link">&para;</a></h2>
 <p>After merges to <code>main</code> that change <code>package.json</code>, <code>pnpm-lock.yaml</code>, the generator script, or this workflow (and on <code>workflow_dispatch</code>):</p>
 <ol>
 <li>Checkout with <code>persist-credentials: false</code> (avoids Duplicate Authorization with create-pull-request)</li>
@@ -2368,18 +2709,19 @@ budgets live in
 </ol>
 <p><strong>Secret:</strong> reuse <strong><code>RELEASE_PUSH_TOKEN</code></strong> (admin PAT with <strong>contents</strong>, <strong>workflows</strong>, and <strong>pull requests</strong> write). Default <code>GITHUB_TOKEN</code> PRs do not auto-run required checks, so they cannot enter the merge queue cleanly. Direct pushes to <code>main</code> remain blocked by the merge-queue ruleset. The workflow probes Contents write (create/delete a short-lived ref) before <code>create-pull-request</code> so a token missing write access fails with a clear error instead of a git 403.</p>
 <hr />
-<h2 id="docs-docsyml">Docs (<code>docs.yml</code>)</h2>
-<p>Deploys documentation to GitHub Pages on every push to <code>main</code>:</p>
+<h2 id="docs-docsyml">Docs (<code>docs.yml</code>)<a class="headerlink" href="#docs-docsyml" title="Permanent link">&para;</a></h2>
+<p>Builds the documentation site with <code>mkdocs build --strict</code> on pull requests that touch <code>docs/**</code>, <code>README.md</code>, <code>CONTRIBUTING.md</code>, <code>mkdocs.yml</code>, or the MkDocs scripts. On every push to <code>main</code> it builds the site the same way and deploys it to GitHub Pages:</p>
 <ol>
-<li>Checkout code</li>
-<li>Setup Python 3.x</li>
+<li>Check out the code with full history (<code>fetch-depth: 0</code>) so the git-revision-date plugin can show "last updated" dates</li>
+<li>Set up Node 22 and Python 3.x</li>
 <li>Install MkDocs dependencies (<code>docs/requirements.txt</code>)</li>
-<li>Copy <code>README.md</code> → <code>docs/index.md</code> and <code>CONTRIBUTING.md</code> → <code>docs/contributing.md</code></li>
-<li>Rewrite doc links for MkDocs</li>
-<li>Deploy with <code>mkdocs gh-deploy --force</code></li>
+<li>Run <code>node scripts/prepare-mkdocs.mjs</code>, which generates <code>docs/contributing.md</code> from <code>CONTRIBUTING.md</code>, plus <code>docs/install.md</code> and <code>docs/features.md</code> from the <code>&lt;!-- docs-site:… --&gt;</code> markers in <code>README.md</code>. It also rewrites repository-relative links for the site. These generated pages are gitignored.</li>
+<li>Run <code>mkdocs build --strict</code></li>
+<li>Deploy with <code>mkdocs gh-deploy --force</code> (push to <code>main</code> only)</li>
 </ol>
+<p>The landing page <code>docs/index.md</code> is written by hand and is not copied from the README. <code>docs/agents/</code> is excluded from the site (<code>exclude_docs</code> in <code>mkdocs.yml</code>). Locally, <code>pnpm run docs:build</code> and <code>pnpm run docs:serve</code> run the same prepare step first.</p>
 <hr />
-<h2 id="dependabot">Dependabot</h2>
+<h2 id="dependabot">Dependabot<a class="headerlink" href="#dependabot" title="Permanent link">&para;</a></h2>
 <p>Automated dependency updates are configured in <code>.github/dependabot.yml</code>:</p>
 <ul>
 <li><strong>Schedule:</strong> Weekly on Saturdays</li>
@@ -2396,16 +2738,16 @@ budgets live in
   <strong>rsLXMF</strong> / <strong>rsNomad</strong> / <strong>rsLXST</strong> / <strong>lrgp-rs</strong> float to <code>origin/main</code> via
   <code>clone-ratspeak-stack.sh</code> (overlays must apply; no committed SHA pins). See AGENTS.md §6.</li>
 </ul>
-<h3 id="testing-dependabot-prs-locally">Testing Dependabot PRs locally</h3>
+<h3 id="testing-dependabot-prs-locally">Testing Dependabot PRs locally<a class="headerlink" href="#testing-dependabot-prs-locally" title="Permanent link">&para;</a></h3>
 <p>Use <strong>pnpm</strong> (not npm) to test dependabot PRs:</p>
-<pre><code class="language-bash">git checkout &lt;dependabot-branch&gt;
-pnpm install --frozen-lockfile
-pnpm run build
-pnpm run test:run
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>&lt;dependabot-branch&gt;
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pnpm<span class="w"> </span>install<span class="w"> </span>--frozen-lockfile
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>test:run
+</code></pre></div>
 <p>Do not use <code>npm install</code>; it will create a <code>package-lock.json</code> and may not respect pnpm's lockfile format.</p>
 <hr />
-<h2 id="running-ci-locally-with-act">Running CI Locally with <code>act</code></h2>
+<h2 id="running-ci-locally-with-act">Running CI Locally with <code>act</code><a class="headerlink" href="#running-ci-locally-with-act" title="Permanent link">&para;</a></h2>
 <p><strong>Optional tooling:</strong> You can run local CI in two ways:</p>
 <table>
 <thead>
@@ -2435,51 +2777,51 @@ pnpm run test:run
 <p>Docker <code>pnpm run act:ci</code> runs the real <code>ci.yaml</code> work jobs (<code>quality</code>, <code>lint</code>, <code>typecheck</code>, <code>app-build</code>, <code>policy-scanners</code>) in sequence. It does <strong>not</strong> invoke the <code>Build &amp; Test</code> aggregator (<code>build</code>) — that job only checks sibling results on GitHub so the required check name stays stable. Path-filtered Flatpak checks are not part of container <code>act:ci</code> (native <code>act:ci:native</code> still runs them; or change Flatpak inputs and use the <code>flatpak</code> job / <code>act:flatpak</code>).</p>
 <p><strong>macOS note:</strong> <a href="https://podman.io/">Podman Desktop</a> is the preferred Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at <code>/var/run/docker.sock</code>; pass that path to <code>act</code> via <code>ACT_DOCKER_SOCKET</code>, or let <code>act</code> detect it automatically if Podman created the symlink. If you use Docker Desktop instead, its socket is typically under <code>~/.docker/run/docker.sock</code>.</p>
 <p>Install act (container mode only):</p>
-<pre><code class="language-bash"># macOS
-brew install act
-
-# Linux / Windows
-# https://github.com/nektos/act/releases
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># macOS</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>brew<span class="w"> </span>install<span class="w"> </span>act
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># Linux / Windows</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># https://github.com/nektos/act/releases</span>
+</code></pre></div>
 <p>On Windows, Podman Desktop with Docker compatibility is preferred. If you use Docker Desktop instead, use the WSL2 backend. On Apple Silicon, <code>act</code> uses <code>--container-architecture linux/amd64</code> automatically for x86_64 CI parity.</p>
 <p><strong>Podman:</strong> <code>scripts/run-act.mjs</code> passes <code>--container-daemon-socket</code> to <code>act</code> (auto-detects <code>/var/run/docker.sock</code> on macOS). If <code>act</code> still cannot connect, set <code>ACT_DOCKER_SOCKET</code> to your socket path or use native mode. If you use Docker Desktop instead, its socket is typically under <code>~/.docker/run/docker.sock</code>.</p>
-<h3 id="package-scripts">Package scripts</h3>
-<pre><code class="language-bash"># One-time (container mode)
-pnpm run act:pull-images
-
-# List targets
-pnpm run act:list
-
-# PR parity — container (act + Podman/Docker)
-# act:ci runs quality / lint / typecheck / app-build / policy-scanners
-# (not the GitHub-only Build &amp; Test aggregator job)
-pnpm run act:ci
-pnpm run act:tests
-pnpm run act:pr
-
-# PR parity — host (no container engine)
-pnpm run act:ci:native
-pnpm run act:tests:native
-pnpm run act:pr:native
-
-# Linux packaging
-pnpm run act:build:linux        # container
-pnpm run act:build:linux:native # host (best on Linux)
-
-# Heavier workflows (container only unless noted)
-pnpm run act:reticulum
-pnpm run act:reticulum:native # stub sidecar cargo test/build on host
-pnpm run act:flatpak          # docker only
-
-# Override mode on one invocation
-node scripts/run-act.mjs ci --native
-node scripts/run-act.mjs ci --docker
-MESH_CLIENT_ACT_MODE=native pnpm run act:ci
-
-# Dry-run passthrough (container mode)
-node scripts/run-act.mjs ci -- -n
-</code></pre>
-<h3 id="what-runs-locally-vs-native-os-only">What runs locally vs native OS only</h3>
+<h3 id="package-scripts">Package scripts<a class="headerlink" href="#package-scripts" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># One-time (container mode)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:pull-images
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># List targets</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:list
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># PR parity — container (act + Podman/Docker)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># act:ci runs quality / lint / typecheck / app-build / policy-scanners</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># (not the GitHub-only Build &amp; Test aggregator job)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:ci
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:tests
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:pr
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1"># PR parity — host (no container engine)</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:ci:native
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:tests:native
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:pr:native
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="c1"># Linux packaging</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:build:linux<span class="w">        </span><span class="c1"># container</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:build:linux:native<span class="w"> </span><span class="c1"># host (best on Linux)</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="c1"># Heavier workflows (container only unless noted)</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:reticulum
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:reticulum:native<span class="w"> </span><span class="c1"># stub sidecar cargo test/build on host</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:flatpak<span class="w">          </span><span class="c1"># docker only</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="c1"># Override mode on one invocation</span>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>node<span class="w"> </span>scripts/run-act.mjs<span class="w"> </span>ci<span class="w"> </span>--native
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>node<span class="w"> </span>scripts/run-act.mjs<span class="w"> </span>ci<span class="w"> </span>--docker
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a><span class="nv">MESH_CLIENT_ACT_MODE</span><span class="o">=</span>native<span class="w"> </span>pnpm<span class="w"> </span>run<span class="w"> </span>act:ci
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a><span class="c1"># Dry-run passthrough (container mode)</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>node<span class="w"> </span>scripts/run-act.mjs<span class="w"> </span>ci<span class="w"> </span>--<span class="w"> </span>-n
+</code></pre></div>
+<h3 id="what-runs-locally-vs-native-os-only">What runs locally vs native OS only<a class="headerlink" href="#what-runs-locally-vs-native-os-only" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -2529,9 +2871,9 @@ node scripts/run-act.mjs ci -- -n
 </tbody>
 </table>
 <p><strong>Not run locally via act:</strong> <code>docs.yml</code> (<code>mkdocs gh-deploy</code>), release publish legs, <code>macos-latest</code> / <code>windows-latest</code> / <code>windows-11-vs2026-arm</code> matrix jobs, and <code>ubuntu-24.04-arm</code> Flatpak builds (no faithful local emulation).</p>
-<p>Note: The test results artifact upload step is automatically skipped when running under <code>act</code> (detected by actor <code>nektos/act</code> in <a href="../.github/workflows/tests.yaml"><code>tests.yaml</code></a>).</p>
+<p>Note: The test results artifact upload step is automatically skipped when running under <code>act</code> (detected by actor <code>nektos/act</code> in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>tests.yaml</code></a>).</p>
 <hr />
-<h2 id="pipeline-status-issue-378">Pipeline status (issue #378)</h2>
+<h2 id="pipeline-status-issue-378">Pipeline status (issue #378)<a class="headerlink" href="#pipeline-status-issue-378" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
@@ -2575,7 +2917,7 @@ node scripts/run-act.mjs ci -- -n
 </tbody>
 </table>
 <hr />
-<h2 id="merge-queue-and-rulesets">Merge queue and rulesets</h2>
+<h2 id="merge-queue-and-rulesets">Merge queue and rulesets<a class="headerlink" href="#merge-queue-and-rulesets" title="Permanent link">&para;</a></h2>
 <p><code>main</code> is protected by a <strong>repository ruleset</strong> (not classic branch protection) that:</p>
 <ol>
 <li>Requires a pull request before merging</li>
@@ -2584,7 +2926,7 @@ node scripts/run-act.mjs ci -- -n
 <li>Requires <strong>strict</strong> status checks (must pass on the merge group / up-to-date tip)</li>
 <li>Blocks force-pushes and branch deletion on <code>main</code></li>
 </ol>
-<h3 id="required-check-names-always-on">Required check names (always-on)</h3>
+<h3 id="required-check-names-always-on">Required check names (always-on)<a class="headerlink" href="#required-check-names-always-on" title="Permanent link">&para;</a></h3>
 <p>Only checks that report on every PR and every <code>merge_group</code> run are required:</p>
 <table>
 <thead>
@@ -2616,7 +2958,7 @@ node scripts/run-act.mjs ci -- -n
 </tr>
 </tbody>
 </table>
-<p>Each required check is pinned with <code>integration_id</code> <strong>15368</strong> (GitHub Actions) in <a href="../.github/rulesets/main-merge-queue.json"><code>.github/rulesets/main-merge-queue.json</code></a>.</p>
+<p>Each required check is pinned with <code>integration_id</code> <strong>15368</strong> (GitHub Actions) in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/rulesets/main-merge-queue.json"><code>.github/rulesets/main-merge-queue.json</code></a>.</p>
 <p><strong>Do not</strong> add these as required (they skip or are not PR/<code>merge_group</code> gates and would stall the queue):</p>
 <ul>
 <li><code>Reticulum sidecar coverage</code> (path-filtered)</li>
@@ -2625,23 +2967,23 @@ node scripts/run-act.mjs ci -- -n
 <li>E2E, packaging smoke, Flatpak, release jobs</li>
 </ul>
 <p><code>ci.yaml</code> and <code>tests.yaml</code> both listen for <code>merge_group</code> so the queue’s temporary ref re-runs the same gates.</p>
-<h3 id="bypass-actors">Bypass actors</h3>
+<h3 id="bypass-actors">Bypass actors<a class="headerlink" href="#bypass-actors" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Repository admins</strong> (<code>RepositoryRole</code> id 5) — emergency hotfixes and local <code>pnpm run release</code> (direct push of bump commit + tag to <code>main</code>)</li>
 </ul>
-<p>GitHub Actions <strong>cannot</strong> be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). <a href="../.github/workflows/third-party-licenses.yaml"><code>third-party-licenses.yaml</code></a> therefore opens a PR (via <code>RELEASE_PUSH_TOKEN</code>) instead of pushing to <code>main</code>.</p>
+<p>GitHub Actions <strong>cannot</strong> be added as a bypass actor on this organization (“must be part of the ruleset source or owner organization”). <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/third-party-licenses.yaml"><code>third-party-licenses.yaml</code></a> therefore opens a PR (via <code>RELEASE_PUSH_TOKEN</code>) instead of pushing to <code>main</code>.</p>
 <p><strong>Pull request gate:</strong> one approving review, <strong>dismiss stale reviews on push</strong>, and <strong>require last push approval</strong> so an approved PR cannot enter the merge queue after unreviewed follow-up commits.</p>
-<h3 id="applying-updating-the-ruleset">Applying / updating the ruleset</h3>
-<p>Canonical JSON lives at <a href="../.github/rulesets/main-merge-queue.json"><code>.github/rulesets/main-merge-queue.json</code></a> (live ruleset id <strong>20821455</strong>). Vitest contract: <code>scripts/main-merge-queue-ruleset.test.mjs</code> (pinned checks + review gates). After changing the JSON, <strong>PUT the live ruleset</strong> or drift will remain until someone syncs:</p>
-<pre><code class="language-bash"># Update live ruleset from canonical JSON
-gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
-  --method PUT \
-  --input .github/rulesets/main-merge-queue.json
-</code></pre>
+<h3 id="applying--updating-the-ruleset">Applying / updating the ruleset<a class="headerlink" href="#applying--updating-the-ruleset" title="Permanent link">&para;</a></h3>
+<p>Canonical JSON lives at <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/rulesets/main-merge-queue.json"><code>.github/rulesets/main-merge-queue.json</code></a> (live ruleset id <strong>20821455</strong>). Vitest contract: <code>scripts/main-merge-queue-ruleset.test.mjs</code> (pinned checks + review gates). After changing the JSON, <strong>PUT the live ruleset</strong> or drift will remain until someone syncs:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Update live ruleset from canonical JSON</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>gh<span class="w"> </span>api<span class="w"> </span>repos/Colorado-Mesh/mesh-client/rulesets/20821455<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span>--method<span class="w"> </span>PUT<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--input<span class="w"> </span>.github/rulesets/main-merge-queue.json
+</code></pre></div>
 <p><code>gh api --input</code> can hit HTTP/2 content-length issues on create; if that fails, POST the JSON body with Python <code>urllib</code> (same payload).</p>
 <p>The ruleset is already <strong>active</strong> with <code>merge_group</code> triggers on <code>ci.yaml</code> / <code>tests.yaml</code>. Keep those triggers if you ever recreate the ruleset — enabling the queue without them leaves required checks pending forever.</p>
 <hr />
-<h2 id="required-status-checks">Required Status Checks</h2>
+<h2 id="required-status-checks">Required Status Checks<a class="headerlink" href="#required-status-checks" title="Permanent link">&para;</a></h2>
 <p>All PRs (and merge-queue groups) for <code>main</code> must pass the <strong>required check names</strong> listed above. Those jobs cover:</p>
 <ul>
 <li>Lint, format, markdown, licenses, actionlint, yamllint (<code>pnpm run lint</code> and related steps in <code>ci.yaml</code>)</li>
@@ -2650,7 +2992,7 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 <li>Affected Vitest tests on pull requests; full Vitest with global coverage thresholds on <code>merge_group</code>, <code>main</code>, and manual runs</li>
 </ul>
 <hr />
-<h2 id="pre-commit-hook">Pre-commit Hook</h2>
+<h2 id="pre-commit-hook">Pre-commit Hook<a class="headerlink" href="#pre-commit-hook" title="Permanent link">&para;</a></h2>
 <p>The pre-commit hook (<code>.githooks/pre-commit</code>) runs checks beyond what GitHub Actions runs directly:</p>
 <ul>
 <li><strong>Staged-file</strong> Prettier + markdownlint (not a full-tree <code>pnpm run format</code> / <code>lint:md</code>)</li>
@@ -2661,37 +3003,37 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 <li><code>pnpm audit</code> only when dependency manifests staged; <code>actionlint</code> / <code>yamllint</code> only when relevant files are staged</li>
 <li><code>pnpm run test:staged</code> (<code>scripts/precommit-tests.mjs</code>: staged-only <code>vitest related</code>; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)</li>
 </ul>
-<p><strong>PR CI</strong> (<a href="../.github/workflows/tests.yaml"><code>tests.yaml</code></a>) selects merge-base-related Vitest work and fails closed to the full suite when scoping is unsafe. The merge queue and <strong><code>pnpm run release</code></strong> always run full Vitest; green pre-commit does not replace those gates.</p>
+<p><strong>PR CI</strong> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>tests.yaml</code></a>) selects merge-base-related Vitest work and fails closed to the full suite when scoping is unsafe. The merge queue and <strong><code>pnpm run release</code></strong> always run full Vitest; green pre-commit does not replace those gates.</p>
 <p>CI focuses on lint, typecheck, build, cheap always-on policy scanners, Flatpak metadata validation, and coverage tests. i18n quality is enforced locally via pre-commit and indirectly in CI through Vitest (<code>locale-quality.test.ts</code>).</p>
 <hr />
-<h2 id="troubleshooting">Troubleshooting</h2>
-<h3 id="ci-fails-but-passes-locally">CI fails but passes locally</h3>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="ci-fails-but-passes-locally">CI fails but passes locally<a class="headerlink" href="#ci-fails-but-passes-locally" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Ensure you're using Node 22 (same as CI)</li>
 <li>Run <code>pnpm install --frozen-lockfile</code> to match CI's exact dependency versions</li>
 <li>Check for platform-specific differences (paths, case sensitivity)</li>
 </ul>
-<h3 id="release-workflow-fails">Release workflow fails</h3>
+<h3 id="release-workflow-fails">Release workflow fails<a class="headerlink" href="#release-workflow-fails" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Verify the tag follows semantic versioning (<code>v1.2.3</code>)</li>
 <li>Ensure <code>GH_TOKEN</code> secret is set in repository settings</li>
 <li>Check that <code>dist:*</code> / <code>dist:*:publish</code> scripts exist in <code>package.json</code> (tag release CI uses <code>dist:*</code> + <code>ci-upload-release-assets.mjs</code>)</li>
 </ul>
-<h3 id="docs-deployment-fails">Docs deployment fails</h3>
+<h3 id="docs-deployment-fails">Docs deployment fails<a class="headerlink" href="#docs-deployment-fails" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Verify <code>docs/requirements.txt</code> dependencies are valid</li>
 <li>Check MkDocs configuration in <code>mkdocs.yml</code></li>
 <li>Ensure all referenced doc files exist</li>
 </ul>
 <hr />
-<h2 id="packaging-smoke-builds-buildyaml-flatpakyaml-releaseyaml">Packaging smoke builds (<code>build.yaml</code> / <code>flatpak.yaml</code> / <code>release.yaml</code>)</h2>
+<h2 id="packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml">Packaging smoke builds (<code>build.yaml</code> / <code>flatpak.yaml</code> / <code>release.yaml</code>)<a class="headerlink" href="#packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml" title="Permanent link">&para;</a></h2>
 <p><code>build.yaml</code> and <code>release.yaml</code> call <code>packaging-sidecars.yaml</code> to build the x64 and ARM64 Reticulum sidecars in parallel on separate runners (job UI: <strong>Stage Reticulum</strong>). Each OS runs the full-feature host tests once in its native architecture job. Release platform selection applies to both the sidecar and Electron matrices. Packaging starts after the selected sidecars succeed, so a failed build or test blocks the installers.</p>
 <p>The sidecars reach the packaging jobs as tar archives from the same workflow run (<code>ci-reticulum-staged-{platform}-{arch}</code> — internal handoff only; not installer downloads). Tar preserves Unix executable permissions; each architecture also carries its own <code>RESOLVED_SHAS.txt</code> for the freshly cloned Ratspeak sources. The download action verifies that both platform binaries are staged before Electron packaging. Installer names, signing, updater metadata, and the four packaging smoke jobs remain the same. The existing <code>reticulum-sidecar.yaml</code> checks remain independent.</p>
 <p><strong>Actions artifact zip names (installer downloads):</strong> Release keeps <code>mesh-client-{macos|linux|windows}-{sha}</code>. Build Binaries (always <code>workflow_dispatch</code>) uses the same names with a <code>test-</code> prefix (<code>test-mesh-client-…</code>) so testers can tell them apart from official packaging runs. Filenames <em>inside</em> those zips still get <code>-run{N}</code> on Build Binaries (see below).</p>
 <p>Local <code>node scripts/build-reticulum-sidecar-release.mjs --platform win32|linux|darwin</code> still runs host tests and builds both architectures. <code>--arch x64|arm64</code> selects one target; CI uses <code>--skip-tests</code> only for the cross-build whose host tests run in the native job. Parallel jobs reduce elapsed build time but need more concurrent runners; queue delays can reduce the gain.</p>
 <p>Packaging sidecars cache Cargo dependencies with <code>Swatinem/rust-cache</code>, separately by target triple, runner OS/architecture, and Rust toolchain. The packaging key is separate from validation jobs. The sidecar workspace crate and Cargo-installed tools are excluded. Every run still clones the current Ratspeak sources, applies overlays, runs the native host tests, and builds/stages the selected target; a cache hit never skips those steps. Missing caches fall back to a normal build.</p>
 <p>To test sidecar staging or compare cold and warm cache timings without building installers or publishing a release, run <strong>Packaging sidecars</strong> manually and select <code>all</code>, <code>mac</code>, <code>linux</code>, or <code>win</code>. It uses the same jobs as Build Binaries and Release and uploads only the staged sidecar artifacts.</p>
-<h3 id="build-channel-stamp-test-vs-release">Build channel stamp (test vs release)</h3>
+<h3 id="build-channel-stamp-test-vs-release">Build channel stamp (test vs release)<a class="headerlink" href="#build-channel-stamp-test-vs-release" title="Permanent link">&para;</a></h3>
 <p><strong>Build Binaries</strong> (<code>build.yaml</code>), <strong>Release</strong> (<code>release.yaml</code>), and <strong>Build Flatpak</strong> (<code>flatpak.yaml</code>) run <code>scripts/ci-write-build-info-env.mjs</code> before packaging. That writes a JSON <code>MESH_CLIENT_BUILD_INFO</code> blob into <code>$GITHUB_ENV</code>, which <code>scripts/esbuild-main-build.mjs</code> embeds via esbuild <code>--define</code> into the main process. Flatpak also writes <code>flatpak/ci-build-info.json</code> (gitignored) so the sandbox <code>pnpm run build</code> sees the same env.</p>
 <table>
 <thead>
@@ -2721,7 +3063,7 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 </table>
 <p><code>appVersion</code> remains <code>package.json</code> semver (unchanged). Use <code>buildChannel</code> + <code>buildInfo.runUrl</code> when triaging Export for GitHub / Developer zips so a test binary is not mistaken for an official release. Startup logs include a compact fragment (<code>buildChannel=… run=… runId=… sha=…</code>).</p>
 <p><strong>Which binary am I running?</strong> If a tester says they downloaded Actions run N but the app reports a different run, open <strong>Export for GitHub</strong> → <code>manifest.json</code> → <code>buildInfo.runUrl</code> (authoritative), or the <code>[Startup] runtime … run=…</code> line in the app log. Same-semver test installers used to share identical filenames across runs; test builds now stamp <code>-run{N}</code> into downloadable basenames (see below).</p>
-<h3 id="test-build-installer-filenames-runn">Test-build installer filenames (<code>-run{N}</code>)</h3>
+<h3 id="test-build-installer-filenames--runn">Test-build installer filenames (<code>-run{N}</code>)<a class="headerlink" href="#test-build-installer-filenames--runn" title="Permanent link">&para;</a></h3>
 <p><strong>Test / one-off only</strong> — never official GitHub Release assets:</p>
 <table>
 <thead>
@@ -2755,7 +3097,7 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 </tbody>
 </table>
 <p><code>packaging-smoke</code> on Build Binaries downloads <strong>stamped</strong> names (Windows Setup matcher accepts default or <code>-run{N}</code>). Flatpak smoke always uses the unstamped local path <strong>before</strong> rename. Manual Flatpak runs use Actions run title <strong><code>Build Flatpak (no release)</code></strong>; tag runs use <strong><code>Build Flatpak</code></strong>.</p>
-<h3 id="schema-compare-vs-last-official-release">Schema compare vs last official release</h3>
+<h3 id="schema-compare-vs-last-official-release">Schema compare vs last official release<a class="headerlink" href="#schema-compare-vs-last-official-release" title="Permanent link">&para;</a></h3>
 <p><strong>Build Binaries</strong>, <strong>Build Flatpak</strong>, and <strong>Release</strong> start with a <strong><code>schema-release-compare</code></strong> job (<code>scripts/ci-schema-release-compare.mjs</code>) that:</p>
 <ol>
 <li>Labels <strong>Build Binaries</strong> / <strong>Build Flatpak (no release)</strong> runs as a <strong>test build</strong> (not an official release) in <code>$GITHUB_STEP_SUMMARY</code></li>
@@ -2773,7 +3115,7 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 <li><code>scripts/electron-builder-before-pack.mjs</code> — copy into <code>resources/reticulum-sidecar/</code></li>
 </ul>
 <p>Post-build smoke tests:</p>
-<h3 id="macos-packaging-verify-verify-mac-packagingmjs">macOS packaging verify (<code>verify-mac-packaging.mjs</code>)</h3>
+<h3 id="macos-packaging-verify-verify-mac-packagingmjs">macOS packaging verify (<code>verify-mac-packaging.mjs</code>)<a class="headerlink" href="#macos-packaging-verify-verify-mac-packagingmjs" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong><code>scripts/verify-mac-packaging.mjs</code></strong> — macOS packaging guard (runs after <code>dist:mac</code> / <code>dist:mac:publish</code> and in <code>packaging-smoke</code> on tag releases). Validates:</li>
 <li><strong>Both x64 and arm64</strong> <code>.dmg</code> / <code>.zip</code> artifacts under <code>release/</code> (path or file-name markers), each above minimum size</li>
@@ -2798,6 +3140,27 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 
 
 
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
 
 
 
@@ -2811,6 +3174,12 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
       </main>
       
         <footer class="md-footer">
@@ -2819,10 +3188,43 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
       Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Colorado-Mesh/mesh-client" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://discord.com/invite/McChKR5NpS" target="_blank" rel="noopener" title="Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://coloradomesh.org/" target="_blank" rel="noopener" title="Colorado Mesh" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2m-5.15 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M14.34 14H9.66c-.1-.66-.16-1.32-.16-2s.06-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2M12 19.96c-.83-1.2-1.5-2.53-1.91-3.96h3.82c-.41 1.43-1.08 2.76-1.91 3.96M8 8H5.08A7.92 7.92 0 0 1 9.4 4.44C8.8 5.55 8.35 6.75 8 8m-2.92 8H8c.35 1.25.8 2.45 1.4 3.56A8 8 0 0 1 5.08 16m-.82-2C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2M12 4.03c.83 1.2 1.5 2.54 1.91 3.97h-3.82c.41-1.43 1.08-2.77 1.91-3.97M18.92 8h-2.95a15.7 15.7 0 0 0-1.38-3.56c1.84.63 3.37 1.9 4.33 3.56M12 2C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>
     </a>
   
 </div>
@@ -2840,7 +3242,7 @@ gh api repos/Colorado-Mesh/mesh-client/rulesets/20821455 \
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>

@@ -6,10 +6,14 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
       
       
       
-        <link rel="prev" href="..">
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/development-environment/">
+      
+      
+        <link rel="prev" href="../log-analysis/">
       
       
         <link rel="next" href="../contributing/">
@@ -18,7 +22,7 @@
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../assets/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -49,6 +53,8 @@
       
     
     
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -65,7 +71,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue">
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -90,8 +96,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,20 +126,20 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
     
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
   
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="blue"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
   
@@ -164,6 +169,11 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
       </label>
       <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
         
         <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
           
@@ -196,7 +206,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    Colorado-Mesh/mesh-client
   </div>
 </a>
       </div>
@@ -238,17 +248,55 @@
   
   
   
+  
+    <li class="md-tabs__item">
+      <a href="../install/" class="md-tabs__link">
+        
+  
+  
     
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../features/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Features
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
   
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../reticulum-setup-guide/" class="md-tabs__link">
           
   
   
-  Engineering
+    
+  
+  User Guide
 
         </a>
       </li>
@@ -264,11 +312,37 @@
     
     
       <li class="md-tabs__item">
-        <a href="../diagnostics/" class="md-tabs__link">
+        <a href="../troubleshooting/" class="md-tabs__link">
           
   
   
+    
+  
   Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="./" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Engineering
 
         </a>
       </li>
@@ -287,6 +361,8 @@
         <a href="../license/" class="md-tabs__link">
           
   
+  
+    
   
   Project
 
@@ -320,8 +396,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/logo.png" alt="logo">
 
     </a>
     Colorado Mesh Client
@@ -334,7 +409,7 @@
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
   </div>
   <div class="md-source__repository">
-    GitHub
+    Colorado-Mesh/mesh-client
   </div>
 </a>
     </div>
@@ -372,11 +447,635 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM (MECP & Incident Command)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notification-sounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notification Sounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
   
     
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -393,10 +1092,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -414,8 +1113,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -720,7 +1419,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#lint-format" class="md-nav__link">
+  <a href="#lint--format" class="md-nav__link">
     <span class="md-ellipsis">
       
         Lint / Format
@@ -775,7 +1474,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#setup-helpers" class="md-nav__link">
+  <a href="#setup--helpers" class="md-nav__link">
     <span class="md-ellipsis">
       
         Setup / helpers
@@ -1182,6 +1881,155 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#build-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Build troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pnpm-install-fails-on-native-module-compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm install fails on native module compilation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Python installation to use" (e.g. when building @serialport/bindings-cpp)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-development-sigill-during-pnpm-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGILL during pnpm install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-development-sigsegv-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGSEGV on startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-native-module-failed-to-load-dialog-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "A native module failed to load" dialog on startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pnpm-run-distmac-fails-with-gh_token--cannot-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm run dist:mac fails with GH_TOKEN / "Cannot cleanup"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dep0190-when-running-electron-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0190] when running electron-builder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duplicate-dependency-references-during-dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicate dependency references during dist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with "space in the path" or EPERM on native modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-0x80010135--path-too-long-eg-bluetooth_hci_socketlastbuildstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: 0x80010135 / "Path too long" (e.g. bluetooth_hci_socket.lastbuildstate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dep0169--urlparse-deprecation-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0169] / url.parse() deprecation warning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1338,98 +2186,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../localization/" class="md-nav__link">
+      <a href="../service-announcements/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Localization
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../key-backup-and-crypto/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Key Backup & Crypto
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Meshtastic Telemetry
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../nomad-hosting-interop/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Nomad Hosting Interop
+    Service Announcements
   
 
     
@@ -1478,42 +2242,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../reticulum/" class="md-nav__link">
+      <a href="../reticulum-development/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Reticulum
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reticulum-setup-guide/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reticulum Setup Guide
+    Reticulum Development
   
 
     
@@ -1590,6 +2326,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
         
   
@@ -1626,169 +2390,13 @@
   
     
     
-    
-    
-      
       
         
       
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
+        
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Support
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Support
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../diagnostics/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Diagnostics
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../troubleshooting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Troubleshooting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../notification-sounds/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Notification Sounds
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../log-analysis/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Log Analysis
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
+      
     
     
     
@@ -1802,133 +2410,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
         
           
-          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Community
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_5">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Community
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://discord.com/invite/McChKR5NpS" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Discord
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="https://coloradomesh.org/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Website
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
             
   
   
@@ -1946,8 +2431,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -2303,7 +2788,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#lint-format" class="md-nav__link">
+  <a href="#lint--format" class="md-nav__link">
     <span class="md-ellipsis">
       
         Lint / Format
@@ -2358,7 +2843,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#setup-helpers" class="md-nav__link">
+  <a href="#setup--helpers" class="md-nav__link">
     <span class="md-ellipsis">
       
         Setup / helpers
@@ -2765,6 +3250,155 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#build-troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Build troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pnpm-install-fails-on-native-module-compilation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm install fails on native module compilation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-visual-studio-installation-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Visual Studio installation to use"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: "Could not find any Python installation to use" (e.g. when building @serialport/bindings-cpp)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-development-sigill-during-pnpm-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGILL during pnpm install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#linux-development-sigsegv-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Linux development: SIGSEGV on startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-native-module-failed-to-load-dialog-on-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "A native module failed to load" dialog on startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pnpm-run-distmac-fails-with-gh_token--cannot-cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        pnpm run dist:mac fails with GH_TOKEN / "Cannot cleanup"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dep0190-when-running-electron-builder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0190] when running electron-builder
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#duplicate-dependency-references-during-dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        duplicate dependency references during dist
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        dist:win fails with "space in the path" or EPERM on native modules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#windows-0x80010135--path-too-long-eg-bluetooth_hci_socketlastbuildstate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Windows: 0x80010135 / "Path too long" (e.g. bluetooth_hci_socket.lastbuildstate)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dep0169--urlparse-deprecation-warning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [DEP0169] / url.parse() deprecation warning
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2782,14 +3416,19 @@
 
 
   
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/development-environment.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
   
 
 
-<h1 id="development-environment-setup">Development Environment Setup</h1>
+<h1 id="development-environment-setup">Development Environment Setup<a class="headerlink" href="#development-environment-setup" title="Permanent link">&para;</a></h1>
 <p>This guide covers local development setup for Mesh Client (Meshtastic, MeshCore, and Reticulum), including cloning, prerequisites, and test harness tooling. For runtime errors, connection issues, and packaged-app problems, see <a href="../troubleshooting/">troubleshooting.md</a>.</p>
-<h2 id="shared-requirements-and-tooling">Shared Requirements and Tooling</h2>
+<h2 id="shared-requirements-and-tooling">Shared Requirements and Tooling<a class="headerlink" href="#shared-requirements-and-tooling" title="Permanent link">&para;</a></h2>
 <p>These requirements apply to all platforms.</p>
-<h3 id="1-required-software">1) Required software</h3>
+<h3 id="1-required-software">1) Required software<a class="headerlink" href="#1-required-software" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Git</li>
 <li>Node.js <strong>22.13.0+</strong> and pnpm <strong>12+</strong> (<code>package.json</code> <code>engines</code>; the repo pins <strong><code>packageManager</code></strong> to a specific pnpm release — use <a href="https://nodejs.org/api/corepack.html">Corepack</a> when available, or <code>npm install -g corepack@latest</code> / <code>npm install -g pnpm@&lt;pin&gt;</code> on Node 25+ where Corepack is not bundled). <code>pnpm install</code> fails on engine mismatch. After pulling a pnpm major bump, <code>preinstall</code> and <code>pnpm run dev</code> print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.</li>
@@ -2797,21 +3436,21 @@
 <li>Python 3 + <code>pip</code> (needed for MkDocs documentation build and yamllint)</li>
 </ul>
 <p>Verify:</p>
-<pre><code class="language-bash">git --version
-node --version
-pnpm --version
-</code></pre>
-<h3 id="environment-check">Environment check</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>--version
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>node<span class="w"> </span>--version
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pnpm<span class="w"> </span>--version
+</code></pre></div>
+<h3 id="environment-check">Environment check<a class="headerlink" href="#environment-check" title="Permanent link">&para;</a></h3>
 <p>Run the automated checklist after cloning (works before pnpm is installed):</p>
-<pre><code class="language-bash">node scripts/check-environment.mjs # before pnpm install
-pnpm install
-pnpm run check:environment # re-check after install
-pnpm run dev
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>node<span class="w"> </span>scripts/check-environment.mjs<span class="w"> </span><span class="c1"># before pnpm install</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pnpm<span class="w"> </span>install
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>check:environment<span class="w"> </span><span class="c1"># re-check after install</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+</code></pre></div>
 <p><strong>Required</strong> checks (must pass): Git, Node.js, pnpm, <code>node_modules</code>, and platform-native build tools (Xcode CLT on macOS, <code>g++</code>/<code>make</code> on Linux, MSVC <code>cl</code> on Windows).</p>
 <p><strong>Optional</strong> checks (warnings only): Python/pip, Rust, actionlint, yamllint, a Docker-compatible container engine (Podman preferred), act, and Linux <code>dialout</code> group membership. For local CI you can use <strong>container mode</strong> (<code>pnpm run act:ci</code> — act + Podman/Docker) or <strong>host mode</strong> (<code>pnpm run act:ci:native</code> — no container engine). Fix optional items when you need docs builds, pre-commit hooks, Reticulum sidecar work, local CI parity, or USB serial on Linux.</p>
 <p>Use the printed <code>→</code> hints and <code>setup:*</code> scripts (<code>setup:build-deps</code>, <code>setup:actionlint</code>, <code>setup:dialout</code>) to fix failures. See <a href="#8-helper-scripts-auto-install-where-possible">Helper scripts (auto-install where possible)</a> below.</p>
-<h3 id="mkdocs-documentation-tooling">MkDocs (documentation) tooling</h3>
+<h3 id="mkdocs-documentation-tooling">MkDocs (documentation) tooling<a class="headerlink" href="#mkdocs-documentation-tooling" title="Permanent link">&para;</a></h3>
 <p>Docs are built with MkDocs Material.</p>
 <ol>
 <li>Create and activate a local virtual environment (recommended on macOS/Homebrew Python because of PEP 668 externally managed environments):</li>
@@ -2834,31 +3473,31 @@ pnpm run dev
 <li><code>pnpm run docs:serve</code></li>
 </ol>
 <p>If <code>pnpm run docs:install</code> fails with <code>externally-managed-environment</code>, activate <code>.venv</code> and rerun.</p>
-<h3 id="2-clone-and-install">2) Clone and install</h3>
-<pre><code class="language-bash">git clone https://github.com/Colorado-Mesh/mesh-client
-cd mesh-client
-node scripts/check-environment.mjs # optional but recommended on first clone
-pnpm install
-pnpm run check:environment # re-check after install
-</code></pre>
+<h3 id="2-clone-and-install">2) Clone and install<a class="headerlink" href="#2-clone-and-install" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Colorado-Mesh/mesh-client
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">cd</span><span class="w"> </span>mesh-client
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>node<span class="w"> </span>scripts/check-environment.mjs<span class="w"> </span><span class="c1"># optional but recommended on first clone</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>pnpm<span class="w"> </span>install
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>pnpm<span class="w"> </span>run<span class="w"> </span>check:environment<span class="w"> </span><span class="c1"># re-check after install</span>
+</code></pre></div>
 <p>If you are updating from an older clone, use a clean install when troubleshooting native module issues:</p>
-<pre><code class="language-bash">rm -rf node_modules package-lock.json
-pnpm install
-</code></pre>
-<h3 id="3-run-the-app">3) Run the app</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>rm<span class="w"> </span>-rf<span class="w"> </span>node_modules<span class="w"> </span>package-lock.json
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pnpm<span class="w"> </span>install
+</code></pre></div>
+<h3 id="3-run-the-app">3) Run the app<a class="headerlink" href="#3-run-the-app" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Dev mode (hot reload): <code>pnpm run dev</code></li>
 <li>Production-like local start: <code>pnpm start</code></li>
 </ul>
-<h3 id="reticulum-sidecar-optional">Reticulum sidecar (optional)</h3>
+<h3 id="reticulum-sidecar-optional">Reticulum sidecar (optional)<a class="headerlink" href="#reticulum-sidecar-optional" title="Permanent link">&para;</a></h3>
 <p>Reticulum/LXMF runs in a separate Rust binary (<code>mesh-client-reticulum</code>) spawned by the Electron main process. The GPL-3.0-or-later TypeScript layers talk to it over localhost HTTP/WS only. You only need this when working on the <strong>Reticulum</strong> protocol tab.</p>
-<h4 id="installing-rust">Installing Rust</h4>
-<p><strong>Recommended: <a href="https://rustup.rs/">rustup</a></strong> — matches <a href="../.github/workflows/reticulum-sidecar.yaml">CI</a> and <code>pnpm run update</code>:</p>
-<pre><code class="language-bash">curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source &quot;$HOME/.cargo/env&quot; # or open a new terminal
-rustc --version
-cargo --version
-</code></pre>
+<h4 id="installing-rust">Installing Rust<a class="headerlink" href="#installing-rust" title="Permanent link">&para;</a></h4>
+<p><strong>Recommended: <a href="https://rustup.rs/">rustup</a></strong> — matches <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/reticulum-sidecar.yaml">CI</a> and <code>pnpm run update</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>curl<span class="w"> </span>--proto<span class="w"> </span><span class="s1">'=https'</span><span class="w"> </span>--tlsv1.2<span class="w"> </span>-sSf<span class="w"> </span>https://sh.rustup.rs<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">source</span><span class="w"> </span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.cargo/env"</span><span class="w"> </span><span class="c1"># or open a new terminal</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>rustc<span class="w"> </span>--version
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>cargo<span class="w"> </span>--version
+</code></pre></div>
 <p><strong>macOS Homebrew alternative:</strong> <code>brew install rust</code> works for local <code>cargo build</code>, but CI uses rustup. <strong>Do not install both</strong> rustup and Homebrew <code>rust</code> on the same machine — they can fight over <code>rustc</code>/<code>cargo</code> on your <code>PATH</code>. Pick one:</p>
 <table>
 <thead>
@@ -2883,43 +3522,43 @@ cargo --version
 </table>
 <p>If you use Homebrew only, <code>pnpm run update</code> will try <code>brew upgrade rust</code> when rustup is absent. For cross-target builds (WoA, Linux glibc) and toolchain pins, prefer rustup.</p>
 <p>Linux and Windows: use rustup; on Windows you may also need <a href="https://visualstudio.microsoft.com/visual-cpp-build-tools/">Visual Studio Build Tools</a> with the C++ workload (same as native Node modules).</p>
-<p><a href="../reticulum-sidecar/rust-toolchain.toml"><code>reticulum-sidecar/rust-toolchain.toml</code></a> pins <strong><code>stable</code></strong> and installs <code>clippy</code>, <code>rustfmt</code>, and <code>llvm-tools-preview</code> on the first <code>cargo</code> command run inside <code>reticulum-sidecar/</code> (rustup auto-install). When <code>cargo</code> is on your <code>PATH</code> <strong>and</strong> sidecar-related paths are staged, pre-commit runs <code>pnpm run check:reticulum-sidecar</code> (full-feature fmt + Clippy + test with <code>rns-stack,rns-ble,rns-rnode-tcp</code> — no coverage).</p>
-<h4 id="build-the-sidecar">Build the sidecar</h4>
+<p><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/rust-toolchain.toml"><code>reticulum-sidecar/rust-toolchain.toml</code></a> pins <strong><code>stable</code></strong> and installs <code>clippy</code>, <code>rustfmt</code>, and <code>llvm-tools-preview</code> on the first <code>cargo</code> command run inside <code>reticulum-sidecar/</code> (rustup auto-install). When <code>cargo</code> is on your <code>PATH</code> <strong>and</strong> sidecar-related paths are staged, pre-commit runs <code>pnpm run check:reticulum-sidecar</code> (full-feature fmt + Clippy + test with <code>rns-stack,rns-ble,rns-rnode-tcp</code> — no coverage).</p>
+<h4 id="build-the-sidecar">Build the sidecar<a class="headerlink" href="#build-the-sidecar" title="Permanent link">&para;</a></h4>
 <p>From the repo root:</p>
-<pre><code class="language-bash">pnpm run reticulum:sidecar:build
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
+</code></pre></div>
 <p>This writes <code>reticulum-sidecar/target/debug/mesh-client-reticulum</code> (macOS/Linux) or <code>.exe</code> on Windows.</p>
 <p><strong>First-time / recover the stack workspace:</strong> from the mesh-client repo root, run <code>./scripts/clone-ratspeak-stack.sh</code>. That script clones (or updates) the repo-local <code>.rsstack/</code> workspace checkouts <code>rsReticulum</code>, <code>rsLXMF</code>, <code>rsNomad</code>, <code>rsLXST</code>, and <code>lrgp-rs</code>, floats each to <strong><code>origin/main</code></strong> by default, and applies mesh-client overlays (fails if a patch will not apply). For bisect only, set <code>RS_RETICULUM_REF</code> / <code>RS_LXMF_REF</code> / <code>RS_NOMAD_REF</code> / <code>RS_LXST_REF</code> / <code>RS_LRGP_REF</code> to a SHA or ref before running the clone script — CI and normal updates never pin Ratspeak SHAs.</p>
-<p>When those <code>.rsstack/</code> checkouts already exist, <code>pnpm run reticulum:sidecar:build</code> applies required overlays via <code>scripts/ensure-rsReticulum-patches.sh</code> before compiling with <code>rns-stack,rns-ble,rns-rnode-tcp</code>. See <a href="../reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/README.md</code></a> for overlay details.</p>
+<p>When those <code>.rsstack/</code> checkouts already exist, <code>pnpm run reticulum:sidecar:build</code> applies required overlays via <code>scripts/ensure-rsReticulum-patches.sh</code> before compiling with <code>rns-stack,rns-ble,rns-rnode-tcp</code>. See <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/README.md</code></a> for overlay details.</p>
 <p><strong>First run in Electron dev:</strong> <strong>Reticulum</strong> → <strong>Connection</strong> → <strong>Start stack</strong> will run <code>cargo build</code> automatically if that binary is missing (first compile can take a few minutes). Pre-build with the command above to avoid waiting on the first click.</p>
-<h4 id="run-and-verify">Run and verify</h4>
-<pre><code class="language-bash"># Optional: run sidecar standalone (port 19437)
-pnpm run reticulum:sidecar:dev
-
-# Health check (standalone or after Start stack in the app)
-curl -s http://127.0.0.1:19437/api/v1/status
-# → {&quot;status&quot;:&quot;ok&quot;,...}
-</code></pre>
+<h4 id="run-and-verify">Run and verify<a class="headerlink" href="#run-and-verify" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Optional: run sidecar standalone (port 19437)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:dev
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Health check (standalone or after Start stack in the app)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://127.0.0.1:19437/api/v1/status
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># → {"status":"ok",...}</span>
+</code></pre></div>
 <p>In Electron dev: select <strong>RN</strong> (Reticulum, yellow) at the top of the rail → <strong>Connection</strong> → <strong>Start stack</strong>. Then use <strong>Network</strong> for identity (generate/import) and <strong>Connection</strong> for interfaces (add, edit, delete). Dev builds resolve the binary from <code>reticulum-sidecar/target/debug/mesh-client-reticulum</code>.</p>
-<h4 id="keep-rust-and-the-sidecar-current">Keep Rust and the sidecar current</h4>
+<h4 id="keep-rust-and-the-sidecar-current">Keep Rust and the sidecar current<a class="headerlink" href="#keep-rust-and-the-sidecar-current" title="Permanent link">&para;</a></h4>
 <p><code>pnpm run update</code> updates Node dependencies and:</p>
 <ol>
 <li>Syncs Flatpak vendored Electron archives to match <code>package.json</code> (<code>scripts/sync-flatpak-electron.mjs</code>)</li>
 <li>When <code>cargo</code> is available: runs <code>rustup update</code> (or <code>brew upgrade rust</code> if you use Homebrew rust without rustup) and rebuilds the sidecar with <code>cargo build</code> in <code>reticulum-sidecar/</code></li>
 </ol>
-<p><strong>Scope:</strong> <code>pnpm update</code> / <code>pnpm-lock.yaml</code> changes are <strong>repo-local</strong> (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored <code>reticulum-sidecar/target/</code>. <strong>Rust toolchain updates are not repo-scoped</strong> — <code>rustup update</code> refreshes the toolchain in your user profile (<code>~/.rustup</code>, <code>~/.cargo/bin</code>), shared by any Rust project on the machine. The committed <a href="../reticulum-sidecar/rust-toolchain.toml"><code>rust-toolchain.toml</code></a> selects <code>stable</code> and required components for this crate; rustup applies it when you build or lint inside <code>reticulum-sidecar/</code>.</p>
+<p><strong>Scope:</strong> <code>pnpm update</code> / <code>pnpm-lock.yaml</code> changes are <strong>repo-local</strong> (commit the lockfile on your branch). The sidecar rebuild writes only to gitignored <code>reticulum-sidecar/target/</code>. <strong>Rust toolchain updates are not repo-scoped</strong> — <code>rustup update</code> refreshes the toolchain in your user profile (<code>~/.rustup</code>, <code>~/.cargo/bin</code>), shared by any Rust project on the machine. The committed <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/rust-toolchain.toml"><code>rust-toolchain.toml</code></a> selects <code>stable</code> and required components for this crate; rustup applies it when you build or lint inside <code>reticulum-sidecar/</code>.</p>
 <p>By default, <code>pnpm run update</code> keeps <code>reticulum-sidecar/target/</code> so the next Electron <strong>Start stack</strong> or <code>reticulum:sidecar:build</code> stays warm. After a verify-and-walk-away run (or when reclaiming disk — often ~2–3G), opt in to a full <code>cargo clean</code> after a successful rebuild:</p>
-<pre><code class="language-bash"># Preferred
-CLEAN_SIDECAR_TARGET=1 pnpm run update
-
-# Equivalent flag (pnpm forwards args after --)
-pnpm run update -- --clean-target
-
-# Ad hoc anytime (does not run update)
-pnpm run reticulum:sidecar:clean
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Preferred</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nv">CLEAN_SIDECAR_TARGET</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pnpm<span class="w"> </span>run<span class="w"> </span>update
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Equivalent flag (pnpm forwards args after --)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>pnpm<span class="w"> </span>run<span class="w"> </span>update<span class="w"> </span>--<span class="w"> </span>--clean-target
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Ad hoc anytime (does not run update)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:clean
+</code></pre></div>
 <p>Skip cleanup while iterating on sidecar Rust or Reticulum in Electron — the next build will be cold (several minutes).</p>
-<h4 id="lint-and-coverage-sidecar">Lint and coverage (sidecar)</h4>
+<h4 id="lint-and-coverage-sidecar">Lint and coverage (sidecar)<a class="headerlink" href="#lint-and-coverage-sidecar" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -2942,63 +3581,63 @@ pnpm run reticulum:sidecar:clean
 </tr>
 </tbody>
 </table>
-<p>CI: full-feature lint in <a href="../.github/workflows/reticulum-sidecar.yaml"><code>reticulum-sidecar.yaml</code></a>; line-coverage threshold in <a href="../.github/workflows/tests.yaml"><code>tests.yaml</code></a> when sidecar paths change (not pre-commit).</p>
-<h4 id="further-reading">Further reading</h4>
+<p>CI: full-feature lint in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/reticulum-sidecar.yaml"><code>reticulum-sidecar.yaml</code></a>; line-coverage threshold in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>tests.yaml</code></a> when sidecar paths change (not pre-commit).</p>
+<h4 id="further-reading">Further reading<a class="headerlink" href="#further-reading" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Optional full RNS stack: <a href="../reticulum-sidecar/README.md"><code>reticulum-sidecar/README.md</code></a> (<code>rns-stack</code> Cargo feature)</li>
+<li>Optional full RNS stack: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/README.md"><code>reticulum-sidecar/README.md</code></a> (<code>rns-stack</code> Cargo feature)</li>
 <li>Architecture: <a href="../reticulum/">docs/reticulum.md</a></li>
 <li>HTTP contract: <a href="../reticulum-sidecar-ipc/">docs/reticulum-sidecar-ipc.md</a></li>
-<li>Won't start / health timeout: <a href="../troubleshooting/#reticulum-sidecar-wont-start-or-health-poll-times-out">troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out</a></li>
+<li>Won't start / health timeout: <a href="../troubleshooting-reticulum/#reticulum-sidecar-wont-start-or-health-poll-times-out">troubleshooting-reticulum.md#reticulum-sidecar-wont-start-or-health-poll-times-out</a></li>
 </ul>
 <p>Windows ARM64 release builds use a dedicated <code>aarch64-pc-windows-msvc</code> CI job (see <code>.github/workflows/reticulum-sidecar.yaml</code>).</p>
-<h3 id="common-pnpm-commands">Common pnpm commands</h3>
+<h3 id="common-pnpm-commands">Common pnpm commands<a class="headerlink" href="#common-pnpm-commands" title="Permanent link">&para;</a></h3>
 <p>Use these from the repository root:</p>
-<pre><code class="language-bash"># App run/build
-pnpm run dev
-pnpm start
-pnpm run build
-
-# Platform packaging (binary artifacts in release/)
-pnpm run dist:mac
-pnpm run dist:linux
-pnpm run dist:win
-
-# Quality checks
-pnpm run check:environment
-pnpm run test:run
-pnpm run test:coverage
-pnpm run lint
-pnpm run typecheck
-pnpm run format:check
-pnpm run check:i18n
-
-# Maintenance
-pnpm run update
-pnpm run clean
-pnpm run clean:build
-pnpm run clean:build:full
-
-# Reticulum sidecar (optional; requires Rust)
-pnpm run reticulum:sidecar:build
-pnpm run reticulum:sidecar:dev
-pnpm run check:reticulum-sidecar
-pnpm run reticulum:sidecar:clippy:full
-pnpm run reticulum:sidecar:coverage
-
-# Docs
-pnpm run docs:install
-pnpm run docs:build
-pnpm run docs:serve
-</code></pre>
-<p>Both <code>clean:build</code> and <code>clean:build:full</code> (cross-platform; see <a href="../scripts/clean-build.mjs"><code>scripts/clean-build.mjs</code></a>) print the full list of what will be removed and always confirm with a <code>Proceed? [y/N]</code> prompt before deleting anything (default <strong>N</strong>; pass <code>-y</code>/<code>--yes</code> to skip, in which case the plan is still printed). They never run when stdin is not a TTY and <code>-y</code> is absent, so they cannot hang in CI.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># App run/build</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>pnpm<span class="w"> </span>start
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Platform packaging (binary artifacts in release/)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:mac
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:linux
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:win
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1"># Quality checks</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>pnpm<span class="w"> </span>run<span class="w"> </span>check:environment
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>pnpm<span class="w"> </span>run<span class="w"> </span>test:run
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>pnpm<span class="w"> </span>run<span class="w"> </span>test:coverage
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>pnpm<span class="w"> </span>run<span class="w"> </span>lint
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>pnpm<span class="w"> </span>run<span class="w"> </span>typecheck
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>pnpm<span class="w"> </span>run<span class="w"> </span>format:check
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>pnpm<span class="w"> </span>run<span class="w"> </span>check:i18n
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a><span class="c1"># Maintenance</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>pnpm<span class="w"> </span>run<span class="w"> </span>update
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>pnpm<span class="w"> </span>run<span class="w"> </span>clean
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>pnpm<span class="w"> </span>run<span class="w"> </span>clean:build
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>pnpm<span class="w"> </span>run<span class="w"> </span>clean:build:full
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a><span class="c1"># Reticulum sidecar (optional; requires Rust)</span>
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:dev
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>pnpm<span class="w"> </span>run<span class="w"> </span>check:reticulum-sidecar
+<a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:clippy:full
+<a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:coverage
+<a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a>
+<a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a><span class="c1"># Docs</span>
+<a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a>pnpm<span class="w"> </span>run<span class="w"> </span>docs:install
+<a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>pnpm<span class="w"> </span>run<span class="w"> </span>docs:build
+<a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a>pnpm<span class="w"> </span>run<span class="w"> </span>docs:serve
+</code></pre></div>
+<p>Both <code>clean:build</code> and <code>clean:build:full</code> (cross-platform; see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/scripts/clean-build.mjs"><code>scripts/clean-build.mjs</code></a>) print the full list of what will be removed and always confirm with a <code>Proceed? [y/N]</code> prompt before deleting anything (default <strong>N</strong>; pass <code>-y</code>/<code>--yes</code> to skip, in which case the plan is still printed). They never run when stdin is not a TTY and <code>-y</code> is absent, so they cannot hang in CI.</p>
 <ul>
 <li><strong><code>clean:build</code> (shallow)</strong> — removes build dists, test output, and caches (<code>dist</code>, <code>dist-electron</code>, <code>release</code>, <code>coverage</code>, <code>.vitest-reports</code>, <code>test-results</code>, <code>playwright-report</code>, <code>.eslintcache</code>). It <strong>keeps <code>node_modules/</code> and the Reticulum sidecar</strong>, so <code>pnpm run dev</code> / <code>pnpm start</code> and the sidecar keep working. Use it to force fresh rebuilds, clear stale or corrupt intermediate output, or free modest disk without re-installing.</li>
 <li><strong><code>clean:build:full</code></strong> — removes everything above <strong>plus</strong> <code>node_modules</code>, <code>reticulum-sidecar/target/</code>, and the bundled sidecar binary (<code>resources/reticulum-sidecar/</code>), then runs <code>pnpm install</code> and <code>pnpm run reticulum:sidecar:build</code> so the environment is left in a working state. Use it to fix a corrupt/drifted <code>node_modules</code>, clear stale Rust incremental state after toolchain or overlay-patch changes, or reclaim up to ~20G+ of disk while restoring a known-good environment. The reinstall is skipped if nothing in tier 2 was actually present.</li>
 </ul>
 <p><code>clean:build</code> and <code>clean:build:full</code> are the cross-platform equivalents of <code>make clean</code>/deep clean; the repo's older Unix-only <code>clean</code> (<code>clean</code> above) remains for its narrower, <code>rm -rf</code>-style behaviour.</p>
-<h3 id="all-scripts-reference">All Scripts Reference</h3>
-<p>Complete reference of all pnpm scripts in <a href="../package.json"><code>package.json</code></a>, organized by category.</p>
-<h4 id="build">Build</h4>
+<h3 id="all-scripts-reference">All Scripts Reference<a class="headerlink" href="#all-scripts-reference" title="Permanent link">&para;</a></h3>
+<p>Complete reference of all pnpm scripts in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/package.json"><code>package.json</code></a>, organized by category.</p>
+<h4 id="build">Build<a class="headerlink" href="#build" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3041,7 +3680,7 @@ pnpm run docs:serve
 </tr>
 </tbody>
 </table>
-<h4 id="run">Run</h4>
+<h4 id="run">Run<a class="headerlink" href="#run" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3068,7 +3707,7 @@ pnpm run docs:serve
 </tr>
 </tbody>
 </table>
-<h4 id="package-distributables">Package (distributables)</h4>
+<h4 id="package-distributables">Package (distributables)<a class="headerlink" href="#package-distributables" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3108,98 +3747,98 @@ pnpm run docs:serve
 </tbody>
 </table>
 <p><code>dist:mac</code>, <code>dist:linux</code>, and <code>predist</code> run <code>dedupe:dist</code> (<code>scripts/dedupe-dist.mjs</code>) before packaging; that helper retries on transient <code>@jsr/_tmp_*</code> rename races. <code>dist:win</code> uses <code>scripts/dist-win-hoisted-install.mjs</code> and restores <code>node_modules</code> afterward. CI <code>packaging-smoke</code> also runs a headless <strong>Linux AppImage launch</strong> check (<code>scripts/test-linux-appimage-launch.mjs</code>) — see <a href="../ci-cd/#packaging-smoke-builds-buildyaml--flatpakyaml--releaseyaml">CI/CD — Packaging smoke builds</a>.</p>
-<h4 id="building-a-flatpak-linux">Building a Flatpak (Linux)</h4>
+<h4 id="building-a-flatpak-linux">Building a Flatpak (Linux)<a class="headerlink" href="#building-a-flatpak-linux" title="Permanent link">&para;</a></h4>
 <p>Flatpak builds use <code>flatpak-builder</code> directly (not a pnpm script) and require a one-time local setup. The GitHub Actions workflow (<code>flatpak.yaml</code>) handles this in CI automatically; the steps below are for local iteration.</p>
 <p><strong>1. Install system tools (Debian/Ubuntu)</strong></p>
-<pre><code class="language-bash">sudo apt install flatpak flatpak-builder elfutils
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>flatpak<span class="w"> </span>flatpak-builder<span class="w"> </span>elfutils
+</code></pre></div>
 <p><strong>1. Install system tools (Fedora)</strong></p>
-<pre><code class="language-bash">sudo dnf install flatpak flatpak-builder elfutils
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>flatpak<span class="w"> </span>flatpak-builder<span class="w"> </span>elfutils
+</code></pre></div>
 <p><strong>2. Add Flathub and install runtimes</strong> (one-time, ~500 MB)</p>
-<pre><code class="language-bash">flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak install --user -y flathub org.freedesktop.Platform//24.08
-flatpak install --user -y flathub org.freedesktop.Sdk//24.08
-flatpak install --user -y flathub org.freedesktop.Sdk.Extension.node22//24.08
-flatpak install --user -y flathub org.electronjs.Electron2.BaseApp//24.08
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>flatpak<span class="w"> </span>remote-add<span class="w"> </span>--user<span class="w"> </span>--if-not-exists<span class="w"> </span>flathub<span class="w"> </span>https://flathub.org/repo/flathub.flatpakrepo
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>flatpak<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>-y<span class="w"> </span>flathub<span class="w"> </span>org.freedesktop.Platform//24.08
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>flatpak<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>-y<span class="w"> </span>flathub<span class="w"> </span>org.freedesktop.Sdk//24.08
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>flatpak<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>-y<span class="w"> </span>flathub<span class="w"> </span>org.freedesktop.Sdk.Extension.node22//24.08
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>flatpak<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>-y<span class="w"> </span>flathub<span class="w"> </span>org.electronjs.Electron2.BaseApp//24.08
+</code></pre></div>
 <p><strong>3. Generate offline pnpm sources</strong> (re-run whenever <code>pnpm-lock.yaml</code> changes)</p>
-<pre><code class="language-bash"># Prefer the CI pin with --force-reinstall (images may preinstall an older 0.1.0).
-# See scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_GIT.
-pip install --force-reinstall --no-cache-dir \
-  &quot;git+https://github.com/flatpak/flatpak-builder-tools@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node&quot;
-# Skip Playwright browser vendoring (GitHub /raw/ 404s; Electron E2E skips downloads).
-# Also skips Electron linux-armv7l archive lookup for Electron &gt;= 44 (those zips are no
-# longer published; Flatpak only ships x64 + arm64).
-node scripts/patch-flatpak-node-generator-playwright.mjs
-# Fail fast: version lookup / lockfile extraction must succeed before the generator.
-set -euo pipefail
-# Must match store layout for packageManager (pnpm 11/12 → v11). Generator defaults to v10.
-# pnpm 12 may write a two-document lockfile; generator only accepts one document.
-STORE_VERSION=&quot;$(
-  node --input-type=module &lt;&lt; 'EOF'
-import fs from 'node:fs';
-import { storeVersionFromPackageManager } from './scripts/flatpakPnpmStoreVersion.mjs';
-// Failure point: missing/invalid packageManager → null (generator would get a bad --pnpm-store-version).
-// Fallback: exit non-zero under set -e so flatpak-node-generator never runs.
-const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const storeVersion = storeVersionFromPackageManager(pkg.packageManager);
-if (storeVersion == null) {
-  throw new Error(
-    `storeVersionFromPackageManager returned null for packageManager=${JSON.stringify(pkg.packageManager)}`,
-  );
-}
-console.log(storeVersion);
-EOF
-)&quot;
-node --input-type=module &lt;&lt; 'EOF'
-import fs from 'node:fs';
-import { extractProjectPnpmLockfile } from './scripts/flatpakPnpmStoreVersion.mjs';
-fs.mkdirSync('flatpak', { recursive: true });
-fs.writeFileSync(
-  'flatpak/pnpm-lock.project.yaml',
-  extractProjectPnpmLockfile(fs.readFileSync('pnpm-lock.yaml', 'utf8')),
-);
-EOF
-flatpak-node-generator pnpm flatpak/pnpm-lock.project.yaml \
-  --pnpm-store-version &quot;$STORE_VERSION&quot; \
-  -o flatpak/generated-sources.json
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Prefer the CI pin with --force-reinstall (images may preinstall an older 0.1.0).</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="c1"># See scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_GIT.</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>pip<span class="w"> </span>install<span class="w"> </span>--force-reinstall<span class="w"> </span>--no-cache-dir<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">  </span><span class="s2">"git+https://github.com/flatpak/flatpak-builder-tools@ac5a296ac6111aa2319daf532f609a067b88d8a9#subdirectory=node"</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="c1"># Skip Playwright browser vendoring (GitHub /raw/ 404s; Electron E2E skips downloads).</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="c1"># Also skips Electron linux-armv7l archive lookup for Electron &gt;= 44 (those zips are no</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># longer published; Flatpak only ships x64 + arm64).</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>node<span class="w"> </span>scripts/patch-flatpak-node-generator-playwright.mjs
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="c1"># Fail fast: version lookup / lockfile extraction must succeed before the generator.</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="nb">set</span><span class="w"> </span>-euo<span class="w"> </span>pipefail
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a><span class="c1"># Must match store layout for packageManager (pnpm 11/12 → v11). Generator defaults to v10.</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="c1"># pnpm 12 may write a two-document lockfile; generator only accepts one document.</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="nv">STORE_VERSION</span><span class="o">=</span><span class="s2">"</span><span class="k">$(</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="w">  </span>node<span class="w"> </span>--input-type<span class="o">=</span>module<span class="w"> </span><span class="s">&lt;&lt; 'EOF'</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="s">import fs from 'node:fs';</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a><span class="s">import { storeVersionFromPackageManager } from './scripts/flatpakPnpmStoreVersion.mjs';</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a><span class="s">// Failure point: missing/invalid packageManager → null (generator would get a bad --pnpm-store-version).</span>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a><span class="s">// Fallback: exit non-zero under set -e so flatpak-node-generator never runs.</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a><span class="s">const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));</span>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="s">const storeVersion = storeVersionFromPackageManager(pkg.packageManager);</span>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="s">if (storeVersion == null) {</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="s">  throw new Error(</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a><span class="s">    `storeVersionFromPackageManager returned null for packageManager=${JSON.stringify(pkg.packageManager)}`,</span>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="s">  );</span>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="s">}</span>
+<a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="s">console.log(storeVersion);</span>
+<a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a><span class="s">EOF</span>
+<a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a><span class="k">)</span><span class="s2">"</span>
+<a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a>node<span class="w"> </span>--input-type<span class="o">=</span>module<span class="w"> </span><span class="s">&lt;&lt; 'EOF'</span>
+<a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a><span class="s">import fs from 'node:fs';</span>
+<a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a><span class="s">import { extractProjectPnpmLockfile } from './scripts/flatpakPnpmStoreVersion.mjs';</span>
+<a id="__codelineno-12-32" name="__codelineno-12-32" href="#__codelineno-12-32"></a><span class="s">fs.mkdirSync('flatpak', { recursive: true });</span>
+<a id="__codelineno-12-33" name="__codelineno-12-33" href="#__codelineno-12-33"></a><span class="s">fs.writeFileSync(</span>
+<a id="__codelineno-12-34" name="__codelineno-12-34" href="#__codelineno-12-34"></a><span class="s">  'flatpak/pnpm-lock.project.yaml',</span>
+<a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a><span class="s">  extractProjectPnpmLockfile(fs.readFileSync('pnpm-lock.yaml', 'utf8')),</span>
+<a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a><span class="s">);</span>
+<a id="__codelineno-12-37" name="__codelineno-12-37" href="#__codelineno-12-37"></a><span class="s">EOF</span>
+<a id="__codelineno-12-38" name="__codelineno-12-38" href="#__codelineno-12-38"></a>flatpak-node-generator<span class="w"> </span>pnpm<span class="w"> </span>flatpak/pnpm-lock.project.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-39" name="__codelineno-12-39" href="#__codelineno-12-39"></a><span class="w">  </span>--pnpm-store-version<span class="w"> </span><span class="s2">"</span><span class="nv">$STORE_VERSION</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-40" name="__codelineno-12-40" href="#__codelineno-12-40"></a><span class="w">  </span>-o<span class="w"> </span>flatpak/generated-sources.json
+</code></pre></div>
 <p><code>flatpak/generated-sources.json</code> is generated automatically in the <code>flatpak.yaml</code> CI workflow and does not need to be committed. For local builds you generate it manually as shown above; the file is only required locally and in a Flathub submission repo.</p>
 <p><strong>PR-cycle offline check</strong> (not pre-commit): after installing <code>flatpak-node-generator</code>, run <code>pnpm run check:flatpak-offline-pnpm</code> to assert the workflow passes the correct <code>--pnpm-store-version</code> and that generated sources cover lockfile tarballs (catches <code>ERR_PNPM_NO_OFFLINE_TARBALL</code>). CI / <code>act:pr</code> / <code>release.sh</code> run this automatically.</p>
 <p>Offline install inside the Flatpak sandbox uses <code>scripts/flatpak-pnpm-install.mjs</code>, which retries transient <code>@jsr/_tmp_*</code> rename races (same root cause as Windows <code>dist:win</code> hoisted installs).</p>
 <p><strong>3b. Bundle Reticulum sidecar</strong> (required for Reticulum tab in the Flatpak; CI does this automatically)</p>
 <p>The manifest copies <code>resources/</code> into the app, including <code>resources/reticulum-sidecar/mesh-client-reticulum</code>. Before <code>flatpak-builder</code>, build the sidecar and install the binary there:</p>
-<pre><code class="language-bash">pnpm run reticulum:sidecar:build
-install -Dm755 reticulum-sidecar/target/debug/mesh-client-reticulum \
-  resources/reticulum-sidecar/mesh-client-reticulum
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>install<span class="w"> </span>-Dm755<span class="w"> </span>reticulum-sidecar/target/debug/mesh-client-reticulum<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>resources/reticulum-sidecar/mesh-client-reticulum
+</code></pre></div>
 <p>For a release-quality local Flatpak, use <code>cargo build --release</code> with <code>rns-stack,rns-ble,rns-rnode-tcp</code> (see <a href="#reticulum-sidecar-optional">Reticulum sidecar</a>).</p>
 <p><strong>4. Build and install locally</strong></p>
-<pre><code class="language-bash">flatpak-builder --user --install --force-clean build-dir org.coloradomesh.MeshClient.yml
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>flatpak-builder<span class="w"> </span>--user<span class="w"> </span>--install<span class="w"> </span>--force-clean<span class="w"> </span>build-dir<span class="w"> </span>org.coloradomesh.MeshClient.yml
+</code></pre></div>
 <p>This installs the app into your user Flatpak store.</p>
 <p><strong>5. Run</strong></p>
-<pre><code class="language-bash">flatpak run org.coloradomesh.MeshClient
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>flatpak<span class="w"> </span>run<span class="w"> </span>org.coloradomesh.MeshClient
+</code></pre></div>
 <p><strong>6. Produce a <code>.flatpak</code> bundle</strong> (for sharing without a repo)</p>
-<pre><code class="language-bash">flatpak build-bundle ~/.local/share/flatpak/repo \
-  org.coloradomesh.MeshClient.flatpak \
-  org.coloradomesh.MeshClient stable
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>flatpak<span class="w"> </span>build-bundle<span class="w"> </span>~/.local/share/flatpak/repo<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>org.coloradomesh.MeshClient.flatpak<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span>org.coloradomesh.MeshClient<span class="w"> </span>stable
+</code></pre></div>
 <p>Installing a <code>.flatpak</code> file creates a one-off remote named like <code>meshclient-origin</code> (not <code>flathub</code>); that is expected. The ref branch is <code>stable</code> (release CI sets this; older artifacts used <code>master</code>). Version is shown in MetaInfo / <code>flatpak info</code>, not in the remote name.</p>
 <p><strong>Reinstall after downloading a new bundle</strong></p>
-<pre><code class="language-bash">flatpak uninstall --user org.coloradomesh.MeshClient
-flatpak install --user ./org.coloradomesh.MeshClient-aarch64.flatpak
-flatpak run org.coloradomesh.MeshClient
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>flatpak<span class="w"> </span>uninstall<span class="w"> </span>--user<span class="w"> </span>org.coloradomesh.MeshClient
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>flatpak<span class="w"> </span>install<span class="w"> </span>--user<span class="w"> </span>./org.coloradomesh.MeshClient-aarch64.flatpak
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>flatpak<span class="w"> </span>run<span class="w"> </span>org.coloradomesh.MeshClient
+</code></pre></div>
 <p><strong>Runtime issues</strong> (GPU, VMware guests): see <a href="../troubleshooting/#flatpak-vmwgfx-driver-missing-vmware-on-macos">Flatpak: <code>vmwgfx: driver missing</code> (VMware on macOS)</a>.</p>
 <p><strong>Launch failures on Arch/CachyOS Wayland</strong>: see <a href="../troubleshooting/#flatpak-immediate-exit-on-arch--cachyos--wayland-598">Flatpak: immediate exit on Arch / CachyOS / Wayland (#598)</a>.</p>
 <p><strong>Lint the manifest</strong> before submitting to Flathub:</p>
-<pre><code class="language-bash">flatpak run --command=flatpak-builder-lint org.freedesktop.Sdk \
-  manifest org.coloradomesh.MeshClient.yml
-</code></pre>
-<h4 id="test">Test</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>flatpak<span class="w"> </span>run<span class="w"> </span>--command<span class="o">=</span>flatpak-builder-lint<span class="w"> </span>org.freedesktop.Sdk<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>manifest<span class="w"> </span>org.coloradomesh.MeshClient.yml
+</code></pre></div>
+<h4 id="test">Test<a class="headerlink" href="#test" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3226,7 +3865,7 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<h4 id="lint-format">Lint / Format</h4>
+<h4 id="lint--format">Lint / Format<a class="headerlink" href="#lint--format" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3257,7 +3896,7 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<h4 id="typecheck">Typecheck</h4>
+<h4 id="typecheck">Typecheck<a class="headerlink" href="#typecheck" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3280,7 +3919,7 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<h4 id="quality-checks">Quality checks</h4>
+<h4 id="quality-checks">Quality checks<a class="headerlink" href="#quality-checks" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3387,7 +4026,7 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<h4 id="documentation">Documentation</h4>
+<h4 id="documentation">Documentation<a class="headerlink" href="#documentation" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3414,7 +4053,7 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<h4 id="ci-act">CI (act)</h4>
+<h4 id="ci-act">CI (act)<a class="headerlink" href="#ci-act" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3477,7 +4116,7 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<h4 id="setup-helpers">Setup / helpers</h4>
+<h4 id="setup--helpers">Setup / helpers<a class="headerlink" href="#setup--helpers" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3568,7 +4207,7 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<h4 id="lifecycle-automatic">Lifecycle (automatic)</h4>
+<h4 id="lifecycle-automatic">Lifecycle (automatic)<a class="headerlink" href="#lifecycle-automatic" title="Permanent link">&para;</a></h4>
 <table>
 <thead>
 <tr>
@@ -3595,10 +4234,10 @@ flatpak run org.coloradomesh.MeshClient
 </tr>
 </tbody>
 </table>
-<p><code>postinstall</code> runs <code>scripts/rebuild-native.mjs</code> for Electron native addons and applies <code>patchedDependencies</code> from <code>pnpm-workspace.yaml</code> (Meshtastic JSR transports, MeshCore, <code>readable-stream</code>, <code>usb</code>, etc.). When bumping patched packages, update hashes under <code>patches/</code> and keep <code>WATCH_ENTRIES</code> in <code>scripts/update.sh</code> in sync — see <a href="../AGENTS.md#6-commands--ci-checks">AGENTS.md</a>.</p>
+<p><code>postinstall</code> runs <code>scripts/rebuild-native.mjs</code> for Electron native addons and applies <code>patchedDependencies</code> from <code>pnpm-workspace.yaml</code> (Meshtastic JSR transports, MeshCore, <code>readable-stream</code>, <code>usb</code>, etc.). When bumping patched packages, update hashes under <code>patches/</code> and keep <code>WATCH_ENTRIES</code> in <code>scripts/update.sh</code> in sync — see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/AGENTS.md#6-commands--ci-checks">AGENTS.md</a>.</p>
 <p><code>pnpm run update</code> also runs <code>check_pinned_majors</code> (<code>scripts/check-pinned-majors.mjs</code>), which warns when an <code>overrides</code> pin in <code>pnpm-workspace.yaml</code> has fallen behind a newer npm major — a stale <code>undici: ^7.29.0</code> floor once withheld an upstream main-process crash fix. Caps that are correct because the consuming package forbids the newer major (or because the pin is a platform target, e.g. <code>electron</code>) are recorded with a reason in <code>PINNED_MAJOR_EXCEPTIONS</code>; add an entry there instead of silencing the warning. The check needs network access, so it is warn-only and is not part of pre-commit or <code>check:pr</code>.</p>
 <p>It then runs <code>check_audit_ignores</code> (<code>scripts/check-audit-ignores.mjs</code>, also <code>pnpm run check:audit-ignores</code>), which looks up each advisory in <code>pnpm-workspace.yaml</code> → <code>auditConfig.ignoreGhsas</code> on the GitHub advisory API and warns once a patched release exists (or the advisory is withdrawn), so the exception can be backed out. Every ignore must carry an inline comment saying why it is unreachable. Like the pinned-majors check it is network-dependent and warn-only; set <code>GITHUB_TOKEN</code> / <code>GH_TOKEN</code> to avoid the unauthenticated rate limit.</p>
-<h3 id="dependabot-dependency-updates">Dependabot dependency updates</h3>
+<h3 id="dependabot-dependency-updates">Dependabot dependency updates<a class="headerlink" href="#dependabot-dependency-updates" title="Permanent link">&para;</a></h3>
 <p>Automated dependency updates are configured in <code>.github/dependabot.yml</code>:</p>
 <ul>
 <li><strong>Schedule:</strong> Weekly on Saturdays</li>
@@ -3607,13 +4246,13 @@ flatpak run org.coloradomesh.MeshClient
 </ul>
 <p><strong>Testing Dependabot PRs locally:</strong></p>
 <p>Always use <strong>pnpm</strong> to test dependabot PRs:</p>
-<pre><code class="language-bash">git checkout &lt;dependabot-branch&gt;
-pnpm install --frozen-lockfile
-pnpm run build
-pnpm run test:run
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>&lt;dependabot-branch&gt;
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>pnpm<span class="w"> </span>install<span class="w"> </span>--frozen-lockfile
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>test:run
+</code></pre></div>
 <p>Do <strong>not</strong> use <code>npm install</code>; it creates a <code>package-lock.json</code> and may not respect pnpm's lockfile format.</p>
-<h3 id="4-test-harness-setup-and-local-quality-checks">4) Test harness setup and local quality checks</h3>
+<h3 id="4-test-harness-setup-and-local-quality-checks">4) Test harness setup and local quality checks<a class="headerlink" href="#4-test-harness-setup-and-local-quality-checks" title="Permanent link">&para;</a></h3>
 <p>This section is the project test harness setup.</p>
 <p>Installed via <code>pnpm install</code> (from <code>package.json</code>):</p>
 <ul>
@@ -3631,7 +4270,7 @@ pnpm run test:run
 <li>Podman or Docker (Docker-compatible engine) and <code>act</code> (optional for container CI — <code>act:*</code>; host CI uses <code>act:*:native</code> without a container engine)</li>
 <li>Python 3 + <code>venv</code> + MkDocs Python deps (for docs checks/builds)</li>
 </ul>
-<h4 id="vitest-projects-and-worker-allocation">Vitest projects and worker allocation</h4>
+<h4 id="vitest-projects-and-worker-allocation">Vitest projects and worker allocation<a class="headerlink" href="#vitest-projects-and-worker-allocation" title="Permanent link">&para;</a></h4>
 <p><code>vitest.config.mts</code> defines three projects:</p>
 <table>
 <thead>
@@ -3659,11 +4298,11 @@ pnpm run test:run
 </tr>
 </tbody>
 </table>
-<p>Worker counts are derived in <a href="../vitest.harness.mts"><code>vitest.harness.mts</code></a> via <code>computeVitestMaxWorkers(cpuCount, ratio)</code>: jsdom workers use <code>RENDERER_UI_CPU_RATIO</code> because they are memory-heavy; node workers use <code>NODE_WORKER_CPU_RATIO</code>. Both pools floor at <code>MIN_VITEST_WORKERS</code> (currently 2) and cap effective CPU count at <code>MAX_VITEST_CPU_COUNT</code> (32). When tuning worker allocation, change those constants in the harness (not this doc). Shared Vite dependency inline lists (<code>VITEST_CORE_DEPS</code>, <code>VITEST_SERVER_INLINE_DEPS</code>) also live there — add new deps to the harness when tests need them inlined.</p>
+<p>Worker counts are derived in <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/vitest.harness.mts"><code>vitest.harness.mts</code></a> via <code>computeVitestMaxWorkers(cpuCount, ratio)</code>: jsdom workers use <code>RENDERER_UI_CPU_RATIO</code> because they are memory-heavy; node workers use <code>NODE_WORKER_CPU_RATIO</code>. Both pools floor at <code>MIN_VITEST_WORKERS</code> (currently 2) and cap effective CPU count at <code>MAX_VITEST_CPU_COUNT</code> (32). When tuning worker allocation, change those constants in the harness (not this doc). Shared Vite dependency inline lists (<code>VITEST_CORE_DEPS</code>, <code>VITEST_SERVER_INLINE_DEPS</code>) also live there — add new deps to the harness when tests need them inlined.</p>
 <p>By default all three Vitest projects run in <strong>parallel</strong> (<code>groupOrder: 0</code>). On memory-constrained hosts, set <code>VITEST_SEQUENTIAL_PROJECTS=1</code> to run <code>renderer-ui</code> first, then <code>renderer-logic</code> + <code>main</code> together (legacy behavior).</p>
-<p>Pull-request CI selects merge-base-related tests across these project jobs. Merge-queue, <code>main</code>, manual, and unsafe-to-scope changes run all three with coverage and merge blob reports via <code>pnpm run test:coverage:merge</code> (see <a href="../.github/workflows/tests.yaml"><code>.github/workflows/tests.yaml</code></a>).</p>
-<h4 id="playwright-electron-e2e">Playwright Electron E2E</h4>
-<p>Standalone suite under <a href="../e2e/"><code>e2e/</code></a> launches the <strong>unpackaged</strong> production build with Playwright’s Electron API (<code>playwright._electron.launch</code>), using <a href="../scripts/start-electron.mjs"><code>resolveLocalElectronBin()</code></a> and an isolated <code>--user-data-dir</code> (<code>mesh-e2e-*</code> under the OS temp dir). Specs cover startup, preload IPC, tabs, window lifecycle, protocol switch, settings relaunch, empty states, reload, locale, diagnostics shell, and save-dialog cancel — not BLE/serial/MQTT/hardware or Reticulum sidecar flows.</p>
+<p>Pull-request CI selects merge-base-related tests across these project jobs. Merge-queue, <code>main</code>, manual, and unsafe-to-scope changes run all three with coverage and merge blob reports via <code>pnpm run test:coverage:merge</code> (see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>.github/workflows/tests.yaml</code></a>).</p>
+<h4 id="playwright-electron-e2e">Playwright Electron E2E<a class="headerlink" href="#playwright-electron-e2e" title="Permanent link">&para;</a></h4>
+<p>Standalone suite under <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/e2e"><code>e2e/</code></a> launches the <strong>unpackaged</strong> production build with Playwright’s Electron API (<code>playwright._electron.launch</code>), using <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/scripts/start-electron.mjs"><code>resolveLocalElectronBin()</code></a> and an isolated <code>--user-data-dir</code> (<code>mesh-e2e-*</code> under the OS temp dir). Specs cover startup, preload IPC, tabs, window lifecycle, protocol switch, settings relaunch, empty states, reload, locale, diagnostics shell, and save-dialog cancel — not BLE/serial/MQTT/hardware or Reticulum sidecar flows.</p>
 <table>
 <thead>
 <tr>
@@ -3690,22 +4329,22 @@ pnpm run test:run
 <ul>
 <li><strong><code>workers: 1</code></strong> — main uses <code>requestSingleInstanceLock()</code>; parallel launches flake.</li>
 <li><strong>Linux:</strong> set <code>MESH_CLIENT_DISABLE_GPU=1</code> (harness does this); CI uses <code>xvfb-run -a</code>. Local headless Linux needs <code>DISPLAY</code> for direct <code>pnpm run test:e2e</code>, or wrap with <code>xvfb-run -a</code> (<code>pnpm run check:environment</code> warns when <code>DISPLAY</code> is unset).</li>
-<li><strong>Not</strong> wired into pre-commit, <code>pnpm run test:run</code>, or <code>pnpm run check:pr</code>. Daily + manual CI: <a href="../.github/workflows/e2e.yaml"><code>.github/workflows/e2e.yaml</code></a>.</li>
+<li><strong>Not</strong> wired into pre-commit, <code>pnpm run test:run</code>, or <code>pnpm run check:pr</code>. Daily + manual CI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/e2e.yaml"><code>.github/workflows/e2e.yaml</code></a>.</li>
 </ul>
-<p>Monolithic protocol runtimes (<code>useMeshtasticRuntime</code>, <code>useMeshcoreRuntime</code>) also use <strong>source contract tests</strong> (read <code>.ts</code> files and assert wiring strings) where full <code>renderHook</code> integration would require heavy BLE/MQTT mocking; see <code>*.reconnect*.test.ts</code> beside those runtimes. Another example: <a href="../src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts"><code>meshtasticRuntimeWireEffects.diagnostics.contract.test.ts</code></a> asserts LocalStats / RF hop-SNR still call <code>processNodeUpdate</code> from <code>meshtasticNodeSideEffects</code> / <code>meshtasticRawPacketSideEffects</code>.</p>
-<h4 id="browser-dev-without-electron">Browser dev without Electron</h4>
+<p>Monolithic protocol runtimes (<code>useMeshtasticRuntime</code>, <code>useMeshcoreRuntime</code>) also use <strong>source contract tests</strong> (read <code>.ts</code> files and assert wiring strings) where full <code>renderHook</code> integration would require heavy BLE/MQTT mocking; see <code>*.reconnect*.test.ts</code> beside those runtimes. Another example: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/meshtastic/meshtasticRuntimeWireEffects.diagnostics.contract.test.ts"><code>meshtasticRuntimeWireEffects.diagnostics.contract.test.ts</code></a> asserts LocalStats / RF hop-SNR still call <code>processNodeUpdate</code> from <code>meshtasticNodeSideEffects</code> / <code>meshtasticRawPacketSideEffects</code>.</p>
+<h4 id="browser-dev-without-electron">Browser dev without Electron<a class="headerlink" href="#browser-dev-without-electron" title="Permanent link">&para;</a></h4>
 <p>When you open the Vite dev URL in a <strong>plain browser tab</strong> (not the Electron window), <code>installDevElectronApiStubIfNeeded()</code> in <code>src/renderer/main.tsx</code> installs a no-op <code>window.electronAPI</code> stub (<code>devElectronApiStub.ts</code>). UI shell and most panels render, but <strong>RF connect, SQLite, MQTT IPC, and file dialogs require the Electron window</strong>. The console logs <code>[dev] Installed browser electronAPI stub…</code> when the stub is active.</p>
 <p>Run these quality checks before opening a PR:</p>
-<pre><code class="language-bash">pnpm run test:run
-pnpm run lint
-pnpm run lint:md
-pnpm run typecheck
-pnpm run format:check
-pnpm run check:i18n
-# Reticulum sidecar (when editing reticulum-sidecar/**)
-pnpm run reticulum:sidecar:clippy:full
-pnpm run reticulum:sidecar:test
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>test:run
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>lint
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>lint:md
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>typecheck
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>pnpm<span class="w"> </span>run<span class="w"> </span>format:check
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>pnpm<span class="w"> </span>run<span class="w"> </span>check:i18n
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># Reticulum sidecar (when editing reticulum-sidecar/**)</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:clippy:full
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:test
+</code></pre></div>
 <p>Other useful commands:</p>
 <ul>
 <li><code>pnpm test</code> (watch mode — reruns only changed test files)</li>
@@ -3722,39 +4361,39 @@ pnpm run reticulum:sidecar:test
 <li><code>pnpm run i18n:prune-unused -- --write</code> (drop orphaned locale keys)</li>
 </ul>
 <p>The pre-commit hook runs path-gated <code>check:*</code> steps plus staged-related Vitest — see <a href="#6-git-hooks-and-pre-commit-behavior">Git hooks</a>.</p>
-<h3 id="5-building-a-distributable">5) Building a distributable</h3>
+<h3 id="5-building-a-distributable">5) Building a distributable<a class="headerlink" href="#5-building-a-distributable" title="Permanent link">&para;</a></h3>
 <p>Use the platform-specific packaging command:</p>
-<pre><code class="language-bash">pnpm run dist:mac   # macOS -&gt; .dmg + .zip in release/
-pnpm run dist:linux # Linux -&gt; .AppImage + .deb in release/
-pnpm run dist:win   # Windows -&gt; .exe installer in release/
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:mac<span class="w">   </span><span class="c1"># macOS -&gt; .dmg + .zip in release/</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:linux<span class="w"> </span><span class="c1"># Linux -&gt; .AppImage + .deb in release/</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:win<span class="w">   </span><span class="c1"># Windows -&gt; .exe installer in release/</span>
+</code></pre></div>
 <p>Output goes to the <code>release/</code> directory.</p>
 <p><strong>macOS (<code>dist:mac</code>)</strong> runs <code>electron-builder --mac --x64 --arm64 --publish never</code> (Intel + Apple Silicon DMG/ZIP pairs), then <strong><code>node scripts/verify-mac-packaging.mjs</code></strong>. Verify stages <strong><code>00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.txt</code></strong> for GitHub Releases, asserts both arch <code>.dmg</code> + <code>.zip</code> artifacts, deep-validates every archive (symlink-preserving ZIP extract via <code>ditto -xk</code>, DMG mount including <strong>IMPORTANT-Read-Me.txt</strong>), launcher/framework sizes, Squirrel/Mantle/ReactiveObjC framework symlinks, and bundled Reticulum sidecar — same checks CI <code>packaging-smoke</code> uses on downloaded artifacts. <strong>Developer ID–signed</strong> builds also run <code>codesign --verify --deep --strict</code> and <code>xcrun stapler validate</code> on the finished <code>.app</code>, plus <code>codesign --verify --strict</code> on the bundled Reticulum sidecar; unsigned or ad-hoc (non–Developer ID) local builds skip that gate and are still expected to pass verify. Building both arches is slower than a single-arch pack.</p>
 <p><strong>Optional macOS signing (release parity):</strong> export the same env vars CI uses before <code>pnpm run dist:mac</code> or <code>dist:mac:publish</code>:</p>
-<pre><code class="language-bash">export CSC_LINK='…' # base64 .p12 Developer ID Application cert
-export CSC_KEY_PASSWORD='…'
-export CSC_IDENTITY_AUTO_DISCOVERY=true
-export APPLE_ID='…'
-export APPLE_APP_SPECIFIC_PASSWORD='…'
-export APPLE_TEAM_ID='…'
-pnpm run dist:mac
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CSC_LINK</span><span class="o">=</span><span class="s1">'…'</span><span class="w"> </span><span class="c1"># base64 .p12 Developer ID Application cert</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CSC_KEY_PASSWORD</span><span class="o">=</span><span class="s1">'…'</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">CSC_IDENTITY_AUTO_DISCOVERY</span><span class="o">=</span><span class="nb">true</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">APPLE_ID</span><span class="o">=</span><span class="s1">'…'</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="nb">export</span><span class="w"> </span><span class="nv">APPLE_APP_SPECIFIC_PASSWORD</span><span class="o">=</span><span class="s1">'…'</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">APPLE_TEAM_ID</span><span class="o">=</span><span class="s1">'…'</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dist:mac
+</code></pre></div>
 <p>When <code>CSC_LINK</code> is unset, electron-builder skips signing/notarization (<code>CSC_IDENTITY_AUTO_DISCOVERY=false</code> in CI). See <a href="../release-process/#macos-code-signing-and-notarization">Release Process — macOS code signing and notarization</a>.</p>
-<h3 id="build-analysis">Build analysis</h3>
+<h3 id="build-analysis">Build analysis<a class="headerlink" href="#build-analysis" title="Permanent link">&para;</a></h3>
 <p>To analyze the main process bundle size and composition:</p>
-<pre><code class="language-bash">pnpm run build:main:minify-meta
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build:main:minify-meta
+</code></pre></div>
 <p>This generates <code>dist-electron/main/meta.json</code>. Upload this file to <a href="https://esbuild.github.io/analyze/">esbuild's online analyzer</a> to visualize:</p>
 <ul>
 <li>Bundle size by dependency</li>
 <li>Code that could be externalized</li>
 <li>Minification effectiveness</li>
 </ul>
-<h3 id="6-git-hooks-and-pre-commit-behavior">6) Git hooks and pre-commit behavior</h3>
+<h3 id="6-git-hooks-and-pre-commit-behavior">6) Git hooks and pre-commit behavior<a class="headerlink" href="#6-git-hooks-and-pre-commit-behavior" title="Permanent link">&para;</a></h3>
 <p>After <code>pnpm install</code>, repo hooks are enabled via <code>core.hooksPath</code> (see the <code>prepare</code> script in <code>package.json</code>). The pre-commit hook runs on every commit. Typical commits run <strong>staged-related Vitest only</strong> (<code>pnpm run test:staged</code> → <code>vitest related</code> on staged source/test files, optionally narrowed to matching Vitest projects). Unstaged WIP is ignored. Full typecheck still runs every commit; ESLint runs on staged JS/TS with <code>--cache</code> (CI still runs full-tree lint). Path-gated <code>typecheck:strict-shared</code> runs when <code>src/shared/</code> (or <code>tsconfig.strict.json</code>) is staged. Several expensive <code>check:*</code> steps and <code>pnpm audit</code> / full-feature sidecar builds are <strong>path-gated</strong>.</p>
 <p>ESLint: production <code>src/**</code> enforces <code>no-unsafe-*</code>; test files keep those off. <code>no-unnecessary-condition</code> is enforced for <code>src/shared/**</code> and <code>src/renderer/lib/**</code> only.</p>
-<p>Green pre-commit does <strong>not</strong> replace PR CI: <a href="../.github/workflows/tests.yaml"><code>.github/workflows/tests.yaml</code></a> runs merge-base-related tests on pull requests and fails closed to full Vitest when scoping is unsafe. The merge queue always reruns full Vitest with coverage. Use <code>pnpm run check:pr</code> for a comprehensive local gate before opening a PR.</p>
-<p>Hook order (authoritative source: <a href="../.githooks/pre-commit"><code>.githooks/pre-commit</code></a>):</p>
+<p>Green pre-commit does <strong>not</strong> replace PR CI: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>.github/workflows/tests.yaml</code></a> runs merge-base-related tests on pull requests and fails closed to full Vitest when scoping is unsafe. The merge queue always reruns full Vitest with coverage. Use <code>pnpm run check:pr</code> for a comprehensive local gate before opening a PR.</p>
+<p>Hook order (authoritative source: <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.githooks/pre-commit"><code>.githooks/pre-commit</code></a>):</p>
 <ol>
 <li>If <code>package.json</code> or <code>pnpm-lock.yaml</code> is staged: <code>pnpm install --frozen-lockfile</code></li>
 <li>Prettier on <strong>staged</strong> files only (not whole-tree <code>pnpm run format</code> unless you run it manually)</li>
@@ -3768,13 +4407,13 @@ pnpm run dist:mac
 <li><code>pnpm audit --audit-level=high</code> only when dependency manifests staged; <code>actionlint</code> when <code>.github/workflows/*</code> staged; <code>yamllint</code> when any <code>*.yaml</code> / <code>*.yml</code> staged</li>
 <li><code>pnpm run test:staged</code> (<code>scripts/precommit-tests.mjs</code>: staged-only <code>vitest related</code>; full suite when vitest config/setup mocks or dependency manifests change; skip when no source/test staged)</li>
 </ol>
-<p><strong>Release / protected CI full suite:</strong> <code>pnpm run release</code> (<code>scripts/release.sh</code>), merge-queue <code>merge_group</code>, <code>main</code> push, and manual <a href="../.github/workflows/tests.yaml"><code>tests.yaml</code></a> runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated <code>check:*</code> set and requires actionlint + yamllint. Use <code>pnpm run check:pr</code> for the comprehensive Vitest/lint/typecheck surface locally before a PR.</p>
+<p><strong>Release / protected CI full suite:</strong> <code>pnpm run release</code> (<code>scripts/release.sh</code>), merge-queue <code>merge_group</code>, <code>main</code> push, and manual <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/tests.yaml"><code>tests.yaml</code></a> runs always execute full Vitest. Pull requests use merge-base-related tests unless a safe fallback requires the full suite. Release also runs the ungated <code>check:*</code> set and requires actionlint + yamllint. Use <code>pnpm run check:pr</code> for the comprehensive Vitest/lint/typecheck surface locally before a PR.</p>
 <p>Install hook dependencies via <a href="#8-helper-scripts-auto-install-where-possible">Helper scripts</a> (<code>setup:actionlint</code>, yamllint via pip/brew/apt).</p>
 <p>Emergency bypass (temporary only):</p>
-<pre><code class="language-bash">git commit --no-verify
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>git<span class="w"> </span>commit<span class="w"> </span>--no-verify
+</code></pre></div>
 <p>Run any skipped checks manually as soon as possible.</p>
-<h3 id="7-ci-workflow-tooling-optional-but-recommended">7) CI workflow tooling (optional but recommended)</h3>
+<h3 id="7-ci-workflow-tooling-optional-but-recommended">7) CI workflow tooling (optional but recommended)<a class="headerlink" href="#7-ci-workflow-tooling-optional-but-recommended" title="Permanent link">&para;</a></h3>
 <p>Local CI has two modes:</p>
 <table>
 <thead>
@@ -3825,17 +4464,17 @@ pnpm run dist:mac
 </tr>
 </tbody>
 </table>
-<pre><code class="language-bash">pnpm run act:pull-images # container mode only
-pnpm run act:list
-pnpm run act:ci    # or act:ci:native
-pnpm run act:tests # or act:tests:native
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:pull-images<span class="w"> </span><span class="c1"># container mode only</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:list
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:ci<span class="w">    </span><span class="c1"># or act:ci:native</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>act:tests<span class="w"> </span><span class="c1"># or act:tests:native</span>
+</code></pre></div>
 <p>On macOS, podman exposes a Docker-compatible socket at <code>/var/run/docker.sock</code>; pass that path to <code>act</code> via <code>ACT_DOCKER_SOCKET</code>, or let it auto-detect if Podman created the socket symlink. If you use Docker Desktop instead of Podman, its socket is typically under <code>~/.docker/run/docker.sock</code>.</p>
 <p>macOS and Windows <strong>installer</strong> builds still require native <code>pnpm run dist:mac</code> / <code>pnpm run dist:win</code>. See <a href="../ci-cd/#running-ci-locally-with-act">ci-cd.md</a>.</p>
 <ul>
 <li><strong>actionlint</strong>: required for local pre-commit if workflow files are touched.</li>
 </ul>
-<h3 id="8-helper-scripts-auto-install-where-possible">8) Helper scripts (auto-install where possible)</h3>
+<h3 id="8-helper-scripts-auto-install-where-possible">8) Helper scripts (auto-install where possible)<a class="headerlink" href="#8-helper-scripts-auto-install-where-possible" title="Permanent link">&para;</a></h3>
 <p>These scripts try to install optional tooling automatically. If they fail (for example, missing <code>sudo</code>/admin rights), follow the manual steps in this doc instead.</p>
 <ol>
 <li>Verify your environment (recommended after a fresh clone):</li>
@@ -3856,7 +4495,7 @@ pnpm run act:tests # or act:tests:native
 <li><code>pnpm run setup:dialout</code></li>
 <li>Adds your user to the <code>dialout</code> group (requires sudo + re-login).</li>
 </ol>
-<h3 id="9-internationalization-i18n">9) Internationalization (i18n)</h3>
+<h3 id="9-internationalization-i18n">9) Internationalization (i18n)<a class="headerlink" href="#9-internationalization-i18n" title="Permanent link">&para;</a></h3>
 <p>The app uses <code>i18next</code> for localization. English is the source of truth.</p>
 <ul>
 <li><strong>Locale files</strong>: <code>src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json</code></li>
@@ -3868,112 +4507,112 @@ pnpm run act:tests # or act:tests:native
 <li><strong>Removing strings</strong>: delete the English key, then run <code>pnpm run i18n:prune-unused -- --write</code> (or remove manually from every locale).</li>
 </ul>
 <p>Auto-translation uses MyMemory by default. Incremental translations (new keys only) run automatically during the git pre-commit hook. Use <code>pnpm run i18n:auto-translate --all</code> to force a full re-scan of all missing keys. Use <code>pnpm run check:i18n:branch</code> before large doc-only PRs to lint keys changed vs <code>HEAD</code> without the full unused-key pass.</p>
-<h3 id="10-optional-editortooling">10) Optional editor/tooling</h3>
+<h3 id="10-optional-editortooling">10) Optional editor/tooling<a class="headerlink" href="#10-optional-editortooling" title="Permanent link">&para;</a></h3>
 <ul>
 <li>VS Code (or Cursor) with TypeScript + ESLint support</li>
 <li>Prettier editor extension (optional convenience; repository already defines formatting rules)</li>
 <li>React DevTools for renderer debugging</li>
 </ul>
-<h2 id="macos">macOS</h2>
+<h2 id="macos">macOS<a class="headerlink" href="#macos" title="Permanent link">&para;</a></h2>
 <p>Electron <strong>44</strong> (this repo’s runtime) requires <strong>macOS 13 Ventura</strong> or later for both <code>pnpm run dev</code> and packaged builds. Monterey hosts are unsupported.</p>
-<h3 id="install-prerequisites">Install prerequisites</h3>
+<h3 id="install-prerequisites">Install prerequisites<a class="headerlink" href="#install-prerequisites" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Install Git (Xcode CLT includes it):
-   <code>bash
-   xcode-select --install</code></li>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>xcode-select<span class="w"> </span>--install
+</code></pre></div></li>
 <li>Install Node 22 (22.13.0+ recommended via nvm) and npm:</li>
 </ol>
-<p>```bash
-   curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh -o install_nvm.sh</p>
-<p>less install_nvm.sh
-   bash install_nvm.sh
-   rm install_nvm.sh
-   export NVM_DIR="$HOME/.nvm"
-   [ -s "$NVM_DIR/nvm.sh" ] &amp;&amp; . "$NVM_DIR/nvm.sh"
-   nvm install 22
-   nvm use 22
-   ```</p>
-<h3 id="buildrun-flow">Build/run flow</h3>
-<pre><code class="language-bash">git clone https://github.com/Colorado-Mesh/mesh-client
-cd mesh-client
-pnpm install
-pnpm run dev
-</code></pre>
-<h3 id="local-ci-container-engine">Local CI container engine</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span>-o<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>less<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>bash<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>rm<span class="w"> </span>install_nvm.sh
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
+</code></pre></div>
+<h3 id="buildrun-flow">Build/run flow<a class="headerlink" href="#buildrun-flow" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Colorado-Mesh/mesh-client
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="nb">cd</span><span class="w"> </span>mesh-client
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>pnpm<span class="w"> </span>install
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+</code></pre></div>
+<h3 id="local-ci-container-engine">Local CI container engine<a class="headerlink" href="#local-ci-container-engine" title="Permanent link">&para;</a></h3>
 <p><a href="https://podman.io/">Podman Desktop</a> is the preferred cross-platform Docker-compatible engine for local CI. When Docker compatibility is enabled, Podman exposes a Docker-compatible socket at <code>/var/run/docker.sock</code>; pass that path to <code>act</code> via <code>ACT_DOCKER_SOCKET</code>, or let it auto-detect if Podman Desktop created the socket symlink. If you use Docker Desktop instead, see the socket note above.</p>
-<h3 id="bluetooth-permissions">Bluetooth permissions</h3>
+<h3 id="bluetooth-permissions">Bluetooth permissions<a class="headerlink" href="#bluetooth-permissions" title="Permanent link">&para;</a></h3>
 <p>On first BLE connection, macOS prompts for Bluetooth access. If denied accidentally:</p>
 <ul>
 <li>Go to <strong>System Settings &gt; Privacy &amp; Security &gt; Bluetooth</strong></li>
 <li>Enable access for Mesh-Client</li>
 </ul>
-<h3 id="reticulum-sidecar-optional_1">Reticulum sidecar (optional)</h3>
+<h3 id="reticulum-sidecar-optional_1">Reticulum sidecar (optional)<a class="headerlink" href="#reticulum-sidecar-optional_1" title="Permanent link">&para;</a></h3>
 <p>If you work on the Reticulum protocol tab, install Rust and build the sidecar — see <a href="#reticulum-sidecar-optional">Reticulum sidecar (optional)</a> above. On macOS, <strong>rustup is preferred</strong> over <code>brew install rust</code> (CI parity); do not install both.</p>
-<h3 id="macos-release-download-note-not-required-for-source-development">macOS release-download note (not required for source development)</h3>
+<h3 id="macos-release-download-note-not-required-for-source-development">macOS release-download note (not required for source development)<a class="headerlink" href="#macos-release-download-note-not-required-for-source-development" title="Permanent link">&para;</a></h3>
 <p>If a downloaded app reports "Mesh-client is damaged and can't be opened", see <a href="../troubleshooting/#macos-file-is-damaged-and-cannot-be-opened">macOS: File is damaged and cannot be opened</a>. If launch fails with <code>Library not loaded: Squirrel.framework</code> after extracting the macOS <strong>ZIP with 7-Zip</strong>, see <a href="../troubleshooting/#macos-library-not-loaded-squirrelframework-after-zip-extract">macOS: Squirrel.framework after ZIP extract</a>.</p>
-<h2 id="windows">Windows</h2>
-<h3 id="install-prerequisites_1">Install prerequisites</h3>
+<h2 id="windows">Windows<a class="headerlink" href="#windows" title="Permanent link">&para;</a></h2>
+<h3 id="install-prerequisites_1">Install prerequisites<a class="headerlink" href="#install-prerequisites_1" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Install Git and Node.js (winget primary path):
-   <code>powershell
-   winget install git.git
-   winget install OpenJS.NodeJS</code></li>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">git</span><span class="p">.</span><span class="n">git</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">OpenJS</span><span class="p">.</span><span class="n">NodeJS</span>
+</code></pre></div></li>
 <li>Allow npm script execution in current user scope:
-   <code>powershell
-   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser</code></li>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nb">Set-ExecutionPolicy</span> <span class="n">-ExecutionPolicy</span> <span class="n">RemoteSigned</span> <span class="n">-Scope</span> <span class="n">CurrentUser</span>
+</code></pre></div></li>
 <li>Install <strong>Visual Studio Build Tools</strong> with <strong>Desktop development with C++</strong> workload.</li>
 <li>Install Python 3 and ensure it is on PATH:
-   <code>powershell
-   winget install Python.Python.3.12</code>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">Python</span><span class="p">.</span><span class="n">Python</span><span class="p">.</span><span class="n">3</span><span class="p">.</span><span class="n">12</span>
+</code></pre></div>
    If needed, set npm Python path explicitly:
-   <code>powershell
-   npm config set python "C:\\Path\\To\\python.exe"</code></li>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="n">npm</span> <span class="n">config</span> <span class="nb">set </span><span class="n">python</span> <span class="s2">"C:\\Path\\To\\python.exe"</span>
+</code></pre></div></li>
 </ol>
-<h3 id="buildrun-flow_1">Build/run flow</h3>
-<pre><code class="language-powershell">git clone https://github.com/Colorado-Mesh/mesh-client
-cd mesh-client
-pnpm install
-pnpm run dev
-</code></pre>
-<h3 id="windows-packaging-note">Windows packaging note</h3>
+<h3 id="buildrun-flow_1">Build/run flow<a class="headerlink" href="#buildrun-flow_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">://</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="p">/</span><span class="n">Colorado-Mesh</span><span class="p">/</span><span class="n">mesh-client</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="nb">cd </span><span class="n">mesh-client</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="n">pnpm</span> <span class="n">install</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a><span class="n">pnpm</span> <span class="n">run</span> <span class="n">dev</span>
+</code></pre></div>
+<h3 id="windows-packaging-note">Windows packaging note<a class="headerlink" href="#windows-packaging-note" title="Permanent link">&para;</a></h3>
 <p>The Windows build (<code>dist:win</code>) uses pnpm's <code>node-linker=hoisted</code> mode to work around asar packaging issues on Windows. The build command automatically reinstalls with hoisted mode, packages, then restores the default structure.</p>
-<h3 id="serial-device-driver-reminder">Serial device driver reminder</h3>
+<h3 id="serial-device-driver-reminder">Serial device driver reminder<a class="headerlink" href="#serial-device-driver-reminder" title="Permanent link">&para;</a></h3>
 <p>If serial ports do not appear, install the right USB UART driver (for example CH340/CH341, CP210x, or FTDI).</p>
-<h3 id="troubleshooting">Troubleshooting</h3>
-<p>See <a href="../troubleshooting/#windows-could-not-find-any-visual-studio-installation-to-use">troubleshooting.md</a> (Visual Studio), <a href="../troubleshooting/#windows-could-not-find-any-python-installation-to-use">Python</a>, and <a href="../troubleshooting/#windows-distwin-fails-with-path-spaces-or-eperm"><code>dist:win</code> path / <code>EPERM</code></a>.</p>
-<h2 id="linux">Linux</h2>
-<h3 id="install-prerequisites_2">Install prerequisites</h3>
+<h3 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h3>
+<p>See <a href="#windows-could-not-find-any-visual-studio-installation-to-use">Build troubleshooting</a> (Visual Studio), <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp">Python</a>, and <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules"><code>dist:win</code> path / <code>EPERM</code></a>.</p>
+<h2 id="linux">Linux<a class="headerlink" href="#linux" title="Permanent link">&para;</a></h2>
+<h3 id="install-prerequisites_2">Install prerequisites<a class="headerlink" href="#install-prerequisites_2" title="Permanent link">&para;</a></h3>
 <p>Install Node 22 (22.13.0+ recommended), <code>make</code>, and C++ build tools (<code>g++</code>/<code>gcc-c++</code>) with native build dependencies.</p>
 <p>Debian/Ubuntu:</p>
-<pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-export NVM_DIR=&quot;$HOME/.nvm&quot;
-[ -s &quot;$NVM_DIR/nvm.sh&quot; ] &amp;&amp; . &quot;$NVM_DIR/nvm.sh&quot;
-nvm install 22
-nvm use 22
-sudo apt install build-essential
-sudo apt install python3 libnspr4 libnss3
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>build-essential
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>libnspr4<span class="w"> </span>libnss3
+</code></pre></div>
 <p>Fedora/RedHat:</p>
-<pre><code class="language-bash">curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-export NVM_DIR=&quot;$HOME/.nvm&quot;
-[ -s &quot;$NVM_DIR/nvm.sh&quot; ] &amp;&amp; . &quot;$NVM_DIR/nvm.sh&quot;
-nvm install 22
-nvm use 22
-sudo dnf install @development-tools
-sudo dnf install python3 nspr nss
-</code></pre>
-<h3 id="buildrun-flow_2">Build/run flow</h3>
-<pre><code class="language-bash">git clone https://github.com/Colorado-Mesh/mesh-client
-cd mesh-client
-pnpm install
-pnpm run dev
-</code></pre>
-<h3 id="serial-permissions">Serial permissions</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="o">[</span><span class="w"> </span>-s<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span><span class="w"> </span><span class="o">]</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>.<span class="w"> </span><span class="s2">"</span><span class="nv">$NVM_DIR</span><span class="s2">/nvm.sh"</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a>nvm<span class="w"> </span>install<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a>nvm<span class="w"> </span>use<span class="w"> </span><span class="m">22</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>@development-tools
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>python3<span class="w"> </span>nspr<span class="w"> </span>nss
+</code></pre></div>
+<h3 id="buildrun-flow_2">Build/run flow<a class="headerlink" href="#buildrun-flow_2" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Colorado-Mesh/mesh-client
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="nb">cd</span><span class="w"> </span>mesh-client
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>pnpm<span class="w"> </span>install
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+</code></pre></div>
+<h3 id="serial-permissions">Serial permissions<a class="headerlink" href="#serial-permissions" title="Permanent link">&para;</a></h3>
 <p>Add your user to <code>dialout</code>:</p>
-<pre><code class="language-bash">sudo usermod -a -G dialout $USER
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>sudo<span class="w"> </span>usermod<span class="w"> </span>-a<span class="w"> </span>-G<span class="w"> </span>dialout<span class="w"> </span><span class="nv">$USER</span>
+</code></pre></div>
 <p>Log out/in after changing groups.</p>
-<h3 id="linux-bluetooth-ble">Linux Bluetooth (BLE)</h3>
+<h3 id="linux-bluetooth-ble">Linux Bluetooth (BLE)<a class="headerlink" href="#linux-bluetooth-ble" title="Permanent link">&para;</a></h3>
 <p>LoRa BLE uses the reticulum-sidecar <strong>btleplug</strong> GATT stack on Linux (same as macOS/Windows) — not Web Bluetooth / Noble.</p>
 <ul>
 <li>Requires a working BlueZ stack (<code>systemctl status bluetooth</code>, <code>rfkill list</code>)</li>
@@ -3981,17 +4620,93 @@ pnpm run dev
 <li>ATT MTU / write sizing follows sidecar negotiation via <code>bleAttWriteLimit.ts</code> (spec min 23)</li>
 </ul>
 <p>Pairing failures and BlueZ steps: <a href="../troubleshooting/#ble-known-issues">BLE known issues</a>.</p>
-<h3 id="linux-launch-notes">Linux launch notes</h3>
+<h3 id="linux-launch-notes">Linux launch notes<a class="headerlink" href="#linux-launch-notes" title="Permanent link">&para;</a></h3>
 <p>The supported dev and local run flows are:</p>
-<pre><code class="language-bash">pnpm run dev
-pnpm start
-</code></pre>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>dev
+<a id="__codelineno-38-2" name="__codelineno-38-2" href="#__codelineno-38-2"></a>pnpm<span class="w"> </span>start
+</code></pre></div>
 <p>ARM (for example Raspberry Pi) may also require:</p>
-<pre><code class="language-bash">sudo apt install zlib1g-dev libfuse2
-sudo sysctl -w kernel.unprivileged_userns_clone=1
-</code></pre>
-<h3 id="troubleshooting_1">Troubleshooting</h3>
-<p>See <a href="../troubleshooting/#linux-development-sigill-during-pnpm-install">Linux development: SIGILL / SIGSEGV</a> and <a href="../troubleshooting/#linux-serial-port-access-denied">Linux: serial port access denied</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>zlib1g-dev<span class="w"> </span>libfuse2
+<a id="__codelineno-39-2" name="__codelineno-39-2" href="#__codelineno-39-2"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>-w<span class="w"> </span>kernel.unprivileged_userns_clone<span class="o">=</span><span class="m">1</span>
+</code></pre></div>
+<h3 id="troubleshooting_1">Troubleshooting<a class="headerlink" href="#troubleshooting_1" title="Permanent link">&para;</a></h3>
+<p>See <a href="#linux-development-sigill-during-pnpm-install">Linux development: SIGILL / SIGSEGV</a> and <a href="../troubleshooting/#linux-serial-port-access-denied">Linux: serial port access denied</a>.</p>
+<h2 id="build-troubleshooting">Build troubleshooting<a class="headerlink" href="#build-troubleshooting" title="Permanent link">&para;</a></h2>
+<p>Clone, compile, and local packaging issues. Runtime problems with the packaged app are in <a href="../troubleshooting/">Troubleshooting</a>.</p>
+<h3 id="pnpm-install-fails-on-native-module-compilation"><code>pnpm install</code> fails on native module compilation<a class="headerlink" href="#pnpm-install-fails-on-native-module-compilation" title="Permanent link">&para;</a></h3>
+<p>See <a href="./">development-environment.md</a> for OS-specific prerequisite installation.</p>
+<h3 id="windows-could-not-find-any-visual-studio-installation-to-use">Windows: "Could not find any Visual Studio installation to use"<a class="headerlink" href="#windows-could-not-find-any-visual-studio-installation-to-use" title="Permanent link">&para;</a></h3>
+<p>See <a href="./#windows">development-environment.md</a> for required build tools and the full recovery steps.</p>
+<h3 id="windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp">Windows: "Could not find any Python installation to use" (e.g. when building <code>@serialport/bindings-cpp</code>)<a class="headerlink" href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp" title="Permanent link">&para;</a></h3>
+<p>See <a href="./#windows">development-environment.md</a> for Python setup and npm/node-gyp troubleshooting.</p>
+<h3 id="linux-development-sigill-during-pnpm-install">Linux development: SIGILL during <code>pnpm install</code><a class="headerlink" href="#linux-development-sigill-during-pnpm-install" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom</strong>: <code>electron exited with signal SIGILL</code> during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).</p>
+<p><strong>Fix</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="nv">MESHTASTIC_SKIP_ELECTRON_REBUILD</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pnpm<span class="w"> </span>install
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>rebuild
+</code></pre></div>
+<p>Run <code>pnpm run rebuild</code> on a host where the bundled Electron binary executes correctly.</p>
+<h3 id="linux-development-sigsegv-on-startup">Linux development: SIGSEGV on startup<a class="headerlink" href="#linux-development-sigsegv-on-startup" title="Permanent link">&para;</a></h3>
+<p><strong>Symptom</strong>: <code>electron exited with signal SIGSEGV</code> when running from source (GPU process; see <a href="https://github.com/electron/electron/issues/41980">electron#41980</a>).</p>
+<p><strong>Fix</strong>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pnpm<span class="w"> </span>dlx<span class="w"> </span>electron<span class="w"> </span>.<span class="w"> </span>--disable-gpu
+</code></pre></div>
+<p>Or:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>electron:open<span class="w"> </span>--<span class="w"> </span>--disable-gpu
+</code></pre></div>
+<p>Optional persistent mitigation:</p>
+<ul>
+<li><code>export MESH_CLIENT_DISABLE_GPU=1</code></li>
+<li><code>ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open</code></li>
+</ul>
+<h3 id="a-native-module-failed-to-load-dialog-on-startup">"A native module failed to load" dialog on startup<a class="headerlink" href="#a-native-module-failed-to-load-dialog-on-startup" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: A native addon (e.g. <code>@serialport/bindings-cpp</code>) was compiled for a different Electron ABI; common after an Electron or Node version change.</p>
+<p><strong>Fix</strong>: Run <code>pnpm install</code> (the postinstall script rebuilds native modules for the correct ABI automatically).</p>
+<ul>
+<li>If you still see dlopen errors after switching machines or OSes, delete <code>node_modules</code> and run a clean <code>pnpm install</code>.</li>
+<li><strong>Windows</strong>: Also ensure the <a href="https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist">Visual C++ Redistributable</a> is installed.</li>
+</ul>
+<h3 id="pnpm-run-distmac-fails-with-gh_token--cannot-cleanup"><code>pnpm run dist:mac</code> fails with <code>GH_TOKEN</code> / "Cannot cleanup"<a class="headerlink" href="#pnpm-run-distmac-fails-with-gh_token--cannot-cleanup" title="Permanent link">&para;</a></h3>
+<p>electron-builder publishes to GitHub when it thinks it's in CI. Local builds use <code>--publish never</code> so artifacts land in <code>release/</code> without a token. Tag release CI also builds with <code>dist:*</code> (<code>--publish never</code>) and attaches via <code>ci-upload-release-assets.mjs</code> to the prepare draft; see <code>.github/workflows/release.yaml</code>.</p>
+<h3 id="dep0190-when-running-electron-builder"><code>[DEP0190]</code> when running electron-builder<a class="headerlink" href="#dep0190-when-running-electron-builder" title="Permanent link">&para;</a></h3>
+<p>Node deprecates <code>spawn(..., { shell: true })</code> with an args array. This project carries the packaging workaround via pnpm <code>patchedDependencies</code> on transitive packages used by the Electron build path. Re-run <code>pnpm install</code> if you upgrade <code>electron-builder</code> or its transitive packaging deps and the warning returns.</p>
+<h3 id="duplicate-dependency-references-during-dist"><code>duplicate dependency references</code> during dist<a class="headerlink" href="#duplicate-dependency-references-during-dist" title="Permanent link">&para;</a></h3>
+<p>npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at <strong>debug</strong> only so normal <code>dist:*</code> runs stay quiet. To see it: <code>DEBUG=electron-builder pnpm dlx electron-builder --mac</code> (or your usual dist command).</p>
+<h3 id="distwin-fails-with-space-in-the-path-or-eperm-on-native-modules"><code>dist:win</code> fails with "space in the path" or <code>EPERM</code> on native modules<a class="headerlink" href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules" title="Permanent link">&para;</a></h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li><code>Attempting to build a module with a space in the path</code> during <code>pnpm run dist:win</code> (or <code>pnpm run rebuild</code>).</li>
+<li><code>EPERM: operation not permitted</code> when the rebuild tries to replace a locked <code>.node</code> file.</li>
+</ul>
+<p><strong>Cause</strong></p>
+<ol>
+<li><strong>Spaces in the project path</strong>: node-gyp is unreliable when the repo lives under a path with spaces (e.g. <code>C:\Users\Joey Stanford\mesh-client</code>). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See <a href="https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565">node-gyp#65</a>.</li>
+<li><strong>EPERM on unlink</strong>: Something on Windows still has the <code>.node</code> file open (another <code>node</code>/<code>electron</code> process, antivirus/Windows Defender scanning the file, or a stuck handle).</li>
+</ol>
+<p><strong>Fix</strong></p>
+<ol>
+<li><strong>Use a path without spaces</strong> (strongly recommended): clone or copy the repo to e.g. <code>C:\dev\mesh-client</code>, then <code>pnpm install</code> and <code>pnpm run dist:win</code> from there.</li>
+<li><strong>Clear the lock before rebuild</strong>: quit any running Mesh-Client/Electron dev instances, then delete the affected <code>build</code> folder under <code>node_modules</code> and retry.</li>
+<li><strong>Rebuild then dist</strong>: <code>pnpm run rebuild</code>; if that succeeds, run <code>pnpm run dist:win</code>.</li>
+</ol>
+<p>CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.</p>
+<h3 id="windows-0x80010135--path-too-long-eg-bluetooth_hci_socketlastbuildstate">Windows: <code>0x80010135</code> / "Path too long" (e.g. <code>bluetooth_hci_socket.lastbuildstate</code>)<a class="headerlink" href="#windows-0x80010135--path-too-long-eg-bluetooth_hci_socketlastbuildstate" title="Permanent link">&para;</a></h3>
+<p><strong>Symptoms</strong></p>
+<ul>
+<li>Explorer or the compiler shows <strong>error 0x80010135</strong> with <strong>Path too long</strong>, often on a <strong><code>*.lastbuildstate</code></strong> file under <code>node_modules</code>.</li>
+<li><strong><code>bluetooth_hci_socket</code></strong> in the name points at <strong><code>@stoprocent/bluetooth-hci-socket</code></strong> (a native dependency of <strong><code>@stoprocent/noble</code></strong>). MSBuild writes build state under very deep paths; together with a long clone directory, the full path can exceed the legacy <strong>~260 character</strong> Win32 limit.</li>
+</ul>
+<p><strong>Fix</strong> (use one or more)</p>
+<ol>
+<li><strong>Shorten the repo path</strong> (most reliable): clone or copy the project to a shallow path such as <code>C:\dev\mesh-client</code> instead of e.g. <code>C:\Users\…\Documents\GitHub\org\mesh-client</code>.</li>
+<li><strong>Enable long paths in Git</strong> (helps clones/checkouts): <code>git config --global core.longpaths true</code>, then re-clone or ensure no stuck long paths in the worktree.</li>
+<li><strong>Enable Win32 long paths in Windows</strong> (Windows 10 1607+): this option is <strong>not</strong> available as a normal toggle in <strong>Settings</strong>; enable it via <strong>Local Group Policy</strong> → <em>Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths</em>, or set the registry DWORD <strong><code>LongPathsEnabled = 1</code></strong> under <code>HKLM\SYSTEM\CurrentControlSet\Control\FileSystem</code> (admin rights; reboot may be required). See <a href="https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation">Microsoft: Maximum Path Length Limitation</a>.</li>
+<li><strong><code>pnpm run dist:win</code></strong> already runs a <strong>hoisted</strong> <code>pnpm install</code> to shorten <code>node_modules</code> depth before packaging; if <strong><code>pnpm install</code></strong> / <strong><code>pnpm run rebuild</code></strong> fails earlier with this error, try the short path and long-path OS settings first, or temporarily: <code>pnpm install --config.node-linker=hoisted</code> from a short root path.</li>
+</ol>
+<h3 id="dep0169--urlparse-deprecation-warning"><code>[DEP0169]</code> / <code>url.parse()</code> deprecation warning<a class="headerlink" href="#dep0169--urlparse-deprecation-warning" title="Permanent link">&para;</a></h3>
+<p>The app uses npm package overrides to force <code>follow-redirects</code> and <code>cacheable-request</code> onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>trace-deprecation
+</code></pre></div>
 
 
 
@@ -3999,6 +4714,27 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
 
 
 
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
 
 
 
@@ -4012,6 +4748,12 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
       </main>
       
         <footer class="md-footer">
@@ -4020,10 +4762,43 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
   
+    <div class="md-copyright__highlight">
+      Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+    </div>
+  
   
     Made with
     <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
       Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Colorado-Mesh/mesh-client" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://discord.com/invite/McChKR5NpS" target="_blank" rel="noopener" title="Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://coloradomesh.org/" target="_blank" rel="noopener" title="Colorado Mesh" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2m-5.15 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M14.34 14H9.66c-.1-.66-.16-1.32-.16-2s.06-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2M12 19.96c-.83-1.2-1.5-2.53-1.91-3.96h3.82c-.41 1.43-1.08 2.76-1.91 3.96M8 8H5.08A7.92 7.92 0 0 1 9.4 4.44C8.8 5.55 8.35 6.75 8 8m-2.92 8H8c.35 1.25.8 2.45 1.4 3.56A8 8 0 0 1 5.08 16m-.82-2C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2M12 4.03c.83 1.2 1.5 2.54 1.91 3.97h-3.82c.41-1.43 1.08-2.77 1.91-3.97M18.92 8h-2.95a15.7 15.7 0 0 0-1.38-3.56c1.84.63 3.37 1.9 4.33 3.56M12 2C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>
     </a>
   
 </div>
@@ -4041,7 +4816,7 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>

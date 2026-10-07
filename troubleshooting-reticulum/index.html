@@ -1,0 +1,3576 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Cross-platform desktop client for Meshtastic, MeshCore, and Reticulum (LXMF) mesh networks.">
+      
+      
+      
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/troubleshooting-reticulum/">
+      
+      
+        <link rel="prev" href="../troubleshooting-meshcore/">
+      
+      
+        <link rel="next" href="../diagnostics/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Reticulum Troubleshooting - Colorado Mesh Client</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#reticulum-troubleshooting" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Colorado Mesh Client" class="md-header__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Colorado Mesh Client
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Reticulum Troubleshooting
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Colorado-Mesh/mesh-client
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../install/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Install
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../features/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Features
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../reticulum-setup-guide/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../troubleshooting/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Support
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../development-environment/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Engineering
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../license/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Project
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Colorado Mesh Client" class="md-nav__button md-logo" aria-label="Colorado Mesh Client" data-md-component="logo">
+      
+  <img src="../assets/logo.png" alt="logo">
+
+    </a>
+    Colorado Mesh Client
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Colorado-Mesh/mesh-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Colorado-Mesh/mesh-client
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-setup-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Setup Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../emcomm/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    EMCOMM (MECP & Incident Command)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../key-backup-and-crypto/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Key Backup & Crypto
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshtastic-telemetry-local-client/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic Telemetry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notification-sounds/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notification Sounds
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../localization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Localization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glossary
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Support
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Support
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting-meshcore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MeshCore Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-connect-stuck--cancel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC connect stuck / Cancel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-hub-dropped-vs-disconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC hub dropped vs Disconnect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-false-self-part--hubparted-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC false self-PART / hubParted banner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-history-shows-fewer-messages-than-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC history shows fewer messages than Retention
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-sidecar-wont-start-or-health-poll-times-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar won't start or health poll times out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-rrclxmf-requires-live-rns-stack-right-after-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum RRC/LXMF requires live rns-stack right after start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-cancel-then-connect-stuck-on-start_aborted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Cancel then Connect stuck on START_ABORTED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-sidecar-cargo-build-fails-register_packet_tap--reticulum_cargo_build_failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar cargo build fails (register_packet_tap / RETICULUM_CARGO_BUILD_FAILED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-autointerface-log-spam-on-macos-vpn-utun--enobufs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum AutoInterface log spam on macOS (VPN utun / ENOBUFS)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-local-dms-hang-with-autointerface--private-tcp-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum local DMs hang with AutoInterface + private TCP hub
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-public-hub-tcp-blocked-fast-flapping-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum public hub TCP blocked (fast-flapping client)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-dm-shows-stored-at-propagation-node-but-the-reply-never-arrives-pn-island--preferred-mismatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum DM shows "Stored at propagation node" but the reply never arrives (PN island / preferred mismatch)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-nomad-network-or-topology-api-returns-404" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Nomad Network or topology API returns 404
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-my-pages-hosting-enabled-but-not-serving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad My Pages hosting enabled but not serving
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-page-that-used-to-show-my-name-is-now-generic-or-not-allowed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad page that used to show my name is now generic (or "not allowed")
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-network-pages-hang-or-almost-never-load" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad Network pages hang or almost never load
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-sidecar-stops-during-dev-vite-hmr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar stops during dev (Vite HMR)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-proxyget-fetch-failed--many-reticulumipc-start-lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum proxyGet fetch failed / many [ReticulumIPC] start lines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-announce-interval-resets-after-saving-stack-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum announce interval resets after saving stack settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clear-announces-does-not-empty-the-peers-tab-under-rns-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clear announces does not empty the Peers tab under rns-stack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-identity-hash-mismatch-stub-vs-live-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum identity hash mismatch (stub vs live stack)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-rsi--raw-identity-backup-restore-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum .rsi / raw identity backup restore fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-map-empty-or-no-markers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Map empty or no markers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum BLE RNode blocks Meshtastic/MeshCore BLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ble-rnode-pairing-fails-wrong-pin--no-pin-on-display--not-in-macos-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ble-rnode-bond-is-stale-os-still-shows-paired" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum BLE RNode bond is stale (OS still shows Paired)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-lxmf-duplicate-sending--orphaned-pending-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum LXMF duplicate Sending / orphaned pending rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-remote-propagation-sync-fails-or-never-completes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum remote propagation sync fails or never completes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-local-pn-hosting-not-discoverable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum local PN hosting not discoverable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-stored-at-pn-but-sync-leaves-chat-empty" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: Stored at PN but Sync leaves Chat empty
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-pn-hosting-policy-apply-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum PN hosting policy apply fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-last-synced-time-looks-wrong-after-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum last synced time looks wrong after update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-colorado-mesh--letsmesh-wont-connect-after-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-colorado-mesh-one-time-region-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore Colorado Mesh one-time region prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-announces--nomad--rrc-work-but-chat-fails-both-ways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: announces / Nomad / RRC work but Chat fails both ways
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-dm-stuck-on-sending-meshchatx--shared-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum DM stuck on Sending (MeshChatX / shared instance)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-no-propagation-node-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: no propagation node configured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ratspeak-dms-work-but-mesh-client-stays-silent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: Ratspeak DMs work but mesh-client stays silent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-interface-addeditdelete-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum interface add/edit/delete fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-i2p-interface-stays-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum I2P interface stays down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-peers-stale-or-slow-with-many-hubs-or-testnets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Peers stale or slow with many hubs or testnets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rnode-wi-fi-interface-offline-or-wont-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RNode Wi-Fi interface offline or won't connect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-admin-rnode-flasher-timeout-or-stalled-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Admin: RNode flasher timeout or stalled transfer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-remote-transfer-fails-or-path_constrained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Remote transfer fails or path_constrained
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-remote-inbound-rncp-blocked-ask-mode--policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Remote inbound rncp blocked (Ask mode / policy)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-hung-sidecar-watchdog-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum hung-sidecar watchdog restart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-lxmf-paper-createingest-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum LXMF paper create/ingest fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-games-challenge-fails-or-board-does-not-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Games challenge fails or board does not update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-lxst-voice-call-fails-or-is-silent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum LXST voice call fails or is silent
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../diagnostics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Diagnostics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../log-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Log Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://coloradomesh.org/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Community
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Engineering
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Engineering
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development-environment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Development Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../accessibility-checklist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Accessibility
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../style-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    UI Style Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-announcements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Announcements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshcore-meshtastic-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meshtastic & MeshCore Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-sidecar-ipc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Sidecar IPC
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reticulum-games-parity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Games Parity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nomad-hosting-interop/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Nomad Hosting Interop
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../letsmesh-mqtt-auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LetsMesh MQTT Auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../license/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    License
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../credits/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Credits
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../third-party-licenses/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Third-party licenses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-connect-stuck--cancel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC connect stuck / Cancel
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-hub-dropped-vs-disconnect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC hub dropped vs Disconnect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-false-self-part--hubparted-banner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC false self-PART / hubParted banner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rrc-history-shows-fewer-messages-than-retention" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RRC history shows fewer messages than Retention
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-sidecar-wont-start-or-health-poll-times-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar won't start or health poll times out
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-rrclxmf-requires-live-rns-stack-right-after-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum RRC/LXMF requires live rns-stack right after start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-cancel-then-connect-stuck-on-start_aborted" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Cancel then Connect stuck on START_ABORTED
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-sidecar-cargo-build-fails-register_packet_tap--reticulum_cargo_build_failed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar cargo build fails (register_packet_tap / RETICULUM_CARGO_BUILD_FAILED)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-autointerface-log-spam-on-macos-vpn-utun--enobufs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum AutoInterface log spam on macOS (VPN utun / ENOBUFS)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-local-dms-hang-with-autointerface--private-tcp-hub" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum local DMs hang with AutoInterface + private TCP hub
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-public-hub-tcp-blocked-fast-flapping-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum public hub TCP blocked (fast-flapping client)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-dm-shows-stored-at-propagation-node-but-the-reply-never-arrives-pn-island--preferred-mismatch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum DM shows "Stored at propagation node" but the reply never arrives (PN island / preferred mismatch)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-nomad-network-or-topology-api-returns-404" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Nomad Network or topology API returns 404
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-my-pages-hosting-enabled-but-not-serving" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad My Pages hosting enabled but not serving
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-page-that-used-to-show-my-name-is-now-generic-or-not-allowed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad page that used to show my name is now generic (or "not allowed")
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nomad-network-pages-hang-or-almost-never-load" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nomad Network pages hang or almost never load
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-sidecar-stops-during-dev-vite-hmr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum sidecar stops during dev (Vite HMR)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-proxyget-fetch-failed--many-reticulumipc-start-lines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum proxyGet fetch failed / many [ReticulumIPC] start lines
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-announce-interval-resets-after-saving-stack-settings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum announce interval resets after saving stack settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clear-announces-does-not-empty-the-peers-tab-under-rns-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clear announces does not empty the Peers tab under rns-stack
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-identity-hash-mismatch-stub-vs-live-stack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum identity hash mismatch (stub vs live stack)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-rsi--raw-identity-backup-restore-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum .rsi / raw identity backup restore fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-map-empty-or-no-markers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Map empty or no markers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum BLE RNode blocks Meshtastic/MeshCore BLE
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ble-rnode-pairing-fails-wrong-pin--no-pin-on-display--not-in-macos-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ble-rnode-bond-is-stale-os-still-shows-paired" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum BLE RNode bond is stale (OS still shows Paired)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-lxmf-duplicate-sending--orphaned-pending-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum LXMF duplicate Sending / orphaned pending rows
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-remote-propagation-sync-fails-or-never-completes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum remote propagation sync fails or never completes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-local-pn-hosting-not-discoverable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum local PN hosting not discoverable
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-stored-at-pn-but-sync-leaves-chat-empty" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: Stored at PN but Sync leaves Chat empty
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-pn-hosting-policy-apply-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum PN hosting policy apply fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-last-synced-time-looks-wrong-after-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum last synced time looks wrong after update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-colorado-mesh--letsmesh-wont-connect-after-upgrade" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore Colorado Mesh / LetsMesh won't connect after upgrade
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#meshcore-colorado-mesh-one-time-region-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MeshCore Colorado Mesh one-time region prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-announces--nomad--rrc-work-but-chat-fails-both-ways" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: announces / Nomad / RRC work but Chat fails both ways
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-dm-stuck-on-sending-meshchatx--shared-instance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum DM stuck on Sending (MeshChatX / shared instance)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-no-propagation-node-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: no propagation node configured
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-ratspeak-dms-work-but-mesh-client-stays-silent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum: Ratspeak DMs work but mesh-client stays silent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-interface-addeditdelete-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum interface add/edit/delete fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-i2p-interface-stays-down" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum I2P interface stays down
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-peers-stale-or-slow-with-many-hubs-or-testnets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Peers stale or slow with many hubs or testnets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rnode-wi-fi-interface-offline-or-wont-connect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RNode Wi-Fi interface offline or won't connect
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-admin-rnode-flasher-timeout-or-stalled-transfer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Admin: RNode flasher timeout or stalled transfer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-remote-transfer-fails-or-path_constrained" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Remote transfer fails or path_constrained
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-remote-inbound-rncp-blocked-ask-mode--policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Remote inbound rncp blocked (Ask mode / policy)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-hung-sidecar-watchdog-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum hung-sidecar watchdog restart
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-lxmf-paper-createingest-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum LXMF paper create/ingest fails
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-games-challenge-fails-or-board-does-not-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum Games challenge fails or board does not update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reticulum-lxst-voice-call-fails-or-is-silent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reticulum LXST voice call fails or is silent
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/troubleshooting-reticulum.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="reticulum-troubleshooting">Reticulum troubleshooting<a class="headerlink" href="#reticulum-troubleshooting" title="Permanent link">&para;</a></h1>
+<p>AGPL Rust sidecar (<code>mesh-client-reticulum</code>), interfaces, LXMF, RRC, and RNode Wi‑Fi. For general connection, log analysis, and bug-report help, see <a href="../troubleshooting/">Troubleshooting</a>. See also <a href="../reticulum/">reticulum.md</a> and <a href="../reticulum-sidecar-ipc/">Reticulum sidecar IPC</a>.</p>
+<h2 id="rrc-connect-stuck--cancel">RRC connect stuck / Cancel<a class="headerlink" href="#rrc-connect-stuck--cancel" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Hub stays on <strong>Connecting…</strong> / <strong>Awaiting welcome</strong>; Cancel appears in the RRC header.</p>
+<p><strong>Cause</strong>: Path discovery, Link handshake, and WELCOME can take up to the proxy timeout (~60 s). A previous connect may still be aborting.</p>
+<p><strong>What to do</strong>:</p>
+<ol>
+<li>Click <strong>Cancel</strong> — renderer sets disconnect intent and calls <code>POST /api/v1/rrc/disconnect</code> for that hub hash so the in-flight connect is aborted.</li>
+<li>Confirm the destination hash is 32 hex and the stack has a path (Peers / Topology).</li>
+<li>Retry connect; check sidecar logs for <code>rrc</code> timeouts (<code>path lookup</code>, <code>link proof</code>, <code>WELCOME</code>).</li>
+</ol>
+<h2 id="rrc-hub-dropped-vs-disconnect">RRC hub dropped vs Disconnect<a class="headerlink" href="#rrc-hub-dropped-vs-disconnect" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Hub shows <strong>Reconnecting…</strong> with an error, rooms still listed; or the hub disappears after you clicked Disconnect. Coming back after idle may also show a fresh <code>room …: registered</code> NOTICE and <code>/who</code> member list even though the laptop did not sleep and the hub process stayed up.</p>
+<p><strong>Cause (idle flaps):</strong> RRC session lifetime is the RNS Link. Initiator keepalive/stale (RTT-scaled; on a fast TCP path this can be ~5s keepalive / ~10s stale) tears the Link when keepalive echoes miss — Wi‑Fi power save, brief NAT stalls, or a pinned next-hop iface that died while another path to the hub still works. Sidecar then emits <code>rrc.disconnected</code> with <code>will_reconnect: true</code>, re-HELLO/JOINs, and the client re-arms <code>/who</code>. Log <code>reason=</code> values: <code>timeout</code> (keepalive/stale), <code>transport_error</code> (iface/endpoint terminal), <code>remote_close</code> (hub closed Link). A historical <code>resource_offers_closed</code> label was usually a raced real <code>Closed</code> reason (fixed in <code>rrc_link</code>).</p>
+<p><strong>What to do</strong>:</p>
+<ol>
+<li><strong>Unintended drop</strong> (<code>will_reconnect: true</code>): sidecar retries with backoff (~2–30 s), DropPath+RequestPath on timeout/transport/remote close so the next Link can attach on a live interface, preserves desired rooms (including join keys), and rejoins after WELCOME. Wait for <strong>Active</strong> or check <code>rrc.error</code> / link-close reasons in the log (<code>[useReticulumRuntime] rrc.disconnected … reason=</code>).</li>
+<li><strong>Explicit Disconnect / Cancel</strong> (<code>local_disconnect</code> or <code>will_reconnect: false</code>): that hub session is removed from the UI. Reconnect manually or rely on hub auto-join when the stack starts.</li>
+<li>Failed initial connect also clears the hub slot so it cannot exhaust the 8-session cap.</li>
+<li>If flaps are frequent on multi-iface stacks, check Connection → Interfaces for Auto/TCP competition and prefer a stable path to the hub.</li>
+</ol>
+<h2 id="rrc-false-self-part--hubparted-banner">RRC false self-PART / hubParted banner<a class="headerlink" href="#rrc-false-self-part--hubparted-banner" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Busy rooms show repeated “Left the room (hub parted you)” / self leave when other members part; or an involuntary hub PART looks like a kick/ban.</p>
+<p><strong>Cause</strong>: Older logic treated member-fanout <code>PARTED</code> as self-leave. Sidecar now classifies actor-facing self PARTED vs other-member fanout (<code>parted_concerns_self</code>); involuntary self-PART while the room is still desired queues silent rejoin and the UI uses neutral <code>rrc.moderation.hubParted</code> (not kick/ban copy).</p>
+<p><strong>What to do</strong>: Upgrade / restart the sidecar. If the banner appears after a true hub PART, re-join the room (or wait for auto-rejoin when still desired). Kick/ban wording is reserved for moderation notice paths only.</p>
+<h2 id="rrc-history-shows-fewer-messages-than-retention">RRC history shows fewer messages than Retention<a class="headerlink" href="#rrc-history-shows-fewer-messages-than-retention" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: App → Retention keeps <strong>10,000</strong> RRC messages, but opening a room only shows ~<strong>500</strong>.</p>
+<p><strong>Cause</strong>: Per-room UI hydrate caps at <code>RRC_ROOM_HISTORY_LOAD_COUNT</code> (<strong>500</strong>) via <code>rrcRoomHistory.ts</code>. SQLite may still hold up to the retention count; older rows are not all loaded into the session store.</p>
+<p><strong>What to do</strong>: This is expected. Retention prune (<code>db:pruneRrcMessagesByCount</code> / age) controls disk; the 500 cap is a session/UI hydrate limit, not a wipe.</p>
+<h2 id="reticulum-sidecar-wont-start-or-health-poll-times-out">Reticulum sidecar won't start or health poll times out<a class="headerlink" href="#reticulum-sidecar-wont-start-or-health-poll-times-out" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Connection tab <strong>Start stack</strong> fails; logs show <code>[ReticulumSidecar]</code> health poll timeout; <code>reticulum:getStatus</code> reports <code>lastError</code>. Identity <strong>Generate</strong> / <strong>Import</strong> errors with <code>Reticulum sidecar is not running</code>.</p>
+<p><strong>Health vs live ready:</strong> Electron health only requires <code>GET /api/v1/status</code> → <code>status: "ok"</code> (HTTP listening). That is <strong>not</strong> the same as <code>rns_ready</code> / <code>lxmf_ready</code> (true only after live RNS/LXMF attach). A green/configured Connection after Start means the API is up + identity known; Chat LXMF and RRC may still need a few seconds for live attach. Diagnostics may show <code>reticulum/rns-not-ready</code> / <code>reticulum/lxmf-not-ready</code> briefly — see <a href="#reticulum-rrclxmf-requires-live-rns-stack-right-after-start">requires live right after start</a>.</p>
+<p><strong>Checks</strong>:</p>
+<ol>
+<li><strong>Identity wizard</strong>: click <strong>Start stack</strong> at the top of the Reticulum Connection panel before generating or importing a mnemonic. The sidecar must be running for <code>reticulum:proxyGet</code> / <code>proxyPost</code> identity routes.</li>
+<li><strong>Dev — binary missing</strong>: build once from repo root: <code>pnpm run reticulum:sidecar:build</code> (requires <a href="https://rustup.rs/">Rust</a>; see <a href="../development-environment/#reticulum-sidecar-optional">development-environment.md</a>). Electron <strong>Start stack</strong> can auto-run <code>cargo build</code> on first click, but you need <code>cargo</code> on <code>PATH</code>. Error text <code>sidecar binary not found</code> means <code>reticulum-sidecar/target/debug/mesh-client-reticulum</code> does not exist yet.</li>
+<li><strong>Dev — run / health</strong>: <code>pnpm run reticulum:sidecar:dev</code> or confirm <code>curl http://127.0.0.1:19437/api/v1/status</code> after <strong>Start stack</strong> (<code>status</code> should be <code>ok</code>; <code>rns_ready</code>/<code>lxmf_ready</code> may still be <code>false</code> for a short window).</li>
+<li><strong>Packaged app — sidecar missing from installer</strong>: older Electron releases (before CI bundled the sidecar) ship without <code>mesh-client-reticulum</code> under <code>resources/reticulum-sidecar/</code>; the UI shows a message about a missing bundled sidecar — <strong>upgrade to a newer release</strong> (or use Flatpak on Linux). WoA needs the <strong>arm64</strong> installer (<code>Mesh-client-Setup-{version}-arm64.exe</code>) with an <strong>arm64</strong> sidecar inside, not the x64 binary.</li>
+<li><strong>Packaged app — verify install</strong>: confirm <code>mesh-client-reticulum</code> (or <code>.exe</code> on Windows) exists under the app resources (<code>reticulum-sidecar/</code> beside the executable).</li>
+<li><strong>macOS Gatekeeper</strong>: unsigned local sidecar builds may need <code>xattr -cr</code> on the binary or ad-hoc signing for dev.</li>
+<li><strong>Port conflict</strong>: sidecar picks an ephemeral port; stale processes under <code>~/Library/Application Support/mesh-client/reticulum/</code> are rare — quit the app fully and retry.</li>
+</ol>
+<p>Keep Rust current with <code>pnpm run update</code> (runs <code>rustup update</code> and rebuilds the sidecar when <code>cargo</code> is available).</p>
+<h2 id="reticulum-rrclxmf-requires-live-rns-stack-right-after-start">Reticulum RRC/LXMF requires live rns-stack right after start<a class="headerlink" href="#reticulum-rrclxmf-requires-live-rns-stack-right-after-start" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: For the first few seconds after <strong>Start stack</strong>, Chat DM send/reaction or RRC hub connect fails with <code>lxmf send requires live rns-stack sidecar</code>, <code>lxmf reaction requires live rns-stack sidecar</code>, or <code>rrc connect requires live rns-stack sidecar</code> (humanized toasts). Connection may already show <strong>configured</strong>.</p>
+<p><strong>Cause</strong>: Listen-first startup — HTTP is up (<code>status: ok</code>) and the UI marks configured when identity is known, but <code>attach_live</code> has not finished. LXMF/RRC fail closed until the live bridge is ready. RRC auto-connect retries about every <strong>500 ms</strong> while hubs are pending and wakes on the configured event.</p>
+<p><strong>What to do</strong>: Wait a few seconds and retry (or let RRC auto-join settle). If errors persist after <code>rns_ready</code>/<code>lxmf_ready</code> are true in <code>/api/v1/status</code>, treat as a real stack failure (restart stack; check logs).</p>
+<h2 id="reticulum-cancel-then-connect-stuck-on-start_aborted">Reticulum Cancel then Connect stuck on START_ABORTED<a class="headerlink" href="#reticulum-cancel-then-connect-stuck-on-start_aborted" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Click <strong>Cancel</strong> during <strong>Start stack</strong> (especially while cargo is building), then <strong>Connect</strong> / <strong>Start</strong> again; UI or logs show <code>RETICULUM_SIDECAR_START_ABORTED</code> and the stack never comes up.</p>
+<p><strong>Cause (fixed):</strong> Older builds rejoined the aborted start promise. Current builds set an abort flag and return from <strong>Cancel</strong> without waiting on cargo/BLE; the next <strong>start</strong> waits for the doomed promise to clear, then starts fresh. Cancel during cargo does not tear down Meshtastic/MeshCore GATT; LoRa BLE uses <code>ensureForBle()</code> independently of Reticulum UI Start.</p>
+<p><strong>What to do</strong>: Upgrade to a build with listen-first Cancel fix. If you still see <code>START_ABORTED</code> after Cancel+Connect on a current build, quit the app fully and <strong>Start stack</strong> once.</p>
+<h2 id="reticulum-sidecar-cargo-build-fails-register_packet_tap--reticulum_cargo_build_failed">Reticulum sidecar cargo build fails (<code>register_packet_tap</code> / <code>RETICULUM_CARGO_BUILD_FAILED</code>)<a class="headerlink" href="#reticulum-sidecar-cargo-build-fails-register_packet_tap--reticulum_cargo_build_failed" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: <strong>Start stack</strong> fails; logs show <code>RETICULUM_CARGO_BUILD_FAILED</code> or Rust errors such as <code>method not found in ReticulumHandle</code>, <code>register_packet_tap</code>, or <code>PacketTapEvent</code>. Electron may surface <code>RETICULUM_RNS_PATCH_MISSING</code> after upgrading mesh-client.</p>
+<p><strong>Cause</strong>: Full-stack (<code>rns-stack</code>) dev builds call <code>register_packet_tap</code> in the sidecar, but that API lives in a local rsReticulum overlay (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/rsReticulum-packet-tap.patch"><code>reticulum-sidecar/patches/rsReticulum-packet-tap.patch</code></a>) until <a href="https://github.com/ratspeak/rsReticulum/pull/10">ratspeak/rsReticulum#10</a> merges. CI applies overlays via <code>clone-ratspeak-stack.sh</code>; a <code>.rsstack/rsReticulum</code> checkout without the overlay fails to compile.</p>
+<p><strong>Fix</strong> (canonical recover path):</p>
+<ol>
+<li>From mesh-client repo root, re-float the <code>.rsstack/</code> workspace and re-apply overlays:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./scripts/clone-ratspeak-stack.sh
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
+</code></pre></div>
+   <code>clone-ratspeak-stack.sh</code> floats <code>rsReticulum</code> / <code>rsLXMF</code> / <code>rsNomad</code> to <code>origin/main</code> (override with <code>RS_*_REF</code> for bisect) and fails if an overlay will not apply.</li>
+<li>If the <code>.rsstack/</code> checkouts already exist and you only need overlays: <code>./scripts/ensure-rsReticulum-patches.sh</code> then <code>pnpm run reticulum:sidecar:build</code>.</li>
+<li><strong>Manual apply</strong> (single overlay):
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>-C<span class="w"> </span>.rsstack/rsReticulum<span class="w"> </span>apply<span class="w"> </span>../../reticulum-sidecar/patches/rsReticulum-packet-tap.patch
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
+</code></pre></div></li>
+<li>On <strong>newer rsReticulum</strong> checkouts that already include the auto-beacon utun fix upstream, only the packet-tap patch is required — <code>apply-rsReticulum-auto-beacon-utun.sh</code> is a no-op.</li>
+</ol>
+<p>Quit mesh-client fully, reopen, and click <strong>Start stack</strong> again.</p>
+<h2 id="reticulum-autointerface-log-spam-on-macos-vpn-utun--enobufs">Reticulum AutoInterface log spam on macOS (VPN utun / ENOBUFS)<a class="headerlink" href="#reticulum-autointerface-log-spam-on-macos-vpn-utun--enobufs" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Log panel floods with <code>[ReticulumSidecar] auto: beacon TX failed</code> on <code>utun0</code>, <code>utun4</code>, or similar every ~1.6 s. Error text may include <code>No buffer space available (os error 55)</code>. Diagnostics may show an <strong>AutoInterface beacon</strong> info row for VPN tunnel interfaces.</p>
+<p><strong>Cause</strong>: Reticulum <strong>AutoInterface</strong> discovers link-local IPv6 on macOS VPN tunnel interfaces (<code>utun*</code>). Those interfaces often cannot transmit IPv6 multicast beacons, so the sidecar retries indefinitely and fills <code>mesh-client.log</code>.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li><strong>Update mesh-client</strong> to a build that includes the rsReticulum overlay <code>rsReticulum-auto-beacon-utun.patch</code> (skips <code>utun*</code> during enumeration and backs off repeated TX failures).</li>
+<li><strong>Dev rebuild</strong>: from repo root, prefer the canonical recover path, then rebuild:
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./scripts/clone-ratspeak-stack.sh
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
+</code></pre></div>
+   Or apply individual overlays (<code>./scripts/apply-rsReticulum-packet-tap.sh</code>, <code>./scripts/apply-rsReticulum-auto-beacon-utun.sh</code>, <code>./scripts/apply-rsReticulum-link-client-proof-budget.sh</code>, …) then <code>pnpm run reticulum:sidecar:build</code>.</li>
+<li><strong>Workaround on old builds</strong>: disable <strong>AutoInterface</strong> under Connection → Interfaces if LAN discovery is not needed (TCP/RNode paths still work).</li>
+<li><strong>Physical NIC failures</strong> (<code>en0</code>, <code>wlan0</code>, …): restart the stack; check firewall/multicast permissions — that indicates real LAN discovery failure, not VPN noise.</li>
+<li><strong>Local DMs hang with Auto + LAN TCP hub</strong> — see <a href="#reticulum-local-dms-hang-with-autointerface--private-tcp-hub">Reticulum local DMs hang with AutoInterface + private TCP hub</a>.</li>
+</ol>
+<p>Log path: <code>~/Library/Application Support/mesh-client/mesh-client.log</code> (macOS).</p>
+<h2 id="reticulum-local-dms-hang-with-autointerface--private-tcp-hub">Reticulum local DMs hang with AutoInterface + private TCP hub<a class="headerlink" href="#reticulum-local-dms-hang-with-autointerface--private-tcp-hub" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: LXMF Direct to a LAN peer stalls on <strong>Sending</strong> (or takes minutes) while <strong>AutoInterface</strong> is enabled and a <strong>private</strong> TCP/UDP hub is also up (e.g. local transport at <code>192.168.x.x</code>). Disabling Auto and restarting the stack makes the same DMs work over the hub (<code>received_via</code> / path interface shows TCP). Announce flood is not required to reproduce.</p>
+<p><strong>Cause</strong>: AutoInterface peers are normal Reticulum <strong>0-hop</strong> neighbors. Transport prefers fewest hops; Auto and TCP are both <code>network</code> medium. A fresher Auto path can stay <strong>active</strong> even when a private hub path to the same peer is also 0-hop (equal-hop tie / learn order). If that Auto link is unhealthy (multicast, carrier, beacon issues), Direct waits on Auto while the private hub path sits unused as a backup. A 0-hop path <strong>to the hub itself</strong> does not mean Direct already chose the hub for the peer.</p>
+<p><strong>Automatic recovery</strong> (mesh-client sidecar):</p>
+<ol>
+<li><strong>Health preempt</strong> — If Auto looks degraded for delivery (beacon/carrier/status) and a live <strong>private</strong> path exists (RFC1918 / IPv6 ULA or link-local / <code>.local</code> TCP/UDP), suppress Auto and open Direct on that private path before waiting out a full Auto link hang.</li>
+<li><strong>Failure failover</strong> — If Direct still fails or times out on Auto, exhaust backups <strong>private non-Auto → public hubs → preferred PN</strong> (does not preempt healthy Auto to the internet).</li>
+</ol>
+<p>Healthy Auto is left preferred (RNS default). Public hubs are never chosen by the health preempt.</p>
+<p><strong>Manual workaround</strong>: Connection → Interfaces → disable <strong>Auto</strong> → restart stack if prompted. Keep the private hub up; confirm it is not <code>ECONNREFUSED</code> in the log (<code>hostLink</code> TCP probe).</p>
+<h2 id="reticulum-public-hub-tcp-blocked-fast-flapping-client">Reticulum public hub TCP blocked (fast-flapping client)<a class="headerlink" href="#reticulum-public-hub-tcp-blocked-fast-flapping-client" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: A public TCP hub (e.g. <strong>Ratspeak</strong>, <strong>RMAP World</strong>) shows <strong>down</strong> in Connection → Interfaces. The amber Connection banner says <strong>TCP hub unreachable</strong> (the remote instance may be offline <strong>or blocking connections</strong>, including after frequent app/stack restarts) or, after five stack starts in 12 hours, <strong>hub likely blocked your IP after frequent stack restarts</strong>. Sidecar logs may show <code>TCP read: EOF</code>, <code>Connection reset by peer</code>, and <code>reconnecting in 5s name = …</code> in a loop. A host TCP probe can still succeed while the RNS session is rejected.</p>
+<p><strong>Cause</strong>: Reticulum <strong>1.4.0+</strong> <code>BackboneInterface</code> listeners block client IPs that <strong>fast-flap</strong> — by default, <strong>five TCP sessions shorter than ~20 seconds within 12 hours</strong> triggers a <strong>12-hour IP block</strong> (<a href="https://reticulum.network/manual/interfaces.html">Interfaces manual</a>). Hubs upgraded to 1.4.0 (RMAP World mid-2025; Ratspeak more recently) enforce this policy. Common mesh-client triggers:</p>
+<ul>
+<li><strong>Quick mesh-client or stack restarts</strong> — each restart drops the RNS TCP session; if the hub saw a short session, it counts as one flap.</li>
+<li><strong>Share instance / duplicate Reticulum apps</strong> — competing sessions connect and drop.</li>
+<li><strong>Reconnect or auto-recovery loops</strong> — repeated stack restarts while the hub is already rejecting make it worse.</li>
+</ul>
+<p>mesh-client counts <strong>stack starts</strong> (persisted across app restarts), not sidecar log timestamps and not whether each run lasted under 20 seconds. Testers who restart the client often still hit the notice. After five stack starts in 12 hours it shows the lockout banner, hides <strong>Restart stack</strong> on that alert, and skips auto stack restart. Host TCP probes run only before the sidecar is ready.</p>
+<p><strong>What to do</strong>:</p>
+<ol>
+<li><strong>Stop restarting</strong> the app or stack — more restarts add flaps and extend the block.</li>
+<li>Connection → Interfaces → <strong>disable</strong> the affected hub temporarily.</li>
+<li>Fully quit mesh-client and any other Reticulum apps (MeshChatX, Ratspeak, standalone <code>rnsd</code>) if <strong>Share instance</strong> is enabled.</li>
+<li><strong>Wait up to 12 hours</strong> before re-enabling the hub (matches default hub <code>fast_flapping_block_time</code>).</li>
+<li>If you need connectivity sooner, use a different network path (another hub, LAN transport, or RF) — the block is per <strong>source IP</strong>, not identity.</li>
+</ol>
+<h2 id="reticulum-dm-shows-stored-at-propagation-node-but-the-reply-never-arrives-pn-island--preferred-mismatch">Reticulum DM shows "Stored at propagation node" but the reply never arrives (PN island / preferred mismatch)<a class="headerlink" href="#reticulum-dm-shows-stored-at-propagation-node-but-the-reply-never-arrives-pn-island--preferred-mismatch" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: A propagated DM Completes as <strong>Stored at propagation node</strong> on the sender, and the sender's periodic <strong>Propagation sync</strong> also Completes, yet the reply never lands in Chat. Direct (path-based) DMs between the same two apps work; only store-and-forward replies go missing. Often seen when two peers each prefer a <strong>different</strong> PN (e.g. one on <code>0e972735…</code>, the other syncing <code>11111111…</code>), or when an external app (Sideband, Columba, Retichat) reports "single checkmark / parked at PN".</p>
+<p><strong>Cause</strong>: "Stored at PN" only means the message was deposited on the <strong>sender's</strong> chosen deposit node. The recipient only receives it if they <strong>sync (or peer) that same PN island</strong>. If the recipient's Preferred / sync target is a different PN, and those PNs are not peered/replicating, a successful sync on the recipient's node retrieves nothing for that deposit. Sync <strong>Completing ≠ retrieving that specific deposit</strong>. Shared, enabled backup PNs (e.g. both have <code>deadbeef</code> enabled) do <strong>not</strong> help when the cascade already succeeded on the first preferred remote and stopped there.</p>
+<p><strong>Diagnose</strong>:</p>
+<ol>
+<li>On both sides, note the <strong>Preferred</strong> PN hash in <strong>Network → Propagation nodes</strong> (and mode: Off / Auto / Manual). For external apps, ask the peer for <strong>their</strong> preferred/inbox PN hash.</li>
+<li>In a <strong>Developer</strong> support bundle: <code>debug-snapshot.json</code> → <code>propagationClient</code> shows each side's <code>mode</code>, <code>preferredId</code>, <code>resolvedSyncTargetId</code>, <code>autoTarget</code>, and <code>lastSyncError</code>; <code>reticulum/lxmf-outbound.log</code> shows <code>propagation-deposit … pn_hash=… cascade_step=… delivery_method=…</code> (the <strong>actual deposit island</strong>) and <code>propagation-retrieve</code> lines for what sync pulled.</li>
+<li>Compare the sender's deposit <code>pn_hash</code> against the recipient's <code>resolvedSyncTargetId</code>. A mismatch with non-peered PNs is the island gap.</li>
+</ol>
+<p><strong>Fix</strong>: Put both peers on a <strong>shared</strong> propagation node (same Preferred hash, or PNs known to peer/replicate), or switch mode to <strong>Auto</strong> so each side tracks the best commonly-reachable PN. When testing against external apps, record their preferred PN hash and align it with mesh-client's Preferred.</p>
+<p><strong>Repro matrix</strong> (sender deposit island vs recipient sync target):</p>
+<table>
+<thead>
+<tr>
+<th>Sender Preferred</th>
+<th>Recipient sync target</th>
+<th>PNs peered?</th>
+<th>Reply retrieved?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0e972735…</code></td>
+<td><code>11111111…</code></td>
+<td>no</td>
+<td><strong>No</strong> (island gap)</td>
+</tr>
+<tr>
+<td><code>0e972735…</code></td>
+<td><code>11111111…</code></td>
+<td>yes</td>
+<td>Yes (peers replicate)</td>
+</tr>
+<tr>
+<td><code>deadbeef…</code> (shared)</td>
+<td><code>deadbeef…</code> (shared)</td>
+<td>n/a</td>
+<td>Yes (same island)</td>
+</tr>
+<tr>
+<td><code>0e972735…</code></td>
+<td><code>0e972735…</code></td>
+<td>n/a</td>
+<td>Yes (same node)</td>
+</tr>
+</tbody>
+</table>
+<p>Force the propagated path (peer offline / Direct disabled) and compare the sender's <code>propagation-deposit … pn_hash</code> against the recipient's <code>propagation-retrieve</code> / <code>propagationClient.resolvedSyncTargetId</code> in a Developer bundle to confirm which row applies.</p>
+<h2 id="reticulum-nomad-network-or-topology-api-returns-404">Reticulum Nomad Network or topology API returns 404<a class="headerlink" href="#reticulum-nomad-network-or-topology-api-returns-404" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Device log shows <code>sidecar GET /api/v1/nomadnetwork/nodes failed: 404</code> or <code>/api/v1/topology</code> <strong>404</strong> while the sidecar process is running. Nomad Network tab may show <strong>API unavailable</strong>.</p>
+<p><strong>Cause</strong>: The running <code>mesh-client-reticulum</code> binary is <strong>older than</strong> the Rust sources in <code>reticulum-sidecar/</code> (routes were added after the binary was built). Dev auto-build only ran when the binary was missing, or you have not rebuilt since pulling.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>From repo root: <code>pnpm run reticulum:sidecar:build</code></li>
+<li>Quit mesh-client fully, reopen, <strong>Connection → Start stack</strong></li>
+<li>Confirm with <code>curl</code> against the sidecar port from logs: <code>/api/v1/nomadnetwork/nodes</code> and <code>/api/v1/topology</code> return JSON 200</li>
+</ol>
+<p>In dev, <strong>Start stack</strong> now rebuilds when <code>reticulum-sidecar/src/**/*.rs</code> or <code>Cargo.toml</code> is newer than the debug binary.</p>
+<h2 id="nomad-my-pages-hosting-enabled-but-not-serving">Nomad My Pages hosting enabled but not serving<a class="headerlink" href="#nomad-my-pages-hosting-enabled-but-not-serving" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: After relaunch, <strong>Nomad Network → My Pages</strong> shows no green <strong>Serving to network</strong> chip even though you left serving on; or Start serving fails after choosing a folder. Status may show <code>last_error</code> such as <code>content_source_required</code> / <code>content_source_unavailable</code> / <code>invalid_content_source</code>.</p>
+<p><strong>Cause</strong>: Hosting requires a watched folder. The remembered content folder is missing, moved, or invalid (neither <code>pages/</code> nor <code>.mu</code> files), serving was enabled without a content source, or auto-restore failed after the Reticulum stack came up. Preference <code>nomad_serving_enabled</code> may stay true so hosting can retry once the folder is fixed.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Open <strong>My Pages</strong>, click <strong>Choose folder</strong>, and select the site root (directory with <code>pages/</code>) or the <code>pages/</code> directory.</li>
+<li>Click <strong>Start serving</strong> if it did not auto-resume (Start stays disabled until a folder is chosen).</li>
+<li>Check <strong>Log → Analyze</strong> (Reticulum protocol) for <strong>Nomad Page Hosting Issues</strong> (<code>[nomad-serving]</code> / <code>[NomadHosting]</code>), or <strong>Export for GitHub</strong> — those lines are in <code>mesh-client.log</code>.</li>
+</ol>
+<h2 id="nomad-page-that-used-to-show-my-name-is-now-generic-or-not-allowed">Nomad page that used to show my name is now generic (or "not allowed")<a class="headerlink" href="#nomad-page-that-used-to-show-my-name-is-now-generic-or-not-allowed" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: A Nomad page that used to greet you by name, show your account, or let you in now shows a generic version, asks you to log in, or returns the node's "not allowed" page.</p>
+<p><strong>Cause</strong>: mesh-client now browses Nomad nodes <strong>anonymously by default</strong>. Earlier builds sent your Reticulum identity to every node; now a node only receives it if you turn on identification for that node.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Open the node and click the <strong>fingerprint</strong> button in the browser toolbar, then confirm. The page reloads with your identity.</li>
+<li>To stop later, click the fingerprint button again or the <strong>Identifying</strong> badge in the node list. This only affects future connections — the node keeps any identity it already received.</li>
+</ol>
+<p><strong>Hosting your own page restricted with Access?</strong> Self-preview (<strong>Open in browser</strong> in My Pages) ignores <code>.allowed</code> lists, so test restrictions from another node. An <code>.allowed</code> file with no valid 32-character hashes blocks everyone.</p>
+<h2 id="nomad-network-pages-hang-or-almost-never-load">Nomad Network pages hang or almost never load<a class="headerlink" href="#nomad-network-pages-hang-or-almost-never-load" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Most Nomad pages spin for a long time then fail; a few nearby nodes load quickly. UI shows humanized errors (via <code>nomadPageErrorHumanize.ts</code>) instead of raw sidecar codes when recognized.</p>
+<p><strong>Humanized error categories</strong> (sidecar code → user message):</p>
+<table>
+<thead>
+<tr>
+<th>Sidecar code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path_timeout</code></td>
+<td>No route to the node (path lookup timed out)</td>
+</tr>
+<tr>
+<td><code>pubkey_not_found</code></td>
+<td>Destination identity key not cached yet — wait for a Nomad announce</td>
+</tr>
+<tr>
+<td><code>link_timeout</code></td>
+<td>Link could not be established in time (UI may say path OK vs stale)</td>
+</tr>
+<tr>
+<td><code>response_timeout</code></td>
+<td>Link opened but page payload did not arrive in time</td>
+</tr>
+<tr>
+<td><code>missing_identity_hash</code></td>
+<td>No remembered identity for the node yet</td>
+</tr>
+<tr>
+<td><code>network_not_ready</code></td>
+<td>No usable path/interface yet — wait for hub/path or restart stack</td>
+</tr>
+<tr>
+<td><code>nomad_not_serving</code></td>
+<td>Remote node is not serving Nomad pages</td>
+</tr>
+<tr>
+<td><code>invalid_url</code></td>
+<td>Malformed Nomad page/file URL</td>
+</tr>
+<tr>
+<td><code>transport_unavailable</code></td>
+<td>Reticulum transport unavailable — restart stack</td>
+</tr>
+<tr>
+<td><code>sidecar_not_running</code></td>
+<td>Sidecar not running — start stack from Connection</td>
+</tr>
+<tr>
+<td><code>response_too_large</code></td>
+<td>Remote response exceeded the sidecar size cap</td>
+</tr>
+<tr>
+<td><code>nomad_busy</code></td>
+<td>Another Nomad page/file query still holds the link lock, or a page navigation preempted an in-flight query. In-page <code>/media</code> images queue (do not cancel each other); rebuild sidecar if multiple images fail with this code on an older build.</td>
+</tr>
+</tbody>
+</table>
+<p>Unrecognized codes pass through unchanged.</p>
+<p><strong>Images reload every revisit:</strong> Page/image LRUs are <strong>in-memory only</strong> (lost on Close viewer, Clear caches, or app restart). <code>/media</code> blobs larger than <strong>2 MiB base64</strong> (~1.5 MiB binary) are shown once but never stored — see <a href="../reticulum/#nomad-browser-caches">reticulum.md § Nomad browser caches</a>.</p>
+<p>TCP/network Nomad Links use path-scaled initiator hops (<code>link_hops = clamp(path_hops, 3, 7)</code>) and a LinkClient proof wait of the <strong>remaining overall MeshChat deadline</strong> (~45s TCP after instant pubkey recall), matching v5.25.0. Do not cap LRPROOF at hops×6 or a 30s floor — that false-failed multi-hop hub pages that still load on release. First attempts use a cached path when present (no DropPath storm); missing paths RequestPath briefly and may return <code>path_timeout</code>. On TCP <code>link_timeout</code>, the sidecar suppresses the dead iface, drops the failed via, promotes ranked path-slot backups / other live hubs (extra RequestPath when another TCP/RF iface is up), then retries inside the same fetch. LXMF Direct chat uses the same path exhaustion before the <strong>multi-PN cascade</strong>. <code>force_path_ok=true</code> means rediscovered after absence only (cache hits log <code>force_path_ok=false</code>). Failure logs (<code>[nomadNetworkStore] … fetch failed</code> and sidecar <code>Nomad Link query failed</code>) include <code>path_hops</code>, <code>link_hops</code>, <code>proof_budget_secs</code>, <code>force_path_ok</code>, <code>path_ensure_kind</code>, <code>elapsed_ms</code>, <code>tried_interfaces</code>, <code>failover_rounds</code>, <code>iface</code>, and <code>raw=</code>. UI errors distinguish cached-path vs rediscovered-path link failures.</p>
+<p><strong>Cause</strong>: Older <code>LinkClient</code> always waited for a fresh path-response announce for the destination public key, even when Nomad announces had already cached it. Successful fetches could also deregister all <code>nomadnetwork.node</code> announce handlers. Distant/high-hop nodes can still time out at the path stage (expected RF/mesh reachability limits).</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Ensure <code>.rsstack/rsReticulum</code> is on floated <code>origin/main</code> — handler-free <code>resolve_destination_on_transport</code> in <code>crates/rns-runtime/src/link_client.rs</code> supersedes the retired <code>rsReticulum-link-client-nomad</code> overlay (see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md">patches/README.md</a>).</li>
+<li>Rebuild sidecar: <code>pnpm run reticulum:sidecar:build</code>, restart stack.</li>
+<li>Prefer low-hop nodes while testing; hop count is shown in the Nomad list.</li>
+<li>Match the humanized message to the table above — <code>path_timeout</code> / high hops often mean RF reachability limits, not a mesh-client bug.</li>
+<li>For TCP <code>link_timeout</code>, check log fields <code>tried_interfaces</code> / <code>failover_rounds</code> / <code>iface</code> first (primary signal after path failover), then <code>path_hops</code> / <code>link_hops</code> / <code>proof_budget_secs</code> / <code>raw=</code> — UI hop counts can lag the path table; trust <code>path_hops</code>. Persistent fails after the full proof budget usually mean the peer/hub did not return LRPROOF.</li>
+</ol>
+<h2 id="reticulum-sidecar-stops-during-dev-vite-hmr">Reticulum sidecar stops during dev (Vite HMR)<a class="headerlink" href="#reticulum-sidecar-stops-during-dev-vite-hmr" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: After saving a file in <code>pnpm run dev</code>, many <code>[ReticulumIPC] proxyGet failed: Reticulum sidecar is not running</code> lines appear; Nomad Network / Network (propagation, identity) panels fail until you restart the stack.</p>
+<p><strong>Cause</strong>: Hot module reload remounted the Reticulum runtime, which previously called <code>reticulum:stop</code> on every unmount.</p>
+<p><strong>Fix</strong>: Current dev builds <strong>preserve</strong> the sidecar across HMR remounts. If you still see this on an older build, click <strong>Start stack</strong> again on Connection. Explicit <strong>Disconnect</strong> / app quit still stops the sidecar.</p>
+<h2 id="reticulum-proxyget-fetch-failed--many-reticulumipc-start-lines">Reticulum <code>proxyGet</code> fetch failed / many <code>[ReticulumIPC] start</code> lines<a class="headerlink" href="#reticulum-proxyget-fetch-failed--many-reticulumipc-start-lines" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Device log or devtools shows <code>Error occurred in handler for 'reticulum:proxyGet': TypeError: fetch failed</code>, often in bursts of three or more at once. The app log may also show dozens of <code>[ReticulumIPC] start</code> entries within a few seconds while Nomad/Network/Peers panels stay empty or stale.</p>
+<p><strong>Cause</strong>: Overlapping sidecar start attempts restart the process before its HTTP server is ready (start/reconnect storm). Panels keep calling <code>proxyGet</code> against a dead or stale localhost port during the churn.</p>
+<p><strong>Fix</strong>: Current builds serialize sidecar start in the main process and suppress autostart/reconnect feedback loops during an in-flight start. If you still see this: disable <strong>Autostart stack</strong> on Connection, click <strong>Start stack</strong> once, wait up to ~30s for the health poll, then reopen other Reticulum tabs.</p>
+<h2 id="reticulum-announce-interval-resets-after-saving-stack-settings">Reticulum announce interval resets after saving stack settings<a class="headerlink" href="#reticulum-announce-interval-resets-after-saving-stack-settings" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: You set an announce interval on the Network tab, then saved <strong>Stack settings</strong> (transport / log level) and the interval returned to <strong>0</strong>.</p>
+<p><strong>Cause</strong>: Older sidecars treated <code>PUT /api/v1/stack/settings</code> as a full replace. A partial JSON body omitted <code>announce_interval_sec</code>, which deserialized as <strong>0</strong>.</p>
+<p><strong>Fix</strong>: Current builds merge omitted fields on the sidecar under a config lock. Clients should PUT only the fields they intend to change. <code>GET /api/v1/stack/settings</code> and missing keys in rnsd config default to <strong>3600</strong> s (1 h) after bootstrap migration — a value of <strong>0</strong> in the UI means an explicit setting.</p>
+<h2 id="clear-announces-does-not-empty-the-peers-tab-under-rns-stack">Clear announces does not empty the Peers tab under rns-stack<a class="headerlink" href="#clear-announces-does-not-empty-the-peers-tab-under-rns-stack" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: <strong>Clear announces</strong> on Network succeeds but peers reappear after refresh.</p>
+<p><strong>Cause</strong>: With the full <strong><code>rns-stack</code></strong> build, <code>DELETE /api/v1/announces</code> clears the stub cache only; the live RNS path table repopulates on the next <code>GET /api/v1/peers</code>.</p>
+<p><strong>Workaround</strong>: Expect peers to return while connected to a live network; use the stub sidecar for offline UI testing of an empty peer list.</p>
+<h2 id="reticulum-identity-hash-mismatch-stub-vs-live-stack">Reticulum identity hash mismatch (stub vs live stack)<a class="headerlink" href="#reticulum-identity-hash-mismatch-stub-vs-live-stack" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: UI shows a configured identity hash that does not match Ratspeak/rsReticulum on disk, or LXMF peers cannot reach you.</p>
+<p><strong>Cause</strong>: The stub stack can mark identity configured in <code>mesh_client_stack.json</code> before <code>config/identity</code> exists; the live bridge may spawn a fresh RNS identity until the identity file is written.</p>
+<p><strong>Fix</strong>: Generate or import identity with the stack running; restart the stack after identity changes. Compare <code>GET /api/v1/identity/status</code> with your Ratspeak identity file.</p>
+<h2 id="reticulum-rsi--raw-identity-backup-restore-fails">Reticulum <code>.rsi</code> / raw identity backup restore fails<a class="headerlink" href="#reticulum-rsi--raw-identity-backup-restore-fails" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Importing a Ratspeak <code>.rsi</code> fails with an incorrect PIN message, or raw identity file import rejects the file.</p>
+<p><strong>Cause / fix</strong>:</p>
+<ol>
+<li><strong><code>.rsi</code> PIN</strong> — use the same PIN (≥6 characters) chosen at export; wrong PIN or a tampered vault fails closed. Raw identity export also requires this PIN gate on the sidecar API.</li>
+<li><strong>mesh-client.identity.v1</strong> — metadata-only backups are no longer supported; re-export from a current build (<code>.rsi</code> or raw 64-byte identity).</li>
+<li><strong>Private key text vs file picker</strong> — the Network panel textarea accepts <strong>hex / base64 / URL-safe base64 / base32</strong> text. <code>reticulum:showIdentityImportDialog</code> accepts only a <strong>raw binary 64-byte</strong> identity file (not a text file of hex/base64).</li>
+<li><strong>Oversized <code>.rsi</code></strong> — import is size-capped; use a normal Ratspeak/mesh-client backup, not an unrelated huge JSON dump.</li>
+</ol>
+<h2 id="reticulum-map-empty-or-no-markers">Reticulum Map empty or no markers<a class="headerlink" href="#reticulum-map-empty-or-no-markers" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Map tab shows empty state, sidebar list only, or no markers despite peers on the Peers tab.</p>
+<ol>
+<li><strong>Stack not running</strong> — start the stack from Connection; Map ingest requires live <code>rns-stack</code>.</li>
+<li><strong>No discovery announces heard yet</strong> — only interfaces with <code>discoverable=yes</code> appear. Wait for transport propagation; stack identity re-announce default is <strong>3600 s (1 h)</strong> when unset (RMAP publish interval remains separate; see Network → RMAP controls).</li>
+<li><strong>LoRa without TCP hub</strong> — Diagnostics / config audit may show <code>rmap_no_tcp_hub</code>. Enable <code>rmap.world:4242</code> or another TCP hub and restart the stack.</li>
+<li><strong>Missing GPS in announce</strong> — nodes without latitude/longitude appear in the list panel only (no map marker).</li>
+<li><strong>Global coverage</strong> — the in-app map shows <strong>heard</strong> opt-in nodes only; use <strong>Global map</strong> (rmap.world) for worldwide view.</li>
+<li><strong><code>discover_interfaces</code></strong> — sidecar enables <code>discover_interfaces = Yes</code> on bootstrap; restart the stack after upgrading if the Map tab stays empty on an old config.</li>
+<li><strong>Stub sidecar</strong> — dev builds without <code>rns-stack</code> return an empty discovered list.</li>
+<li><strong>Filter empty</strong> — interface-type filter pills may exclude all rows; try <strong>All</strong>.</li>
+<li><strong>Refresh errors</strong> — transient sidecar errors show inline <code>refreshFailed</code> without clearing last-good markers.</li>
+<li><strong>No publish-capable interface</strong> — Auto and outbound TCP client types cannot publish RMAP discovery. Eligible types are RNode / KISS / AX.25 KISS (with serial), I2P, and Backbone (requires <code>reachable_on</code>). UDP, pipe, BLE peer, and RNode Multi are not advertizable by rsReticulum.</li>
+<li><strong>Partial publishing (amber X of Y)</strong> — Connection shows <strong>publishing X of Y</strong> in amber when some but not all eligible interfaces have <code>discoverable=yes</code>. TCP hubs never count toward Y. Use Network → <strong>Publish on RMAP v4</strong> (check again while indeterminate) or per-interface <strong>RMAP</strong> toggles on Connection to sync the rest.</li>
+</ol>
+<h2 id="reticulum-ble-rnode-blocks-meshtasticmeshcore-ble">Reticulum BLE RNode blocks Meshtastic/MeshCore BLE<a class="headerlink" href="#reticulum-ble-rnode-blocks-meshtasticmeshcore-ble" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Reticulum stack is running with an enabled BLE RNode; Meshtastic or MeshCore BLE scan/connect fails with <code>scan_busy</code> / “Bluetooth scan in progress (reticulum)” or <code>mac_conflict</code>.</p>
+<p><strong>Cause</strong>: The app checks BLE device ownership and serializes app-requested scans and LoRa connection setup. A conflicting configured address or active scan can block Connect. LoRa GATT and Reticulum run in the same sidecar process with separate centrals; Reticulum's autonomous discovery/reconnect does not use the app's scan lease. The inverse is also normal: RNode Signal meter advertisement polls may see <code>scan_busy (gatt)</code> while Meshtastic/MeshCore GATT connect holds the scan mutex — that is expected contention (logged at debug), not a stuck lease; meters already seeded from connect-time <code>host_rssi</code> skip those polls.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Wait for the Reticulum BLE scan/connect to finish, then retry Meshtastic/MeshCore Connect.</li>
+<li>Stop the Reticulum stack or disable the BLE RNode if you need exclusive LoRa BLE access.</li>
+<li>Check Device logs for <code>[BleCoexistence]</code> / <code>[GATT]</code> and sidecar <code>scan_busy</code> / <code>mac_conflict</code> codes.</li>
+<li>Ensure Meshtastic/MeshCore and the RNode use <strong>different</strong> Bluetooth addresses.</li>
+</ol>
+<h2 id="reticulum-ble-rnode-pairing-fails-wrong-pin--no-pin-on-display--not-in-macos-list">Reticulum BLE RNode pairing fails (wrong PIN / no PIN on display / not in macOS list)<a class="headerlink" href="#reticulum-ble-rnode-pairing-fails-wrong-pin--no-pin-on-display--not-in-macos-list" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: BLE RNode stays offline; logs show <code>peripheral.connect() ok</code> then <code>[pair] TX read err</code> / <code>BLE pairing in progress</code> / <code>BLE pairing timed out</code>; Connection may show a pairing-timed-out sidecar alert. The RNode does not appear under System Settings → Bluetooth. Admin <strong>Start pairing</strong> does not put a code on the radio display.</p>
+<p><strong>Cause</strong>: RNode generates a <strong>new</strong> 6-digit PIN each pairing — there is <strong>no</strong> default. Users sometimes enter <strong>123456</strong> (Meshtastic’s fixed default). Admin <strong>Start pairing</strong> shows the PIN in the <strong>Admin Bluetooth panel over USB</strong> (radio display often stays blank). Discovery uses the sidecar BLE scan (<code>ble://…</code>), not the macOS Settings device list. The OS passkey dialog appears when the stack triggers SMP (TX-char read).</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Stop the stack (or disable the BLE RNode) so reconnect does not thrash while you prepare.</li>
+<li>Forget any half-paired RNode in System Settings → Bluetooth.</li>
+<li>Get a real PIN: USB → Admin → Bluetooth → <strong>Start pairing</strong> (watch the <strong>Admin panel</strong>, not the radio screen), <strong>or</strong> ~7 s button hold on display boards for an on-screen PIN.</li>
+<li>Start the stack <strong>once</strong>, enter that PIN in the OS dialog within ~60 seconds — never <code>123456</code>.</li>
+<li>The device may only show as Paired in System Settings <strong>after</strong> a successful bond.</li>
+<li>For repeated offline BLE interfaces, <strong>remove the interface and add it back</strong> (<strong>Pick device</strong>) to refresh the stored Bluetooth address before retrying pairing.</li>
+</ol>
+<h2 id="reticulum-ble-rnode-bond-is-stale-os-still-shows-paired">Reticulum BLE RNode bond is stale (OS still shows Paired)<a class="headerlink" href="#reticulum-ble-rnode-bond-is-stale-os-still-shows-paired" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Connection / Diagnostics show a BLE bond-stale banner for an RNode interface; Connect fails; System Settings still lists the device as Paired.</p>
+<p><strong>Cause</strong>: Sidecar latched <code>interfaceIssueAlert.bleBondRemoved</code> (“Peer removed pairing information”). The OS bond no longer matches the radio.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Forget the RNode in System Settings → Bluetooth (macOS will not clear Paired automatically).</li>
+<li>Prefer USB serial or Wi‑Fi (<code>tcp://</code>) when possible to avoid BLE bonds.</li>
+<li>On Admin → Bluetooth: <strong>Clear paired devices</strong> (USB <code>CMD_BT_UNPAIR</code>, ESP32) if available, then <strong>Start pairing</strong>. Connection issue banners also link to Admin Bluetooth.</li>
+<li><strong>Remove and re-add</strong> the BLE interface (<strong>Pick device</strong>) so the saved <code>ble://</code> id refreshes.</li>
+<li>Restart the Reticulum stack and enter the new 6-digit PIN when prompted.</li>
+</ol>
+<p>Bond-stale <strong>TX queue full</strong> hints (<code>txQueueDropsHintBleBondStale</code>) point at the same Forget / Clear paired / Start pairing path. Sidecar overlay <code>rsReticulum-ble-rnode-bond-desync</code> stops BLE reconnect until stack restart when bond removal is detected — see <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md">reticulum-sidecar/patches/README.md</a>. <code>bleBondRemoved</code> stays sticky until stack stop / interface remove (not only the generic 5‑minute log latch).</p>
+<h2 id="reticulum-lxmf-duplicate-sending--orphaned-pending-rows">Reticulum LXMF duplicate Sending / orphaned pending rows<a class="headerlink" href="#reticulum-lxmf-duplicate-sending--orphaned-pending-rows" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Chat shows a stuck <code>reticulum-pending-*</code> Sending row beside the real LXMF hash row after send completes.</p>
+<p><strong>Cause</strong>: Optimistic pending id was not deleted when the sidecar assigned <code>message_hash</code>.</p>
+<p><strong>Fix</strong>: Upgrade to a build that passes <code>replaces_message_hash</code> on SQLite upsert (<code>db:saveReticulumMessage</code> deletes the prior pending hash atomically). Restarting the app also marks stale <code>sending</code> rows failed on startup.</p>
+<p><strong>Symptoms</strong>: LXMF <code>[file:…:image/…]</code> bubble shows the filename label but no inline image.</p>
+<p><strong>Cause / checks</strong>: File missing from <code>userData/reticulum/attachments/</code>, SVG/unsupported MIME, path outside the jail, magic-byte mismatch, IPC rate limit, or read failure (UI falls back to label only).</p>
+<p><strong>Fix</strong>: Confirm the attachment was cached inbound, that the MIME is a supported raster type (not SVG), and retry after scrolling away and back. Check Device logs for <code>chat:readReticulumAttachmentAsDataUrl</code>.</p>
+<h2 id="reticulum-remote-propagation-sync-fails-or-never-completes">Reticulum remote propagation sync fails or never completes<a class="headerlink" href="#reticulum-remote-propagation-sync-fails-or-never-completes" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: <strong>Sync messages</strong> stays Establishing, fails with “not an LXMF propagation node”, “no link proof”, “no network path”, or marks Complete incorrectly after cancel.</p>
+<p><strong>Cause / behavior</strong>:</p>
+<ul>
+<li>User Sync is <strong>client <code>/get</code>-primary</strong> (inbox into Chat). Peer <code>/offer</code> inventory push is Host peer-loop only when serving.</li>
+<li><strong>No path yet</strong> → <code>PROPAGATION_PATH_UNKNOWN</code> (hard-fail after announce settle; UI <code>syncPathUnknown</code>) — not a 45s Establishing stall. Wait for a path / <strong>Announce now</strong>, retry.</li>
+<li>Remote sync needs a known identity. Missing identity → <code>PROPAGATION_IDENTITY_UNKNOWN</code>.</li>
+<li>Destinations that announce as delivery/other (including TCP hubs) → <code>PROPAGATION_TARGET_NOT_PN</code>. Add a destination that announces <code>lxmf.propagation</code>.</li>
+<li>Establishing with <strong>no LRPROOF</strong> often means the PN lacks a reverse path to your LXMF identity. Sync always sends an LXMF delivery announce and waits ~10s before Linking; if that still stalls, use the Propagation recovery callout (<strong>Announce now</strong>, wait, <strong>Retry Sync</strong>), or Network → <strong>Announce now</strong> and retry. Auto stops cascading other remotes after this class of establish failure (client reverse-path). Dual enabled TCP backbones can cause announce/Link asymmetry — try one backbone.</li>
+<li>Soft-defer <code>PROPAGATION_RETRIEVE_BUSY</code> means Host silent <code>/get</code> or another retrieve owns the client — wait or Cancel; Cancel must call rsLXMF <code>abort_transfer</code> or the next Sync stays busy.</li>
+<li>Auto keeps picking a bad Discovered PN → <strong>Ignore for Auto</strong> on that row (Manual Prefer/Sync still works).</li>
+<li>HaveAll / Complete is success (not failure). Cancel or Establishing stall (~45s) must not advance “last synced”.</li>
+<li>Transfer-phase hangs use a renderer hard ceiling (~180s) plus lxmf-core’s own timeouts.</li>
+<li>Auto/Manual <strong>Sync</strong> runs a multi-step cascade that waits for each attempt to settle (terminal WS frame or stall/ceiling). Failed remotes are omitted for ~15 minutes; the remote half of a cascade is capped (~5 min budget, ~60s per remote attempt) before falling through to local-prop. Soft defer <code>PROPAGATION_SYNC_OUTBOUND_BUSY</code> / <code>PROPAGATION_RETRIEVE_BUSY</code> / <code>PROPAGATION_STACK_NOT_LIVE</code> does <strong>not</strong> start that backoff — the next tick may retry the same node.</li>
+<li>Auto-sync interval counts from the last <em>successful</em> sync; failed attempts only apply a short cooldown (~2 min). Nothing-to-sync (<code>syncNoTarget</code> / local messagestore still loading / retrieve busy) is not treated as a full remote success.</li>
+</ul>
+<p><strong>Fix</strong>: Prefer a discovered <code>lxmf.propagation</code> node, wait for an announce/path, retry <strong>Sync</strong> (or <strong>Announce now</strong> then Sync), and check Device logs for <code>propagation-retrieve</code> (<code>retrieve_mode=get</code>) and path-gate <code>PROPAGATION_PATH_UNKNOWN</code>. Peer <code>/offer</code> errors under <code>propagation-sync</code> apply to Host peer loop, not the Sync button. If Add fails with <strong>offer unsupported</strong>, the destination does not speak LXMF <code>/offer</code>. If Sync/Add fails with <strong>peering cost exceeds max</strong>, raise <strong>Network → Advanced PN hosting → Max peering cost</strong>.</p>
+<h2 id="reticulum-local-pn-hosting-not-discoverable">Reticulum local PN hosting not discoverable<a class="headerlink" href="#reticulum-local-pn-hosting-not-discoverable" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Local Host propagation node is enabled but peers never hear your PN announce / cannot <code>/offer</code> or <code>/get</code>.</p>
+<p><strong>Cause</strong>: Hosting requires a live stack with identity signing key; enable starts <code>lxmf.propagation</code> LinkManager + announce loop (Resource deposit ingress + stamp validation into the local store, <code>/offer</code> admission, outbound peer inventory sync when idle, auto inbox drain into Chat, and sequenced post-peer <code>/get</code> after host <code>/offer</code> Completes).</p>
+<p><strong>Fix</strong>: Confirm sidecar is running, identity is configured, <strong>Network → Propagation → Host propagation node</strong> is Enabled, and check logs for <code>[propagation-serve]</code> / <code>[propagation-announce]</code> / <code>[propagation-deposit]</code> / auto-drain / <code>get_post_peer</code> / <code>get_periodic</code>. Tune announce interval under <strong>Advanced PN hosting</strong>. Peers depositing to your host should see your <code>lxmf.propagation</code> hash; bad stamps are rejected and logged under <code>propagation-deposit</code>.</p>
+<h2 id="reticulum-stored-at-pn-but-sync-leaves-chat-empty">Reticulum: Stored at PN but Sync leaves Chat empty<a class="headerlink" href="#reticulum-stored-at-pn-but-sync-leaves-chat-empty" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Sender shows <strong>Stored at propagation node</strong> (Propagated Completes). Recipient runs <strong>Sync messages</strong> (progress reaches Complete / HaveAll) but the DM never appears in Chat. Preferred PN hashes may differ between the two clients.</p>
+<p><strong>Cause (any-node model)</strong>: LXMF does <strong>not</strong> require both parties to prefer the same PN. Deposit on PN A and retrieve via Sync from PN B is valid when autopeer/static peering moves inventory. Empty Chat after Sync is usually a fabric/retrieve/ingest gap (mail never reached the synced node, stamp/admission drop on a host PN, or inbound ring not catch-up’d into Chat) — not “wrong preferred PN.”</p>
+<p><strong>Progress bar = client <code>/get</code> retrieval.</strong> User Sync against a remote PN drives the progress bar from the <strong>client <code>/get</code> download</strong> (inbox mail into Chat). Peer <code>/offer</code> inventory replication runs on the <strong>local Host peer loop</strong> when you are serving a PN — not on the Sync button — so a nonempty messagestore cannot hang Sync at AwaitingResponse against remotes that are not your peers. Look for <code>propagation-retrieve</code> <code>/get</code> Completes in Device logs for retrieve counts.</p>
+<p><strong>Host PN auto Chat path:</strong> With <strong>Host propagation node</strong> enabled, mail that lands in the local store via peer Resource ingress should appear in Chat via <strong>auto-drain</strong> (<code>local-prop inbox auto-drain Completes</code>, <code>retrieve_mode=local</code>) without pressing Sync on local-prop. After your host peer <code>/offer</code> Completes to a peered remote, a <strong>silent</strong> client <code>/get</code> to that peer may also run (<code>retrieve_mode=get_post_peer</code>, no Sync UI bar). While Host is on and quiet, a <strong>~90s</strong> periodic silent <code>/get</code> (<code>retrieve_mode=get_periodic</code>) revisits Prefer/peered remotes for inbox catch-up — this is not a 2s poll and does not re-<code>/offer</code> an unchanged store. Host peer <code>/offer</code> re-runs when the local messagestore generation advances (or after a failed/partial sync), with lxmd-style peer Idle bookkeeping. Explicit Sync remains <code>/get</code>-primary (Prefer / cascade).</p>
+<p><strong>Do not</strong> tell users they must share the same preferred PN. Prefer log correlation instead:</p>
+<ol>
+<li>Sender Device log: <code>propagation-deposit</code> with <code>message_hash</code>, <code>transient_id</code>, <code>pn_hash</code> (deposit Completes).</li>
+<li>Recipient log (the real retrieval): <code>propagation-retrieve … retrieve_mode=get|get_post_peer|get_periodic pn_hash=… listed=N downloaded=N delivered=N</code> (the client <code>/get</code> download; <code>listed=0</code> is a valid empty-inbox success). Per-message <code>propagation-retrieve</code> with matching <code>message_hash</code> / <code>transient_id</code> fires as each downloaded message hits the delivery callback. Host auto-drain / <code>local-prop</code> Sync logs <code>retrieve_mode=local</code>. The peer-offer side logs <code>propagation-sync … peer_outcome=have_all|transfer</code> — that is <strong>not</strong> retrieval.</li>
+<li>Renderer: <code>[catchUpRecentInboundLxmf] … reason=propagation_sync</code> or <code>propagation-retrieve catch-up after sync Completes count=N</code> (<code>count=0 (empty ring)</code> means Sync Completes with no new inbound for Chat).</li>
+<li>Confirm remote Sync Completes and that Host PN (if used) shows <code>[propagation-deposit] local PN accepted stamped propagated blob</code> plus auto-drain / post-peer / periodic retrieve lines when expecting Chat without a manual Sync.</li>
+</ol>
+<p><strong>Fix</strong>: Retry Sync after path/announce settle; if using local Host, confirm ingress + auto-drain / silent <code>/get</code> (<code>get_post_peer</code> / <code>get_periodic</code>) logs and peer sync ticks (<code>local host queued outbound peer inventory sync</code>). Export developer bundles from both sides and <code>rg 'propagation-deposit|propagation-retrieve'</code>.</p>
+<h2 id="reticulum-pn-hosting-policy-apply-fails">Reticulum PN hosting policy apply fails<a class="headerlink" href="#reticulum-pn-hosting-policy-apply-fails" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Saving <strong>Network → Advanced PN hosting</strong> (peering cost, storage limits, static peers, announce interval) fails or reverts; Device log shows hosting-policy errors.</p>
+<p><strong>Cause / checks</strong>:</p>
+<ul>
+<li>Sidecar rejected the policy (<code>peering_cost_exceeds_max</code>, <code>stamp_flex_exceeds_cost</code>, range limits, or invalid 32-hex static peer). The renderer now validates the same rules before PUT; failure surfaces via the panel error path.</li>
+<li>Stack/identity not ready (hosting apply needs a live sidecar). BLE/USB hubs themselves are unrelated — policy is local lxmf-core config, but the stack must be running to persist it.</li>
+<li>Invalid <code>node_name</code> (control characters or longer than 128 characters).</li>
+</ul>
+<p><strong>Fix</strong>: Fix the invalid field (keep peering cost ≤ max; stamp flex ≤ stamp cost; static peers as lowercase 32-hex). Confirm Reticulum stack is <strong>running</strong>, then re-apply. Check logs for <code>[reticulumPropagationStore] hosting policy</code> / sidecar <code>hosting-policy</code> responses.</p>
+<h2 id="reticulum-last-synced-time-looks-wrong-after-update">Reticulum last synced time looks wrong after update<a class="headerlink" href="#reticulum-last-synced-time-looks-wrong-after-update" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Propagation UI shows a far-future or absurdly old “last synced” time after a sidecar upgrade or clock skew.</p>
+<p><strong>Cause</strong>: <code>last_propagation_sync_at</code> comes from the sidecar as Unix seconds. A future clock (or bad stamp) was previously accepted wholesale; refresh now clamps future values to local <code>Date.now()</code>.</p>
+<p><strong>Fix</strong>: Run <strong>Refresh</strong> / reopen Propagation after fixing the system clock. Trigger a successful <strong>Sync</strong> to rewrite a sane stamp.</p>
+<h2 id="meshcore-colorado-mesh--letsmesh-wont-connect-after-upgrade">MeshCore Colorado Mesh / LetsMesh won't connect after upgrade<a class="headerlink" href="#meshcore-colorado-mesh--letsmesh-wont-connect-after-upgrade" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: MeshCore MQTT preset worked before upgrade; broker connection fails on port <strong>1883</strong> or wrong topic.</p>
+<p><strong>Cause</strong>: Colorado Mesh moved to <strong>wss port 443</strong> with topic <strong><code>meshcore/DEN</code></strong>; LetsMesh uses <strong><code>meshcore/test</code></strong>. Stale <code>mesh-client:mqttSettings:meshcore</code> may retain old port/topic. Malformed topic prefixes (not <code>meshcore/{IATA}</code> or <code>meshcore/test</code>) also block Connect on device-signing brokers. A <strong>stale WebSocket path</strong> blocks Connect too: LetsMesh / MeshMapper / Colorado use <code>/ws</code>, while Waev / Meshat.se / MeshCore.CA / EastMesh use <code>/mqtt</code> — a mismatch gives a clear "requires WebSocket path …" error plus the amber deviation banner.</p>
+<p><strong>Fix</strong>: Re-select the preset on the Connection tab (or, for MeshCore.CA/LetsMesh, click the broker/region toggle) to repair <code>wsPath</code>/<code>tlsEnabled</code>, or clear <code>mesh-client:mqttSettings:meshcore</code> in devtools Application → Local Storage and reconnect. Migrations run on app start via <code>connectionPanelStorageMigrations.ts</code> (port/topic repair + IATA shape normalize + preset reconcile).</p>
+<h2 id="meshcore-colorado-mesh-one-time-region-prompt">MeshCore Colorado Mesh one-time region prompt<a class="headerlink" href="#meshcore-colorado-mesh-one-time-region-prompt" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: After upgrade, a dialog asks whether you are in Colorado when MQTT is set to Colorado Mesh. MQTT Auto-connect is deferred until you answer.</p>
+<p><strong>Cause</strong>: Colorado Mesh is a <strong>regional</strong> broker. mesh-client prompts existing Colorado-preset (or Colorado host) users once so non-Colorado users can switch to <strong>LetsMesh</strong>. Auto-launch will not connect to Colorado until that choice is stored.</p>
+<p><strong>Fix</strong>: Choose <strong>I am in Colorado</strong> to keep the preset (Auto-connect resumes if enabled), or <strong>Switch to LetsMesh</strong>. The choice is stored in <code>mesh-client:coloradoMqttRegionAck-v1</code> and is not shown again. Selecting Colorado Mesh later shows a confirm that the preset is for Colorado-area users and publishes under <code>meshcore/DEN</code>.</p>
+<h2 id="reticulum-announces--nomad--rrc-work-but-chat-fails-both-ways">Reticulum: announces / Nomad / RRC work but Chat fails both ways<a class="headerlink" href="#reticulum-announces--nomad--rrc-work-but-chat-fails-both-ways" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Both mesh-client instances hear announces, Nomad pages and RRC work, probes look reachable, but Chat DMs never arrive either way. Developer bundles show outbound <code>to_hash</code> values that are <strong>not</strong> the peer’s Network <strong>LXMF</strong> hash. Pasting the peer’s <strong>identity</strong> hash and their <strong>LXMF</strong> hash opens <strong>two</strong> Chat tabs. Diagnostics may list <strong>Direct LXMF link … timed out</strong> against a hash that identity activity marks as <code>lxst.telephony</code> (or against the RNS identity hash). When <strong>MeshChatX</strong> (or another RNS app) runs on one side, the other may briefly show <strong>Delivered</strong> via RF — that Complete is for MeshChatX’s LXMF identity, not mesh-client Chat. <strong>Delivered to a MeshChatX-era favorite (e.g. <code>d010ea44…</code> / Ceorl-wired) is not delivery into a different mesh-client LXMF (e.g. <code>e3359f…</code> / Ceorl-test).</strong> Peers may appear in the list (announce heard) while Network topology shows <strong>no</strong> RF edge (<code>hops</code> null / no path). Prefer <strong>RF</strong> is not the same as disabling TCP hubs.</p>
+<p><strong>Cause</strong>: The RNS path table lists <strong>every</strong> destination aspect. Opening <strong>Peers → Message</strong> (or a stale DM) on an <code>lxst.telephony</code> row, or pasting the peer’s <strong>RNS identity</strong> hash, used to send LXMF Chat to a non-<code>lxmf.delivery</code> destination. mesh-client remaps identity and telephony to the peer’s <code>lxmf.delivery</code> hash when identity activity knows it; without an LXMF announce it refuses send. A peer coming online after the other side’s hourly announce can miss the reverse LXMF path until <strong>Announce now</strong>. With Propagation <strong>Off</strong>, Direct timeout has no PN cascade. A prior link-timeout failure bridge could also leave later Sends stuck on <strong>Sending</strong> for the same dest until a new outbound clears that dedupe. Favoriting an older MeshChatX LXMF while the peer’s live mesh-client identity uses a new LXMF produces green <strong>Delivered</strong> Completes that never appear in the other app’s Chat.</p>
+<p><strong>Fix / retest checklist</strong>:</p>
+<ol>
+<li><strong>Fully quit</strong> MeshChatX / other Reticulum apps on both machines during a mesh-client ↔ mesh-client test.</li>
+<li>On <strong>Network</strong>, confirm each side’s <strong>LXMF</strong> hash (not only the identity hash). Example pair: upstairs <code>ac978c…</code> ↔ downstairs <code>e3359f…</code>.</li>
+<li>Both sides <strong>Announce now</strong>, then wait until each sees the peer’s <strong>LXMF</strong> row with a path (hops ≥ 0) or Probe succeeds.</li>
+<li>Open Chat from Peers <strong>Message</strong> (or paste the peer’s 32-character <strong>LXMF</strong> hash — not the identity hash). The DM header shows copyable <strong>LXMF</strong> and <strong>identity</strong> prefixes — the LXMF prefix must match Network, not a MeshChatX-era favorite or a Voice-only row.</li>
+<li>If Direct still fails, set Propagation to <strong>Auto</strong> or <strong>Manual</strong> with a usable PN (Propagation <strong>Off</strong> has no cascade after Direct timeout). Prefer RF does not disable TCP — turn TCP hubs off on Connection → Interfaces when testing RF-only.</li>
+<li>Export <strong>both</strong> Developer bundles; check <code>reticulum_messages.to_hash</code> against <code>reticulum_identity_activity</code> (<code>lxmf.delivery</code> vs identity / <code>lxst.telephony</code>) and <code>reticulum/lxmf-outbound.log</code> for Direct Completes / Failed lines. Stuck <code>reticulum-pending-*</code> / <code>sending</code> rows after link timeouts are a client bridge bug (fixed builds clear dest dedupe on each new Send).</li>
+</ol>
+<h2 id="reticulum-dm-stuck-on-sending-meshchatx--shared-instance">Reticulum DM stuck on Sending (MeshChatX / shared instance)<a class="headerlink" href="#reticulum-dm-stuck-on-sending-meshchatx--shared-instance" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Outbound Reticulum DMs stay <strong>Sending</strong>; Device log shows <code>link delivery timed out</code> with <code>link establishment timeout</code>, and many <code>failed to queue path request for LXMF delivery</code> lines. <strong>Diagnostics</strong> may list per-peer <strong>Direct LXMF link … timed out</strong> rows (warning). Connection may show <strong>sidecar interface issues</strong> only for stack health (TX queue drops, transport saturated, TCP hub failures) — not single-peer link timeouts. Sniffer may show a <strong>Link Request</strong> that never completes.</p>
+<p><strong>Cause</strong>: Usually <strong>RNS transport overload</strong>, not a missing mesh-client chat handshake. Common triggers:</p>
+<ol>
+<li><strong>Shared instance conflict</strong> — <code>share_instance = Yes</code> with another Reticulum app still running (MeshChatX, Ratspeak, standalone <code>rnsd</code>) fighting the same IPC socket. mesh-client may attach as <code>SharedInstanceClient</code> and <strong>not spawn</strong> local TCP hubs (Connection then shows misleading “TCP hub unreachable”).</li>
+<li><strong>Dead TCP hub still enabled</strong> — outbound queue fills; path requests fail with <em>no available capacity</em>.</li>
+<li><strong>No PN cascade capacity</strong> — when Direct fails and there are no enabled cascade candidates (preferred/other remotes or local-prop), the row fails with no store-and-forward retry. With remotes (and/or enabled local-prop), the sidecar cascades after Direct exhausts (see <strong>Stale path + Failed via TCP</strong> below). Developer bundles include <code>reticulum/lxmf-outbound.log</code> (filtered LXMF outbound / PN cascade lines).</li>
+</ol>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li><strong>Fully quit</strong> other Reticulum apps (MeshChatX, Ratspeak, any <code>rnsd</code> tray process) — not just close the window — <strong>or</strong> turn off <strong>Share Reticulum instance</strong> (Connection banner / Network → stack settings) and restart the stack.</li>
+<li><strong>Stop and restart</strong> the mesh-client Reticulum stack (Connection → <strong>Restart stack</strong> or stop/start). Stopping (or an unexpected sidecar exit) clears the interface-issue tracker immediately.</li>
+<li>Disable unreachable TCP interfaces on Connection → Interfaces (only when not in shared-instance client mode). Disabling or removing a hub drops that name from the TCP/TX latch <strong>immediately</strong> (and keeps it from reappearing while logs catch up); each latch also ages out after a <strong>5-minute</strong> per-entry TTL (<code>RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS</code>), not a single global timestamp.</li>
+<li>Retry the DM; use <strong>Peers → Request path / Probe</strong> if the peer is reachable but the path is stale.</li>
+<li>Configure a <strong>propagation node</strong> on Network → Propagation for offline delivery.</li>
+</ol>
+<p>New/incomplete configs default to <code>share_instance = No</code> and <code>instance_name = mesh-client</code> so mesh-client does not attach to system <code>\0rns/default</code>. <strong>Upgrades are not auto-migrated</strong> when Share is already <code>Yes</code> or <code>instance_name</code> is already <code>default</code> — turn Share off (banner / Network / Diagnostics repair) and restart, or fully quit the other RNS app. Use Network → <strong>Check config</strong> (or <code>pnpm run reticulum:config:check</code>) to lint the on-disk INI.</p>
+<p>Export for GitHub (<code>reticulum.sidecar.interfaceIssueAlert</code>, link-timeout counts) helps confirm transport saturation vs. a single peer outage.</p>
+<h2 id="reticulum-no-propagation-node-configured">Reticulum: no propagation node configured<a class="headerlink" href="#reticulum-no-propagation-node-configured" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Chat shows a persistent amber <strong>propagation</strong> notice; send failures toast <em>No propagation node configured</em>; offline peers never receive LXMF.</p>
+<p><strong>Cause</strong>: Direct LXMF links require a live path. When the peer is offline or unreachable, mesh-client needs a <strong>remote propagation node</strong> (lxmd store-and-forward) — not a TCP transport hub.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Open <strong>Network → Propagation</strong> (Chat notice <strong>Set up propagation</strong> jumps there).</li>
+<li>Add a <strong>32-character LXMF destination hash</strong> from whoever runs the propagation node you trust.</li>
+<li>Pick a <strong>Propagation mode</strong> in the same section. Fresh installs default to <strong>Off</strong> (no automatic Preferred, no periodic sync). <strong>Upgrades keep any saved mode</strong> (including legacy <strong>Auto</strong>). Set <strong>Preferred</strong> manually and use <strong>Manual</strong> to sync that pin (or the closest added node when none is preferred), or use <strong>Auto</strong> to one-time sync the best <strong>Discovered</strong> node by hash (<strong>without</strong> adding it or changing Preferred), then configured remotes, then the local inbox. Set preferred / Add &amp; prefer stay available in Auto. See <a href="#reticulum-dm-shows-stored-at-propagation-node-but-the-reply-never-arrives-pn-island--preferred-mismatch">PN island / preferred mismatch</a> if both peers use different PNs.</li>
+<li><strong>Local propagation hosting</strong> is a full LXMF Propagation Node (announce, admit deposits, peer <code>/offer</code> sync, client <code>/get</code>) — wire-compatible with official Python/<code>lxmd</code>. Clients <strong>need not Prefer you</strong>; Auto discovering your announce is enough. It is <strong>last</strong> in the sender’s Direct→PN cascade (<code>stored_locally</code> = deposited on your hosted node, amber house badge — not “outbox only”). Fabric delivery to peers who sync other PNs depends on <strong>peering / PN↔PN propagation health</strong>, not on recipients Preferring your local hash. Preferring Local still shows a warning toast (you become the Prefer pin for <em>your</em> outbound cascade).</li>
+</ol>
+<p><strong>Stale path + Failed via TCP:</strong> When a path exists, mesh-client tries <strong>Direct</strong> first. If Direct fails, the sidecar <strong>cascades</strong> preferred remote → other enabled remotes (hop-sorted) → in <strong>Auto</strong> only, up to 3 heard-but-not-added <strong>Discovered</strong> PNs (hop-sorted) → local-prop last. Remote deposits Complete as <code>delivered</code> (<strong>Stored at propagation node</strong>); local-prop Completes as <code>stored_locally</code> (hosted on your PN; peer sync may still propagate). Prefer PN link timeouts <strong>advance</strong> the cascade when other candidates remain (they do not hammer the same Prefer hash until <code>syncTimedOut</code>). The renderer link-timeout Failed bridge skips while cascade capacity remains. Without any cascade candidates, the row stays <strong>Failed</strong>. Check developer-bundle <code>reticulum/lxmf-outbound.log</code> for cascade lines. Persistent <code>proxyGet</code>/<code>proxyPost</code> storms may hit the shared <strong>900/min</strong> proxy ceiling (LXMF recent catch-up uses a dedicated <strong>120/min</strong> bucket; renderer backs off on rate-limit errors).</p>
+<p><strong>Not the same as transport:</strong> Ratspeak TCP hubs (e.g. <code>rns.ratspeak.org:4242</code>) and <a href="https://github.com/ratspeak/rathole">rathole</a> are <strong>connectivity / transport</strong> tools, not LXMF propagation. mesh-client does not ship a default community propagation hash.</p>
+<h2 id="reticulum-ratspeak-dms-work-but-mesh-client-stays-silent">Reticulum: Ratspeak DMs work but mesh-client stays silent<a class="headerlink" href="#reticulum-ratspeak-dms-work-but-mesh-client-stays-silent" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Another Reticulum client (Ratspeak, Sideband, MeshChat, <strong>Columba</strong>, <strong>Retichat</strong>) exchanges DMs with a mobile peer after both sides announce; mesh-client shows outbound stuck <strong>Sending</strong> / <strong>Queued</strong> / <strong>Failed</strong>, <strong>zero inbound</strong>, or a Chat contact that never appears under <strong>Peers</strong>.</p>
+<p><strong>First reply Ack’d, second shows</strong>: After mesh-client sends a <strong>Direct</strong> DM, the peer’s first reply often shows <strong>Ack</strong> on their client but never appears in mesh-client Chat/SQLite; a second reply usually lands. That reply rides the <strong>outbound-initiated reusable Direct link</strong>. The sidecar must wire <code>LinkDeliveryManager::set_inbound_packet_sender</code> (live stack start → <code>spawn_lxmf_outbound_backchannel</code>) so plaintext reaches the same unpack path as peer-initiated <code>lxmf.delivery</code> links — otherwise rsLXMF still sends <strong>LinkProof</strong> (Ack) and drops the payload. Upgrade / rebuild the sidecar and <strong>Restart stack</strong>. Developer bundles: look for <code>LXMF outbound-link backchannel packet</code> after the peer’s first reply; inbound ring catch-up cannot recover messages that never entered the ring.</p>
+<p><strong>Cause</strong>: LXMF requires (1) an <strong><code>lxmf.delivery</code> announce</strong> so peers learn a path <em>to</em> this identity and (2) inbound destination registration (<code>RegisterDestination</code> + LinkManager) so link payloads reach Chat. Older sidecars stored announce interval in config without scheduling announces; current builds send startup + periodic delivery announces and register <code>lxmf.delivery</code>. Short messages from Python clients (Sideband/Columba) often use <strong>opportunistic</strong> DATA — current sidecars wire <code>set_inbound_raw_channel</code> (lxmd parity) so those packets are not dropped after proof.</p>
+<p><strong>Checks</strong>:</p>
+<ol>
+<li>Upgrade / rebuild the sidecar (<code>pnpm run reticulum:sidecar:build</code>) and <strong>Restart stack</strong>.</li>
+<li>On Network, use <strong>Announce now</strong>; on the other client, confirm mesh-client’s <strong>LXMF</strong> hash (Network identity → LXMF destination, not only the identity hash) appears after the announce.</li>
+<li>Same fabric: enable the same TCP hub / Auto / RNode paths on both clients when A/B testing.</li>
+<li>Contact named in Chat but missing from Peers → path dead; use <strong>Peers → Request path / Probe</strong>, or wait for the peer’s announce on that fabric.</li>
+<li><strong>Auto interface up ≠ Auto peers.</strong> Auto “up” means LAN multicast carrier works; peer rows appear only when another RNS node announces onto that Auto group (or paths are owned by that interface). Multi-hop peers labeled with a TCP hub name and a shared <code>via</code> are hub fanout, not LAN neighbors.</li>
+<li>Configure a remote <strong>propagation node</strong> if the peer is often offline (does not replace missing announces).</li>
+<li><strong>Columba / Sideband opportunistic triage</strong> (developer bundle, default <code>RUST_LOG=warn</code>): after a send from the phone, look for <code>[ReticulumSidecar]</code> lines:</li>
+<li><code>LXMF inbound opportunistic packet</code> — frame reached the raw channel</li>
+<li><code>opportunistic LXMF decrypt failed</code> (+ <code>error=…</code>) — ciphertext did not decrypt to this identity</li>
+<li><code>inbound data not an LXMF message</code> with <code>via=opportunistic</code> — decrypt OK, unpack failed</li>
+<li><code>inbound LXMF queued for clients</code> — sidecar accepted the message (if Chat still empty, look at renderer ingest / identity)</li>
+<li><strong>None of the above</strong> after a Columba send → packet never hit <code>lxmf.delivery</code> (wrong dest hash on the phone, missing reverse path/announce, or not opportunistic/link traffic at all)</li>
+</ol>
+<h2 id="reticulum-interface-addeditdelete-fails">Reticulum interface add/edit/delete fails<a class="headerlink" href="#reticulum-interface-addeditdelete-fails" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Connection tab <strong>Add interface</strong>, <strong>Edit</strong>, or <strong>Delete</strong> shows an inline error; interface list does not refresh.</p>
+<p><strong>Checks</strong>:</p>
+<ol>
+<li><strong>Stack running</strong>: start the sidecar from <strong>Connection → Start stack</strong> before editing interfaces. Identity routes on the Network tab also require a live sidecar (<code>reticulum:proxyGet</code> / <code>proxyPut</code> / <code>proxyDelete</code>).</li>
+<li><strong>Edit validation</strong>: name is required; TCP needs a reachable host and valid port; RNode needs a serial port path when adding (edit can update preset/callsign without re-plugging). <strong>I2P</strong> peers must be comma-separated <code>.b32.i2p</code> hostnames (max <strong>512</strong> characters); inline errors: <code>i2pPeersRequired</code>, <code>i2pPeersInvalid</code>, <code>i2pPeersTooLong</code>. Invalid <strong>mode</strong> values are rejected by the sidecar (<code>invalid interface mode: …</code>); use the Connection mode select (or clear to omit). For TCP hub reachability / path seeking, prefer <strong>Boundary</strong> — <strong>Add default backbones</strong> sets/repairs missing mode to <code>boundary</code> (does not overwrite a valid user-chosen mode).</li>
+<li><strong>Delete</strong>: confirm in the modal; if the interface id changed after config import, refresh by stopping and restarting the stack.</li>
+<li><strong>Logs</strong>: filter Device logs for <code>[ReticulumIPC]</code> or <code>[ReticulumSidecar]</code>; sidecar returns <code>{ ok: false, error }</code> for parse or unknown-interface failures.</li>
+</ol>
+<p><strong>TCP / UDP / I2P / Auto / Pipe not active after add</strong>: Sidecar live <code>apply_interfaces</code> only hot-applies <strong>BLE Peer</strong>; other types are written to config and require a stack restart. The Connection UI auto-restarts after add/enable/edit/delete for those types (<code>reticulumInterfaceChangeRequiresStackRestart</code>). If a transport still does not appear, use <strong>Stop stack</strong> then <strong>Start stack</strong>, or check the amber restart hint. <strong>Add default backbones</strong> still shows the hint only (no auto-restart).</p>
+<p>For bulk fixes, use Network <strong>Config import</strong> (merge) instead of hand-editing individual rows. See <a href="../reticulum/#interface-management-connection-tab">reticulum.md — Interface management</a>.</p>
+<h2 id="reticulum-i2p-interface-stays-down">Reticulum I2P interface stays down<a class="headerlink" href="#reticulum-i2p-interface-stays-down" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Connection → Interfaces shows an enabled I2P row (e.g. <strong>RNS I2P Hub A</strong>) as <strong>down</strong>; Diagnostics may list <code>reticulum/interface-down</code>. The I2P router appears running and “clients” look ready, but mesh-client never comes up.</p>
+<p><strong>Checks</strong>:</p>
+<ol>
+<li><strong>Interface enabled</strong>: default hub presets (including <strong>RNS I2P Hub A</strong>) are added <strong>disabled</strong>. Enable the row after configuring SAM, then let the UI restart the stack (or Stop/Start).</li>
+<li><strong>SAM application bridge</strong>, not I2PTunnel: HTTP/HTTPS proxies on <code>127.0.0.1:4444</code> / <code>4445</code> (and similar “Client ready” lines) are classic I2PTunnel clients. Reticulum needs the <strong>SAM</strong> bridge (default <strong><code>127.0.0.1:7656</code></strong> on the mesh-client machine). In the I2P Router Console → <strong>Clients</strong>, enable <strong>SAM application bridge</strong> (Run on load). The Connection ⓘ tooltip on I2P rows covers the local case.</li>
+<li><strong>Remote SAM (optional)</strong>: if I2P runs on another LAN host, do <strong>not</strong> put that IP in the typed Host field (that field is hub <strong>peers</strong> / <code>.b32.i2p</code>). Edit the I2P interface → <strong>Advanced</strong> and set:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="na">i2p_sam_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">192.168.1.86</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="na">i2p_sam_port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">7656</span>
+</code></pre></div>
+<p>Use rsReticulum keys <code>i2p_sam_host</code> / <code>i2p_sam_port</code> (not Python RNS <code>sam_address</code> / <code>sam_port</code>). On the I2P router, bind SAM to the LAN address or <code>0.0.0.0</code> (localhost-only SAM is unreachable remotely). Confirm from the mesh-client host: <code>nc -z &lt;sam-host&gt; 7656</code>. See <a href="../reticulum/#interface-management-connection-tab">reticulum.md — Interface management</a>.</p>
+<ol>
+<li><strong>Restart I2P after enabling SAM</strong>: flipping SAM on while the router is already running often does not open <code>7656</code> until you fully restart I2P. Confirm something listens on the configured SAM address/port. SAM may also delay ~2 minutes after router boot (<code>delay=120</code> in the SAM client config).</li>
+<li><strong>Restart the Reticulum stack</strong> after SAM is listening (stack restart alone cannot help while SAM is refused).</li>
+<li><strong>Tunnel build time</strong>: first connect to a hub <code>.b32.i2p</code> peer can take a while on a fresh router. Sidecar / Device logs may show <code>I2P client:</code> / <code>I2P server:</code> messages (<code>failed to connect to SAM bridge</code>, <code>STREAM CONNECT failed</code>, <code>stream connected</code>).</li>
+</ol>
+<h2 id="reticulum-peers-stale-or-slow-with-many-hubs-or-testnets">Reticulum Peers stale or slow with many hubs or testnets<a class="headerlink" href="#reticulum-peers-stale-or-slow-with-many-hubs-or-testnets" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Peers looks briefly stale after opening the tab, or—after enabling several public hubs or testnets—shows thousands of path-table rows and scrolling, search, or refresh feels sluggish. UI may remain responsive on <strong>History</strong>, <strong>Contacts</strong>, or <strong>Favorites</strong> because those tabs show a smaller set than the full path table.</p>
+<p><strong>Checks</strong>:</p>
+<ol>
+<li><strong>Refresh model</strong>: opening Peers uses the sidecar’s short-lived soft cache. Click <strong>Refresh</strong> to force a live path-table read (<code>?refresh=1</code>). mesh-client virtualizes peer rows above 100 entries (never mounts the full DOM when the virtualizer is not ready), prepares labels once before filter/sort, and does <strong>not</strong> reload the full path table on high-frequency <code>stats_update</code> / <code>interface.state</code> WS events. The sidecar still maintains the full RNS path table (often 3k–10k rows on busy hubs). Background peer refresh runs every 30 s while the stack is configured (60 s above 2,000 peers), plus announce/<code>peers_updated</code> debounced updates.</li>
+<li><strong>Reduce noise</strong>: disable unused TCP/community hub interfaces on <strong>Connection → Interfaces</strong> and restart the stack so RNS drops stale TCP clients. The Amsterdam official testnet hub remains decommissioned (red <strong>decommissioned</strong> badge; <strong>Enable</strong> is blocked) and is auto-disabled on stack start and by <strong>Add default backbones</strong> — focus remaining noise on community hubs you enabled. If an old Amsterdam row keeps turning off, that is expected; use the picker or <strong>Directory ↗</strong> for live hubs.</li>
+<li><strong>History vs Contacts</strong>: messaging stamps <strong>History</strong> (<code>last_heard</code>) only. Peers you DM show under <strong>History</strong> until you open peer details and choose <strong>Save as contact</strong> (<strong>Contacts</strong> = <code>is_contact</code>). <strong>Favorites</strong> pins a short list. Removing a contact keeps History/chat messages.</li>
+<li><strong>Search</strong>: the peer search box debounces input and filters the full prepared list (not only the visible window) — wait a moment after typing before judging filter performance on very large lists.</li>
+<li><strong>Topology</strong>: automatic topology rebuilds pause above the large-mesh threshold; use its manual <strong>Refresh</strong> after a significant route change.</li>
+</ol>
+<h2 id="rnode-wi-fi-interface-offline-or-wont-connect">RNode Wi-Fi interface offline or won't connect<a class="headerlink" href="#rnode-wi-fi-interface-offline-or-wont-connect" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Connection tab shows a Wi-Fi RNode interface as <strong>down</strong>; logs may show TCP connect failures to the configured host.</p>
+<p><strong>Checks</strong>:</p>
+<ol>
+<li><strong>Interface type</strong>: use <strong>RNode</strong> with transport <strong>Wi-Fi</strong> (<code>tcp://192.168.x.x:7633</code>), not <strong>TCP Client</strong> (mesh upstream on port <strong>4242</strong>).</li>
+<li><strong>Provisioning</strong>: Wi-Fi is disabled after flashing until you configure station or AP mode (<strong>Admin → Wi-Fi</strong>, AP + <code>http://10.0.0.1</code>, or <code>rnodeconf</code>).</li>
+<li><strong>IP address</strong>: DHCP may change the RNode IP — update the host on Connection → Interfaces, or set a static IP in Admin → Wi-Fi advanced.</li>
+<li><strong>LAN reachability</strong>: the computer running mesh-client must be on the same network as the RNode; check firewall rules for outbound TCP to port <strong>7633</strong>.</li>
+<li><strong>Sidecar build</strong>: packaged builds include <code>rns-rnode-tcp</code>; dev builds need <code>pnpm run reticulum:sidecar:build</code> with <code>rns-stack,rns-ble,rns-rnode-tcp</code> features.</li>
+</ol>
+<p>See <a href="../reticulum/#rnode-over-wi-fi">reticulum.md — RNode over Wi-Fi</a>.</p>
+<h2 id="reticulum-admin-rnode-flasher-timeout-or-stalled-transfer">Reticulum Admin: RNode flasher timeout or stalled transfer<a class="headerlink" href="#reticulum-admin-rnode-flasher-timeout-or-stalled-transfer" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: <strong>Reticulum → Admin → RNode flasher</strong> fails with a timeout or stall message after you pick a port and start flashing. UI copy maps internal error tags to i18n hints (<code>flasher.errors.*</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Error tag</th>
+<th>Typical cause</th>
+<th>Recovery</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>RNODE_COMMAND_TIMEOUT</code></strong></td>
+<td>Board not responding on serial (boot loop, wrong port, stack still holding the port)</td>
+<td><strong>Stop stack</strong> (or disable the RNode interface) so the sidecar releases USB; quit other serial tools; wait for boot to finish; retry. Command window: <strong>30 s</strong> (<code>RNODE_COMMAND_TIMEOUT_MS</code>). BLE pairing uses a separate <strong>90 s</strong> cap (<code>RNODE_BT_PAIRING_TIMEOUT_MS</code>).</td>
+</tr>
+<tr>
+<td><strong><code>ESP32_FLASH_STALLED</code></strong></td>
+<td>ESP32-S3 flash wrote no progress for <strong>60 s</strong></td>
+<td>Different USB cable/port; hold <strong>BOOT (0)</strong>, tap <strong>RESET (EN)</strong>, release <strong>BOOT</strong> for bootloader mode; flash again.</td>
+</tr>
+<tr>
+<td><strong><code>NRF52_DFU_STALLED</code></strong></td>
+<td>nRF52 DFU wrote no progress for <strong>60 s</strong></td>
+<td>Same cable/port/bootloader steps as ESP32; confirm you selected the DFU-capable port.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Before flashing</strong>: stop the Reticulum stack or disable the <strong>USB serial</strong> RNode interface — the sidecar holds that port while the stack runs (<code>flasher.errors.blockedByStack</code>). Enabled BLE or Wi‑Fi RNodes do not block the USB flasher. After a failed flash, power-cycle the board and re-enter bootloader if the port disappears.</p>
+<p><strong>Provision / Set firmware hash</strong>: Flash success unlocks Provision for the rest of the app session (survives leaving and returning to Admin). Changing product, model, or firmware file clears that unlock. If EEPROM is locked with a bad checksum, wipe EEPROM first (<code>PROVISION_WIPE_REQUIRED</code>). If Provision reports success but Set hash still says not provisioned, power-cycle and retry — or wipe and provision again (<code>PROVISION_VERIFY_FAILED</code>).</p>
+<h2 id="reticulum-remote-transfer-fails-or-path_constrained">Reticulum Remote transfer fails or <code>path_constrained</code><a class="headerlink" href="#reticulum-remote-transfer-fails-or-path_constrained" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: <strong>Reticulum → Remote</strong> rnsh/rncp (or Chat DM send-file) fails with <code>Path constrained</code>, <code>Path unknown</code>, <code>Not announced</code>, or <code>Timeout</code>; the path-capability chip is red.</p>
+<p><strong>Cause</strong>: rnsh/rncp gate on the destination's link speed and path table (<code>stack::path_speed::PathCapability</code>). A <code>path_constrained</code> reason means the known path is too slow/limited for the transfer; other reasons map to <code>reticulumRemote.reasons.*</code> via <code>useRemotePathCapability</code>.</p>
+<p><strong>What to do</strong>:</p>
+<ol>
+<li>Confirm the destination is announced and has a path (Peers / Topology); <strong>Probe</strong> it if the chip is stale.</li>
+<li>For <code>path_constrained</code>, prefer a faster interface or wait for a better path; large files over slow links may not be attempted.</li>
+<li>Check sidecar logs for <code>rnsh</code>/<code>rncp</code> link errors; the <code>reticulum:rncpSend</code> / <code>rncpFetch</code> IPC returns the reason key surfaced in the toast.</li>
+</ol>
+<p><strong>Chat DM note</strong>: the destination field is the peer's <strong><code>rncp.receive</code></strong> hash, not their LXMF/Chat hash. Prefer <strong>Request enable</strong> (mesh-client peers share the receive hash after they accept) or paste from their Remote → <strong>My rncp receive destination</strong>.</p>
+<p><strong>Request enable / 422</strong>: <code>sendRncpRequestEnable</code> must POST LXMF with a <code>text</code> field (not <code>content</code>) — wrong key → HTTP <strong>422</strong>. After you send request-enable, the peer's <code>mesh-client:rncp-receive-dest:v1:&lt;hash&gt;</code> reply is applied when present (prefer a pending mark from <code>rncpReceiveDestSharePending</code> in this session; shares without that mark are still applied so older peers / pasted hashes autofill). Inbound enable-request modal enqueue and dest-share apply are deduped by LXMF <code>message_hash</code> so periodic catch-up / WS duplicates do not re-open the modal or re-toast; when the peer is already listening, dest is auto-shared at most once per peer per outbound request-enable cooldown.</p>
+<p><strong>Sleep / wake</strong>: Suspend clears in-memory rnsh sessions and rncp transfers; reopen Remote (or wait for resume reconnect) after wake. See <a href="../troubleshooting/#sleep-wake-and-long-running-sessions">Sleep, wake, and long-running sessions</a>.</p>
+<h2 id="reticulum-remote-inbound-rncp-blocked-ask-mode--policy">Reticulum Remote inbound rncp blocked (Ask mode / policy)<a class="headerlink" href="#reticulum-remote-inbound-rncp-blocked-ask-mode--policy" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Incoming file offers never arrive, or an offer is auto-declined; a peer reports their send was rejected.</p>
+<p><strong>Cause</strong>: Inbound rncp is gated by the listener mode (<code>RncpInboundMode</code>: <code>off</code> / <code>ask</code> / <code>allow_all_listed</code>) plus a per-identity allow/block policy (<code>reticulumInboundPolicyStore</code>, persisted via <code>db:*ReticulumInboundPolicy</code>). <code>off</code> drops all offers; <code>ask</code> prompts (<code>RncpEnableRequestModal</code>); <code>allow_all_listed</code> accepts only allow-listed identities.</p>
+<p><strong>What to do</strong>:</p>
+<ol>
+<li><strong>Reticulum → Remote → settings</strong>: set the inbound mode and review the allow/block list.</li>
+<li>In <strong>Ask</strong> mode, respond to the enable-request prompt; a blocked identity stays blocked until you change its policy row.</li>
+<li>The listener config persists in <code>mesh_client_stack.json</code> (<code>rncp_listener_*</code>) and restores on live stack start — re-enable after a factory reset.</li>
+</ol>
+<h2 id="reticulum-hung-sidecar-watchdog-restart">Reticulum hung-sidecar watchdog restart<a class="headerlink" href="#reticulum-hung-sidecar-watchdog-restart" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Logs show <code>[reticulumSidecarWatchdog] hung poll failure</code> then <code>restarting hung sidecar</code>; the stack briefly drops and recovers on its own.</p>
+<p><strong>Cause</strong>: The main-process watchdog (<code>reticulumSidecarWatchdog.ts</code>) polls <code>/api/v1/status</code> every <strong>30 s</strong> while the sidecar process is alive. After <strong>2</strong> consecutive unresponsive polls (5 s fetch timeout) it attempts <strong>one</strong> restart. Process-exit crashes are not handled here — those are owned by the renderer autostart path.</p>
+<p><strong>What to do</strong>: Usually no action; the watchdog recovers a wedged-but-alive sidecar. If restarts loop, check for a stuck link/interface or resource exhaustion in the sidecar log and <strong>Stop stack</strong> to clear state.</p>
+<h2 id="reticulum-lxmf-paper-createingest-fails">Reticulum LXMF paper create/ingest fails<a class="headerlink" href="#reticulum-lxmf-paper-createingest-fails" title="Permanent link">&para;</a></h2>
+<p><strong>Symptoms</strong>: Chat <strong>Share as paper</strong> errors; Scan paper / Network QR / OS <code>lxm://</code> toast fails; paper badge missing after restart.</p>
+<table>
+<thead>
+<tr>
+<th>Sidecar / UI error</th>
+<th>Likely cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>identity_unknown</code> / <code>shareAsPaperIdentityUnknown</code></td>
+<td>Peer pubkey not in <code>known_identities</code></td>
+<td>Import peer <code>lxma://</code> contact QR or wait for an announce, then retry</td>
+</tr>
+<tr>
+<td><code>decrypt_failed</code> / <code>paperDecryptFailed</code></td>
+<td>Paper encrypted to a different identity</td>
+<td>Switch to the recipient identity slot (Network) that matches the paper</td>
+</tr>
+<tr>
+<td><code>paper_too_large</code> / <code>shareAsPaperTooLarge</code></td>
+<td>Message exceeds LXMF paper size cap</td>
+<td>Shorten the text and recreate</td>
+</tr>
+<tr>
+<td><code>invalid_uri</code> / <code>paperInvalidUri</code></td>
+<td>Truncated or non-paper <code>lxm://</code> blob</td>
+<td>Rescan / recopy the full QR or URI</td>
+</tr>
+<tr>
+<td><code>identity_not_configured</code></td>
+<td>No local LXMF identity</td>
+<td>Generate/import identity on Network, ensure stack is running</td>
+</tr>
+<tr>
+<td>Paper badge gone after restart</td>
+<td>Older builds stripped <code>received_via: paper</code> on SQLite save</td>
+<td>Update to a build that allowlists <code>paper</code> in <code>reticulumMessageTransport</code> / DB IPC</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../reticulum/#chat-lxmf">reticulum.md</a> and <a href="../reticulum-sidecar-ipc/">sidecar IPC</a> paper routes.</p>
+<h2 id="reticulum-games-challenge-fails-or-board-does-not-update">Reticulum Games challenge fails or board does not update<a class="headerlink" href="#reticulum-games-challenge-fails-or-board-does-not-update" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Stack not running / games disabled:</strong> Games need a live <code>rns-stack</code> sidecar with sibling <code>lrgp-rs</code>. Check Connection → Start stack and <code>GET</code> status via Games tab (or logs for <code>games requires live rns-stack</code>).</li>
+<li><strong><code>unsupported_app</code>:</strong> Peer lacks that LRGP app (mesh-client and Ratspeak ship Tic-Tac-Toe, Chess, and Four in a Row). Challenge with <code>ttt</code>, <code>chess</code>, or <code>four_in_a_row</code>.</li>
+<li><strong><code>not_your_turn</code> / <code>invalid_move</code>:</strong> Local validation rejected the move before send; wait for opponent or pick a legal cell/UCI move.</li>
+<li><strong>Challenge never arrives:</strong> Path/Direct delivery required for reliable LRGP; ensure a path to the peer (Peers → Probe) or preferred PN fallback. Confirm peer Games tab / unread session list (sidebar Games badge + DM-style ping on inbound challenge).</li>
+<li><strong>Accept does nothing / session stays Pending:</strong> After a stack restart the Games tab can still list SQLite sessions; the sidecar now rehydrates those into memory on spawn. If Accept still fails, check the action error toast (<code>unknown_session</code> / <code>no_propagation_node</code>) and that the stack is running.</li>
+<li><strong>Resend after restart:</strong> Last outbound LRGP envelope is persisted in <code>reticulum/storage/lrgp/games_outbound.db</code>. Resend should still work after Stop/Start stack. If you still get <code>no_previous_action</code>, send a new move first (nothing was committed before restart).</li>
+<li><strong>Delivery chips (Sending / Offline Inbox / Retry needed):</strong> Session <code>delivery_state</code> tracks LXMF outbound status. <strong>Retry needed</strong> enables Resend for the last committed envelope.</li>
+<li><strong>Board jumped then snapped back:</strong> Client optimistic paint rolls back when enqueue fails (<code>games.action_result</code> ok:false or IPC error).</li>
+<li><strong>Promotion chooser:</strong> Pawn to last rank opens queen/rook/bishop/knight (filtered by <code>legal_moves</code>); Escape cancels.</li>
+<li><strong>Claim threefold / 50-move:</strong> When Chess metadata <code>draw_offer_reason</code> is <code>3fr</code> or <code>50m</code>, Claim replaces Offer Draw and sends <code>draw_offer</code> with <code>{ r }</code>.</li>
+<li><strong>IPC blocked on proxy:</strong> Renderer must use <code>electronAPI.reticulum.games.*</code> (<code>reticulum:games*</code>); generic <code>proxyGet</code>/<code>proxyPost</code> to <code>/api/v1/games/*</code> is rejected by design.</li>
+<li><strong>Interop with Ratspeak:</strong> Same LRGP v1 wire (<code>lrgp.v1</code> + <code>0xFB</code>/<code>0xFD</code>). See <a href="../reticulum-games-parity/">reticulum-games-parity.md</a>.</li>
+</ul>
+<h2 id="reticulum-lxst-voice-call-fails-or-is-silent">Reticulum LXST voice call fails or is silent<a class="headerlink" href="#reticulum-lxst-voice-call-fails-or-is-silent" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Stack not running:</strong> Call needs a live Reticulum sidecar (<code>available</code> + <code>enabled</code> + <code>running</code> from <code>/api/v1/voice/status</code>). Start the stack from Connection.</li>
+<li><strong>Peer identity unknown:</strong> Dial uses a 32-hex <strong>identity</strong> hash (not only the LXMF destination). Wait for an announce or Probe the peer from Peers / Chat DM, then try Call again.</li>
+<li><strong>Busy / rejected / no answer:</strong> Line-busy and reject play distinct tones; discovery/ring timeouts surface as no-answer toasts. Only one local call at a time — Hang up before dialing again.</li>
+<li><strong>Call progress tones (outbound):</strong> Expect <strong>dial tone → peer-derived DTMF burst → UK double-ring</strong> while connecting. <strong>Busy / no-answer</strong> uses a short busy cadence; <strong>connect-fail / unexpected drop</strong> uses a fast reorder tone (not the same as busy). Hearing dial/ring without two-way audio is often still connecting — wait for Established before assuming failure.</li>
+<li><strong>One-way or silent audio:</strong> Confirm microphone permission (<a href="../troubleshooting/#permission-messages-in-the-console">Permission messages in the console</a>). <strong>Answer</strong> only warms <code>AudioContext</code> on the click; <strong>microphone capture/TX begins after <code>voice.update: established</code></strong> (Call click warms contexts before dial). If capture still fails after Established, check OS privacy and that another app is not exclusive-locking the mic. TX drops increment <code>localTxDrops</code> under IPC pressure — hang up and retry on a quieter link.</li>
+<li><strong>Inbound accept fails (Columba / Python LXST):</strong> mesh-client→peer may work while peer→mesh-client fails on Answer. Current builds defer mic/TX until Established and soft-drop pre-establish PCM (older packages could fatal-error lxst with <code>active call is not established</code> on Answer). Rebuild sidecar + app, then retry. If it still fails, check developer-bundle logs for <code>[ReticulumSidecar]</code> <code>call start role=incoming</code>, <code>call failed</code> / <code>call terminated</code>, and renderer <code>[reticulumVoice] voice.error message=…</code> / <code>answer failed</code>. Generic UI toast <strong>Voice call failed</strong> hides the raw rsLXST reason — the log line is definitive.</li>
+<li><strong>Interop:</strong> Peer must run LXST telephony (Sideband, Ratspeak, Columba, or mesh-client with rsLXST). This is not an LXMF voice-note clip.</li>
+</ul>
+
+
+
+
+
+
+
+  
+    
+  
+  
+
+
+  <aside class="md-source-file">
+    
+      
+  <span class="md-source-file__fact">
+    <span class="md-icon" title="Last update">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
+    </span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
+  </span>
+
+    
+    
+    
+    
+  </aside>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/Colorado-Mesh/mesh-client" target="_blank" rel="noopener" title="GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://discord.com/invite/McChKR5NpS" target="_blank" rel="noopener" title="Discord" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M492.5 69.8c-.2-.3-.4-.6-.8-.7-38.1-17.5-78.4-30-119.7-37.1-.4-.1-.8 0-1.1.1s-.6.4-.8.8c-5.5 9.9-10.5 20.2-14.9 30.6-44.6-6.8-89.9-6.8-134.4 0-4.5-10.5-9.5-20.7-15.1-30.6-.2-.3-.5-.6-.8-.8s-.7-.2-1.1-.2C162.5 39 122.2 51.5 84.1 69c-.3.1-.6.4-.8.7C7.1 183.5-13.8 294.6-3.6 404.2c0 .3.1.5.2.8s.3.4.5.6c44.4 32.9 94 58 146.8 74.2.4.1.8.1 1.1 0s.7-.4.9-.7c11.3-15.4 21.4-31.8 30-48.8.1-.2.2-.5.2-.8s0-.5-.1-.8-.2-.5-.4-.6-.4-.3-.7-.4c-15.8-6.1-31.2-13.4-45.9-21.9-.3-.2-.5-.4-.7-.6s-.3-.6-.3-.9 0-.6.2-.9.3-.5.6-.7c3.1-2.3 6.2-4.7 9.1-7.1.3-.2.6-.4.9-.4s.7 0 1 .1c96.2 43.9 200.4 43.9 295.5 0 .3-.1.7-.2 1-.2s.7.2.9.4c2.9 2.4 6 4.9 9.1 7.2.2.2.4.4.6.7s.2.6.2.9-.1.6-.3.9-.4.5-.6.6c-14.7 8.6-30 15.9-45.9 21.8-.2.1-.5.2-.7.4s-.3.4-.4.7-.1.5-.1.8.1.5.2.8c8.8 17 18.8 33.3 30 48.8.2.3.6.6.9.7s.8.1 1.1 0c52.9-16.2 102.6-41.3 147.1-74.2.2-.2.4-.4.5-.6s.2-.5.2-.8c12.3-126.8-20.5-236.9-86.9-334.5zm-302 267.7c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.4 59.2-52.8 59.2m195.4 0c-29 0-52.8-26.6-52.8-59.2s23.4-59.2 52.8-59.2c29.7 0 53.3 26.8 52.8 59.2 0 32.7-23.2 59.2-52.8 59.2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://coloradomesh.org/" target="_blank" rel="noopener" title="Colorado Mesh" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2m-5.15 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M14.34 14H9.66c-.1-.66-.16-1.32-.16-2s.06-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2M12 19.96c-.83-1.2-1.5-2.53-1.91-3.96h3.82c-.41 1.43-1.08 2.76-1.91 3.96M8 8H5.08A7.92 7.92 0 0 1 9.4 4.44C8.8 5.55 8.35 6.75 8 8m-2.92 8H8c.35 1.25.8 2.45 1.4 3.56A8 8 0 0 1 5.08 16m-.82-2C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2M12 4.03c.83 1.2 1.5 2.54 1.91 3.97h-3.82c.41-1.43 1.08-2.77 1.91-3.97M18.92 8h-2.95a15.7 15.7 0 0 0-1.38-3.56c1.84.63 3.37 1.9 4.33 3.56M12 2C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.top", "navigation.indexes", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

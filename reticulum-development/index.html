@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/reticulum-games-parity/">
+        <link rel="canonical" href="https://colorado-mesh.github.io/mesh-client/reticulum-development/">
       
       
-        <link rel="prev" href="../reticulum-sidecar-ipc/">
+        <link rel="prev" href="../meshcore-meshtastic-parity/">
       
       
-        <link rel="next" href="../nomad-hosting-interop/">
+        <link rel="next" href="../reticulum-sidecar-ipc/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>Reticulum Games Parity - Colorado Mesh Client</title>
+        <title>Reticulum Development - Colorado Mesh Client</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#reticulum-games--ratspeak-parity-checklist" class="md-skip">
+        <a href="#reticulum-development" class="md-skip">
           Skip to content
         </a>
       
@@ -113,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Reticulum Games Parity
+              Reticulum Development
             
           </span>
         </div>
@@ -1352,10 +1352,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../reticulum-development/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reticulum Development
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1371,6 +1398,76 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ownership-rns-vs-lxmf-client-vs-mesh-client-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership: RNS vs LXMF client vs mesh-client policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-sidecar-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the sidecar (development)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-rnsh--rncp-interop-smoke" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote (rnsh / rncp) interop smoke
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1408,37 +1505,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Reticulum Games Parity
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../reticulum-games-parity/" class="md-nav__link">
         
   
   
@@ -1454,70 +1524,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#commands--api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Commands / API
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ui" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        UI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#wire-interop" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Wire interop
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remaining-follow-ups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Remaining follow-ups
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1764,10 +1770,38 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#commands--api" class="md-nav__link">
+  <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Commands / API
+        Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ownership-rns-vs-lxmf-client-vs-mesh-client-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ownership: RNS vs LXMF client vs mesh-client policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-sidecar-development" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building the sidecar (development)
       
     </span>
   </a>
@@ -1775,32 +1809,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#ui" class="md-nav__link">
+  <a href="#remote-rnsh--rncp-interop-smoke" class="md-nav__link">
     <span class="md-ellipsis">
       
-        UI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#wire-interop" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Wire interop
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remaining-follow-ups" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Remaining follow-ups
+        Remote (rnsh / rncp) interop smoke
       
     </span>
   </a>
@@ -1824,7 +1836,7 @@
 
 
   
-    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/reticulum-games-parity.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/Colorado-Mesh/mesh-client/edit/main/docs/reticulum-development.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1832,212 +1844,187 @@
   
 
 
-<h1 id="reticulum-games--ratspeak-parity-checklist">Reticulum Games — Ratspeak parity checklist<a class="headerlink" href="#reticulum-games--ratspeak-parity-checklist" title="Permanent link">&para;</a></h1>
-<p>Living matrix for <a href="https://github.com/Colorado-Mesh/mesh-client/issues/773">issue #773</a>. Wire protocol is <a href="https://github.com/ratspeak/lrgp-rs">lrgp-rs</a> (LRGP v1). Product surface reference is Ratspeak:</p>
+<h1 id="reticulum-development">Reticulum development<a class="headerlink" href="#reticulum-development" title="Permanent link">&para;</a></h1>
+<p>Developer and maintainer notes for the Reticulum integration: process architecture, the ownership split between RNS, LXMF and mesh-client policy, building the sidecar, and interop smoke tests. The user guide is <a href="../reticulum/">Reticulum in mesh-client</a>; the HTTP/WebSocket contract is <a href="../reticulum-sidecar-ipc/">Reticulum sidecar IPC</a>.</p>
+<h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart LR
+  subgraph ui [Renderer GPL]
+    RT[useReticulumRuntime]
+    Panels[Stack / Network / Admin / Chat panels]
+    RT --&gt; Panels
+  end
+  subgraph main [Electron main GPL]
+    IPC[reticulum:* IPC proxy]
+    DB[(SQLite reticulum_* tables)]
+    IPC --&gt; DB
+  end
+  subgraph sidecar [Sidecar AGPL]
+    Bin[mesh-client-reticulum]
+    RNS[rsReticulum + rsLXMF]
+    Bin --&gt; RNS
+  end
+  ui &lt;--&gt;|electronAPI| IPC
+  IPC &lt;--&gt;|127.0.0.1| Bin</code></pre>
+<p>The renderer <strong>must not</strong> call the sidecar URL directly (sandbox). All HTTP/WS goes through main-process <code>reticulum:proxyGet</code> / <code>proxyPost</code> / <code>proxyPut</code> / <code>proxyDelete</code>. Paths must start with <code>/api/v1/</code>. Full route list: <a href="../reticulum-sidecar-ipc/">reticulum-sidecar-ipc.md</a>.</p>
+<p><strong>Listen-first connect:</strong> The sidecar binds HTTP first, then <code>attach_live</code> brings up RNS/LXMF (path table, BLE Peer, deferred PN messagestore). Electron health is <code>GET /api/v1/status</code> with <code>status: "ok"</code> — not <code>rns_ready</code> / <code>lxmf_ready</code>. <code>useReticulumRuntime</code> marks connection <strong>configured</strong> once start succeeds and identity is known, then hydrates peers/DB in the background and dispatches <code>RETICULUM_CONFIGURED_EVENT</code>. TCP hubs and RRC can proceed after live attach; Chat LXMF send/reaction fail closed with <code>requires live rns-stack sidecar</code> until the bridge is up. <strong>Cancel</strong> / stop does not wait on cargo or BLE. LoRa Meshtastic/MeshCore may call <code>ensureForBle()</code> so GATT is available without a Reticulum UI Start. Renderer LXMF/RRC proxy sends use a <strong>15 s</strong> IPC deadline (<code>RETICULUM_IPC_SEND_TIMEOUT_MS</code>).</p>
+<h3 id="ownership-rns-vs-lxmf-client-vs-mesh-client-policy">Ownership: RNS vs LXMF client vs mesh-client policy<a class="headerlink" href="#ownership-rns-vs-lxmf-client-vs-mesh-client-policy" title="Permanent link">&para;</a></h3>
+<p>Reticulum is not one blob that “does everything automatically.” Before adding sidecar or UI automation, classify the work:</p>
+<pre class="mermaid"><code>flowchart TB
+  subgraph rns [RNS transport - library]
+    PathTable[Path table / RequestPath]
+    AnnounceFlood[Announce flood / Auto beacons]
+    Links[Links / proofs / Resources]
+  end
+  subgraph lxmf [LXMF app layer - client or lxmd must own]
+    DeliveryAnnounce[lxmf.delivery announces]
+    OutboundDriver[Direct then Propagated delivery]
+    PnHost[PN serve /get /offer]
+    IdentityLearn[Pubkey from announces / path responses]
+  end
+  subgraph mesh [mesh-client product policy]
+    AutoDemote[Auto vs private LAN demotion]
+    PnCascade[Multi-PN deposit and sync cascade]
+    PathMedium[Prefer RF vs network slots]
+    UiProbe[DM probe / Nomad force-path]
+  end
+  rns --&gt; lxmf
+  lxmf --&gt; mesh</code></pre>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Owns</th>
+<th>mesh-client role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RNS transport</strong> (rsReticulum)</td>
+<td>Path table, announce flooding, AutoInterface beacons, RMAP discovery announce signing, Links / proofs / Resources</td>
+<td>Call transport APIs (<code>RequestPath</code>, path table reads, destination register). Do <strong>not</strong> reimplement pathfinding or beacon loops in the sidecar or UI. Library gaps belong in overlays under <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/</code></a>, not a second routing plane.</td>
+</tr>
+<tr>
+<td><strong>LXMF client / PN</strong> (rsLXMF + sidecar orchestration)</td>
+<td><code>lxmf.delivery</code> announce schedules, Direct→Propagated outbound driver, identity learning for LRPROOF, local PN serve (<code>/offer</code>/<code>/get</code>), client inbox retrieve</td>
+<td>Intentional <strong>lxmd / Ratspeak parity</strong>. rsLXMF is a library, not a full daemon — the sidecar owns these loops (<code>lxmf_delivery.rs</code>, <code>lxmf_outbound.rs</code>, <code>propagation_*</code>, <code>pn_inbound.rs</code>). Without them, Chat and offline delivery do not work. Documented elsewhere as “Host PN fabric → Chat (lxmd-style glue)”: mesh-client is PN + end-client on rsLXMF, <strong>not</strong> a second <code>lxmd</code> binary.</td>
+</tr>
+<tr>
+<td><strong>mesh-client product policy</strong></td>
+<td>AutoInterface demotion toward private TCP/UDP, multi-slot path failover before PN fallback, prefer path medium, multi-PN deposit/sync cascade (Off/Auto/Manual), Chat DM auto-probe, Nomad <code>force_path_refresh</code></td>
+<td><strong>Not</strong> required by bare RNS. Exists for multi-hub / Auto+LAN / UX. Treat as intentional product behavior; do not mistake it for transport.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Renderer rule:</strong> UI mirrors sidecar events and configures policy (announce interval, Propagation mode, Path/Probe buttons, RMAP publish toggles, topology layout). It must not invent peer discovery, announce flooding, or a second pathfinder. Optimistic <code>announce.received</code> peer rows and Topology graphs are <strong>views</strong> over the RNS path table, not routing.</p>
+<p><strong>What looks “automatic” but is correct to own in the sidecar</strong></p>
 <ul>
-<li><code>crates/ratspeak-tauri/src/commands/games.rs</code></li>
-<li><code>dashboard/static/js/games_tab.js</code></li>
+<li>Periodic / startup <strong>LXMF delivery</strong> announces and Network <strong>Announce now</strong> (Ratspeak/lxmd parity; see Network tab).</li>
+<li><code>LxmfOutboundDriver</code> Direct planning, path-request gating, retries, then Propagated cascade.</li>
+<li>PN hosting admission, peer <code>/offer</code> bookkeeping, silent <code>/get</code> catch-up, and renderer Auto/Manual <strong>sync cascades</strong> that call into those APIs.</li>
+<li>Registering announce/path-response handlers so Direct LRPROOF has peer public keys.</li>
 </ul>
-<p>Update this file when Games PRs land. <code>pnpm run update</code> warns only when a <strong>published</strong> Ratspeak GitHub Release is newer than the <code>reviewed-ref</code> pin on the <code>games-parity</code> entry in <code>scripts/update.sh</code> (bump that pin after review). Tags, <code>main</code>, and RCs without a GitHub Release are ignored.</p>
-<p><strong>Last review:</strong> 2026-09-25 (Ratspeak v1.0.33 — large-file/photo attachment fixes, Bluetooth Peer transfer timeouts, discovery on busy links, first-message delivery; <strong>no Games API or <code>games_tab.js</code> delta</strong> vs v1.0.32. Four in a Row UI remains <code>done</code>; wire-interop rows still <code>todo</code> until a live gold test). Prior: 2026-09-22 (Ratspeak v1.0.32 — Android sharing / Network Ownership / voice + LoRa routing; no Games API delta; <code>games_tab.js</code> only adds <code>openGameSession(sessionId, isCurrent)</code> stale-open cancellation).</p>
-<p>Status: <code>done</code> | <code>partial</code> | <code>wontfix</code> | <code>todo</code></p>
-<h2 id="commands--api">Commands / API<a class="headerlink" href="#commands--api" title="Permanent link">&para;</a></h2>
+<p><strong>What is product policy above RNS</strong> (keep intentional; cite when changing)</p>
+<ul>
+<li><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/src/stack/auto_path_policy.rs"><code>auto_path_policy.rs</code></a> — RNS correctly prefers 0-hop Auto; sidecar demotes unhealthy Auto toward a live <strong>private</strong> path for LXMF Direct (see <a href="../reticulum/#path-routing">Path routing</a>).</li>
+<li><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/src/stack/path_failover.rs"><code>path_failover.rs</code></a> + path-medium overlays — ranked slots / medium preference before giving up Direct.</li>
+<li><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/src/stack/pn_cascade.rs"><code>pn_cascade.rs</code></a> + <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/reticulum/reticulumPropagationAutoApply.ts"><code>reticulumPropagationAutoApply.ts</code></a> — multi-PN deposit and sync order.</li>
+<li>Chat DM auto-probe (<code>useReticulumDmPathProbe</code>) — reachability UX; RNS would still path on send.</li>
+<li>Nomad <code>force_path_refresh</code> — DropPath→RequestPath recovery for stale TCP hub paths.</li>
+<li>Nomad per-node <strong>identify</strong> (default <strong>anonymous</strong>) — Link sessions send <code>LINKIDENTIFY</code> only for nodes the user opted in; RNS itself has no such default. See <a href="../reticulum/#nomad-identify-to-this-site">Nomad identify</a>.</li>
+</ul>
+<p><strong>Gate for new automation:</strong> Is this RNS transport, LXMF client/PN (lxmd parity), or mesh-client policy? Prefer library/overlay for transport; prefer sidecar lxmd-shaped loops for LXMF; prefer explicit, documented policy modules for product overrides — never a parallel path table or announce flood in the renderer.</p>
+<p><strong>Duplication vs ownership (send / path / propagation):</strong> Extra sidecar (or renderer) code is not automatically “Ratspeak duplicated.” Classify before deleting or relocating:</p>
 <table>
 <thead>
 <tr>
-<th>Ratspeak command</th>
-<th>mesh-client</th>
-<th>Status</th>
-<th>Notes</th>
+<th>Area</th>
+<th>Upstream-owned</th>
+<th>mesh-client-owned (keep)</th>
+<th>Suspicious duplication (do not add)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>send_game_action</code></td>
-<td><code>POST /api/v1/games/action</code> + <code>reticulum:gamesAction</code></td>
-<td>done</td>
-<td>Direct-preferred send</td>
+<td><strong>Send pipeline</strong></td>
+<td>LXMF wire, Direct outbound driver, terminal <code>lxmf_outbound_status</code> Completes</td>
+<td>Renderer outbox drain, optimistic pending→hash rekey, SQLite <code>delivery_status</code>, badge semantics (<code>sending</code> vs recipient <strong>Delivered</strong> vs PN deposit). <code>POST /lxmf/send</code> enqueue is not delivery.</td>
+<td>A second outbound driver or treating HTTP send <code>ok</code> as recipient receipt</td>
 </tr>
 <tr>
-<td><code>get_available_games</code></td>
-<td><code>GET /api/v1/games/apps</code></td>
-<td>done</td>
-<td></td>
+<td><strong>Path policy</strong></td>
+<td>RNS path table, <code>RequestPath</code>, announce flood</td>
+<td><code>auto_path_policy.rs</code>, <code>path_failover.rs</code>, path-medium preference/pins — product policy on the RNS table</td>
+<td>A parallel pathfinder or announce loop in sidecar or UI</td>
 </tr>
 <tr>
-<td><code>get_all_game_sessions</code></td>
-<td><code>GET /api/v1/games/sessions</code></td>
-<td>done</td>
-<td>optional <code>?peer=</code></td>
-</tr>
-<tr>
-<td><code>get_active_games</code></td>
-<td><code>GET /api/v1/games/sessions?peer=</code></td>
-<td>done</td>
-<td>peer filter</td>
-</tr>
-<tr>
-<td><code>get_game_session_detail</code></td>
-<td><code>GET /api/v1/games/sessions/:id</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td><code>mark_game_read</code></td>
-<td><code>POST …/read</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td><code>delete_game_session</code></td>
-<td><code>DELETE …/:id</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td><code>resend_last_game_action</code></td>
-<td><code>POST …/resend</code></td>
-<td>done</td>
-<td>same envelope/nonce; overlay DB survives restart</td>
+<td><strong>Propagation</strong></td>
+<td>PN <code>/offer</code>/<code>/get</code> wire (rsLXMF)</td>
+<td>Sidecar LXMF/PN loops (lxmd parity) plus <code>pn_cascade.rs</code> / Auto-discovered candidates / Off·Auto·Manual sync order (<code>reticulumPropagationAutoApply.ts</code>)</td>
+<td>A second messagestore or PN protocol implementation</td>
 </tr>
 </tbody>
 </table>
-<h2 id="ui">UI<a class="headerlink" href="#ui" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Ratspeak UI</th>
-<th>mesh-client</th>
-<th>Status</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Games tab</td>
-<td>Left-rail Games (<code>Gamepad2</code>)</td>
-<td>done</td>
-<td>Reticulum-only via <code>hasLrgpGames</code></td>
-</tr>
-<tr>
-<td>Session list filters</td>
-<td>GamesPanel filters</td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Unread badge</td>
-<td>session unread + Games tab badge</td>
-<td>done</td>
-<td>tab and rail red pill via <code>gamesUnread</code></td>
-</tr>
-<tr>
-<td>TTT board</td>
-<td><code>TicTacToeBoard</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Chess board</td>
-<td><code>ChessBoard</code></td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Challenge from contacts</td>
-<td>Peers / Chat DM Challenge</td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Draw / resign</td>
-<td>session actions</td>
-<td>done</td>
-<td></td>
-</tr>
-<tr>
-<td>Delivery state / resend</td>
-<td>session <code>delivery_state</code> + Resend</td>
-<td>done</td>
-<td>LXMF outbound bridge; chips; Resend on <code>failed</code></td>
-</tr>
-<tr>
-<td>Notification route <code>lrgp:&lt;session&gt;</code></td>
-<td><code>lrgp:</code> + <code>lxm://game/&lt;id&gt;</code> → Games tab</td>
-<td>done</td>
-<td><code>MeshClientDeepLinkHost</code> + <code>openReticulumGameSession</code></td>
-</tr>
-<tr>
-<td>Optimistic rollback UI</td>
-<td>client backup + restore</td>
-<td>done</td>
-<td>TTT + Chess optimistic paint; WS/<code>action_result</code> rollback</td>
-</tr>
-<tr>
-<td>Chess promotion picker</td>
-<td><code>ChessBoard</code> chooser</td>
-<td>done</td>
-<td>q/r/b/n filtered by <code>legal_moves</code></td>
-</tr>
-<tr>
-<td>Threefold / 50-move claims</td>
-<td>Claim buttons → <code>draw_offer</code> <code>{ r }</code></td>
-<td>done</td>
-<td><code>3fr</code> / <code>50m</code> when <code>draw_offer_reason</code> set</td>
-</tr>
-<tr>
-<td>Win celebration</td>
-<td><code>burstConfetti</code> on local win</td>
-<td>done</td>
-<td><code>confettiBurst.ts</code> canvas burst; once per <code>session_id</code>; reduce-motion aware</td>
-</tr>
-<tr>
-<td>Four in a Row</td>
-<td><code>FourInARowBoard</code></td>
-<td>done</td>
-<td>7×6 gravity board; column click sends <code>{ c }</code>; optimistic drop + win/draw detection; winning line highlighted</td>
-</tr>
-</tbody>
-</table>
-<h2 id="wire-interop">Wire interop<a class="headerlink" href="#wire-interop" title="Permanent link">&para;</a></h2>
+<p>False <strong>Delivered</strong> on RF-only Chat is typically <strong>renderer correlation</strong> (outbox vs store row), not missing Ratspeak send logic. Correlate receipts to the attempt’s optimistic id/hash (<code>useChatOutbox.ts</code>); do not “fix” it by moving UI status into the sidecar.</p>
+<hr />
+<h2 id="building-the-sidecar-development">Building the sidecar (development)<a class="headerlink" href="#building-the-sidecar-development" title="Permanent link">&para;</a></h2>
+<p><code>rns-stack</code> builds need the repo-local <code>.rsstack/</code> workspace checkouts <code>rsReticulum</code>, <code>rsLXMF</code>, <code>rsNomad</code>, <code>rsLXST</code>, and <code>lrgp-rs</code> (see <code>scripts/clone-ratspeak-stack.sh</code>). That script floats each to <code>origin/main</code> by default (optional bisect with <code>RS_RETICULUM_REF</code> / <code>RS_LXMF_REF</code> / <code>RS_NOMAD_REF</code> / <code>RS_LXST_REF</code> / <code>RS_LRGP_REF</code>) and applies mesh-client overlays for rsReticulum/rsLXMF (fails if a patch will not apply). Open upstream feature PRs such as <a href="https://github.com/ratspeak/rsReticulum/pull/26">rsReticulum#26</a> and <a href="https://github.com/ratspeak/rsLXMF/pull/7">rsLXMF#7</a> are carried as overlays (not SHA pins) — tracked by <code>pnpm run update</code>. Peer list / detail default avatars use <a href="https://github.com/ratspeak/LXMFace">LXMFace</a> (<code>src/renderer/lib/reticulum/lxmface.ts</code>) when no custom Lucide icon is set.</p>
+<p>End users of <strong>GitHub Releases</strong> or <strong>Flatpak</strong> do not need Rust. Developers and contributors do.</p>
+<p><strong>One command</strong> (from repo root; requires <a href="https://rustup.rs/">Rust</a>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:build
+</code></pre></div>
+<p>Cargo always needs the <code>.rsstack/</code> checkouts (<code>rsReticulum</code>, <code>rsLXMF</code>, <code>rsNomad</code>, <code>rsLXST</code>, <code>lrgp-rs</code>) as path dependencies — clone them with <code>./scripts/clone-ratspeak-stack.sh</code> (same as <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/README.md">reticulum-sidecar/README.md</a>). With those trees present, the build script applies required patches and compiles with <strong><code>rns-stack,rns-ble,rns-rnode-tcp</code></strong> for the <strong>real mesh-I/O</strong> stack (live path table, BLE, RNode USB/Wi‑Fi, Nomad hosting, LXST voice, LRGP games). Building <strong>without</strong> <code>--features rns-stack</code> still uses those checkouts but links the <strong>stub</strong> stack (file-backed API for UI/tests — not for real mesh I/O).</p>
+<p><strong>Electron dev:</strong> <strong>Start stack</strong> auto-runs <code>cargo build</code> when the debug binary is missing, when <code>reticulum-sidecar/src/**/*.rs</code> or <code>Cargo.toml</code> is newer than the binary, or when a stub binary is present but the full <code>.rsstack/</code> workspace exists. First compile can take several minutes — pre-build with the command above.</p>
+<p><strong>Run sidecar alone:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pnpm<span class="w"> </span>run<span class="w"> </span>reticulum:sidecar:dev
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>http://127.0.0.1:19437/api/v1/status
+</code></pre></div>
+<p>CI matrix (stub + full stack): <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/reticulum-sidecar.yaml"><code>.github/workflows/reticulum-sidecar.yaml</code></a>. Flatpak release builds bundle the full-stack binary into <code>resources/reticulum-sidecar/</code>.</p>
+<p>Patch overlays (packet tap, AutoInterface utun, discovery-announce-egress, rsLXMF policy-setters, …): <a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/reticulum-sidecar/patches/README.md"><code>reticulum-sidecar/patches/README.md</code></a>.</p>
+<hr />
+<h2 id="remote-rnsh--rncp-interop-smoke">Remote (rnsh / rncp) interop smoke<a class="headerlink" href="#remote-rnsh--rncp-interop-smoke" title="Permanent link">&para;</a></h2>
+<p>Wire protocols are stock Reticulum utilities — mesh-client is a client (and rncp receive listener), not a private dialect.</p>
 <table>
 <thead>
 <tr>
 <th>Scenario</th>
-<th>Status</th>
+<th>Peer side</th>
+<th>mesh-client side</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>mesh-client ↔ mesh-client TTT</td>
-<td>done</td>
+<td>Shell</td>
+<td><code>rnsh</code> / <code>rnsh-rs</code> listen; allow our identity (<code>-a</code> / allow-list)</td>
+<td>Remote → Shell → paste <code>rnsh</code> destination hash → connect</td>
 </tr>
 <tr>
-<td>mesh-client ↔ mesh-client Chess</td>
-<td>done</td>
+<td>Send file</td>
+<td><code>rncp -l -a &lt;our_identity&gt;</code> (or mesh-client inbound Ask)</td>
+<td>Remote → Transfer / Chat DM → peer <code>rncp.receive</code> hash (not LXMF)</td>
 </tr>
 <tr>
-<td>mesh-client ↔ Ratspeak TTT</td>
-<td>done</td>
+<td>Receive file</td>
+<td><code>rncp file &lt;our_receive_hash&gt;</code></td>
+<td>Remote → Settings → inbound Ask/allow-list; copy <strong>My rncp receive destination</strong></td>
 </tr>
 <tr>
-<td>mesh-client ↔ Ratspeak Chess</td>
-<td>done</td>
+<td>Fetch</td>
+<td>Peer <code>rncp -l -F -j &lt;jail&gt; -a &lt;our_id&gt;</code></td>
+<td>Remote → Transfer → Fetch remote path</td>
 </tr>
 <tr>
-<td>mesh-client ↔ mesh-client Four in a Row</td>
-<td>todo</td>
+<td>Auth fail</td>
+<td>Peer allow-list omits us</td>
+<td>Error shows <strong>not allowed</strong> + copy our identity hash</td>
 </tr>
 <tr>
-<td>mesh-client ↔ Ratspeak Four in a Row</td>
-<td>todo</td>
+<td>Request enable</td>
+<td>Second mesh-client</td>
+<td>Chat/Transfer <strong>Request enable</strong> (<code>mesh-client:request-rncp-receive:v1</code>); peer replies with <code>mesh-client:rncp-receive-dest:v1:&lt;hash&gt;</code> so the sender autofills</td>
 </tr>
 </tbody>
 </table>
-<p>Manual gold test: two clients on a TCP hub — challenge → accept → play → resign/draw.</p>
-<h2 id="remaining-follow-ups">Remaining follow-ups<a class="headerlink" href="#remaining-follow-ups" title="Permanent link">&para;</a></h2>
-<p>None for the delivery / envelope / optimistic / Chess promotion+claim track. Envelope bytes live in sidecar companion <code>games_outbound.db</code> (not <code>lrgp-rs</code> <code>LrgpStore</code> schema).</p>
-<p>Four in a Row ships with unit + axe coverage, but the two wire-interop rows above are still <strong>unverified on a live mesh</strong> — run the manual gold test against Ratspeak before marking them <code>done</code>. The board follows <code>lrgp-rs</code> <code>SPEC.md</code> appendix C: 42 cells row-major (<code>row * 7 + column</code>), markers <code>A</code> (challenger, first) / <code>B</code>, local outgoing payload exactly <code>{ c }</code> with the sidecar deriving <code>n</code>, landing row/cell, and terminal claims.</p>
+<p>Transfers require a <strong>high-speed</strong> path (TCP/network); LoRa/BLE-only destinations are refused locally before a link opens. There is no byte-level resume — Retry restarts the full file.</p>
 
 
 
@@ -2058,7 +2045,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="September 28, 2026 15:59:15 UTC">September 28, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
   </span>
 
     
