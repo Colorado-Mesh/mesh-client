@@ -58,6 +58,11 @@ describe('prepare-mkdocs helpers', () => {
     );
   });
 
+  it('strips HTML tags from slugs, including nested tags', () => {
+    expect(githubSlug('Install <img src="x.png"> now')).toBe('install--now');
+    expect(githubSlug('Safe <scr<script>ipt>alert</script> heading')).toBe('safe-alert-heading');
+  });
+
   it('extracts marked sections and rejects missing markers', () => {
     expect(extractMarkedSection(README, 'limitations')).toBe('- Only one radio.');
     expect(() => extractMarkedSection(README, 'nope')).toThrow(/docs-site:nope/);
