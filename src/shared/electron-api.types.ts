@@ -48,6 +48,7 @@ import type {
   ReticulumSidecarEvent,
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
+  SystemReticulumInstance,
 } from './reticulum-types';
 import type {
   VoiceMemoAudioRequest,
@@ -1429,6 +1430,8 @@ export interface ElectronAPI {
     /** Dedicated factory reset (blocked on generic proxyPost). UI must confirm first. */
     factoryReset: () => Promise<unknown>;
     readDefaultConfigFile: () => Promise<{ path: string | null; content: string | null }>;
+    /** Read-only probe for a system rnsd / other Reticulum app (never writes its config). */
+    detectSystemInstance: () => Promise<SystemReticulumInstance>;
     showConfigImportDialog: () => Promise<{ path: string | null; content: string | null }>;
     showIdentityImportDialog: () => Promise<ReticulumIdentityImportDialogResult>;
     showIdentityBackupImportDialog: () => Promise<ReticulumIdentityBackupImportDialogResult>;

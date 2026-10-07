@@ -12,7 +12,6 @@ use super::rf_profiles::{match_params_to_profile, rf_profile_by_id};
 use super::types::InterfaceRow;
 
 pub const SHARED_INSTANCE_NAME: &str = "SharedInstanceServer";
-pub const SHARED_INSTANCE_CLIENT_NAME: &str = "SharedInstanceClient";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ConfigAuditIssue {
@@ -35,6 +34,7 @@ pub fn audit_config(
     live_interfaces: &[InterfaceRow],
     stack_settings: &StackSettings,
     stack_running: bool,
+    shared_instance_conflict: Option<&str>,
 ) -> Result<Vec<ConfigAuditIssue>, String> {
     let mut issues = Vec::new();
     let config_rows = config::interfaces_from_config_dir(config_dir).unwrap_or_default();
@@ -79,17 +79,7 @@ pub fn audit_config(
         }
     }
 
-    // Keep status set aligned with renderer `isReticulumInterfaceOnlineStatus`.
-    let shared_client_live = live_interfaces.iter().find(|i| {
-        i.name == SHARED_INSTANCE_CLIENT_NAME
-            && matches!(
-                i.status.to_ascii_lowercase().as_str(),
-                "up" | "connected" | "online" | "running"
-            )
-    });
-    let shared_instance_client = shared_client_live.is_some();
-
-    if stack_running && !shared_instance_client {
+    if stack_running {
         for row in config_rows.iter().filter(|r| r.enabled) {
             if row.iface_type != "tcp" {
                 continue;
@@ -111,12 +101,7 @@ pub fn audit_config(
     }
 
     for live in live_interfaces {
-        // Client mode never spawns local TCP hubs — unreachable is misleading.
-        if !shared_instance_client
-            && live.iface_type == "tcp"
-            && live.enabled
-            && live.status != "up"
-        {
+        if live.iface_type == "tcp" && live.enabled && live.status != "up" {
             issues.push(issue(
                 "tcp_unreachable",
                 "warning",
@@ -173,27 +158,20 @@ pub fn audit_config(
     let shared_live = live_interfaces
         .iter()
         .find(|i| i.name == SHARED_INSTANCE_NAME);
-    if let Some(client) = shared_client_live {
+    // mesh-client never attaches as a client of another Reticulum app (see
+    // `instance_policy`); when Share cannot bind, the stack runs standalone.
+    if let Some(endpoint) = shared_instance_conflict {
         issues.push(issue(
-            "shared_instance_client",
+            "shared_instance_conflict",
             "warning",
-            Some(client.id.clone()),
-            Some(SHARED_INSTANCE_CLIENT_NAME.into()),
-            "Share instance attached as a client of another Reticulum app — local TCP hubs in this config are not started".into(),
+            None,
+            Some(SHARED_INSTANCE_NAME.into()),
+            format!(
+                "Another Reticulum app owns the shared instance ({endpoint}) — mesh-client is running standalone. Quit the other app and restart, or turn off Share instance"
+            ),
             Some("disable_share_instance"),
         ));
-    } else if stack_settings.share_instance {
-        if stack_running && shared_live.map(|i| i.status.as_str()) != Some("up") {
-            issues.push(issue(
-                "missing_shared_instance",
-                "warning",
-                shared_live.map(|i| i.id.clone()),
-                Some(SHARED_INSTANCE_NAME.into()),
-                "Share instance is on but this app is not hosting the shared server — quit other Reticulum apps or turn off Share instance, then restart".into(),
-                Some("disable_share_instance"),
-            ));
-        }
-    } else if shared_live.is_some() {
+    } else if !stack_settings.share_instance && shared_live.is_some() {
         issues.push(issue(
             "shared_instance_unexpected",
             "info",
@@ -536,7 +514,7 @@ pub fn repair_config(
 pub fn validate_config_offline(config_dir: &Path) -> Result<Vec<ConfigAuditIssue>, String> {
     config::parse_config_dir(config_dir)?;
     let settings = config::get_stack_settings(config_dir)?;
-    audit_config(config_dir, &[], &settings, false)
+    audit_config(config_dir, &[], &settings, false, None)
 }
 
 #[cfg(test)]
@@ -581,7 +559,7 @@ discoverable = Yes
             enable_transport: true,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(issues.iter().any(|i| i.kind == "rmap_missing_coordinates"));
         let _ = fs::remove_dir_all(&dir);
     }
@@ -606,7 +584,7 @@ longitude = -105.0
             enable_transport: true,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(issues.iter().any(|i| i.kind == "rmap_no_tcp_hub"));
         let _ = fs::remove_dir_all(&dir);
     }
@@ -631,7 +609,7 @@ longitude = -105.0
             enable_transport: false,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(issues.iter().any(|i| i.kind == "rmap_transport_disabled"));
         let _ = fs::remove_dir_all(&dir);
     }
@@ -656,7 +634,7 @@ longitude = 2.3522
             enable_transport: true,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(issues.iter().any(|i| i.kind == "rmap_i2p_not_connectable"));
         let _ = fs::remove_dir_all(&dir);
     }
@@ -683,34 +661,83 @@ longitude = -105.0
             enable_transport: true,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(issues.iter().any(|i| i.kind == "rmap_missing_reachable_on"));
         let _ = fs::remove_dir_all(&dir);
     }
 
     #[test]
-    fn shared_instance_client_suppresses_tcp_unreachable() {
+    fn shared_instance_conflict_reported_with_endpoint() {
         let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
         fs::create_dir_all(&dir).unwrap();
         write_sample_config(
             &dir,
-            r#"[[Ratspeak]]
-type = TCPClientInterface
-interface_enabled = Yes
-name = Ratspeak
-target_host = rns.ratspeak.org
-target_port = 4242
+            r#"[[Default Interface]]
+type = AutoInterface
+enabled = Yes
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            share_instance: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, true, Some("127.0.0.1:37428")).unwrap();
+        let conflict = issues
+            .iter()
+            .find(|i| i.kind == "shared_instance_conflict")
+            .expect("conflict issue");
+        assert_eq!(
+            conflict.repair_kind.as_deref(),
+            Some("disable_share_instance")
+        );
+        assert!(conflict.message.contains("127.0.0.1:37428"));
+        assert!(issues.iter().all(|i| i.kind != "missing_shared_instance"));
+        assert!(issues.iter().all(|i| i.kind != "shared_instance_client"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn share_on_without_conflict_reports_nothing_shared() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[Default Interface]]
+type = AutoInterface
+enabled = Yes
+"#,
+        );
+        let rows = config::interfaces_from_config_dir(&dir).unwrap();
+        let settings = StackSettings {
+            share_instance: true,
+            ..Default::default()
+        };
+        let issues = audit_config(&dir, &rows, &settings, true, None).unwrap();
+        assert!(
+            issues
+                .iter()
+                .all(|i| !i.kind.starts_with("shared_instance")
+                    && i.kind != "missing_shared_instance")
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn shared_instance_unexpected_when_server_live_and_share_off() {
+        let dir = std::env::temp_dir().join(format!("mesh_reticulum_audit_{}", Uuid::new_v4()));
+        fs::create_dir_all(&dir).unwrap();
+        write_sample_config(
+            &dir,
+            r#"[[Default Interface]]
+type = AutoInterface
+enabled = Yes
 "#,
         );
         let mut rows = config::interfaces_from_config_dir(&dir).unwrap();
-        for row in &mut rows {
-            if row.name == "Ratspeak" {
-                row.status = "down".into();
-            }
-        }
         rows.push(InterfaceRow {
             id: "rns-0".into(),
-            name: SHARED_INSTANCE_CLIENT_NAME.into(),
+            name: SHARED_INSTANCE_NAME.into(),
             iface_type: "Full".into(),
             enabled: true,
             status: "up".into(),
@@ -751,13 +778,15 @@ target_port = 4242
             extra_config: std::collections::HashMap::new(),
         });
         let settings = StackSettings {
-            share_instance: true,
+            share_instance: false,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, true).unwrap();
-        assert!(issues.iter().any(|i| i.kind == "shared_instance_client"));
-        assert!(issues.iter().all(|i| i.kind != "tcp_unreachable"));
-        assert!(issues.iter().all(|i| i.kind != "ghost_interface"));
+        let issues = audit_config(&dir, &rows, &settings, true, None).unwrap();
+        assert!(
+            issues
+                .iter()
+                .any(|i| i.kind == "shared_instance_unexpected")
+        );
         let _ = fs::remove_dir_all(&dir);
     }
 
@@ -838,7 +867,7 @@ target_port = 4242
             enable_transport: true,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(!issues.iter().any(|i| i.kind.starts_with("rmap_")));
         let _ = fs::remove_dir_all(&dir);
     }
@@ -871,7 +900,7 @@ target_port = 4242
             enable_transport: true,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(issues.iter().any(|i| i.kind == "rmap_mode_autocorrect"));
         let _ = fs::remove_dir_all(&dir);
     }
@@ -905,7 +934,7 @@ target_port = 4242
             enable_transport: true,
             ..Default::default()
         };
-        let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+        let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
         assert!(!issues.iter().any(|i| i.kind == "rmap_mode_autocorrect"));
         let _ = fs::remove_dir_all(&dir);
     }
@@ -941,7 +970,7 @@ target_port = 4242
                 enable_transport: true,
                 ..Default::default()
             };
-            let issues = audit_config(&dir, &rows, &settings, false).unwrap();
+            let issues = audit_config(&dir, &rows, &settings, false, None).unwrap();
             if mode == "roaming" {
                 assert!(
                     issues.iter().any(|i| i.kind == "rmap_mode_autocorrect"),

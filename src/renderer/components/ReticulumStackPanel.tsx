@@ -13,9 +13,13 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { ICON_LG, ICON_MD } from '@/renderer/lib/icons/iconClass';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import {
+  EMPTY_RETICULUM_INSTANCE_STATUS,
+  fetchReticulumInstanceStatus,
+  type ReticulumInstanceStatus,
+} from '@/renderer/lib/reticulum/reticulumInstanceStatus';
+import {
   collectReticulumInterfaceAlerts,
   collectReticulumLocalInterfaceConnecting,
-  isReticulumSharedInstanceClientMode,
   type ReticulumLocalInterfaceAlert,
 } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import { resolveReticulumSelfHeaderLabel } from '@/renderer/lib/reticulum/reticulumSelfNodeLabel';
@@ -39,7 +43,7 @@ import {
 import { ReticulumLocalInterfaceAlertsBlock } from './ReticulumLocalInterfaceAlertsBlock';
 import { ReticulumLocalInterfaceConnectingBlock } from './ReticulumLocalInterfaceConnectingBlock';
 import { ReticulumRmapConnectionStatus } from './ReticulumRmapConnectionStatus';
-import { ReticulumSharedInstanceClientBanner } from './ReticulumSharedInstanceClientBanner';
+import { ReticulumSharedInstanceConflictBanner } from './ReticulumSharedInstanceConflictBanner';
 import { ReticulumSidecarIssueAlertsBlock } from './ReticulumSidecarIssueAlertsBlock';
 import { Button } from './ui/Button';
 import { CHECKBOX_CLASS, NOTICE_CLASS } from './ui/formClasses';
@@ -208,10 +212,28 @@ export function ReticulumStackPanel({
 
   const shareInstanceEnabled = sidecarApiReady && sidecarUiRunning && shareInstanceSetting;
 
-  const sharedInstanceClient = useMemo(
-    () => isReticulumSharedInstanceClientMode(interfaces),
-    [interfaces],
+  const [fetchedInstanceStatus, setInstanceStatus] = useState<ReticulumInstanceStatus>(
+    EMPTY_RETICULUM_INSTANCE_STATUS,
   );
+  const instanceStatusLive = sidecarApiReady && sidecarUiRunning && !connecting;
+  const instanceStatus = instanceStatusLive
+    ? fetchedInstanceStatus
+    : EMPTY_RETICULUM_INSTANCE_STATUS;
+  useEffect(() => {
+    if (!instanceStatusLive) return;
+    let cancelled = false;
+    void fetchReticulumInstanceStatus()
+      .then((status) => {
+        if (!cancelled) setInstanceStatus(status);
+      })
+      .catch((e: unknown) => {
+        console.debug('[ReticulumStackPanel] instance status ' + errLikeToLogString(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [instanceStatusLive]);
+
   const localAlerts = useMemo(
     (): ReticulumLocalInterfaceAlert[] =>
       collectReticulumInterfaceAlerts(interfaces, serialPortPaths, {
@@ -303,6 +325,7 @@ export function ReticulumStackPanel({
         apiReady={sidecarApiReady}
         connecting={connecting}
         identity={identity}
+        selfHostsSharedInstance={instanceStatus.instanceMode === 'shared'}
         onStart={async () => {
           notifyManualStackStart();
           await onStartStack();
@@ -391,8 +414,9 @@ export function ReticulumStackPanel({
           {sidecarUiRunning ? (
             <>
               <ReticulumLocalInterfaceConnectingBlock interfaces={connectingInterfaces} />
-              {sharedInstanceClient ? (
-                <ReticulumSharedInstanceClientBanner
+              {instanceStatus.sharedInstanceConflict ? (
+                <ReticulumSharedInstanceConflictBanner
+                  endpoint={instanceStatus.sharedInstanceConflict}
                   onRestartStack={handleRestartStack}
                   onRefresh={refresh}
                   onBeginBleConnectGrace={beginBleConnectGrace}

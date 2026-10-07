@@ -200,6 +200,10 @@ pub struct LiveBridge {
     persisted: Arc<RwLock<PersistedState>>,
     #[cfg(feature = "rns-ble")]
     ble_peer_state: Arc<tokio::sync::Mutex<BlePeerRuntimeState>>,
+    /// `shared` | `standalone` (never `client`; see `instance_policy`).
+    instance_mode: &'static str,
+    /// Shared endpoint owned by another Reticulum app when Share was requested.
+    shared_instance_conflict: Option<String>,
 }
 
 /// Cached Nomad initiator Link for one remote `nomadnetwork.node` dest.
@@ -219,6 +223,19 @@ impl Drop for LiveRuntimeShutdown {
 }
 
 impl LiveBridge {
+    pub fn instance_mode(&self) -> &'static str {
+        self.instance_mode
+    }
+
+    pub fn shared_instance_conflict(&self) -> Option<&str> {
+        self.shared_instance_conflict.as_deref()
+    }
+
+    /// Settings other Reticulum apps need to attach to this process as clients.
+    pub fn shared_instance_client_settings(&self) -> serde_json::Value {
+        super::instance_policy::client_settings_json(self.instance_mode, &self.handle.config)
+    }
+
     /// Stop this generation's services before reusing the process for a new live stack.
     pub async fn prepare_stop(&self) -> Result<(), String> {
         tracing::info!("prepare_stop: shutting down live services and RNS runtime");
@@ -359,13 +376,22 @@ impl LiveBridge {
             return Err("identity not configured for live stack".into());
         };
 
-        let shutdown = ShutdownSignal::new();
-        let shutdown_guard = LiveRuntimeShutdown(shutdown.clone());
         let background_tasks = LiveTasks::default();
         let is_foreground = Arc::new(AtomicBool::new(true));
-        let handle = reticulum::init(Some(&config_str), None, shutdown.clone(), is_foreground)
-            .await
-            .map_err(|e| format!("RNS init failed: {e:?}"))?;
+        let share_instance = config::get_stack_settings(&config_dir)
+            .map(|s| s.share_instance)
+            .unwrap_or(false);
+        let startup = super::instance_policy::init_owned_or_standalone(
+            &config_str,
+            share_instance,
+            is_foreground,
+        )
+        .await?;
+        let shutdown = startup.shutdown;
+        let shutdown_guard = LiveRuntimeShutdown(shutdown.clone());
+        let handle = startup.handle;
+        let shared_instance_conflict = startup.shared_instance_conflict;
+        let instance_mode = super::instance_policy::instance_mode_label(handle.instance_mode);
 
         handle
             .enable_on_network_discovery(Arc::new(
@@ -628,6 +654,8 @@ impl LiveBridge {
                 spawned: HashMap::new(),
                 foreground_wake: foreground_wake.clone(),
             })),
+            instance_mode,
+            shared_instance_conflict,
         };
 
         // Mode Off keeps Preferred on disk but must not arm an outbound PN at stack start.

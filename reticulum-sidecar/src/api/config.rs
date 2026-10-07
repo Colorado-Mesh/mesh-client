@@ -68,6 +68,15 @@ pub async fn get_stack_settings(State(stack): State<Arc<StackHandle>>) -> Json<s
     }
 }
 
+pub async fn get_shared_instance_client_settings(
+    State(stack): State<Arc<StackHandle>>,
+) -> Json<serde_json::Value> {
+    match stack.shared_instance_client_settings() {
+        Some(settings) => Json(settings),
+        None => Json(serde_json::json!({ "ok": false, "error": "stack not running" })),
+    }
+}
+
 pub async fn put_stack_settings(
     State(stack): State<Arc<StackHandle>>,
     Json(body): Json<StackSettingsPatch>,

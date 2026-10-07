@@ -234,9 +234,9 @@ Turning publish off clears `ignore_config_warnings` when it is no longer needed.
 
 `point_to_point` is omitted from the official Reticulum manual’s interface-modes section but is defined in RNS (`MODE_POINT_TO_POINT`) and included in mesh-client’s mode catalog.
 
-Inbound “other apps / nodes connect to me” on this machine uses **Share instance** under **Network → stack settings** (runtime `SharedInstanceServer`), not a separate TCP server interface type. To publish a **public** Internet entrypoint that remote peers can auto-connect to, add a **Backbone** interface (Connection → Interfaces) and enable RMAP discoverable with `reachable_on`. See also [diagnostics.md](diagnostics.md) SharedInstance notes.
+Inbound “other apps / nodes connect to me” on this machine uses **Share instance** under **Network → stack settings** (runtime `SharedInstanceServer`), not a separate TCP server interface type; see [Using mesh-client with other Reticulum apps](#using-mesh-client-with-other-reticulum-apps). To publish a **public** Internet entrypoint that remote peers can auto-connect to, add a **Backbone** interface (Connection → Interfaces) and enable RMAP discoverable with `reachable_on`. See also [diagnostics.md](diagnostics.md) SharedInstance notes.
 
-Defaults for new/incomplete configs: `share_instance = No` and `instance_name = mesh-client` (avoids attaching as a client on system `\0rns/default`, which would skip spawning local TCP hubs). Existing installs that already have `share_instance = Yes` / `instance_name = default` are **not** auto-migrated — use the Connection banner, Network → **Share Reticulum instance**, or Diagnostics **Turn off Share instance** repair, then restart. **Network → Check config** runs an offline parse/audit of `userData/reticulum/config` via the bundled sidecar (`validate-config`) on macOS, Windows, and Linux. Maintainers can run the same lint from the CLI: `pnpm run reticulum:config:check` (optional `MESH_CLIENT_RETICULUM_CONFIG_DIR`).
+Defaults for new/incomplete configs: `share_instance = No` and `instance_name = mesh-client`. The sidecar starts with an explicit instance policy: **Share on** means _own_ the shared endpoint (`SharedOwner`), **Share off** means `Standalone`. It never attaches as a client to another app's instance. If Share is on but another Reticulum app already holds the endpoint, mesh-client runs standalone, reports `shared_instance_conflict` on `/api/v1/status`, and shows a Connection notice plus a Diagnostics row (**Turn off Share instance** repair). See [Using mesh-client with other Reticulum apps](#using-mesh-client-with-other-reticulum-apps). **Network → Check config** runs an offline parse/audit of `userData/reticulum/config` via the bundled sidecar (`validate-config`) on macOS, Windows, and Linux. Maintainers can run the same lint from the CLI: `pnpm run reticulum:config:check` (optional `MESH_CLIENT_RETICULUM_CONFIG_DIR`).
 
 **Pick device** opens a modal for serial or BLE selection:
 
@@ -265,6 +265,36 @@ When multiple enabled local RNode interfaces are connected, the interface list s
 - RNode RF preset mismatches
 
 **Repair config** normalizes TCP blocks and legacy preset ids; **Apply preset** writes coordinated defaults. Preset data: [`src/shared/reticulumRnodeRfProfiles.json`](../src/shared/reticulumRnodeRfProfiles.json) (coordinated regional, global fallback, legacy aliases such as `rnode_us915` → `rnode_us`).
+
+---
+
+## Using mesh-client with other Reticulum apps
+
+Mesh-client does **not** attach to a Reticulum instance run by another app (`rnsd`, Sideband, NomadNet, MeshChatX). It always runs its own Ratspeak-based stack ([issue #1181](https://github.com/Colorado-Mesh/mesh-client/issues/1181)).
+
+**Why:** several features need mesh-client to own transport and the radios. As a client of someone else's instance they would silently stop working:
+
+- LoRa/TCP **path preference** for messages (path-medium slots)
+- **RF airtime protection** (rebroadcast exclusion on LoRa interfaces)
+- **RMAP** interface discovery egress
+- **BLE RNode** and **BLE Peer** interfaces (owned by the sidecar)
+- AutoInterface beacon fixes and interface **TX-queue diagnostics**
+
+**Use one instance for every app (reverse direction):** let the other apps attach to mesh-client instead.
+
+1. In mesh-client, open **Network → Stack settings**, turn on **Share Reticulum instance**, save, and restart the stack.
+2. Click **Show settings for other apps** under the Share toggle and copy the `[reticulum]` lines.
+3. Paste them into the `[reticulum]` section of the other app's config (for example `~/.reticulum/config`).
+4. **Start mesh-client first**, then the other app. If the other app (or `rnsd`) starts first it takes the shared endpoint; mesh-client then runs standalone and shows a "another Reticulum app owns the shared instance" notice.
+
+Platform notes:
+
+- **macOS / Windows:** shared instances use TCP `127.0.0.1:37428` (control port `37429`). Only one app on the machine can own that port, so `instance_name` does not separate instances.
+- **Linux:** shared instances use the abstract socket `rns/<instance_name>`. Mesh-client defaults to `instance_name = mesh-client`, so the other app must set the same `instance_name` (the copied snippet includes it). An `rnsd` on `rns/default` can run alongside mesh-client without conflict, but the two stacks will not share interfaces.
+- **`rpc_key`:** the copied snippet includes mesh-client's `rpc_key` so Python tools such as `rnstatus` and `rnpath` can authenticate against mesh-client. Treat it as a secret.
+- **Serial RNodes** can be opened by only one program at a time. When the setup guide detects another running Reticulum app configured with serial ports, it lists them; use each RNode from one app only.
+
+Detection is read-only: the setup guide reads `/etc/reticulum/config`, `~/.config/reticulum/config`, and `~/.reticulum/config` and probes the shared endpoint (`reticulum:detectSystemInstance`). It never changes the other app's config.
 
 ---
 

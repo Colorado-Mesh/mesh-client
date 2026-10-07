@@ -5,6 +5,24 @@ import { MS_PER_SECOND } from './timeConstants';
 /** How long a log-latched sidecar interface issue stays in status after last sighting. */
 export const RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS = 5 * 60 * MS_PER_SECOND;
 
+/**
+ * Read-only view of a system Reticulum (Python `rnsd` or another app) on this machine.
+ * mesh-client never attaches to it; this only drives explanatory notices.
+ */
+export interface SystemReticulumInstance {
+  /** First system config found, or null when none exists. */
+  configPath: string | null;
+  /** `share_instance` from that config (Python default: true when absent). */
+  shareInstance: boolean;
+  sharedInstanceType: 'tcp' | 'unix';
+  /** `127.0.0.1:<port>` (tcp) or `rns/<instance_name>` (unix abstract socket). */
+  endpoint: string;
+  /** True when something accepted a connection on the shared endpoint. */
+  running: boolean;
+  /** Serial device paths used by RNode / KISS interfaces in the system config. */
+  serialPorts: string[];
+}
+
 export interface ReticulumSidecarStatus {
   /** Reticulum has been started; a BLE-only sidecar still reports false. */
   running: boolean;

@@ -1625,12 +1625,12 @@
     "reticulumSidecarUnhealthyRestarting": "Zásobník Reticulum nereaguje – restartování…",
     "server": "Server",
     "reticulumSharedInstance": {
-      "title": "Používání sdílené instance jiné aplikace",
-      "body": "Tato aplikace je připojena jako klient sdílené instance Reticulum jiné aplikace. Místní TCP rozbočovače z konfigurace této aplikace nejsou v tomto režimu spuštěny — provoz může používat pouze zásobník druhé aplikace.",
-      "networkHint": "Nebo otevřete instanci Network → Share Reticulum a vypněte Sdílení ručně a poté restartujte zásobník. Můžete také zcela ukončit MeshChat, Ratspeak nebo samostatný rnsd a restartovat.",
       "disableShare": "Vypnout sdílení instance a restartovat",
       "disableShareAria": "Vypněte možnost Sdílet instanci a restartujte zásobník",
-      "disableFailed": "Sdílení instance se nezdařilo vypnout."
+      "disableFailed": "Sdílení instance se nezdařilo vypnout.",
+      "conflictTitle": "Sdílenou instanci vlastní jiná aplikace Reticulum",
+      "conflictBody": "Sdílení instance Reticulum je zapnuté, ale {{endpoint}} již používá jiná aplikace Reticulum (například rnsd, Sideband, NomadNet nebo MeshChatX). Mesh-client se k němu nepřipojil a provozuje svůj vlastní zásobník bez sdílení.",
+      "conflictHint": "Chcete-li znovu sdílet, ukončete druhou aplikaci a restartujte zásobník. Chcete-li toto upozornění zastavit, vypněte možnost Sdílet."
     },
     "letsMeshUsernameV1Hex": "Uživatelské jméno musí být v1_ následované 64 hexadecimálními znaky (veřejný klíč).",
     "bleWeakSignalWarning": "Signál Bluetooth je slabý ({{rssi}} dBm). Přibližte se pro stabilní připojení.",
@@ -1999,16 +1999,15 @@
         "ghost_interface": "Rozhraní „{{name}}“ je v konfiguraci povoleno, ale není načteno službou RNS.",
         "missing_auto_interface": "Není povoleno automatické rozhraní – zjišťování místní sítě LAN je vypnuté.",
         "auto_interface_down": "Automatické rozhraní „{{name}}“ je povoleno, ale nefunguje.",
-        "missing_shared_instance": "Instance sdílení je zapnutá, ale tato aplikace není hostitelem sdíleného serveru – ukončete ostatní aplikace typu mesh nebo vypněte instanci sdílení a poté restartujte.",
         "shared_instance_unexpected": "Server sdílené instance je aktivní, ale instance Share je vypnutá – restartujte zásobník.",
         "runtime_only_interface": "„{{name}}“ je pouze runtime (není uloženo v konfiguraci).",
         "rmap_missing_coordinates": "Rozhraní „{{name}}“ je zjistitelné, ale chybí platné souřadnice mapy.",
         "rmap_no_tcp_hub": "Detekovatelný místní RNode nemá aktivované TCP klientské centrum pro dostupnost internetu.",
         "rmap_transport_disabled": "Detekovatelná rozhraní jsou nakonfigurována, ale režim přenosu je vypnutý.",
         "rmap_i2p_not_connectable": "Rozhraní I2P „{{name}}“ je zjistitelné, ale připojitelné není ano.",
-        "shared_instance_client": "Sdílet instanci připojenou jako klient jiné aplikace – místní rozbočovače TCP v této konfiguraci nejsou spuštěny.",
         "rmap_mode_autocorrect": "Rozhraní „{{name}}“ je zjistitelné s režimem non-AP/Gateway — Reticulum jej spustí jako přístupový bod, pokud není nastaveno ignore_config_warnings. Upravte rozhraní nebo restartujte zásobník, aby mesh-client mohl orazítkovat odhlášení.",
-        "rmap_missing_reachable_on": "Rozhraní páteřní sítě „{{name}}“ je zjistitelné, ale chybí reachable_on."
+        "rmap_missing_reachable_on": "Rozhraní páteřní sítě „{{name}}“ je zjistitelné, ale chybí reachable_on.",
+        "shared_instance_conflict": "Sdílenou instanci vlastní jiná aplikace Reticulum – mesh-client běží samostatně bez sdílení. Ukončete druhou aplikaci a restartujte nebo vypněte Sdílení instance."
       },
       "runtime": {
         "rnsNotReady": "Zásobník RNS není připraven",
@@ -6387,10 +6386,7 @@
         "body": "Použijte kompatibilní rádiový hardware a nastavení místní rádiové sítě.",
         "title": "Rádio RNode"
       },
-      "existing": {
-        "title": "Stávající nastavení",
-        "body": "Udržujte svá aktuální rozhraní a zkontrolujte, zda jsou připravena."
-      }
+      "existing": {}
     },
     "routeLabel": "Jak se připojit",
     "hubLabel": "Veřejné internetové centrum",
@@ -6401,7 +6397,6 @@
     "radioSettings": "Otevřete nastavení připojení níže, přidejte rozhraní RNode, vyberte USB nebo Bluetooth a použijte frekvenci, šířku pásma, faktor šíření a rychlost kódování dodané vaší místní skupinou.",
     "openInterfaces": "Níže otevřete nastavení připojení",
     "radioCheck": "Povolte rozhraní a použijte jeho výzvu k restartování, poté se vraťte k této příručce. Funkční rádiové spojení stále potřebuje jinou kompatibilní stanici v dosahu.",
-    "existingHint": "Průvodce zkontroluje vaše stávající rozhraní, aniž by je měnil. Rozhraní místní sítě dosáhne v této síti blízkých zařízení Reticulum; samo o sobě vás nepřipojí k veřejným internetovým kolegům.",
     "checkTitle": "Kontrola připojení",
     "ready": "Vaše připojení je k dispozici",
     "checkStack": "Síť Reticulum",
@@ -6757,5 +6752,28 @@
       "reticulum": "Reticulum"
     },
     "received": "Přijato {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Mesh-client provozuje svůj vlastní zásobník Reticulum, takže může poskytovat funkce Ratspeak, které vyžadují kontrolu směrování a rádia: preference cesty LoRa/TCP pro zprávy, ochrana vysílacího času RF, zjišťování rozhraní RMAP, BLE RNode a BLE pee diagnostické rozhraní a fronta rozhraní. Použití instance Reticulum jiné aplikace je vypne.",
+      "reverseHint": "Chcete-li použít jednu instanci Reticulum pro všechny své aplikace, spusťte nejprve mesh-client se zapnutou instancí Share Reticulum a poté na ni nasměrujte ostatní aplikace.",
+      "learnMore": "Zjistěte více",
+      "learnMoreAria": "Další informace o používání mesh-client s jinými aplikacemi Reticulum (otevře dokumentaci)",
+      "detectedTitle": "Na tomto počítači je spuštěna jiná aplikace Reticulum",
+      "detectedBody": "Byla nalezena sdílená instance Reticulum na {{endpoint}} (například rnsd, Sideband, NomadNet nebo MeshChatX). Síťový klient se k němu nepřipojí.",
+      "serialPortConflict": "Druhá aplikace Reticulum je nakonfigurována pro použití {{ports}}. Sériový RNode může být otevřen vždy pouze jedním programem, takže jej používejte pouze z jedné aplikace.",
+      "shareTitle": "Povolit ostatním aplikacím Reticulum používat mesh-client",
+      "shareShow": "Zobrazit nastavení pro jiné aplikace",
+      "shareShowAria": "Zobrazit nastavení konfigurace Reticulum, které ostatní aplikace potřebují používat sdílenou instanci mesh-client",
+      "shareHide": "Skrýt nastavení",
+      "shareHideAria": "Skryjte nastavení konfigurace Reticulum pro ostatní aplikace",
+      "shareSnippetHint": "Přidejte tyto řádky do sekce [reticulum] v konfiguraci Reticulum jiné aplikace (například ~/.reticulum/config), poté spusťte nejprve mesh-client a poté druhou aplikaci. Klíč rpc_key umožňuje nástrojům jako rnstatus a rnpath hovořit s mesh-client; zachovat soukromí.",
+      "shareNotHosting": "Mesh klient právě nehostuje sdílenou instanci. Zapněte sdílení instance Reticulum, uložte a restartujte zásobník.",
+      "shareLoadFailed": "Nelze přečíst nastavení sdílené instance. Zkontrolujte, zda je spuštěn zásobník Reticulum.",
+      "copySnippet": "Kopírovat nastavení",
+      "copySnippetAria": "Zkopírujte nastavení konfigurace Reticulum pro ostatní aplikace",
+      "snippetCopied": "Nastavení zkopírováno",
+      "snippetAria": "Reticulum nastavení konfigurace pro další aplikace"
+    }
   }
 }

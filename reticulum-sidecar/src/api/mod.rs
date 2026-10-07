@@ -92,6 +92,10 @@ pub fn router(stack: Arc<StackHandle>) -> Router {
             "/api/v1/stack/settings",
             get(config::get_stack_settings).put(config::put_stack_settings),
         )
+        .route(
+            "/api/v1/stack/shared-instance",
+            get(config::get_shared_instance_client_settings),
+        )
         .route("/api/v1/rnode/presets", get(interfaces::rnode_presets))
         .route("/api/v1/serial/ports", get(interfaces::serial_ports))
         .route(

@@ -23,6 +23,8 @@ import {
 import type { DiagnosticRow, RfDiagnosticRow } from '@/renderer/lib/types';
 import { useReticulumUiStore } from '@/renderer/stores/reticulumUiStore';
 
+import { ReticulumSystemRnsExplainer } from './reticulum/ReticulumSystemRnsExplainer';
+
 export interface ReticulumDiagnosticsSectionProps {
   rows: DiagnosticRow[];
   onNavigateToConnection?: () => void;
@@ -290,6 +292,9 @@ export function ReticulumDiagnosticsSection({
                                   <li key={key}>{t(key)}</li>
                                 ))}
                               </ul>
+                            ) : null}
+                            {row.condition === 'reticulum/audit/shared_instance_conflict' ? (
+                              <ReticulumSystemRnsExplainer className="text-label text-ink-300 mt-1.5 space-y-1 font-normal" />
                             ) : null}
                           </div>
                         </td>

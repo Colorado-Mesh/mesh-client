@@ -5,19 +5,24 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { restartReticulumStack } from '@/renderer/lib/reticulum/restartReticulumStack';
 import { patchReticulumStackSettings } from '@/renderer/lib/reticulum/reticulumStackSettings';
 
-export interface ReticulumSharedInstanceClientBannerProps {
+import { ReticulumSystemRnsExplainer } from './reticulum/ReticulumSystemRnsExplainer';
+
+export interface ReticulumSharedInstanceConflictBannerProps {
+  /** Shared endpoint held by the other app (`127.0.0.1:37428` or `rns/<name>`). */
+  endpoint: string;
   /** Optional external restart; must settle before banner clears busy. */
   onRestartStack?: () => void | Promise<void>;
   onRefresh?: () => Promise<unknown>;
   onBeginBleConnectGrace?: () => void;
 }
 
-/** Connection alert when mesh-client is a shared-instance client of another RNS app. */
-export function ReticulumSharedInstanceClientBanner({
+/** Share was requested but another Reticulum app owns the endpoint; mesh-client runs standalone. */
+export function ReticulumSharedInstanceConflictBanner({
+  endpoint,
   onRestartStack,
   onRefresh,
   onBeginBleConnectGrace,
-}: ReticulumSharedInstanceClientBannerProps) {
+}: ReticulumSharedInstanceConflictBannerProps) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -35,7 +40,7 @@ export function ReticulumSharedInstanceClientBanner({
         (async () => {
           /* no-op refresh */
         }),
-      logTag: 'ReticulumSharedInstanceClientBanner',
+      logTag: 'ReticulumSharedInstanceConflictBanner',
     });
     if (!result.ok) {
       setActionError(
@@ -60,7 +65,9 @@ export function ReticulumSharedInstanceClientBanner({
     try {
       await fn();
     } catch (e) {
-      console.error(`[ReticulumSharedInstanceClientBanner] action failed ${errLikeToLogString(e)}`);
+      console.error(
+        `[ReticulumSharedInstanceConflictBanner] action failed ${errLikeToLogString(e)}`,
+      );
       setActionError(errLikeToLogString(e));
     } finally {
       inFlightRef.current = false;
@@ -89,13 +96,14 @@ export function ReticulumSharedInstanceClientBanner({
       className="rounded-lg border border-orange-600/50 bg-orange-950/30 px-3 py-2.5 text-sm text-orange-100"
     >
       <p className="font-medium text-orange-200">
-        {t('connectionPanel.reticulumSharedInstance.title')}
+        {t('connectionPanel.reticulumSharedInstance.conflictTitle')}
       </p>
       <p className="text-muted mt-1 text-xs text-orange-100/90">
-        {t('connectionPanel.reticulumSharedInstance.body')}
+        {t('connectionPanel.reticulumSharedInstance.conflictBody', { endpoint })}
       </p>
+      <ReticulumSystemRnsExplainer />
       <p className="text-muted text-label mt-1">
-        {t('connectionPanel.reticulumSharedInstance.networkHint')}
+        {t('connectionPanel.reticulumSharedInstance.conflictHint')}
       </p>
       {actionError ? (
         <p className="mt-2 text-xs text-red-300" role="status">

@@ -51,6 +51,7 @@ import {
   showRncpSaveDirectoryDialog,
 } from '../reticulum-remote-paths';
 import type { ReticulumSidecarManager } from '../reticulum-sidecar-manager';
+import { detectSystemReticulum } from '../reticulum-system-instance';
 import { parseEnabledInterfaceNames } from '../reticulumInterfaceIssueScope';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { isLxmfRecentApiPath } from './reticulumLxmfRecentPath';
@@ -573,6 +574,11 @@ export function registerReticulumIpcHandlers(deps: ReticulumIpcDeps): void {
   ipcMain.handle('reticulum:readDefaultConfigFile', (event) => {
     assertIpcSender(event, 'reticulum:readDefaultConfigFile');
     return readFirstExistingConfig();
+  });
+
+  ipcMain.handle('reticulum:detectSystemInstance', async (event) => {
+    assertIpcSender(event, 'reticulum:detectSystemInstance');
+    return detectSystemReticulum();
   });
 
   ipcMain.handle('reticulum:showConfigImportDialog', async (event) => {

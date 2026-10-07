@@ -5,6 +5,7 @@ import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { RETICULUM_DEFAULT_HUB_PRESETS } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import { isForeignSystemReticulum } from '@/renderer/lib/reticulum/reticulumInstanceStatus';
 import { withMockedConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 import { useReticulumSetupGuideStore } from '@/renderer/stores/reticulumSetupGuideStore';
 
@@ -80,8 +81,9 @@ describe('Reticulum first connection guide', () => {
     view.unmount();
     render(<ReticulumSetupGuide {...props()} />);
     expect(screen.queryByRole('button', { name: 'Open setup guide' })).not.toBeInTheDocument();
-    act(() => {
+    await act(async () => {
       useReticulumSetupGuideStore.getState().setOpen(true);
+      await Promise.resolve();
     });
     expect(screen.getByRole('heading', { name: 'Start here' })).toBeInTheDocument();
     expect(window.electronAPI.reticulum.proxyPost).not.toHaveBeenCalled();
@@ -188,7 +190,7 @@ describe('Reticulum first connection guide', () => {
     render(<ReticulumSetupGuide {...props()} />);
     const user = await openConnectionStep();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeDisabled();
-    await user.click(screen.getByRole('radio', { name: 'Existing setup' }));
+    await user.click(screen.getByRole('radio', { name: 'Existing mesh-client setup' }));
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Continue' })).toBeEnabled();
     });
@@ -322,5 +324,85 @@ describe('Reticulum first connection guide', () => {
     expect(
       within(screen.getByRole('group', { name: 'How to connect' })).getAllByRole('radio'),
     ).toHaveLength(3);
+  });
+});
+
+describe('system Reticulum detection', () => {
+  const runningRnsd = {
+    configPath: '/home/u/.reticulum/config',
+    shareInstance: true,
+    sharedInstanceType: 'tcp' as const,
+    endpoint: '127.0.0.1:37428',
+    running: true,
+    serialPorts: ['/dev/ttyACM0'],
+  };
+
+  it('explains why another running Reticulum app is not used and lists its serial ports', async () => {
+    vi.mocked(window.electronAPI.reticulum.detectSystemInstance).mockResolvedValue(runningRnsd);
+    const { container } = render(<ReticulumSetupGuide {...props()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Open setup guide' }));
+    const notice = await screen.findByRole('note', {
+      name: 'Another Reticulum app is running on this computer',
+    });
+    expect(within(notice).getByText(/127\.0\.0\.1:37428/)).toBeInTheDocument();
+    expect(within(notice).getByText(/Ratspeak features/)).toBeInTheDocument();
+    expect(within(notice).getByText(/\/dev\/ttyACM0/)).toBeInTheDocument();
+    expect(
+      within(notice).getByRole('link', { name: /using mesh-client with other Reticulum apps/i }),
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining('#using-mesh-client-with-other-reticulum-apps'),
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('does not flag mesh-client’s own shared TCP listener', async () => {
+    vi.mocked(window.electronAPI.reticulum.detectSystemInstance).mockResolvedValue(runningRnsd);
+    render(<ReticulumSetupGuide {...props()} selfHostsSharedInstance />);
+    await userEvent.click(screen.getByRole('button', { name: 'Open setup guide' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.detectSystemInstance).toHaveBeenCalled();
+    });
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+
+  it('shows nothing when no other instance is running', async () => {
+    vi.mocked(window.electronAPI.reticulum.detectSystemInstance).mockResolvedValue({
+      ...runningRnsd,
+      running: false,
+    });
+    render(<ReticulumSetupGuide {...props()} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Open setup guide' }));
+    await waitFor(() => {
+      expect(window.electronAPI.reticulum.detectSystemInstance).toHaveBeenCalled();
+    });
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+});
+
+describe('isForeignSystemReticulum', () => {
+  const probe = {
+    configPath: null,
+    shareInstance: true,
+    sharedInstanceType: 'unix' as const,
+    endpoint: 'rns/default',
+    running: true,
+    serialPorts: [],
+  };
+
+  it('treats a non-running probe as absent', () => {
+    expect(isForeignSystemReticulum({ ...probe, running: false }, false)).toBe(false);
+    expect(isForeignSystemReticulum(null, false)).toBe(false);
+  });
+
+  it('keeps a unix-socket instance foreign even when mesh-client hosts its own', () => {
+    expect(isForeignSystemReticulum(probe, true)).toBe(true);
+  });
+
+  it('ignores a TCP hit only when mesh-client hosts the shared instance', () => {
+    const tcp = { ...probe, sharedInstanceType: 'tcp' as const, endpoint: '127.0.0.1:37428' };
+    expect(isForeignSystemReticulum(tcp, true)).toBe(false);
+    expect(isForeignSystemReticulum(tcp, false)).toBe(true);
   });
 });

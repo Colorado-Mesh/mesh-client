@@ -12,6 +12,8 @@ mod identity_apply;
 mod identity_backup;
 mod identity_import;
 mod identity_slots;
+#[cfg(feature = "rns-stack")]
+mod instance_policy;
 pub mod interface_catalog;
 mod local_rnode_primary;
 mod lxmf_inbound_log;
@@ -3308,9 +3310,16 @@ impl StackHandle {
     pub async fn config_audit(&self) -> Result<Vec<config_audit::ConfigAuditIssue>, String> {
         let settings = config::get_stack_settings(&self.config_dir)?;
         let live = self.list_interfaces().await;
+        let (_, shared_instance_conflict) = self.instance_status();
         let inner = self.inner.read().await;
         let stack_running = inner.rns_ready;
-        config_audit::audit_config(&self.config_dir, &live, &settings, stack_running)
+        config_audit::audit_config(
+            &self.config_dir,
+            &live,
+            &settings,
+            stack_running,
+            shared_instance_conflict.as_deref(),
+        )
     }
 
     #[allow(clippy::unused_async, clippy::unused_async_trait_impl)] // async matches StackHandle config API awaited by HTTP handlers
@@ -3743,6 +3752,28 @@ impl StackHandle {
             }
         }
         self.inner.read().await.lxmf_ready
+    }
+
+    /// Attach settings for other Reticulum apps; `None` until the live bridge is attached.
+    pub fn shared_instance_client_settings(&self) -> Option<serde_json::Value> {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return Some(live.shared_instance_client_settings());
+        }
+        None
+    }
+
+    /// Live instance mode (`shared` / `standalone`) and any shared endpoint owned by
+    /// another Reticulum app. `(None, None)` until the live bridge is attached.
+    pub fn instance_status(&self) -> (Option<&'static str>, Option<String>) {
+        #[cfg(feature = "rns-stack")]
+        if let Some(live) = self.live_opt() {
+            return (
+                Some(live.instance_mode()),
+                live.shared_instance_conflict().map(str::to_string),
+            );
+        }
+        (None, None)
     }
 
     #[allow(clippy::unused_self, clippy::unnecessary_wraps)] // version probes mirror StackHandle info API

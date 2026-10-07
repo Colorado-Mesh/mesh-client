@@ -62,6 +62,10 @@ vi.mock('../reticulum-config-validate', () => ({
   validateReticulumUserConfig: vi.fn(),
 }));
 
+vi.mock('../reticulum-system-instance', () => ({
+  detectSystemReticulum: vi.fn(),
+}));
+
 vi.mock('../reticulum-identity-import', () => ({
   showReticulumIdentityImportDialog: vi.fn(),
   showReticulumIdentityBackupImportDialog: vi.fn(),
@@ -109,6 +113,7 @@ import {
   showRncpOpenFileDialog,
   showRncpSaveDirectoryDialog,
 } from '../reticulum-remote-paths';
+import { detectSystemReticulum } from '../reticulum-system-instance';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerReticulumIpcHandlers, wireReticulumSidecarBridge } from './reticulum-handlers';
 
@@ -469,6 +474,20 @@ describe('registerReticulumIpcHandlers', () => {
       readFirstExistingConfigMock.mockReturnValue({ path: '/tmp/x', content: 'y' });
       const result = handlers.get('reticulum:readDefaultConfigFile')?.(event);
       expect(result).toEqual({ path: '/tmp/x', content: 'y' });
+    });
+
+    it('detectSystemInstance delegates to detectSystemReticulum', async () => {
+      const probe = {
+        configPath: '/home/u/.reticulum/config',
+        shareInstance: true,
+        sharedInstanceType: 'tcp' as const,
+        endpoint: '127.0.0.1:37428',
+        running: true,
+        serialPorts: [],
+      };
+      vi.mocked(detectSystemReticulum).mockResolvedValue(probe);
+      await expect(handlers.get('reticulum:detectSystemInstance')?.(event)).resolves.toEqual(probe);
+      expect(assertIpcSenderMock).toHaveBeenCalledWith(event, 'reticulum:detectSystemInstance');
     });
 
     it('showConfigImportDialog delegates to showReticulumConfigImportDialog', async () => {

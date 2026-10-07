@@ -1604,12 +1604,12 @@
     "reticulumStackRunningAs": "En ejecución — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "La pila de Reticulum no responde: se reinicia…",
     "reticulumSharedInstance": {
-      "title": "Usar la instancia compartida de otra aplicación",
-      "body": "Esta aplicación se adjuntó como cliente de la instancia de Reticulum compartida de otra aplicación. Los concentradores TCP locales de la configuración de esta aplicación no se inician en este modo; el tráfico solo puede usar la pila de la otra aplicación.",
-      "networkHint": "O abra la instancia de Network → Share Reticulum para desactivar Compartir manualmente y, a continuación, reinicie la pila. También puedes salir completamente de MeshChat, Ratspeak o RNSD independiente y reiniciar.",
       "disableShare": "Desactivar la instancia Compartir y reiniciar",
       "disableShareAria": "Desactivar la instancia Compartir y reiniciar la pila",
-      "disableFailed": "No se ha podido desactivar la instancia Compartir."
+      "disableFailed": "No se ha podido desactivar la instancia Compartir.",
+      "conflictTitle": "Otra aplicación Reticulum posee la instancia compartida",
+      "conflictBody": "La instancia compartida Reticulum está activada, pero {{endpoint}} ya está siendo utilizada por otra aplicación Reticulum (por ejemplo, rnsd, Sideband, NomadNet o MeshChatX). El cliente de malla no se adjuntó a él y está ejecutando su propia pila sin compartirla.",
+      "conflictHint": "Para compartir nuevamente, salga de la otra aplicación y reinicie la pila. O desactive Compartir para detener este aviso."
     },
     "letsMeshUsernameV1Hex": "El nombre de usuario debe ser v1_ seguido de 64 caracteres hexadecimales (clave pública).",
     "bleWeakSignalWarning": "La señal Bluetooth es débil ({{rssi}} dBm). Acérquese para una conexión estable.",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "La interfaz \"{{name}}\" está habilitada en la configuración pero no cargada por RNS.",
         "missing_auto_interface": "No hay AutoInterface habilitada: la detección de LAN local está desactivada.",
         "auto_interface_down": "La interfaz automática \"{{name}}\" está habilitada pero inactiva.",
-        "missing_shared_instance": "La instancia de Share está activada, pero esta aplicación no aloja el servidor compartido. Salga de otras aplicaciones de malla o desactive la instancia de Share y reinicie.",
         "shared_instance_unexpected": "El servidor de instancias compartidas está activo, pero la instancia compartida está desactivada: reinicie la pila.",
         "runtime_only_interface": "\"{{name}}\" es solo de tiempo de ejecución (no almacenado en la configuración).",
         "rmap_missing_coordinates": "La interfaz \"{{name}}\" se puede descubrir pero faltan coordenadas de mapa válidas.",
         "rmap_no_tcp_hub": "El RNode local detectable no tiene un concentrador de clientes TCP habilitado para la accesibilidad a Internet.",
         "rmap_transport_disabled": "Las interfaces detectables están configuradas, pero el modo de transporte está desactivado.",
         "rmap_i2p_not_connectable": "La interfaz I2P \"{{name}}\" es detectable pero no es conectable.",
-        "shared_instance_client": "Compartir instancia adjunta como cliente de otra aplicación: los concentradores TCP locales en esta configuración no se inician.",
         "rmap_mode_autocorrect": "La interfaz \"{{name}}\" se puede descubrir con un modo no AP/Gateway: Reticulum la ejecutará como punto de acceso a menos que se establezca ignore_config_warnings. Edite la interfaz o reinicie la pila para que el cliente de malla pueda sellar la exclusión voluntaria (mesh-client).",
-        "rmap_missing_reachable_on": "Se puede descubrir la interfaz principal \"{{name}}\", pero no se puede acceder a_on."
+        "rmap_missing_reachable_on": "Se puede descubrir la interfaz principal \"{{name}}\", pero no se puede acceder a_on.",
+        "shared_instance_conflict": "Otra aplicación Reticulum posee la instancia compartida: mesh-client se ejecuta de forma independiente sin compartirla. Salga de la otra aplicación y reiníciela, o desactive Compartir instancia."
       },
       "runtime": {
         "rnsNotReady": "La pila RNS no está lista",
@@ -6328,10 +6327,7 @@
         "title": "Radio RNode",
         "body": "Utilice hardware de radio compatible y la configuración de su red de radio local."
       },
-      "existing": {
-        "title": "Configuración existente",
-        "body": "Mantenga sus interfaces actuales y compruebe si están listas."
-      }
+      "existing": {}
     },
     "hubLabel": "Acceso a internet",
     "hubHint": "Empieza con un concentrador. La aplicación añadirá o habilitará esta conexión y reiniciará Reticulum para aplicarla. Los centros públicos pueden ver tu dirección IP y, a veces, pueden no estar disponibles.",
@@ -6341,7 +6337,6 @@
     "radioSettings": "Abra la configuración de conexión a continuación, añada una interfaz RNode, elija USB o Bluetooth y utilice la frecuencia, el ancho de banda, el factor de propagación y la velocidad de codificación suministrados por su grupo local.",
     "radioCheck": "Habilite la interfaz y aplique su mensaje de reinicio, luego vuelva a esta guía. Una conexión de radio en funcionamiento todavía necesita otra estación compatible dentro del alcance.",
     "openInterfaces": "Abra la configuración de conexión a continuación",
-    "existingHint": "La guía comprobará sus interfaces existentes sin cambiarlas. Una interfaz de red local llega a los dispositivos Reticulum cercanos en esa red; por sí misma no lo conecta a sus pares públicos de Internet.",
     "checkTitle": "Comprobación de la conexión",
     "ready": "Tu conexión está disponible",
     "checkStack": "Red de Reticulum",
@@ -6695,5 +6690,28 @@
       "reticulum": "Reticulum"
     },
     "received": "Recibido {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "El cliente Mesh ejecuta su propia pila Reticulum para poder proporcionar funciones de Ratspeak que necesitan control de enrutamiento y radios: preferencia de ruta LoRa/TCP para mensajes, protección de tiempo aire de RF, descubrimiento de interfaz RMAP, pares BLE RNode y BLE y diagnóstico de cola de interfaz. Usar la instancia Reticulum de otra aplicación los desactivaría.",
+      "reverseHint": "Para usar una instancia Reticulum para todas sus aplicaciones, inicie mesh-client primero con Compartir instancia Reticulum activada y luego apunte las otras aplicaciones hacia ella.",
+      "learnMore": "Más información",
+      "learnMoreAria": "Obtenga más información sobre el uso de mesh-client con otras aplicaciones Reticulum (abre la documentación)",
+      "detectedTitle": "Se está ejecutando otra aplicación Reticulum en esta computadora",
+      "detectedBody": "Encontré una instancia compartida Reticulum en {{endpoint}} (por ejemplo, rnsd, Sideband, NomadNet o MeshChatX). El cliente de malla no se conectará a él.",
+      "serialPortConflict": "La otra aplicación Reticulum está configurada para usar {{ports}}. Un RNode serial solo puede ser abierto por un programa a la vez, así que úselo desde una sola aplicación.",
+      "shareTitle": "Permitir que otras aplicaciones Reticulum usen mesh-client",
+      "shareShow": "Mostrar configuración para otras aplicaciones",
+      "shareShowAria": "Mostrar la configuración de Reticulum que otras aplicaciones necesitan para usar la instancia compartida de mesh-client",
+      "shareHide": "Ocultar configuración",
+      "shareHideAria": "Ocultar la configuración de Reticulum para otras aplicaciones",
+      "shareSnippetHint": "Agregue estas líneas a la sección [reticulum] de la configuración Reticulum de la otra aplicación (por ejemplo ~/.reticulum/config), luego inicie mesh-client primero y la otra aplicación en segundo lugar. rpc_key permite que herramientas como rnstatus y rnpath se comuniquen con mesh-client; mantenlo en privado.",
+      "shareNotHosting": "El cliente Mesh no aloja una instancia compartida en este momento. Active Compartir instancia Reticulum, guarde y reinicie la pila.",
+      "shareLoadFailed": "No se pudo leer la configuración de la instancia compartida. Compruebe que la pila Reticulum se esté ejecutando.",
+      "copySnippet": "Copiar configuración",
+      "copySnippetAria": "Copie la configuración de Reticulum para otras aplicaciones",
+      "snippetCopied": "Configuraciones copiadas",
+      "snippetAria": "Reticulum ajustes de configuración para otras aplicaciones"
+    }
   }
 }

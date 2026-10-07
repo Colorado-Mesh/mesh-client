@@ -152,19 +152,24 @@ describe('ReticulumDiagnosticsSection', () => {
     repairReticulumConfig.mockResolvedValue({ ok: true, repaired: ['disable_share_instance'] });
     const shareRow: RfDiagnosticRow = {
       kind: 'rf',
-      id: 'rf:1:reticulum/audit/shared_instance_client',
+      id: 'rf:1:reticulum/audit/shared_instance_conflict',
       nodeId: 1,
-      condition: 'reticulum/audit/shared_instance_client',
-      cause: 'client',
+      condition: 'reticulum/audit/shared_instance_conflict',
+      cause: 'conflict',
       severity: 'warning',
       detectedAt: Date.now(),
       causeI18n: {
-        key: 'diagnosticsPanel.reticulum.audit.shared_instance_client',
-        params: { name: '', message: 'client' },
+        key: 'diagnosticsPanel.reticulum.audit.shared_instance_conflict',
+        params: { name: '', message: 'conflict' },
       },
       reticulumRepairKind: 'disable_share_instance',
     };
     render(<ReticulumDiagnosticsSection rows={[shareRow]} />);
+    expect(screen.getByText('reticulum.systemRns.whyNotSupported')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'reticulum.systemRns.learnMoreAria' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('#using-mesh-client-with-other-reticulum-apps'),
+    );
     expect(
       screen.getByText('diagnosticsPanel.reticulum.action.disable_share_instance'),
     ).toBeInTheDocument();

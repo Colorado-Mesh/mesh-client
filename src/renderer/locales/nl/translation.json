@@ -1604,12 +1604,12 @@
     "reticulumSidecarUnhealthyRestarting": "Reticulum-stack reageert niet — opnieuw opstarten…",
     "server": "Server",
     "reticulumSharedInstance": {
-      "title": "Gedeelde instantie van een andere app gebruiken",
-      "body": "Deze app is bijgevoegd als een client van het gedeelde Reticulum-exemplaar van een andere app. Lokale TCP-hubs van de configuratie van deze app worden niet gestart in deze modus — verkeer mag alleen de stack van de andere app gebruiken.",
-      "networkHint": "Of open Network → Share Reticulum-instantie om delen handmatig uit te schakelen en start vervolgens de stapel opnieuw. Je kunt MeshChat, Ratspeak of standalone rnsd ook volledig afsluiten en opnieuw starten.",
       "disableShare": "Deel instantie uitschakelen en opnieuw opstarten",
       "disableShareAria": "Schakel de instantie Delen uit en start de stapel opnieuw",
-      "disableFailed": "Kan de instantie Delen niet uitschakelen."
+      "disableFailed": "Kan de instantie Delen niet uitschakelen.",
+      "conflictTitle": "Een andere Reticulum-app is eigenaar van het gedeelde exemplaar",
+      "conflictBody": "Delen Reticulum-instantie is ingeschakeld, maar {{endpoint}} wordt al gebruikt door een andere Reticulum-app (bijvoorbeeld rnsd, Sideband, NomadNet of MeshChatX). Mesh-client is er niet aan gekoppeld en draait zijn eigen stapel zonder te delen.",
+      "conflictHint": "Als u opnieuw wilt delen, sluit u de andere app en start u de stapel opnieuw. Of schakel Share uit om deze melding te stoppen."
     },
     "letsMeshUsernameV1Hex": "Gebruikersnaam moet v1_zijn, gevolgd door 64 hexadecimale tekens (openbare sleutel).",
     "bleWeakSignalWarning": "Bluetooth-signaal is zwak ({{rssi}} dBm). Kom dichterbij voor een stabiele verbinding.",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "Interface \"{{name}}\" is ingeschakeld in de configuratie, maar niet geladen door RNS.",
         "missing_auto_interface": "Geen ingeschakelde AutoInterface: lokale LAN-detectie is uitgeschakeld.",
         "auto_interface_down": "AutoInterface \"{{name}}\" is ingeschakeld maar uitgeschakeld.",
-        "missing_shared_instance": "De Share-instantie is ingeschakeld, maar deze app host niet de gedeelde server. Sluit andere mesh-apps of schakel de Share-instantie uit en start vervolgens opnieuw op.",
         "shared_instance_unexpected": "De gedeelde instanceserver is live, maar de Share-instance is uitgeschakeld. Start de stapel opnieuw op.",
         "runtime_only_interface": "\"{{name}}\" is alleen runtime (niet opgeslagen in de configuratie).",
         "rmap_missing_coordinates": "Interface \"{{name}}\" is detecteerbaar, maar er ontbreken geldige kaartcoördinaten.",
         "rmap_no_tcp_hub": "Ontdekbare lokale RNode heeft geen ingeschakelde TCP-clienthub voor internetbereikbaarheid.",
         "rmap_transport_disabled": "Ontdekbare interfaces zijn geconfigureerd, maar de transportmodus is uitgeschakeld.",
         "rmap_i2p_not_connectable": "I2P-interface \"{{name}}\" is detecteerbaar, maar aansluitbaar is niet ja.",
-        "shared_instance_client": "Deel een exemplaar gekoppeld als client van een andere app: lokale TCP-hubs in deze configuratie zijn niet gestart.",
         "rmap_mode_autocorrect": "Interface \"{{name}}\" is detecteerbaar met een niet-AP/Gateway-modus — Reticulum zal het als toegangspunt uitvoeren, tenzij ignore_config_warnings is ingesteld. Bewerk de interface of start de stack opnieuw, zodat de mesh-client de opt-out kan afstempelen.",
-        "rmap_missing_reachable_on": "Backbone-interface \"{{name}}\" is detecteerbaar, maar reachable_on ontbreekt."
+        "rmap_missing_reachable_on": "Backbone-interface \"{{name}}\" is detecteerbaar, maar reachable_on ontbreekt.",
+        "shared_instance_conflict": "Een andere Reticulum-app is eigenaar van de gedeelde instantie: mesh-client draait standalone zonder te delen. Sluit de andere app en start deze opnieuw, of schakel de Share-instantie uit."
       },
       "runtime": {
         "rnsNotReady": "RNS-stack is niet gereed",
@@ -6327,8 +6326,7 @@
         "title": "RNode-radio"
       },
       "existing": {
-        "body": "Behoud uw huidige interfaces en controleer of deze gereed zijn.",
-        "title": "Bestaande opstelling"
+        "body": "Laat de interfaces die al zijn geconfigureerd in mesh-client staan ​​en controleer of ze gereed zijn."
       }
     },
     "routeLabel": "Hoe te verbinden",
@@ -6340,7 +6338,6 @@
     "radioDevice": "Gebruik een apparaat met RNode-firmware. Een Meshtastic- of MeshCore-radio is niet automatisch een RNode; flash niet en verander de firmware niet zonder de instructies van uw apparaat te controleren.",
     "radioSettings": "Open hieronder de verbindingsinstellingen, voeg een RNode-interface toe, kies USB of Bluetooth en gebruik de frequentie, bandbreedte, spreidingsfactor en coderingssnelheid die door uw lokale groep worden geleverd.",
     "radioCheck": "Schakel de interface in, pas de herstartprompt toe en keer vervolgens terug naar deze handleiding. Voor een werkende radioverbinding is nog steeds een ander compatibel station binnen bereik nodig.",
-    "existingHint": "De gids controleert uw bestaande interfaces zonder deze te wijzigen. Een lokale netwerkinterface bereikt nabijgelegen Reticulum-apparaten op dat netwerk; het verbindt u op zichzelf niet met openbare internetgenoten.",
     "openInterfaces": "Open de verbindingsinstellingen hieronder",
     "checkTitle": "Uw verbinding controleren",
     "checkStack": "Reticulum netwerk",
@@ -6380,7 +6377,8 @@
     "interfaceSaveFailed": "Kan deze verbinding niet opslaan. Controleer uw verbindingsinstellingen en probeer het opnieuw.",
     "identityUnavailable": "Kan uw identiteit niet lezen. Controleer of Reticulum actief is en probeer het opnieuw.",
     "identitySaveFailed": "Kan uw identiteitsinstellingen niet opslaan. Probeer het opnieuw.",
-    "interfacesUnavailable": "Kan uw verbindingen niet lezen. Controleer of Reticulum actief is en probeer het opnieuw."
+    "interfacesUnavailable": "Kan uw verbindingen niet lezen. Controleer of Reticulum actief is en probeer het opnieuw.",
+    "existingHint": "De gids controleert de interfaces die al in mesh-client zijn geconfigureerd, zonder deze te wijzigen. Het maakt geen gebruik van de Reticulum-configuratie van een andere app of een afzonderlijk draaiende rnsd. Een lokaal netwerkinterface bereikt nabijgelegen Reticulum-apparaten op dat netwerk; het verbindt u op zichzelf niet met openbare internetgenoten."
   },
   "mecp": {
     "severity": {
@@ -6695,5 +6693,28 @@
       "reticulum": "Reticulum"
     },
     "received": "{{when}} ontvangen"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Mesh-client draait zijn eigen Reticulum-stack, zodat het Ratspeak-functies kan bieden die controle over routering en radio's nodig hebben: LoRa/TCP padvoorkeur voor berichten, RF-zendtijdbescherming, RMAP-interfacedetectie, BLE RNode en BLE Peer, en diagnostiek van interfacewachtrijen. Als u de Reticulum-instantie van een andere app gebruikt, worden deze uitgeschakeld.",
+      "reverseHint": "Als u één Reticulum-instantie voor al uw apps wilt gebruiken, start u eerst mesh-client met de Share Reticulum-instantie ingeschakeld en richt u vervolgens de andere apps erop.",
+      "learnMore": "Meer informatie",
+      "learnMoreAria": "Meer informatie over het gebruik van mesh-client met andere Reticulum-apps (opent documentatie)",
+      "detectedTitle": "Er wordt nog een Reticulum-app op deze computer uitgevoerd",
+      "detectedBody": "Er is een gedeelde instantie Reticulum gevonden op {{endpoint}} (bijvoorbeeld rnsd, Sideband, NomadNet of MeshChatX). Mesh-client zal zich er niet aan hechten.",
+      "serialPortConflict": "De andere Reticulum-app is geconfigureerd om {{ports}} te gebruiken. Een seriële RNode kan door slechts één programma tegelijk worden geopend, dus gebruik deze slechts vanuit één app.",
+      "shareTitle": "Laat andere Reticulum apps mesh-client gebruiken",
+      "shareShow": "Toon instellingen voor andere apps",
+      "shareShowAria": "Toon de Reticulum-configuratie-instellingen die andere apps nodig hebben om de gedeelde instantie van mesh-client te gebruiken",
+      "shareHide": "Instellingen verbergen",
+      "shareHideAria": "Verberg de Reticulum configuratie-instellingen voor andere apps",
+      "shareSnippetHint": "Voeg deze regels toe aan het [reticulum]-gedeelte van de Reticulum-configuratie van de andere app (bijvoorbeeld ~/.reticulum/config), start vervolgens eerst mesh-client en daarna de andere app. Met de rpc_key kunnen tools zoals rnstatus en rnpath praten met mesh-client; houd het privé.",
+      "shareNotHosting": "Mesh-client host momenteel geen gedeelde instantie. Schakel de Share Reticulum instance in, sla deze op en start de stack opnieuw op.",
+      "shareLoadFailed": "Kan de instellingen van het gedeelde exemplaar niet lezen. Controleer of de stapel Reticulum actief is.",
+      "copySnippet": "Kopieer instellingen",
+      "copySnippetAria": "Kopieer de Reticulum-configuratie-instellingen voor andere apps",
+      "snippetCopied": "Instellingen gekopieerd",
+      "snippetAria": "Reticulum configuratie-instellingen voor andere apps"
+    }
   }
 }

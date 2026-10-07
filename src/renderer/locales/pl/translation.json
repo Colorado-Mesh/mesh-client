@@ -1640,12 +1640,12 @@
     "region": "Region",
     "port": "Port",
     "reticulumSharedInstance": {
-      "title": "Korzystanie z udostępnionej instancji innej aplikacji",
-      "body": "Ta aplikacja została dołączona jako klient udostępnionej instancji Reticulum innej aplikacji. W tym trybie nie są uruchamiane lokalne koncentratory TCP z konfiguracji tej aplikacji — ruch może korzystać tylko ze stosu innej aplikacji.",
-      "networkHint": "Lub otwórz instancję Network → Share Reticulum, aby ręcznie wyłączyć Udostępnianie, a następnie ponownie uruchom stos. Możesz również całkowicie wyjść z MeshChat, Ratspeak lub samodzielnego rnsd i uruchomić ponownie.",
       "disableShare": "Wyłącz udostępnianie instancji i uruchom ponownie",
       "disableShareAria": "Wyłącz opcję Udostępnij instancję i uruchom ponownie stos",
-      "disableFailed": "Nie udało się wyłączyć instancji udostępniania."
+      "disableFailed": "Nie udało się wyłączyć instancji udostępniania.",
+      "conflictTitle": "Inna aplikacja Reticulum jest właścicielem instancji udostępnionej",
+      "conflictBody": "Instancja udostępniania Reticulum jest włączona, ale {{endpoint}} jest już używana przez inną aplikację Reticulum (na przykład rnsd, Sideband, NomadNet lub MeshChatX). Klient Mesh nie podłączył się do niego i uruchamia własny stos bez udostępniania.",
+      "conflictHint": "Aby udostępnić ponownie, zamknij inną aplikację i uruchom ponownie stos. Możesz też wyłączyć opcję Udostępnij, aby zatrzymać to powiadomienie."
     },
     "letsMeshUsernameV1Hex": "Nazwa użytkownika musi składać się z v1_oraz 64 znaków szesnastkowych (klucz publiczny).",
     "bleWeakSignalWarning": "Sygnał Bluetooth jest słaby ({{rssi}} dBm). Podejdź bliżej, aby uzyskać stabilne połączenie.",
@@ -2015,16 +2015,15 @@
         "ghost_interface": "Interfejs „{{name}}” jest włączony w konfiguracji, ale nie jest ładowany przez RNS.",
         "missing_auto_interface": "Brak włączonego interfejsu automatycznego — wykrywanie lokalnej sieci LAN jest wyłączone.",
         "auto_interface_down": "AutoInterfejs „{{name}}” jest włączony, ale wyłączony.",
-        "missing_shared_instance": "Instancja udostępniania jest włączona, ale ta aplikacja nie hostuje serwera współdzielonego — zamknij inne aplikacje siatkowe lub wyłącz instancję udostępniania, a następnie uruchom ponownie.",
         "shared_instance_unexpected": "Współdzielony serwer instancji jest aktywny, ale instancja Share jest wyłączona — uruchom ponownie stos.",
         "runtime_only_interface": "„{{name}}” jest przeznaczony tylko do środowiska wykonawczego (nie jest przechowywany w konfiguracji).",
         "rmap_missing_coordinates": "Interfejs „{{name}}” jest wykrywalny, ale brakuje prawidłowych współrzędnych mapy.",
         "rmap_no_tcp_hub": "Wykrywalny lokalny RNode nie ma włączonego węzła klienta TCP dla dostępności internetowej.",
         "rmap_transport_disabled": "Wykrywalne interfejsy są skonfigurowane, ale tryb transportu jest wyłączony.",
         "rmap_i2p_not_connectable": "Interfejs I2P „{{name}}” można wykryć, ale nie można go podłączyć.",
-        "shared_instance_client": "Udostępnij instancję dołączoną jako klient innej aplikacji — lokalne koncentratory TCP w tej konfiguracji nie są uruchamiane.",
         "rmap_mode_autocorrect": "Interfejs „{{name}}” można wykryć w trybie innym niż AP/Gateway — Reticulum uruchomi go jako punkt dostępu, chyba że ustawiono ignore_config_warnings. Edytuj interfejs lub uruchom ponownie stos, aby klient-siatka mógł stemplować opt-out (mesh-client).",
-        "rmap_missing_reachable_on": "Interfejs szkieletowy „{{name}}” jest wykrywalny, ale brakuje funkcji reachable_on."
+        "rmap_missing_reachable_on": "Interfejs szkieletowy „{{name}}” jest wykrywalny, ale brakuje funkcji reachable_on.",
+        "shared_instance_conflict": "Inna aplikacja Reticulum jest właścicielem instancji udostępnionej — mesh-client działa samodzielnie, bez udostępniania. Zamknij inną aplikację i uruchom ponownie lub wyłącz instancję Udostępnij."
       },
       "runtime": {
         "rnsNotReady": "Stos RNS nie jest gotowy",
@@ -6429,10 +6428,7 @@
         "title": "Radio RNode",
         "body": "Użyj kompatybilnego sprzętu radiowego i ustawień lokalnej sieci radiowej."
       },
-      "existing": {
-        "body": "Zachowaj dotychczasowe interfejsy i sprawdź, czy są gotowe.",
-        "title": "Istniejąca konfiguracja"
-      }
+      "existing": {}
     },
     "backupBody": "Te słowa przywrócą Twoją tożsamość, jeśli stracisz ten komputer. Zapisz je teraz w prywatnym miejscu. Nigdy nie podawaj ich nikomu, kto prosi o Twój adres do wiadomości. Możesz także później wyeksportować chronioną kopię zapasową z sieci.",
     "connectionBody": "Interfejs to po prostu połączenie z Reticulum. Wybierz sposób, w jaki chcesz połączyć się z siecią. Później możesz dodać inne połączenia.",
@@ -6443,7 +6439,6 @@
     "radioDevice": "Użyj urządzenia z oprogramowaniem sprzętowym RNode. Radio Meshtastic lub MeshCore nie jest automatycznie RNode; nie flashuj ani nie zmieniaj oprogramowania sprzętowego bez sprawdzenia instrukcji urządzenia.",
     "hubSaved": "Połączenie zapisane. Sprawdzam to po ponownym uruchomieniu…",
     "radioSettings": "Otwórz ustawienia połączenia poniżej, dodaj interfejs RNode, wybierz USB lub Bluetooth i użyj częstotliwości, przepustowości, współczynnika rozproszenia i szybkości kodowania dostarczonych przez twoją grupę lokalną.",
-    "existingHint": "Przewodnik sprawdzi istniejące interfejsy bez ich zmiany. Interfejs sieci lokalnej dociera do pobliskich urządzeń Reticulum w tej sieci; sam w sobie nie łączy Cię z publicznymi urządzeniami równorzędnymi w Internecie.",
     "radioCheck": "Włącz interfejs i zastosuj monit o ponowne uruchomienie, a następnie wróć do tego przewodnika. Aby połączenie radiowe działało, nadal wymagana jest inna kompatybilna stacja w zasięgu.",
     "openInterfaces": "Otwórz ustawienia połączenia poniżej",
     "checkTitle": "Sprawdzam połączenie",
@@ -6803,5 +6798,28 @@
       "reticulum": "Reticulum"
     },
     "received": "Otrzymano {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Klient Mesh uruchamia własny stos Reticulum, dzięki czemu może zapewnić funkcje Ratspeak, które wymagają kontroli routingu i radiotelefonów: preferencje ścieżki LoRa/TCP dla komunikatów, ochrona czasu antenowego RF, wykrywanie interfejsu RMAP, BLE RNode i BLE peer oraz diagnostyka kolejki interfejsu. Użycie instancji Reticulum innej aplikacji spowodowałoby ich wyłączenie.",
+      "reverseHint": "Aby używać jednej instancji Reticulum dla wszystkich aplikacji, uruchom najpierw mesh-client z włączoną instancją Udostępnij Reticulum, a następnie skieruj na nią inne aplikacje.",
+      "learnMore": "Dowiedz się więcej",
+      "learnMoreAria": "Dowiedz się więcej o używaniu mesh-client z innymi aplikacjami Reticulum (otwiera dokumentację)",
+      "detectedTitle": "Na tym komputerze działa inna aplikacja Reticulum",
+      "detectedBody": "Znaleziono instancję współdzieloną Reticulum pod adresem {{endpoint}} (na przykład rnsd, Sideband, NomadNet lub MeshChatX). Klient Mesh nie będzie się do niego podłączał.",
+      "serialPortConflict": "Druga aplikacja Reticulum jest skonfigurowana do korzystania z {{ports}}. Serial RNode może być otwarty tylko przez jeden program na raz, więc używaj go tylko w jednej aplikacji.",
+      "shareTitle": "Pozwól innym aplikacjom Reticulum używać mesh-client",
+      "shareShow": "Pokaż ustawienia innych aplikacji",
+      "shareShowAria": "Pokaż ustawienia konfiguracyjne Reticulum, których inne aplikacje muszą używać współdzielonej instancji mesh-client",
+      "shareHide": "Ukryj ustawienia",
+      "shareHideAria": "Ukryj ustawienia konfiguracyjne Reticulum dla innych aplikacji",
+      "shareSnippetHint": "Dodaj te linie do sekcji [reticulum] konfiguracji Reticulum drugiej aplikacji (na przykład ~/.reticulum/config), następnie uruchom najpierw mesh-client, a drugą aplikację jako drugą. Klucz rpc_key pozwala narzędziom takim jak rnstatus i rnpath komunikować się z mesh-client; zachowaj to dla siebie.",
+      "shareNotHosting": "Klient Mesh nie obsługuje obecnie instancji współdzielonej. Włącz instancję Share Reticulum, zapisz i zrestartuj stos.",
+      "shareLoadFailed": "Nie można odczytać ustawień instancji udostępnionej. Sprawdź, czy stos Reticulum jest uruchomiony.",
+      "copySnippet": "Skopiuj ustawienia",
+      "copySnippetAria": "Skopiuj ustawienia konfiguracyjne Reticulum dla innych aplikacji",
+      "snippetCopied": "Ustawienia skopiowane",
+      "snippetAria": "Reticulum ustawienia konfiguracyjne dla innych aplikacji"
+    }
   }
 }
