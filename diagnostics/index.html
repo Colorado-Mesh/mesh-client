@@ -3976,14 +3976,9 @@
 <td><strong>Add Auto interface</strong></td>
 </tr>
 <tr>
-<td><code>missing_shared_instance</code></td>
-<td><code>share_instance = Yes</code> but this app is not hosting <code>SharedInstanceServer</code> (often another app owns the name)</td>
-<td><strong>Turn off Share instance</strong> (<code>disable_share_instance</code>) then restart</td>
-</tr>
-<tr>
-<td><code>shared_instance_client</code></td>
-<td>Attached as <code>SharedInstanceClient</code> of another app — local TCP hubs from this config are not started</td>
-<td><strong>Turn off Share instance</strong> / quit the other app, then restart</td>
+<td><code>shared_instance_conflict</code></td>
+<td>Share is on but another Reticulum app (rnsd, Sideband, NomadNet, MeshChatX) owns the shared endpoint; mesh-client runs standalone</td>
+<td><strong>Turn off Share instance</strong> (<code>disable_share_instance</code>), or quit the other app and restart</td>
 </tr>
 <tr>
 <td><code>shared_instance_unexpected</code></td>
@@ -4017,7 +4012,7 @@
 </tr>
 </tbody>
 </table>
-<p>The Connection tab <strong>Interfaces</strong> list shows the same audit hints per row (amber/red subtext) with <strong>Repair</strong> / <strong>Turn off Share instance</strong> / <strong>Disable</strong> shortcuts. <strong>SharedInstanceServer</strong> / <strong>SharedInstanceClient</strong> are runtime-only — they show a <strong>Runtime</strong> badge and cannot be edited or deleted from config. In <strong>SharedInstanceClient</strong> mode, misleading <code>tcp_unreachable</code> / ghost-TCP alerts for this app’s hubs are suppressed. The <code>runtime_only_interface</code> audit note is intentionally omitted from the Diagnostics panel (expected state, not a fault); misconfiguration is reported via <code>missing_shared_instance</code>, <code>shared_instance_client</code>, or <code>shared_instance_unexpected</code> instead.</p>
+<p>The Connection tab <strong>Interfaces</strong> list shows the same audit hints per row (amber/red subtext) with <strong>Repair</strong> / <strong>Turn off Share instance</strong> / <strong>Disable</strong> shortcuts. <strong>SharedInstanceServer</strong> is runtime-only — it shows a <strong>Runtime</strong> badge and cannot be edited or deleted from config. Mesh-client never attaches as a <strong>SharedInstanceClient</strong> of another app (see <a href="../reticulum/#using-mesh-client-with-other-reticulum-apps">Using mesh-client with other Reticulum apps</a>); the <code>shared_instance_conflict</code> row explains why and links there. The <code>runtime_only_interface</code> audit note is intentionally omitted from the Diagnostics panel (expected state, not a fault); misconfiguration is reported via <code>shared_instance_conflict</code> or <code>shared_instance_unexpected</code> instead.</p>
 <p>Sidecar APIs: <code>GET /api/v1/config/audit</code>, <code>POST /api/v1/config/repair</code> (see <a href="../reticulum-sidecar-ipc/"><code>reticulum-sidecar-ipc.md</code></a>).</p>
 <hr />
 <h2 id="17-key-source-files">17. Key Source Files<a class="headerlink" href="#17-key-source-files" title="Permanent link">&para;</a></h2>
@@ -4302,7 +4297,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 4, 2026 20:14:09 UTC">October 4, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 18:55:39 UTC">October 7, 2026</span>
   </span>
 
     
