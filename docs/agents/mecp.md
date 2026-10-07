@@ -48,14 +48,14 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 
 ### Why not ALERT_APP outbound
 
-Evaluated and deferred. Blockers:
+Evaluated and not planned. Blockers:
 
 - **Firmware rate limit:** `PhoneAPI.cpp` allows one locally-originated `ALERT_APP` packet per **10s** (same rule as POSITION / WAYPOINT / TELEMETRY), versus 2s for text (`MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS`). An over-limit packet is dropped with only a queue-status reply — no `RATE_LIMIT_EXCEEDED` routing error — so `@meshtastic/core` waits for its 60s queue timeout before rejecting.
 - **No re-queue on that failure:** the Meshtastic emergency `sendFn` is fire-and-forget (session `sendChatMessage` does not surface the device result), so a silently dropped report would never fall back to the emergency outbox.
 - **Bursts:** `tryParseMecp` also matches R01 / B02 / B03 ACK and beacon control traffic, and RF rebroadcast (`sendMecpRebroadcast.ts`) is unpaced, so a MAYDAY followed by an ACK, update, or bridge send within 10s would lose packets.
 - **No Store & Forward replay:** the S&F server stores only `TEXT_MESSAGE_APP`.
 
-A future attempt needs at least: a dedicated ≥10s `ALERT_APP` pacer covering compose, outbox drain, ACK/beacon, and rebroadcast; a send result that re-queues to the emergency outbox on timeout; and a classifier limited to severity 0/1 that excludes R/B control codes and drills.
+If ever revisited, it needs at least: a dedicated ≥10s `ALERT_APP` pacer covering compose, outbox drain, ACK/beacon, and rebroadcast; a send result that re-queues to the emergency outbox on timeout; and a classifier limited to severity 0/1 that excludes R/B control codes and drills.
 
 ## RF rebroadcast (default off)
 
@@ -69,13 +69,5 @@ A future attempt needs at least: a dedicated ≥10s `ALERT_APP` pacer covering c
 ## Incident Command
 
 Inbound MECP feeds the always-visible **Incident** tab (persistent `incidentStore`, cross-protocol merge, R01 ACK / B02 beacon Confirm, Resolve, map markers). Ops alerts, exports, SAR map tools, and incident track retention are also EMCOMM workstreams. See [emcomm.md](emcomm.md).
-
-## Out of scope (follow-ups)
-
-- RetAlert (`!RETALERT!…`)
-- SQLite `mecpParsed` column (Incident Command uses a Zustand persist store — see [emcomm.md](emcomm.md))
-- MeshCore Rooms bubble styling
-- Send via `ALERT_APP` portnum (deferred — see [Why not ALERT_APP outbound](#why-not-alert_app-outbound))
-- Reticulum DM bridge endpoints
 
 Sound choices and volume are configurable per severity in App → Notifications. Original sounds remain defaults; MAYDAY/URGENT retain mute bypass and a 10% volume floor. See [notification-sounds.md](../notification-sounds.md).
