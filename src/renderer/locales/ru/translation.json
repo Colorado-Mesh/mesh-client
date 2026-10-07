@@ -875,7 +875,8 @@
     "reactionYouAria": "Ваша реакция: {{name}}",
     "reactionOtherAria": "{{reactor}} отреагировал: {{name}}",
     "clearChannelMessagesChanged": "{{name}} больше не находится в этом слоте на радио, поэтому ничего не было очищено.",
-    "clearChannelMessagesRadioChanged": "Подключенная радиостанция изменилась, пока она была открыта, поэтому сообщения в {{name}} не были удалены."
+    "clearChannelMessagesRadioChanged": "Подключенная радиостанция изменилась, пока она была открыта, поэтому сообщения в {{name}} не были удалены.",
+    "viewSenderDetails": "Подробнее о {{name}}"
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",
@@ -4141,14 +4142,30 @@
     "bandwidthTooltip": "Ширина канала в кГц. Уже = больший радиус действия и меньше помех, но более медленная скорость передачи данных. Все узлы в сети должны использовать одинаковую пропускную способность.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "Фактор распространения",
     "spreadFactorDesc": "Выше = больше дальность, но медленнее эфирное время. По умолчанию: SF12.",

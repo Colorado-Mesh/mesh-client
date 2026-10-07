@@ -841,7 +841,8 @@
     "reactionYouAria": "Sua reação: {{name}}",
     "reactionOtherAria": "{{reactor}} reagiu com {{name}}",
     "clearChannelMessagesChanged": "{{name}} não está mais naquele espaço no rádio, então nada foi liberado.",
-    "clearChannelMessagesRadioChanged": "O rádio ligado mudou enquanto estava aberto, por isso as mensagens em {{name}} não foram apagadas."
+    "clearChannelMessagesRadioChanged": "O rádio ligado mudou enquanto estava aberto, por isso as mensagens em {{name}} não foram apagadas.",
+    "viewSenderDetails": "Ver detalhes de {{name}}"
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",
@@ -4061,14 +4062,30 @@
     "bandwidthTooltip": "Largura do canal em kHz. Mais estreito = maior alcance e menos interferência, mas taxa de dados mais lenta. Todos os nós da rede devem usar a mesma largura de banda.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "Fator Spread",
     "spreadFactorDesc": "Maior = mais alcance, mas tempo de transmissão mais lento. Padrão: SF12.",

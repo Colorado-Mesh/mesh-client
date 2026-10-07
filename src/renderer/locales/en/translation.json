@@ -748,6 +748,7 @@
     },
     "copyMessage": "Copy message",
     "filterBySender": "Filter by sender",
+    "viewSenderDetails": "View details for {{name}}",
     "clearSenderFilter": "Clear filter",
     "filteringBySender": "Filtering by {{name}}",
     "jumpToDate": "Jump to date",
