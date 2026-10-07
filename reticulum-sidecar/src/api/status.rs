@@ -12,6 +12,11 @@ pub struct StatusResponse {
     pub version: String,
     pub rns_ready: bool,
     pub lxmf_ready: bool,
+    /// `shared` | `standalone`; null until the live stack is attached.
+    pub instance_mode: Option<&'static str>,
+    /// Shared-instance endpoint owned by another Reticulum app (Share requested but
+    /// not bound); mesh-client runs standalone instead of attaching as a client.
+    pub shared_instance_conflict: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -23,11 +28,14 @@ pub struct AppInfoResponse {
 }
 
 pub async fn status(State(stack): State<Arc<StackHandle>>) -> Json<StatusResponse> {
+    let (instance_mode, shared_instance_conflict) = stack.instance_status();
     Json(StatusResponse {
         status: "ok",
         version: env!("CARGO_PKG_VERSION").to_string(),
         rns_ready: stack.rns_ready().await,
         lxmf_ready: stack.lxmf_ready().await,
+        instance_mode,
+        shared_instance_conflict,
     })
 }
 

@@ -1604,12 +1604,12 @@
     "reticulumStackRunningAs": "Berjalan — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Stack Reticulum tidak responsif — memulai ulang…",
     "reticulumSharedInstance": {
-      "title": "Menggunakan sesi berbagi aplikasi lain",
-      "body": "Aplikasi ini dilampirkan sebagai klien dari instance Reticulum bersama aplikasi lain. Hub TCP lokal dari konfigurasi aplikasi ini tidak dimulai dalam mode ini — lalu lintas hanya dapat menggunakan tumpukan aplikasi lain.",
-      "networkHint": "Atau buka contoh Network → Share Reticulum untuk menonaktifkan Share secara manual, lalu mulai ulang tumpukan. Anda juga dapat sepenuhnya keluar dari MeshChat, Ratspeak, atau rnsd mandiri dan memulai kembali.",
       "disableShare": "Nonaktifkan Bagikan sesi dan mulai ulang",
       "disableShareAria": "Nonaktifkan Bagikan instance dan mulai ulang tumpukan",
-      "disableFailed": "Gagal menonaktifkan Bagikan instance."
+      "disableFailed": "Gagal menonaktifkan Bagikan instance.",
+      "conflictTitle": "Aplikasi Reticulum lain memiliki instance bersama",
+      "conflictBody": "Bagikan instance Reticulum aktif, tetapi {{endpoint}} sudah digunakan oleh aplikasi Reticulum lain (misalnya rnsd, Sideband, NomadNet, atau MeshChatX). Klien mesh tidak melampirkannya dan menjalankan tumpukannya sendiri tanpa berbagi.",
+      "conflictHint": "Untuk berbagi lagi, keluar dari aplikasi lain dan mulai ulang tumpukan. Atau matikan Bagikan untuk menghentikan pemberitahuan ini."
     },
     "letsMeshUsernameV1Hex": "Nama pengguna harus v1_disusul oleh 64 karakter hex (kunci publik).",
     "bleWeakSignalWarning": "Sinyal Bluetooth lemah ({{rssi}} dBm). Bergerak lebih dekat untuk koneksi yang stabil.",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "Antarmuka \"{{name}}\" diaktifkan di konfigurasi tetapi tidak dimuat oleh RNS.",
         "missing_auto_interface": "Tidak ada AutoInterface yang diaktifkan — penemuan LAN lokal tidak aktif.",
         "auto_interface_down": "AutoInterface \"{{name}}\" diaktifkan tetapi tidak aktif.",
-        "missing_shared_instance": "Berbagi contoh aktif tetapi aplikasi ini tidak menghosting server bersama — tutup aplikasi mesh lainnya atau matikan Bagikan contoh, lalu mulai ulang.",
         "shared_instance_unexpected": "Server instans bersama aktif tetapi instans Berbagi tidak aktif — mulai ulang tumpukan.",
         "runtime_only_interface": "\"{{name}}\" hanya runtime (tidak disimpan dalam konfigurasi).",
         "rmap_missing_coordinates": "Antarmuka \"{{name}}\" dapat ditemukan tetapi tidak memiliki koordinat peta yang valid.",
         "rmap_no_tcp_hub": "RNode lokal yang dapat ditemukan tidak memiliki hub klien TCP yang diaktifkan untuk jangkauan internet.",
         "rmap_transport_disabled": "Antarmuka yang dapat ditemukan dikonfigurasi tetapi mode transportasi tidak aktif.",
         "rmap_i2p_not_connectable": "Antarmuka I2P \"{{name}}\" dapat ditemukan tetapi terhubung bukan ya.",
-        "shared_instance_client": "Bagikan instance yang dilampirkan sebagai klien aplikasi lain — hub TCP lokal dalam konfigurasi ini tidak dimulai.",
         "rmap_mode_autocorrect": "Antarmuka \"{{name}}\" dapat ditemukan dengan mode non — AP/Gateway — Reticulum akan menjalankannya sebagai Access Point kecuali jika ignore_config_warnings ditetapkan. Edit antarmuka atau mulai ulang tumpukan sehingga mesh-client dapat mencap opt - out.",
-        "rmap_missing_reachable_on": "Antarmuka backbone \"{{name}}\" dapat ditemukan tetapi REACHABLE_ON hilang."
+        "rmap_missing_reachable_on": "Antarmuka backbone \"{{name}}\" dapat ditemukan tetapi REACHABLE_ON hilang.",
+        "shared_instance_conflict": "Aplikasi Reticulum lain memiliki instance bersama — mesh-client berjalan mandiri tanpa berbagi. Keluar dari aplikasi lain dan mulai ulang, atau matikan Bagikan contoh."
       },
       "runtime": {
         "rnsNotReady": "Tumpukan RNS belum siap",
@@ -6328,8 +6327,8 @@
         "body": "Gunakan perangkat keras radio yang kompatibel dan pengaturan jaringan radio lokal Anda."
       },
       "existing": {
-        "title": "Pengaturan yang ada",
-        "body": "Pertahankan antarmuka Anda saat ini dan periksa apakah sudah siap."
+        "title": "Pengaturan mesh-client yang ada",
+        "body": "Biarkan antarmuka sudah dikonfigurasi di mesh-client dan periksa apakah sudah siap."
       }
     },
     "routeLabel": "Bagaimana cara menghubungkan",
@@ -6343,7 +6342,6 @@
     "openInterfaces": "Buka pengaturan koneksi di bawah",
     "ready": "Koneksi Anda tersedia",
     "checkTitle": "Memeriksa koneksi Anda",
-    "existingHint": "Panduan ini akan memeriksa antarmuka Anda yang ada tanpa mengubahnya. Antarmuka jaringan lokal menjangkau perangkat Reticulum terdekat di jaringan itu; itu tidak dengan sendirinya menghubungkan Anda ke rekan-rekan internet publik.",
     "available": "Siap",
     "waiting": "Menunggu",
     "checkConnection": "Koneksi yang dipilih",
@@ -6380,7 +6378,8 @@
     "identitySaveFailed": "Tidak dapat menyimpan setelan identitas Anda. Coba lagi.",
     "identityUnavailable": "Tidak dapat membaca identitas Anda. Periksa apakah Reticulum sedang berjalan, lalu coba lagi.",
     "interfacesUnavailable": "Tidak dapat membaca koneksi Anda. Periksa apakah Reticulum sedang berjalan, lalu coba lagi.",
-    "interfaceSaveFailed": "Tidak dapat menyimpan koneksi ini. Periksa pengaturan koneksi Anda dan coba lagi."
+    "interfaceSaveFailed": "Tidak dapat menyimpan koneksi ini. Periksa pengaturan koneksi Anda dan coba lagi.",
+    "existingHint": "Panduan ini akan memeriksa antarmuka yang sudah dikonfigurasi di mesh-client tanpa mengubahnya. Itu tidak menggunakan konfigurasi Reticulum aplikasi lain atau rnsd yang berjalan secara terpisah. Antarmuka jaringan lokal menjangkau perangkat Reticulum terdekat di jaringan tersebut; itu tidak dengan sendirinya menghubungkan Anda ke rekan-rekan internet publik."
   },
   "mecp": {
     "severity": {
@@ -6695,5 +6694,28 @@
       "reticulum": "Reticulum"
     },
     "received": "Menerima {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Mesh-client menjalankan tumpukan Reticulum miliknya sendiri sehingga dapat menyediakan fitur Ratspeak yang memerlukan kontrol perutean dan radio: preferensi jalur LoRa/TCP untuk pesan, perlindungan airtime RF, penemuan antarmuka RMAP, BLE RNode dan BLE Peer, dan diagnostik antrean antarmuka. Menggunakan instance Reticulum aplikasi lain akan menonaktifkannya.",
+      "reverseHint": "Untuk menggunakan satu instance Reticulum untuk semua aplikasi Anda, mulai mesh-client terlebih dahulu dengan Share Reticulum instance aktif, lalu arahkan aplikasi lain ke instance tersebut.",
+      "learnMore": "Pelajari lebih lanjut",
+      "learnMoreAria": "Pelajari lebih lanjut tentang menggunakan mesh-client dengan aplikasi Reticulum lainnya (buka dokumentasi)",
+      "detectedTitle": "Aplikasi Reticulum lain sedang berjalan di komputer ini",
+      "detectedBody": "Menemukan instance bersama Reticulum di {{endpoint}} (misalnya rnsd, Sideband, NomadNet, atau MeshChatX). Klien mesh tidak akan melampirkannya.",
+      "serialPortConflict": "Aplikasi Reticulum lainnya dikonfigurasi untuk menggunakan {{ports}}. Serial RNode hanya dapat dibuka oleh satu program dalam satu waktu, jadi gunakan dari satu aplikasi saja.",
+      "shareTitle": "Izinkan aplikasi Reticulum lainnya menggunakan mesh-client",
+      "shareShow": "Tampilkan pengaturan untuk aplikasi lain",
+      "shareShowAria": "Tampilkan pengaturan konfigurasi Reticulum yang diperlukan aplikasi lain untuk menggunakan instance bersama mesh-client",
+      "shareHide": "Sembunyikan pengaturan",
+      "shareHideAria": "Sembunyikan pengaturan konfigurasi Reticulum untuk aplikasi lain",
+      "shareSnippetHint": "Tambahkan baris ini ke bagian [retikulum] pada konfigurasi Reticulum aplikasi lain (misalnya ~/.reticulum/config), lalu mulai mesh-client terlebih dahulu dan aplikasi lainnya kedua. rpc_key memungkinkan alat seperti rnstatus dan rnpath berbicara dengan mesh-client; merahasiakannya.",
+      "shareNotHosting": "Klien mesh tidak menghosting instance bersama saat ini. Aktifkan Bagikan Reticulum instance, simpan, dan mulai ulang tumpukan.",
+      "shareLoadFailed": "Tidak dapat membaca pengaturan instance bersama. Periksa apakah tumpukan Reticulum sedang berjalan.",
+      "copySnippet": "Salin pengaturan",
+      "copySnippetAria": "Salin pengaturan konfigurasi Reticulum untuk aplikasi lain",
+      "snippetCopied": "Pengaturan disalin",
+      "snippetAria": "Reticulum pengaturan konfigurasi untuk aplikasi lain"
+    }
   }
 }

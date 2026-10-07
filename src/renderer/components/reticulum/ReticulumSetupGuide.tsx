@@ -7,6 +7,7 @@ import {
   formatDefaultHubPresetEndpoint,
   RETICULUM_DEFAULT_HUB_PRESETS,
 } from '@/renderer/lib/reticulum/reticulumDefaultHubPresets';
+import { isForeignSystemReticulum } from '@/renderer/lib/reticulum/reticulumInstanceStatus';
 import { isReticulumLocalSerialInterface } from '@/renderer/lib/reticulum/reticulumLocalInterfaceHealth';
 import {
   enableReticulumSetupHub,
@@ -18,9 +19,11 @@ import {
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import type { ReticulumIdentityStatus } from '@/renderer/stores/reticulumIdentityStore';
 import { useReticulumSetupGuideStore } from '@/renderer/stores/reticulumSetupGuideStore';
+import type { SystemReticulumInstance } from '@/shared/reticulum-types';
 import { MS_PER_SECOND } from '@/shared/timeConstants';
 
 import { INPUT_BOX_CLASS, SELECT_BOX_CLASS } from '../ui/formClasses';
+import { ReticulumSystemRnsExplainer } from './ReticulumSystemRnsExplainer';
 
 export type ReticulumSetupDestination = 'Nodes' | 'RRC' | 'Radio';
 
@@ -34,6 +37,8 @@ interface Props {
   onRefreshIdentity: () => Promise<void>;
   onShowInterfaces: () => void;
   onNavigate?: (destination: ReticulumSetupDestination) => boolean;
+  /** mesh-client itself owns the shared instance (its own TCP listener answers the probe). */
+  selfHostsSharedInstance?: boolean;
 }
 
 const HUBS = RETICULUM_DEFAULT_HUB_PRESETS.filter(
@@ -85,6 +90,7 @@ export function ReticulumSetupGuide({
   onRefreshIdentity,
   onShowInterfaces,
   onNavigate,
+  selfHostsSharedInstance = false,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
@@ -108,10 +114,33 @@ export function ReticulumSetupGuide({
   const [checking, setChecking] = useState(false);
   const [checkRevision, setCheckRevision] = useState(0);
   const selectedHub = HUBS.find((hub) => hub.id === hubId) ?? HUBS[0];
+  const [systemProbe, setSystemProbe] = useState<SystemReticulumInstance | null>(null);
+  const foreignSystemRns =
+    systemProbe && isForeignSystemReticulum(systemProbe, selfHostsSharedInstance)
+      ? systemProbe
+      : null;
 
   useEffect(() => {
     if (open) headingRef.current?.focus();
   }, [open, step]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void window.electronAPI.reticulum
+      .detectSystemInstance()
+      .then((probe) => {
+        if (!cancelled) setSystemProbe(probe);
+      })
+      .catch((e: unknown) => {
+        console.debug(
+          '[ReticulumSetupGuide] system Reticulum probe failed ' + errLikeToLogString(e),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open && identity?.display_name) {
@@ -273,6 +302,29 @@ export function ReticulumSetupGuide({
           >
             {t(STEP_KEYS[step])}
           </h3>
+
+          {foreignSystemRns ? (
+            <div
+              role="note"
+              aria-label={t('reticulum.systemRns.detectedTitle')}
+              className="rounded-lg border border-orange-600/50 bg-orange-950/30 px-3 py-2.5 text-sm text-orange-100"
+            >
+              <p className="font-medium text-orange-200">
+                {t('reticulum.systemRns.detectedTitle')}
+              </p>
+              <p className="mt-1 text-xs text-orange-100/90">
+                {t('reticulum.systemRns.detectedBody', { endpoint: foreignSystemRns.endpoint })}
+              </p>
+              <ReticulumSystemRnsExplainer />
+              {foreignSystemRns.serialPorts.length > 0 ? (
+                <p className="text-muted text-label mt-1">
+                  {t('reticulum.systemRns.serialPortConflict', {
+                    ports: foreignSystemRns.serialPorts.join(', '),
+                  })}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
           {step === 0 && (
             <div className="text-ink-300 space-y-4 text-sm">

@@ -1604,12 +1604,12 @@
     "reticulumStackRunningAs": "実行中— {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum スタックが応答なし — 再起動中…",
     "reticulumSharedInstance": {
-      "title": "別のアプリの共有インスタンスを使用する",
-      "body": "このアプリは、別のアプリの共有Reticulumインスタンスのクライアントとして接続されています。このアプリの設定からのローカルTCPハブは、このモードでは開始されません。トラフィックは、他のアプリのスタックのみを使用できます。",
-      "networkHint": "または、Network → Share Reticulumインスタンスを開いて手動で共有をオフにし、スタックを再起動します。MeshChat、Ratspeak、またはスタンドアロンRNSDを完全に終了して再起動することもできます。",
       "disableShare": "インスタンスの共有をオフにして再起動する",
       "disableShareAria": "共有インスタンスをオフにして、スタックを再起動します",
-      "disableFailed": "共有インスタンスをオフにできませんでした。"
+      "disableFailed": "共有インスタンスをオフにできませんでした。",
+      "conflictTitle": "別の Reticulum アプリが共有インスタンスを所有しています",
+      "conflictBody": "Reticulum インスタンスの共有はオンですが、{{endpoint}} は別の Reticulum アプリ (たとえば、rnsd、Sideband、NomadNet、または MeshChatX) によってすでに使用されています。メッシュクライアントは接続されておらず、共有せずに独自のスタックを実行しています。",
+      "conflictHint": "再度共有するには、他のアプリを終了し、スタックを再起動します。または、この通知を停止するには、共有をオフにします。"
     },
     "letsMeshUsernameV1Hex": "ユーザー名はv 1_の後に64文字の16進数文字（公開鍵）でなければなりません。",
     "bleWeakSignalWarning": "Bluetooth信号が弱い（ {{rssi}} dBm ）。安定した接続のために近づいてください。",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "インターフェイス「{{name}}」は構成で有効になっていますが、RNS によってロードされていません。",
         "missing_auto_interface": "有効な AutoInterface がありません - ローカル LAN 検出がオフになっています。",
         "auto_interface_down": "AutoInterface \"{{name}}\" は有効ですが、ダウンしています。",
-        "missing_shared_instance": "共有インスタンスはオンですが、このアプリは共有サーバーをホストしていません。他のメッシュ アプリを終了するか、共有インスタンスをオフにしてから再起動してください。",
         "shared_instance_unexpected": "共有インスタンス サーバーはライブですが、共有インスタンスがオフになっています。スタックを再起動します。",
         "runtime_only_interface": "「{{name}}」は実行時のみです (構成には保存されません)。",
         "rmap_missing_coordinates": "インターフェース「{{name}}」は検出可能ですが、有効なマップ座標がありません。",
         "rmap_no_tcp_hub": "検出可能なローカルRNodeには、インターネット到達可能性のために有効なTCPクライアントハブがありません。",
         "rmap_transport_disabled": "検出可能なインターフェイスが設定されていますが、トランスポートモードはオフです。",
         "rmap_i2p_not_connectable": "I2Pインターフェース「{{name}}」は検出可能ですが、接続可能ではありません。",
-        "shared_instance_client": "別のアプリのクライアントとして接続された共有インスタンス — この構成内のローカル TCP ハブは起動されていません。",
         "rmap_mode_autocorrect": "インターフェース「{{name}}」は、非AP/ゲートウェイモードで検出可能です。Reticulumは、ignore_config_warningsが設定されていない限り、アクセスポイントとして実行します。mesh-clientがオプトアウトをスタンプできるように、インターフェースを編集するか、スタックを再起動します。",
-        "rmap_missing_reachable_on": "バックボーンインターフェース「{{name}}」は検出可能ですが、reachable_onが見つかりません。"
+        "rmap_missing_reachable_on": "バックボーンインターフェース「{{name}}」は検出可能ですが、reachable_onが見つかりません。",
+        "shared_instance_conflict": "別の Reticulum アプリが共有インスタンスを所有しています。mesh-client は共有せずにスタンドアロンで実行されています。他のアプリを終了して再起動するか、インスタンスの共有をオフにします。"
       },
       "runtime": {
         "rnsNotReady": "RNS スタックの準備ができていません",
@@ -6321,10 +6320,7 @@
         "title": "インターネット",
         "body": "パブリック ハブは、他の人々とつながります。ラジオは必要ありません。始めるのに良い場所です。"
       },
-      "existing": {
-        "body": "現在のインターフェイスを保持し、準備ができているかどうかを確認します。",
-        "title": "既存のセットアップ"
-      },
+      "existing": {},
       "radio": {
         "body": "互換性のある無線ハードウェアとローカル無線ネットワークの設定を使用します。",
         "title": "RNode無線"
@@ -6343,7 +6339,6 @@
     "radioDevice": "RNode ファームウェアを実行しているデバイスを使用します。 Meshtastic または MeshCore 無線は、自動的には RNode にはなりません。デバイスの指示を確認せずにファームウェアをフラッシュしたり変更したりしないでください。",
     "checkTitle": "接続を確認しています",
     "checkStack": "Reticulum ネットワーク",
-    "existingHint": "このガイドでは、既存のインターフェイスを変更せずにチェックします。ローカル ネットワーク インターフェイスは、そのネットワーク上の近くの Reticulum デバイスに到達します。それ自体ではパブリック インターネット ピアに接続しません。",
     "ready": "接続が利用可能です",
     "available": "準備ができて",
     "waiting": "待っている",
@@ -6695,5 +6690,28 @@
       "reticulum": "Reticulum"
     },
     "received": "{{when}}を受け取りました"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "メッシュ クライアントは独自の Reticulum スタックを実行するため、ルーティングと無線の制御が必要な Ratspeak 機能 (メッセージの LoRa/TCP パス優先、RF 通信時間保護、RMAP インターフェイス検出、BLE RNode および BLE ピア、インターフェイス キュー診断) を提供できます。別のアプリの Reticulum インスタンスを使用すると、これらはオフになります。",
+      "reverseHint": "すべてのアプリに 1 つの Reticulum インスタンスを使用するには、まず Reticulum インスタンスの共有をオンにして mesh-client を起動し、次に他のアプリをそのインスタンスに向けます。",
+      "learnMore": "もっと詳しく知る",
+      "learnMoreAria": "他の Reticulum アプリで mesh-client を使用する方法の詳細 (ドキュメントが開きます)",
+      "detectedTitle": "別の Reticulum アプリがこのコンピューターで実行されています",
+      "detectedBody": "Reticulum 共有インスタンスが {{endpoint}} で見つかりました (たとえば、rnsd、Sideband、NomadNet、または MeshChatX)。メッシュクライアントはそれに接続されません。",
+      "serialPortConflict": "他の Reticulum アプリは {{ports}} を使用するように構成されています。シリアル RNode は一度に 1 つのプログラムでしか開けないため、1 つのアプリからのみ使用してください。",
+      "shareTitle": "他の Reticulum アプリで mesh-client を使用できるようにする",
+      "shareShow": "他のアプリの設定を表示する",
+      "shareShowAria": "他のアプリが mesh-client の共有インスタンスを使用する必要がある Reticulum 構成設定を表示します",
+      "shareHide": "設定を非表示にする",
+      "shareHideAria": "他のアプリの Reticulum 構成設定を非表示にする",
+      "shareSnippetHint": "これらの行を他のアプリの Reticulum 構成 (例: ~/.reticulum/config) の [reticulum] セクションに追加し、最初に mesh-client を起動し、次に他のアプリを起動します。 rpc_key を使用すると、rnstatus や rnpath などのツールが mesh-client と通信できるようになります。秘密にしておいてください。",
+      "shareNotHosting": "現在、メッシュクライアントは共有インスタンスをホストしていません。 Reticulum インスタンスの共有をオンにし、スタックを保存して再起動します。",
+      "shareLoadFailed": "共有インスタンス設定を読み取れませんでした。 Reticulum スタックが実行されていることを確認します。",
+      "copySnippet": "設定をコピーする",
+      "copySnippetAria": "他のアプリの Reticulum 構成設定をコピーします",
+      "snippetCopied": "設定がコピーされました",
+      "snippetAria": "Reticulum 他のアプリの構成設定"
+    }
   }
 }

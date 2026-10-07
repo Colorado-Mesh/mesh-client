@@ -1604,12 +1604,12 @@
     "server": "Server",
     "region": "Bundesland",
     "reticulumSharedInstance": {
-      "title": "Verwenden der gemeinsam genutzten Instanz einer anderen App",
-      "body": "Diese App wurde als Client der gemeinsam genutzten Reticulum-Instanz einer anderen App angehängt. Lokale TCP-Hubs aus der Konfiguration dieser App werden in diesem Modus nicht gestartet — der Datenverkehr darf nur den Stack der anderen App verwenden.",
-      "networkHint": "Oder öffnen Sie die Network → Share Reticulum-Instanz, um die Freigabe manuell zu deaktivieren, und starten Sie dann den Stack neu. Sie können auch MeshChat, Ratspeak oder eigenständiges RNSD vollständig beenden und neu starten.",
       "disableShare": "Share-Instanz deaktivieren und neu starten",
       "disableShareAria": "Deaktivieren Sie die Share-Instanz und starten Sie den Stack neu",
-      "disableFailed": "Fehler beim Deaktivieren der Share-Instanz."
+      "disableFailed": "Fehler beim Deaktivieren der Share-Instanz.",
+      "conflictTitle": "Eine andere Reticulum-App ist Eigentümer der freigegebenen Instanz",
+      "conflictBody": "Die Instanz „Share Reticulum“ ist aktiviert, aber {{endpoint}} wird bereits von einer anderen Reticulum-App verwendet (z. B. rnsd, Sideband, NomadNet oder MeshChatX). Der Mesh-Client hat keine Verbindung hergestellt und führt seinen eigenen Stapel aus, ohne ihn zu teilen.",
+      "conflictHint": "Um erneut zu teilen, beenden Sie die andere App und starten Sie den Stapel neu. Oder schalten Sie „Teilen“ aus, um diesen Hinweis zu stoppen."
     },
     "letsMeshUsernameV1Hex": "Der Benutzername muss v1_ gefolgt von 64 Hexadezimalzeichen (öffentlicher Schlüssel) sein.",
     "bleWeakSignalWarning": "Bluetooth-Signal ist schwach ({{rssi}} dBm). Nähern Sie sich für eine stabile Verbindung.",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "Die Schnittstelle „{{name}}“ ist in der Konfiguration aktiviert, wird jedoch nicht von RNS geladen.",
         "missing_auto_interface": "Kein aktiviertes AutoInterface – lokale LAN-Erkennung ist deaktiviert.",
         "auto_interface_down": "AutoInterface „{{name}}“ ist aktiviert, aber nicht verfügbar.",
-        "missing_shared_instance": "Die Freigabe-Instanz ist aktiviert, aber diese App hostet den freigegebenen Server nicht — beenden Sie andere Mesh-Apps oder deaktivieren Sie die Freigabe-Instanz und starten Sie sie dann neu.",
         "shared_instance_unexpected": "Der gemeinsam genutzte Instanzserver ist live, aber die gemeinsam genutzte Instanz ist aus — starten Sie den Stack neu.",
         "runtime_only_interface": "„{{name}}“ ist nur zur Laufzeit gültig (wird nicht in der Konfiguration gespeichert).",
         "rmap_missing_coordinates": "Schnittstelle „{{name}}“ ist auffindbar, aber es fehlen gültige Kartenkoordinaten.",
         "rmap_no_tcp_hub": "Der auffindbare lokale RNode hat keinen aktivierten TCP-Client-Hub für die Internet-Erreichbarkeit.",
         "rmap_transport_disabled": "Erkennbare Schnittstellen sind konfiguriert, aber der Transportmodus ist ausgeschaltet.",
         "rmap_i2p_not_connectable": "Die I2P-Schnittstelle \"{{name}}\" ist auffindbar, aber anschließbar ist nicht ja.",
-        "shared_instance_client": "Als Client einer anderen App angehängte Instanz freigeben — lokale TCP-Hubs in dieser Konfiguration werden nicht gestartet.",
         "rmap_mode_autocorrect": "Die Schnittstelle „{{name}}“ ist mit einem Nicht-AP-/Gateway-Modus auffindbar — Reticulum führt sie als Access Point aus, es sei denn, ignore_config_warnings ist festgelegt. Bearbeiten Sie die Schnittstelle oder starten Sie den Stack neu, damit der mesh-client das Opt-Out stempeln kann.",
-        "rmap_missing_reachable_on": "Die Backbone-Schnittstelle \"{{name}}\" ist auffindbar, aber reachable_on fehlt."
+        "rmap_missing_reachable_on": "Die Backbone-Schnittstelle \"{{name}}\" ist auffindbar, aber reachable_on fehlt.",
+        "shared_instance_conflict": "Eine andere Reticulum-App besitzt die freigegebene Instanz – mesh-client wird eigenständig ohne Freigabe ausgeführt. Beenden Sie die andere App und starten Sie sie neu oder deaktivieren Sie die Option „Instanz teilen“."
       },
       "runtime": {
         "rnsNotReady": "Der RNS-Stack ist nicht bereit",
@@ -6328,10 +6327,7 @@
         "title": "RNode-Radio",
         "body": "Nutzen Sie kompatible Funkhardware und die Einstellungen Ihres lokalen Funknetzes."
       },
-      "existing": {
-        "title": "Vorhandenes Setup",
-        "body": "Behalten Sie Ihre aktuellen Schnittstellen und prüfen Sie, ob diese bereit sind."
-      }
+      "existing": {}
     },
     "hubLabel": "Öffentlicher Internet-Hub",
     "hubHint": "Beginnen Sie mit einem Hub. Die App fügt diese Verbindung hinzu oder aktiviert sie und startet Reticulum neu, um sie anzuwenden. Öffentliche Hubs können Ihre IP-Adresse sehen und sind möglicherweise manchmal nicht erreichbar.",
@@ -6341,7 +6337,6 @@
     "radioSettings": "Öffnen Sie unten die Verbindungseinstellungen, fügen Sie eine RNode-Schnittstelle hinzu, wählen Sie USB oder Bluetooth und verwenden Sie die von Ihrer lokalen Gruppe bereitgestellte Frequenz, Bandbreite, Spreizfaktor und Codierungsrate.",
     "radioCheck": "Aktivieren Sie die Schnittstelle, übernehmen Sie die Neustartaufforderung und kehren Sie dann zu dieser Anleitung zurück. Für eine funktionierende Funkverbindung ist weiterhin ein weiterer kompatibler Sender in Reichweite erforderlich.",
     "openInterfaces": "Öffnen Sie unten die Verbindungseinstellungen",
-    "existingHint": "Der Leitfaden überprüft Ihre vorhandenen Schnittstellen, ohne diese zu ändern. Eine lokale Netzwerkschnittstelle erreicht nahegelegene Reticulum-Geräte in diesem Netzwerk. Es stellt keine Verbindung zu öffentlichen Internetpartnern her.",
     "checkTitle": "Überprüfen Sie Ihre Verbindung",
     "ready": "Ihr Anschluss ist verfügbar",
     "checkStack": "Reticulum-Netzwerk",
@@ -6695,5 +6690,28 @@
       "reticulum": "Reticulum"
     },
     "received": "Empfangen {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Der Mesh-Client führt seinen eigenen Reticulum-Stack aus, sodass er Ratspeak-Funktionen bereitstellen kann, die eine Steuerung von Routing und Funkgeräten erfordern: LoRa/TCP Pfadpräferenz für Nachrichten, RF-Airtime-Schutz, RMAP-Schnittstellenerkennung, BLE RNode und BLE Peer und Schnittstellenwarteschlangendiagnose. Die Verwendung der Reticulum-Instanz einer anderen App würde diese deaktivieren.",
+      "reverseHint": "Um eine Reticulum-Instanz für alle Ihre Apps zu verwenden, starten Sie mesh-client zuerst mit aktivierter Option „Reticulum-Instanz teilen“ und verweisen Sie dann die anderen Apps darauf.",
+      "learnMore": "Erfahren Sie mehr",
+      "learnMoreAria": "Erfahren Sie mehr über die Verwendung von mesh-client mit anderen Reticulum-Apps (öffnet die Dokumentation)",
+      "detectedTitle": "Auf diesem Computer wird eine andere Reticulum-App ausgeführt",
+      "detectedBody": "Es wurde eine gemeinsam genutzte Instanz Reticulum unter {{endpoint}} gefunden (z. B. rnsd, Sideband, NomadNet oder MeshChatX). Der Mesh-Client stellt keine Verbindung her.",
+      "serialPortConflict": "Die andere Reticulum-App ist für die Verwendung von {{ports}} konfiguriert. Eine serielle RNode kann jeweils nur von einem Programm geöffnet werden, also verwenden Sie sie nur von einer App aus.",
+      "shareTitle": "Lassen Sie andere Reticulum-Apps mesh-client verwenden",
+      "shareShow": "Einstellungen für andere Apps anzeigen",
+      "shareShowAria": "Zeigen Sie die Konfigurationseinstellungen von Reticulum an, die andere Apps benötigen, um die gemeinsam genutzte Instanz von mesh-client zu verwenden",
+      "shareHide": "Einstellungen ausblenden",
+      "shareHideAria": "Blenden Sie die Reticulum-Konfigurationseinstellungen für andere Apps aus",
+      "shareSnippetHint": "Fügen Sie diese Zeilen zum Abschnitt [reticulum] der Reticulum-Konfiguration der anderen App hinzu (z. B. ~/.reticulum/config) und starten Sie dann zuerst mesh-client und dann die andere App. Mit dem rpc_key können Tools wie rnstatus und rnpath mit mesh-client kommunizieren. Halte es privat.",
+      "shareNotHosting": "Der Mesh-Client hostet derzeit keine gemeinsam genutzte Instanz. Aktivieren Sie „Share Reticulum-Instanz“, speichern Sie den Stack und starten Sie ihn neu.",
+      "shareLoadFailed": "Die Einstellungen der freigegebenen Instanz konnten nicht gelesen werden. Überprüfen Sie, ob der Reticulum-Stack ausgeführt wird.",
+      "copySnippet": "Einstellungen kopieren",
+      "copySnippetAria": "Kopieren Sie die Reticulum-Konfigurationseinstellungen für andere Apps",
+      "snippetCopied": "Einstellungen kopiert",
+      "snippetAria": "Reticulum Konfigurationseinstellungen für andere Apps"
+    }
   }
 }

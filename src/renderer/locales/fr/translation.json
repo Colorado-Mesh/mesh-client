@@ -1604,12 +1604,12 @@
     "reticulumSidecarUnhealthyRestarting": "La pile Reticulum ne répond pas – redémarrage…",
     "port": "Port",
     "reticulumSharedInstance": {
-      "title": "Utilisation de l'instance partagée d'une autre application",
-      "body": "Cette application est jointe en tant que client de l'instance Reticulum partagée d'une autre application. Les concentrateurs TCP locaux de la configuration de cette application ne sont pas démarrés dans ce mode — le trafic ne peut utiliser que la pile de l'autre application.",
-      "networkHint": "Ou ouvrez l'instance Network → Share Reticulum pour désactiver le partage manuellement, puis redémarrez la pile. Vous pouvez également quitter complètement MeshChat, Ratspeak ou rnsd autonome et redémarrer.",
       "disableShare": "Désactiver l'instance de partage et redémarrer",
       "disableShareAria": "Désactiver l'instance de partage et redémarrer la pile",
-      "disableFailed": "Impossible de désactiver l'instance de partage."
+      "disableFailed": "Impossible de désactiver l'instance de partage.",
+      "conflictTitle": "Une autre application Reticulum est propriétaire de l'instance partagée",
+      "conflictBody": "Le partage de l'instance Reticulum est activé, mais {{endpoint}} est déjà utilisé par une autre application Reticulum (par exemple rnsd, Sideband, NomadNet ou MeshChatX). Le client Mesh ne s'y est pas attaché et exécute sa propre pile sans partage.",
+      "conflictHint": "Pour partager à nouveau, quittez l'autre application et redémarrez la pile. Ou désactivez le partage pour arrêter cet avis."
     },
     "letsMeshUsernameV1Hex": "Le nom d'utilisateur doit être v1_ suivi de 64 caractères hexadécimaux (clé publique).",
     "bleWeakSignalWarning": "Le signal Bluetooth est faible ({{rssi}} dBm). Rapprochez-vous pour une connexion stable.",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "L'interface \"{{name}}\" est activée dans la configuration mais n'est pas chargée par RNS.",
         "missing_auto_interface": "Aucune interface automatique activée : la découverte du réseau local local est désactivée.",
         "auto_interface_down": "L'interface automatique \"{{name}}\" est activée mais désactivée.",
-        "missing_shared_instance": "L'instance de partage est activée, mais cette application n'héberge pas le serveur partagé. Quittez d'autres applications maillées ou désactivez l'instance de partage, puis redémarrez.",
         "shared_instance_unexpected": "Le serveur d'instance partagée est actif mais l'instance de partage est désactivée — redémarrez la pile.",
         "runtime_only_interface": "\"{{name}}\" est uniquement destiné à l'exécution (non stocké dans la configuration).",
         "rmap_missing_coordinates": "L'interface « {{name}} » est détectable mais il manque des coordonnées cartographiques valides.",
         "rmap_no_tcp_hub": "Le RNode local détectable n'a pas de concentrateur client TCP activé pour l'accessibilité à Internet.",
         "rmap_transport_disabled": "Les interfaces détectables sont configurées mais le mode de transport est désactivé.",
         "rmap_i2p_not_connectable": "L'interface I2P « {{name}} » est détectable mais connectable n'est pas oui.",
-        "shared_instance_client": "Partager l'instance attachée en tant que client d'une autre application — les concentrateurs TCP locaux dans cette configuration ne sont pas démarrés.",
         "rmap_mode_autocorrect": "L'interface \"{{name}}\" est détectable avec un mode non-AP/Gateway — Reticulum l'exécutera en tant que point d'accès sauf si ignore_config_warnings est défini. Modifiez l'interface ou redémarrez la pile afin que mesh-client puisse estampiller l'opt-out.",
-        "rmap_missing_reachable_on": "L'interface principale « {{name}} » est détectable mais accessible_sur est manquante."
+        "rmap_missing_reachable_on": "L'interface principale « {{name}} » est détectable mais accessible_sur est manquante.",
+        "shared_instance_conflict": "Une autre application Reticulum possède l'instance partagée : mesh-client s'exécute de manière autonome sans partage. Quittez l'autre application et redémarrez, ou désactivez l'instance de partage."
       },
       "runtime": {
         "rnsNotReady": "La pile RNS n'est pas prête",
@@ -6326,10 +6325,7 @@
         "title": "Radio RNode",
         "body": "Utilisez du matériel radio compatible et les paramètres de votre réseau radio local."
       },
-      "existing": {
-        "body": "Conservez vos interfaces actuelles et vérifiez si elles sont prêtes.",
-        "title": "Configuration existante"
-      }
+      "existing": {}
     },
     "routeLabel": "Comment se connecter",
     "connectionBody": "Une interface est simplement une connexion à Reticulum. Choisissez comment vous souhaitez accéder au réseau. Vous pourrez ajouter d'autres connexions ultérieurement.",
@@ -6343,7 +6339,6 @@
     "openInterfaces": "Ouvrez les paramètres de connexion ci-dessous",
     "ready": "Votre connexion est disponible",
     "checkTitle": "Vérifier votre connexion",
-    "existingHint": "Le guide vérifiera vos interfaces existantes sans les modifier. Une interface de réseau local atteint les appareils Reticulum à proximité sur ce réseau ; il ne vous connecte pas en soi à des pairs Internet publics.",
     "available": "Prêt",
     "waiting": "En attendant",
     "checkStack": "Réseau de Reticulum",
@@ -6695,5 +6690,28 @@
       "reticulum": "Reticulum"
     },
     "received": "Reçu {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Le client Mesh exécute sa propre pile Reticulum afin de pouvoir fournir des fonctionnalités Ratspeak qui nécessitent un contrôle du routage et des radios : préférence de chemin LoRa/TCP pour les messages, protection du temps d'antenne RF, découverte d'interface RMAP, BLE RNode et BLE Peer et diagnostics de file d'attente d'interface. L’utilisation de l’instance Reticulum d’une autre application les désactiverait.",
+      "reverseHint": "Pour utiliser une instance Reticulum pour toutes vos applications, démarrez d'abord mesh-client avec l'instance Partager Reticulum activée, puis pointez les autres applications vers elle.",
+      "learnMore": "Apprendre encore plus",
+      "learnMoreAria": "En savoir plus sur l'utilisation de mesh-client avec d'autres applications Reticulum (ouvre la documentation)",
+      "detectedTitle": "Une autre application Reticulum est en cours d'exécution sur cet ordinateur",
+      "detectedBody": "Trouvé une instance partagée Reticulum sur {{endpoint}} (par exemple rnsd, Sideband, NomadNet ou MeshChatX). Le client Mesh ne s'y attachera pas.",
+      "serialPortConflict": "L'autre application Reticulum est configurée pour utiliser {{ports}}. Un numéro de série RNode ne peut être ouvert que par un seul programme à la fois, utilisez-le donc à partir d'une seule application.",
+      "shareTitle": "Autoriser les autres applications Reticulum à utiliser mesh-client",
+      "shareShow": "Afficher les paramètres d'autres applications",
+      "shareShowAria": "Afficher les paramètres de configuration de Reticulum dont les autres applications ont besoin pour utiliser l'instance partagée de mesh-client",
+      "shareHide": "Masquer les paramètres",
+      "shareHideAria": "Masquer les paramètres de configuration Reticulum pour d'autres applications",
+      "shareSnippetHint": "Ajoutez ces lignes à la section [reticulum] de la configuration Reticulum de l'autre application (par exemple ~/.reticulum/config), puis démarrez mesh-client en premier et l'autre application en second. Le rpc_key permet à des outils comme rnstatus et rnpath de communiquer avec mesh-client ; gardez-le privé.",
+      "shareNotHosting": "Le client Mesh n'héberge pas d'instance partagée pour le moment. Activez l'instance Partager Reticulum, enregistrez et redémarrez la pile.",
+      "shareLoadFailed": "Impossible de lire les paramètres de l'instance partagée. Vérifiez que la pile Reticulum est en cours d'exécution.",
+      "copySnippet": "Paramètres de copie",
+      "copySnippetAria": "Copiez les paramètres de configuration Reticulum pour d'autres applications",
+      "snippetCopied": "Paramètres copiés",
+      "snippetAria": "Paramètres de configuration Reticulum pour d'autres applications"
+    }
   }
 }

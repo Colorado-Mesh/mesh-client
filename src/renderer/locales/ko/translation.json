@@ -1604,12 +1604,12 @@
     "reticulumStackRunningAs": "실행 중 — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum 스택이 응답하지 않음 — 다시 시작 중…",
     "reticulumSharedInstance": {
-      "title": "다른 앱의 공유 인스턴스 사용",
-      "body": "이 앱은 다른 앱의 공유 Reticulum 인스턴스의 클라이언트로 연결되었습니다. 이 앱의 구성에서 로컬 TCP 허브는 이 모드에서 시작되지 않습니다. 트래픽은 다른 앱의 스택만 사용할 수 있습니다.",
-      "networkHint": "또는 Network → Share Reticulum 인스턴스를 열어 Share를 수동으로 끄고 스택을 다시 시작합니다. MeshChat, Ratspeak 또는 독립 실행형 rnsd를 완전히 종료하고 다시 시작할 수도 있습니다.",
       "disableShare": "인스턴스 공유 끄고 다시 시작",
       "disableShareAria": "인스턴스 공유 끄고 스택 다시 시작",
-      "disableFailed": "회차 공유 기능을 끄지 못했습니다."
+      "disableFailed": "회차 공유 기능을 끄지 못했습니다.",
+      "conflictTitle": "다른 Reticulum 앱이 공유 인스턴스를 소유합니다.",
+      "conflictBody": "공유 Reticulum 인스턴스가 켜져 있지만 {{endpoint}}은(는) 다른 Reticulum 앱(예: rnsd, Sideband, NomadNet 또는 MeshChatX)에서 이미 사용 중입니다. Mesh-client는 여기에 연결되지 않았으며 공유하지 않고 자체 스택을 실행하고 있습니다.",
+      "conflictHint": "다시 공유하려면 다른 앱을 종료하고 스택을 다시 시작하세요. 또는 공유를 꺼서 이 알림을 중지하세요."
     },
     "letsMeshUsernameV1Hex": "사용자 이름은 v1_뒤에 64 16진수 문자 (공개 키) 이어야 합니다.",
     "bleWeakSignalWarning": "블루투스 신호가 약합니다 ({{rssi}} dBm). 안정적인 연결을 위해 더 가까이 이동하세요.",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "인터페이스 \"{{name}}\"은 구성에서는 활성화되어 있지만 RNS에서는 로드되지 않습니다.",
         "missing_auto_interface": "활성화된 AutoInterface 없음 — 로컬 LAN 검색이 꺼져 있습니다.",
         "auto_interface_down": "AutoInterface \"{{name}}\"이(가) 활성화되었지만 작동 중지되었습니다.",
-        "missing_shared_instance": "공유 인스턴스가 켜져 있지만 이 앱은 공유 서버를 호스팅하지 않습니다. 다른 메시 앱을 종료하거나 공유 인스턴스를 끈 다음 다시 시작하세요.",
         "shared_instance_unexpected": "공유 인스턴스 서버가 활성화되어 있지만 공유 인스턴스가 꺼져 있습니다. 스택을 다시 시작하세요.",
         "runtime_only_interface": "\"{{name}}\"은 런타임 전용입니다(구성에 저장되지 않음).",
         "rmap_missing_coordinates": "인터페이스 \"{{name}}\" 을 (를) 검색할 수 있지만 유효한 지도 좌표가 누락되었습니다.",
         "rmap_no_tcp_hub": "검색 가능한 로컬 RNode에는 인터넷에 연결할 수 있는 TCP 클라이언트 허브가 없습니다.",
         "rmap_transport_disabled": "검색 가능한 인터페이스가 구성되었지만 전송 모드가 꺼져 있습니다.",
         "rmap_i2p_not_connectable": "I2P 인터페이스 \"{{name}}\" 는 검색 가능하지만 연결 가능은 예가 아닙니다.",
-        "shared_instance_client": "다른 앱의 클라이언트로 연결된 공유 인스턴스 - 이 구성의 로컬 TCP 허브는 시작되지 않습니다.",
         "rmap_mode_autocorrect": "비 AP/게이트웨이 모드에서 인터페이스 \"{{name}}\" 을 (를) 검색할 수 있습니다. Reticulum은 ignore_config_warnings를 설정하지 않는 한 액세스 포인트로 실행합니다. mesh-client가 옵트아웃 스탬프를 찍을 수 있도록 인터페이스를 편집하거나 스택을 다시 시작하십시오.",
-        "rmap_missing_reachable_on": "백본 인터페이스 \"{{name}}\" 을 (를) 검색할 수 있지만 reachable_on 이 (가) 누락되었습니다."
+        "rmap_missing_reachable_on": "백본 인터페이스 \"{{name}}\" 을 (를) 검색할 수 있지만 reachable_on 이 (가) 누락되었습니다.",
+        "shared_instance_conflict": "다른 Reticulum 앱이 공유 인스턴스를 소유하고 있습니다. mesh-client이(가) 공유 없이 독립형으로 실행되고 있습니다. 다른 앱을 종료하고 다시 시작하거나 공유 인스턴스를 끄세요."
       },
       "runtime": {
         "rnsNotReady": "RNS 스택이 준비되지 않았습니다.",
@@ -6327,8 +6326,8 @@
         "title": "RNode 라디오"
       },
       "existing": {
-        "title": "기존 설정",
-        "body": "현재 인터페이스를 유지하고 준비가 되었는지 확인하세요."
+        "title": "기존 mesh-client 설정",
+        "body": "mesh-client에 이미 구성된 인터페이스를 유지하고 준비가 되었는지 확인하세요."
       }
     },
     "routeLabel": "연결 방법",
@@ -6340,7 +6339,6 @@
     "radioDevice": "RNode 펌웨어를 실행하는 장치를 사용하십시오. Meshtastic 또는 MeshCore 라디오는 자동으로 RNode가 아닙니다. 장치의 지침을 확인하지 않고 펌웨어를 플래시하거나 변경하지 마십시오.",
     "radioCheck": "인터페이스를 활성화하고 다시 시작 프롬프트를 적용한 다음 이 가이드로 돌아오세요. 작동하는 무선 연결에는 여전히 범위 내에 다른 호환 가능한 스테이션이 필요합니다.",
     "radioSettings": "아래의 연결 설정을 열고, RNode 인터페이스를 추가하고, USB 또는 Bluetooth를 선택하고, 지역 그룹에서 제공하는 주파수, 대역폭, 확산 인자 및 코딩 속도를 사용하세요.",
-    "existingHint": "가이드는 기존 인터페이스를 변경하지 않고 확인합니다. 로컬 네트워크 인터페이스는 해당 네트워크의 근처 Reticulum 장치에 도달합니다. 그 자체로는 공용 인터넷 피어에 연결되지 않습니다.",
     "openInterfaces": "아래 연결 설정 열기",
     "checkTitle": "연결 확인 중",
     "ready": "연결이 가능합니다",
@@ -6380,7 +6378,8 @@
     "interfacesUnavailable": "연결을 읽을 수 없습니다. Reticulum이 실행 중인지 확인한 후 다시 시도하세요.",
     "identityUnavailable": "귀하의 신원을 읽을 수 없습니다. Reticulum이 실행 중인지 확인한 후 다시 시도하세요.",
     "interfaceSaveFailed": "이 연결을 저장할 수 없습니다. 연결 설정을 확인하고 다시 시도하세요.",
-    "identitySaveFailed": "ID 설정을 저장할 수 없습니다. 다시 시도해 보세요."
+    "identitySaveFailed": "ID 설정을 저장할 수 없습니다. 다시 시도해 보세요.",
+    "existingHint": "가이드는 mesh-client에 이미 구성된 인터페이스를 변경하지 않고 확인합니다. 다른 앱의 Reticulum 구성이나 별도로 실행되는 rnsd를 사용하지 않습니다. 로컬 네트워크 인터페이스는 해당 네트워크의 근처 Reticulum 장치에 도달합니다. 그 자체로는 공용 인터넷 피어에 연결되지 않습니다."
   },
   "mecp": {
     "severity": {
@@ -6695,5 +6694,28 @@
       "reticulum": "Reticulum"
     },
     "received": "접수됨 {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "메시 클라이언트는 자체 Reticulum 스택을 실행하므로 라우팅 및 무선 제어가 필요한 Ratspeak 기능을 제공할 수 있습니다: 메시지에 대한 LoRa/TCP 경로 기본 설정, RF 통신 시간 보호, RMAP 인터페이스 검색, BLE RNode 및 BLE 피어, 인터페이스 대기열 진단. 다른 앱의 Reticulum 인스턴스를 사용하면 이 기능이 꺼집니다.",
+      "reverseHint": "모든 앱에 하나의 Reticulum 인스턴스를 사용하려면 먼저 Reticulum 인스턴스 공유를 켜고 mesh-client을 시작한 다음 다른 앱이 이를 가리키도록 하세요.",
+      "learnMore": "자세히 알아보기",
+      "learnMoreAria": "다른 Reticulum 앱과 함께 mesh-client을(를) 사용하는 방법에 대해 자세히 알아보세요(문서 열기).",
+      "detectedTitle": "이 컴퓨터에서 다른 Reticulum 앱이 실행 중입니다.",
+      "detectedBody": "{{endpoint}}에서 Reticulum 공유 인스턴스를 찾았습니다(예: rnsd, Sideband, NomadNet 또는 MeshChatX). 메시 클라이언트는 연결되지 않습니다.",
+      "serialPortConflict": "다른 Reticulum 앱은 {{ports}}을(를) 사용하도록 구성되었습니다. 일련의 RNode은(는) 한 번에 하나의 프로그램에서만 열 수 있으므로 하나의 앱에서만 사용하세요.",
+      "shareTitle": "다른 Reticulum 앱에서 mesh-client을(를) 사용하도록 허용",
+      "shareShow": "다른 앱의 설정 표시",
+      "shareShowAria": "다른 앱이 mesh-client의 공유 인스턴스를 사용하는 데 필요한 Reticulum 구성 설정을 표시합니다.",
+      "shareHide": "설정 숨기기",
+      "shareHideAria": "다른 앱의 Reticulum 구성 설정 숨기기",
+      "shareSnippetHint": "다른 앱의 Reticulum 구성(예: ~/.reticulum/config)의 [reticulum] 섹션에 이 줄을 추가한 다음 mesh-client을 먼저 시작하고 다른 앱을 두 번째로 시작합니다. rpc_key를 사용하면 rnstatus 및 rnpath와 같은 도구가 mesh-client와 통신할 수 있습니다. 비공개로 유지하세요.",
+      "shareNotHosting": "Mesh-client는 현재 공유 인스턴스를 호스팅하지 않습니다. Share Reticulum 인스턴스를 켜고 저장한 후 스택을 다시 시작합니다.",
+      "shareLoadFailed": "공유 인스턴스 설정을 읽을 수 없습니다. Reticulum 스택이 실행 중인지 확인하세요.",
+      "copySnippet": "설정 복사",
+      "copySnippetAria": "다른 앱의 Reticulum 구성 설정 복사",
+      "snippetCopied": "설정이 복사되었습니다.",
+      "snippetAria": "Reticulum 다른 앱에 대한 구성 설정"
+    }
   }
 }

@@ -44,6 +44,7 @@ import type {
   ReticulumSidecarEvent,
   ReticulumSidecarStartOptions,
   ReticulumSidecarStatus,
+  SystemReticulumInstance,
 } from '../shared/reticulum-types';
 import { throwIfReticulumProxyIpcError } from '../shared/reticulumProxyIpcError';
 import type { ServiceAnnouncementFetchResult } from '../shared/serviceAnnouncementFeed';
@@ -1320,6 +1321,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     factoryReset: (): Promise<unknown> => ipcRenderer.invoke('reticulum:factoryReset'),
     readDefaultConfigFile: (): Promise<{ path: string | null; content: string | null }> =>
       ipcRenderer.invoke('reticulum:readDefaultConfigFile'),
+    detectSystemInstance: (): Promise<SystemReticulumInstance> =>
+      ipcRenderer.invoke('reticulum:detectSystemInstance'),
     showConfigImportDialog: (): Promise<{ path: string | null; content: string | null }> =>
       ipcRenderer.invoke('reticulum:showConfigImportDialog'),
     showIdentityImportDialog: (): Promise<ReticulumIdentityImportDialogResult> =>

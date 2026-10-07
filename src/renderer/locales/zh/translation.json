@@ -1604,12 +1604,12 @@
     "reticulumStackRunningAs": "运行中 — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum 堆栈无响应 — 正在重新启动...",
     "reticulumSharedInstance": {
-      "title": "使用其他应用的共享实例",
-      "body": "此应用程序附加为另一个应用程序的共享Reticulum实例的客户端。来自此应用程序配置的本地TCP集线器未在此模式下启动—流量只能使用其他应用程序的堆栈。",
-      "networkHint": "或者打开Network → Share Reticulum实例手动关闭Share ，然后重新启动堆栈。您还可以完全退出MeshChat、Ratspeak或独立RNSD并重新启动。",
       "disableShare": "关闭共享实例并重新启动",
       "disableShareAria": "关闭共享实例并重新启动堆栈",
-      "disableFailed": "无法关闭共享实例。"
+      "disableFailed": "无法关闭共享实例。",
+      "conflictTitle": "另一个 Reticulum 应用程序拥有共享实例",
+      "conflictBody": "共享 Reticulum 实例已打开，但 {{endpoint}} 已被另一个 Reticulum 应用程序（例如 rnsd、Sideband、NomadNet 或 MeshChatX）使用。 Mesh-client 没有附加到它，并且正在运行自己的堆栈而不共享。",
+      "conflictHint": "要再次共享，请退出其他应用程序并重新启动堆栈。或者关闭“共享”以停止此通知。"
     },
     "letsMeshUsernameV1Hex": "用户名必须为v1_后跟64个十六进制字符（公钥）。",
     "bleWeakSignalWarning": "蓝牙信号弱（ {{rssi}} dBm ）。靠近一点，以获得稳定的连接。",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "接口“{{name}}”在配置中启用，但 RNS 未加载。",
         "missing_auto_interface": "未启用自动接口 — 本地 LAN 发现已关闭。",
         "auto_interface_down": "自动接口“{{name}}”已启用但已关闭。",
-        "missing_shared_instance": "共享实例已打开，但此应用未托管共享服务器—退出其他网格应用或关闭共享实例，然后重新启动。",
         "shared_instance_unexpected": "共享实例服务器处于活动状态，但共享实例处于关闭状态—重新启动堆栈。",
         "runtime_only_interface": "“{{name}}”仅是运行时的（不存储在配置中）。",
         "rmap_missing_coordinates": "接口“{{name}}”是可发现的，但缺少有效的地图坐标。",
         "rmap_no_tcp_hub": "可发现的本地RNode没有启用TCP客户端集线器以实现互联网可访问性。",
         "rmap_transport_disabled": "已配置可发现的接口，但传输模式已关闭。",
         "rmap_i2p_not_connectable": "I2P接口“{{name}}”是可发现的，但不是可连接的。",
-        "shared_instance_client": "作为另一个应用的客户端附加的共享实例—此配置中的本地TCP集线器未启动。",
         "rmap_mode_autocorrect": "接口“{{name}}”可通过非AP/网关模式发现—除非设置ignore_config_warnings ，否则Reticulum将作为接入点运行。编辑界面或重新启动堆栈，以便mesh-client可以标记选择退出。",
-        "rmap_missing_reachable_on": "主干接口“{{name}}”是可发现的，但缺少reachable_on。"
+        "rmap_missing_reachable_on": "主干接口“{{name}}”是可发现的，但缺少reachable_on。",
+        "shared_instance_conflict": "另一个 Reticulum 应用程序拥有共享实例 - mesh-client 独立运行而不共享。退出其他应用程序并重新启动，或关闭共享实例。"
       },
       "runtime": {
         "rnsNotReady": "RNS 堆栈尚未准备好",
@@ -6327,10 +6326,7 @@
         "title": "RNode无线电",
         "body": "使用兼容的无线电硬件和本地无线电网络的设置。"
       },
-      "existing": {
-        "title": "现有设置",
-        "body": "保留当前的接口并检查它们是否准备就绪。"
-      }
+      "existing": {}
     },
     "connectionBody": "接口只是与 Reticulum 的连接。选择您想要访问网络的方式。您可以稍后添加其他连接。",
     "hubLabel": "公共互联网中心",
@@ -6341,7 +6337,6 @@
     "radioSettings": "打开下面的连接设置，添加 RNode 接口，选择 USB 或蓝牙，并使用本地组提供的频率、带宽、扩频因子和编码率。",
     "radioCheck": "启用该接口并应用其重新启动提示，然后返回到本指南。正常工作的无线电连接仍需要范围内的另一个兼容电台。",
     "openInterfaces": "打开下面的连接设置",
-    "existingHint": "该指南将检查您现有的界面而不更改它们。本地网络接口可到达该网络上附近的 Reticulum 设备；它本身并不会将您连接到公共互联网同行。",
     "checkTitle": "检查您的连接",
     "ready": "您的连接可用",
     "available": "准备好",
@@ -6695,5 +6690,28 @@
       "reticulum": "Reticulum"
     },
     "received": "已收到{{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Mesh-client 运行自己的 Reticulum 堆栈，因此它可以提供需要控制路由和无线电的 Ratspeak 功能：LoRa/TCP 消息路径首选项、RF 通话时间保护、RMAP 接口发现、BLE RNode 和 BLE 对等以及接口队列诊断。使用另一个应用程序的 Reticulum 实例会关闭它们。",
+      "reverseHint": "要为所有应用程序使用一个 Reticulum 实例，请首先启动 mesh-client 并打开共享 Reticulum 实例，然后将其他应用程序指向它。",
+      "learnMore": "了解更多",
+      "learnMoreAria": "了解有关将 mesh-client 与其他 Reticulum 应用程序一起使用的更多信息（打开文档）",
+      "detectedTitle": "另一个 Reticulum 应用程序正在该计算机上运行",
+      "detectedBody": "在 {{endpoint}} 处找到 Reticulum 共享实例（例如 rnsd、Sideband、NomadNet 或 MeshChatX）。网格客户端不会附加到它。",
+      "serialPortConflict": "另一个 Reticulum 应用程序配置为使用 {{ports}}。串行 RNode 一次只能由一个程序打开，因此只能从一个应用程序使用它。",
+      "shareTitle": "让其他 Reticulum 应用程序使用 mesh-client",
+      "shareShow": "显示其他应用程序的设置",
+      "shareShowAria": "显示其他应用程序需要使用 mesh-client 的共享实例的 Reticulum 配置设置",
+      "shareHide": "隐藏设置",
+      "shareHideAria": "隐藏其他应用程序的 Reticulum 配置设置",
+      "shareSnippetHint": "将这些行添加到另一个应用程序的 Reticulum 配置的 [reticulum] 部分（例如 ~/.reticulum/config），然后首先启动 mesh-client，然后启动另一个应用程序。 rpc_key 允许 rnstatus 和 rnpath 等工具与 mesh-client 通信；保密。",
+      "shareNotHosting": "Mesh-client 目前不托管共享实例。打开共享 Reticulum 实例，保存并重新启动堆栈。",
+      "shareLoadFailed": "无法读取共享实例设置。检查 Reticulum 堆栈是否正在运行。",
+      "copySnippet": "复制设置",
+      "copySnippetAria": "复制其他应用程序的 Reticulum 配置设置",
+      "snippetCopied": "已复制设置",
+      "snippetAria": "Reticulum 其他应用程序的配置设置"
+    }
   }
 }

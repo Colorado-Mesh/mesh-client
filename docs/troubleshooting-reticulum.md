@@ -487,7 +487,7 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 **Cause**: Usually **RNS transport overload**, not a missing mesh-client chat handshake. Common triggers:
 
-1. **Shared instance conflict** — `share_instance = Yes` with another Reticulum app still running (MeshChatX, Ratspeak, standalone `rnsd`) fighting the same IPC socket. mesh-client may attach as `SharedInstanceClient` and **not spawn** local TCP hubs (Connection then shows misleading “TCP hub unreachable”).
+1. **Shared instance conflict** — `share_instance = Yes` with another Reticulum app still running (MeshChatX, Ratspeak, standalone `rnsd`) that already owns the shared endpoint. Mesh-client never attaches to it: it runs standalone, and Connection / Diagnostics show **Another Reticulum app owns the shared instance** with the reason. Both stacks then compete for the same hubs and radios. See [Using mesh-client with other Reticulum apps](reticulum.md#using-mesh-client-with-other-reticulum-apps).
 2. **Dead TCP hub still enabled** — outbound queue fills; path requests fail with _no available capacity_.
 3. **No PN cascade capacity** — when Direct fails and there are no enabled cascade candidates (preferred/other remotes or local-prop), the row fails with no store-and-forward retry. With remotes (and/or enabled local-prop), the sidecar cascades after Direct exhausts (see **Stale path + Failed via TCP** below). Developer bundles include `reticulum/lxmf-outbound.log` (filtered LXMF outbound / PN cascade lines).
 
@@ -495,11 +495,11 @@ Bond-stale **TX queue full** hints (`txQueueDropsHintBleBondStale`) point at the
 
 1. **Fully quit** other Reticulum apps (MeshChatX, Ratspeak, any `rnsd` tray process) — not just close the window — **or** turn off **Share Reticulum instance** (Connection banner / Network → stack settings) and restart the stack.
 2. **Stop and restart** the mesh-client Reticulum stack (Connection → **Restart stack** or stop/start). Stopping (or an unexpected sidecar exit) clears the interface-issue tracker immediately.
-3. Disable unreachable TCP interfaces on Connection → Interfaces (only when not in shared-instance client mode). Disabling or removing a hub drops that name from the TCP/TX latch **immediately** (and keeps it from reappearing while logs catch up); each latch also ages out after a **5-minute** per-entry TTL (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`), not a single global timestamp.
+3. Disable unreachable TCP interfaces on Connection → Interfaces. Disabling or removing a hub drops that name from the TCP/TX latch **immediately** (and keeps it from reappearing while logs catch up); each latch also ages out after a **5-minute** per-entry TTL (`RETICULUM_INTERFACE_ISSUE_ALERT_STALE_MS`), not a single global timestamp.
 4. Retry the DM; use **Peers → Request path / Probe** if the peer is reachable but the path is stale.
 5. Configure a **propagation node** on Network → Propagation for offline delivery.
 
-New/incomplete configs default to `share_instance = No` and `instance_name = mesh-client` so mesh-client does not attach to system `\0rns/default`. **Upgrades are not auto-migrated** when Share is already `Yes` or `instance_name` is already `default` — turn Share off (banner / Network / Diagnostics repair) and restart, or fully quit the other RNS app. Use Network → **Check config** (or `pnpm run reticulum:config:check`) to lint the on-disk INI.
+New/incomplete configs default to `share_instance = No` and `instance_name = mesh-client`. With Share on, mesh-client only ever _owns_ the shared instance; if another app holds it, mesh-client falls back to standalone instead of becoming its client. To run one instance for every app, start mesh-client first with Share on and point the other apps at it (Network → **Show settings for other apps**). Use Network → **Check config** (or `pnpm run reticulum:config:check`) to lint the on-disk INI.
 
 Export for GitHub (`reticulum.sidecar.interfaceIssueAlert`, link-timeout counts) helps confirm transport saturation vs. a single peer outage.
 

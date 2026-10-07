@@ -477,6 +477,14 @@ export function createElectronAPIMock(): ElectronAPI {
       proxyDelete: vi.fn().mockResolvedValue({ ok: true }),
       factoryReset: vi.fn().mockResolvedValue({ ok: true }),
       readDefaultConfigFile: vi.fn().mockResolvedValue({ path: null, content: null }),
+      detectSystemInstance: vi.fn().mockResolvedValue({
+        configPath: null,
+        shareInstance: true,
+        sharedInstanceType: 'tcp',
+        endpoint: '127.0.0.1:37428',
+        running: false,
+        serialPorts: [],
+      }),
       showConfigImportDialog: vi.fn().mockResolvedValue({ path: null, content: null }),
       showIdentityImportDialog: vi
         .fn()

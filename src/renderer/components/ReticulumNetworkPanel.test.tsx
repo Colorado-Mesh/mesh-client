@@ -564,13 +564,25 @@ describe('ReticulumNetworkPanel', () => {
     expect(await screen.findByText('networkPanel.reticulumConfigValidate.ok')).toBeInTheDocument();
   });
 
+  it('explains why system Reticulum is not used next to the Share toggle', () => {
+    render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
+    expect(screen.getByText('reticulum.systemRns.whyNotSupported')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'reticulum.systemRns.learnMoreAria' })).toHaveAttribute(
+      'href',
+      expect.stringContaining('#using-mesh-client-with-other-reticulum-apps'),
+    );
+    expect(
+      screen.getByRole('button', { name: 'reticulum.systemRns.shareShowAria' }),
+    ).toBeInTheDocument();
+  });
+
   it('renders Check config issues via audit i18n keys', async () => {
     const user = userEvent.setup();
     window.electronAPI.reticulum.validateConfig = vi.fn().mockResolvedValue({
       ok: false,
       issues: [
         {
-          kind: 'shared_instance_client',
+          kind: 'shared_instance_conflict',
           severity: 'warning',
           message: 'English sidecar message',
           interface_name: null,
@@ -584,7 +596,7 @@ describe('ReticulumNetworkPanel', () => {
     );
     expect(
       await screen.findByText(
-        'diagnosticsPanel.reticulum.audit.shared_instance_client:{"name":"","message":"English sidecar message"}',
+        'diagnosticsPanel.reticulum.audit.shared_instance_conflict:{"name":"","message":"English sidecar message"}',
       ),
     ).toBeInTheDocument();
   });

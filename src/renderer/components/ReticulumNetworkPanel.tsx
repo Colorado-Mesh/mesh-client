@@ -48,6 +48,7 @@ import { ConfirmModal } from './ConfirmModal';
 import { IdentityVaultPanel } from './IdentityVaultPanel';
 import QrCodeImage from './QrCodeImage';
 import QrIngestControl from './QrIngestControl';
+import { ReticulumShareForOtherApps } from './reticulum/ReticulumShareForOtherApps';
 import { ReticulumAnnounceControls } from './ReticulumAnnounceControls';
 import { ReticulumBlockedContactsSection } from './ReticulumBlockedContactsSection';
 import { ReticulumPathTableMaintenance } from './ReticulumPathTableMaintenance';
@@ -778,6 +779,7 @@ export function ReticulumNetworkPanel({
             />
             {t('networkPanel.reticulumStackSettings.shareInstance')}
           </label>
+          <ReticulumShareForOtherApps sidecarApiReady={sidecarApiReady} />
           <label
             data-setting-anchor="radio.reticulumStack.logLevel"
             className="text-ink-400 block text-xs"

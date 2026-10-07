@@ -1604,12 +1604,12 @@
     "reticulumStackRunningAs": "Çalışıyor — {{name}}",
     "reticulumSidecarUnhealthyRestarting": "Reticulum yığını yanıt vermiyor — yeniden başlatılıyor…",
     "reticulumSharedInstance": {
-      "title": "Başka bir uygulamanın paylaşılan örneğini kullanma",
-      "body": "Bu uygulama, başka bir uygulamanın paylaşılan Reticulum örneğinin istemcisi olarak eklenmiştir. Bu uygulamanın yapılandırmasındaki yerel TCP hub'ları bu modda başlatılmaz; trafik yalnızca diğer uygulamanın yığınını kullanabilir.",
-      "networkHint": "Veya → Paylaşımı manuel olarak kapatmak için Ağ Paylaşımı Reticulum örneğini açın, ardından yığını yeniden başlatın. Ayrıca MeshChat, Ratspeak veya bağımsız rnsd'den tamamen çıkıp yeniden başlatabilirsiniz.",
       "disableShare": "Paylaşım örneğini kapatın ve yeniden başlatın",
       "disableShareAria": "Paylaşım örneğini kapat ve yığını yeniden başlat",
-      "disableFailed": "Paylaşım örneği kapatılamadı."
+      "disableFailed": "Paylaşım örneği kapatılamadı.",
+      "conflictTitle": "Başka bir Reticulum uygulaması paylaşılan örneğin sahibi",
+      "conflictBody": "Reticulum örneğini paylaş, ancak {{endpoint}} zaten başka bir Reticulum uygulaması (örneğin rnsd, Sideband, NomadNet veya MeshChatX) tarafından kullanılıyor. Mesh-istemci ona bağlanmadı ve kendi yığınını paylaşmadan çalıştırıyor.",
+      "conflictHint": "Tekrar paylaşmak için diğer uygulamadan çıkın ve yığını yeniden başlatın. Veya bu bildirimi durdurmak için Paylaş'ı kapatın."
     },
     "letsMeshUsernameV1Hex": "Kullanıcı adı v1_ ve ardından 64 onaltılık karakter (genel anahtar) olmalıdır.",
     "bleWeakSignalWarning": "Bluetooth sinyali zayıf ({{rssi}} dBm). Sabit bir bağlantı için yaklaşın.",
@@ -1977,16 +1977,15 @@
         "ghost_interface": "\"{{name}}\" arayüzü yapılandırmada etkinleştirildi ancak RNS tarafından yüklenmedi.",
         "missing_auto_interface": "Etkin Otomatik Arayüz yok — yerel LAN keşfi kapalı.",
         "auto_interface_down": "Otomatik Arayüz \"{{name}}\" etkin ancak çalışmıyor.",
-        "missing_shared_instance": "Örnek paylaşımı açık ancak bu uygulama paylaşılan sunucuyu barındırmıyor; diğer mesh uygulamalarından çıkın veya Örnek Paylaşımı'nı kapatın ve ardından yeniden başlatın.",
         "shared_instance_unexpected": "Paylaşılan örnek sunucusu yayında ancak Paylaşım örneği kapalı; yığını yeniden başlatın.",
         "runtime_only_interface": "\"{{name}}\" yalnızca çalışma zamanıdır (yapılandırmada saklanmaz).",
         "rmap_missing_coordinates": "\"{{name}}\" arayüzü bulunabilir ancak geçerli harita koordinatları eksik.",
         "rmap_no_tcp_hub": "Bulunabilir yerel RNode'un internet erişilebilirliği için etkinleştirilmiş bir TCP istemci merkezi yoktur.",
         "rmap_transport_disabled": "Bulunabilir arayüzler yapılandırılmış ancak taşıma modu kapalı.",
         "rmap_i2p_not_connectable": "\"{{name}}\" I2P arayüzü keşfedilebilir ancak bağlanılabilir evet değildir.",
-        "shared_instance_client": "Başka bir uygulamanın istemcisi olarak eklenen paylaşım örneği — bu yapılandırmadaki yerel TCP hub'ları başlatılmadı.",
         "rmap_mode_autocorrect": "\"{{name}}\" arayüzü, AP/Ağ Geçidi olmayan bir modda bulunabilir — Reticulum, ignore_config_warnings ayarlanmadığı sürece bunu Erişim Noktası olarak çalıştıracaktır. Arayüzü düzenleyin veya yığını yeniden başlatın, böylece mesh istemcisi devre dışı bırakma işlemini damgalayabilir (mesh-client).",
-        "rmap_missing_reachable_on": "\"{{name}}\" omurga arayüzü keşfedilebilir ancak REACHABLE_ON eksik."
+        "rmap_missing_reachable_on": "\"{{name}}\" omurga arayüzü keşfedilebilir ancak REACHABLE_ON eksik.",
+        "shared_instance_conflict": "Paylaşılan örneğin başka bir Reticulum uygulaması var — mesh-client, paylaşım olmadan bağımsız olarak çalışıyor. Diğer uygulamadan çıkın ve yeniden başlatın veya Örneği paylaş'ı kapatın."
       },
       "runtime": {
         "rnsNotReady": "RNS yığını hazır değil",
@@ -6327,8 +6326,8 @@
         "body": "Uyumlu radyo donanımını ve yerel radyo ağınızın ayarlarını kullanın."
       },
       "existing": {
-        "body": "Mevcut arayüzlerinizi koruyun ve hazır olup olmadıklarını kontrol edin.",
-        "title": "Mevcut kurulum"
+        "title": "Mevcut mesh-client kurulumu",
+        "body": "Arayüzleri mesh-client'da önceden yapılandırılmış halde tutun ve hazır olup olmadıklarını kontrol edin."
       }
     },
     "connectionBody": "Bir arayüz basitçe Reticulum'a bir bağlantıdır. Ağa nasıl ulaşmak istediğinizi seçin. Daha sonra başka bağlantılar ekleyebilirsiniz.",
@@ -6341,7 +6340,6 @@
     "radioCheck": "Arayüzü etkinleştirin ve yeniden başlatma istemini uygulayın, ardından bu kılavuza geri dönün. Çalışan bir radyo bağlantısının kapsama alanında yine başka bir uyumlu istasyona ihtiyacı vardır.",
     "checkTitle": "Bağlantınız kontrol ediliyor",
     "openInterfaces": "Aşağıdaki bağlantı ayarlarını açın",
-    "existingHint": "Kılavuz mevcut arayüzlerinizi değiştirmeden kontrol edecektir. Bir yerel ağ arayüzü, o ağdaki yakındaki Reticulum cihazlarına ulaşır; tek başına sizi halka açık internetteki meslektaşlarınıza bağlamaz.",
     "radioSettings": "Aşağıdaki bağlantı ayarlarını açın, bir RNode arayüzü ekleyin, USB veya Bluetooth'u seçin ve yerel grubunuz tarafından sağlanan frekansı, bant genişliğini, yayılma faktörünü ve kodlama hızını kullanın.",
     "ready": "Bağlantınız mevcut",
     "checkStack": "Reticulum ağı",
@@ -6380,7 +6378,8 @@
     "identityUnavailable": "Kimliğiniz okunamadı. Reticulum'un çalıştığını kontrol edin ve tekrar deneyin.",
     "identitySaveFailed": "Kimlik ayarlarınız kaydedilemedi. Tekrar deneyin.",
     "interfacesUnavailable": "Bağlantılarınız okunamadı. Reticulum'un çalıştığını kontrol edin ve tekrar deneyin.",
-    "interfaceSaveFailed": "Bu bağlantı kaydedilemedi. Bağlantı ayarlarınızı kontrol edip tekrar deneyin."
+    "interfaceSaveFailed": "Bu bağlantı kaydedilemedi. Bağlantı ayarlarınızı kontrol edip tekrar deneyin.",
+    "existingHint": "Kılavuz, mesh-client'da önceden yapılandırılmış olan arayüzleri değiştirmeden kontrol edecektir. Başka bir uygulamanın Reticulum yapılandırmasını veya ayrı olarak çalışan bir rnsd'yi kullanmaz. Bir yerel ağ arayüzü, o ağdaki yakındaki Reticulum cihazlara ulaşır; tek başına sizi halka açık internet akranlarına bağlamaz."
   },
   "mecp": {
     "severity": {
@@ -6695,5 +6694,28 @@
       "reticulum": "Reticulum"
     },
     "received": "Alındı {{when}}"
+  },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Mesh-istemci kendi Reticulum yığınını çalıştırır, böylece yönlendirme ve radyoların kontrolüne ihtiyaç duyan Ratspeak özelliklerini sağlayabilir: mesajlar için LoRa/TCP yol tercihi, RF yayın süresi koruması, RMAP arayüzü keşfi, BLE RNode ve BLE Eş ve arayüz kuyruğu teşhisi. Başka bir uygulamanın Reticulum örneğinin kullanılması bunların kapatılmasına neden olur.",
+      "reverseHint": "Tüm uygulamalarınız için tek bir Reticulum örneği kullanmak istiyorsanız, önce mesh-client örneğini Paylaş Reticulum örneğini açık olarak başlatın, ardından diğer uygulamaları ona yönlendirin.",
+      "learnMore": "Daha fazla bilgi edin",
+      "learnMoreAria": "mesh-client ürününü diğer Reticulum uygulamalarıyla kullanma hakkında daha fazla bilgi edinin (belgeleri açar)",
+      "detectedTitle": "Bu bilgisayarda başka bir Reticulum uygulaması çalışıyor",
+      "detectedBody": "{{endpoint}} adresinde Reticulum paylaşılan örneği bulundu (örneğin rnsd, Sideband, NomadNet veya MeshChatX). Mesh-client ona bağlanmayacak.",
+      "serialPortConflict": "Diğer Reticulum uygulaması {{ports}} kullanacak şekilde yapılandırılmıştır. Bir seri RNode aynı anda yalnızca bir program tarafından açılabilir, bu nedenle onu yalnızca tek bir uygulamadan kullanın.",
+      "shareTitle": "Diğer Reticulum uygulamalarının mesh-client kullanmasına izin ver",
+      "shareShow": "Diğer uygulamaların ayarlarını göster",
+      "shareShowAria": "Diğer uygulamaların mesh-client'in paylaşılan örneğini kullanması için gereken Reticulum yapılandırma ayarlarını gösterin",
+      "shareHide": "Ayarları gizle",
+      "shareHideAria": "Diğer uygulamalar için Reticulum yapılandırma ayarlarını gizleyin",
+      "shareSnippetHint": "Bu satırları diğer uygulamanın Reticulum yapılandırmasının [reticulum] bölümüne ekleyin (örneğin ~/.reticulum/config), ardından önce mesh-client'yi ve ikinci olarak diğer uygulamayı başlatın. rpc_key rnstatus ve rnpath gibi araçların mesh-client ile konuşmasını sağlar; bunu özel tut.",
+      "shareNotHosting": "Mesh-client şu anda paylaşılan bir örneği barındırmıyor. Reticulum örneğini paylaş'ı açın, kaydedin ve yığını yeniden başlatın.",
+      "shareLoadFailed": "Paylaşılan örnek ayarları okunamadı. Reticulum yığınının çalışıp çalışmadığını kontrol edin.",
+      "copySnippet": "Ayarları kopyala",
+      "copySnippetAria": "Diğer uygulamalar için Reticulum yapılandırma ayarlarını kopyalayın",
+      "snippetCopied": "Ayarlar kopyalandı",
+      "snippetAria": "Diğer uygulamalar için Reticulum yapılandırma ayarları"
+    }
   }
 }

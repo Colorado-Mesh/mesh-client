@@ -1116,9 +1116,9 @@
       "tcpFastFlapHint": "Reticulum 1.4.0+ public hubs block an IP after five short TCP sessions within 12 hours. Quick mesh-client or stack restarts count. Disable this hub and wait up to 12 hours — restarting again extends the block."
     },
     "reticulumSharedInstance": {
-      "title": "Using another app’s shared instance",
-      "body": "This app attached as a client of another app’s shared Reticulum instance. Local TCP hubs from this app’s config are not started in this mode — traffic may only use the other app’s stack.",
-      "networkHint": "Or open Network → Share Reticulum instance to turn Share off manually, then restart the stack. You can also fully quit MeshChat, Ratspeak, or standalone rnsd and restart.",
+      "conflictTitle": "Another Reticulum app owns the shared instance",
+      "conflictBody": "Share Reticulum instance is on, but {{endpoint}} is already in use by another Reticulum app (for example rnsd, Sideband, NomadNet, or MeshChatX). Mesh-client did not attach to it and is running its own stack without sharing.",
+      "conflictHint": "To share again, quit the other app and restart the stack. Or turn Share off to stop this notice.",
       "disableShare": "Turn off Share instance and restart",
       "disableShareAria": "Turn off Share instance and restart the stack",
       "disableFailed": "Failed to turn off Share instance."
@@ -2071,8 +2071,7 @@
         "ghost_interface": "Interface \"{{name}}\" is enabled in config but not loaded by RNS.",
         "missing_auto_interface": "No enabled AutoInterface — local LAN discovery is off.",
         "auto_interface_down": "AutoInterface \"{{name}}\" is enabled but down.",
-        "missing_shared_instance": "Share instance is on but this app is not hosting the shared server — quit other mesh apps or turn off Share instance, then restart.",
-        "shared_instance_client": "Share instance attached as a client of another app — local TCP hubs in this config are not started.",
+        "shared_instance_conflict": "Another Reticulum app owns the shared instance — mesh-client is running standalone without sharing. Quit the other app and restart, or turn off Share instance.",
         "shared_instance_unexpected": "Shared instance server is live but Share instance is off — restart the stack.",
         "runtime_only_interface": "\"{{name}}\" is runtime-only (not stored in config).",
         "rmap_missing_coordinates": "Interface \"{{name}}\" is discoverable but missing valid map coordinates.",
@@ -6418,6 +6417,29 @@
     "menuToastAvailableBody": "Version {{version}} is available.",
     "menuToastErrorTitle": "Update check failed"
   },
+  "reticulum": {
+    "systemRns": {
+      "whyNotSupported": "Mesh-client runs its own Reticulum stack so it can provide Ratspeak features that need control of routing and radios: LoRa/TCP path preference for messages, RF airtime protection, RMAP interface discovery, BLE RNode and BLE Peer, and interface queue diagnostics. Using another app’s Reticulum instance would turn these off.",
+      "reverseHint": "To use one Reticulum instance for all your apps, start mesh-client first with Share Reticulum instance on, then point the other apps at it.",
+      "learnMore": "Learn more",
+      "learnMoreAria": "Learn more about using mesh-client with other Reticulum apps (opens documentation)",
+      "detectedTitle": "Another Reticulum app is running on this computer",
+      "detectedBody": "Found a Reticulum shared instance at {{endpoint}} (for example rnsd, Sideband, NomadNet, or MeshChatX). Mesh-client will not attach to it.",
+      "serialPortConflict": "The other Reticulum app is configured to use {{ports}}. A serial RNode can be opened by only one program at a time, so use it from one app only.",
+      "shareTitle": "Let other Reticulum apps use mesh-client",
+      "shareShow": "Show settings for other apps",
+      "shareShowAria": "Show the Reticulum config settings other apps need to use mesh-client’s shared instance",
+      "shareHide": "Hide settings",
+      "shareHideAria": "Hide the Reticulum config settings for other apps",
+      "shareSnippetHint": "Add these lines to the [reticulum] section of the other app’s Reticulum config (for example ~/.reticulum/config), then start mesh-client first and the other app second. The rpc_key lets tools like rnstatus and rnpath talk to mesh-client; keep it private.",
+      "shareNotHosting": "Mesh-client is not hosting a shared instance right now. Turn on Share Reticulum instance, save, and restart the stack.",
+      "shareLoadFailed": "Could not read the shared instance settings. Check that the Reticulum stack is running.",
+      "copySnippet": "Copy settings",
+      "copySnippetAria": "Copy the Reticulum config settings for other apps",
+      "snippetCopied": "Settings copied",
+      "snippetAria": "Reticulum config settings for other apps"
+    }
+  },
   "reticulumSetup": {
     "eyebrow": "RETICULUM · GETTING STARTED",
     "title": "Your first connection",
@@ -6456,8 +6478,8 @@
         "body": "Use compatible radio hardware and the settings of your local radio network."
       },
       "existing": {
-        "title": "Existing setup",
-        "body": "Keep your current interfaces and check whether they are ready."
+        "title": "Existing mesh-client setup",
+        "body": "Keep the interfaces already configured in mesh-client and check whether they are ready."
       }
     },
     "hubLabel": "Public internet hub",
@@ -6468,7 +6490,7 @@
     "radioSettings": "Open connection settings below, add an RNode interface, choose USB or Bluetooth, and use the frequency, bandwidth, spreading factor, and coding rate supplied by your local group.",
     "radioCheck": "Enable the interface and apply its restart prompt, then return to this guide. A working radio connection still needs another compatible station in range.",
     "openInterfaces": "Open connection settings below",
-    "existingHint": "The guide will check your existing interfaces without changing them. A local-network interface reaches nearby Reticulum devices on that network; it does not by itself connect you to public internet peers.",
+    "existingHint": "The guide will check the interfaces already configured in mesh-client without changing them. It does not use another app’s Reticulum config or a separately running rnsd. A local-network interface reaches nearby Reticulum devices on that network; it does not by itself connect you to public internet peers.",
     "checkTitle": "Checking your connection",
     "ready": "Your connection is available",
     "checkStack": "Reticulum network",

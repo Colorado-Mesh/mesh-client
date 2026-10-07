@@ -81,18 +81,19 @@ describe('reticulumConfigAudit', () => {
           message: 'Runtime shared-instance server (not in config)',
         },
         {
-          kind: 'missing_shared_instance',
+          kind: 'shared_instance_conflict',
           severity: 'warning',
-          interface_name: 'SharedInstanceServer',
-          message: 'share_instance is on but SharedInstanceServer is not up',
-          repair_kind: 'restart_stack',
+          interface_name: null,
+          message: 'another Reticulum app owns 127.0.0.1:37428',
+          repair_kind: 'disable_share_instance',
         },
       ],
       1,
     );
     expect(rows).toHaveLength(1);
     const row = rows[0] as RfDiagnosticRow;
-    expect(row.condition).toBe('reticulum/audit/missing_shared_instance');
+    expect(row.condition).toBe('reticulum/audit/shared_instance_conflict');
+    expect(row.reticulumRepairKind).toBe('disable_share_instance');
   });
 
   it.each([
