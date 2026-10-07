@@ -19,7 +19,7 @@ MECP/<severity>/<codes> [freetext]
 
 - Codes are a letter plus two digits (for example `M01`). Labels come from the MECP language packs, so codes display in your language.
 - A report is at most **200 bytes** (UTF-8).
-- Drill codes (`D01`, `D02`) mark a report as a drill: it is listed but never alerts or badges.
+- Drill codes (`D01`, `D02`) mark a report as a drill: it is listed but never plays an alert tone or toast and never adds an unread alert badge. Open MAYDAY and URGENT drills still count toward the **Incident** tab badge.
 - Tones and volume are configurable per severity in **App → Notifications → Notification tones**. MAYDAY and URGENT keep their mute bypass and a 10% volume floor. See [Notification sounds](notification-sounds.md).
 - Chat channel and DM chips show a shield icon, colored by the most severe unread MECP report in that conversation.
 

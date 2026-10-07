@@ -29,7 +29,7 @@ Terms you will see in Mesh-Client and in these docs. Protocol names in parenthes
 : A fixed node that relays traffic for others. You can manage it remotely from the **Repeaters** tab.
 
 **Room server** (MeshCore)
-: A node that hosts a bulletin-board style chat room. You log in with a password and read or post messages.
+: A node that hosts a bulletin-board style chat room. A blank password gives read-only access when the room allows it; posting needs the guest password (often `hello`) or the admin password.
 
 **RNode** (Reticulum)
 : LoRa hardware running RNode firmware so Reticulum can use it as a radio interface.

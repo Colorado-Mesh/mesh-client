@@ -9,7 +9,7 @@
  * (scripts/run-mkdocs.mjs and .github/workflows/docs.yml both do).
  */
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const REPO_BLOB_BASE = 'https://github.com/Colorado-Mesh/mesh-client/blob/main/';
@@ -160,7 +160,7 @@ export function prepareMkdocs(repoRoot) {
   return Object.keys(outputs);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (process.argv[1] && resolve(fileURLToPath(import.meta.url)) === resolve(process.argv[1])) {
   const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
   const written = prepareMkdocs(repoRoot);
   console.debug(`[prepare-mkdocs] wrote ${written.join(', ')}`);
