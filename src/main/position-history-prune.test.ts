@@ -64,6 +64,12 @@ describe('normalizePositionPruneExemptNodeIds', () => {
     expect(normalizePositionPruneExemptNodeIds(undefined)).toEqual([]);
     expect(normalizePositionPruneExemptNodeIds(null)).toEqual([]);
   });
+
+  it('parses full-range uint32 decimal strings produced by String(msg.from)', () => {
+    expect(normalizePositionPruneExemptNodeIds([String(0xdeadbeef), String(0xffffffff)])).toEqual([
+      0xdeadbeef, 0xffffffff,
+    ]);
+  });
 });
 
 describe('sanitizeExemptNodeIdsArg', () => {
@@ -116,6 +122,23 @@ describe('position history prune exemptions', () => {
     expect(countFor(db, NODE_B)).toBe(3);
 
     expect(prunePositionHistoryPerNodeOn(db, 1, [])).toBe(2);
+    expect(countFor(db, NODE_B)).toBe(1);
+    db.close();
+  });
+
+  it('exempts incident sender ids in the renderer String(msg.from) decimal form', () => {
+    dir = mkdtempSync(join(tmpdir(), 'mesh-pos-prune-decimal-'));
+    const db = openDb(dir);
+    const highNode = 0xdeadbeef;
+    const old = Date.now() - 40 * MS_PER_DAY;
+    const base = Date.now();
+    insertPositions(db, highNode, [old, base - 2000, base - 1000]);
+    insertPositions(db, NODE_B, [old, base - 2000, base - 1000]);
+    const exempt = new Set([String(highNode)]);
+
+    expect(prunePositionHistoryOn(db, 30, exempt)).toBe(1);
+    expect(prunePositionHistoryPerNodeOn(db, 1, [...exempt])).toBe(1);
+    expect(countFor(db, highNode)).toBe(3);
     expect(countFor(db, NODE_B)).toBe(1);
     db.close();
   });

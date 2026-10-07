@@ -48,6 +48,22 @@ describe('incidentPruneOptions (S12)', () => {
     ]);
   });
 
+  it('forwards decimal String(msg.from) sender ids across protocols', () => {
+    useIncidentStore.setState({
+      incidents: {
+        mt: incident('mt', String(0xdeadbeef), 'open'),
+        mc: {
+          ...incident('mc', String(0x12345678), 'acked'),
+          protocol: 'meshcore',
+          protocolsSeen: ['meshcore'],
+        },
+      },
+    });
+    expect([...(incidentPruneOptions().exemptNodeIds ?? [])].sort()).toEqual(
+      [String(0x12345678), String(0xdeadbeef)].sort(),
+    );
+  });
+
   it('is empty with no incidents', () => {
     expect([...(incidentPruneOptions().exemptNodeIds ?? [])]).toEqual([]);
   });

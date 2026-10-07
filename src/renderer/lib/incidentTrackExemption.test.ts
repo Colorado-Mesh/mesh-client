@@ -29,6 +29,14 @@ describe('nodesExemptFromPositionPrune', () => {
     expect([...result]).toEqual(['!cccc0001']);
   });
 
+  it('passes through decimal String(msg.from) sender ids unchanged', () => {
+    const result = nodesExemptFromPositionPrune([
+      { status: 'open', senderId: String(0xdeadbeef) },
+      { status: 'acked', senderId: String(0xa0000001) },
+    ]);
+    expect([...result].sort()).toEqual([String(0xa0000001), String(0xdeadbeef)]);
+  });
+
   it('returns an empty set for no incidents', () => {
     expect(nodesExemptFromPositionPrune([]).size).toBe(0);
   });
