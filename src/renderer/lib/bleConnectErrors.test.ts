@@ -49,6 +49,19 @@ describe('classifyMeshcoreBleTimeoutStage', () => {
     );
   });
 
+  it('classifies sidecar GATT connect_timeout (BlueZ D-Bus no reply) as an IPC-open timeout', () => {
+    expect(classifyMeshcoreBleTimeoutStage('connect_timeout: Timeout waiting for reply')).toBe(
+      'ipc-open',
+    );
+    expect(classifyMeshcoreBleTimeoutStage('connect_timeout: connect timed out')).toBe('ipc-open');
+  });
+
+  it('does not classify other sidecar GATT codes as timeouts', () => {
+    expect(classifyMeshcoreBleTimeoutStage('pairing_required: Authentication Failed')).toBe(
+      'unknown',
+    );
+  });
+
   it('does not classify missing services as a timeout', () => {
     expect(classifyMeshcoreBleTimeoutStage('Could not find all requested services')).toBe(
       'unknown',
@@ -139,6 +152,12 @@ describe('isMeshcoreRetryableBleErrorMessage', () => {
     expect(
       isMeshcoreRetryableBleErrorMessage('Device is unreachable while discovering services'),
     ).toBe(true);
+  });
+
+  it('retries a sidecar GATT connect_timeout once', () => {
+    expect(isMeshcoreRetryableBleErrorMessage('connect_timeout: Timeout waiting for reply')).toBe(
+      true,
+    );
   });
 
   it('does not treat vague unreachable wording without discovery context as retryable', () => {
