@@ -87,6 +87,8 @@ From real-time diagnostics to permanent message archives, Mesh-Client delivers t
 
 ## Key Features
 
+<!-- docs-site:features:start -->
+
 Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protocol switcher** at the top of the rail (MT / MC / RN; Meshtastic green, MeshCore cyan, Reticulum yellow) to focus a tab; the other sessions stay connected in the background.
 
 | Protocol   | Transport focus                                    | Deep-dive doc                                                                                                      |
@@ -183,7 +185,7 @@ Mesh-Client supports **three mesh stacks** in one desktop app. Use the **protoco
 - **Launcher settings search**: Ctrl/Cmd+K finds panels and individual settings; choosing a setting opens its panel, expands the section, scrolls to the row, and focuses it
 - **Enable / disable protocols** (App → Protocols): turn off protocols you don't use. A disabled protocol is hidden from the switcher, disconnected, and skipped by auto-connect, autostart, and sleep/wake recovery; with one protocol left, the switcher is hidden
 - **Firmware update toast**: **Don't remind me** silences the toast for that release (per protocol); it returns when a newer release ships
-- **Developer announcements**: a dismissible strip at the top of the window shows short notices from the maintainers (outages, "please update", news), fetched from a JSON file in this repo; plain text only, and nothing shows when offline. See [`docs/agents/service-announcements.md`](docs/agents/service-announcements.md)
+- **Developer announcements**: a dismissible strip at the top of the window shows short notices from the maintainers (outages, "please update", news), fetched from a JSON file in this repo; plain text only, and nothing shows when offline. See [`docs/service-announcements.md`](docs/service-announcements.md)
 
 ### Shared RF features (Meshtastic & MeshCore)
 
@@ -233,8 +235,8 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 
 **EMCOMM / Incident Command**
 
-- **MECP** (Mesh Emergency Communication Protocol): structured emergency text (`MECP/<severity>/<codes> …`) on Meshtastic, MeshCore, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (`mecp-received.log`), and can optionally bridge Meshtastic↔MeshCore RF channels (**App → MECP RF rebroadcast**, default off). Chat compose is opt-in (**App → MECP → Show MECP button in Chat**, default off); when on, a red siren button sits in the composer next to Send. Chat channel and DM chips show a shield icon, colored by the highest severity, while unread MECP reports are waiting. Details for agents: [`docs/agents/mecp.md`](docs/agents/mecp.md).
-- **Incident** tab (always visible on all three protocols; pinned at the bottom of the rail next to **App** — rarely needed day-to-day, but the red badge counts open MAYDAY/URGENT so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress **beacon** is active. Coordinates come from the report or the sender's last known position and can appear on the Map (**Layers → Emergency incidents**) for Meshtastic, MeshCore, **and Reticulum** (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). **Acknowledge** sends R01 (or **Confirm** / B02 when a beacon is active). **Resolve** closes the row locally. If you sent the distress beacon, **Cancel beacon** also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed but never badge. Details for agents: [`docs/agents/emcomm.md`](docs/agents/emcomm.md).
+- **MECP** (Mesh Emergency Communication Protocol): structured emergency text (`MECP/<severity>/<codes> …`) on Meshtastic, MeshCore, and Reticulum (LXMF chat). Inbound reports alert with severity-specific tones, append to a durable audit log (`mecp-received.log`), and can optionally bridge Meshtastic↔MeshCore RF channels (**App → MECP RF rebroadcast**, default off). Chat compose is opt-in (**App → MECP → Show MECP button in Chat**, default off); when on, a red siren button sits in the composer next to Send. Chat channel and DM chips show a shield icon, colored by the highest severity, while unread MECP reports are waiting. Operator guide: [EMCOMM: MECP and Incident Command](docs/emcomm.md).
+- **Incident** tab (always visible on all three protocols; pinned at the bottom of the rail next to **App** — rarely needed day-to-day, but the red badge counts open MAYDAY/URGENT so you still notice it): common operating picture for open MECP emergencies. Each row shows severity, sender, MECP codes, optional free text, ACK count, which protocols heard the report, and whether a distress **beacon** is active. Coordinates come from the report or the sender's last known position and can appear on the Map (**Layers → Emergency incidents**) for Meshtastic, MeshCore, **and Reticulum** (Reticulum Map uses the same incident overlay; MECP over LXMF chat still populates the Incident tab). **Acknowledge** sends R01 (or **Confirm** / B02 when a beacon is active). **Resolve** closes the row locally. If you sent the distress beacon, **Cancel beacon** also sends B03 ("I am OK") on that protocol and channel so other stations clear it. Broadcast ACKs are best-effort / network-heard — not read receipts. Drills are listed but never badge. Operator guide: [EMCOMM: MECP and Incident Command](docs/emcomm.md).
 - **Emergency outbox**: MECP / MAYDAY sends that can't go out live are queued as emergency priority and keep retrying after reconnect (no 24h age cutoff or attempt limit; a soft cap blocks, never deletes)
 - **ACK honesty**: broadcast acknowledgements are **heard by the network** / best effort — not read receipts
 - **Ops alerts** (App → Notifications): watched-node silence escalation, battery low (where telemetry exists), and unexpected link-down (never on manual disconnect or during reconnect)
@@ -293,7 +295,7 @@ MeshCore runs simultaneously alongside Meshtastic and Reticulum. Use the protoco
 - Login to room-server contacts; **blank** guest password for read-only when allowed; **`"hello"`** as the default read/write guest password; **Continue read-only** also sends blank
 - Post plain UTF-8 after login; inbound **SignedPlain** pushes show author prefix stripped in the UI
 - **Remember password**, **Auto-sync** (periodic re-login while connected, minimum 60 minutes per room), per-room unread badges (**Rooms** tab in the Chat section; separate from **Chat** badges)
-- Room admin CLI / ACL setperm on the **Repeaters** tab (room rows); Rooms Members still call `get acl` via the same CLI path. Session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting.md#meshcore-room-server-login-posts-and-windows-10)
+- Room admin CLI / ACL setperm on the **Repeaters** tab (room rows); Rooms Members still call `get acl` via the same CLI path. Session/login queue and path sync in `meshcoreRoom*.ts` — see [docs/meshcore-meshtastic-parity.md](docs/meshcore-meshtastic-parity.md#meshcore-room-servers) and [Troubleshooting](docs/troubleshooting-meshcore.md#meshcore-room-server-login-posts-and-windows-10)
 
 **Diagnostics & Remote Queries**
 
@@ -409,9 +411,13 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **BLE coexistence:** Meshtastic, MeshCore, and Reticulum run Bluetooth in the same sidecar process and can use **different devices** concurrently. The app checks configured device ownership and serializes scans requested through the app; Reticulum's background discovery and reconnect run separately. See [BLE coexistence](docs/agents/ble-serial.md#multi-protocol-ble-coexistence-incl-reticulum).
 - Packaged builds bundle `mesh-client-reticulum` beside the Electron app; dev builds: `pnpm run reticulum:sidecar:build` — see [development-environment.md](docs/development-environment.md#reticulum-sidecar-optional)
 
+<!-- docs-site:features:end -->
+
 ---
 
 ## Limitations
+
+<!-- docs-site:limitations:start -->
 
 - **MQTT → RF (Meshtastic)**: Downlink uses the firmware **MQTT module** (`proxy_to_client_enabled` on BLE/USB) and per-channel **downlink enabled** on the Radio tab — not legacy app `sendText` relay. mesh-client bridges `MqttClientProxyMessage` between broker and radio when proxy is active.
 - **MQTT → RF (MeshCore JSON)**: Not supported; MeshCore MQTT is chat ingest only.
@@ -422,7 +428,7 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **MeshCore - channel editing**: Can add/edit/delete channels (name + PSK) via the Radio tab, but does not expose Meshtastic-style full protobuf config. Radio parameters (frequency, bandwidth, spreading factor, coding rate, TX power) can be set via the Radio tab.
 - **MeshCore - remote telemetry availability**: `getTelemetry` requires the remote node to have environment sensors. A timeout is returned if the node has no sensor data.
 - **MeshCore - neighbor info availability**: `getNeighbours` is supported only by Repeater-type nodes running firmware v1.9.0+. The button is hidden for Chat and Room contacts.
-- **MeshCore - Trace Route / Ping trace**: Remote nodes typically respond only if they have **your** node as a contact. One-way or foreign heard nodes may lead to a client-side timeout; multi-hop paths without synced outPath bytes trigger **passive** PathUpdated wait + contact refresh (**15s + 5s × hops**, capped at **45s**), then for **2+ hops** up to **two** flood-advert priming rounds before `SendTracePath`. **1-hop** targets may use a synthesized `[relayPrefix, destPrefix]` path when a direct 0-hop repeater is known. If priming and synthesis still fail, ping may fast-fail with **No route from radio yet** instead of waiting the full trace timeout. See [Troubleshooting; MeshCore: Trace Route or Ping trace times out](docs/troubleshooting.md#meshcore-trace-route-or-ping-trace-times-out).
+- **MeshCore - Trace Route / Ping trace**: Remote nodes typically respond only if they have **your** node as a contact. One-way or foreign heard nodes may lead to a client-side timeout; multi-hop paths without synced outPath bytes trigger **passive** PathUpdated wait + contact refresh (**15s + 5s × hops**, capped at **45s**), then for **2+ hops** up to **two** flood-advert priming rounds before `SendTracePath`. **1-hop** targets may use a synthesized `[relayPrefix, destPrefix]` path when a direct 0-hop repeater is known. If priming and synthesis still fail, ping may fast-fail with **No route from radio yet** instead of waiting the full trace timeout. See [Troubleshooting; MeshCore: Trace Route or Ping trace times out](docs/troubleshooting-meshcore.md#meshcore-trace-route-or-ping-trace-times-out).
 - **MeshCore - contact type labels**: MeshCore reports a numeric `type` field (0 = None, 1 = Chat, 2 = Repeater, 3 = Room); displayed in the hw_model field in the node list.
 - **MeshCore - Security tab (partial)**: Meshtastic-style PKI admin is not on MeshCore firmware; the **Security** tab shows per-node key backup/restore, sign, and export/import only. LetsMesh MQTT uses a separate **active identity cache** (`mesh-client:meshcoreIdentity`); per-node archives do not overwrite each other — see [Key backup and cryptography](docs/key-backup-and-crypto.md).
 - **Map tiles; OpenStreetMap Referer requirement**: Packaged desktop builds load the UI from the local filesystem. The main process now loads the renderer with an explicit HTTP referrer so OpenStreetMap tile requests include a valid `Referer` header and comply with the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/). If you point the app at a different tile server, ensure its usage policy permits this client.
@@ -431,9 +437,13 @@ Architecture and API: [docs/reticulum.md](docs/reticulum.md). Games wire parity:
 - **Graph / Topology visible-node cap**: Meshtastic and MeshCore **Graph** and Reticulum **Topology** render at most **400** nodes after hop filters (force-layout budget). Numeric **Max hops** is applied even when Show distant is off. Unknown hops are omitted unless Max hops is **All hops** and Show distant is on (they are not 1-hop neighbors). The nearby hop ceiling (Mesh hops > 1, Reticulum hops > 2) applies only when Max hops is **All hops**. Reticulum Topology can also filter **RF only** (RNode / KISS / BLE; hides TCP/I2P/Auto). Reticulum path-table ingest is a separate layer (renderer feed **800**, sidecar **2,000**).
 - **Reticulum — propagation required for offline peers**: LXMF send fails with `no_propagation_node` when the destination is not in the path table and no cascade candidates exist (enabled remotes or local-prop). Local inbox Completes (`stored_locally`) ≠ peer delivery at a remote PN. When a path exists, Direct is tried first; on Direct fail the sidecar cascades preferred remote → other enabled remotes (hop-sorted) → local-prop last.
 
+<!-- docs-site:limitations:end -->
+
 ---
 
 ## Quick Start
+
+<!-- docs-site:install:start -->
 
 ### System requirements
 
@@ -487,6 +497,8 @@ See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-f
 
 **Building from source / development setup:** see [docs/development-environment.md](docs/development-environment.md) for complete shared requirements, clone/install steps, test harness setup, and detailed macOS/Windows/Linux instructions.
 
+<!-- docs-site:install:end -->
+
 ---
 
 ## Run Locally
@@ -537,7 +549,7 @@ All three protocols can run at the same time. Use the **MT / MC / RN** protocol 
 4. On **Connection → Interfaces**, add transports (TCP hub, Auto, or RNode over USB/BLE/Wi‑Fi) and enable them; restart the stack after interface changes when using the full `rns-stack` build
 5. Use **Chat** for LXMF DMs (and **Share as paper** / **Scan paper** for offline encrypted handoff); **Games** for Tic-Tac-Toe / Chess / Four in a Row (or Challenge from Peers / Chat); **Call** for LXST voice; **Remote** for rnsh/rncp; **RRC** for hub rooms; **Peers** and **Topology** for path-table visibility; **Nomad Network** for browse + **My Pages** watched-folder hosting
 
-Dev builds need the sidecar binary once: `pnpm run reticulum:sidecar:build`. Packaged releases include it automatically. See [docs/reticulum.md](docs/reticulum.md) and [Troubleshooting — Reticulum](docs/troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
+Dev builds need the sidecar binary once: `pnpm run reticulum:sidecar:build`. Packaged releases include it automatically. See [docs/reticulum.md](docs/reticulum.md) and [Troubleshooting — Reticulum](docs/troubleshooting-reticulum.md#reticulum-sidecar-wont-start-or-health-poll-times-out).
 
 ### Auto-Reconnect
 
@@ -585,7 +597,7 @@ Enter your broker URL, topic, and optional credentials in the MQTT section of th
 | Windows  | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
 | Linux    | Yes        | Yes | Yes              | Yes              | Yes       | Yes                         |
 
-Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack lives in the repo-local `.rsstack/` workspace (`rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, `lrgp-rs`) — see [docs/reticulum.md](docs/reticulum.md#building-the-sidecar).
+Sidecar dev build: `pnpm run reticulum:sidecar:build` ([Rust](https://rustup.rs/) required). Full stack lives in the repo-local `.rsstack/` workspace (`rsReticulum`, `rsLXMF`, `rsNomad`, `rsLXST`, `lrgp-rs`) — see [docs/reticulum-development.md](docs/reticulum-development.md#building-the-sidecar-development).
 
 ### Tech Stack
 

@@ -26,7 +26,7 @@ export const MACOS_RELEASE_ASSET_NAME = '00-READ-ME-BEFORE-EXTRACTING-macOS-ZIP.
 export const MACOS_INSTALL_NOTE_MARKER = '<!-- mesh-client-macos-install -->';
 
 const TROUBLESHOOTING_ANCHOR =
-  'https://github.com/Colorado-Mesh/mesh-client/blob/main/docs/troubleshooting.md#macos-library-not-loaded-squirrelframework-after-zip-extract';
+  'https://colorado-mesh.github.io/mesh-client/troubleshooting/#macos-library-not-loaded-squirrelframework-after-zip-extract';
 
 /**
  * @returns {string}

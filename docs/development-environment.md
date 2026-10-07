@@ -177,7 +177,7 @@ CI: full-feature lint in [`reticulum-sidecar.yaml`](../.github/workflows/reticul
 - Optional full RNS stack: [`reticulum-sidecar/README.md`](../reticulum-sidecar/README.md) (`rns-stack` Cargo feature)
 - Architecture: [docs/reticulum.md](reticulum.md)
 - HTTP contract: [docs/reticulum-sidecar-ipc.md](reticulum-sidecar-ipc.md)
-- Won't start / health timeout: [troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out](troubleshooting.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
+- Won't start / health timeout: [troubleshooting-reticulum.md#reticulum-sidecar-wont-start-or-health-poll-times-out](troubleshooting-reticulum.md#reticulum-sidecar-wont-start-or-health-poll-times-out)
 
 Windows ARM64 release builds use a dedicated `aarch64-pc-windows-msvc` CI job (see `.github/workflows/reticulum-sidecar.yaml`).
 
@@ -880,7 +880,7 @@ If serial ports do not appear, install the right USB UART driver (for example CH
 
 ### Troubleshooting
 
-See [troubleshooting.md](troubleshooting.md#windows-could-not-find-any-visual-studio-installation-to-use) (Visual Studio), [Python](troubleshooting.md#windows-could-not-find-any-python-installation-to-use), and [`dist:win` path / `EPERM`](troubleshooting.md#windows-distwin-fails-with-path-spaces-or-eperm).
+See [Build troubleshooting](#windows-could-not-find-any-visual-studio-installation-to-use) (Visual Studio), [Python](#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp), and [`dist:win` path / `EPERM`](#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules).
 
 ## Linux
 
@@ -959,4 +959,117 @@ sudo sysctl -w kernel.unprivileged_userns_clone=1
 
 ### Troubleshooting
 
-See [Linux development: SIGILL / SIGSEGV](troubleshooting.md#linux-development-sigill-during-pnpm-install) and [Linux: serial port access denied](troubleshooting.md#linux-serial-port-access-denied).
+See [Linux development: SIGILL / SIGSEGV](#linux-development-sigill-during-pnpm-install) and [Linux: serial port access denied](troubleshooting.md#linux-serial-port-access-denied).
+
+## Build troubleshooting
+
+Clone, compile, and local packaging issues. Runtime problems with the packaged app are in [Troubleshooting](troubleshooting.md).
+
+### `pnpm install` fails on native module compilation
+
+See [development-environment.md](development-environment.md) for OS-specific prerequisite installation.
+
+### Windows: "Could not find any Visual Studio installation to use"
+
+See [development-environment.md](development-environment.md#windows) for required build tools and the full recovery steps.
+
+### Windows: "Could not find any Python installation to use" (e.g. when building `@serialport/bindings-cpp`)
+
+See [development-environment.md](development-environment.md#windows) for Python setup and npm/node-gyp troubleshooting.
+
+### Linux development: SIGILL during `pnpm install`
+
+**Symptom**: `electron exited with signal SIGILL` during install/rebuild (common in sandboxes or VMs without instructions the prebuilt Electron binary expects).
+
+**Fix**:
+
+```bash
+MESHTASTIC_SKIP_ELECTRON_REBUILD=1 pnpm install
+pnpm run rebuild
+```
+
+Run `pnpm run rebuild` on a host where the bundled Electron binary executes correctly.
+
+### Linux development: SIGSEGV on startup
+
+**Symptom**: `electron exited with signal SIGSEGV` when running from source (GPU process; see [electron#41980](https://github.com/electron/electron/issues/41980)).
+
+**Fix**:
+
+```bash
+pnpm run build && pnpm dlx electron . --disable-gpu
+```
+
+Or:
+
+```bash
+pnpm run electron:open -- --disable-gpu
+```
+
+Optional persistent mitigation:
+
+- `export MESH_CLIENT_DISABLE_GPU=1`
+- `ELECTRON_OZONE_PLATFORM_HINT=x11 pnpm run electron:open`
+
+### "A native module failed to load" dialog on startup
+
+**Cause**: A native addon (e.g. `@serialport/bindings-cpp`) was compiled for a different Electron ABI; common after an Electron or Node version change.
+
+**Fix**: Run `pnpm install` (the postinstall script rebuilds native modules for the correct ABI automatically).
+
+- If you still see dlopen errors after switching machines or OSes, delete `node_modules` and run a clean `pnpm install`.
+- **Windows**: Also ensure the [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist) is installed.
+
+### `pnpm run dist:mac` fails with `GH_TOKEN` / "Cannot cleanup"
+
+electron-builder publishes to GitHub when it thinks it's in CI. Local builds use `--publish never` so artifacts land in `release/` without a token. Tag release CI also builds with `dist:*` (`--publish never`) and attaches via `ci-upload-release-assets.mjs` to the prepare draft; see `.github/workflows/release.yaml`.
+
+### `[DEP0190]` when running electron-builder
+
+Node deprecates `spawn(..., { shell: true })` with an args array. This project carries the packaging workaround via pnpm `patchedDependencies` on transitive packages used by the Electron build path. Re-run `pnpm install` if you upgrade `electron-builder` or its transitive packaging deps and the warning returns.
+
+### `duplicate dependency references` during dist
+
+npm's JSON tree lists hoisted packages with many duplicate refs (one per edge). That's expected and not something you need to fix. The patched packaging dependency path keeps that summary at **debug** only so normal `dist:*` runs stay quiet. To see it: `DEBUG=electron-builder pnpm dlx electron-builder --mac` (or your usual dist command).
+
+### `dist:win` fails with "space in the path" or `EPERM` on native modules
+
+**Symptoms**
+
+- `Attempting to build a module with a space in the path` during `pnpm run dist:win` (or `pnpm run rebuild`).
+- `EPERM: operation not permitted` when the rebuild tries to replace a locked `.node` file.
+
+**Cause**
+
+1. **Spaces in the project path**: node-gyp is unreliable when the repo lives under a path with spaces (e.g. `C:\Users\Joey Stanford\mesh-client`). This can surface as "Attempting to build a module with a space in the path", "Could not find any Visual Studio installation to use", or EPERM. See [node-gyp#65](https://github.com/nodejs/node-gyp/issues/65#issuecomment-368820565).
+2. **EPERM on unlink**: Something on Windows still has the `.node` file open (another `node`/`electron` process, antivirus/Windows Defender scanning the file, or a stuck handle).
+
+**Fix**
+
+1. **Use a path without spaces** (strongly recommended): clone or copy the repo to e.g. `C:\dev\mesh-client`, then `pnpm install` and `pnpm run dist:win` from there.
+2. **Clear the lock before rebuild**: quit any running Mesh-Client/Electron dev instances, then delete the affected `build` folder under `node_modules` and retry.
+3. **Rebuild then dist**: `pnpm run rebuild`; if that succeeds, run `pnpm run dist:win`.
+
+CI builds avoid both issues by using short paths and clean agents; local Windows builds need the same constraints.
+
+### Windows: `0x80010135` / "Path too long" (e.g. `bluetooth_hci_socket.lastbuildstate`)
+
+**Symptoms**
+
+- Explorer or the compiler shows **error 0x80010135** with **Path too long**, often on a **`*.lastbuildstate`** file under `node_modules`.
+- **`bluetooth_hci_socket`** in the name points at **`@stoprocent/bluetooth-hci-socket`** (a native dependency of **`@stoprocent/noble`**). MSBuild writes build state under very deep paths; together with a long clone directory, the full path can exceed the legacy **~260 character** Win32 limit.
+
+**Fix** (use one or more)
+
+1. **Shorten the repo path** (most reliable): clone or copy the project to a shallow path such as `C:\dev\mesh-client` instead of e.g. `C:\Users\…\Documents\GitHub\org\mesh-client`.
+2. **Enable long paths in Git** (helps clones/checkouts): `git config --global core.longpaths true`, then re-clone or ensure no stuck long paths in the worktree.
+3. **Enable Win32 long paths in Windows** (Windows 10 1607+): this option is **not** available as a normal toggle in **Settings**; enable it via **Local Group Policy** → _Computer Configuration → Administrative Templates → System → Filesystem → Enable Win32 long paths_, or set the registry DWORD **`LongPathsEnabled = 1`** under `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (admin rights; reboot may be required). See [Microsoft: Maximum Path Length Limitation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation).
+4. **`pnpm run dist:win`** already runs a **hoisted** `pnpm install` to shorten `node_modules` depth before packaging; if **`pnpm install`** / **`pnpm run rebuild`** fails earlier with this error, try the short path and long-path OS settings first, or temporarily: `pnpm install --config.node-linker=hoisted` from a short root path.
+
+### `[DEP0169]` / `url.parse()` deprecation warning
+
+The app uses npm package overrides to force `follow-redirects` and `cacheable-request` onto versions that use the WHATWG URL API, which removes this warning. To trace the source of any deprecation, run:
+
+```bash
+pnpm run trace-deprecation
+```

@@ -109,7 +109,7 @@ export function formatAnnouncementWarning(diff) {
     '',
     '  If this was not intentional, unstage it:',
     `      git restore --staged ${SERVICE_ANNOUNCEMENT_FEED_PATH}`,
-    '  Authoring guide: docs/agents/service-announcements.md',
+    '  Authoring guide: docs/service-announcements.md',
     rule,
     '',
   );
