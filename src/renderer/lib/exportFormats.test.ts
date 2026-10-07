@@ -2,13 +2,121 @@ import { describe, expect, it } from 'vitest';
 
 import {
   diagnosticsRowsToJson,
+  INCIDENT_EXPORT_FIELDS,
+  INCIDENT_EXPORT_FORMAT,
+  incidentsToCsv,
+  incidentsToExportRows,
+  incidentsToJson,
   nodesToCsv,
   nodesToTopologyJson,
   toJsonSafe,
   TOPOLOGY_NODE_FIELDS,
 } from './exportFormats';
+import type { EmergencyIncident } from './mecp/incidentTypes';
 
 const EXPORTED_AT = '2026-09-24T12:00:00.000Z';
+
+function incident(overrides: Partial<EmergencyIncident> = {}): EmergencyIncident {
+  return {
+    id: 'fp-1',
+    protocol: 'meshtastic',
+    protocolsSeen: ['meshtastic', 'meshcore'],
+    severity: 0,
+    codes: ['M01', 'B01'],
+    freetext: 'leg injury',
+    senderId: '3735928559',
+    senderName: 'Ada',
+    relaySenderIds: ['42'],
+    channel: '0',
+    receivedAt: Date.UTC(2026, 8, 24, 10, 0, 0),
+    lastSeenAt: Date.UTC(2026, 8, 24, 10, 5, 0),
+    lat: 39.7,
+    lon: -105.0,
+    coordsSource: 'message',
+    messageIds: ['m1'],
+    ackCount: 2,
+    ackPeerIds: ['7', '8'],
+    beaconActive: true,
+    beaconAcked: false,
+    isDrill: false,
+    status: 'acked',
+    ...overrides,
+  };
+}
+
+describe('incident log export', () => {
+  it('maps every incident oldest first with ISO timestamps and nulls for missing values', () => {
+    const resolved = incident({
+      id: 'fp-0',
+      status: 'resolved',
+      receivedAt: Date.UTC(2026, 8, 24, 9, 0, 0),
+      resolvedAt: Date.UTC(2026, 8, 24, 9, 30, 0),
+      lat: undefined,
+      lon: undefined,
+      coordsSource: null,
+      relaySenderIds: undefined,
+    });
+    const rows = incidentsToExportRows([incident(), resolved]);
+    expect(rows.map((r) => r.id)).toEqual(['fp-0', 'fp-1']);
+    expect(rows[0]).toMatchObject({
+      status: 'resolved',
+      received_at: '2026-09-24T09:00:00.000Z',
+      resolved_at: '2026-09-24T09:30:00.000Z',
+      latitude: null,
+      longitude: null,
+      coords_source: null,
+      relay_sender_ids: [],
+    });
+    expect(rows[1].resolved_at).toBeNull();
+    expect(Object.keys(rows[1])).toEqual([...INCIDENT_EXPORT_FIELDS]);
+  });
+
+  it('wraps rows in a versioned JSON envelope', () => {
+    const rows = incidentsToExportRows([incident()]);
+    const json = incidentsToJson(rows, { exportedAt: EXPORTED_AT });
+    expect(json).toMatchObject({
+      format: INCIDENT_EXPORT_FORMAT,
+      version: 1,
+      exportedAt: EXPORTED_AT,
+      incidentCount: 1,
+    });
+    expect(json.incidents[0]).toMatchObject({ codes: ['M01', 'B01'], ack_peer_ids: ['7', '8'] });
+  });
+
+  it('writes CSV in field order with space-joined lists and injection-guarded text', () => {
+    const csv = incidentsToCsv(incidentsToExportRows([incident({ freetext: '=HYPERLINK(1)' })]));
+    const [header, line] = csv.trimEnd().split('\r\n');
+    expect(header).toBe(INCIDENT_EXPORT_FIELDS.join(','));
+    const cells = line.split(',');
+    const col = (f: (typeof INCIDENT_EXPORT_FIELDS)[number]) =>
+      cells[INCIDENT_EXPORT_FIELDS.indexOf(f)];
+    expect(col('codes')).toBe('M01 B01');
+    expect(col('protocols_seen')).toBe('meshtastic meshcore');
+    expect(col('freetext')).toBe("'=HYPERLINK(1)");
+    expect(col('received_at')).toBe('2026-09-24T10:00:00.000Z');
+  });
+
+  it('neutralizes leading minus formulas and LF in incident text', () => {
+    const csv = incidentsToCsv(
+      incidentsToExportRows([incident({ freetext: '-1+2', senderName: '\n=cmd' })]),
+    );
+    const [, line] = csv.trimEnd().split('\r\n');
+    expect(line).toContain(`,'-1+2,`);
+    expect(line).toContain(`,"'\n=cmd",`);
+  });
+
+  it('exports out-of-range timestamps as null instead of throwing', () => {
+    const rows = incidentsToExportRows([
+      incident({ lastSeenAt: 1e20, resolvedAt: Number.POSITIVE_INFINITY }),
+    ]);
+    expect(rows[0]).toMatchObject({ last_seen_at: null, resolved_at: null });
+    expect(() => incidentsToCsv(rows)).not.toThrow();
+  });
+
+  it('writes only the header for no incidents', () => {
+    expect(incidentsToCsv([])).toBe(INCIDENT_EXPORT_FIELDS.join(',') + '\r\n');
+  });
+});
 
 describe('nodesToCsv', () => {
   it('returns empty string for no rows/columns', () => {

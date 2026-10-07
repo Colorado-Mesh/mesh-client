@@ -1,6 +1,6 @@
-# Agent reference: Connection panel helpers
+# Connection panel helpers
 
-Deep subsystem reference for AI assistants. Open this when a task touches ConnectionPanel error humanization, last-connection rehydrate, storage migrations, or MeshCore chat-channel filtering. Hard rules live in [`AGENTS.md`](../../AGENTS.md).
+Developer reference for ConnectionPanel error humanization, last-connection rehydrate, storage migrations, or MeshCore chat-channel filtering. Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md).
 
 - **Error humanization:** `connectionPanelErrorHumanize.ts` — serial/HTTP/BLE user-facing hints (i18n); uses `electronAPI.getPlatform()`.
 - **Last connection / reconnect rehydrate:** `lastConnectionStorage.ts` — `mesh-client:lastConnection:<protocol>` and BLE fallback keys; rebuild RF params after wake or GATT disconnect.

@@ -3,6 +3,7 @@ import { Copy, KeyRound, PARENT_HOVER_ATTR, Star, TriangleAlert, X } from 'lucid
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getDistanceUnit } from '@/renderer/lib/appSettingsStorage';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
@@ -63,6 +64,7 @@ import {
 } from '../lib/meshtastic/meshtasticModuleEvents';
 import { meshtasticNodeAwaitingNodeInfo } from '../lib/meshtastic/meshtasticNodeAwaitingNodeInfo';
 import { Z_NODE_DETAIL_MODAL } from '../lib/modalZIndex';
+import { nodeBearingRange } from '../lib/nodeBearingRange';
 import { getNodeStatus } from '../lib/nodeStatus';
 import { useRadioProvider } from '../lib/radio/providerFactory';
 import { MESHCORE_TRACE_PING_TOTAL_TIMEOUT_MS } from '../lib/timeConstants';
@@ -264,7 +266,7 @@ export default function NodeDetailModal({
   onConfigureRemotely,
   hasRemoteAdminKey,
 }: NodeDetailModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const parentIconTrigger = useParentIconTrigger();
   const use24HourTime = useTimeFormatStore((s) => s.use24HourTime);
   const { ensureRepeaterAuth, promptRepeaterPassword, RemoteAuthModal } =
@@ -350,6 +352,7 @@ export default function NodeDetailModal({
   const mqttIgnoredNodes = useDiagnosticsStore((s) => s.mqttIgnoredNodes);
   const setNodeMqttIgnored = useDiagnosticsStore((s) => s.setNodeMqttIgnored);
   const getForeignLoraDetectionsList = useDiagnosticsStore((s) => s.getForeignLoraDetectionsList);
+  const ourPositionReference = useDiagnosticsStore((s) => s.ourPositionReference);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const nodeRef = useRef(node);
@@ -613,6 +616,15 @@ export default function NodeDetailModal({
       ? meshcoreContactDisplayName(node.node_id, node.long_name)
       : node.short_name || node.long_name || hexId;
   const isOurNode = node.node_id === homeNode?.node_id;
+  const bearingRange = isOurNode
+    ? null
+    : nodeBearingRange(
+        ourPositionReference,
+        node,
+        positionHistory?.get(node.node_id),
+        getDistanceUnit(),
+        i18n.language,
+      );
   const nodeStatus = getNodeStatus(node.last_heard, nodeStaleThresholdMs, nodeOfflineThresholdMs);
   const nodeStatusUi =
     nodeStatus === 'online'
@@ -1127,6 +1139,18 @@ export default function NodeDetailModal({
                 </span>
               )}
           </div>
+          {bearingRange && (
+            <div
+              className="text-ink-200 mt-0.5 font-mono text-xs"
+              title={t('nodeDetailModal.bearingRangeTitle')}
+              data-testid="node-bearing-range"
+            >
+              {t('nodeDetailModal.bearingRange', {
+                bearing: bearingRange.bearing,
+                distance: bearingRange.distance,
+              })}
+            </div>
+          )}
           {protocol === 'meshcore' && contactPubkey && (
             <div className="mt-1 flex w-full items-start gap-2">
               <span className="text-muted text-2xs font-mono break-all whitespace-normal">

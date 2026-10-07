@@ -1,6 +1,6 @@
-# Agent reference: BLE and serial
+# BLE and serial
 
-Deep subsystem reference for AI assistants. Open this when a task touches LoRa BLE/serial transports, sidecar GATT reconnect, dual-radio wake stagger, or multi-protocol BLE coexistence. Hard rules live in [`AGENTS.md`](../../AGENTS.md).
+Developer reference for LoRa BLE/serial transports, sidecar GATT reconnect, dual-radio wake stagger, or multi-protocol BLE coexistence. Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md).
 
 Meshtastic and MeshCore share LoRa BLE reconnect contracts on **all platforms** (linux, darwin, win32). **BLE transport** is reticulum-sidecar **btleplug** GATT (`/api/v1/gatt/*`), proxied by Electron main `gatt-sidecar-proxy.ts` over `gatt:*` IPC. Renderer transport: `transportSidecarGatt.ts` (Meshtastic) / MeshCore framing over the same GATT sessions. Session ids remain `meshtastic` / `meshcore`. Serial: `connection.ts`, `serialPortSignature.ts`. Meshtastic BLE open: `connection.ts` / `TransportManager`. Reticulum BLE RNode / BLE Peer use the same sidecar process through rsReticulum and `/api/v1/ble/*`, with separate BLE centrals.
 

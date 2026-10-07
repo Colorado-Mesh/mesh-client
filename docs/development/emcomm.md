@@ -1,6 +1,6 @@
-# Agent reference: EMCOMM (emergency communications)
+# EMCOMM (emergency communications)
 
-Deep subsystem reference for AI assistants. Open when a task touches Incident Command, the emergency outbox, MECP send reliability, ACK/beacon, ops alerts, EMCOMM exports, SAR map tools, or track retention. MECP wire format, siren alerts, audit log, and RF rebroadcast live in [mecp.md](mecp.md). Hard rules live in [`AGENTS.md`](../../AGENTS.md). The operator-facing guide (what users see and do) is [`../emcomm.md`](../emcomm.md); keep it in sync when user-visible behavior changes.
+Developer reference for Incident Command, the emergency outbox, MECP send reliability, ACK/beacon, ops alerts, EMCOMM exports, SAR map tools, or track retention. MECP wire format, siren alerts, audit log, and RF rebroadcast live in [mecp.md](mecp.md). Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md). The operator-facing guide (what users see and do) is [`../emcomm.md`](../emcomm.md); keep it in sync when user-visible behavior changes.
 
 ## Safety invariants (S1–S16)
 
@@ -70,22 +70,22 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
 
 ## WS6 — Exports
 
-- **UI:** NodeListPanel **Export JSON** (topology envelope over `nodesToExportRows`) / **Export CSV**; DiagnosticsPanel **Export JSON** (visible rows for the active protocol); MECP audit log via App → MECP.
+- **UI:** NodeListPanel **Export JSON** (topology envelope over `nodesToExportRows`) / **Export CSV**; DiagnosticsPanel **Export JSON** (visible rows for the active protocol); MECP audit log via App → MECP; IncidentPanel **Export log** (JSON / CSV, disabled when the store is empty).
 - **Serializers** ([`exportFormats.ts`](../../src/renderer/lib/exportFormats.ts), pure): `nodesToCsv` (RFC 4180, CSV-injection guarded, canonical `TOPOLOGY_NODE_FIELDS` first then extra keys), `nodesToTopologyJson` (`format: 'mesh-client-topology'`, `version`), `diagnosticsRowsToJson` (`format: 'mesh-client-diagnostics'`), `toJsonSafe` (Maps/Sets/bigint/Dates/cycles).
-- **After-action report:** deferred to a follow-up (assembler + `node_status_events` writer intentionally not in this PR).
+- **Incident log (after-action record):** `incidentsToExportRows` maps **every** stored incident (including resolved) oldest first to `INCIDENT_EXPORT_FIELDS` (snake_case, ISO timestamps, `null` for missing); `incidentsToJson` (`format: 'mesh-client-incidents'`) and `incidentsToCsv` (space-joined list fields). Source is the `incidentStore` only — the MECP audit log stays a separate export.
 - **Ops link-down:** Meshtastic + MeshCore RF drivers only. Reticulum uses the sidecar (not an RF `ConnectionDriver` link), so link-down alerts intentionally omit it.
 
 ## WS7 — SAR map tools (MGRS grid, measure, bearing)
 
 - [`lib/map/mgrsGrid.ts`](../../src/renderer/lib/map/mgrsGrid.ts): `pickMgrsPrecisionForBbox` (finest precision under `MGRS_GRID_MAX_SQUARES = 400`), `mgrsSquaresInBbox`, `mgrsSquareSizeMeters`, `estimateMgrsSquareCount`.
 - [`lib/map/measureMath.ts`](../../src/renderer/lib/map/measureMath.ts): `polylineSegmentsKm`, `polylineLengthKm` (haversine; invalid segments count 0).
-- Bearing: `bearingBetween` / `formatBearing` in [`nodeStatus.ts`](../../src/renderer/lib/nodeStatus.ts) (tested helpers; not yet surfaced in any UI).
+- Bearing: `bearingBetween` / `formatBearing` in [`nodeStatus.ts`](../../src/renderer/lib/nodeStatus.ts) — surfaced as the Node Detail header bearing/distance row via [`nodeBearingRange.ts`](../../src/renderer/lib/nodeBearingRange.ts) (only when `ourPositionReference.trust === 'trusted'`; distance honors the miles/km setting).
 - Map wiring: `MgrsGridLayer` (Layers → MGRS grid, `mapLayerStore.showMgrsGrid`, default off; labels only when ≤60 squares) and `MeasureControl` in `components/map/emcommMapLayers.tsx`.
 
 ## WS8 — USGS topo, incident track exemption, prune
 
 - **USGS topo basemap:** `usgs-topo` in the offline-maps allowlist ([`basemapRegistry.ts`](../../src/shared/offlineMaps/basemapRegistry.ts)) — fixed `basemap.nationalmap.gov` ArcGIS host (z/y/x order), `USGS_TOPO_MAX_NATIVE_ZOOM = 16` (Leaflet overzooms), served through `mesh-tiles://usgs-topo/…` and the shared tile cache. No user-supplied URL templates (S13). Renderer basemap entry in `mapBasemapUtils.ts`; selectable in the Map Layers control and `leafletMapControls.tsx`. See [offline-maps.md](offline-maps.md).
-- **Track exemption:** [`incidentTrackExemption.ts`](../../src/renderer/lib/incidentTrackExemption.ts) `nodesExemptFromPositionPrune` returns sender ids of `open`/`acked` incidents (`resolved` releases the hold). `useAppStartupDbPrune.ts` (`incidentPruneOptions()`) reads the incident store at each startup/session prune and passes them as `exemptNodeIds` to `startupDbPrune.ts`. Sender ids that do not normalize to a uint32 node id (e.g. a MeshCore pubkey prefix longer than 8 hex chars, Reticulum hashes) are dropped by main, so those senders are not yet exempt.
+- **Track exemption:** [`incidentTrackExemption.ts`](../../src/renderer/lib/incidentTrackExemption.ts) `nodesExemptFromPositionPrune` returns sender ids of `open`/`acked` incidents (`resolved` releases the hold). `useAppStartupDbPrune.ts` (`incidentPruneOptions()`) reads the incident store at each startup/session prune and passes them as `exemptNodeIds` to `startupDbPrune.ts`. Incident sender ids are `String(msg.from)` (`useMecpAlertWatcher.ts`), and `MessageRecord.from` is already a uint32 for every protocol (MeshCore pubkeys and Reticulum hashes are folded at ingest), so they always normalize in main. Known limitation: a MeshCore channel MECP whose sender resolves only to a display-name stub id (`0xA…` range) or `0` does not exempt that contact's real `pubkeyToNodeId` track. Reticulum has no `position_history` writer, so nothing to exempt there.
 - **Prune IPC:** `db:prunePositionHistory` / `db:prunePositionHistoryPerNode` accept optional `exemptNodeIds`; main validates with `sanitizeExemptNodeIdsArg` and `normalizePositionPruneExemptNodeIds` (numbers, decimal, `!hex`, `0x` hex; capped at `MAX_POSITION_PRUNE_EXEMPT_IDS`) and excludes them via `json_each` in `database.ts` (S12).
 
 ## File map

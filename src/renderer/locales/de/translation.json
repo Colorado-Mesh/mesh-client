@@ -3332,7 +3332,9 @@
     "keyBadge": "Schlüssel",
     "closePane": "Details schließen",
     "savedPathHeading": "Gespeicherter Pfad",
-    "savedPathHint": "Am besten bewerteter Pfad im gespeicherten Verlauf. Er kann vom aktuellen Sendepfad des Funkgeräts oder vom Pfad einer empfangenen Ankündigung abweichen."
+    "savedPathHint": "Am besten bewerteter Pfad im gespeicherten Verlauf. Er kann vom aktuellen Sendepfad des Funkgeräts oder vom Pfad einer empfangenen Ankündigung abweichen.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Peilung und Entfernung von Ihrer vertrauenswürdigen Position"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",
@@ -6497,7 +6499,11 @@
     "beaconCancelSent": "Signalabbruch gesendet. Andere Sender löschen dein Notsignal, wenn sie es hören.",
     "beaconCancelQueued": "Beacon-Abbruch in der Warteschlange. Wird gesendet, wenn das Radio verfügbar ist.",
     "beaconCancelFailed": "Das Beacon konnte nicht gesendet oder in die Warteschlange gestellt werden. Der Vorfall ist noch offen.",
-    "emptyHint": "Eingehende MECP-Berichte werden hier automatisch angezeigt. Um eine zu senden, aktivieren Sie die Schaltfläche App → MECP MECP → anzeigen im Chat und verwenden Sie dann MECP im Chat. → Kartenebenen können offene Vorfälle mit Koordinaten anzeigen."
+    "emptyHint": "Eingehende MECP-Berichte werden hier automatisch angezeigt. Um eine zu senden, aktivieren Sie die Schaltfläche App → MECP MECP → anzeigen im Chat und verwenden Sie dann MECP im Chat. → Kartenebenen können offene Vorfälle mit Koordinaten anzeigen.",
+    "exportLog": "Protokoll exportieren",
+    "exportMenuLabel": "Vorfallprotokollformat exportieren",
+    "exportJson": "JSON exportieren",
+    "exportCsv": "CSV exportieren"
   },
   "shell": {
     "section": {

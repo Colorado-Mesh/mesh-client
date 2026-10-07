@@ -3332,7 +3332,9 @@
     "keyBadge": "鍵",
     "closePane": "詳細を閉じる",
     "savedPathHeading": "保存されたパス",
-    "savedPathHint": "保存された履歴で最も評価の高い経路です。無線機の現在の送信経路や、受信したアドバタイズの経路とは異なる場合があります。"
+    "savedPathHint": "保存された履歴で最も評価の高い経路です。無線機の現在の送信経路や、受信したアドバタイズの経路とは異なる場合があります。",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "信頼できる位置からの方角と距離"
   },
   "nodeInfoBody": {
     "longName": "長い名前",
@@ -6497,7 +6499,11 @@
     "beaconCancelSent": "ビーコンキャンセルが送信されました。他のステーションは、それを聞いたときにあなたの救難ビーコンをクリアします。",
     "beaconCancelQueued": "ビーコンキャンセルキューされました。ラジオが利用可能になると送信されます。",
     "beaconCancelFailed": "ビーコンキャンセルを送信またはキューイングできませんでした。インシデントはまだ発生していません。",
-    "emptyHint": "インバウンドMECPレポートはここに自動的に表示されます。送信するには、チャットでApp → MECP → Show MECPボタンを有効にし、チャットでMECPを使用します。→マップレイヤーは、座標でオープンなインシデントを表示できます。"
+    "emptyHint": "インバウンドMECPレポートはここに自動的に表示されます。送信するには、チャットでApp → MECP → Show MECPボタンを有効にし、チャットでMECPを使用します。→マップレイヤーは、座標でオープンなインシデントを表示できます。",
+    "exportLog": "ログのエクスポート",
+    "exportMenuLabel": "インシデントログ形式のエクスポート",
+    "exportJson": "JSONのエクスポート",
+    "exportCsv": "CSVのエクスポート"
   },
   "shell": {
     "section": {

@@ -184,7 +184,7 @@ Builds the documentation site with `mkdocs build --strict` on pull requests that
 5. Run `mkdocs build --strict`
 6. Deploy with `mkdocs gh-deploy --force` (push to `main` only)
 
-The landing page `docs/index.md` is written by hand and is not copied from the README. `docs/agents/` is excluded from the site (`exclude_docs` in `mkdocs.yml`). Locally, `pnpm run docs:build` and `pnpm run docs:serve` run the same prepare step first.
+The landing page `docs/index.md` is written by hand and is not copied from the README. Locally, `pnpm run docs:build` and `pnpm run docs:serve` run the same prepare step first.
 
 ---
 

@@ -3332,7 +3332,9 @@
     "keyBadge": "Sleutel",
     "closePane": "Details sluiten",
     "savedPathHeading": "Opgeslagen pad",
-    "savedPathHint": "Het best beoordeelde pad uit de opgeslagen geschiedenis. Het kan verschillen van het huidige verzendpad van de radio of het pad van een ontvangen aankondiging."
+    "savedPathHint": "Het best beoordeelde pad uit de opgeslagen geschiedenis. Het kan verschillen van het huidige verzendpad van de radio of het pad van een ontvangen aankondiging.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Peiling en afstand vanaf uw vertrouwde positie"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",
@@ -6500,7 +6502,11 @@
     "beaconCancelSent": "Baken annuleren verzonden. Andere stations wissen je noodbaken wanneer ze het horen.",
     "beaconCancelQueued": "Beacon annuleert in de wachtrij. Het wordt verzonden wanneer de radio beschikbaar is.",
     "beaconCancelFailed": "Kon het baken niet verzenden of in de wachtrij plaatsen annuleren. Het incident is nog steeds open.",
-    "emptyHint": "Inkomende MECP-rapporten verschijnen hier automatisch. Om er een te verzenden, schakelt u de → App → MECP Show MECP-knop in de chat in en gebruikt u vervolgens MECP in de chat. → Kaartlagen kunnen open incidenten weergeven met coördinaten."
+    "emptyHint": "Inkomende MECP-rapporten verschijnen hier automatisch. Om er een te verzenden, schakelt u de → App → MECP Show MECP-knop in de chat in en gebruikt u vervolgens MECP in de chat. → Kaartlagen kunnen open incidenten weergeven met coördinaten.",
+    "exportLog": "Logboek exporteren",
+    "exportMenuLabel": "Exporteer het incidentenlogboekformaat",
+    "exportJson": "JSON exporteren",
+    "exportCsv": "CSV exporteren"
   },
   "shell": {
     "section": {

@@ -1,7 +1,10 @@
-/** Pure serializers for node / topology / diagnostics exports (no I/O). */
+/** Pure serializers for node / topology / diagnostics / incident exports (no I/O). */
+
+import type { EmergencyIncident } from './mecp/incidentTypes';
 
 export const TOPOLOGY_EXPORT_FORMAT = 'mesh-client-topology';
 export const DIAGNOSTICS_EXPORT_FORMAT = 'mesh-client-diagnostics';
+export const INCIDENT_EXPORT_FORMAT = 'mesh-client-incidents';
 export const EXPORT_FORMAT_VERSION = 1;
 
 /**
@@ -46,7 +49,7 @@ export interface DiagnosticsExport {
 
 const CSV_EOL = '\r\n';
 /** Leading characters spreadsheets interpret as formulas (CSV injection). */
-const CSV_FORMULA_PREFIX = /^[=+@\t\r]|^-(?![\d.])/;
+const CSV_FORMULA_PREFIX = /^[=+@\t\r\n]|^-(?!\d*\.?\d+$)/;
 
 function csvCellText(value: unknown): string {
   if (value == null) return '';
@@ -84,13 +87,122 @@ export function nodesToCsv(rows: Record<string, unknown>[]): string {
       if (!(TOPOLOGY_NODE_FIELDS as readonly string[]).includes(key)) extra.push(key);
     }
   }
-  const columns = [...TOPOLOGY_NODE_FIELDS.filter((f) => seen.has(f)), ...extra];
+  return rowsToCsv([...TOPOLOGY_NODE_FIELDS.filter((f) => seen.has(f)), ...extra], rows);
+}
+
+function rowsToCsv(columns: readonly string[], rows: Record<string, unknown>[]): string {
   if (columns.length === 0) return '';
   const lines = [columns.map(csvEscape).join(',')];
   for (const row of rows) {
     lines.push(columns.map((c) => csvEscape(csvCellText(row[c]))).join(','));
   }
   return lines.join(CSV_EOL) + CSV_EOL;
+}
+
+/**
+ * Stable incident-log fields (after-action record). New fields may be appended; consumers must
+ * ignore unknown keys and treat `null` as "not reported". Timestamps are ISO 8601 UTC.
+ */
+export const INCIDENT_EXPORT_FIELDS = [
+  'id',
+  'status',
+  'severity',
+  'is_drill',
+  'codes',
+  'freetext',
+  'sender_id',
+  'sender_name',
+  'relay_sender_ids',
+  'protocol',
+  'protocols_seen',
+  'channel',
+  'received_at',
+  'last_seen_at',
+  'resolved_at',
+  'latitude',
+  'longitude',
+  'coords_source',
+  'ack_count',
+  'ack_peer_ids',
+  'beacon_active',
+  'beacon_acked',
+] as const;
+
+export type IncidentExportField = (typeof INCIDENT_EXPORT_FIELDS)[number];
+
+export type IncidentExportRow = Record<IncidentExportField, unknown>;
+
+export interface IncidentExport {
+  format: typeof INCIDENT_EXPORT_FORMAT;
+  version: number;
+  exportedAt: string;
+  fields: readonly IncidentExportField[];
+  incidentCount: number;
+  incidents: IncidentExportRow[];
+}
+
+function isoOrNull(ms: number | undefined): string | null {
+  if (ms == null) return null;
+  const date = new Date(ms);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/** Every stored incident (open, acked, resolved), oldest first. */
+export function incidentsToExportRows(incidents: Iterable<EmergencyIncident>): IncidentExportRow[] {
+  return [...incidents]
+    .sort((a, b) => a.receivedAt - b.receivedAt)
+    .map((inc) => ({
+      id: inc.id,
+      status: inc.status,
+      severity: inc.severity,
+      is_drill: inc.isDrill,
+      codes: [...inc.codes],
+      freetext: inc.freetext,
+      sender_id: inc.senderId,
+      sender_name: inc.senderName,
+      relay_sender_ids: [...(inc.relaySenderIds ?? [])],
+      protocol: inc.protocol,
+      protocols_seen: [...inc.protocolsSeen],
+      channel: inc.channel,
+      received_at: isoOrNull(inc.receivedAt),
+      last_seen_at: isoOrNull(inc.lastSeenAt),
+      resolved_at: isoOrNull(inc.resolvedAt),
+      latitude: inc.lat ?? null,
+      longitude: inc.lon ?? null,
+      coords_source: inc.coordsSource,
+      ack_count: inc.ackCount,
+      ack_peer_ids: [...inc.ackPeerIds],
+      beacon_active: inc.beaconActive,
+      beacon_acked: inc.beaconAcked,
+    }));
+}
+
+export function incidentsToJson(
+  rows: IncidentExportRow[],
+  meta?: { exportedAt?: string },
+): IncidentExport {
+  return {
+    format: INCIDENT_EXPORT_FORMAT,
+    version: EXPORT_FORMAT_VERSION,
+    exportedAt: meta?.exportedAt ?? new Date().toISOString(),
+    fields: INCIDENT_EXPORT_FIELDS,
+    incidentCount: rows.length,
+    incidents: rows,
+  };
+}
+
+/** RFC 4180 CSV in `INCIDENT_EXPORT_FIELDS` order; list fields are space-joined. */
+export function incidentsToCsv(rows: IncidentExportRow[]): string {
+  return rowsToCsv(
+    INCIDENT_EXPORT_FIELDS,
+    rows.map((row) => {
+      const flat: Record<string, unknown> = { ...row };
+      for (const [k, v] of Object.entries(flat)) {
+        if (Array.isArray(v)) flat[k] = v.join(' ');
+      }
+      return flat;
+    }),
+  );
 }
 
 export function nodesToTopologyJson(

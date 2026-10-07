@@ -1,6 +1,6 @@
 # Offline maps (`mesh-tiles:` + tile cache)
 
-Agent reference for wilderness / no-WAN basemap caching. Human QA: [troubleshooting.md — Map tab without internet](../troubleshooting.md#map-tab-without-internet-offline--no-wan).
+Developer reference for wilderness / no-WAN basemap caching. Human QA: [troubleshooting.md — Map tab without internet](../troubleshooting.md#map-tab-without-internet-offline--no-wan).
 
 ## Layout
 

@@ -115,3 +115,12 @@ CI does **not** run `check:i18n` as a standalone workflow step. Quality rules ru
 - **`repeatersPanel.cliMultiHopHint`** — must describe **multi-hop** CLI and automatic **Ping** before the first command, not multi-tab UI wording.
 
 Full rule set: `scripts/check-i18n-quality.mjs` and `scripts/check-i18n-quality.test.mjs`.
+
+### Implementation notes
+
+- **Framework:** i18next + react-i18next; static JSON bundles loaded at startup; `fallbackLng: 'en'`.
+- **Locale files:** `src/renderer/locales/{en,es,uk,de,zh,pt-BR,fr,it,pl,cs,ja,ru,nl,ko,tr,id}/translation.json` — English is source of truth (`pnpm run check:i18n` reports key count).
+- **Locale persistence:** `locale` key in `app_settings` SQLite table (canonical) and `mesh-client:appSettings` localStorage (fast startup read); reconciled in `App.tsx` on mount.
+- **Reduce motion / 24-hour time:** `reduceMotion` and `use24HourTime` share the same `app_settings` / localStorage bundle (**App → Appearance**, [`AppPanel.tsx`](../src/renderer/components/AppPanel.tsx); `timeFormatStore`, `formatDisplayTime`). Behavior is documented in [accessibility-checklist.md](accessibility-checklist.md).
+- **Unused keys:** `scripts/i18n-unused-keys.mjs` implements unused-key detection.
+- **Language selector:** `src/renderer/components/LanguageSelector.tsx` — globe-icon dropdown in the header; calls `i18n.changeLanguage()` + `mergeAppSetting('locale', ...)` + `electronAPI.appSettings.set('locale', ...)`.

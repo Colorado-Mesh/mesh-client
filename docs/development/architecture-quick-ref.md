@@ -1,6 +1,6 @@
-# Agent reference: architecture quick reference
+# Architecture quick reference
 
-Deep subsystem reference for AI assistants: where to look first by area. Moved out of [`ARCHITECTURE.md`](../../ARCHITECTURE.md), which stays the human overview. Symptom lookups live in [common-issues.md](common-issues.md). Hard rules live in [`AGENTS.md`](../../AGENTS.md).
+Developer reference: where to look first by area. Moved out of [`ARCHITECTURE.md`](../../ARCHITECTURE.md), which stays the human overview. Symptom lookups live in [common-issues.md](common-issues.md). Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md).
 
 ## Diagnostics
 
@@ -22,7 +22,7 @@ Deep subsystem reference for AI assistants: where to look first by area. Moved o
 
 **First places to look:** `runtime/useMeshtasticRuntime.ts` / `runtime/useMeshcoreRuntime.ts` (protocol side effects); `hooks/useProtocolConnection.ts` (connect); `stores/*` (UI state); `src/main/index.ts` (IPC).
 
-**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types), `stores/` (identity-scoped UI: `identityStore`, `nodeStore`, `messageStore`, `connectionStore`; Reticulum also uses session-global `reticulumIdentityStore` for sidecar identity status). Prefer `useProtocolFacade(protocol)` in App for new wiring. Hook/runtime boundaries: [docs/agents/renderer-hooks.md](renderer-hooks.md) ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)).
+**Renderer layers:** `runtime/` (single-mount protocol runtimes), `hooks/` (facades and store selectors), `lib/` (drivers, sessions, types), `stores/` (identity-scoped UI: `identityStore`, `nodeStore`, `messageStore`, `connectionStore`; Reticulum also uses session-global `reticulumIdentityStore` for sidecar identity status). Prefer `useProtocolFacade(protocol)` in App for new wiring. Hook/runtime boundaries: [renderer-hooks.md](renderer-hooks.md) ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)).
 
 **Drivers / identity bridge:** `lib/drivers/ConnectionDriver.ts` owns RF/MQTT session lifecycle and dispatches Protocol events into `lib/drivers/PacketRouter.ts` (store ingest first, then side-effect listeners). `PacketRouter` invokes generic listeners before event-type listeners, in registration order within each group; attach persistence/ingest before dependent UI side effects. `lib/meshIdentityBridge.ts` builds transport params and attaches Meshtastic Protocol ingress; `lib/identityStoreReads.ts` is the canonical read path for identity-scoped nodes/messages (`getIdentityNode` / `getIdentityChatMessages`).
 
@@ -38,7 +38,7 @@ Deep subsystem reference for AI assistants: where to look first by area. Moved o
 - **`useRendererHeartbeat`** — renderer pings main every 30s; main `rendererHeartbeatWatchdog` warns if no heartbeat within 30s after resume **while visible**, and polls for a **90s visible-window stall**; sticky `rendererUnresponsiveSeen` + `getRendererLiveness()` feed support snapshot `mainLiveness`.
 - **`ProtocolAutoConnectCoordinator`** / **`useProtocolRfAutoConnect`** — silent launch auto-connect for remembered serial/BLE/TCP/HTTP (cancel gate before manual Connect).
 - **`rfReconnectController`** — LoRa single-owner reconnect scheduling shared by Meshtastic/MeshCore runtimes.
-- **Dual-radio BLE** (Meshtastic + MeshCore different peripherals): concurrent sidecar GATT sessions; wake/startup stagger via `lib/meshcoreDualNobleBleInit.ts` (historical name) from `App.tsx` `useLayoutEffect` — see [docs/agents/ble-serial.md](ble-serial.md).
+- **Dual-radio BLE** (Meshtastic + MeshCore different peripherals): concurrent sidecar GATT sessions; wake/startup stagger via `lib/meshcoreDualNobleBleInit.ts` (historical name) from `App.tsx` `useLayoutEffect` — see [ble-serial.md](ble-serial.md).
 
 ## Database
 
@@ -69,9 +69,9 @@ Deep subsystem reference for AI assistants: where to look first by area. Moved o
 
 ## EMCOMM (MECP + Incident Command)
 
-- **MECP wire / alerts / audit / RF bridge:** `src/renderer/lib/mecp/` + `hooks/useMecpAlertWatcher.ts`; durable audit `mecp-received.log` via main `mecp-received-log.ts`. User toggle for Chat compose under App → MECP. See [docs/agents/mecp.md](mecp.md).
-- **Incident Command:** always-visible **Incident** tab (`components/incident/`, `incidentStore`); emergency-priority outbox; R01/B02/B03 ACK/beacon; map markers + SAR overlays. See [docs/agents/emcomm.md](emcomm.md).
+- **MECP wire / alerts / audit / RF bridge:** `src/renderer/lib/mecp/` + `hooks/useMecpAlertWatcher.ts`; durable audit `mecp-received.log` via main `mecp-received-log.ts`. User toggle for Chat compose under App → MECP. See [mecp.md](mecp.md).
+- **Incident Command:** always-visible **Incident** tab (`components/incident/`, `incidentStore`); emergency-priority outbox; R01/B02/B03 ACK/beacon; map markers + SAR overlays. See [emcomm.md](emcomm.md).
 
 ## Offline maps
 
-- Privileged `mesh-tiles:` protocol + disk LRU under userData `tile-cache/` (`src/main/offline-maps/`); region download IPC; renderer **Layers → Offline maps**. Basemap allowlist includes OSM, Carto Dark, USGS Topo. See [docs/agents/offline-maps.md](offline-maps.md).
+- Privileged `mesh-tiles:` protocol + disk LRU under userData `tile-cache/` (`src/main/offline-maps/`); region download IPC; renderer **Layers → Offline maps**. Basemap allowlist includes OSM, Carto Dark, USGS Topo. See [offline-maps.md](offline-maps.md).

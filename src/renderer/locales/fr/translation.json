@@ -3332,7 +3332,9 @@
     "keyBadge": "Clé",
     "closePane": "Fermer les détails",
     "savedPathHeading": "Chemin enregistré",
-    "savedPathHint": "Chemin le mieux classé dans l’historique enregistré. Il peut différer du chemin d’envoi actuel de la radio ou du chemin d’une annonce reçue."
+    "savedPathHint": "Chemin le mieux classé dans l’historique enregistré. Il peut différer du chemin d’envoi actuel de la radio ou du chemin d’une annonce reçue.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Relèvement et distance par rapport à votre position de confiance"
   },
   "nodeInfoBody": {
     "longName": "Nom long",
@@ -6497,7 +6499,11 @@
     "beaconCancelSent": "Annulation de balise envoyée. D'autres stations effacent votre balise de détresse lorsqu'elles l'entendent.",
     "beaconCancelQueued": "L'annulation de la balise est mise en file d'attente. Elle sera envoyée lorsque la radio sera disponible.",
     "beaconCancelFailed": "Impossible d'envoyer ou de mettre en file d'attente l'annulation de la balise. L'incident est toujours ouvert.",
-    "emptyHint": "Les rapports MECP entrants apparaissent ici automatiquement. Pour en envoyer un, activez le bouton → Afficher le mecp de → l'application dans le chat, puis utilisez le mecp dans le chat. → Les couches de carte peuvent afficher les incidents ouverts avec des coordonnées."
+    "emptyHint": "Les rapports MECP entrants apparaissent ici automatiquement. Pour en envoyer un, activez le bouton → Afficher le mecp de → l'application dans le chat, puis utilisez le mecp dans le chat. → Les couches de carte peuvent afficher les incidents ouverts avec des coordonnées.",
+    "exportLog": "Journal d'exportation",
+    "exportMenuLabel": "Exporter le format du journal des incidents",
+    "exportJson": "Exporter JSON",
+    "exportCsv": "Exporter au format CSV"
   },
   "shell": {
     "section": {

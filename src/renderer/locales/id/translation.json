@@ -3332,7 +3332,9 @@
     "keyBadge": "Kunci",
     "closePane": "Tutup detail",
     "savedPathHeading": "Jalur tersimpan",
-    "savedPathHint": "Jalur dengan peringkat terbaik dari riwayat tersimpan. Jalur ini mungkin berbeda dari jalur pengiriman radio saat ini atau jalur pengumuman simpul yang diterima."
+    "savedPathHint": "Jalur dengan peringkat terbaik dari riwayat tersimpan. Jalur ini mungkin berbeda dari jalur pengiriman radio saat ini atau jalur pengumuman simpul yang diterima.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Arah dan jarak dari posisi tepercaya Anda"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",
@@ -6501,7 +6503,11 @@
     "beaconCancelSent": "Pembatalan suar terkirim. Stasiun lain membersihkan suar marabahaya Anda saat mereka mendengarnya.",
     "beaconCancelQueued": "Suar dibatalkan dalam antrean. Suar akan dikirim saat radio tersedia.",
     "beaconCancelFailed": "Tidak dapat mengirim atau mengantre pembatalan suar. Insiden ini masih terbuka.",
-    "emptyHint": "Laporan MECP masuk muncul di sini secara otomatis. Untuk mengirimkannya, aktifkan App → MECP → Tampilkan tombol MECP di Obrolan, lalu gunakan MECP di Obrolan. → Lapisan Peta dapat menunjukkan insiden terbuka dengan koordinat."
+    "emptyHint": "Laporan MECP masuk muncul di sini secara otomatis. Untuk mengirimkannya, aktifkan App → MECP → Tampilkan tombol MECP di Obrolan, lalu gunakan MECP di Obrolan. → Lapisan Peta dapat menunjukkan insiden terbuka dengan koordinat.",
+    "exportLog": "Ekspor log",
+    "exportMenuLabel": "Ekspor format log insiden",
+    "exportJson": "Ekspor JSON",
+    "exportCsv": "Ekspor CSV"
   },
   "shell": {
     "section": {

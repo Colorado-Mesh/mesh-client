@@ -3332,7 +3332,9 @@
     "keyBadge": "Clave",
     "closePane": "Cerrar detalles",
     "savedPathHeading": "Ruta guardada",
-    "savedPathHint": "Ruta mejor clasificada del historial guardado. Puede diferir de la ruta de envío actual de la radio o de la ruta de un anuncio recibido."
+    "savedPathHint": "Ruta mejor clasificada del historial guardado. Puede diferir de la ruta de envío actual de la radio o de la ruta de un anuncio recibido.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Rumbo y distancia desde su posición de confianza"
   },
   "nodeInfoBody": {
     "longName": "Nombre largo",
@@ -6497,7 +6499,11 @@
     "beaconCancelSent": "Cancelación de baliza enviada. Otras estaciones borran tu baliza de socorro cuando la escuchan.",
     "beaconCancelQueued": "Baliza de cancelación en cola. Se enviará cuando la radio esté disponible.",
     "beaconCancelFailed": "No se ha podido enviar ni poner en cola la cancelación de la baliza. El incidente sigue abierto.",
-    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas."
+    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas.",
+    "exportLog": "Exportar registro",
+    "exportMenuLabel": "Exportar formato de registro de incidentes",
+    "exportJson": "Exportar JSON",
+    "exportCsv": "Exportar CSV"
   },
   "shell": {
     "section": {

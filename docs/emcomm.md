@@ -77,6 +77,7 @@ Every inbound MECP report is appended to `mecp-received.log` in the app data fol
 - **Nodes:** NodeList → **Export JSON** (topology) or **Export CSV**.
 - **Diagnostics:** Diagnostics → **Export JSON** (visible rows for the active protocol).
 - **MECP audit log:** App → MECP → **Export MECP log**.
+- **Incident log:** Incident tab → **Export log** → JSON or CSV. Includes every stored incident (open, acknowledged, and resolved) with severity, codes, sender, relays, timestamps, coordinates, ACK peers, and beacon state, oldest first. Use it for the after-action record.
 
 ## Map tools for search and rescue
 

@@ -1,9 +1,8 @@
 """MkDocs hooks for the mesh-client docs site (wired via `hooks:` in mkdocs.yml).
 
 Docs pages link to repository files outside `docs/` (e.g. `../package.json`,
-`../.github/workflows/tests.yaml`) and to `docs/agents/`, which is excluded from
-the site. Those links work on GitHub but not on the published site, so rewrite
-them to GitHub URLs at build time instead of changing the source markdown.
+`../.github/workflows/tests.yaml`). Those links work on GitHub but not on the
+published site, so rewrite them to GitHub URLs at build time instead of changing the source markdown.
 """
 
 import posixpath
@@ -23,10 +22,8 @@ def _rewrite_target(target: str, page_dir: str) -> str:
     if not path:
         return target
     repo_path = posixpath.normpath(posixpath.join("docs", page_dir, path))
-    if repo_path.startswith("docs/") and not repo_path.startswith("docs/agents/"):
+    if repo_path.startswith("docs/"):
         return target
-    if repo_path == "docs/agents":
-        repo_path = "docs/agents/README.md"
     return f"{REPO_BLOB_BASE}{repo_path}{sep}{anchor}"
 
 

@@ -1,6 +1,6 @@
 # Settings search (launcher Settings group)
 
-Agent reference for the **Settings** group in the Ctrl/Cmd+K launcher (`PanelLauncher`). Typing a query lists matching settings; choosing one opens the owning panel, expands any collapsed section, scrolls the row to mid-viewport, flashes it, focuses its first control and announces the jump.
+Developer reference for the **Settings** group in the Ctrl/Cmd+K launcher (`PanelLauncher`). Typing a query lists matching settings; choosing one opens the owning panel, expands any collapsed section, scrolls the row to mid-viewport, flashes it, focuses its first control and announces the jump.
 
 ## Layout
 

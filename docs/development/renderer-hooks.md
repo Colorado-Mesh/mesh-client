@@ -1,6 +1,6 @@
-# Agent reference: Renderer hook architecture (multi-protocol)
+# Renderer hook architecture (multi-protocol)
 
-Deep subsystem reference for AI assistants. Open this when a task touches renderer hooks/runtimes/stores, protocol entry points, identity hydration, the SQLite database layer, or tab/UI wiring. Hard rules live in [`AGENTS.md`](../../AGENTS.md).
+Developer reference for renderer hooks/runtimes/stores, protocol entry points, identity hydration, the SQLite database layer, or tab/UI wiring. Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md).
 
 See **Renderer: hooks vs runtime vs lib** (layout map in [`AGENTS.md`](../../AGENTS.md#2-architecture--domain)). Legacy `useDevice` / `useMeshCore` are removed ([#375](https://github.com/Colorado-Mesh/mesh-client/issues/375), [#377](https://github.com/Colorado-Mesh/mesh-client/issues/377)). Default rules for new UI:
 
