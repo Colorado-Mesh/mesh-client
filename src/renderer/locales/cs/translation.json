@@ -3364,7 +3364,9 @@
     "keyBadge": "Klíč",
     "closePane": "Zavřít podrobnosti",
     "savedPathHeading": "Uložená cesta",
-    "savedPathHint": "Nejlépe hodnocená cesta z uložené historie. Může se lišit od aktuální odesílací cesty rádia nebo od cesty přijatého oznámení."
+    "savedPathHint": "Nejlépe hodnocená cesta z uložené historie. Může se lišit od aktuální odesílací cesty rádia nebo od cesty přijatého oznámení.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Směr a vzdálenost od vaší důvěryhodné pozice"
   },
   "nodeInfoBody": {
     "longName": "Dlouhé jméno",

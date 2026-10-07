@@ -3332,7 +3332,9 @@
     "keyBadge": "密钥",
     "closePane": "关闭详情",
     "savedPathHeading": "已保存的路径",
-    "savedPathHint": "保存历史记录中评分最高的路径。它可能与无线电的当前发送路径或收到的通告路径不同。"
+    "savedPathHint": "保存历史记录中评分最高的路径。它可能与无线电的当前发送路径或收到的通告路径不同。",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "距您信任位置的方位和距离"
   },
   "nodeInfoBody": {
     "longName": "长名称",

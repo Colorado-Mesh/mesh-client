@@ -3332,7 +3332,9 @@
     "keyBadge": "Kunci",
     "closePane": "Tutup detail",
     "savedPathHeading": "Jalur tersimpan",
-    "savedPathHint": "Jalur dengan peringkat terbaik dari riwayat tersimpan. Jalur ini mungkin berbeda dari jalur pengiriman radio saat ini atau jalur pengumuman simpul yang diterima."
+    "savedPathHint": "Jalur dengan peringkat terbaik dari riwayat tersimpan. Jalur ini mungkin berbeda dari jalur pengiriman radio saat ini atau jalur pengumuman simpul yang diterima.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Arah dan jarak dari posisi tepercaya Anda"
   },
   "nodeInfoBody": {
     "longName": "Nama Panjang",

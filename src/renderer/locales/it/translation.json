@@ -3332,7 +3332,9 @@
     "keyBadge": "Chiave",
     "closePane": "Chiudi dettagli",
     "savedPathHeading": "Percorso salvato",
-    "savedPathHint": "Percorso meglio classificato dalla cronologia salvata. Può differire dal percorso di invio corrente della radio o dal percorso di un annuncio ricevuto."
+    "savedPathHint": "Percorso meglio classificato dalla cronologia salvata. Può differire dal percorso di invio corrente della radio o dal percorso di un annuncio ricevuto.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Rilevamento e distanza dalla posizione di fiducia"
   },
   "nodeInfoBody": {
     "longName": "Nome lungo",

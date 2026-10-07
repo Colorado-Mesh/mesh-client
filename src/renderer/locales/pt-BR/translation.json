@@ -3332,7 +3332,9 @@
     "keyBadge": "Chave",
     "closePane": "Fechar detalhes",
     "savedPathHeading": "Caminho salvo",
-    "savedPathHint": "Caminho melhor classificado do histórico salvo. Pode diferir do caminho de envio atual do rádio ou do caminho de um anúncio recebido."
+    "savedPathHint": "Caminho melhor classificado do histórico salvo. Pode diferir do caminho de envio atual do rádio ou do caminho de um anúncio recebido.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Orientação e distância da sua posição confiável"
   },
   "nodeInfoBody": {
     "longName": "Nome longo",

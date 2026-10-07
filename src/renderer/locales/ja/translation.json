@@ -3332,7 +3332,9 @@
     "keyBadge": "鍵",
     "closePane": "詳細を閉じる",
     "savedPathHeading": "保存されたパス",
-    "savedPathHint": "保存された履歴で最も評価の高い経路です。無線機の現在の送信経路や、受信したアドバタイズの経路とは異なる場合があります。"
+    "savedPathHint": "保存された履歴で最も評価の高い経路です。無線機の現在の送信経路や、受信したアドバタイズの経路とは異なる場合があります。",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "信頼できる位置からの方角と距離"
   },
   "nodeInfoBody": {
     "longName": "長い名前",

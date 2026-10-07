@@ -3332,7 +3332,9 @@
     "keyBadge": "Clé",
     "closePane": "Fermer les détails",
     "savedPathHeading": "Chemin enregistré",
-    "savedPathHint": "Chemin le mieux classé dans l’historique enregistré. Il peut différer du chemin d’envoi actuel de la radio ou du chemin d’une annonce reçue."
+    "savedPathHint": "Chemin le mieux classé dans l’historique enregistré. Il peut différer du chemin d’envoi actuel de la radio ou du chemin d’une annonce reçue.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Relèvement et distance par rapport à votre position de confiance"
   },
   "nodeInfoBody": {
     "longName": "Nom long",

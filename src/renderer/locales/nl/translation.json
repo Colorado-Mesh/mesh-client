@@ -3332,7 +3332,9 @@
     "keyBadge": "Sleutel",
     "closePane": "Details sluiten",
     "savedPathHeading": "Opgeslagen pad",
-    "savedPathHint": "Het best beoordeelde pad uit de opgeslagen geschiedenis. Het kan verschillen van het huidige verzendpad van de radio of het pad van een ontvangen aankondiging."
+    "savedPathHint": "Het best beoordeelde pad uit de opgeslagen geschiedenis. Het kan verschillen van het huidige verzendpad van de radio of het pad van een ontvangen aankondiging.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Peiling en afstand vanaf uw vertrouwde positie"
   },
   "nodeInfoBody": {
     "longName": "Lange naam",

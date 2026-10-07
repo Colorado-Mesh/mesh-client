@@ -3450,6 +3450,8 @@
     "hopsFromRoutingTitle": "Hops away (from contact routing when no trace yet)",
     "hopLabel_one": "{{count}} hop",
     "hopLabel_other": "{{count}} hops",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Bearing and distance from your trusted position",
     "positionUpdated": "Position updated",
     "positionRequestTimedOut": "Position request timed out",
     "traceRouteTimedOut": "Trace route timed out",

@@ -3390,7 +3390,9 @@
     "keyBadge": "Klucz",
     "closePane": "Zamknij szczegóły",
     "savedPathHeading": "Zapisana ścieżka",
-    "savedPathHint": "Najlepiej oceniana ścieżka z zapisanej historii. Może różnić się od bieżącej ścieżki nadawania radia lub ścieżki odebranego ogłoszenia."
+    "savedPathHint": "Najlepiej oceniana ścieżka z zapisanej historii. Może różnić się od bieżącej ścieżki nadawania radia lub ścieżki odebranego ogłoszenia.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Namiar i odległość od zaufanej pozycji"
   },
   "nodeInfoBody": {
     "longName": "Długie imię",

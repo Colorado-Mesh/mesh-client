@@ -8,7 +8,8 @@ import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNodeError';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
-import { mergeAppSetting } from '../lib/appSettingsStorage';
+import { mergeAppSetting, mergeAppSettingsPartial } from '../lib/appSettingsStorage';
+import type { OurPositionReference } from '../lib/locationTrust';
 import { setMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { meshcoreRepeaterCredentialSettingForNode } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
@@ -89,9 +90,14 @@ function renderMeshcoreModal(
   );
 }
 
+const mockDiagnostics = vi.hoisted(() => ({
+  ourPositionReference: null as OurPositionReference | null,
+}));
+
 vi.mock('../stores/diagnosticsStore', () => ({
   useDiagnosticsStore: (selector: (s: unknown) => unknown) => {
     const store = {
+      ourPositionReference: mockDiagnostics.ourPositionReference,
       diagnosticRows: [],
       packetStats: new Map(),
       packetCache: new Map(),
@@ -822,6 +828,71 @@ describe('NodeDetailModal verification badges', () => {
     const results = await axe(container);
 
     expect(results).toHaveNoViolations();
+  });
+});
+
+describe('NodeDetailModal bearing and range', () => {
+  const trusted: OurPositionReference = {
+    lat: 39.7,
+    lon: -105.0,
+    source: 'device',
+    trust: 'trusted',
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    mockDiagnostics.ourPositionReference = null;
+  });
+
+  function renderNode(overrides: Partial<React.ComponentProps<typeof NodeDetailModal>> = {}) {
+    return render(
+      <NodeDetailModal
+        node={mockNode}
+        onClose={vi.fn()}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+        {...overrides}
+      />,
+    );
+  }
+
+  it('shows bearing and distance in miles from a trusted position', async () => {
+    mockDiagnostics.ourPositionReference = trusted;
+    const { container } = renderNode();
+    expect(screen.getByTestId('node-bearing-range')).toHaveTextContent('000° · 20.7 mi');
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('uses kilometres when the distance unit setting is km', () => {
+    mergeAppSettingsPartial({ distanceUnit: 'km' }, 'NodeDetailModal.test');
+    mockDiagnostics.ourPositionReference = trusted;
+    renderNode();
+    expect(screen.getByTestId('node-bearing-range')).toHaveTextContent('000° · 33.4 km');
+  });
+
+  it('hides without a position reference', () => {
+    renderNode();
+    expect(screen.queryByTestId('node-bearing-range')).not.toBeInTheDocument();
+  });
+
+  it('hides when our position is not trusted', () => {
+    mockDiagnostics.ourPositionReference = { ...trusted, trust: 'approximate' };
+    renderNode();
+    expect(screen.queryByTestId('node-bearing-range')).not.toBeInTheDocument();
+  });
+
+  it('hides for our own node', () => {
+    mockDiagnostics.ourPositionReference = trusted;
+    renderNode({ homeNode: mockNode });
+    expect(screen.queryByTestId('node-bearing-range')).not.toBeInTheDocument();
+  });
+
+  it('hides when the node has no position', () => {
+    mockDiagnostics.ourPositionReference = trusted;
+    renderNode({ node: { ...mockNode, latitude: null, longitude: null } });
+    expect(screen.queryByTestId('node-bearing-range')).not.toBeInTheDocument();
   });
 });
 

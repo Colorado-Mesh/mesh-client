@@ -3332,7 +3332,9 @@
     "keyBadge": "Schlüssel",
     "closePane": "Details schließen",
     "savedPathHeading": "Gespeicherter Pfad",
-    "savedPathHint": "Am besten bewerteter Pfad im gespeicherten Verlauf. Er kann vom aktuellen Sendepfad des Funkgeräts oder vom Pfad einer empfangenen Ankündigung abweichen."
+    "savedPathHint": "Am besten bewerteter Pfad im gespeicherten Verlauf. Er kann vom aktuellen Sendepfad des Funkgeräts oder vom Pfad einer empfangenen Ankündigung abweichen.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "Peilung und Entfernung von Ihrer vertrauenswürdigen Position"
   },
   "nodeInfoBody": {
     "longName": "Langer Name",

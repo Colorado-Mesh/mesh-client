@@ -3332,7 +3332,9 @@
     "keyBadge": "키",
     "closePane": "세부 정보 닫기",
     "savedPathHeading": "저장된 경로",
-    "savedPathHint": "저장된 기록에서 가장 높은 평가를 받은 경로입니다. 무선 장치의 현재 전송 경로나 수신된 노드 알림의 경로와 다를 수 있습니다."
+    "savedPathHint": "저장된 기록에서 가장 높은 평가를 받은 경로입니다. 무선 장치의 현재 전송 경로나 수신된 노드 알림의 경로와 다를 수 있습니다.",
+    "bearingRange": "{{bearing}} · {{distance}}",
+    "bearingRangeTitle": "신뢰할 수 있는 위치로부터의 방위 및 거리"
   },
   "nodeInfoBody": {
     "longName": "긴 이름",
