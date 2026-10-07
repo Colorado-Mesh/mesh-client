@@ -6560,7 +6560,11 @@
     "beaconCancelSent": "Zrušení signálu odesláno. Ostatní stanice váš nouzový signál vyčistí, jakmile jej uslyší.",
     "beaconCancelQueued": "Beacon byl zrušen ve frontě. Bude odeslán, až bude rádio k dispozici.",
     "beaconCancelFailed": "Nelze odeslat nebo zařadit maják do fronty na zrušení. Incident je stále otevřený.",
-    "emptyHint": "Příchozí zprávy MECP se zde zobrazují automaticky. Chcete-li odeslat, povolte tlačítko App → MECP → Show MECP v chatu a poté použijte MECP v chatu. Mapové → vrstvy mohou zobrazit otevřené incidenty se souřadnicemi."
+    "emptyHint": "Příchozí zprávy MECP se zde zobrazují automaticky. Chcete-li odeslat, povolte tlačítko App → MECP → Show MECP v chatu a poté použijte MECP v chatu. Mapové → vrstvy mohou zobrazit otevřené incidenty se souřadnicemi.",
+    "exportLog": "Exportovat protokol",
+    "exportMenuLabel": "Exportovat formát protokolu incidentů",
+    "exportJson": "Exportujte JSON",
+    "exportCsv": "Export CSV"
   },
   "shell": {
     "section": {

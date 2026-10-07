@@ -6605,7 +6605,11 @@
     "beaconCancelSent": "Anulowanie sygnału nawigacyjnego wysłane. Inne stacje usuwają sygnał alarmowy, gdy go usłyszą.",
     "beaconCancelQueued": "Anulowanie Beacona w kolejce. Wyśle się, gdy radio będzie dostępne.",
     "beaconCancelFailed": "Nie można wysłać lub ustawić w kolejce anulowania sygnału nawigacyjnego. Incydent jest nadal otwarty.",
-    "emptyHint": "Przychodzące raporty MECP pojawiają się tutaj automatycznie. Aby wysłać, włącz przycisk App → MECP → Show MECP na czacie, a następnie użyj MECP na czacie. → Warstwy mapy mogą wyświetlać otwarte incydenty ze współrzędnymi."
+    "emptyHint": "Przychodzące raporty MECP pojawiają się tutaj automatycznie. Aby wysłać, włącz przycisk App → MECP → Show MECP na czacie, a następnie użyj MECP na czacie. → Warstwy mapy mogą wyświetlać otwarte incydenty ze współrzędnymi.",
+    "exportLog": "Eksportuj dziennik",
+    "exportMenuLabel": "Eksportuj format dziennika zdarzeń",
+    "exportJson": "Eksportuj JSON",
+    "exportCsv": "Eksportuj plik CSV"
   },
   "shell": {
     "section": {

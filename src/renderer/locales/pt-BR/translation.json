@@ -6499,7 +6499,11 @@
     "beaconCancelSent": "O Beacon cancel foi enviado. Outras estações liberam seu sinal de socorro quando o ouvem.",
     "beaconCancelQueued": "Beacon cancel na fila. Ele será enviado quando o rádio estiver disponível.",
     "beaconCancelFailed": "Não foi possível enviar ou enfileirar o cancelamento do beacon. O incidente ainda está em aberto.",
-    "emptyHint": "Os relatórios de MECP de entrada aparecem aqui automaticamente. Para enviar um, ative o botão App → MECP → Show MECP no Chat e, em seguida, use o MECP no Chat. → As camadas de mapa podem mostrar incidentes abertos com coordenadas."
+    "emptyHint": "Os relatórios de MECP de entrada aparecem aqui automaticamente. Para enviar um, ative o botão App → MECP → Show MECP no Chat e, em seguida, use o MECP no Chat. → As camadas de mapa podem mostrar incidentes abertos com coordenadas.",
+    "exportLog": "Exportar registro",
+    "exportMenuLabel": "Exportar formato de registro de incidentes",
+    "exportJson": "Exportar JSON",
+    "exportCsv": "Exportar CSV"
   },
   "shell": {
     "section": {

@@ -6499,7 +6499,11 @@
     "beaconCancelSent": "Cancelación de baliza enviada. Otras estaciones borran tu baliza de socorro cuando la escuchan.",
     "beaconCancelQueued": "Baliza de cancelación en cola. Se enviará cuando la radio esté disponible.",
     "beaconCancelFailed": "No se ha podido enviar ni poner en cola la cancelación de la baliza. El incidente sigue abierto.",
-    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas."
+    "emptyHint": "Los informes MECP entrantes aparecen aquí automáticamente. Para enviar uno, habilite el botón App → MECP → Show MECP en el chat y luego use MECP en el chat. → Las capas de mapa pueden mostrar incidentes abiertos con coordenadas.",
+    "exportLog": "Exportar registro",
+    "exportMenuLabel": "Exportar formato de registro de incidentes",
+    "exportJson": "Exportar JSON",
+    "exportCsv": "Exportar CSV"
   },
   "shell": {
     "section": {

@@ -6503,7 +6503,11 @@
     "beaconCancelSent": "비콘 취소가 전송되었습니다. 다른 스테이션은 조난 비콘을 들으면 비콘을 지웁니다.",
     "beaconCancelQueued": "Beacon 취소가 대기 중입니다. 라디오를 사용할 수 있을 때 전송됩니다.",
     "beaconCancelFailed": "Beacon 취소를 보내거나 대기열에 넣을 수 없습니다. 이 사안은 아직 진행 중입니다.",
-    "emptyHint": "인바운드 MECP 보고서는 자동으로 여기에 표시됩니다. 앱을 전송하려면 채팅에서 앱 → MECP → Show MECP 버튼을 활성화한 다음 채팅에서 MECP를 사용하세요. 지도 → 레이어는 열린 인시던트를 좌표로 표시할 수 있습니다."
+    "emptyHint": "인바운드 MECP 보고서는 자동으로 여기에 표시됩니다. 앱을 전송하려면 채팅에서 앱 → MECP → Show MECP 버튼을 활성화한 다음 채팅에서 MECP를 사용하세요. 지도 → 레이어는 열린 인시던트를 좌표로 표시할 수 있습니다.",
+    "exportLog": "로그 내보내기",
+    "exportMenuLabel": "사건 로그 형식 내보내기",
+    "exportJson": "JSON 내보내기",
+    "exportCsv": "CSV 내보내기"
   },
   "shell": {
     "section": {

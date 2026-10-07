@@ -70,9 +70,9 @@ Keep this list in sync with the header comment in [`emcommSafety.contract.test.t
 
 ## WS6 — Exports
 
-- **UI:** NodeListPanel **Export JSON** (topology envelope over `nodesToExportRows`) / **Export CSV**; DiagnosticsPanel **Export JSON** (visible rows for the active protocol); MECP audit log via App → MECP.
+- **UI:** NodeListPanel **Export JSON** (topology envelope over `nodesToExportRows`) / **Export CSV**; DiagnosticsPanel **Export JSON** (visible rows for the active protocol); MECP audit log via App → MECP; IncidentPanel **Export log** (JSON / CSV, disabled when the store is empty).
 - **Serializers** ([`exportFormats.ts`](../../src/renderer/lib/exportFormats.ts), pure): `nodesToCsv` (RFC 4180, CSV-injection guarded, canonical `TOPOLOGY_NODE_FIELDS` first then extra keys), `nodesToTopologyJson` (`format: 'mesh-client-topology'`, `version`), `diagnosticsRowsToJson` (`format: 'mesh-client-diagnostics'`), `toJsonSafe` (Maps/Sets/bigint/Dates/cycles).
-- **After-action report:** deferred to a follow-up (assembler + `node_status_events` writer intentionally not in this PR).
+- **Incident log (after-action record):** `incidentsToExportRows` maps **every** stored incident (including resolved) oldest first to `INCIDENT_EXPORT_FIELDS` (snake_case, ISO timestamps, `null` for missing); `incidentsToJson` (`format: 'mesh-client-incidents'`) and `incidentsToCsv` (space-joined list fields). Source is the `incidentStore` only — the MECP audit log stays a separate export.
 - **Ops link-down:** Meshtastic + MeshCore RF drivers only. Reticulum uses the sidecar (not an RF `ConnectionDriver` link), so link-down alerts intentionally omit it.
 
 ## WS7 — SAR map tools (MGRS grid, measure, bearing)

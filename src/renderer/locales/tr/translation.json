@@ -6503,7 +6503,11 @@
     "beaconCancelSent": "Yol gösterici iptali gönderildi. Diğer istasyonlar, duyduklarında yardım işaretçinizi temizler.",
     "beaconCancelQueued": "Beacon iptal kuyruğa alındı. Telsiz müsait olduğunda gönderilecek.",
     "beaconCancelFailed": "Beacon iptali gönderilemedi veya kuyruğa alınamadı. Olay hala açık.",
-    "emptyHint": "Gelen MECP raporları burada otomatik olarak görünür. Bir tane göndermek için, Sohbet'te App → MECP → Show MECP düğmesini etkinleştirin, ardından Sohbet'te MECP'yi kullanın. Harita → Katmanları açık olayları koordinatlarla gösterebilir."
+    "emptyHint": "Gelen MECP raporları burada otomatik olarak görünür. Bir tane göndermek için, Sohbet'te App → MECP → Show MECP düğmesini etkinleştirin, ardından Sohbet'te MECP'yi kullanın. Harita → Katmanları açık olayları koordinatlarla gösterebilir.",
+    "exportLog": "Günlüğü dışa aktar",
+    "exportMenuLabel": "Olay günlüğü biçimini dışa aktar",
+    "exportJson": "JSON'u dışa aktar",
+    "exportCsv": "CSV'yi dışa aktar"
   },
   "shell": {
     "section": {

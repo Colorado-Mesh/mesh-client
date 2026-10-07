@@ -6499,7 +6499,11 @@
     "beaconCancelSent": "Faro annullato inviato. Altre stazioni cancellano il tuo segnale di soccorso quando lo sentono.",
     "beaconCancelQueued": "Beacon annullato in coda. Verrà inviato quando la radio è disponibile.",
     "beaconCancelFailed": "Impossibile inviare o accodare l'annullamento del beacon. L'incidente è ancora aperto.",
-    "emptyHint": "I rapporti MeCP in entrata vengono visualizzati qui automaticamente. Per inviarne uno, abilita il → pulsante App MeCP → Show MeCP in Chat, quindi utilizza MeCP in Chat. → I livelli mappa possono mostrare incidenti aperti con coordinate."
+    "emptyHint": "I rapporti MeCP in entrata vengono visualizzati qui automaticamente. Per inviarne uno, abilita il → pulsante App MeCP → Show MeCP in Chat, quindi utilizza MeCP in Chat. → I livelli mappa possono mostrare incidenti aperti con coordinate.",
+    "exportLog": "Esporta registro",
+    "exportMenuLabel": "Esporta il formato del registro degli incidenti",
+    "exportJson": "Esporta JSON",
+    "exportCsv": "Esporta CSV"
   },
   "shell": {
     "section": {

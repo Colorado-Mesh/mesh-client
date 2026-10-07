@@ -6499,7 +6499,11 @@
     "beaconCancelSent": "信标取消已发送。其他电台听到它时会清除您的遇险信标。",
     "beaconCancelQueued": "信标取消已排队。当无线电可用时，它将发送。",
     "beaconCancelFailed": "无法发送或排队信标取消。事件仍未解决。",
-    "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP。地图→层可以用坐标显示未决事件。"
+    "emptyHint": "此处会自动显示入站MECP报告。要发送，请在聊天中启用应用程序→MECP→显示MECP按钮，然后在聊天中使用MECP。地图→层可以用坐标显示未决事件。",
+    "exportLog": "导出日志",
+    "exportMenuLabel": "导出事件日志格式",
+    "exportJson": "导出 JSON",
+    "exportCsv": "导出 CSV"
   },
   "shell": {
     "section": {
