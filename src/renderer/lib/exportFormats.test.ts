@@ -96,6 +96,23 @@ describe('incident log export', () => {
     expect(col('received_at')).toBe('2026-09-24T10:00:00.000Z');
   });
 
+  it('neutralizes leading minus formulas and LF in incident text', () => {
+    const csv = incidentsToCsv(
+      incidentsToExportRows([incident({ freetext: '-1+2', senderName: '\n=cmd' })]),
+    );
+    const [, line] = csv.trimEnd().split('\r\n');
+    expect(line).toContain(`,'-1+2,`);
+    expect(line).toContain(`,"'\n=cmd",`);
+  });
+
+  it('exports out-of-range timestamps as null instead of throwing', () => {
+    const rows = incidentsToExportRows([
+      incident({ lastSeenAt: 1e20, resolvedAt: Number.POSITIVE_INFINITY }),
+    ]);
+    expect(rows[0]).toMatchObject({ last_seen_at: null, resolved_at: null });
+    expect(() => incidentsToCsv(rows)).not.toThrow();
+  });
+
   it('writes only the header for no incidents', () => {
     expect(incidentsToCsv([])).toBe(INCIDENT_EXPORT_FIELDS.join(',') + '\r\n');
   });

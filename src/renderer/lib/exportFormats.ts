@@ -49,7 +49,7 @@ export interface DiagnosticsExport {
 
 const CSV_EOL = '\r\n';
 /** Leading characters spreadsheets interpret as formulas (CSV injection). */
-const CSV_FORMULA_PREFIX = /^[=+@\t\r]|^-(?![\d.])/;
+const CSV_FORMULA_PREFIX = /^[=+@\t\r\n]|^-(?!\d*\.?\d+$)/;
 
 function csvCellText(value: unknown): string {
   if (value == null) return '';
@@ -142,7 +142,9 @@ export interface IncidentExport {
 }
 
 function isoOrNull(ms: number | undefined): string | null {
-  return ms != null && Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+  if (ms == null) return null;
+  const date = new Date(ms);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
 /** Every stored incident (open, acked, resolved), oldest first. */
