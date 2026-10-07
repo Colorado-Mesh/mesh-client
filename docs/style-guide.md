@@ -296,7 +296,7 @@ Menus render in a portal above modals (`Z_POPOVER_MENU`), close on Esc or outsid
 - Sentence case for labels, buttons and headings. No uppercase letter-spaced micro labels.
 - No em or en dashes; use a comma, period or hyphen. No emoji. At most one middle dot per line.
 - Name things the way the rest of the app does (Contacts on MeshCore, Nodes on Meshtastic, Peers on Reticulum).
-- Every string goes through `t()` with an English key in `src/renderer/locales/en/translation.json`; see [`docs/agents/i18n.md`](agents/i18n.md).
+- Every string goes through `t()` with an English key in `src/renderer/locales/en/translation.json`; see [`docs/localization.md#maintainer-workflow`](localization.md#maintainer-workflow).
 
 ## Accessibility
 

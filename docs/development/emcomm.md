@@ -1,6 +1,6 @@
-# Agent reference: EMCOMM (emergency communications)
+# EMCOMM (emergency communications)
 
-Deep subsystem reference for AI assistants. Open when a task touches Incident Command, the emergency outbox, MECP send reliability, ACK/beacon, ops alerts, EMCOMM exports, SAR map tools, or track retention. MECP wire format, siren alerts, audit log, and RF rebroadcast live in [mecp.md](mecp.md). Hard rules live in [`AGENTS.md`](../../AGENTS.md). The operator-facing guide (what users see and do) is [`../emcomm.md`](../emcomm.md); keep it in sync when user-visible behavior changes.
+Developer reference for Incident Command, the emergency outbox, MECP send reliability, ACK/beacon, ops alerts, EMCOMM exports, SAR map tools, or track retention. MECP wire format, siren alerts, audit log, and RF rebroadcast live in [mecp.md](mecp.md). Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md). The operator-facing guide (what users see and do) is [`../emcomm.md`](../emcomm.md); keep it in sync when user-visible behavior changes.
 
 ## Safety invariants (S1–S16)
 

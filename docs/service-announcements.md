@@ -59,3 +59,18 @@ Checks fail silently, like the update checker. No toast, dialog, or banner is ev
 | Empty or whitespace-only file                                                | Empty list                                | Nothing            |
 | Malformed JSON, wrong shape, unknown `schema`, over 64 KB, other HTTP errors | `error` (sanitized warn in the app log)   | Current list stays |
 | Some rows invalid                                                            | Valid rows only (warn lists skipped rows) | Valid rows         |
+
+## Implementation
+
+| Piece                                                                       | Path                                                                                              |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Feed (source of truth)                                                      | `announcements/announcements.json`                                                                |
+| Schema / validator (never throws)                                           | `src/shared/serviceAnnouncementFeed.ts`                                                           |
+| Fetch + IPC (`serviceAnnouncements:fetch`, `serviceAnnouncements:open-url`) | `src/main/ipc/service-announcement-handlers.ts`                                                   |
+| Polling, dismissal, date window                                             | `src/renderer/hooks/useServiceAnnouncements.ts`, `src/renderer/lib/serviceAnnouncementDismiss.ts` |
+| UI strip (top of `<main>`, below `ConnectionBanner`)                        | `src/renderer/components/ServiceAnnouncementStrip.tsx`                                            |
+| Pre-commit diff warning                                                     | `scripts/check-service-announcements.mjs`                                                         |
+
+- Poll timing constants: `SERVICE_ANNOUNCEMENT_*` in `src/shared/timeConstants.ts`.
+- Main sends `If-None-Match`, so unchanged feeds return `304` from the CDN.
+- Dismissal is per `id` in localStorage (`mesh-client:serviceAnnouncementsDismissed`, newest 200).

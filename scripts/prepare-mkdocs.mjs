@@ -88,7 +88,7 @@ function rewriteTarget(target, { sourceFile, pageAnchors }) {
     return pageAnchors.has(target.slice(1)) ? target : `${REPO_BLOB_BASE}${sourceFile}${target}`;
   }
   const path = target.replace(/^\.\//, '');
-  if (path.startsWith('docs/') && !path.startsWith('docs/agents/')) {
+  if (path.startsWith('docs/')) {
     return path.slice('docs/'.length);
   }
   if (path === 'CONTRIBUTING.md' || path.startsWith('CONTRIBUTING.md#')) {

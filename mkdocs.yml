@@ -7,9 +7,7 @@ repo_name: Colorado-Mesh/mesh-client
 edit_uri: edit/main/docs/
 copyright: Copyright &copy; Colorado Mesh volunteers. Mesh-Client is GPL-3.0-or-later.
 
-# Agent-facing reference (docs/agents/) stays on GitHub only.
 exclude_docs: |
-  agents/
   requirements.txt
 
 hooks:
@@ -135,6 +133,22 @@ nav:
       - Reticulum Games Parity: reticulum-games-parity.md
       - Nomad Hosting Interop: nomad-hosting-interop.md
       - LetsMesh MQTT Auth: letsmesh-mqtt-auth.md
+      - Subsystem reference:
+          - Overview: development/index.md
+          - Architecture quick reference: development/architecture-quick-ref.md
+          - Common issues: development/common-issues.md
+          - Renderer hooks: development/renderer-hooks.md
+          - BLE and serial: development/ble-serial.md
+          - Chat: development/chat.md
+          - Connection panel: development/connection-panel.md
+          - Meshtastic: development/meshtastic.md
+          - MQTT: development/mqtt.md
+          - MeshCore Repeaters: development/meshcore-repeaters.md
+          - MeshCore Rooms: development/meshcore-rooms.md
+          - EMCOMM: development/emcomm.md
+          - MECP: development/mecp.md
+          - Offline maps: development/offline-maps.md
+          - Settings search: development/settings-search.md
   - Project:
       - License: license.md
       - Credits: credits.md

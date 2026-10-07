@@ -145,6 +145,6 @@ export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
     forbid:
       /(?:data-setting-anchor|anchorId)\s*=\s*(["'])(?!(?:connection|chat|games|rrc|nomadNetwork|remote|nodes|map|radio|modules|admin|rooms|telemetry|security|tak|incident|app|diagnostics|stats|sniffer|rf|graph|topology)\.(?:[a-z][a-zA-Z0-9]*|[a-z][a-zA-Z0-9]*\.[a-z][a-zA-Z0-9]*)\1)/,
     message:
-      'Setting anchor ids are <slotCamel>.<subsectionCamel>.<settingCamel> and live in the owning panel (see docs/agents/settings-search.md)',
+      'Setting anchor ids are <slotCamel>.<subsectionCamel>.<settingCamel> and live in the owning panel (see docs/development/settings-search.md)',
   },
 ];

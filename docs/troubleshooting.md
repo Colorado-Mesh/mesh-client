@@ -1050,13 +1050,13 @@ Legacy SQLite rows could cross-contaminate the shared `nodes` table before proto
 
 ### Map tab without internet (offline / no WAN)
 
-**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). Tiles are served through the privileged **`mesh-tiles:`** protocol and stored under the app **userData** `tile-cache/` directory (viewed tiles cache automatically while online; ~1 GiB LRU). Use **Layers → Offline maps → Download current view** while online to pre-fetch a region (estimate + confirm; a single job is capped at about **half** the cache budget so downloaded tiles are not immediately evicted). Downloads pause if the link drops and resume after a stable connection (~60s). Optional **Auto-cache** downloads the current view after a short settle when the viewport key changes. On high-DPI displays, **Carto Dark** region downloads may fetch `@2x` tiles. **Clear tile cache** frees disk. **Without internet access, uncached areas look blank**; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline. Agent detail: [`docs/agents/offline-maps.md`](agents/offline-maps.md).
+**Basemap tiles:** The map background uses **OpenStreetMap** by default (or **Carto Dark** if selected). On the Map tab, use the **Layers** control under the **online/stale/offline** status counts (top right) to switch basemaps and toggle overlays (node markers, movement trails, waypoints, diagnostic halos). The `TileLayer` is defined in [`MapPanel.tsx`](https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/components/MapPanel.tsx). Tiles are served through the privileged **`mesh-tiles:`** protocol and stored under the app **userData** `tile-cache/` directory (viewed tiles cache automatically while online; ~1 GiB LRU). Use **Layers → Offline maps → Download current view** while online to pre-fetch a region (estimate + confirm; a single job is capped at about **half** the cache budget so downloaded tiles are not immediately evicted). Downloads pause if the link drops and resume after a stable connection (~60s). Optional **Auto-cache** downloads the current view after a short settle when the viewport key changes. On high-DPI displays, **Carto Dark** region downloads may fetch `@2x` tiles. **Clear tile cache** frees disk. **Without internet access, uncached areas look blank**; previously downloaded or viewed tiles still render. Overlays (markers, trails, polylines, halos) come from local/SQLite state and still work offline. Developer reference: [`docs/development/offline-maps.md`](development/offline-maps.md).
 
 **Overlays:** **Node markers, polylines, position trails, and other vector layers** are separate from the tile layer. If nodes have latitude/longitude (from RF, MQTT, SQLite, or your session), those overlays can still **render on top of a missing or partial basemap**.
 
 **Your position offline:** Use **device GPS** when available, **Fixed Position** on the **Radio** tab, or **static coordinates** in app/GPS settings. The IP-geolocation fallback returns immediately with code `OFFLINE` when there is no WAN. See **GPS "Location unavailable" or stuck on the map** above. Positions heard over the mesh do not require internet.
 
-**USGS Topo blank offline:** **USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See [offline-maps.md](agents/offline-maps.md).
+**USGS Topo blank offline:** **USGS Topo** covers the **United States only** — outside the US the basemap is blank by design. Tiles come from the fixed, allowlisted USGS National Map host (`basemap.nationalmap.gov`); if it is blocked by a firewall/proxy or down, uncached areas stay blank. Offline, only viewed or region-downloaded tiles render (select USGS Topo before **Download current view**). Above zoom 16 tiles are overzoomed and look soft. Custom tile URLs are rejected by design. See [offline-maps.md](development/offline-maps.md).
 
 ### Verifying offline behavior (manual QA)
 
@@ -1124,7 +1124,7 @@ Inbound MECP messages are appended to a durable audit file under the app `userDa
 - Windows: `%APPDATA%\mesh-client\mecp-received.log`
 - Linux: `~/.config/mesh-client/mecp-received.log`
 
-Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bundle (includes the file when non-empty). Agent reference: [`docs/agents/mecp.md`](agents/mecp.md).
+Use **App → MECP → Export MECP log**, or open a GitHub/Developer support bundle (includes the file when non-empty). Developer reference: [`docs/development/mecp.md`](development/mecp.md).
 
 **MAYDAY/URGENT alerts ignore mute**
 
@@ -1137,7 +1137,7 @@ Default Web Audio tones (`chatNotifications.ts` profiles; overrideable in **App 
 | 2 SAFETY  | `mecpSafety` | Short–long (dit–dah) pairs × 6, 1175 Hz square (~4.4s)    |
 | 3 ROUTINE | `mecp`       | Repeated ascending triple pulse                           |
 
-MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/agents/mecp.md`](agents/mecp.md).
+MAYDAY and URGENT ignore mute and still fire while Chat is focused on that conversation. SAFETY and ROUTINE play when unmuted (also while focused). Drill codes (D01/D02) never alert. Configure Meshtastic↔MeshCore RF bridging under **App → MECP RF rebroadcast** (default off; optional bidirectional). See [notification-sounds.md](notification-sounds.md) and [`docs/development/mecp.md`](development/mecp.md).
 
 **MECP button missing in Chat**
 
@@ -1153,11 +1153,11 @@ App → MECP → **Show MECP button in Chat** is off by default. Enable it to sh
 - **Acknowledge** (R01) or **Confirm** (B02 for an active beacon) — best-effort on the mesh, not a read receipt
 - **Resolve** to close the incident on this workstation only
 
-Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP. Enabling Chat compose under App → MECP only shows the compose control so you can send one — it does not populate the Incident list by itself. See the README **EMCOMM / Incident Command** section and [`docs/agents/emcomm.md`](agents/emcomm.md).
+Inbound MECP populates the list automatically (live + hydrate from chat history). Map → **Layers → Emergency incidents** plots open rows that have coordinates. Empty is normal until someone sends MECP. Enabling Chat compose under App → MECP only shows the compose control so you can send one — it does not populate the Incident list by itself. See the README **EMCOMM / Incident Command** section and [`docs/development/emcomm.md`](development/emcomm.md).
 
 **MAYDAY stuck / “will send when connected”**
 
-Emergency MECP uses the durable outbox (`priority: emergency`). It keeps retrying after reconnect (no 24h age stop). Check Chat for the emergency OutboxBubble; Cancel requires confirm. See [`docs/agents/emcomm.md`](agents/emcomm.md).
+Emergency MECP uses the durable outbox (`priority: emergency`). It keeps retrying after reconnect (no 24h age stop). Check Chat for the emergency OutboxBubble; Cancel requires confirm. See [`docs/development/emcomm.md`](development/emcomm.md).
 
 **Incident tab empty after restart**
 

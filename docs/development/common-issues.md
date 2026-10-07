@@ -1,6 +1,6 @@
-# Agent reference: Common issues
+# Common issues
 
-Deep subsystem reference for AI assistants. Symptom → where-to-check index. Hard rules live in [`AGENTS.md`](../../AGENTS.md).
+Developer reference: symptom → where-to-check index. Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md).
 
 | Symptom                                                      | Where to check                                                                                                                                                                                                                                                                                                     |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

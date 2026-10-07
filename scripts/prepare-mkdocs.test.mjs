@@ -24,7 +24,7 @@ See [diagnostics](docs/diagnostics.md) and [why](#why).
 
 ### Meshtastic Features
 
-- [Below](#meshtastic-features) and [BLE](docs/agents/ble-serial.md#x)
+- [Below](#meshtastic-features) and [BLE](docs/development/ble-serial.md#x)
 
 <!-- docs-site:features:end -->
 
@@ -99,7 +99,7 @@ describe('generated pages', () => {
     expect(page).toContain('## Meshtastic Features');
     expect(page).toContain('[Below](#meshtastic-features)');
     expect(page).toContain(`[why](${REPO_BLOB_BASE}README.md#why)`);
-    expect(page).toContain(`[BLE](${REPO_BLOB_BASE}docs/agents/ble-serial.md#x)`);
+    expect(page).toContain('[BLE](development/ble-serial.md#x)');
     expect(page).toContain('[diagnostics](diagnostics.md)');
     expect(page).toContain('## Limitations\n\n- Only one radio.');
   });

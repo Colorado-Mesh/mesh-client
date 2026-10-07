@@ -1,6 +1,6 @@
 # AGENTS.md: Coding Guidelines for AI Assistants
 
-This file holds the always-on hard rules (workflow, security, style, testing, CI, git). **Subsystem detail lives in [`docs/agents/`](docs/agents/README.md) — open the matching file when a task touches that area** (see §8). ARCHITECTURE.md and CONTRIBUTING.md are human references; read them only if you need deep subsystem detail beyond what's here.
+This file holds the always-on hard rules (workflow, security, style, testing, CI, git). **Subsystem detail lives in the developer docs ([`docs/development/`](docs/development/index.md) plus the top-level guides linked in §8) — open the matching file when a task touches that area** (see §8). ARCHITECTURE.md and CONTRIBUTING.md are human references; read them only if you need deep subsystem detail beyond what's here.
 
 ## 1. Scope & Workflow
 
@@ -141,41 +141,41 @@ Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
 
 ## 8. Subsystem Quick Reference
 
-Deep, file-level subsystem detail now lives in [`docs/agents/`](docs/agents/README.md) so it loads on demand instead of on every prompt. **Open the matching file when a task touches that area.**
+Deep, file-level subsystem detail lives in the developer docs ([`docs/development/`](docs/development/index.md) and the top-level guides below), shared by human contributors and agents, so it loads on demand instead of on every prompt. **Open the matching file when a task touches that area.**
 
-| When working on…                                                                              | Read                                                                             |
-| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games              | [`docs/agents/reticulum.md`](docs/agents/reticulum.md)                           |
-| LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence             | [`docs/agents/ble-serial.md`](docs/agents/ble-serial.md)                         |
-| Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                         | [`docs/agents/renderer-hooks.md`](docs/agents/renderer-hooks.md)                 |
-| Meshtastic config/admin, channel URLs, Store & Forward, remote admin, GPS                     | [`docs/agents/meshtastic.md`](docs/agents/meshtastic.md)                         |
-| MQTT ingest, channel key mapping, sticky BLE suppress                                         | [`docs/agents/mqtt.md`](docs/agents/mqtt.md)                                     |
-| Chat panel, composer, link previews, notifications, dedup, hop badges, relay coverage, export | [`docs/agents/chat.md`](docs/agents/chat.md)                                     |
-| MeshCore Repeaters admin (ping/trace/neighbors/CLI/waiting drain)                             | [`docs/agents/meshcore-repeaters.md`](docs/agents/meshcore-repeaters.md)         |
-| MeshCore Rooms (BBS) login/post/sync/wire text                                                | [`docs/agents/meshcore-rooms.md`](docs/agents/meshcore-rooms.md)                 |
-| Diagnostics engines, rows, tab scoping                                                        | [`docs/agents/diagnostics.md`](docs/agents/diagnostics.md)                       |
-| i18n / localization workflow, auto-translate, language selector                               | [`docs/agents/i18n.md`](docs/agents/i18n.md)                                     |
-| Connection panel helpers (error hints, rehydrate, storage migrations)                         | [`docs/agents/connection-panel.md`](docs/agents/connection-panel.md)             |
-| MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/agents/mecp.md`](docs/agents/mecp.md)                                     |
-| EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/agents/emcomm.md`](docs/agents/emcomm.md)                                 |
-| Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/agents/offline-maps.md`](docs/agents/offline-maps.md)                     |
-| Weather forecast map (parsed chat forecasts drawn on the Map)                                 | `WeatherForecastLayer.tsx` (layer note in docs/agents)                           |
-| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                                     |
-| Launcher settings search: adding a searchable setting, anchors, registry, guards              | [`docs/agents/settings-search.md`](docs/agents/settings-search.md)               |
-| Developer service announcements feed, strip, pre-commit warning                               | [`docs/agents/service-announcements.md`](docs/agents/service-announcements.md)   |
-| Symptom → where-to-check index                                                                | [`docs/agents/common-issues.md`](docs/agents/common-issues.md)                   |
-| Where to look first by area (diagnostics, protocols, lifecycle, DB, BLE, MQTT, Rooms, UI)     | [`docs/agents/architecture-quick-ref.md`](docs/agents/architecture-quick-ref.md) |
-| Published docs site (mkdocs nav, landing/install pages, in-app doc links)                     | `mkdocs.yml`, `src/shared/docsSite.ts`                                           |
+| When working on…                                                                              | Read                                                                                           |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Reticulum sidecar, LXMF, propagation, Remote/rnsh/rncp, Nomad, RRC, voice, games              | [`docs/reticulum-development.md#code-map`](docs/reticulum-development.md#code-map)             |
+| LoRa BLE/serial, sidecar GATT reconnect, dual-radio wake stagger, BLE coexistence             | [`docs/development/ble-serial.md`](docs/development/ble-serial.md)                             |
+| Renderer hooks/runtimes/stores, protocol entry points, DB, tab wiring                         | [`docs/development/renderer-hooks.md`](docs/development/renderer-hooks.md)                     |
+| Meshtastic config/admin, channel URLs, Store & Forward, remote admin, GPS                     | [`docs/development/meshtastic.md`](docs/development/meshtastic.md)                             |
+| MQTT ingest, channel key mapping, sticky BLE suppress                                         | [`docs/development/mqtt.md`](docs/development/mqtt.md)                                         |
+| Chat panel, composer, link previews, notifications, dedup, hop badges, relay coverage, export | [`docs/development/chat.md`](docs/development/chat.md)                                         |
+| MeshCore Repeaters admin (ping/trace/neighbors/CLI/waiting drain)                             | [`docs/development/meshcore-repeaters.md`](docs/development/meshcore-repeaters.md)             |
+| MeshCore Rooms (BBS) login/post/sync/wire text                                                | [`docs/development/meshcore-rooms.md`](docs/development/meshcore-rooms.md)                     |
+| Diagnostics engines, rows, tab scoping                                                        | [`docs/diagnostics.md#17-key-source-files`](docs/diagnostics.md#17-key-source-files)           |
+| i18n / localization workflow, auto-translate, language selector                               | [`docs/localization.md#maintainer-workflow`](docs/localization.md#maintainer-workflow)         |
+| Connection panel helpers (error hints, rehydrate, storage migrations)                         | [`docs/development/connection-panel.md`](docs/development/connection-panel.md)                 |
+| MECP emergency reports, siren, audit log, ALERT_APP, RF rebroadcast                           | [`docs/development/mecp.md`](docs/development/mecp.md)                                         |
+| EMCOMM Incident Command, emergency outbox, ACK/beacon, ops alerts, SAR/export                 | [`docs/development/emcomm.md`](docs/development/emcomm.md)                                     |
+| Offline maps (`mesh-tiles:`), tile cache, region download                                     | [`docs/development/offline-maps.md`](docs/development/offline-maps.md)                         |
+| Weather forecast map (parsed chat forecasts drawn on the Map)                                 | `src/renderer/components/WeatherForecastLayer.tsx`                                             |
+| App shell (rail, section tabs, status bar, launcher), UI tokens, controls, copy rules         | [`docs/style-guide.md`](docs/style-guide.md)                                                   |
+| Launcher settings search: adding a searchable setting, anchors, registry, guards              | [`docs/development/settings-search.md`](docs/development/settings-search.md)                   |
+| Developer service announcements feed, strip, pre-commit warning                               | [`docs/service-announcements.md#implementation`](docs/service-announcements.md#implementation) |
+| Symptom → where-to-check index                                                                | [`docs/development/common-issues.md`](docs/development/common-issues.md)                       |
+| Where to look first by area (diagnostics, protocols, lifecycle, DB, BLE, MQTT, Rooms, UI)     | [`docs/development/architecture-quick-ref.md`](docs/development/architecture-quick-ref.md)     |
+| Published docs site (mkdocs nav, landing/install pages, in-app doc links)                     | `mkdocs.yml`, `src/shared/docsSite.ts`                                                         |
 
 **Always-remember invariants** (details in the linked files):
 
 - Gate features with `ProtocolCapabilities` / `useRadioProvider(protocol)` — never `protocol === 'meshcore'`.
 - Mount protocol runtimes **once** from `App.tsx`; do not remount in children. New protocol logic goes in `lib/` + thin runtime wiring, not monolithic runtimes.
 - Prefer `useProtocolFacade` and identity-scoped stores (`identityStore` / `nodeStore` / `messageStore` / `connectionStore`, keyed by `identityId`); SQLite→UI via `hydrateIdentityStoresFromDb`.
-- MeshCore zero-hop Status/Telemetry/Neighbors are pubkey-framed (no contact-list gate); multi-hop ping needs a hash-segment path (≥2 bytes), never the full destination pubkey. Do not change behavior guarded by `meshcoreZeroHopRepeaterWorkingState.test.ts` without explicit user request — see [`docs/agents/meshcore-repeaters.md`](docs/agents/meshcore-repeaters.md).
-- Reticulum connect = sidecar start (not `ConnectionDriver` RF); no MQTT for Reticulum's own stack; sidecar owns BLE RNode/Peer and LoRa GATT via `btleplug` — see [`docs/agents/ble-serial.md`](docs/agents/ble-serial.md) and [`docs/agents/reticulum.md`](docs/agents/reticulum.md).
+- MeshCore zero-hop Status/Telemetry/Neighbors are pubkey-framed (no contact-list gate); multi-hop ping needs a hash-segment path (≥2 bytes), never the full destination pubkey. Do not change behavior guarded by `meshcoreZeroHopRepeaterWorkingState.test.ts` without explicit user request — see [`docs/development/meshcore-repeaters.md`](docs/development/meshcore-repeaters.md).
+- Reticulum connect = sidecar start (not `ConnectionDriver` RF); no MQTT for Reticulum's own stack; sidecar owns BLE RNode/Peer and LoRa GATT via `btleplug` — see [`docs/development/ble-serial.md`](docs/development/ble-serial.md) and [`docs/reticulum-development.md#code-map`](docs/reticulum-development.md#code-map).
 - Reticulum automation ownership: do **not** reimplement RNS pathfinding/announce flood in UI or sidecar; **do** own lxmd-parity LXMF client/PN loops in the sidecar; treat Auto demotion / multi-PN cascade / path-medium / DM probe as **product policy** — see [`docs/reticulum-development.md#ownership-rns-vs-lxmf-client-vs-mesh-client-policy`](docs/reticulum-development.md#ownership-rns-vs-lxmf-client-vs-mesh-client-policy).
-- LoRa BLE reconnect is single-owner via `rfReconnectController`; manual disconnect must not auto-reconnect. Dual-radio BLE wake/startup stagger is wired from `App.tsx` `useLayoutEffect` — see [`docs/agents/ble-serial.md`](docs/agents/ble-serial.md).
+- LoRa BLE reconnect is single-owner via `rfReconnectController`; manual disconnect must not auto-reconnect. Dual-radio BLE wake/startup stagger is wired from `App.tsx` `useLayoutEffect` — see [`docs/development/ble-serial.md`](docs/development/ble-serial.md).
 
 ## 9. Cursor / Claude indexing
 

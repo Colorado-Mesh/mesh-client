@@ -1,6 +1,6 @@
-# Agent reference: MECP (Mesh Emergency Communication Protocol)
+# MECP (Mesh Emergency Communication Protocol)
 
-Deep subsystem reference for AI assistants. Open when a task touches MECP compose, alerts, audit log, ALERT_APP ingest, or cross-protocol RF rebroadcast. Hard rules live in [`AGENTS.md`](../../AGENTS.md). The operator-facing guide (send, receive, audit log, RF bridge) is [`../emcomm.md`](../emcomm.md); keep it in sync when user-visible behavior changes.
+Developer reference for MECP compose, alerts, audit log, ALERT_APP ingest, or cross-protocol RF rebroadcast. Repo-wide rules live in [`AGENTS.md`](../../AGENTS.md). The operator-facing guide (send, receive, audit log, RF bridge) is [`../emcomm.md`](../emcomm.md); keep it in sync when user-visible behavior changes.
 
 ## Wire format
 

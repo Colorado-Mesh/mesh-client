@@ -1,6 +1,6 @@
 /**
  * EMCOMM safety invariant registry (source contracts). Keep this list in sync with
- * docs/agents/emcomm.md — add an assert here when a workstream lands the invariant.
+ * docs/development/emcomm.md — add an assert here when a workstream lands the invariant.
  *
  * S1  MECP compose send path uses the emergency outbox (not bare handleSendChunk only).
  * S2  Emergency rows ignore the 24h age / 5-attempt stop; the soft row cap blocks (never deletes)
