@@ -648,6 +648,65 @@ describe('hydrateIdentityStoresFromDb', () => {
     expect(useNodeStore.getState().nodes[ID_MT][0x11].longName).toBe('Node-A');
   });
 
+  it('syncNodesMapToIdentityStore monotonicLastHeard keeps fresher store lastHeardAt (rebooted repeater RTC)', () => {
+    const nowSec = 1_791_501_107;
+    const staleSec = nowSec - 220 * 86_400;
+    upsertNodeRecordsForIdentity(ID_MC, [
+      { nodeId: 0xabc, longName: 'JC MINI RPTR 1', lastHeardAt: nowSec, hopsAway: 3 },
+      { nodeId: 0xdef, longName: 'Older', lastHeardAt: staleSec },
+    ]);
+    const runtimeNode = (nodeId: number, lastHeard: number, hops: number) => ({
+      node_id: nodeId,
+      long_name: 'Renamed',
+      short_name: '',
+      hw_model: 'Repeater',
+      battery: 0,
+      snr: 11.5,
+      rssi: -27,
+      last_heard: lastHeard,
+      latitude: null,
+      longitude: null,
+      hops_away: hops,
+    });
+    const nodes = new Map([
+      [0xabc, runtimeNode(0xabc, staleSec, 0)],
+      [0xdef, runtimeNode(0xdef, nowSec, 1)],
+    ]);
+
+    syncNodesMapToIdentityStore(ID_MC, nodes, { monotonicLastHeard: true });
+
+    const byId = useNodeStore.getState().nodes[ID_MC];
+    expect(byId[0xabc].lastHeardAt).toBe(nowSec);
+    expect(byId[0xabc].hopsAway).toBe(0);
+    expect(byId[0xabc].longName).toBe('Renamed');
+    expect(byId[0xdef].lastHeardAt).toBe(nowSec);
+  });
+
+  it('syncNodesMapToIdentityStore without monotonicLastHeard still applies the runtime value', () => {
+    upsertNodeRecordsForIdentity(ID_MT, [{ nodeId: 0x11, lastHeardAt: 5000 }]);
+    syncNodesMapToIdentityStore(
+      ID_MT,
+      new Map([
+        [
+          0x11,
+          {
+            node_id: 0x11,
+            long_name: 'Node-A',
+            short_name: 'NA',
+            hw_model: 'T-Beam',
+            battery: 0,
+            snr: 0,
+            rssi: 0,
+            last_heard: 1000,
+            latitude: null,
+            longitude: null,
+          },
+        ],
+      ]),
+    );
+    expect(useNodeStore.getState().nodes[ID_MT][0x11].lastHeardAt).toBe(1000);
+  });
+
   it('upsertMessageRecordsForIdentity merges large batches in one store update', () => {
     const records = Array.from({ length: 200 }, (_, i) => ({
       id: String(i + 1),

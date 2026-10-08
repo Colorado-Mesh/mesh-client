@@ -447,7 +447,7 @@ const MESHCORE_CONTACT_UPSERT_SQL =
   "public_key = CASE WHEN excluded.public_key IS NOT NULL AND excluded.public_key != '' AND LENGTH(excluded.public_key) = 64 THEN excluded.public_key ELSE meshcore_contacts.public_key END, " +
   "adv_name = COALESCE(NULLIF(excluded.adv_name, ''), meshcore_contacts.adv_name), " +
   'contact_type = COALESCE(excluded.contact_type, meshcore_contacts.contact_type), ' +
-  'last_advert = CASE WHEN excluded.last_advert IS NOT NULL AND excluded.last_advert > 0 THEN excluded.last_advert ELSE meshcore_contacts.last_advert END, ' +
+  'last_advert = CASE WHEN excluded.last_advert IS NOT NULL AND excluded.last_advert > 0 AND excluded.last_advert > COALESCE(meshcore_contacts.last_advert, 0) THEN excluded.last_advert ELSE meshcore_contacts.last_advert END, ' +
   'adv_lat = CASE WHEN excluded.adv_lat IS NOT NULL AND excluded.adv_lat != 0 THEN excluded.adv_lat ELSE meshcore_contacts.adv_lat END, ' +
   'adv_lon = CASE WHEN excluded.adv_lon IS NOT NULL AND excluded.adv_lon != 0 THEN excluded.adv_lon ELSE meshcore_contacts.adv_lon END, ' +
   'last_snr = COALESCE(excluded.last_snr, meshcore_contacts.last_snr), ' +
