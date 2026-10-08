@@ -445,13 +445,15 @@ describe('incidentStore', () => {
       expect(events[6]).toEqual({ at: 5_000, kind: 'resolved' });
     });
 
-    it('caps the timeline at MAX_EVENTS_PER_INCIDENT, keeping the newest', async () => {
+    it('caps the timeline at MAX_EVENTS_PER_INCIDENT, keeping received and the newest', async () => {
       const { useIncidentStore, MAX_EVENTS_PER_INCIDENT } = await loadStore();
       const s = useIncidentStore.getState();
       const id = s.upsertFromMecp(report('MECP/0/M01'))!;
       for (let i = 0; i < MAX_EVENTS_PER_INCIDENT + 5; i++) s.recordAck(id, `!peer${i}`);
       const events = useIncidentStore.getState().incidents[id].events ?? [];
       expect(events).toHaveLength(MAX_EVENTS_PER_INCIDENT);
+      expect(events[0]).toMatchObject({ kind: 'received', peerId: '!victim' });
+      expect(events[1]).toMatchObject({ kind: 'ackHeard', peerId: '!peer6' });
       expect(events.at(-1)).toMatchObject({
         kind: 'ackHeard',
         peerId: `!peer${MAX_EVENTS_PER_INCIDENT + 4}`,

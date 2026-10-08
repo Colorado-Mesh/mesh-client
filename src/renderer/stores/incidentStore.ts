@@ -26,7 +26,8 @@ export type {
 export const INCIDENT_STORE_KEY = 'mesh-client:incidents';
 export const MAX_INCIDENTS = 200;
 export const MAX_MESSAGE_IDS_PER_INCIDENT = 50;
-export const MAX_EVENTS_PER_INCIDENT = 50;
+/** Only distinct ACK peers grow a timeline without bound; ~80 B per event in localStorage. */
+export const MAX_EVENTS_PER_INCIDENT = 500;
 /** Copies arriving shortly after Resolve (e.g. rebroadcast echoes) must not reopen the incident. */
 export const INCIDENT_REOPEN_GRACE_MS = 5 * MS_PER_MINUTE;
 /** Bridged copies from a different sender id merge when payload matches within this window. */
@@ -164,7 +165,13 @@ function appendEvent(
   events: readonly IncidentEvent[] | undefined,
   event: IncidentEvent,
 ): IncidentEvent[] {
-  return [...(events ?? []), event].slice(-MAX_EVENTS_PER_INCIDENT);
+  const next = [...(events ?? []), event];
+  if (next.length <= MAX_EVENTS_PER_INCIDENT) return next;
+  // Keep the original report; drop the oldest events after it.
+  const first = next[0];
+  return first.kind === 'received'
+    ? [first, ...next.slice(-(MAX_EVENTS_PER_INCIDENT - 1))]
+    : next.slice(-MAX_EVENTS_PER_INCIDENT);
 }
 
 function withAck(inc: EmergencyIncident, peerId: string, at: number): EmergencyIncident {
