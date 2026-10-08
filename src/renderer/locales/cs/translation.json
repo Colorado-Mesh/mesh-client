@@ -6826,6 +6826,7 @@
     "aclUpdated": "Oprávnění byla obnovena.",
     "disconnected": "Připojte se k rádiu pro čtení nebo použití nastavení.",
     "sessionChanged": "Připojení nebo vybraný uzel se změnil. Znovu otevřete konfiguraci a znovu si přečtěte nastavení.",
+    "interrupted": "Operace se zastavila, protože se změnilo připojení. Vaše úpravy jsou zachovány.",
     "commandRejected": "Uzel odmítl příkaz. Zkontrolujte přístup a podporu firmwaru.",
     "invalidReply": "Uzel vrátil nastavení v neočekávaném formátu.",
     "invalidValue": "Zkontrolujte upravené hodnoty a rozsahy. Text musí odpovídat limitu firmwaru a nesmí obsahovat konce řádků.",

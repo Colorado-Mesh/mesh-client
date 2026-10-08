@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
@@ -45,6 +45,7 @@ type RunOperation = (id: string, operation: () => Promise<void>) => Promise<bool
 interface ConfigStatus {
   kind: 'info' | 'success' | 'error';
   message: string;
+  connectionToken?: symbol;
 }
 
 const SECTION_LABELS: Record<InfraConfigSection, string> = {
@@ -138,6 +139,8 @@ function ConfigSection({
   connected,
   send,
   isCurrent,
+  isAlive,
+  connectionToken,
   run,
 }: {
   section: InfraConfigSection;
@@ -145,6 +148,8 @@ function ConfigSection({
   connected: boolean;
   send: InfraConfigSend;
   isCurrent: InfraConfigIsCurrent;
+  isAlive: () => boolean;
+  connectionToken: symbol;
   run: RunOperation;
 }) {
   const { t } = useTranslation();
@@ -160,7 +165,7 @@ function ConfigSection({
   const load = useCallback(
     () =>
       run(section, async () => {
-        setStatus({ kind: 'info', message: t('infraConfig.loading') });
+        setStatus({ kind: 'info', message: t('infraConfig.loading'), connectionToken });
         try {
           const next = await readInfraConfig(section, send, isCurrent);
           if (!isCurrent()) return;
@@ -176,7 +181,7 @@ function ConfigSection({
             });
         }
       }),
-    [section, send, isCurrent, run, t],
+    [section, send, isCurrent, run, t, connectionToken],
   );
 
   useEffect(() => {
@@ -186,12 +191,19 @@ function ConfigSection({
   const apply = () =>
     run(section, async () => {
       if (!snapshot) return;
-      setStatus({ kind: 'info', message: t('infraConfig.applying') });
+      setStatus({ kind: 'info', message: t('infraConfig.applying'), connectionToken });
       const result = await applyInfraConfig(section, snapshot.values, edited, send, isCurrent);
-      if (!isCurrent()) return;
+      if (!isAlive()) return;
       setSnapshot({ ...snapshot, values: result.values });
-      if (!result.error) setEdited(result.values);
       setRebootRequired((previous) => previous || result.rebootRequired);
+      if (!isCurrent()) {
+        setStatus({
+          kind: 'error',
+          message: `${t('infraConfig.interrupted')} ${t('infraConfig.partialSave')}`,
+        });
+        return;
+      }
+      if (!result.error) setEdited(result.values);
       setStatus(
         result.error
           ? {
@@ -263,7 +275,13 @@ function ConfigSection({
           )}
         </div>
         {rebootRequired && <p className={NOTICE_CLASS.warn}>{t('infraConfig.rebootRequired')}</p>}
-        <Status status={status} />
+        <Status
+          status={
+            status?.kind === 'info' && (!connected || status.connectionToken !== connectionToken)
+              ? { kind: 'error', message: t('infraConfig.interrupted') }
+              : status
+          }
+        />
       </div>
     </details>
   );
@@ -274,12 +292,14 @@ function RoomPermissions({
   connected,
   send,
   isCurrent,
+  connectionToken,
   run,
 }: {
   busy: boolean;
   connected: boolean;
   send: InfraConfigSend;
   isCurrent: InfraConfigIsCurrent;
+  connectionToken: symbol;
   run: RunOperation;
 }) {
   const { t } = useTranslation();
@@ -300,7 +320,7 @@ function RoomPermissions({
   const perform = async (operation: () => Promise<string | undefined>) => {
     let succeeded = false;
     await run('acl', async () => {
-      setStatus({ kind: 'info', message: t('infraConfig.loading') });
+      setStatus({ kind: 'info', message: t('infraConfig.loading'), connectionToken });
       try {
         const successKey = await operation();
         if (!isCurrent()) return;
@@ -354,7 +374,13 @@ function RoomPermissions({
             })
           }
         />
-        <Status status={status} />
+        <Status
+          status={
+            status?.kind === 'info' && (!connected || status.connectionToken !== connectionToken)
+              ? { kind: 'error', message: t('infraConfig.interrupted') }
+              : status
+          }
+        />
       </div>
     </details>
   );
@@ -365,13 +391,28 @@ export function MeshcoreInfraConfigPanel({ node, isConnected, onSend, onBack, on
   const [busy, setBusy] = useState<string | null>(null);
   const busyRef = useRef(false);
   const aliveRef = useRef(true);
-  useEffect(() => {
+  const connectionToken = useMemo(
+    () => Symbol(isConnected ? 'connected' : 'disconnected'),
+    [isConnected],
+  );
+  const activeConnectionTokenRef = useRef<symbol | null>(null);
+  useLayoutEffect(() => {
+    activeConnectionTokenRef.current = isConnected ? connectionToken : null;
+    return () => {
+      activeConnectionTokenRef.current = null;
+    };
+  }, [isConnected, connectionToken]);
+  useLayoutEffect(() => {
     aliveRef.current = true;
     return () => {
       aliveRef.current = false;
     };
   }, []);
-  const isCurrent = useCallback(() => aliveRef.current && isConnected, [isConnected]);
+  const isCurrent = useCallback(
+    () => aliveRef.current && activeConnectionTokenRef.current === connectionToken,
+    [connectionToken],
+  );
+  const isAlive = useCallback(() => aliveRef.current, []);
   const run = useCallback<RunOperation>(
     async (id, operation) => {
       if (busyRef.current || !isCurrent()) return false;
@@ -387,7 +428,15 @@ export function MeshcoreInfraConfigPanel({ node, isConnected, onSend, onBack, on
     },
     [isCurrent],
   );
-  const shared = { busy: busy !== null, connected: isConnected, send: onSend, isCurrent, run };
+  const shared = {
+    busy: busy !== null,
+    connected: isConnected,
+    send: onSend,
+    isCurrent,
+    isAlive,
+    connectionToken,
+    run,
+  };
   return (
     <div className="h-full space-y-4 overflow-y-auto">
       <div className="flex flex-wrap items-center gap-3">

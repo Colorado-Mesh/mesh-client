@@ -6769,6 +6769,7 @@
     "aclSaved": "Permission saved. Refresh ACL to check the listing if this firmware supports it over the radio.",
     "disconnected": "Connect to a radio to read or apply settings.",
     "sessionChanged": "The connection or selected node changed. Reopen configuration and read settings again.",
+    "interrupted": "The operation stopped because the connection changed. Your edits are kept.",
     "commandRejected": "The node rejected the command. Check access and firmware support.",
     "invalidReply": "The node returned settings in an unexpected format.",
     "invalidValue": "Check the edited values and ranges. Text must fit the firmware limit and cannot contain line breaks.",

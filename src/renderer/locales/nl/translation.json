@@ -6767,6 +6767,7 @@
     "aclUpdated": "Toestemmingen vernieuwd.",
     "disconnected": "Maak verbinding met een radio om instellingen te lezen of toe te passen.",
     "sessionChanged": "De verbinding of het geselecteerde knooppunt is gewijzigd. Open de configuratie opnieuw en lees de instellingen opnieuw.",
+    "interrupted": "De bewerking is gestopt omdat de verbinding is gewijzigd. Uw wijzigingen blijven behouden.",
     "commandRejected": "Het knooppunt heeft de opdracht afgewezen. Controleer de toegang en firmware-ondersteuning.",
     "invalidReply": "Het knooppunt heeft instellingen in een onverwachte indeling geretourneerd.",
     "invalidValue": "Controleer de bewerkte waarden en bereiken. Tekst moet voldoen aan de firmware-limiet en mag geen regeleinden bevatten.",

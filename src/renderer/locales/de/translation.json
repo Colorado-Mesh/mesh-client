@@ -6764,6 +6764,7 @@
     "aclUpdated": "Berechtigungen aktualisiert.",
     "disconnected": "Verbinden Sie sich mit einem Radio, um Einstellungen zu lesen oder anzuwenden.",
     "sessionChanged": "Die Verbindung oder der ausgewählte Knoten hat sich geändert. Öffnen Sie die Konfiguration erneut und lesen Sie die Einstellungen erneut.",
+    "interrupted": "Der Vorgang wurde gestoppt, weil sich die Verbindung geändert hat. Ihre Änderungen bleiben erhalten.",
     "commandRejected": "Der Knoten hat den Befehl abgelehnt. Überprüfen Sie den Zugriff und die Firmware-Unterstützung.",
     "invalidReply": "Der Knoten gab die Einstellungen in einem unerwarteten Format zurück.",
     "invalidValue": "Überprüfen Sie die bearbeiteten Werte und Bereiche. Der Text muss dem Firmware-Limit entsprechen und darf keine Zeilenumbrüche enthalten.",

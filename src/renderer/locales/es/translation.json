@@ -6764,6 +6764,7 @@
     "aclUpdated": "Permisos actualizados.",
     "disconnected": "Conéctate a una radio para leer o aplicar la configuración.",
     "sessionChanged": "La conexión o el nodo seleccionado han cambiado. Vuelva a abrir la configuración y vuelva a leer los ajustes.",
+    "interrupted": "La operación se detuvo porque cambió la conexión. Tus cambios se conservan.",
     "commandRejected": "El nodo ha rechazado el comando. Compruebe el acceso y el soporte de firmware.",
     "invalidReply": "El nodo devolvió la configuración en un formato inesperado.",
     "invalidValue": "Compruebe los valores y rangos editados. El texto debe ajustarse al límite del firmware y no puede contener saltos de línea.",

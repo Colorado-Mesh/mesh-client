@@ -6764,6 +6764,7 @@
     "aclUpdated": "Autorisations actualisées.",
     "disconnected": "Connectez-vous à une radio pour lire ou appliquer les paramètres.",
     "sessionChanged": "La connexion ou le nœud sélectionné a changé. Rouvrir la configuration et relire les paramètres.",
+    "interrupted": "L’opération a été arrêtée car la connexion a changé. Vos modifications sont conservées.",
     "commandRejected": "Le nœud a rejeté la commande. Vérifiez l'accès et la prise en charge du micrologiciel.",
     "invalidReply": "Le nœud a renvoyé les paramètres dans un format inattendu.",
     "invalidValue": "Vérifiez les valeurs et les plages modifiées. Le texte doit correspondre à la limite du micrologiciel et ne peut pas contenir de sauts de ligne.",

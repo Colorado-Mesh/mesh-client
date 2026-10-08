@@ -1282,6 +1282,29 @@ describe('RepeatersPanel', () => {
     expect(onPendingFocusConsumed).toHaveBeenCalled();
   });
 
+  it('preserves loaded configuration drafts through disconnect and reconnect', async () => {
+    const user = userEvent.setup();
+    const onSendCliCommand = vi.fn((_nodeId: number, command: string) => {
+      return Promise.resolve(command === 'get name' ? '> Test Repeater' : '> 0');
+    });
+    const props = { ...makeBaseProps(), onSendCliCommand };
+    const { rerender } = render(<RepeatersPanel {...props} />);
+    await chooseRowAction(user, 'Configure');
+    await user.click(screen.getByText('Identity and location'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Name')).toBeEnabled();
+    });
+    await user.clear(screen.getByLabelText('Name'));
+    await user.type(screen.getByLabelText('Name'), 'Draft repeater name');
+    rerender(<RepeatersPanel {...props} isConnected={false} />);
+    expect(screen.getByLabelText('Name')).toHaveValue('Draft repeater name');
+    expect(screen.getByLabelText('Name')).toBeDisabled();
+    rerender(<RepeatersPanel {...props} isConnected />);
+    expect(screen.getByLabelText('Name')).toHaveValue('Draft repeater name');
+    expect(screen.getByRole('button', { name: 'Apply Identity and location' })).toBeEnabled();
+    expect(onSendCliCommand).toHaveBeenCalledTimes(4);
+  });
+
   it.each([true, undefined])(
     'reuses the route learned during a configuration read when ping returns %s',
     async (pingResult) => {

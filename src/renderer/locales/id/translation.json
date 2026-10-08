@@ -6768,6 +6768,7 @@
     "aclUpdated": "Izin diperbarui.",
     "disconnected": "Sambungkan ke radio untuk membaca atau menerapkan pengaturan.",
     "sessionChanged": "Koneksi atau simpul yang dipilih berubah. Buka kembali konfigurasi dan baca pengaturan lagi.",
+    "interrupted": "Operasi berhenti karena koneksi berubah. Perubahan Anda tetap disimpan.",
     "commandRejected": "Node menolak perintah. Periksa akses dan dukungan firmware.",
     "invalidReply": "Node mengembalikan pengaturan dalam format yang tidak terduga.",
     "invalidValue": "Periksa nilai dan rentang yang diedit. Teks harus sesuai dengan batas firmware dan tidak boleh berisi jeda baris.",

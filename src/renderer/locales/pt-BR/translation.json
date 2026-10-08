@@ -6764,6 +6764,7 @@
     "aclUpdated": "Permissões atualizadas.",
     "disconnected": "Conecte-se a um rádio para ler ou aplicar as configurações.",
     "sessionChanged": "A conexão ou o nó selecionado foi alterado. Reabra a configuração e leia as configurações novamente.",
+    "interrupted": "A operação parou porque a conexão mudou. Suas alterações foram mantidas.",
     "commandRejected": "O nó rejeitou o comando. Verifique o acesso e o suporte ao firmware.",
     "invalidReply": "O nó retornou as configurações em um formato inesperado.",
     "invalidValue": "Verifique os valores e intervalos editados. O texto deve se ajustar ao limite do firmware e não pode conter quebras de linha.",

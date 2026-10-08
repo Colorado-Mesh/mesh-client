@@ -2,7 +2,15 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
 import { ChevronDown, ChevronRight, Ellipsis, Search, Star, Trash2 } from 'lucide-react-motion';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -470,7 +478,9 @@ export default function RepeatersPanel({
   const meshcoreNeighborsRef = useRef(meshcoreNeighbors);
   meshcoreNeighborsRef.current = meshcoreNeighbors;
   const meshcoreTraceResultsRef = useRef(meshcoreTraceResults);
-  meshcoreTraceResultsRef.current = meshcoreTraceResults;
+  useLayoutEffect(() => {
+    meshcoreTraceResultsRef.current = meshcoreTraceResults;
+  }, [meshcoreTraceResults]);
   const [expandedTelemetry, setExpandedTelemetry] = useState<Set<number>>(new Set());
   const [expandedPath, setExpandedPath] = useState<Set<number>>(new Set());
   const [expandedCli, setExpandedCli] = useState<Set<number>>(new Set());
@@ -931,7 +941,7 @@ export default function RepeatersPanel({
     return (
       <>
         <MeshcoreInfraConfigPanel
-          key={`${configNode.node_id}:${isConnected}`}
+          key={configNode.node_id}
           node={configNode}
           isConnected={isConnected}
           onSend={(command, isCurrent) =>

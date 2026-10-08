@@ -6872,6 +6872,7 @@
     "aclUpdated": "Odświeżono uprawnienia.",
     "disconnected": "Połącz się z radiem, aby odczytać lub zastosować ustawienia.",
     "sessionChanged": "Zmieniono połączenie lub wybrany węzeł. Otwórz ponownie konfigurację i ponownie odczytaj ustawienia.",
+    "interrupted": "Operacja została zatrzymana, ponieważ połączenie się zmieniło. Twoje zmiany zostały zachowane.",
     "commandRejected": "Węzeł odrzucił polecenie. Sprawdź dostęp i obsługę oprogramowania sprzętowego.",
     "invalidReply": "Węzeł zwrócił ustawienia w nieoczekiwanym formacie.",
     "invalidValue": "Sprawdź edytowane wartości i zakresy. Tekst musi pasować do limitu oprogramowania sprzętowego i nie może zawierać podziałów wierszy.",

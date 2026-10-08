@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
@@ -176,6 +176,110 @@ describe('MeshCore infrastructure configuration panel', () => {
     resolve('> Test');
     await new Promise((done) => setTimeout(done, 0));
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not revive an interrupted read after reconnect and allows a fresh retry', async () => {
+    const user = userEvent.setup();
+    let finishRead!: (value: string) => void;
+    const pendingRead = new Promise<string>((resolve) => {
+      finishRead = resolve;
+    });
+    let finishRadioRead!: (value: string) => void;
+    const pendingRadioRead = new Promise<string>((resolve) => {
+      finishRadioRead = resolve;
+    });
+    const send = vi
+      .fn((command: string) =>
+        command === 'get radio' ? pendingRadioRead : Promise.resolve(initial[command] ?? 'OK'),
+      )
+      .mockReturnValueOnce(pendingRead);
+    const p = props({ onSend: send });
+    const { rerender } = render(<MeshcoreInfraConfigPanel {...p} />);
+    await user.click(screen.getByText('Identity and location'));
+    await waitFor(() => {
+      expect(send).toHaveBeenCalledTimes(1);
+    });
+    rerender(<MeshcoreInfraConfigPanel {...p} isConnected={false} />);
+    rerender(<MeshcoreInfraConfigPanel {...p} isConnected />);
+    expect(screen.getByRole('alert')).toHaveTextContent(/connection/);
+    await act(async () => {
+      finishRead('> Obsolete response');
+      await pendingRead;
+    });
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText('Name')).toHaveValue('');
+    expect(screen.getByRole('alert')).toHaveTextContent(/connection/);
+    await user.click(screen.getByText('Radio parameters'));
+    await waitFor(() => {
+      expect(send).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(/connection/);
+    await act(async () => {
+      finishRadioRead(initial['get radio']);
+      await pendingRadioRead;
+    });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency (MHz)')).toBeEnabled();
+    });
+    await user.click(screen.getByRole('button', { name: 'Refresh Identity and location' }));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Name')).toHaveValue('Test repeater');
+    });
+    expect(send).toHaveBeenCalledTimes(7);
+  });
+
+  it('keeps confirmed radio values and the reboot notice when a later write is interrupted', async () => {
+    const user = userEvent.setup();
+    let finishWrite!: (value: string) => void;
+    const pendingWrite = new Promise<string>((resolve) => {
+      finishWrite = resolve;
+    });
+    let radio = initial['get radio'];
+    let tx = initial['get tx'];
+    let firstTx = true;
+    const send = vi.fn((command: string) => {
+      if (command.startsWith('set radio ')) {
+        radio = `> ${command.slice('set radio '.length)}`;
+        return Promise.resolve('OK (reboot to apply)');
+      }
+      if (command === 'set tx 21') {
+        tx = '> 21';
+        if (firstTx) {
+          firstTx = false;
+          return pendingWrite;
+        }
+        return Promise.resolve('OK');
+      }
+      return Promise.resolve(command === 'get radio' ? radio : command === 'get tx' ? tx : 'OK');
+    });
+    const p = props({ onSend: send });
+    const { rerender } = render(<MeshcoreInfraConfigPanel {...p} />);
+    await user.click(screen.getByText('Radio parameters'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency (MHz)')).toBeEnabled();
+    });
+    await user.clear(screen.getByLabelText('Frequency (MHz)'));
+    await user.type(screen.getByLabelText('Frequency (MHz)'), '915.525');
+    await user.clear(screen.getByLabelText('Transmit power (dBm)'));
+    await user.type(screen.getByLabelText('Transmit power (dBm)'), '21');
+    await user.click(screen.getByRole('button', { name: 'Apply Radio parameters' }));
+    await waitFor(() => {
+      expect(send).toHaveBeenCalledWith('set tx 21', expect.any(Function));
+    });
+    rerender(<MeshcoreInfraConfigPanel {...p} isConnected={false} />);
+    rerender(<MeshcoreInfraConfigPanel {...p} isConnected />);
+    await act(async () => {
+      finishWrite('OK');
+      await pendingWrite;
+    });
+    expect(screen.getByRole('alert')).toHaveTextContent(/edits are kept/);
+    expect(screen.getByText(/Reboot this node through the CLI/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Frequency (MHz)')).toHaveValue(915.525);
+    expect(screen.getByLabelText('Transmit power (dBm)')).toHaveValue(21);
+    await user.click(screen.getByRole('button', { name: 'Apply Radio parameters' }));
+    expect(await screen.findByText('Settings saved and checked.')).toBeInTheDocument();
+    expect(send.mock.calls.filter(([command]) => command.startsWith('set radio '))).toHaveLength(1);
+    expect(send.mock.calls.filter(([command]) => command === 'set tx 21')).toHaveLength(2);
   });
 
   it('shows room access and permission controls only for rooms', async () => {

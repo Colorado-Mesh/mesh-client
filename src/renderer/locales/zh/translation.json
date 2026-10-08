@@ -6764,6 +6764,7 @@
     "aclUpdated": "权限已刷新。",
     "disconnected": "连接到收音机以读取或应用设置。",
     "sessionChanged": "连接或所选节点已更改。重新打开配置并再次读取设置。",
+    "interrupted": "连接已更改，操作已停止。您的编辑内容已保留。",
     "commandRejected": "节点拒绝了命令。检查访问权限和固件支持。",
     "invalidReply": "节点以意外格式返回设置。",
     "invalidValue": "检查编辑后的值和范围。文本必须符合固件限制，并且不能包含换行符。",

@@ -6768,6 +6768,7 @@
     "aclUpdated": "İzinler yenilendi.",
     "disconnected": "Ayarları okumak veya uygulamak için bir radyoya bağlanın.",
     "sessionChanged": "Bağlantı veya seçilen düğüm değişti. Yapılandırmayı yeniden açın ve ayarları tekrar okuyun.",
+    "interrupted": "Bağlantı değiştiği için işlem durduruldu. Düzenlemeleriniz korunur.",
     "commandRejected": "Düğüm komutu reddetti. Erişim ve ürün yazılımı desteğini kontrol edin.",
     "invalidReply": "Düğüm, ayarları beklenmeyen bir biçimde döndürdü.",
     "invalidValue": "Düzenlenen değerleri ve aralıkları kontrol edin. Metin, ürün yazılımı sınırına uymalıdır ve satır sonları içeremez.",
