@@ -276,6 +276,7 @@ export function createDevElectronApiStub(): typeof window.electronAPI {
         heapUsed: 0,
       }),
       focusWindow: noopAsync,
+      requestAttention: noopAsync,
     },
     onSpellcheckReplace: noopUnsub,
     meshcore: {

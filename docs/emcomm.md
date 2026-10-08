@@ -52,6 +52,14 @@ ACKs are sent on the protocol where the report was heard (preferring your active
 
 You can't cancel someone else's beacon: `B03` means "I am OK", so only the originator can send it.
 
+### Unseen emergency alert
+
+The MAYDAY siren and URGENT tone play once, and the toast closes after 10 seconds, so a station left unattended could miss them. A new MAYDAY or URGENT report (not a drill) therefore also opens a red banner at the top of every tab, and the window flashes in the taskbar (or the dock icon bounces on macOS) when the app is not focused. The banner stays until you open the Incident tab, press **Mark seen**, acknowledge, or resolve the incident. **View** opens the Incident tab.
+
+"Seen" is local to this computer and sends nothing over the mesh. Acknowledging is still a separate, deliberate step. Reports loaded from history at startup, your own beacons, and drills never open the banner. A report that escalates to MAYDAY or URGENT, or reopens after being resolved, opens it again.
+
+For unattended stations, **App → Notifications → Repeat unseen MAYDAY/URGENT alert (minutes)** replays the tone at that interval until the alert is seen. It is blank (off) by default.
+
 ## Durable audit log
 
 Every inbound MECP report is appended to `mecp-received.log` in the app data folder (separate from the session app log, rotated to `mecp-received.log.1`). Export it from **App → MECP → Export MECP log**. It is also included in support bundles.
@@ -71,13 +79,14 @@ Every inbound MECP report is appended to `mecp-received.log` in the app data fol
 - **Silence:** a watched node has not been heard for the configured minutes, with an escalation at twice that time. Nodes never heard are not "silent".
 - **Battery low:** a watched node's reported battery drops below the threshold (default 10%). Fires once, then re-arms after it recovers 5 points.
 - **Link down:** your Meshtastic or MeshCore radio link drops unexpectedly. Never fires on a manual disconnect or while reconnecting. Reticulum is not included (it runs as a separate stack, not an RF link).
+- **Repeat unseen MAYDAY/URGENT alert:** see [Unseen emergency alert](#unseen-emergency-alert).
 
 ## Exports
 
 - **Nodes:** NodeList → **Export JSON** (topology) or **Export CSV**.
 - **Diagnostics:** Diagnostics → **Export JSON** (visible rows for the active protocol).
 - **MECP audit log:** App → MECP → **Export MECP log**.
-- **Incident log:** Incident tab → **Export log** → JSON or CSV. Includes every stored incident (open, acknowledged, and resolved) with severity, codes, sender, relays, timestamps, coordinates, ACK peers, and beacon state, oldest first. Use it for the after-action record.
+- **Incident log:** Incident tab → **Export log** → JSON or CSV. Includes every stored incident (open, acknowledged, and resolved) with severity, codes, sender, relays, timestamps, coordinates, ACK peers, and beacon state, oldest first. Each incident also carries an `events` timeline: when it was received, relay copies heard, each ACK heard (and from whom), your own ACK sent, beacon confirmed or cancelled, resolved, and reopened. In CSV the timeline is one cell of semicolon-separated entries. Use it for the after-action record.
 
 ## Map tools for search and rescue
 

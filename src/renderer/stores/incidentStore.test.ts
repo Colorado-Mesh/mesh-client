@@ -399,4 +399,161 @@ describe('incidentStore', () => {
     const reloaded = await loadStore();
     expect(reloaded.useIncidentStore.getState().incidents[id]?.codes).toEqual(['T04']);
   });
+
+  describe('event timeline', () => {
+    it('records receive, relay, ACKs, beacon confirm/cancel, resolve and reopen in order', async () => {
+      const { useIncidentStore } = await loadStore();
+      const s = useIncidentStore.getState();
+      const id = s.upsertFromMecp(report('MECP/0/B01 M01 trapped', { receivedAt: 1_000 }))!;
+      s.upsertFromMecp(
+        report('MECP/0/B01 M01 trapped', {
+          protocol: 'meshcore',
+          senderId: '!bridge',
+          receivedAt: 2_000,
+        }),
+      );
+      s.upsertFromMecp(report('MECP/0/R01 B01 M01', { senderId: '!peer', receivedAt: 3_000 }));
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(3_500);
+      s.recordAck(id, 'local');
+      s.confirmBeacon(id);
+      nowSpy.mockRestore();
+      s.upsertFromMecp(report('MECP/3/B03', { receivedAt: 4_000 }));
+      s.resolveIncident(id, 5_000);
+      s.upsertFromMecp(
+        report('MECP/0/B01 M01 trapped', { receivedAt: 5_000 + 10 * 60_000, messageId: 'again' }),
+      );
+
+      const events = useIncidentStore.getState().incidents[id].events ?? [];
+      expect(events.map((e) => [e.kind, e.at])).toEqual([
+        ['received', 1_000],
+        ['relayHeard', 2_000],
+        ['ackHeard', 3_000],
+        ['ackSent', 3_500],
+        ['beaconConfirmed', 3_500],
+        ['beaconCancelled', 4_000],
+        ['resolved', 5_000],
+        ['reopened', 5_000 + 10 * 60_000],
+      ]);
+      expect(events[0]).toEqual({
+        at: 1_000,
+        kind: 'received',
+        peerId: '!victim',
+        protocol: 'meshtastic',
+      });
+      expect(events[1]).toMatchObject({ peerId: '!bridge', protocol: 'meshcore' });
+      expect(events[2]).toMatchObject({ peerId: '!peer' });
+      expect(events[6]).toEqual({ at: 5_000, kind: 'resolved' });
+    });
+
+    it('caps the timeline at MAX_EVENTS_PER_INCIDENT, keeping received and the newest', async () => {
+      const { useIncidentStore, MAX_EVENTS_PER_INCIDENT } = await loadStore();
+      const s = useIncidentStore.getState();
+      const id = s.upsertFromMecp(report('MECP/0/M01'))!;
+      for (let i = 0; i < MAX_EVENTS_PER_INCIDENT + 5; i++) s.recordAck(id, `!peer${i}`);
+      const events = useIncidentStore.getState().incidents[id].events ?? [];
+      expect(events).toHaveLength(MAX_EVENTS_PER_INCIDENT);
+      expect(events[0]).toMatchObject({ kind: 'received', peerId: '!victim' });
+      expect(events[1]).toMatchObject({ kind: 'ackHeard', peerId: '!peer6' });
+      expect(events.at(-1)).toMatchObject({
+        kind: 'ackHeard',
+        peerId: `!peer${MAX_EVENTS_PER_INCIDENT + 4}`,
+      });
+    });
+  });
+
+  describe('seen state (standing alert)', () => {
+    it('live MAYDAY/URGENT starts unseen; drills and lower severities are not listed', async () => {
+      const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
+      const s = useIncidentStore.getState();
+      const urgent = s.upsertFromMecp(report('MECP/1/T04', { receivedAt: 1_000 }))!;
+      const mayday = s.upsertFromMecp(report('MECP/0/M01', { receivedAt: 2_000 }))!;
+      s.upsertFromMecp(report('MECP/0/D01 M01', { senderId: '!drill' }));
+      s.upsertFromMecp(report('MECP/2/L01', { senderId: '!safety' }));
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState()).map((i) => i.id)).toEqual([
+        mayday,
+        urgent,
+      ]);
+    });
+
+    it('seed hydration and own beacons are never unseen', async () => {
+      const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
+      const s = useIncidentStore.getState();
+      s.upsertFromMecp({ ...report('MECP/0/M01', { receivedAt: Date.now() }), fromSeed: true });
+      s.upsertFromMecp({
+        ...report('MECP/0/B01 M01', { senderId: '!me', receivedAt: Date.now() }),
+        localOrigin: true,
+      });
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toEqual([]);
+    });
+
+    it('markSeen, markAllSeen, resolve and beacon confirm clear the standing alert', async () => {
+      const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
+      const s = useIncidentStore.getState();
+      const a = s.upsertFromMecp(report('MECP/0/M01', { senderId: '!a' }))!;
+      const b = s.upsertFromMecp(report('MECP/0/M01', { senderId: '!b' }))!;
+      const c = s.upsertFromMecp(report('MECP/0/B01 M01', { senderId: '!c' }))!;
+      const d = s.upsertFromMecp(report('MECP/1/T04', { senderId: '!d' }))!;
+      s.markSeen(a, 5);
+      expect(useIncidentStore.getState().incidents[a].seenAt).toBe(5);
+      s.resolveIncident(b);
+      s.confirmBeacon(c);
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState()).map((i) => i.id)).toEqual([
+        d,
+      ]);
+      s.markAllSeen();
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toEqual([]);
+    });
+
+    it('a live escalation into MAYDAY needs attention again; a same-severity repeat does not', async () => {
+      const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
+      const s = useIncidentStore.getState();
+      const id = s.upsertFromMecp(report('MECP/1/M01 hurt', { receivedAt: 1_000 }))!;
+      s.markSeen(id);
+      s.upsertFromMecp(report('MECP/1/M01 hurt', { receivedAt: 2_000, messageId: 'rep' }));
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toEqual([]);
+      expect(s.upsertFromMecp(report('MECP/0/M01 hurt', { receivedAt: 3_000 }))).toBe(id);
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState()).map((i) => i.id)).toEqual([
+        id,
+      ]);
+    });
+
+    it('migrates pre-v3 rows to seen so upgrades never raise a banner', async () => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          version: 2,
+          state: {
+            incidents: {
+              old: {
+                id: 'old',
+                protocol: 'meshtastic',
+                protocolsSeen: ['meshtastic'],
+                severity: 0,
+                codes: ['M01'],
+                freetext: '',
+                senderId: '!x',
+                senderName: 'X',
+                channel: null,
+                receivedAt: 1,
+                lastSeenAt: 7,
+                coordsSource: null,
+                messageIds: [],
+                ackCount: 0,
+                ackPeerIds: [],
+                beaconActive: false,
+                beaconAcked: false,
+                isDrill: false,
+                status: 'open',
+              },
+            },
+            resolvedTombstones: {},
+          },
+        }),
+      );
+      const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
+      await useIncidentStore.persist.rehydrate();
+      expect(useIncidentStore.getState().incidents.old.seenAt).toBe(7);
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toEqual([]);
+    });
+  });
 });

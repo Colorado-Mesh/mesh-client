@@ -538,6 +538,7 @@ describe('privileged IPC sender validation (source contract)', () => {
     'app:getRendererLiveness',
     'app:getProcessUptimeSec',
     'app:focusWindow',
+    'app:requestAttention',
     'app:relaunch',
     'meshcore:openJsonFile',
     'db:saveNode',

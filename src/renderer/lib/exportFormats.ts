@@ -1,6 +1,6 @@
 /** Pure serializers for node / topology / diagnostics / incident exports (no I/O). */
 
-import type { EmergencyIncident } from './mecp/incidentTypes';
+import type { EmergencyIncident, IncidentEventKind } from './mecp/incidentTypes';
 
 export const TOPOLOGY_EXPORT_FORMAT = 'mesh-client-topology';
 export const DIAGNOSTICS_EXPORT_FORMAT = 'mesh-client-diagnostics';
@@ -126,11 +126,20 @@ export const INCIDENT_EXPORT_FIELDS = [
   'ack_peer_ids',
   'beacon_active',
   'beacon_acked',
+  'events',
 ] as const;
 
 export type IncidentExportField = (typeof INCIDENT_EXPORT_FIELDS)[number];
 
 export type IncidentExportRow = Record<IncidentExportField, unknown>;
+
+/** One timeline entry in the incident export (`events` field). */
+export interface IncidentExportEvent {
+  at: string | null;
+  kind: IncidentEventKind;
+  peer_id: string | null;
+  protocol: string | null;
+}
 
 export interface IncidentExport {
   format: typeof INCIDENT_EXPORT_FORMAT;
@@ -174,7 +183,21 @@ export function incidentsToExportRows(incidents: Iterable<EmergencyIncident>): I
       ack_peer_ids: [...inc.ackPeerIds],
       beacon_active: inc.beaconActive,
       beacon_acked: inc.beaconAcked,
+      events: (inc.events ?? []).map((ev): IncidentExportEvent => ({
+        at: isoOrNull(ev.at),
+        kind: ev.kind,
+        peer_id: ev.peerId ?? null,
+        protocol: ev.protocol ?? null,
+      })),
     }));
+}
+
+/** `"<iso> <kind> [peer] [protocol]"` entries joined by `; ` for the CSV `events` cell. */
+function incidentEventsCsvCell(events: unknown): string {
+  if (!Array.isArray(events)) return '';
+  return (events as IncidentExportEvent[])
+    .map((ev) => [ev.at, ev.kind, ev.peer_id, ev.protocol].filter((p) => p != null).join(' '))
+    .join('; ');
 }
 
 export function incidentsToJson(
@@ -198,7 +221,8 @@ export function incidentsToCsv(rows: IncidentExportRow[]): string {
     rows.map((row) => {
       const flat: Record<string, unknown> = { ...row };
       for (const [k, v] of Object.entries(flat)) {
-        if (Array.isArray(v)) flat[k] = v.join(' ');
+        if (k === 'events') flat[k] = incidentEventsCsvCell(v);
+        else if (Array.isArray(v)) flat[k] = v.join(' ');
       }
       return flat;
     }),

@@ -431,6 +431,13 @@ const appEntries: readonly SettingSearchEntry[] = [
     keywords: ['disconnect', 'alert'],
   },
   {
+    id: 'app.notifications.mecpRepeatAlert',
+    slot: 'App',
+    labelKey: 'appPanel.mecpRepeatAlertMinutes',
+    sectionKey: 'appPanel.opsAlertsHeading',
+    keywords: ['mecp', 'mayday', 'urgent', 'repeat', 'siren', 'alert'],
+  },
+  {
     id: 'app.notifications.rrcUnreadAll',
     slot: 'App',
     labelKey: 'appPanel.rrcUnreadAllRoomMessages',
@@ -694,6 +701,8 @@ export const appSurface: SettingsSearchSurface = {
     'appPanel.themeRestored': 'success toast, not a control',
     'appPanel.colorsReset': 'success toast, not a control',
     'appPanel.nodeSilenceAlertMinutesPlaceholder': 'placeholder of the indexed node silence alert',
+    'appPanel.mecpRepeatAlertMinutesPlaceholder':
+      'placeholder of the indexed MECP repeat-alert interval',
     'appPanel.roomMessages': 'channel option label in the Danger Zone clear-messages picker',
     'appPanel.channelOption': 'channel option label in the Danger Zone clear-messages picker',
     'appPanel.channelOptionUnnamed':

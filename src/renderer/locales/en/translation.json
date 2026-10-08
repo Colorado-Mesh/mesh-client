@@ -307,6 +307,9 @@
     "nodeSilenceAlertMinutesHint": "Leave blank to use each protocol’s stale threshold. Escalation fires at 2× this value.",
     "nodeBatteryLowThreshold": "Battery-low threshold (%)",
     "notifyOnLinkDown": "Notify on unexpected radio link-down",
+    "mecpRepeatAlertMinutes": "Repeat unseen MAYDAY/URGENT alert (minutes)",
+    "mecpRepeatAlertMinutesPlaceholder": "Off",
+    "mecpRepeatAlertMinutesHint": "For unattended stations. Replays the alert tone at this interval until someone opens the Incident tab or marks the alert seen. Leave blank to alert once.",
     "rrcUnreadAllRoomMessages": "RRC unread for all room messages",
     "rrcUnreadAllRoomMessagesHint": "When on, any new RRC room message marks unread and can play a channel sound. Turn off for IRC-style alerts: only direct messages and @mentions.",
     "unknownError": "Unknown error",
@@ -6582,7 +6585,16 @@
     "ackQueuedBadge": "ACK queued",
     "pendingAckListAria": "Queued acknowledgements for this incident",
     "cancelPendingAck": "Cancel",
-    "cancelPendingAckAria": "Cancel queued acknowledgement for {{sender}}"
+    "cancelPendingAckAria": "Cancel queued acknowledgement for {{sender}}",
+    "standingAlertRegion": "Unseen emergency alert",
+    "standingAlertTitle": "Emergency from {{sender}}",
+    "standingAlertHeard": "Heard at {{time}}",
+    "standingAlertMore_one": "+{{count}} more unseen",
+    "standingAlertMore_other": "+{{count}} more unseen",
+    "standingAlertView": "View",
+    "standingAlertViewAria": "Open the Incident tab",
+    "standingAlertDismiss": "Mark seen",
+    "standingAlertDismissAria": "Mark the emergency from {{sender}} as seen"
   },
   "mecp": {
     "severity": {

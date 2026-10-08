@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   APP_SETTINGS_STORAGE_KEY,
   getAppSettingsRaw,
+  getOperationalAlertSettings,
   isReticulumAutoResendOnAnnounceEnabled,
   isRrcUnreadAllRoomMessagesEnabled,
+  MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
   mergeAppSettingsPartial,
   setAppSettingsRaw,
@@ -31,6 +33,23 @@ describe('appSettingsStorage', () => {
     localStorage.setItem(LEGACY_KEY, JSON.stringify({ b: 3 }));
     expect(getAppSettingsRaw()).toBe(JSON.stringify({ a: 2 }));
     expect(localStorage.getItem(LEGACY_KEY)).toBe(JSON.stringify({ b: 3 }));
+  });
+
+  it.each([
+    [undefined, null],
+    [null, null],
+    ['5', null],
+    [0, null],
+    [Number.NaN, null],
+    [5, 5],
+    [2.7, 2],
+    [999, MECP_REPEAT_ALERT_MAX_MINUTES],
+  ])('mecpRepeatAlertMinutes %s parses to %s (off by default)', (stored, expected) => {
+    localStorage.setItem(
+      APP_SETTINGS_STORAGE_KEY,
+      JSON.stringify(stored === undefined ? {} : { mecpRepeatAlertMinutes: stored }),
+    );
+    expect(getOperationalAlertSettings().mecpRepeatAlertMinutes).toBe(expected);
   });
 
   it('mergeAppSetting migrates legacy then merges', () => {

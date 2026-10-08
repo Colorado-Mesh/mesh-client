@@ -459,7 +459,10 @@
     "protocolsSection": "プロトコル",
     "protocolsEnabledDesc": "使用していないプロトコルをオフにします。無効なプロトコルは、プロトコルスイッチャーから隠され、切断され、自動接続と自動起動によってスキップされます。1つのプロトコルのみが有効になっている場合、スイッチャーは非表示になります。",
     "protocolEnabled": "{{name}}を有効にする",
-    "protocolLastEnabled": "少なくとも1つのプロトコルを有効にしておく必要があります。"
+    "protocolLastEnabled": "少なくとも1つのプロトコルを有効にしておく必要があります。",
+    "mecpRepeatAlertMinutes": "見えないメイデイ/緊急アラートを繰り返す（分）",
+    "mecpRepeatAlertMinutesPlaceholder": "オフ",
+    "mecpRepeatAlertMinutesHint": "無人ステーションの場合。誰かがインシデントタブを開くか、表示されたアラートをマークするまで、この間隔でアラートトーンを再生します。一度警告するには空白のままにします。"
   },
   "aria": {
     "closeDialog": "ダイアログを閉じる",
@@ -6508,7 +6511,16 @@
     "exportLog": "ログのエクスポート",
     "exportMenuLabel": "インシデントログ形式のエクスポート",
     "exportJson": "JSONのエクスポート",
-    "exportCsv": "CSVのエクスポート"
+    "exportCsv": "CSVのエクスポート",
+    "standingAlertRegion": "未表示の緊急アラート",
+    "standingAlertTitle": "{{sender}}からの緊急事態",
+    "standingAlertHeard": "{{time}}に聞いた",
+    "standingAlertMore_one": "+ {{count}}目に見えないもの",
+    "standingAlertMore_other": "+ {{count}}目に見えないもの",
+    "standingAlertView": "表示",
+    "standingAlertViewAria": "インシデントタブを開く",
+    "standingAlertDismiss": "マークが表示されました",
+    "standingAlertDismissAria": "{{sender}}からの緊急事態を確認済みとしてマークします。"
   },
   "shell": {
     "section": {

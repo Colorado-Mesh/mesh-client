@@ -30,6 +30,7 @@ const defaults: OperationalAlertSettings = {
   nodeSilenceAlertMinutes: null,
   nodeBatteryLowThreshold: 10,
   notifyOnLinkDown: true,
+  mecpRepeatAlertMinutes: null,
 };
 
 function makeNode(overrides: Partial<MeshNode> = {}): MeshNode {

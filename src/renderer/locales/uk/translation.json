@@ -475,7 +475,10 @@
     "protocolsSection": "Протоколів",
     "protocolsEnabledDesc": "Вимкніть протоколи, які ви не використовуєте. Вимкнений протокол приховано від комутатора протоколів, від'єднано та пропущено автоматичним підключенням та автоматичним запуском. Якщо ввімкнено лише один протокол, перемикач приховано.",
     "protocolEnabled": "Увімкнути {{name}}",
-    "protocolLastEnabled": "Принаймні один протокол повинен залишатися ввімкненим."
+    "protocolLastEnabled": "Принаймні один протокол повинен залишатися ввімкненим.",
+    "mecpRepeatAlertMinutes": "Повторне невидиме сповіщення про травень/ТЕРМІНОВЕ сповіщення (хвилини)",
+    "mecpRepeatAlertMinutesPlaceholder": "Вимк.",
+    "mecpRepeatAlertMinutesHint": "Для автоматичних станцій. Повторює сигнал сповіщення з цим інтервалом, поки хтось не відкриє вкладку \"Інцидент\" або не позначить побачене сповіщення. Залиште порожнім, щоб сповістити один раз."
   },
   "aria": {
     "closeDialog": "Закрити діалог",
@@ -6614,7 +6617,18 @@
     "exportLog": "Журнал експорту",
     "exportMenuLabel": "Експортувати формат журналу інцидентів",
     "exportJson": "Експорт JSON",
-    "exportCsv": "Експорт CSV"
+    "exportCsv": "Експорт CSV",
+    "standingAlertRegion": "Невидиме аварійне сповіщення",
+    "standingAlertTitle": "Надзвичайна ситуація від {{sender}}",
+    "standingAlertHeard": "Слухали о {{time}}",
+    "standingAlertMore_one": "+{{count}} непереглянуте",
+    "standingAlertMore_other": "+{{count}} непереглянутих",
+    "standingAlertMore_few": "+{{count}} непереглянуті",
+    "standingAlertMore_many": "+{{count}} непереглянутих",
+    "standingAlertView": "Вид",
+    "standingAlertViewAria": "Відкрийте вкладку «Інцидент».",
+    "standingAlertDismiss": "Позначити як побачене",
+    "standingAlertDismissAria": "Позначте аварійну ситуацію від {{sender}}, як показано"
   },
   "shell": {
     "section": {

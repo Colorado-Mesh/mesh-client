@@ -1158,6 +1158,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   app: {
     getRendererLiveness: () => ipcRenderer.invoke('app:getRendererLiveness'),
     focusWindow: (): Promise<void> => ipcRenderer.invoke('app:focusWindow'),
+    requestAttention: (): Promise<void> => ipcRenderer.invoke('app:requestAttention'),
   },
   onSpellcheckReplace: (cb: (payload: SpellcheckReplacePayload) => void) => {
     const handler = (_: unknown, payload: SpellcheckReplacePayload) => {

@@ -3922,6 +3922,25 @@ ipcMain.handle('app:focusWindow', (event) => {
   window.focus();
 });
 
+const windowsRequestingAttention = new WeakSet<BrowserWindow>();
+
+/**
+ * Unseen MAYDAY/URGENT: flash the taskbar entry / bounce the dock without stealing focus.
+ * Electron maps `flashFrame` per OS, so there is no platform branch; cleared on next focus.
+ */
+ipcMain.handle('app:requestAttention', (event) => {
+  assertIpcSender(event, 'app:requestAttention');
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window || window.isDestroyed() || window.isFocused()) return;
+  window.flashFrame(true);
+  if (windowsRequestingAttention.has(window)) return;
+  windowsRequestingAttention.add(window);
+  window.once('focus', () => {
+    windowsRequestingAttention.delete(window);
+    if (!window.isDestroyed()) window.flashFrame(false);
+  });
+});
+
 ipcMain.handle('app:showEmojiPanel', (event) => {
   if (!validateIpcSender(event)) {
     throw new Error('IPC sender validation failed');

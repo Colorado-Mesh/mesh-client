@@ -459,7 +459,10 @@
     "protocolsSection": "Protocolos",
     "protocolsEnabledDesc": "Desative os protocolos que você não usa. Um protocolo desativado é ocultado do comutador de protocolo, desconectado e ignorado por conexão automática e início automático. Com apenas um protocolo ativado, o switcher fica oculto.",
     "protocolEnabled": "Ativar {{name}}",
-    "protocolLastEnabled": "Pelo menos um protocolo deve permanecer ativado."
+    "protocolLastEnabled": "Pelo menos um protocolo deve permanecer ativado.",
+    "mecpRepeatAlertMinutes": "Repetir MAYDAY invisível/alerta URGENTE (minutos)",
+    "mecpRepeatAlertMinutesPlaceholder": "Desligado",
+    "mecpRepeatAlertMinutesHint": "Para estações desacompanhadas. Repete o tom de alerta neste intervalo até que alguém abra a guia Incidente ou marque o alerta visto. Deixe em branco para alertar uma vez."
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -6508,7 +6511,16 @@
     "exportLog": "Exportar registro",
     "exportMenuLabel": "Exportar formato de registro de incidentes",
     "exportJson": "Exportar JSON",
-    "exportCsv": "Exportar CSV"
+    "exportCsv": "Exportar CSV",
+    "standingAlertRegion": "Alerta de emergência invisível",
+    "standingAlertTitle": "Emergência de {{sender}}",
+    "standingAlertHeard": "Ouvido em {{time}}",
+    "standingAlertMore_one": "+{{count}} mais invisível",
+    "standingAlertMore_other": "+{{count}} mais invisível",
+    "standingAlertView": "Visualizar",
+    "standingAlertViewAria": "Abra a guia Incidente",
+    "standingAlertDismiss": "Marca vista",
+    "standingAlertDismissAria": "Marque a emergência de {{sender}} como vista"
   },
   "shell": {
     "section": {
