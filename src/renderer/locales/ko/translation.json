@@ -6775,6 +6775,17 @@
     "loadFirst": "적용하기 전에 노드에서 이 설정을 읽으십시오.",
     "readbackMismatch": "저장 후 노드가 다른 값을 보고했습니다.",
     "authCancelled": "구성 인증이 취소되었습니다.",
-    "aclSaved": "사용 권한이 저장되었습니다. ACL을 새로 고침하여 이 펌웨어가 라디오를 통해 해당 펌웨어를 지원하는지 확인하세요."
+    "aclSaved": "사용 권한이 저장되었습니다. ACL을 새로 고침하여 이 펌웨어가 라디오를 통해 해당 펌웨어를 지원하는지 확인하세요.",
+    "identitySummary": "이름, 소유자 정보 및 좌표",
+    "radioSummary": "주파수, 변조 및 송신 출력",
+    "routingSummary": "패킷 전달, 경로 해시 및 알림 간격",
+    "roomSummary": "게스트 비밀번호 및 읽기 권한",
+    "permissionsSummary": "이 방의 읽기, 쓰기 및 관리 권한 설정",
+    "edited": "수정됨",
+    "pendingChanges_one": "변경 {{count}}개",
+    "pendingChanges_other": "변경 {{count}}개",
+    "read": "설정 읽기 완료",
+    "radioConnected": "무전기 연결됨",
+    "radioDisconnected": "무전기 연결 끊김"
   }
 }

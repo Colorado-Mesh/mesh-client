@@ -6329,7 +6329,10 @@
         "title": "Radio RNode",
         "body": "Utilice hardware de radio compatible y la configuración de su red de radio local."
       },
-      "existing": {}
+      "existing": {
+        "title": "Configuración existente de mesh-client",
+        "body": "Conserva las interfaces ya configuradas en mesh-client y comprueba si están listas."
+      }
     },
     "hubLabel": "Acceso a internet",
     "hubHint": "Empieza con un concentrador. La aplicación añadirá o habilitará esta conexión y reiniciará Reticulum para aplicarla. Los centros públicos pueden ver tu dirección IP y, a veces, pueden no estar disponibles.",
@@ -6377,7 +6380,8 @@
     "interfacesUnavailable": "No se pudieron leer tus conexiones. Compruebe que Reticulum se esté ejecutando y vuelva a intentarlo.",
     "identityUnavailable": "No se pudo leer tu identidad. Compruebe que Reticulum se esté ejecutando y vuelva a intentarlo.",
     "interfaceSaveFailed": "No se pudo guardar esta conexión. Verifique la configuración de su conexión e inténtelo nuevamente.",
-    "identitySaveFailed": "No se pudo guardar su configuración de identidad. Intentar otra vez."
+    "identitySaveFailed": "No se pudo guardar su configuración de identidad. Intentar otra vez.",
+    "existingHint": "La guía comprobará las interfaces ya configuradas en mesh-client sin modificarlas. No utiliza la configuración de Reticulum de otra aplicación ni un rnsd ejecutado por separado. Una interfaz de red local alcanza los dispositivos Reticulum cercanos de esa red; por sí sola no te conecta con pares públicos de internet."
   },
   "mecp": {
     "severity": {
@@ -6771,6 +6775,17 @@
     "loadFirst": "Lea esta configuración desde el nodo antes de aplicarla.",
     "readbackMismatch": "El nodo informó un valor diferente después de guardar.",
     "authCancelled": "Se ha cancelado la autenticación de la configuración.",
-    "aclSaved": "Permiso guardado. Actualice la ACL para comprobar el anuncio si este firmware lo admite a través de la radio."
+    "aclSaved": "Permiso guardado. Actualice la ACL para comprobar el anuncio si este firmware lo admite a través de la radio.",
+    "identitySummary": "Nombre, información del propietario y coordenadas",
+    "radioSummary": "Frecuencia, modulación y potencia de transmisión",
+    "routingSummary": "Reenvío de paquetes, hashes de ruta e intervalos de anuncios",
+    "roomSummary": "Contraseña de invitados y acceso de lectura",
+    "permissionsSummary": "Gestiona quién puede leer, escribir y administrar esta sala",
+    "edited": "Modificado",
+    "pendingChanges_one": "{{count}} cambio",
+    "pendingChanges_other": "{{count}} cambios",
+    "read": "Ajustes leídos",
+    "radioConnected": "Radio conectada",
+    "radioDisconnected": "Radio desconectada"
   }
 }

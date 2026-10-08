@@ -202,6 +202,22 @@ export function validateInfraConfigValue(field: InfraConfigField, value: string)
   }
 }
 
+/** Firmware float32 readbacks can be equivalent without having the same decimal text. */
+export function infraConfigValueMatches(
+  field: InfraConfigField,
+  expected: string | undefined,
+  actual: string | undefined,
+): boolean {
+  if (expected === undefined || actual === undefined) return expected === actual;
+  if (field.type !== 'number') return expected === actual;
+  return (
+    Math.min(
+      Math.abs(Number(expected) - Number(actual)),
+      Math.abs(Math.fround(Number(expected)) - Number(actual)),
+    ) < 0.00001
+  );
+}
+
 export interface InfraConfigApplyResult {
   values: InfraConfigValues;
   appliedKeys: InfraConfigKey[];
@@ -265,13 +281,7 @@ export async function applyInfraConfig(
         const expected = edited[key] ?? original[key];
         const actual = confirmed[key];
         const field = fields.find((item) => item.key === key);
-        const matches =
-          field?.type === 'number'
-            ? Math.min(
-                Math.abs(Number(expected) - Number(actual)),
-                Math.abs(Math.fround(Number(expected)) - Number(actual)),
-              ) < 0.00001
-            : expected === actual;
+        const matches = field != null && infraConfigValueMatches(field, expected, actual);
         if (!matches) throw configError('infraConfig.readbackMismatch');
       }
     }

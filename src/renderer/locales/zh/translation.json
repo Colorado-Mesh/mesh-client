@@ -6328,7 +6328,10 @@
         "title": "RNode无线电",
         "body": "使用兼容的无线电硬件和本地无线电网络的设置。"
       },
-      "existing": {}
+      "existing": {
+        "title": "现有的 mesh-client 设置",
+        "body": "保留已在 mesh-client 中配置的接口，并检查它们是否就绪。"
+      }
     },
     "connectionBody": "接口只是与 Reticulum 的连接。选择您想要访问网络的方式。您可以稍后添加其他连接。",
     "hubLabel": "公共互联网中心",
@@ -6377,7 +6380,8 @@
     "identityUnavailable": "无法读取您的身份。检查 Reticulum 是否正在运行，然后重试。",
     "identitySaveFailed": "无法保存您的身份设置。再试一次。",
     "interfacesUnavailable": "无法读取您的连接。检查 Reticulum 是否正在运行，然后重试。",
-    "interfaceSaveFailed": "无法保存此连接。检查您的连接设置并重试。"
+    "interfaceSaveFailed": "无法保存此连接。检查您的连接设置并重试。",
+    "existingHint": "本指南将检查已在 mesh-client 中配置的接口，而不会更改它们。它不会使用其他应用的 Reticulum 配置或单独运行的 rnsd。本地网络接口可以连接该网络上附近的 Reticulum 设备，但它本身不会将您连接到公共互联网对等节点。"
   },
   "mecp": {
     "severity": {
@@ -6771,6 +6775,17 @@
     "loadFirst": "在应用之前，从节点读取此设置。",
     "readbackMismatch": "节点在保存后报告了不同的值。",
     "authCancelled": "配置身份验证已取消。",
-    "aclSaved": "权限已保存。如果此固件通过无线电支持，请刷新ACL以检查房源。"
+    "aclSaved": "权限已保存。如果此固件通过无线电支持，请刷新ACL以检查房源。",
+    "identitySummary": "名称、所有者信息和坐标",
+    "radioSummary": "频率、调制和发射功率",
+    "routingSummary": "数据包转发、路径哈希和广播间隔",
+    "roomSummary": "访客密码和读取权限",
+    "permissionsSummary": "管理此房间的读取、写入和管理权限",
+    "edited": "已编辑",
+    "pendingChanges_one": "{{count}} 项更改",
+    "pendingChanges_other": "{{count}} 项更改",
+    "read": "已读取设置",
+    "radioConnected": "电台已连接",
+    "radioDisconnected": "电台未连接"
   }
 }

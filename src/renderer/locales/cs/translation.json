@@ -6388,7 +6388,10 @@
         "body": "Použijte kompatibilní rádiový hardware a nastavení místní rádiové sítě.",
         "title": "Rádio RNode"
       },
-      "existing": {}
+      "existing": {
+        "title": "Stávající nastavení mesh-client",
+        "body": "Ponechte rozhraní již nastavená v mesh-client a ověřte, zda jsou připravena."
+      }
     },
     "routeLabel": "Jak se připojit",
     "hubLabel": "Veřejné internetové centrum",
@@ -6437,7 +6440,8 @@
     "identityUnavailable": "Vaši identitu se nepodařilo přečíst. Zkontrolujte, zda Reticulum běží, a zkuste to znovu.",
     "identitySaveFailed": "Nastavení identity se nepodařilo uložit. Zkuste to znovu.",
     "interfaceSaveFailed": "Toto připojení se nepodařilo uložit. Zkontrolujte nastavení připojení a zkuste to znovu.",
-    "interfacesUnavailable": "Vaše spojení se nepodařilo přečíst. Zkontrolujte, zda Reticulum běží, a zkuste to znovu."
+    "interfacesUnavailable": "Vaše spojení se nepodařilo přečíst. Zkontrolujte, zda Reticulum běží, a zkuste to znovu.",
+    "existingHint": "Průvodce zkontroluje rozhraní již nastavená v mesh-client, aniž by je měnil. Nepoužívá konfiguraci Reticulum z jiné aplikace ani samostatně běžící rnsd. Rozhraní místní sítě dosáhne na blízká zařízení Reticulum v této síti; samo o sobě vás nepřipojí k veřejným internetovým protějškům."
   },
   "mecp": {
     "severity": {
@@ -6833,6 +6837,18 @@
     "loadFirst": "Před použitím si toto nastavení přečtěte z uzlu.",
     "readbackMismatch": "Uzel po uložení vykázal jinou hodnotu.",
     "authCancelled": "Ověření konfigurace bylo zrušeno.",
-    "aclSaved": "Povolení uloženo. Obnovte seznam ACL a zkontrolujte, zda jej tento firmware podporuje přes rádio."
+    "aclSaved": "Povolení uloženo. Obnovte seznam ACL a zkontrolujte, zda jej tento firmware podporuje přes rádio.",
+    "identitySummary": "Název, informace o vlastníkovi a souřadnice",
+    "radioSummary": "Frekvence, modulace a vysílací výkon",
+    "routingSummary": "Předávání paketů, hashe cest a intervaly oznámení",
+    "roomSummary": "Heslo pro hosty a přístup ke čtení",
+    "permissionsSummary": "Správa oprávnění ke čtení, zápisu a správě místnosti",
+    "edited": "Upraveno",
+    "pendingChanges_one": "{{count}} změna",
+    "pendingChanges_other": "Změny: {{count}}",
+    "read": "Nastavení načteno",
+    "radioConnected": "Rádio připojeno",
+    "radioDisconnected": "Rádio odpojeno",
+    "pendingChanges_few": "{{count}} změny"
   }
 }

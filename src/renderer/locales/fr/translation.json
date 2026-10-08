@@ -6327,7 +6327,10 @@
         "title": "Radio RNode",
         "body": "Utilisez du matériel radio compatible et les paramètres de votre réseau radio local."
       },
-      "existing": {}
+      "existing": {
+        "title": "Configuration existante de mesh-client",
+        "body": "Conservez les interfaces déjà configurées dans mesh-client et vérifiez leur disponibilité."
+      }
     },
     "routeLabel": "Comment se connecter",
     "connectionBody": "Une interface est simplement une connexion à Reticulum. Choisissez comment vous souhaitez accéder au réseau. Vous pourrez ajouter d'autres connexions ultérieurement.",
@@ -6377,7 +6380,8 @@
     "identityUnavailable": "Impossible de lire votre identité. Vérifiez que Reticulum est en cours d'exécution, puis réessayez.",
     "interfacesUnavailable": "Impossible de lire vos connexions. Vérifiez que Reticulum est en cours d'exécution, puis réessayez.",
     "identitySaveFailed": "Impossible d'enregistrer vos paramètres d'identité. Essayer à nouveau.",
-    "interfaceSaveFailed": "Impossible d'enregistrer cette connexion. Vérifiez vos paramètres de connexion et réessayez."
+    "interfaceSaveFailed": "Impossible d'enregistrer cette connexion. Vérifiez vos paramètres de connexion et réessayez.",
+    "existingHint": "Le guide vérifiera les interfaces déjà configurées dans mesh-client sans les modifier. Il n’utilise pas la configuration Reticulum d’une autre application ni un rnsd exécuté séparément. Une interface réseau locale atteint les appareils Reticulum proches sur ce réseau ; elle ne vous connecte pas à elle seule aux pairs publics sur internet."
   },
   "mecp": {
     "severity": {
@@ -6771,6 +6775,17 @@
     "loadFirst": "Lisez ce paramètre dans le nœud avant de l'appliquer.",
     "readbackMismatch": "Le nœud a signalé une valeur différente après l'enregistrement.",
     "authCancelled": "L'authentification de configuration a été annulée.",
-    "aclSaved": "Autorisation enregistrée. Actualisez l'ACL pour vérifier la liste si ce micrologiciel la prend en charge sur la radio."
+    "aclSaved": "Autorisation enregistrée. Actualisez l'ACL pour vérifier la liste si ce micrologiciel la prend en charge sur la radio.",
+    "identitySummary": "Nom, informations du propriétaire et coordonnées",
+    "radioSummary": "Fréquence, modulation et puissance de transmission",
+    "routingSummary": "Relais des paquets, empreintes des chemins et intervalles des annonces",
+    "roomSummary": "Mot de passe invité et accès en lecture",
+    "permissionsSummary": "Gérer les droits de lecture, écriture et administration de ce salon",
+    "edited": "Modifié",
+    "pendingChanges_one": "{{count}} modification",
+    "pendingChanges_other": "{{count}} modifications",
+    "read": "Paramètres lus",
+    "radioConnected": "Radio connectée",
+    "radioDisconnected": "Radio déconnectée"
   }
 }

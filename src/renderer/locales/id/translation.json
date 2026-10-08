@@ -6775,6 +6775,17 @@
     "loadFirst": "Baca pengaturan ini dari node sebelum menerapkannya.",
     "readbackMismatch": "Node melaporkan nilai yang berbeda setelah menyimpan.",
     "authCancelled": "Autentikasi konfigurasi dibatalkan.",
-    "aclSaved": "Izin disimpan. Segarkan ACL untuk memeriksa iklan apakah firmware ini mendukungnya melalui radio."
+    "aclSaved": "Izin disimpan. Segarkan ACL untuk memeriksa iklan apakah firmware ini mendukungnya melalui radio.",
+    "identitySummary": "Nama, informasi pemilik dan koordinat",
+    "radioSummary": "Frekuensi, modulasi dan daya pancar",
+    "routingSummary": "Penerusan paket, hash jalur dan interval pengumuman",
+    "roomSummary": "Kata sandi tamu dan akses baca",
+    "permissionsSummary": "Kelola siapa yang dapat membaca, menulis dan mengelola ruang ini",
+    "edited": "Diedit",
+    "pendingChanges_one": "{{count}} perubahan",
+    "pendingChanges_other": "{{count}} perubahan",
+    "read": "Pengaturan dibaca",
+    "radioConnected": "Radio terhubung",
+    "radioDisconnected": "Radio terputus"
   }
 }

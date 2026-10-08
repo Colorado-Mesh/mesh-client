@@ -6430,7 +6430,10 @@
         "title": "Radio RNode",
         "body": "Użyj kompatybilnego sprzętu radiowego i ustawień lokalnej sieci radiowej."
       },
-      "existing": {}
+      "existing": {
+        "title": "Istniejąca konfiguracja mesh-client",
+        "body": "Zachowaj interfejsy już skonfigurowane w mesh-client i sprawdź ich gotowość."
+      }
     },
     "backupBody": "Te słowa przywrócą Twoją tożsamość, jeśli stracisz ten komputer. Zapisz je teraz w prywatnym miejscu. Nigdy nie podawaj ich nikomu, kto prosi o Twój adres do wiadomości. Możesz także później wyeksportować chronioną kopię zapasową z sieci.",
     "connectionBody": "Interfejs to po prostu połączenie z Reticulum. Wybierz sposób, w jaki chcesz połączyć się z siecią. Później możesz dodać inne połączenia.",
@@ -6481,7 +6484,8 @@
     "interfacesUnavailable": "Nie udało się odczytać Twoich połączeń. Sprawdź, czy Reticulum działa, a następnie spróbuj ponownie.",
     "identitySaveFailed": "Nie można zapisać ustawień Twojej tożsamości. Spróbuj ponownie.",
     "interfaceSaveFailed": "Nie udało się zapisać tego połączenia. Sprawdź ustawienia połączenia i spróbuj ponownie.",
-    "identityUnavailable": "Nie udało się odczytać Twojej tożsamości. Sprawdź, czy Reticulum działa, a następnie spróbuj ponownie."
+    "identityUnavailable": "Nie udało się odczytać Twojej tożsamości. Sprawdź, czy Reticulum działa, a następnie spróbuj ponownie.",
+    "existingHint": "Przewodnik sprawdzi interfejsy już skonfigurowane w mesh-client bez ich zmieniania. Nie używa konfiguracji Reticulum innej aplikacji ani osobno uruchomionego rnsd. Interfejs sieci lokalnej dociera do pobliskich urządzeń Reticulum w tej sieci; sam nie łączy z publicznymi węzłami w internecie."
   },
   "mecp": {
     "severity": {
@@ -6879,6 +6883,19 @@
     "loadFirst": "Przed zastosowaniem tego ustawienia odczytaj je z węzła.",
     "readbackMismatch": "Węzeł zgłosił inną wartość po zapisaniu.",
     "authCancelled": "Uwierzytelnianie konfiguracji zostało anulowane.",
-    "aclSaved": "Uprawnienia zostały zapisane. Odśwież listę ACL, aby sprawdzić, czy to oprogramowanie sprzętowe obsługuje je przez radio."
+    "aclSaved": "Uprawnienia zostały zapisane. Odśwież listę ACL, aby sprawdzić, czy to oprogramowanie sprzętowe obsługuje je przez radio.",
+    "identitySummary": "Nazwa, informacje o właścicielu i współrzędne",
+    "radioSummary": "Częstotliwość, modulacja i moc nadawania",
+    "routingSummary": "Przekazywanie pakietów, skróty ścieżek i interwały ogłoszeń",
+    "roomSummary": "Hasło gościa i dostęp do odczytu",
+    "permissionsSummary": "Zarządzaj uprawnieniami do odczytu, zapisu i administracji pokojem",
+    "edited": "Zmieniono",
+    "pendingChanges_one": "{{count}} zmiana",
+    "pendingChanges_other": "Zmiany: {{count}}",
+    "read": "Ustawienia odczytane",
+    "radioConnected": "Radio połączone",
+    "radioDisconnected": "Radio rozłączone",
+    "pendingChanges_few": "{{count}} zmiany",
+    "pendingChanges_many": "{{count}} zmian"
   }
 }
