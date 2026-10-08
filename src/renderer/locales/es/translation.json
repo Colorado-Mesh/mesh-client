@@ -6776,7 +6776,18 @@
     "loadFirst": "Lea esta configuración desde el nodo antes de aplicarla.",
     "readbackMismatch": "El nodo informó un valor diferente después de guardar.",
     "authCancelled": "Se ha cancelado la autenticación de la configuración.",
-    "aclSaved": "Permiso guardado. Actualice la ACL para comprobar el anuncio si este firmware lo admite a través de la radio."
+    "aclSaved": "Permiso guardado. Actualice la ACL para comprobar el anuncio si este firmware lo admite a través de la radio.",
+    "identitySummary": "Nombre, información del propietario y coordenadas",
+    "radioSummary": "Frecuencia, modulación y potencia de transmisión",
+    "routingSummary": "Reenvío de paquetes, hashes de ruta e intervalos de anuncios",
+    "roomSummary": "Contraseña de invitados y acceso de lectura",
+    "permissionsSummary": "Gestiona quién puede leer, escribir y administrar esta sala",
+    "edited": "Modificado",
+    "pendingChanges_one": "{{count}} cambio",
+    "pendingChanges_other": "{{count}} cambios",
+    "read": "Ajustes leídos",
+    "radioConnected": "Radio conectada",
+    "radioDisconnected": "Radio desconectada"
   },
   "chatTranslation": {
     "translate": "Traducir mensaje",

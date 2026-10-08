@@ -6776,7 +6776,18 @@
     "loadFirst": "Lees deze instelling van het knooppunt voordat u deze toepast.",
     "readbackMismatch": "Het knooppunt rapporteerde een andere waarde na het opslaan.",
     "authCancelled": "Configuratieverificatie is geannuleerd.",
-    "aclSaved": "Toestemming opgeslagen. Vernieuw ACL om de lijst te controleren of deze firmware het via de radio ondersteunt."
+    "aclSaved": "Toestemming opgeslagen. Vernieuw ACL om de lijst te controleren of deze firmware het via de radio ondersteunt.",
+    "identitySummary": "Naam, eigenaarsinformatie en coördinaten",
+    "radioSummary": "Frequentie, modulatie en zendvermogen",
+    "routingSummary": "Pakketdoorsturing, padhashes en aankondigingsintervallen",
+    "roomSummary": "Gastwachtwoord en leestoegang",
+    "permissionsSummary": "Beheer wie deze ruimte kan lezen, beschrijven en beheren",
+    "edited": "Bewerkt",
+    "pendingChanges_one": "{{count}} wijziging",
+    "pendingChanges_other": "{{count}} wijzigingen",
+    "read": "Instellingen gelezen",
+    "radioConnected": "Radio verbonden",
+    "radioDisconnected": "Radio niet verbonden"
   },
   "chatTranslation": {
     "translate": "Bericht vertalen",

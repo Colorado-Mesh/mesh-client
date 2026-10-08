@@ -6776,7 +6776,18 @@
     "invalidValue": "Check the edited values and ranges. Text must fit the firmware limit and cannot contain line breaks.",
     "loadFirst": "Read this setting from the node before applying it.",
     "readbackMismatch": "The node reported a different value after saving.",
-    "authCancelled": "Configuration authentication was cancelled."
+    "authCancelled": "Configuration authentication was cancelled.",
+    "identitySummary": "Name, owner information and coordinates",
+    "radioSummary": "Frequency, modulation and transmit power",
+    "routingSummary": "Packet forwarding, path hashes and advert timing",
+    "roomSummary": "Guest password and read access",
+    "permissionsSummary": "Manage who can read, write and administer this room",
+    "edited": "Edited",
+    "pendingChanges_one": "{{count}} change",
+    "pendingChanges_other": "{{count}} changes",
+    "read": "Settings read",
+    "radioConnected": "Radio connected",
+    "radioDisconnected": "Radio disconnected"
   },
   "chatTranslation": {
     "translate": "Translate message",

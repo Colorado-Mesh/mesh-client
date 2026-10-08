@@ -6776,7 +6776,18 @@
     "loadFirst": "Lesen Sie diese Einstellung vom Knoten aus, bevor Sie sie anwenden.",
     "readbackMismatch": "Der Knoten meldete nach dem Speichern einen anderen Wert.",
     "authCancelled": "Die Konfigurationsauthentifizierung wurde abgebrochen.",
-    "aclSaved": "Berechtigung gespeichert. Aktualisieren Sie die ACL, um die Auflistung zu überprüfen, ob diese Firmware sie über das Funkgerät unterstützt."
+    "aclSaved": "Berechtigung gespeichert. Aktualisieren Sie die ACL, um die Auflistung zu überprüfen, ob diese Firmware sie über das Funkgerät unterstützt.",
+    "identitySummary": "Name, Eigentümerinformationen und Koordinaten",
+    "radioSummary": "Frequenz, Modulation und Sendeleistung",
+    "routingSummary": "Paketweiterleitung, Pfad-Hashes und Ankündigungsintervalle",
+    "roomSummary": "Gastpasswort und Lesezugriff",
+    "permissionsSummary": "Lese-, Schreib- und Verwaltungsrechte für diesen Raum",
+    "edited": "Bearbeitet",
+    "pendingChanges_one": "{{count}} Änderung",
+    "pendingChanges_other": "{{count}} Änderungen",
+    "read": "Einstellungen gelesen",
+    "radioConnected": "Funkgerät verbunden",
+    "radioDisconnected": "Funkgerät getrennt"
   },
   "chatTranslation": {
     "translate": "Mitteilung übersetzen",

@@ -6776,7 +6776,18 @@
     "loadFirst": "Leia esta configuração do nó antes de aplicá-la.",
     "readbackMismatch": "O nó relatou um valor diferente após salvar.",
     "authCancelled": "A autenticação de configuração foi cancelada.",
-    "aclSaved": "Permissão salva. Atualize a ACL para verificar a listagem se este firmware a suporta pelo rádio."
+    "aclSaved": "Permissão salva. Atualize a ACL para verificar a listagem se este firmware a suporta pelo rádio.",
+    "identitySummary": "Nome, informações do proprietário e coordenadas",
+    "radioSummary": "Frequência, modulação e potência de transmissão",
+    "routingSummary": "Encaminhamento de pacotes, hashes de rota e intervalos de anúncios",
+    "roomSummary": "Senha de convidados e acesso de leitura",
+    "permissionsSummary": "Gerencie quem pode ler, escrever e administrar esta sala",
+    "edited": "Editado",
+    "pendingChanges_one": "{{count}} alteração",
+    "pendingChanges_other": "{{count}} alterações",
+    "read": "Configurações lidas",
+    "radioConnected": "Rádio conectado",
+    "radioDisconnected": "Rádio desconectado"
   },
   "chatTranslation": {
     "translate": "Traduzir mensagem",

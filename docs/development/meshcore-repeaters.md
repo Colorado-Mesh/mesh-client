@@ -8,7 +8,7 @@ Developer reference for MeshCore repeater admin RPCs, trace/ping, neighbors pagi
 
 ## Configuration panel
 
-Choose **Configure** from a repeater or room row menu. **Manage** on the Rooms tab opens the same panel for that room. Open a section to read its settings; unopened sections generate no radio traffic. Identity/location, radio parameters, and routing/adverts are shared. Rooms also expose guest access and ACL permissions. **Advanced** opens the existing CLI for firmware-specific options and confirmed reboot commands.
+Choose **Configure** from a repeater or room row menu. **Manage** on the Rooms tab opens the same panel for that room. Section summaries explain the settings inside; opening a section reads its settings and unopened sections generate no radio traffic. The header reports the local radio connection, and section badges count pending changes while individual edited fields are marked. Identity/location, radio parameters, and routing/adverts are shared. Rooms also expose guest access and ACL permissions. **Advanced** opens the existing CLI for firmware-specific options and confirmed reboot commands.
 
 **Apply** validates all edited fields before sending, writes only changed values, and reads each value back before reporting success. Radio frequency/bandwidth/SF/CR are one `set radio` exchange. Firmware rejection or timeout keeps edits available and stops subsequent writes; earlier confirmed changes remain saved. Refresh is disabled while there are edits, so use **Discard edits** first. Unsupported settings are disabled without substituting defaults. Radio changes that require reboot show a notice; reboot stays an explicit CLI action.
 

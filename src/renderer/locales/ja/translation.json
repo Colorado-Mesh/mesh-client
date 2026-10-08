@@ -6776,7 +6776,18 @@
     "loadFirst": "適用する前に、ノードからこの設定を読み取ります。",
     "readbackMismatch": "ノードは保存後に異なる値を報告しました。",
     "authCancelled": "構成認証がキャンセルされました。",
-    "aclSaved": "アクセス許可が保存されました。このファームウェアが無線でサポートされているかどうかを確認するには、ACLを更新してください。"
+    "aclSaved": "アクセス許可が保存されました。このファームウェアが無線でサポートされているかどうかを確認するには、ACLを更新してください。",
+    "identitySummary": "名前、所有者情報、座標",
+    "radioSummary": "周波数、変調、送信出力",
+    "routingSummary": "パケット転送、経路ハッシュ、advert の送信間隔",
+    "roomSummary": "ゲストパスワードと読み取りアクセス",
+    "permissionsSummary": "このルームの読み取り、書き込み、管理権限",
+    "edited": "編集済み",
+    "pendingChanges_one": "{{count}} 件の変更",
+    "pendingChanges_other": "{{count}} 件の変更",
+    "read": "設定を読み取り済み",
+    "radioConnected": "無線機接続済み",
+    "radioDisconnected": "無線機未接続"
   },
   "chatTranslation": {
     "translate": "メッセージを翻訳する",

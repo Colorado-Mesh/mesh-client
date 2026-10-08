@@ -6838,7 +6838,19 @@
     "loadFirst": "Před použitím si toto nastavení přečtěte z uzlu.",
     "readbackMismatch": "Uzel po uložení vykázal jinou hodnotu.",
     "authCancelled": "Ověření konfigurace bylo zrušeno.",
-    "aclSaved": "Povolení uloženo. Obnovte seznam ACL a zkontrolujte, zda jej tento firmware podporuje přes rádio."
+    "aclSaved": "Povolení uloženo. Obnovte seznam ACL a zkontrolujte, zda jej tento firmware podporuje přes rádio.",
+    "identitySummary": "Název, informace o vlastníkovi a souřadnice",
+    "radioSummary": "Frekvence, modulace a vysílací výkon",
+    "routingSummary": "Předávání paketů, hashe cest a intervaly oznámení",
+    "roomSummary": "Heslo pro hosty a přístup ke čtení",
+    "permissionsSummary": "Správa oprávnění ke čtení, zápisu a správě místnosti",
+    "edited": "Upraveno",
+    "pendingChanges_one": "{{count}} změna",
+    "pendingChanges_other": "Změny: {{count}}",
+    "read": "Nastavení načteno",
+    "radioConnected": "Rádio připojeno",
+    "radioDisconnected": "Rádio odpojeno",
+    "pendingChanges_few": "{{count}} změny"
   },
   "chatTranslation": {
     "translate": "Přeložit zprávu",

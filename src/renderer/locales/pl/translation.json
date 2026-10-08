@@ -6884,7 +6884,20 @@
     "loadFirst": "Przed zastosowaniem tego ustawienia odczytaj je z węzła.",
     "readbackMismatch": "Węzeł zgłosił inną wartość po zapisaniu.",
     "authCancelled": "Uwierzytelnianie konfiguracji zostało anulowane.",
-    "aclSaved": "Uprawnienia zostały zapisane. Odśwież listę ACL, aby sprawdzić, czy to oprogramowanie sprzętowe obsługuje je przez radio."
+    "aclSaved": "Uprawnienia zostały zapisane. Odśwież listę ACL, aby sprawdzić, czy to oprogramowanie sprzętowe obsługuje je przez radio.",
+    "identitySummary": "Nazwa, informacje o właścicielu i współrzędne",
+    "radioSummary": "Częstotliwość, modulacja i moc nadawania",
+    "routingSummary": "Przekazywanie pakietów, skróty ścieżek i interwały ogłoszeń",
+    "roomSummary": "Hasło gościa i dostęp do odczytu",
+    "permissionsSummary": "Zarządzaj uprawnieniami do odczytu, zapisu i administracji pokojem",
+    "edited": "Zmieniono",
+    "pendingChanges_one": "{{count}} zmiana",
+    "pendingChanges_other": "Zmiany: {{count}}",
+    "read": "Ustawienia odczytane",
+    "radioConnected": "Radio połączone",
+    "radioDisconnected": "Radio rozłączone",
+    "pendingChanges_few": "{{count}} zmiany",
+    "pendingChanges_many": "{{count}} zmian"
   },
   "chatTranslation": {
     "translate": "Translate message",

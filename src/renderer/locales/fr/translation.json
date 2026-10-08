@@ -6776,7 +6776,18 @@
     "loadFirst": "Lisez ce paramètre dans le nœud avant de l'appliquer.",
     "readbackMismatch": "Le nœud a signalé une valeur différente après l'enregistrement.",
     "authCancelled": "L'authentification de configuration a été annulée.",
-    "aclSaved": "Autorisation enregistrée. Actualisez l'ACL pour vérifier la liste si ce micrologiciel la prend en charge sur la radio."
+    "aclSaved": "Autorisation enregistrée. Actualisez l'ACL pour vérifier la liste si ce micrologiciel la prend en charge sur la radio.",
+    "identitySummary": "Nom, informations du propriétaire et coordonnées",
+    "radioSummary": "Fréquence, modulation et puissance de transmission",
+    "routingSummary": "Relais des paquets, empreintes des chemins et intervalles des annonces",
+    "roomSummary": "Mot de passe invité et accès en lecture",
+    "permissionsSummary": "Gérer les droits de lecture, écriture et administration de ce salon",
+    "edited": "Modifié",
+    "pendingChanges_one": "{{count}} modification",
+    "pendingChanges_other": "{{count}} modifications",
+    "read": "Paramètres lus",
+    "radioConnected": "Radio connectée",
+    "radioDisconnected": "Radio déconnectée"
   },
   "chatTranslation": {
     "translate": "Traducir mensaje",

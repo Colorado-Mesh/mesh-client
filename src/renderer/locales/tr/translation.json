@@ -6776,7 +6776,18 @@
     "loadFirst": "Bu ayarı uygulamadan önce düğümden okuyun.",
     "readbackMismatch": "Düğüm, kaydettikten sonra farklı bir değer bildirdi.",
     "authCancelled": "Yapılandırma kimlik doğrulaması iptal edildi.",
-    "aclSaved": "İzin kaydedildi. Bu ürün yazılımının kaydı radyo üzerinden destekleyip desteklemediğini kontrol etmek için ACL'yi yenileyin."
+    "aclSaved": "İzin kaydedildi. Bu ürün yazılımının kaydı radyo üzerinden destekleyip desteklemediğini kontrol etmek için ACL'yi yenileyin.",
+    "identitySummary": "Ad, sahip bilgileri ve koordinatlar",
+    "radioSummary": "Frekans, modülasyon ve iletim gücü",
+    "routingSummary": "Paket iletimi, yol karmaları ve duyuru aralıkları",
+    "roomSummary": "Misafir parolası ve okuma erişimi",
+    "permissionsSummary": "Bu odanın okuma, yazma ve yönetim izinleri",
+    "edited": "Düzenlendi",
+    "pendingChanges_one": "{{count}} değişiklik",
+    "pendingChanges_other": "{{count}} değişiklik",
+    "read": "Ayarlar okundu",
+    "radioConnected": "Telsiz bağlı",
+    "radioDisconnected": "Telsiz bağlantısı kesildi"
   },
   "chatTranslation": {
     "translate": "Mesajı çevir",

@@ -109,10 +109,15 @@ describe('MeshCore infrastructure configuration panel', () => {
     });
     await user.clear(screen.getByLabelText('Name'));
     await user.type(screen.getByLabelText('Name'), 'New repeater');
+    expect(screen.getByText('1 change')).toBeInTheDocument();
+    expect(screen.getByText('Edited')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Refresh Identity and location' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Apply Identity and location' }));
     expect(await screen.findByText('Settings saved and checked.')).toBeInTheDocument();
     expect(name).toBe('New repeater');
+    expect(screen.queryByText('1 change')).not.toBeInTheDocument();
+    expect(screen.queryByText('Edited')).not.toBeInTheDocument();
+    expect(screen.getByText('Settings read')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Apply Identity and location' })).toBeDisabled();
   });
 
@@ -239,7 +244,8 @@ describe('MeshCore infrastructure configuration panel', () => {
     let firstTx = true;
     const send = vi.fn((command: string) => {
       if (command.startsWith('set radio ')) {
-        radio = `> ${command.slice('set radio '.length)}`;
+        const [frequency, ...parameters] = command.slice('set radio '.length).split(',');
+        radio = `> ${[Math.fround(Number(frequency)), ...parameters].join(',')}`;
         return Promise.resolve('OK (reboot to apply)');
       }
       if (command === 'set tx 21') {
@@ -274,12 +280,40 @@ describe('MeshCore infrastructure configuration panel', () => {
     });
     expect(screen.getByRole('alert')).toHaveTextContent(/edits are kept/);
     expect(screen.getByText(/Reboot this node through the CLI/)).toBeInTheDocument();
-    expect(screen.getByLabelText('Frequency (MHz)')).toHaveValue(915.525);
+    expect(screen.getByLabelText('Frequency (MHz)')).toHaveValue(Math.fround(915.525));
+    expect(screen.getByText('1 change')).toBeInTheDocument();
+    expect(screen.getAllByText('Edited')).toHaveLength(1);
     expect(screen.getByLabelText('Transmit power (dBm)')).toHaveValue(21);
     await user.click(screen.getByRole('button', { name: 'Apply Radio parameters' }));
     expect(await screen.findByText('Settings saved and checked.')).toBeInTheDocument();
     expect(send.mock.calls.filter(([command]) => command.startsWith('set radio '))).toHaveLength(1);
     expect(send.mock.calls.filter(([command]) => command === 'set tx 21')).toHaveLength(2);
+  });
+
+  it('keeps a draft pending when firmware readback differs from the requested value', async () => {
+    const user = userEvent.setup();
+    let saved = false;
+    const send = vi.fn((command: string) => {
+      if (command.startsWith('set radio ')) {
+        saved = true;
+        return Promise.resolve('OK');
+      }
+      return Promise.resolve(
+        command === 'get radio' && saved ? '> 900,62.5,7,8' : (initial[command] ?? 'OK'),
+      );
+    });
+    render(<MeshcoreInfraConfigPanel {...props({ onSend: send })} />);
+    await user.click(screen.getByText('Radio parameters'));
+    await waitFor(() => {
+      expect(screen.getByLabelText('Frequency (MHz)')).toBeEnabled();
+    });
+    await user.clear(screen.getByLabelText('Frequency (MHz)'));
+    await user.type(screen.getByLabelText('Frequency (MHz)'), '915.525');
+    await user.click(screen.getByRole('button', { name: 'Apply Radio parameters' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('different value after saving');
+    expect(screen.getByLabelText('Frequency (MHz)')).toHaveValue(915.525);
+    expect(screen.getByText('1 change')).toBeInTheDocument();
+    expect(screen.getByText('Edited')).toBeInTheDocument();
   });
 
   it('shows room access and permission controls only for rooms', async () => {

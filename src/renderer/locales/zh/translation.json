@@ -6776,7 +6776,18 @@
     "loadFirst": "在应用之前，从节点读取此设置。",
     "readbackMismatch": "节点在保存后报告了不同的值。",
     "authCancelled": "配置身份验证已取消。",
-    "aclSaved": "权限已保存。如果此固件通过无线电支持，请刷新ACL以检查房源。"
+    "aclSaved": "权限已保存。如果此固件通过无线电支持，请刷新ACL以检查房源。",
+    "identitySummary": "名称、所有者信息和坐标",
+    "radioSummary": "频率、调制和发射功率",
+    "routingSummary": "数据包转发、路径哈希和广播间隔",
+    "roomSummary": "访客密码和读取权限",
+    "permissionsSummary": "管理此房间的读取、写入和管理权限",
+    "edited": "已编辑",
+    "pendingChanges_one": "{{count}} 项更改",
+    "pendingChanges_other": "{{count}} 项更改",
+    "read": "已读取设置",
+    "radioConnected": "电台已连接",
+    "radioDisconnected": "电台未连接"
   },
   "chatTranslation": {
     "translate": "翻译消息",
