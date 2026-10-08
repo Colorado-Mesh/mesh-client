@@ -6323,7 +6323,10 @@
         "title": "インターネット",
         "body": "パブリック ハブは、他の人々とつながります。ラジオは必要ありません。始めるのに良い場所です。"
       },
-      "existing": {},
+      "existing": {
+        "title": "既存の mesh-client 設定",
+        "body": "mesh-client で設定済みのインターフェースを保持し、準備状況を確認します。"
+      },
       "radio": {
         "body": "互換性のある無線ハードウェアとローカル無線ネットワークの設定を使用します。",
         "title": "RNode無線"
@@ -6378,7 +6381,8 @@
     "identityUnavailable": "あなたの身元を読み取れませんでした。 Reticulum が実行されていることを確認してから、再試行してください。",
     "identitySaveFailed": "ID 設定を保存できませんでした。もう一度やり直してください。",
     "interfaceSaveFailed": "この接続を保存できませんでした。接続設定を確認して、もう一度試してください。",
-    "interfacesUnavailable": "接続を読み取れませんでした。 Reticulum が実行されていることを確認してから、再試行してください。"
+    "interfacesUnavailable": "接続を読み取れませんでした。 Reticulum が実行されていることを確認してから、再試行してください。",
+    "existingHint": "このガイドは mesh-client で設定済みのインターフェースを変更せずに確認します。他のアプリの Reticulum 設定や別途実行中の rnsd は使用しません。ローカルネットワークのインターフェースは、そのネットワーク上の近くの Reticulum デバイスに接続しますが、それだけでインターネット上の公開ピアに接続するわけではありません。"
   },
   "mecp": {
     "severity": {
@@ -6773,5 +6777,51 @@
     "readbackMismatch": "ノードは保存後に異なる値を報告しました。",
     "authCancelled": "構成認証がキャンセルされました。",
     "aclSaved": "アクセス許可が保存されました。このファームウェアが無線でサポートされているかどうかを確認するには、ACLを更新してください。"
+  },
+  "chatTranslation": {
+    "translate": "メッセージを翻訳する",
+    "loading": "翻訳",
+    "attribution": "{{language}}から{{provider}}経由で翻訳",
+    "showOriginal": "元のページを表示",
+    "showTranslation": "翻訳を表示",
+    "missingPack": "オフライン翻訳にはこれらのパックが必要です。",
+    "downloadPacks": "言語パックをダウンロード",
+    "online": "オンラインで翻訳",
+    "uncertain": "このメッセージは短すぎるか、その言語を自信を持って特定できませんでした。",
+    "unsupported": "オフライン翻訳はこの言語をサポートしていません。",
+    "error": "翻訳に失敗しました。もう一度試すか、翻訳設定を確認してください。",
+    "detectedLanguage": "検出された言語",
+    "settingsTitle": "翻訳",
+    "offlinePrivacy": "オフライン翻訳はこのデバイスで実行されます。自動翻訳は、オンラインサービスにメッセージテキストを送信しません。",
+    "optInDescription": "翻訳を有効にして、エンジンと言語検出器（ {{size}} ）をダウンロードします。言語パックは別途ダウンロードされます。有効にする前にダウンロードされるものはありません。",
+    "enable": "オフライン翻訳を有効にする",
+    "enabled": "オフライン翻訳を有効にしました",
+    "engineStatus": "エンジン： {{status}}",
+    "installed": "インストール済み",
+    "notInstalled": "未インストール",
+    "target": "次の言語に翻訳",
+    "readLanguages": "読んだ言語",
+    "auto": "着信メッセージを自動的に翻訳する",
+    "autoHint": "読んでいない言語で表示される受信メッセージのみが翻訳されます。イングリッシュピボットに必要な両方向を取り付けます。不足しているパックはスキップされます。",
+    "packs": "エンジンと言語パック",
+    "engine": "エンジンと言語検出器",
+    "progress": "{{pack}}のダウンロードの進捗状況",
+    "cancelPack": "{{pack}}のダウンロードをキャンセル",
+    "cancel": "キャンセル",
+    "deletePack": "{{pack}}パックを削除",
+    "downloadPack": "{{pack}}パックをダウンロード",
+    "delete": "削除",
+    "download": "ダウンロード",
+    "onlinePrivacy": "オンライン翻訳は、オンライン翻訳を選択した場合にのみ、選択したメッセージテキストを設定されたLibreTranslateサーバーに送信します。自動翻訳は常にオフラインのままです。",
+    "serverUrl": "LibreTranslateサーバーURL",
+    "apiKey": "APIキー（オプション）",
+    "savedKey": "APIキーは安全に保存されます。空白のフィールドは、同じサーバーURLに対してのみ保持されます。",
+    "onlineEnabled": "手動オンライン翻訳を許可する",
+    "test": "テストサーバー",
+    "testSuccess": "サーバー接続に成功しました。",
+    "clearKey": "保存したAPIキーを削除",
+    "diskUsage": "インストールされたファイルは、ディスク上で{{size}}を使用します。",
+    "removeAll": "すべての翻訳ファイルを削除",
+    "settingsError": "操作に失敗しました。接続またはサーバーの設定を確認して、もう一度やり直してください。"
   }
 }

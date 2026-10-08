@@ -82,6 +82,7 @@ import type {
   TAKServerStatus,
   TAKSettings,
 } from './tak-types';
+import type { TranslationAPI } from './translation-types';
 import type {
   VoiceAudioRequest,
   VoiceCallRequest,
@@ -371,6 +372,7 @@ export type BleCoexistenceAcquireScanResult =
   | ({ ok: false; code: 'scan_busy'; owner: BleScanOwner } & BleCoexistenceState);
 
 export interface ElectronAPI {
+  translation: TranslationAPI;
   // ─── Database operations ────────────────────────────────────────────────────
   db: {
     saveMessage: (message: {

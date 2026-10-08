@@ -1,4 +1,4 @@
-// Poll until Vite and Electron bundles (main + preload) are ready before launching Electron.
+// Poll until Vite and Electron bundles (main + preload + translation worker) are ready before launching Electron.
 import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
@@ -14,9 +14,10 @@ const INTERVAL_MS = 300;
 export const DEV_ELECTRON_BUNDLE_PATHS = {
   main: path.join(projectRoot, 'dist-electron/main/index.js'),
   preload: path.join(projectRoot, 'dist-electron/preload/index.js'),
+  translation: path.join(projectRoot, 'dist-electron/main/translation-worker.js'),
 };
 
-/** @param {Record<'main' | 'preload', string>} paths @param {typeof fs.statSync} [statSync] */
+/** @param {Record<string, string>} paths @param {typeof fs.statSync} [statSync] */
 export function areElectronBundlesReady(paths = DEV_ELECTRON_BUNDLE_PATHS, statSync = fs.statSync) {
   for (const filePath of Object.values(paths)) {
     try {
@@ -49,7 +50,7 @@ export function isVitePortOpen(host = HOST, port = PORT) {
  *   host?: string;
  *   port?: number;
  *   intervalMs?: number;
- *   paths?: Record<'main' | 'preload', string>;
+ *   paths?: Record<string, string>;
  *   isPortOpen?: (host: string, port: number) => Promise<boolean>;
  *   statSync?: typeof fs.statSync;
  *   sleep?: (ms: number) => Promise<void>;

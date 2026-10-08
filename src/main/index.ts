@@ -147,6 +147,7 @@ import { registerRrcDbIpcHandlers } from './ipc/rrc-db-handlers';
 import { registerServiceAnnouncementIpcHandlers } from './ipc/service-announcement-handlers';
 import { registerTakIpcHandlers } from './ipc/tak-handlers';
 import { destroyRegisteredTcpBridgeSockets, registerTcpBridgeIpcHandlers } from './ipc/tcp-bridge';
+import { registerTranslationHandlers } from './ipc/translation-handlers';
 import { createIpcRateLimiter } from './ipcRateLimit';
 import { listMeshcoreDmPeersFromDb, listMeshtasticDmPeersFromDb } from './listDmPeers';
 import { snapshotLiveSessionMeter } from './live-session-meter';
@@ -3642,6 +3643,23 @@ ipcMain.handle('mqtt:publishWaypoint', (event, args) => {
 registerGeoIpcHandlers();
 registerGpsIpcHandlers();
 registerNotificationSoundHandlers();
+const disposeTranslation = registerTranslationHandlers({
+  getSetting: (key) =>
+    (
+      getDatabase().prepareOnce('SELECT value FROM app_settings WHERE key = ?').get(key) as
+        { value: string } | undefined
+    )?.value,
+  setSetting: (key, value) => {
+    getDatabase()
+      .prepareOnce('INSERT OR REPLACE INTO app_settings(key, value) VALUES (?, ?)')
+      .run(key, value);
+  },
+  onProgress: (progress) => {
+    if (mainWindow && !mainWindow.isDestroyed())
+      mainWindow.webContents.send('translation:packProgress', progress);
+  },
+});
+app.on('before-quit', disposeTranslation);
 registerFlasherHandlers();
 registerServiceAnnouncementIpcHandlers({ ipcMain });
 

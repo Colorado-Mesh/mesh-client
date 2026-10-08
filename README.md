@@ -202,6 +202,7 @@ These sections apply to the two LoRa companion-radio stacks. Reticulum uses the 
 **Chat**
 
 - Send/receive messages across channels with per-transport delivery badges and delivery ACK / failure states
+- **Translate messages** in Chat, MeshCore Rooms, and RRC, including saved messages while disconnected. Open **App → Translation**, enable offline translation, and download the language packs you need. The engine and packs are optional downloads; the installer includes no translation binaries. Select your target language and **Languages I read** before enabling automatic translation. Auto-translation uses only offline packs. Optional **LibreTranslate** sends message text to your configured server only when you explicitly choose **Translate online**. Original messages remain visible; translations are held in memory.
 - **Durable outbox**: outgoing messages are queued in SQLite and retried until delivered; survive app restarts and connection drops
 - **Long message chunking (Meshtastic / Reticulum)**: messages over the payload limit are auto-split into sequential `[N/T]`-prefixed chunks (word-boundary split, max 9 chunks). **MeshCore is single-packet**: each message is sent as one radio packet and longer text is blocked with an explanatory notice (busy repeaters drop split parts — see [Limitations](#limitations)). MeshCore MQTT-only connections are also guarded from sending when no RF path is available
 - **Shared composer** (`ChatComposer`): drafts, mentions, protocol-aware length limits (chunking for Meshtastic / Reticulum; single-packet for MeshCore, see above), spellcheck, and emoji picker used by **Chat** and **MeshCore Rooms**; right‑click misspelling replacements (Electron spellchecker for both protocols)
@@ -503,7 +504,7 @@ See [Troubleshooting; macOS: File is damaged…](docs/troubleshooting.md#macos-f
 
 ## Run Locally
 
-**Prerequisites:** [Node.js 22.13.0+](https://nodejs.org/) and [pnpm 12+](https://pnpm.io/installation) (repo pins an exact `packageManager` — Corepack, or `npm i -g pnpm` / `npm i -g corepack` on Node 25+). After a pnpm major bump, `pnpm install` / `pnpm run dev` print upgrade instructions if your local pnpm is too old.
+**Prerequisites:** [Node.js 22.15.0+](https://nodejs.org/) and [pnpm 12+](https://pnpm.io/installation) (repo pins an exact `packageManager` — Corepack, or `npm i -g pnpm` / `npm i -g corepack` on Node 25+). After a pnpm major bump, `pnpm install` / `pnpm run dev` print upgrade instructions if your local pnpm is too old.
 
 ```bash
 git clone https://github.com/Colorado-Mesh/mesh-client

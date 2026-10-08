@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
+import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
+
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import * as chatNotifications from '../lib/chatNotifications';
 import {
@@ -6693,5 +6695,41 @@ describe('ChatPanel — starred view', () => {
       screen.getByRole('button', { name: 'General 2, Unread MAYDAY MECP report' }),
     ).toBeInTheDocument();
     expect(onSend).not.toHaveBeenCalled();
+  });
+});
+
+describe('Chat translation actions', () => {
+  it.each([true, false])('translates retained messages with connection=%s', async (connected) => {
+    const api = resetTranslation();
+    render(
+      <ToastProvider>
+        <ChatPanel
+          messages={[
+            {
+              id: 7012,
+              sender_id: 2,
+              sender_name: 'Alice',
+              payload: 'Bonjour à tous, comment allez-vous ?',
+              channel: 0,
+              timestamp: Date.now(),
+            },
+          ]}
+          channels={[{ index: 0, name: 'General' }]}
+          myNodeNum={1}
+          nodes={new Map()}
+          isConnected={connected}
+          isActive
+          onSend={vi.fn()}
+          onReact={vi.fn()}
+          onResend={vi.fn()}
+          onNodeClick={vi.fn()}
+        />
+      </ToastProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Translate message' }));
+    expect(await screen.findByText('Hello everyone')).toBeInTheDocument();
+    expect(api.translate).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'offline', mode: 'manual' }),
+    );
   });
 });

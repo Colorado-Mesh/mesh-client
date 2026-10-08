@@ -83,6 +83,7 @@ import { useNodeStore } from '../stores/nodeStore';
 import { usePositionHistoryStore } from '../stores/positionHistoryStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
+import { AppTranslationSection } from './AppTranslationSection';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
 import NotificationSoundSettings from './NotificationSoundSettings';
@@ -781,6 +782,7 @@ export default function AppPanel({
   return (
     <div className="w-full space-y-6">
       <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
+      <AppTranslationSection />
 
       <div className="space-y-2">
         <div className="flex items-center gap-1">

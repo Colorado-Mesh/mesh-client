@@ -63,6 +63,23 @@ describe('esbuild-main-build', () => {
       tempDir = mkdtempSync(path.join(os.tmpdir(), 'mesh-main-bundle-'));
       const outfile = path.join(tempDir, 'index.js');
       await buildMainProcess({ minify: true, outfile });
+      const worker = path.join(tempDir, 'translation-worker.js');
+      const workerBytes = fs.readFileSync(worker);
+      expect(workerBytes.length).toBeGreaterThan(10_000);
+      expect(workerBytes.toString('utf8')).not.toContain('https://firefox-settings-attachments');
+      const noticeDirectory = path.join(tempDir, 'translation-licenses');
+      expect(fs.readFileSync(path.join(noticeDirectory, 'LICENSE-fastText.txt'), 'utf8')).toContain(
+        'Copyright (c) 2016-present, Facebook, Inc.',
+      );
+      expect(fs.readFileSync(path.join(noticeDirectory, 'LICENSE-fastText.txt'), 'utf8')).toContain(
+        'Permission is hereby granted',
+      );
+      expect(fs.readFileSync(path.join(noticeDirectory, 'LICENSE-MPL-2.0.txt'), 'utf8')).toContain(
+        'Mozilla Public License Version 2.0',
+      );
+      expect(fs.readFileSync(path.join(noticeDirectory, 'README.md'), 'utf8')).toContain(
+        '48d55cf7ec80093903e2ef7f58b61a84a22ef716',
+      );
       const { size } = fs.statSync(outfile);
       expect(size).toBeGreaterThan(100_000);
       expect(size).toBeLessThan(MAIN_BUNDLE_SIZE_BUDGET_BYTES);

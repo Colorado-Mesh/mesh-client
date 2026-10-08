@@ -1560,6 +1560,7 @@ export default function RrcPanel({
         <RrcChatView
           connected={connected}
           hubDestHash={hubDestHash}
+          localIdentityHash={localIdentityHash}
           activeRoom={activeRoom}
           messages={activeMessages}
           showTimestamps={showTimestamps}

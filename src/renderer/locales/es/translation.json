@@ -6330,7 +6330,10 @@
         "title": "Radio RNode",
         "body": "Utilice hardware de radio compatible y la configuración de su red de radio local."
       },
-      "existing": {}
+      "existing": {
+        "title": "Configuración existente de mesh-client",
+        "body": "Conserva las interfaces ya configuradas en mesh-client y comprueba si están listas."
+      }
     },
     "hubLabel": "Acceso a internet",
     "hubHint": "Empieza con un concentrador. La aplicación añadirá o habilitará esta conexión y reiniciará Reticulum para aplicarla. Los centros públicos pueden ver tu dirección IP y, a veces, pueden no estar disponibles.",
@@ -6378,7 +6381,8 @@
     "interfacesUnavailable": "No se pudieron leer tus conexiones. Compruebe que Reticulum se esté ejecutando y vuelva a intentarlo.",
     "identityUnavailable": "No se pudo leer tu identidad. Compruebe que Reticulum se esté ejecutando y vuelva a intentarlo.",
     "interfaceSaveFailed": "No se pudo guardar esta conexión. Verifique la configuración de su conexión e inténtelo nuevamente.",
-    "identitySaveFailed": "No se pudo guardar su configuración de identidad. Intentar otra vez."
+    "identitySaveFailed": "No se pudo guardar su configuración de identidad. Intentar otra vez.",
+    "existingHint": "La guía comprobará las interfaces ya configuradas en mesh-client sin modificarlas. No utiliza la configuración de Reticulum de otra aplicación ni un rnsd ejecutado por separado. Una interfaz de red local alcanza los dispositivos Reticulum cercanos de esa red; por sí sola no te conecta con pares públicos de internet."
   },
   "mecp": {
     "severity": {
@@ -6773,5 +6777,51 @@
     "readbackMismatch": "El nodo informó un valor diferente después de guardar.",
     "authCancelled": "Se ha cancelado la autenticación de la configuración.",
     "aclSaved": "Permiso guardado. Actualice la ACL para comprobar el anuncio si este firmware lo admite a través de la radio."
+  },
+  "chatTranslation": {
+    "translate": "Traducir mensaje",
+    "loading": "Traduciendo",
+    "attribution": "Traducido de {{language}} a través de {{provider}}",
+    "showOriginal": "Mostrar Original",
+    "showTranslation": "mostrar traducción",
+    "missingPack": "La traducción sin conexión necesita estos paquetes.",
+    "downloadPacks": "Descargar paquetes de idiomas",
+    "online": "Traducir en línea",
+    "uncertain": "Este mensaje es demasiado corto o su idioma no se ha podido identificar con confianza.",
+    "unsupported": "La traducción sin conexión no es compatible con este idioma.",
+    "error": "La traducción ha fallado. Inténtelo de nuevo o compruebe la configuración de la traducción.",
+    "detectedLanguage": "idioma detectado",
+    "settingsTitle": "Translation",
+    "offlinePrivacy": "La traducción sin conexión se ejecuta en este dispositivo. La traducción automática nunca envía mensajes de texto a un servicio en línea.",
+    "optInDescription": "Habilite la traducción para descargar el motor y el detector de idioma ({{size}}). Los paquetes de idiomas son descargas separadas. No se descarga nada antes de habilitarlo.",
+    "enable": "Habilitar traducción sin conexión",
+    "enabled": "Traducción sin conexión habilitada",
+    "engineStatus": "Motor: {{status}}",
+    "installed": "Instalada",
+    "notInstalled": "No instalado",
+    "target": "Traducir a",
+    "readLanguages": "Idiomas I",
+    "auto": "Traducir automáticamente los mensajes entrantes",
+    "autoHint": "Solo se traducen los mensajes entrantes visibles en idiomas que no lees. Instale ambas direcciones necesarias para el giro en inglés. Los paquetes que faltan se omiten.",
+    "packs": "Paquetes de motor e idioma",
+    "engine": "Motor y detector de idioma",
+    "progress": "Descargar progreso para {{pack}}",
+    "cancelPack": "Cancelar descarga de {{pack}}",
+    "cancel": "Cancelar",
+    "deletePack": "Eliminar {{pack}} paquete",
+    "downloadPack": "Descargar {{pack}} pack",
+    "delete": "Eliminar",
+    "download": "Descargar",
+    "onlinePrivacy": "La traducción en línea envía el texto del mensaje seleccionado a su servidor LibreTranslate configurado solo cuando elige Traducir en línea. La traducción automática siempre permanece sin conexión.",
+    "serverUrl": "URL del servidor de LibreTranslate",
+    "apiKey": "Clave API (opcional)",
+    "savedKey": "Una clave API se guarda de forma segura. Un campo en blanco lo mantiene solo para la misma URL del servidor.",
+    "onlineEnabled": "Permitir traducción manual en línea",
+    "test": "Servidor de prueba",
+    "testSuccess": "La conexión al servidor se ha realizado correctamente.",
+    "clearKey": "Eliminar clave API guardada",
+    "diskUsage": "Los archivos instalados usan {{size}} en el disco.",
+    "removeAll": "Eliminar todos los archivos de traducción",
+    "settingsError": "La operación ha fallado. Compruebe la configuración de su conexión o servidor e inténtelo de nuevo."
   }
 }

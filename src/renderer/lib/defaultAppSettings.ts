@@ -37,6 +37,12 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
    */
   meshcoreFloodScopePresets: [] as string[],
   locale: 'en' as string,
+  translationEnabled: false,
+  translationReadLanguages: ['en'] as string[],
+  translationTargetLanguage: 'en' as string,
+  translationAutoEnabled: false,
+  translationLibreEnabled: false,
+  translationLibreUrl: '',
   chatCompactMode: false,
   /** Leave weather-bot posts out of channel views (they stay in the Weather view). */
   weatherFilterHideInChannels: false,

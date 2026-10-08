@@ -6327,7 +6327,10 @@
         "title": "Rádio RNode",
         "body": "Use hardware de rádio compatível e as configurações da sua rede de rádio local."
       },
-      "existing": {}
+      "existing": {
+        "title": "Configuração existente do mesh-client",
+        "body": "Mantenha as interfaces já configuradas no mesh-client e verifique se estão prontas."
+      }
     },
     "savedWords": "Eu salvei minhas palavras de recuperação",
     "routeLabel": "Como conectar",
@@ -6378,7 +6381,8 @@
     "interfaceSaveFailed": "Não foi possível salvar esta conexão. Verifique suas configurações de conexão e tente novamente.",
     "identityUnavailable": "Não foi possível ler sua identidade. Verifique se o Reticulum está funcionando e tente novamente.",
     "interfacesUnavailable": "Não foi possível ler suas conexões. Verifique se o Reticulum está funcionando e tente novamente.",
-    "identitySaveFailed": "Não foi possível salvar suas configurações de identidade. Tente novamente."
+    "identitySaveFailed": "Não foi possível salvar suas configurações de identidade. Tente novamente.",
+    "existingHint": "O guia verificará as interfaces já configuradas no mesh-client sem alterá-las. Ele não usa a configuração Reticulum de outro aplicativo nem um rnsd executado separadamente. Uma interface de rede local alcança dispositivos Reticulum próximos nessa rede; sozinha, ela não conecta você a pares públicos na internet."
   },
   "mecp": {
     "severity": {
@@ -6773,5 +6777,51 @@
     "readbackMismatch": "O nó relatou um valor diferente após salvar.",
     "authCancelled": "A autenticação de configuração foi cancelada.",
     "aclSaved": "Permissão salva. Atualize a ACL para verificar a listagem se este firmware a suporta pelo rádio."
+  },
+  "chatTranslation": {
+    "translate": "Traduzir mensagem",
+    "loading": "Traduzindo",
+    "attribution": "Traduzido de {{language}} via {{provider}}",
+    "showOriginal": "Mostrar original",
+    "showTranslation": "Exibir tradução",
+    "missingPack": "A tradução offline precisa desses pacotes.",
+    "downloadPacks": "Baixar pacotes de idiomas",
+    "online": "Traduzir online",
+    "uncertain": "Esta mensagem é muito curta ou seu idioma não pôde ser identificado com confiança.",
+    "unsupported": "A tradução offline não suporta este idioma.",
+    "error": "Falha na tradução. Tente novamente ou verifique as configurações de tradução.",
+    "detectedLanguage": "Idioma detectado",
+    "settingsTitle": "Tradução",
+    "offlinePrivacy": "A tradução offline é executada neste dispositivo. A tradução automática nunca envia texto de mensagem para um serviço online.",
+    "optInDescription": "Ative a tradução para baixar o mecanismo e o detector de idioma ({{size}}). Os pacotes de idiomas são downloads separados. Nada é baixado antes de ativá-lo.",
+    "enable": "Ativar tradução offline",
+    "enabled": "Tradução offline ativada",
+    "engineStatus": "Motor: {{status}}",
+    "installed": "Instalado",
+    "notInstalled": "Não instalado",
+    "target": "Traduzir para",
+    "readLanguages": "Idiomas que leio",
+    "auto": "Traduzir automaticamente as mensagens recebidas",
+    "autoHint": "Somente mensagens de entrada visíveis em idiomas que você não lê são traduzidas. Instale as duas direções necessárias para a rotação em inglês. Pacotes ausentes são ignorados.",
+    "packs": "Pacotes de motores e idiomas",
+    "engine": "Detector de motor e idioma",
+    "progress": "Progresso do download para {{pack}}",
+    "cancelPack": "Cancelar o download de {{pack}}",
+    "cancel": "Cancelar",
+    "deletePack": "Eliminar pacote {{pack}}",
+    "downloadPack": "Baixe o pacote {{pack}}",
+    "delete": "Excluir",
+    "download": "Download",
+    "onlinePrivacy": "A tradução online envia o texto da mensagem selecionada para o servidor LibreTranslate configurado somente quando você escolhe Traduzir online. A tradução automática permanece sempre offline.",
+    "serverUrl": "URL do servidor LibreTranslate",
+    "apiKey": "Chave API (opcional)",
+    "savedKey": "Uma chave de API é salva com segurança. Um campo em branco o mantém apenas para a mesma URL do servidor.",
+    "onlineEnabled": "Permitir tradução manual online",
+    "test": "TEST SERVER",
+    "testSuccess": "A conexão com o servidor foi bem-sucedida.",
+    "clearKey": "Remover chave de API salva",
+    "diskUsage": "Os arquivos instalados usam {{size}} no disco.",
+    "removeAll": "Remover todos os arquivos de tradução",
+    "settingsError": "A operação falhou. Verifique as configurações da sua conexão ou do servidor e tente novamente."
   }
 }

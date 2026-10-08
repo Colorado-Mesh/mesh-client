@@ -6389,7 +6389,10 @@
         "body": "Použijte kompatibilní rádiový hardware a nastavení místní rádiové sítě.",
         "title": "Rádio RNode"
       },
-      "existing": {}
+      "existing": {
+        "title": "Stávající nastavení mesh-client",
+        "body": "Ponechte rozhraní již nastavená v mesh-client a ověřte, zda jsou připravena."
+      }
     },
     "routeLabel": "Jak se připojit",
     "hubLabel": "Veřejné internetové centrum",
@@ -6438,7 +6441,8 @@
     "identityUnavailable": "Vaši identitu se nepodařilo přečíst. Zkontrolujte, zda Reticulum běží, a zkuste to znovu.",
     "identitySaveFailed": "Nastavení identity se nepodařilo uložit. Zkuste to znovu.",
     "interfaceSaveFailed": "Toto připojení se nepodařilo uložit. Zkontrolujte nastavení připojení a zkuste to znovu.",
-    "interfacesUnavailable": "Vaše spojení se nepodařilo přečíst. Zkontrolujte, zda Reticulum běží, a zkuste to znovu."
+    "interfacesUnavailable": "Vaše spojení se nepodařilo přečíst. Zkontrolujte, zda Reticulum běží, a zkuste to znovu.",
+    "existingHint": "Průvodce zkontroluje rozhraní již nastavená v mesh-client, aniž by je měnil. Nepoužívá konfiguraci Reticulum z jiné aplikace ani samostatně běžící rnsd. Rozhraní místní sítě dosáhne na blízká zařízení Reticulum v této síti; samo o sobě vás nepřipojí k veřejným internetovým protějškům."
   },
   "mecp": {
     "severity": {
@@ -6835,5 +6839,51 @@
     "readbackMismatch": "Uzel po uložení vykázal jinou hodnotu.",
     "authCancelled": "Ověření konfigurace bylo zrušeno.",
     "aclSaved": "Povolení uloženo. Obnovte seznam ACL a zkontrolujte, zda jej tento firmware podporuje přes rádio."
+  },
+  "chatTranslation": {
+    "translate": "Přeložit zprávu",
+    "loading": "Překládání",
+    "attribution": "Přeloženo z {{language}} přes {{provider}}",
+    "showOriginal": "Zobrazit originál",
+    "showTranslation": "Zobrazit překlad",
+    "missingPack": "Offline překlad potřebuje tyto balíčky.",
+    "downloadPacks": "Stáhnout jazykové balíčky:",
+    "online": "Přeložit online",
+    "uncertain": "Tato zpráva je příliš krátká nebo její jazyk nelze s jistotou identifikovat.",
+    "unsupported": "Offline překlad tento jazyk nepodporuje.",
+    "error": "Překlad se nezdařil. Zkuste to znovu nebo zkontrolujte nastavení překladu.",
+    "detectedLanguage": "zjištěný jazyk",
+    "settingsTitle": "Translation",
+    "offlinePrivacy": "Offline překlad běží na tomto zařízení. Automatický překlad nikdy neodesílá text zprávy online službě.",
+    "optInDescription": "Povolte překlad pro stažení detektoru motoru a jazyka ({{size}}). Jazykové balíčky jsou samostatné soubory ke stažení. Před povolením není nic staženo.",
+    "enable": "Povolit offline překlad",
+    "enabled": "Offline překlad povolen",
+    "engineStatus": "Motor: {{status}}",
+    "installed": "Nainstalováno",
+    "notInstalled": "Není instalován",
+    "target": "Přeložit do:",
+    "readLanguages": "Jazyky, které čtu",
+    "auto": "Automaticky přeložit příchozí zprávy",
+    "autoHint": "Přeloženy jsou pouze viditelné příchozí zprávy v jazycích, které nečtete. Nainstalujte oba směry potřebné pro anglické otočení. Chybějící balení jsou přeskočena.",
+    "packs": "Balíčky motorů a jazyků",
+    "engine": "Detektor motoru a jazyka",
+    "progress": "Postup stahování pro {{pack}}",
+    "cancelPack": "Zrušit stahování {{pack}}",
+    "cancel": "Zrušit",
+    "deletePack": "Smazat {{pack}} balíček",
+    "downloadPack": "Stáhnout {{pack}} balíček",
+    "delete": "Odstranit",
+    "download": "Stáhnout",
+    "onlinePrivacy": "Online překlad odešle vybraný text zprávy na váš nakonfigurovaný server LibreTranslate pouze tehdy, když zvolíte Přeložit online. Automatický překlad vždy zůstane offline.",
+    "serverUrl": "Adresa URL serveru LibreTranslate",
+    "apiKey": "API klíč (volitelné)",
+    "savedKey": "Klíč API je bezpečně uložen. Prázdné pole jej uchovává pouze pro stejnou adresu URL serveru.",
+    "onlineEnabled": "Povolit ruční online překlad",
+    "test": "Testovací FTP server",
+    "testSuccess": "Připojení k serveru bylo úspěšné.",
+    "clearKey": "Odebrat uložený klíč API",
+    "diskUsage": "Nainstalované soubory používají {{size}} na disku.",
+    "removeAll": "Odebrat všechny překladové soubory",
+    "settingsError": "Operace se nezdařila. Zkontrolujte nastavení připojení nebo serveru a zkuste to znovu."
   }
 }

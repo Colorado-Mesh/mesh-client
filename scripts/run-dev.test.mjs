@@ -9,6 +9,9 @@ describe('run-dev', () => {
     expect(args).toContain('command-electron');
     expect(args.some((arg) => arg.startsWith('esbuild src/main/index.ts'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('esbuild src/preload/index.ts'))).toBe(true);
+    expect(
+      args.some((arg) => arg.startsWith('esbuild src/main/translation/bergamotWorkerEntry.ts')),
+    ).toBe(true);
     expect(args).toContain('vite');
     expect(args.some((arg) => arg.includes('wait-for-dev.mjs'))).toBe(true);
     expect(args.some((arg) => arg.startsWith('pnpm run'))).toBe(false);

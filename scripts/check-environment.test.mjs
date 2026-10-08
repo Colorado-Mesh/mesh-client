@@ -98,6 +98,8 @@ describe('check-environment versionGte', () => {
   it('accepts versions at or above the minimum', () => {
     expect(versionGte('v22.13.0', '>=22.13.0')).toBe(true);
     expect(versionGte('22.14.0', '>=22.13.0')).toBe(true);
+    expect(versionGte('22.14.0', '>=22.15.0')).toBe(false);
+    expect(versionGte('22.15.0', '>=22.15.0')).toBe(true);
     expect(versionGte('23.0.0', '>=22.13.0')).toBe(true);
   });
 
