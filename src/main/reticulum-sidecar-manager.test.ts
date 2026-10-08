@@ -271,6 +271,39 @@ describe('ReticulumSidecarManager', () => {
     mkdirSpy.mockRestore();
   });
 
+  it('logs forwarded triage INFO lines at info level, not warn', async () => {
+    const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
+    const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    const proc = mockSidecarProc();
+    proc.kill.mockImplementation(() => {
+      proc.emit('exit', 0, null);
+    });
+    spawnMock.mockReturnValue(proc);
+
+    const manager = new ReticulumSidecarManager();
+    try {
+      await manager.start();
+      const stderr = (proc as unknown as { stderr: EventEmitter }).stderr;
+      const info =
+        '2026-10-08T04:16:27.182855Z INFO lxmf-outbound: PN cascade candidates updated count=1 preferred=none';
+      const warn =
+        '2026-10-08T04:16:27.182855Z WARN lxmf-outbound: no preferred propagation destination_hash';
+      stderr.emit('data', Buffer.from(`${info}\n${warn}\n`));
+
+      expect(infoSpy).toHaveBeenCalledWith('[ReticulumSidecar]', info);
+      expect(warnSpy).not.toHaveBeenCalledWith('[ReticulumSidecar]', info);
+      expect(warnSpy).toHaveBeenCalledWith('[ReticulumSidecar]', warn);
+    } finally {
+      await manager.stop();
+      warnSpy.mockRestore();
+      infoSpy.mockRestore();
+      existsSpy.mockRestore();
+      mkdirSpy.mockRestore();
+    }
+  });
+
   it('rate-limits repeated TCP read errors for one interface and names the hub', async () => {
     const existsSpy = vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     const mkdirSpy = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined);

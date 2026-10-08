@@ -32,6 +32,7 @@ import {
   logReticulumSidecarStderrLine,
   normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
+  reticulumSidecarLineSeverity,
   ReticulumSidecarStderrDedupe,
   ReticulumSidecarTcpReadErrorDedupe,
   shouldForwardReticulumSidecarStdout,
@@ -554,6 +555,10 @@ export class ReticulumSidecarManager extends EventEmitter {
         return;
       }
       // WARN/ERROR and PN-triage INFO must reach mesh-client.log (debug is filtered in packaged).
+      if (reticulumSidecarLineSeverity(text) === 'INFO') {
+        console.info('[ReticulumSidecar]', decision.message);
+        return;
+      }
       console.warn('[ReticulumSidecar]', decision.message);
     };
     const bindOutputLines = (stream: typeof proc.stdout): void => {

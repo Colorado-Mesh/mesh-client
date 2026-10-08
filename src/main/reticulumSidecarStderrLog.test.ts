@@ -4,6 +4,7 @@ import {
   logReticulumSidecarStderrLine,
   normalizeReticulumSidecarOutputLine,
   resolveSidecarRustLog,
+  reticulumSidecarLineSeverity,
   ReticulumSidecarStderrDedupe,
   ReticulumSidecarTcpReadErrorDedupe,
   shouldForwardReticulumSidecarStdout,
@@ -14,6 +15,16 @@ const TCP_RST_ID4 =
   '2026-10-05T23:54:35.152482Z WARN rns_interface::tcp: TCP read error interface_id=4 error=Connection reset by peer (os error 54)';
 const TCP_RST_ID5 =
   '2026-10-05T23:54:36.000000Z WARN rns_interface::tcp: TCP read error interface_id=5 error=Connection reset by peer (os error 54)';
+
+describe('reticulumSidecarLineSeverity', () => {
+  it('reads the severity token with or without a leading timestamp', () => {
+    expect(
+      reticulumSidecarLineSeverity('2026-10-08T04:16:27.182855Z INFO lxmf-outbound: updated'),
+    ).toBe('INFO');
+    expect(reticulumSidecarLineSeverity('WARN rns_interface::tcp: TCP read error')).toBe('WARN');
+    expect(reticulumSidecarLineSeverity('')).toBe('');
+  });
+});
 
 describe('shouldForwardReticulumSidecarStdout', () => {
   it('forwards WARN and ERROR tracing lines', () => {

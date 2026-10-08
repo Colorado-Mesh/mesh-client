@@ -437,6 +437,15 @@ describe('isDroppableMeshtasticSdkLogLine', () => {
     ).toBe(true);
   });
 
+  it('drops the per-node INFO Node Info configure burst', async () => {
+    const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
+    expect(
+      isDroppableMeshtasticSdkLogLine(
+        '22:16:05:123 INFO [iMeshDevice] HandleFromRadio 📱 Received Node Info packet for node: 1315420765',
+      ),
+    ).toBe(true);
+  });
+
   it('keeps INFO / WARN / ERROR SDK lines', async () => {
     const { isDroppableMeshtasticSdkLogLine } = await import('./log-service');
     expect(

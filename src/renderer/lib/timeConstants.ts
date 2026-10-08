@@ -236,6 +236,12 @@ export const MESHCORE_POST_CONNECT_SELF_TELEMETRY_DRAIN_WAIT_MS = 30 * MS_PER_SE
 /** initConn contact dump: max gap between Contact frames before one same-link getContacts retry. */
 export const MESHCORE_INIT_CONTACTS_IDLE_TIMEOUT_MS = 20 * MS_PER_SECOND;
 
+/**
+ * initConn contact dump: after an idle stall, how long to wait for the stalled `getContacts()` to
+ * settle before giving up on the same-link retry (a hung dump never settles on its own).
+ */
+export const MESHCORE_INIT_CONTACTS_STALL_GRACE_MS = 5 * MS_PER_SECOND;
+
 /** Defer first getMetadata after configure (NodeDB flood can starve the admin packet). */
 export const MESHTASTIC_GET_METADATA_AFTER_CONFIGURE_DEFER_MS = 12 * MS_PER_SECOND;
 

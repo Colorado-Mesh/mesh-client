@@ -186,6 +186,7 @@ import { resolveMqttBrokerClientId } from './mqtt-broker-client-id';
 import { type CachedNode, MQTTManager, parsePsk } from './mqtt-manager';
 import { createMeshTilesProtocolHandler } from './offline-maps/protocol';
 import { createTileCache, type TileCache } from './offline-maps/tile-cache';
+import { PermissionDecisionLogger } from './permissionDecisionLog';
 import { readFileUpTo } from './readFileUpTo';
 import { createRendererHeartbeatWatchdog } from './rendererHeartbeatWatchdog';
 import { resolveRendererLoadUrl } from './resolveRendererLoadUrl';
@@ -1998,6 +1999,7 @@ function createWindow() {
     }
   });
 
+  const permissionLog = new PermissionDecisionLogger();
   // Allow serial, geolocation, and media (camera / future live audio). Deny web-app-installation etc.
   mainWindow.webContents.session.setPermissionCheckHandler((_webContents, permission) => {
     const granted =
@@ -2005,9 +2007,7 @@ function createWindow() {
       permission === 'geolocation' ||
       permission === 'media' ||
       permission === 'notifications';
-    console.debug(
-      `[permissions] checkHandler: ${sanitizeLogMessage(permission)} → ${granted ? 'granted' : 'denied'}`,
-    );
+    permissionLog.log('checkHandler', permission, granted);
     return granted;
   });
 
@@ -2017,9 +2017,7 @@ function createWindow() {
     (_webContents, permission, callback) => {
       const grant =
         permission === 'geolocation' || permission === 'media' || permission === 'notifications';
-      console.debug(
-        `[permissions] requestHandler: ${sanitizeLogMessage(permission)} → ${grant ? 'granted' : 'denied'}`,
-      );
+      permissionLog.log('requestHandler', permission, grant);
       callback(grant);
     },
   );
