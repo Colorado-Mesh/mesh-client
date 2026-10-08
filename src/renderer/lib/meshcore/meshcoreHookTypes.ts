@@ -331,3 +331,9 @@ export interface MeshcoreTraceResultEntry {
   lastSnr: number;
   tag: number;
 }
+
+/** Guard a configuration operation while waiting for auth or companion queue access. */
+export interface MeshcoreRepeaterCliOptions {
+  confirmedDanger?: boolean;
+  isCurrent?: () => boolean;
+}

@@ -2,7 +2,15 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { TFunction } from 'i18next';
 import { ChevronDown, ChevronRight, Ellipsis, Search, Star, Trash2 } from 'lucide-react-motion';
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
@@ -15,6 +23,7 @@ import type {
   CliHistoryEntry,
   MeshCoreNeighborResult,
   MeshCoreNodeTelemetry,
+  MeshcoreRepeaterCliOptions,
   MeshCoreRepeaterStatus,
   MeshcoreRequestNeighborsOpts,
   MeshcoreTraceResultEntry,
@@ -40,6 +49,7 @@ import {
 import type { MeshcoreRepeaterRpcPendingMap } from '../lib/meshcoreRepeaterAdminPending';
 import { isRepeaterAdminRpcPending } from '../lib/meshcoreRepeaterAdminPending';
 import { isMeshcoreRepeaterCliDangerCommand } from '../lib/meshcoreRepeaterCliDanger';
+import { normalizeMeshcoreCliCommand } from '../lib/meshcoreRepeaterCliQueue';
 import { meshcoreTracePathLenToHops } from '../lib/meshcoreUtils';
 import { effectiveLastHeardMs, getNodeStatus } from '../lib/nodeStatus';
 import type { PathRecord } from '../lib/pathHistoryTypes';
@@ -65,6 +75,7 @@ import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import { useRepeaterSignalStore } from '../stores/repeaterSignalStore';
 import { ConfirmModal } from './ConfirmModal';
 import { HelpTooltip } from './HelpTooltip';
+import { MeshcoreInfraConfigPanel } from './MeshcoreInfraConfigPanel';
 import { MeshcoreRepeaterSavedPasswordIndicator } from './MeshcoreRepeaterPasswordControls';
 import { MeshcoreRoomAclControls } from './MeshcoreRoomAclControls';
 import { MeshcoreRouteChain } from './MeshcoreRouteChain';
@@ -192,7 +203,7 @@ interface Props {
   onSendCliCommand?: (
     nodeId: number,
     command: string,
-    opts?: { confirmedDanger?: boolean },
+    opts?: MeshcoreRepeaterCliOptions,
   ) => Promise<string>;
   meshcoreCliHistories?: Map<number, CliHistoryEntry[]>;
   meshcoreCliErrors?: Map<number, string>;
@@ -202,7 +213,7 @@ interface Props {
   onToggleFavorite?: (nodeId: number, favorited: boolean) => void;
   /** Jump to Rooms tab for this room server. */
   onOpenRoom?: (nodeId: number) => void;
-  /** Select/expand CLI for this node (from Rooms Manage jump). */
+  /** Open configuration for this node (from Rooms Manage jump). */
   pendingFocusNodeId?: number | null;
   onPendingFocusConsumed?: () => void;
 }
@@ -426,6 +437,7 @@ export default function RepeatersPanel({
     el?.focus();
   }, []);
   const { ensureRepeaterAuth, RemoteAuthModal } = useMeshcoreRepeaterRemoteAuth();
+  const [configNodeId, setConfigNodeId] = useState<number | null>(null);
   const [savedAdminEntries, setSavedAdminEntries] = useState<MeshcoreInfraAdminPasswordEntry[]>(
     () => listSavedAdminPasswords(),
   );
@@ -465,6 +477,10 @@ export default function RepeatersPanel({
   const [neighborsUiPending, setNeighborsUiPending] = useState<Set<number>>(new Set());
   const meshcoreNeighborsRef = useRef(meshcoreNeighbors);
   meshcoreNeighborsRef.current = meshcoreNeighbors;
+  const meshcoreTraceResultsRef = useRef(meshcoreTraceResults);
+  useLayoutEffect(() => {
+    meshcoreTraceResultsRef.current = meshcoreTraceResults;
+  }, [meshcoreTraceResults]);
   const [expandedTelemetry, setExpandedTelemetry] = useState<Set<number>>(new Set());
   const [expandedPath, setExpandedPath] = useState<Set<number>>(new Set());
   const [expandedCli, setExpandedCli] = useState<Set<number>>(new Set());
@@ -590,7 +606,7 @@ export default function RepeatersPanel({
     }
     if (target.hw_model === 'Room') setTypeFilter('room');
     else setTypeFilter('repeater');
-    setExpandedCli((prev) => new Set([...prev, pendingFocusNodeId]));
+    setConfigNodeId(pendingFocusNodeId);
     lastConsumedPendingFocusRef.current = pendingFocusNodeId;
     onPendingFocusConsumed?.();
   }, [nodes, onPendingFocusConsumed, pendingFocusNodeId]);
@@ -815,7 +831,7 @@ export default function RepeatersPanel({
   };
 
   const ensureCliRoutePrimed = async (nodeId: number): Promise<boolean> => {
-    if (meshcoreTraceResults.get(nodeId) != null) return true;
+    if (meshcoreTraceResultsRef.current.get(nodeId) != null) return true;
     const hops = nodes.get(nodeId)?.hops_away ?? 0;
     if (hops <= 0) return true;
     addToast(t('repeatersPanel.cliAutoPingToast'), 'info');
@@ -825,7 +841,7 @@ export default function RepeatersPanel({
         addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
         return false;
       }
-      if (meshcoreTraceResults.get(nodeId) != null || pingOk === true) return true;
+      if (meshcoreTraceResultsRef.current.get(nodeId) != null || pingOk === true) return true;
       addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
       return false;
     } catch (e) {
@@ -835,13 +851,13 @@ export default function RepeatersPanel({
     }
   };
 
-  const runCliCommand = async (
+  const sendAuthenticatedCliCommand = async (
     nodeId: number,
     command: string,
-    opts?: { confirmedDanger?: boolean },
+    opts?: MeshcoreRepeaterCliOptions,
   ) => {
     if (!onSendCliCommand || !command.trim()) {
-      return;
+      throw new Error(t('infraConfig.commandRejected'));
     }
     const node = nodes.get(nodeId);
     const auth = await ensureRepeaterAuth(
@@ -855,12 +871,22 @@ export default function RepeatersPanel({
         ),
       node?.hw_model,
     );
-    if (!auth.ok) return;
+    if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
+    if (!auth.ok) throw new Error(t('infraConfig.authCancelled'));
     if (auth.saved) refreshStoredSecrets();
     const primed = await ensureCliRoutePrimed(nodeId);
-    if (!primed) return;
+    if (!primed) throw new Error(t('repeatersPanel.cliAutoPingFailed'));
+    if (opts?.isCurrent && !opts.isCurrent()) throw new Error(t('infraConfig.sessionChanged'));
+    return onSendCliCommand(nodeId, normalizeMeshcoreCliCommand(command), opts);
+  };
+
+  const runCliCommand = async (
+    nodeId: number,
+    command: string,
+    opts?: MeshcoreRepeaterCliOptions,
+  ) => {
     try {
-      const response = await onSendCliCommand(nodeId, command.trim(), opts);
+      const response = await sendAuthenticatedCliCommand(nodeId, command, opts);
       if (isRepeaterCliClockCannotGoBackwards(command, response)) {
         addToast(
           t('repeatersPanel.cliClockCannotGoBackwards', { utc: formatComputerUtcStamp() }),
@@ -909,6 +935,30 @@ export default function RepeatersPanel({
       }
     }
   };
+
+  const configNode = configNodeId == null ? undefined : nodes.get(configNodeId);
+  if (configNode && onSendCliCommand) {
+    return (
+      <>
+        <MeshcoreInfraConfigPanel
+          key={configNode.node_id}
+          node={configNode}
+          isConnected={isConnected}
+          onSend={(command, isCurrent) =>
+            sendAuthenticatedCliCommand(configNode.node_id, command, { isCurrent })
+          }
+          onBack={() => {
+            setConfigNodeId(null);
+          }}
+          onOpenCli={() => {
+            setExpandedCli((previous) => new Set([...previous, configNode.node_id]));
+            setConfigNodeId(null);
+          }}
+        />
+        {RemoteAuthModal}
+      </>
+    );
+  }
 
   return (
     <>
@@ -1523,6 +1573,14 @@ export default function RepeatersPanel({
                                   : []),
                                 ...(onSendCliCommand
                                   ? [
+                                      {
+                                        id: 'configure',
+                                        label: t('infraConfig.configure'),
+                                        disabled: !isConnected || isCliLoading,
+                                        onSelect: () => {
+                                          setConfigNodeId(node.node_id);
+                                        },
+                                      },
                                       {
                                         id: 'cli',
                                         label: t('repeatersPanel.cliInterface'),

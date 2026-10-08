@@ -111,6 +111,7 @@ function makeHarness(overrides?: { handleResponseResult?: boolean }): Harness {
       handleResponse,
       clear: vi.fn(),
       parseResponseToken: (text: string) => ({ token: null, body: text }),
+      redactResponseForHistory: (text: string) => text,
     } as never),
     selfInfoRef: ref(null),
     setDeviceLogs: (updater) => {

@@ -34,4 +34,12 @@ describe('meshcoreRepeaterCliDanger', () => {
     expect(isMeshcoreRepeaterCliDangerCommand('set radio.fem.txgain on')).toBe(true);
     expect(isMeshcoreRepeaterCliDangerCommand('set radio.fem.txgain off')).toBe(true);
   });
+
+  it('allows literal destructive words in structured string settings', () => {
+    expect(isMeshcoreRepeaterCliDangerCommand('set name Factory Repeater')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('set owner.info Reboot contact')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('set guest.password reboot')).toBe(false);
+    expect(isMeshcoreRepeaterCliDangerCommand('set name test\nreboot')).toBe(true);
+    expect(isMeshcoreRepeaterCliDangerCommand('factory')).toBe(true);
+  });
 });

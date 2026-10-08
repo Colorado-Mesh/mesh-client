@@ -757,7 +757,9 @@ export function attachMeshcoreConnSideEffects(
       const { body } = service ? service.parseResponseToken(payload.text) : { body: payload.text };
       addCliHistoryEntry(senderId, {
         type: 'received',
-        text: body,
+        text:
+          service?.redactResponseForHistory(payload.text) ??
+          body.replace(/^password now:.*$/i, '[redacted]'),
         timestamp: Date.now(),
       });
     }

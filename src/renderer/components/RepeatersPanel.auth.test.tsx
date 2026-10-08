@@ -102,6 +102,18 @@ describe('RepeatersPanel repeater auth', () => {
     vi.mocked(window.electronAPI.appSettings.set).mockResolvedValue({ changes: 1 });
   });
 
+  it('does not transmit configuration after closing the panel during authentication', async () => {
+    const user = userEvent.setup();
+    const onSendCliCommand = vi.fn().mockResolvedValue('> Test');
+    render(<RepeatersPanel {...makeProps({ onSendCliCommand })} />);
+    await chooseRowAction(user, 'Configure');
+    await user.click(screen.getByText('Identity and location'));
+    await screen.findByLabelText('Admin password (optional)');
+    await user.click(screen.getByRole('button', { name: 'Back to repeaters' }));
+    await user.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(onSendCliCommand).not.toHaveBeenCalled();
+  });
+
   it('continues Status after Continue with password in auth modal', async () => {
     const user = userEvent.setup();
     const onRequestRepeaterStatus = vi.fn().mockResolvedValue(undefined);

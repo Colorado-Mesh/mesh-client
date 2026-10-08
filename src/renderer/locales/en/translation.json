@@ -4753,14 +4753,30 @@
     "bandwidthTooltip": "Channel width in kHz. Narrower = longer range and less interference but slower data rate. All nodes on the network must use the same bandwidth.",
     "bandwidthKhz": "{{value}} kHz",
     "spreadFactors": {
-      "SF5": { "label": "SF5" },
-      "SF6": { "label": "SF6" },
-      "SF7": { "label": "SF7" },
-      "SF8": { "label": "SF8" },
-      "SF9": { "label": "SF9" },
-      "SF10": { "label": "SF10" },
-      "SF11": { "label": "SF11" },
-      "SF12": { "label": "SF12" }
+      "SF5": {
+        "label": "SF5"
+      },
+      "SF6": {
+        "label": "SF6"
+      },
+      "SF7": {
+        "label": "SF7"
+      },
+      "SF8": {
+        "label": "SF8"
+      },
+      "SF9": {
+        "label": "SF9"
+      },
+      "SF10": {
+        "label": "SF10"
+      },
+      "SF11": {
+        "label": "SF11"
+      },
+      "SF12": {
+        "label": "SF12"
+      }
     },
     "spreadFactorLabel": "Spread Factor",
     "spreadFactorDesc": "Higher = more range but slower airtime. Default: SF12.",
@@ -6707,5 +6723,58 @@
       "decrease": "Decrease {{label}}",
       "increase": "Increase {{label}}"
     }
+  },
+  "infraConfig": {
+    "configure": "Configure",
+    "title": "Configure {{name}}",
+    "back": "Back to repeaters",
+    "description": "Open a section to read settings from this node. Apply saves only edited values and checks them against the node.",
+    "identity": "Identity and location",
+    "radio": "Radio parameters",
+    "routing": "Routing and adverts",
+    "room": "Room access",
+    "permissions": "Room permissions",
+    "advanced": "Advanced",
+    "name": "Name",
+    "ownerInfo": "Owner information",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "frequency": "Frequency (MHz)",
+    "bandwidth": "Bandwidth (kHz)",
+    "sf": "Spreading factor",
+    "cr": "Coding rate",
+    "tx": "Transmit power (dBm)",
+    "repeat": "Forward packets",
+    "pathHash": "Advert path hash size (bytes)",
+    "advertInterval": "Zero-hop advert interval (minutes)",
+    "floodAdvertInterval": "Flood advert interval (hours)",
+    "floodMax": "Maximum flood hops",
+    "allowReadOnly": "Allow guests with a blank password to read",
+    "guestPassword": "Guest password",
+    "notLoaded": "Not loaded",
+    "unsupported": "Unavailable on this firmware or board",
+    "loading": "Reading settings...",
+    "applying": "Saving and checking settings...",
+    "saved": "Settings saved and checked.",
+    "refresh": "Refresh",
+    "discard": "Discard edits",
+    "refreshSection": "Refresh {{section}}",
+    "discardSection": "Discard edits in {{section}}",
+    "rebootRequired": "Radio settings are saved. Reboot this node through the CLI to activate them. New radio parameters may interrupt remote access.",
+    "partialSave": "Earlier changes may already be saved. Unsaved edits are kept; discard edits and refresh to check the node before retrying.",
+    "advertHint": "Use 0 to disable an advert interval. Zero-hop adverts use even intervals from 60 to 240 minutes; flood adverts use 3 to 168 hours.",
+    "guestHint": "This changes the room server password. Saved guest login credentials on this computer are separate.",
+    "cliHint": "Use the CLI for firmware-specific settings and confirmed reboot commands.",
+    "aclUpdated": "Permissions refreshed.",
+    "aclSaved": "Permission saved. Refresh ACL to check the listing if this firmware supports it over the radio.",
+    "disconnected": "Connect to a radio to read or apply settings.",
+    "sessionChanged": "The connection or selected node changed. Reopen configuration and read settings again.",
+    "interrupted": "The operation stopped because the connection changed. Your edits are kept.",
+    "commandRejected": "The node rejected the command. Check access and firmware support.",
+    "invalidReply": "The node returned settings in an unexpected format.",
+    "invalidValue": "Check the edited values and ranges. Text must fit the firmware limit and cannot contain line breaks.",
+    "loadFirst": "Read this setting from the node before applying it.",
+    "readbackMismatch": "The node reported a different value after saving.",
+    "authCancelled": "Configuration authentication was cancelled."
   }
 }
