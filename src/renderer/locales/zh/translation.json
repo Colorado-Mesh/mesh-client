@@ -6328,7 +6328,10 @@
         "title": "RNode无线电",
         "body": "使用兼容的无线电硬件和本地无线电网络的设置。"
       },
-      "existing": {}
+      "existing": {
+        "title": "现有的 mesh-client 设置",
+        "body": "保留已在 mesh-client 中配置的接口，并检查它们是否就绪。"
+      }
     },
     "connectionBody": "接口只是与 Reticulum 的连接。选择您想要访问网络的方式。您可以稍后添加其他连接。",
     "hubLabel": "公共互联网中心",
@@ -6377,7 +6380,8 @@
     "identityUnavailable": "无法读取您的身份。检查 Reticulum 是否正在运行，然后重试。",
     "identitySaveFailed": "无法保存您的身份设置。再试一次。",
     "interfacesUnavailable": "无法读取您的连接。检查 Reticulum 是否正在运行，然后重试。",
-    "interfaceSaveFailed": "无法保存此连接。检查您的连接设置并重试。"
+    "interfaceSaveFailed": "无法保存此连接。检查您的连接设置并重试。",
+    "existingHint": "本指南将检查已在 mesh-client 中配置的接口，而不会更改它们。它不会使用其他应用的 Reticulum 配置或单独运行的 rnsd。本地网络接口可以连接该网络上附近的 Reticulum 设备，但它本身不会将您连接到公共互联网对等节点。"
   },
   "mecp": {
     "severity": {
@@ -6772,5 +6776,51 @@
     "readbackMismatch": "节点在保存后报告了不同的值。",
     "authCancelled": "配置身份验证已取消。",
     "aclSaved": "权限已保存。如果此固件通过无线电支持，请刷新ACL以检查房源。"
+  },
+  "chatTranslation": {
+    "translate": "翻译消息",
+    "loading": "正在翻译",
+    "attribution": "翻译自{{language}}通过{{provider}}",
+    "showOriginal": "显示原始内容",
+    "showTranslation": "显示译文",
+    "missingPack": "离线翻译需要这些内容包。",
+    "downloadPacks": "下载语言包",
+    "online": "在线翻译",
+    "uncertain": "此消息太短或无法自信地识别其语言。",
+    "unsupported": "离线翻译不支持此语言。",
+    "error": "翻译失败。请重试或检查翻译设置。",
+    "detectedLanguage": "检测到的语言",
+    "settingsTitle": "翻译",
+    "offlinePrivacy": "离线翻译在此设备上运行。自动翻译绝不会将消息文本发送到在线服务。",
+    "optInDescription": "启用翻译以下载引擎和语言检测器（ {{size}} ）。语言包是单独下载的。启用之前不会下载任何内容。",
+    "enable": "启用离线翻译",
+    "enabled": "离线翻译已启用",
+    "engineStatus": "发动机： {{status}}",
+    "installed": "已安装",
+    "notInstalled": "未安装",
+    "target": "翻译成",
+    "readLanguages": "我阅读的语言",
+    "auto": "自动翻译传入消息",
+    "autoHint": "只有您未阅读的语言的可见传入消息才会被翻译。安装英语旋转所需的两个方向。缺少的卡包将被跳过。",
+    "packs": "引擎和语言包",
+    "engine": "引擎和语言检测器",
+    "progress": "{{pack}}的下载进度",
+    "cancelPack": "取消下载{{pack}}",
+    "cancel": "取消",
+    "deletePack": "删除{{pack}}包",
+    "downloadPack": "下载{{pack}}包",
+    "delete": "删除",
+    "download": "下载",
+    "onlinePrivacy": "只有当您选择在线翻译时，在线翻译才会将所选的消息文本发送到您配置的LibreTranslate服务器。自动翻译始终保持离线状态。",
+    "serverUrl": "LibreTranslate服务器URL",
+    "apiKey": "API 密钥（可选）",
+    "savedKey": "API密钥已安全保存。空白字段仅用于相同的服务器URL。",
+    "onlineEnabled": "允许手动在线翻译",
+    "test": "测试服",
+    "testSuccess": "服务器连接成功。",
+    "clearKey": "删除已保存的API密钥",
+    "diskUsage": "已安装的文件使用磁盘上的{{size}}。",
+    "removeAll": "删除所有翻译文件",
+    "settingsError": "操作失败。请检查您的连接或服务器设置，然后重试。"
   }
 }

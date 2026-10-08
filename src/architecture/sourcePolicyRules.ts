@@ -23,6 +23,13 @@ export interface SourcePolicyRule {
 
 export const SOURCE_POLICY_RULES: SourcePolicyRule[] = [
   {
+    id: 'translation-no-bundled-models',
+    include: ['src/main/**/*.ts', 'src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    forbid: /(?:from\s*|import\s*\()\s*['"][^'"]+\.(?:wasm|bin|spm|ftz)[?'"]/,
+    message:
+      'Translation binaries must be downloaded after opt-in, never imported into the installer',
+  },
+  {
     id: 'runtime-tests-use-loadRuntimeSource',
     include: ['src/renderer/runtime/**/*.test.ts', 'src/renderer/runtime/**/*.contract.test.ts'],
     forbid: /readFileSync\s*\(\s*join\([^)]*use(?:Meshtastic|Meshcore|Reticulum)Runtime\.ts/,

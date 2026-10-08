@@ -12,6 +12,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
+import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
 import { ChatComposer } from '@/renderer/components/ChatComposer';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RrcFormattedBody } from '@/renderer/components/rrc/RrcFormattedBody';
@@ -51,6 +53,7 @@ import {
   type RrcNoticeGroup,
   toggleRrcNoticeGroupExpansion,
 } from '@/renderer/lib/rrcNoticeGrouping';
+import { rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage, RrcRoomMember } from '@/shared/rrc-types';
 
@@ -311,6 +314,7 @@ export interface RrcChatViewProps {
   connected: boolean;
   /** Focused hub hash — stream identity with activeRoom (hub switch must re-pin). */
   hubDestHash?: string | null;
+  localIdentityHash?: string | null;
   activeRoom: string | null;
   messages: RrcChatMessage[];
   showTimestamps: boolean;
@@ -361,6 +365,7 @@ export function RrcChatView({
   onSendChunk,
   onInterceptSend,
   composeSeed = null,
+  localIdentityHash = null,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const { inactive: appWindowInactive } = useAppWindowActivity();
@@ -697,7 +702,34 @@ export function RrcChatView({
               {body}
             </>
           ) : null}
+          <TranslatedMessageBlock
+            messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
+            text={rawBody}
+            incoming={
+              isActive &&
+              !whisperEcho &&
+              (msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
+              !(localIdentityHash && msg.sender_hash
+                ? rrcIdentityHashesMatch(msg.sender_hash, localIdentityHash)
+                : Boolean(nickname && msg.nickname?.toLowerCase() === nickname.toLowerCase()))
+            }
+            onContentResize={() => {
+              messageVirtualizerRef.current.measure();
+            }}
+          />
         </div>
+        <span
+          className={
+            alwaysShowMessageActions
+              ? 'opacity-100'
+              : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+          }
+        >
+          <MessageTranslateButton
+            messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
+            text={rawBody}
+          />
+        </span>
         <button
           type="button"
           className={`message-action text-muted shrink-0 rounded p-0.5 text-xs ${
@@ -720,7 +752,7 @@ export function RrcChatView({
     return { lineClass, inner };
   };
 
-  if (!connected) {
+  if (!connected && visibleMessages.length === 0) {
     return (
       <div className="text-ink-400 flex flex-1 items-center justify-center p-6 text-sm">
         {t('rrc.selectHubPrompt')}

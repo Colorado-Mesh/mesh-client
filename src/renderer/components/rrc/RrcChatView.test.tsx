@@ -6,6 +6,7 @@ import { axe } from 'vitest-axe';
 import { hydrateAxeThemeColors } from '@/renderer/lib/a11yTestHelpers';
 import { applyFontScale } from '@/renderer/lib/fontScale';
 import { rrcNickColorClass } from '@/renderer/lib/rrcNickColor';
+import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
 import type { RrcChatMessage } from '@/shared/rrc-types';
 
 import { estimateRrcRowHeight, RrcChatView } from './RrcChatView';
@@ -46,6 +47,7 @@ vi.mock('@tanstack/react-virtual', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string) => key,
   }),
 }));
@@ -944,5 +946,21 @@ describe('RrcChatView hub notice grouping', () => {
     expect(await axe(container)).toHaveNoViolations();
     fireEvent.click(screen.getByRole('button', { name: 'rrc.hubSession.expand' }));
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('RRC translation actions', () => {
+  it.each([true, false])('translates retained rows with connection=%s', async (connected) => {
+    const api = resetTranslation();
+    render(
+      <RrcChatView
+        {...baseProps}
+        connected={connected}
+        messages={[makeMsg({ id: 'translation', body: 'Bonjour à tous, comment allez-vous ?' })]}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'chatTranslation.translate' }));
+    expect(await screen.findByText('Hello everyone')).toBeInTheDocument();
+    expect(api.translate).toHaveBeenCalledWith(expect.objectContaining({ provider: 'offline' }));
   });
 });

@@ -6327,7 +6327,10 @@
         "title": "Radio RNode",
         "body": "Utilisez du matériel radio compatible et les paramètres de votre réseau radio local."
       },
-      "existing": {}
+      "existing": {
+        "title": "Configuration existante de mesh-client",
+        "body": "Conservez les interfaces déjà configurées dans mesh-client et vérifiez leur disponibilité."
+      }
     },
     "routeLabel": "Comment se connecter",
     "connectionBody": "Une interface est simplement une connexion à Reticulum. Choisissez comment vous souhaitez accéder au réseau. Vous pourrez ajouter d'autres connexions ultérieurement.",
@@ -6377,7 +6380,8 @@
     "identityUnavailable": "Impossible de lire votre identité. Vérifiez que Reticulum est en cours d'exécution, puis réessayez.",
     "interfacesUnavailable": "Impossible de lire vos connexions. Vérifiez que Reticulum est en cours d'exécution, puis réessayez.",
     "identitySaveFailed": "Impossible d'enregistrer vos paramètres d'identité. Essayer à nouveau.",
-    "interfaceSaveFailed": "Impossible d'enregistrer cette connexion. Vérifiez vos paramètres de connexion et réessayez."
+    "interfaceSaveFailed": "Impossible d'enregistrer cette connexion. Vérifiez vos paramètres de connexion et réessayez.",
+    "existingHint": "Le guide vérifiera les interfaces déjà configurées dans mesh-client sans les modifier. Il n’utilise pas la configuration Reticulum d’une autre application ni un rnsd exécuté séparément. Une interface réseau locale atteint les appareils Reticulum proches sur ce réseau ; elle ne vous connecte pas à elle seule aux pairs publics sur internet."
   },
   "mecp": {
     "severity": {
@@ -6772,5 +6776,51 @@
     "readbackMismatch": "Le nœud a signalé une valeur différente après l'enregistrement.",
     "authCancelled": "L'authentification de configuration a été annulée.",
     "aclSaved": "Autorisation enregistrée. Actualisez l'ACL pour vérifier la liste si ce micrologiciel la prend en charge sur la radio."
+  },
+  "chatTranslation": {
+    "translate": "Traducir mensaje",
+    "loading": "Traduction en cours",
+    "attribution": "Traduit de {{language}} via {{provider}}",
+    "showOriginal": "Afficher l’original",
+    "showTranslation": "afficher la traduction",
+    "missingPack": "La traduction hors ligne a besoin de ces packs.",
+    "downloadPacks": "Télécharger les modules linguistiques",
+    "online": "Traduire en ligne",
+    "uncertain": "Ce message est trop court ou sa langue n'a pas pu être identifiée en toute confiance.",
+    "unsupported": "La traduction hors ligne ne prend pas en charge cette langue.",
+    "error": "Échec de la traduction. Réessayez ou vérifiez les paramètres de traduction.",
+    "detectedLanguage": "langue détectée",
+    "settingsTitle": "Traduction",
+    "offlinePrivacy": "La traduction hors ligne s'exécute sur cet appareil. La traduction automatique n'envoie jamais de texte de message à un service en ligne.",
+    "optInDescription": "Activez la traduction pour télécharger le moteur et le détecteur de langue ({{size}}). Les modules linguistiques sont des téléchargements séparés. Rien n'est téléchargé avant que vous ne l'activiez.",
+    "enable": "Activer la traduction hors ligne",
+    "enabled": "Traduction hors ligne activée",
+    "engineStatus": "Moteur : {{status}}",
+    "installed": "Installée",
+    "notInstalled": "Non installé",
+    "target": "Traduire vers",
+    "readLanguages": "Langues que je lis",
+    "auto": "Traduire automatiquement les messages entrants",
+    "autoHint": "Seuls les messages entrants visibles dans les langues que vous ne lisez pas sont traduits. Installez les deux directions nécessaires au pivotement anglais. Les packs manquants sont ignorés.",
+    "packs": "Packs moteur et langue",
+    "engine": "Détecteur de moteur et de langue",
+    "progress": "Progression du téléchargement pour {{pack}}",
+    "cancelPack": "Annuler le téléchargement de {{pack}}",
+    "cancel": "Annuler",
+    "deletePack": "Supprimer {{pack}} pack",
+    "downloadPack": "Télécharger {{pack}} pack",
+    "delete": "Effacer",
+    "download": "Télécharger",
+    "onlinePrivacy": "La traduction en ligne envoie le texte du message sélectionné à votre serveur LibreTranslate configuré uniquement lorsque vous choisissez Traduire en ligne. La traduction automatique reste toujours hors ligne.",
+    "serverUrl": "URL du serveur LibreTranslate",
+    "apiKey": "Clé API (facultative)",
+    "savedKey": "Une clé API est enregistrée en toute sécurité. Un champ vide le conserve uniquement pour la même URL de serveur.",
+    "onlineEnabled": "Autoriser la traduction manuelle en ligne",
+    "test": "Serveur de test",
+    "testSuccess": "La connexion au serveur a réussi.",
+    "clearKey": "Supprimer la clé API enregistrée",
+    "diskUsage": "Les fichiers installés utilisent {{size}} sur le disque.",
+    "removeAll": "Supprimer tous les fichiers de traduction",
+    "settingsError": "L'opération a échoué. Vérifiez vos paramètres de connexion ou de serveur et réessayez."
   }
 }

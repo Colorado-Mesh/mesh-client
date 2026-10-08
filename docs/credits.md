@@ -60,6 +60,23 @@ Application source (Electron main / preload / renderer) is **GPL-3.0-or-later**;
 | `src/renderer/lib/mecp/languages/*.json`                                                  | CC BY 4.0 | MECP localized code/category strings (see upstream `LICENSE-LANGUAGES`)                   |
 | `resources/geo/cities15000.tsv` ([GeoNames](https://www.geonames.org/))                   | CC BY 4.0 | Offline place lookup for weather forecasts on the map (`scripts/build-geo-gazetteer.mjs`) |
 
+### Chat translation
+
+The statically bundled Mozilla Bergamot JavaScript loader is MPL-2.0; its modified source,
+upstream revisions and checksums are in [the vendor notes](../src/main/translation/vendor/README.md),
+with the [MPL-2.0 notice](../src/main/translation/vendor/LICENSE-MPL-2.0.txt).
+The fastText loader/code is MIT ([license](../src/main/translation/vendor/LICENSE-fastText.txt)).
+These loaders are the only third-party translation code shipped in the installer.
+
+After explicit opt-in, the app downloads Mozilla's Bergamot WASM and translation models
+([mozilla/translations](https://github.com/mozilla/translations), MPL-2.0), fastText WASM
+(MIT), and the fastText `lid.176.ftz` language-identification model. The latter is trained on
+Wikipedia, Tatoeba and SETimes and is **CC-BY-SA-3.0**; see
+[fastText's model attribution](https://fasttext.cc/docs/en/language-identification.html) and
+[the license](https://creativecommons.org/licenses/by-sa/3.0/).
+The identification data is used unchanged; translation models are decompressed without
+modifying their data. No model, vocabulary, language-ID file or translation WASM is bundled.
+
 ## Third-party licenses
 
 npm runtime and development dependency licenses are generated from `package.json` in [third-party-licenses.md](third-party-licenses.md). Transitive licenses are gated by `pnpm run check:licenses`.

@@ -72,6 +72,13 @@ export function appPanelSettingsPersistPayload(
   const rest = { ...settings };
   delete rest.meshcorePathHashMode;
   delete rest.meshcoreOpenWireCompatEnabled;
+  // The Translation section owns these fields independently of AppPanel's saved snapshot.
+  delete rest.translationEnabled;
+  delete rest.translationReadLanguages;
+  delete rest.translationTargetLanguage;
+  delete rest.translationAutoEnabled;
+  delete rest.translationLibreEnabled;
+  delete rest.translationLibreUrl;
   return rest;
 }
 

@@ -36,6 +36,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
+import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
 import { useMeshcoreRoomLoginQueueRevision } from '@/renderer/hooks/useMeshcoreRoomLoginQueueRevision';
 import { useMeshcoreRoomSessionRevision } from '@/renderer/hooks/useMeshcoreRoomSessionRevision';
 import { useAppWindowActivity } from '@/renderer/lib/appWindowActivity';
@@ -2456,6 +2458,10 @@ export default function RoomsPanel({
                                     size={14}
                                   />
                                 </button>
+                                <MessageTranslateButton
+                                  messageKey={`room:${myNodeNum}:${selectedRoomId}:${m.id}`}
+                                  text={m.payload}
+                                />
                               </div>
                             </div>
                             <div className="break-words whitespace-pre-wrap">
@@ -2468,6 +2474,14 @@ export default function RoomsPanel({
                                 }}
                               />
                             </div>
+                            <TranslatedMessageBlock
+                              messageKey={`room:${myNodeNum}:${selectedRoomId}:${m.id}`}
+                              text={m.payload}
+                              incoming={!isOwn && isActive}
+                              onContentResize={() => {
+                                schedulePostRowRemeasure(index);
+                              }}
+                            />
                             {isOwn && m.status && selectedRoomId != null && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
                                 {m.status === 'failed' && (

@@ -55,3 +55,6 @@ docs/contributing.md
 docs/install.md
 docs/features.md
 site/
+
+# Reviewed generated Emscripten loaders; preserve upstream source and hashes.
+src/main/translation/vendor/*.js

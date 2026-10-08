@@ -38,7 +38,7 @@ export function parseVersion(output) {
 
 /**
  * @param {string} found
- * @param {string} requiredExpr e.g. ">=22.13.0"
+ * @param {string} requiredExpr e.g. ">=22.15.0"
  */
 export function versionGte(found, requiredExpr) {
   const min = parseVersion(requiredExpr.replace(/^>=\s*/, ''));
@@ -93,7 +93,7 @@ function commandOk(command, args) {
 function readEngines() {
   const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
   return {
-    node: pkg.engines?.node ?? '>=22.13.0',
+    node: pkg.engines?.node ?? '>=22.15.0',
     pnpm: pkg.engines?.pnpm ?? '>=12.0.0',
     packageManager: typeof pkg.packageManager === 'string' ? pkg.packageManager : undefined,
   };

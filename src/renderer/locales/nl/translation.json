@@ -6328,7 +6328,8 @@
         "title": "RNode-radio"
       },
       "existing": {
-        "body": "Laat de interfaces die al zijn geconfigureerd in mesh-client staan ​​en controleer of ze gereed zijn."
+        "body": "Laat de interfaces die al zijn geconfigureerd in mesh-client staan ​​en controleer of ze gereed zijn.",
+        "title": "Bestaande mesh-client-configuratie"
       }
     },
     "routeLabel": "Hoe te verbinden",
@@ -6775,5 +6776,51 @@
     "readbackMismatch": "Het knooppunt rapporteerde een andere waarde na het opslaan.",
     "authCancelled": "Configuratieverificatie is geannuleerd.",
     "aclSaved": "Toestemming opgeslagen. Vernieuw ACL om de lijst te controleren of deze firmware het via de radio ondersteunt."
+  },
+  "chatTranslation": {
+    "translate": "Bericht vertalen",
+    "loading": "Vertalen",
+    "attribution": "Vertaald van {{language}} via {{provider}}",
+    "showOriginal": "Origineel weergeven",
+    "showTranslation": "Vertaling tonen",
+    "missingPack": "Offline vertaling heeft deze pakketten nodig.",
+    "downloadPacks": "Taalpakketten downloaden",
+    "online": "Vertaal Docs Online",
+    "uncertain": "Dit bericht is te kort of de taal ervan kon niet met vertrouwen worden geïdentificeerd.",
+    "unsupported": "Offline vertaling ondersteunt deze taal niet.",
+    "error": "Vertaling mislukt. Probeer het opnieuw of controleer de vertaalinstellingen.",
+    "detectedLanguage": "gedetecteerde taal",
+    "settingsTitle": "Vertaling",
+    "offlinePrivacy": "Offline vertaling wordt uitgevoerd op dit apparaat. Automatische vertaling stuurt nooit berichttekst naar een online service.",
+    "optInDescription": "Schakel vertaling in om de motor- en taaldetector ({{size}}) te downloaden. Taalpakketten zijn aparte downloads. Er wordt niets gedownload voordat u het inschakelt.",
+    "enable": "Offline vertaling inschakelen",
+    "enabled": "Offline vertaling ingeschakeld",
+    "engineStatus": "Motor: {{status}}",
+    "installed": "Geinstalleerd",
+    "notInstalled": "Niet geïnstalleerd",
+    "target": "Vertalen naar",
+    "readLanguages": "Talen die ik lees",
+    "auto": "Inkomende berichten automatisch vertalen",
+    "autoHint": "Alleen zichtbare inkomende berichten in talen die u niet leest, worden vertaald. Installeer beide richtingen die nodig zijn voor Engels draaien. Ontbrekende verpakkingen worden overgeslagen.",
+    "packs": "Motor- en taalpakketten",
+    "engine": "Motor- en taaldetector",
+    "progress": "Downloadvoortgang voor {{pack}}",
+    "cancelPack": "Download van {{pack}} annuleren",
+    "cancel": "Annuleren",
+    "deletePack": "Verwijder het {{pack}} -pakket",
+    "downloadPack": "Download het {{pack}} -pakket",
+    "delete": "Verwijderen",
+    "download": "Download",
+    "onlinePrivacy": "Online vertaling verzendt de geselecteerde berichttekst alleen naar uw geconfigureerde LibreTranslate-server wanneer u Online vertalen kiest. Automatische vertaling blijft altijd offline.",
+    "serverUrl": "LibreTranslate server-URL",
+    "apiKey": "API-sleutel (optioneel)",
+    "savedKey": "Een API-sleutel wordt veilig opgeslagen. Een leeg veld bewaart het alleen voor dezelfde server-URL.",
+    "onlineEnabled": "Handmatige online vertaling toestaan",
+    "test": "Testserver",
+    "testSuccess": "De serververbinding is geslaagd.",
+    "clearKey": "Opgeslagen API-sleutel verwijderen",
+    "diskUsage": "Geïnstalleerde bestanden gebruiken {{size}} op schijf.",
+    "removeAll": "Verwijder alle vertaalbestanden",
+    "settingsError": "De bewerking is mislukt. Controleer uw verbinding of serverinstellingen en probeer het opnieuw."
   }
 }
