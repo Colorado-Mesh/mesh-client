@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readdirSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -36,6 +37,7 @@ describe('translation pack manager', () => {
     temp = await fs.mkdtemp(path.join(os.tmpdir(), 'mesh-translation-'));
   });
   afterEach(async () => {
+    vi.useRealTimers();
     await fs.rm(temp, { recursive: true, force: true });
     vi.restoreAllMocks();
   });
@@ -92,6 +94,135 @@ describe('translation pack manager', () => {
     await expect(fs.stat(directory())).rejects.toMatchObject({ code: 'ENOENT' });
     expect(() => manager.install('../fr-en')).toThrow('Unknown');
     expect(() => manager.assetPath('fr-en', '../model.bin')).toThrow();
+  });
+  it.each(['compressed', 'raw'])(
+    'publishes verified %s bytes despite a pathname replacement',
+    async (kind) => {
+      let replaced = false;
+      const bytes = kind === 'compressed' ? compressed : data;
+      const testedManifest =
+        kind === 'compressed'
+          ? manifest
+          : [
+              {
+                ...manifest[0],
+                assets: [
+                  {
+                    file: 'model.bin',
+                    url: 'https://models.example/model.bin',
+                    size: data.length,
+                    sha256: sha(data),
+                  },
+                ],
+              },
+            ];
+      const manager = new TranslationPackManager({
+        directory,
+        enabled: () => true,
+        fetch: vi.fn(() => Promise.resolve(new Response(bytes))),
+        onProgress: (progress) => {
+          if (progress.state !== 'verifying') return;
+          const temporary = readdirSync(directory()).find((entry) => entry.startsWith('.install-'));
+          expect(temporary).toBeDefined();
+          if (!temporary) throw new Error('Missing download directory');
+          const raw = path.join(directory(), temporary, 'model.bin.download');
+          const original = `${raw}.original`;
+          renameSync(raw, original);
+          writeFileSync(raw, Buffer.alloc(bytes.length));
+          unlinkSync(original);
+          replaced = true;
+        },
+        manifest: testedManifest,
+      });
+      expect(await manager.install('fr-en')).toEqual({ ok: true });
+      expect(replaced).toBe(true);
+      expect(await fs.readFile(manager.assetPath('fr-en', 'model.bin'))).toEqual(data);
+      expect(await manager.verify('fr-en')).toBe(true);
+    },
+  );
+  it('allows steady download progress beyond the inactivity deadline and clears its timer', async () => {
+    vi.useFakeTimers();
+    let controller!: ReadableStreamDefaultController<Uint8Array>;
+    let downloading!: () => void;
+    const started = new Promise<void>((resolve) => {
+      downloading = resolve;
+    });
+    let received!: () => void;
+    const firstChunk = new Promise<void>((resolve) => {
+      received = resolve;
+    });
+    const manager = new TranslationPackManager({
+      directory,
+      enabled: () => true,
+      fetch: vi.fn((_input, options) =>
+        Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(stream) {
+                controller = stream;
+                options?.signal?.addEventListener('abort', () => {
+                  stream.error(options.signal?.reason);
+                });
+              },
+            }),
+          ),
+        ),
+      ),
+      onProgress: (progress) => {
+        if (progress.state !== 'downloading') return;
+        if (progress.receivedBytes === 0) downloading();
+        else received();
+      },
+      manifest,
+      timeoutMs: 1000,
+    });
+    const install = manager.install('fr-en');
+    await started;
+    await vi.advanceTimersByTimeAsync(900);
+    controller.enqueue(compressed.subarray(0, 1));
+    await firstChunk;
+    await vi.advanceTimersByTimeAsync(900);
+    controller.enqueue(compressed.subarray(1));
+    controller.close();
+    expect(await install).toEqual({ ok: true });
+    expect(await manager.verify('fr-en')).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('aborts stalled downloads and clears their partial files and inactivity timer', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let downloading!: () => void;
+    const started = new Promise<void>((resolve) => {
+      downloading = resolve;
+    });
+    const manager = new TranslationPackManager({
+      directory,
+      enabled: () => true,
+      fetch: vi.fn((_input, options) =>
+        Promise.resolve(
+          new Response(
+            new ReadableStream({
+              start(stream) {
+                options?.signal?.addEventListener('abort', () => {
+                  stream.error(options.signal?.reason);
+                });
+              },
+            }),
+          ),
+        ),
+      ),
+      onProgress: (progress) => {
+        if (progress.state === 'downloading') downloading();
+      },
+      manifest,
+      timeoutMs: 1000,
+    });
+    const install = manager.install('fr-en');
+    await started;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(await install).toEqual({ ok: false, reason: 'downloadFailed' });
+    expect(await fs.readdir(directory())).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
   });
   it.each(['hash', 'network', 'size'])('cleans a failed %s download', async (failure) => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});

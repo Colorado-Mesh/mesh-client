@@ -5824,7 +5824,8 @@
       "expand_other": "Mostrar avisos do hub {{count}}",
       "collapse_one": "Ocultar aviso do hub {{count}}",
       "collapse_other": "Ocultar avisos do hub {{count}}"
-    }
+    },
+    "replyToUser": "Responder a {{nickname}}"
   },
   "signalMeter": {
     "rssi": "RSSI",

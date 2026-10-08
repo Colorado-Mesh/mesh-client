@@ -236,55 +236,82 @@ export class TranslationPackManager {
     directory: string,
     job: InstallJob,
   ): Promise<void> {
-    const signal = AbortSignal.any([
-      job.abort.signal,
-      AbortSignal.timeout(this.deps.timeoutMs ?? 5 * MS_PER_MINUTE),
-    ]);
-    const response = await this.deps.fetch(asset.url, { signal, redirect: 'error' });
-    if (!response.ok || !response.body)
-      throw new Error(`Translation download HTTP ${response.status}`);
-    const rawPath = path.join(directory, `${asset.file}.download`);
-    const handle = await fs.open(rawPath, 'wx', 0o600);
-    const reader = response.body.getReader();
-    const digest = createHash('sha256');
-    let received = 0;
-    job.progress.state = 'downloading';
-    this.emit(job);
+    const idle = new AbortController();
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    const resetDeadline = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(
+        () => {
+          idle.abort(new Error('Translation download stalled'));
+        },
+        this.deps.timeoutMs ?? 5 * MS_PER_MINUTE,
+      );
+    };
+    resetDeadline();
     try {
-      while (true) {
-        signal.throwIfAborted();
-        const chunk = await reader.read();
-        if (chunk.done) break;
-        received += chunk.value.byteLength;
-        if (received > asset.size) throw new Error('Translation download exceeds manifest size');
-        digest.update(chunk.value);
-        await handle.writeFile(chunk.value);
-        job.progress.receivedBytes += chunk.value.byteLength;
-        this.emit(job);
-      }
-    } finally {
+      const signal = AbortSignal.any([job.abort.signal, idle.signal]);
+      const response = await this.deps.fetch(asset.url, { signal, redirect: 'error' });
+      if (!response.ok || !response.body)
+        throw new Error(`Translation download HTTP ${response.status}`);
+      resetDeadline();
+      const rawPath = path.join(directory, `${asset.file}.download`);
+      const handle = await fs.open(rawPath, 'wx+', 0o600);
+      let verifiedBytes: Buffer;
       try {
-        await reader.cancel();
+        const reader = response.body.getReader();
+        let received = 0;
+        try {
+          job.progress.state = 'downloading';
+          this.emit(job);
+          while (true) {
+            signal.throwIfAborted();
+            const chunk = await reader.read();
+            if (chunk.done) break;
+            if (chunk.value.byteLength > 0) resetDeadline();
+            received += chunk.value.byteLength;
+            if (received > asset.size)
+              throw new Error('Translation download exceeds manifest size');
+            await handle.writeFile(chunk.value);
+            job.progress.receivedBytes += chunk.value.byteLength;
+            this.emit(job);
+          }
+        } finally {
+          await reader.cancel();
+        }
+        signal.throwIfAborted();
+        if (received !== asset.size) throw new Error('Translation SHA-256 mismatch');
+        job.progress.state = 'verifying';
+        this.emit(job);
+        const raw = Buffer.alloc(received);
+        let offset = 0;
+        while (offset < raw.length) {
+          signal.throwIfAborted();
+          const { bytesRead } = await handle.read(raw, offset, raw.length - offset, offset);
+          if (bytesRead === 0) throw new Error('Translation download truncated');
+          offset += bytesRead;
+        }
+        if (hash(raw) !== asset.sha256) throw new Error('Translation SHA-256 mismatch');
+        verifiedBytes = raw;
+        if (asset.decodedSize && asset.decodedSha256) {
+          verifiedBytes = zstdDecompressSync(raw, { maxOutputLength: asset.decodedSize });
+          if (
+            verifiedBytes.length !== asset.decodedSize ||
+            hash(verifiedBytes) !== asset.decodedSha256
+          )
+            throw new Error('Decompressed translation SHA-256 mismatch');
+        }
       } finally {
         await handle.close();
       }
-    }
-    if (received !== asset.size || digest.digest('hex') !== asset.sha256)
-      throw new Error('Translation SHA-256 mismatch');
-    job.progress.state = 'verifying';
-    this.emit(job);
-    if (asset.decodedSize && asset.decodedSha256) {
-      const decoded = zstdDecompressSync(await fs.readFile(rawPath), {
-        maxOutputLength: asset.decodedSize,
+      await fs.writeFile(path.join(directory, asset.file), verifiedBytes, {
+        flag: 'wx',
+        mode: 0o600,
       });
-      if (decoded.length !== asset.decodedSize || hash(decoded) !== asset.decodedSha256)
-        throw new Error('Decompressed translation SHA-256 mismatch');
-      await fs.writeFile(path.join(directory, asset.file), decoded, { flag: 'wx', mode: 0o600 });
       await fs.rm(rawPath);
-    } else {
-      await fs.rename(rawPath, path.join(directory, asset.file));
+      signal.throwIfAborted();
+    } finally {
+      clearTimeout(idleTimer);
     }
-    signal.throwIfAborted();
   }
 }
 

@@ -5824,7 +5824,8 @@
       "expand_other": "{{count}} ハブ通知を表示",
       "collapse_one": "{{count}} ハブ通知を非表示にする",
       "collapse_other": "{{count}} ハブ通知を非表示にする"
-    }
+    },
+    "replyToUser": "{{nickname}} に返信"
   },
   "signalMeter": {
     "rssi": "RSSI",

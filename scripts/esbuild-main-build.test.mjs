@@ -64,8 +64,9 @@ describe('esbuild-main-build', () => {
       const outfile = path.join(tempDir, 'index.js');
       await buildMainProcess({ minify: true, outfile });
       const worker = path.join(tempDir, 'translation-worker.js');
-      expect(fs.statSync(worker).size).toBeGreaterThan(10_000);
-      expect(fs.readFileSync(worker, 'utf8')).not.toContain('https://firefox-settings-attachments');
+      const workerBytes = fs.readFileSync(worker);
+      expect(workerBytes.length).toBeGreaterThan(10_000);
+      expect(workerBytes.toString('utf8')).not.toContain('https://firefox-settings-attachments');
       const noticeDirectory = path.join(tempDir, 'translation-licenses');
       expect(fs.readFileSync(path.join(noticeDirectory, 'LICENSE-fastText.txt'), 'utf8')).toContain(
         'Copyright (c) 2016-present, Facebook, Inc.',

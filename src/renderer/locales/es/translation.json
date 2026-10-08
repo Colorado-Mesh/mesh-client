@@ -5824,7 +5824,8 @@
       "expand_other": "Mostrar avisos del centro {{count}}",
       "collapse_one": "Ocultar aviso del centro {{count}}",
       "collapse_other": "Ocultar avisos del centro {{count}}"
-    }
+    },
+    "replyToUser": "Responder a {{nickname}}"
   },
   "signalMeter": {
     "rssi": "RSSI",

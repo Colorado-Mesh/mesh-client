@@ -23,6 +23,8 @@ Developer reference for the Chat panel, composer, link previews, notifications, 
 - **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
 - **Support bundle IPC:** `support:exportBundle` — `exportSupportBundle.ts` → `window.electronAPI.support.exportBundle(mode, json)`; main `support-bundle.ts` writes zip (`github` = logs + debug snapshot including Reticulum diagnostic JSON and Meshtastic channel layout triage via `debugSnapshotMeshtasticContext.ts`; `developer` = SQLite plus redacted `reticulum/config` and `reticulum/mesh_client_stack.json`). Modes in `support-bundle.types.ts`.
 
+RRC hub messages expose Reply next to Copy on hover/focus (or always when message actions are enabled). Reply prefixes `@nickname` followed by a space to the existing composer draft, focuses it, and uses the normal room send path. System lines have no reply target; muted or unavailable sends disable the action.
+
 ## Message translation
 
 `translation:*` IPC owns the opt-in state and verified downloads under `userData/translation/`.

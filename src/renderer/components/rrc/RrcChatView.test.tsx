@@ -950,17 +950,124 @@ describe('RrcChatView hub notice grouping', () => {
 });
 
 describe('RRC translation actions', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
   it.each([true, false])('translates retained rows with connection=%s', async (connected) => {
     const api = resetTranslation();
     render(
       <RrcChatView
         {...baseProps}
         connected={connected}
+        canSend={connected}
         messages={[makeMsg({ id: 'translation', body: 'Bonjour à tous, comment allez-vous ?' })]}
       />,
     );
+    const composer = screen.getByRole('textbox');
+    fireEvent.change(composer, { target: { value: 'sounds good' } });
     fireEvent.click(screen.getByRole('button', { name: 'chatTranslation.translate' }));
     expect(await screen.findByText('Hello everyone')).toBeInTheDocument();
     expect(api.translate).toHaveBeenCalledWith(expect.objectContaining({ provider: 'offline' }));
+    expect(composer).toHaveValue('sounds good');
+    const reply = screen.getByRole('button', { name: 'rrc.replyToUser' });
+    if (connected) {
+      fireEvent.click(reply);
+      await waitFor(() => {
+        expect(composer).toHaveValue('@alice sounds good');
+      });
+    } else {
+      expect(reply).toBeDisabled();
+    }
   });
+});
+
+describe('RRC hover reply', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    baseProps.onSendChunk.mockClear();
+  });
+  it.each(['linux', 'darwin', 'win32'])(
+    'inserts a mention, preserves the draft and focuses the composer on %s',
+    async () => {
+      const user = userEvent.setup();
+      render(<RrcChatView {...baseProps} messages={[makeMsg({ id: 'reply', body: 'hello' })]} />);
+      const composer = screen.getByRole('textbox');
+      await user.type(composer, 'sounds good');
+      await user.click(screen.getByRole('button', { name: 'rrc.replyToUser' }));
+      await waitFor(() => {
+        expect(composer).toHaveValue('@alice sounds good');
+      });
+      await waitFor(() => {
+        expect(composer).toHaveFocus();
+      });
+      await user.click(screen.getByRole('button', { name: 'rrc.replyToUser' }));
+      expect(composer).toHaveValue('@alice sounds good');
+      expect(baseProps.onSendChunk).not.toHaveBeenCalled();
+    },
+  );
+  it('does not reply to system lines and disables replies while sending is unavailable', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        canSend={false}
+        messages={[
+          makeMsg({ id: 'sys', body: 'joined', kind: 'system', nickname: null }),
+          makeMsg({ id: 'msg', body: 'hello' }),
+        ]}
+      />,
+    );
+    expect(screen.getAllByRole('button', { name: 'rrc.replyToUser' })).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'rrc.replyToUser' })).toBeDisabled();
+  });
+  it('lets later nicklist seeds win and does not replay a reply when switching hubs', async () => {
+    const user = userEvent.setup();
+    const props = {
+      ...baseProps,
+      hubDestHash: 'aa'.repeat(16),
+      messages: [makeMsg({ id: 'reply', body: 'hello' })],
+    };
+    const { rerender } = render(<RrcChatView {...props} />);
+    expect(screen.getByRole('textbox')).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'rrc.replyToUser' }));
+    await waitFor(() => {
+      expect(screen.getByRole('textbox')).toHaveValue('@alice ');
+    });
+    rerender(<RrcChatView {...props} composeSeed={{ text: '/msg bob ', token: 123 }} />);
+    expect(screen.getByRole('textbox')).toHaveValue('/msg bob ');
+    rerender(<RrcChatView {...props} hubDestHash={'cc'.repeat(16)} />);
+    expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+});
+
+it('preserves a reply draft across hub changes with a consumed nicklist seed still present', async () => {
+  localStorage.clear();
+  const user = userEvent.setup();
+  const seed = { text: '/msg bob ', token: 123 };
+  const props = {
+    ...baseProps,
+    hubDestHash: 'aa'.repeat(16),
+    composeSeed: seed,
+    messages: [makeMsg({ id: 'reply-stale', body: 'hello' })],
+  };
+  const { rerender } = render(<RrcChatView {...props} composeSeed={null} />);
+  rerender(<RrcChatView {...props} />);
+  await user.click(screen.getByRole('button', { name: 'rrc.replyToUser' }));
+  await waitFor(() => {
+    expect(screen.getByRole('textbox')).toHaveValue('@alice /msg bob ');
+  });
+  await user.type(screen.getByRole('textbox'), 'my draft');
+  rerender(<RrcChatView {...props} hubDestHash={'cc'.repeat(16)} />);
+  expect(screen.getByRole('textbox')).toHaveValue('');
+  rerender(<RrcChatView {...props} />);
+  expect(screen.getByRole('textbox')).toHaveValue('@alice /msg bob my draft');
+});
+
+it('does not turn nameless sender hashes into mention targets', () => {
+  render(
+    <RrcChatView
+      {...baseProps}
+      messages={[makeMsg({ id: 'nameless', body: 'hello', nickname: null })]}
+    />,
+  );
+  expect(screen.queryByRole('button', { name: 'rrc.replyToUser' })).not.toBeInTheDocument();
 });

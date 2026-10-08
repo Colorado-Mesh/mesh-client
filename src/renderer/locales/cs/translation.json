@@ -5882,7 +5882,8 @@
       "expand_many": "Zobrazit {{count}} oznámení hubu",
       "collapse_few": "Skrýt {{count}} oznámení hubu",
       "collapse_many": "Skrýt {{count}} oznámení hubu"
-    }
+    },
+    "replyToUser": "Odpovědět uživateli {{nickname}}"
   },
   "signalMeter": {
     "rssi": "\"RSSI\"",
