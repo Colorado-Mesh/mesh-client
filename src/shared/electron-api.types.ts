@@ -1242,6 +1242,8 @@ export interface ElectronAPI {
     getRendererLiveness: () => Promise<RendererLivenessSnapshot>;
     /** Restore, show and focus the calling window (desktop notification click). */
     focusWindow: () => Promise<void>;
+    /** Flash the taskbar / bounce the dock until the window is focused (unseen MAYDAY/URGENT). */
+    requestAttention: () => Promise<void>;
   };
 
   // ─── MeshCore TCP bridge ─────────────────────────────────────────────────────

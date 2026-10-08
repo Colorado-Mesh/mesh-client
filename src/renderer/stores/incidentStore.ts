@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 import { isBeacon, isBeaconAck, isBeaconCancel, type Severity } from '@/renderer/lib/mecp/engine';
-import type { EmergencyIncident } from '@/renderer/lib/mecp/incidentTypes';
+import type { EmergencyIncident, IncidentEvent } from '@/renderer/lib/mecp/incidentTypes';
 import { findOpenIncidentForAck, isGeneralAck } from '@/renderer/lib/mecp/mecpAck';
 import {
   extractMecpCoords,
@@ -18,12 +18,15 @@ import { MS_PER_HOUR, MS_PER_MINUTE } from '@/shared/timeConstants';
 export type {
   EmergencyIncident,
   IncidentCoordsSource,
+  IncidentEvent,
+  IncidentEventKind,
   IncidentStatus,
 } from '@/renderer/lib/mecp/incidentTypes';
 
 export const INCIDENT_STORE_KEY = 'mesh-client:incidents';
 export const MAX_INCIDENTS = 200;
 export const MAX_MESSAGE_IDS_PER_INCIDENT = 50;
+export const MAX_EVENTS_PER_INCIDENT = 50;
 /** Copies arriving shortly after Resolve (e.g. rebroadcast echoes) must not reopen the incident. */
 export const INCIDENT_REOPEN_GRACE_MS = 5 * MS_PER_MINUTE;
 /** Bridged copies from a different sender id merge when payload matches within this window. */
@@ -75,6 +78,10 @@ interface IncidentStoreState {
    * `resolveIncidentWithBeaconCancel` in `beaconCancel.ts`.
    */
   resolveIncident: (incidentId: string, at?: number) => void;
+  /** Local operator has looked at the incident. Never transmits. */
+  markSeen: (incidentId: string, at?: number) => void;
+  /** Mark every unresolved incident seen (operator opened the Incident tab). */
+  markAllSeen: (at?: number) => void;
   clearAll: () => void;
 }
 
@@ -152,14 +159,26 @@ function pruneTombstones(tombs: Record<string, number>): Record<string, number> 
   return next;
 }
 
+function appendEvent(
+  events: readonly IncidentEvent[] | undefined,
+  event: IncidentEvent,
+): IncidentEvent[] {
+  return [...(events ?? []), event].slice(-MAX_EVENTS_PER_INCIDENT);
+}
+
 function withAck(inc: EmergencyIncident, peerId: string): EmergencyIncident {
   if (inc.ackPeerIds.includes(peerId)) return inc;
   const ackPeerIds = [...inc.ackPeerIds, peerId];
+  const event: IncidentEvent =
+    peerId === 'local'
+      ? { at: Date.now(), kind: 'ackSent' }
+      : { at: Date.now(), kind: 'ackHeard', peerId };
   return {
     ...inc,
     ackPeerIds,
     ackCount: ackPeerIds.length,
     status: inc.status === 'open' ? 'acked' : inc.status,
+    events: appendEvent(inc.events, event),
   };
 }
 
@@ -258,7 +277,17 @@ export const useIncidentStore = create<IncidentStoreState>()(
           set((s) => {
             const next = { ...s.incidents };
             for (const inc of beacons) {
-              next[inc.id] = { ...inc, beaconActive: false, lastSeenAt: now };
+              next[inc.id] = {
+                ...inc,
+                beaconActive: false,
+                lastSeenAt: now,
+                events: appendEvent(inc.events, {
+                  at: now,
+                  kind: 'beaconCancelled',
+                  peerId: senderId,
+                  protocol,
+                }),
+              };
             }
             return { incidents: next };
           });
@@ -352,6 +381,8 @@ export const useIncidentStore = create<IncidentStoreState>()(
               : {}),
             isDrill: parsed.isDrill,
             status: 'open',
+            ...(input.fromSeed || input.localOrigin ? { seenAt: now } : {}),
+            events: [{ at: now, kind: 'received', peerId: senderId, protocol }],
           };
           set((s) => {
             const pruned = pruneIncidents({ ...s.incidents, [id]: created }, s.resolvedTombstones);
@@ -381,13 +412,27 @@ export const useIncidentStore = create<IncidentStoreState>()(
           (!isRelay && beacon && typeof input.beaconCancelToNode === 'number'
             ? input.beaconCancelToNode
             : undefined);
+        const mergedSeverity = Math.min(existing.severity, severity) as Severity;
+        // A live reopen or escalation into MAYDAY/URGENT needs the operator's attention again.
+        const needsAttention =
+          !input.fromSeed &&
+          !input.localOrigin &&
+          mergedSeverity <= 1 &&
+          (reopen || mergedSeverity < existing.severity);
+        let events = existing.events;
+        if (reopen) {
+          events = appendEvent(events, { at: now, kind: 'reopened', peerId: senderId, protocol });
+        }
+        if (isRelay || !existing.protocolsSeen.includes(protocol)) {
+          events = appendEvent(events, { at: now, kind: 'relayHeard', peerId: senderId, protocol });
+        }
         const merged: EmergencyIncident = {
           ...existing,
           protocol,
           protocolsSeen: existing.protocolsSeen.includes(protocol)
             ? existing.protocolsSeen
             : [...existing.protocolsSeen, protocol],
-          severity: Math.min(existing.severity, severity) as Severity,
+          severity: mergedSeverity,
           lastSeenAt: Math.max(existing.lastSeenAt, now),
           // Keep original victim identity; relays are recorded separately.
           senderName: isRelay ? existing.senderName : (input.senderName ?? existing.senderName),
@@ -402,6 +447,8 @@ export const useIncidentStore = create<IncidentStoreState>()(
           ...(markLocalOrigin ? { localOrigin: true } : {}),
           ...(beaconCancelToNode != null ? { beaconCancelToNode } : {}),
           ...(reopen ? { status: 'open' as const, resolvedAt: undefined } : {}),
+          ...(needsAttention ? { seenAt: undefined } : {}),
+          ...(events ? { events } : {}),
         };
         set((s) => {
           let nextTombs = s.resolvedTombstones;
@@ -444,6 +491,8 @@ export const useIncidentStore = create<IncidentStoreState>()(
                 ...inc,
                 beaconAcked: true,
                 status: inc.status === 'open' ? 'acked' : inc.status,
+                seenAt: inc.seenAt ?? Date.now(),
+                events: appendEvent(inc.events, { at: Date.now(), kind: 'beaconConfirmed' }),
               },
             },
           };
@@ -468,25 +517,55 @@ export const useIncidentStore = create<IncidentStoreState>()(
                 status: 'resolved',
                 resolvedAt,
                 beaconActive: false,
+                seenAt: inc.seenAt ?? resolvedAt,
+                events: appendEvent(inc.events, { at: resolvedAt, kind: 'resolved' }),
               },
             },
             resolvedTombstones: pruneTombstones(nextTombs),
           };
         }),
 
+      markSeen: (incidentId, at) =>
+        set((s) => {
+          const inc = s.incidents[incidentId];
+          if (!inc || inc.seenAt != null) return s;
+          return {
+            incidents: { ...s.incidents, [incidentId]: { ...inc, seenAt: at ?? Date.now() } },
+          };
+        }),
+
+      markAllSeen: (at) =>
+        set((s) => {
+          const seenAt = at ?? Date.now();
+          let next: Record<string, EmergencyIncident> | null = null;
+          for (const inc of Object.values(s.incidents)) {
+            if (inc.seenAt != null || !isUnresolved(inc)) continue;
+            next ??= { ...s.incidents };
+            next[inc.id] = { ...inc, seenAt };
+          }
+          return next ? { incidents: next } : s;
+        }),
+
       clearAll: () => set({ incidents: {} }),
     }),
     {
       name: INCIDENT_STORE_KEY,
-      version: 2,
+      version: 3,
       partialize: (state) => ({
         incidents: state.incidents,
         resolvedTombstones: state.resolvedTombstones,
       }),
-      migrate: (persisted) => {
+      migrate: (persisted, version) => {
         const p = persisted as Partial<IncidentStoreState> | undefined;
+        const incidents = p?.incidents ?? {};
+        // Rows stored before seenAt existed predate the standing alert; never surface them.
+        if (version < 3) {
+          for (const inc of Object.values(incidents)) {
+            inc.seenAt ??= inc.lastSeenAt;
+          }
+        }
         return {
-          incidents: p?.incidents ?? {},
+          incidents,
           resolvedTombstones: p?.resolvedTombstones ?? {},
         };
       },
@@ -522,6 +601,18 @@ export function incidentTabBadgeCount(state: Pick<IncidentStoreState, 'incidents
     if (isUnresolved(inc) && inc.severity <= 1) n++;
   }
   return n;
+}
+
+/**
+ * Live, unresolved, non-drill MAYDAY/URGENT incidents the operator has not looked at yet,
+ * most severe first then most recent. Returns a new array; use with `useShallow`.
+ */
+export function selectUnseenCriticalIncidents(
+  state: Pick<IncidentStoreState, 'incidents'>,
+): EmergencyIncident[] {
+  return Object.values(state.incidents)
+    .filter((inc) => isOpenCritical(inc) && inc.seenAt == null)
+    .sort((a, b) => a.severity - b.severity || b.lastSeenAt - a.lastSeenAt);
 }
 
 /** Unresolved incidents, most severe first, then most recent. Returns a new array; memoize callers. */

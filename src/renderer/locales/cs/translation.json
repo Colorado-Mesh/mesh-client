@@ -467,7 +467,10 @@
     "protocolsSection": "Protokoly",
     "protocolsEnabledDesc": "Vypněte protokoly, které nepoužíváte. Zakázaný protokol je skrytý před přepínačem protokolu, odpojen a přeskočen automatickým připojením a automatickým spuštěním. Pokud je povolen pouze jeden protokol, je přepínač skrytý.",
     "protocolEnabled": "Povolit {{name}}",
-    "protocolLastEnabled": "Alespoň jeden protokol musí zůstat povolen."
+    "protocolLastEnabled": "Alespoň jeden protokol musí zůstat povolen.",
+    "mecpRepeatAlertMinutes": "Opakujte neviditelné MAYDAY/NALÉHAVÉ upozornění (minuty)",
+    "mecpRepeatAlertMinutesPlaceholder": "Vypnuto",
+    "mecpRepeatAlertMinutesHint": "Pro stanice bez dozoru. Přehrává výstražný tón v tomto intervalu, dokud někdo neotevře kartu Incident (Incident) nebo neoznačí zobrazené výstrahy. Ponechte prázdné pro upozornění jednou."
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -6569,7 +6572,17 @@
     "exportLog": "Exportovat protokol",
     "exportMenuLabel": "Exportovat formát protokolu incidentů",
     "exportJson": "Exportujte JSON",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV",
+    "standingAlertRegion": "Neviditelná nouzová výstraha",
+    "standingAlertTitle": "Nouzové od {{sender}}",
+    "standingAlertHeard": "Slyšeno v {{time}}",
+    "standingAlertMore_one": "+{{count}} dalších neviděných",
+    "standingAlertMore_other": "+{{count}} dalších neviděných",
+    "standingAlertMore_few": "+{{count}} další neviděné",
+    "standingAlertView": "Zobrazit",
+    "standingAlertViewAria": "Otevřít kartu Incident",
+    "standingAlertDismiss": "Značka zobrazena",
+    "standingAlertDismissAria": "Označit stav nouze z {{sender}} jako viditelný"
   },
   "shell": {
     "section": {

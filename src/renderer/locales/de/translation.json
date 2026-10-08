@@ -459,7 +459,10 @@
     "protocolsSection": "Protokolle",
     "protocolsEnabledDesc": "Deaktivieren Sie Protokolle, die Sie nicht verwenden. Ein deaktiviertes Protokoll wird vom Protokollumschalter ausgeblendet, getrennt und durch automatische Verbindung und Autostart übersprungen. Wenn nur ein Protokoll aktiviert ist, wird der Umschalter ausgeblendet.",
     "protocolEnabled": "{{name}} aktivieren",
-    "protocolLastEnabled": "Mindestens ein Protokoll muss aktiviert bleiben."
+    "protocolLastEnabled": "Mindestens ein Protokoll muss aktiviert bleiben.",
+    "mecpRepeatAlertMinutes": "Wiederholen Sie ungesehenen MAYDAY/DRINGENDEN Alarm (Minuten)",
+    "mecpRepeatAlertMinutesPlaceholder": "Aus",
+    "mecpRepeatAlertMinutesHint": "Für unbeaufsichtigte Sender. Wiederholt den Alarmton in diesem Intervall, bis jemand die Registerkarte Vorfall öffnet oder den Alarm markiert. Lassen Sie das Feld leer, um einmal zu warnen."
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -6508,7 +6511,16 @@
     "exportLog": "Protokoll exportieren",
     "exportMenuLabel": "Vorfallprotokollformat exportieren",
     "exportJson": "JSON exportieren",
-    "exportCsv": "CSV exportieren"
+    "exportCsv": "CSV exportieren",
+    "standingAlertRegion": "Unsichtbarer Notfallalarm",
+    "standingAlertTitle": "Notfall von {{sender}}",
+    "standingAlertHeard": "Gehört bei {{time}}",
+    "standingAlertMore_one": "+{{count}} unsichtbarer",
+    "standingAlertMore_other": "+{{count}} unsichtbarer",
+    "standingAlertView": "Ansicht",
+    "standingAlertViewAria": "Öffnen Sie die Registerkarte Vorfall",
+    "standingAlertDismiss": "Als gesehen markieren",
+    "standingAlertDismissAria": "Notruf von {{sender}} als gesehen markieren"
   },
   "shell": {
     "section": {

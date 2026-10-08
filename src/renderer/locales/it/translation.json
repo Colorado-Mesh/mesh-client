@@ -459,7 +459,10 @@
     "protocolsSection": "Protocolli",
     "protocolsEnabledDesc": "Disattiva i protocolli che non utilizzi. Un protocollo disabilitato viene nascosto dal commutatore di protocollo, disconnesso e saltato dalla connessione automatica e dall'avvio automatico. Con un solo protocollo abilitato, lo switcher è nascosto.",
     "protocolEnabled": "Abilita {{name}}",
-    "protocolLastEnabled": "Almeno un protocollo deve rimanere abilitato."
+    "protocolLastEnabled": "Almeno un protocollo deve rimanere abilitato.",
+    "mecpRepeatAlertMinutes": "Ripeti avviso MAYDAY/URGENTE invisibile (minuti)",
+    "mecpRepeatAlertMinutesPlaceholder": "Disattivato",
+    "mecpRepeatAlertMinutesHint": "Per le stazioni non presidiate. Riproduce il tono di avviso a questo intervallo fino a quando qualcuno non apre la scheda Incidente o contrassegna l'avviso visualizzato. Lasciare vuoto per avvisare una volta."
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -6508,7 +6511,16 @@
     "exportLog": "Esporta registro",
     "exportMenuLabel": "Esporta il formato del registro degli incidenti",
     "exportJson": "Esporta JSON",
-    "exportCsv": "Esporta CSV"
+    "exportCsv": "Esporta CSV",
+    "standingAlertRegion": "Allarme di emergenza invisibile",
+    "standingAlertTitle": "Emergenza da {{sender}}",
+    "standingAlertHeard": "Sentito alle {{time}}",
+    "standingAlertMore_one": "+{{count}} altro invisibile",
+    "standingAlertMore_other": "+{{count}} altro invisibile",
+    "standingAlertView": "Visualizza",
+    "standingAlertViewAria": "Apri la scheda Incidente",
+    "standingAlertDismiss": "Segna come visto",
+    "standingAlertDismissAria": "Contrassegna l'emergenza da {{sender}} come visibile"
   },
   "shell": {
     "section": {

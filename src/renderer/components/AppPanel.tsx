@@ -14,6 +14,7 @@ import type { SupportBundleMode } from '@/shared/support-bundle.types';
 import type { LocationFilter } from '../App';
 import {
   getAppSettingsRaw,
+  MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
   mergeAppSettingsPartial,
 } from '../lib/appSettingsStorage';
@@ -195,6 +196,7 @@ interface AppSettings {
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
+  mecpRepeatAlertMinutes: number | null;
   hiddenProtocols: MeshProtocol[];
 }
 
@@ -2301,6 +2303,34 @@ export default function AppPanel({
             <label htmlFor="notifyOnLinkDown" className="text-ink-300 cursor-pointer text-sm">
               {t('appPanel.notifyOnLinkDown')}
             </label>
+          </div>
+          <div
+            data-setting-anchor="app.notifications.mecpRepeatAlert"
+            className="flex flex-col gap-1"
+          >
+            <label htmlFor="mecpRepeatAlertMinutes" className="text-ink-300 text-sm">
+              {t('appPanel.mecpRepeatAlertMinutes')}
+            </label>
+            <input
+              id="mecpRepeatAlertMinutes"
+              type="number"
+              min={1}
+              max={MECP_REPEAT_ALERT_MAX_MINUTES}
+              placeholder={t('appPanel.mecpRepeatAlertMinutesPlaceholder')}
+              aria-label={t('appPanel.mecpRepeatAlertMinutes')}
+              value={settings.mecpRepeatAlertMinutes ?? ''}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                updateSetting(
+                  'mecpRepeatAlertMinutes',
+                  raw === ''
+                    ? null
+                    : Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.max(1, parseInt(raw, 10) || 1)),
+                );
+              }}
+              className={`${INPUT_BOX_CLASS} w-40`}
+            />
+            <p className="text-muted text-xs">{t('appPanel.mecpRepeatAlertMinutesHint')}</p>
           </div>
         </div>
         {hasRrcPanel && (

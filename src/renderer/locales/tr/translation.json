@@ -459,7 +459,10 @@
     "protocolsSection": "Protokoller",
     "protocolsEnabledDesc": "Kullanmadığınız protokolleri kapatın. Devre dışı bırakılmış bir protokol, protokol değiştiriciden gizlenir, bağlantısı kesilir ve otomatik bağlantı ve otomatik başlatma tarafından atlanır. Yalnızca bir protokol etkinleştirildiğinde, anahtarlayıcı gizlenir.",
     "protocolEnabled": "{{name}} Etkinleştir",
-    "protocolLastEnabled": "En az bir protokol etkin kalmalıdır."
+    "protocolLastEnabled": "En az bir protokol etkin kalmalıdır.",
+    "mecpRepeatAlertMinutes": "Görünmeyen MAYDAY/ACİL uyarıyı tekrarla (dakika)",
+    "mecpRepeatAlertMinutesPlaceholder": "Kapalı",
+    "mecpRepeatAlertMinutesHint": "Katılımsız istasyonlar için. Birisi Olay sekmesini açana veya görülen uyarıyı işaretleyene kadar bu aralıkta uyarı tonunu tekrar çalar. Bir kez uyarmak için boş bırakın."
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -6508,7 +6511,16 @@
     "exportLog": "Günlüğü dışa aktar",
     "exportMenuLabel": "Olay günlüğü biçimini dışa aktar",
     "exportJson": "JSON'u dışa aktar",
-    "exportCsv": "CSV'yi dışa aktar"
+    "exportCsv": "CSV'yi dışa aktar",
+    "standingAlertRegion": "Görünmeyen acil durum uyarısı",
+    "standingAlertTitle": "{{sender}} 'dan itibaren acil durum",
+    "standingAlertHeard": "{{time}} 'da duyuldu",
+    "standingAlertMore_one": "+{{count}} daha fazla görülmedi",
+    "standingAlertMore_other": "+{{count}} daha fazla görülmedi",
+    "standingAlertView": "Görüntüle",
+    "standingAlertViewAria": "Olay sekmesini açın",
+    "standingAlertDismiss": "Görüldü olarak",
+    "standingAlertDismissAria": "Acil durumu {{sender}} 'dan görüldüğü gibi işaretleyin"
   },
   "shell": {
     "section": {

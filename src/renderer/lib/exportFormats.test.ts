@@ -116,6 +116,41 @@ describe('incident log export', () => {
   it('writes only the header for no incidents', () => {
     expect(incidentsToCsv([])).toBe(INCIDENT_EXPORT_FIELDS.join(',') + '\r\n');
   });
+
+  it('exports the event timeline as JSON objects and a compact CSV cell', () => {
+    const withEvents = incident({
+      events: [
+        {
+          at: Date.UTC(2026, 8, 24, 10, 0, 0),
+          kind: 'received',
+          peerId: '3735928559',
+          protocol: 'meshtastic',
+        },
+        { at: Date.UTC(2026, 8, 24, 10, 1, 0), kind: 'ackHeard', peerId: '7' },
+        { at: Date.UTC(2026, 8, 24, 10, 2, 0), kind: 'ackSent' },
+      ],
+    });
+    const rows = incidentsToExportRows([withEvents, incident({ id: 'legacy', events: undefined })]);
+    expect(rows[0].events).toEqual([
+      {
+        at: '2026-09-24T10:00:00.000Z',
+        kind: 'received',
+        peer_id: '3735928559',
+        protocol: 'meshtastic',
+      },
+      { at: '2026-09-24T10:01:00.000Z', kind: 'ackHeard', peer_id: '7', protocol: null },
+      { at: '2026-09-24T10:02:00.000Z', kind: 'ackSent', peer_id: null, protocol: null },
+    ]);
+    expect(rows[1].events).toEqual([]);
+
+    const [, line] = incidentsToCsv([rows[0]]).trimEnd().split('\r\n');
+    expect(
+      line.endsWith(
+        ',2026-09-24T10:00:00.000Z received 3735928559 meshtastic; ' +
+          '2026-09-24T10:01:00.000Z ackHeard 7; 2026-09-24T10:02:00.000Z ackSent',
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('nodesToCsv', () => {

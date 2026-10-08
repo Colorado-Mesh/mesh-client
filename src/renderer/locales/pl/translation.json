@@ -475,7 +475,10 @@
     "protocolsSection": "Protokoły",
     "protocolsEnabledDesc": "Wyłącz protokoły, których nie używasz. Wyłączony protokół jest ukryty przed przełącznikiem protokołu, rozłączony i pomijany przez automatyczne łączenie i automatyczne uruchamianie. Przy włączonym tylko jednym protokole przełącznik jest ukryty.",
     "protocolEnabled": "Włącz {{name}}",
-    "protocolLastEnabled": "Przynajmniej jeden protokół musi pozostać włączony."
+    "protocolLastEnabled": "Przynajmniej jeden protokół musi pozostać włączony.",
+    "mecpRepeatAlertMinutes": "Powtórz niewidoczny MAYDAY/PILNY alert (minuty)",
+    "mecpRepeatAlertMinutesPlaceholder": "Wył.",
+    "mecpRepeatAlertMinutesHint": "W przypadku stacji nienadzorowanych. Powtarza dźwięk alertu w tym odstępie czasu, dopóki ktoś nie otworzy karty incydentu lub nie oznaczy wyświetlonego alertu. Pozostaw puste, aby powiadomić raz."
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -6614,7 +6617,18 @@
     "exportLog": "Eksportuj dziennik",
     "exportMenuLabel": "Eksportuj format dziennika zdarzeń",
     "exportJson": "Eksportuj JSON",
-    "exportCsv": "Eksportuj plik CSV"
+    "exportCsv": "Eksportuj plik CSV",
+    "standingAlertRegion": "Niewidoczny alarm awaryjny",
+    "standingAlertTitle": "Sytuacja awaryjna od {{sender}}",
+    "standingAlertHeard": "Odezwał się o {{time}}",
+    "standingAlertMore_one": "+{{count}} nieprzejrzany",
+    "standingAlertMore_other": "+{{count}} nieprzejrzanych",
+    "standingAlertMore_few": "+{{count}} nieprzejrzane",
+    "standingAlertMore_many": "+{{count}} nieprzejrzanych",
+    "standingAlertView": "Wyświetl",
+    "standingAlertViewAria": "Otwórz kartę Zdarzenie.",
+    "standingAlertDismiss": "Oznacz jako widziane",
+    "standingAlertDismissAria": "Oznacz sytuację awaryjną z {{sender}} jako widoczną"
   },
   "shell": {
     "section": {

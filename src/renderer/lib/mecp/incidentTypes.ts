@@ -6,6 +6,24 @@ export type IncidentStatus = 'open' | 'acked' | 'resolved';
 
 export type IncidentCoordsSource = 'message' | 'lastKnown' | null;
 
+export type IncidentEventKind =
+  | 'received'
+  | 'relayHeard'
+  | 'ackHeard'
+  | 'ackSent'
+  | 'beaconConfirmed'
+  | 'beaconCancelled'
+  | 'resolved'
+  | 'reopened';
+
+/** After-action timeline entry. Only records what the mesh actually carried or the operator did. */
+export interface IncidentEvent {
+  at: number;
+  kind: IncidentEventKind;
+  peerId?: string;
+  protocol?: MeshProtocol;
+}
+
 export interface EmergencyIncident {
   /** `incidentFingerprint()` of the first report (stable across severity escalation). */
   id: string;
@@ -42,4 +60,11 @@ export interface EmergencyIncident {
   isDrill: boolean;
   status: IncidentStatus;
   resolvedAt?: number;
+  /**
+   * Local only, never transmitted. Absent means a live MAYDAY/URGENT this operator has not yet
+   * looked at (drives the standing alert banner). Hydration seed and own traffic set it.
+   */
+  seenAt?: number;
+  /** Oldest first, capped. Optional so rows saved before the timeline still load. */
+  events?: IncidentEvent[];
 }

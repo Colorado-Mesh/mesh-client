@@ -459,7 +459,10 @@
     "protocolsSection": "Protokol",
     "protocolsEnabledDesc": "Matikan protokol yang tidak Anda gunakan. Protokol yang dinonaktifkan disembunyikan dari pengalih protokol, terputus, dan dilewati oleh auto - connect dan autostart. Dengan hanya satu protokol yang diaktifkan, pengalih disembunyikan.",
     "protocolEnabled": "Aktifkan {{name}}",
-    "protocolLastEnabled": "Setidaknya satu protokol harus tetap diaktifkan."
+    "protocolLastEnabled": "Setidaknya satu protokol harus tetap diaktifkan.",
+    "mecpRepeatAlertMinutes": "Ulangi peringatan MAYDAY/MENDESAK YANG tidak terlihat (menit)",
+    "mecpRepeatAlertMinutesPlaceholder": "Tidak aktif",
+    "mecpRepeatAlertMinutesHint": "Untuk stasiun tanpa pengawasan. Putar ulang nada peringatan pada interval ini sampai seseorang membuka tab Insiden atau menandai peringatan yang terlihat. Biarkan kosong untuk memperingatkan satu kali."
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -6508,7 +6511,16 @@
     "exportLog": "Ekspor log",
     "exportMenuLabel": "Ekspor format log insiden",
     "exportJson": "Ekspor JSON",
-    "exportCsv": "Ekspor CSV"
+    "exportCsv": "Ekspor CSV",
+    "standingAlertRegion": "Peringatan darurat yang tidak terlihat",
+    "standingAlertTitle": "Keadaan darurat dari {{sender}}",
+    "standingAlertHeard": "Mendengar di {{time}}",
+    "standingAlertMore_one": "+{{count}} lebih tidak terlihat",
+    "standingAlertMore_other": "+{{count}} lebih tidak terlihat",
+    "standingAlertView": "Lihat",
+    "standingAlertViewAria": "Buka tab Insiden",
+    "standingAlertDismiss": "Tandai terlihat",
+    "standingAlertDismissAria": "Tandai keadaan darurat dari {{sender}} seperti yang terlihat"
   },
   "shell": {
     "section": {

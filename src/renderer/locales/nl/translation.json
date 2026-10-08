@@ -459,7 +459,10 @@
     "protocolsSection": "Protocollen",
     "protocolsEnabledDesc": "Schakel protocollen uit die u niet gebruikt. Een uitgeschakeld protocol wordt verborgen voor de protocolswitcher, de verbinding verbroken en overgeslagen door automatisch verbinden en automatisch starten. Met slechts één protocol ingeschakeld, is de switcher verborgen.",
     "protocolEnabled": "{{name}} inschakelen",
-    "protocolLastEnabled": "Ten minste één protocol moet ingeschakeld blijven."
+    "protocolLastEnabled": "Ten minste één protocol moet ingeschakeld blijven.",
+    "mecpRepeatAlertMinutes": "Herhaal ongeziene MAYDAY/DRINGENDE waarschuwing (minuten)",
+    "mecpRepeatAlertMinutesPlaceholder": "Off",
+    "mecpRepeatAlertMinutesHint": "Voor onbeheerde stations. Herhaalt de waarschuwingstoon op dit interval totdat iemand het tabblad Incident opent of de waarschuwing ziet. Laat leeg om een keer te waarschuwen."
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -6508,7 +6511,16 @@
     "exportLog": "Logboek exporteren",
     "exportMenuLabel": "Exporteer het incidentenlogboekformaat",
     "exportJson": "JSON exporteren",
-    "exportCsv": "CSV exporteren"
+    "exportCsv": "CSV exporteren",
+    "standingAlertRegion": "Ongeziene noodwaarschuwing",
+    "standingAlertTitle": "Noodgeval van {{sender}}",
+    "standingAlertHeard": "Gehoord op {{time}}",
+    "standingAlertMore_one": "+{{count}} meer ongezien",
+    "standingAlertMore_other": "+{{count}} meer ongezien",
+    "standingAlertView": "Bekijken",
+    "standingAlertViewAria": "Open het tabblad Incident",
+    "standingAlertDismiss": "Markeer gezien",
+    "standingAlertDismissAria": "Markeer de noodsituatie van {{sender}} als gezien"
   },
   "shell": {
     "section": {

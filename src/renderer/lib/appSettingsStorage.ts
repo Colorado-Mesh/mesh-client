@@ -152,18 +152,28 @@ export interface OperationalAlertSettings {
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
+  /** Repeat interval for unseen MAYDAY/URGENT alerts; null = off. */
+  mecpRepeatAlertMinutes: number | null;
 }
 
-/** Watched-node silence / battery and RF link-down alert settings (App tab). */
+export const MECP_REPEAT_ALERT_MAX_MINUTES = 60;
+
+/** Watched-node silence / battery, RF link-down and unseen-MECP repeat settings (App tab). */
 export function getOperationalAlertSettings(): OperationalAlertSettings {
   const parsed = parseStoredJson<{
     nodeSilenceAlertMinutes?: unknown;
     nodeBatteryLowThreshold?: unknown;
     notifyOnLinkDown?: unknown;
+    mecpRepeatAlertMinutes?: unknown;
   }>(getAppSettingsRaw(), 'getOperationalAlertSettings');
   const silence = parsed?.nodeSilenceAlertMinutes;
   const battery = parsed?.nodeBatteryLowThreshold;
+  const repeat = parsed?.mecpRepeatAlertMinutes;
   return {
+    mecpRepeatAlertMinutes:
+      typeof repeat === 'number' && Number.isFinite(repeat) && repeat >= 1
+        ? Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.floor(repeat))
+        : DEFAULT_APP_SETTINGS_SHARED.mecpRepeatAlertMinutes,
     nodeSilenceAlertMinutes:
       typeof silence === 'number' && Number.isFinite(silence) && silence > 0
         ? silence

@@ -459,7 +459,10 @@
     "protocolsSection": "协议",
     "protocolsEnabledDesc": "关闭您不使用的协议。禁用的协议从协议切换器隐藏，断开连接，并通过自动连接和自动启动跳过。仅启用一个协议时，切换器将被隐藏。",
     "protocolEnabled": "启用{{name}}",
-    "protocolLastEnabled": "至少有一个协议必须保持启用状态。"
+    "protocolLastEnabled": "至少有一个协议必须保持启用状态。",
+    "mecpRepeatAlertMinutes": "重复看不见的MAYDAY/紧急警报（分钟）",
+    "mecpRepeatAlertMinutesPlaceholder": "关闭",
+    "mecpRepeatAlertMinutesHint": "对于无人值守的站点。以此间隔重播警报音，直到有人打开事件选项卡或标记看到的警报。留空以提醒一次。"
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -6508,7 +6511,16 @@
     "exportLog": "导出日志",
     "exportMenuLabel": "导出事件日志格式",
     "exportJson": "导出 JSON",
-    "exportCsv": "导出 CSV"
+    "exportCsv": "导出 CSV",
+    "standingAlertRegion": "看不见的紧急警报",
+    "standingAlertTitle": "紧急情况从{{sender}}开始",
+    "standingAlertHeard": "听说时间： {{time}}",
+    "standingAlertMore_one": "+ {{count}}更多未知",
+    "standingAlertMore_other": "+ {{count}}更多未知",
+    "standingAlertView": "查看",
+    "standingAlertViewAria": "打开“事件”标签卡",
+    "standingAlertDismiss": "标记为已见",
+    "standingAlertDismissAria": "将{{sender}}的紧急情况标记为可见"
   },
   "shell": {
     "section": {

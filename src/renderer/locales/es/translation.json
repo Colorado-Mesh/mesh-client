@@ -459,7 +459,10 @@
     "protocolsSection": "Protocolos",
     "protocolsEnabledDesc": "Desactive los protocolos que no utiliza. Un protocolo deshabilitado se oculta del conmutador de protocolos, se desconecta y se omite mediante la conexión automática y el inicio automático. Con un solo protocolo habilitado, el conmutador está oculto.",
     "protocolEnabled": "Habilitar {{name}}",
-    "protocolLastEnabled": "Al menos un protocolo debe permanecer habilitado."
+    "protocolLastEnabled": "Al menos un protocolo debe permanecer habilitado.",
+    "mecpRepeatAlertMinutes": "Repetir MAYDAY no visto/alerta URGENTE (minutos)",
+    "mecpRepeatAlertMinutesPlaceholder": "Apagado",
+    "mecpRepeatAlertMinutesHint": "Para estaciones desatendidas. Reproduce el tono de alerta en este intervalo hasta que alguien abre la pestaña Incidencia o marca la alerta vista. Dejar en blanco para alertar una vez."
   },
   "aria": {
     "closeDialog": "Cerrar cuadro de diálogo",
@@ -6508,7 +6511,16 @@
     "exportLog": "Exportar registro",
     "exportMenuLabel": "Exportar formato de registro de incidentes",
     "exportJson": "Exportar JSON",
-    "exportCsv": "Exportar CSV"
+    "exportCsv": "Exportar CSV",
+    "standingAlertRegion": "Alerta de emergencia no vista",
+    "standingAlertTitle": "Emergencia desde {{sender}}",
+    "standingAlertHeard": "Escuchado a las {{time}}",
+    "standingAlertMore_one": "+{{count}} más invisibles",
+    "standingAlertMore_other": "+{{count}} más invisibles",
+    "standingAlertView": "Visualización",
+    "standingAlertViewAria": "Abre la pestaña Incidencia",
+    "standingAlertDismiss": "Marca vista",
+    "standingAlertDismissAria": "Marca la emergencia de {{sender}} como se ve"
   },
   "shell": {
     "section": {

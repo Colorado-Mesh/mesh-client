@@ -147,6 +147,7 @@ import { FirmwareUpdateNotifier } from './components/FirmwareUpdateNotifier';
 import { GlobalInstantTooltip } from './components/GlobalInstantTooltip';
 import { HelpTooltip } from './components/HelpTooltip';
 import { InactiveProtocolNotifier } from './components/InactiveProtocolNotifier';
+import { UnseenEmergencyBanner } from './components/incident/UnseenEmergencyBanner';
 import LanguageSelector from './components/LanguageSelector';
 import { MeshcoreFloodAdvertHeaderButton } from './components/MeshcoreFloodAdvertHeaderButton';
 import { MeshcoreWaitingMessagesHeaderIndicator } from './components/MeshcoreWaitingMessagesHeaderIndicator';
@@ -206,6 +207,7 @@ import { useTakContacts } from './hooks/useTakContacts';
 import { useTakNodeReplicator } from './hooks/useTakNodeReplicator';
 import { useTakRemoteStatus } from './hooks/useTakRemoteRelay';
 import { useTakServer } from './hooks/useTakServer';
+import { useUnseenEmergencyAlerts } from './hooks/useUnseenEmergencyAlerts';
 import { useWeatherForecastIngest } from './hooks/useWeatherForecastIngest';
 import { ChatPanel, ConnectionPanel, LogPanel, NodeListPanel } from './lazyAppPanels';
 import { ContactGroupsModal, NodeDetailModal, ReticulumPeerDetailModal } from './lazyModals';
@@ -1662,6 +1664,7 @@ function AppContent() {
       : nodesForUi.size;
 
   const operationalAlertSettings = useOperationalAlertSettings();
+  useUnseenEmergencyAlerts(operationalAlertSettings.mecpRepeatAlertMinutes);
   useNodeStatusNotifier(nodesForUi, capabilities, {
     silenceThresholdMinutes: operationalAlertSettings.nodeSilenceAlertMinutes,
   });
@@ -1751,6 +1754,7 @@ function AppContent() {
 
   const handleIncidentAck = useCallback(
     (incident: EmergencyIncident) => {
+      useIncidentStore.getState().markSeen(incident.id);
       const route = resolveIncidentAckRoute(
         incident,
         protocol,
@@ -1976,6 +1980,12 @@ function AppContent() {
     lastPanelBySectionRef.current.set(`${protocol}:${activeNavSection.id}`, activePanelIndex);
   }, [protocol, activeNavSection, activePanelIndex]);
 
+  // Only on navigating to the tab: a MAYDAY arriving while the tab is already open keeps its
+  // standing alert until dismissed, ACKed or resolved (an open tab does not mean anyone is there).
+  useEffect(() => {
+    if (activePanelIndex === INCIDENT_PANEL_INDEX) useIncidentStore.getState().markAllSeen();
+  }, [activePanelIndex]);
+
   const handleNavSectionSelect = useCallback(
     (id: NavSectionId) => {
       const section = navSections.find((s) => s.id === id);
@@ -1994,6 +2004,10 @@ function AppContent() {
     },
     [activeTabMappings],
   );
+
+  const openIncidentPanel = useCallback(() => {
+    openSlotPanel('Incident');
+  }, [openSlotPanel]);
 
   const openTabFromLauncher = useCallback((tabIndex: number) => {
     setActiveTab(tabIndex);
@@ -4199,6 +4213,7 @@ function AppContent() {
                 reconnectAttempt={activeConnectionView.state.reconnectAttempt}
                 onReconnect={handleReconnect}
               />
+              <UnseenEmergencyBanner onView={openIncidentPanel} />
               <ServiceAnnouncementStrip
                 announcements={serviceAnnouncements.visible}
                 onDismiss={serviceAnnouncements.dismiss}

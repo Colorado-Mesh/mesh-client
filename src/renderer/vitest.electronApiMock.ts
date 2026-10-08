@@ -322,6 +322,7 @@ export function createElectronAPIMock(): ElectronAPI {
         heapUsed: 0,
       }),
       focusWindow: vi.fn().mockResolvedValue(undefined),
+      requestAttention: vi.fn().mockResolvedValue(undefined),
     },
     onSpellcheckReplace: vi.fn().mockReturnValue(() => {}),
     meshcore: {

@@ -459,7 +459,10 @@
     "protocolsSection": "프로토콜",
     "protocolsEnabledDesc": "사용하지 않는 프로토콜을 끕니다. 비활성화된 프로토콜은 프로토콜 스위처에서 숨겨지고 연결이 끊어지며 자동 연결 및 자동 시작으로 건너뜁니다. 하나의 프로토콜만 활성화되면 스위처가 숨겨집니다.",
     "protocolEnabled": "{{name}} 활성화",
-    "protocolLastEnabled": "하나 이상의 프로토콜이 활성화된 상태로 유지되어야 합니다."
+    "protocolLastEnabled": "하나 이상의 프로토콜이 활성화된 상태로 유지되어야 합니다.",
+    "mecpRepeatAlertMinutes": "보이지 않는 메이데이/긴급 알림 반복 (분)",
+    "mecpRepeatAlertMinutesPlaceholder": "해제",
+    "mecpRepeatAlertMinutesHint": "무인 스테이션의 경우. 누군가가 사고 탭을 열거나 표시된 경고를 표시할 때까지 이 간격으로 경고음을 다시 재생합니다. 한 번 경고하려면 비워 둡니다."
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -6508,7 +6511,16 @@
     "exportLog": "로그 내보내기",
     "exportMenuLabel": "사건 로그 형식 내보내기",
     "exportJson": "JSON 내보내기",
-    "exportCsv": "CSV 내보내기"
+    "exportCsv": "CSV 내보내기",
+    "standingAlertRegion": "보이지 않는 비상 경보",
+    "standingAlertTitle": "{{sender}} 의 긴급 상황",
+    "standingAlertHeard": "{{time}} 에서 소식 듣기",
+    "standingAlertMore_one": "+ {{count}} 더 보기",
+    "standingAlertMore_other": "+ {{count}} 더 보기",
+    "standingAlertView": "보기",
+    "standingAlertViewAria": "Incident 탭을 엽니다.",
+    "standingAlertDismiss": "표시됨",
+    "standingAlertDismissAria": "표시된 대로 {{sender}} 의 비상사태를 표시합니다."
   },
   "shell": {
     "section": {

@@ -475,7 +475,10 @@
     "protocolsSection": "Протоколы",
     "protocolsEnabledDesc": "Отключите протоколы, которые вы не используете. Отключенный протокол скрыт от коммутатора протоколов, отключен и пропущен автоподключением и автозапуском. При включенном только одном протоколе переключатель скрыт.",
     "protocolEnabled": "Включить {{name}}",
-    "protocolLastEnabled": "По крайней мере один протокол должен оставаться включенным."
+    "protocolLastEnabled": "По крайней мере один протокол должен оставаться включенным.",
+    "mecpRepeatAlertMinutes": "Повторите невидимое оповещение MAYDAY/СРОЧНОЕ оповещение (минуты)",
+    "mecpRepeatAlertMinutesPlaceholder": "Выкл.",
+    "mecpRepeatAlertMinutesHint": "Для автоматических станций. Повторяет сигнал оповещения с этим интервалом, пока кто-то не откроет вкладку «Происшествие» или не отметит увиденное оповещение. Оставьте пустым, чтобы предупредить один раз."
   },
   "aria": {
     "closeDialog": "Закрыть диалог",
@@ -6614,7 +6617,18 @@
     "exportLog": "Экспортировать журнал",
     "exportMenuLabel": "Экспортировать формат журнала инцидентов",
     "exportJson": "Экспорт JSON",
-    "exportCsv": "Экспортировать CSV"
+    "exportCsv": "Экспортировать CSV",
+    "standingAlertRegion": "Невидимое аварийное оповещение",
+    "standingAlertTitle": "Аварийная ситуация от {{sender}}",
+    "standingAlertHeard": "Слушали в {{time}}",
+    "standingAlertMore_one": "+{{count}} непросмотренное",
+    "standingAlertMore_other": "+{{count}} непросмотренных",
+    "standingAlertMore_few": "+{{count}} непросмотренных",
+    "standingAlertMore_many": "+{{count}} непросмотренных",
+    "standingAlertView": "Просмотр",
+    "standingAlertViewAria": "Откройте вкладку «Инцидент».",
+    "standingAlertDismiss": "Отметка замечена",
+    "standingAlertDismissAria": "Отметить аварийную ситуацию от {{sender}} как видимую"
   },
   "shell": {
     "section": {

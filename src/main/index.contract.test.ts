@@ -1070,6 +1070,23 @@ describe('desktop notification click focus', () => {
   });
 });
 
+describe('unseen emergency window attention', () => {
+  it('flashes only the unfocused sender window and clears on focus', () => {
+    const idx = INDEX_SOURCE.indexOf("ipcMain.handle('app:requestAttention'");
+    expect(idx).toBeGreaterThan(-1);
+    const end = INDEX_SOURCE.indexOf('ipcMain.handle(', idx + 1);
+    const body = INDEX_SOURCE.slice(idx, end);
+    expect(body).toContain("assertIpcSender(event, 'app:requestAttention')");
+    expect(body).toContain('BrowserWindow.fromWebContents(event.sender)');
+    expect(body).toContain('window.isFocused()');
+    expect(body).toContain('window.flashFrame(true)');
+    expect(body).toContain("window.once('focus'");
+    expect(body).toContain('window.flashFrame(false)');
+    expect(body).not.toContain('process.platform');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('app:requestAttention')");
+  });
+});
+
 describe('RNode flasher firmware backup', () => {
   it('registers the save handler module and exposes it on the flasher namespace', () => {
     expect(INDEX_SOURCE).toContain('registerFlasherHandlers();');

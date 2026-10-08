@@ -92,6 +92,8 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   nodeBatteryLowThreshold: 10,
   /** Alert when an RF link drops unexpectedly (not manual, not mid-reconnect). */
   notifyOnLinkDown: true,
+  /** Replay the MAYDAY/URGENT tone every N minutes while one is unseen; null = off. */
+  mecpRepeatAlertMinutes: null as number | null,
   /**
    * Protocols the user does not use: hidden from the switcher and skipped by autostart.
    * Stored as a hidden list so newly registered protocols default to enabled.
