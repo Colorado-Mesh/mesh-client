@@ -1283,7 +1283,7 @@ export function useMeshcoreRuntime() {
         meshcorePendingDriverIdentityRef.current ??
         getOfflineIdentityIdForProtocol('meshcore');
       if (storeId) {
-        syncNodesMapToIdentityStore(storeId, mergedInitial);
+        syncNodesMapToIdentityStore(storeId, mergedInitial, { monotonicLastHeard: true });
       }
       if (opts?.hydrateMessages && mapped.length > 0) {
         setMessages((prev) => mergeMeshcoreDbHydrationWithLive(prev, mapped));
@@ -1835,7 +1835,9 @@ export function useMeshcoreRuntime() {
       if (mergedForStore.size > 0) meshcoreNodesAppliedRef.current = true;
       // Publish before React commits — connect-time side effects (room auto-login) filter on hw_model.
       const storeId = resolveMeshcoreStoreIdentityId();
-      if (storeId) syncNodesMapToIdentityStore(storeId, mergedForStore);
+      if (storeId) {
+        syncNodesMapToIdentityStore(storeId, mergedForStore, { monotonicLastHeard: true });
+      }
     },
     [resolveMeshcoreStoreIdentityId, readMeshcoreNodes],
   );
