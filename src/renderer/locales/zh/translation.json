@@ -5824,7 +5824,8 @@
       "expand_other": "显示 {{count}} 中心通知",
       "collapse_one": "隐藏 {{count}} 中心通知",
       "collapse_other": "隐藏 {{count}} 中心通知"
-    }
+    },
+    "replyToUser": "回复 {{nickname}}"
   },
   "signalMeter": {
     "rssi": "RSSI",

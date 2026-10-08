@@ -553,8 +553,11 @@ export function ChatComposer({
     }
     prevViewKeyRef.current = viewKey;
     const drafts = loadDraftsInitial(protocol);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft from localStorage on tab switch
-    setInput(drafts[viewKey] ?? '');
+    const nextDraft = drafts[viewKey] ?? '';
+    // Avoid a queued no-op restore overriding a reply seed applied by the next render.
+
+    if (inputValueRef.current !== nextDraft) setInput(nextDraft);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore per-view draft and mention UI on tab switch
     setMentionQuery(null);
     setChatActionError(null);
     clearMentionCycle();

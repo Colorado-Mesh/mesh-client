@@ -5824,7 +5824,8 @@
       "expand_other": "{{count}} hub bildirimlerini göster",
       "collapse_one": "{{count}} hub bildirimini gizle",
       "collapse_other": "{{count}} hub bildirimlerini gizle"
-    }
+    },
+    "replyToUser": "{{nickname}} kullanıcısına yanıt ver"
   },
   "signalMeter": {
     "rssi": "RSSI",

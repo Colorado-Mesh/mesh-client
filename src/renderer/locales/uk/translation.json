@@ -5924,7 +5924,8 @@
       "expand_many": "Показати {{count}} повідомлень хаба",
       "collapse_few": "Приховати {{count}} повідомлення хаба",
       "collapse_many": "Приховати {{count}} повідомлень хаба"
-    }
+    },
+    "replyToUser": "Відповісти {{nickname}}"
   },
   "signalMeter": {
     "rssi": "RSSI (індикатор потужності прийнятого сигналу)",

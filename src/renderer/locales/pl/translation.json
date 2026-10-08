@@ -5924,7 +5924,8 @@
       "expand_many": "Pokaż {{count}} komunikatów huba",
       "collapse_few": "Ukryj {{count}} komunikaty huba",
       "collapse_many": "Ukryj {{count}} komunikatów huba"
-    }
+    },
+    "replyToUser": "Odpowiedz użytkownikowi {{nickname}}"
   },
   "signalMeter": {
     "rssi": "RSSI",
