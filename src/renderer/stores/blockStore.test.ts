@@ -105,6 +105,31 @@ describe('blockStore', () => {
     expect(bucket.loaded).toBe(true);
   });
 
+  it('re-reads when a block lands while load is in flight so the block is not lost', async () => {
+    const hash = 'ff'.repeat(16);
+    let releaseFirst!: (rows: unknown[]) => void;
+    getBlockedContacts
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseFirst = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([{ blocked_hash: hash, created_at: 5 }]);
+    blockContact.mockResolvedValue({ changes: 1 });
+
+    const loading = useBlockStore.getState().load('meshtastic', 'lora-blocklist');
+    await useBlockStore.getState().block('meshtastic', 'lora-blocklist', hash);
+    releaseFirst([]);
+    await loading;
+
+    expect(getBlockedContacts).toHaveBeenCalledTimes(2);
+    expect(useBlockStore.getState().isBlocked(hash, 'meshtastic')).toBe(true);
+    expect(useBlockStore.getState().byProtocol.meshtastic!.entries.map((e) => e.hash)).toEqual([
+      hash,
+    ]);
+  });
+
   it('keeps one blocklist per protocol without cross-protocol matches', async () => {
     getBlockedContacts.mockImplementation((protocol: string) =>
       Promise.resolve(
