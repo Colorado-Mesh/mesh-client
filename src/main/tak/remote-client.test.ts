@@ -14,6 +14,7 @@ import type { TAKContact, TAKRemoteStatus } from '../../shared/tak-types';
 import { createTakTestPki, type TakTestPki } from '../fixtures/tak-test-pki';
 import {
   describeTakRemoteError,
+  TAK_REMOTE_HTTP_PORT_ERROR,
   TAK_REMOTE_MAX_BUFFERED_BYTES,
   TAK_REMOTE_RECONNECT_BASE_MS,
   TAK_REMOTE_RECONNECT_MAX_MS,
@@ -491,6 +492,51 @@ describe('TakRemoteClient reconnect and output', () => {
     sockets[0]?.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
     sockets[0]?.emit('close');
     expect(c.getStatus().error).toBe('The server requires a client certificate; import one');
+    c.stop();
+  });
+
+  it('explains an HTTP reply on the stream instead of the EPIPE that follows', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { c, sockets } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    c.write('<event/>');
+    sockets[0]?.emit(
+      'data',
+      Buffer.from('HTTP/1.1 400 \r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<!doctype'),
+    );
+    expect(sockets[0]?.destroy).toHaveBeenCalled();
+    expect(c.getStatus().error).toBe(TAK_REMOTE_HTTP_PORT_ERROR);
+    c.stop();
+  });
+
+  it('detects an HTTP reply whose prefix is split across chunks', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { c, sockets } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    sockets[0]?.emit('data', Buffer.from('HT'));
+    expect(sockets[0]?.destroy).not.toHaveBeenCalled();
+    sockets[0]?.emit('data', Buffer.from('TP/1.1 400 \r\nConnection: close\r\n\r\n'));
+    expect(sockets[0]?.destroy).toHaveBeenCalled();
+    expect(c.getStatus().error).toBe(TAK_REMOTE_HTTP_PORT_ERROR);
+    c.stop();
+  });
+
+  it('still parses CoT whose first chunk is shorter than the HTTP prefix', () => {
+    const { c, sockets } = withFakeSockets();
+    const contacts: TAKContact[] = [];
+    c.on('cot', (contact: TAKContact) => contacts.push(contact));
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    const peer =
+      '<event version="2.0" uid="ANDROID-abc" type="a-f-G-U-C"><point lat="39.7" lon="-105"/>' +
+      '<detail><contact callsign="VIPER"/></detail></event>\n';
+    sockets[0]?.emit('data', Buffer.from(peer.slice(0, 2)));
+    sockets[0]?.emit('data', Buffer.from(peer.slice(2)));
+    expect(sockets[0]?.destroy).not.toHaveBeenCalled();
+    expect(contacts).toHaveLength(1);
+    expect(contacts[0]?.uid).toBe('ANDROID-abc');
     c.stop();
   });
 
