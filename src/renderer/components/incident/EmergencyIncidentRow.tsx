@@ -12,6 +12,7 @@ import { isMeshProtocol, REGISTERED_MESH_PROTOCOLS } from '@/shared/meshProtocol
 
 import { MecpSeverityBadge } from '../mecp/MecpSeverityBadge';
 import { AckIncidentButton } from './AckIncidentButton';
+import { BlockIncidentSenderButton } from './BlockIncidentSenderButton';
 import { ResolveIncidentButton } from './ResolveIncidentButton';
 
 export function EmergencyIncidentRow({
@@ -82,6 +83,7 @@ export function EmergencyIncidentRow({
           {t('incidentPanel.protocolsSeen', { protocols: incident.protocolsSeen.join(', ') })}
         </span>
         <span className="ml-auto flex gap-2">
+          <BlockIncidentSenderButton incident={incident} />
           {onAck ? <AckIncidentButton incident={incident} onAck={onAck} /> : null}
           <ResolveIncidentButton
             incident={incident}

@@ -41,6 +41,27 @@ function isGloballyMuted(): boolean {
 }
 
 /**
+ * One-time notice that alert tones are being suppressed (per-sender throttle or a multi-sender
+ * flood). Incidents are still recorded; the sender notice offers a Block action.
+ */
+export function notifyMecpAlertsSuppressed(
+  kind: 'sender' | 'flood',
+  senderLabel: string,
+  onBlock?: () => void,
+): void {
+  if (kind === 'flood') {
+    pushAppToast(i18n.t('mecp.block.floodToast'), 'warning', 10_000);
+    return;
+  }
+  pushAppToast(
+    i18n.t('mecp.block.throttledToast', { sender: senderLabel }),
+    'warning',
+    15_000,
+    onBlock ? { action: { label: i18n.t('mecp.block.throttledBlock'), onClick: onBlock } } : {},
+  );
+}
+
+/**
  * Play sound + emergency toast for an inbound MECP message.
  * Severity 0–1 ignore mutes; 2–3 respect global + per-view mutes. Drills never alert.
  * Always audible when focused on the receiving chat (callers must not gate on focus).

@@ -462,7 +462,14 @@
     "protocolLastEnabled": "Mindestens ein Protokoll muss aktiviert bleiben.",
     "mecpRepeatAlertMinutes": "Wiederholen Sie ungesehenen MAYDAY/DRINGENDEN Alarm (Minuten)",
     "mecpRepeatAlertMinutesPlaceholder": "Aus",
-    "mecpRepeatAlertMinutesHint": "Für unbeaufsichtigte Sender. Wiederholt den Alarmton in diesem Intervall, bis jemand die Registerkarte Vorfall öffnet oder den Alarm markiert. Lassen Sie das Feld leer, um einmal zu warnen."
+    "mecpRepeatAlertMinutesHint": "Für unbeaufsichtigte Sender. Wiederholt den Alarmton in diesem Intervall, bis jemand die Registerkarte Vorfall öffnet oder den Alarm markiert. Lassen Sie das Feld leer, um einmal zu warnen.",
+    "loraBlocklist": {
+      "title": "Blockierte Knoten",
+      "description": "Nachrichten von blockierten Knoten werden gelöscht, bevor sie den Chat erreichen, sodass sie auch keine MECP-Warnungen auslösen können. Blockieren eines Knotens aus seinem Knotendetail. Knoten-IDs können gefälscht werden, so dass gelegentlicher Missbrauch verhindert wird und kein entschlossener Angreifer.",
+      "empty": "Keine blockierten Knoten.",
+      "unblockAria": "Entsperren {{node}}",
+      "unblockFailed": "Die Blockierung dieses Knotens konnte nicht aufgehoben werden."
+    }
   },
   "aria": {
     "closeDialog": "Schließen Dialog",
@@ -6433,9 +6440,28 @@
       "learnMore": "So funktioniert MECP",
       "protocolSource": "Protokollquelle auf GitHub",
       "showComposeButton": "MECP-Schaltfläche im Chat anzeigen",
-      "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an."
+      "showComposeButtonHint": "Standardmäßig deaktiviert. Wenn diese Option aktiviert ist, zeigt Chat eine MECP-Schaltfläche zum Erstellen und Senden von Notfallberichten an.",
+      "standingAlert": "Einsatzleitstelle (Standalarm)",
+      "standingAlertHint": "Standardmäßig ausgeschaltet. Für EOCs und überwachte Stationen: Lässt ein rotes Banner hoch und blinkt die Taskleiste oder springt das Dock, bis jemand jeden neuen MAYDAY oder jede neue DRINGLICHKEIT ansieht. Jeder hört immer noch den einmaligen Alarmton und sieht den Toast."
     },
-    "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll"
+    "exportLogEmpty": "Noch keine MECP-Nachrichten im empfangenen Protokoll",
+    "block": {
+      "listTitle": "Blockierte Notfallsender",
+      "listHint": "MECP-Berichte von diesen Absendern geben keine Warnungen aus, öffnen keine Vorfälle und werden nicht erneut gesendet. Sie werden immer noch in das Audit-Protokoll geschrieben und immer noch im Chat angezeigt.",
+      "listEmpty": "Keine blockierten Absender.",
+      "unblock": "Entsperren",
+      "unblockAria": "Entsperren Sie Notfallwarnungen von {{sender}}",
+      "blockAction": "Warnungen blockieren",
+      "blockActionAria": "Notfallwarnungen von {{sender}} blockieren",
+      "confirmTitle": "Notfallwarnungen von {{sender}} blockieren?",
+      "confirmMessage": "Zukünftige MECP-Berichte von diesem Absender zu {{protocol}} werden keine Warnmeldungen senden, keine Vorfälle öffnen oder erneut gesendet werden. Knoten-IDs können gefälscht werden, also blockieren Sie nur einen Absender, von dem Sie sicher sind, dass er MECP missbraucht. Sie können die Blockierung in App → MECP aufheben.",
+      "confirmBlock": "Nur blockieren",
+      "confirmBlockAndResolve": "Blockieren und auflösen",
+      "blocked": "Blockierte Notfallwarnungen von {{sender}}",
+      "throttledToast": "Wiederholte Notfallwarnungen von {{sender}} werden zum Schweigen gebracht. Ihre Berichte werden weiterhin auf der Registerkarte Vorfall angezeigt.",
+      "throttledBlock": "Absender blockieren",
+      "floodToast": "Viele Stationen senden sofort Notfallberichte. Weitere Alarmtöne werden kurz pausiert; überprüfen Sie die Registerkarte Vorfall."
+    }
   },
   "notificationSounds": {
     "title": "Benachrichtigungstöne",

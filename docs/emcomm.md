@@ -54,11 +54,23 @@ You can't cancel someone else's beacon: `B03` means "I am OK", so only the origi
 
 ### Unseen emergency alert
 
-The MAYDAY siren and URGENT tone play once, and the toast closes after 10 seconds, so a station left unattended could miss them. A new MAYDAY or URGENT report (not a drill) therefore also opens a red banner at the top of every tab, and the window flashes in the taskbar (or the dock icon bounces on macOS) when the app is not focused. The banner stays until you open the Incident tab, press **Mark seen**, acknowledge, or resolve the incident. **View** opens the Incident tab.
+The MAYDAY siren and URGENT tone play once, and the toast closes after 10 seconds. Everyone gets that one-time alert. Stations that must not miss a report (an EOC, a net control, a monitored shelter) can turn on **App → MECP → Incident Command station (standing alert)**. It is **off** by default.
+
+With it on, a new MAYDAY or URGENT report (not a drill) also opens a red banner at the top of every tab, and the window flashes in the taskbar (or the dock icon bounces on macOS) when the app is not focused. The banner stays until you open the Incident tab, press **Mark seen**, acknowledge, or resolve the incident. **View** opens the Incident tab.
 
 "Seen" is local to this computer and sends nothing over the mesh. Acknowledging is still a separate, deliberate step. Reports loaded from history at startup, your own beacons, and drills never open the banner. A report that escalates to MAYDAY or URGENT, or reopens after being resolved, opens it again.
 
-For unattended stations, **App → Notifications → Repeat unseen MAYDAY/URGENT alert (minutes)** replays the tone at that interval until the alert is seen. It is blank (off) by default.
+For unattended stations, **App → MECP → Repeat unseen MAYDAY/URGENT alert (minutes)** (under the station toggle) replays the tone at that interval until the alert is seen. It is blank (off) by default.
+
+### Spam and blocking
+
+Anyone on the mesh can send a MECP report, so mesh-client limits how much noise one sender can make:
+
+- **Repeat silencing:** after 3 alerts from the same sender within 10 minutes, further reports from that sender stop sounding. They still appear in the Incident tab (without the banner), and a one-time notice offers **Block sender**. If many different stations send reports within a minute, further tones pause briefly as well.
+- **Block alerts:** each row in the Incident tab has **Block alerts**. Choose **Block only**, or **Block and resolve** to also close that sender's open incidents locally. Reports from a blocked sender no longer alert, open incidents, or get bridged by RF rebroadcast. They are still written to the audit log (marked blocked) and still show as text in Chat. Unblock in **App → MECP → Blocked emergency senders**.
+- **Block a node completely (Meshtastic and MeshCore):** **Block** in a node's detail view drops all of that node's messages before they reach Chat, so it cannot send MECP either. Unblock in **App → Blocked nodes**. Reticulum has its own blocklist in the Reticulum network settings.
+
+Node IDs can be spoofed, especially on Meshtastic, so blocking stops casual abuse but not a determined attacker. Only block a sender you are sure is abusing MECP.
 
 ## Durable audit log
 
@@ -79,7 +91,7 @@ Every inbound MECP report is appended to `mecp-received.log` in the app data fol
 - **Silence:** a watched node has not been heard for the configured minutes, with an escalation at twice that time. Nodes never heard are not "silent".
 - **Battery low:** a watched node's reported battery drops below the threshold (default 10%). Fires once, then re-arms after it recovers 5 points.
 - **Link down:** your Meshtastic or MeshCore radio link drops unexpectedly. Never fires on a manual disconnect or while reconnecting. Reticulum is not included (it runs as a separate stack, not an RF link).
-- **Repeat unseen MAYDAY/URGENT alert:** see [Unseen emergency alert](#unseen-emergency-alert).
+- **Standing alert and repeat for unseen MAYDAY/URGENT:** in App → MECP; see [Unseen emergency alert](#unseen-emergency-alert).
 
 ## Exports
 

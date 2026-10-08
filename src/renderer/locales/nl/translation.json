@@ -462,7 +462,14 @@
     "protocolLastEnabled": "Ten minste één protocol moet ingeschakeld blijven.",
     "mecpRepeatAlertMinutes": "Herhaal ongeziene MAYDAY/DRINGENDE waarschuwing (minuten)",
     "mecpRepeatAlertMinutesPlaceholder": "Off",
-    "mecpRepeatAlertMinutesHint": "Voor onbeheerde stations. Herhaalt de waarschuwingstoon op dit interval totdat iemand het tabblad Incident opent of de waarschuwing ziet. Laat leeg om een keer te waarschuwen."
+    "mecpRepeatAlertMinutesHint": "Voor onbeheerde stations. Herhaalt de waarschuwingstoon op dit interval totdat iemand het tabblad Incident opent of de waarschuwing ziet. Laat leeg om een keer te waarschuwen.",
+    "loraBlocklist": {
+      "title": "Geblokkeerde knooppunten",
+      "description": "Berichten van geblokkeerde knooppunten worden verwijderd voordat ze Chat bereiken, dus ze kunnen ook geen MECP-waarschuwingen genereren. Blokkeer een knooppunt van het knooppuntdetail. Node-ID's kunnen worden vervalst, dus dit stopt incidenteel misbruik, niet een vastberaden aanvaller.",
+      "empty": "Geen geblokkeerde knooppunten.",
+      "unblockAria": "Deblokkeer {{node}}",
+      "unblockFailed": "Kon dat knooppunt niet deblokkeren."
+    }
   },
   "aria": {
     "closeDialog": "Dialoogvenster sluiten",
@@ -6433,9 +6440,28 @@
       "learnMore": "Hoe MECP werkt",
       "protocolSource": "Protocolbron op GitHub",
       "showComposeButton": "Toon de MECP-knop in de chat",
-      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden."
+      "showComposeButtonHint": "Standaard uitgeschakeld. Indien ingeschakeld, toont Chat een MECP-knop om noodrapporten samen te stellen en te verzenden.",
+      "standingAlert": "Incident Commandostation (staand alarm)",
+      "standingAlertHint": "Standaard uitgeschakeld. Voor EOC's en bewaakte stations: houdt een rode banner omhoog en knippert de taakbalk of stuitert het dock totdat iemand naar elke nieuwe MAYDAY of URGENT kijkt. Iedereen hoort nog steeds de eenmalige alarmtoon en ziet de toost."
     },
-    "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek"
+    "exportLogEmpty": "Nog geen MECP-berichten in het ontvangen logboek",
+    "block": {
+      "listTitle": "Geblokkeerde noodafzenders",
+      "listHint": "MECP-rapporten van deze afzenders geven geen waarschuwingen, openen geen incidenten en worden niet opnieuw uitgezonden. Ze worden nog steeds naar het auditlogboek geschreven en worden nog steeds weergegeven in Chat.",
+      "listEmpty": "Geen geblokkeerde afzenders.",
+      "unblock": "Deblokkeer",
+      "unblockAria": "Deblokkeer noodwaarschuwingen van {{sender}}",
+      "blockAction": "Waarschuwingen blokkeren",
+      "blockActionAria": "Blokkeer noodwaarschuwingen van {{sender}}",
+      "confirmTitle": "Noodwaarschuwingen van {{sender}} blokkeren?",
+      "confirmMessage": "Toekomstige MECP-rapporten van deze afzender op {{protocol}} zullen geen incidenten waarschuwen, openen of opnieuw worden uitgezonden. Knooppunt-ID's kunnen worden vervalst, dus blokkeer alleen een afzender waarvan u zeker weet dat deze MECP misbruikt. U kunt de blokkering deblokkeren in App → MECP.",
+      "confirmBlock": "Alleen Blokkeren",
+      "confirmBlockAndResolve": "Blokkeren en oplossen",
+      "blocked": "Geblokkeerde noodwaarschuwingen van {{sender}}",
+      "throttledToast": "Het dempen van herhaalde noodwaarschuwingen van {{sender}}. Hun rapporten verschijnen nog steeds op het tabblad Incident.",
+      "throttledBlock": "Afzender blokkeren",
+      "floodToast": "Veel stations sturen noodmeldingen in één keer. Verdere waarschuwingstonen worden kort gepauzeerd; controleer het tabblad Incident."
+    }
   },
   "notificationSounds": {
     "title": "Meldingstonen",

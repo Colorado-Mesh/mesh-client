@@ -470,7 +470,14 @@
     "protocolLastEnabled": "Alespoň jeden protokol musí zůstat povolen.",
     "mecpRepeatAlertMinutes": "Opakujte neviditelné MAYDAY/NALÉHAVÉ upozornění (minuty)",
     "mecpRepeatAlertMinutesPlaceholder": "Vypnuto",
-    "mecpRepeatAlertMinutesHint": "Pro stanice bez dozoru. Přehrává výstražný tón v tomto intervalu, dokud někdo neotevře kartu Incident (Incident) nebo neoznačí zobrazené výstrahy. Ponechte prázdné pro upozornění jednou."
+    "mecpRepeatAlertMinutesHint": "Pro stanice bez dozoru. Přehrává výstražný tón v tomto intervalu, dokud někdo neotevře kartu Incident (Incident) nebo neoznačí zobrazené výstrahy. Ponechte prázdné pro upozornění jednou.",
+    "loraBlocklist": {
+      "title": "Blokované uzly",
+      "description": "Zprávy z blokovaných uzlů jsou vypuštěny dříve, než se dostanou do chatu, takže také nemohou vyvolat výstrahy MECP. Blokuje uzel z jeho detailu uzlu. ID uzlů lze zfalšovat, takže to zastaví příležitostné zneužití, nikoli odhodlaného útočníka.",
+      "empty": "Žádné blokované uzly.",
+      "unblockAria": "Odblokovat {{node}}",
+      "unblockFailed": "Nelze odblokovat tento uzel."
+    }
   },
   "aria": {
     "closeDialog": "Zavřít dialog",
@@ -6493,9 +6500,28 @@
       "learnMore": "Jak MECP funguje",
       "protocolSource": "Zdroj protokolu na GitHub",
       "showComposeButton": "Zobrazit tlačítko MECP v chatu",
-      "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv."
+      "showComposeButtonHint": "Ve výchozím nastavení vypnuto. Pokud je povoleno, Chat zobrazuje tlačítko MECP pro vytváření a odesílání nouzových zpráv.",
+      "standingAlert": "Stanice velení incidentu (stálá pohotovost)",
+      "standingAlertHint": "Ve výchozím nastavení vypnuto. Pro EOC a monitorované stanice: udržuje červený banner nahoře a bliká na hlavním panelu nebo odrazí dok, dokud se někdo nepodívá na každý nový MAYDAY nebo URGENTNÍ. Každý stále slyší jednorázový výstražný tón a vidí přípitek."
     },
-    "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP"
+    "exportLogEmpty": "V přijatém protokolu zatím nejsou žádné zprávy MECP",
+    "block": {
+      "listTitle": "Blokovaní nouzoví odesílatelé",
+      "listHint": "Hlášení MECP od těchto odesílatelů nezazní výstrahy, neotevírají incidenty ani se znovu nevysílají. Jsou stále zapsány do protokolu auditu a stále se zobrazují v chatu.",
+      "listEmpty": "Žádní blokovaní odesílatelé.",
+      "unblock": "Odblokování",
+      "unblockAria": "Odblokuj nouzová upozornění z {{sender}}",
+      "blockAction": "Blokovat upozornění",
+      "blockActionAria": "Blokovat nouzová upozornění od {{sender}}",
+      "confirmTitle": "Blokovat nouzová upozornění od {{sender}}?",
+      "confirmMessage": "Budoucí zprávy MECP od tohoto odesílatele dne {{protocol}} nebudou upozorněny, neotevřou incidenty ani nebudou znovu vysílány. ID uzlů lze falšovat, takže blokujte pouze odesílatele, o kterém jste si jisti, že zneužívá MECP. Odblokování můžete odblokovat v aplikaci → MECP.",
+      "confirmBlock": "Blokovat pouze",
+      "confirmBlockAndResolve": "Zablokovat a vyřešit",
+      "blocked": "Blokovaná nouzová upozornění od {{sender}}",
+      "throttledToast": "Umlčení opakovaných nouzových výstrah od {{sender}}. Jejich hlášení se stále zobrazují na kartě Incident.",
+      "throttledBlock": "Blokovat tohoto odesilatele",
+      "floodToast": "Mnoho stanic odesílá nouzová hlášení najednou. Další výstražné tóny jsou krátce pozastaveny; zkontrolujte kartu Incident (Incident)."
+    }
   },
   "notificationSounds": {
     "title": "Tóny oznámení",

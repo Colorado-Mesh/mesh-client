@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
-import { useBlockStore } from '@/renderer/stores/blockStore';
+import { useBlockedEntries, useBlockStore } from '@/renderer/stores/blockStore';
 
 import { useToast } from './Toast';
 
@@ -16,7 +16,7 @@ export function ReticulumBlockedContactsSection({
 }: Readonly<ReticulumBlockedContactsSectionProps>) {
   const { t } = useTranslation();
   const { addToast } = useToast();
-  const blockedEntries = useBlockStore((s) => s.blockedEntries);
+  const blockedEntries = useBlockedEntries('reticulum');
   const unblock = useBlockStore((s) => s.unblock);
 
   if (!identityId) return null;

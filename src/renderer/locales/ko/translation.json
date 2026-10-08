@@ -462,7 +462,14 @@
     "protocolLastEnabled": "하나 이상의 프로토콜이 활성화된 상태로 유지되어야 합니다.",
     "mecpRepeatAlertMinutes": "보이지 않는 메이데이/긴급 알림 반복 (분)",
     "mecpRepeatAlertMinutesPlaceholder": "해제",
-    "mecpRepeatAlertMinutesHint": "무인 스테이션의 경우. 누군가가 사고 탭을 열거나 표시된 경고를 표시할 때까지 이 간격으로 경고음을 다시 재생합니다. 한 번 경고하려면 비워 둡니다."
+    "mecpRepeatAlertMinutesHint": "무인 스테이션의 경우. 누군가가 사고 탭을 열거나 표시된 경고를 표시할 때까지 이 간격으로 경고음을 다시 재생합니다. 한 번 경고하려면 비워 둡니다.",
+    "loraBlocklist": {
+      "title": "차단된 노드",
+      "description": "차단된 노드의 메시지는 채팅에 도달하기 전에 드롭되므로 MECP 경고도 표시할 수 없습니다. 노드 세부 정보에서 노드를 차단합니다. 노드 ID는 스푸핑될 수 있으므로 결정된 공격자가 아닌 일상적인 악용을 중지합니다.",
+      "empty": "차단된 노드가 없습니다.",
+      "unblockAria": "{{node}} 차단 해제",
+      "unblockFailed": "해당 노드의 차단을 해제할 수 없습니다."
+    }
   },
   "aria": {
     "closeDialog": "대화상자 닫기",
@@ -6433,9 +6440,28 @@
       "learnMore": "MECP 이용 방법",
       "protocolSource": "GitHub의 프로토콜 소스",
       "showComposeButton": "채팅에 MECP 버튼 표시",
-      "showComposeButtonHint": "기본적으로 꺼짐. 활성화되면 채팅에 MECP 버튼이 표시되어 비상 보고서를 작성하고 전송할 수 있습니다."
+      "showComposeButtonHint": "기본적으로 꺼짐. 활성화되면 채팅에 MECP 버튼이 표시되어 비상 보고서를 작성하고 전송할 수 있습니다.",
+      "standingAlert": "인시던트 커맨드 스테이션 (스탠딩 알림)",
+      "standingAlertHint": "기본적으로 꺼짐. EOC 및 모니터링 스테이션의 경우: 빨간색 배너를 위로 올리고 작업 표시줄을 깜박이거나 누군가가 새로운 메이데이 또는 긴급을 볼 때까지 도크를 바운스합니다. 모두가 여전히 일회성 경고음을 듣고 건배사를 봅니다."
     },
-    "exportLogEmpty": "아직 수신된 로그에 MECP 메시지가 없습니다"
+    "exportLogEmpty": "아직 수신된 로그에 MECP 메시지가 없습니다",
+    "block": {
+      "listTitle": "차단된 비상 발신자",
+      "listHint": "이러한 발신자의 MECP 보고서는 경고음을 울리거나, 사건을 열거나, 재방송되지 않습니다. 여전히 감사 로그에 기록되고 채팅에 표시됩니다.",
+      "listEmpty": "차단된 발신자가 없습니다.",
+      "unblock": "차단 해제",
+      "unblockAria": "{{sender}} 님의 긴급 경보 차단 해제",
+      "blockAction": "경고 차단",
+      "blockActionAria": "{{sender}} 에서 보내는 긴급 경보 차단",
+      "confirmTitle": "{{sender}} 에서 보내는 긴급 경보를 차단하시겠어요?",
+      "confirmMessage": "이 발신자가 {{protocol}} 에 보낸 향후 MECP 보고서는 경고하거나, 사건을 열거나, 재방송되지 않습니다. 노드 ID는 스푸핑될 수 있으므로 MECP를 남용하고 있다고 확신하는 발신자만 차단하십시오. App MECP에서 차단을 해제할 수 → 있습니다.",
+      "confirmBlock": "차단",
+      "confirmBlockAndResolve": "차단 및 해결",
+      "blocked": "{{sender}} 발 긴급 경보 차단됨",
+      "throttledToast": "{{sender}} 에서 반복되는 비상 경보를 차단합니다. 신고는 여전히 사고 탭에 표시됩니다.",
+      "throttledBlock": "보낸 사람 차단",
+      "floodToast": "많은 방송국에서 긴급 보고서를 한 번에 보내고 있습니다. 추가 경고음은 잠시 일시 중지됩니다. 사고 탭을 확인하세요."
+    }
   },
   "notificationSounds": {
     "title": "알림음",

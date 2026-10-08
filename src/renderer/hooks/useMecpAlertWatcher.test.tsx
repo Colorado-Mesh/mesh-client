@@ -2,13 +2,22 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { mapMeshcoreDbRowsToChatMessages } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import {
+  MECP_ALERT_THROTTLE_MAX,
+  resetMecpAlertThrottleForTests,
+} from '@/renderer/lib/mecp/mecpAlertThrottle';
 import { savedMessageToChatMessage } from '@/renderer/lib/meshtasticDbCacheHydration';
 import { reticulumHashToNodeId } from '@/renderer/lib/reticulum/destHash';
 import {
   chatMessageToMessageRecord,
   reticulumDbRowToMessageRecord,
 } from '@/renderer/lib/storeRecordAdapters';
-import { selectOpenIncidentsSorted, useIncidentStore } from '@/renderer/stores/incidentStore';
+import {
+  selectOpenIncidentsSorted,
+  selectUnseenCriticalIncidents,
+  useIncidentStore,
+} from '@/renderer/stores/incidentStore';
+import { useMecpBlockStore } from '@/renderer/stores/mecpBlockStore';
 import {
   type MessageRecord,
   resetBulkLoadedMessageIdsForTests,
@@ -23,8 +32,11 @@ const appendReceived = vi.fn().mockResolvedValue({ ok: true });
 const triggerMecpAlert = vi.fn();
 const executeMecpRebroadcast = vi.fn().mockResolvedValue([]);
 
+const notifyMecpAlertsSuppressed = vi.fn();
+
 vi.mock('@/renderer/lib/mecp/mecpAlert', () => ({
   triggerMecpAlert: (...args: unknown[]) => triggerMecpAlert(...args),
+  notifyMecpAlertsSuppressed: (...args: unknown[]) => notifyMecpAlertsSuppressed(...args),
 }));
 
 vi.mock('@/renderer/lib/mecp/mecpRebroadcast', async () => {
@@ -44,6 +56,9 @@ beforeEach(() => {
   appendReceived.mockClear();
   triggerMecpAlert.mockClear();
   executeMecpRebroadcast.mockClear();
+  notifyMecpAlertsSuppressed.mockClear();
+  resetMecpAlertThrottleForTests();
+  useMecpBlockStore.setState({ blocked: {} });
   resetBulkLoadedMessageIdsForTests();
   useIncidentStore.setState({ incidents: {}, resolvedTombstones: {} });
   window.electronAPI = {
@@ -540,5 +555,80 @@ describe('useMecpAlertWatcher', () => {
     await vi.waitFor(() => {
       expect(appendReceived).toHaveBeenCalledTimes(1);
     });
+  });
+
+  function renderMeshtasticWatcher() {
+    const own = new Set<number>([1]);
+    return renderHook(
+      ({ messages }) => {
+        useMecpAlertWatcher(
+          { protocol: 'meshtastic', messages, ownNodeIds: own, ownSenderId: 1 },
+          { protocol: 'meshcore', messages: [], ownNodeIds: own },
+          { protocol: 'reticulum', messages: [], ownNodeIds: own },
+        );
+      },
+      { initialProps: { messages: [] as MessageRecord[] } },
+    );
+  }
+
+  it('audits a blocked sender only: no alert, incident, or rebroadcast', async () => {
+    useMecpBlockStore.getState().block('meshtastic', '9', 'Spammer');
+    const { rerender } = renderMeshtasticWatcher();
+
+    rerender({ messages: [msg({ id: 'b1', payload: 'MECP/0/M01 fake', from: 9 })] });
+
+    await vi.waitFor(() => {
+      expect(appendReceived).toHaveBeenCalledWith(
+        expect.objectContaining({ messageId: 'b1', blocked: true }),
+      );
+    });
+    expect(triggerMecpAlert).not.toHaveBeenCalled();
+    expect(executeMecpRebroadcast).not.toHaveBeenCalled();
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(0);
+  });
+
+  it('does not seed hydrated incidents from a blocked sender', () => {
+    useMecpBlockStore.getState().block('meshtastic', '9', 'Spammer');
+    const own = new Set<number>([1]);
+    renderHook(() => {
+      useMecpAlertWatcher(
+        {
+          protocol: 'meshtastic',
+          messages: [msg({ id: 's1', payload: 'MECP/0/M01 old', from: 9 })],
+          ownNodeIds: own,
+          ownSenderId: 1,
+        },
+        { protocol: 'meshcore', messages: [], ownNodeIds: own },
+        { protocol: 'reticulum', messages: [], ownNodeIds: own },
+      );
+    });
+    expect(Object.keys(useIncidentStore.getState().incidents)).toHaveLength(0);
+  });
+
+  it('throttles repeated alerts from one sender but still records each incident quietly', async () => {
+    const { rerender } = renderMeshtasticWatcher();
+    const messages: MessageRecord[] = [];
+    for (let i = 0; i <= MECP_ALERT_THROTTLE_MAX; i++) {
+      messages.push(msg({ id: `t${i}`, payload: `MECP/0/M01 spam ${i}`, from: 9 }));
+      rerender({ messages: [...messages] });
+      await vi.waitFor(() => {
+        expect(appendReceived).toHaveBeenCalledTimes(i + 1);
+      });
+    }
+
+    expect(triggerMecpAlert).toHaveBeenCalledTimes(MECP_ALERT_THROTTLE_MAX);
+    expect(notifyMecpAlertsSuppressed).toHaveBeenCalledTimes(1);
+    expect(notifyMecpAlertsSuppressed).toHaveBeenCalledWith('sender', '9', expect.any(Function));
+    const incidents = Object.values(useIncidentStore.getState().incidents);
+    expect(incidents).toHaveLength(MECP_ALERT_THROTTLE_MAX + 1);
+    // The quiet (throttled) row is recorded already seen, so it never drives the banner.
+    expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toHaveLength(
+      MECP_ALERT_THROTTLE_MAX,
+    );
+
+    // The suppression toast's Block action blocks the sender.
+    const onBlock = notifyMecpAlertsSuppressed.mock.calls[0]?.[2] as () => void;
+    onBlock();
+    expect(useMecpBlockStore.getState().blocked['meshtastic:9']).toBeDefined();
   });
 });

@@ -152,7 +152,9 @@ export interface OperationalAlertSettings {
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
-  /** Repeat interval for unseen MAYDAY/URGENT alerts; null = off. */
+  /** Standing banner + window attention for unseen MAYDAY/URGENT (Incident Command station). */
+  mecpStandingAlertEnabled: boolean;
+  /** Repeat interval for unseen MAYDAY/URGENT alerts; null = off. Requires the standing alert. */
   mecpRepeatAlertMinutes: number | null;
 }
 
@@ -165,15 +167,23 @@ export function getOperationalAlertSettings(): OperationalAlertSettings {
     nodeBatteryLowThreshold?: unknown;
     notifyOnLinkDown?: unknown;
     mecpRepeatAlertMinutes?: unknown;
+    mecpStandingAlertEnabled?: unknown;
   }>(getAppSettingsRaw(), 'getOperationalAlertSettings');
   const silence = parsed?.nodeSilenceAlertMinutes;
   const battery = parsed?.nodeBatteryLowThreshold;
   const repeat = parsed?.mecpRepeatAlertMinutes;
+  const mecpRepeatAlertMinutes =
+    typeof repeat === 'number' && Number.isFinite(repeat) && repeat >= 1
+      ? Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.floor(repeat))
+      : DEFAULT_APP_SETTINGS_SHARED.mecpRepeatAlertMinutes;
+  // Users who opted into repeats before the standing toggle existed keep their station mode.
+  const mecpStandingAlertEnabled =
+    typeof parsed?.mecpStandingAlertEnabled === 'boolean'
+      ? parsed.mecpStandingAlertEnabled
+      : mecpRepeatAlertMinutes != null || DEFAULT_APP_SETTINGS_SHARED.mecpStandingAlertEnabled;
   return {
-    mecpRepeatAlertMinutes:
-      typeof repeat === 'number' && Number.isFinite(repeat) && repeat >= 1
-        ? Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.floor(repeat))
-        : DEFAULT_APP_SETTINGS_SHARED.mecpRepeatAlertMinutes,
+    mecpStandingAlertEnabled,
+    mecpRepeatAlertMinutes,
     nodeSilenceAlertMinutes:
       typeof silence === 'number' && Number.isFinite(silence) && silence > 0
         ? silence

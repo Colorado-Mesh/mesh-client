@@ -104,13 +104,7 @@ describe('ReticulumNetworkPanel', () => {
     });
     window.electronAPI.reticulum.proxyPut = vi.fn().mockResolvedValue({ ok: true });
     window.electronAPI.reticulum.proxyPost = vi.fn().mockResolvedValue({ ok: true });
-    useBlockStore.setState({
-      protocol: null,
-      identityId: null,
-      blockedHashes: new Set(),
-      blockedEntries: [],
-      loaded: false,
-    });
+    useBlockStore.setState({ byProtocol: {} });
   });
 
   it('does not render flasher or factory reset sections', () => {
@@ -121,7 +115,11 @@ describe('ReticulumNetworkPanel', () => {
   });
 
   it('renders the blocked contacts section for a hydrated Reticulum identity', () => {
-    useBlockStore.setState({ protocol: 'reticulum', identityId: 'id-1', loaded: true });
+    useBlockStore.setState({
+      byProtocol: {
+        reticulum: { identityId: 'id-1', hashes: new Set(), entries: [], loaded: true },
+      },
+    });
 
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
 
@@ -131,7 +129,11 @@ describe('ReticulumNetworkPanel', () => {
   });
 
   it('hides the blocked contacts section when the hydrated identity is not Reticulum', () => {
-    useBlockStore.setState({ protocol: 'meshtastic', identityId: 'id-1', loaded: true });
+    useBlockStore.setState({
+      byProtocol: {
+        meshtastic: { identityId: 'id-1', hashes: new Set(), entries: [], loaded: true },
+      },
+    });
 
     render(<ReticulumNetworkPanel connecting={false} onStartStack={async () => {}} />);
 

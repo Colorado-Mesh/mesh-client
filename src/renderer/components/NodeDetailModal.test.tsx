@@ -10,6 +10,7 @@ import { markDeleteActiveMqttIdentityError } from '@/shared/meshtasticDeleteNode
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
 import { mergeAppSetting, mergeAppSettingsPartial } from '../lib/appSettingsStorage';
 import type { OurPositionReference } from '../lib/locationTrust';
+import { LORA_BLOCKLIST_SCOPE_ID } from '../lib/loraBlocklist';
 import { setMeshcoreRadioMaxContacts } from '../lib/meshcore/meshcoreContactCapacityPush';
 import { meshcoreRepeaterCredentialSettingForNode } from '../lib/meshcoreRepeaterCredentialStorage';
 import { clearAllMeshcoreRepeaterEphemeralPasswords } from '../lib/meshcoreRepeaterSession';
@@ -19,6 +20,7 @@ import {
   OFFLINE_MESHCORE_IDENTITY_ID,
 } from '../lib/offlineProtocolIdentities';
 import type { MeshNode } from '../lib/types';
+import { useBlockStore } from '../stores/blockStore';
 import { useNodeStore } from '../stores/nodeStore';
 import { usePathHistoryStore } from '../stores/pathHistoryStore';
 import NodeDetailModal from './NodeDetailModal';
@@ -970,5 +972,40 @@ describe('NodeDetailModal pane variant', () => {
     } finally {
       before.remove();
     }
+  });
+});
+
+describe('NodeDetailModal LoRa node block', () => {
+  beforeEach(() => {
+    useBlockStore.setState({ byProtocol: {} });
+    vi.mocked(window.electronAPI.db.blockContact).mockClear();
+    vi.mocked(window.electronAPI.db.unblockContact).mockClear();
+  });
+
+  it('blocks a Meshtastic node under the stable LoRa scope and then offers Unblock', async () => {
+    const user = userEvent.setup();
+    render(
+      <NodeDetailModal
+        node={mockNode}
+        protocol="meshtastic"
+        onClose={vi.fn()}
+        onRequestPosition={vi.fn().mockResolvedValue(undefined)}
+        onTraceRoute={vi.fn().mockResolvedValue(undefined)}
+        onDeleteNode={vi.fn().mockResolvedValue(undefined)}
+        onToggleFavorite={vi.fn()}
+        isConnected={true}
+        homeNode={null}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Block' }));
+
+    expect(window.electronAPI.db.blockContact).toHaveBeenCalledWith(
+      'meshtastic',
+      LORA_BLOCKLIST_SCOPE_ID,
+      String(mockNode.node_id),
+    );
+    expect(await screen.findByRole('button', { name: 'Unblock' })).toBeInTheDocument();
+    expect(useBlockStore.getState().isBlocked(String(mockNode.node_id), 'meshtastic')).toBe(true);
   });
 });

@@ -77,7 +77,7 @@ export default function ReticulumPeerDetailModal({
 
   const identityId =
     getIdentityIdForProtocol('reticulum') ?? getOfflineIdentityIdForProtocol('reticulum');
-  const isBlocked = useBlockStore((s) => s.isBlocked(peerHash));
+  const isBlocked = useBlockStore((s) => s.isBlocked(peerHash, 'reticulum'));
   const blockContact = useBlockStore((s) => s.block);
   const unblockContact = useBlockStore((s) => s.unblock);
   const activityKey = peerHash.replace(/[^0-9a-f]/gi, '').toLowerCase();

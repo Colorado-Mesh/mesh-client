@@ -462,7 +462,14 @@
     "protocolLastEnabled": "En az bir protokol etkin kalmalıdır.",
     "mecpRepeatAlertMinutes": "Görünmeyen MAYDAY/ACİL uyarıyı tekrarla (dakika)",
     "mecpRepeatAlertMinutesPlaceholder": "Kapalı",
-    "mecpRepeatAlertMinutesHint": "Katılımsız istasyonlar için. Birisi Olay sekmesini açana veya görülen uyarıyı işaretleyene kadar bu aralıkta uyarı tonunu tekrar çalar. Bir kez uyarmak için boş bırakın."
+    "mecpRepeatAlertMinutesHint": "Katılımsız istasyonlar için. Birisi Olay sekmesini açana veya görülen uyarıyı işaretleyene kadar bu aralıkta uyarı tonunu tekrar çalar. Bir kez uyarmak için boş bırakın.",
+    "loraBlocklist": {
+      "title": "Engellenen düğümler",
+      "description": "Engellenen düğümlerden gelen mesajlar Sohbete ulaşmadan önce bırakılır, bu nedenle MECP uyarılarını da yükseltemezler. Bir düğümü Düğüm Ayrıntısından engelle. Düğüm kimlikleri taklit edilebilir, bu nedenle bu, kararlı bir saldırganı değil, gündelik istismarı durdurur.",
+      "empty": "Engellenmiş düğüm yok.",
+      "unblockAria": "{{node}} engelini kaldır",
+      "unblockFailed": "Bu düğümün engeli kaldırılamadı."
+    }
   },
   "aria": {
     "closeDialog": "İletişim kutusunu kapat",
@@ -6433,9 +6440,28 @@
       "learnMore": "MECP nasıl çalışır?",
       "protocolSource": "GitHub'daki protokol kaynağı",
       "showComposeButton": "Sohbette MECP düğmesini göster",
-      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir."
+      "showComposeButtonHint": "Varsayılan olarak kapalı. Etkinleştirildiğinde, Sohbet acil durum raporları oluşturmak ve göndermek için bir MECP düğmesi gösterir.",
+      "standingAlert": "Olay Komuta istasyonu (ayakta alarm)",
+      "standingAlertHint": "Varsayılan olarak kapalı. EOC'ler ve izlenen istasyonlar için: kırmızı bir başlığı yukarıda tutar ve görev çubuğunu yanıp söner veya biri her yeni Mayday'e veya ACİL duruma bakana kadar rıhtımı sektirir. Herkes hala bir kerelik uyarı tonunu duyar ve tostu görür."
     },
-    "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok"
+    "exportLogEmpty": "Alınan günlükte henüz MECP mesajı yok",
+    "block": {
+      "listTitle": "Engellenen acil durum göndericileri",
+      "listHint": "Bu göndericilerden gelen MECP raporları sesli uyarı vermez, olayları açmaz veya yeniden yayınlanmaz. Hala denetim günlüğüne yazılırlar ve hala Sohbette görünürler.",
+      "listEmpty": "Engellenen Gönderenler",
+      "unblock": "Engellemeyi kaldır",
+      "unblockAria": "{{sender}} 'dan acil durum uyarılarının engelini kaldırın",
+      "blockAction": "Uyarıları engelle",
+      "blockActionAria": "{{sender}} noktasından gelen acil durum uyarılarını engelleyin",
+      "confirmTitle": "{{sender}} ile ilgili acil durum uyarıları engellensin mi?",
+      "confirmMessage": "{{protocol}} tarihinde bu göndericiden gelecek MECP raporları uyarı vermeyecek, olayları açmayacak veya yeniden yayınlanmayacaktır. Düğüm kimlikleri taklit edilebilir, bu nedenle yalnızca MECP'yi kötüye kullandığından emin olduğunuz bir göndereni engelleyin. Uygulama MECP'sinde engellemeyi → kaldırabilirsiniz.",
+      "confirmBlock": "Yalnızca Engelle",
+      "confirmBlockAndResolve": "Engelle ve çöz",
+      "blocked": "{{sender}} 'dan engellenen acil durum uyarıları",
+      "throttledToast": "{{sender}} 'dan itibaren tekrarlanan acil durum uyarılarını susturma. Raporları hala Olay sekmesinde görünür.",
+      "throttledBlock": "Göndereni Engelle",
+      "floodToast": "Birçok istasyon aynı anda acil durum raporları gönderiyor. Diğer uyarı tonları kısa bir süre duraklatılır; Olay sekmesini kontrol edin."
+    }
   },
   "notificationSounds": {
     "title": "Bildirim tonları",

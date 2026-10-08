@@ -65,5 +65,25 @@ describe('mecp-received-log', () => {
         payload: 'MECP/0/M01',
       }),
     ).toBe(false);
+    expect(
+      isValidMecpAppendPayload({
+        protocol: 'meshtastic',
+        severity: 0,
+        drill: false,
+        payload: 'MECP/0/M01',
+        blocked: 'yes',
+      }),
+    ).toBe(false);
+  });
+
+  it('records the blocked flag only when the sender is blocked', async () => {
+    const { formatMecpReceivedLogLine } = await import('./mecp-received-log');
+    const base = { protocol: 'meshtastic', severity: 0, drill: false, payload: 'MECP/0/M01' };
+    const blocked = JSON.parse(formatMecpReceivedLogLine({ ...base, blocked: true })) as {
+      blocked?: boolean;
+    };
+    const normal = JSON.parse(formatMecpReceivedLogLine(base)) as { blocked?: boolean };
+    expect(blocked.blocked).toBe(true);
+    expect(normal.blocked).toBeUndefined();
   });
 });

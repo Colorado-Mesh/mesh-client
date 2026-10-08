@@ -478,7 +478,14 @@
     "protocolLastEnabled": "Przynajmniej jeden protokół musi pozostać włączony.",
     "mecpRepeatAlertMinutes": "Powtórz niewidoczny MAYDAY/PILNY alert (minuty)",
     "mecpRepeatAlertMinutesPlaceholder": "Wył.",
-    "mecpRepeatAlertMinutesHint": "W przypadku stacji nienadzorowanych. Powtarza dźwięk alertu w tym odstępie czasu, dopóki ktoś nie otworzy karty incydentu lub nie oznaczy wyświetlonego alertu. Pozostaw puste, aby powiadomić raz."
+    "mecpRepeatAlertMinutesHint": "W przypadku stacji nienadzorowanych. Powtarza dźwięk alertu w tym odstępie czasu, dopóki ktoś nie otworzy karty incydentu lub nie oznaczy wyświetlonego alertu. Pozostaw puste, aby powiadomić raz.",
+    "loraBlocklist": {
+      "title": "Zablokowane węzły",
+      "description": "Wiadomości z zablokowanych węzłów są usuwane przed dotarciem do czatu, więc nie mogą również zgłaszać alertów MECP. Zablokuj węzeł z jego szczegółów. Identyfikatory węzłów mogą być fałszowane, więc zapobiega to przypadkowym nadużyciom, a nie zdeterminowanemu atakującemu.",
+      "empty": "Brak zablokowanych węzłów.",
+      "unblockAria": "Odblokuj {{node}}",
+      "unblockFailed": "Nie można odblokować tego węzła."
+    }
   },
   "aria": {
     "closeDialog": "Zamknij okno dialogowe",
@@ -6537,9 +6544,28 @@
       "learnMore": "Jak działa MECP",
       "protocolSource": "Źródło protokołu na GitHub",
       "showComposeButton": "Pokaż przycisk MECP na czacie",
-      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych."
+      "showComposeButtonHint": "Domyślnie wyłączone. Po włączeniu Czat pokazuje przycisk MECP do tworzenia i wysyłania raportów awaryjnych.",
+      "standingAlert": "Stanowisko kierowania incydentami (stan gotowości)",
+      "standingAlertHint": "Domyślnie wyłączone. W przypadku EOC i monitorowanych stacji: trzyma podniesiony czerwony baner i miga na pasku zadań lub odbija się od doku, dopóki ktoś nie spojrzy na każdy nowy MAYDAY lub PILNY. Wszyscy wciąż słyszą jednorazowy sygnał ostrzegawczy i widzą grzankę."
     },
-    "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku"
+    "exportLogEmpty": "Brak komunikatów MECP w otrzymanym dzienniku",
+    "block": {
+      "listTitle": "Zablokowani nadawcy awaryjni",
+      "listHint": "Raporty MECP od tych nadawców nie generują alertów, nie otwierają incydentów ani nie są reemitowane. Są one nadal zapisywane w dzienniku audytu i nadal wyświetlane na czacie.",
+      "listEmpty": "Brak zablokowanych nadawców.",
+      "unblock": "Odblokuj",
+      "unblockAria": "Odblokuj alerty awaryjne z {{sender}}",
+      "blockAction": "Blokuj alerty",
+      "blockActionAria": "Blokuj alerty awaryjne z {{sender}}",
+      "confirmTitle": "Zablokować alerty awaryjne z {{sender}}?",
+      "confirmMessage": "Przyszłe raporty MECP od tego nadawcy w dniu {{protocol}} nie będą alarmować, nie otworzą incydentów ani nie zostaną ponownie rozesłane. Identyfikatory węzłów mogą być fałszowane, więc blokuj tylko nadawcę, który na pewno nadużywa MECP. Możesz odblokować w App → MECP.",
+      "confirmBlock": "Blokuj tylko",
+      "confirmBlockAndResolve": "Blokuj i rozwiązuj",
+      "blocked": "Zablokowane alerty awaryjne z {{sender}}",
+      "throttledToast": "Wyciszanie powtarzających się alertów awaryjnych z {{sender}}. Raporty wciąż pojawiają się w zakładce Incydent.",
+      "throttledBlock": "Zablokuj nadawcę",
+      "floodToast": "Wiele stacji wysyła zgłoszenia alarmowe jednocześnie. Kolejne dźwięki alarmowe są na krótko wstrzymane; sprawdź kartę Zdarzenie."
+    }
   },
   "notificationSounds": {
     "title": "Dźwięki powiadomień",

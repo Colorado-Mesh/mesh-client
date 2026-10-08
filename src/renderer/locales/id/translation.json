@@ -462,7 +462,14 @@
     "protocolLastEnabled": "Setidaknya satu protokol harus tetap diaktifkan.",
     "mecpRepeatAlertMinutes": "Ulangi peringatan MAYDAY/MENDESAK YANG tidak terlihat (menit)",
     "mecpRepeatAlertMinutesPlaceholder": "Tidak aktif",
-    "mecpRepeatAlertMinutesHint": "Untuk stasiun tanpa pengawasan. Putar ulang nada peringatan pada interval ini sampai seseorang membuka tab Insiden atau menandai peringatan yang terlihat. Biarkan kosong untuk memperingatkan satu kali."
+    "mecpRepeatAlertMinutesHint": "Untuk stasiun tanpa pengawasan. Putar ulang nada peringatan pada interval ini sampai seseorang membuka tab Insiden atau menandai peringatan yang terlihat. Biarkan kosong untuk memperingatkan satu kali.",
+    "loraBlocklist": {
+      "title": "Node yang diblokir",
+      "description": "Pesan dari node yang diblokir dijatuhkan sebelum mencapai Obrolan, jadi mereka juga tidak dapat menaikkan peringatan MECP. Blokir node dari Detail Node - nya. ID Node dapat dipalsukan, jadi ini menghentikan penyalahgunaan biasa, bukan penyerang yang pasti.",
+      "empty": "Tidak ada node yang diblokir.",
+      "unblockAria": "Buka blokiran {{node}}",
+      "unblockFailed": "Tidak dapat membuka blokir simpul itu."
+    }
   },
   "aria": {
     "closeDialog": "Tutup dialog",
@@ -6433,9 +6440,28 @@
       "learnMore": "Cara kerja MECP",
       "protocolSource": "Sumber protokol di GitHub",
       "showComposeButton": "Tampilkan tombol MECP di Obrolan",
-      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat."
+      "showComposeButtonHint": "Mati secara default. Saat diaktifkan, Obrolan menampilkan tombol MECP untuk menyusun dan mengirim laporan darurat.",
+      "standingAlert": "Stasiun Komando Insiden (peringatan berdiri)",
+      "standingAlertHint": "Mati secara default. Untuk EOC dan stasiun yang dipantau: pasang spanduk merah dan nyalakan bilah tugas atau pantulkan dok sampai seseorang melihat setiap MAYDAY baru atau MENDESAK. Semua orang masih mendengar nada peringatan satu kali dan melihat roti panggang."
     },
-    "exportLogEmpty": "Belum ada pesan MECP di log yang diterima"
+    "exportLogEmpty": "Belum ada pesan MECP di log yang diterima",
+    "block": {
+      "listTitle": "Pengirim darurat yang diblokir",
+      "listHint": "Laporan MECP dari pengirim ini tidak membunyikan peringatan, membuka insiden, atau mendapatkan siaran ulang. Mereka masih ditulis ke log audit dan masih ditampilkan di Obrolan.",
+      "listEmpty": "Tidak ada pengirim yang diblokir.",
+      "unblock": "Buka blokir",
+      "unblockAria": "Buka blokir peringatan darurat dari {{sender}}",
+      "blockAction": "Pemberitahuan blokir",
+      "blockActionAria": "Blokir peringatan darurat dari {{sender}}",
+      "confirmTitle": "Blokir peringatan darurat dari {{sender}}?",
+      "confirmMessage": "Laporan MECP mendatang dari pengirim ini pada {{protocol}} tidak akan memberi tahu, membuka insiden, atau disiarkan ulang. ID Node dapat dipalsukan, jadi hanya blokir pengirim yang Anda yakin menyalahgunakan MECP. Anda dapat membuka blokir di App → MECP.",
+      "confirmBlock": "Hanya blok halaman",
+      "confirmBlockAndResolve": "Blokir dan selesaikan",
+      "blocked": "Pemberitahuan darurat yang diblokir dari {{sender}}",
+      "throttledToast": "Membungkam peringatan darurat berulang dari {{sender}}. Laporan mereka masih muncul di tab Insiden.",
+      "throttledBlock": "Blokir Pengirim",
+      "floodToast": "Banyak stasiun yang mengirimkan laporan darurat sekaligus. Nada peringatan lebih lanjut dijeda sebentar; periksa tab Insiden."
+    }
   },
   "notificationSounds": {
     "title": "Nada notifikasi",

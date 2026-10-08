@@ -19,6 +19,9 @@
  * S14 `mecpComposeEnabled` default remains `false`.
  * S15 Incident ACKs queue as normal priority; recordAck only on live `'sent'` (drain path tags viewKey).
  * S16 App mounts emergency+ACK outbox drain once for all protocols.
+ * S17 `mecpStandingAlertEnabled` default remains `false`; App gates the banner and attention on it.
+ * S18 A blocked MECP sender never alerts, opens an incident, or is rebroadcast, but is still audited.
+ * S19 The per-sender alert throttle only silences tones; throttled reports are still recorded.
  * Beacon cancel: resolving an originated beacon sends B03 via sendEmergencyText (beaconCancel.ts).
  *
  * Behavioral coverage for S2/S3 lives in useChatOutbox.test.ts and emergencySend.test.ts.
@@ -153,6 +156,36 @@ describe('EMCOMM safety invariants (source contracts)', () => {
     expect(hook).toMatch(/runSessionDbPrune\(incidentPruneOptions\(\)\)/);
     const db = readSrc('main/database.ts');
     expect(db).toMatch(/node_id NOT IN \(SELECT value FROM json_each\(\?\)\)/);
+  });
+
+  it('S17: the standing alert is opt-in and App gates the banner + attention hook on it', () => {
+    expect(readSrc('renderer/lib/defaultAppSettings.ts')).toMatch(
+      /mecpStandingAlertEnabled:\s*false/,
+    );
+    const app = readSrc('renderer/App.tsx');
+    expect(app).toMatch(
+      /operationalAlertSettings\.mecpStandingAlertEnabled \? \(\s*<UnseenEmergencyBanner/,
+    );
+    expect(app).toMatch(
+      /useUnseenEmergencyAlerts\(\s*operationalAlertSettings\.mecpStandingAlertEnabled,/,
+    );
+  });
+
+  it('S18: blocked MECP senders are audited but skip incident, alert, and rebroadcast', () => {
+    const watcher = readSrc('renderer/hooks/useMecpAlertWatcher.ts');
+    expect(watcher).toMatch(/const blocked = isMecpSenderBlocked\(/);
+    expect(watcher).toMatch(/if \(!blocked && !alerted\.has\(key\)\)/);
+    expect(watcher).toMatch(/\.\.\.\(blocked \? \{ blocked: true \} : \{\}\)/);
+    expect(watcher).toMatch(/if \(!blocked && \(slice\.protocol === 'meshtastic'/);
+    expect(readSrc('renderer/components/ChatPanel.tsx')).toMatch(/isMecpSenderBlocked\(protocol,/);
+  });
+
+  it('S19: throttled reports are upserted quietly, never dropped', () => {
+    const watcher = readSrc('renderer/hooks/useMecpAlertWatcher.ts');
+    expect(watcher).toMatch(
+      /upsertIncidentFromMessage\(slice, msg, quiet \? \{ quiet: true \} : undefined\);/,
+    );
+    expect(watcher).toMatch(/if \(!quiet\) fireAlert\(/);
   });
 
   it('S13: USGS topo is allowlisted only (no user URL templates)', () => {

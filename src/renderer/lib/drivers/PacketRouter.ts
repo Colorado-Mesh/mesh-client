@@ -33,6 +33,7 @@ import {
 } from '../../stores/nodeStore';
 import { getConnectedMeshcoreBleMac } from '../connectedMeshcoreBleMac';
 import { errLikeToLogString } from '../errLikeToLogString';
+import { isLoraSenderBlocked } from '../loraBlocklist';
 import { shouldSuppressMeshtasticNodeHear } from '../meshcoreBleMacMeshtasticNodeId';
 import { nextMeshcoreMessageLocalOrder } from '../meshcoreMessageOrder';
 import { ensureMeshtasticChatSenderInNodeStore } from '../meshtastic/meshtasticChatSenderNode';
@@ -204,6 +205,11 @@ class PacketRouter {
       case 'text_message': {
         const protocolType = getIdentity(identityId)?.protocol.type;
         const isMeshtastic = protocolType === 'meshtastic';
+        // Fully blocked LoRa sender: never stored, persisted, alerted, or seen by MECP.
+        if (protocolType && isLoraSenderBlocked(protocolType, event.payload.from)) {
+          skipListeners = true;
+          break;
+        }
         if (event.payload.id) {
           const byIdentity = useMessageStore.getState().messages[identityId] ?? {};
           const dedupWindowMs = event.payload.tapback

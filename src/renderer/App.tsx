@@ -308,6 +308,7 @@ import type {
   LauncherSettingItem,
 } from './lib/launcherDestinations';
 import { generateLetsMeshAuthToken, readMeshcoreIdentityAsync } from './lib/letsMeshJwt';
+import { hydrateLoraBlocklists } from './lib/loraBlocklist';
 import { meshcoreChatMessagesForDisplay } from './lib/meshcoreChannelText';
 import {
   meshcoreRoomServerIdsFromNodes,
@@ -1664,7 +1665,13 @@ function AppContent() {
       : nodesForUi.size;
 
   const operationalAlertSettings = useOperationalAlertSettings();
-  useUnseenEmergencyAlerts(operationalAlertSettings.mecpRepeatAlertMinutes);
+  useEffect(() => {
+    void hydrateLoraBlocklists();
+  }, []);
+  useUnseenEmergencyAlerts(
+    operationalAlertSettings.mecpStandingAlertEnabled,
+    operationalAlertSettings.mecpRepeatAlertMinutes,
+  );
   useNodeStatusNotifier(nodesForUi, capabilities, {
     silenceThresholdMinutes: operationalAlertSettings.nodeSilenceAlertMinutes,
   });
@@ -4214,7 +4221,9 @@ function AppContent() {
                 reconnectAttempt={activeConnectionView.state.reconnectAttempt}
                 onReconnect={handleReconnect}
               />
-              <UnseenEmergencyBanner onView={openIncidentPanel} />
+              {operationalAlertSettings.mecpStandingAlertEnabled ? (
+                <UnseenEmergencyBanner onView={openIncidentPanel} />
+              ) : null}
               <ServiceAnnouncementStrip
                 announcements={serviceAnnouncements.visible}
                 onDismiss={serviceAnnouncements.dismiss}

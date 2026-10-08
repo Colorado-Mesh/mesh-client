@@ -1327,6 +1327,8 @@ export interface ElectronAPI {
       toChannel?: number | string;
       bidirectional?: boolean;
       messageId?: string;
+      /** Sender is on the local MECP blocklist (audited only). */
+      blocked?: boolean;
     }) => Promise<{ ok: true }>;
     exportReceivedLog: () => Promise<{
       success: boolean;

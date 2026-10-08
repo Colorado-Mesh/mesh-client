@@ -30,6 +30,19 @@ const openBlocklistDialog = vi.fn();
 const HASH_1 = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
 const HASH_2 = 'b1b2c3d4e5f60718293a4b5c6d7e8f90';
 
+function setReticulumEntries(entries: { hash: string; createdAt: number }[]): void {
+  useBlockStore.setState({
+    byProtocol: {
+      reticulum: {
+        identityId: 'id-1',
+        hashes: new Set(entries.map((e) => e.hash)),
+        entries,
+        loaded: true,
+      },
+    },
+  });
+}
+
 describe('ReticulumBlockedContactsSection', () => {
   beforeEach(() => {
     addToast.mockReset();
@@ -46,13 +59,7 @@ describe('ReticulumBlockedContactsSection', () => {
       db: { exportBlockedContacts, importBlockedContacts, getBlockedContacts, unblockContact },
       reticulum: { saveBlocklistDialog, openBlocklistDialog },
     };
-    useBlockStore.setState({
-      protocol: 'reticulum',
-      identityId: 'id-1',
-      blockedHashes: new Set(),
-      blockedEntries: [],
-      loaded: true,
-    });
+    setReticulumEntries([]);
     vi.spyOn(console, 'debug').mockImplementation(() => {});
     vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
@@ -68,10 +75,7 @@ describe('ReticulumBlockedContactsSection', () => {
   });
 
   it('lists blocked entries with their block date', () => {
-    useBlockStore.setState({
-      blockedEntries: [{ hash: HASH_1, createdAt: Date.UTC(2026, 0, 15) }],
-      blockedHashes: new Set([HASH_1]),
-    });
+    setReticulumEntries([{ hash: HASH_1, createdAt: Date.UTC(2026, 0, 15) }]);
 
     render(<ReticulumBlockedContactsSection identityId="id-1" />);
 
@@ -215,10 +219,7 @@ describe('ReticulumBlockedContactsSection', () => {
   });
 
   it('unblocks an entry from the list', async () => {
-    useBlockStore.setState({
-      blockedEntries: [{ hash: HASH_1, createdAt: 1 }],
-      blockedHashes: new Set([HASH_1]),
-    });
+    setReticulumEntries([{ hash: HASH_1, createdAt: 1 }]);
     const user = userEvent.setup();
     render(<ReticulumBlockedContactsSection identityId="id-1" />);
 
@@ -234,10 +235,7 @@ describe('ReticulumBlockedContactsSection', () => {
   });
 
   it('has no axe violations with entries rendered', async () => {
-    useBlockStore.setState({
-      blockedEntries: [{ hash: HASH_1, createdAt: 1 }],
-      blockedHashes: new Set([HASH_1]),
-    });
+    setReticulumEntries([{ hash: HASH_1, createdAt: 1 }]);
     const { container } = render(<ReticulumBlockedContactsSection identityId="id-1" />);
     hydrateAxeThemeColors(container);
     await expect(axe(container)).resolves.toHaveNoViolations();

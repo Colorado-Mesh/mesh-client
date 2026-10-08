@@ -56,6 +56,11 @@ export interface MecpIncidentInput {
   localOrigin?: boolean;
   /** Unicast `to` of an originated beacon; omitted for channel broadcasts. */
   beaconCancelToNode?: number | null;
+  /**
+   * Alert-throttled sender: record the row but never raise the standing alert for it
+   * (created already seen; escalation/reopen does not clear `seenAt`).
+   */
+  quiet?: boolean;
 }
 
 interface IncidentStoreState {
@@ -387,7 +392,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
               : {}),
             isDrill: parsed.isDrill,
             status: 'open',
-            ...(input.fromSeed || input.localOrigin ? { seenAt: now } : {}),
+            ...(input.fromSeed || input.localOrigin || input.quiet ? { seenAt: now } : {}),
             events: [{ at: now, kind: 'received', peerId: senderId, protocol }],
           };
           set((s) => {
@@ -423,6 +428,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
         const needsAttention =
           !input.fromSeed &&
           !input.localOrigin &&
+          !input.quiet &&
           mergedSeverity <= 1 &&
           (reopen || mergedSeverity < existing.severity);
         let events = existing.events;

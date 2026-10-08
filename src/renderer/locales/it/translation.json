@@ -462,7 +462,14 @@
     "protocolLastEnabled": "Almeno un protocollo deve rimanere abilitato.",
     "mecpRepeatAlertMinutes": "Ripeti avviso MAYDAY/URGENTE invisibile (minuti)",
     "mecpRepeatAlertMinutesPlaceholder": "Disattivato",
-    "mecpRepeatAlertMinutesHint": "Per le stazioni non presidiate. Riproduce il tono di avviso a questo intervallo fino a quando qualcuno non apre la scheda Incidente o contrassegna l'avviso visualizzato. Lasciare vuoto per avvisare una volta."
+    "mecpRepeatAlertMinutesHint": "Per le stazioni non presidiate. Riproduce il tono di avviso a questo intervallo fino a quando qualcuno non apre la scheda Incidente o contrassegna l'avviso visualizzato. Lasciare vuoto per avvisare una volta.",
+    "loraBlocklist": {
+      "title": "Nodi bloccati",
+      "description": "I messaggi provenienti dai nodi bloccati vengono eliminati prima che raggiungano la chat, quindi non possono nemmeno generare avvisi MeCP. Bloccare un nodo dal suo Dettaglio Nodo. Gli ID nodo possono essere falsificati, quindi questo blocca l'abuso casuale, non un aggressore determinato.",
+      "empty": "Nessun nodo bloccato.",
+      "unblockAria": "Sblocca {{node}}",
+      "unblockFailed": "Impossibile sbloccare quel nodo."
+    }
   },
   "aria": {
     "closeDialog": "Chiudi finestra",
@@ -6433,9 +6440,28 @@
       "learnMore": "Come funziona MeCP",
       "protocolSource": "Fonte del protocollo su GitHub",
       "showComposeButton": "Mostra pulsante MeCP in chat",
-      "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza."
+      "showComposeButtonHint": "OFF per impostazione predefinita. Se abilitata, la chat mostra un pulsante MeCP per comporre e inviare i rapporti di emergenza.",
+      "standingAlert": "Incidente Stazione di comando (allarme in piedi)",
+      "standingAlertHint": "Disattivato per impostazione predefinita. Per EOC e stazioni monitorate: mantiene un banner rosso e lampeggia sulla barra delle applicazioni o fa rimbalzare il dock fino a quando qualcuno non guarda ogni nuovo MAYDAY o URGENTE. Tutti sentono ancora il tono di allerta una tantum e vedono il brindisi."
     },
-    "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto"
+    "exportLogEmpty": "Nessun messaggio MeCP nel registro ricevuto",
+    "block": {
+      "listTitle": "Mittenti di emergenza bloccati",
+      "listHint": "I rapporti MeCP di questi mittenti non emettono avvisi, aprono incidenti o vengono ritrasmessi. Sono ancora scritti nel registro di controllo e vengono ancora visualizzati in Chat.",
+      "listEmpty": "Nessun mittente bloccato.",
+      "unblock": "Sblocca",
+      "unblockAria": "Sblocca gli avvisi di emergenza da {{sender}}",
+      "blockAction": "Blocca avvisi",
+      "blockActionAria": "Blocca gli avvisi di emergenza da {{sender}}",
+      "confirmTitle": "Vuoi bloccare gli avvisi di emergenza da {{sender}}?",
+      "confirmMessage": "Le future segnalazioni MeCP di questo mittente su {{protocol}} non avviseranno, apriranno incidenti o saranno ritrasmesse. Gli ID nodo possono essere falsificati, quindi blocca solo un mittente che sei sicuro stia abusando di MeCP. Puoi sbloccare in App → MeCP.",
+      "confirmBlock": "Blocca Solo",
+      "confirmBlockAndResolve": "Blocca e risolvi",
+      "blocked": "Avvisi di emergenza bloccati da {{sender}}",
+      "throttledToast": "Silenziare gli avvisi di emergenza ripetuti da {{sender}}. I loro rapporti appaiono ancora nella scheda Incidente.",
+      "throttledBlock": "Blocca mittente",
+      "floodToast": "Molte stazioni inviano rapporti di emergenza contemporaneamente. Ulteriori toni di avviso vengono messi in pausa brevemente; controllare la scheda Incidente."
+    }
   },
   "notificationSounds": {
     "title": "Toni di notifica",
