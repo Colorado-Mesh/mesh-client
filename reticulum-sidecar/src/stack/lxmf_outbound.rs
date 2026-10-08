@@ -332,20 +332,23 @@ impl LxmfOutboundDriver {
     }
 
     /// Refresh enabled PN candidates used after Direct path failover exhausts.
-    /// Returns `false` (and stays quiet) when the list is unchanged.
+    /// Returns `false` when the list is unchanged. Logs only when the ordered cascade
+    /// membership changes — hops / medium refreshes alone are stored silently.
     pub fn set_pn_cascade_candidates(&mut self, candidates: Vec<PnCascadeCandidate>) -> bool {
         if candidates == self.pn_cascade_candidates {
             return false;
         }
-        tracing::info!(
-            target: "lxmf-outbound",
-            count = candidates.len(),
-            preferred = %self
-                .preferred_pn_hash
-                .map(hex::encode)
-                .unwrap_or_else(|| "none".into()),
-            "PN cascade candidates updated"
-        );
+        if !pn_cascade_membership_eq(&candidates, &self.pn_cascade_candidates) {
+            tracing::info!(
+                target: "lxmf-outbound",
+                count = candidates.len(),
+                preferred = %self
+                    .preferred_pn_hash
+                    .map(hex::encode)
+                    .unwrap_or_else(|| "none".into()),
+                "PN cascade candidates updated"
+            );
+        }
         self.pn_cascade_candidates = candidates;
         true
     }
@@ -1725,6 +1728,17 @@ impl LxmfOutboundDriver {
     }
 }
 
+/// Same PNs in the same cascade order, ignoring per-refresh `hops` / `medium` churn.
+fn pn_cascade_membership_eq(a: &[PnCascadeCandidate], b: &[PnCascadeCandidate]) -> bool {
+    a.len() == b.len()
+        && a.iter().zip(b).all(|(x, y)| {
+            x.hash == y.hash
+                && x.is_local == y.is_local
+                && x.is_discovered == y.is_discovered
+                && x.id == y.id
+        })
+}
+
 fn delivery_method_label(method: DeliveryMethod) -> &'static str {
     match method {
         DeliveryMethod::Direct => "direct",
@@ -2997,6 +3011,47 @@ mod tests {
             "identical rebuild must not log again"
         );
         assert!(driver.set_pn_cascade_candidates(vec![candidate(3)]));
+        assert_eq!(
+            driver.pn_cascade_candidates[0].hops,
+            Some(3),
+            "hops refresh must still be stored"
+        );
+    }
+
+    #[test]
+    fn pn_cascade_membership_eq_ignores_hops_and_medium_churn() {
+        use crate::stack::path_medium::PathMediumSetting;
+
+        let candidate = |hash_byte: u8, hops, medium, id: &str| PnCascadeCandidate {
+            hash: [hash_byte; 16],
+            is_local: false,
+            is_discovered: true,
+            hops,
+            medium,
+            id: id.into(),
+        };
+        let a = vec![
+            candidate(1, Some(2), None, "pn-a"),
+            candidate(2, Some(3), None, "pn-b"),
+        ];
+        let hops_only = vec![
+            candidate(1, Some(4), Some(PathMediumSetting::Rf), "pn-a"),
+            candidate(2, None, None, "pn-b"),
+        ];
+        assert!(pn_cascade_membership_eq(&a, &hops_only));
+
+        let reordered = vec![
+            candidate(2, Some(3), None, "pn-b"),
+            candidate(1, Some(2), None, "pn-a"),
+        ];
+        assert!(!pn_cascade_membership_eq(&a, &reordered));
+
+        let swapped = vec![
+            candidate(1, Some(2), None, "pn-a"),
+            candidate(3, Some(3), None, "pn-c"),
+        ];
+        assert!(!pn_cascade_membership_eq(&a, &swapped));
+        assert!(!pn_cascade_membership_eq(&a, &a[..1]));
     }
 
     #[test]

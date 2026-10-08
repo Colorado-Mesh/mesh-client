@@ -50,6 +50,18 @@ describe('findRenumberedMeshtasticNode', () => {
     debug.mockRestore();
   });
 
+  it('logs a repeated non-crc32 pair only once', () => {
+    const debug = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    upsertNodeRecord(ID, { nodeId: OLD, publicKeyHex: KEY, lastHeardAt: QUIET });
+    for (let i = 0; i < 4; i++) {
+      expect(findRenumberedMeshtasticNode(ID, NEW + 1, KEY, NOW, NOW)).toBeNull();
+    }
+    expect(findRenumberedMeshtasticNode(ID, NEW + 2, KEY, NOW, NOW)).toBeNull();
+    const lines = debug.mock.calls.filter(([m]) => String(m).includes('is not crc32'));
+    expect(lines).toHaveLength(2);
+    debug.mockRestore();
+  });
+
   it('does not merge a cloned key that is still active on the old number', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     upsertNodeRecord(ID, { nodeId: OLD, publicKeyHex: KEY, lastHeardAt: NOW - 1000 });

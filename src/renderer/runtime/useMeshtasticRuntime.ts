@@ -1937,6 +1937,8 @@ export function useMeshtasticRuntime() {
         windowMinutes: resolveAutoStoreForwardHistoryWindowMinutes(heartbeatPeriod),
         messageCap: manual ? SF_MANUAL_HISTORY_MESSAGE_CAP : historyTuning.messageCap,
       });
+      // Routing NAKs for this id (e.g. PKI_SEND_FAIL_PUBLIC_KEY) must not fail a pending chat row.
+      registerMeshtasticNonChatWirePacketId(packetId);
 
       try {
         await writeToRadioWithoutQueue(activeDevice, toRadioBytes);

@@ -242,11 +242,14 @@ export class TakRemoteClient extends EventEmitter {
     });
     socket.on('error', (err: NodeJS.ErrnoException) => {
       // A rejected handshake is followed by EPIPE/ECONNRESET on the dead socket; keep the cause.
-      const isFollowOn = err.code === 'EPIPE' || err.code === 'ECONNRESET';
-      if (!(isFollowOn && lastError)) lastError = sanitizeLogMessage(describeTakRemoteError(err));
-      console.warn(
-        `[TakRemote] ${sanitizeLogMessage(host)}:${port} error: ${sanitizeLogMessage(err.message)}`,
-      );
+      const isFollowOn = (err.code === 'EPIPE' || err.code === 'ECONNRESET') && !!lastError;
+      const line = `[TakRemote] ${sanitizeLogMessage(host)}:${port} error: ${sanitizeLogMessage(err.message)}`;
+      if (isFollowOn) {
+        console.debug(line);
+        return;
+      }
+      lastError = sanitizeLogMessage(describeTakRemoteError(err));
+      console.warn(line);
     });
     socket.once('close', () => {
       if (stableTimer) clearTimeout(stableTimer);

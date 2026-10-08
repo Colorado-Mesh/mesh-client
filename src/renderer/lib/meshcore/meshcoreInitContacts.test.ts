@@ -130,6 +130,34 @@ describe('fetchMeshcoreContactsForInit', () => {
     expect(maxInFlight()).toBe(1);
   });
 
+  it('rethrows the stall after the grace window when the stalled dump never settles', async () => {
+    const { conn, dumps, maxInFlight } = makeConn();
+    const onStallRetry = vi.fn();
+    const p = fetchMeshcoreContactsForInit(conn, {
+      totalTimeoutMs: 60_000,
+      idleTimeoutMs: 1_000,
+      stallGraceMs: 2_000,
+      onStallRetry,
+    });
+    let settledAt: number | null = null;
+    const start = Date.now();
+    const assertion = expect(
+      p.finally(() => {
+        settledAt = Date.now() - start;
+      }),
+    ).rejects.toThrow('getContacts stalled after 1000ms idle (2 contacts received)');
+    dumps[0].emitContact();
+    dumps[0].emitContact();
+    await vi.advanceTimersByTimeAsync(2_999);
+    expect(settledAt).toBeNull();
+    await vi.advanceTimersByTimeAsync(1);
+    await assertion;
+    expect(settledAt).toBe(3_000);
+    expect(onStallRetry).not.toHaveBeenCalled();
+    expect(conn.getContacts).toHaveBeenCalledTimes(1);
+    expect(maxInFlight()).toBe(1);
+  });
+
   it('enforces the total cap across both attempts', async () => {
     const { conn, dumps, listenerCount, maxInFlight } = makeConn();
     const p = fetchMeshcoreContactsForInit(conn, { totalTimeoutMs: 3_000, idleTimeoutMs: 1_000 });

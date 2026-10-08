@@ -6,12 +6,16 @@
  * and retry the dump once on the same link before the caller tears the transport down.
  *
  * The idle timer rejects the wrapper and drops its listener, but it does not abort
- * `getContacts()`. The retry waits until that promise settles. If it is still running when the
- * total cap expires, the caller bails and tears the link down instead of starting a second dump.
+ * `getContacts()`. The retry waits until that promise settles. If it is still running after the
+ * stall grace window, the stall error is rethrown so the caller tears the link down promptly
+ * instead of starting a second dump (or idling until the total cap).
  */
 
 import type { MeshCoreContactRaw } from '@/renderer/lib/meshcore/meshcoreHookTypes';
-import { MESHCORE_INIT_CONTACTS_IDLE_TIMEOUT_MS } from '@/renderer/lib/timeConstants';
+import {
+  MESHCORE_INIT_CONTACTS_IDLE_TIMEOUT_MS,
+  MESHCORE_INIT_CONTACTS_STALL_GRACE_MS,
+} from '@/renderer/lib/timeConstants';
 
 /** meshcore.js `Constants.ResponseCodes.Contact`. */
 export const MESHCORE_RESPONSE_CONTACT = 3;
@@ -26,6 +30,8 @@ export interface FetchMeshcoreContactsForInitOpts {
   /** Hard cap across both attempts. */
   totalTimeoutMs: number;
   idleTimeoutMs?: number;
+  /** After an idle stall, max wait for the stalled dump to settle before rethrowing the stall. */
+  stallGraceMs?: number;
   onStallRetry?: (info: { contactsBeforeStall: number; idleTimeoutMs: number }) => void;
   /** When true after a stall, skip the retry so a superseded setup never re-dumps on its old conn. */
   isCancelled?: () => boolean;
@@ -148,11 +154,14 @@ export async function fetchMeshcoreContactsForInit(
     return await first.result;
   } catch (e) {
     if (!(e instanceof MeshcoreContactsStallError) || opts.isCancelled?.()) throw e;
-    const dumped = await waitForDumpOrDeadline(first.dumpSettled, deadline);
+    const stallGraceMs = opts.stallGraceMs ?? MESHCORE_INIT_CONTACTS_STALL_GRACE_MS;
+    const graceDeadline = Math.min(deadline, Date.now() + stallGraceMs);
+    const dumped = await waitForDumpOrDeadline(first.dumpSettled, graceDeadline);
     if (opts.isCancelled?.()) throw e;
-    if (!dumped || deadline - Date.now() <= 0) {
+    if (deadline - Date.now() <= 0) {
       throw new Error(`getContacts timed out after ${opts.totalTimeoutMs}ms`);
     }
+    if (!dumped) throw e;
     opts.onStallRetry?.({ contactsBeforeStall: e.contactsBeforeStall, idleTimeoutMs });
     return await runAttempt(conn, idleTimeoutMs, opts.totalTimeoutMs, deadline).result;
   }

@@ -18,6 +18,10 @@ const ZERO_PUBLIC_KEY_HEX = '0'.repeat(64);
 /** Per identity: Meshtastic PKC public key (lowercase hex) -> node number it was last seen on. */
 const nodeNumByPublicKey = new Map<IdentityId, Map<string, number>>();
 
+/** `${nodeNum}:${previous}` pairs already logged as non-crc32 (shared keys repeat every packet). */
+const loggedNonCrcPairs = new Set<string>();
+const LOGGED_NON_CRC_PAIRS_MAX = 512;
+
 function normalizePublicKeyHex(raw: string | undefined): string | null {
   if (!raw) return null;
   const hex = raw.toLowerCase();
@@ -83,9 +87,14 @@ export function findRenumberedMeshtasticNode(
   // new number here makes the next packet look like `previous === nodeNum` and
   // skips the migration for the rest of the session.
   if (meshtasticNodeNumFromPublicKeyHex(key) !== nodeNum) {
-    console.debug(
-      `[meshtasticNodeRenumber] !${nodeNum.toString(16)} is not crc32 of its public key; not merging !${previous.toString(16)}`,
-    );
+    const pair = `${nodeNum}:${previous}`;
+    if (!loggedNonCrcPairs.has(pair)) {
+      if (loggedNonCrcPairs.size >= LOGGED_NON_CRC_PAIRS_MAX) loggedNonCrcPairs.clear();
+      loggedNonCrcPairs.add(pair);
+      console.debug(
+        `[meshtasticNodeRenumber] !${nodeNum.toString(16)} is not crc32 of its public key; not merging !${previous.toString(16)}`,
+      );
+    }
     return null;
   }
   if (oldLastHeardMs > nowMs - MESHTASTIC_RENUMBER_OLD_NODE_QUIET_MS) {
@@ -147,4 +156,5 @@ export function maybeMigrateRenumberedMeshtasticNode(
 /** @internal Test helper. */
 export function resetMeshtasticRenumberIndexForTests(): void {
   nodeNumByPublicKey.clear();
+  loggedNonCrcPairs.clear();
 }

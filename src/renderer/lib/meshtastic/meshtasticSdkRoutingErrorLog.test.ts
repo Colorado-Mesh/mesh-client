@@ -276,6 +276,19 @@ describe('meshtasticSdkRoutingErrorLog', () => {
     expect(updateMessageStatus).not.toHaveBeenCalled();
   });
 
+  it('does not pin a registered Store & Forward PKI NAK on the sole sending chat row', () => {
+    seedOutbound([{ packetId: 55, to: 0x1234, timestamp: Date.now() }]);
+    registerMeshtasticNonChatWirePacketId(3297083144);
+    const onMissingRecipientKey = vi.fn();
+    const applied = applyMeshtasticOutboundRoutingErrorFromLog(
+      'Error received for packet 3297083144: PKI_SEND_FAIL_PUBLIC_KEY',
+      { myNodeNum: 42, identityId: IDENTITY, onMissingRecipientKey },
+    );
+    expect(applied).toBe(false);
+    expect(updateMessageStatus).not.toHaveBeenCalled();
+    expect(onMissingRecipientKey).not.toHaveBeenCalled();
+  });
+
   it('skips fallback while non-chat outbound is in flight', () => {
     seedOutbound([{ packetId: 55, timestamp: Date.now() }]);
     beginMeshtasticNonChatOutbound();

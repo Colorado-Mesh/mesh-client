@@ -495,6 +495,32 @@ describe('TakRemoteClient reconnect and output', () => {
     c.stop();
   });
 
+  it('logs the follow-on EPIPE at debug, keeping only the handshake error as a warning', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    warnSpy.mockClear();
+    debugSpy.mockClear();
+    const { c, sockets } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit('error', new Error('SSL routines:TLSV1_ALERT_INTERNAL_ERROR'));
+    sockets[0]?.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
+    const warned = warnSpy.mock.calls.map(([m]) => String(m)).filter((m) => m.includes('error:'));
+    expect(warned).toHaveLength(1);
+    expect(warned[0]).toContain('TLSV1_ALERT_INTERNAL_ERROR');
+    expect(debugSpy.mock.calls.some(([m]) => String(m).includes('write EPIPE'))).toBe(true);
+    c.stop();
+  });
+
+  it('warns on EPIPE when no earlier error explains it', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    warnSpy.mockClear();
+    const { c, sockets } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
+    expect(warnSpy.mock.calls.some(([m]) => String(m).includes('write EPIPE'))).toBe(true);
+    c.stop();
+  });
+
   it('explains an HTTP reply on the stream instead of the EPIPE that follows', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { c, sockets } = withFakeSockets();

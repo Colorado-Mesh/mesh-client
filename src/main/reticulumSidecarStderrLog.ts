@@ -47,9 +47,20 @@ const SIDECAR_STDOUT_INFO_FORWARD_MARKERS = [
   'gatt',
 ] as const;
 
-export function shouldForwardReticulumSidecarStdout(text: string): boolean {
+function splitSidecarTracingFields(text: string): { fields: string[]; index: number } {
   const fields = text.trimStart().split(/\s+/);
   const index = fields[0] && Number.isFinite(Date.parse(fields[0])) ? 1 : 0;
+  return { fields, index };
+}
+
+/** Tracing severity token (`INFO`, `WARN`, …) after the optional timestamp, or `''`. */
+export function reticulumSidecarLineSeverity(text: string): string {
+  const { fields, index } = splitSidecarTracingFields(text);
+  return fields[index] ?? '';
+}
+
+export function shouldForwardReticulumSidecarStdout(text: string): boolean {
+  const { fields, index } = splitSidecarTracingFields(text);
   const severity = fields[index] ?? '';
   if (severity === 'WARN' || severity === 'ERROR') {
     return true;
