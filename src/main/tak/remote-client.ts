@@ -48,6 +48,7 @@ const NOT_USING_TLS = 'The server is not using TLS; turn off TLS to connect over
 /** TAK Server's web/API port (often 8443) answers CoT with an HTTP error and hangs up. */
 export const TAK_REMOTE_HTTP_PORT_ERROR =
   'This port is a web (HTTPS) port, not a CoT streaming port; use the streaming port (usually 8089)';
+const HTTP_REPLY_PREFIX = Buffer.from('HTTP/', 'latin1');
 
 /** Plain-language status text for the socket and certificate errors a TAK user can act on. */
 const SOCKET_ERROR_TEXT: Record<string, string> = {
@@ -193,7 +194,8 @@ export class TakRemoteClient extends EventEmitter {
     let lastError: string | undefined;
     let secureAt = 0;
     let stableTimer: ReturnType<typeof setTimeout> | null = null;
-    let sawData = false;
+    /** Leading bytes held until they can be told apart from an HTTP reply; null once decided. */
+    let head: Buffer | null = Buffer.alloc(0);
 
     socket.setTimeout(TAK_REMOTE_CONNECT_TIMEOUT_MS);
     socket.once('timeout', () => {
@@ -214,17 +216,26 @@ export class TakRemoteClient extends EventEmitter {
     const framer = new CotFramer();
     socket.on('data', (chunk: Buffer) => {
       if (this.socket !== socket) return;
-      if (!sawData && chunk.subarray(0, 5).toString('latin1') === 'HTTP/') {
-        lastError = TAK_REMOTE_HTTP_PORT_ERROR;
-        console.warn(
-          `[TakRemote] ${sanitizeLogMessage(host)}:${port} answered with HTTP; not a CoT streaming port`,
-        );
-        socket.destroy();
-        return;
+      let data = chunk;
+      if (head) {
+        data = Buffer.concat([head, chunk]);
+        const n = Math.min(data.length, HTTP_REPLY_PREFIX.length);
+        if (data.subarray(0, n).equals(HTTP_REPLY_PREFIX.subarray(0, n))) {
+          if (n < HTTP_REPLY_PREFIX.length) {
+            head = data;
+            return;
+          }
+          lastError = TAK_REMOTE_HTTP_PORT_ERROR;
+          console.warn(
+            `[TakRemote] ${sanitizeLogMessage(host)}:${port} answered with HTTP; not a CoT streaming port`,
+          );
+          socket.destroy();
+          return;
+        }
+        head = null;
       }
-      sawData = true;
       const now = Date.now();
-      for (const frame of framer.push(chunk)) {
+      for (const frame of framer.push(data)) {
         const contact = parseCotEvent(frame, 'remote', now);
         if (contact) this.emit('cot', contact);
       }

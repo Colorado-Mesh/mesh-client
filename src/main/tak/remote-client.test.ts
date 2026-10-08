@@ -510,6 +510,36 @@ describe('TakRemoteClient reconnect and output', () => {
     c.stop();
   });
 
+  it('detects an HTTP reply whose prefix is split across chunks', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { c, sockets } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    sockets[0]?.emit('data', Buffer.from('HT'));
+    expect(sockets[0]?.destroy).not.toHaveBeenCalled();
+    sockets[0]?.emit('data', Buffer.from('TP/1.1 400 \r\nConnection: close\r\n\r\n'));
+    expect(sockets[0]?.destroy).toHaveBeenCalled();
+    expect(c.getStatus().error).toBe(TAK_REMOTE_HTTP_PORT_ERROR);
+    c.stop();
+  });
+
+  it('still parses CoT whose first chunk is shorter than the HTTP prefix', () => {
+    const { c, sockets } = withFakeSockets();
+    const contacts: TAKContact[] = [];
+    c.on('cot', (contact: TAKContact) => contacts.push(contact));
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    const peer =
+      '<event version="2.0" uid="ANDROID-abc" type="a-f-G-U-C"><point lat="39.7" lon="-105"/>' +
+      '<detail><contact callsign="VIPER"/></detail></event>\n';
+    sockets[0]?.emit('data', Buffer.from(peer.slice(0, 2)));
+    sockets[0]?.emit('data', Buffer.from(peer.slice(2)));
+    expect(sockets[0]?.destroy).not.toHaveBeenCalled();
+    expect(contacts).toHaveLength(1);
+    expect(contacts[0]?.uid).toBe('ANDROID-abc');
+    c.stop();
+  });
+
   it('times out a handshake that never completes', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { c, sockets } = withFakeSockets();
