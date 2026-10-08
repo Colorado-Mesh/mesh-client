@@ -14,6 +14,7 @@ import type { TAKContact, TAKRemoteStatus } from '../../shared/tak-types';
 import { createTakTestPki, type TakTestPki } from '../fixtures/tak-test-pki';
 import {
   describeTakRemoteError,
+  TAK_REMOTE_HTTP_PORT_ERROR,
   TAK_REMOTE_MAX_BUFFERED_BYTES,
   TAK_REMOTE_RECONNECT_BASE_MS,
   TAK_REMOTE_RECONNECT_MAX_MS,
@@ -491,6 +492,21 @@ describe('TakRemoteClient reconnect and output', () => {
     sockets[0]?.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' }));
     sockets[0]?.emit('close');
     expect(c.getStatus().error).toBe('The server requires a client certificate; import one');
+    c.stop();
+  });
+
+  it('explains an HTTP reply on the stream instead of the EPIPE that follows', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { c, sockets } = withFakeSockets();
+    c.start();
+    sockets[0]?.emit('secureConnect');
+    c.write('<event/>');
+    sockets[0]?.emit(
+      'data',
+      Buffer.from('HTTP/1.1 400 \r\nContent-Type: text/html\r\nConnection: close\r\n\r\n<!doctype'),
+    );
+    expect(sockets[0]?.destroy).toHaveBeenCalled();
+    expect(c.getStatus().error).toBe(TAK_REMOTE_HTTP_PORT_ERROR);
     c.stop();
   });
 

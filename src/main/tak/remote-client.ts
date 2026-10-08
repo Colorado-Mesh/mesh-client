@@ -45,6 +45,9 @@ type TcpConnectFn = (options: net.NetConnectOpts) => net.Socket;
 const UNTRUSTED_SERVER = "The server certificate is not trusted; import the server's CA";
 /** Plain TCP answered a TLS handshake. OpenSSL 3.0 uses the version code; 3.5 the length code. */
 const NOT_USING_TLS = 'The server is not using TLS; turn off TLS to connect over plain TCP';
+/** TAK Server's web/API port (often 8443) answers CoT with an HTTP error and hangs up. */
+export const TAK_REMOTE_HTTP_PORT_ERROR =
+  'This port is a web (HTTPS) port, not a CoT streaming port; use the streaming port (usually 8089)';
 
 /** Plain-language status text for the socket and certificate errors a TAK user can act on. */
 const SOCKET_ERROR_TEXT: Record<string, string> = {
@@ -190,6 +193,7 @@ export class TakRemoteClient extends EventEmitter {
     let lastError: string | undefined;
     let secureAt = 0;
     let stableTimer: ReturnType<typeof setTimeout> | null = null;
+    let sawData = false;
 
     socket.setTimeout(TAK_REMOTE_CONNECT_TIMEOUT_MS);
     socket.once('timeout', () => {
@@ -210,6 +214,15 @@ export class TakRemoteClient extends EventEmitter {
     const framer = new CotFramer();
     socket.on('data', (chunk: Buffer) => {
       if (this.socket !== socket) return;
+      if (!sawData && chunk.subarray(0, 5).toString('latin1') === 'HTTP/') {
+        lastError = TAK_REMOTE_HTTP_PORT_ERROR;
+        console.warn(
+          `[TakRemote] ${sanitizeLogMessage(host)}:${port} answered with HTTP; not a CoT streaming port`,
+        );
+        socket.destroy();
+        return;
+      }
+      sawData = true;
       const now = Date.now();
       for (const frame of framer.push(chunk)) {
         const contact = parseCotEvent(frame, 'remote', now);
