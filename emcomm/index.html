@@ -750,6 +750,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#spam-and-blocking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spam and blocking
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2388,6 +2399,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#spam-and-blocking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spam and blocking
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2558,9 +2580,18 @@
 <p>ACKs are sent on the protocol where the report was heard (preferring your active tab). They are <strong>heard-by-network, best effort</strong>: an ACK count means ACK copies were overheard on the mesh, not that the person in distress read anything. Treat it as "the network has it", never as a read receipt.</p>
 <p>You can't cancel someone else's beacon: <code>B03</code> means "I am OK", so only the originator can send it.</p>
 <h3 id="unseen-emergency-alert">Unseen emergency alert<a class="headerlink" href="#unseen-emergency-alert" title="Permanent link">&para;</a></h3>
-<p>The MAYDAY siren and URGENT tone play once, and the toast closes after 10 seconds, so a station left unattended could miss them. A new MAYDAY or URGENT report (not a drill) therefore also opens a red banner at the top of every tab, and the window flashes in the taskbar (or the dock icon bounces on macOS) when the app is not focused. The banner stays until you open the Incident tab, press <strong>Mark seen</strong>, acknowledge, or resolve the incident. <strong>View</strong> opens the Incident tab.</p>
+<p>The MAYDAY siren and URGENT tone play once, and the toast closes after 10 seconds. Everyone gets that one-time alert. Stations that must not miss a report (an EOC, a net control, a monitored shelter) can turn on <strong>App → MECP → Incident Command station (standing alert)</strong>. It is <strong>off</strong> by default.</p>
+<p>With it on, a new MAYDAY or URGENT report (not a drill) also opens a red banner at the top of every tab, and the window flashes in the taskbar (or the dock icon bounces on macOS) when the app is not focused. The banner stays until you open the Incident tab, press <strong>Mark seen</strong>, acknowledge, or resolve the incident. <strong>View</strong> opens the Incident tab.</p>
 <p>"Seen" is local to this computer and sends nothing over the mesh. Acknowledging is still a separate, deliberate step. Reports loaded from history at startup, your own beacons, and drills never open the banner. A report that escalates to MAYDAY or URGENT, or reopens after being resolved, opens it again.</p>
-<p>For unattended stations, <strong>App → Notifications → Repeat unseen MAYDAY/URGENT alert (minutes)</strong> replays the tone at that interval until the alert is seen. It is blank (off) by default.</p>
+<p>For unattended stations, <strong>App → MECP → Repeat unseen MAYDAY/URGENT alert (minutes)</strong> (under the station toggle) replays the tone at that interval until the alert is seen. It is blank (off) by default.</p>
+<h3 id="spam-and-blocking">Spam and blocking<a class="headerlink" href="#spam-and-blocking" title="Permanent link">&para;</a></h3>
+<p>Anyone on the mesh can send a MECP report, so mesh-client limits how much noise one sender can make:</p>
+<ul>
+<li><strong>Repeat silencing:</strong> after 3 alerts from the same sender within 10 minutes, further reports from that sender stop sounding. They still appear in the Incident tab (without the banner), and a one-time notice offers <strong>Block sender</strong>. If many different stations send reports within a minute, further tones pause briefly as well.</li>
+<li><strong>Block alerts:</strong> each row in the Incident tab has <strong>Block alerts</strong>. Choose <strong>Block only</strong>, or <strong>Block and resolve</strong> to also close that sender's open incidents locally. Reports from a blocked sender no longer alert, open incidents, or get bridged by RF rebroadcast. They are still written to the audit log (marked blocked) and still show as text in Chat. Unblock in <strong>App → MECP → Blocked emergency senders</strong>.</li>
+<li><strong>Block a node completely (Meshtastic and MeshCore):</strong> <strong>Block</strong> in a node's detail view drops all of that node's messages before they reach Chat, so it cannot send MECP either. Unblock in <strong>App → Blocked nodes</strong>. Reticulum has its own blocklist in the Reticulum network settings.</li>
+</ul>
+<p>Node IDs can be spoofed, especially on Meshtastic, so blocking stops casual abuse but not a determined attacker. Only block a sender you are sure is abusing MECP.</p>
 <h2 id="durable-audit-log">Durable audit log<a class="headerlink" href="#durable-audit-log" title="Permanent link">&para;</a></h2>
 <p>Every inbound MECP report is appended to <code>mecp-received.log</code> in the app data folder (separate from the session app log, rotated to <code>mecp-received.log.1</code>). Export it from <strong>App → MECP → Export MECP log</strong>. It is also included in support bundles.</p>
 <h2 id="rf-rebroadcast-bridge">RF rebroadcast (bridge)<a class="headerlink" href="#rf-rebroadcast-bridge" title="Permanent link">&para;</a></h2>
@@ -2576,7 +2607,7 @@
 <li><strong>Silence:</strong> a watched node has not been heard for the configured minutes, with an escalation at twice that time. Nodes never heard are not "silent".</li>
 <li><strong>Battery low:</strong> a watched node's reported battery drops below the threshold (default 10%). Fires once, then re-arms after it recovers 5 points.</li>
 <li><strong>Link down:</strong> your Meshtastic or MeshCore radio link drops unexpectedly. Never fires on a manual disconnect or while reconnecting. Reticulum is not included (it runs as a separate stack, not an RF link).</li>
-<li><strong>Repeat unseen MAYDAY/URGENT alert:</strong> see <a href="#unseen-emergency-alert">Unseen emergency alert</a>.</li>
+<li><strong>Standing alert and repeat for unseen MAYDAY/URGENT:</strong> in App → MECP; see <a href="#unseen-emergency-alert">Unseen emergency alert</a>.</li>
 </ul>
 <h2 id="exports">Exports<a class="headerlink" href="#exports" title="Permanent link">&para;</a></h2>
 <ul>
@@ -2612,7 +2643,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 22:33:47 UTC">October 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 23:32:29 UTC">October 8, 2026</span>
   </span>
 
     

@@ -1998,6 +1998,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#spam-and-full-node-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spam and full node blocks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#send-path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2338,6 +2349,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#spam-and-full-node-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Spam and full node blocks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#send-path" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2435,6 +2457,8 @@
 <li>New inbound MECP → durable audit append (<code>mecp:appendReceived</code>)</li>
 <li>Alerts: sev <strong>0</strong> <code>'mecpSiren'</code> (~5s six-cycle siren, length-matched to URGENT) + emergency toast; sev <strong>1</strong> US EAS-style 853+960 Hz <code>'mecpEas'</code> (~5s) + toast (<strong>ignore</strong> mutes; <strong>always</strong> including focused chat); sev <strong>2</strong> <code>'mecpSafety'</code> (short–long dit–dah × 6, 1175 Hz square, ~4.4s) / <strong>3</strong> <code>'mecp'</code> repeated rising triple when unmuted; drills never alert</li>
 <li>Focused Chat still alerts via <code>ChatPanel</code> → <code>triggerMecpAlert</code> (deduped with the watcher)</li>
+<li><strong>Blocked senders</strong> (<code>mecpBlockStore</code>, localStorage <code>mesh-client:mecpBlockedSenders</code>, keyed <code>${protocol}:${String(msg.from)}</code>, capped at <code>MAX_MECP_BLOCKED_SENDERS</code>): audit append only, with <code>blocked: true</code>. No incident upsert (live or seed), no alert, no rebroadcast (S18). <code>ChatPanel</code> skips its alert for them too. Block from the Incident row (<strong>Block alerts</strong>, optionally resolving that sender's open rows via <code>blockMecpIncidentSender</code>) or the suppression toast; unblock in App → MECP → Blocked emergency senders</li>
+<li><strong>Alert throttle</strong> (<a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/src/renderer/lib/mecp/mecpAlertThrottle.ts"><code>mecpAlertThrottle.ts</code></a>): the watcher calls <code>recordMecpAlert</code> once per live non-drill message. More than <code>MECP_ALERT_THROTTLE_MAX</code> (3) alerts from one sender inside <code>MECP_ALERT_THROTTLE_WINDOW_MS</code> (10 min), or <code>MECP_ALERT_FLOOD_MAX_SENDERS</code> (5) other senders inside <code>MECP_ALERT_FLOOD_WINDOW_MS</code> (1 min), silences the tone and toast. The report is still upserted with <code>quiet: true</code>, so the row exists but is created already seen and never drives the standing banner (S19). One <code>notifyMecpAlertsSuppressed</code> toast per window (sender toast offers <strong>Block sender</strong>). <code>ChatPanel</code> reads <code>isMecpAlertThrottled</code> without counting</li>
 <li>Optional RF rebroadcast (§ below)</li>
 <li>Upserts eligible MECP into the Incident Command store — see <a href="#incident-command">Incident Command</a>. Live: peer reports plus B03/R01/B02 control updates, excluding history, store-and-forward, tapback and invalid severity. Seed (mount snapshot or DB rows): records older than <code>INCIDENT_SEED_MAX_AGE_MS</code> (24h) are dropped before any handling, and new reports honor resolved tombstones. Own traffic is skipped except own B01/B03 beacon control (not via S&amp;F/tapback), so Resolve can send B03. Records stored by the bulk message-store writers (<code>wasMessageBulkLoaded</code>, tracked per stored record object) always take the silent seed path even when hydration lands after mount; a DB row never demotes a live record already in the store</li>
 <li>Chat channel/DM chips and the overflow <code>ChatChannelSwitcher</code> (rows + trigger) show a static severity-colored <code>ShieldAlert</code> (<code>MecpUnreadIcon</code>) for the most severe <strong>unread</strong> MECP in that view (<code>computeUnreadMecpSeverityByView</code>, same watermark as unread counts). The Incident tab badge counts open MAYDAY/URGENT only, drills included (<code>incidentTabBadgeCount</code>, S9); quit confirmation still uses non-drill <code>openMaydayUrgentCount</code></li>
@@ -2446,6 +2470,12 @@
 <li>IPC: <code>mecp:appendReceived</code>, <code>mecp:exportReceivedLog</code> (Save dialog)</li>
 <li>Included in support bundles</li>
 <li>App → MECP section: <strong>Export MECP log</strong> (Save dialog) alongside RF bridge settings and a link to upstream docs</li>
+<li>Lines from blocked senders carry <code>"blocked": true</code> (validated as optional boolean in <code>isValidMecpAppendPayload</code>)</li>
+</ul>
+<h2 id="spam-and-full-node-blocks">Spam and full node blocks<a class="headerlink" href="#spam-and-full-node-blocks" title="Permanent link">&para;</a></h2>
+<ul>
+<li>MECP-only blocks and the throttle are described under <a href="#receive-path">Receive path</a>. Node IDs (especially Meshtastic) are spoofable, so blocks stop casual abuse; the throttle covers id-hopping floods.</li>
+<li><strong>Full LoRa node block:</strong> Node Detail <strong>Block</strong> writes <code>blocked_contacts</code> with <code>protocol</code> = <code>meshtastic</code> / <code>meshcore</code> and the stable scope <code>LORA_BLOCKLIST_SCOPE_ID</code> (<code>lora-blocklist</code>), not the per-connection identity id. <code>blockStore</code> holds one bucket per protocol (<code>byProtocol</code>); App hydrates both LoRa buckets on mount (<code>hydrateLoraBlocklists</code>), <code>useReticulumRuntime</code> hydrates Reticulum. <code>PacketRouter.dispatch</code> drops <code>text_message</code> from a blocked sender before the store write and listeners (<code>isLoraSenderBlocked</code>: Meshtastic decimal node id; MeshCore node id or registered 32-byte pubkey hex), and Meshtastic MQTT ingest checks the same helper. Channel senders known only by a MeshCore display-name stub cannot be matched. Rows already in SQLite are not deleted. Unblock in App → Blocked nodes (<code>LoraBlockedNodesSection</code>)</li>
 </ul>
 <h2 id="send-path">Send path<a class="headerlink" href="#send-path" title="Permanent link">&para;</a></h2>
 <ul>
@@ -2496,7 +2526,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 23:32:29 UTC">October 8, 2026</span>
   </span>
 
     
