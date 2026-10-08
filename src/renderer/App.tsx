@@ -2006,8 +2006,9 @@ function AppContent() {
   );
 
   const openIncidentPanel = useCallback(() => {
-    openSlotPanel('Incident');
-  }, [openSlotPanel]);
+    if (activePanelIndex === INCIDENT_PANEL_INDEX) useIncidentStore.getState().markAllSeen();
+    else openSlotPanel('Incident');
+  }, [activePanelIndex, openSlotPanel]);
 
   const openTabFromLauncher = useCallback((tabIndex: number) => {
     setActiveTab(tabIndex);

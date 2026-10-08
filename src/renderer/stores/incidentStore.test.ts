@@ -413,8 +413,10 @@ describe('incidentStore', () => {
         }),
       );
       s.upsertFromMecp(report('MECP/0/R01 B01 M01', { senderId: '!peer', receivedAt: 3_000 }));
+      const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(3_500);
       s.recordAck(id, 'local');
       s.confirmBeacon(id);
+      nowSpy.mockRestore();
       s.upsertFromMecp(report('MECP/3/B03', { receivedAt: 4_000 }));
       s.resolveIncident(id, 5_000);
       s.upsertFromMecp(
@@ -422,15 +424,15 @@ describe('incidentStore', () => {
       );
 
       const events = useIncidentStore.getState().incidents[id].events ?? [];
-      expect(events.map((e) => e.kind)).toEqual([
-        'received',
-        'relayHeard',
-        'ackHeard',
-        'ackSent',
-        'beaconConfirmed',
-        'beaconCancelled',
-        'resolved',
-        'reopened',
+      expect(events.map((e) => [e.kind, e.at])).toEqual([
+        ['received', 1_000],
+        ['relayHeard', 2_000],
+        ['ackHeard', 3_000],
+        ['ackSent', 3_500],
+        ['beaconConfirmed', 3_500],
+        ['beaconCancelled', 4_000],
+        ['resolved', 5_000],
+        ['reopened', 5_000 + 10 * 60_000],
       ]);
       expect(events[0]).toEqual({
         at: 1_000,

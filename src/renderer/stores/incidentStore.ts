@@ -70,7 +70,8 @@ interface IncidentStoreState {
    * incident and B03 clears the sender's active beacon.
    */
   upsertFromMecp: (input: MecpIncidentInput) => string | null;
-  recordAck: (incidentId: string, peerId: string) => void;
+  /** `at` is when the ACK was heard (message time); defaults to now for local sends. */
+  recordAck: (incidentId: string, peerId: string, at?: number) => void;
   /** Local operator acknowledged a B01 beacon (sent B02). */
   confirmBeacon: (incidentId: string) => void;
   /**
@@ -166,13 +167,11 @@ function appendEvent(
   return [...(events ?? []), event].slice(-MAX_EVENTS_PER_INCIDENT);
 }
 
-function withAck(inc: EmergencyIncident, peerId: string): EmergencyIncident {
+function withAck(inc: EmergencyIncident, peerId: string, at: number): EmergencyIncident {
   if (inc.ackPeerIds.includes(peerId)) return inc;
   const ackPeerIds = [...inc.ackPeerIds, peerId];
   const event: IncidentEvent =
-    peerId === 'local'
-      ? { at: Date.now(), kind: 'ackSent' }
-      : { at: Date.now(), kind: 'ackHeard', peerId };
+    peerId === 'local' ? { at, kind: 'ackSent' } : { at, kind: 'ackHeard', peerId };
   return {
     ...inc,
     ackPeerIds,
@@ -301,7 +300,7 @@ export const useIncidentStore = create<IncidentStoreState>()(
             senderId,
           });
           if (!target) return null;
-          get().recordAck(target.id, senderId);
+          get().recordAck(target.id, senderId, now);
           return target.id;
         }
 
@@ -472,11 +471,11 @@ export const useIncidentStore = create<IncidentStoreState>()(
         return existing.id;
       },
 
-      recordAck: (incidentId, peerId) =>
+      recordAck: (incidentId, peerId, at) =>
         set((s) => {
           const inc = s.incidents[incidentId];
           if (!inc || inc.status === 'resolved' || inc.senderId === peerId) return s;
-          const next = withAck(inc, peerId);
+          const next = withAck(inc, peerId, at ?? Date.now());
           return next === inc ? s : { incidents: { ...s.incidents, [incidentId]: next } };
         }),
 
