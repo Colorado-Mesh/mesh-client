@@ -11,11 +11,12 @@ import { selectUnseenCriticalIncidents, useIncidentStore } from '../stores/incid
  * A newly unseen incident flashes the taskbar / bounces the dock; when `repeatMinutes` is set the
  * alert tone replays at that interval until every incident is seen. The first tone is owned by
  * `triggerMecpAlert`, so the repeat only starts one interval later.
+ * When `enabled` is false (not an Incident Command station) neither attention nor repeat runs.
  */
-export function useUnseenEmergencyAlerts(repeatMinutes: number | null): void {
+export function useUnseenEmergencyAlerts(enabled: boolean, repeatMinutes: number | null): void {
   const unseen = useIncidentStore(useShallow(selectUnseenCriticalIncidents));
-  const idsKey = unseen.map((inc) => inc.id).join('|');
-  const hasUnseen = unseen.length > 0;
+  const idsKey = enabled ? unseen.map((inc) => inc.id).join('|') : '';
+  const hasUnseen = enabled && unseen.length > 0;
   const mostSevere = unseen[0]?.severity ?? null;
 
   const knownIdsRef = useRef<ReadonlySet<string>>(new Set());

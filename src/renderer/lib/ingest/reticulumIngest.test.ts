@@ -187,10 +187,9 @@ describe('reticulumIngest side effects — history stamp, no auto-contact', () =
       display_name: 'Peer',
     }));
     useBlockStore.setState({
-      protocol: 'reticulum',
-      identityId: 'id-1',
-      blockedHashes: new Set(),
-      loaded: true,
+      byProtocol: {
+        reticulum: { identityId: 'id-1', hashes: new Set(), entries: [], loaded: true },
+      },
     });
   });
 
@@ -330,10 +329,14 @@ describe('reticulumIngest blocked senders', () => {
     upsertMessage.mockClear();
     messagesState = {};
     useBlockStore.setState({
-      protocol: 'reticulum',
-      identityId: 'id-1',
-      blockedHashes: new Set(['deadbeef1234567890deadbeef12345678']),
-      loaded: true,
+      byProtocol: {
+        reticulum: {
+          identityId: 'id-1',
+          hashes: new Set(['deadbeef1234567890deadbeef12345678']),
+          entries: [],
+          loaded: true,
+        },
+      },
     });
   });
 
@@ -361,10 +364,14 @@ describe('reticulumIngest reactions', () => {
     upsertMessage.mockClear();
     messagesState = {};
     useBlockStore.setState({
-      protocol: 'reticulum',
-      identityId: 'offline-reticulum',
-      blockedHashes: new Set(),
-      loaded: true,
+      byProtocol: {
+        reticulum: {
+          identityId: 'offline-reticulum',
+          hashes: new Set(),
+          entries: [],
+          loaded: true,
+        },
+      },
     });
   });
 
@@ -413,10 +420,9 @@ describe('reticulumIngest reply quotes', () => {
       },
     };
     useBlockStore.setState({
-      protocol: 'reticulum',
-      identityId,
-      blockedHashes: new Set(),
-      loaded: true,
+      byProtocol: {
+        reticulum: { identityId, hashes: new Set(), entries: [], loaded: true },
+      },
     });
   });
 

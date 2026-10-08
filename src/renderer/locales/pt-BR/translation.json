@@ -462,7 +462,14 @@
     "protocolLastEnabled": "Pelo menos um protocolo deve permanecer ativado.",
     "mecpRepeatAlertMinutes": "Repetir MAYDAY invisível/alerta URGENTE (minutos)",
     "mecpRepeatAlertMinutesPlaceholder": "Desligado",
-    "mecpRepeatAlertMinutesHint": "Para estações desacompanhadas. Repete o tom de alerta neste intervalo até que alguém abra a guia Incidente ou marque o alerta visto. Deixe em branco para alertar uma vez."
+    "mecpRepeatAlertMinutesHint": "Para estações desacompanhadas. Repete o tom de alerta neste intervalo até que alguém abra a guia Incidente ou marque o alerta visto. Deixe em branco para alertar uma vez.",
+    "loraBlocklist": {
+      "title": "Nós bloqueados",
+      "description": "As mensagens de nós bloqueados são descartadas antes de chegarem ao Chat, portanto, também não podem gerar alertas MECP. Bloqueie um nó de seu Detalhe de Nó. Os IDs de nó podem ser falsificados, portanto, isso impede o abuso casual, não um invasor determinado.",
+      "empty": "Sem nós bloqueados.",
+      "unblockAria": "Desbloquear {{node}}",
+      "unblockFailed": "Não foi possível desbloquear esse nó."
+    }
   },
   "aria": {
     "closeDialog": "Fechar janela",
@@ -6433,9 +6440,28 @@
       "learnMore": "Como funciona o MECP",
       "protocolSource": "Origem do protocolo no GitHub",
       "showComposeButton": "Mostrar botão MECP no Chat",
-      "showComposeButtonHint": "Desligado por padrão. Quando ativado, o Chat mostra um botão MECP para compor e enviar relatórios de emergência."
+      "showComposeButtonHint": "Desligado por padrão. Quando ativado, o Chat mostra um botão MECP para compor e enviar relatórios de emergência.",
+      "standingAlert": "Estação de Comando de Incidentes (alerta permanente)",
+      "standingAlertHint": "Desligado por padrão. Para EOCs e estações monitoradas: mantém um banner vermelho para cima e pisca a barra de tarefas ou salta a doca até que alguém olhe para cada novo MAYDAY ou URGENTE. Todo mundo ainda ouve o tom de alerta único e vê o brinde."
     },
-    "exportLogEmpty": "Nenhuma mensagem MECP no registro recebido ainda"
+    "exportLogEmpty": "Nenhuma mensagem MECP no registro recebido ainda",
+    "block": {
+      "listTitle": "Remetentes de emergência bloqueados",
+      "listHint": "Os relatórios MECP desses remetentes não soam alertas, abrem incidentes ou são retransmitidos. Eles ainda são gravados no registro de auditoria e ainda são exibidos no Chat.",
+      "listEmpty": "Nenhum remetente bloqueado.",
+      "unblock": "Desbloquear",
+      "unblockAria": "Desbloquear alertas de emergência de {{sender}}",
+      "blockAction": "Bloquear alertas",
+      "blockActionAria": "Bloquear alertas de emergência de {{sender}}",
+      "confirmTitle": "Bloquear alertas de emergência de {{sender}}?",
+      "confirmMessage": "Os relatórios futuros do MECP deste remetente em {{protocol}} não alertarão, abrirão incidentes ou serão retransmitidos. Os IDs de nó podem ser falsificados, portanto, bloqueie apenas um remetente que você tem certeza de que está abusando do MECP. Você pode desbloquear no app → MECP.",
+      "confirmBlock": "Bloco Apenas",
+      "confirmBlockAndResolve": "Bloquear e resolver",
+      "blocked": "Alertas de emergência bloqueados de {{sender}}",
+      "throttledToast": "Silenciar alertas de emergência repetidos de {{sender}}. Seus relatórios ainda aparecem na guia Incidente.",
+      "throttledBlock": "Bloquear remetente",
+      "floodToast": "Muitas estações estão enviando relatórios de emergência de uma só vez. Outros tons de alerta são pausados brevemente; verifique a guia Incidente."
+    }
   },
   "notificationSounds": {
     "title": "Tons de notificação",

@@ -28,6 +28,8 @@ export interface MecpReceivedLogEntry {
   toChannel?: number | string;
   bidirectional?: boolean;
   messageId?: string;
+  /** Sender is on the local MECP blocklist: logged, but not alerted, tracked, or rebroadcast. */
+  blocked?: boolean;
 }
 
 let logFilePath: string | null = null;
@@ -83,6 +85,7 @@ export function formatMecpReceivedLogLine(entry: MecpReceivedLogEntry): string {
     toChannel: entry.toChannel != null ? clampField(entry.toChannel) : undefined,
     bidirectional: entry.bidirectional,
     messageId: entry.messageId != null ? clampField(entry.messageId) : undefined,
+    blocked: entry.blocked === true ? true : undefined,
   };
   return `${JSON.stringify(record)}\n`;
 }
@@ -140,6 +143,7 @@ export function isValidMecpAppendPayload(raw: unknown): raw is MecpReceivedLogEn
     return false;
   }
   if (typeof o.drill !== 'boolean') return false;
+  if (o.blocked !== undefined && typeof o.blocked !== 'boolean') return false;
   if (o.severity != null && (typeof o.severity !== 'number' || o.severity < 0 || o.severity > 3)) {
     return false;
   }

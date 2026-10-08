@@ -165,6 +165,7 @@ import {
 import { applyControlledEditableValue } from '../lib/controlledEditableValue';
 import { sendEmergencyText } from '../lib/emergencySend';
 import { triggerMecpAlert } from '../lib/mecp/mecpAlert';
+import { isMecpAlertThrottled } from '../lib/mecp/mecpAlertThrottle';
 import {
   getCachedMecpLanguage,
   isMecpMessage,
@@ -203,6 +204,7 @@ import {
 import type { ChatMessage, IdentityId, MeshNode, MeshProtocol } from '../lib/types';
 import { isWeatherPost } from '../lib/weatherPosts';
 import type { RequestStoreForwardHistoryResult } from '../runtime/useMeshtasticRuntime';
+import { isMecpSenderBlocked, mecpBlockKey } from '../stores/mecpBlockStore';
 import { useReticulumIdentityActivityStore } from '../stores/reticulumIdentityActivityStore';
 import { useReticulumPeerStore } from '../stores/reticulumPeerStore';
 import { useTimeFormatStore } from '../stores/timeFormatStore';
@@ -1878,6 +1880,14 @@ function ChatPanel({
         if (isOwnNode(msg.sender_id) || msg.isHistory) continue;
         const mecp = tryParseMecp(msg.payload);
         if (mecp?.severity == null) continue;
+        // The watcher owns throttle counting; this path only honors its block/throttle state.
+        const mecpSenderId = String(msg.sender_id);
+        if (
+          isMecpSenderBlocked(protocol, mecpSenderId) ||
+          isMecpAlertThrottled(mecpBlockKey(protocol, mecpSenderId))
+        ) {
+          continue;
+        }
         const peer = resolveDmPeer(msg);
         const msgViewKey = peer != null ? `dm:${peer}` : `ch:${msg.channel}`;
         const dedupeId =

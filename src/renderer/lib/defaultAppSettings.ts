@@ -92,6 +92,11 @@ export const DEFAULT_APP_SETTINGS_SHARED = {
   nodeBatteryLowThreshold: 10,
   /** Alert when an RF link drops unexpectedly (not manual, not mid-reconnect). */
   notifyOnLinkDown: true,
+  /**
+   * Incident Command station mode: standing banner + window attention for unseen MAYDAY/URGENT
+   * (default off; the one-shot siren/toast fires regardless).
+   */
+  mecpStandingAlertEnabled: false,
   /** Replay the MAYDAY/URGENT tone every N minutes while one is unseen; null = off. */
   mecpRepeatAlertMinutes: null as number | null,
   /**

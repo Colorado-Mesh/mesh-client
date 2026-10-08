@@ -143,6 +143,7 @@ import {
 } from '../lib/identityStoreReads';
 import type { MeshtasticIngestSession } from '../lib/ingest/meshtasticIngest';
 import { rehydrateMeshtasticConnectionParamsFromStorage } from '../lib/lastConnectionStorage';
+import { isLoraSenderBlocked } from '../lib/loraBlocklist';
 import { runLoraRfReconnectAttempt } from '../lib/loraRfReconnectAttempt';
 import { meshtasticTransportParams } from '../lib/meshIdentityBridge';
 import {
@@ -1565,6 +1566,7 @@ export function useMeshtasticRuntime() {
       }
       const msg = normalizeMeshtasticMqttChatMessage(rawMsg);
       if (!msg) return;
+      if (isLoraSenderBlocked('meshtastic', msg.sender_id)) return;
 
       if (msg.sender_id) {
         ensureNodeExists(msg.sender_id, 'mqtt');

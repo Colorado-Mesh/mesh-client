@@ -8,11 +8,11 @@ import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
 import { useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { getIdentityIdForProtocol } from '@/renderer/lib/identityByProtocol';
+import { isLoraBlocklistProtocol, LORA_BLOCKLIST_SCOPE_ID } from '@/renderer/lib/loraBlocklist';
 import {
   isValidMeshtasticAdminKeyBase64,
   normalizeMeshtasticAdminKeyInput,
 } from '@/renderer/lib/meshtasticRemoteAdminKeyStorage';
-import { getOfflineIdentityIdForProtocol } from '@/renderer/lib/offlineProtocolIdentities';
 import { writeClipboardText } from '@/renderer/lib/writeClipboardText';
 import { formatIsoDateTime } from '@/shared/formatIsoDate';
 import { buildMeshcoreContactAddUri, type MeshcoreContactType } from '@/shared/meshClientDeepLink';
@@ -170,17 +170,16 @@ function NodeBlockButton({
   publicKeyHex?: string;
 }) {
   const { t } = useTranslation();
-  const identityId =
-    protocol && protocol !== 'reticulum'
-      ? (getIdentityIdForProtocol(protocol) ?? getOfflineIdentityIdForProtocol(protocol))
-      : null;
+  const identityId = protocol && isLoraBlocklistProtocol(protocol) ? LORA_BLOCKLIST_SCOPE_ID : null;
   const blockedHash =
     protocol === 'meshcore' && publicKeyHex
       ? publicKeyHex
       : protocol && protocol !== 'reticulum'
         ? String(node.node_id)
         : '';
-  const isBlocked = useBlockStore((s) => (blockedHash ? s.isBlocked(blockedHash) : false));
+  const isBlocked = useBlockStore((s) =>
+    blockedHash && protocol ? s.isBlocked(blockedHash, protocol) : false,
+  );
   const block = useBlockStore((s) => s.block);
   const unblock = useBlockStore((s) => s.unblock);
   if (!protocol || protocol === 'reticulum' || !identityId || !blockedHash) return null;

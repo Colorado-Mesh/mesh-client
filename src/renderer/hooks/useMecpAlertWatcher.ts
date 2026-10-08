@@ -6,7 +6,8 @@ import { chatViewKeyForMessage } from '@/renderer/lib/chatUnreadCounts';
 import i18n from '@/renderer/lib/i18n';
 import { beaconCancelToNodeForMessage } from '@/renderer/lib/mecp/beaconCancel';
 import { isBeacon, isBeaconCancel } from '@/renderer/lib/mecp/engine';
-import { triggerMecpAlert } from '@/renderer/lib/mecp/mecpAlert';
+import { notifyMecpAlertsSuppressed, triggerMecpAlert } from '@/renderer/lib/mecp/mecpAlert';
+import { recordMecpAlert } from '@/renderer/lib/mecp/mecpAlertThrottle';
 import {
   getCachedMecpLanguage,
   localizeMecpCodes,
@@ -25,6 +26,11 @@ import {
 } from '@/renderer/lib/mecp/sendMecpRebroadcast';
 import type { MeshProtocol } from '@/renderer/lib/types';
 import { INCIDENT_SEED_MAX_AGE_MS, useIncidentStore } from '@/renderer/stores/incidentStore';
+import {
+  isMecpSenderBlocked,
+  mecpBlockKey,
+  useMecpBlockStore,
+} from '@/renderer/stores/mecpBlockStore';
 import { type MessageRecord, wasMessageBulkLoaded } from '@/renderer/stores/messageStore';
 
 export interface MecpWatcherProtocolSlice {
@@ -44,7 +50,7 @@ function messageDedupKey(protocol: string, id: string): string {
 function upsertIncidentFromMessage(
   slice: MecpWatcherProtocolSlice,
   msg: MessageRecord,
-  opts?: { fromSeed?: boolean; localOrigin?: boolean },
+  opts?: { fromSeed?: boolean; localOrigin?: boolean; quiet?: boolean },
 ): void {
   const parsed = tryParseMecp(msg.payload);
   if (parsed?.severity == null) return;
@@ -66,6 +72,7 @@ function upsertIncidentFromMessage(
     fromSeed: opts?.fromSeed,
     ...(localOrigin ? { localOrigin: true } : {}),
     ...(beaconCancelToNode != null ? { beaconCancelToNode } : {}),
+    ...(opts?.quiet ? { quiet: true } : {}),
   });
 }
 
@@ -122,6 +129,7 @@ function seedIncidentFromHistory(slice: MecpWatcherProtocolSlice, msg: MessageRe
     }
     return;
   }
+  if (isMecpSenderBlocked(slice.protocol, String(msg.from))) return;
   upsertIncidentFromMessage(slice, msg, { fromSeed: true });
 }
 
@@ -150,6 +158,7 @@ async function appendAudit(entry: {
   toChannel?: number | string;
   bidirectional?: boolean;
   messageId?: string;
+  blocked?: boolean;
 }): Promise<void> {
   await window.electronAPI.mecp.appendReceived(entry);
 }
@@ -224,14 +233,31 @@ async function processNewMessages(
 
     const decoded = localizeMecpCodes(parsed, lang);
 
+    const senderId = String(msg.from);
+    const senderLabel = msg.senderName ?? senderId;
+    // Blocked senders are audited only: no incident, alert, or rebroadcast.
+    const blocked = isMecpSenderBlocked(slice.protocol, senderId);
+
     // Claim before any await so concurrent effect runs cannot double-process.
     inFlight.add(key);
 
-    upsertIncidentFromMessage(slice, msg);
-
-    if (!alerted.has(key)) {
+    if (!blocked && !alerted.has(key)) {
       alerted.add(key);
-      fireAlert(slice, msg, parsed, mutedViews);
+      // Decide before the upsert so a throttled report is recorded already seen (never dropped).
+      const decision = parsed.isDrill
+        ? null
+        : recordMecpAlert(mecpBlockKey(slice.protocol, senderId));
+      const quiet = decision?.alert === false;
+      upsertIncidentFromMessage(slice, msg, quiet ? { quiet: true } : undefined);
+      if (!quiet) fireAlert(slice, msg, parsed, mutedViews);
+      if (decision?.notify) {
+        const protocol = slice.protocol;
+        notifyMecpAlertsSuppressed(decision.notify, senderLabel, () => {
+          useMecpBlockStore.getState().block(protocol, senderId, senderLabel);
+        });
+      }
+    } else if (!blocked) {
+      upsertIncidentFromMessage(slice, msg);
     }
 
     try {
@@ -245,6 +271,7 @@ async function processNewMessages(
         decoded,
         direction: 'received',
         messageId: msg.id,
+        ...(blocked ? { blocked: true } : {}),
       });
     } catch (e) {
       console.warn('[useMecpAlertWatcher] appendReceived failed', e);
@@ -256,7 +283,7 @@ async function processNewMessages(
     inFlight.delete(key);
     seen.add(key);
 
-    if (slice.protocol === 'meshtastic' || slice.protocol === 'meshcore') {
+    if (!blocked && (slice.protocol === 'meshtastic' || slice.protocol === 'meshcore')) {
       void executeMecpRebroadcast(
         {
           protocol: slice.protocol,

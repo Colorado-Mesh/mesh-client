@@ -46,7 +46,7 @@ describe('useUnseenEmergencyAlerts', () => {
 
   it('requests window attention once per newly unseen incident, never for seed or drills', () => {
     renderHook(() => {
-      useUnseenEmergencyAlerts(null);
+      useUnseenEmergencyAlerts(true, null);
     });
     expect(requestAttention).not.toHaveBeenCalled();
     ingest('MECP/0/M01 seeded', '1', true);
@@ -60,9 +60,21 @@ describe('useUnseenEmergencyAlerts', () => {
     expect(requestAttention).toHaveBeenCalledTimes(2);
   });
 
+  it('does nothing when the standing alert is off, even with a repeat interval set', () => {
+    renderHook(() => {
+      useUnseenEmergencyAlerts(false, 2);
+    });
+    ingest('MECP/0/M01 help', '1');
+    act(() => {
+      vi.advanceTimersByTime(10 * MS_PER_MINUTE);
+    });
+    expect(requestAttention).not.toHaveBeenCalled();
+    expect(playMecpSiren).not.toHaveBeenCalled();
+  });
+
   it('does not repeat the tone when the setting is off', () => {
     renderHook(() => {
-      useUnseenEmergencyAlerts(null);
+      useUnseenEmergencyAlerts(true, null);
     });
     ingest('MECP/0/M01 help', '1');
     act(() => {
@@ -73,7 +85,7 @@ describe('useUnseenEmergencyAlerts', () => {
 
   it('repeats the most severe tone each interval until everything is seen', () => {
     renderHook(() => {
-      useUnseenEmergencyAlerts(2);
+      useUnseenEmergencyAlerts(true, 2);
     });
     const urgent = ingest('MECP/1/T04', '1');
     act(() => {

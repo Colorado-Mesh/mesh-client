@@ -561,6 +561,7 @@ vi.mock('./lib/appSettingsStorage', () => ({
     nodeSilenceAlertMinutes: null,
     nodeBatteryLowThreshold: 20,
     notifyOnLinkDown: true,
+    mecpStandingAlertEnabled: false,
     mecpRepeatAlertMinutes: null,
   }),
 }));

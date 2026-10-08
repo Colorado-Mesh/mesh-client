@@ -190,7 +190,7 @@ export function ingestReticulumLxmfPayload(
   p: ReticulumLxmfPayload,
   ctx: ReticulumIngestMergeContext = {},
 ): boolean {
-  if (p.sender_hash && useBlockStore.getState().isBlocked(p.sender_hash)) {
+  if (p.sender_hash && useBlockStore.getState().isBlocked(p.sender_hash, 'reticulum')) {
     return false;
   }
   const record = payloadToMessageRecord(p, identityId);

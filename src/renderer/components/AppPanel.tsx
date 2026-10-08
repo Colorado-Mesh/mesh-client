@@ -2,18 +2,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { LoraBlockedNodesSection } from '@/renderer/components/LoraBlockedNodesSection';
+import { MecpBlockedSendersSection } from '@/renderer/components/mecp/MecpBlockedSendersSection';
 import { MecpRebroadcastSettings } from '@/renderer/components/mecp/MecpRebroadcastSettings';
 import { copyDebugSnapshotToClipboard } from '@/renderer/lib/debugSnapshot';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { exportSupportBundleToDisk } from '@/renderer/lib/exportSupportBundle';
 import type { MessageClearRefreshOptions } from '@/renderer/lib/hydrateIdentityStoresFromDb';
 import { DetailsChevron } from '@/renderer/lib/icons/detailsChevron';
+import { isLoraBlocklistProtocol } from '@/renderer/lib/loraBlocklist';
 import { parseDatabaseSchemaTooNewFromMessage } from '@/shared/databaseSchemaTooNew';
 import type { SupportBundleMode } from '@/shared/support-bundle.types';
 
 import type { LocationFilter } from '../App';
 import {
   getAppSettingsRaw,
+  getOperationalAlertSettings,
   MECP_REPEAT_ALERT_MAX_MINUTES,
   mergeAppSetting,
   mergeAppSettingsPartial,
@@ -196,6 +200,7 @@ interface AppSettings {
   nodeSilenceAlertMinutes: number | null;
   nodeBatteryLowThreshold: number;
   notifyOnLinkDown: boolean;
+  mecpStandingAlertEnabled: boolean;
   mecpRepeatAlertMinutes: number | null;
   hiddenProtocols: MeshProtocol[];
 }
@@ -218,6 +223,7 @@ function loadSettings(): AppSettings {
     ...DEFAULT_SETTINGS,
     ...parsed,
     hiddenProtocols: sanitizeHiddenProtocols(parsed.hiddenProtocols),
+    mecpStandingAlertEnabled: getOperationalAlertSettings().mecpStandingAlertEnabled,
   };
 }
 
@@ -2304,34 +2310,6 @@ export default function AppPanel({
               {t('appPanel.notifyOnLinkDown')}
             </label>
           </div>
-          <div
-            data-setting-anchor="app.notifications.mecpRepeatAlert"
-            className="flex flex-col gap-1"
-          >
-            <label htmlFor="mecpRepeatAlertMinutes" className="text-ink-300 text-sm">
-              {t('appPanel.mecpRepeatAlertMinutes')}
-            </label>
-            <input
-              id="mecpRepeatAlertMinutes"
-              type="number"
-              min={1}
-              max={MECP_REPEAT_ALERT_MAX_MINUTES}
-              placeholder={t('appPanel.mecpRepeatAlertMinutesPlaceholder')}
-              aria-label={t('appPanel.mecpRepeatAlertMinutes')}
-              value={settings.mecpRepeatAlertMinutes ?? ''}
-              onChange={(e) => {
-                const raw = e.target.value.trim();
-                updateSetting(
-                  'mecpRepeatAlertMinutes',
-                  raw === ''
-                    ? null
-                    : Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.max(1, parseInt(raw, 10) || 1)),
-                );
-              }}
-              className={`${INPUT_BOX_CLASS} w-40`}
-            />
-            <p className="text-muted text-xs">{t('appPanel.mecpRepeatAlertMinutesHint')}</p>
-          </div>
         </div>
         {hasRrcPanel && (
           <div data-setting-anchor="app.notifications.rrcUnreadAll" className="space-y-1">
@@ -2408,6 +2386,58 @@ export default function AppPanel({
             {t('mecp.section.showComposeButtonHint')}
           </p>
         </div>
+        <div data-setting-anchor="app.mecp.standingAlert" className="space-y-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="mecpStandingAlertEnabled"
+              checked={settings.mecpStandingAlertEnabled}
+              onChange={(e) => {
+                updateSetting('mecpStandingAlertEnabled', e.target.checked);
+              }}
+              aria-label={t('mecp.section.standingAlert')}
+              className="accent-brand-green h-4 w-4 rounded"
+            />
+            <label
+              htmlFor="mecpStandingAlertEnabled"
+              className="text-ink-300 cursor-pointer text-sm"
+            >
+              {t('mecp.section.standingAlert')}
+            </label>
+          </div>
+          <p className="text-muted pl-7 text-xs leading-relaxed">
+            {t('mecp.section.standingAlertHint')}
+          </p>
+        </div>
+        <div data-setting-anchor="app.mecp.repeatAlert" className="flex flex-col gap-1 pl-7">
+          <label htmlFor="mecpRepeatAlertMinutes" className="text-ink-300 text-sm">
+            {t('appPanel.mecpRepeatAlertMinutes')}
+          </label>
+          <input
+            id="mecpRepeatAlertMinutes"
+            type="number"
+            min={1}
+            max={MECP_REPEAT_ALERT_MAX_MINUTES}
+            disabled={!settings.mecpStandingAlertEnabled}
+            placeholder={t('appPanel.mecpRepeatAlertMinutesPlaceholder')}
+            aria-label={t('appPanel.mecpRepeatAlertMinutes')}
+            value={settings.mecpRepeatAlertMinutes ?? ''}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              updateSetting(
+                'mecpRepeatAlertMinutes',
+                raw === ''
+                  ? null
+                  : Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.max(1, parseInt(raw, 10) || 1)),
+              );
+            }}
+            className={`${INPUT_BOX_CLASS} w-40 disabled:opacity-50`}
+          />
+          <p className="text-muted text-xs">{t('appPanel.mecpRepeatAlertMinutesHint')}</p>
+        </div>
+        <div data-setting-anchor="app.mecp.blockedSenders">
+          <MecpBlockedSendersSection />
+        </div>
         <button
           data-setting-anchor="app.mecp.exportLog"
           type="button"
@@ -2454,6 +2484,12 @@ export default function AppPanel({
           <MecpRebroadcastSettings />
         </div>
       </section>
+
+      {isLoraBlocklistProtocol(protocol) ? (
+        <div data-setting-anchor="app.blockedNodes">
+          <LoraBlockedNodesSection protocol={protocol} nodes={nodesProp} />
+        </div>
+      ) : null}
 
       {/* Danger Zone — collapsible; same pattern as Appearance → Color scheme */}
       <div className="space-y-2">

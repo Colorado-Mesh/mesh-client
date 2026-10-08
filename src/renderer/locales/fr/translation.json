@@ -462,7 +462,14 @@
     "protocolLastEnabled": "Au moins un protocole doit rester activé.",
     "mecpRepeatAlertMinutes": "Répéter MAYDAY invisible/alerte URGENTE (minutes)",
     "mecpRepeatAlertMinutesPlaceholder": "Arrêt",
-    "mecpRepeatAlertMinutesHint": "Pour les stations sans surveillance. Rejoue la tonalité d'alerte à cet intervalle jusqu'à ce que quelqu'un ouvre l'onglet Incident ou marque l'alerte vue. Laissez vide pour alerter une fois."
+    "mecpRepeatAlertMinutesHint": "Pour les stations sans surveillance. Rejoue la tonalité d'alerte à cet intervalle jusqu'à ce que quelqu'un ouvre l'onglet Incident ou marque l'alerte vue. Laissez vide pour alerter une fois.",
+    "loraBlocklist": {
+      "title": "Noeuds bloqués",
+      "description": "Les messages des nœuds bloqués sont supprimés avant qu'ils n'atteignent le Chat, de sorte qu'ils ne peuvent pas non plus déclencher d'alertes MECP. Bloquer un nœud à partir de ses détails de nœud. Les ID de nœud peuvent être usurpés, ce qui empêche les abus occasionnels, et non un attaquant déterminé.",
+      "empty": "Aucun nœud bloqué.",
+      "unblockAria": "Débloquer {{node}}",
+      "unblockFailed": "Impossible de débloquer ce nœud."
+    }
   },
   "aria": {
     "closeDialog": "Fermer la boîte de dialogue",
@@ -6433,9 +6440,28 @@
       "learnMore": "Fonctionnement du MECP",
       "protocolSource": "Source du protocole sur GitHub",
       "showComposeButton": "Afficher le bouton MECP dans le chat",
-      "showComposeButtonHint": "Désactivé par défaut. Lorsqu'il est activé, Chat affiche un bouton MECP pour composer et envoyer des rapports d'urgence."
+      "showComposeButtonHint": "Désactivé par défaut. Lorsqu'il est activé, Chat affiche un bouton MECP pour composer et envoyer des rapports d'urgence.",
+      "standingAlert": "Poste de commandement des incidents (alerte permanente)",
+      "standingAlertHint": "Désactivé par défaut. Pour les EOC et les stations surveillées : maintient une bannière rouge et fait clignoter la barre des tâches ou fait rebondir le quai jusqu'à ce que quelqu'un regarde chaque nouveau MAYDAY ou URGENT. Tout le monde entend encore le ton d'alerte unique et voit le toast."
     },
-    "exportLogEmpty": "Aucun message MECP dans le journal reçu pour le moment"
+    "exportLogEmpty": "Aucun message MECP dans le journal reçu pour le moment",
+    "block": {
+      "listTitle": "Émetteurs d'urgence bloqués",
+      "listHint": "Les rapports MECP de ces expéditeurs n'émettent pas d'alertes, n'ouvrent pas d'incidents ou ne sont pas rediffusés. Ils sont toujours écrits dans le journal d'audit et s'affichent toujours dans le chat.",
+      "listEmpty": "Aucun expéditeur bloqué.",
+      "unblock": "Débloquer",
+      "unblockAria": "Débloquer les alertes d'urgence de {{sender}}",
+      "blockAction": "Bloquer les alertes",
+      "blockActionAria": "Bloquer les alertes d'urgence de {{sender}}",
+      "confirmTitle": "Bloquer les alertes d'urgence de {{sender}} ?",
+      "confirmMessage": "Les futurs rapports MECP de cet expéditeur sur {{protocol}} n'alerteront pas, n'ouvriront pas d'incidents ou ne seront pas rediffusés. Les ID de nœud peuvent être usurpés, donc ne bloquez qu'un expéditeur dont vous êtes sûr qu'il abuse du MECP. Vous pouvez débloquer dans App → MECP.",
+      "confirmBlock": "Blocage des exécutables",
+      "confirmBlockAndResolve": "Bloquer et résoudre",
+      "blocked": "Alertes d'urgence bloquées de {{sender}}",
+      "throttledToast": "Mise en sourdine des alertes d'urgence répétées de {{sender}}. Leurs rapports apparaissent toujours dans l'onglet Incident.",
+      "throttledBlock": "Bloquer l’expéditeur",
+      "floodToast": "De nombreuses stations envoient des rapports d'urgence à la fois. D'autres tonalités d'alerte sont brièvement mises en pause ; vérifiez l'onglet Incident."
+    }
   },
   "notificationSounds": {
     "title": "Tonalités de notification",

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { useBlockStore } from '../../stores/blockStore';
 import { useConnectionStore } from '../../stores/connectionStore';
 import { getDevice, useDeviceStore } from '../../stores/deviceStore';
 import { addIdentity, useIdentityStore } from '../../stores/identityStore';
@@ -10,6 +11,7 @@ import {
   resetConnectedMeshcoreBleMacForTests,
   setConnectedMeshcoreBleMac,
 } from '../connectedMeshcoreBleMac';
+import { LORA_BLOCKLIST_SCOPE_ID } from '../loraBlocklist';
 import {
   clearMeshtasticConfigIngressGuardsForTests,
   setMeshtasticRemoteConfigTarget,
@@ -497,5 +499,43 @@ describe('PacketRouter', () => {
       ID_MT,
     );
     expect(useNodeStore.getState().nodes[ID_MT][ghostId].lastHeardAt).toBe(priorHeard);
+  });
+
+  it('drops text from a fully blocked Meshtastic sender before store write and listeners', () => {
+    addIdentity({
+      id: ID_MT,
+      protocol: meshtasticProtocol,
+      signature: 'sig-mt-blocked',
+      transports: [],
+      createdAt: 1,
+      lastSeenAt: 1,
+    });
+    useBlockStore.setState({
+      byProtocol: {
+        meshtastic: {
+          identityId: LORA_BLOCKLIST_SCOPE_ID,
+          hashes: new Set(['77']),
+          entries: [],
+          loaded: true,
+        },
+      },
+    });
+    const listener = vi.fn();
+    const detach = packetRouter.addListener(listener);
+    try {
+      const text = (id: string, from: number): DomainEvent => ({
+        type: 'text_message',
+        payload: { id, from, to: 0xffffffff, payload: 'MECP/0/M01', channelIndex: 0, timestamp: 1 },
+      });
+      packetRouter.dispatch(text('blocked', 77), ID_MT);
+      packetRouter.dispatch(text('allowed', 78), ID_MT);
+      const stored = useMessageStore.getState().messages[ID_MT] ?? {};
+      expect(stored.blocked).toBeUndefined();
+      expect(stored.allowed).toBeDefined();
+      expect(listener).toHaveBeenCalledTimes(1);
+    } finally {
+      detach();
+      useBlockStore.setState({ byProtocol: {} });
+    }
   });
 });

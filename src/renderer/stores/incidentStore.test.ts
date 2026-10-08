@@ -486,6 +486,16 @@ describe('incidentStore', () => {
       expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toEqual([]);
     });
 
+    it('quiet (alert-throttled) reports are recorded but never raise the standing alert', async () => {
+      const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
+      const s = useIncidentStore.getState();
+      const id = s.upsertFromMecp({ ...report('MECP/1/T04', { senderId: '!q' }), quiet: true })!;
+      expect(useIncidentStore.getState().incidents[id].status).toBe('open');
+      // Escalation into MAYDAY from the same quiet sender still does not clear seenAt.
+      s.upsertFromMecp({ ...report('MECP/0/T04', { senderId: '!q' }), quiet: true });
+      expect(selectUnseenCriticalIncidents(useIncidentStore.getState())).toEqual([]);
+    });
+
     it('markSeen, markAllSeen, resolve and beacon confirm clear the standing alert', async () => {
       const { useIncidentStore, selectUnseenCriticalIncidents } = await loadStore();
       const s = useIncidentStore.getState();

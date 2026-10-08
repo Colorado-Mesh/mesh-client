@@ -462,7 +462,14 @@
     "protocolLastEnabled": "至少有一个协议必须保持启用状态。",
     "mecpRepeatAlertMinutes": "重复看不见的MAYDAY/紧急警报（分钟）",
     "mecpRepeatAlertMinutesPlaceholder": "关闭",
-    "mecpRepeatAlertMinutesHint": "对于无人值守的站点。以此间隔重播警报音，直到有人打开事件选项卡或标记看到的警报。留空以提醒一次。"
+    "mecpRepeatAlertMinutesHint": "对于无人值守的站点。以此间隔重播警报音，直到有人打开事件选项卡或标记看到的警报。留空以提醒一次。",
+    "loraBlocklist": {
+      "title": "已阻止的节点",
+      "description": "来自被阻止节点的消息在到达聊天室之前被丢弃，因此它们也无法发出MECP警报。从节点详细信息中阻止节点。节点ID可以被欺骗，因此这可以阻止偶然的滥用，而不是一个坚定的攻击者。",
+      "empty": "没有被阻止的节点。",
+      "unblockAria": "取消屏蔽{{node}}",
+      "unblockFailed": "无法取消阻止该节点。"
+    }
   },
   "aria": {
     "closeDialog": "关闭对话框",
@@ -6433,9 +6440,28 @@
       "learnMore": "MECP的工作原理",
       "protocolSource": "GitHub上的协议源",
       "showComposeButton": "在聊天中显示MECP按钮",
-      "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。"
+      "showComposeButtonHint": "默认情况下关闭。启用时，聊天显示一个MECP按钮，用于撰写和发送紧急报告。",
+      "standingAlert": "事故指挥站（常备警报）",
+      "standingAlertHint": "默认情况下关闭。对于EOC和监控站：保持红色横幅并闪烁任务栏或反弹码头，直到有人查看每个新的MAYDAY或紧急情况。每个人仍然听到一次性的警报声，看到了祝酒词。"
     },
-    "exportLogEmpty": "收到的日志中还没有MECP消息"
+    "exportLogEmpty": "收到的日志中还没有MECP消息",
+    "block": {
+      "listTitle": "已屏蔽的紧急发件人",
+      "listHint": "来自这些发件人的MECP报告不会发出警报、打开事件或重新广播。它们仍会写入审核日志，并显示在聊天中。",
+      "listEmpty": "封鎖的寄件者",
+      "unblock": "取消屏蔽",
+      "unblockAria": "取消屏蔽来自{{sender}}的紧急警报",
+      "blockAction": "屏蔽警报",
+      "blockActionAria": "屏蔽来自{{sender}}的紧急警报",
+      "confirmTitle": "屏蔽来自{{sender}}的紧急警报？",
+      "confirmMessage": "此发件人于{{protocol}}提交的未来MECP报告将不会发出警报、打开事件或重新广播。节点ID可能会被欺骗，因此只能阻止您确定滥用MECP的发件人。您可以在应用程序→MECP中取消屏蔽。",
+      "confirmBlock": "仅阻止",
+      "confirmBlockAndResolve": "屏蔽和解决",
+      "blocked": "已屏蔽来自{{sender}}的紧急警报",
+      "throttledToast": "将来自{{sender}}的重复紧急警报静音。他们的报告仍会显示在“事件”标签卡中。",
+      "throttledBlock": "封鎖寄件人",
+      "floodToast": "许多车站同时发送紧急报告。进一步的警报提示音将暂停；请检查事件选项卡。"
+    }
   },
   "notificationSounds": {
     "title": "通知提示音",

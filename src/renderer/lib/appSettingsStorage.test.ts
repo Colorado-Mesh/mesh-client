@@ -52,6 +52,18 @@ describe('appSettingsStorage', () => {
     expect(getOperationalAlertSettings().mecpRepeatAlertMinutes).toBe(expected);
   });
 
+  it.each([
+    [{}, false],
+    [{ mecpStandingAlertEnabled: true }, true],
+    [{ mecpStandingAlertEnabled: false, mecpRepeatAlertMinutes: 5 }, false],
+    // Opted into repeats before the toggle existed: keep station mode.
+    [{ mecpRepeatAlertMinutes: 5 }, true],
+    [{ mecpStandingAlertEnabled: 'yes' }, false],
+  ])('mecpStandingAlertEnabled for %j is %s (off by default)', (stored, expected) => {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify(stored));
+    expect(getOperationalAlertSettings().mecpStandingAlertEnabled).toBe(expected);
+  });
+
   it('mergeAppSetting migrates legacy then merges', () => {
     localStorage.setItem(LEGACY_KEY, JSON.stringify({ existing: true }));
     mergeAppSetting('newKey', 42, 'appSettingsStorage.test merge');

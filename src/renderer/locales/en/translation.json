@@ -136,6 +136,13 @@
     "mapFilterDesc": "Hides nodes beyond a set distance from your device. Filtering is display-only — nodes remain in the database.",
     "noGpsFix": "Your device has no GPS fix — filter is enabled but all nodes are shown.",
     "requiresGpsFix": "Note: Requires your device to have a valid GPS fix.",
+    "loraBlocklist": {
+      "title": "Blocked nodes",
+      "description": "Messages from blocked nodes are dropped before they reach Chat, so they cannot raise MECP alerts either. Block a node from its Node Detail. Node IDs can be spoofed, so this stops casual abuse, not a determined attacker.",
+      "empty": "No blocked nodes.",
+      "unblockAria": "Unblock {{node}}",
+      "unblockFailed": "Could not unblock that node."
+    },
     "reticulumBlocklist": {
       "title": "Blocked contacts",
       "description": "Blocked senders are dropped before their LXMF messages reach your inbox. Export the list to move it to another install, or import a list to block many senders at once.",
@@ -6616,7 +6623,26 @@
       "learnMore": "How MECP works (site & video)",
       "protocolSource": "Protocol source on GitHub",
       "showComposeButton": "Show MECP button in Chat",
-      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports."
+      "showComposeButtonHint": "Off by default. When enabled, Chat shows a MECP button to compose and send emergency reports.",
+      "standingAlert": "Incident Command station (standing alert)",
+      "standingAlertHint": "Off by default. For EOCs and monitored stations: keeps a red banner up and flashes the taskbar or bounces the dock until someone looks at each new MAYDAY or URGENT. Everyone still hears the one-time alert tone and sees the toast."
+    },
+    "block": {
+      "listTitle": "Blocked emergency senders",
+      "listHint": "MECP reports from these senders do not sound alerts, open incidents, or get rebroadcast. They are still written to the audit log and still show in Chat.",
+      "listEmpty": "No blocked senders.",
+      "unblock": "Unblock",
+      "unblockAria": "Unblock emergency alerts from {{sender}}",
+      "blockAction": "Block alerts",
+      "blockActionAria": "Block emergency alerts from {{sender}}",
+      "confirmTitle": "Block emergency alerts from {{sender}}?",
+      "confirmMessage": "Future MECP reports from this sender on {{protocol}} will not alert, open incidents, or be rebroadcast. Node IDs can be spoofed, so only block a sender you are sure is abusing MECP. You can unblock in App → MECP.",
+      "confirmBlock": "Block only",
+      "confirmBlockAndResolve": "Block and resolve",
+      "blocked": "Blocked emergency alerts from {{sender}}",
+      "throttledToast": "Silencing repeated emergency alerts from {{sender}}. Their reports still appear in the Incident tab.",
+      "throttledBlock": "Block sender",
+      "floodToast": "Many stations are sending emergency reports at once. Further alert tones are paused briefly; check the Incident tab."
     },
     "compose": {
       "title": "Compose MECP report",
