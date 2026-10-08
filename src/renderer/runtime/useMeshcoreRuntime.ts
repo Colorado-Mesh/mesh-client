@@ -450,6 +450,7 @@ import {
   markMeshcoreCompanionTx,
   meshcoreWaitingMessagesPeriodicPollDue,
   preemptMeshcoreSilentBulkForCli,
+  resetMeshcoreWaitingMessagesDrainSchedule,
   scheduleMeshcoreWaitingMessagesDrain,
   shouldRunMeshcoreWaitingMessagesPeriodicPoll,
 } from '../lib/meshcoreWaitingMessagesDrain';
@@ -3226,6 +3227,10 @@ export function useMeshcoreRuntime() {
       // (BLE auto-connect vs manual TCP race — openMeshCoreTransport can leave a live
       // meshcore:tcp socket before attachRfSession sets driverConnected).
       meshcoreSetupGenerationRef.current += 1;
+      resetMeshcoreWaitingMessagesDrainSchedule();
+      resetMeshcoreRepeaterRpcInFlightOnDisconnect();
+      setMeshcoreRepeaterRpcPending(new Map());
+      repeaterCommandServiceRef.current?.clear();
       resetMeshcoreRoomAutoLoginSingleFlight();
       if (type === 'ble' && bleConnectInProgressRef.current) {
         console.debug('[useMeshcoreRuntime] prepareRfConnect BLE superseding in-flight connect');
@@ -3824,6 +3829,10 @@ export function useMeshcoreRuntime() {
     // Abort in-flight initConn immediately (before async driver teardown). Neal TCP: peer FIN
     // after getContacts raced past a gen bump that used to live only inside the async IIFE.
     meshcoreSetupGenerationRef.current += 1;
+    resetMeshcoreWaitingMessagesDrainSchedule();
+    resetMeshcoreRepeaterRpcInFlightOnDisconnect();
+    setMeshcoreRepeaterRpcPending(new Map());
+    repeaterCommandServiceRef.current?.clear();
     resetMeshcoreRoomAutoLoginSingleFlight();
     if (
       !meshcoreEverConfiguredRef.current &&

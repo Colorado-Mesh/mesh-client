@@ -45,6 +45,27 @@ describe('meshcore repeater CLI working state', () => {
     expect(cleanup).toContain('endMeshcoreCliReplyHold();');
   });
 
+  it.each([
+    ['handleMeshcoreConnectionLost', 'meshcoreRfReconnectRef.current.onLinkLost()'],
+    ['prepareRfConnect', 'await connectionDriver.disconnect'],
+  ])('clears the superseded CLI session in %s before reconnecting', (callback, boundary) => {
+    const body = extractUseCallbackBody(RUNTIME_SOURCE, callback);
+    const generationIdx = body.indexOf('meshcoreSetupGenerationRef.current += 1;');
+    const boundaryIdx = body.indexOf(boundary);
+    expect(generationIdx).toBeGreaterThan(-1);
+    expect(boundaryIdx).toBeGreaterThan(generationIdx);
+    for (const cleanup of [
+      'resetMeshcoreWaitingMessagesDrainSchedule();',
+      'resetMeshcoreRepeaterRpcInFlightOnDisconnect();',
+      'setMeshcoreRepeaterRpcPending(new Map());',
+      'repeaterCommandServiceRef.current?.clear();',
+    ]) {
+      const cleanupIdx = body.indexOf(cleanup);
+      expect(cleanupIdx, cleanup).toBeGreaterThan(generationIdx);
+      expect(cleanupIdx, cleanup).toBeLessThan(boundaryIdx);
+    }
+  });
+
   it('observes reply rejection before a queued send can be cancelled', () => {
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
     const registerIdx = cliBody.indexOf('service.registerPendingCommand');

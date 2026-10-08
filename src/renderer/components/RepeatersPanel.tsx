@@ -469,6 +469,8 @@ export default function RepeatersPanel({
   const [neighborsUiPending, setNeighborsUiPending] = useState<Set<number>>(new Set());
   const meshcoreNeighborsRef = useRef(meshcoreNeighbors);
   meshcoreNeighborsRef.current = meshcoreNeighbors;
+  const meshcoreTraceResultsRef = useRef(meshcoreTraceResults);
+  meshcoreTraceResultsRef.current = meshcoreTraceResults;
   const [expandedTelemetry, setExpandedTelemetry] = useState<Set<number>>(new Set());
   const [expandedPath, setExpandedPath] = useState<Set<number>>(new Set());
   const [expandedCli, setExpandedCli] = useState<Set<number>>(new Set());
@@ -819,7 +821,7 @@ export default function RepeatersPanel({
   };
 
   const ensureCliRoutePrimed = async (nodeId: number): Promise<boolean> => {
-    if (meshcoreTraceResults.get(nodeId) != null) return true;
+    if (meshcoreTraceResultsRef.current.get(nodeId) != null) return true;
     const hops = nodes.get(nodeId)?.hops_away ?? 0;
     if (hops <= 0) return true;
     addToast(t('repeatersPanel.cliAutoPingToast'), 'info');
@@ -829,7 +831,7 @@ export default function RepeatersPanel({
         addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
         return false;
       }
-      if (meshcoreTraceResults.get(nodeId) != null || pingOk === true) return true;
+      if (meshcoreTraceResultsRef.current.get(nodeId) != null || pingOk === true) return true;
       addToast(t('repeatersPanel.cliAutoPingFailed'), 'error');
       return false;
     } catch (e) {

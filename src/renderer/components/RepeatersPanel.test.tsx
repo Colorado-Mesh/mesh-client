@@ -1282,6 +1282,77 @@ describe('RepeatersPanel', () => {
     expect(onPendingFocusConsumed).toHaveBeenCalled();
   });
 
+  it.each([true, undefined])(
+    'reuses the route learned during a configuration read when ping returns %s',
+    async (pingResult) => {
+      const user = userEvent.setup();
+      let finishPing!: (result: boolean | undefined) => void;
+      const firstPing = new Promise<boolean | undefined>((resolve) => {
+        finishPing = resolve;
+      });
+      const onPing = vi.fn().mockResolvedValue(pingResult).mockReturnValueOnce(firstPing);
+      const replies = new Map([
+        ['get name', '> Test Repeater'],
+        ['get owner.info', '> Operator'],
+        ['get lat', '> 0'],
+        ['get lon', '> 0'],
+      ]);
+      const onSendCliCommand = vi.fn((_nodeId: number, command: string) => {
+        const reply = replies.get(command);
+        if (reply == null) throw new Error(`Unexpected command: ${command}`);
+        return Promise.resolve(reply);
+      });
+      const props = {
+        ...makeBaseProps(),
+        nodes: new Map([[repeater.node_id, { ...repeater, hops_away: 2 }]]),
+        onPing,
+        onSendCliCommand,
+      };
+      const { rerender } = render(<RepeatersPanel {...props} />);
+      await chooseRowAction(user, 'Configure');
+      await user.click(screen.getByText('Identity and location'));
+      await waitFor(() => {
+        expect(onPing).toHaveBeenCalledTimes(1);
+      });
+
+      rerender(
+        <RepeatersPanel
+          {...props}
+          meshcoreTraceResults={
+            new Map([
+              [
+                repeater.node_id,
+                {
+                  pathLen: 2,
+                  pathHashes: [0xaa, 0xbb],
+                  hashSizeBytes: 1,
+                  pathSnrs: [1, 2],
+                  lastSnr: 1,
+                  tag: 0,
+                },
+              ],
+            ])
+          }
+        />,
+      );
+      await act(async () => {
+        finishPing(pingResult);
+        await firstPing;
+      });
+
+      await waitFor(() => {
+        expect(screen.getByRole('textbox', { name: 'Name' })).toBeEnabled();
+      });
+      expect(onSendCliCommand.mock.calls.map(([, command]) => command)).toEqual([
+        'get name',
+        'get owner.info',
+        'get lat',
+        'get lon',
+      ]);
+      expect(onPing).toHaveBeenCalledTimes(1);
+    },
+  );
+
   it('pins favorited rows first when sorting by name', async () => {
     const user = userEvent.setup();
     const now = Math.floor(Date.now() / 1000);
