@@ -6147,14 +6147,32 @@ ipcMain.handle(
       if (!db) return { changes: 0 };
       const safeLastAdvert = sanitizeMeshcoreLastAdvertForDb(lastAdvert);
       const coords = sanitizeMeshcoreAdvLatLonForDb(advLat, advLon);
+      // Monotonic: a rebooted repeater with a reset RTC must not drag last_advert backwards.
+      const lastAdvertSql =
+        'last_advert = CASE WHEN ? IS NOT NULL AND ? > COALESCE(last_advert, 0) THEN ? ELSE last_advert END';
       if (advName !== undefined) {
         db.prepareOnce(
-          'UPDATE meshcore_contacts SET last_advert = ?, adv_lat = ?, adv_lon = ?, adv_name = ? WHERE node_id = ?',
-        ).run(safeLastAdvert, coords.adv_lat, coords.adv_lon, advName ?? null, safeNodeId);
+          `UPDATE meshcore_contacts SET ${lastAdvertSql}, adv_lat = ?, adv_lon = ?, adv_name = ? WHERE node_id = ?`,
+        ).run(
+          safeLastAdvert,
+          safeLastAdvert,
+          safeLastAdvert,
+          coords.adv_lat,
+          coords.adv_lon,
+          advName ?? null,
+          safeNodeId,
+        );
       } else {
         db.prepareOnce(
-          'UPDATE meshcore_contacts SET last_advert = ?, adv_lat = ?, adv_lon = ? WHERE node_id = ?',
-        ).run(safeLastAdvert, coords.adv_lat, coords.adv_lon, safeNodeId);
+          `UPDATE meshcore_contacts SET ${lastAdvertSql}, adv_lat = ?, adv_lon = ? WHERE node_id = ?`,
+        ).run(
+          safeLastAdvert,
+          safeLastAdvert,
+          safeLastAdvert,
+          coords.adv_lat,
+          coords.adv_lon,
+          safeNodeId,
+        );
       }
     } catch (err) {
       console.error(

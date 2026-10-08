@@ -362,7 +362,9 @@ function applyMeshcoreRfAdvertToStore(
   const existing = useNodeStore.getState().nodes[identityId]?.[nodeId];
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Node may be absent when its identity bucket is missing.
   const hwModel = mergeHwModelOnContactUpdate(existing?.hwModel, incomingHw);
-  const lastHeardAt = advert.timestampSec > 0 ? advert.timestampSec : Math.floor(now / 1000);
+  // We physically received this packet now; the advert timestamp is the sender's RTC, which
+  // resets after a repeater reboot and would make a live neighbor look months stale.
+  const lastHeardAt = Math.floor(now / 1000);
 
   persistMeshcoreNodeInfoAfterAdvert(
     identityId,

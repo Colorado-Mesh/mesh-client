@@ -9,6 +9,7 @@ import {
 import * as meshcorePathChainDisplay from '../meshcorePathChainDisplay';
 import { pubkeyToNodeId } from '../meshcoreUtils';
 import { setMeshtasticConnectedMyNodeNum } from '../meshtasticConnectedNodeRef';
+import { getNodeStatus } from '../nodeStatus';
 import { useRelayCoverageStore } from '../relayCoverage/relayCoverageStore';
 import { meshNodeToNodeRecord } from '../storeRecordAdapters';
 import type { MeshNode, TelemetryPoint } from '../types';
@@ -247,13 +248,14 @@ function buildFloodAdvertPacket(opts: {
   publicKey: Uint8Array;
   name: string;
   deviceRole: number;
+  timestampSec?: number;
 }): Uint8Array {
   const nameBytes = new TextEncoder().encode(opts.name);
   const raw = new Uint8Array(2 + 32 + 4 + 64 + 1 + nameBytes.length);
   raw[0] = (4 << 2) | 1; // ADVERT + FLOOD
   raw[1] = 0; // 0 hops
   raw.set(opts.publicKey, 2);
-  new DataView(raw.buffer).setUint32(34, 1_700_000_000, true);
+  new DataView(raw.buffer).setUint32(34, opts.timestampSec ?? 1_700_000_000, true);
   raw[102] = 0x80 | (opts.deviceRole & 0x0f);
   raw.set(nameBytes, 103);
   return raw;
@@ -329,6 +331,8 @@ describe('handleMeshcoreRfRx advert identity', () => {
     vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockClear();
     vi.mocked(window.electronAPI.db.saveMeshcoreContact).mockResolvedValue(undefined);
     vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
+    const nowMs = 1_700_000_100_000;
+    vi.spyOn(Date, 'now').mockReturnValue(nowMs);
 
     handleMeshcoreRfRx(
       {
@@ -342,12 +346,57 @@ describe('handleMeshcoreRfRx advert identity', () => {
     expect(useNodeStore.getState().nodes[ID][nodeId].longName).toBe('Bob');
     expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
       nodeId,
-      1_700_000_000,
+      Math.floor(nowMs / 1000),
       null,
       null,
       'Bob',
     );
     expect(window.electronAPI.db.saveMeshcoreContact).not.toHaveBeenCalled();
+  });
+
+  it('uses receive time when a rebooted repeater adverts with a reset (220-day-old) RTC', () => {
+    const publicKey = Uint8Array.from({ length: 32 }, (_, i) => (i + 11) & 0xff);
+    const nodeId = pubkeyToNodeId(publicKey);
+    const nowMs = 1_791_501_107_757;
+    const nowSec = Math.floor(nowMs / 1000);
+    const twoHoursAgoSec = nowSec - 2 * 3600;
+    const rebootedRtcSec = nowSec - 220 * 86_400;
+    vi.spyOn(Date, 'now').mockReturnValue(nowMs);
+    upsertNodeRecord(ID, {
+      nodeId,
+      longName: 'JC MINI RPTR 1',
+      hwModel: 'Repeater',
+      lastHeardAt: twoHoursAgoSec,
+      publicKey,
+    });
+    const { deps } = makeDeps({ myNodeNumRef: ref(1) });
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockClear();
+    vi.mocked(window.electronAPI.db.updateMeshcoreContactAdvert).mockResolvedValue(undefined);
+
+    handleMeshcoreRfRx(
+      {
+        lastSnr: 11.5,
+        lastRssi: -27,
+        raw: buildFloodAdvertPacket({
+          publicKey,
+          name: 'JC MINI RPTR 1',
+          deviceRole: 2,
+          timestampSec: rebootedRtcSec,
+        }),
+      },
+      deps,
+    );
+
+    const record = useNodeStore.getState().nodes[ID][nodeId];
+    expect(record.lastHeardAt).toBe(nowSec);
+    expect(getNodeStatus(record.lastHeardAt ?? 0, undefined, undefined, nowMs)).toBe('online');
+    expect(window.electronAPI.db.updateMeshcoreContactAdvert).toHaveBeenCalledWith(
+      nodeId,
+      nowSec,
+      null,
+      null,
+      'JC MINI RPTR 1',
+    );
   });
 
   it('revives a locally deleted contact when a live RF advert is heard', () => {

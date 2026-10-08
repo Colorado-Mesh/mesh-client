@@ -1099,7 +1099,7 @@ export function useMeshcoreRuntime() {
     const storeId =
       meshcoreIdentityIdRef.current ?? meshcorePendingDriverIdentityRef.current ?? null;
     if (!storeId) return;
-    syncNodesMapToIdentityStore(storeId, nodes);
+    syncNodesMapToIdentityStore(storeId, nodes, { monotonicLastHeard: true });
   }, [nodes, meshcoreIdentityId]);
 
   useEffect(() => {

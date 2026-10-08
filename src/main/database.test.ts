@@ -274,6 +274,12 @@ describe('saveMeshcoreContact UPSERT COALESCE preservation', () => {
     );
   });
 
+  it('only moves last_advert forward', () => {
+    expect(DATABASE_SOURCE).toMatch(
+      /excluded\.last_advert > COALESCE\(meshcore_contacts\.last_advert, 0\) THEN excluded\.last_advert/,
+    );
+  });
+
   it('uses COALESCE for adv_lat to preserve existing values', () => {
     expect(DATABASE_SOURCE).toMatch(
       /adv_lat = CASE WHEN excluded\.adv_lat IS NOT NULL AND excluded\.adv_lat != 0/,

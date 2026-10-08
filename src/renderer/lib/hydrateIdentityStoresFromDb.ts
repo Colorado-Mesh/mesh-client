@@ -16,6 +16,7 @@ import {
   type NodeRecord,
   replaceNodeRecordsForIdentity,
   upsertNodeRecordsForIdentity,
+  useNodeStore,
 } from '../stores/nodeStore';
 import { MAX_IN_MEMORY_CHAT_MESSAGES, trimChatMessagesToMax } from './chatInMemoryBuffer';
 import { errLikeToLogString } from './errLikeToLogString';
@@ -36,6 +37,7 @@ import {
   savedMessageToChatMessage,
 } from './meshtasticDbCacheHydration';
 import { getMeshtasticMessageLoadLimit } from './meshtasticMessageLoadLimit';
+import { lastHeardToUnixSeconds } from './nodeStatus';
 import {
   chatMessageToMessageRecord,
   meshNodeToNodeRecord,
@@ -204,14 +206,32 @@ export async function hydrateMeshcoreNodesFromDb(
 }
 
 /** Push an in-memory node map into identity-scoped Zustand (e.g. after radio contact sync). */
+export interface SyncNodesMapToIdentityStoreOpts {
+  /**
+   * Never lower an existing `lastHeardAt`. Other ingress paths (MeshCore RF RX, PacketRouter)
+   * bump the store directly, so a stale runtime Map must not roll that freshness back.
+   */
+  monotonicLastHeard?: boolean;
+}
+
 export function syncNodesMapToIdentityStore(
   identityId: IdentityId,
   nodes: Map<number, MeshNode>,
+  opts?: SyncNodesMapToIdentityStoreOpts,
 ): void {
-  upsertNodeRecordsForIdentity(
-    identityId,
-    Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node)),
-  );
+  const records = Array.from(nodes.values(), (node) => meshNodeToNodeRecord(node));
+  if (opts?.monotonicLastHeard) {
+    const existingById = useNodeStore.getState().nodes[identityId] as
+      Record<number, NodeRecord | undefined> | undefined;
+    for (const record of records) {
+      const existingLastHeard = existingById?.[record.nodeId]?.lastHeardAt;
+      if (existingLastHeard == null) continue;
+      const existingSec = lastHeardToUnixSeconds(existingLastHeard);
+      const incomingSec = lastHeardToUnixSeconds(record.lastHeardAt ?? 0);
+      if (existingSec > incomingSec) record.lastHeardAt = existingLastHeard;
+    }
+  }
+  upsertNodeRecordsForIdentity(identityId, records);
 }
 
 /** Replace identity node bucket from a full map (post-delete DB reload). */
