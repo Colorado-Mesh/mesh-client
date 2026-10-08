@@ -21,6 +21,7 @@ const EXPECTED_TOP_LEVEL_KEYS = [
   'chat',
   'log',
   'support',
+  'translation',
 ];
 
 describe('preload bridge contract', () => {
@@ -65,5 +66,15 @@ describe('preload bridge contract', () => {
     expect(TYPES_SOURCE).toContain('getRendererLiveness:');
     expect(TYPES_SOURCE).not.toMatch(/\n {2}getRendererLiveness:/);
     expect(TYPES_SOURCE).toContain('RendererLivenessSnapshot');
+  });
+});
+
+describe('translation preload boundary', () => {
+  it('exposes only typed methods and unsubscribes from progress', () => {
+    expect(TYPES_SOURCE).toContain('translation: TranslationAPI');
+    expect(PRELOAD_SOURCE).toContain("ipcRenderer.invoke('translation:translate', request)");
+    expect(PRELOAD_SOURCE).toContain(
+      "ipcRenderer.removeListener('translation:packProgress', handler)",
+    );
   });
 });

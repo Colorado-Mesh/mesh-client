@@ -40,6 +40,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
+import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
 import {
   type BatchedMessageAnnouncer,
   createBatchedMessageAnnouncer,
@@ -4046,6 +4048,15 @@ function ChatPanel({
                               })()}
                             </div>
 
+                            <TranslatedMessageBlock
+                              messageKey={`${protocol}:${identityId ?? myNodeNum}:${msg.id}`}
+                              text={msg.payload}
+                              incoming={!isOwn && isActive}
+                              onContentResize={() => {
+                                scheduleMessageRowRemeasure(i);
+                              }}
+                            />
+
                             {/* Transport + RF hop count on continuations (no header line) */}
                             {isContinuation && incomingMeta && (
                               <div className="mt-0.5 flex items-center justify-end gap-2">
@@ -4169,6 +4180,10 @@ function ChatPanel({
                                 size={14}
                               />
                             </button>
+                            <MessageTranslateButton
+                              messageKey={`${protocol}:${identityId ?? myNodeNum}:${msg.id}`}
+                              text={msg.payload}
+                            />
                             {isConnected && (
                               <>
                                 <button

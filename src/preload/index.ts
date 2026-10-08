@@ -60,6 +60,11 @@ import type {
   TAKServerStatus,
   TAKSettings,
 } from '../shared/tak-types';
+import type {
+  LibreTranslationConfig,
+  TranslationProgress,
+  TranslationRequest,
+} from '../shared/translation-types';
 
 export type { GattBleDevice, GattBleSessionId, SerialPort };
 
@@ -69,6 +74,28 @@ async function unwrapReticulumProxy<T = unknown>(result: Promise<unknown>): Prom
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  translation: {
+    getStatus: () => ipcRenderer.invoke('translation:getStatus'),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke('translation:setEnabled', enabled),
+    translate: (request: TranslationRequest) =>
+      ipcRenderer.invoke('translation:translate', request),
+    detect: (text: string) => ipcRenderer.invoke('translation:detect', text),
+    listPacks: () => ipcRenderer.invoke('translation:listPacks'),
+    installPack: (id: string) => ipcRenderer.invoke('translation:installPack', id),
+    cancelInstall: (id: string) => ipcRenderer.invoke('translation:cancelInstall', id),
+    deletePack: (id: string) => ipcRenderer.invoke('translation:deletePack', id),
+    removeAll: () => ipcRenderer.invoke('translation:removeAll'),
+    setLibreConfig: (config: LibreTranslationConfig) =>
+      ipcRenderer.invoke('translation:setLibreConfig', config),
+    testLibreConfig: () => ipcRenderer.invoke('translation:testLibreConfig'),
+    onPackProgress: (callback: (progress: TranslationProgress) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, progress: TranslationProgress) => {
+        callback(progress);
+      };
+      ipcRenderer.on('translation:packProgress', handler);
+      return () => ipcRenderer.removeListener('translation:packProgress', handler);
+    },
+  },
   // ─── Database operations ────────────────────────────────────────
   db: {
     saveMessage: (message: {

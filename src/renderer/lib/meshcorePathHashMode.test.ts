@@ -21,6 +21,20 @@ describe('meshcorePathHashMode', () => {
     expect(appPanelSettingsPersistPayload(settings)).toEqual({ chatCompactMode: true });
   });
 
+  it('leaves translation preferences to their live settings owner', () => {
+    expect(
+      appPanelSettingsPersistPayload({
+        chatCompactMode: true,
+        translationEnabled: false,
+        translationTargetLanguage: 'en',
+        translationReadLanguages: ['en'],
+        translationAutoEnabled: false,
+        translationLibreEnabled: false,
+        translationLibreUrl: '',
+      }),
+    ).toEqual({ chatCompactMode: true });
+  });
+
   it('parses pathHashMode from deviceQuery payload', () => {
     expect(
       parsePathHashModeFromDeviceQuery({

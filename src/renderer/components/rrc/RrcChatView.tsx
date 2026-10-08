@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Virtual useVirtualizer; same as RoomsPanel */
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { ArrowDown, ChevronRight, Copy } from 'lucide-react-motion';
+import { ArrowDown, ChevronRight, Copy, PARENT_HOVER_ATTR, Reply } from 'lucide-react-motion';
 import {
   type ReactNode,
   useCallback,
@@ -12,6 +12,8 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { MessageTranslateButton } from '@/renderer/components/chat/MessageTranslateButton';
+import { TranslatedMessageBlock } from '@/renderer/components/chat/TranslatedMessageBlock';
 import { ChatComposer } from '@/renderer/components/ChatComposer';
 import { ConfirmModal } from '@/renderer/components/ConfirmModal';
 import { RrcFormattedBody } from '@/renderer/components/rrc/RrcFormattedBody';
@@ -51,6 +53,8 @@ import {
   type RrcNoticeGroup,
   toggleRrcNoticeGroupExpansion,
 } from '@/renderer/lib/rrcNoticeGrouping';
+import { rrcReplyMention } from '@/renderer/lib/rrcReplyMention';
+import { rrcIdentityHashesMatch } from '@/renderer/lib/rrcRoomMembers';
 import { useTimeFormatStore } from '@/renderer/stores/timeFormatStore';
 import type { RrcChatMessage, RrcRoomMember } from '@/shared/rrc-types';
 
@@ -311,6 +315,7 @@ export interface RrcChatViewProps {
   connected: boolean;
   /** Focused hub hash — stream identity with activeRoom (hub switch must re-pin). */
   hubDestHash?: string | null;
+  localIdentityHash?: string | null;
   activeRoom: string | null;
   messages: RrcChatMessage[];
   showTimestamps: boolean;
@@ -361,6 +366,7 @@ export function RrcChatView({
   onSendChunk,
   onInterceptSend,
   composeSeed = null,
+  localIdentityHash = null,
 }: RrcChatViewProps) {
   const { t } = useTranslation();
   const { inactive: appWindowInactive } = useAppWindowActivity();
@@ -442,6 +448,33 @@ export function RrcChatView({
     const room = activeRoom ?? '_none';
     return `rrc:${hub}:${room}`;
   }, [hubDestHash, activeRoom]);
+  const composerTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const replySequence = useRef(0);
+  const [observedExternalToken, setObservedExternalToken] = useState(composeSeed?.token ?? null);
+  const [composerSeed, setComposerSeed] = useState(composeSeed);
+  if ((composeSeed?.token ?? null) !== observedExternalToken) {
+    setObservedExternalToken(composeSeed?.token ?? null);
+    setComposerSeed(composeSeed);
+  }
+  const activeComposerViewRef = useRef(composerViewKey);
+  useLayoutEffect(() => {
+    activeComposerViewRef.current = composerViewKey;
+  }, [composerViewKey]);
+  const replyToNickname = (nick: string) => {
+    const text = rrcReplyMention(composerTextareaRef.current?.value ?? '', nick);
+    if (text === null || !canSend || isMuted || !activeRoom) return;
+    setComposerSeed({ text, token: --replySequence.current });
+    requestAnimationFrame(() => {
+      if (
+        activeComposerViewRef.current !== composerViewKey ||
+        composerTextareaRef.current?.value !== text
+      )
+        return;
+      const textarea = composerTextareaRef.current;
+      textarea?.focus();
+      textarea?.setSelectionRange(text.length, text.length);
+    });
+  };
 
   const payloadLimit = resolveRrcMsgBodyLimit(maxMsgBodyBytes);
 
@@ -697,7 +730,34 @@ export function RrcChatView({
               {body}
             </>
           ) : null}
+          <TranslatedMessageBlock
+            messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
+            text={rawBody}
+            incoming={
+              isActive &&
+              !whisperEcho &&
+              (msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
+              !(localIdentityHash && msg.sender_hash
+                ? rrcIdentityHashesMatch(msg.sender_hash, localIdentityHash)
+                : Boolean(nickname && msg.nickname?.toLowerCase() === nickname.toLowerCase()))
+            }
+            onContentResize={() => {
+              messageVirtualizerRef.current.measure();
+            }}
+          />
         </div>
+        <span
+          className={
+            alwaysShowMessageActions
+              ? 'opacity-100'
+              : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+          }
+        >
+          <MessageTranslateButton
+            messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
+            text={rawBody}
+          />
+        </span>
         <button
           type="button"
           className={`message-action text-muted shrink-0 rounded p-0.5 text-xs ${
@@ -715,12 +775,28 @@ export function RrcChatView({
         >
           <Copy size={11} />
         </button>
+        {(msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
+          rrcReplyMention('', whisperEcho ? nickname : (msg.nickname ?? '')) !== null && (
+            <button
+              type="button"
+              {...{ [PARENT_HOVER_ATTR]: '' }}
+              className={`message-action text-muted shrink-0 rounded p-0.5 text-xs disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
+              aria-label={t('rrc.replyToUser', { nickname: lineNick })}
+              title={t('rrc.replyToUser', { nickname: lineNick })}
+              disabled={!canSend || isMuted || !activeRoom}
+              onClick={() => {
+                replyToNickname(lineNick);
+              }}
+            >
+              <Reply aria-hidden size={11} />
+            </button>
+          )}
       </div>
     );
     return { lineClass, inner };
   };
 
-  if (!connected) {
+  if (!connected && visibleMessages.length === 0) {
     return (
       <div className="text-ink-400 flex flex-1 items-center justify-center p-6 text-sm">
         {t('rrc.selectHubPrompt')}
@@ -835,7 +911,8 @@ export function RrcChatView({
           onInterceptSend={onInterceptSend}
           onSendChunk={onSendChunk}
           mentionAdapter={mentionAdapter}
-          composeSeed={composeSeed}
+          composeSeed={composerSeed}
+          textareaRef={composerTextareaRef}
           className="w-full"
         />
       </div>

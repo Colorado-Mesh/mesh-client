@@ -73,6 +73,30 @@ export async function buildMainProcess(opts = {}) {
     logLevel: 'info',
   });
 
+  await esbuild.build({
+    absWorkingDir,
+    entryPoints: ['src/main/translation/bergamotWorkerEntry.ts'],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    outfile: path.join(path.dirname(outfile), 'translation-worker.js'),
+    minify,
+    logLevel: 'info',
+  });
+
+  const noticeDirectory = path.resolve(
+    absWorkingDir,
+    path.dirname(outfile),
+    'translation-licenses',
+  );
+  fs.mkdirSync(noticeDirectory, { recursive: true });
+  for (const notice of ['LICENSE-MPL-2.0.txt', 'LICENSE-fastText.txt', 'README.md']) {
+    fs.copyFileSync(
+      path.resolve(absWorkingDir, 'src/main/translation/vendor', notice),
+      path.join(noticeDirectory, notice),
+    );
+  }
+
   if (metafilePath && result.metafile) {
     const outPath = path.resolve(absWorkingDir, metafilePath);
     fs.mkdirSync(path.dirname(outPath), { recursive: true });

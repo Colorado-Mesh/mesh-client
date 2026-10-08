@@ -1076,3 +1076,11 @@ describe('RNode flasher firmware backup', () => {
     expect(PRELOAD_SOURCE).toContain("'flasher:saveFirmwareBackup'");
   });
 });
+
+describe('translation worker registration', () => {
+  it('registers the opt-in namespace and tears down workers before quit', () => {
+    expect(INDEX_SOURCE).toContain('const disposeTranslation = registerTranslationHandlers(');
+    expect(INDEX_SOURCE).toContain("app.on('before-quit', disposeTranslation)");
+    expect(PRELOAD_SOURCE).toContain("'translation:packProgress'");
+  });
+});

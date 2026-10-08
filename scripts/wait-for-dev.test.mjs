@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { areElectronBundlesReady, waitForDevReady } from './wait-for-dev.mjs';
+import {
+  areElectronBundlesReady,
+  waitForDevReady,
+  DEV_ELECTRON_BUNDLE_PATHS,
+} from './wait-for-dev.mjs';
 
 describe('wait-for-dev', () => {
   it('areElectronBundlesReady requires non-empty files for main and preload', () => {
@@ -49,4 +53,14 @@ describe('wait-for-dev', () => {
     expect(sleep).toHaveBeenCalled();
     expect(statSync).toHaveBeenCalled();
   });
+});
+
+it('requires the translation worker before launching Electron', () => {
+  expect(DEV_ELECTRON_BUNDLE_PATHS.translation).toContain('translation-worker.js');
+  expect(
+    areElectronBundlesReady(DEV_ELECTRON_BUNDLE_PATHS, (file) => {
+      if (file.endsWith('translation-worker.js')) throw new Error('not built');
+      return { isFile: () => true, size: 1 };
+    }),
+  ).toBe(false);
 });

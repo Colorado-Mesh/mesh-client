@@ -22,3 +22,41 @@ Developer reference for the Chat panel, composer, link previews, notifications, 
 - **Mention segments:** `src/renderer/lib/chatMentionSegments.ts` — parse/build `@[Name]` tokens; `MentionAutocomplete.tsx` renders the dropdown.
 - **Export IPC:** `chat:export` — renderer calls `window.electronAPI.chat.export(messages)`; main opens a Save dialog and writes a `.txt` file.
 - **Support bundle IPC:** `support:exportBundle` — `exportSupportBundle.ts` → `window.electronAPI.support.exportBundle(mode, json)`; main `support-bundle.ts` writes zip (`github` = logs + debug snapshot including Reticulum diagnostic JSON and Meshtastic channel layout triage via `debugSnapshotMeshtasticContext.ts`; `developer` = SQLite plus redacted `reticulum/config` and `reticulum/mesh_client_stack.json`). Modes in `support-bundle.types.ts`.
+
+RRC hub messages expose Reply next to Copy on hover/focus (or always when message actions are enabled). Reply prefixes `@nickname` followed by a space to the existing composer draft, focuses it, and uses the normal room send path. System lines have no reply target; muted or unavailable sends disable the action.
+
+## Message translation
+
+`translation:*` IPC owns the opt-in state and verified downloads under `userData/translation/`.
+`src/main/translation/translationManifest.ts` pins Mozilla Remote Settings engine major 4 and
+model major 3 assets, both compressed and decoded checksums. The constructor and disabled
+handlers perform no fetch, worker launch or directory creation. Pack installation is serial,
+atomic and cancellable; deletion is serialized with publication so a cancelled install cannot
+resurrect removed data. No JavaScript is downloaded.
+
+A dedicated Node worker statically bundles the two vendored loaders. It serializes WASM work,
+keeps only the active direct/English-pivot model pair, frees native wrappers, and is terminated
+on timeout, idle, disable or deletion. The renderer CSP is unchanged. Missing pivot packs are
+returned by ID; simplified Chinese uses Mozilla's `zh-Hans` model and Portuguese shares the
+`pt` model with `pt-BR`. The shipped Electron Node 24 runtime supplies zstd decoding.
+
+The renderer store keeps 200 results in memory and rejects stale status/inference completions.
+Auto-translation runs only for mounted incoming prose, skips read languages and uncertain
+language detection, and never falls back online. Original wire text and stored messages are
+unchanged. `AppTranslationSection` owns its settings separately from AppPanel's snapshot save.
+LibreTranslate requires explicit manual selection, a validated HTTP(S) URL, bounded replies,
+and an encrypted API key (unavailable when the OS key store cannot safely encrypt).
+
+Run `node scripts/translation-smoke.mjs` manually for real French → English → German inference;
+`--extended` also checks Indonesian → English → Japanese with tiny/separate-vocabulary packs.
+It downloads verified packs into a unique temporary directory and removes them on exit.
+Use Node 22.15+ with zstd support, or Electron's Node runtime (`ELECTRON_RUN_AS_NODE=1`).
+CI uses deterministic fake downloads/workers and verifies inert defaults, lifecycle races,
+packaging, panel actions, settings search and accessibility.
+
+When refreshing translation upstreams, review the pinned Firefox loader sources in
+`src/main/translation/vendor/README.md` and Mozilla's `translations-wasm-v2`,
+`translations-models-v2` and identification collections together. Update the static manifest
+only after verifying checksums, model quality/version, native constructor compatibility and
+licenses, then rerun the real-model smoke. Do not automatically adopt a new CDN record or
+fetch a loader at runtime. Credits and license notices are in `docs/credits.md`.

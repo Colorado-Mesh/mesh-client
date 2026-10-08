@@ -1039,3 +1039,30 @@ describe('navigation security (source contract)', () => {
     expect(body).toContain("{ action: 'deny' }");
   });
 });
+
+describe('translation IPC security contract', () => {
+  it('guards every namespace handler before work and rate-limits reads and mutations', () => {
+    const source = readFileSync(join(__dirname, 'ipc/translation-handlers.ts'), 'utf8');
+    const channels = [...source.matchAll(/ipcMain.handle\(\s*'([^']+)'/g)].map((match) => match[1]);
+    expect(channels.sort()).toEqual(
+      [
+        'getStatus',
+        'listPacks',
+        'setEnabled',
+        'translate',
+        'detect',
+        'installPack',
+        'cancelInstall',
+        'deletePack',
+        'removeAll',
+        'setLibreConfig',
+        'testLibreConfig',
+      ]
+        .map((name) => `translation:${name}`)
+        .sort(),
+    );
+    for (const channel of channels) expect(source).toContain(`guard(event, '${channel}'`);
+    expect(source).toContain('assertIpcSender(event, channel)');
+    expect(source).toContain('(write ? writes : reads).checkOrThrow()');
+  });
+});

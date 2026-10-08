@@ -19,6 +19,7 @@ export default tseslint.config(
       '**/node_modules/**',
       '.cache/**',
       'src/renderer/lib/nomad/vendor/**',
+      'src/main/translation/vendor/*.js',
       'eslint.config.mjs',
       '**/*.d.ts',
       'eslint.config.*',

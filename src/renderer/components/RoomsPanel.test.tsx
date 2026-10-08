@@ -34,6 +34,7 @@ import {
   getMeshcoreRoomSyncConfig,
   meshcoreRoomSyncSettingForNode,
 } from '@/renderer/lib/meshcoreRoomSyncStorage';
+import { resetTranslation } from '@/renderer/lib/translation/translationTestFixtures';
 import type { ChatMessage, MeshNode } from '@/renderer/lib/types';
 import { mockConsoleWarn } from '@/renderer/lib/vitestConsoleMock';
 
@@ -72,6 +73,7 @@ vi.mock('@tanstack/react-virtual', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
+    i18n: { language: 'en' },
     t: (key: string, opts?: Record<string, unknown>) => {
       if (key === 'meshcore.errors.roomLogin.noRoute') {
         return 'No route to this room server. Trace the node from the map or wait for path adverts, then try again.';
@@ -1848,5 +1850,34 @@ describe('RoomsPanel layout', () => {
     );
     await userEvent.click(screen.getByText('roomsPanel.savedPasswordsCount'));
     expect(await axe(container)).toHaveNoViolations();
+  });
+});
+
+describe('Room translation actions', () => {
+  it.each([true, false])('translates retained posts with connection=%s', async (connected) => {
+    const api = resetTranslation();
+    const roomId = 0x7012;
+    const room = makeRoom(roomId, 'Translation Room');
+    meshcoreApplyRoomSession(roomId, {
+      guestPassword: 'hello',
+      adminPassword: '',
+      role: 'readwrite',
+    });
+    const msg = buildMeshcoreRoomIncomingMessage({
+      rawText: 'Bonjour à tous, comment allez-vous ?',
+      roomServerId: roomId,
+      authorId: 2,
+      authorName: 'Alice',
+      timestamp: Date.now(),
+      receivedVia: 'rf',
+    });
+    renderRoomsPanel(new Map([[roomId, room]]), {
+      initialRoomTarget: roomId,
+      messages: [msg],
+      isConnected: connected,
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'chatTranslation.translate' }));
+    expect(await screen.findByText('Hello everyone')).toBeInTheDocument();
+    expect(api.translate).toHaveBeenCalledWith(expect.objectContaining({ provider: 'offline' }));
   });
 });

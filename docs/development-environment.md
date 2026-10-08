@@ -9,7 +9,7 @@ These requirements apply to all platforms.
 ### 1) Required software
 
 - Git
-- Node.js **22.13.0+** and pnpm **12+** (`package.json` `engines`; the repo pins **`packageManager`** to a specific pnpm release — use [Corepack](https://nodejs.org/api/corepack.html) when available, or `npm install -g corepack@latest` / `npm install -g pnpm@<pin>` on Node 25+ where Corepack is not bundled). `pnpm install` fails on engine mismatch. After pulling a pnpm major bump, `preinstall` and `pnpm run dev` print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.
+- Node.js **22.15.0+** and pnpm **12+** (`package.json` `engines`; the repo pins **`packageManager`** to a specific pnpm release — use [Corepack](https://nodejs.org/api/corepack.html) when available, or `npm install -g corepack@latest` / `npm install -g pnpm@<pin>` on Node 25+ where Corepack is not bundled). `pnpm install` fails on engine mismatch. After pulling a pnpm major bump, `preinstall` and `pnpm run dev` print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.
 - [CI](https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml) uses Node 22
 - Python 3 + `pip` (needed for MkDocs documentation build and yamllint)
 
@@ -796,7 +796,7 @@ Electron **44** (this repo’s runtime) requires **macOS 13 Ventura** or later f
    ```bash
    xcode-select --install
    ```
-2. Install Node 22 (22.13.0+ recommended via nvm) and npm:
+2. Install Node 22 (22.15.0+ recommended via nvm) and npm:
 
    ```bash
    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh -o install_nvm.sh
@@ -886,7 +886,7 @@ See [Build troubleshooting](#windows-could-not-find-any-visual-studio-installati
 
 ### Install prerequisites
 
-Install Node 22 (22.13.0+ recommended), `make`, and C++ build tools (`g++`/`gcc-c++`) with native build dependencies.
+Install Node 22 (22.15.0+ recommended), `make`, and C++ build tools (`g++`/`gcc-c++`) with native build dependencies.
 
 Debian/Ubuntu:
 

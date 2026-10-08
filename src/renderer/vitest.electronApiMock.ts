@@ -26,6 +26,26 @@ function makeOutboxMockRow(entry: OutboxEntryInput): OutboxEntry {
 /** Full typed electronAPI stub for renderer-ui tests (extracted from setup for reuse). */
 export function createElectronAPIMock(): ElectronAPI {
   return {
+    translation: {
+      getStatus: vi.fn().mockResolvedValue({
+        enabled: false,
+        packs: [],
+        progress: [],
+        diskBytes: 0,
+        libre: { enabled: false, url: '', hasApiKey: false },
+      }),
+      setEnabled: vi.fn(),
+      translate: vi.fn(),
+      detect: vi.fn(),
+      listPacks: vi.fn(),
+      installPack: vi.fn(),
+      cancelInstall: vi.fn(),
+      deletePack: vi.fn(),
+      removeAll: vi.fn(),
+      setLibreConfig: vi.fn(),
+      testLibreConfig: vi.fn(),
+      onPackProgress: vi.fn().mockReturnValue(() => {}),
+    },
     db: {
       saveMessage: vi.fn().mockResolvedValue(undefined),
       getMessages: vi.fn().mockResolvedValue([]),
