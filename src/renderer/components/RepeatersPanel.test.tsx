@@ -156,6 +156,7 @@ describe('RepeatersPanel', () => {
       'Request status',
       'Neighbors',
       'Sensor telemetry LPP',
+      'Configure',
       'CLI interface',
       'Remove',
     ]);
@@ -1264,7 +1265,7 @@ describe('RepeatersPanel', () => {
     });
   });
 
-  it('expands CLI for pendingFocusNodeId room', async () => {
+  it('opens configuration for pendingFocusNodeId room', async () => {
     const room = mockRoomNode(0xdef);
     const onPendingFocusConsumed = vi.fn();
     render(
@@ -1277,7 +1278,7 @@ describe('RepeatersPanel', () => {
         isConnected
       />,
     );
-    expect(await screen.findByRole('textbox', { name: 'CLI command input' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Configure/ })).toBeInTheDocument();
     expect(onPendingFocusConsumed).toHaveBeenCalled();
   });
 

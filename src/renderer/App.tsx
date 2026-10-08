@@ -5194,6 +5194,7 @@ function AppContent() {
                           <ErrorBoundary>
                             <Suspense fallback={<PanelSkeleton />}>
                               <RepeatersPanel
+                                key={meshcoreIdentityId ?? 'meshcore'}
                                 nodes={meshcoreUiNodes}
                                 meshcoreNodeStatus={meshcoreRuntime.meshcoreNodeStatus}
                                 meshcoreStatusErrors={meshcoreRuntime.meshcoreStatusErrors}

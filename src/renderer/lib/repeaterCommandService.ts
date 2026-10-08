@@ -1,3 +1,5 @@
+import { redactMeshcoreCliSecrets } from './meshcoreRepeaterCliQueue';
+
 export interface PendingCommand {
   command: string;
   token: string;
@@ -76,6 +78,8 @@ export function padRepeaterCliTimeoutForWaitingDrain(
 export class RepeaterCommandService {
   private nextToken = 0;
   private pendingCommands = new Map<string, PendingCommand>();
+  /** Keep sensitive token tombstones until reuse so late replies are also redacted. */
+  private sensitiveTokens = new Set<string>();
   private timeoutMs: number;
   private maxRetries: number;
   private baseTimeoutMs: number;
@@ -128,6 +132,8 @@ export class RepeaterCommandService {
     },
   ): { token: string; promise: Promise<string>; timeoutMs: number } {
     const token = options?.token ?? this.generateToken();
+    if (redactMeshcoreCliSecrets(command) !== command) this.sensitiveTokens.add(token);
+    else this.sensitiveTokens.delete(token);
     const timeoutMs = options?.timeoutMs ?? this.calculateTimeout(path, command.length);
     const maxRetries = options?.maxRetries ?? this.maxRetries;
     const senderNodeId = options?.senderNodeId ?? 0;
@@ -214,6 +220,13 @@ export class RepeaterCommandService {
     this.pendingCommands.delete(token);
     pending.resolve(body);
     return true;
+  }
+
+  redactResponseForHistory(rawResponse: string): string {
+    const { token, body } = this.parseResponseToken(rawResponse);
+    return (token && this.sensitiveTokens.has(token)) || /^password now:/i.test(body.trim())
+      ? '[redacted]'
+      : body;
   }
 
   handleError(token: string, error: Error): boolean {

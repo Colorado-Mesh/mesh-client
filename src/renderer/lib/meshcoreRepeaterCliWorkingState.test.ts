@@ -6,9 +6,13 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { extractUseCallbackBody } from './sourceContractTestHelpers';
+import {
+  extractIfBlockBody,
+  extractUseCallbackBody,
+  loadRuntimeSource,
+} from './sourceContractTestHelpers';
 
-const RUNTIME_SOURCE = readFileSync(join(__dirname, '../runtime/useMeshcoreRuntime.ts'), 'utf-8');
+const RUNTIME_SOURCE = loadRuntimeSource('useMeshcoreRuntime.ts');
 const IN_FLIGHT_SOURCE = readFileSync(join(__dirname, 'meshcoreRepeaterRpcInFlight.ts'), 'utf-8');
 const REPEATER_CMD_SOURCE = readFileSync(join(__dirname, 'repeaterCommandService.ts'), 'utf-8');
 
@@ -17,6 +21,40 @@ describe('meshcore repeater CLI working state', () => {
     expect(IN_FLIGHT_SOURCE).toContain("'cli'");
     const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
     expect(cliBody).toMatch(/runMeshcoreRepeaterRpcOnce\(\s*'cli'/);
+  });
+
+  it('checks the captured session and caller lifetime before queued CLI transmission', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    expect(cliBody).toContain('connectionAtRequest !== connRef.current');
+    expect(cliBody).toContain('identityAtRequest !== meshcoreIdentityIdRef.current');
+    expect(cliBody).toContain('setupGenerationAtRequest !== meshcoreSetupGenerationRef.current');
+    expect(cliBody).toContain('!opts.isCurrent()');
+    const sendSlotStart = cliBody.indexOf('await repeaterRemoteRpcRef.current(async () => {');
+    const sendIdx = cliBody.indexOf('await conn.sendTextMessage', sendSlotStart);
+    expect(sendIdx).toBeGreaterThan(sendSlotStart);
+    expect(cliBody.slice(sendSlotStart, sendIdx)).toContain('assertRequestCurrent();');
+  });
+
+  it('releases shared CLI holds only for the connection generation that acquired them', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    const cleanup = extractIfBlockBody(
+      cliBody,
+      '\n            identityAtRequest === meshcoreIdentityIdRef.current &&\n            setupGenerationAtRequest === meshcoreSetupGenerationRef.current\n          ',
+    );
+    expect(cleanup).toContain('endMeshcoreSilentBulkCliPreempt();');
+    expect(cleanup).toContain('endMeshcoreCliReplyHold();');
+  });
+
+  it('observes reply rejection before a queued send can be cancelled', () => {
+    const cliBody = extractUseCallbackBody(RUNTIME_SOURCE, 'sendRepeaterCliCommand');
+    const registerIdx = cliBody.indexOf('service.registerPendingCommand');
+    const observerIdx = cliBody.indexOf('void promise.catch', registerIdx);
+    const sendSlotIdx = cliBody.indexOf(
+      'await repeaterRemoteRpcRef.current(async () => {',
+      registerIdx,
+    );
+    expect(observerIdx).toBeGreaterThan(registerIdx);
+    expect(observerIdx).toBeLessThan(sendSlotIdx);
   });
 
   it('resolves repeater pubkey via ensureNodePubKey like other admin RPCs', () => {

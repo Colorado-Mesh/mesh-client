@@ -5,7 +5,7 @@ import { INPUT_BOX_SM_CLASS, SELECT_BOX_SM_CLASS } from './ui/formClasses';
 
 interface Props {
   disabled?: boolean;
-  onApply: (pubkeyHex: string, level: number) => Promise<void>;
+  onApply: (pubkeyHex: string, level: number) => Promise<void> | Promise<boolean>;
 }
 
 /** Room ACL setperm form — used on Repeaters & Rooms ops CLI row. */
@@ -23,8 +23,8 @@ export function MeshcoreRoomAclControls({ disabled, onApply }: Props) {
       if (!/^[0-9a-f]{64}$/.test(normalized)) return;
       setPending(true);
       try {
-        await onApply(normalized, aclLevel);
-        setAclPubkey('');
+        const applied = await onApply(normalized, aclLevel);
+        if (applied !== false) setAclPubkey('');
       } finally {
         setPending(false);
       }

@@ -13,6 +13,36 @@ describe('RepeaterCommandService', () => {
     service = createRepeaterCommandService();
   });
 
+  describe('secret reply history', () => {
+    it('redacts replies after completion and after timeout', async () => {
+      const completed = service.registerPendingCommand('get guest.password', [], { token: 'AB' });
+      service.handleResponse('AB|> secret');
+      expect(await completed.promise).toBe('> secret');
+      expect(service.redactResponseForHistory('AB|> secret')).toBe('[redacted]');
+
+      vi.useFakeTimers();
+      try {
+        const timedOut = service.registerPendingCommand('get prv.key', [], {
+          token: 'CD',
+          timeoutMs: 10,
+        });
+        const rejected = expect(timedOut.promise).rejects.toThrow('timed out');
+        await vi.advanceTimersByTimeAsync(10);
+        await rejected;
+        expect(service.redactResponseForHistory('CD|> private-secret')).toBe('[redacted]');
+        service.clear();
+        expect(service.redactResponseForHistory('CD|> private-secret')).toBe('[redacted]');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('redacts password-change echoes without a token and retains ordinary replies', () => {
+      expect(service.redactResponseForHistory('password now: secret')).toBe('[redacted]');
+      expect(service.redactResponseForHistory('EF|> Repeater')).toBe('> Repeater');
+    });
+  });
+
   describe('generateToken', () => {
     it('should generate sequential tokens cycling through 0-255', () => {
       const tokens: string[] = [];
