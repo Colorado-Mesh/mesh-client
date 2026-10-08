@@ -14,5 +14,8 @@ describe('RRC reply mention', () => {
     expect(rrcReplyMention('draft', '')).toBeNull();
     expect(rrcReplyMention('draft', 'bad\nname')).toBeNull();
     expect(rrcReplyMention('draft', '@Joey')).toBeNull();
+    expect(rrcReplyMention('draft', 'Joey\n')).toBeNull();
+    expect(rrcReplyMention('draft', '\tJoey')).toBeNull();
+    expect(rrcReplyMention('draft', '  Joey  ')).toBe('@Joey draft');
   });
 });
