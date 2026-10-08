@@ -2472,7 +2472,7 @@ impl LiveBridge {
                             config::interfaces_from_config_dir(&config_dir).unwrap_or_default();
                         medium_for_path_interface(&iface_name, &config_rows)
                     });
-                let row = super::DiscoveredPropagationRow {
+                let mut row = super::DiscoveredPropagationRow {
                     destination_hash: hash_hex.clone(),
                     identity_hash: identity_hash_hex.clone(),
                     public_key: public_key_hex.clone(),
@@ -2487,6 +2487,7 @@ impl LiveBridge {
                     let Ok(mut cache) = discovered.lock() else {
                         continue;
                     };
+                    row.medium = announced_medium(cache.get(&hash_hex), row.medium);
                     let previous = cache.insert(hash_hex.clone(), row.clone());
                     // Only rebuild when this announce can change the Auto cascade shortlist.
                     let changed = previous.is_none_or(|prev| {
@@ -6787,6 +6788,16 @@ fn reconcile_discovered_media(
     changed
 }
 
+/// Medium to store for a re-announced PN: the fresh path-cache lookup, or the last known
+/// medium when the path is momentarily absent. Clearing it would flip the row against the
+/// next `reconcile_discovered_media` tick and rebuild the cascade on every announce.
+fn announced_medium(
+    previous: Option<&super::DiscoveredPropagationRow>,
+    fresh: Option<PathMediumSetting>,
+) -> Option<PathMediumSetting> {
+    fresh.or_else(|| previous.and_then(|p| p.medium))
+}
+
 async fn rebuild_pn_cascade_candidates(
     persisted: &Arc<RwLock<PersistedState>>,
     discovered_propagation: &Arc<Mutex<HashMap<String, super::DiscoveredPropagationRow>>>,
@@ -8621,6 +8632,23 @@ mod discovered_medium_reconcile_tests {
             discovered.lock().unwrap().get(&hash).unwrap().medium,
             Some(PathMediumSetting::Rf)
         );
+    }
+
+    #[test]
+    fn announce_without_path_keeps_the_last_known_medium() {
+        let hash = "ee".repeat(16);
+        let prev = discovered_row(&hash, Some(PathMediumSetting::Rf));
+
+        assert_eq!(
+            announced_medium(Some(&prev), None),
+            Some(PathMediumSetting::Rf),
+            "a cache miss at announce time must not flap against the path-table tick"
+        );
+        assert_eq!(
+            announced_medium(Some(&prev), Some(PathMediumSetting::Network)),
+            Some(PathMediumSetting::Network)
+        );
+        assert_eq!(announced_medium(None, None), None);
     }
 
     #[test]
