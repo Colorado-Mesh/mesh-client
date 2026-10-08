@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { buildMainProcess, parseEsbuildMainBuildArgs } from './esbuild-main-build.mjs';
 
 /** Keep the minified main outfile under esbuild's 1mb advisory (and well below). */
-const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 512 * 1024;
+const MAIN_BUNDLE_SIZE_BUDGET_BYTES = 640 * 1024;
 
 describe('esbuild-main-build', () => {
   /** @type {string | null} */

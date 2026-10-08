@@ -332,7 +332,11 @@ impl LxmfOutboundDriver {
     }
 
     /// Refresh enabled PN candidates used after Direct path failover exhausts.
-    pub fn set_pn_cascade_candidates(&mut self, candidates: Vec<PnCascadeCandidate>) {
+    /// Returns `false` (and stays quiet) when the list is unchanged.
+    pub fn set_pn_cascade_candidates(&mut self, candidates: Vec<PnCascadeCandidate>) -> bool {
+        if candidates == self.pn_cascade_candidates {
+            return false;
+        }
         tracing::info!(
             target: "lxmf-outbound",
             count = candidates.len(),
@@ -343,6 +347,7 @@ impl LxmfOutboundDriver {
             "PN cascade candidates updated"
         );
         self.pn_cascade_candidates = candidates;
+        true
     }
 
     /// Refresh local path cache from transport GetPathTable rows.
@@ -2970,6 +2975,28 @@ mod tests {
             );
         }
         assert!(saw_sending, "cascade advance should emit sending");
+    }
+
+    #[test]
+    fn set_pn_cascade_candidates_reports_only_real_changes() {
+        let identity = Identity::new();
+        let (tx, _rx) = mpsc::channel(32);
+        let mut driver = LxmfOutboundDriver::new(tx, &identity, &"aabb".repeat(8));
+        let candidate = |hops| PnCascadeCandidate {
+            hash: [0x9fu8; 16],
+            is_local: false,
+            is_discovered: true,
+            hops: Some(hops),
+            medium: None,
+            id: "pn-a".into(),
+        };
+
+        assert!(driver.set_pn_cascade_candidates(vec![candidate(2)]));
+        assert!(
+            !driver.set_pn_cascade_candidates(vec![candidate(2)]),
+            "identical rebuild must not log again"
+        );
+        assert!(driver.set_pn_cascade_candidates(vec![candidate(3)]));
     }
 
     #[test]
