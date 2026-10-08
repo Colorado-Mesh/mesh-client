@@ -2501,6 +2501,7 @@
 <p><strong>Chat</strong></p>
 <ul>
 <li>Send/receive messages across channels with per-transport delivery badges and delivery ACK / failure states</li>
+<li><strong>Translate messages</strong> in Chat, MeshCore Rooms, and RRC, including saved messages while disconnected. Open <strong>App → Translation</strong>, enable offline translation, and download the language packs you need. The engine and packs are optional downloads; the installer includes no translation binaries. Select your target language and <strong>Languages I read</strong> before enabling automatic translation. Auto-translation uses only offline packs. Optional <strong>LibreTranslate</strong> sends message text to your configured server only when you explicitly choose <strong>Translate online</strong>. Original messages remain visible; translations are held in memory.</li>
 <li><strong>Durable outbox</strong>: outgoing messages are queued in SQLite and retried until delivered; survive app restarts and connection drops</li>
 <li><strong>Long message chunking (Meshtastic / Reticulum)</strong>: messages over the payload limit are auto-split into sequential <code>[N/T]</code>-prefixed chunks (word-boundary split, max 9 chunks). <strong>MeshCore is single-packet</strong>: each message is sent as one radio packet and longer text is blocked with an explanatory notice (busy repeaters drop split parts — see <a href="#limitations">Limitations</a>). MeshCore MQTT-only connections are also guarded from sending when no RF path is available</li>
 <li><strong>Shared composer</strong> (<code>ChatComposer</code>): drafts, mentions, protocol-aware length limits (chunking for Meshtastic / Reticulum; single-packet for MeshCore, see above), spellcheck, and emoji picker used by <strong>Chat</strong> and <strong>MeshCore Rooms</strong>; right‑click misspelling replacements (Electron spellchecker for both protocols)</li>
@@ -2771,7 +2772,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 18:17:58 UTC">October 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 20:58:31 UTC">October 8, 2026</span>
   </span>
 
     

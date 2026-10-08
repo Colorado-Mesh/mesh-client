@@ -1718,6 +1718,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Chat
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1734,6 +1752,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#message-translation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message translation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -2178,6 +2226,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#message-translation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Message translation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2226,6 +2293,36 @@
 <li><strong>Support bundle IPC:</strong> <code>support:exportBundle</code> — <code>exportSupportBundle.ts</code> → <code>window.electronAPI.support.exportBundle(mode, json)</code>; main <code>support-bundle.ts</code> writes zip (<code>github</code> = logs + debug snapshot including Reticulum diagnostic JSON and Meshtastic channel layout triage via <code>debugSnapshotMeshtasticContext.ts</code>; <code>developer</code> = SQLite plus redacted <code>reticulum/config</code> and <code>reticulum/mesh_client_stack.json</code>). Modes in <code>support-bundle.types.ts</code>.</li>
 </ul>
 <p>RRC hub messages expose Reply next to Copy on hover/focus (or always when message actions are enabled). Reply prefixes <code>@nickname</code> followed by a space to the existing composer draft, focuses it, and uses the normal room send path. System lines have no reply target; muted or unavailable sends disable the action.</p>
+<h2 id="message-translation">Message translation<a class="headerlink" href="#message-translation" title="Permanent link">&para;</a></h2>
+<p><code>translation:*</code> IPC owns the opt-in state and verified downloads under <code>userData/translation/</code>.
+<code>src/main/translation/translationManifest.ts</code> pins Mozilla Remote Settings engine major 4 and
+model major 3 assets, both compressed and decoded checksums. The constructor and disabled
+handlers perform no fetch, worker launch or directory creation. Pack installation is serial,
+atomic and cancellable; deletion is serialized with publication so a cancelled install cannot
+resurrect removed data. No JavaScript is downloaded.</p>
+<p>A dedicated Node worker statically bundles the two vendored loaders. It serializes WASM work,
+keeps only the active direct/English-pivot model pair, frees native wrappers, and is terminated
+on timeout, idle, disable or deletion. The renderer CSP is unchanged. Missing pivot packs are
+returned by ID; simplified Chinese uses Mozilla's <code>zh-Hans</code> model and Portuguese shares the
+<code>pt</code> model with <code>pt-BR</code>. The shipped Electron Node 24 runtime supplies zstd decoding.</p>
+<p>The renderer store keeps 200 results in memory and rejects stale status/inference completions.
+Auto-translation runs only for mounted incoming prose, skips read languages and uncertain
+language detection, and never falls back online. Original wire text and stored messages are
+unchanged. <code>AppTranslationSection</code> owns its settings separately from AppPanel's snapshot save.
+LibreTranslate requires explicit manual selection, a validated HTTP(S) URL, bounded replies,
+and an encrypted API key (unavailable when the OS key store cannot safely encrypt).</p>
+<p>Run <code>node scripts/translation-smoke.mjs</code> manually for real French → English → German inference;
+<code>--extended</code> also checks Indonesian → English → Japanese with tiny/separate-vocabulary packs.
+It downloads verified packs into a unique temporary directory and removes them on exit.
+Use Node 22.15+ with zstd support, or Electron's Node runtime (<code>ELECTRON_RUN_AS_NODE=1</code>).
+CI uses deterministic fake downloads/workers and verifies inert defaults, lifecycle races,
+packaging, panel actions, settings search and accessibility.</p>
+<p>When refreshing translation upstreams, review the pinned Firefox loader sources in
+<code>src/main/translation/vendor/README.md</code> and Mozilla's <code>translations-wasm-v2</code>,
+<code>translations-models-v2</code> and identification collections together. Update the static manifest
+only after verifying checksums, model quality/version, native constructor compatibility and
+licenses, then rerun the real-model smoke. Do not automatically adopt a new CDN record or
+fetch a loader at runtime. Credits and license notices are in <code>docs/credits.md</code>.</p>
 
 
 
@@ -2246,7 +2343,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 18:17:12 UTC">October 8, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 20:57:45 UTC">October 8, 2026</span>
   </span>
 
     

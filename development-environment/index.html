@@ -3931,7 +3931,7 @@
 <h3 id="1-required-software">1) Required software<a class="headerlink" href="#1-required-software" title="Permanent link">&para;</a></h3>
 <ul>
 <li>Git</li>
-<li>Node.js <strong>22.13.0+</strong> and pnpm <strong>12+</strong> (<code>package.json</code> <code>engines</code>; the repo pins <strong><code>packageManager</code></strong> to a specific pnpm release — use <a href="https://nodejs.org/api/corepack.html">Corepack</a> when available, or <code>npm install -g corepack@latest</code> / <code>npm install -g pnpm@&lt;pin&gt;</code> on Node 25+ where Corepack is not bundled). <code>pnpm install</code> fails on engine mismatch. After pulling a pnpm major bump, <code>preinstall</code> and <code>pnpm run dev</code> print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.</li>
+<li>Node.js <strong>22.15.0+</strong> and pnpm <strong>12+</strong> (<code>package.json</code> <code>engines</code>; the repo pins <strong><code>packageManager</code></strong> to a specific pnpm release — use <a href="https://nodejs.org/api/corepack.html">Corepack</a> when available, or <code>npm install -g corepack@latest</code> / <code>npm install -g pnpm@&lt;pin&gt;</code> on Node 25+ where Corepack is not bundled). <code>pnpm install</code> fails on engine mismatch. After pulling a pnpm major bump, <code>preinstall</code> and <code>pnpm run dev</code> print an upgrade banner with the exact install command if your local pnpm is too old or the wrong major.</li>
 <li><a href="https://github.com/Colorado-Mesh/mesh-client/blob/main/.github/workflows/ci.yaml">CI</a> uses Node 22</li>
 <li>Python 3 + <code>pip</code> (needed for MkDocs documentation build and yamllint)</li>
 </ul>
@@ -5020,7 +5020,7 @@
 <li>Install Git (Xcode CLT includes it):
    <div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>xcode-select<span class="w"> </span>--install
 </code></pre></div></li>
-<li>Install Node 22 (22.13.0+ recommended via nvm) and npm:</li>
+<li>Install Node 22 (22.15.0+ recommended via nvm) and npm:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span>-o<span class="w"> </span>install_nvm.sh
 <a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>
@@ -5082,7 +5082,7 @@
 <p>See <a href="#windows-could-not-find-any-visual-studio-installation-to-use">Build troubleshooting</a> (Visual Studio), <a href="#windows-could-not-find-any-python-installation-to-use-eg-when-building-serialportbindings-cpp">Python</a>, and <a href="#distwin-fails-with-space-in-the-path-or-eperm-on-native-modules"><code>dist:win</code> path / <code>EPERM</code></a>.</p>
 <h2 id="linux">Linux<a class="headerlink" href="#linux" title="Permanent link">&para;</a></h2>
 <h3 id="install-prerequisites_2">Install prerequisites<a class="headerlink" href="#install-prerequisites_2" title="Permanent link">&para;</a></h3>
-<p>Install Node 22 (22.13.0+ recommended), <code>make</code>, and C++ build tools (<code>g++</code>/<code>gcc-c++</code>) with native build dependencies.</p>
+<p>Install Node 22 (22.15.0+ recommended), <code>make</code>, and C++ build tools (<code>g++</code>/<code>gcc-c++</code>) with native build dependencies.</p>
 <p>Debian/Ubuntu:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
 <a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NVM_DIR</span><span class="o">=</span><span class="s2">"</span><span class="nv">$HOME</span><span class="s2">/.nvm"</span>
@@ -5227,7 +5227,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 7, 2026 02:14:17 UTC">October 7, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 8, 2026 20:57:45 UTC">October 8, 2026</span>
   </span>
 
     
