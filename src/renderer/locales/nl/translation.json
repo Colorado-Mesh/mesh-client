@@ -5824,7 +5824,8 @@
       "expand_other": "Toon {{count}} hub-kennisgevingen",
       "collapse_one": "Verberg {{count}} hubmelding",
       "collapse_other": "Verberg {{count}} hub-meldingen"
-    }
+    },
+    "replyToUser": "Reageren op {{nickname}}"
   },
   "signalMeter": {
     "rssi": "RSSI",

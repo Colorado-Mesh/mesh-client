@@ -5824,7 +5824,8 @@
       "expand_other": "{{count}} 허브 알림 표시",
       "collapse_one": "{{count}} 허브 알림 숨기기",
       "collapse_other": "{{count}} 허브 알림 숨기기"
-    }
+    },
+    "replyToUser": "{{nickname}}에게 답장"
   },
   "signalMeter": {
     "rssi": "RSSI",

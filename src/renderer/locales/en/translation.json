@@ -6109,7 +6109,8 @@
     "showList": "Show rooms and hubs",
     "backToList": "Back to rooms and hubs",
     "hideMembers": "Hide members",
-    "listColumnAria": "Rooms and hubs"
+    "listColumnAria": "Rooms and hubs",
+    "replyToUser": "Reply to {{nickname}}"
   },
   "securityPanel": {
     "keyRegenRequested": "Key regeneration requested. Device will generate new keys.",
