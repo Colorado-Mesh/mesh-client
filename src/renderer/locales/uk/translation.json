@@ -5686,7 +5686,10 @@
     "channelRelayRoom": "Кімната геочату для {{channel}}",
     "channelRelayRoomPlaceholder": "Кімната геочату (вимкнено)",
     "channelRelayNoChannels": "Підключіть радіоприймач MeshCore, щоб переглянути його канали.",
-    "channelRelayUnnamed": "Канал {{n}}"
+    "channelRelayUnnamed": "Канал {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic каналів до TAK",
+    "channelRelayDescMeshtastic": "Виберіть, які повідомлення каналу прослуховувалися в TAK. Кімната GeoChat відображає канал, зокрема повідомлення, почуті через MQTT, у цій кімнаті чату TAK. Це відбувається лише в одну сторону: нічого з TAK не надсилається через сіть.",
+    "channelRelayNoChannelsMeshtastic": "Підключіть радіоприймач Meshtastic, щоб переглянути його канали."
   },
   "telemetryPanel": {
     "title": "Телеметрія",

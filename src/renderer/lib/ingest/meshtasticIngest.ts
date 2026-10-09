@@ -27,6 +27,7 @@ import {
   messageRecordToChatMessage,
   nodeRecordToMeshNode,
 } from '../storeRecordAdapters';
+import { relayMeshtasticChatToTak } from '../tak/takChannelRelay';
 import type { IdentityId } from '../types';
 
 const SEEN_PACKET_TTL_MS = 10 * 60 * 1000;
@@ -174,6 +175,7 @@ function handleTextMessage(
     }
   }
 
+  relayMeshtasticChatToTak(identityId, incoming);
   persistDbWrite('meshtastic ingest message', () =>
     window.electronAPI.db.saveMessage(withMeshtasticChannelIdentity(incoming)),
   );

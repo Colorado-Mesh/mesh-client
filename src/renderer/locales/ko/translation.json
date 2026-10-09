@@ -5604,7 +5604,10 @@
     "channelRelayRoom": "{{channel}} 을 (를) 위한 GeoChat 룸",
     "channelRelayRoomPlaceholder": "GeoChat 룸 (꺼짐)",
     "channelRelayNoChannels": "MeshCore 라디오를 연결하여 채널을 나열합니다.",
-    "channelRelayUnnamed": "채널 {{n}}"
+    "channelRelayUnnamed": "채널 {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic 채널을 TAK로",
+    "channelRelayDescMeshtastic": "TAK에 전달되는 채널 메시지를 선택하세요. GeoChat 방은 MQTT을 통해 들었던 메시지를 포함하여 채널을 해당 TAK 채팅방에 미러링합니다. 이는 단방향으로만 진행됩니다. TAK의 어떤 것도 메시를 통해 전송되지 않습니다.",
+    "channelRelayNoChannelsMeshtastic": "Meshtastic 라디오를 연결하여 채널 목록을 표시하세요."
   },
   "telemetryPanel": {
     "title": "원격 측정",

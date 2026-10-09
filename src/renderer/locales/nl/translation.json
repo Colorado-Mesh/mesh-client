@@ -5604,7 +5604,10 @@
     "channelRelayRoom": "GeoChat-ruimte voor {{channel}}",
     "channelRelayRoomPlaceholder": "GeoChat-ruimte (uit)",
     "channelRelayNoChannels": "Sluit een MeshCore -radio aan om de kanalen te vermelden.",
-    "channelRelayUnnamed": "Kanaal {{n}}"
+    "channelRelayUnnamed": "Kanaal {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic kanalen naar TAK",
+    "channelRelayDescMeshtastic": "Kies welke gehoorde kanaalberichten worden ingevoerd in TAK. Een GeoChat-ruimte weerspiegelt het kanaal, inclusief berichten die via MQTT worden gehoord, naar die TAK-chatruimte. Dit kan maar één kant op: er wordt niets van TAK over de mesh verzonden.",
+    "channelRelayNoChannelsMeshtastic": "Sluit een Meshtastic radio aan om de kanalen weer te geven."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

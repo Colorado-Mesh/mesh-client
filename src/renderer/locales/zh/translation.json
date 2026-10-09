@@ -5604,7 +5604,10 @@
     "channelRelayRoom": "{{channel}}的GeoChat聊天室",
     "channelRelayRoomPlaceholder": "GeoChat聊天室（关闭）",
     "channelRelayNoChannels": "连接MeshCore收音机以列出其频道。",
-    "channelRelayUnnamed": "通道{{n}}"
+    "channelRelayUnnamed": "通道{{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic频道至TAK",
+    "channelRelayDescMeshtastic": "选择将哪些已听到的频道消息馈送到TAK。GeoChat聊天室将该频道（包括通过MQTT听到的消息）镜像到TAK聊天室。这只有一种方式： TAK中的任何内容都不会通过网格发送。",
+    "channelRelayNoChannelsMeshtastic": "连接Meshtastic收音机以列出其频道。"
   },
   "telemetryPanel": {
     "title": "遥测",

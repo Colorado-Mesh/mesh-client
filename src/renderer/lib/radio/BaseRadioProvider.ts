@@ -78,6 +78,8 @@ export interface ProtocolCapabilities {
   hasRemoteAdmin: boolean;
   /** Whether the TAK panel (local CoT server + remote relay) is available */
   hasTakPanel: boolean;
+  /** Whether channel `!MT1` tracker fixes can feed TAK markers (MeshCore tracker firmware) */
+  hasTakTrackerChannels: boolean;
   /** Whether Serial Bridge is available */
   hasSerial: boolean;
   /** Whether Range Test packets are available */
@@ -215,6 +217,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   hasSecurityPanel: true,
   hasRemoteAdmin: true,
   hasTakPanel: true,
+  hasTakTrackerChannels: false,
   hasSerial: true,
   hasRangeTest: true,
   hasPaxCounter: true,
@@ -297,6 +300,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   hasSecurityPanel: true,
   hasRemoteAdmin: false,
   hasTakPanel: true,
+  hasTakTrackerChannels: true,
   hasSerial: false,
   hasRangeTest: false,
   hasPaxCounter: false,
@@ -378,6 +382,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   hasSecurityPanel: false,
   hasRemoteAdmin: false,
   hasTakPanel: true,
+  hasTakTrackerChannels: false,
   hasSerial: false,
   hasRangeTest: false,
   hasPaxCounter: false,

@@ -269,6 +269,7 @@ import {
   traceRouteEventsToResultsMap,
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
+import { relayMeshtasticChatToTak } from '../lib/tak/takChannelRelay';
 import {
   MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS,
   MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
@@ -1718,6 +1719,7 @@ export function useMeshtasticRuntime() {
       });
       if (storeId) {
         upsertMessage(storeId, chatMessageToMessageRecord(mqttWithPreviews));
+        if (!mqttTreatAsBacklog) relayMeshtasticChatToTak(storeId, mqttWithPreviews);
       }
       persistMeshtasticMessage(mqttWithPreviews);
     });

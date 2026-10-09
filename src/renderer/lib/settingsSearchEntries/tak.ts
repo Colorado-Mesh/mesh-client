@@ -138,6 +138,13 @@ const takEntries: readonly SettingSearchEntry[] = [
     sectionKey: 'takServerPanel.channelRelayTitle',
     keywords: ['tak', 'meshcore', 'tracker', 'mt1', 'geochat', 'chat', 'channel', 'room'],
   },
+  {
+    id: 'tak.channelRelay.meshtastic',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.channelRelayTitleMeshtastic',
+    sectionKey: 'takServerPanel.channelRelayTitleMeshtastic',
+    keywords: ['tak', 'meshtastic', 'geochat', 'chat', 'channel', 'room', 'mqtt'],
+  },
 ];
 
 export const takSurface: SettingsSearchSurface = {
@@ -190,6 +197,7 @@ export const takSurface: SettingsSearchSurface = {
     'takServerPanel.channelRelayTitle': 'section heading; its channel rows are indexed',
     'takServerPanel.channelRelayRoom*': 'GeoChat room field in each indexed channel row',
     'takServerPanel.channelRelayUnnamed': 'fallback channel name in a row',
-    'takServerPanel.channelRelayNoChannels': 'empty-state text before a radio lists channels',
+    'takServerPanel.channelRelayNoChannels*': 'empty-state text before a radio lists channels',
+    'takServerPanel.channelRelayDescMeshtastic': 'section prose; its channel rows are indexed',
   },
 };

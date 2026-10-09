@@ -5604,7 +5604,10 @@
     "channelRelayRoom": "GeoChat-Raum für {{channel}}",
     "channelRelayRoomPlaceholder": "GeoChat-Raum (aus)",
     "channelRelayNoChannels": "Schließen Sie ein MeshCore -Funkgerät an, um dessen Sender aufzulisten.",
-    "channelRelayUnnamed": "Kanal {{n}}"
+    "channelRelayUnnamed": "Kanal {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic Kanäle zu TAK",
+    "channelRelayDescMeshtastic": "Wähle aus, welche Nachrichten von den Heared Channels in TAK eingehen. Ein GeoChat-Raum spiegelt den Kanal einschließlich der über MQTT gesendeten Nachrichten in diesem TAK Chat-Raum wider. Das geht nur in eine Richtung: Nichts von TAK wird über das Netz geschickt.",
+    "channelRelayNoChannelsMeshtastic": "Schließen Sie ein Meshtastic -Funkgerät an, um dessen Sender aufzulisten."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

@@ -5604,7 +5604,10 @@
     "channelRelayRoom": "Ruang GeoChat untuk {{channel}}",
     "channelRelayRoomPlaceholder": "Ruang GeoChat (nonaktif)",
     "channelRelayNoChannels": "Hubungkan radio MeshCore untuk mengiklankan salurannya.",
-    "channelRelayUnnamed": "Saluran {{n}}"
+    "channelRelayUnnamed": "Saluran {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic saluran ke TAK",
+    "channelRelayDescMeshtastic": "Pilih pesan saluran mana yang didengarkan yang dimasukkan ke TAK. Ruang GeoChat mencerminkan saluran, termasuk pesan yang didengar melalui MQTT, ke dalam ruang obrolan TAK tersebut. Ini hanya berlaku satu arah: tidak ada apa pun dari TAK yang dikirim melalui mesh.",
+    "channelRelayNoChannelsMeshtastic": "Hubungkan radio Meshtastic untuk mencantumkan salurannya."
   },
   "telemetryPanel": {
     "title": "Telemetri",

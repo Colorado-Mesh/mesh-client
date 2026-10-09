@@ -5648,7 +5648,10 @@
     "channelRelayRoom": "Místnost GeoChat pro {{channel}}",
     "channelRelayRoomPlaceholder": "Místnost GeoChat (vypnuto)",
     "channelRelayNoChannels": "Připojte rádio MeshCore a zobrazte seznam jeho kanálů.",
-    "channelRelayUnnamed": "Kanál {{n}}"
+    "channelRelayUnnamed": "Kanál {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic kanály do TAK",
+    "channelRelayDescMeshtastic": "Vyber, které zprávy slyšeného kanálu se budou přenášet do TAK. Místnost GeoChat zrcadlí kanál, včetně zpráv slyšených přes MQTT, do této TAK chatovací místnosti. Toto platí pouze pro jednu cestu: nic z TAK není odesláno přes síť.",
+    "channelRelayNoChannelsMeshtastic": "Připojte rádio Meshtastic a zobrazte seznam jeho kanálů."
   },
   "telemetryPanel": {
     "title": "Telemetrie",

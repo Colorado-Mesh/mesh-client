@@ -6427,6 +6427,9 @@
     "channelRelayRoom": "GeoChat room for {{channel}}",
     "channelRelayRoomPlaceholder": "GeoChat room (off)",
     "channelRelayNoChannels": "Connect a MeshCore radio to list its channels.",
+    "channelRelayTitleMeshtastic": "Meshtastic channels to TAK",
+    "channelRelayDescMeshtastic": "Choose which heard channel messages feed into TAK. A GeoChat room mirrors the channel, including messages heard over MQTT, into that TAK chat room. This only goes one way: nothing from TAK is sent over the mesh.",
+    "channelRelayNoChannelsMeshtastic": "Connect a Meshtastic radio to list its channels.",
     "channelRelayUnnamed": "Channel {{n}}"
   },
   "telemetryPanel": {
