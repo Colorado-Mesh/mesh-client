@@ -135,7 +135,7 @@ Installers, Flatpak, Gatekeeper, and first-launch failures.
 
 **Cause**: With a hoisted `nodeLinker`, electron-builder can omit some transitive packages from `app.asar` unless a full copy exists at a predictable path (historically worsened when `pnpm list --json` marked nodes as deduped). `mqtt` is loaded from `node_modules` at runtime (not bundled into the main esbuild output).
 
-**Fix in this repo**: `readable-stream@^4.7.0` is a **direct** production dependency (with the existing `patches/readable-stream@4.7.0.patch` for Windows `process/` resolution). Do not remove it when bumping `mqtt` or pnpm. After `pnpm run dist:linux`, verify the asar contains `node_modules/readable-stream`, `node_modules/bl`, and `node_modules/mqtt`. See [electron-builder#9603](https://github.com/electron-userland/electron-builder/issues/9603) and [pnpm#10601](https://github.com/pnpm/pnpm/issues/10601).
+**Fix in this repo**: `readable-stream@^4.8.0` is a **direct** production dependency (with the existing `patches/readable-stream@4.8.0.patch` for Windows `process/` resolution). Do not remove it when bumping `mqtt` or pnpm. After `pnpm run dist:linux`, verify the asar contains `node_modules/readable-stream`, `node_modules/bl`, and `node_modules/mqtt`. See [electron-builder#9603](https://github.com/electron-userland/electron-builder/issues/9603) and [pnpm#10601](https://github.com/pnpm/pnpm/issues/10601).
 
 ### Permission messages in the console
 

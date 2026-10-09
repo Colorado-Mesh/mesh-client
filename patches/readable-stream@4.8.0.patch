@@ -1,0 +1,11 @@
+diff --git a/lib/internal/shims/process.js b/lib/internal/shims/process.js
+index cdc2a07..ca53cd1 100644
+--- a/lib/internal/shims/process.js
++++ b/lib/internal/shims/process.js
+@@ -15,5 +15,5 @@ const process = ((base, esmKey, keys, isValid) => {
+     }
+   }
+   return base
+-})(require('process/'), '__esModule', ['default', 'process'], (candidate) => 'nextTick' in candidate)
++})(require('process'), '__esModule', ['default', 'process'], (candidate) => 'nextTick' in candidate)
+ module.exports = process
