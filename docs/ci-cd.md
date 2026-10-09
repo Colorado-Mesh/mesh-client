@@ -17,6 +17,7 @@ Mesh-Client uses GitHub Actions for continuous integration and deployment.
 | `release.yaml`              | Version tags (`v*`)                          | Build & publish releases (AppImage/deb/rpm)                                     |
 | `flatpak.yaml`              | Version tags (`v*`), manual                  | Build Flatpak (+ schema compare vs last official); publish to release on tags   |
 | `cut-release.yaml`          | Manual `workflow_dispatch`                   | **Primary** release cut in Actions (needs admin `RELEASE_PUSH_TOKEN`)           |
+| `release-preflight.yaml`    | Path-filtered PR, nightly, manual            | `release.sh --preflight-only` on a fresh runner with the Cut release toolchain  |
 | `docs.yml`                  | Push to `main`                               | Deploy MkDocs to GitHub Pages                                                   |
 | `third-party-licenses.yaml` | Path-filtered push to `main` + dispatch      | Regenerate licenses doc and open a PR (needs `RELEASE_PUSH_TOKEN`)              |
 

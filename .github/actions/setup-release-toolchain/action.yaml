@@ -1,0 +1,41 @@
+name: Setup release toolchain
+description: >-
+  Install the non-Node tools scripts/release.sh pre-flight requires (actionlint,
+  yamllint, flatpak-node-generator, Linux build deps, Rust). Shared by Cut release
+  and Release preflight so the preflight runs in the same environment as a real cut.
+  Run after checkout and Node/pnpm dependency install.
+
+runs:
+  using: composite
+  steps:
+    - name: Install actionlint
+      shell: bash
+      run: pnpm run setup:actionlint
+
+    - name: Add actionlint to PATH
+      shell: bash
+      env:
+        HOOKS_BIN: ${{ github.workspace }}/.githooks/bin
+      run: echo "${HOOKS_BIN}" >> "$GITHUB_PATH"
+
+    - name: Install yamllint
+      shell: bash
+      run: pip install yamllint
+
+    - name: Install flatpak-node-generator
+      shell: bash
+      run: |
+        # Keep pin in sync with scripts/flatpakPnpmStoreVersion.mjs FLATPAK_NODE_GENERATOR_COMMIT.
+        COMMIT=$(node --input-type=module -e "
+          import { FLATPAK_NODE_GENERATOR_COMMIT } from './scripts/flatpakPnpmStoreVersion.mjs';
+          process.stdout.write(FLATPAK_NODE_GENERATOR_COMMIT);
+        ")
+        pip3 install --force-reinstall --no-cache-dir \
+          "git+https://github.com/flatpak/flatpak-builder-tools@${COMMIT}#subdirectory=node"
+
+    - name: Install Linux build deps (sidecar / Flatpak checks)
+      shell: bash
+      run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8

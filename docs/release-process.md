@@ -44,11 +44,12 @@ Documentation deploys separately: [`docs.yml`](../.github/workflows/docs.yml) ru
 
 **Preferred path:** Actions → **Cut release** ([`cut-release.yaml`](../.github/workflows/cut-release.yaml)).
 
-1. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.).
-2. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
-3. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.
-4. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release --yes` or the same env var.
-5. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
+1. Confirm the latest **Release preflight** run ([`release-preflight.yaml`](../.github/workflows/release-preflight.yaml)) on `main` is green, or dispatch it. It runs the full `release.sh` pre-flight (`--preflight-only`) on a fresh runner using the same composites as Cut release (`setup-node-pnpm`, `setup-release-toolchain`), so release-only breakage surfaces without burning a cut. It also runs on PRs that touch release plumbing and nightly. Locally: `pnpm run release --preflight-only` (any branch; no pull, dep update, bump, tag, or push).
+2. (Optional) Run once with **dry_run** checked to confirm the computed version in the job summary (`feat(scope):` → minor, etc.). Dry run only previews the version; it does not run pre-flight.
+3. Re-run with dry_run unchecked. Default bump is **auto**; override with `patch` / `minor` / `major` / exact `X.Y.Z` when needed.
+4. **skip_dep_update** defaults to **true** — bump dependencies in a normal PR via `pnpm run update` before cutting.
+5. The workflow sets `MESH_CLIENT_RELEASE_YES=1` (non-interactive). Locally use `pnpm run release --yes` or the same env var.
+6. Wait for `release.yaml` + `flatpak.yaml` to attach draft artifacts, then **Publish** on GitHub.
 
 **Secret:** `RELEASE_PUSH_TOKEN` — fine-grained PAT (or GitHub App installation token) owned by a repo **admin** (so the merge-queue ruleset bypass applies), with **contents: write**, **workflows: write**, and **pull requests: write** (also used by `third-party-licenses.yaml` so bot PRs run required checks). Plain `GITHUB_TOKEN` cannot trigger tag workflows, cannot push past the ruleset, and cannot open check-running license PRs.
 
