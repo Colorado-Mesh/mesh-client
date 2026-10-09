@@ -101,6 +101,21 @@ function finite(n: number | undefined): n is number {
   return n != null && Number.isFinite(n);
 }
 
+/** Standard CoT delete (`t-x-d-d`) telling TAK clients to remove the marker with `targetUid`. */
+export function cotDeleteEvent(targetUid: string, nowMs: number = Date.now()): string {
+  const time = new Date(nowMs).toISOString();
+  const stale = new Date(nowMs + COT_STALE_MS).toISOString();
+  const target = escapeXml(targetUid);
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<event version="2.0" uid="${target}-delete-${nowMs}" type="t-x-d-d"` +
+    ` time="${time}" start="${time}" stale="${stale}" how="h-g-i-g-o">` +
+    `<point lat="0" lon="0" hae="9999999" ce="9999999" le="9999999"/>` +
+    `<detail><link uid="${target}" relation="none" type="none"/><__forcedelete/></detail>` +
+    `</event>`
+  );
+}
+
 /**
  * CoT for a relayed node. `time` is when we send it, `start` is when we last heard the node, and
  * `stale` is when ATAK should drop it without a refresh. Returns null without a position.

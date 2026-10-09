@@ -27,7 +27,7 @@ import {
   type TakServerIdentity,
 } from './tak/certificate-manager';
 import { TakContactCache } from './tak/contact-cache';
-import { COT_STALE_MS, meshNodeToCot } from './tak/cot-converter';
+import { COT_STALE_MS, cotDeleteEvent, cotUidFor, meshNodeToCot } from './tak/cot-converter';
 import { CotFramer, parseCotEvent } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import { buildGeochatCot } from './tak/geochat-cot';
@@ -284,13 +284,28 @@ export class TakServerManager extends EventEmitter {
     return this.styleSettings;
   }
 
-  /** Apply new styling and re-send every fresh node so open maps restyle without waiting. */
+  /**
+   * Apply new styling: re-send every fresh node so open maps restyle without waiting, and
+   * retract nodes the new filters exclude so they do not linger until stale.
+   */
   setStyleSettings(settings: TakStyleSettings): void {
+    const previous = this.styleSettings;
     this.styleSettings = settings;
     if (!this.hasConnectedSink()) return;
-    this.forEachFreshCot((cot) => {
-      this.broadcast(cot);
-    });
+    const cutoff = Date.now() - COT_STALE_MS;
+    for (const node of this.nodeCache.values()) {
+      if (node.cachedAtMs < cutoff) continue;
+      const cot = this.toCot(node);
+      if (cot) {
+        this.broadcast(cot);
+      } else if (
+        node.latitude != null &&
+        node.longitude != null &&
+        resolveTakStyle(previous, node, node.protocol)
+      ) {
+        this.broadcast(cotDeleteEvent(cotUidFor(node, node.protocol)));
+      }
+    }
   }
 
   private hasConnectedSink(): boolean {

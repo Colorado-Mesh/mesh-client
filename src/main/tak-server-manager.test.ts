@@ -463,6 +463,47 @@ describe('TakServerManager multi-protocol node cache', () => {
     manager.onNodeUpdate({ node_id: 5, protocol: 'meshcore', latitude: 40, longitude: -105 });
     expect(socket.write).not.toHaveBeenCalled();
   });
+
+  it('retracts relayed nodes that new style settings exclude and keeps eligible ones', () => {
+    const manager = new TakServerManager();
+    const socket = connectMockClient(manager);
+    manager.onNodeUpdate({
+      node_id: 5,
+      protocol: 'meshcore',
+      latitude: 40,
+      longitude: -105,
+      long_name: 'EMS-3',
+    });
+    manager.onNodeUpdate({ node_id: 6, protocol: 'meshcore', latitude: 41, longitude: -105 });
+    manager.onNodeUpdate({ node_id: 7, protocol: 'meshcore' });
+    vi.mocked(socket.write).mockClear();
+
+    manager.setStyleSettings({
+      sendUnmatched: false,
+      filters: [
+        {
+          enabled: true,
+          op: 'startsWith',
+          patterns: ['ems-'],
+          stripMatch: false,
+          style: { cotType: 'a-f-G-U-S-M' },
+        },
+      ],
+    });
+
+    const lines = vi.mocked(socket.write).mock.calls.map((c) => String(c[0]));
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain('uid="MC-5"');
+    expect(lines[0]).toContain('type="a-f-G-U-S-M"');
+    expect(lines[1]).toContain('type="t-x-d-d"');
+    expect(lines[1]).toContain('<link uid="MC-6" relation="none" type="none"/>');
+
+    vi.mocked(socket.write).mockClear();
+    manager.setStyleSettings({ sendUnmatched: false, filters: [] });
+    const again = vi.mocked(socket.write).mock.calls.map((c) => String(c[0]));
+    expect(again).toHaveLength(1);
+    expect(again[0]).toContain('<link uid="MC-5"');
+  });
 });
 
 describe('TakServerManager remote relay', () => {

@@ -107,6 +107,17 @@ describe('TakContactsLayer', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('updates the marker title when a contact is renamed', () => {
+    useTakContactStore.getState().replaceAll([contact({})]);
+    const { rerender } = render(<TakContactsLayer />);
+    expect(screen.getByTestId('tak-marker').getAttribute('title')).toBe('VIPER');
+    useTakContactStore.getState().replaceAll([contact({ callsign: 'COBRA' })]);
+    rerender(<TakContactsLayer />);
+    const markers = screen.getAllByTestId('tak-marker');
+    expect(markers).toHaveLength(1);
+    expect(markers[0]?.getAttribute('title')).toBe('COBRA');
+  });
+
   it('keeps contact text out of the icon markup', () => {
     useTakContactStore
       .getState()

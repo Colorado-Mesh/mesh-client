@@ -110,7 +110,8 @@ export function TakContactsLayer() {
         }
         return (
           <Marker
-            key={`tak-${contact.uid}`}
+            // react-leaflet only applies title/alt at creation, so a rename remounts the marker.
+            key={`tak-${contact.uid}:${contact.callsign}`}
             position={[contact.lat, contact.lon]}
             icon={symbolIcon(symbol)}
             title={contact.callsign}

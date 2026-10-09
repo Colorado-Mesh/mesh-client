@@ -237,4 +237,11 @@ describe('takNodeUpdateSignature', () => {
     const b = meshNodeToTakUpdate(node({ hw_model: 'Repeater' }), 'meshcore')!;
     expect(takNodeUpdateSignature(a)).not.toBe(takNodeUpdateSignature(b));
   });
+
+  it('changes when a tracker stale window changes', () => {
+    const a = meshNodeToTakUpdate(node(), 'meshcore')!;
+    expect(takNodeUpdateSignature({ ...a, stale_sec: 60 })).not.toBe(
+      takNodeUpdateSignature({ ...a, stale_sec: 120 }),
+    );
+  });
 });

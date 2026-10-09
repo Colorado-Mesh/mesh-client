@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MeshNode } from '../../renderer/lib/types';
-import { meshNodeToCot } from './cot-converter';
+import { cotDeleteEvent, meshNodeToCot } from './cot-converter';
 
 function makeNode(overrides: Partial<MeshNode> = {}): MeshNode {
   return {
@@ -236,5 +236,19 @@ describe('meshNodeToCot relay fidelity', () => {
 
   it('omits track without motion fields', () => {
     expect(meshNodeToCot(makeNode())).not.toContain('<track');
+  });
+});
+
+describe('cotDeleteEvent', () => {
+  it('builds a forced delete addressed to the target uid', () => {
+    const cot = cotDeleteEvent('MC-6', Date.parse('2026-10-09T12:00:00.000Z'));
+    expect(cot).toContain('type="t-x-d-d"');
+    expect(cot).toContain('time="2026-10-09T12:00:00.000Z"');
+    expect(cot).toContain('<link uid="MC-6" relation="none" type="none"/><__forcedelete/>');
+    expect(cot).not.toContain('uid="MC-6" type=');
+  });
+
+  it('escapes the target uid', () => {
+    expect(cotDeleteEvent('a"b')).toContain('<link uid="a&quot;b"');
   });
 });

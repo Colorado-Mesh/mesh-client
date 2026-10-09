@@ -179,5 +179,6 @@ export function takNodeUpdateSignature(update: TAKNodeUpdate): string {
     update.speed ?? '',
     update.course ?? '',
     update.sequence ?? '',
+    update.stale_sec ?? '',
   ].join('|');
 }
