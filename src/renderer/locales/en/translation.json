@@ -557,6 +557,8 @@
     "floodScopeOverrideCustomInvalid": "Enter a valid region hashtag (for example #metro or #us-co).",
     "channels": "Channels",
     "scrollChannels": "Scroll for more channels",
+    "scrollDms": "Scroll for more conversations",
+    "hiddenUnreadDms": "Unread conversations",
     "unreadChannelsAbove": "{{count}} unread above",
     "unreadChannelsBelow": "{{count}} unread below",
     "hiddenUnreadChannels": "Unread channels",

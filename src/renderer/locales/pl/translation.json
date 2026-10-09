@@ -529,6 +529,8 @@
     "removeChannelNeedsRadio": "Dostępne po podłączeniu radia",
     "channels": "Kanały",
     "scrollChannels": "Przewiń, aby zobaczyć więcej kanałów",
+    "scrollDms": "Przewiń, aby zobaczyć więcej rozmów",
+    "hiddenUnreadDms": "Nieprzeczytane rozmowy",
     "unreadChannelsAbove": "Nieprzeczytane powyżej: {{count}}",
     "unreadChannelsBelow": "Nieprzeczytane poniżej: {{count}}",
     "hiddenUnreadChannels": "Nieprzeczytane kanały",

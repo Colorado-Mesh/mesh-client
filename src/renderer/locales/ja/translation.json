@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "無線機の接続後に使用できます",
     "channels": "チャンネル",
     "scrollChannels": "スクロールして他のチャンネルを表示",
+    "scrollDms": "スクロールして他の会話を表示",
+    "hiddenUnreadDms": "未読の会話",
     "unreadChannelsAbove": "上の未読：{{count}}",
     "unreadChannelsBelow": "下の未読：{{count}}",
     "hiddenUnreadChannels": "未読チャンネル",

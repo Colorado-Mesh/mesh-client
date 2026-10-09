@@ -521,6 +521,8 @@
     "removeChannelNeedsRadio": "Dostupné po připojení rádia",
     "channels": "Kanály",
     "scrollChannels": "Posunutím zobrazíte další kanály",
+    "scrollDms": "Posuňte pro další konverzace",
+    "hiddenUnreadDms": "Nepřečtené konverzace",
     "unreadChannelsAbove": "Nepřečtené nahoře: {{count}}",
     "unreadChannelsBelow": "Nepřečtené dole: {{count}}",
     "hiddenUnreadChannels": "Nepřečtené kanály",

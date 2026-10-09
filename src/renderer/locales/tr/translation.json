@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "Telsiz bağlandığında kullanılabilir",
     "channels": "Kanallar",
     "scrollChannels": "Daha fazla kanal için kaydırın",
+    "scrollDms": "Daha fazla sohbet için kaydırın",
+    "hiddenUnreadDms": "Okunmamış sohbetler",
     "unreadChannelsAbove": "Yukarıda {{count}} okunmamış",
     "unreadChannelsBelow": "Aşağıda {{count}} okunmamış",
     "hiddenUnreadChannels": "Okunmamış kanallar",

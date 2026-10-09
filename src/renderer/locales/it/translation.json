@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "Disponibile quando la radio è connessa",
     "channels": "Scanalature",
     "scrollChannels": "Scorri per altri canali",
+    "scrollDms": "Scorri per altre conversazioni",
+    "hiddenUnreadDms": "Conversazioni non lette",
     "unreadChannelsAbove": "{{count}} non letti sopra",
     "unreadChannelsBelow": "{{count}} non letti sotto",
     "hiddenUnreadChannels": "Canali non letti",

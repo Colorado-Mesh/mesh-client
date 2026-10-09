@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "Tersedia setelah radio terhubung",
     "channels": "Saluran",
     "scrollChannels": "Gulir untuk melihat saluran lainnya",
+    "scrollDms": "Gulir untuk melihat percakapan lainnya",
+    "hiddenUnreadDms": "Percakapan belum dibaca",
     "unreadChannelsAbove": "{{count}} belum dibaca di atas",
     "unreadChannelsBelow": "{{count}} belum dibaca di bawah",
     "hiddenUnreadChannels": "Saluran belum dibaca",
