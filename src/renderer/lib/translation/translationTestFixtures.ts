@@ -41,7 +41,7 @@ export function resetTranslation(status = translationStatus()) {
       Promise.resolve({ language: 'fr', confidence: 0.99 }),
     ),
     listPacks: vi.fn(() => Promise.resolve(status.packs)),
-    installPack: vi.fn(() => Promise.resolve({ ok: true })),
+    installPack: vi.fn<TranslationAPI['installPack']>(() => Promise.resolve({ ok: true })),
     cancelInstall: vi.fn(async () => {}),
     deletePack: vi.fn(async () => {}),
     removeAll: vi.fn(() => Promise.resolve({ ...translationStatus(false), enabled: false })),

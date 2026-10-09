@@ -122,23 +122,23 @@ function trySendViaMeshtasticSession(
   channelIndex: number,
   destination: number | undefined,
   replyTo: string | undefined,
-): boolean {
+): { handled: boolean; messageId?: string } {
   const session = tryGetMeshtasticSession();
-  if (!session) return false;
+  if (!session) return { handled: false };
   const mqttStatus = getConnection(identityId)?.mqttStatus ?? 'disconnected';
   const hasMqtt = mqttStatus === 'connected';
   if (!handle && !hasMqtt) {
     console.warn('[useSendMessage] no handle and MQTT disconnected for', identityId);
-    return true;
+    return { handled: true };
   }
   const replyIdNum = replyTo != null && replyTo !== '' ? Number.parseInt(replyTo, 10) : undefined;
-  session.sendChatMessage(
+  const messageId = session.sendChatMessage(
     text,
     channelIndex,
     destination,
     replyIdNum != null && !Number.isNaN(replyIdNum) ? replyIdNum : undefined,
   );
-  return true;
+  return { handled: true, ...(messageId != null ? { messageId } : {}) };
 }
 
 function allocateOutboundProvisionalId(
@@ -211,10 +211,16 @@ export function useSendMessage(
 
       // Meshtastic: runtime TransportManager sends RF + MQTT concurrently (hybrid or MQTT-only).
       if (identity.protocol.type === 'meshtastic') {
-        if (
-          trySendViaMeshtasticSession(identityId, handle, text, channelIndex, destination, replyTo)
-        ) {
-          return;
+        const viaSession = trySendViaMeshtasticSession(
+          identityId,
+          handle,
+          text,
+          channelIndex,
+          destination,
+          replyTo,
+        );
+        if (viaSession.handled) {
+          return viaSession.messageId;
         }
         if (!handle) {
           console.warn('[useSendMessage] Meshtastic runtime not mounted and no RF handle');
@@ -362,7 +368,7 @@ export function useSendMessage(
             abandonMeshcoreHeardRepeat();
           }
         })();
-        return;
+        return provisionalId;
       }
 
       if (!handle) {
@@ -451,6 +457,7 @@ export function useSendMessage(
       };
 
       finishSend(handle);
+      return provisionalId;
     },
     [identityId, addToast, t],
   );

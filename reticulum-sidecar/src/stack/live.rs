@@ -7023,6 +7023,22 @@ fn spawn_client_download_driver_task(
                 );
                 message
             };
+        let terminal_download_failure =
+            |bridge: &PropagationBridge, progress: f64, round: u8, tried: &[String]| {
+                if progress < PropagationBridge::CLIENT_LINK_ESTABLISHED_PROGRESS {
+                    return terminal_establish_failure(bridge, round, tried);
+                }
+                let message = bridge.client_download_fail_message(progress);
+                tracing::info!(
+                    target: "propagation-sync",
+                    pn_hash = %pn_hex,
+                    progress,
+                    message = %message,
+                    tried_interfaces = ?tried,
+                    "propagation client /get request failed"
+                );
+                message
+            };
         'attempt: loop {
             let round_started = Instant::now();
             let mut last_logged_progress = -1.0_f64;
@@ -7099,8 +7115,12 @@ fn spawn_client_download_driver_task(
                     {
                         continue 'attempt;
                     }
-                    let message =
-                        terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                    let message = terminal_download_failure(
+                        &bridge,
+                        progress,
+                        failover_round,
+                        &tried_interfaces,
+                    );
                     run_guarded(&|| {
                         emit_progress(false, 0.0, Some(&message));
                     });
@@ -7146,8 +7166,12 @@ fn spawn_client_download_driver_task(
                         {
                             continue 'attempt;
                         }
-                        let message =
-                            terminal_establish_failure(&bridge, failover_round, &tried_interfaces);
+                        let message = terminal_download_failure(
+                            &bridge,
+                            progress,
+                            failover_round,
+                            &tried_interfaces,
+                        );
                         run_guarded(&|| {
                             bridge.cancel_client_download();
                             emit_progress(false, 0.0, Some(&message));

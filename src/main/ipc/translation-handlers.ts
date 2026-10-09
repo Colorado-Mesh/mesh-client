@@ -57,6 +57,21 @@ export function validateTranslationRequest(value: unknown): TranslationRequest {
   };
 }
 
+/**
+ * Mozilla's attachment CDN answers Chromium's network stack (`net.fetch`) with HTTP 406, so pack
+ * downloads use Node's fetch with a non-browser User-Agent.
+ */
+export function createTranslationPackFetch(
+  version: string,
+  fetchImpl?: typeof fetch,
+): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(init?.headers);
+    headers.set('User-Agent', `mesh-client/${version}`);
+    return (fetchImpl ?? globalThis.fetch)(input, { ...init, headers });
+  };
+}
+
 /** Registration is inert: constructing services creates no directory, network request or worker. */
 export function registerTranslationHandlers(deps: TranslationHandlerDependencies): () => void {
   const enabled = () => deps.getSetting('translationEnabled') === '1';
@@ -65,7 +80,7 @@ export function registerTranslationHandlers(deps: TranslationHandlerDependencies
   const packs = new TranslationPackManager({
     directory: () => path.join(app.getPath('userData'), 'translation'),
     enabled,
-    fetch: fetchImpl,
+    fetch: createTranslationPackFetch(app.getVersion()),
     onProgress: deps.onProgress,
   });
   const worker = new BergamotWorker();

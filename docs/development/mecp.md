@@ -49,8 +49,14 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 ## Send path
 
 - App → MECP → **Show MECP button in Chat** (default **off**) gates the Chat MECP compose control
-- When enabled: red **Siren** icon button in the composer action row (`ChatComposer` `actionSlot`, next to share-location, left of Send; hidden in Starred) → `MecpComposeModal` (defaults: ROUTINE + Drill category, no codes selected) → encode → `sendEmergencyText` ([`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts)) → live `handleSendChunk` / `useSendMessage` (follows open DM/channel)
-- **Emergency outbox:** when offline / MQTT-only MeshCore, or when the live send throws, the report is queued in the chat outbox with `priority: 'emergency'` — no 24h drain cutoff, no 5-attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See [emcomm.md — WS2](emcomm.md#ws2--emergency-priority-outbox)
+- When enabled: red **Siren** icon button in the composer action row (`ChatComposer` `actionSlot`, next to share-location, left of Send; hidden in Starred) → `MecpComposeModal` (defaults: ROUTINE + Drill category, no codes selected) → encode → `sendEmergencyText` ([`emergencySend.ts`](../../src/renderer/lib/emergencySend.ts)) → emergency outbox row → immediate drain through `useSendMessage` (follows open DM/channel)
+- **Retry until acknowledged:** every report is queued in the chat outbox with `priority: 'emergency'` and stays there until the **network acknowledges** it — no 24h drain cutoff, no attempt stop, soft cap of 20 rows (overflow blocks the oldest, never deletes). See [emcomm.md — WS2](emcomm.md#ws2--emergency-priority-outbox)
+- **What counts as acknowledged** ([`networkAckAwait.ts`](../../src/renderer/lib/networkAckAwait.ts) `awaitNetworkAck`), any one of:
+  - Meshtastic: device `acked` (routing ACK on a DM, implicit ACK / rebroadcast heard on a channel) or MQTT publish `acked`
+  - MeshCore: DM ACK (event 130); channel floods need at least one repeater in the heard-repeat window (companion accept alone does not count)
+  - Reticulum: LXMF receipt (or remote PN `propagated`), same as `assertReticulumSendAcked`
+  - Any protocol: another station's R01 echoing our codes (or our severity when it echoes none), a B02 for our B01, or a relayed copy of the same payload (`isPeerMecpNetworkAck`)
+- **Stopping retries:** the outbox row shows "Waiting for network acknowledgement…" while a send is in flight and a countdown while backing off. **Stop retrying** (confirm) aborts any in-flight wait (`abortOutboxRowSend` in [`chatOutboxDrain.ts`](../../src/renderer/lib/chatOutboxDrain.ts)) and deletes the row; the drain does not re-persist a cancelled row.
 - Attach GPS uses the app share-location waterfall (`resolveShareLocation`), not raw `navigator.geolocation` alone
 - Meshtastic outbound uses normal text (`TEXT_MESSAGE_APP`), not ALERT_APP. This is deliberate — see [Why not ALERT_APP outbound](#why-not-alert_app-outbound)
 
@@ -59,7 +65,7 @@ Default tone shapes and timings: [notification-sounds.md — Default MECP tone s
 Evaluated and not planned. Blockers:
 
 - **Firmware rate limit:** `PhoneAPI.cpp` allows one locally-originated `ALERT_APP` packet per **10s** (same rule as POSITION / WAYPOINT / TELEMETRY), versus 2s for text (`MESHTASTIC_TEXT_CHUNK_SEND_INTERVAL_MS`). An over-limit packet is dropped with only a queue-status reply — no `RATE_LIMIT_EXCEEDED` routing error — so `@meshtastic/core` waits for its 60s queue timeout before rejecting.
-- **No re-queue on that failure:** the Meshtastic emergency `sendFn` is fire-and-forget (session `sendChatMessage` does not surface the device result), so a silently dropped report would never fall back to the emergency outbox.
+- **Silent drops look like timeouts:** an over-limit `ALERT_APP` packet never reaches `acked`, so the emergency outbox would only retry after the network-ACK timeout, burning more of the 10s budget on every attempt.
 - **Bursts:** `tryParseMecp` also matches R01 / B02 / B03 ACK and beacon control traffic, and RF rebroadcast (`sendMecpRebroadcast.ts`) is unpaced, so a MAYDAY followed by an ACK, update, or bridge send within 10s would lose packets.
 - **No Store & Forward replay:** the S&F server stores only `TEXT_MESSAGE_APP`.
 

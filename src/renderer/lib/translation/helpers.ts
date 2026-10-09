@@ -1,5 +1,9 @@
 import { TRANSLATION_MIN_LETTERS } from '@/shared/translation-types';
-import { normalizeTranslationLanguage } from '@/shared/translationLanguages';
+import {
+  normalizeTranslationLanguage,
+  TRANSLATION_LANGUAGES,
+  translationPath,
+} from '@/shared/translationLanguages';
 
 export function readsTranslationLanguage(
   language: string,
@@ -8,6 +12,16 @@ export function readsTranslationLanguage(
   return readLanguages.some(
     (read) => normalizeTranslationLanguage(read) === normalizeTranslationLanguage(language),
   );
+}
+
+/** Packs that automatic translation needs to bring every unread language into `target`. */
+export function neededTranslationPacks(target: string, readLanguages: readonly string[]): string[] {
+  const needed = new Set<string>();
+  for (const source of TRANSLATION_LANGUAGES) {
+    if (source === target || readsTranslationLanguage(source, readLanguages)) continue;
+    for (const id of translationPath(source, target)) needed.add(id);
+  }
+  return [...needed];
 }
 
 /** Mesh control/data payloads stay intact; translating them produces misleading prose. */

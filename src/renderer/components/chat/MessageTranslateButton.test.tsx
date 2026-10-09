@@ -33,4 +33,18 @@ describe('Translate action', () => {
     hydrateAxeThemeColors(container);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  it('keeps the default size and accepts a compact class and icon size', () => {
+    const { rerender } = render(<MessageTranslateButton messageKey="one" text="Bonjour" />);
+    const button = screen.getByRole('button', { name: 'chatTranslation.translate' });
+    expect(button.className).toContain('p-1');
+    expect(button.querySelector('svg')?.getAttribute('width')).toBe('14');
+
+    rerender(
+      <MessageTranslateButton messageKey="one" text="Bonjour" className="p-0.5" iconSize={11} />,
+    );
+    const compact = screen.getByRole('button', { name: 'chatTranslation.translate' });
+    expect(compact.className).toBe('p-0.5');
+    expect(compact.querySelector('svg')?.getAttribute('width')).toBe('11');
+  });
 });

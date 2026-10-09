@@ -716,6 +716,11 @@ export interface ElectronAPI {
       timestamp?: number | null,
     ) => Promise<void>;
     updateMeshcoreMessageStatus: (packetId: number, status: string) => Promise<void>;
+    /** Delete a `failed` outbound row (by packet id) superseded by an automatic resend. */
+    deleteFailedOutboundMessage: (
+      protocol: 'meshtastic' | 'meshcore',
+      packetId: number,
+    ) => Promise<{ changes: number } | undefined>;
     updateMeshcoreMessageStatusByKey: (
       senderId: number,
       timestamp: number,

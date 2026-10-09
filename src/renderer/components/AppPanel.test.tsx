@@ -34,6 +34,27 @@ describe('AppPanel accessibility', () => {
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
+
+  it('places collapsed Translation above a collapsed MECP section', async () => {
+    const { container } = render(
+      <ToastProvider>
+        <AppPanel {...defaultProps} />
+      </ToastProvider>,
+    );
+    await act(async () => {});
+    const translation = container.querySelector('details[data-setting-anchor="app.translation"]');
+    const mecp = container
+      .querySelector('[data-setting-anchor="app.mecp.showComposeButton"]')
+      ?.closest('details');
+    expect(translation).toBeInstanceOf(HTMLDetailsElement);
+    expect(mecp).toBeInstanceOf(HTMLDetailsElement);
+    expect((translation as HTMLDetailsElement).open).toBe(false);
+    expect(mecp!.open).toBe(false);
+    expect(
+      (translation as Node).compareDocumentPosition(mecp as Node) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });
 
 describe('AppPanel: DB-backed message retention card (issue #387)', () => {

@@ -61,6 +61,7 @@ const SYNC_PEERAGE_STAMP_FAILED_KEY = 'reticulumPropagation.syncPeeringStampFail
 export const SYNC_ESTABLISH_IDENTITY_KEY = 'reticulumPropagation.syncEstablishIdentityMissing';
 export const SYNC_ESTABLISH_INVALID_KEY = 'reticulumPropagation.syncEstablishInvalidProof';
 export const SYNC_ESTABLISH_NO_PROOF_KEY = 'reticulumPropagation.syncEstablishNoLinkProof';
+const SYNC_REQUEST_FAILED_KEY = 'reticulumPropagation.syncRequestFailed';
 const SYNC_OFFER_NO_IDENTITY_KEY = 'reticulumPropagation.syncOfferNoIdentity';
 const SYNC_OFFER_NO_ACCESS_KEY = 'reticulumPropagation.syncOfferNoAccess';
 const SYNC_OFFER_INVALID_KEY_KEY = 'reticulumPropagation.syncOfferInvalidKey';
@@ -118,6 +119,7 @@ function mapPropagationSyncErrorByPrefix(error: string): string | null {
   if (establishMatch?.[1] && ESTABLISH_ERROR_KEYS[establishMatch[1]]) {
     return ESTABLISH_ERROR_KEYS[establishMatch[1]];
   }
+  if (/^propagation request failed:/i.test(error)) return SYNC_REQUEST_FAILED_KEY;
   return null;
 }
 

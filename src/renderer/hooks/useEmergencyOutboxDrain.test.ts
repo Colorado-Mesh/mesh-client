@@ -8,6 +8,7 @@ import {
 import { resetMeshcoreSendRateForTests } from '@/renderer/lib/meshcoreSendRateNotice';
 import { resetMeshtasticTextSendPacingForTests } from '@/renderer/lib/meshtasticTextSendPacing';
 import type { MeshProtocol } from '@/renderer/lib/types';
+import { useMessageStore } from '@/renderer/stores/messageStore';
 import type { OutboxEntry } from '@/shared/electron-api.types';
 
 import { useChatOutbox } from './useChatOutbox';
@@ -40,6 +41,32 @@ function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
   };
 }
 
+let ackedSendSeq = 0;
+
+/** Send fn whose MeshCore DM bubble is immediately acked, satisfying the emergency network-ACK gate. */
+function ackedSend(): string {
+  ackedSendSeq += 1;
+  const id = `mc-acked-${ackedSendSeq}`;
+  useMessageStore.setState((s) => ({
+    messages: {
+      ...s.messages,
+      'mc-identity': {
+        ...(s.messages['mc-identity'] ?? {}),
+        [id]: {
+          id,
+          from: 1,
+          to: 42,
+          payload: 'x',
+          channelIndex: -1,
+          timestamp: Date.now(),
+          status: 'acked',
+        },
+      },
+    },
+  }));
+  return id;
+}
+
 function drainsFor(
   sendFns: Partial<Record<MeshProtocol, EmergencyOutboxDrainTarget['sendFn']>>,
   available: Partial<Record<MeshProtocol, boolean>> = {},
@@ -59,6 +86,7 @@ describe('useEmergencyOutboxDrain', () => {
     resetChatOutboxDrainLocksForTests();
     resetMeshtasticTextSendPacingForTests();
     resetMeshcoreSendRateForTests();
+    useMessageStore.setState({ messages: {} });
     stored = [];
     vi.mocked(mockOutbox.list).mockReset();
     vi.mocked(mockOutbox.updateStatus).mockReset();
@@ -107,7 +135,7 @@ describe('useEmergencyOutboxDrain', () => {
         viewKey: 'ackIncident:mecp-x:ch:0',
       }),
     ];
-    const sendFn = vi.fn().mockResolvedValue(undefined);
+    const sendFn = vi.fn(ackedSend);
     renderHook(() => {
       useEmergencyOutboxDrain({ drains: drainsFor({ meshcore: sendFn }, { meshcore: true }) });
     });
@@ -133,7 +161,7 @@ describe('useEmergencyOutboxDrain', () => {
           attemptCount: 1,
         }),
       ];
-      const sendFn = vi.fn().mockResolvedValue(undefined);
+      const sendFn = vi.fn(ackedSend);
       renderHook(() => {
         useEmergencyOutboxDrain({ drains: drainsFor({ meshcore: sendFn }, { meshcore: true }) });
       });
@@ -170,7 +198,7 @@ describe('useEmergencyOutboxDrain', () => {
     });
     const sendFn = vi.fn(async () => {
       await gate;
-      return undefined;
+      return ackedSend();
     });
     renderHook(() => {
       useEmergencyOutboxDrain({ drains: drainsFor({ meshcore: sendFn }, { meshcore: true }) });

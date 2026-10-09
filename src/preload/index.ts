@@ -406,6 +406,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ),
     updateMeshcoreMessageStatus: (packetId: number, status: string) =>
       ipcRenderer.invoke('db:updateMeshcoreMessageStatus', packetId, status),
+    deleteFailedOutboundMessage: (protocol: 'meshtastic' | 'meshcore', packetId: number) =>
+      ipcRenderer.invoke('db:deleteFailedOutboundMessage', protocol, packetId),
     updateMeshcoreMessageStatusByKey: (
       senderId: number,
       timestamp: number,

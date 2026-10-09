@@ -1,10 +1,9 @@
 --- a/crates/rns-interface/src/ble_rnode.rs
 +++ b/crates/rns-interface/src/ble_rnode.rs
-@@ -160,6 +160,108 @@
- static RNODE_RUNNING: std::sync::OnceLock<
+@@ -158,6 +158,108 @@ static RNODE_RUNNING: std::sync::OnceLock<
      std::sync::Mutex<std::collections::HashMap<InterfaceId, Arc<AtomicBool>>>,
  > = std::sync::OnceLock::new();
-+
+ 
 +/// Last advertisement / resolve-time host↔RNode RSSI (dBm), keyed by normalized
 +/// BLE address or friendly name. CoreBluetooth stops advertising after GATT
 +/// connect and does not refresh `PeripheralProperties.rssi`, so mesh-client
@@ -106,22 +105,23 @@
 +        }
 +    }
 +}
- 
++
  fn running_map()
  -> &'static std::sync::Mutex<std::collections::HashMap<InterfaceId, Arc<AtomicBool>>> {
-@@ -1469,6 +1571,11 @@
-             };
+     RNODE_RUNNING.get_or_init(|| std::sync::Mutex::new(std::collections::HashMap::new()))
+@@ -1467,6 +1569,11 @@ pub async fn scan_ble_devices(timeout_secs: u64) -> Result<Vec<BleDevice>, Strin
              #[cfg(not(target_os = "linux"))]
              let bonded = false;
-+
+ 
 +            if let Some(rssi) = props.rssi {
 +                remember_host_rssi(&address, rssi);
 +                remember_host_rssi(&name, rssi);
 +            }
- 
++
              devices.push(BleDevice {
                  name,
-@@ -1514,6 +1621,7 @@
+                 address,
+@@ -1511,6 +1618,7 @@ async fn resolve_ble_target(
          for p in &peripherals {
              if let Ok(Some(props)) = bounded_ble_operation("properties", p.properties()).await {
                  if props.services.contains(&NUS_SERVICE_UUID) {
@@ -129,15 +129,15 @@
                      return Ok((p.clone(), BleTargetResolutionClass::FirstRnode));
                  }
                  // A populated list without NUS means a different device;
-@@ -1521,6 +1629,7 @@
-                 if props.services.is_empty() {
-                     if let Some(ref name) = props.local_name {
-                         if name.starts_with("RNode ") {
-+                            remember_peripheral_host_rssi(p, &[]).await;
-                             return Ok((p.clone(), BleTargetResolutionClass::FirstRnode));
-                         }
-                     }
-@@ -1538,6 +1647,7 @@
+@@ -1519,6 +1627,7 @@ async fn resolve_ble_target(
+                     && let Some(ref name) = props.local_name
+                     && name.starts_with("RNode ")
+                 {
++                    remember_peripheral_host_rssi(p, &[]).await;
+                     return Ok((p.clone(), BleTargetResolutionClass::FirstRnode));
+                 }
+             }
+@@ -1534,6 +1643,7 @@ async fn resolve_ble_target(
          let addr = p.id().to_string();
          if addr.eq_ignore_ascii_case(target) {
              ble_diag(format!("[ble] resolve matched by address: {addr}"));
@@ -145,19 +145,18 @@
              return Ok((p.clone(), BleTargetResolutionClass::PrimaryId));
          }
      }
-@@ -1557,6 +1667,7 @@
-                     } else {
-                         ble_diag("[ble] resolve matched by generation-stable advertised name");
-                     }
-+                    remember_peripheral_host_rssi(p, &[target, name.as_str()]).await;
-                     return Ok((p.clone(), resolution_class));
-                 }
+@@ -1566,6 +1676,7 @@ async fn resolve_ble_target(
+             } else {
+                 ble_diag("[ble] resolve matched by generation-stable advertised name");
              }
-@@ -5328,8 +5439,31 @@
++            remember_peripheral_host_rssi(p, &[target, name.as_str()]).await;
+             return Ok((p.clone(), resolution_class));
+         }
      }
+@@ -5331,6 +5442,29 @@ mod tests {
  
      // ── Device type tests ──
-+
+ 
 +    #[test]
 +    fn host_rssi_cache_key_normalizes_uuid_mac_and_name() {
 +        assert_eq!(
@@ -170,8 +169,8 @@
 +        );
 +        assert_eq!(host_rssi_cache_key("ble://RNode 0BB2"), "rnode 0bb2");
 +    }
- 
-     #[test]
++
++    #[test]
 +    fn remember_host_rssi_roundtrips_by_address_and_name() {
 +        remember_host_rssi("ble://AA:BB:CC:DD:EE:FF", -71);
 +        remember_host_rssi("RNode 41F4", -55);
@@ -181,7 +180,6 @@
 +        assert_eq!(cached_host_rssi("ble://RNode 41F4"), Some(-55));
 +    }
 +
-+    #[test]
+     #[test]
      fn test_device_type_rnode_serialization() {
          let dev = BleDevice {
-             name: "RNode 3B87".into(),

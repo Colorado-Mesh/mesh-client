@@ -126,6 +126,9 @@ describe('reticulumPropagationSync', () => {
     expect(mapPropagationSyncError('propagation establish failed: NoLinkProof')).toBe(
       'reticulumPropagation.syncEstablishNoLinkProof',
     );
+    expect(mapPropagationSyncError('propagation request failed: RequestFailed')).toBe(
+      'reticulumPropagation.syncRequestFailed',
+    );
     expect(mapPropagationSyncError('propagation offer rejected: Unknown')).toBe(
       'reticulumPropagation.syncOfferUnknown',
     );

@@ -7,11 +7,15 @@ import { ipcMain, net } from 'electron';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { assertIpcSender } from '../validate-ipc-sender';
-import { registerTranslationHandlers, validateTranslationRequest } from './translation-handlers';
+import {
+  createTranslationPackFetch,
+  registerTranslationHandlers,
+  validateTranslationRequest,
+} from './translation-handlers';
 
 const fixture = vi.hoisted(() => ({ directory: '' }));
 vi.mock('electron', () => ({
-  app: { getPath: () => fixture.directory },
+  app: { getPath: () => fixture.directory, getVersion: () => '9.9.9' },
   ipcMain: { handle: vi.fn() },
   net: { fetch: vi.fn() },
   safeStorage: {
@@ -73,6 +77,37 @@ describe('translation IPC', () => {
       expect(assertIpcSender).toHaveBeenCalledTimes(10);
     },
   );
+  it('downloads packs with Node fetch and a mesh-client User-Agent instead of net.fetch', async () => {
+    const nodeFetch = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response(null, { status: 503 })),
+    );
+    vi.stubGlobal('fetch', nodeFetch);
+    try {
+      settings.set('translationEnabled', '1');
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect(await handler('translation:installPack')({}, 'fr-en')).toEqual({
+        ok: false,
+        reason: 'downloadFailed',
+      });
+      expect(nodeFetch).toHaveBeenCalled();
+      const init = nodeFetch.mock.calls[0]?.[1];
+      expect(new Headers(init?.headers).get('User-Agent')).toBe('mesh-client/9.9.9');
+      expect(init?.redirect).toBe('error');
+      expect(net.fetch).not.toHaveBeenCalled();
+      expect(String(warn.mock.calls[0]?.[1])).toContain('HTTP 503');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it('keeps caller headers while overriding the pack User-Agent', async () => {
+    const inner = vi.fn<typeof fetch>(() => Promise.resolve(new Response('ok')));
+    await createTranslationPackFetch('1.2.3', inner)('https://cdn.test/a', {
+      headers: { 'User-Agent': 'Chrome', Accept: '*/*' },
+    });
+    const headers = new Headers(inner.mock.calls[0]?.[1]?.headers);
+    expect(headers.get('User-Agent')).toBe('mesh-client/1.2.3');
+    expect(headers.get('Accept')).toBe('*/*');
+  });
   it('validates primitive request mode/provider, text size, language and pack IDs', async () => {
     for (const bad of [
       { mode: ['auto'], provider: 'libre' },

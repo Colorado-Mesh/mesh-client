@@ -19,6 +19,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import { MESHCORE_ROOM_MESSAGE_CHANNEL } from '@/renderer/hooks/meshcore/meshcoreHookPreamble';
+import { useAutoResend } from '@/renderer/hooks/useAutoResend';
 import type { ChatOutboxSendFn } from '@/renderer/hooks/useChatOutbox';
 import {
   isChatOutboxSendAvailable,
@@ -1738,6 +1739,11 @@ function AppContent() {
     [chatSendAvailableByProtocol, outboxSendFnByProtocol],
   );
   useEmergencyOutboxDrain({ drains: emergencyOutboxDrains });
+  const autoResendSendByProtocol = useMemo(
+    () => protocolRecord(meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage),
+    [meshtasticSendMessage, meshcoreSendMessage, reticulumSendMessage],
+  );
+  useAutoResend(autoResendSendByProtocol);
 
   const incidentOwnSenderIds = useMemo(
     () =>

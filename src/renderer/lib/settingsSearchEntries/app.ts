@@ -16,54 +16,6 @@ const RETENTION = 'appPanel.retentionLimitsHeading';
 
 const appEntries: readonly SettingSearchEntry[] = [
   {
-    id: 'app.translation',
-    slot: 'App',
-    labelKey: 'chatTranslation.settingsTitle',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.enabled',
-    slot: 'App',
-    labelKey: 'chatTranslation.enabled',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.target',
-    slot: 'App',
-    labelKey: 'chatTranslation.target',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.readLanguages',
-    slot: 'App',
-    labelKey: 'chatTranslation.readLanguages',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.auto',
-    slot: 'App',
-    labelKey: 'chatTranslation.auto',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.packs',
-    slot: 'App',
-    labelKey: 'chatTranslation.packs',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.libre',
-    slot: 'App',
-    labelKey: 'chatTranslation.serverUrl',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
-    id: 'app.translation.removeAll',
-    slot: 'App',
-    labelKey: 'chatTranslation.removeAll',
-    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
-  },
-  {
     id: 'app.protocols.enabled',
     slot: 'App',
     labelKey: 'appPanel.protocolsSection',
@@ -439,6 +391,54 @@ const appEntries: readonly SettingSearchEntry[] = [
     visible: (ctx) => ctx.capabilities.hasRrcPanel,
   },
   {
+    id: 'app.translation',
+    slot: 'App',
+    labelKey: 'chatTranslation.settingsTitle',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.enabled',
+    slot: 'App',
+    labelKey: 'chatTranslation.enabled',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.target',
+    slot: 'App',
+    labelKey: 'chatTranslation.target',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.readLanguages',
+    slot: 'App',
+    labelKey: 'chatTranslation.readLanguages',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.auto',
+    slot: 'App',
+    labelKey: 'chatTranslation.auto',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.packs',
+    slot: 'App',
+    labelKey: 'chatTranslation.packs',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.libre',
+    slot: 'App',
+    labelKey: 'chatTranslation.serverUrl',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
+    id: 'app.translation.removeAll',
+    slot: 'App',
+    labelKey: 'chatTranslation.removeAll',
+    keywords: ['translation', 'translate', 'language', 'offline', 'libretranslate'],
+  },
+  {
     id: 'app.mecp.showComposeButton',
     slot: 'App',
     labelKey: 'mecp.section.showComposeButton',
@@ -611,13 +611,49 @@ export const appSurface: SettingsSearchSurface = {
       'Translation section help, status, or child action; its parent setting is indexed',
     'chatTranslation.enable':
       'Translation section help, status, or child action; its parent setting is indexed',
-    'chatTranslation.engineStatus':
-      'Translation section help, status, or child action; its parent setting is indexed',
     'chatTranslation.installed':
       'Translation section help, status, or child action; its parent setting is indexed',
-    'chatTranslation.notInstalled':
+    'chatTranslation.yourLanguages':
       'Translation section help, status, or child action; its parent setting is indexed',
-    'chatTranslation.autoHint':
+    'chatTranslation.readLanguagesHint':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.autoTitle':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.autoDescription':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.autoNeedsPacks':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.neededTitle':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.pivotHint':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.neededComplete':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.neededSummary':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.downloadNeeded':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.allPacks':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.searchLanguages':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.noLanguagesMatch':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.packLanguage':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.intoEnglish':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.fromEnglish':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.unavailable':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.queued':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.downloadFailed':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.retry':
+      'Translation section help, status, or child action; its parent setting is indexed',
+    'chatTranslation.downloadSize':
       'Translation section help, status, or child action; its parent setting is indexed',
     'chatTranslation.engine':
       'Translation section help, status, or child action; its parent setting is indexed',
@@ -632,8 +668,6 @@ export const appSurface: SettingsSearchSurface = {
     'chatTranslation.downloadPack':
       'Translation section help, status, or child action; its parent setting is indexed',
     'chatTranslation.delete':
-      'Translation section help, status, or child action; its parent setting is indexed',
-    'chatTranslation.download':
       'Translation section help, status, or child action; its parent setting is indexed',
     'chatTranslation.onlinePrivacy':
       'Translation section help, status, or child action; its parent setting is indexed',

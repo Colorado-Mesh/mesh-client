@@ -24,6 +24,7 @@ import {
   createChatScrollAdjustPredicate,
   createStableChatMeasureElement,
   getDistFromChatBottom,
+  scheduleVirtualRowRemeasure,
 } from '@/renderer/lib/chatScrollUtils';
 import { readAppliedFontScale, subscribeAppliedFontScale } from '@/renderer/lib/fontScale';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
@@ -65,8 +66,24 @@ function formatHash(hash: string): string {
 /** Compact IRC line height at 100% font scale: ~20px leading-snug + 2px row gap. */
 const RRC_ROW_LINE_PX = 20;
 const RRC_ROW_GAP_PX = 2;
-/** Characters per wrapped line at 100% font scale. */
-const RRC_ROW_CHARS_PER_LINE = 80;
+/** Message-column characters per wrapped line at 100% font scale (row width minus nick column). */
+const RRC_ROW_CHARS_PER_LINE = 64;
+
+/**
+ * Each row is its own grid, so column widths must depend only on the pane width (never on row
+ * content) to line up across rows. Static class strings so Tailwind can see them. Time widths fit
+ * `HH:MM:SS` / `HH:MM:SS AM`. In narrow panes or at large text sizes the time and nick columns
+ * shrink (truncating) while the message keeps at least half the row.
+ */
+const RRC_GRID_NO_TIME = 'grid-cols-[minmax(0,14ch)_minmax(50%,1fr)_auto]';
+const RRC_GRID_TIME_24H = 'grid-cols-[minmax(0,8ch)_minmax(0,14ch)_minmax(50%,1fr)_auto]';
+const RRC_GRID_TIME_12H = 'grid-cols-[minmax(0,11ch)_minmax(0,14ch)_minmax(50%,1fr)_auto]';
+const RRC_ROW_CLASS = 'group grid items-baseline gap-x-2 rounded leading-snug hover:bg-ink-800/40';
+
+function rrcGridColsClass(showTimestamps: boolean, use24HourTime: boolean): string {
+  if (!showTimestamps) return RRC_GRID_NO_TIME;
+  return use24HourTime ? RRC_GRID_TIME_24H : RRC_GRID_TIME_12H;
+}
 
 /**
  * Compact IRC line height for virtualization (not ChatMessage card estimates).
@@ -269,11 +286,15 @@ function RrcNoticeGroupSummary({
   group,
   expanded,
   time,
+  gridColsClass,
+  showTime,
   onToggle,
 }: Readonly<{
   group: RrcNoticeGroup;
   expanded: boolean;
   time: string | null;
+  gridColsClass: string;
+  showTime: boolean;
   onToggle: (group: RrcNoticeGroup) => void;
 }>) {
   const { t } = useTranslation();
@@ -287,8 +308,13 @@ function RrcNoticeGroupSummary({
     details.push(t('rrc.hubSession.linkTimeouts', { count: group.linkTimeoutCount }));
   }
   return (
-    <div className="flex items-start gap-1 leading-snug">
-      {time && <span className="text-muted shrink-0 text-[0.625rem]">[{time}]</span>}
+    <div className={`${RRC_ROW_CLASS} ${gridColsClass}`}>
+      {showTime && (
+        <span className="text-muted truncate text-right tabular-nums">{time ?? ''}</span>
+      )}
+      <span aria-hidden className="text-muted text-right">
+        *
+      </span>
       <button
         type="button"
         aria-expanded={expanded}
@@ -298,7 +324,7 @@ function RrcNoticeGroupSummary({
         onClick={() => {
           onToggle(group);
         }}
-        className="hover:text-ink-200 flex min-w-0 flex-1 items-start gap-1 rounded text-left"
+        className="hover:text-ink-200 col-span-2 flex min-w-0 items-start gap-1 rounded text-left"
       >
         <ChevronRight
           aria-hidden
@@ -508,6 +534,16 @@ export function RrcChatView({
   const messageVirtualizerRef = useRef(messageVirtualizer);
   messageVirtualizerRef.current = messageVirtualizer;
 
+  const scheduleMessageRowRemeasure = useCallback((rowIndex: number) => {
+    scheduleVirtualRowRemeasure(
+      (node) => {
+        messageVirtualizerRef.current.measureElement(node);
+      },
+      scrollContainerRef.current,
+      rowIndex,
+    );
+  }, []);
+
   const computeIsAtChatEnd = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el) return false;
@@ -670,12 +706,17 @@ export function RrcChatView({
     });
   }, [updateScrollButtonVisibility]);
 
+  const gridColsClass = rrcGridColsClass(showTimestamps, use24HourTime);
+
   const formatLineTime = (msg: RrcChatMessage | undefined): string | null =>
     showTimestamps && msg
       ? formatDisplayTime(msg.timestamp, { withSeconds: true, use24Hour: use24HourTime })
       : null;
 
-  const renderLineParts = (msg: RrcChatMessage): { lineClass: string; inner: ReactNode } => {
+  const renderLineParts = (
+    msg: RrcChatMessage,
+    rowIndex: number,
+  ): { lineClass: string; inner: ReactNode } => {
     const nick = msg.nickname || (msg.sender_hash ? formatHash(msg.sender_hash) : '');
     const time = formatLineTime(msg);
     const whisperEcho = msg.kind === 'system' ? parseRrcWhisperEcho(msg.body) : null;
@@ -705,30 +746,45 @@ export function RrcChatView({
         plainBody
       );
 
+    const isRoomMsg = whisperAsRoomMsg || msg.kind === 'msg';
+    const isNoticeLike = msg.kind === 'notice' || msg.kind === 'system' || msg.kind === 'error';
+    const nickCell = isRoomMsg ? (
+      <span
+        data-testid="rrc-line-nick"
+        title={lineNick}
+        className={`truncate text-right font-semibold ${rrcNickColorClass(lineNick)}`}
+      >
+        {lineNick}
+      </span>
+    ) : msg.kind === 'notice' && nick ? (
+      <span
+        data-testid="rrc-line-nick"
+        title={nick}
+        className={`truncate text-right ${rrcNickColorClass(nick)}`}
+      >
+        -{nick}-
+      </span>
+    ) : (
+      <span data-testid="rrc-line-nick" className="text-muted truncate text-right">
+        {msg.kind === 'action' || isNoticeLike ? '*' : ''}
+      </span>
+    );
+
     const inner = (
-      <div className="group flex items-start gap-1 leading-snug">
-        {time && <span className="text-muted shrink-0 text-[0.625rem]">[{time}]</span>}
-        <div className="min-w-0 flex-1 break-words whitespace-pre-wrap">
+      <div className={`${RRC_ROW_CLASS} ${gridColsClass}`}>
+        {showTimestamps && (
+          <span data-testid="rrc-line-time" className="text-muted truncate text-right tabular-nums">
+            {time ?? ''}
+          </span>
+        )}
+        {nickCell}
+        <div className="min-w-0 break-words whitespace-pre-wrap">
           {msg.kind === 'action' ? (
             <>
-              * <NickSpan nick={nick} /> {body}
+              <NickSpan nick={nick} /> {body}
             </>
-          ) : whisperAsRoomMsg || msg.kind === 'msg' ? (
-            <>
-              <span className={`font-semibold ${rrcNickColorClass(lineNick)}`}>
-                &lt;{lineNick}&gt;
-              </span>{' '}
-              {body}
-            </>
-          ) : msg.kind === 'notice' || msg.kind === 'system' || msg.kind === 'error' ? (
-            <>
-              {msg.kind === 'notice' && nick ? (
-                <span className={rrcNickColorClass(nick)}>-{nick}- </span>
-              ) : (
-                <span className="text-muted">* </span>
-              )}
-              {body}
-            </>
+          ) : isRoomMsg || isNoticeLike ? (
+            body
           ) : null}
           <TranslatedMessageBlock
             messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
@@ -742,55 +798,59 @@ export function RrcChatView({
                 : Boolean(nickname && msg.nickname?.toLowerCase() === nickname.toLowerCase()))
             }
             onContentResize={() => {
-              messageVirtualizerRef.current.measure();
+              scheduleMessageRowRemeasure(rowIndex);
             }}
           />
         </div>
-        <span
-          className={
-            alwaysShowMessageActions
-              ? 'opacity-100'
-              : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
-          }
-        >
-          <MessageTranslateButton
-            messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
-            text={rawBody}
-          />
-        </span>
-        <button
-          type="button"
-          className={`message-action text-muted shrink-0 rounded p-0.5 text-xs ${
-            alwaysShowMessageActions
-              ? 'opacity-100'
-              : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
-          }`}
-          aria-label={t('rrc.copyMessage')}
-          title={t('rrc.copyMessage')}
-          onClick={() => {
-            void navigator.clipboard.writeText(msg.body).catch((e: unknown) => {
-              console.debug('[RrcChatView] clipboard ' + String(e));
-            });
-          }}
-        >
-          <Copy size={11} />
-        </button>
-        {(msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
-          rrcReplyMention('', whisperEcho ? nickname : (msg.nickname ?? '')) !== null && (
-            <button
-              type="button"
-              {...{ [PARENT_HOVER_ATTR]: '' }}
-              className={`message-action text-muted shrink-0 rounded p-0.5 text-xs disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
-              aria-label={t('rrc.replyToUser', { nickname: lineNick })}
-              title={t('rrc.replyToUser', { nickname: lineNick })}
-              disabled={!canSend || isMuted || !activeRoom}
-              onClick={() => {
-                replyToNickname(lineNick);
-              }}
-            >
-              <Reply aria-hidden size={11} />
-            </button>
-          )}
+        <div className="flex items-center self-start leading-none">
+          <span
+            className={
+              alwaysShowMessageActions
+                ? 'opacity-100'
+                : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+            }
+          >
+            <MessageTranslateButton
+              messageKey={`rrc:${hubDestHash}:${activeRoom}:${msg.id}`}
+              text={rawBody}
+              className="message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none"
+              iconSize={11}
+            />
+          </span>
+          <button
+            type="button"
+            className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none ${
+              alwaysShowMessageActions
+                ? 'opacity-100'
+                : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+            }`}
+            aria-label={t('rrc.copyMessage')}
+            title={t('rrc.copyMessage')}
+            onClick={() => {
+              void navigator.clipboard.writeText(msg.body).catch((e: unknown) => {
+                console.debug('[RrcChatView] clipboard ' + String(e));
+              });
+            }}
+          >
+            <Copy size={11} />
+          </button>
+          {(msg.kind === 'msg' || msg.kind === 'action' || whisperAsRoomMsg) &&
+            rrcReplyMention('', whisperEcho ? nickname : (msg.nickname ?? '')) !== null && (
+              <button
+                type="button"
+                {...{ [PARENT_HOVER_ATTR]: '' }}
+                className={`message-action text-muted shrink-0 rounded p-0.5 text-xs leading-none disabled:opacity-40 ${alwaysShowMessageActions ? 'opacity-100' : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'}`}
+                aria-label={t('rrc.replyToUser', { nickname: lineNick })}
+                title={t('rrc.replyToUser', { nickname: lineNick })}
+                disabled={!canSend || isMuted || !activeRoom}
+                onClick={() => {
+                  replyToNickname(lineNick);
+                }}
+              >
+                <Reply aria-hidden size={11} />
+              </button>
+            )}
+        </div>
       </div>
     );
     return { lineClass, inner };
@@ -843,12 +903,14 @@ export function RrcChatView({
                         group={row.group}
                         expanded={expanded}
                         time={formatLineTime(row.group.messages[row.group.messages.length - 1])}
+                        gridColsClass={gridColsClass}
+                        showTime={showTimestamps}
                         onToggle={toggleGroupExpanded}
                       />
                       {expanded && (
-                        <div className="border-ink-700 ml-3 border-l pl-2">
+                        <div className="border-ink-700 border-l">
                           {row.group.messages.map((msg) => {
-                            const line = renderLineParts(msg);
+                            const line = renderLineParts(msg, vi.index);
                             return (
                               <div
                                 key={msg.id}
@@ -864,7 +926,7 @@ export function RrcChatView({
                     </div>
                   );
                 }
-                const line = renderLineParts(row.msg);
+                const line = renderLineParts(row.msg, vi.index);
                 return (
                   <div
                     key={vi.key}

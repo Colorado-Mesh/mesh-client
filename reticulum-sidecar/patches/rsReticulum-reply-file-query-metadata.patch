@@ -1,8 +1,8 @@
 diff --git a/api/snapshots/rns-runtime.txt b/api/snapshots/rns-runtime.txt
-index b7fca02..f1ededf 100644
+index cfdb018..fc525ab 100644
 --- a/api/snapshots/rns-runtime.txt
 +++ b/api/snapshots/rns-runtime.txt
-@@ -587,7 +587,7 @@ pub fn rns_runtime::link_manager::LinkManager::set_link_packet_channel(&mut self
+@@ -599,7 +599,7 @@ pub fn rns_runtime::link_manager::LinkManager::set_link_packet_channel(&mut self
  pub fn rns_runtime::link_manager::LinkManager::set_link_packet_proof_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::LinkPacketProof>)
  pub fn rns_runtime::link_manager::LinkManager::set_outbound_resource_proof_channel(&mut self, tokio::sync::mpsc::bounded::Sender<rns_runtime::link_manager::LinkResourceProof>)
  pub fn rns_runtime::link_manager::LinkManager::set_request_handler<F>(&mut self, F) where F: core::ops::function::Fn([u8; 16], [u8; 16], alloc::vec::Vec<u8>) -> core::option::Option<alloc::vec::Vec<u8>> + core::marker::Send + 'static
@@ -136,10 +136,10 @@ index 4f48bc8..fce828f 100644
                                      }
                                      Err(e) => {
 diff --git a/crates/rns-runtime/src/link_manager.rs b/crates/rns-runtime/src/link_manager.rs
-index 62ec51f..36b8b92 100644
+index 095dac6..672150f 100644
 --- a/crates/rns-runtime/src/link_manager.rs
 +++ b/crates/rns-runtime/src/link_manager.rs
-@@ -402,6 +402,8 @@ impl std::fmt::Debug for LinkManagerAccountingEvent {
+@@ -485,6 +485,8 @@ impl std::fmt::Debug for LinkManagerAccountingEvent {
  /// Result of an extended request handler. `Reply` is the ordinary response;
  /// `ReplyWithResource` sends an inline ack followed by a resource transfer
  /// (rncp --fetch). Python: `RNS.Resource(..., target_link=link)`.
@@ -148,7 +148,7 @@ index 62ec51f..36b8b92 100644
  #[derive(Debug, Clone)]
  pub enum RequestOutcome {
      Reply(Vec<u8>),
-@@ -412,10 +414,32 @@ pub enum RequestOutcome {
+@@ -495,10 +497,32 @@ pub enum RequestOutcome {
          metadata: Option<Vec<u8>>,
          auto_compress: bool,
      },
@@ -181,7 +181,7 @@ index 62ec51f..36b8b92 100644
  /// Python-compatible context supplied to a per-path Destination request handler.
  #[derive(Clone)]
  pub struct DestinationRequest {
-@@ -431,7 +455,10 @@ pub type DestinationRequestHandler =
+@@ -514,7 +538,10 @@ pub type DestinationRequestHandler =
      Box<dyn Fn(DestinationRequest) -> RequestOutcome + Send + 'static>;
  
  type RequestHandler = Box<dyn Fn([u8; 16], [u8; 16], Vec<u8>) -> Option<Vec<u8>> + Send>;
@@ -193,7 +193,7 @@ index 62ec51f..36b8b92 100644
  type LinkIdentityGate = Box<dyn Fn([u8; 16], [u8; 16]) -> bool + Send>;
  type ResourceAcceptHandler = Box<dyn Fn([u8; 16], &ResourceAdvertisement) -> bool + Send>;
  
-@@ -4675,7 +4702,7 @@ impl LinkManager {
+@@ -4909,7 +4936,7 @@ impl LinkManager {
                  RequestOutcome::Drop
              }
          } else if let Some(ref handler) = self.request_handler_ex {
@@ -202,7 +202,7 @@ index 62ec51f..36b8b92 100644
          } else if let Some(ref handler) = self.request_handler {
              match handler(link_id, path_hash, data) {
                  Some(response) => RequestOutcome::Reply(response),
-@@ -4685,15 +4712,20 @@ impl LinkManager {
+@@ -4919,15 +4946,20 @@ impl LinkManager {
              RequestOutcome::Drop
          };
  
@@ -227,7 +227,7 @@ index 62ec51f..36b8b92 100644
          };
  
          if let Some(response) = response {
-@@ -4768,7 +4800,7 @@ impl LinkManager {
+@@ -5002,7 +5034,7 @@ impl LinkManager {
                      );
                  }
              }
@@ -236,7 +236,7 @@ index 62ec51f..36b8b92 100644
              tracing::debug!(
                  link_id = hex::encode(link_id),
                  request_id = hex::encode(request_id),
-@@ -4777,6 +4809,35 @@ impl LinkManager {
+@@ -5011,6 +5043,35 @@ impl LinkManager {
              );
          }
  
@@ -269,10 +269,10 @@ index 62ec51f..36b8b92 100644
 +            }
 +        }
 +
-         if let Some((data, metadata, auto_compress)) = fetch_spec {
-             if self
+         if let Some((data, metadata, auto_compress)) = fetch_spec
+             && self
                  .start_resource_transfer_inner(
-@@ -4809,9 +4870,12 @@ impl LinkManager {
+@@ -5042,9 +5103,12 @@ impl LinkManager {
  
      /// Handler that may schedule a follow-up resource transfer (rncp --fetch).
      /// Takes precedence over [`Self::set_request_handler`].
@@ -286,7 +286,7 @@ index 62ec51f..36b8b92 100644
      {
          self.request_handler_ex = Some(Box::new(handler));
      }
-@@ -7162,6 +7226,137 @@ mod tests {
+@@ -7471,6 +7535,137 @@ mod tests {
          assert_eq!(response_data, b"ready");
      }
  
@@ -425,10 +425,10 @@ index 62ec51f..36b8b92 100644
      fn test_destination_link_acceptance_gating() {
          let (tx, _transport_rx) = mpsc::channel(64);
 diff --git a/crates/rns-runtime/src/reticulum.rs b/crates/rns-runtime/src/reticulum.rs
-index 121e565..171c9da 100644
+index 79b65e9..10e7ad2 100644
 --- a/crates/rns-runtime/src/reticulum.rs
 +++ b/crates/rns-runtime/src/reticulum.rs
-@@ -6189,7 +6189,9 @@ async fn start_blackhole_subscriber(handle: ReticulumHandle) {
+@@ -6294,7 +6294,9 @@ async fn start_blackhole_subscriber(handle: ReticulumHandle) {
                  {
                      Ok(payload) => {
                          match handle
@@ -440,7 +440,7 @@ index 121e565..171c9da 100644
                          {
                              Some(TransportQueryResponse::IntResult(applied)) => {
 diff --git a/crates/rns-runtime/src/rncp.rs b/crates/rns-runtime/src/rncp.rs
-index be76a7b..041b146 100644
+index 5c40bef..e9378cb 100644
 --- a/crates/rns-runtime/src/rncp.rs
 +++ b/crates/rns-runtime/src/rncp.rs
 @@ -279,7 +279,7 @@ pub async fn spawn_rncp_listener(
@@ -468,7 +468,7 @@ index be76a7b..041b146 100644
  
  struct OutboundDrive<'a> {
 diff --git a/crates/rns-tools/src/commands/rnpath.rs b/crates/rns-tools/src/commands/rnpath.rs
-index 22eea9a..663fea3 100644
+index 6d9911a..97aacf9 100644
 --- a/crates/rns-tools/src/commands/rnpath.rs
 +++ b/crates/rns-tools/src/commands/rnpath.rs
 @@ -951,7 +951,7 @@ async fn run_remote_blackhole_list(args: Args) -> ExitCode {
@@ -490,7 +490,7 @@ index 22eea9a..663fea3 100644
              eprintln!("rnpath-rs: remote query failed: {}", remote_err(&e));
              shutdown.trigger();
 diff --git a/crates/rns-tools/src/commands/rnstatus.rs b/crates/rns-tools/src/commands/rnstatus.rs
-index a79fac5..2a41259 100644
+index 28345b4..0d079c8 100644
 --- a/crates/rns-tools/src/commands/rnstatus.rs
 +++ b/crates/rns-tools/src/commands/rnstatus.rs
 @@ -1006,7 +1006,7 @@ impl RemoteSession {

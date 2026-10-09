@@ -4,8 +4,13 @@ import type { MeshProtocol } from '@/renderer/lib/types';
 import type { OutboxEntry, OutboxEntryInput, OutboxStatus } from '@/shared/electron-api.types';
 import { isMeshProtocol } from '@/shared/meshProtocol';
 
+import { REGULAR_MESSAGE_MAX_AUTO_RESENDS } from '../lib/autoResend/autoResendPolicy';
 import {
+  abortOutboxRowSend,
+  beginOutboxRowSend,
+  endOutboxRowSend,
   registerChatOutboxDrainListener,
+  setOutboxRowAwaitingAck,
   subscribeChatOutboxRowsChanged,
   withChatOutboxDrainLock,
 } from '../lib/chatOutboxDrain';
@@ -19,6 +24,11 @@ import { parseIncidentAckViewKey } from '../lib/mecp/incidentAck';
 import { tryParseMecp } from '../lib/mecp/mecpMessages';
 import { recordMeshcoreSend } from '../lib/meshcoreSendRateNotice';
 import { withMeshtasticTextSendPacing } from '../lib/meshtasticTextSendPacing';
+import {
+  awaitNetworkAck,
+  isNetworkAckCancelledError,
+  NETWORK_ACK_MAX_TIMEOUT_MS,
+} from '../lib/networkAckAwait';
 import { getRadioCapabilities } from '../lib/radio/providerFactory';
 import {
   assertReticulumSendAcked,
@@ -29,9 +39,11 @@ import { useIncidentStore } from '../stores/incidentStore';
 
 export type { OutboxEntry };
 
-// Retry backoff delays in ms: 30s, 2m, 10m, 10m (max 5 attempts then permanently failed)
-const RETRY_DELAYS_MS = [30_000, 120_000, 600_000, 600_000];
-const MAX_ATTEMPTS = 5;
+// Normal rows: 30s, 2m, 10m backoff; one initial try plus the regular auto-resend budget.
+const RETRY_DELAYS_MS = [30_000, 120_000, 600_000];
+export const MAX_ATTEMPTS = 1 + REGULAR_MESSAGE_MAX_AUTO_RESENDS;
+/** Emergency rows retry until acknowledged: 30s, 1m, 2m, then every 5m. */
+export const EMERGENCY_RETRY_DELAYS_MS = [30_000, 60_000, 120_000, 300_000];
 /** Drop outbox rows older than this from automatic drain (manual retry still allowed). */
 export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /**
@@ -42,7 +54,7 @@ export const OUTBOX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export const EMERGENCY_OUTBOX_SOFT_CAP = 20;
 const EMERGENCY_CAP_BLOCKED_KEY = 'chatPanel.outboxEmergencyCapBlocked';
 /** Per-row send watchdog so a hung TX cannot hold {@link withChatOutboxDrainLock} forever. */
-export const OUTBOX_DRAIN_ROW_TIMEOUT_MS = RETICULUM_RECEIPT_TIMEOUT_MS + 15_000;
+export const OUTBOX_DRAIN_ROW_TIMEOUT_MS = NETWORK_ACK_MAX_TIMEOUT_MS + 15_000;
 const MAX_TIMER_DELAY_MS = 2_147_483_647;
 const MECP_MAYDAY_PAYLOAD_RE = /^MECP\/0\b/i;
 const MECP_SEVERITY_PAYLOAD_RE = /^MECP\/(\d)\b/i;
@@ -136,8 +148,9 @@ function compareDrainOrder(a: OutboxEntry, b: OutboxEntry): number {
   return a.createdAt - b.createdAt;
 }
 
-function retryDelayMs(attemptCount: number): number {
-  return RETRY_DELAYS_MS[Math.min(attemptCount - 1, RETRY_DELAYS_MS.length - 1)];
+function retryDelayMs(row: Pick<OutboxEntry, 'priority'>, attemptCount: number): number {
+  const delays = isEmergencyOutboxPriority(row) ? EMERGENCY_RETRY_DELAYS_MS : RETRY_DELAYS_MS;
+  return delays[Math.min(attemptCount - 1, delays.length - 1)];
 }
 
 /** Mark the incident ACK'd once a tagged ACK outbox row actually leaves the radio. */
@@ -222,7 +235,7 @@ async function recordOutboxSendFailure(
   // still halt them. Other normal rows stop after MAX_ATTEMPTS.
   const keepRetrying =
     !isBlocked && (isAppManagedOutboxRow(row) || nextAttemptCount < MAX_ATTEMPTS);
-  const nextRetryAt = keepRetrying ? Date.now() + retryDelayMs(nextAttemptCount) : undefined;
+  const nextRetryAt = keepRetrying ? Date.now() + retryDelayMs(row, nextAttemptCount) : undefined;
   try {
     await window.electronAPI.chat.outbox.updateStatus(
       row.id,
@@ -327,6 +340,7 @@ async function sendOneOutboxRow(
 ): Promise<void> {
   await window.electronAPI.chat.outbox.updateStatus(row.id, 'sending');
   updateRow(row.id, { status: 'sending' });
+  const signal = beginOutboxRowSend(row.id);
   try {
     await withOutboxDrainRowTimeout(async () => {
       const reticulumIdentityId = protocol === 'reticulum' ? resolveReticulumIdentityId() : null;
@@ -336,9 +350,6 @@ async function sendOneOutboxRow(
         row.toNode ?? undefined,
         row.replyId ?? undefined,
       );
-      if (protocol === 'reticulum') {
-        await assertReticulumSendAcked(reticulumIdentityId, sendResult, reticulumReceiptTimeoutMs);
-      }
       // Keep the app-wide single-packet fast-send clock honest: a drained row is airtime too.
       if (
         isMeshProtocol(row.protocol) &&
@@ -346,11 +357,37 @@ async function sendOneOutboxRow(
       ) {
         recordMeshcoreSend();
       }
+      if (isEmergencyOutboxPriority(row)) {
+        // Radio accept is not delivery: keep the row until the network acknowledges it.
+        setOutboxRowAwaitingAck(row.id, true);
+        await awaitNetworkAck({
+          protocol,
+          sendResult,
+          payload: row.payload,
+          identityId: reticulumIdentityId,
+          signal,
+          ...(protocol === 'reticulum' ? { timeoutMs: reticulumReceiptTimeoutMs } : {}),
+        });
+      } else if (protocol === 'reticulum') {
+        await assertReticulumSendAcked(reticulumIdentityId, sendResult, reticulumReceiptTimeoutMs);
+      }
     });
+    if (signal.aborted) {
+      removeRow(row.id);
+      return;
+    }
     await finalizeSuccessfulOutboxSend(row, removeRow, updateRow);
   } catch (err: unknown) {
+    if (signal.aborted || isNetworkAckCancelledError(err)) {
+      // User cancelled: the row is already deleted from SQLite; do not resurrect it.
+      console.debug('[useChatOutbox] outbox row cancelled mid-send', row.id);
+      removeRow(row.id);
+      return;
+    }
     // catch-no-log-ok recordOutboxSendFailure logs the send failure
     await recordOutboxSendFailure(row, err, updateRow);
+  } finally {
+    endOutboxRowSend(row.id);
   }
 }
 
@@ -638,6 +675,8 @@ export function useChatOutbox({
 
   const cancel = useCallback(
     (id: number) => {
+      // Stop an in-flight send / network-ACK wait first so the drain does not re-persist it.
+      abortOutboxRowSend(id);
       void window.electronAPI.chat.outbox
         .remove(id)
         .then(() => {

@@ -790,7 +790,6 @@ export default function AppPanel({
   return (
     <div className="w-full space-y-6">
       <h2 className="text-ink-200 text-xl font-semibold">{t('appPanel.title')}</h2>
-      <AppTranslationSection />
 
       <div className="space-y-2">
         <div className="flex items-center gap-1">
@@ -2338,152 +2337,156 @@ export default function AppPanel({
         )}
       </div>
 
-      <section
-        className="space-y-3 rounded-lg border border-red-900/40 bg-red-950/10 p-4"
-        aria-label={t('mecp.section.title')}
-      >
-        <div className="space-y-1">
+      <AppTranslationSection />
+
+      <details className="group rounded-lg border border-red-900/40 bg-red-950/10">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg px-4 py-3 hover:bg-red-950/30 [&::-webkit-details-marker]:hidden">
           <h3 className="text-sm font-semibold text-red-200">{t('mecp.section.title')}</h3>
-          <p className="text-muted text-xs leading-relaxed">{t('mecp.section.hint')}</p>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            <a
-              href="https://mecp.radio/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-green text-xs underline-offset-2 hover:underline"
-              aria-label={t('mecp.section.learnMore')}
-            >
-              {t('mecp.section.learnMore')}
-            </a>
-            <a
-              href="https://github.com/xiang-dev-1/MECP"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted text-xs underline-offset-2 hover:underline"
-              aria-label={t('mecp.section.protocolSource')}
-            >
-              {t('mecp.section.protocolSource')}
-            </a>
+          <DetailsChevron className="text-muted h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="space-y-3 border-t border-red-900/40 px-4 pt-3 pb-4">
+          <div className="space-y-1">
+            <p className="text-muted text-xs leading-relaxed">{t('mecp.section.hint')}</p>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              <a
+                href="https://mecp.radio/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-green text-xs underline-offset-2 hover:underline"
+                aria-label={t('mecp.section.learnMore')}
+              >
+                {t('mecp.section.learnMore')}
+              </a>
+              <a
+                href="https://github.com/xiang-dev-1/MECP"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted text-xs underline-offset-2 hover:underline"
+                aria-label={t('mecp.section.protocolSource')}
+              >
+                {t('mecp.section.protocolSource')}
+              </a>
+            </div>
           </div>
-        </div>
-        <div data-setting-anchor="app.mecp.showComposeButton" className="space-y-1">
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="mecpComposeEnabled"
-              checked={settings.mecpComposeEnabled}
-              onChange={(e) => {
-                updateSetting('mecpComposeEnabled', e.target.checked);
-              }}
-              aria-label={t('mecp.section.showComposeButton')}
-              className="accent-brand-green h-4 w-4 rounded"
-            />
-            <label htmlFor="mecpComposeEnabled" className="text-ink-300 cursor-pointer text-sm">
-              {t('mecp.section.showComposeButton')}
+          <div data-setting-anchor="app.mecp.showComposeButton" className="space-y-1">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="mecpComposeEnabled"
+                checked={settings.mecpComposeEnabled}
+                onChange={(e) => {
+                  updateSetting('mecpComposeEnabled', e.target.checked);
+                }}
+                aria-label={t('mecp.section.showComposeButton')}
+                className="accent-brand-green h-4 w-4 rounded"
+              />
+              <label htmlFor="mecpComposeEnabled" className="text-ink-300 cursor-pointer text-sm">
+                {t('mecp.section.showComposeButton')}
+              </label>
+            </div>
+            <p className="text-muted pl-7 text-xs leading-relaxed">
+              {t('mecp.section.showComposeButtonHint')}
+            </p>
+          </div>
+          <div data-setting-anchor="app.mecp.standingAlert" className="space-y-1">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="mecpStandingAlertEnabled"
+                checked={settings.mecpStandingAlertEnabled}
+                onChange={(e) => {
+                  updateSetting('mecpStandingAlertEnabled', e.target.checked);
+                }}
+                aria-label={t('mecp.section.standingAlert')}
+                className="accent-brand-green h-4 w-4 rounded"
+              />
+              <label
+                htmlFor="mecpStandingAlertEnabled"
+                className="text-ink-300 cursor-pointer text-sm"
+              >
+                {t('mecp.section.standingAlert')}
+              </label>
+            </div>
+            <p className="text-muted pl-7 text-xs leading-relaxed">
+              {t('mecp.section.standingAlertHint')}
+            </p>
+          </div>
+          <div data-setting-anchor="app.mecp.repeatAlert" className="flex flex-col gap-1 pl-7">
+            <label htmlFor="mecpRepeatAlertMinutes" className="text-ink-300 text-sm">
+              {t('appPanel.mecpRepeatAlertMinutes')}
             </label>
-          </div>
-          <p className="text-muted pl-7 text-xs leading-relaxed">
-            {t('mecp.section.showComposeButtonHint')}
-          </p>
-        </div>
-        <div data-setting-anchor="app.mecp.standingAlert" className="space-y-1">
-          <div className="flex items-center gap-3">
             <input
-              type="checkbox"
-              id="mecpStandingAlertEnabled"
-              checked={settings.mecpStandingAlertEnabled}
+              id="mecpRepeatAlertMinutes"
+              type="number"
+              min={1}
+              max={MECP_REPEAT_ALERT_MAX_MINUTES}
+              disabled={!settings.mecpStandingAlertEnabled}
+              placeholder={t('appPanel.mecpRepeatAlertMinutesPlaceholder')}
+              aria-label={t('appPanel.mecpRepeatAlertMinutes')}
+              value={settings.mecpRepeatAlertMinutes ?? ''}
               onChange={(e) => {
-                updateSetting('mecpStandingAlertEnabled', e.target.checked);
-              }}
-              aria-label={t('mecp.section.standingAlert')}
-              className="accent-brand-green h-4 w-4 rounded"
-            />
-            <label
-              htmlFor="mecpStandingAlertEnabled"
-              className="text-ink-300 cursor-pointer text-sm"
-            >
-              {t('mecp.section.standingAlert')}
-            </label>
-          </div>
-          <p className="text-muted pl-7 text-xs leading-relaxed">
-            {t('mecp.section.standingAlertHint')}
-          </p>
-        </div>
-        <div data-setting-anchor="app.mecp.repeatAlert" className="flex flex-col gap-1 pl-7">
-          <label htmlFor="mecpRepeatAlertMinutes" className="text-ink-300 text-sm">
-            {t('appPanel.mecpRepeatAlertMinutes')}
-          </label>
-          <input
-            id="mecpRepeatAlertMinutes"
-            type="number"
-            min={1}
-            max={MECP_REPEAT_ALERT_MAX_MINUTES}
-            disabled={!settings.mecpStandingAlertEnabled}
-            placeholder={t('appPanel.mecpRepeatAlertMinutesPlaceholder')}
-            aria-label={t('appPanel.mecpRepeatAlertMinutes')}
-            value={settings.mecpRepeatAlertMinutes ?? ''}
-            onChange={(e) => {
-              const raw = e.target.value.trim();
-              updateSetting(
-                'mecpRepeatAlertMinutes',
-                raw === ''
-                  ? null
-                  : Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.max(1, parseInt(raw, 10) || 1)),
-              );
-            }}
-            className={`${INPUT_BOX_CLASS} w-40 disabled:opacity-50`}
-          />
-          <p className="text-muted text-xs">{t('appPanel.mecpRepeatAlertMinutesHint')}</p>
-        </div>
-        <div data-setting-anchor="app.mecp.blockedSenders">
-          <MecpBlockedSendersSection />
-        </div>
-        <button
-          data-setting-anchor="app.mecp.exportLog"
-          type="button"
-          disabled={mecpExportBusy}
-          className="border-ink-600 bg-ink-900/60 text-ink-200 hover:bg-ink-800 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
-          aria-label={t('mecp.exportLog')}
-          onClick={() => {
-            if (mecpExportBusy) return;
-            setMecpExportBusy(true);
-            void window.electronAPI.mecp
-              .exportReceivedLog()
-              .then((res) => {
-                if (res.success) {
-                  addToast(
-                    res.path
-                      ? t('mecp.exportLogSuccessPath', { path: res.path })
-                      : t('mecp.exportLogSuccess'),
-                    'success',
-                  );
-                  return;
-                }
-                if (res.reason === 'empty') {
-                  addToast(t('mecp.exportLogEmpty'), 'info');
-                  return;
-                }
-                if (res.reason === 'cancelled') return;
-                addToast(t('mecp.exportLogFailed'), 'error');
-              })
-              .catch((err: unknown) => {
-                console.warn(
-                  '[AppPanel] MECP export failed',
-                  err instanceof Error ? err.message : err,
+                const raw = e.target.value.trim();
+                updateSetting(
+                  'mecpRepeatAlertMinutes',
+                  raw === ''
+                    ? null
+                    : Math.min(MECP_REPEAT_ALERT_MAX_MINUTES, Math.max(1, parseInt(raw, 10) || 1)),
                 );
-                addToast(t('mecp.exportLogFailed'), 'error');
-              })
-              .finally(() => {
-                setMecpExportBusy(false);
-              });
-          }}
-        >
-          {t('mecp.exportLog')}
-        </button>
-        <div data-setting-anchor="app.mecp.rebroadcast">
-          <MecpRebroadcastSettings />
+              }}
+              className={`${INPUT_BOX_CLASS} w-40 disabled:opacity-50`}
+            />
+            <p className="text-muted text-xs">{t('appPanel.mecpRepeatAlertMinutesHint')}</p>
+          </div>
+          <div data-setting-anchor="app.mecp.blockedSenders">
+            <MecpBlockedSendersSection />
+          </div>
+          <button
+            data-setting-anchor="app.mecp.exportLog"
+            type="button"
+            disabled={mecpExportBusy}
+            className="border-ink-600 bg-ink-900/60 text-ink-200 hover:bg-ink-800 rounded-lg border px-3 py-2 text-sm disabled:opacity-50"
+            aria-label={t('mecp.exportLog')}
+            onClick={() => {
+              if (mecpExportBusy) return;
+              setMecpExportBusy(true);
+              void window.electronAPI.mecp
+                .exportReceivedLog()
+                .then((res) => {
+                  if (res.success) {
+                    addToast(
+                      res.path
+                        ? t('mecp.exportLogSuccessPath', { path: res.path })
+                        : t('mecp.exportLogSuccess'),
+                      'success',
+                    );
+                    return;
+                  }
+                  if (res.reason === 'empty') {
+                    addToast(t('mecp.exportLogEmpty'), 'info');
+                    return;
+                  }
+                  if (res.reason === 'cancelled') return;
+                  addToast(t('mecp.exportLogFailed'), 'error');
+                })
+                .catch((err: unknown) => {
+                  console.warn(
+                    '[AppPanel] MECP export failed',
+                    err instanceof Error ? err.message : err,
+                  );
+                  addToast(t('mecp.exportLogFailed'), 'error');
+                })
+                .finally(() => {
+                  setMecpExportBusy(false);
+                });
+            }}
+          >
+            {t('mecp.exportLog')}
+          </button>
+          <div data-setting-anchor="app.mecp.rebroadcast">
+            <MecpRebroadcastSettings />
+          </div>
         </div>
-      </section>
+      </details>
 
       {isLoraBlocklistProtocol(protocol) ? (
         <div data-setting-anchor="app.blockedNodes">
