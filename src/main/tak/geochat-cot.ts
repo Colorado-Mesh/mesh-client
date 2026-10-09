@@ -84,7 +84,6 @@ export function buildGeochatCot(
     : `<point lat="0" lon="0" hae="${UNKNOWN_ALTITUDE}" ce="9999999" le="9999999"/>`;
 
   return (
-    `<?xml version="1.0" encoding="UTF-8"?>` +
     `<event version="2.0" uid="${uid}" type="b-t-f" time="${time}" start="${time}"` +
     ` stale="${stale}" how="h-g-i-g-o">` +
     point +
