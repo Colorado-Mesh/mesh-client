@@ -1678,6 +1678,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#atak-reports-remote-hosts-certificate-not-trusted-check-truststore-with-a-mesh-client-data-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATAK reports “remote host's certificate not trusted; check truststore” with a mesh-client data package
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4022,6 +4033,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#atak-reports-remote-hosts-certificate-not-trusted-check-truststore-with-a-mesh-client-data-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ATAK reports “remote host's certificate not trusted; check truststore” with a mesh-client data package
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -5076,6 +5098,17 @@
 <li>If your LAN IP changed since the last package, generate a new package and re-import — the connect string and cert SAN must match.</li>
 </ol>
 <p>Also confirm the phone/tablet is on the same LAN as the desktop, the TAK server is running, and the firewall allows inbound TCP on the configured port (default 8089).</p>
+<h3 id="atak-reports-remote-hosts-certificate-not-trusted-check-truststore-with-a-mesh-client-data-package">ATAK reports “remote host's certificate not trusted; check truststore” with a mesh-client data package<a class="headerlink" href="#atak-reports-remote-hosts-certificate-not-trusted-check-truststore-with-a-mesh-client-data-package" title="Permanent link">&para;</a></h3>
+<p><strong>Cause</strong>: Older mesh-client builds shipped the CA in the data package as a PEM file (<code>certs/ca.pem</code>). ATAK loads the truststore as a password-protected PKCS#12 file, so the PEM fails to load and the server certificate is rejected.</p>
+<p><strong>Fix</strong>:</p>
+<ol>
+<li>Update mesh-client (the package now contains <code>certs/truststore.p12</code>).</li>
+<li><strong>Generate data package</strong> again and import the new zip on the EUD (remove any previous mesh-client connection/package first).</li>
+</ol>
+<p>On an older build, convert the CA by hand and import it in ATAK under <strong>Settings → Network Preferences → TAK Servers → Mesh Client → Import Trust Store</strong> (password <code>atakatak</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>openssl<span class="w"> </span>pkcs12<span class="w"> </span>-export<span class="w"> </span>-nokeys<span class="w"> </span>-in<span class="w"> </span>ca.pem<span class="w"> </span>-out<span class="w"> </span>truststore.p12<span class="w"> </span>-caname<span class="w"> </span>mesh-client-ca<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>-passout<span class="w"> </span>pass:atakatak<span class="w"> </span>-certpbe<span class="w"> </span>PBE-SHA1-3DES<span class="w"> </span>-macalg<span class="w"> </span>sha1
+</code></pre></div>
 <h2 id="chat-nodes-and-notifications">Chat, nodes, and notifications<a class="headerlink" href="#chat-nodes-and-notifications" title="Permanent link">&para;</a></h2>
 <h3 id="unread-messages-but-no-app-icon-badge">Unread messages but no app-icon badge<a class="headerlink" href="#unread-messages-but-no-app-icon-badge" title="Permanent link">&para;</a></h3>
 <p>On <strong>macOS</strong>, allow notifications for Mesh Client and enable <strong>Badge application icon</strong> in <strong>System Settings → Notifications → Mesh Client</strong>. The app initializes macOS notification authorization when unread messages exist and reapplies the current badge when its window regains focus. Reading the remaining unread messages clears the badge. macOS notification settings still control whether the badge is visible; the app does not override a denied permission.</p>
@@ -5356,7 +5389,7 @@
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 14:02:14 UTC">October 9, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 9, 2026 17:51:05 UTC">October 9, 2026</span>
   </span>
 
     
