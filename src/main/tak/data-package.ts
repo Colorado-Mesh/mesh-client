@@ -23,12 +23,12 @@ function toP12Buffer(p12Asn1: forge.asn1.Asn1): Buffer {
  * ATAK, iTAK and WinTAK load `caLocation` as a password-protected PKCS#12 truststore.
  * A PEM CA fails to parse there, leaves the truststore empty, and the EUD rejects the
  * server certificate ("remote host's certificate not trusted; check truststore").
- * 3DES matches the client bundle and is readable by every Android keystore provider.
+ * Android's PKCS#12 provider only exposes a keyless certificate as a trusted entry when it
+ * carries a friendlyName alias; the password protects the SHA-1 MAC.
  */
 function buildTruststoreP12(caCert: forge.pki.Certificate): Buffer {
   return toP12Buffer(
     forge.pkcs12.toPkcs12Asn1(null, [caCert], PKCS12_PASSWORD, {
-      algorithm: '3des',
       friendlyName: TRUSTSTORE_FRIENDLY_NAME,
     }),
   );
