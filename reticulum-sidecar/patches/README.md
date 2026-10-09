@@ -47,7 +47,7 @@ Carry [ratspeak/rsReticulum#26](https://github.com/ratspeak/rsReticulum/pull/26)
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | `9bc7ee5ff9caf04cfb3ba5a50bd19394aeaf9d33` (`ratspeak/rsReticulum` `origin/main`) |
+| **Base commit** | `0f8731bb5b13e7f60e2d4bb38022480210009690` (`ratspeak/rsReticulum` `origin/main`; PR #26 diff rebased onto upstream's let-chain `fetch_spec` block) |
 | **Upstream PR** | https://github.com/ratspeak/rsReticulum/pull/26 |
 
 **Adds (8 files):**
@@ -604,11 +604,11 @@ When upstream rsLXMF exposes equivalent abort / cancel mid-transfer cleanup, rem
 
 ## rsLXMF-propagation-client-lrproof-diagnostics.patch
 
-Adds sticky `last_establish_error` on `PropagationClient` so client `/get` Sync surfaces `LrproofIdentityMissing`, `LrproofInvalid`, and `LrproofInvalidKey` instead of a generic `NoLinkProof` (parity with peer `/offer` via `rsLXMF-propagation-sync-peering.patch`).
+Adds sticky `last_establish_error` on `PropagationClient` so client `/get` Sync surfaces `LrproofIdentityMissing`, `LrproofInvalid`, and `LrproofInvalidKey` instead of a generic `NoLinkProof` (parity with peer `/offer` via `rsLXMF-propagation-sync-peering.patch`). An invalid LRPROOF only records `LrproofInvalid` and keeps the client `LinkEstablishing`, so a later valid proof can still bind (upstream `invalid_client_lrproof_allows_later_valid_binding_before_lrrtt`).
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | floated rsLXMF `origin/main` at apply time |
+| **Base commit** | floated rsLXMF `origin/main` @ `8bad5e2` after other rsLXMF overlays (incl. abort-transfer) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsLXMF) |
 
 **Touches:** rsLXMF `PropagationClient` (`drain_events` / `handle_link_proof` establish diagnostics)
@@ -631,7 +631,7 @@ When upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, r
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | floated rsLXMF `origin/main` @ `4a0abec` after other rsLXMF overlays (incl. LRPROOF diagnostics) |
+| **Base commit** | floated rsLXMF `origin/main` @ `8bad5e2` after other rsLXMF overlays (incl. LRPROOF diagnostics) |
 | **Upstream issue** | [ratspeak/rsLXMF#8](https://github.com/ratspeak/rsLXMF/issues/8) |
 
 **Touches:** rsLXMF `PropagationClient` (`send_get_path_request`, outbound request Resource driver in `tick`, `ResourceReq` / `ResourcePrf` in `drain_events`)
@@ -677,7 +677,7 @@ Cache advertisement / resolve-time host↔RNode RSSI so mesh-client Interface **
 
 | Field | Value |
 | ----- | ----- |
-| **Base commit** | floated rsReticulum `origin/main` after other rsReticulum overlays (incl. flow-control READY timeout) |
+| **Base commit** | floated rsReticulum `origin/main` @ `0f8731b` after other rsReticulum overlays (incl. flow-control READY timeout) |
 | **Upstream PR** | none yet (mesh-client-local; watch ratspeak/rsReticulum) |
 
 **Touches:** `crates/rns-interface/src/ble_rnode.rs` — `remember_host_rssi` / `cached_host_rssi`, fill on `scan_ble_devices` + `resolve_ble_target`

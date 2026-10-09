@@ -543,7 +543,13 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
             };
             emit(&shared.event_tx, "voice.stats", &payload);
         }
+        // rsLXST reports non-Opus profiles (native Codec2) as AudioFramesReceived.
         TelephonyServiceEvent::OpusFramesReceived {
+            link_id,
+            profile,
+            frames,
+        }
+        | TelephonyServiceEvent::AudioFramesReceived {
             link_id,
             profile,
             frames,
@@ -605,6 +611,11 @@ async fn bridge_service_event(shared: &ManagerShared, evt: TelephonyServiceEvent
         | TelephonyServiceEvent::OpusReceiveStreamStarted { .. }
         | TelephonyServiceEvent::OpusReceiveStreamStopped { .. }
         | TelephonyServiceEvent::OpusReceiveStreamFrames { .. }
+        | TelephonyServiceEvent::AudioTransmitStreamStarted { .. }
+        | TelephonyServiceEvent::AudioTransmitStreamStopped { .. }
+        | TelephonyServiceEvent::AudioReceiveStreamStarted { .. }
+        | TelephonyServiceEvent::AudioReceiveStreamStopped { .. }
+        | TelephonyServiceEvent::AudioReceiveStreamFrames { .. }
         | TelephonyServiceEvent::Drive(_) => {}
     }
 }
@@ -1285,6 +1296,25 @@ mod tests {
             .expect("voice.audio on dedicated bus");
         assert!(audio.contains("\"type\":\"voice.audio\""));
         assert!(audio.contains("samples_b64"));
+
+        let codec2_pcm = RawAudioFrame::new(1, vec![0.0f32; 48]).expect("pcm");
+        bridge_service_event(
+            &shared,
+            TelephonyServiceEvent::AudioFramesReceived {
+                link_id: link,
+                profile: Profile::BandwidthUltraLow,
+                frames: vec![codec2_pcm],
+            },
+        )
+        .await;
+        let codec2_audio = voice_audio_rx
+            .try_recv()
+            .expect("Codec2 voice.audio on dedicated bus");
+        assert!(codec2_audio.contains("\"type\":\"voice.audio\""));
+        assert!(codec2_audio.contains(&format!(
+            "\"profile\":{}",
+            Profile::BandwidthUltraLow.wire_value()
+        )));
 
         bridge_service_event(
             &shared,
