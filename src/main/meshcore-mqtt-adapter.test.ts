@@ -3,6 +3,7 @@ import type { IClientOptions } from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MQTTSettings } from '../renderer/lib/types';
+import { computeMqttExponentialReconnectDelayMs } from '../shared/mqttReconnectSchedule';
 import { MeshcoreMqttAdapter } from './meshcore-mqtt-adapter';
 
 vi.mock('mqtt', () => {
@@ -381,6 +382,85 @@ describe('MeshcoreMqttAdapter — token refresh', () => {
       expect(onToken).not.toHaveBeenCalled();
       vi.advanceTimersByTime(2);
       expect(onToken).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('retry budget after a stable session', () => {
+    async function connectJwt(maxRetries: number) {
+      const mqttMod = await import('mqtt');
+      const expiresAt = Date.now() + 60 * 60 * 1000;
+      adapter.on(MeshcoreMqttAdapter.EVENT_TOKEN_REFRESH_NEEDED, () => {
+        adapter.updateToken('fresh-token', expiresAt);
+      });
+      adapter.on('error', () => {});
+      adapter.connect({
+        ...BASE_SETTINGS,
+        username: `v1_${'A'.repeat(64)}`,
+        tokenExpiresAt: expiresAt,
+        maxRetries,
+      });
+      const client = vi.mocked(mqttMod.connect).mock.results.at(-1)!.value as {
+        on: ReturnType<typeof vi.fn>;
+      };
+      const lastHandler = (event: string) => {
+        const hits = client.on.mock.calls.filter((c: unknown[]) => c[0] === event);
+        return hits[hits.length - 1]?.[1] as () => void;
+      };
+      return {
+        connack: () => {
+          lastHandler('connect')();
+        },
+        close: () => {
+          lastHandler('close')();
+        },
+      };
+    }
+
+    it('escalates attempts when reconnects close before CONNACK', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const session = await connectJwt(3);
+
+      session.connack();
+      vi.advanceTimersByTime(60_000);
+      session.close();
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        vi.advanceTimersByTime(computeMqttExponentialReconnectDelayMs(attempt));
+        expect(adapter.getStatus()).toBe('connecting');
+        session.close();
+      }
+
+      const attempts = debugSpy.mock.calls
+        .map((c) => String(c[0]))
+        .filter((line) => line.startsWith('[MeshCore MQTT] close:'))
+        .map((line) => /attempt=(\d+)\//.exec(line)?.[1]);
+      expect(attempts).toEqual(['1', '2', '3']);
+      expect(adapter.getStatus()).toBe('error');
+    });
+
+    it('resets the budget after a genuinely stable reconnected session', async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(0);
+      const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const session = await connectJwt(3);
+
+      session.connack();
+      vi.advanceTimersByTime(60_000);
+      session.close();
+      vi.advanceTimersByTime(computeMqttExponentialReconnectDelayMs(1));
+      session.close();
+      vi.advanceTimersByTime(computeMqttExponentialReconnectDelayMs(2));
+      session.connack();
+      vi.advanceTimersByTime(60_000);
+      session.close();
+
+      const attempts = debugSpy.mock.calls
+        .map((c) => String(c[0]))
+        .filter((line) => line.startsWith('[MeshCore MQTT] close:'))
+        .map((line) => /attempt=(\d+)\//.exec(line)?.[1]);
+      expect(attempts).toEqual(['1', '2', '1']);
     });
   });
 

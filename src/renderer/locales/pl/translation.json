@@ -5178,7 +5178,8 @@
     "establishRecoveryRetryAria": "Poczekaj na rozstrzygnięcie ogłoszenia, a następnie spróbuj ponownie zsynchronizować preferowany lub ostatni cel",
     "establishRecoveryDualTcpTip": "Dwa lub więcej interfejsów TCP są włączone. Ogłoszenie i link do synchronizacji mogą pozostać na różnych ścieżkach — wyłącz jedną sieć szkieletową w obszarze → Interfejsy połączeń, a następnie ogłoś i spróbuj ponownie.",
     "establishRecoveryOpenInterfaces": "Otwarte interfejsy",
-    "establishRecoveryOpenInterfacesAria": "Otwórz interfejsy połączeń, aby dostosować szkielety TCP"
+    "establishRecoveryOpenInterfacesAria": "Otwórz interfejsy połączeń, aby dostosować szkielety TCP",
+    "syncRequestFailed": "Synchronizacja propagacji dotarła do węzła, ale żądanie nie zostało zakończone. Spróbuje ponownie przy następnej synchronizacji."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Wykrywanie RMAP v4",

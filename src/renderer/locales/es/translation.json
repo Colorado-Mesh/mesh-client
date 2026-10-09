@@ -5098,7 +5098,8 @@
     "establishRecoveryRetryAria": "Espere a que se anuncie la liquidación, luego vuelva a intentar la sincronización en el objetivo preferido o último",
     "establishRecoveryDualTcpTip": "Dos o más interfaces TCP están habilitadas. Anuncie y el enlace de sincronización puede salir en diferentes rutas: deshabilite una red troncal en → Interfaces de conexión, luego anuncie y vuelva a intentarlo.",
     "establishRecoveryOpenInterfaces": "Interfaces abiertas",
-    "establishRecoveryOpenInterfacesAria": "Interfaces de conexión abiertas para ajustar los backbones TCP"
+    "establishRecoveryOpenInterfacesAria": "Interfaces de conexión abiertas para ajustar los backbones TCP",
+    "syncRequestFailed": "La sincronización de propagación ha llegado al nodo, pero la solicitud no se ha completado. Volverá a intentarlo en la próxima sincronización."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Descubrimiento de RMAP v4",

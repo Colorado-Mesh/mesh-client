@@ -5098,7 +5098,8 @@
     "establishRecoveryRetryAria": "等待公告结算，然后在首选或最后一个目标上重试同步",
     "establishRecoveryDualTcpTip": "启用了两个或多个TCP接口。公告和同步链接可以保留在不同的路径上—在连接→接口下禁用一个主干，然后公告并重试。",
     "establishRecoveryOpenInterfaces": "打开接口",
-    "establishRecoveryOpenInterfacesAria": "打开连接接口以调整TCP骨干网"
+    "establishRecoveryOpenInterfacesAria": "打开连接接口以调整TCP骨干网",
+    "syncRequestFailed": "传播同步到达节点，但请求未完成。它将在下一次同步时重试。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4发现",

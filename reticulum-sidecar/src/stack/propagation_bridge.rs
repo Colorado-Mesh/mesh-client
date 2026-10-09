@@ -507,7 +507,7 @@ impl PropagationBridge {
         match client.state() {
             PropagationClientState::Idle | PropagationClientState::Failed => 0.0,
             PropagationClientState::LinkEstablishing => 10.0,
-            PropagationClientState::LinkEstablished => 20.0,
+            PropagationClientState::LinkEstablished => Self::CLIENT_LINK_ESTABLISHED_PROGRESS,
             PropagationClientState::ListRequested => 40.0,
             PropagationClientState::GetRequested => 55.0,
             PropagationClientState::Receiving => 70.0,
@@ -871,6 +871,20 @@ impl PropagationBridge {
         self.last_establish_error()
             .map(|e| format!("propagation establish failed: {e}"))
             .unwrap_or_else(|| "propagation establish failed: NoLinkProof".to_string())
+    }
+
+    /// Client `/get` UI progress once the LRPROOF arrived (`LinkEstablished`).
+    pub const CLIENT_LINK_ESTABLISHED_PROGRESS: f64 = 20.0;
+
+    /// Terminal client `/get` failure message for the last progress seen before
+    /// `Failed`. After the link was proven the request itself failed (rejected,
+    /// timed out, or link lost), so LRPROOF / announce recovery does not apply.
+    pub fn client_download_fail_message(&self, last_progress: f64) -> String {
+        if last_progress >= Self::CLIENT_LINK_ESTABLISHED_PROGRESS {
+            "propagation request failed: RequestFailed".to_string()
+        } else {
+            self.propagation_establish_fail_message()
+        }
     }
 
     /// Sticky success/failure after Complete/Failed collapses to Idle.
@@ -1506,6 +1520,35 @@ mod tests {
             "propagation establish failed: LrproofIdentityMissing"
         );
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn client_download_fail_message_separates_request_failure_from_establish() {
+        let dir = tempfile::tempdir().expect("tmpdir");
+        let (tx, _rx) = mpsc::channel(8);
+        let identity = rns_identity::identity::Identity::new();
+        let bridge = PropagationBridge::new(
+            tx,
+            [0xab; 16],
+            dir.path().to_path_buf(),
+            &identity,
+            &super::super::pn_hosting_policy::PnHostingPolicy::default(),
+        )
+        .expect("bridge");
+        assert_eq!(
+            bridge.client_download_fail_message(10.0),
+            "propagation establish failed: NoLinkProof"
+        );
+        for progress in [
+            PropagationBridge::CLIENT_LINK_ESTABLISHED_PROGRESS,
+            40.0,
+            90.0,
+        ] {
+            assert_eq!(
+                bridge.client_download_fail_message(progress),
+                "propagation request failed: RequestFailed"
+            );
+        }
     }
 
     #[test]

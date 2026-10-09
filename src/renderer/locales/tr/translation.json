@@ -5098,7 +5098,8 @@
     "establishRecoveryRetryAria": "Duyuru yerleşimini bekleyin, ardından tercih edilen veya son hedefte senkronizasyonu yeniden deneyin",
     "establishRecoveryDualTcpTip": "İki veya daha fazla TCP arayüzü etkinleştirildi. Anons ve senkronizasyon bağlantısı farklı yollarda bırakılabilir — Bağlantı → Arabirimleri altında bir omurgayı devre dışı bırakın, ardından anons edin ve yeniden deneyin.",
     "establishRecoveryOpenInterfaces": "Açık Arayüzler",
-    "establishRecoveryOpenInterfacesAria": "TCP omurgalarını ayarlamak için Bağlantı Arayüzlerini açın"
+    "establishRecoveryOpenInterfacesAria": "TCP omurgalarını ayarlamak için Bağlantı Arayüzlerini açın",
+    "syncRequestFailed": "Yayılma senkronizasyonu düğüme ulaştı, ancak istek tamamlanmadı. Bir sonraki senkronizasyonda tekrar deneyecektir."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4 keşfi",

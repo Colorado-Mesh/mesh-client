@@ -5098,7 +5098,8 @@
     "establishRecoveryRetryAria": "Attendi l'annuncio della liquidazione, quindi riprova la sincronizzazione sulla destinazione preferita o sull'ultima destinazione",
     "establishRecoveryDualTcpTip": "Sono abilitate due o più interfacce TCP. Annuncia e il collegamento di sincronizzazione può lasciare su percorsi diversi: disabilita una dorsale in → Interfacce di connessione, quindi annuncia e riprova.",
     "establishRecoveryOpenInterfaces": "Interfacce Aperte",
-    "establishRecoveryOpenInterfacesAria": "Apri le interfacce di connessione per regolare i backbone TCP"
+    "establishRecoveryOpenInterfacesAria": "Apri le interfacce di connessione per regolare i backbone TCP",
+    "syncRequestFailed": "La sincronizzazione della propagazione ha raggiunto il nodo, ma la richiesta non è stata completata. Riproveremo alla prossima sincronizzazione."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Scoperta RMAP v4",

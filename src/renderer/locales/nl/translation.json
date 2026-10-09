@@ -5098,7 +5098,8 @@
     "establishRecoveryRetryAria": "Wacht tot de aankondiging is afgewikkeld en probeer vervolgens opnieuw te synchroniseren op het voorkeurs- of laatste doelwit",
     "establishRecoveryDualTcpTip": "Twee of meer TCP-interfaces zijn ingeschakeld. Kondig aan en de synchronisatielink kan op verschillende paden vertrekken — schakel één backbone uit onder Verbindingsinterfaces, kondig → vervolgens aan en probeer het opnieuw.",
     "establishRecoveryOpenInterfaces": "Open interfaces",
-    "establishRecoveryOpenInterfacesAria": "Open verbindingsinterfaces om TCP-backbones aan te passen"
+    "establishRecoveryOpenInterfacesAria": "Open verbindingsinterfaces om TCP-backbones aan te passen",
+    "syncRequestFailed": "Propagatiesynchronisatie bereikte het knooppunt, maar het verzoek werd niet voltooid. Het zal het opnieuw proberen bij de volgende synchronisatie."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v4-detectie",

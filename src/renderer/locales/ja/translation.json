@@ -5098,7 +5098,8 @@
     "establishRecoveryRetryAria": "アナウンスの解決を待ち、優先ターゲットまたは最後のターゲットで同期を再試行します",
     "establishRecoveryDualTcpTip": "2つ以上のTCPインターフェイスがイネーブルになっています。アナウンスと同期リンクは異なるパスに残すことができます。接続→インターフェースの下の1つのバックボーンを無効にしてから、アナウンスして再試行します。",
     "establishRecoveryOpenInterfaces": "インターフェースを開く",
-    "establishRecoveryOpenInterfacesAria": "TCPバックボーンを調整するために接続インターフェースを開きます"
+    "establishRecoveryOpenInterfacesAria": "TCPバックボーンを調整するために接続インターフェースを開きます",
+    "syncRequestFailed": "伝播同期はノードに到達しましたが、要求は完了しませんでした。次回の同期時に再試行します。"
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "RMAP v 4検出",

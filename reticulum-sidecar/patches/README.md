@@ -625,6 +625,29 @@ Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRI
 
 When upstream rsLXMF exposes equivalent PropagationClient LRPROOF diagnostics, remove this patch and the apply step.
 
+## rsLXMF-propagation-client-request-resource.patch
+
+`PropagationClient::send_get_path_request` always sent `/get` as one Link packet. Once the haves list passes about 13 transient IDs (32 bytes each), the packed request exceeds the Link MDU and rsReticulum rejects the send as `InvalidPacket`. Client Sync then fails every cycle at `PurgeRequested` and the node never purges delivered mail. This overlay matches Python `Link.request`: when the packed body is larger than `link.mdu`, it is sent as a single-segment request Resource (`flags.is_request`, `request_id` = truncated hash of the packed request). The client serves the node's `RESOURCE_REQ`, accepts `RESOURCE_PRF`, and then waits for the normal response.
+
+| Field | Value |
+| ----- | ----- |
+| **Base commit** | floated rsLXMF `origin/main` @ `4a0abec` after other rsLXMF overlays (incl. LRPROOF diagnostics) |
+| **Upstream issue** | [ratspeak/rsLXMF#8](https://github.com/ratspeak/rsLXMF/issues/8) |
+
+**Touches:** rsLXMF `PropagationClient` (`send_get_path_request`, outbound request Resource driver in `tick`, `ResourceReq` / `ResourcePrf` in `drain_events`)
+
+### Apply locally
+
+```bash
+./scripts/apply-rsLXMF-propagation-client-request-resource.sh
+```
+
+Listed in `scripts/lib/ratspeak-overlay-apply-list.sh` and `RATSPEAK_PATCH_ENTRIES` in `scripts/update.sh`.
+
+### Sunset
+
+When upstream rsLXMF sends oversized PropagationClient `/get` requests as a Resource, remove this patch and the apply step.
+
 ## rsReticulum-ble-rnode-flow-control-ready-timeout.patch
 
 When BLE RNode `flow_control` is on, wait up to 2s for `CMD_READY`, then release the one-packet permit so NUS links that never deliver READY cannot freeze the host 256-slot TX queue after the first frame. Still paces bursts when READY works.

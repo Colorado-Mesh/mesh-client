@@ -1,0 +1,506 @@
+diff --git a/crates/lxmf-core/src/propagation_client.rs b/crates/lxmf-core/src/propagation_client.rs
+index 0000000..0000000 100644
+--- a/crates/lxmf-core/src/propagation_client.rs
++++ b/crates/lxmf-core/src/propagation_client.rs
+@@ -19,8 +19,8 @@ use bytes::Bytes;
+ use rns_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+ use rns_link::link::{CloseReason, Link, LinkAction};
+ use rns_protocol::resource::{
+-    InboundTransfer, MAX_SEGMENTS, MultiSegmentInbound, RANDOM_HASH_SIZE, ResourceError,
+-    TransferAction,
++    InboundTransfer, MAX_EFFICIENT_SIZE, MAX_SEGMENTS, MultiSegmentInbound, OutboundTransfer,
++    RANDOM_HASH_SIZE, ResourceError, TransferAction,
+ };
+ use rns_protocol::resource_adv::ResourceAdvertisement;
+ use rns_transport::link_messages::DestinationEvent;
+@@ -105,6 +105,14 @@ struct PendingEndpointCleanup {
+     result_rx: oneshot::Receiver<LinkEndpointUnbindResult>,
+ }
+ 
++/// A `/get` body larger than the Link MDU, sent as a request Resource
++/// (Python `Link.request` parity).
++struct OutboundRequestResource {
++    transfer: OutboundTransfer,
++    request_id: [u8; 16],
++    requested: bool,
++}
++
+ pub struct PropagationClient {
+     transport_tx: mpsc::Sender<TransportMessage>,
+     event_tx: mpsc::Sender<DestinationEvent>,
+@@ -135,6 +143,7 @@ pub struct PropagationClient {
+     inbound_resources: HashMap<[u8; 32], InboundTransfer>,
+     inbound_split_resources: HashMap<[u8; 32], MultiSegmentInbound>,
+     segment_routing: HashMap<[u8; 32], SegmentRoute>,
++    outbound_request: Option<OutboundRequestResource>,
+     /// Ordered, bounded staging for transport backpressure.
+     pending_transport: VecDeque<TransportMessage>,
+     /// KB per transfer; `None` means unlimited.
+@@ -182,6 +191,7 @@ impl PropagationClient {
+             inbound_resources: HashMap::new(),
+             inbound_split_resources: HashMap::new(),
+             segment_routing: HashMap::new(),
++            outbound_request: None,
+             pending_transport: VecDeque::new(),
+             delivery_limit: Some(DELIVERY_LIMIT as f64),
+             max_messages: None,
+@@ -706,6 +716,12 @@ impl PropagationClient {
+                         rns_wire::context::PacketContext::ResourceHmu => {
+                             self.handle_resource_hmu(data);
+                         }
++                        rns_wire::context::PacketContext::ResourceReq => {
++                            self.handle_outbound_request_part_request(data);
++                        }
++                        rns_wire::context::PacketContext::ResourcePrf => {
++                            self.handle_outbound_request_proof(data);
++                        }
+                         rns_wire::context::PacketContext::ResourceIcl
+                         | rns_wire::context::PacketContext::ResourceRcl => {
+                             self.handle_resource_cancel(data);
+@@ -1365,6 +1381,10 @@ impl PropagationClient {
+             Some(LinkAction::None) | None => {}
+         }
+ 
++        if self.status.state != PropagationClientState::Failed {
++            self.drive_outbound_request();
++        }
++
+         if self.status.state == PropagationClientState::Receiving {
+             let mut retry_requests = Vec::new();
+             for transfer in self.inbound_resources.values_mut() {
+@@ -1549,50 +1569,262 @@ impl PropagationClient {
+     /// Send a msgpack request to the `MESSAGE_GET_PATH` endpoint; returns `true`
+     /// if the request was dispatched successfully.
+     fn send_get_path_request(&mut self, request_data: &[u8]) -> bool {
+-        let outbound = if let Some(ref mut link) = self.link {
+-            match link.request(
+-                MESSAGE_GET_PATH,
+-                Some(request_data),
+-                Duration::from_secs(60),
+-            ) {
+-                Ok((encrypted, _request_id)) => {
+-                    if let Some(link_id) = self.link_id {
+-                        let req_header = rns_wire::header::PacketHeader {
+-                            flags: rns_wire::flags::PacketFlags {
+-                                header_type: rns_wire::flags::HeaderType::Header1,
+-                                context_flag: false,
+-                                transport_type: rns_wire::flags::TransportType::Broadcast,
+-                                destination_type: rns_wire::flags::DestinationType::Link,
+-                                packet_type: rns_wire::flags::PacketType::Data,
+-                            },
+-                            hops: 0,
+-                            transport_id: None,
+-                            destination_hash: link_id,
+-                            context: rns_wire::context::PacketContext::Request,
+-                        };
+-                        let mut req_raw = req_header.pack();
+-                        req_raw.extend_from_slice(&encrypted);
+-                        let packet_request_id = rns_wire::hash::truncated_packet_hash(
+-                            &req_raw,
+-                            rns_wire::flags::HeaderType::Header1,
+-                        );
+-                        link.update_pending_request_id(&_request_id, packet_request_id);
+-                        Some(OutboundRequest {
+-                            raw: Bytes::from(req_raw),
+-                            destination_hash: link_id,
+-                        })
+-                    } else {
+-                        None
+-                    }
++        let Some(link) = self.link.as_mut() else {
++            return false;
++        };
++        let Ok((packed, request_id)) = link.prepare_request(
++            MESSAGE_GET_PATH,
++            Some(request_data),
++            Duration::from_secs(60),
++        ) else {
++            return false;
++        };
++        // Transport rejects Link packets over the MTU as InvalidPacket, so bodies
++        // past the Link MDU (e.g. a long haves list) must travel as a Resource.
++        if packed.len() > link.mdu {
++            return self.start_outbound_request_resource(packed, request_id);
++        }
++        let outbound = match link.encrypt(&packed) {
++            Ok(encrypted) => {
++                if let Some(link_id) = self.link_id {
++                    let req_header = rns_wire::header::PacketHeader {
++                        flags: rns_wire::flags::PacketFlags {
++                            header_type: rns_wire::flags::HeaderType::Header1,
++                            context_flag: false,
++                            transport_type: rns_wire::flags::TransportType::Broadcast,
++                            destination_type: rns_wire::flags::DestinationType::Link,
++                            packet_type: rns_wire::flags::PacketType::Data,
++                        },
++                        hops: 0,
++                        transport_id: None,
++                        destination_hash: link_id,
++                        context: rns_wire::context::PacketContext::Request,
++                    };
++                    let mut req_raw = req_header.pack();
++                    req_raw.extend_from_slice(&encrypted);
++                    let packet_request_id = rns_wire::hash::truncated_packet_hash(
++                        &req_raw,
++                        rns_wire::flags::HeaderType::Header1,
++                    );
++                    link.update_pending_request_id(&request_id, packet_request_id);
++                    Some(OutboundRequest {
++                        raw: Bytes::from(req_raw),
++                        destination_hash: link_id,
++                    })
++                } else {
++                    None
+                 }
+-                Err(_) => None,
+             }
+-        } else {
+-            None
++            Err(_) => {
++                link.fail_pending_request(&request_id);
++                None
++            }
+         };
+         outbound.is_some_and(|request| self.queue_link_endpoint(request))
+     }
+ 
++    fn start_outbound_request_resource(&mut self, packed: Vec<u8>, request_id: [u8; 16]) -> bool {
++        let Some(link) = self.link.as_mut() else {
++            return false;
++        };
++        let rtt = link.rtt.unwrap_or(Duration::from_millis(500));
++        // Single-segment only; a split request Resource is never needed for `/get`.
++        let transfer = match link.session_keys() {
++            Some(keys) if packed.len() <= MAX_EFFICIENT_SIZE => {
++                OutboundTransfer::new_encrypted(packed, true, rtt, keys).ok()
++            }
++            _ => None,
++        };
++        let Some(mut transfer) = transfer else {
++            link.fail_pending_request(&request_id);
++            return false;
++        };
++        transfer.resource.flags.is_request = true;
++        transfer.resource.request_id = Some(request_id.to_vec());
++        link.mark_request_resource_sending(&request_id);
++        tracing::debug!(
++            request_id = %hex::encode(request_id),
++            transfer_size = transfer.resource.total_size,
++            "propagation client /get request sent as Resource"
++        );
++        self.outbound_request = Some(OutboundRequestResource {
++            transfer,
++            request_id,
++            requested: false,
++        });
++        self.drive_outbound_request();
++        self.status.state != PropagationClientState::Failed
++    }
++
++    fn drive_outbound_request(&mut self) {
++        for _ in 0..16 {
++            let Some(outbound) = self.outbound_request.as_mut() else {
++                return;
++            };
++            let action = if outbound.transfer.advertised && !outbound.requested {
++                outbound.transfer.check_timeout()
++            } else {
++                outbound.transfer.tick()
++            };
++            match action {
++                TransferAction::SendAdvertisement(adv_data) => {
++                    if !self.send_outbound_request_packet(
++                        &adv_data,
++                        rns_wire::context::PacketContext::ResourceAdv,
++                    ) {
++                        self.fail_outbound_request();
++                    }
++                    // check_timeout() re-advertises until the node's first RESOURCE_REQ.
++                    return;
++                }
++                TransferAction::SendPart(_, part_data) => {
++                    if !self.send_outbound_request_packet(
++                        &part_data,
++                        rns_wire::context::PacketContext::Resource,
++                    ) {
++                        self.fail_outbound_request();
++                        return;
++                    }
++                    if !self.pending_transport.is_empty() {
++                        return;
++                    }
++                }
++                TransferAction::Complete => {
++                    self.complete_outbound_request();
++                    return;
++                }
++                TransferAction::Failed(_) => {
++                    self.fail_outbound_request();
++                    return;
++                }
++                _ => return,
++            }
++        }
++    }
++
++    fn handle_outbound_request_part_request(&mut self, encrypted_data: &[u8]) {
++        let Some(plaintext) = self
++            .link
++            .as_ref()
++            .and_then(|link| link.decrypt(encrypted_data).ok())
++        else {
++            return;
++        };
++        let resource_hash_start =
++            if plaintext.first().copied() == Some(rns_protocol::resource::HASHMAP_IS_EXHAUSTED) {
++                1 + rns_protocol::resource::MAPHASH_LEN
++            } else {
++                1
++            };
++        let Some(requested_resource_hash) =
++            plaintext.get(resource_hash_start..resource_hash_start + 32)
++        else {
++            return;
++        };
++        let Some(outbound) = self.outbound_request.as_mut() else {
++            return;
++        };
++        if requested_resource_hash != outbound.transfer.resource.resource_hash {
++            return;
++        }
++        outbound.requested = true;
++        let actions = outbound.transfer.handle_request(&plaintext);
++
++        for action in actions {
++            match action {
++                TransferAction::SendPart(_, part_data) => {
++                    if !self.send_outbound_request_packet(
++                        &part_data,
++                        rns_wire::context::PacketContext::Resource,
++                    ) {
++                        self.fail_outbound_request();
++                        return;
++                    }
++                }
++                TransferAction::SendHmu(hmu_data) => {
++                    if !self.send_outbound_request_packet(
++                        &hmu_data,
++                        rns_wire::context::PacketContext::ResourceHmu,
++                    ) {
++                        self.fail_outbound_request();
++                        return;
++                    }
++                }
++                TransferAction::SendCancel(cancel_type, resource_hash) => {
++                    let context = match cancel_type {
++                        rns_protocol::resource::CancelType::Icl => {
++                            rns_wire::context::PacketContext::ResourceIcl
++                        }
++                        rns_protocol::resource::CancelType::Rcl => {
++                            rns_wire::context::PacketContext::ResourceRcl
++                        }
++                    };
++                    let _ = self.send_outbound_request_packet(&resource_hash, context);
++                    self.fail_outbound_request();
++                    return;
++                }
++                TransferAction::Failed(_) => {
++                    self.fail_outbound_request();
++                    return;
++                }
++                TransferAction::Complete => {
++                    self.complete_outbound_request();
++                    return;
++                }
++                TransferAction::None
++                | TransferAction::SendAdvertisement(_)
++                | TransferAction::SendProof(_)
++                | TransferAction::SendRequest(_) => {}
++            }
++        }
++    }
++
++    fn handle_outbound_request_proof(&mut self, proof_data: &[u8]) {
++        let proven = self
++            .outbound_request
++            .as_mut()
++            .is_some_and(|outbound| outbound.transfer.handle_proof(proof_data));
++        if proven {
++            self.complete_outbound_request();
++        }
++    }
++
++    fn complete_outbound_request(&mut self) {
++        let Some(outbound) = self.outbound_request.take() else {
++            return;
++        };
++        if let Some(link) = self.link.as_mut() {
++            link.mark_request_resource_sent(&outbound.request_id);
++        }
++        // The response wait starts once the node has the whole request.
++        self.started_at = Some(Instant::now());
++    }
++
++    fn fail_outbound_request(&mut self) {
++        if let Some(outbound) = self.outbound_request.take() {
++            if let Some(link) = self.link.as_mut() {
++                link.fail_pending_request(&outbound.request_id);
++            }
++        }
++        self.status.state = PropagationClientState::Failed;
++    }
++
++    fn send_outbound_request_packet(
++        &mut self,
++        data: &[u8],
++        context: rns_wire::context::PacketContext,
++    ) -> bool {
++        // RESOURCE parts were link-encrypted before chunking and ride raw so the
++        // advertised map hashes still match; ADV and control frames are encrypted here.
++        if context == rns_wire::context::PacketContext::Resource {
++            return self.send_link_packet(context, rns_wire::flags::PacketType::Data, data);
++        }
++        let Some(encrypted) = self.link.as_ref().and_then(|link| link.encrypt(data).ok()) else {
++            return false;
++        };
++        self.send_link_packet(context, rns_wire::flags::PacketType::Data, &encrypted)
++    }
++
+     fn cleanup(&mut self) {
+         let graceful_release = self.endpoint_release_queued || self.send_teardown();
+         if let Some(link_id) = self.link_id.take() {
+@@ -1607,6 +1839,7 @@ impl PropagationClient {
+         self.inbound_resources.clear();
+         self.inbound_split_resources.clear();
+         self.segment_routing.clear();
++        self.outbound_request = None;
+         self.receiving_for = None;
+         self.started_at = None;
+     }
+@@ -1911,6 +2144,126 @@ mod tests {
+         assert!(fields[1].as_array().unwrap().is_empty());
+     }
+ 
++    #[test]
++    fn oversized_purge_request_is_sent_as_request_resource() {
++        let (tx, mut rx) = mpsc::channel(256);
++        let mut client = PropagationClient::new(tx, None, None);
++        let (initiator, responder) = active_link_pair([0xE7; 16]);
++        let link_id = initiator.link_id;
++        client.link_id = Some(link_id);
++        client.link = Some(initiator);
++        client.attached_interface = Some(0);
++        client.status.state = PropagationClientState::GetRequested;
++        let haves: Vec<Vec<u8>> = (0..50u8).map(|i| vec![i; 32]).collect();
++        client.received_ids = haves.clone();
++        let inject = |client: &mut PropagationClient,
++                      context: rns_wire::context::PacketContext,
++                      payload: &[u8]| {
++            client
++                .event_tx
++                .try_send(DestinationEvent::InboundPacket {
++                    raw: link_data_packet(link_id, context, payload),
++                    interface_id: 0,
++                    metrics: Default::default(),
++                })
++                .unwrap();
++            client.drain_events(&std::collections::HashMap::new());
++        };
++        let sent_packets = |rx: &mut mpsc::Receiver<TransportMessage>| {
++            let mut packets = Vec::new();
++            while let Ok(message) = rx.try_recv() {
++                if let TransportMessage::SendLinkEndpoint {
++                    request, result_tx, ..
++                } = message
++                {
++                    let _ = result_tx.send(LinkEndpointSendResult::Sent);
++                    assert!(request.raw.len() <= rns_wire::constants::MTU);
++                    let (header, offset) =
++                        rns_wire::header::PacketHeader::unpack(&request.raw).unwrap();
++                    packets.push((header.context, request.raw[offset..].to_vec()));
++                }
++            }
++            packets
++        };
++
++        client.send_purge_request();
++        assert_eq!(client.state(), PropagationClientState::PurgeRequested);
++
++        let packets = sent_packets(&mut rx);
++        assert_eq!(packets.len(), 1);
++        let (context, adv_body) = &packets[0];
++        assert_eq!(*context, rns_wire::context::PacketContext::ResourceAdv);
++        let adv = ResourceAdvertisement::unpack(&responder.decrypt(adv_body).unwrap()).unwrap();
++        assert!(adv.flags.is_request);
++        let mut random_hash = [0u8; RANDOM_HASH_SIZE];
++        random_hash.copy_from_slice(&adv.random_hash[..RANDOM_HASH_SIZE]);
++        let mut receiver = InboundTransfer::from_advertisement(
++            adv.num_parts,
++            adv.transfer_size,
++            adv.data_size,
++            random_hash,
++            adv.resource_hash,
++            adv.flags,
++            adv.get_map_hashes(),
++            Duration::from_millis(50),
++        )
++        .unwrap();
++
++        let mut next_request = receiver.request_next();
++        for _ in 0..16 {
++            let TransferAction::SendRequest(request) = next_request else {
++                break;
++            };
++            inject(
++                &mut client,
++                rns_wire::context::PacketContext::ResourceReq,
++                &responder.encrypt(&request).unwrap(),
++            );
++            next_request = TransferAction::None;
++            for (context, body) in sent_packets(&mut rx) {
++                if context == rns_wire::context::PacketContext::Resource {
++                    let action = receiver.receive_part(body);
++                    if matches!(action, TransferAction::SendRequest(_)) {
++                        next_request = action;
++                    }
++                }
++            }
++        }
++        assert!(receiver.resource.is_complete());
++
++        let decrypt =
++            |ciphertext: &[u8]| responder.decrypt(ciphertext).map_err(|_| ResourceError::Corrupt);
++        let (assembled, proof) = receiver.complete(Some(&decrypt)).unwrap();
++        let (request_id, _, _, request_data) = Link::parse_request(&assembled).unwrap();
++        assert_eq!(adv.request_id.as_deref(), Some(&request_id[..]));
++        let value = rmpv::decode::read_value(&mut &request_data[..]).unwrap();
++        let fields = value.as_array().unwrap();
++        assert!(fields[0].is_nil());
++        let purged: Vec<Vec<u8>> = fields[1]
++            .as_array()
++            .unwrap()
++            .iter()
++            .map(|id| id.as_slice().unwrap().to_vec())
++            .collect();
++        assert_eq!(purged, haves);
++
++        inject(
++            &mut client,
++            rns_wire::context::PacketContext::ResourcePrf,
++            &proof,
++        );
++        assert!(client.outbound_request.is_none());
++        assert_eq!(client.state(), PropagationClientState::PurgeRequested);
++
++        let response = responder.create_response(&request_id, &[0xC0]).unwrap();
++        inject(
++            &mut client,
++            rns_wire::context::PacketContext::Response,
++            &response,
++        );
++        assert_eq!(client.state(), PropagationClientState::Complete);
++    }
++
+     #[test]
+     fn test_take_received_messages() {
+         let (tx, _rx) = mpsc::channel(16);

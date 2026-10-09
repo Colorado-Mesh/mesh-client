@@ -5098,7 +5098,8 @@
     "establishRecoveryRetryAria": "Attendez d'annoncer le règlement, puis réessayez la synchronisation sur la cible préférée ou la dernière cible",
     "establishRecoveryDualTcpTip": "Deux interfaces TCP ou plus sont activées. Annoncez et le lien de synchronisation peut partir sur différents chemins — désactivez une dorsale sous → Interfaces de connexion, puis annoncez et réessayez.",
     "establishRecoveryOpenInterfaces": "interfaces ouverts",
-    "establishRecoveryOpenInterfacesAria": "Ouvrir les interfaces de connexion pour ajuster les backbones TCP"
+    "establishRecoveryOpenInterfacesAria": "Ouvrir les interfaces de connexion pour ajuster les backbones TCP",
+    "syncRequestFailed": "La synchronisation de la propagation a atteint le nœud, mais la demande n'a pas abouti. Il réessayera lors de la prochaine synchronisation."
   },
   "reticulumRmapDiscovery": {
     "sectionTitle": "Découverte RMAP v4",

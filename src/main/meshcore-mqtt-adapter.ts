@@ -466,9 +466,13 @@ export class MeshcoreMqttAdapter extends EventEmitter {
       this.clearReconnectTimer();
       const now = Date.now();
       this.disconnectCount++;
-      const sessionDuration = this.lastConnected ? now - this.lastConnected : 0;
+      // Consume this session's CONNACK timestamp: a reconnect that closes before its own
+      // CONNACK must measure 0s, not the age of a previous session (else it looks stable).
+      const connectedAt = this.lastConnected;
+      this.lastConnected = null;
+      const sessionDuration = connectedAt ? now - connectedAt : 0;
       console.debug(
-        `[MeshCore MQTT] connection closed after ${Math.round(sessionDuration / 1000)}s (disconnect #${this.lastConnected ? this.disconnectCount : 'first'})`,
+        `[MeshCore MQTT] connection closed after ${Math.round(sessionDuration / 1000)}s (disconnect #${this.disconnectCount}${connectedAt ? '' : ', no CONNACK'})`,
         new Date().toISOString(),
       );
       // Intentional disconnect() clears lastSettings; do not treat transient `disconnected`

@@ -5420,6 +5420,7 @@
     "syncEstablishIdentityMissing": "Propagation sync could not verify the link proof — the node identity was missing. Wait for an announce and try again.",
     "syncEstablishInvalidProof": "Propagation sync received an invalid link proof from the node — try again in a moment.",
     "syncEstablishNoLinkProof": "Propagation sync got no link proof from the node — your identity may need a fresh announce, or the path back is missing.",
+    "syncRequestFailed": "Propagation sync reached the node, but the request did not complete. It will retry on the next sync.",
     "establishRecoveryTitle": "Link proof missing — stopped trying other nodes",
     "establishRecoveryBody": "The reverse path to your identity is likely missing on this client (not a bad propagation node). Sync will not cascade to other remotes until this is fixed.",
     "establishRecoveryAnnounce": "Announce now",
