@@ -129,6 +129,25 @@ describe('generateDataPackage', () => {
     warnSpy.mockRestore();
   });
 
+  it('ships the CA as a PKCS#12 truststore, not a PEM file', async () => {
+    await generateDataPackage(STUB_CERTS, STUB_SETTINGS);
+    const names = fileCallArgs.map(([name]) => name);
+    expect(names).toContain('truststore.p12');
+    expect(names).toContain('client.p12');
+    expect(names).not.toContain('ca.pem');
+    const truststore = fileCallArgs.find(([name]) => name === 'truststore.p12');
+    expect(Buffer.isBuffer(truststore![1])).toBe(true);
+  });
+
+  it('connection.pref points caLocation at the truststore', async () => {
+    await generateDataPackage(STUB_CERTS, STUB_SETTINGS);
+    const prefEntry = fileCallArgs.find(([name]) => name === 'connection.pref');
+    expect(prefEntry![1]).toContain(
+      '<entry key="caLocation0" class="class java.lang.String">cert/truststore.p12</entry>',
+    );
+    expect(prefEntry![1]).not.toContain('ca.pem');
+  });
+
   it('connection.pref contains the correct port', async () => {
     await generateDataPackage(STUB_CERTS, { ...STUB_SETTINGS, port: 9999 });
     const prefEntry = fileCallArgs.find(([name]) => name === 'connection.pref');
