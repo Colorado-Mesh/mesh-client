@@ -811,7 +811,9 @@
       "bleUnavailable": "Bluetooth is niet gereed. Maak opnieuw verbinding en probeer het opnieuw.",
       "roomSessionExpired": "Roomsessie verlopen — log opnieuw in om te posten.",
       "noSavedRoomCredential": "Geen opgeslagen ruimtewachtwoord. Log eerst in op de ruimte.",
-      "mqttOriginReactionUnsupported": "Reacties op alleen MQTT-berichten worden niet ondersteund. Stuur in plaats daarvan een normaal antwoord."
+      "mqttOriginReactionUnsupported": "Reacties op alleen MQTT-berichten worden niet ondersteund. Stuur in plaats daarvan een normaal antwoord.",
+      "networkAckTimeout": "Nog geen bevestiging van het netwerk.",
+      "networkAckFailed": "Het netwerk heeft dit bericht niet bevestigd."
     },
     "reticulumDmDestHashesAria": "Bestemming LXMF en identiteitshashes",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "Deze chat is LXMF {{openPrefix}}…. Een andere LXMF {{alternatePrefix}}… ({{name}}) kan dezelfde persoon zijn in een andere app. Open het → bericht van collega's op die hash of kondig nu aan beide kanten aan.",
     "reticulumDmStaleAlternateDismissAria": "Bestemmingswaarschuwing negeren",
     "outboxEmergencyBadge": "Noodstop",
-    "outboxEmergencyWillSend": "Zal het opnieuw proberen totdat het wordt verzonden",
     "outboxEmergencyCapBlocked": "Gepauzeerd: te veel noodberichten in de wachtrij. Probeer het opnieuw of annuleer deze.",
-    "outboxEmergencyCancelConfirm": "Dit noodbericht annuleren? Het wordt niet verzonden.",
     "retryOutboxEmergencyAttempt": "Poging {{count}}",
     "channelSwitcher": {
       "trigger": "Alle kanalen ({{total}})",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}} reageerde met {{name}}",
     "clearChannelMessagesChanged": "{{name}} zit niet meer in die sleuf op de radio, dus er is niets gewist.",
     "clearChannelMessagesRadioChanged": "De aangesloten radio is gewijzigd terwijl deze open was, dus berichten in {{name}} zijn niet gewist.",
-    "viewSenderDetails": "Details van {{name}} bekijken"
+    "viewSenderDetails": "Details van {{name}} bekijken",
+    "outboxStatusAwaitingAck": "Wachten op netwerkbevestiging...",
+    "outboxRetryingIn": "Opnieuw proberen in {{time}}",
+    "outboxStopRetrying": "Stop met opnieuw proberen",
+    "outboxStopRetryingAria": "Stop met het opnieuw proberen van dit noodbericht",
+    "outboxCancelled": "Geannuleerd",
+    "autoResendPending": "Opnieuw proberen ({{attempt}}/{{max}}) in {{time}}",
+    "autoResendSending": "Opnieuw proberen ({{attempt}}/{{max}})...",
+    "cancelAutoResend": "Opnieuw proberen annuleren",
+    "cancelAutoResendAria": "Automatisch opnieuw proberen van dit bericht annuleren",
+    "outboxEmergencyWillSend": "Zal het opnieuw proberen totdat het netwerk het bevestigt",
+    "outboxEmergencyCancelConfirm": "Stop met het opnieuw proberen van dit noodbericht? Het zal niet langer kwalijk worden genomen, zelfs als het netwerk het nooit heeft erkend."
   },
   "chatPayload": {
     "mention": "Vermeld {{label}}",

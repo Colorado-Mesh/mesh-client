@@ -18,13 +18,16 @@ export interface MeshtasticSessionApi {
   latchExplicitDisconnect?: () => boolean;
   /** Clear a hide-induced user-disconnect latch. Does not open a radio. */
   clearExplicitDisconnectLatch?: () => void;
-  /** Meshtastic chat send (RF and MQTT-only via TransportManager). */
+  /**
+   * Meshtastic chat send (RF and MQTT-only via TransportManager). Returns the optimistic
+   * messageStore id (`String(tempId)`), re-keyed via `renameMessageId` on device ACK.
+   */
   sendChatMessage: (
     text: string,
     channelIndex: number,
     destination?: number,
     replyId?: number,
-  ) => void;
+  ) => string | undefined;
   connectAutomatic: (
     type: ConnectionType,
     httpAddress?: string,

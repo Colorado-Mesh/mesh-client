@@ -819,6 +819,7 @@ describe('db mutator IPC sender validation (source contract, H3)', () => {
     'db:updateMeshcoreMessageSender',
     'db:updateMeshcoreMessageStatus',
     'db:updateMeshcoreMessageStatusByKey',
+    'db:deleteFailedOutboundMessage',
     'db:migrateRfStubNodes',
     'db:deleteMeshcoreContact',
   ] as const;

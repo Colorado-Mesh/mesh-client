@@ -811,7 +811,9 @@
       "bleUnavailable": "O Bluetooth não está pronto. Reconecte-se e tente novamente.",
       "roomSessionExpired": "A sessão da sala expirou — inicie sessão novamente para publicar.",
       "noSavedRoomCredential": "Nenhuma senha de sala salva. Faça login no sala primeiro.",
-      "mqttOriginReactionUnsupported": "Não há suporte para reações a mensagens somente MQTT. Em vez disso, envie uma resposta normal."
+      "mqttOriginReactionUnsupported": "Não há suporte para reações a mensagens somente MQTT. Em vez disso, envie uma resposta normal.",
+      "networkAckTimeout": "Ainda não há confirmação da rede.",
+      "networkAckFailed": "A rede não reconheceu esta mensagem."
     },
     "reticulumDmDestHashesAria": "LXMF de destino e hashes de identidade",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "Este chat é LXMF {{openPrefix}}…. Outra LXMF {{alternatePrefix}}… ({{name}}) pode ser a mesma pessoa em um aplicativo diferente. Abra a → Mensagem dos Pares nesse hash ou Anuncie agora em ambos os lados.",
     "reticulumDmStaleAlternateDismissAria": "Ignorar aviso de destino",
     "outboxEmergencyBadge": "Emergência",
-    "outboxEmergencyWillSend": "Continuará a tentar novamente até ser enviado",
     "outboxEmergencyCapBlocked": "Pausado: muitas mensagens de emergência na fila. Tente novamente ou cancele este.",
-    "outboxEmergencyCancelConfirm": "Cancelar esta mensagem de emergência? Não será enviado.",
     "retryOutboxEmergencyAttempt": "Tentativa {{count}}",
     "channelSwitcher": {
       "trigger": "Todos os canais ({{total}})",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}} reagiu com {{name}}",
     "clearChannelMessagesChanged": "{{name}} não está mais naquele espaço no rádio, então nada foi liberado.",
     "clearChannelMessagesRadioChanged": "O rádio ligado mudou enquanto estava aberto, por isso as mensagens em {{name}} não foram apagadas.",
-    "viewSenderDetails": "Ver detalhes de {{name}}"
+    "viewSenderDetails": "Ver detalhes de {{name}}",
+    "outboxStatusAwaitingAck": "Aguardando confirmação da rede...",
+    "outboxRetryingIn": "Tentando novamente em {{time}}",
+    "outboxStopRetrying": "Parar de tentar novamente",
+    "outboxStopRetryingAria": "Pare de tentar novamente esta mensagem de emergência",
+    "outboxCancelled": "Cancelado",
+    "autoResendPending": "Tentando novamente ({{attempt}}/{{max}}) em {{time}}",
+    "autoResendSending": "Tentando novamente ({{attempt}}/{{max}})…",
+    "cancelAutoResend": "Cancelar nova tentativa",
+    "cancelAutoResendAria": "Cancelar repetição automática desta mensagem",
+    "outboxEmergencyWillSend": "Continuaremos tentando novamente até que a rede reconheça",
+    "outboxEmergencyCancelConfirm": "Parar de tentar novamente esta mensagem de emergência? Ele não será mais reenviado, mesmo que a rede nunca o tenha reconhecido."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

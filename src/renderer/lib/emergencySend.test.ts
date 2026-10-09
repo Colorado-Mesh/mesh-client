@@ -60,25 +60,18 @@ describe('sendEmergencyText', () => {
     });
   });
 
-  it('sends live when available and does not queue on success', async () => {
+  it('queues an emergency row even when send is available (drain awaits network ACK)', async () => {
     const deps = makeDeps({ channel: 2, replyId: 7 });
-    await expect(sendEmergencyText('MECP report', deps)).resolves.toBe('sent');
-    expect(deps.sendFn).toHaveBeenCalledWith('MECP report', 2, undefined, 7);
-    expect(deps.queueOutbox).not.toHaveBeenCalled();
-  });
-
-  it('falls back to an emergency outbox row when the live send throws', async () => {
-    const { spy, restore } = mockConsoleWarn();
-    try {
-      const deps = makeDeps({ sendFn: vi.fn().mockRejectedValue(new Error('radio busy')) });
-      await expect(sendEmergencyText('MECP report', deps)).resolves.toBe('queued');
-      expect(deps.queueOutbox).toHaveBeenCalledWith(
-        expect.objectContaining({ priority: 'emergency', payload: 'MECP report' }),
-      );
-      expect(spy).toHaveBeenCalled();
-    } finally {
-      restore();
-    }
+    await expect(sendEmergencyText('MECP report', deps)).resolves.toBe('queued');
+    expect(deps.sendFn).not.toHaveBeenCalled();
+    expect(deps.queueOutbox).toHaveBeenCalledWith(
+      expect.objectContaining({
+        priority: 'emergency',
+        payload: 'MECP report',
+        channel: 2,
+        replyId: 7,
+      }),
+    );
   });
 
   it('propagates queueOutbox failures so callers can surface them', async () => {
@@ -90,7 +83,7 @@ describe('sendEmergencyText', () => {
   });
 });
 
-describe('sendEmergencyText (Reticulum receipt)', () => {
+describe('sendTextWithOutboxFallback (Reticulum receipt)', () => {
   const identityId = OFFLINE_RETICULUM_IDENTITY_ID;
 
   function pendingMessage(id: string, status: 'sending' | 'acked' | 'failed') {
@@ -119,7 +112,7 @@ describe('sendEmergencyText (Reticulum receipt)', () => {
       return 'rt-1';
     });
     const deps = makeDeps({ protocol: 'reticulum', toNode: 123, sendFn });
-    const outcome = sendEmergencyText('MECP/0/M01', deps);
+    const outcome = sendTextWithOutboxFallback('MECP/0/M01', deps, 'emergency');
     await Promise.resolve();
     useMessageStore.setState({ messages: pendingMessage('rt-1', 'acked') });
     await expect(outcome).resolves.toBe('sent');
@@ -139,7 +132,9 @@ describe('sendEmergencyText (Reticulum receipt)', () => {
         sendFn,
         reticulumReceiptTimeoutMs: 10,
       });
-      await expect(sendEmergencyText('MECP/0/M01', deps)).resolves.toBe('queued');
+      await expect(sendTextWithOutboxFallback('MECP/0/M01', deps, 'emergency')).resolves.toBe(
+        'queued',
+      );
       expect(deps.queueOutbox).toHaveBeenCalledWith(
         expect.objectContaining({ priority: 'emergency', protocol: 'reticulum' }),
       );
@@ -158,12 +153,16 @@ describe('sendEmergencyText (Reticulum receipt)', () => {
           return 'rt-3';
         }),
       });
-      await expect(sendEmergencyText('MECP/0/M01', failing)).resolves.toBe('queued');
+      await expect(sendTextWithOutboxFallback('MECP/0/M01', failing, 'emergency')).resolves.toBe(
+        'queued',
+      );
       const noId = makeDeps({
         protocol: 'reticulum',
         sendFn: vi.fn().mockResolvedValue(undefined),
       });
-      await expect(sendEmergencyText('MECP/0/M01', noId)).resolves.toBe('queued');
+      await expect(sendTextWithOutboxFallback('MECP/0/M01', noId, 'emergency')).resolves.toBe(
+        'queued',
+      );
     } finally {
       restore();
     }
@@ -181,6 +180,13 @@ describe('sendTextWithOutboxFallback', () => {
     expect(deps.queueOutbox).toHaveBeenCalledWith(
       expect.objectContaining({ priority: 'normal', payload: 'OK' }),
     );
+  });
+
+  it('sends live when available and does not queue on success', async () => {
+    const deps = makeDeps({ channel: 2, replyId: 7 });
+    await expect(sendTextWithOutboxFallback('OK', deps, 'normal')).resolves.toBe('sent');
+    expect(deps.sendFn).toHaveBeenCalledWith('OK', 2, undefined, 7);
+    expect(deps.queueOutbox).not.toHaveBeenCalled();
   });
 
   it('queues a normal-priority row when the live send throws', async () => {

@@ -1,7 +1,11 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { resetChatOutboxDrainLocksForTests } from '@/renderer/lib/chatOutboxDrain';
+import {
+  isOutboxRowAwaitingAck,
+  resetChatOutboxDrainLocksForTests,
+  resetOutboxRowSendStateForTests,
+} from '@/renderer/lib/chatOutboxDrain';
 import { tryParseMecp } from '@/renderer/lib/mecp/mecpMessages';
 import {
   isMeshcoreSendTooFast,
@@ -21,9 +25,34 @@ import {
   EMERGENCY_OUTBOX_SOFT_CAP,
   isEmergencyOutboxPriority,
   isMaydayEmergencyOutboxPayload,
+  MAX_ATTEMPTS,
   OUTBOX_MAX_AGE_MS,
   useChatOutbox,
 } from './useChatOutbox';
+
+const OUTBOUND_IDENTITY = 'mc-identity';
+
+/** Simulate a send fn that created a MeshCore DM bubble with `status`; returns its store id. */
+function seedOutbound(id: string, status: 'sending' | 'acked' | 'failed'): string {
+  useMessageStore.setState((s) => ({
+    messages: {
+      ...s.messages,
+      [OUTBOUND_IDENTITY]: {
+        ...(s.messages[OUTBOUND_IDENTITY] ?? {}),
+        [id]: {
+          id,
+          from: 1,
+          to: 42,
+          payload: 'MECP/0/M01',
+          channelIndex: -1,
+          timestamp: Date.now(),
+          status,
+        },
+      },
+    },
+  }));
+  return id;
+}
 
 function makeEntry(overrides: Partial<OutboxEntry> = {}): OutboxEntry {
   return {
@@ -421,7 +450,7 @@ describe('useChatOutbox', () => {
   });
 
   it('permanently fails row after MAX_ATTEMPTS without nextRetryAt', async () => {
-    const entry = makeEntry({ id: 13, attemptCount: 4 }); // next attempt = 5 = MAX_ATTEMPTS
+    const entry = makeEntry({ id: 13, attemptCount: MAX_ATTEMPTS - 1 }); // next attempt = MAX_ATTEMPTS
     vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
     const sendFn = vi.fn().mockRejectedValue(new Error('radio busy'));
     renderHook(() => useChatOutbox({ protocol: 'meshtastic', isSendAvailable: true, sendFn }));
@@ -431,7 +460,7 @@ describe('useChatOutbox', () => {
         'failed',
         'chatPanel.sendFailed',
         undefined,
-        5,
+        MAX_ATTEMPTS,
       );
     });
   });
@@ -875,6 +904,88 @@ describe('useChatOutbox', () => {
   });
 
   describe('emergency priority', () => {
+    beforeEach(() => {
+      resetOutboxRowSendStateForTests();
+    });
+
+    it('keeps an emergency row the radio accepted until the network acknowledges it', async () => {
+      const entry = makeEntry({ id: 120, protocol: 'meshcore', priority: 'emergency' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn(() => seedOutbound('mc-wait-1', 'sending'));
+      renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+      await waitFor(() => {
+        expect(isOutboxRowAwaitingAck(120)).toBe(true);
+      });
+      expect(mockOutbox.remove).not.toHaveBeenCalled();
+      seedOutbound('mc-wait-1', 'acked');
+      await waitFor(() => {
+        expect(mockOutbox.remove).toHaveBeenCalledWith(120);
+      });
+      expect(isOutboxRowAwaitingAck(120)).toBe(false);
+    });
+
+    it('schedules a retry (no attempt cap) when the network never acknowledges', async () => {
+      const { restore } = mockConsoleWarn();
+      try {
+        const entry = makeEntry({
+          id: 121,
+          protocol: 'meshcore',
+          priority: 'emergency',
+          attemptCount: MAX_ATTEMPTS + 3,
+        });
+        vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+        const sendFn = vi.fn(() => seedOutbound('mc-fail-1', 'failed'));
+        renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+        await waitFor(() => {
+          expect(mockOutbox.updateStatus).toHaveBeenCalledWith(
+            121,
+            'failed',
+            'chatPanel.sendErrors.networkAckFailed',
+            expect.any(Number),
+            MAX_ATTEMPTS + 4,
+          );
+        });
+        expect(mockOutbox.remove).not.toHaveBeenCalled();
+      } finally {
+        restore();
+      }
+    });
+
+    it('cancel during the network-ACK wait deletes the row and stops retries', async () => {
+      const entry = makeEntry({ id: 122, protocol: 'meshcore', priority: 'emergency' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn(() => seedOutbound('mc-cancel-1', 'sending'));
+      const { result } = renderHook(() =>
+        useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }),
+      );
+      await waitFor(() => {
+        expect(isOutboxRowAwaitingAck(122)).toBe(true);
+      });
+      result.current.cancel(122);
+      await waitFor(() => {
+        expect(result.current.rows.some((r) => r.id === 122)).toBe(false);
+      });
+      expect(mockOutbox.remove).toHaveBeenCalledWith(122);
+      expect(mockOutbox.updateStatus).not.toHaveBeenCalledWith(
+        122,
+        'failed',
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(isOutboxRowAwaitingAck(122)).toBe(false);
+    });
+
+    it('treats normal rows as delivered once the radio accepts them', async () => {
+      const entry = makeEntry({ id: 123, protocol: 'meshcore' });
+      vi.mocked(mockOutbox.list).mockResolvedValue([entry]);
+      const sendFn = vi.fn(() => seedOutbound('mc-normal-1', 'sending'));
+      renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
+      await waitFor(() => {
+        expect(mockOutbox.remove).toHaveBeenCalledWith(123);
+      });
+    });
+
     it('isEmergencyOutboxPriority only matches emergency rows', () => {
       expect(isEmergencyOutboxPriority(makeEntry({ priority: 'emergency' }))).toBe(true);
       expect(isEmergencyOutboxPriority(makeEntry())).toBe(false);
@@ -891,7 +1002,7 @@ describe('useChatOutbox', () => {
         priority: 'emergency',
       });
       vi.mocked(mockOutbox.list).mockResolvedValue([normal, emergency]);
-      const sendFn = vi.fn().mockResolvedValue(undefined);
+      const sendFn = vi.fn(() => seedOutbound('mc-ack-1', 'acked'));
       renderHook(() => useChatOutbox({ protocol: 'meshcore', isSendAvailable: true, sendFn }));
       await waitFor(() => {
         expect(mockOutbox.remove).toHaveBeenCalledWith(101);

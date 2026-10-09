@@ -3265,6 +3265,7 @@ export function useMeshtasticRuntime() {
         tempId,
         from,
       );
+      return String(tempId);
     },
     [getNodeName, isDuplicate, readIdentityMessages],
   );

@@ -811,7 +811,9 @@
       "bleUnavailable": "蓝牙尚未准备就绪。请重新连接并重试。",
       "roomSessionExpired": "聊天室会话已过期—请重新登录以发布。",
       "noSavedRoomCredential": "未保存房间密码。请先登录房间。",
-      "mqttOriginReactionUnsupported": "不支持对仅MQTT消息的反应。请改为发送普通回复。"
+      "mqttOriginReactionUnsupported": "不支持对仅MQTT消息的反应。请改为发送普通回复。",
+      "networkAckTimeout": "还没有来自网络的确认。",
+      "networkAckFailed": "网络未确认此消息。"
     },
     "reticulumDmDestHashesAria": "目标LXMF和身份哈希",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}} …",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "此聊天是LXMF {{openPrefix}} ……。另一个LXMF {{alternatePrefix}} … ({{name}})可能是不同应用程序上的同一人。在该哈希上打开同行→消息，或立即在双方宣布。",
     "reticulumDmStaleAlternateDismissAria": "忽略目的地警告",
     "outboxEmergencyBadge": "急诊",
-    "outboxEmergencyWillSend": "将继续重试，直到发送",
     "outboxEmergencyCapBlocked": "已暂停：排队的紧急消息过多。请重试或取消此操作。",
-    "outboxEmergencyCancelConfirm": "要取消此紧急消息吗？它不会被发送。",
     "retryOutboxEmergencyAttempt": "尝试{{count}}",
     "channelSwitcher": {
       "trigger": "所有频道（{{total}}）",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}} 的反应：{{name}}",
     "clearChannelMessagesChanged": "{{name}} 已不在电台的该位置，因此未清除任何消息。",
     "clearChannelMessagesRadioChanged": "已连接的电台已更换，因此未清除 {{name}} 中的消息。",
-    "viewSenderDetails": "查看{{name}}的详细信息"
+    "viewSenderDetails": "查看{{name}}的详细信息",
+    "outboxStatusAwaitingAck": "正在等待网络确认…",
+    "outboxRetryingIn": "{{time}}后重试",
+    "outboxStopRetrying": "停止重试",
+    "outboxStopRetryingAria": "停止重试此紧急消息",
+    "outboxCancelled": "已取消",
+    "autoResendPending": "在{{time}}后重试（ {{attempt}}/{{max}} ）",
+    "autoResendSending": "正在重试（ {{attempt}}/{{max}} ） ……",
+    "cancelAutoResend": "取消重试",
+    "cancelAutoResendAria": "取消此消息的自动重试",
+    "outboxEmergencyWillSend": "将继续重试，直到网络确认",
+    "outboxEmergencyCancelConfirm": "停止重试此紧急消息？它将不再被重新发送，即使网络从未确认过。"
   },
   "chatPayload": {
     "mention": "提及{{label}}",

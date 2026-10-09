@@ -49,11 +49,19 @@ import {
 } from '@/renderer/lib/a11yAnnouncer';
 import { isMecpComposeEnabled } from '@/renderer/lib/appSettingsStorage';
 import { isAppWindowInactive } from '@/renderer/lib/appWindowActivity';
+import {
+  autoResendKey,
+  autoResendMessageId,
+  cancelAutoResend,
+  useAutoResendStore,
+} from '@/renderer/lib/autoResend/autoResendController';
+import { REGULAR_MESSAGE_MAX_AUTO_RESENDS } from '@/renderer/lib/autoResend/autoResendPolicy';
 import { BUNDLED_EMOJI_DATA_SOURCE } from '@/renderer/lib/bundledEmojiData';
 import { clearFloodScopeOverride } from '@/renderer/lib/chatPanelProtocolStorage';
 import { translateChatSendError } from '@/renderer/lib/chatSendErrorI18n';
 import { errLikeToLogString } from '@/renderer/lib/errLikeToLogString';
 import { formatDisplayTime } from '@/renderer/lib/formatDisplayTime';
+import { formatRetryCountdown } from '@/renderer/lib/formatRetryCountdown';
 import { formatShortRelativeAgo } from '@/renderer/lib/formatShortRelativeAgo';
 import { useIconTrigger, useParentIconTrigger } from '@/renderer/lib/icons/iconMotionContext';
 import { meshcoreChannelScopeKey } from '@/renderer/lib/meshcoreChannelScope';
@@ -118,6 +126,7 @@ import type { OutboxEntry } from '../../shared/electron-api.types';
 import { isMeshcoreRoomChatMessage } from '../hooks/meshcore/meshcoreHookPreamble';
 import { isEmergencyOutboxPriority, useChatOutbox } from '../hooks/useChatOutbox';
 import { useNowMs } from '../hooks/useNowMs';
+import { useOutboxRowAwaitingAck } from '../hooks/useOutboxRowAwaitingAck';
 import { useReticulumDmPathProbe } from '../hooks/useReticulumDmPathProbe';
 import { chatDmPeerMessageCounts } from '../lib/chatDmPeerIndex';
 import { playMessageNotification } from '../lib/chatNotifications';
@@ -373,14 +382,20 @@ function OutboxBubble({
   onCancel: (id: number) => void;
 }) {
   const { t } = useTranslation();
+  const awaitingAck = useOutboxRowAwaitingAck(row.id);
+  const backingOff =
+    (row.status === 'queued' || row.status === 'failed') && row.nextRetryAt != null;
+  const nowMs = useNowMs(backingOff, 1000);
   const statusLabel =
-    row.status === 'queued'
-      ? t('chatPanel.outboxStatusQueued')
-      : row.status === 'sending'
-        ? t('chatPanel.outboxStatusSending')
-        : row.status === 'blocked'
-          ? t('chatPanel.outboxStatusBlocked')
-          : t('chatPanel.outboxStatusFailed');
+    row.status === 'sending' && awaitingAck
+      ? t('chatPanel.outboxStatusAwaitingAck')
+      : row.status === 'queued'
+        ? t('chatPanel.outboxStatusQueued')
+        : row.status === 'sending'
+          ? t('chatPanel.outboxStatusSending')
+          : row.status === 'blocked'
+            ? t('chatPanel.outboxStatusBlocked')
+            : t('chatPanel.outboxStatusFailed');
   const statusColor =
     row.status === 'queued'
       ? 'text-muted'
@@ -416,6 +431,13 @@ function OutboxBubble({
               {t('chatPanel.retryOutboxEmergencyAttempt', { count: row.attemptCount })}
             </span>
           )}
+          {backingOff && row.nextRetryAt != null && nowMs > 0 && (
+            <span className="text-ink-300">
+              {t('chatPanel.outboxRetryingIn', {
+                time: formatRetryCountdown(row.nextRetryAt, nowMs),
+              })}
+            </span>
+          )}
           {displayError && (
             <span className="text-muted max-w-35 truncate" title={displayError}>
               — {displayError}
@@ -435,7 +457,11 @@ function OutboxBubble({
           )}
           <button
             type="button"
-            aria-label={t('chatPanel.cancelOutboxMessage')}
+            aria-label={
+              isEmergency
+                ? t('chatPanel.outboxStopRetryingAria')
+                : t('chatPanel.cancelOutboxMessage')
+            }
             onClick={() => {
               if (isEmergency && !window.confirm(t('chatPanel.outboxEmergencyCancelConfirm'))) {
                 return;
@@ -444,11 +470,49 @@ function OutboxBubble({
             }}
             className="text-2xs bg-ink-600 hover:bg-ink-500 rounded px-1.5 py-0.5 text-white"
           >
-            {t('common.cancel')}
+            {isEmergency ? t('chatPanel.outboxStopRetrying') : t('common.cancel')}
           </button>
         </div>
       </div>
     </div>
+  );
+}
+
+/** Countdown + Cancel retry for a failed bubble with a pending automatic resend. */
+function AutoResendStatus({ protocol, msg }: { protocol: MeshProtocol; msg: ChatMessage }) {
+  const { t } = useTranslation();
+  const messageId = autoResendMessageId(msg);
+  const entry = useAutoResendStore((s) =>
+    messageId != null ? s.entries[autoResendKey(protocol, messageId)] : undefined,
+  );
+  const nowMs = useNowMs(entry != null, 1000);
+  if (!entry || messageId == null) return null;
+  return (
+    <span className="text-label text-ink-300 flex items-center gap-1" role="status">
+      <span>
+        {nowMs > 0
+          ? t('chatPanel.autoResendPending', {
+              attempt: entry.attempt,
+              max: REGULAR_MESSAGE_MAX_AUTO_RESENDS,
+              time: formatRetryCountdown(entry.nextAt, nowMs),
+            })
+          : t('chatPanel.autoResendSending', {
+              attempt: entry.attempt,
+              max: REGULAR_MESSAGE_MAX_AUTO_RESENDS,
+            })}
+      </span>
+      <button
+        type="button"
+        aria-label={t('chatPanel.cancelAutoResendAria')}
+        onClick={(e) => {
+          e.stopPropagation();
+          cancelAutoResend(protocol, messageId);
+        }}
+        className="text-2xs bg-ink-600 hover:bg-ink-500 rounded px-1.5 py-0.5 text-white"
+      >
+        {t('chatPanel.cancelAutoResend')}
+      </button>
+    </span>
   );
 }
 
@@ -4107,6 +4171,9 @@ function ChatPanel({
                             {/* Delivery status for own messages */}
                             {isOwn && (msg.status || msg.mqttStatus) && (
                               <div className="mt-0.5 flex items-center justify-end gap-1">
+                                {isOwn && msg.status === 'failed' && (
+                                  <AutoResendStatus protocol={protocol} msg={msg} />
+                                )}
                                 {isOwn &&
                                   msg.status === 'failed' &&
                                   !isReticulumTooLargeForPropagationError(msg.error) && (

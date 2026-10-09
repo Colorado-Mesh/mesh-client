@@ -5779,6 +5779,31 @@ ipcMain.handle(
   },
 );
 
+// ─── IPC: Drop a failed outbound row superseded by an automatic resend ─────
+// Only `status = 'failed'` rows match, so a packet-id collision cannot delete delivered or
+// inbound history.
+ipcMain.handle(
+  'db:deleteFailedOutboundMessage',
+  (event, protocol: unknown, packetId: unknown): { changes: number } | undefined => {
+    if (!validateIpcSender(event))
+      throw new Error('db:deleteFailedOutboundMessage: unauthorized sender');
+    try {
+      if (protocol !== 'meshtastic' && protocol !== 'meshcore')
+        throw new Error('db:deleteFailedOutboundMessage: invalid protocol');
+      const pid = safeNonNegativeInt(packetId);
+      const db = getDbForIpc('db:deleteFailedOutboundMessage');
+      if (!db) return { changes: 0 };
+      const table = protocol === 'meshtastic' ? 'messages' : 'meshcore_messages';
+      const result = db
+        .prepareOnce(`DELETE FROM ${table} WHERE packet_id = ? AND status = 'failed'`)
+        .run(pid);
+      return { changes: Number(result.changes) };
+    } catch (err) {
+      finishDbIpcHandler('db:deleteFailedOutboundMessage', err);
+    }
+  },
+);
+
 ipcMain.handle('db:updateMeshcoreMessageStatus', (event, packetId: number, status: string) => {
   if (!validateIpcSender(event))
     throw new Error('db:updateMeshcoreMessageStatus: unauthorized sender');

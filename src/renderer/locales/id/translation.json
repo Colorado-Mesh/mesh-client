@@ -811,7 +811,9 @@
       "bleUnavailable": "Bluetooth belum siap. Sambungkan kembali dan coba lagi.",
       "roomSessionExpired": "Sesi ruangan kedaluwarsa — masuk lagi untuk memposting.",
       "noSavedRoomCredential": "Tidak ada kata sandi ruangan yang disimpan. Masuk ke ruangan terlebih dahulu.",
-      "mqttOriginReactionUnsupported": "Reaksi terhadap pesan khusus MQTT tidak didukung. Kirim balasan biasa saja."
+      "mqttOriginReactionUnsupported": "Reaksi terhadap pesan khusus MQTT tidak didukung. Kirim balasan biasa saja.",
+      "networkAckTimeout": "Belum ada pengakuan dari jaringan.",
+      "networkAckFailed": "Jaringan tidak menerima pesan ini."
     },
     "reticulumDmDestHashesAria": "Tujuan LXMF dan hash identitas",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "Obrolan ini adalah LXMF {{openPrefix}}…. LXMF {{alternatePrefix}} lainnya… ({{name}}) mungkin orang yang sama di aplikasi lain. Buka → Pesan Rekan pada hash itu, atau Umumkan sekarang di kedua sisi.",
     "reticulumDmStaleAlternateDismissAria": "Abaikan peringatan tujuan",
     "outboxEmergencyBadge": "Keadaan Darurat",
-    "outboxEmergencyWillSend": "Akan terus mencoba lagi sampai dikirim",
     "outboxEmergencyCapBlocked": "Dijeda: terlalu banyak pesan darurat yang diantrekan. Coba lagi atau batalkan yang ini.",
-    "outboxEmergencyCancelConfirm": "Batalkan pesan darurat ini? Itu tidak akan dikirim.",
     "retryOutboxEmergencyAttempt": "Upaya {{count}}",
     "channelSwitcher": {
       "trigger": "Semua kanal ({{total}})",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}} bereaksi dengan {{name}}",
     "clearChannelMessagesChanged": "{{name}} tidak lagi ada di slot itu di radio, jadi tidak ada yang dihapus.",
     "clearChannelMessagesRadioChanged": "Radio yang terhubung berubah saat ini terbuka, sehingga pesan dalam {{name}} tidak dihapus.",
-    "viewSenderDetails": "Lihat detail untuk {{name}}"
+    "viewSenderDetails": "Lihat detail untuk {{name}}",
+    "outboxStatusAwaitingAck": "Menunggu pengakuan jaringan…",
+    "outboxRetryingIn": "Mencoba lagi dalam {{time}}",
+    "outboxStopRetrying": "Berhenti mencoba lagi",
+    "outboxStopRetryingAria": "Berhenti mencoba lagi pesan darurat ini",
+    "outboxCancelled": "Dibatalkan",
+    "autoResendPending": "Mencoba lagi ({{attempt}}/{{max}}) di {{time}}",
+    "autoResendSending": "Mencoba lagi ({{attempt}}/{{max}} )…",
+    "cancelAutoResend": "Batalkan coba lagi",
+    "cancelAutoResendAria": "Batalkan percobaan ulang otomatis pesan ini",
+    "outboxEmergencyWillSend": "Akan terus mencoba lagi sampai jaringan menyadarinya",
+    "outboxEmergencyCancelConfirm": "Berhenti mencoba lagi pesan darurat ini? Itu tidak akan lagi dikirim kembali, bahkan jika jaringan tidak pernah mengakuinya."
   },
   "chatPayload": {
     "mention": "Sebutkan {{label}}",

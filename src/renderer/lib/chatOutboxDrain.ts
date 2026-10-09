@@ -82,6 +82,64 @@ export function notifyChatOutboxRowsChanged(protocol: MeshProtocol): void {
   }
 }
 
+const inFlightRowAborts = new Map<number, AbortController>();
+const awaitingAckRowIds = new Set<number>();
+const awaitingAckListeners = new Set<() => void>();
+
+function notifyAwaitingAckListeners(): void {
+  for (const listener of [...awaitingAckListeners]) {
+    try {
+      listener();
+    } catch (e) {
+      console.warn('[chatOutboxDrain] awaiting-ack listener failed', e);
+    }
+  }
+}
+
+/** Register the abort handle for an outbox row the drain is currently sending. */
+export function beginOutboxRowSend(rowId: number): AbortSignal {
+  inFlightRowAborts.get(rowId)?.abort();
+  const controller = new AbortController();
+  inFlightRowAborts.set(rowId, controller);
+  return controller.signal;
+}
+
+export function endOutboxRowSend(rowId: number): void {
+  inFlightRowAborts.delete(rowId);
+  setOutboxRowAwaitingAck(rowId, false);
+}
+
+/** Stop an in-flight send / network-ACK wait (user cancelled the row). */
+export function abortOutboxRowSend(rowId: number): void {
+  inFlightRowAborts.get(rowId)?.abort();
+  setOutboxRowAwaitingAck(rowId, false);
+}
+
+export function setOutboxRowAwaitingAck(rowId: number, awaiting: boolean): void {
+  const had = awaitingAckRowIds.has(rowId);
+  if (awaiting === had) return;
+  if (awaiting) awaitingAckRowIds.add(rowId);
+  else awaitingAckRowIds.delete(rowId);
+  notifyAwaitingAckListeners();
+}
+
+/** True while the drain has transmitted the row and waits for the network to acknowledge it. */
+export function isOutboxRowAwaitingAck(rowId: number): boolean {
+  return awaitingAckRowIds.has(rowId);
+}
+
+export function subscribeOutboxAwaitingAck(listener: () => void): () => void {
+  awaitingAckListeners.add(listener);
+  return () => {
+    awaitingAckListeners.delete(listener);
+  };
+}
+
+export function resetOutboxRowSendStateForTests(): void {
+  inFlightRowAborts.clear();
+  awaitingAckRowIds.clear();
+}
+
 /** Request an immediate outbox drain for the given protocol (e.g. after peer announce). */
 export function requestChatOutboxDrain(protocol: MeshProtocol): void {
   const set = listeners.get(protocol);

@@ -129,6 +129,11 @@ export interface ProtocolCapabilities {
    * device badge (MeshCore — MQTT ✓ was masking RF heard-by). Meshtastic keeps dual badges.
    */
   prefersDeviceDeliveryStatusOverMqtt: boolean;
+  /**
+   * Channel (group) sends get a delivery signal that can fail (Meshtastic implicit ACK). MeshCore
+   * channel floods only report companion accept, so failed-send auto-resend skips them.
+   */
+  hasChannelDeliveryAck: boolean;
   /** Meshtastic-centric routing/RF diagnostics (Hop Goblins, CU, foreign LoRa). */
   hasDiagnosticsPanel: boolean;
   /**
@@ -234,6 +239,7 @@ export const MESHTASTIC_CAPABILITIES: ProtocolCapabilities = {
   dedupeQueueBadgeForLocalSending: true,
   prefersDeviceOwnerLongNameInHeader: false,
   prefersDeviceDeliveryStatusOverMqtt: false,
+  hasChannelDeliveryAck: true,
   hasDiagnosticsPanel: true,
   showsNodeNumHexId: true,
   hasReticulumInterfaceConfig: false,
@@ -315,6 +321,7 @@ export const MESHCORE_CAPABILITIES: ProtocolCapabilities = {
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: true,
   prefersDeviceDeliveryStatusOverMqtt: true,
+  hasChannelDeliveryAck: false,
   hasDiagnosticsPanel: true,
   showsNodeNumHexId: false,
   hasReticulumInterfaceConfig: false,
@@ -395,6 +402,7 @@ export const RETICULUM_CAPABILITIES: ProtocolCapabilities = {
   dedupeQueueBadgeForLocalSending: false,
   prefersDeviceOwnerLongNameInHeader: false,
   prefersDeviceDeliveryStatusOverMqtt: false,
+  hasChannelDeliveryAck: true,
   hasDiagnosticsPanel: true,
   showsNodeNumHexId: false,
   hasReticulumInterfaceConfig: true,

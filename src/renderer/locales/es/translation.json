@@ -811,7 +811,9 @@
       "bleUnavailable": "El Bluetooth no está listo. Vuelve a conectarte e inténtalo de nuevo.",
       "roomSessionExpired": "La sesión de la sala ha caducado. Vuelve a iniciar sesión para publicar.",
       "noSavedRoomCredential": "No se ha guardado la contraseña de la sala. Inicie sesión en la sala primero.",
-      "mqttOriginReactionUnsupported": "Las reacciones a los mensajes solo MQTT no son compatibles. En su lugar, envía una respuesta normal."
+      "mqttOriginReactionUnsupported": "Las reacciones a los mensajes solo MQTT no son compatibles. En su lugar, envía una respuesta normal.",
+      "networkAckTimeout": "Aún no hay acuse de recibo de la red.",
+      "networkAckFailed": "La red no ha reconocido este mensaje."
     },
     "reticulumDmDestHashesAria": "LXMF de destino y hashes de identidad",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "Este chat es LXMF {{openPrefix}}…. Otro LXMF {{alternatePrefix}}… ({{name}}) puede ser la misma persona en una aplicación diferente. Abra el → mensaje de pares en ese hash, o Anúncielo ahora en ambos lados.",
     "reticulumDmStaleAlternateDismissAria": "Descartar advertencia de destino",
     "outboxEmergencyBadge": "Emergencia",
-    "outboxEmergencyWillSend": "Seguirá intentándolo hasta que se envíe",
     "outboxEmergencyCapBlocked": "En pausa: demasiados mensajes de emergencia en cola. Vuelve a intentarlo o cancela este.",
-    "outboxEmergencyCancelConfirm": "¿Quieres cancelar este mensaje de emergencia? No se enviará.",
     "retryOutboxEmergencyAttempt": "Intento {{count}}",
     "channelSwitcher": {
       "trigger": "Todos los canales ({{total}})",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}} reaccionó con {{name}}",
     "clearChannelMessagesChanged": "{{name}} ya no está en esa ranura de la radio, así que no se aclaró nada.",
     "clearChannelMessagesRadioChanged": "La radio conectada cambió mientras estaba abierta, por lo que no se borraron los mensajes en {{name}}.",
-    "viewSenderDetails": "Ver detalles de {{name}}"
+    "viewSenderDetails": "Ver detalles de {{name}}",
+    "outboxStatusAwaitingAck": "Esperando acuse de recibo de la red...",
+    "outboxRetryingIn": "Volviendo a intentarlo en {{time}}",
+    "outboxStopRetrying": "Dejar de reintentar",
+    "outboxStopRetryingAria": "Dejar de volver a intentar este mensaje de emergencia",
+    "outboxCancelled": "Cancelada",
+    "autoResendPending": "Volviendo a intentarlo ({{attempt}}/{{max}}) en {{time}}",
+    "autoResendSending": "Intentando de nuevo ({{attempt}}/{{max}})…",
+    "cancelAutoResend": "Cancelar reintento",
+    "cancelAutoResendAria": "Cancelar el reintento automático de este mensaje",
+    "outboxEmergencyWillSend": "Seguirá intentándolo hasta que la red lo reconozca",
+    "outboxEmergencyCancelConfirm": "¿Quieres dejar de volver a intentar este mensaje de emergencia? Ya no se volverá a enviar, incluso si la red nunca lo reconoció."
   },
   "chatPayload": {
     "mention": "Mencionar {{label}}",

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
+  abortOutboxRowSend,
   notifyChatOutboxRowsChanged,
   subscribeChatOutboxRowsChanged,
 } from '@/renderer/lib/chatOutboxDrain';
@@ -135,6 +136,7 @@ export function useIncidentAckOutboxRows(): {
 
   const cancelAck = useCallback(async (row: OutboxEntry) => {
     try {
+      abortOutboxRowSend(row.id);
       await window.electronAPI.chat.outbox.remove(row.id);
       if (isMeshProtocol(row.protocol)) notifyChatOutboxRowsChanged(row.protocol);
     } catch (err: unknown) {

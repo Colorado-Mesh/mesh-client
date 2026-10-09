@@ -811,7 +811,9 @@
       "bleUnavailable": "Bluetooth hazır değil. Yeniden bağlanın ve tekrar deneyin.",
       "roomSessionExpired": "Oda oturumunun süresi doldu — yayınlamak için tekrar giriş yapın.",
       "noSavedRoomCredential": "Kaydedilmiş oda şifresi yok. Önce odaya giriş yapın.",
-      "mqttOriginReactionUnsupported": "Yalnızca MQTT mesajlarına verilen tepkiler desteklenmez. Bunun yerine normal bir yanıt gönderin."
+      "mqttOriginReactionUnsupported": "Yalnızca MQTT mesajlarına verilen tepkiler desteklenmez. Bunun yerine normal bir yanıt gönderin.",
+      "networkAckTimeout": "Ağdan henüz bir onay yok.",
+      "networkAckFailed": "Ağ bu mesajı kabul etmedi."
     },
     "reticulumDmDestHashesAria": "Hedef LXMF ve kimlik karmaları",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "Bu sohbet LXMF {{openPrefix}}…. Başka bir LXMF {{alternatePrefix}} … ({{name}}) farklı bir uygulamada aynı kişi olabilir. Bu karmadaki Eşler → Mesajını açın veya her iki tarafta da Şimdi duyurun.",
     "reticulumDmStaleAlternateDismissAria": "Varış noktası uyarısını kapat",
     "outboxEmergencyBadge": "Acil durum",
-    "outboxEmergencyWillSend": "Gönderilene kadar yeniden denemeye devam edecek",
     "outboxEmergencyCapBlocked": "Duraklatıldı: Çok fazla sıralanmış acil durum mesajı var. Bunu yeniden deneyin veya iptal edin.",
-    "outboxEmergencyCancelConfirm": "Bu acil durum mesajı iptal edilsin mi? Gönderilmeyecektir.",
     "retryOutboxEmergencyAttempt": "Deneme {{count}}",
     "channelSwitcher": {
       "trigger": "Tüm kanallar ({{total}})",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}}, {{name}} ile tepki verdi",
     "clearChannelMessagesChanged": "{{name}} artık radyodaki o yuvada değil, bu nedenle hiçbir şey temizlenmedi.",
     "clearChannelMessagesRadioChanged": "Bu açıkken bağlı radyo değişti, bu nedenle {{name}} içindeki mesajlar silinmedi.",
-    "viewSenderDetails": "{{name}} için ayrıntıları görüntüleyin"
+    "viewSenderDetails": "{{name}} için ayrıntıları görüntüleyin",
+    "outboxStatusAwaitingAck": "Ağ onayı bekleniyor…",
+    "outboxRetryingIn": "{{time}} içinde yeniden deneme",
+    "outboxStopRetrying": "Yeniden denemeyi durdur",
+    "outboxStopRetryingAria": "Bu acil durum mesajını yeniden denemeyi durdur",
+    "outboxCancelled": "İptal Edildi",
+    "autoResendPending": "{{time}} içinde ({{attempt}}/{{max}}) yeniden deneniyor",
+    "autoResendSending": "Yeniden deneniyor ({{attempt}}/{{max}} )…",
+    "cancelAutoResend": "Yeniden denemeyi iptal et",
+    "cancelAutoResendAria": "Bu mesajın otomatik yeniden denemesini iptal et",
+    "outboxEmergencyWillSend": "Ağ onaylayana kadar yeniden denemeye devam edecek",
+    "outboxEmergencyCancelConfirm": "Bu acil durum mesajını yeniden denemeyi durdur? Ağ bunu asla kabul etmese bile artık yeniden gönderilmeyecektir."
   },
   "chatPayload": {
     "mention": "{{label}}'dan bahsedin",

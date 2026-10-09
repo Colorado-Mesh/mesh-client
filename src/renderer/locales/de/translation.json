@@ -811,7 +811,9 @@
       "bleUnavailable": "Bluetooth ist nicht bereit. Verbinden Sie sich erneut und versuchen Sie es erneut.",
       "roomSessionExpired": "Die Raumsitzung ist abgelaufen - melden Sie sich erneut an, um zu posten.",
       "noSavedRoomCredential": "Kein gespeichertes Raumpasswort. Logge dich zuerst in den Raum ein.",
-      "mqttOriginReactionUnsupported": "Reaktionen auf reine MQTT-Nachrichten werden nicht unterstützt. Senden Sie stattdessen eine normale Antwort."
+      "mqttOriginReactionUnsupported": "Reaktionen auf reine MQTT-Nachrichten werden nicht unterstützt. Senden Sie stattdessen eine normale Antwort.",
+      "networkAckTimeout": "Noch keine Quittierung aus dem Netzwerk.",
+      "networkAckFailed": "Das Netzwerk hat diese Meldung nicht bestätigt."
     },
     "reticulumDmDestHashesAria": "Ziel-LXMF und Identitäts-Hashes",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "Dieser Chat ist LXMF {{openPrefix}}…. Ein anderer LXMF {{alternatePrefix}}… ({{name}}) kann dieselbe Person in einer anderen App sein. Öffnen Sie die → Peers-Nachricht auf diesem Hash oder kündigen Sie sie jetzt auf beiden Seiten an.",
     "reticulumDmStaleAlternateDismissAria": "Zielwarnung ausblenden",
     "outboxEmergencyBadge": "Notfall",
-    "outboxEmergencyWillSend": "Wird wiederholt, bis es gesendet wird",
     "outboxEmergencyCapBlocked": "Pausiert: zu viele Notfallmeldungen in der Warteschlange. Versuchen Sie es erneut oder brechen Sie diese ab.",
-    "outboxEmergencyCancelConfirm": "Diese Notfallnachricht abbrechen? Es wird nicht gesendet.",
     "retryOutboxEmergencyAttempt": "Versuch {{count}}",
     "channelSwitcher": {
       "trigger": "Alle Kanäle ({{total}})",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}} reagierte mit {{name}}",
     "clearChannelMessagesChanged": "{{name}} ist nicht mehr in diesem Slot im Radio, daher wurde nichts gelöscht.",
     "clearChannelMessagesRadioChanged": "Das angeschlossene Funkgerät änderte sich, während dieses geöffnet war, sodass Nachrichten in {{name}} nicht gelöscht wurden.",
-    "viewSenderDetails": "Details zu {{name}} anzeigen"
+    "viewSenderDetails": "Details zu {{name}} anzeigen",
+    "outboxStatusAwaitingAck": "Warten auf Netzwerkbestätigung...",
+    "outboxRetryingIn": "Erneuter Versuch in {{time}}",
+    "outboxStopRetrying": "Wiederholungsversuch beenden",
+    "outboxStopRetryingAria": "Stoppen Sie den Wiederholungsversuch dieser Notfallmeldung",
+    "outboxCancelled": "Storniert",
+    "autoResendPending": "Erneuter Versuch ({{attempt}}/{{max}}) in {{time}}",
+    "autoResendSending": "Erneuter Versuch ({{attempt}}/{{max}})…",
+    "cancelAutoResend": "Erneuten Versuch abbrechen",
+    "cancelAutoResendAria": "Automatischen Wiederholungsversuch dieser Nachricht abbrechen",
+    "outboxEmergencyWillSend": "Wird so lange wiederholt, bis das Netzwerk es bestätigt",
+    "outboxEmergencyCancelConfirm": "Diese Notfallmeldung nicht mehr versuchen? Es wird nicht mehr erneut gesendet, auch wenn das Netzwerk es nie bestätigt hat."
   },
   "chatPayload": {
     "mention": "Erwähne {{label}}",

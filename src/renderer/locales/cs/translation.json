@@ -828,7 +828,9 @@
       "bleUnavailable": "Bluetooth není připraven. Připojte se znovu a zkuste to znovu.",
       "roomSessionExpired": "Relace místnosti vypršela — pro zveřejnění se znovu přihlaste.",
       "noSavedRoomCredential": "Žádné uložené heslo místnosti. Nejprve se přihlaste do místnosti.",
-      "mqttOriginReactionUnsupported": "Reakce na zprávy pouze MQTT nejsou podporovány. Místo toho odešli normální odpověď."
+      "mqttOriginReactionUnsupported": "Reakce na zprávy pouze MQTT nejsou podporovány. Místo toho odešli normální odpověď.",
+      "networkAckTimeout": "Zatím žádné potvrzení ze sítě.",
+      "networkAckFailed": "Síť tuto zprávu nepotvrdila."
     },
     "reticulumDmDestHashesAria": "Cílový LXMF a hash identity",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -840,9 +842,7 @@
     "reticulumDmStaleAlternateNamed": "Tento chat je LXMF {{openPrefix}}…. Další LXMF {{alternatePrefix}}… ({{name}}) může být stejná osoba v jiné aplikaci. Otevřete → zprávu kolegů na tomto hash, nebo oznamte nyní na obou stranách.",
     "reticulumDmStaleAlternateDismissAria": "Zavřít varování o cíli",
     "outboxEmergencyBadge": "Stav nouze",
-    "outboxEmergencyWillSend": "Zkusí to znovu, dokud nebude odesláno",
     "outboxEmergencyCapBlocked": "Pozastaveno: příliš mnoho nouzových zpráv ve frontě. Zkus to znovu nebo to zruš.",
-    "outboxEmergencyCancelConfirm": "Zrušit tuto nouzovou zprávu? Nebude odesláno.",
     "retryOutboxEmergencyAttempt": "Pokus {{count}}",
     "channelSwitcher": {
       "trigger": "Všechny kanály ({{total}})",
@@ -873,7 +873,18 @@
     "reactionOtherAria": "{{reactor}} reagoval/a s {{name}}",
     "clearChannelMessagesChanged": "{{name}} již není v tomto slotu v rádiu, takže nic nebylo vymazáno.",
     "clearChannelMessagesRadioChanged": "Připojené rádio se změnilo, když bylo otevřené, takže zprávy v {{name}} nebyly vymazány.",
-    "viewSenderDetails": "Zobrazit podrobnosti pro {{name}}"
+    "viewSenderDetails": "Zobrazit podrobnosti pro {{name}}",
+    "outboxStatusAwaitingAck": "Čekání na potvrzení sítě...",
+    "outboxRetryingIn": "Zkus to znovu za {{time}}",
+    "outboxStopRetrying": "Zastavit opakování",
+    "outboxStopRetryingAria": "Zastavit opakování této nouzové zprávy",
+    "outboxCancelled": "Zrušeno",
+    "autoResendPending": "Opakování ({{attempt}}/{{max}}) v {{time}}",
+    "autoResendSending": "Probíhá opakování ({{attempt}}/{{max}})…",
+    "cancelAutoResend": "Zrušit opakování",
+    "cancelAutoResendAria": "Zrušit automatické opakování této zprávy",
+    "outboxEmergencyWillSend": "Bude se opakovat, dokud to síť nepotvrdí",
+    "outboxEmergencyCancelConfirm": "Přestat opakovat tuto nouzovou zprávu? Již nebude znovu odeslána, i když ji síť nikdy nepotvrdila."
   },
   "chatPayload": {
     "mention": "Zmínit {{label}}",

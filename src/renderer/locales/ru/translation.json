@@ -843,7 +843,9 @@
       "bleUnavailable": "Bluetooth не готов. Подключитесь заново и повторите попытку.",
       "roomSessionExpired": "Сессия комнаты истекла — войдите снова, чтобы опубликовать.",
       "noSavedRoomCredential": "Нет сохраненного пароля комнаты. Сначала войдите в комнату.",
-      "mqttOriginReactionUnsupported": "Реакции на сообщения только MQTT не поддерживаются. Вместо этого отправьте обычный ответ."
+      "mqttOriginReactionUnsupported": "Реакции на сообщения только MQTT не поддерживаются. Вместо этого отправьте обычный ответ.",
+      "networkAckTimeout": "Подтверждения от сети пока нет.",
+      "networkAckFailed": "Сеть не подтвердила это сообщение."
     },
     "reticulumDmDestHashesAria": "Целевой LXMF и хэши удостоверений",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -855,9 +857,7 @@
     "reticulumDmStaleAlternateNamed": "Этот чат - LXMF {{openPrefix}}…. Другой пользователь LXMF {{alternatePrefix}} … ({{name}}) может находиться в другом приложении. Открыть одноранговое → сообщение по этому хэшу или объявить сейчас с обеих сторон.",
     "reticulumDmStaleAlternateDismissAria": "Отклонить предупреждение о месте назначения",
     "outboxEmergencyBadge": "Авар.",
-    "outboxEmergencyWillSend": "Продолжит повторять попытку, пока не будет отправлено",
     "outboxEmergencyCapBlocked": "Приостановлено: слишком много экстренных сообщений в очереди. Повторите попытку или отмените ее.",
-    "outboxEmergencyCancelConfirm": "Отменить это экстренное сообщение? Он не будет отправлен.",
     "retryOutboxEmergencyAttempt": "Попытка {{count}}",
     "channelSwitcher": {
       "trigger": "Все каналы ({{total}})",
@@ -888,7 +888,18 @@
     "reactionOtherAria": "{{reactor}} отреагировал: {{name}}",
     "clearChannelMessagesChanged": "{{name}} больше не находится в этом слоте на радио, поэтому ничего не было очищено.",
     "clearChannelMessagesRadioChanged": "Подключенная радиостанция изменилась, пока она была открыта, поэтому сообщения в {{name}} не были удалены.",
-    "viewSenderDetails": "Подробнее о {{name}}"
+    "viewSenderDetails": "Подробнее о {{name}}",
+    "outboxStatusAwaitingAck": "Ожидание подтверждения сети...",
+    "outboxRetryingIn": "Повторная попытка через {{time}}",
+    "outboxStopRetrying": "Прекратить повторную попытку",
+    "outboxStopRetryingAria": "Прекратить повтор этого экстренного сообщения",
+    "outboxCancelled": "Аннулировано",
+    "autoResendPending": "Повторная попытка ({{attempt}}/{{max}}) через {{time}}",
+    "autoResendSending": "Повторная попытка ({{attempt}}/{{max}})…",
+    "cancelAutoResend": "Отменить повтор",
+    "cancelAutoResendAria": "Отменить автоматическую повторную попытку этого сообщения",
+    "outboxEmergencyWillSend": "Будет продолжать повторять попытку до тех пор, пока сеть не подтвердит ее",
+    "outboxEmergencyCancelConfirm": "Прекратить повтор этого экстренного сообщения? Он больше не будет повторно отправлен, даже если сеть никогда не признавала его."
   },
   "chatPayload": {
     "mention": "Упоминание {{label}}",

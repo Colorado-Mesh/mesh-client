@@ -91,6 +91,34 @@ const defaultState: MessageStoreState = {
 
 export const useMessageStore = create<MessageStoreState>()(() => defaultState);
 
+/** Live record lifecycle events (not emitted for bulk DB hydration writers). */
+export type MessageStoreEvent =
+  | { type: 'added'; identityId: IdentityId; record: MessageRecord }
+  | { type: 'renamed'; identityId: IdentityId; fromId: string; toId: string };
+
+type MessageStoreEventListener = (event: MessageStoreEvent) => void;
+
+const messageStoreEventListeners = new Set<MessageStoreEventListener>();
+
+/** Follow outbound id re-keys and new live rows without diffing the whole store. */
+export function subscribeMessageStoreEvents(listener: MessageStoreEventListener): () => void {
+  messageStoreEventListeners.add(listener);
+  return () => {
+    messageStoreEventListeners.delete(listener);
+  };
+}
+
+function emitMessageStoreEvent(event: MessageStoreEvent): void {
+  if (messageStoreEventListeners.size === 0) return;
+  for (const listener of [...messageStoreEventListeners]) {
+    try {
+      listener(event);
+    } catch (err: unknown) {
+      console.warn('[messageStore] event listener failed', err);
+    }
+  }
+}
+
 const MESSAGE_RECORD_KEYS: (keyof MessageRecord)[] = [
   'id',
   'from',
@@ -193,6 +221,7 @@ function carryChannelIdentity(existing: MessageRecord, incoming: MessageRecord):
 
 /** Insert or replace the full record when fields differ (no merge). Use upsertMessage for partial updates. */
 export function addMessage(identityId: IdentityId, incoming: MessageRecord): void {
+  let inserted = null as MessageRecord | null;
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[incoming.id];
@@ -202,8 +231,10 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
     if (existing === message || (existing && messageRecordFieldsEqual(existing, message))) {
       return s;
     }
+    if (!existing) inserted = message;
     return mergeIdentityMessages(s, identityId, { ...byIdentity, [message.id]: message });
   });
+  if (inserted) emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
 }
 
 /**
@@ -212,6 +243,7 @@ export function addMessage(identityId: IdentityId, incoming: MessageRecord): voi
  * optimistic row instead of creating a duplicate.
  */
 export function upsertMessage(identityId: IdentityId, message: MessageRecord): void {
+  let inserted = null as MessageRecord | null;
   useMessageStore.setState((s) => {
     const byIdentity = s.messages[identityId] ?? {};
     const existing = byIdentity[message.id];
@@ -225,8 +257,10 @@ export function upsertMessage(identityId: IdentityId, message: MessageRecord): v
     if (existing === merged || (existing && messageRecordFieldsEqual(existing, merged))) {
       return s;
     }
+    if (!existing) inserted = merged;
     return mergeIdentityMessages(s, identityId, { ...byIdentity, [message.id]: merged });
   });
+  if (inserted) emitMessageStoreEvent({ type: 'added', identityId, record: inserted });
 }
 
 /**
@@ -427,6 +461,7 @@ export function renameMessageId(identityId: IdentityId, fromId: string, toId: st
   // When dropping onto an already-acked Completes target, discard `fromId` coverage only —
   // do not merge/rename onto the delivered bubble (hash-collision retries).
   if (fromId === toId || fromExisting == null) return;
+  emitMessageStoreEvent({ type: 'renamed', identityId, fromId, toId });
   if (dropOntoAckedCompletes) {
     useRelayCoverageStore.getState().remove(identityId, fromId);
     clearHeardRepeatWindowIfMessage(identityId, fromId);

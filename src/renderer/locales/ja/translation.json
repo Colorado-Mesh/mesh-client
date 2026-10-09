@@ -811,7 +811,9 @@
       "bleUnavailable": "Bluetoothの準備ができていません。再接続してもう一度お試しください。",
       "roomSessionExpired": "ルームセッションの有効期限が切れました。再度ログインして投稿してください。",
       "noSavedRoomCredential": "保存されたルームのパスワードはありません。まずルームにログインします。",
-      "mqttOriginReactionUnsupported": "MQTTのみのメッセージへの応答はサポートされていません。代わりに通常の返信を送信してください。"
+      "mqttOriginReactionUnsupported": "MQTTのみのメッセージへの応答はサポートされていません。代わりに通常の返信を送信してください。",
+      "networkAckTimeout": "ネットワークからの確認応答はまだありません。",
+      "networkAckFailed": "ネットワークはこのメッセージを認識しませんでした。"
     },
     "reticulumDmDestHashesAria": "宛先LXMFとIDハッシュ",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}} …",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "こちらのチャットはLXMF {{openPrefix}} …です。別のLXMF {{alternatePrefix}} … （ {{name}} ）は、別のアプリで同じ人物である可能性があります。→そのハッシュのピアメッセージを開くか、両側で今すぐアナウンスします。",
     "reticulumDmStaleAlternateDismissAria": "行き先に関する警告を非表示にする",
     "outboxEmergencyBadge": "緊急",
-    "outboxEmergencyWillSend": "送信されるまで再試行を続けます",
     "outboxEmergencyCapBlocked": "一時停止：待機中の緊急メッセージが多すぎます。再度お試しいただくか、こちらをキャンセルしてください。",
-    "outboxEmergencyCancelConfirm": "この緊急メッセージをキャンセルしますか？送信されません。",
     "retryOutboxEmergencyAttempt": "{{count}}を試みる",
     "channelSwitcher": {
       "trigger": "すべてのチャンネル（{{total}}）",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}}は{{name}}と反応しました",
     "clearChannelMessagesChanged": "{{name}}はラジオのそのスロットにはないため、何もクリアされませんでした。",
     "clearChannelMessagesRadioChanged": "開いている間に接続されているラジオが変わったため、{{name}}のメッセージは消去されませんでした。",
-    "viewSenderDetails": "{{name}}の詳細を見る"
+    "viewSenderDetails": "{{name}}の詳細を見る",
+    "outboxStatusAwaitingAck": "ネットワーク確認を待っています…",
+    "outboxRetryingIn": "{{time}}後に再試行します",
+    "outboxStopRetrying": "再試行を停止",
+    "outboxStopRetryingAria": "この緊急メッセージの再試行を停止する",
+    "outboxCancelled": "キャンセル済み",
+    "autoResendPending": "再試行中（ {{attempt}}/{{max}} ） {{time}}",
+    "autoResendSending": "再試行中（ {{attempt}}/{{max}} ） …",
+    "cancelAutoResend": "再試行をキャンセル",
+    "cancelAutoResendAria": "このメッセージの自動再試行をキャンセルする",
+    "outboxEmergencyWillSend": "ネットワークが確認するまで再試行します",
+    "outboxEmergencyCancelConfirm": "この緊急メッセージの再試行を停止しますか？ネットワークが認識していなくても、再送信されることはありません。"
   },
   "chatPayload": {
     "mention": "{{label}} について言及してください",

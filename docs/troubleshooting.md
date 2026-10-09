@@ -1157,7 +1157,7 @@ Inbound MECP populates the list automatically (live + hydrate from chat history)
 
 **MAYDAY stuck / “will send when connected”**
 
-Emergency MECP uses the durable outbox (`priority: emergency`). It keeps retrying after reconnect (no 24h age stop). Check Chat for the emergency OutboxBubble; Cancel requires confirm. See [`docs/development/emcomm.md`](development/emcomm.md).
+Emergency MECP uses the durable outbox (`priority: emergency`). It keeps retrying until the network acknowledges the report (no 24h age stop, no attempt limit). Check Chat for the emergency OutboxBubble ("Waiting for network acknowledgement…" or a retry countdown); **Stop retrying** requires confirm. See [`docs/development/emcomm.md`](development/emcomm.md).
 
 **Incident tab empty after restart**
 

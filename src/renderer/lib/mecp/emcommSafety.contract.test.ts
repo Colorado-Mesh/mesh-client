@@ -65,7 +65,9 @@ describe('EMCOMM safety invariants (source contracts)', () => {
 
   it('S1: emergencySend module exists and MECP compose routes through it', () => {
     expect(existsSync(join(RENDERER, 'lib', 'emergencySend.ts'))).toBe(true);
-    expect(readSrc('renderer/lib/emergencySend.ts')).toMatch(/priority: 'emergency'/);
+    expect(readSrc('renderer/lib/emergencySend.ts')).toMatch(
+      /export function sendEmergencyText[\s\S]*?enqueueOutboxText\(text, deps, 'emergency'\)/,
+    );
     const panel = readSrc('renderer/components/ChatPanel.tsx');
     expect(panel).toMatch(/<MecpComposeModal[\s\S]*?sendEmergencyText\(/);
   });

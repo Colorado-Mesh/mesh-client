@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { meshcoreNodeHash } from '@/shared/meshcoreNodeHash';
 
@@ -8,14 +8,18 @@ import {
   resetHeardRepeatWindowsForTests,
 } from '../lib/meshcore/heardRepeatTracker';
 import { useRelayCoverageStore } from '../lib/relayCoverage/relayCoverageStore';
+import { mockConsoleWarn } from '../lib/vitestConsoleMock';
 import {
   addMessage,
   mergeMessageRecordsFromDbForIdentity,
   type MessageRecord,
+  type MessageStoreEvent,
   pruneMessageRecordsForIdentityByChannel,
   renameMessageId,
   replaceMessageRecordsForIdentity,
+  subscribeMessageStoreEvents,
   updateMessageStatus,
+  upsertMessage,
   upsertMessageRecordsForIdentity,
   useMessageStore,
   wasMessageBulkLoaded,
@@ -346,5 +350,52 @@ describe('messageStore rename / status guards for Reticulum Completes', () => {
     addMessage(ID_A, { ...sampleRecord(hash), status: 'acked', payload: 'done' });
     updateMessageStatus(ID_A, hash, 'sending');
     expect(useMessageStore.getState().messages[ID_A]?.[hash]?.status).toBe('acked');
+  });
+});
+
+describe('messageStore events', () => {
+  beforeEach(() => {
+    useMessageStore.setState({ messages: {} });
+  });
+
+  it('emits added only for new records and renamed only for real renames', () => {
+    const events: MessageStoreEvent[] = [];
+    const unsubscribe = subscribeMessageStoreEvents((e) => events.push(e));
+    try {
+      addMessage(ID_A, sampleRecord('m1'));
+      addMessage(ID_A, { ...sampleRecord('m1'), payload: 'edited' });
+      upsertMessage(ID_A, sampleRecord('m2'));
+      renameMessageId(ID_A, 'm1', 'm1');
+      renameMessageId(ID_A, 'missing', 'x');
+      renameMessageId(ID_A, 'm1', 'wire-1');
+    } finally {
+      unsubscribe();
+    }
+    expect(events.map((e) => (e.type === 'added' ? `added:${e.record.id}` : e.type))).toEqual([
+      'added:m1',
+      'added:m2',
+      'renamed',
+    ]);
+    expect(events[2]).toEqual({ type: 'renamed', identityId: ID_A, fromId: 'm1', toId: 'wire-1' });
+  });
+
+  it('stops emitting after unsubscribe and isolates throwing listeners', () => {
+    const { spy, restore } = mockConsoleWarn();
+    try {
+      const good = vi.fn();
+      const unsubBad = subscribeMessageStoreEvents(() => {
+        throw new Error('boom');
+      });
+      const unsubGood = subscribeMessageStoreEvents(good);
+      addMessage(ID_A, sampleRecord('e1'));
+      expect(good).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalled();
+      unsubGood();
+      unsubBad();
+      addMessage(ID_A, sampleRecord('e2'));
+      expect(good).toHaveBeenCalledTimes(1);
+    } finally {
+      restore();
+    }
   });
 });

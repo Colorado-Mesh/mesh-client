@@ -843,7 +843,9 @@
       "bleUnavailable": "Bluetooth nie jest gotowy. Połącz się ponownie i spróbuj ponownie.",
       "roomSessionExpired": "Sesja w pokoju wygasła — zaloguj się ponownie, aby opublikować.",
       "noSavedRoomCredential": "Brak zapisanego hasła do pokoju. Najpierw zaloguj się do pokoju.",
-      "mqttOriginReactionUnsupported": "Reakcje na komunikaty tylko MQTT nie są obsługiwane. Zamiast tego wyślij normalną odpowiedź."
+      "mqttOriginReactionUnsupported": "Reakcje na komunikaty tylko MQTT nie są obsługiwane. Zamiast tego wyślij normalną odpowiedź.",
+      "networkAckTimeout": "Brak jeszcze potwierdzenia z sieci.",
+      "networkAckFailed": "Sieć nie potwierdziła tej wiadomości."
     },
     "reticulumDmDestHashesAria": "Docelowy LXMF i skróty tożsamości",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -855,9 +857,7 @@
     "reticulumDmStaleAlternateNamed": "Ten czat to LXMF {{openPrefix}}…. Inna LXMF {{alternatePrefix}}… ({{name}}) może być tą samą osobą w innej aplikacji. Otwórz → wiadomość rówieśniczą na tym haszu lub ogłoś teraz po obu stronach.",
     "reticulumDmStaleAlternateDismissAria": "Odrzuć ostrzeżenie o miejscu docelowym",
     "outboxEmergencyBadge": "Sytuacja awaryjna",
-    "outboxEmergencyWillSend": "Będzie ponawiać próby do momentu wysłania",
     "outboxEmergencyCapBlocked": "Wstrzymano: zbyt wiele wiadomości alarmowych w kolejce. Spróbuj ponownie lub anuluj to.",
-    "outboxEmergencyCancelConfirm": "Anulować tę wiadomość alarmową? Nie zostanie wysłany.",
     "retryOutboxEmergencyAttempt": "Próba {{count}}",
     "channelSwitcher": {
       "trigger": "Wszystkie kanały ({{total}})",
@@ -888,7 +888,18 @@
     "reactionOtherAria": "{{reactor}} zareagował(a): {{name}}",
     "clearChannelMessagesChanged": "{{name}} nie ma już w tym gnieździe w radiu, więc nic nie zostało wyczyszczone.",
     "clearChannelMessagesRadioChanged": "Podłączone radio zmieniło się, gdy było otwarte, więc wiadomości w {{name}} nie zostały wyczyszczone.",
-    "viewSenderDetails": "Zobacz szczegóły: {{name}}"
+    "viewSenderDetails": "Zobacz szczegóły: {{name}}",
+    "outboxStatusAwaitingAck": "Oczekiwanie na potwierdzenie sieci…",
+    "outboxRetryingIn": "Ponawianie za {{time}}",
+    "outboxStopRetrying": "Przestań ponawiać próbę",
+    "outboxStopRetryingAria": "Przestań ponawiać próbę wysłania tej wiadomości alarmowej",
+    "outboxCancelled": "Anulowane",
+    "autoResendPending": "Ponawianie próby ({{attempt}}/{{max}}) w {{time}}",
+    "autoResendSending": "Ponawianie próby ({{attempt}}/{{max}})…",
+    "cancelAutoResend": "Anuluj ponowienie",
+    "cancelAutoResendAria": "Anuluj automatyczne ponawianie tej wiadomości",
+    "outboxEmergencyWillSend": "Będzie ponawiać próby, dopóki sieć tego nie potwierdzi",
+    "outboxEmergencyCancelConfirm": "Przestać ponawiać próbę wysłania tej wiadomości alarmowej? Nie będzie już ponownie wysyłany, nawet jeśli sieć nigdy tego nie potwierdziła."
   },
   "chatPayload": {
     "mention": "Wspomnij o {{label}}",

@@ -811,7 +811,9 @@
       "bleUnavailable": "Bluetooth n'est pas prêt. Reconnectez-vous et réessayez.",
       "roomSessionExpired": "La session de la salle a expiré — reconnectez-vous pour publier.",
       "noSavedRoomCredential": "Aucun mot de passe de salle enregistré. Connectez-vous d'abord à la salle.",
-      "mqttOriginReactionUnsupported": "Les réactions aux messages MQTT uniquement ne sont pas prises en charge. Envoyez plutôt une réponse normale."
+      "mqttOriginReactionUnsupported": "Les réactions aux messages MQTT uniquement ne sont pas prises en charge. Envoyez plutôt une réponse normale.",
+      "networkAckTimeout": "Aucun accusé de réception du réseau pour le moment.",
+      "networkAckFailed": "Le réseau n'a pas accusé réception de ce message."
     },
     "reticulumDmDestHashesAria": "Hachages LXMF et d'identité de destination",
     "reticulumDmLxmfPrefix": "LXMF {{prefix}}…",
@@ -823,9 +825,7 @@
     "reticulumDmStaleAlternateNamed": "Ce chat est LXMF {{openPrefix}}…. Un autre LXMF {{alternatePrefix}}… ({{name}}) peut être la même personne sur une application différente. Ouvrez le → message des pairs sur ce hachage, ou Annoncez maintenant des deux côtés.",
     "reticulumDmStaleAlternateDismissAria": "Ignorer l'avertissement de destination",
     "outboxEmergencyBadge": "Urgence",
-    "outboxEmergencyWillSend": "Continuera à réessayer jusqu'à l'envoi",
     "outboxEmergencyCapBlocked": "En pause : trop de messages d'urgence en file d'attente. Réessayez ou annulez celui-ci.",
-    "outboxEmergencyCancelConfirm": "Annuler ce message d'urgence ? Il ne sera pas envoyé.",
     "retryOutboxEmergencyAttempt": "Tentative {{count}}",
     "channelSwitcher": {
       "trigger": "Tous les canaux ({{total}})",
@@ -854,7 +854,18 @@
     "reactionOtherAria": "{{reactor}} a réagi avec {{name}}",
     "clearChannelMessagesChanged": "{{name}} n'est plus dans cet emplacement sur la radio, donc rien n'a été effacé.",
     "clearChannelMessagesRadioChanged": "La radio connectée a changé alors qu'elle était ouverte, donc les messages en {{name}} n'ont pas été effacés.",
-    "viewSenderDetails": "Afficher les détails pour {{name}}"
+    "viewSenderDetails": "Afficher les détails pour {{name}}",
+    "outboxStatusAwaitingAck": "En attente de l'accusé de réception du réseau…",
+    "outboxRetryingIn": "Nouvelle tentative dans {{time}}",
+    "outboxStopRetrying": "Arrêter de réessayer",
+    "outboxStopRetryingAria": "Arrêtez de réessayer ce message d'urgence",
+    "outboxCancelled": "Annulé",
+    "autoResendPending": "Nouvelle tentative ({{attempt}}/{{max}}) dans {{time}}",
+    "autoResendSending": "Nouvelle tentative ({{attempt}}/{{max}})…",
+    "cancelAutoResend": "Nouveau,Annuler,Réessayer",
+    "cancelAutoResendAria": "Annuler la nouvelle tentative automatique de ce message",
+    "outboxEmergencyWillSend": "Continuera à réessayer jusqu'à ce que le réseau le reconnaisse",
+    "outboxEmergencyCancelConfirm": "Arrêter de réessayer ce message d'urgence ? Il ne sera plus renvoyé, même si le réseau ne l'a jamais reconnu."
   },
   "chatPayload": {
     "mention": "Mention {{label}}",
