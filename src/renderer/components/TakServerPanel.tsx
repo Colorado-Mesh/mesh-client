@@ -61,6 +61,8 @@ interface Props {
   capabilities?: ProtocolCapabilities;
   /** Meshtastic identity whose channels may feed GeoChat into TAK. */
   meshtasticIdentityId?: IdentityId | null;
+  /** Runtime Meshtastic channels; used when the device store has none (MQTT-only, no radio). */
+  meshtasticRuntimeChannels?: readonly TakRelayChannel[];
   /** MeshCore identity whose channels may feed tracker fixes and GeoChat into TAK. */
   meshcoreIdentityId?: IdentityId | null;
 }
@@ -71,13 +73,14 @@ export default function TakServerPanel({
   atakMessages,
   capabilities,
   meshtasticIdentityId,
+  meshtasticRuntimeChannels,
   meshcoreIdentityId,
 }: Props) {
   const { t } = useTranslation();
   const id = useId();
   const meshtasticCaps = useRadioProvider('meshtastic');
   const meshcoreCaps = useRadioProvider('meshcore');
-  const meshtasticChannels = useDeviceStore((s) =>
+  const storedMeshtasticChannels = useDeviceStore((s) =>
     meshtasticIdentityId ? (s.devices[meshtasticIdentityId]?.channels ?? NO_CHANNELS) : NO_CHANNELS,
   );
   const meshcoreChannels = useDeviceStore((s) =>
@@ -85,6 +88,10 @@ export default function TakServerPanel({
       ? (s.devices[meshcoreIdentityId]?.meshcoreChannels ?? NO_CHANNELS)
       : NO_CHANNELS,
   );
+  const meshtasticChannels =
+    storedMeshtasticChannels.length > 0
+      ? storedMeshtasticChannels
+      : (meshtasticRuntimeChannels ?? NO_CHANNELS);
   const {
     status,
     clients,

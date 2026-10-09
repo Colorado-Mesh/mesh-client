@@ -5524,6 +5524,7 @@ function AppContent() {
                                 }
                                 capabilities={capabilities}
                                 meshtasticIdentityId={meshtasticIdentityId}
+                                meshtasticRuntimeChannels={meshtasticRuntime.channels}
                                 meshcoreIdentityId={meshcoreIdentityId}
                               />
                             </Suspense>
