@@ -83,7 +83,8 @@ describe('estimateRrcRowHeight', () => {
 
   it('scales with wrapped body length', () => {
     expect(estimateRrcRowHeight(makeMsg({ id: '1', body: 'hi' }))).toBe(22);
-    expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(42);
+    // 160 chars over the 64-char message column: 3 lines * 20 + 2
+    expect(estimateRrcRowHeight(makeMsg({ id: '2', body: 'x'.repeat(160) }))).toBe(62);
     expect(estimateRrcRowHeight(undefined)).toBe(22);
   });
 
@@ -170,7 +171,13 @@ describe('RrcChatView IRC layout', () => {
     mockScrollToEnd.mockClear();
   });
 
-  it('renders <nick> body on one line without block wrappers in the line', () => {
+  function lineCells(line: HTMLElement) {
+    const nick = line.querySelector<HTMLElement>('[data-testid="rrc-line-nick"]');
+    const body = line.querySelector<HTMLElement>('.min-w-0');
+    return { nick, body };
+  }
+
+  it('renders nick and body in separate columns without angle brackets', () => {
     render(
       <RrcChatView
         {...baseProps}
@@ -178,9 +185,71 @@ describe('RrcChatView IRC layout', () => {
       />,
     );
     const line = screen.getByTestId('rrc-chat-line');
-    expect(line.textContent).toMatch(/<nv0n>\s*hello/);
-    expect(line.querySelector('.min-w-0')?.querySelector('div')).toBeNull();
-    expect(line.innerHTML).toContain(rrcNickColorClass('nv0n'));
+    const { nick, body } = lineCells(line);
+    expect(nick?.textContent).toBe('nv0n');
+    expect(nick).toHaveAttribute('title', 'nv0n');
+    expect(nick?.className).toContain('text-right');
+    expect(nick?.className).toContain(rrcNickColorClass('nv0n'));
+    expect(line.textContent).not.toMatch(/[<>]/);
+    expect(body?.textContent).toBe('hello');
+    expect(body?.className).toContain('whitespace-pre-wrap');
+    expect(body?.querySelector('div')).toBeNull();
+    expect(line.firstElementChild?.className).toContain('grid');
+  });
+
+  it('truncates long nicks in the nick column but keeps the full nick in title', () => {
+    const longNick = 'NONGKHAEM_RCC_LONG_NICK';
+    render(
+      <RrcChatView
+        {...baseProps}
+        messages={[makeMsg({ id: '1', body: 'hi', nickname: longNick })]}
+      />,
+    );
+    const { nick } = lineCells(screen.getByTestId('rrc-chat-line'));
+    expect(nick?.className).toContain('truncate');
+    expect(nick).toHaveAttribute('title', longNick);
+  });
+
+  it('shows the timestamp column only when timestamps are on', () => {
+    const msgs = [makeMsg({ id: '1', body: 'hi', nickname: 'nv0n' })];
+    const { rerender } = render(<RrcChatView {...baseProps} messages={msgs} />);
+    expect(screen.queryByTestId('rrc-line-time')).toBeNull();
+    rerender(<RrcChatView {...baseProps} showTimestamps messages={msgs} />);
+    const time = screen.getByTestId('rrc-line-time');
+    expect(time.textContent).not.toBe('');
+    expect(time.textContent).not.toMatch(/[[\]]/);
+  });
+
+  it('marks notice and system rows in the nick column', () => {
+    render(
+      <RrcChatView
+        {...baseProps}
+        messages={[
+          makeMsg({ id: '1', kind: 'notice', body: 'heads up', nickname: 'Zeva' }),
+          makeMsg({ id: '2', kind: 'system', body: 'joined', nickname: null }),
+        ]}
+      />,
+    );
+    const [notice, system] = screen.getAllByTestId('rrc-chat-line');
+    expect(lineCells(notice).nick?.textContent).toBe('-Zeva-');
+    expect(lineCells(notice).body?.textContent).toBe('heads up');
+    expect(lineCells(system).nick?.textContent).toBe('*');
+    expect(lineCells(system).body?.textContent).toBe('joined');
+  });
+
+  it('has no axe violations for column rows with timestamps', async () => {
+    const { container } = render(
+      <RrcChatView
+        {...baseProps}
+        showTimestamps
+        messages={[
+          makeMsg({ id: '1', body: 'hello', nickname: 'nv0n' }),
+          makeMsg({ id: '2', kind: 'action', body: 'waves', nickname: 'Zeva' }),
+        ]}
+      />,
+    );
+    hydrateAxeThemeColors(container);
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('highlights self @nick in IRC bold red', () => {
@@ -215,7 +284,8 @@ describe('RrcChatView IRC layout', () => {
       />,
     );
     const line = screen.getByTestId('rrc-chat-line');
-    expect(line.textContent).toMatch(/<Zeva>\s*psst/);
+    expect(lineCells(line).nick?.textContent).toBe('Zeva');
+    expect(lineCells(line).body?.textContent).toBe('psst');
     expect(line.textContent).not.toMatch(/-Zeva-/);
     expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
     expect(line.className).toContain('text-ink-100');
@@ -254,7 +324,8 @@ describe('RrcChatView IRC layout', () => {
       />,
     );
     const line = screen.getByTestId('rrc-chat-line');
-    expect(line.textContent).toMatch(/<nv0n>\s*hi there/);
+    expect(lineCells(line).nick?.textContent).toBe('nv0n');
+    expect(lineCells(line).body?.textContent).toBe('hi there');
     expect(line.textContent).not.toContain('→');
     expect(line.className).toContain('text-ink-100');
     expect(line.innerHTML).toContain(rrcNickColorClass('nv0n'));
@@ -279,7 +350,8 @@ describe('RrcChatView IRC layout', () => {
       />,
     );
     const line = screen.getByTestId('rrc-chat-line');
-    expect(line.textContent).toMatch(/<nv0n>\s*testing/);
+    expect(lineCells(line).nick?.textContent).toBe('nv0n');
+    expect(lineCells(line).body?.textContent).toBe('testing');
     expect(line.textContent).not.toContain('→');
   });
 
@@ -291,7 +363,8 @@ describe('RrcChatView IRC layout', () => {
       />,
     );
     const line = screen.getByTestId('rrc-chat-line');
-    expect(line.textContent).toMatch(/\*\s*Zeva\s+waves/);
+    expect(lineCells(line).nick?.textContent).toBe('*');
+    expect(lineCells(line).body?.textContent).toMatch(/^Zeva\s+waves/);
     expect(line.innerHTML).toContain(rrcNickColorClass('Zeva'));
   });
 });
