@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { COT_STALE_MS } from './cot-converter';
-import { COT_FRAME_MAX_BYTES, CotFramer, parseCotEvent } from './cot-parser';
+import { COT_FRAME_MAX_BYTES, CotFramer, isCotPing, parseCotEvent } from './cot-parser';
 
 const NOW = Date.parse('2026-10-02T12:00:00Z');
 
@@ -127,5 +127,19 @@ describe('parseCotEvent', () => {
     ['no uid', '<event type="a-f-G"><point lat="1" lon="1"/></event>'],
   ])('ignores %s', (_label, xml) => {
     expect(parseCotEvent(xml, 'local', NOW)).toBeNull();
+  });
+});
+
+describe('isCotPing', () => {
+  it('recognises a client keepalive ping', () => {
+    expect(isCotPing(cot({ uid: 'ANDROID-1-ping', type: 't-x-c-t' }))).toBe(true);
+  });
+
+  it.each(['t-x-c-t-r', 'a-f-G-U-C', 't-x-d-d'])('ignores %s', (type) => {
+    expect(isCotPing(cot({ type }))).toBe(false);
+  });
+
+  it('ignores text that is not an event', () => {
+    expect(isCotPing('not xml')).toBe(false);
   });
 });

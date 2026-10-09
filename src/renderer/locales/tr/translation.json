@@ -5604,7 +5604,10 @@
     "channelRelayRoom": "{{channel}} için GeoChat odası",
     "channelRelayRoomPlaceholder": "GeoChat odası (kapalı)",
     "channelRelayNoChannels": "Kanallarını listelemek için bir MeshCore radyo bağlayın.",
-    "channelRelayUnnamed": "Kanal {{n}}"
+    "channelRelayUnnamed": "Kanal {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic kanalları TAK'ye",
+    "channelRelayDescMeshtastic": "Hangi duyulmuş kanal mesajlarının TAK'a besleneceğini seçin. Bir GeoChat odası, MQTT üzerinden duyulan mesajlar da dahil olmak üzere kanalı TAK sohbet odasına yansıtır. Bu sadece tek yönlüdür: TAK'den hiçbir şey ağ üzerinden gönderilmez.",
+    "channelRelayNoChannelsMeshtastic": "Kanallarını listelemek için bir Meshtastic radyo bağlayın."
   },
   "telemetryPanel": {
     "title": "Telemetri",

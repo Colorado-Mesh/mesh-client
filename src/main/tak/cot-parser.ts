@@ -2,7 +2,7 @@ import { StringDecoder } from 'string_decoder';
 
 import type { TAKContact, TAKContactSource } from '../../shared/tak-types';
 import { MS_PER_SECOND } from '../../shared/timeConstants';
-import { COT_STALE_MS, COT_UID_PREFIXES } from './cot-converter';
+import { COT_PING_TYPE, COT_STALE_MS, COT_UID_PREFIXES } from './cot-converter';
 
 /** Drop a partial event that grows past this; a sane CoT event is a few KB. */
 export const COT_FRAME_MAX_BYTES = 64 * 1024;
@@ -115,6 +115,11 @@ function staleWindowMs(time: string | undefined, stale: string | undefined): num
   const s = stale ? Date.parse(stale) : NaN;
   if (!Number.isFinite(t) || !Number.isFinite(s)) return COT_STALE_MS;
   return Math.min(Math.max(s - t, MIN_STALE_WINDOW_MS), MAX_STALE_WINDOW_MS);
+}
+
+/** True for a client keepalive ping (`t-x-c-t`), which a server answers with a pong. */
+export function isCotPing(xml: string): boolean {
+  return attr(openTag(xml, 'event'), 'type') === COT_PING_TYPE;
 }
 
 /** Units (`a-…`) and dropped map points (`b-m-p…`); pings, chat, tasking, deletes are not mapped. */

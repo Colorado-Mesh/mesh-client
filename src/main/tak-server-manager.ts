@@ -27,8 +27,14 @@ import {
   type TakServerIdentity,
 } from './tak/certificate-manager';
 import { TakContactCache } from './tak/contact-cache';
-import { COT_STALE_MS, cotDeleteEvent, cotUidFor, meshNodeToCot } from './tak/cot-converter';
-import { CotFramer, parseCotEvent } from './tak/cot-parser';
+import {
+  COT_STALE_MS,
+  cotDeleteEvent,
+  cotPongEvent,
+  cotUidFor,
+  meshNodeToCot,
+} from './tak/cot-converter';
+import { CotFramer, isCotPing, parseCotEvent } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
 import { buildGeochatCot } from './tak/geochat-cot';
 import { getLanIp } from './tak/lan-ip';
@@ -461,6 +467,15 @@ export class TakServerManager extends EventEmitter {
     this.emit('client-updated', { ...client.info });
   }
 
+  /** Answer a client keepalive so the EUD does not time out a connection with no mesh traffic. */
+  private sendPong(socket: tls.TLSSocket, nowMs: number): void {
+    try {
+      socket.write(cotPongEvent(nowMs) + '\n');
+    } catch {
+      // catch-no-log-ok: socket may close between the ping and the reply; not actionable
+    }
+  }
+
   private _handleClient(socket: tls.TLSSocket): void {
     const address = socket.remoteAddress ?? 'unknown';
     if (this.clients.size >= MAX_TAK_CLIENTS) {
@@ -495,6 +510,10 @@ export class TakServerManager extends EventEmitter {
       this.resetClientIdleTimer(id, client);
       const now = Date.now();
       for (const frame of client.framer.push(chunk)) {
+        if (isCotPing(frame)) {
+          this.sendPong(socket, now);
+          continue;
+        }
         const contact = parseCotEvent(frame, 'local', now);
         if (!contact) continue;
         this.contacts.upsert(contact);

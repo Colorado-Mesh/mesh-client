@@ -1,9 +1,11 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 
 import { hydrateAxeThemeColors } from '../lib/a11yTestHelpers';
+import { setDeviceChannels, useDeviceStore } from '../stores/deviceStore';
+import { setTakSinkActive } from '../stores/takSinkStore';
 import TakServerPanel from './TakServerPanel';
 
 describe('TakServerPanel', () => {
@@ -134,6 +136,44 @@ describe('TakServerPanel', () => {
     render(<TakServerPanel />);
     await act(async () => {});
     expect(screen.getByText('ALPHA')).toBeInTheDocument();
+  });
+
+  describe('Meshtastic channel relay channels', () => {
+    const MESHTASTIC_ID = 'tak-panel-meshtastic';
+
+    beforeEach(() => {
+      useDeviceStore.setState({ devices: {} });
+      setTakSinkActive(true);
+    });
+
+    afterEach(() => {
+      setTakSinkActive(false);
+      useDeviceStore.setState({ devices: {} });
+    });
+
+    it('falls back to runtime channels when the device store has none (MQTT-only)', async () => {
+      render(
+        <TakServerPanel
+          meshtasticIdentityId={MESHTASTIC_ID}
+          meshtasticRuntimeChannels={[{ index: 1, name: 'LongFast' }]}
+        />,
+      );
+      await act(async () => {});
+      expect(screen.getByLabelText('GeoChat room for LongFast')).toBeInTheDocument();
+    });
+
+    it('prefers stored channels over runtime channels', async () => {
+      setDeviceChannels(MESHTASTIC_ID, [{ index: 0, name: 'Radio' }], []);
+      render(
+        <TakServerPanel
+          meshtasticIdentityId={MESHTASTIC_ID}
+          meshtasticRuntimeChannels={[{ index: 1, name: 'LongFast' }]}
+        />,
+      );
+      await act(async () => {});
+      expect(screen.getByLabelText('GeoChat room for Radio')).toBeInTheDocument();
+      expect(screen.queryByLabelText('GeoChat room for LongFast')).toBeNull();
+    });
   });
 
   it('has no axe accessibility violations', async () => {

@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useMessageStore } from '../../stores/messageStore';
 import { upsertNode } from '../../stores/nodeStore';
+import { useTakRelayPrefsStore } from '../../stores/takRelayPrefsStore';
+import { setTakSinkActive } from '../../stores/takSinkStore';
 import { packetRouter } from '../drivers/PacketRouter';
 import { messageRecordToChatMessage } from '../storeRecordAdapters';
 import { attachMeshtasticIngest } from './meshtasticIngest';
@@ -238,5 +240,87 @@ describe('attachMeshtasticIngest', () => {
     expect(saveNode).not.toHaveBeenCalled();
     session.detach();
     saveNode.mockRestore();
+  });
+});
+
+describe('meshtastic ingest TAK channel relay', () => {
+  const TAK_ID = 'meshtastic-ingest-tak-test';
+  const pushChatMessage = vi.fn().mockResolvedValue(undefined);
+
+  function dispatchText(id: string, from: number, payload: string, channelIndex = 1) {
+    packetRouter.dispatch(
+      {
+        type: 'text_message',
+        payload: { id, from, to: 0xffffffff, payload, channelIndex, timestamp: Date.now() },
+      },
+      TAK_ID,
+    );
+  }
+
+  beforeEach(() => {
+    vi.spyOn(window.electronAPI.db, 'saveMessage').mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.db, 'saveNode').mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.db, 'updateMessageReceivedVia').mockResolvedValue(undefined);
+    vi.spyOn(window.electronAPI.tak, 'pushChatMessage').mockImplementation(pushChatMessage);
+    pushChatMessage.mockClear();
+    useTakRelayPrefsStore.setState({ byIdentity: {} });
+    useTakRelayPrefsStore.getState().setChatBridge(TAK_ID, 1, 'Mesh Ops');
+    setTakSinkActive(true);
+  });
+
+  afterEach(() => {
+    setTakSinkActive(false);
+    useTakRelayPrefsStore.setState({ byIdentity: {} });
+    useMessageStore.setState({ messages: {} });
+    vi.restoreAllMocks();
+  });
+
+  it('mirrors a new channel message once, even when the same packet arrives again', () => {
+    const session = attachMeshtasticIngest(TAK_ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0xbbbb,
+    });
+    dispatchText('501', 0xaaaa, 'on scene');
+    dispatchText('501', 0xaaaa, 'on scene');
+    expect(pushChatMessage).toHaveBeenCalledTimes(1);
+    expect(pushChatMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ room: 'Mesh Ops', text: 'on scene' }),
+    );
+    session.detach();
+  });
+
+  it('does not mirror our own echo', () => {
+    const session = attachMeshtasticIngest(TAK_ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0xbbbb,
+    });
+    dispatchText('502', 0xbbbb, 'my own message');
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    session.detach();
+  });
+
+  it('does not mirror an RF copy of a message already heard over MQTT', () => {
+    useMessageStore.setState({
+      messages: {
+        [TAK_ID]: {
+          '503': {
+            id: '503',
+            from: 0xaaaa,
+            to: 0xffffffff,
+            payload: 'via mqtt first',
+            channelIndex: 1,
+            timestamp: Date.now(),
+            receivedVia: 'mqtt',
+          },
+        },
+      },
+    });
+    const session = attachMeshtasticIngest(TAK_ID, {
+      getIsConfiguring: () => false,
+      getMyNodeNum: () => 0xbbbb,
+    });
+    dispatchText('503', 0xaaaa, 'via mqtt first');
+    expect(pushChatMessage).not.toHaveBeenCalled();
+    session.detach();
   });
 });

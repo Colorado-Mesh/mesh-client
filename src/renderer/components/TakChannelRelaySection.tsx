@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { TAK_GEOCHAT_ROOM_MAX_LEN } from '@/shared/tak-types';
 
 import type { IdentityId } from '../lib/types';
-import { useDeviceStore } from '../stores/deviceStore';
 import { useTakRelayPrefsStore } from '../stores/takRelayPrefsStore';
 import { useTakSinkStore } from '../stores/takSinkStore';
 import { CHECKBOX_CLASS, INPUT_BOX_SM_CLASS } from './ui/formClasses';
@@ -44,23 +43,39 @@ function RoomInput({ identityId, channel, channelName, saved }: RoomInputProps) 
   );
 }
 
-interface Props {
-  /** The MeshCore identity whose channels can feed TAK; channel slots are device-specific. */
-  identityId: IdentityId | null;
+export interface TakRelayChannel {
+  index: number;
+  name: string;
 }
 
-const NO_CHANNELS: readonly { index: number; name: string }[] = [];
+interface Props {
+  /** The identity whose channels can feed TAK; channel slots are device-specific. */
+  identityId: IdentityId | null;
+  channels: readonly TakRelayChannel[];
+  /** Offer the `!MT1` tracker-fix checkbox (protocol capability `hasTakTrackerChannels`). */
+  showTrackers: boolean;
+  title: string;
+  description: string;
+  emptyText: string;
+  /** Settings search anchor for the channel list. */
+  anchorId: string;
+}
 
 /**
- * Per-channel opt-ins for what a heard MeshCore channel feeds into TAK: `!MT1` tracker fixes as
- * markers and plain messages as a one-way GeoChat room. Only shown while a TAK sink is up.
+ * Per-channel opt-ins for what a heard channel feeds into TAK: `!MT1` tracker fixes as markers
+ * (when supported) and plain messages as a one-way GeoChat room. Only shown while a TAK sink is up.
  */
-export default function TakChannelRelaySection({ identityId }: Props) {
+export default function TakChannelRelaySection({
+  identityId,
+  channels,
+  showTrackers,
+  title,
+  description,
+  emptyText,
+  anchorId,
+}: Props) {
   const { t } = useTranslation();
   const sinkActive = useTakSinkStore((s) => s.active);
-  const channels = useDeviceStore((s) =>
-    identityId ? (s.devices[identityId]?.meshcoreChannels ?? NO_CHANNELS) : NO_CHANNELS,
-  );
   const prefs = useTakRelayPrefsStore((s) => (identityId ? s.byIdentity[identityId] : undefined));
   const setTrackerChannel = useTakRelayPrefsStore((s) => s.setTrackerChannel);
 
@@ -68,12 +83,12 @@ export default function TakChannelRelaySection({ identityId }: Props) {
 
   return (
     <div className="bg-deep-black border-ink-800 space-y-3 rounded-xl border p-4">
-      <h3 className="text-ink-300 text-sm font-medium">{t('takServerPanel.channelRelayTitle')}</h3>
-      <p className="text-ink-400 text-xs">{t('takServerPanel.channelRelayDesc')}</p>
+      <h3 className="text-ink-300 text-sm font-medium">{title}</h3>
+      <p className="text-ink-400 text-xs">{description}</p>
       {channels.length === 0 ? (
-        <p className="text-muted text-xs">{t('takServerPanel.channelRelayNoChannels')}</p>
+        <p className="text-muted text-xs">{emptyText}</p>
       ) : (
-        <ul data-setting-anchor="tak.channelRelay.trackers" className="space-y-2">
+        <ul data-setting-anchor={anchorId} className="space-y-2">
           {channels.map((ch) => {
             const name = ch.name.trim() || t('takServerPanel.channelRelayUnnamed', { n: ch.index });
             const tracker = prefs?.trackerChannels.includes(ch.index) ?? false;
@@ -82,18 +97,20 @@ export default function TakChannelRelaySection({ identityId }: Props) {
             return (
               <li key={ch.index} className="flex flex-wrap items-center gap-3 text-xs">
                 <span className="text-ink-200 min-w-24 font-medium">{name}</span>
-                <label htmlFor={checkboxId} className="text-ink-300 flex items-center gap-1">
-                  <input
-                    id={checkboxId}
-                    type="checkbox"
-                    checked={tracker}
-                    onChange={(e) => {
-                      setTrackerChannel(identityId, ch.index, e.target.checked);
-                    }}
-                    className={CHECKBOX_CLASS}
-                  />
-                  {t('takServerPanel.channelRelayTrackers')}
-                </label>
+                {showTrackers && (
+                  <label htmlFor={checkboxId} className="text-ink-300 flex items-center gap-1">
+                    <input
+                      id={checkboxId}
+                      type="checkbox"
+                      checked={tracker}
+                      onChange={(e) => {
+                        setTrackerChannel(identityId, ch.index, e.target.checked);
+                      }}
+                      className={CHECKBOX_CLASS}
+                    />
+                    {t('takServerPanel.channelRelayTrackers')}
+                  </label>
+                )}
                 <RoomInput
                   key={`${identityId}-${ch.index}-${room}`}
                   identityId={identityId}

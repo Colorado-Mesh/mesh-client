@@ -5686,7 +5686,10 @@
     "channelRelayRoom": "Pokój GeoChat dla {{channel}}",
     "channelRelayRoomPlaceholder": "Pokój GeoChat (wyłączony)",
     "channelRelayNoChannels": "Podłącz radio MeshCore, aby wyświetlić listę jego kanałów.",
-    "channelRelayUnnamed": "Kanał {{n}}"
+    "channelRelayUnnamed": "Kanał {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic kanały do TAK",
+    "channelRelayDescMeshtastic": "Wybierz, które usłyszane wiadomości kanałowe mają być przesyłane do TAK. Pokój GeoChat odzwierciedla kanał, w tym wiadomości słyszane przez MQTT, w tym pokoju czatu TAK. To działa tylko w jeden sposób: nic z TAK nie jest wysyłane przez siatkę.",
+    "channelRelayNoChannelsMeshtastic": "Podłącz radio Meshtastic, aby wyświetlić listę jego kanałów."
   },
   "telemetryPanel": {
     "title": "Telemetria",

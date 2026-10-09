@@ -725,6 +725,36 @@ describe('TakServerManager inbound CoT from local clients', () => {
     expect(updated).toHaveLength(1);
   });
 
+  const PING =
+    `<event version="2.0" uid="ANDROID-1-ping" type="t-x-c-t" time="2026-10-02T00:00:00Z" ` +
+    `start="2026-10-02T00:00:00Z" stale="2026-10-02T00:00:10Z" how="m-g">` +
+    `<point lat="0" lon="0" hae="0" ce="9999999" le="9999999"/></event>`;
+
+  it('answers a client ping with a pong on that client only', () => {
+    const manager = new TakServerManager();
+    const pinger = connectClient(manager);
+    const other = connectClient(manager);
+    vi.mocked(pinger.write).mockClear();
+    vi.mocked(other.write).mockClear();
+
+    pinger.emit('data', Buffer.from(PING));
+
+    expect(pinger.write).toHaveBeenCalledTimes(1);
+    const line = String(vi.mocked(pinger.write).mock.calls[0]?.[0]);
+    expect(line).toContain('type="t-x-c-t-r"');
+    expect(line.endsWith('</event>\n')).toBe(true);
+    expect(other.write).not.toHaveBeenCalled();
+    expect(manager.getContacts()).toEqual([]);
+  });
+
+  it('does not answer position reports', () => {
+    const manager = new TakServerManager();
+    const socket = connectClient(manager);
+    vi.mocked(socket.write).mockClear();
+    socket.emit('data', Buffer.from(SA('ANDROID-1', 'VIPER')));
+    expect(socket.write).not.toHaveBeenCalled();
+  });
+
   it('keeps the client callsign from its own uid when it shares other units', () => {
     const manager = new TakServerManager();
     const socket = connectClient(manager);

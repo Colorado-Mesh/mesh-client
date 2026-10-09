@@ -269,6 +269,7 @@ import {
   traceRouteEventsToResultsMap,
   waypointEventsToMeshWaypointMap,
 } from '../lib/storeRecordAdapters';
+import { relayMeshtasticChatToTak } from '../lib/tak/takChannelRelay';
 import {
   MESHTASTIC_MQTT_CHANNEL_KEYS_DEBOUNCE_MS,
   MESHTASTIC_PACKET_DEDUP_FALLBACK_MAX_ENTRIES,
@@ -1704,20 +1705,22 @@ export function useMeshtasticRuntime() {
         return;
       }
 
+      const isSameMqttMessage = (m: ChatMessage) =>
+        m.sender_id === mqttWithPreviews.sender_id &&
+        m.timestamp === mqttWithPreviews.timestamp &&
+        m.payload === mqttWithPreviews.payload &&
+        m.channel === mqttWithPreviews.channel &&
+        (m.to ?? undefined) === (mqttWithPreviews.to ?? undefined);
+      const alreadyStored = dedupSource.some(isSameMqttMessage);
       setMessages((prev) => {
-        const isDup = prev.some(
-          (m) =>
-            m.sender_id === mqttWithPreviews.sender_id &&
-            m.timestamp === mqttWithPreviews.timestamp &&
-            m.payload === mqttWithPreviews.payload &&
-            m.channel === mqttWithPreviews.channel &&
-            (m.to ?? undefined) === (mqttWithPreviews.to ?? undefined),
-        );
-        if (isDup) return prev;
+        if (prev.some(isSameMqttMessage)) return prev;
         return trimChatMessagesToMax([...prev, mqttWithPreviews], MAX_IN_MEMORY_CHAT_MESSAGES);
       });
       if (storeId) {
         upsertMessage(storeId, chatMessageToMessageRecord(mqttWithPreviews));
+        if (!mqttTreatAsBacklog && !alreadyStored) {
+          relayMeshtasticChatToTak(storeId, mqttWithPreviews);
+        }
       }
       persistMeshtasticMessage(mqttWithPreviews);
     });

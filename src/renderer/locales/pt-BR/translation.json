@@ -5604,7 +5604,10 @@
     "channelRelayRoom": "Sala GeoChat para {{channel}}",
     "channelRelayRoomPlaceholder": "Sala GeoChat (desligada)",
     "channelRelayNoChannels": "Conecte um rádio MeshCore para anunciar seus canais.",
-    "channelRelayUnnamed": "Canal {{n}}"
+    "channelRelayUnnamed": "Canal {{n}}",
+    "channelRelayTitleMeshtastic": "Meshtastic canais para TAK",
+    "channelRelayDescMeshtastic": "Escolha quais mensagens de canal ouvidas alimentam TAK. Uma sala do GeoChat espelha o canal, incluindo mensagens ouvidas em MQTT, naquela sala de chat TAK. Isso só vai de uma maneira: nada de TAK é enviado pela malha.",
+    "channelRelayNoChannelsMeshtastic": "Conecte um rádio Meshtastic para anunciar seus canais."
   },
   "telemetryPanel": {
     "title": "Telemetria",
