@@ -529,6 +529,8 @@
     "removeChannelNeedsRadio": "Доступно после подключения радио",
     "channels": "Каналы",
     "scrollChannels": "Прокрутите, чтобы увидеть больше каналов",
+    "scrollDms": "Прокрутите, чтобы увидеть другие разговоры",
+    "hiddenUnreadDms": "Непрочитанные разговоры",
     "unreadChannelsAbove": "Непрочитанные выше: {{count}}",
     "unreadChannelsBelow": "Непрочитанные ниже: {{count}}",
     "hiddenUnreadChannels": "Непрочитанные каналы",

@@ -54,14 +54,25 @@ function arrangeGeometry(viewport: HTMLElement, viewportHeight = 40) {
   });
 }
 
-function Choices({ onChoose, lastActive = false }: { onChoose: () => void; lastActive?: boolean }) {
+function Choices({
+  onChoose,
+  lastActive = false,
+  dms = false,
+  unread = true,
+}: {
+  onChoose: () => void;
+  lastActive?: boolean;
+  dms?: boolean;
+  unread?: boolean;
+}) {
   return (
     <>
       {['General', 'Ops', 'Weather', 'Very long emergency coordination name'].map((name, index) => (
         <button
           key={name}
           type="button"
-          data-channel-unread={index === 0 ? 0 : 1}
+          data-channel-unread={dms ? undefined : index === 0 || !unread ? 0 : 1}
+          data-dm-unread={dms ? (index === 0 || !unread ? 0 : 1) : undefined}
           data-strip-active={lastActive && index === 3 ? 'true' : undefined}
           onClick={onChoose}
         >
@@ -73,6 +84,58 @@ function Choices({ onChoose, lastActive = false }: { onChoose: () => void; lastA
 }
 
 describe('WrappingChannelList', () => {
+  it('updates hidden unread DM cues without requiring a resize or resetting the scroll position', () => {
+    const onChoose = vi.fn();
+    const { rerender } = render(
+      <WrappingChannelList kind="dms" activeKey={null}>
+        <Choices dms unread={false} onChoose={onChoose} />
+      </WrappingChannelList>,
+    );
+    const viewport = screen.getByRole('region', { name: 'DMs' });
+    arrangeGeometry(viewport);
+    expect(screen.getByText('Scroll for more conversations')).toBeInTheDocument();
+    rerender(
+      <WrappingChannelList kind="dms" activeKey={null}>
+        <Choices dms onChoose={onChoose} />
+      </WrappingChannelList>,
+    );
+    expect(screen.getByRole('button', { name: '3 unread below' })).toBeInTheDocument();
+    viewport.scrollTop = 48;
+    rerender(
+      <WrappingChannelList kind="dms" activeKey={null}>
+        <Choices dms unread={false} onChoose={onChoose} />
+      </WrappingChannelList>,
+    );
+    expect(screen.queryByRole('button', { name: /unread (above|below)/ })).not.toBeInTheDocument();
+    expect(viewport.scrollTop).toBe(48);
+    expect(disconnect).not.toHaveBeenCalled();
+    expect(onChoose).not.toHaveBeenCalled();
+  });
+
+  it.each(['linux', 'darwin', 'win32'] as const)(
+    'reveals hidden unread DMs without selecting or marking them read on %s',
+    async (platform) => {
+      vi.mocked(window.electronAPI.getPlatform).mockReturnValue(platform);
+      const user = userEvent.setup();
+      const onChoose = vi.fn();
+      render(
+        <WrappingChannelList kind="dms" activeKey={null}>
+          <Choices dms onChoose={onChoose} />
+        </WrappingChannelList>,
+      );
+      const viewport = screen.getByRole('region', { name: 'DMs' });
+      arrangeGeometry(viewport);
+      expect(screen.getByText('Unread conversations')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: '3 unread below' }));
+      expect(screen.getByRole('button', { name: 'Ops' })).toHaveFocus();
+      expect(viewport.scrollTop).toBe(48);
+      expect(onChoose).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Ops' })).toHaveAttribute('data-dm-unread', '1');
+      await user.keyboard('{Enter}');
+      expect(onChoose).toHaveBeenCalledOnce();
+    },
+  );
+
   it.each(['linux', 'darwin', 'win32'] as const)(
     'reveals unread choices without selecting them, preserving keyboard access on %s',
     async (platform) => {

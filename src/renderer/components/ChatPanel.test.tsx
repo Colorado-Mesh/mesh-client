@@ -4816,7 +4816,8 @@ describe('ChatPanel reticulum dm-only chat', () => {
     expect(localStorage.getItem('mesh-client:activeDm:reticulum')).toBe(String(lastFocusedId));
   });
 
-  it('promotes DM pills into the channel row as one scrolling strip (no separate DM row)', () => {
+  it('wraps Reticulum DM pills in the channel row and preserves drafts, mute and close actions', async () => {
+    const user = userEvent.setup();
     const peerIds = [0x101, 0x102, 0x103, 0x104, 0x105, 0x106];
     localStorage.setItem('mesh-client:openDmTabs:reticulum', JSON.stringify(peerIds));
     const nodes = new Map<number, MeshNode>(
@@ -4824,7 +4825,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
         nodeId,
         {
           node_id: nodeId,
-          reticulum_destination_hash: `deadbeef${index.toString(16).padStart(2, '0')}`,
+          reticulum_destination_hash: nodeId.toString(16).padStart(12, '0') + 'ab'.repeat(10),
           long_name: `Peer ${index}`,
           short_name: `P${index}`,
           hw_model: 'Reticulum',
@@ -4838,7 +4839,7 @@ describe('ChatPanel reticulum dm-only chat', () => {
         },
       ]),
     );
-    render(
+    const { container } = render(
       <ToastProvider>
         <ChatPanel {...reticulumProps} nodes={nodes} />
       </ToastProvider>,
@@ -4846,22 +4847,44 @@ describe('ChatPanel reticulum dm-only chat', () => {
 
     expect(screen.queryByRole('group', { name: 'Channels' })).not.toBeInTheDocument();
 
-    const dmsStrip = screen.getByRole('group', { name: 'DMs' });
-    expect(dmsStrip.className).toMatch(/overflow-x-auto/);
-    expect(dmsStrip.className).not.toMatch(/flex-wrap/);
+    const dmsList = screen.getByRole('region', { name: 'DMs' });
+    expect(screen.queryByRole('button', { name: /All direct messages/ })).not.toBeInTheDocument();
+    expect(dmsList.querySelectorAll('img')).toHaveLength(peerIds.length);
 
-    const headerRow = dmsStrip.closest('.grid');
+    const headerRow = dmsList.closest('.grid');
     expect(headerRow?.className).toMatch(/grid-cols-\[minmax\(0,1fr\)_auto\]/);
 
     const exportBtn = screen.getByRole('button', { name: 'Export chat' });
     const starredBtn = screen.getByRole('button', { name: 'Starred messages' });
-    expect(dmsStrip.contains(exportBtn)).toBe(false);
-    expect(dmsStrip.contains(starredBtn)).toBe(false);
+    expect(dmsList.contains(exportBtn)).toBe(false);
+    expect(dmsList.contains(starredBtn)).toBe(false);
     expect(headerRow?.contains(exportBtn)).toBe(true);
     expect(headerRow?.contains(starredBtn)).toBe(true);
 
     expect(screen.getByRole('button', { name: 'Peer 0' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Peer 5' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Peer 0' }));
+    const composer = await waitForComposer();
+    await user.type(composer, 'draft for first peer');
+    await user.click(screen.getByRole('button', { name: 'Peer 5' }));
+    expect(composer).toHaveValue('');
+    await user.type(composer, 'draft for last peer');
+    await user.click(screen.getByRole('button', { name: 'Peer 0' }));
+    expect(composer).toHaveValue('draft for first peer');
+
+    const lastPill = screen.getByRole('button', { name: 'Peer 5' }).parentElement!;
+    await user.click(within(lastPill).getByRole('button', { name: 'Mute this conversation' }));
+    expect(
+      within(lastPill).getByRole('button', { name: 'Unmute this conversation' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Peer 0' })).toHaveAttribute('aria-pressed', 'true');
+    expect(composer).toHaveValue('draft for first peer');
+    await user.click(within(lastPill).getByRole('button', { name: 'Close DM tab' }));
+    expect(screen.queryByRole('button', { name: 'Peer 5' })).not.toBeInTheDocument();
+    expect(composer).toHaveValue('draft for first peer');
+
+    hydrateAxeThemeColors(container);
+    expect(await axe(dmsList)).toHaveNoViolations();
   });
 
   it('does not list node-map contacts without message history', () => {

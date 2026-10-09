@@ -2747,11 +2747,26 @@ function ChatPanel({
     [activeDmNode, dmOnlyChat, dmNodeName, isConnected, isDmMode, isMqttOnly, t],
   );
 
-  /** Shared DMS label + pills (Row 1 when dmOnlyChat; Row 2 otherwise). */
+  const renderDmTabList = (children: ReactNode) =>
+    dmOnlyChat ? (
+      <WrappingChannelList kind="dms" activeKey={viewMode === 'dm' ? activeDmNode : null}>
+        {children}
+      </WrappingChannelList>
+    ) : (
+      <ScrollStrip
+        aria-label={t('chatPanel.dms')}
+        activeKey={viewMode === 'dm' ? activeDmNode : null}
+        className="flex-1"
+      >
+        {children}
+      </ScrollStrip>
+    );
+
+  /** Reticulum wraps its DM pills in Row 1; LoRa protocols keep the separate DM strip. */
   const dmTabPills = (
     <>
       <span className="text-muted shrink-0 text-xs font-medium">{t('chatPanel.dms')}</span>
-      {visibleDmTabs.length > 0 && (
+      {!dmOnlyChat && visibleDmTabs.length > 0 && (
         <ChatChannelSwitcher
           kind="dms"
           channels={visibleDmTabs.map((nodeNum) => ({ index: nodeNum, name: getDmLabel(nodeNum) }))}
@@ -2766,12 +2781,8 @@ function ChatPanel({
           {t(dmOnlyChat ? 'chatPanel.noDmConversationsReticulum' : 'chatPanel.noDmConversations')}
         </span>
       ) : (
-        <ScrollStrip
-          aria-label={t('chatPanel.dms')}
-          activeKey={viewMode === 'dm' ? activeDmNode : null}
-          className="flex-1"
-        >
-          {visibleDmTabs.map((nodeNum) => {
+        renderDmTabList(
+          visibleDmTabs.map((nodeNum) => {
             const dmUnread = dmUnreadCounts.get(nodeNum) ?? 0;
             const isActiveDm = viewMode === 'dm' && activeDmNode === nodeNum;
             const showDmUnreadBadge = dmUnread > 0 && !isActiveDm;
@@ -2789,10 +2800,10 @@ function ChatPanel({
               <div
                 key={`dm-${protocol}-${nodeNum}`}
                 data-strip-active={isActiveDm ? 'true' : undefined}
-                className={`text-control flex h-7 shrink-0 items-center gap-1 rounded-lg border pr-1 pl-2 font-medium transition-colors ${
-                  isActiveDm
-                    ? 'border-brand-green/35 bg-brand-green/12 text-bright-green'
-                    : 'bg-deep-black hover:border-secondary-dark border-ink-800 text-ink-300 hover:text-ink-100'
+                className={`${chipClass(isActiveDm)} flex items-center gap-1 pr-1! pl-2! ${
+                  dmOnlyChat
+                    ? 'h-auto! min-h-7 max-w-full rounded-full! py-0.5'
+                    : 'shrink-0 rounded-lg!'
                 }`}
               >
                 <button
@@ -2803,7 +2814,10 @@ function ChatPanel({
                       : getDmLabel(nodeNum)
                   }
                   aria-pressed={isActiveDm}
-                  className="inline-flex max-w-[12rem] min-w-0 items-center gap-1 truncate text-left"
+                  data-dm-unread={showDmUnreadBadge ? dmUnread : 0}
+                  className={`inline-flex min-w-0 items-center gap-1 text-left ${
+                    dmOnlyChat ? '' : 'max-w-[12rem] truncate'
+                  }`}
                   onClick={() => {
                     openDmTo(nodeNum);
                   }}
@@ -2817,10 +2831,20 @@ function ChatPanel({
                       className="shrink-0"
                     />
                   ) : null}
-                  <span className="min-w-0 truncate">{getDmLabel(nodeNum)}</span>
+                  <span
+                    className={`min-w-0 ${
+                      dmOnlyChat ? '[overflow-wrap:anywhere] whitespace-normal' : 'truncate'
+                    }`}
+                  >
+                    {getDmLabel(nodeNum)}
+                  </span>
+                  {dmOnlyChat && showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
+                  {dmOnlyChat && showDmUnreadBadge && dmMecpSeverity !== undefined && (
+                    <MecpUnreadIcon severity={dmMecpSeverity} />
+                  )}
                 </button>
-                {showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
-                {showDmUnreadBadge && dmMecpSeverity !== undefined && (
+                {!dmOnlyChat && showDmUnreadBadge && <ChipUnreadBadge count={dmUnread} />}
+                {!dmOnlyChat && showDmUnreadBadge && dmMecpSeverity !== undefined && (
                   <MecpUnreadIcon severity={dmMecpSeverity} />
                 )}
                 <button
@@ -2831,7 +2855,7 @@ function ChatPanel({
                   aria-label={
                     dmMuted ? t('chatPanel.unmuteConversation') : t('chatPanel.muteConversation')
                   }
-                  className={`flex h-5 w-5 items-center justify-center rounded transition-colors ${
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors ${
                     dmMuted
                       ? 'text-orange-400 hover:text-orange-300'
                       : 'text-muted hover:text-ink-100'
@@ -2857,24 +2881,28 @@ function ChatPanel({
                     closeDmTab(nodeNum);
                   }}
                   aria-label={t('chatPanel.closeDmTab')}
-                  className="text-muted hover:text-ink-100 flex h-5 w-5 items-center justify-center rounded"
+                  className="text-muted hover:text-ink-100 flex h-5 w-5 shrink-0 items-center justify-center rounded"
                   title={t('chatPanel.closeDm')}
                 >
                   <X aria-hidden className="h-3 w-3" size={12} />
                 </button>
               </div>
             );
-          })}
-        </ScrollStrip>
+          }),
+        )
       )}
     </>
   );
 
   return (
-    <div className="flex h-full min-h-0 min-w-0 flex-col">
+    <div className={`flex h-full min-h-0 min-w-0 flex-col ${dmOnlyChat ? 'overflow-y-auto' : ''}`}>
       {/* Row 1 — Wrapping channels (or Reticulum DMs) + toolbar utilities */}
       <div
-        className={`mb-2 grid min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)] ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
+        className={`mb-2 grid min-w-0 grid-cols-1 items-start gap-x-3 gap-y-2 lg:grid-cols-[minmax(0,1fr)_auto] ${
+          dmOnlyChat
+            ? 'min-h-[7.5rem] grid-rows-[minmax(5rem,1fr)_auto] lg:min-h-[5rem] lg:grid-rows-[minmax(5rem,1fr)]'
+            : 'min-h-0 grid-rows-[minmax(0,1fr)_auto] lg:grid-rows-[minmax(0,1fr)]'
+        } ${!dmOnlyChat && viewMode === 'dm' ? 'opacity-60' : ''}`}
       >
         <div
           className="flex h-full min-h-0 min-w-0 items-start gap-2"
@@ -3565,7 +3593,9 @@ function ChatPanel({
       )}
 
       {/* Messages area */}
-      <div className={`relative min-h-12 flex-1 ${viewMode === 'starred' ? 'hidden' : ''}`}>
+      <div
+        className={`relative flex-1 ${dmOnlyChat ? 'min-h-6' : 'min-h-12'} ${viewMode === 'starred' ? 'hidden' : ''}`}
+      >
         <div
           ref={scrollContainerRef}
           data-chat-scroll-root

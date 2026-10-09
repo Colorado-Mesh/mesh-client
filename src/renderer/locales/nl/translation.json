@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "Beschikbaar zodra de radio is verbonden",
     "channels": "Kanalen",
     "scrollChannels": "Scroll voor meer kanalen",
+    "scrollDms": "Scroll voor meer gesprekken",
+    "hiddenUnreadDms": "Ongelezen gesprekken",
     "unreadChannelsAbove": "{{count}} ongelezen boven",
     "unreadChannelsBelow": "{{count}} ongelezen onder",
     "hiddenUnreadChannels": "Ongelezen kanalen",

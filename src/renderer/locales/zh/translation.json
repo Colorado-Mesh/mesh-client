@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "连接电台后可用",
     "channels": "槽钢",
     "scrollChannels": "滚动查看更多频道",
+    "scrollDms": "滚动查看更多对话",
+    "hiddenUnreadDms": "未读对话",
     "unreadChannelsAbove": "上方未读：{{count}}",
     "unreadChannelsBelow": "下方未读：{{count}}",
     "hiddenUnreadChannels": "未读频道",

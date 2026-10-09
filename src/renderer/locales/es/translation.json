@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "Disponible cuando la radio esté conectada",
     "channels": "Canales",
     "scrollChannels": "Desplázate para ver más canales",
+    "scrollDms": "Desplázate para ver más conversaciones",
+    "hiddenUnreadDms": "Conversaciones sin leer",
     "unreadChannelsAbove": "{{count}} sin leer arriba",
     "unreadChannelsBelow": "{{count}} sin leer abajo",
     "hiddenUnreadChannels": "Canales sin leer",

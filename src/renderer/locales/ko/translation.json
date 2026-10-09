@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "무전기가 연결되면 사용할 수 있습니다",
     "channels": "채널",
     "scrollChannels": "스크롤하여 더 많은 채널 보기",
+    "scrollDms": "스크롤하여 더 많은 대화 보기",
+    "hiddenUnreadDms": "읽지 않은 대화",
     "unreadChannelsAbove": "위쪽 안 읽음: {{count}}",
     "unreadChannelsBelow": "아래쪽 안 읽음: {{count}}",
     "hiddenUnreadChannels": "안 읽은 채널",

@@ -4,10 +4,15 @@ import { useTranslation } from 'react-i18next';
 interface WrappingChannelListProps {
   activeKey: number | null;
   children: ReactNode;
+  kind?: 'channels' | 'dms';
 }
 
-/** Wrapped channels scroll only when the chat header runs out of vertical space. */
-export function WrappingChannelList({ activeKey, children }: WrappingChannelListProps) {
+/** Wrapped conversation choices scroll only when the chat header runs out of vertical space. */
+export function WrappingChannelList({
+  activeKey,
+  children,
+  kind = 'channels',
+}: WrappingChannelListProps) {
   const { t } = useTranslation();
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -28,9 +33,9 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
     const below: HTMLButtonElement[] = [];
     if (viewport && bounds) {
       for (const button of viewport.querySelectorAll<HTMLButtonElement>(
-        'button[data-channel-unread]',
+        'button[data-channel-unread], button[data-dm-unread]',
       )) {
-        if (Number(button.dataset.channelUnread) <= 0) continue;
+        if (Number(button.dataset.channelUnread ?? button.dataset.dmUnread) <= 0) continue;
         const marker = button.querySelector<HTMLElement>('[data-chip-unread]') ?? button;
         const box = marker.getBoundingClientRect();
         if (box.top < bounds.top - 1) above.push(button);
@@ -100,6 +105,10 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
     if (button) reveal(button);
   }, [activeKey, reveal]);
 
+  // Unread counts can change without resizing the list. Refresh cues without revealing
+  // the selection again or resetting a user's scroll position.
+  useLayoutEffect(measure, [children, measure]);
+
   function showUnread(direction: 'above' | 'below') {
     const buttons = unreadOutside()[direction];
     const button = direction === 'above' ? buttons.at(-1) : buttons[0];
@@ -115,7 +124,7 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
         id={id}
         ref={viewportRef}
         role="region"
-        aria-label={t('chatPanel.channels')}
+        aria-label={t(kind === 'dms' ? 'chatPanel.dms' : 'chatPanel.channels')}
         tabIndex={overflow ? 0 : undefined}
         onScroll={measure}
         onFocusCapture={(event) => {
@@ -130,10 +139,12 @@ export function WrappingChannelList({ activeKey, children }: WrappingChannelList
       {overflow && (
         <div className="text-muted text-label flex shrink-0 flex-wrap items-center justify-between gap-x-2">
           {hiddenUnread.above === 0 && hiddenUnread.below === 0 && (
-            <span>{t('chatPanel.scrollChannels')}</span>
+            <span>{t(kind === 'dms' ? 'chatPanel.scrollDms' : 'chatPanel.scrollChannels')}</span>
           )}
           {(hiddenUnread.above > 0 || hiddenUnread.below > 0) && (
-            <span>{t('chatPanel.hiddenUnreadChannels')}</span>
+            <span>
+              {t(kind === 'dms' ? 'chatPanel.hiddenUnreadDms' : 'chatPanel.hiddenUnreadChannels')}
+            </span>
           )}
           {(['above', 'below'] as const).map((direction) =>
             hiddenUnread[direction] > 0 ? (

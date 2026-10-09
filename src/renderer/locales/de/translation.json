@@ -513,6 +513,8 @@
     "removeChannelNeedsRadio": "Verfügbar, sobald das Funkgerät verbunden ist",
     "channels": "Rinnen",
     "scrollChannels": "Für weitere Kanäle scrollen",
+    "scrollDms": "Für weitere Unterhaltungen scrollen",
+    "hiddenUnreadDms": "Ungelesene Unterhaltungen",
     "unreadChannelsAbove": "{{count}} ungelesen oben",
     "unreadChannelsBelow": "{{count}} ungelesen unten",
     "hiddenUnreadChannels": "Ungelesene Kanäle",
