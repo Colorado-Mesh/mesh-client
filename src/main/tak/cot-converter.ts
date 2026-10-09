@@ -123,7 +123,6 @@ export function cotPongEvent(nowMs: number = Date.now()): string {
   const time = new Date(nowMs).toISOString();
   const stale = new Date(nowMs + COT_PONG_STALE_MS).toISOString();
   return (
-    `<?xml version="1.0" encoding="UTF-8"?>` +
     `<event version="2.0" uid="${COT_PONG_UID}" type="${COT_PONG_TYPE}"` +
     ` time="${time}" start="${time}" stale="${stale}" how="h-g-i-g-o">` +
     `<point lat="0" lon="0" hae="0" ce="9999999" le="9999999"/>` +
