@@ -663,6 +663,11 @@ if ! pnpm run check:licenses; then
   exit 1
 fi
 
+if ! pnpm run check:rust-licenses -- --require-cargo; then
+  print_error "Rust sidecar license check failed. Install Rust and run 'scripts/clone-ratspeak-stack.sh' if .rsstack/ is missing."
+  exit 1
+fi
+
 if ! pnpm run check:flatpak; then
   print_error "Flatpak manifest check failed. Run 'node scripts/sync-flatpak-electron.mjs' if Electron drifted."
   exit 1

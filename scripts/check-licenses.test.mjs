@@ -9,6 +9,7 @@ import {
   isLicenseAllowed,
   licenseFromPackageManifest,
   parseSeeLicenseInFilename,
+  splitSpdxSlash,
   splitSpdxTopLevel,
   unwrapSpdxParens,
 } from './check-licenses.mjs';
@@ -41,7 +42,48 @@ describe('splitSpdxTopLevel', () => {
   });
 });
 
+describe('splitSpdxSlash', () => {
+  it('splits Cargo-style slash expressions with or without spaces', () => {
+    expect(splitSpdxSlash('MIT/Apache-2.0')).toEqual(['MIT', 'Apache-2.0']);
+    expect(splitSpdxSlash('MIT / Apache-2.0')).toEqual(['MIT', 'Apache-2.0']);
+    expect(splitSpdxSlash('MIT/Apache-2.0/BSD-3-Clause')).toEqual([
+      'MIT',
+      'Apache-2.0',
+      'BSD-3-Clause',
+    ]);
+  });
+
+  it('does not split inside parentheses', () => {
+    expect(splitSpdxSlash('(MIT/Apache-2.0)')).toEqual(['(MIT/Apache-2.0)']);
+  });
+
+  it('returns a single part when there is no slash', () => {
+    expect(splitSpdxSlash('MIT')).toEqual(['MIT']);
+  });
+});
+
 describe('isLicenseAllowed', () => {
+  it('treats Cargo-style slash as OR', () => {
+    expect(isLicenseAllowed('MIT/Apache-2.0')).toBe(true);
+    expect(isLicenseAllowed('Apache-2.0 / MIT')).toBe(true);
+    expect(isLicenseAllowed('MIT/Apache-2.0/BSD-3-Clause')).toBe(true);
+    expect(isLicenseAllowed('GPL-3.0/MIT')).toBe(true);
+    expect(isLicenseAllowed('GPL-2.0/MIT')).toBe(true);
+    expect(isLicenseAllowed('GPL-2.0/UNLICENSED')).toBe(false);
+  });
+
+  it('binds slash tighter than AND', () => {
+    expect(isLicenseAllowed('GPL-2.0 AND MIT/Apache-2.0')).toBe(false);
+    expect(isLicenseAllowed('ISC AND GPL-2.0/MIT')).toBe(true);
+  });
+
+  it('allows the Rust sidecar license ids', () => {
+    expect(isLicenseAllowed('AGPL-3.0-or-later')).toBe(true);
+    expect(isLicenseAllowed('bzip2-1.0.6')).toBe(true);
+    expect(isLicenseAllowed('LGPL-2.1-only AND MIT AND BSD-3-Clause')).toBe(true);
+    expect(isLicenseAllowed('(MIT OR Apache-2.0) AND Unicode-3.0')).toBe(true);
+  });
+
   it('allows simple ids from the policy list', () => {
     expect(isLicenseAllowed('MIT')).toBe(true);
     expect(isLicenseAllowed('Hippocratic-2.1')).toBe(true);
