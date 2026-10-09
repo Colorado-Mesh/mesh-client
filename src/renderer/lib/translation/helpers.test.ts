@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  neededTranslationPacks,
   readsTranslationLanguage,
   skipMessageTranslation,
   translationCacheKey,
@@ -37,5 +38,43 @@ describe('translation message rules', () => {
     expect(translationMessageKey('hub:a', 'text', 'en')).not.toBe(
       translationMessageKey('hub:b', 'text', 'en'),
     );
+  });
+});
+
+describe('neededTranslationPacks', () => {
+  const allBut = (...languages: string[]) =>
+    [
+      'en',
+      'cs',
+      'de',
+      'es',
+      'fr',
+      'id',
+      'it',
+      'ja',
+      'ko',
+      'nl',
+      'pl',
+      'pt',
+      'ru',
+      'tr',
+      'uk',
+      'zh',
+    ].filter((language) => !languages.includes(language));
+  it('needs only the direct pack into English', () => {
+    expect(neededTranslationPacks('en', allBut('fr'))).toEqual(['fr-en']);
+  });
+  it('pivots through English for a non-English target', () => {
+    expect(neededTranslationPacks('de', allBut('fr'))).toEqual(['fr-en', 'en-de']);
+    expect(neededTranslationPacks('de', allBut('en'))).toEqual(['en-de']);
+  });
+  it('skips read languages (including regional variants) and the target', () => {
+    expect(neededTranslationPacks('en', [...allBut('fr', 'pt'), 'pt-BR'])).toEqual(['fr-en']);
+    expect(neededTranslationPacks('en', allBut('en'))).toEqual([]);
+  });
+  it('de-duplicates shared pivot packs', () => {
+    const needed = neededTranslationPacks('de', allBut('fr', 'es'));
+    expect(needed).toEqual(['es-en', 'en-de', 'fr-en']);
+    expect(new Set(needed).size).toBe(needed.length);
   });
 });

@@ -252,7 +252,7 @@ export class TranslationPackManager {
       const signal = AbortSignal.any([job.abort.signal, idle.signal]);
       const response = await this.deps.fetch(asset.url, { signal, redirect: 'error' });
       if (!response.ok || !response.body)
-        throw new Error(`Translation download HTTP ${response.status}`);
+        throw new Error(`Translation download HTTP ${response.status} (${asset.file})`);
       resetDeadline();
       const rawPath = path.join(directory, `${asset.file}.download`);
       const handle = await fs.open(rawPath, 'wx+', 0o600);
