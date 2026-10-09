@@ -34,6 +34,8 @@ We were inspired by features from these projects:
 - [CoreScope](https://github.com/Kpa-clawbot/CoreScope): Self-hosted MeshCore network analyzer with RF analytics, packet visualization, and topology tools
 - [Ratspeak](https://github.com/ratspeak/Ratspeak): Primary reference for the Reticulum/rsReticulum/rsLXMF stack, sidecar IPC patterns, and peer interop ([rsReticulum](https://github.com/ratspeak/rsReticulum), [rsLXMF](https://github.com/ratspeak/rsLXMF))
 - [MECP](https://mecp.radio/) ([GitHub](https://github.com/xiang-dev-1/MECP)): Mesh Emergency Communication Protocol — structured emergency text for LoRa mesh (engine GPLv3; language packs CC BY 4.0)
+- [MeshCoreTracker](https://github.com/CopIXus/MeshCoreTracker): GPS tracker firmware for MeshCore radios; inspired parsing of compact tracker-fix messages (`!MT1`) with role tags and rename-safe, identity-based TAK marker IDs
+- [MeshcoreToTAK](https://github.com/CopIXus/MeshcoreToTAK): MeshCore-to-TAK gateway firmware; inspired role-based CoT styling, ordered unit-name filters, MeshCore channel to TAK GeoChat mirroring, and MIL-STD-2525 contact symbology
 
 ### Bundled binaries
 
