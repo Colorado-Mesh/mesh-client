@@ -84,4 +84,4 @@ modifying their data. No model, vocabulary, language-ID file or translation WASM
 
 ## Third-party licenses
 
-npm runtime and development dependency licenses are generated from `package.json` in [third-party-licenses.md](third-party-licenses.md). Transitive licenses are gated by `pnpm run check:licenses`.
+npm runtime and development dependency licenses are generated from `package.json` in [third-party-licenses.md](third-party-licenses.md). Transitive licenses are gated by `pnpm run check:licenses`; Rust sidecar crate licenses are gated by `pnpm run check:rust-licenses`.
