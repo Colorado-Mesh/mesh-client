@@ -101,6 +101,29 @@ function finite(n: number | undefined): n is number {
   return n != null && Number.isFinite(n);
 }
 
+/** Event type an EUD sends as a keepalive when its streaming connection is quiet. */
+export const COT_PING_TYPE = 't-x-c-t';
+/** Reply type; the uid is the one TAK Server answers with. */
+const COT_PONG_TYPE = 't-x-c-t-r';
+const COT_PONG_UID = 'takPong';
+const COT_PONG_STALE_MS = 20 * 1000;
+
+/**
+ * Keepalive reply to a client ping. ATAK, iTAK and WinTAK drop and redial a streaming
+ * connection that delivers nothing for a few tens of seconds, so a quiet mesh needs this.
+ */
+export function cotPongEvent(nowMs: number = Date.now()): string {
+  const time = new Date(nowMs).toISOString();
+  const stale = new Date(nowMs + COT_PONG_STALE_MS).toISOString();
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<event version="2.0" uid="${COT_PONG_UID}" type="${COT_PONG_TYPE}"` +
+    ` time="${time}" start="${time}" stale="${stale}" how="h-g-i-g-o">` +
+    `<point lat="0" lon="0" hae="0" ce="9999999" le="9999999"/>` +
+    `</event>`
+  );
+}
+
 /** Standard CoT delete (`t-x-d-d`) telling TAK clients to remove the marker with `targetUid`. */
 export function cotDeleteEvent(targetUid: string, nowMs: number = Date.now()): string {
   const time = new Date(nowMs).toISOString();

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MeshNode } from '../../renderer/lib/types';
-import { cotDeleteEvent, meshNodeToCot } from './cot-converter';
+import { cotDeleteEvent, cotPongEvent, meshNodeToCot } from './cot-converter';
 
 function makeNode(overrides: Partial<MeshNode> = {}): MeshNode {
   return {
@@ -250,5 +250,17 @@ describe('cotDeleteEvent', () => {
 
   it('escapes the target uid', () => {
     expect(cotDeleteEvent('a"b')).toContain('<link uid="a&quot;b"');
+  });
+});
+
+describe('cotPongEvent', () => {
+  it('builds a TAK Server style pong that goes stale shortly after', () => {
+    const cot = cotPongEvent(Date.parse('2026-10-09T12:00:00.000Z'));
+    expect(cot).toContain('uid="takPong"');
+    expect(cot).toContain('type="t-x-c-t-r"');
+    expect(cot).toContain('time="2026-10-09T12:00:00.000Z"');
+    expect(cot).toContain('stale="2026-10-09T12:00:20.000Z"');
+    expect(cot).toContain('<point lat="0" lon="0"');
+    expect(cot.endsWith('</event>')).toBe(true);
   });
 });
