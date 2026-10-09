@@ -75,12 +75,14 @@ import type {
   TAKContact,
   TAKContactsUpdate,
   TAKEnrollmentRequest,
+  TAKGeochatMessage,
   TAKNodeUpdate,
   TAKRemoteCredentialSummary,
   TAKRemoteSettings,
   TAKRemoteStatus,
   TAKServerStatus,
   TAKSettings,
+  TakStyleSettings,
 } from './tak-types';
 import type { TranslationAPI } from './translation-types';
 import type {
@@ -1418,6 +1420,12 @@ export interface ElectronAPI {
     remoteEnroll: (request: TAKEnrollmentRequest) => Promise<TAKRemoteCredentialSummary>;
     remoteClearCredentials: () => Promise<TAKRemoteCredentialSummary>;
     onRemoteStatus: (cb: (status: TAKRemoteStatus) => void) => () => void;
+    /** Mirror one heard mesh channel message into TAK GeoChat; dropped while no sink is active. */
+    pushChatMessage: (message: TAKGeochatMessage) => Promise<void>;
+    /** How relayed nodes are styled: user unit filters over each node's advertised role. */
+    getStyleSettings: () => Promise<TakStyleSettings>;
+    /** Validate, save, and apply style settings; resolves with what was saved. */
+    setStyleSettings: (settings: TakStyleSettings) => Promise<TakStyleSettings>;
   };
 
   // ─── Reticulum sidecar ───────────────────────────────────────────────────────

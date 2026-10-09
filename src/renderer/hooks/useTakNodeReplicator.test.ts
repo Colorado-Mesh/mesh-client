@@ -10,6 +10,8 @@ vi.mock('@/renderer/lib/gpsSource', () => ({
 import { readStoredStaticGps } from '@/renderer/lib/gpsSource';
 import { TAK_NODE_REFRESH_MS, TAK_NODE_SCAN_INTERVAL_MS } from '@/renderer/lib/takNodeFeed';
 import { useReticulumDiscoveryMapStore } from '@/renderer/stores/reticulumDiscoveryMapStore';
+import { isTakSinkActive } from '@/renderer/stores/takSinkStore';
+import { clearTakTrackerFixes, recordTakTrackerFix } from '@/renderer/stores/takTrackerStore';
 
 import { type TakReticulumSelfIdentity, useTakNodeReplicator } from './useTakNodeReplicator';
 
@@ -196,5 +198,45 @@ describe('useTakNodeReplicator', () => {
     const many = Array.from({ length: 1200 }, (_, i) => node(i + 1));
     renderReplicator({ active: true, nodes: nodesByProtocol(many) });
     expect(pushNodeUpdates().mock.calls.map((c) => c[0].length)).toEqual([500, 500, 200]);
+  });
+});
+
+describe('useTakNodeReplicator tracker fixes and sink flag', () => {
+  afterEach(() => {
+    clearTakTrackerFixes();
+  });
+
+  it('mirrors the active flag into the TAK sink store', () => {
+    const { rerender, unmount } = renderReplicator({ active: true, nodes: nodesByProtocol() });
+    expect(isTakSinkActive()).toBe(true);
+    rerender({ active: false, nodes: nodesByProtocol() });
+    expect(isTakSinkActive()).toBe(false);
+    rerender({ active: true, nodes: nodesByProtocol() });
+    unmount();
+    expect(isTakSinkActive()).toBe(false);
+  });
+
+  it('sends a newly recorded tracker fix under its stable uid', () => {
+    renderReplicator({ active: true, nodes: nodesByProtocol() });
+    pushNodeUpdates().mockClear();
+    act(() => {
+      recordTakTrackerFix(
+        { callsign: 'Rex', id8: 'a1b2c3d4', role: 'k9', lat: 39.7, lon: -105.1, speed: 2 },
+        NOW_MS,
+      );
+    });
+    act(() => {
+      vi.advanceTimersByTime(TAK_NODE_SCAN_INTERVAL_MS);
+    });
+    const sent = pushNodeUpdates().mock.calls.flatMap((c) => c[0]);
+    expect(sent).toEqual([
+      expect.objectContaining({
+        uid: 'meshtracker-a1b2c3d4',
+        node_id: 0xa1b2c3d4,
+        tracker_role: 'k9',
+        long_name: 'Rex',
+        speed: 2,
+      }),
+    ]);
   });
 });

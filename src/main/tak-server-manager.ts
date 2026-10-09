@@ -11,10 +11,13 @@ import type {
   TAKClientInfo,
   TAKContact,
   TAKContactsUpdate,
+  TAKGeochatMessage,
+  TakRelayExtras,
   TAKRemoteSettings,
   TAKRemoteStatus,
   TAKServerStatus,
   TAKSettings,
+  TakStyleSettings,
 } from '../shared/tak-types';
 import { sanitizeLogMessage } from './log-service';
 import {
@@ -27,10 +30,13 @@ import { TakContactCache } from './tak/contact-cache';
 import { COT_STALE_MS, meshNodeToCot } from './tak/cot-converter';
 import { CotFramer, parseCotEvent } from './tak/cot-parser';
 import { generateDataPackage } from './tak/data-package';
+import { buildGeochatCot } from './tak/geochat-cot';
 import { getLanIp } from './tak/lan-ip';
 import { TakRemoteClient } from './tak/remote-client';
 import { loadTakRemoteCredentials } from './tak/remote-credentials';
 import { DEFAULT_TAK_REMOTE_PORT, saveTakRemoteSettings } from './tak/remote-settings';
+import { loadTakStyleSettings } from './tak/style-settings';
+import { resolveTakStyle } from './tak/unit-filters';
 
 interface ConnectedClient {
   socket: tls.TLSSocket;
@@ -42,9 +48,10 @@ interface ConnectedClient {
 }
 
 /** A node update from any protocol feed; `protocol` defaults to Meshtastic (MQTT feed). */
-export type TakNodeUpdate = Partial<MeshNode> & { node_id: number; protocol?: MeshProtocol };
+export type TakNodeUpdate = Partial<MeshNode> &
+  TakRelayExtras & { node_id: number; protocol?: MeshProtocol };
 
-interface CachedTakNode extends MeshNode {
+interface CachedTakNode extends MeshNode, TakRelayExtras {
   protocol: MeshProtocol;
   /** When this entry last received an update, by the main-process clock. */
   cachedAtMs: number;
@@ -60,7 +67,10 @@ export class TakServerManager extends EventEmitter {
   private server: tls.Server | null = null;
   private clients = new Map<string, ConnectedClient>();
   private settings: TAKSettings | null = null;
-  /** Keyed by `${protocol}:${node_id}`; node ids from different protocols can collide. */
+  /**
+   * Keyed by `${protocol}:${node_id}` (node ids from different protocols can collide), or by the
+   * explicit uid of a tracker fix.
+   */
   private nodeCache = new Map<string, CachedTakNode>();
   private certBundle: CertBundle | null = null;
   private _status: TAKServerStatus = { running: false, port: 8089, clientCount: 0 };
@@ -72,9 +82,11 @@ export class TakServerManager extends EventEmitter {
     port: DEFAULT_TAK_REMOTE_PORT,
   };
   private readonly contacts = new TakContactCache();
+  private styleSettings: TakStyleSettings;
 
   constructor() {
     super();
+    this.styleSettings = loadTakStyleSettings();
     this.contacts.on('update', (update: TAKContactsUpdate) => {
       this.emit('contacts', update);
     });
@@ -248,7 +260,7 @@ export class TakServerManager extends EventEmitter {
 
   onNodeUpdate(node: TakNodeUpdate): void {
     const protocol = node.protocol ?? 'meshtastic';
-    const key = `${protocol}:${node.node_id}`;
+    const key = node.uid ?? `${protocol}:${node.node_id}`;
     const existing = this.nodeCache.get(key) ?? ({} as CachedTakNode);
     const merged: CachedTakNode = { ...existing, ...node, protocol, cachedAtMs: Date.now() };
     this.nodeCache.delete(key);
@@ -256,13 +268,38 @@ export class TakServerManager extends EventEmitter {
     this.pruneNodeCache();
 
     if (merged.latitude == null || merged.longitude == null) return;
-    const remote = this.remote?.isConnected() ? this.remote : null;
-    if (this.clients.size === 0 && !remote) return;
+    if (!this.hasConnectedSink()) return;
 
-    const cot = meshNodeToCot(merged, protocol);
-    if (!cot) return;
-    remote?.write(cot);
+    const cot = this.toCot(merged);
+    if (cot) this.broadcast(cot);
+  }
 
+  /** Mirror one heard mesh channel message into TAK GeoChat on every sink. */
+  sendChat(msg: TAKGeochatMessage): void {
+    if (!this.hasConnectedSink()) return;
+    this.broadcast(buildGeochatCot(msg));
+  }
+
+  getStyleSettings(): TakStyleSettings {
+    return this.styleSettings;
+  }
+
+  /** Apply new styling and re-send every fresh node so open maps restyle without waiting. */
+  setStyleSettings(settings: TakStyleSettings): void {
+    this.styleSettings = settings;
+    if (!this.hasConnectedSink()) return;
+    this.forEachFreshCot((cot) => {
+      this.broadcast(cot);
+    });
+  }
+
+  private hasConnectedSink(): boolean {
+    return this.clients.size > 0 || this.remote?.isConnected() === true;
+  }
+
+  /** Write one CoT event to the remote relay and every local client. */
+  private broadcast(cot: string): void {
+    if (this.remote?.isConnected()) this.remote.write(cot);
     const data = cot + '\n';
     for (const [id, client] of this.clients) {
       try {
@@ -276,6 +313,16 @@ export class TakServerManager extends EventEmitter {
     }
   }
 
+  /** Styled CoT for a cached node, or null when it has no position or filters exclude it. */
+  private toCot(node: CachedTakNode): string | null {
+    const resolved = resolveTakStyle(this.styleSettings, node, node.protocol);
+    if (!resolved) return null;
+    return meshNodeToCot(node, node.protocol, {
+      style: resolved.style,
+      callsign: resolved.callsign,
+    });
+  }
+
   /**
    * CoT for every cached node updated within the CoT stale window, for a sink that just
    * connected. Older entries would already have gone stale on a client that was connected all
@@ -285,7 +332,7 @@ export class TakServerManager extends EventEmitter {
     const cutoff = Date.now() - COT_STALE_MS;
     for (const node of this.nodeCache.values()) {
       if (node.cachedAtMs < cutoff) continue;
-      const cot = meshNodeToCot(node, node.protocol);
+      const cot = this.toCot(node);
       if (cot) send(cot);
     }
   }

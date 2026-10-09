@@ -79,6 +79,10 @@ vi.mock('./tak/remote-credentials', () => ({
   loadTakRemoteCredentials: vi.fn(() => ({ ca: 'ca-pem' })),
 }));
 
+vi.mock('./tak/style-settings', () => ({
+  loadTakStyleSettings: vi.fn(() => ({ filters: [], sendUnmatched: true })),
+}));
+
 import type { TAKClientInfo, TAKContact, TAKContactsUpdate } from '../shared/tak-types';
 import { loadOrGenerateCerts, regenerateCerts } from './tak/certificate-manager';
 import { TAK_CONTACT_FLUSH_MS } from './tak/contact-cache';
@@ -408,6 +412,57 @@ describe('TakServerManager multi-protocol node cache', () => {
     expect(writtenUids(socket)).toEqual(['MC-5']);
     expect(String(vi.mocked(socket.write).mock.calls[0]?.[0])).toContain('callsign="Ridge"');
   });
+
+  it('caches a tracker fix under its own uid', () => {
+    const manager = new TakServerManager();
+    const socket = connectMockClient(manager);
+    vi.mocked(socket.write).mockClear();
+    const fix = { node_id: 1, protocol: 'meshcore' as const, latitude: 40, longitude: -105 };
+    manager.onNodeUpdate(fix);
+    manager.onNodeUpdate({ ...fix, uid: 'meshtracker-a1b2c3d4' });
+
+    expect(writtenUids(socket)).toEqual(['MC-1', 'meshtracker-a1b2c3d4']);
+  });
+
+  it('restyles fresh nodes on every sink when style settings change', () => {
+    const manager = new TakServerManager();
+    const socket = connectMockClient(manager);
+    manager.onNodeUpdate({
+      node_id: 5,
+      protocol: 'meshcore',
+      latitude: 40,
+      longitude: -105,
+      long_name: 'EMS-3',
+    });
+    vi.mocked(socket.write).mockClear();
+
+    manager.setStyleSettings({
+      sendUnmatched: true,
+      filters: [
+        {
+          enabled: true,
+          op: 'startsWith',
+          patterns: ['ems-'],
+          stripMatch: true,
+          style: { cotType: 'a-f-G-U-S-M', role: 'Medic' },
+        },
+      ],
+    });
+
+    const line = String(vi.mocked(socket.write).mock.calls[0]?.[0]);
+    expect(line).toContain('type="a-f-G-U-S-M"');
+    expect(line).toContain('callsign="3"');
+    expect(manager.getStyleSettings().filters).toHaveLength(1);
+  });
+
+  it('does not relay nodes that no filter matches when sendUnmatched is off', () => {
+    const manager = new TakServerManager();
+    manager.setStyleSettings({ sendUnmatched: false, filters: [] });
+    const socket = connectMockClient(manager);
+    vi.mocked(socket.write).mockClear();
+    manager.onNodeUpdate({ node_id: 5, protocol: 'meshcore', latitude: 40, longitude: -105 });
+    expect(socket.write).not.toHaveBeenCalled();
+  });
 });
 
 describe('TakServerManager remote relay', () => {
@@ -637,5 +692,25 @@ describe('TakServerManager inbound CoT from local clients', () => {
     socket.emit('data', Buffer.from(SA('ANDROID-1', 'VIPER-2')));
     expect(manager.getConnectedClients()[0]?.callsign).toBe('VIPER-2');
     expect(manager.getContacts().map((c) => c.uid)).toEqual(['OTHER-2', 'ANDROID-1']);
+  });
+});
+
+describe('TakServerManager GeoChat', () => {
+  it('writes a GeoChat event to local clients only while one is connected', () => {
+    const manager = new TakServerManager();
+    const msg = { room: 'Mesh', senderCallsign: 'Bob', text: 'hi', timeMs: Date.now() };
+    manager.sendChat(msg);
+    const internals = manager as unknown as {
+      clients: Map<string, unknown>;
+      _handleClient: (socket: tls.TLSSocket) => void;
+    };
+    internals.clients = new Map();
+    const socket = mockTlsSocket();
+    internals._handleClient(socket);
+    vi.mocked(socket.write).mockClear();
+    manager.sendChat(msg);
+    const line = String(vi.mocked(socket.write).mock.calls[0]?.[0]);
+    expect(line).toContain('type="b-t-f"');
+    expect(line).toContain('chatroom="Mesh"');
   });
 });

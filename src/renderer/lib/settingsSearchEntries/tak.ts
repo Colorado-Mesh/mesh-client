@@ -2,6 +2,7 @@ import type { SettingSearchEntry, SettingsSearchSurface } from '../settingsSearc
 
 const SERVER = 'takServerPanel.serverSettings';
 const REMOTE = 'takServerPanel.remoteTitle';
+const STYLES = 'takServerPanel.unitStylesTitle';
 
 const takEntries: readonly SettingSearchEntry[] = [
   {
@@ -116,6 +117,27 @@ const takEntries: readonly SettingSearchEntry[] = [
     sectionKey: REMOTE,
     keywords: ['tak server', 'relay', 'disconnect'],
   },
+  {
+    id: 'tak.styles.sendUnmatched',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.unitStylesSendUnmatched',
+    sectionKey: STYLES,
+    keywords: ['tak', 'cot', 'filter', 'relay', 'unmatched'],
+  },
+  {
+    id: 'tak.styles.addFilter',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.unitStylesAddFilter',
+    sectionKey: STYLES,
+    keywords: ['tak', 'cot', 'unit filter', 'icon', 'team color', 'role', 'k9', 'ems', 'callsign'],
+  },
+  {
+    id: 'tak.channelRelay.trackers',
+    slot: 'TAK',
+    labelKey: 'takServerPanel.channelRelayTrackers',
+    sectionKey: 'takServerPanel.channelRelayTitle',
+    keywords: ['tak', 'meshcore', 'tracker', 'mt1', 'geochat', 'chat', 'channel', 'room'],
+  },
 ];
 
 export const takSurface: SettingsSearchSurface = {
@@ -123,6 +145,8 @@ export const takSurface: SettingsSearchSurface = {
   files: [
     { path: 'src/renderer/components/TakServerPanel.tsx', sweepAllKeys: true },
     { path: 'src/renderer/components/TakRemoteRelaySection.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/TakUnitFiltersSection.tsx', sweepAllKeys: true },
+    { path: 'src/renderer/components/TakChannelRelaySection.tsx', sweepAllKeys: true },
   ],
   exempt: {
     'takServerPanel.title': 'panel heading; the launcher already lists the TAK panel',
@@ -159,5 +183,13 @@ export const takSurface: SettingsSearchSurface = {
     'takServerPanel.remotePasswordLabel': 'password field of the indexed certificate import row',
     'takServerPanel.remoteClear': 'clear button grouped with the indexed certificate import row',
     'takServerPanel.remoteEnroll*': 'fields and notes of the indexed certificate enrollment row',
+    'takServerPanel.unitStylesTitle': 'section heading; its rows are indexed',
+    'takServerPanel.unitStylesSave*': 'save button and status for the indexed unit filter rows',
+    'takServerPanel.unitStylesPreview*': 'name tester for the indexed unit filters, not a setting',
+    'takServerPanel.unitFilter*': 'fields of a filter row added by the indexed Add filter control',
+    'takServerPanel.channelRelayTitle': 'section heading; its channel rows are indexed',
+    'takServerPanel.channelRelayRoom*': 'GeoChat room field in each indexed channel row',
+    'takServerPanel.channelRelayUnnamed': 'fallback channel name in a row',
+    'takServerPanel.channelRelayNoChannels': 'empty-state text before a radio lists channels',
   },
 };

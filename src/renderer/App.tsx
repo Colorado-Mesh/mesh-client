@@ -5523,6 +5523,7 @@ function AppContent() {
                                     : undefined
                                 }
                                 capabilities={capabilities}
+                                meshcoreIdentityId={meshcoreIdentityId}
                               />
                             </Suspense>
                           </ErrorBoundary>

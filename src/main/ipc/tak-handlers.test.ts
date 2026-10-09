@@ -35,6 +35,12 @@ vi.mock('../tak/remote-settings', async (importOriginal) => ({
   loadTakRemoteSettings: vi.fn(() => null),
 }));
 
+vi.mock('../tak/style-settings', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  loadTakStyleSettings: vi.fn(() => ({ filters: [], sendUnmatched: true })),
+  saveTakStyleSettings: vi.fn(),
+}));
+
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -44,6 +50,7 @@ import { dialog } from 'electron';
 
 import { enrollTakClientCertificate } from '../tak/enrollment';
 import { parseTakCredentialFiles, saveTakRemoteCredentials } from '../tak/remote-credentials';
+import { saveTakStyleSettings } from '../tak/style-settings';
 import { assertIpcSender } from '../validate-ipc-sender';
 import { registerTakIpcHandlers } from './tak-handlers';
 
@@ -402,5 +409,110 @@ describe('remote relay handlers', () => {
         );
       },
     );
+  });
+});
+
+describe('tak style settings handlers', () => {
+  type Handler = (event: unknown, arg?: unknown) => unknown;
+
+  async function register(manager: unknown): Promise<(channel: string) => Handler> {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    handle.mockClear();
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    return (channel) => handle.mock.calls.find((c) => c[0] === channel)?.[1] as Handler;
+  }
+
+  const SETTINGS = {
+    sendUnmatched: true,
+    filters: [
+      {
+        enabled: true,
+        op: 'contains',
+        patterns: ['k9'],
+        stripMatch: false,
+        style: { cotType: 'a-f-G-U-C', role: 'K9' },
+      },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('reads from the manager, or from disk before it exists', async () => {
+    const live = { filters: [], sendUnmatched: false };
+    expect((await register({ getStyleSettings: () => live }))('tak:getStyleSettings')({})).toBe(
+      live,
+    );
+    expect((await register(null))('tak:getStyleSettings')({})).toEqual({
+      filters: [],
+      sendUnmatched: true,
+    });
+  });
+
+  it('validates, saves, and hot-applies new settings', async () => {
+    const setStyleSettings = vi.fn();
+    const get = await register({ setStyleSettings });
+    const saved = get('tak:setStyleSettings')({}, SETTINGS);
+    expect(saved).toEqual(SETTINGS);
+    expect(saveTakStyleSettings).toHaveBeenCalledWith(SETTINGS);
+    expect(setStyleSettings).toHaveBeenCalledWith(SETTINGS);
+  });
+
+  it('rejects malformed settings without saving', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const get = await register(null);
+    expect(() => get('tak:setStyleSettings')({}, { filters: 'all' })).toThrow(
+      /tak:setStyleSettings/,
+    );
+    expect(saveTakStyleSettings).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+});
+
+describe('tak:pushChatMessage', () => {
+  type Handler = (event: unknown, arg?: unknown) => unknown;
+
+  async function register(manager: unknown): Promise<Handler> {
+    const { ipcMain } = await import('electron');
+    const handle = vi.mocked(ipcMain.handle);
+    handle.mockClear();
+    registerTakIpcHandlers({
+      idleTakStatus: { running: false, port: 8089, clientCount: 0 },
+      ensureTakServerManager: vi.fn(),
+      getTakServerManager: () => manager as never,
+      validateTakSettings: vi.fn(),
+    });
+    return handle.mock.calls.find((c) => c[0] === 'tak:pushChatMessage')?.[1] as Handler;
+  }
+
+  const MSG = { room: 'Mesh', senderCallsign: 'Bob', text: 'hi', timeMs: 1_700_000_000_000 };
+
+  it('validates and forwards to the manager while a sink is active', async () => {
+    const sendChat = vi.fn();
+    const handler = await register({ hasActiveSink: () => true, sendChat });
+    handler({}, MSG);
+    expect(sendChat).toHaveBeenCalledWith(MSG);
+    expect(assertIpcSender).toHaveBeenCalledWith({}, 'tak:pushChatMessage');
+  });
+
+  it('drops messages while no sink is active', async () => {
+    const sendChat = vi.fn();
+    (await register({ hasActiveSink: () => false, sendChat }))({}, MSG);
+    (await register(null))({}, MSG);
+    expect(sendChat).not.toHaveBeenCalled();
+  });
+
+  it('rejects malformed messages', async () => {
+    const sendChat = vi.fn();
+    const handler = await register({ hasActiveSink: () => true, sendChat });
+    expect(() => handler({}, { ...MSG, room: '' })).toThrow(/tak:pushChatMessage/);
+    expect(sendChat).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ import {
   type TakFeedSources,
   takNodeUpdateKey,
   takNodeUpdateSignature,
+  trackerFixToTakUpdate,
 } from './takNodeFeed';
 import type { MeshNode } from './types';
 
@@ -82,7 +83,17 @@ describe('meshNodeToTakUpdate', () => {
       long_name: 'Ridge',
       battery: 90,
       last_heard: NOW_SEC - 60,
+      source: 'rf',
     });
+  });
+
+  it('carries the advertised role, hops and MQTT source', () => {
+    expect(
+      meshNodeToTakUpdate(node({ hw_model: 'Repeater', hops: 2, source: 'mqtt' }), 'meshcore'),
+    ).toMatchObject({ hw_model: 'Repeater', hops_away: 2, source: 'mqtt' });
+    expect(
+      meshNodeToTakUpdate(node({ role: 2, hops_away: 0, heard_via_mqtt_only: true }), 'meshtastic'),
+    ).toMatchObject({ role: 2, hops_away: 0, source: 'mqtt' });
   });
 
   it.each([
@@ -117,6 +128,7 @@ describe('rmapRowToTakUpdate', () => {
       longitude: -105.5,
       altitude: 2100,
       long_name: 'Mesa RNode',
+      infrastructure: true,
     });
     // First 12 hex chars folded to uint32, matching reticulumHashToNodeId.
     expect(update?.node_id).toBe(0xa1b2c3d4e5f6 >>> 0);
@@ -175,6 +187,38 @@ describe('collectTakNodeUpdates', () => {
   });
 });
 
+describe('trackerFixToTakUpdate', () => {
+  const entry = {
+    fix: { callsign: 'Rex', id8: 'a1b2c3d4', lat: 39.7, lon: -105.1, staleSec: 60, seq: 3 },
+    receivedAtMs: NOW_MS - 30_000,
+    hops: 2,
+  };
+
+  it('maps a valid fix under its stable uid', () => {
+    expect(trackerFixToTakUpdate(entry, NOW_MS)).toMatchObject({
+      node_id: 0xa1b2c3d4,
+      protocol: 'meshcore',
+      uid: 'meshtracker-a1b2c3d4',
+      long_name: 'Rex',
+      sequence: 3,
+      stale_sec: 60,
+      hops_away: 2,
+      last_heard: (NOW_MS - 30_000) / 1000,
+    });
+  });
+
+  it('drops a fix past its stale window and an all-zero tracker id', () => {
+    expect(trackerFixToTakUpdate(entry, NOW_MS + 30_000)).toBeNull();
+    expect(
+      trackerFixToTakUpdate({ ...entry, fix: { ...entry.fix, id8: '00000000' } }, NOW_MS),
+    ).toBeNull();
+  });
+
+  it('keys tracker updates by uid', () => {
+    expect(takNodeUpdateKey(trackerFixToTakUpdate(entry, NOW_MS)!)).toBe('meshtracker-a1b2c3d4');
+  });
+});
+
 describe('takNodeUpdateSignature', () => {
   it('ignores last_heard so a re-heard node with no changes is not re-sent', () => {
     const a = meshNodeToTakUpdate(node({ last_heard: NOW_SEC - 60 }), 'meshtastic')!;
@@ -185,6 +229,12 @@ describe('takNodeUpdateSignature', () => {
   it('changes when the position moves', () => {
     const a = meshNodeToTakUpdate(node(), 'meshtastic')!;
     const b = meshNodeToTakUpdate(node({ latitude: 39.71 }), 'meshtastic')!;
+    expect(takNodeUpdateSignature(a)).not.toBe(takNodeUpdateSignature(b));
+  });
+
+  it('changes when the advertised role changes', () => {
+    const a = meshNodeToTakUpdate(node({ hw_model: 'Chat' }), 'meshcore')!;
+    const b = meshNodeToTakUpdate(node({ hw_model: 'Repeater' }), 'meshcore')!;
     expect(takNodeUpdateSignature(a)).not.toBe(takNodeUpdateSignature(b));
   });
 });
