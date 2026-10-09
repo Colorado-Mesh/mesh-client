@@ -96,15 +96,15 @@ modules:
         path: .
       - flatpak/generated-sources.json
       - type: archive
-        url: https://github.com/pnpm/pnpm/releases/download/v12.7.0/pnpm-linux-x64.tar.gz
-        sha256: 68190c7d289efecd66ff088c93b9c5ec361989e8194239e004bd905403d3d3e5
+        url: https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-x64.tar.gz
+        sha256: 358f30541b42371360c0d48a8daddc0c0850a90c36fcbea598032a9850e2c9ab
         dest: pnpm-vendor
         # pnpm tarball has root-level `pnpm` + `dist/`; default strip-components:1 drops the binary.
         strip-components: 0
         only-arches: [x86_64]
       - type: archive
-        url: https://github.com/pnpm/pnpm/releases/download/v12.7.0/pnpm-linux-arm64.tar.gz
-        sha256: db39a3fc7969dcf3398ebf2f2090c62ba732e5a9887b96147a97134a1a779088
+        url: https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-arm64.tar.gz
+        sha256: ad444fa06d7ff344d74ba1e4933f2ed71cc6357cc2d33707a5c60958b7d83085
         dest: pnpm-vendor
         strip-components: 0
         only-arches: [aarch64]
